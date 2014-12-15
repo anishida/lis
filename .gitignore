@@ -1,12 +1,12 @@
 # for all subdirectories
 *.o
-Makefile.in
 Makefile
+Makefile.in
 
 # autotools stuff
 autom4te.cache/
 config.*
-libtool
 include/stamp-h1
+libtool
 
 
