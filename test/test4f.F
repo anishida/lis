@@ -1,4 +1,4 @@
-C   Copyright (C) The Scalable Software Infrastructure Project. 
+C   Copyright (C) 2005 The Scalable Software Infrastructure Project. 
 C   All rights reserved.
 C
 C   Redistribution and use in source and binary forms, with or without
