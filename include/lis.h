@@ -754,7 +754,7 @@ extern "C"
 	extern LIS_INT lis_matrix_malloc_dns(LIS_INT n, LIS_INT gn, LIS_SCALAR **value);
 
 /****************************/
-/* Matrix Vector Operations */
+/* Matrix-Vector Operations */
 /****************************/
 
 	extern LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y);
