@@ -3,5 +3,10 @@
 Makefile.in
 Makefile
 
-# autoreconf stuff
+# autotools stuff
+autom4te.cache/
 config.*
+libtool
+include/stamp-h1
+
+
