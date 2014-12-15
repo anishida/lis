@@ -1,4 +1,4 @@
-# Process this file with autoconf to produce a configure script.
+# Process this file with reconfigure.sh to update configure script.
 
 AC_INIT(lis, 1.5.38, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
@@ -39,6 +39,9 @@ AC_ARG_WITH(library-suffix,
 	[LIBSUFFIX="${withval}"],
 	[LIBSUFFIX=])
 AC_SUBST(LIBSUFFIX)
+
+
+# Checks for Targets
 
 if test "$TARGET" != ""; then
 	case "$TARGET" in
