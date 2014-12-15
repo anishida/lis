@@ -1,5 +1,8 @@
 # for all subdirectories
 *.o
+*.orig
+*~
+\#*#
 Makefile
 Makefile.in
 
