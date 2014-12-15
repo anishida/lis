@@ -1,13 +1,13 @@
 
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT(lis, 1.5.37, devel@ssisc.org)
+AC_INIT(lis, 1.5.38, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
 
 AC_CANONICAL_SYSTEM
-#AM_INIT_AUTOMAKE(lis,1.5.37,devel@ssisc.org)
+#AM_INIT_AUTOMAKE(lis,1.5.38,devel@ssisc.org)
 AM_INIT_AUTOMAKE
 AM_CONFIG_HEADER(include/lis_config.h)
 
