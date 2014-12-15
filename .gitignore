@@ -1,0 +1,8 @@
+# for all subdirectories
+*.o
+Makefile.in
+Makefile
+
+# autoreconf stuff
+config.*
+configure
