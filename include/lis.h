@@ -754,14 +754,14 @@ extern "C"
 	extern LIS_INT lis_matrix_malloc_dns(LIS_INT n, LIS_INT gn, LIS_SCALAR **value);
 
 /****************************/
-/* Matrix Vector Products   */
+/* Matrix Vector Operations */
 /****************************/
 
 	extern LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y);
 	extern LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y);
 
 /****************************/
-/* Arrays                   */
+/* Array Operations         */
 /****************************/
 
         extern LIS_INT lis_array_swap(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y);
