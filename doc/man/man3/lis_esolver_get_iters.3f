@@ -1,0 +1,33 @@
+.TH lis_esolver_get_iters 3f "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_esolver_get_iters \- get the numbers of iterations for all the eigenpairs from the eigensolver
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_esolver_get_iters\fR(\fBLIS_ESOLVER esolver\fR, \fBLIS_VECTOR v\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the numbers of iterations for all the eigenpairs from the eigensolver.
+
+.SH INPUT
+
+.IP "\fBesolver\fR"
+The eigensolver
+
+.SH OUTPUT
+
+.IP "\fBv\fR"
+The vector which stores the numbers of iterations
+
+.SH NOTE
+Vector \fIv\fR must be created in advance with the function \fBlis_vector_create\fR.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

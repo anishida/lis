@@ -1,0 +1,30 @@
+.TH lis_matrix_copy 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_matrix_copy \- copy the values of the matrix elements
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_matrix_copy\fR(\fBLIS_MATRIX Ain\fR, \fBLIS_MATRIX Aout\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Copy the values of the matrix elements.
+
+.SH INPUT
+
+.IP "\fBAin\fR"
+The source matrix
+
+.SH OUTPUT
+
+.IP "\fBAout\fR"
+The destination matrix
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

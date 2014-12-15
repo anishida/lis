@@ -1,0 +1,30 @@
+.TH lis_esolver_get_time 3f "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_esolver_get_time \- get the execution time for the specified eigenpair from the eigensolver
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_esolver_get_time\fR(\fBLIS_ESOLVER esolver\fR, \fBdouble *times\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the execution time for the specified eigenpair from the eigensolver.
+
+.SH INPUT
+
+.IP "\fBesolver\fR"
+The eigensolver
+
+.SH OUTPUT
+
+.IP "\fBtimes\fR"
+The time in seconds of the execution
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

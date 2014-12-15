@@ -1,0 +1,46 @@
+.TH lis_array_matvec 3f "3 Dec 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_array_matvec \- calculate the matrix vector product
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_array_matvec\fR(\fBLIS_INTEGER n\fR, \fBLIS_SCALAR a()\fR, \fBLIS_SCALAR x()\fR, \fBLIS_SCALAR y()\fR, \fBLIS_INTEGER op\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Calculate the matrix-vector product \fIAx\fR.
+
+.SH INPUT
+
+.IP "\fBn\fR"
+The size of the matrix and vectors
+
+.IP "\fBa\fR"
+The array that stores matrix \fIA\fR of size \fIn * n\fR
+
+.IP "\fBx\fR"
+The array that stores vector \fIx\fR of size \fIn\fR
+
+.IP "\fBy\fR"
+The array that stores vector \fIy\fR of size \fIn\fR
+
+.IP "\fBop\fR"
+.RS
+.IP "\fBLIS_INS_VALUE\fR"
+\fIy\fR = \fIAx\fR
+.IP "\fBLIS_SUB_VALUE\fR"
+\fIy\fR = \fIy - Ax\fR
+
+.SH OUTPUT
+
+.IP "\fBy\fR"
+\fIy\fR
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

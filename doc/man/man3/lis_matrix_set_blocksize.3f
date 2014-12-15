@@ -1,0 +1,40 @@
+.TH lis_matrix_set_blocksize 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_matrix_set_blocksize \- assign the block size of the matrix
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_matrix_set_blocksize\fR(\fBLIS_MATRIX A\fR, \fBLIS_INTEGER bnr\fR, \fBLIS_INTEGER bnc\fR, \fBLIS_INTEGER row\fR[], \fBLIS_INTEGER col\fR[], \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Assign the block size of the BSR, BSC, and VBR formats.
+
+.SH INPUT
+
+.IP "\fBA\fR"
+The matrix
+
+.IP "\fBbnr\fR"
+The row block size of the BSR (BSC) format or the number of row blocks of the VBR format
+
+.IP "\fBbnc\fR"
+The column block size of the BSR (BSC) format or the number of column blocks of the VBR format
+
+.IP "\fBrow\fR"
+The array of the row division information about the VBR format
+
+.IP "\fBcolumn\fR"
+The array of the column division information about the VBR format
+
+.SH NOTE
+.PP
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

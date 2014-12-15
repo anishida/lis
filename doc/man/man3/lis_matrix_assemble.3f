@@ -1,0 +1,30 @@
+.TH lis_matrix_assemble 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_matrix_assemble \- assemble the matrix into the specified storage format
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_matrix_assemble\fR(\fBLIS_MATRIX A\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Assemble matrix \fIA\fR into the specified storage format.
+
+.SH INPUT
+
+.IP "\fBA\fR"
+The matrix
+
+.SH OUTPUT
+
+.IP "\fBA\fR"
+The matrix assembled into the specified storage format
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

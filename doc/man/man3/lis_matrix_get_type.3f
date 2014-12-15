@@ -1,0 +1,31 @@
+.TH lis_matrix_get_type 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+lis_matrix_get_type \- get the storage format
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_matrix_get_type\fR(\fBLIS_MATRIX A\fR, \fBLIS_INTEGER *matrix_type\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the storage format.
+
+.SH INPUT
+
+.IP "\fBA\fR"
+The matrix
+
+.IP "\fBmatrix_type\fR"
+The storage format
+
+.SH OUTPUT
+
+.IP "\fBNone\fR"
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

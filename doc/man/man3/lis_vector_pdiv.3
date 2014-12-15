@@ -1,0 +1,40 @@
+.TH lis_vector_pdiv 3 "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_vector_pdiv \- divide each element of a vector by the corresponding element of another
+
+.SH SYNOPSIS
+
+#include "lis.h"
+
+\fBLIS_INT lis_vector_pdiv\fR(\fBLIS_VECTOR x\fR, \fBLIS_VECTOR y\fR, \fBLIS_VECTOR z\fR);
+
+.SH DESCRIPTION
+
+Divide each element of vector \fIx\fR by the corresponding element of vector \fIy\fR.
+
+.SH INPUT
+
+.IP "\fBx, y\fR"
+The vectors
+
+.SH OUTPUT
+
+.IP "\fBz\fR"
+The vector that stores the divided elements of \fIx\fR 
+
+.SH EXIT STATUS
+
+The following exit values are returned:
+.IP "0"
+The process is normally terminated
+.IP "unspecified"
+An error occurred
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

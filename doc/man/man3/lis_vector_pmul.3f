@@ -1,0 +1,30 @@
+.TH lis_vector_pmul 3f "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_vector_pmul \- multiply each element of a vector by the corresponding of another
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_vector_pmul\fR(\fBLIS_VECTOR x\fR, \fBLIS_VECTOR y\fR, \fBLIS_VECTOR z\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Multiply each element of vector \fIx\fR by the corresponding element of vector \fIy\fR.
+
+.SH INPUT
+
+.IP "\fBx, y\fR"
+The vectors
+
+.SH OUTPUT
+
+.IP "\fBz\fR"
+The vector that stores the multiplied elements of \fIx\fR 
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

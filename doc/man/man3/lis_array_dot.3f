@@ -1,0 +1,33 @@
+.TH lis_array_dot 3f "3 Dec 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_array_dot \- calculate the inner product of the vectors
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_array_dot\fR(\fBLIS_INTEGER n\fR, \fBLIS_SCALAR x()\fR, \fBLIS_SCALAR y()\fR, \fBLIS_SCALAR *value\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Calculate the inner product \fIx^T y\fR of vectors \fIx\fR and \fIy\fR.
+
+.SH INPUT
+
+.IP "\fBn\fR"
+The size of the vectors
+
+.IP "\fBx, y\fR"
+The arrays that store the vectors
+
+.SH OUTPUT
+
+.IP "\fBvalue\fR"
+The inner product
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

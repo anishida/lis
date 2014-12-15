@@ -1,0 +1,36 @@
+.TH lis_matrix_get_size 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+lis_matrix_get_size \- get the size of the matrix
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_matrix_get_size\fR(\fBLIS_MATRIX A\fR, \fBLIS_INTEGER *local_n\fR, \fBLIS_INTEGER *global_n\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the size of matrix \fIA\fR.
+
+.SH INPUT
+
+.IP "\fBA\fR"
+The matrix
+
+.SH OUTPUT
+
+.IP "\fBlocal_n\fR"
+The size of the partial matrix
+
+.IP "\fBglobal_n\fR"
+The size of the global matrix
+
+.SH NOTE
+
+In the case of the serial and multithreaded environments, \fIlocal_n\fR is equal to \fIglobal_n\fR.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

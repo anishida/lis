@@ -1,0 +1,32 @@
+.TH lis_matrix_shift_diagonal 3f "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+lis_matrix_shift_diagonal \- shift the digonal elemments of the matrix
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_matrix_shift_diagonal\fR(\fBLIS_MATRIX A\fR, \fBLIS_SCALAR alpha\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Shifts the diagonal elements of matrix \fIA\fR.
+
+.SH INPUT
+
+.IP "\fBalpha\fR"
+The amount of the shift
+
+.IP "\fBA\fR"
+The matrix
+
+.SH OUTPUT
+
+.IP "\fBA\fR"
+The shifted matrix
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

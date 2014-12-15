@@ -1,0 +1,30 @@
+.TH lis_vector_nrmi 3f "9 Sep 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_vector_nrmi \- calculate the infinity norm of the vector
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_vector_nrmi\fR(\fBLIS_VECTOR x\fR, \fBLIS_SCALAR *value\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Calculate the infinity norm of vector \fIx\fR.
+
+.SH INPUT
+
+.IP "\fBx\fR"
+The vector
+
+.SH OUTPUT
+
+.IP "\fBvalue\fR"
+The infinity norm of the vector
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

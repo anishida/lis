@@ -1,0 +1,39 @@
+.TH lis_array_solve 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_array_solve \- solve the linear equation with the direct method
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_array_solve\fR(\fBLIS_INTEGER n\fR, \fBLIS_SCALAR a()\fR, \fBLIS_SCALAR b()\fR, \fBLIS_SCALAR x()\fR, \fBLIS_SCALAR w()\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Solve the linear equation \fIAx=b\fR with the specified solver.
+
+.SH INPUT
+
+.IP "\fBn\fR"
+The size of the matrix
+
+.IP "\fBa\fR"
+The array that stores coefficient matrix \fIA\fR of size \fIn * n\fR 
+
+.IP "\fBb\fR"
+The array that stores right hand side vector \fIb\fR of size \fIn\fR 
+
+.IP "\fBw\fR"
+The work array \fIw\fR of size \fIn\fR 
+
+.SH OUTPUT
+
+.IP "\fBx\fR"
+The array that stores solution \fIx\fR
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

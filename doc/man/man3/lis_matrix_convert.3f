@@ -1,0 +1,49 @@
+'\" te
+.TH lis_matrix_convert 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_matrix_convert \- convert the matrix format
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_matrix_convert\fR(\fBLIS_MATRIX Ain\fR, \fBLIS_MATRIX Aout\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Convert matrix \fBAin\fR into \fBAout\fR of the format specified by \fBlis_matrix_set_type\fR.
+
+.SH INPUT
+
+.IP "\fBAin\fR"
+The source matrix
+
+.SH OUTPUT
+
+.IP "\fBAout\fR"
+The destination matrix
+
+.SH NOTE
+
+The storage format of the \fBAout\fR is set by \fBlis_matrix_set_type\fR. 
+The block size of the BSR, BSC, and VBR formats is set by \fBlis_matrix_set_blocksize\fR.
+The conversions indicated by 1 in the table below are performed directly, and the other ones are
+performed via the indicated formats. The conversions with no indication are performed via the CSR
+format.
+
+.TS
+allbox, tab(;);
+l | l | l | l | l | l | l | l | l | l | l | l 
+l | l | l | l | l | l | l | l | l | l | l | l 
+l | l | l | l | l | l | l | l | l | l | l | l .
+Src/Dst; CSR; CSC; MSR; DIA; ELL; JAD; BSR; BSC; VBR; COO; DNS
+CSR; ; 1; 1; 1; 1; 1; 1; CSC; 1; 1; 1
+COO; 1; 1; 1; CSR; CSR; CSR; CSR; CSC; CSR; ; CSR
+.TE
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

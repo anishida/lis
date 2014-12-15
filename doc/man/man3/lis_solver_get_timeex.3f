@@ -1,0 +1,39 @@
+.TH lis_solver_get_timeex 3f "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_solver_get_timeex \- get the detailed information on the execution time from the solver
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_solver_get_timeex\fR(\fBLIS_SOLVER solver\fR, \fBdouble *time\fR, \fBdouble *itime\fR, \fBdouble *ptime\fR, \fBdouble *p_c_time\fR, \fBdouble *p_i_time\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the detailed information on the execution time from the solver.
+
+.SH INPUT
+
+.IP "\fBsolver\fR"
+The solver
+
+.SH OUTPUT
+
+.IP "\fBtime\fR"
+The total time in seconds
+
+.IP "\fBitime\fR"
+The time in seconds of the iterations
+
+.IP "\fBp_c_time\fR"
+The time in seconds of the creation of the preconditioner
+
+.IP "\fBp_i_time\fR"
+The time in seconds of the iterations of the preconditioner
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

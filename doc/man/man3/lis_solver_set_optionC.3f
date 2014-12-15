@@ -1,0 +1,29 @@
+.TH lis_solver_set_optionC 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_solver_set_optionC \- set the options for the solver on the command line
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_solver_set_optionC\fR(\fBLIS_SOLVER solver\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Set the options for the solver on the command line.
+
+.SH INPUT
+
+.IP "\fBNone\fR"
+
+.SH OUTPUT
+
+.IP "\fBsolver\fR"
+The solver
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

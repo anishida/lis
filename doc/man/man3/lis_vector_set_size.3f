@@ -1,0 +1,41 @@
+.TH lis_vector_set_size 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_vector_set_size \- assign the size of the vector
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_vector_set_size\fR(\fBLIS_VECTOR v\fR, \fBLIS_INTEGER local_n\fR, \fBLIS_INTEGER global_n\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Assign the size of vector \fIv\fR.
+
+.SH INPUT
+
+.IP "\fBv\fR"
+The vector
+
+.IP "\fBlocal_n\fR"
+The size of the partial vector
+
+.IP "\fBglobal_n\fR"
+The size of the global vector
+
+.SH NOTE
+
+Either \fIlocal_n\fR or \fIglobal_n\fR must be provided.
+In the case of the serial and multithreaded environments, \fIlocal_n\fR is equal to \fIglobal_n\fR. 
+Therefore, both
+\fBlis_vector_set_size\fR(\fBv,n,0\fR) and \fBlis_vector_set_size\fR(\fBv,0,n\fR) create a vector of size \fIn\fR.
+For the multiprocessing environment, \fBlis_vector_set_size\fR(\fBv,n,0\fR) creates a partial vector of size \fIn\fR
+on each processing element. On the other hand, \fIlis_vector_set_size\fR(\fBv,0,n\fR) creates a partial vector
+of size \fIm_p\fR on the processing element \fIp\fR. The values of \fIm_p\fR are determined by the library.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

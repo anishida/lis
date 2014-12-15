@@ -1,0 +1,40 @@
+.TH lis_solver_get_time 3 "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_solver_get_time \- get the execution time from the solver
+
+.SH SYNOPSIS
+
+#include "lis.h"
+
+\fBLIS_INT lis_solver_get_time\fR(\fBLIS_SOLVER solver\fR, \fBdouble *time\fR);
+
+.SH DESCRIPTION
+
+Get the execution time from the solver.
+
+.SH INPUT
+
+.IP "\fBsolver\fR"
+The solver
+
+.SH OUTPUT
+
+.IP "\fBtime\fR"
+The time in seconds of the execution
+
+.SH EXIT STATUS
+
+The following exit values are returned:
+.IP "0"
+The process is normally terminated
+.IP "unspecified"
+An error occurred
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

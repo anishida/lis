@@ -1,0 +1,40 @@
+.TH lis_solver_get_solvername 3 "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_solver_get_solvername \- get the solver name from the solver number
+
+.SH SYNOPSIS
+
+#include "lis.h"
+
+\fBLIS_INT lis_solver_get_solvername\fR(\fBLIS_INT nsol\fR, \fchar *name\fR);
+
+.SH DESCRIPTION
+
+Get the solver name from the solver number.
+
+.SH INPUT
+
+.IP "\fBnsol\fR"
+The solver number
+
+.SH OUTPUT
+
+.IP "\fBname\fR"
+The solver name
+
+.SH EXIT STATUS
+
+The following exit values are returned:
+.IP "0"
+The process is normally terminated
+.IP "unspecified"
+An error occurred
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

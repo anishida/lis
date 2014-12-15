@@ -1,0 +1,33 @@
+.TH lis_matrix_create 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+lis_matrix_create \- create the matrix
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_matrix_create\fR(\fBLis_Comm comm\fR, \fBLIS_MATRIX *A\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Create matrix \fIA\fR.
+
+.SH INPUT
+
+.IP "\fBLIS_Comm\fR"
+The MPI communicator
+
+.SH OUTPUT
+
+.IP "\fBA\fR"
+The matrix
+
+.SH NOTE
+
+For the serial and multithreaded environments, the value of \fBcomm\fR is ignored.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

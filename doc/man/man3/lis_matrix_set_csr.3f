@@ -1,0 +1,40 @@
+.TH lis_matrix_set_csr 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_matrix_set_csr \- associate the arrays in the CSR format with the matrix
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_matrix_set_csr\fR(\fBLIS_INTEGER nnz\fR, \fBLIS_INTEGER ptr\fR[], \fBLIS_INTEGER index\fR[], \fBLIS_SCALAR value\fR[], \fBLIS_MATRIX A\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Associate the arrays in the CSR format with matrix A.
+
+.SH INPUT
+
+.IP "\fBnnz\fR"
+The number of nonzero elements 
+
+.IP "\fBptr, index, value\fR"
+The arrays in the CSR format
+
+.IP "\fBA\fR"
+The matrix
+
+.SH OUTPUT
+
+.IP "\fBA\fR"
+The matrix associated with the arrays
+
+.SH NOTE
+
+After \fBlis_matrix_set_csr\fR is called, the function \fBlis_matrix_assemble\fR must be called.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

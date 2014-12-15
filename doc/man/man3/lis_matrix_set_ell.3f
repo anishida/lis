@@ -1,0 +1,40 @@
+.TH lis_matrix_set_ell 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_matrix_set_ell \- associate the arrays in the ELL format with the matrix
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_matrix_set_ell\fR(\fBLIS_INTEGER maxnzr\fR, \fBLIS_INTEGER index\fR[], \fBLIS_SCALAR value\fR[], \fBLIS_MATRIX A\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Associate the arrays in the ELL format with matrix A.
+
+.SH INPUT
+
+.IP "\fBmaxnzr\fR"
+The maximum number of nonzero elements in each row
+
+.IP "\fBindex, value\fR"
+The arrays in the ELL format
+
+.IP "\fBA\fR"
+The matrix
+
+.SH OUTPUT
+
+.IP "\fBA\fR"
+The matrix associated with the arrays
+
+.SH NOTE
+
+After \fBlis_matrix_set_ell\fR is called, the function \fBlis_matrix_assemble\fR must be called.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

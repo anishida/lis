@@ -1,0 +1,25 @@
+.TH lis_solver_destroy 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_solver_destroy \- destroy the solver
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_solver_destroy\fR(\fBLIS_SOLVER solver\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Destroy the solver.
+
+.SH INPUT
+
+.IP "\fBsolver\fR"
+The solver to be destroyed
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

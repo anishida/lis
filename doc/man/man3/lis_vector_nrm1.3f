@@ -1,0 +1,30 @@
+.TH lis_vector_nrm1 3f "9 Sep 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_vector_nrm1 \- calculate the 1-norm of the vector
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_vector_nrm1\fR(\fBLIS_VECTOR x\fR, \fBLIS_SCALAR *value\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Calculate the 1-norm of vector \fIx\fR.
+
+.SH INPUT
+
+.IP "\fBx\fR"
+The vector
+
+.SH OUTPUT
+
+.IP "\fBvalue\fR"
+The 1-norm of the vector
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

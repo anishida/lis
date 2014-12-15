@@ -1,0 +1,33 @@
+#!/bin/sh
+
+srcdir=${srcdir-.}
+if test ! -d $srcdir; then
+  echo "defs: installation error" 1>&2
+  exit 1
+fi
+
+case "$srcdir" in
+  /* | [A-Za-z]:\\*) ;;
+  *) srcdir=`\cd $srcdir && pwd` ;;
+esac
+case "$top_builddir" in
+  /* | [A-Za-z]:\\*) ;;
+  *) top_builddir=`\cd $top_builddir && pwd` ;;
+esac
+
+progname=`echo "$0" | sed 's,^.*/,,'`
+testname=`echo "$progname" | sed 's,-.*$,,'`
+testsubdir=${testsubdir-testSubDir}
+
+case x$VERBOSE in
+  xNO | xno | x0 | x) 
+   exec > /dev/null 2>&1
+   ;;
+esac
+
+rm -rf $testsubdir > /dev/null 2>&1
+mkdir $testsubdir
+cd $testsubdir || { echo "Cannot make or change into $testsubdir"; exit 1; }
+
+echo "=== Running test $progname"
+

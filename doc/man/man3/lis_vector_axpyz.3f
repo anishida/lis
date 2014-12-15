@@ -1,0 +1,33 @@
+.TH lis_vector_axpyz 3f "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_vector_axpyz \- calculate the sum of the vectors
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_vector_axpyz\fR(\fBLIS_SCALAR alpha\fR, \fBLIS_VECTOR x\fR, \fBLIS_VECTOR y\fR, \fBLIS_VECTOR z\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Calculate the sum of the vectors \fIz = alpha * x + y\fR.
+
+.SH INPUT
+
+.IP "\fBalpha\fR"
+The scalar value
+
+.IP "\fBx, y\fR"
+The vectors
+
+.SH OUTPUT
+
+.IP "\fBz\fR"
+\fIalpha * x + y\fR 
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

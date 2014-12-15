@@ -1,0 +1,33 @@
+.TH lis_array_ge 3f "3 Dec 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_array_ge \- calculate the inverse of the matrix with the Gaussian elimination
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_array_ge\fR(\fBLIS_INTEGER n\fR, \fBLIS_SCALAR a()\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Calculate the inverse \fIA\fR of matrix \fIA\fR with the Gaussian elimination.
+
+.SH INPUT
+
+.IP "\fBn\fR"
+The size of the matrix
+
+.IP "\fBa\fR"
+The array that stores matrix \fIA\fR of size \fIn * n\fR
+
+.SH OUTPUT
+
+.IP "\fBa\fR"
+The inverse of the array
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

@@ -1,0 +1,29 @@
+.TH lis_vector_swap 3f "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+lis_vector_swap \- swap the values of the vector elements
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_vector_swap\fR(\fBLIS_VECTOR x\fR, \fBLIS_VECTOR y\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Swap the values of the vector elements.
+
+.SH INPUT
+
+.IP "\fBx, y\fR"
+The source vectors
+
+.SH OUTPUT
+
+.IP "\fBx, y\fR"
+The destination vectors
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

@@ -1,0 +1,29 @@
+.TH lis_esolver_set_optionC 3 "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_esolver_set_optionC \- set the options for the eigensolver on the command line
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_esolver_set_optionC\fR(\fBLIS_ESOLVER esolver\fR);
+
+.SH DESCRIPTION
+
+Set the options for the eigensolver on the command line.
+
+.SH INPUT
+
+.IP "\fBNone\fR"
+
+.SH OUTPUT
+
+.IP "\fBesolver\fR"
+The eigensolver
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

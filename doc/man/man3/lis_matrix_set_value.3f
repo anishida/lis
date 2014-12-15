@@ -1,0 +1,51 @@
+.TH lis_matrix_set_value 3f "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+lis_matrix_set_value \- assign the scalar value to the element of the matrix
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_matrix_set_value\fR(\fBLIS_INTEGER flag\fR, \fBLIS_INTEGER i\fR, \fBLIS_INTEGER j\fR, \fBLIS_SCALAR value\fR, \fBLIS_MATRIX A\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Assign the scalar value to the (\fIi\fR, \fIj\fR)-th element of matrix \fIA\fR.
+
+.SH INPUT
+
+.IP "\fBflag\fR"
+.RS
+.IP "\fBLIS_INS_VALUE\fR"
+\fIA\fR[\fIi\fR, \fIj\fR] = \fIvalue\fR
+.IP "\fBLIS_ADD_VALUE\fR"
+\fIA\fR[\fIi\fR, \fIj\fR] = \fIA\fR[\fIi\fR, \fIj\fR] + \fIvalue\fR
+
+.IP "\fBi\fR"
+The row number of the matrix
+
+.IP "\fBj\fR"
+The column number of the matrix
+
+.IP "\fBvalue\fR"
+The scalar value to be assigned
+
+.IP "\fBA\fR"
+The matrix
+
+.SH OUTPUT
+
+.IP "\fBA\fR"
+The matrix
+
+.SH NOTE
+
+For the multiprocessing environment, the \fIi\fR-th row and the \fIj\fR-th column of the global matrix must be specified.
+The function \fBlis_matrix_set_value\fR stores the assigned value in a temporary internal format. Therefore,
+after \fBlis_matrix_set_value\fR is called, the function \fBlis_matrix_assemble\fR must be called.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

@@ -1,0 +1,43 @@
+.TH lis_matvec 3 "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_matvec \- calculate the matrix vector product
+
+.SH SYNOPSIS
+
+#include "lis.h"
+
+\fBLIS_INT lis_matvec\fR(\fBLIS_MATRIX A\fR, \fBLIS_VECTOR x\fR, \fBLIS_VECTOR y\fR);
+
+.SH DESCRIPTION
+
+Calculate the matrix vector product \fIy = Ax\fR.
+
+.SH INPUT
+
+.IP "\fBA\fR"
+The matrix
+
+.IP "\fBx\fR"
+The vector
+
+.SH OUTPUT
+
+.IP "\fBy\fR"
+\fIAx\fR
+
+.SH EXIT STATUS
+
+The following exit values are returned:
+.IP "0"
+The process is normally terminated
+.IP "unspecified"
+An error occurred
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

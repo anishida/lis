@@ -1,0 +1,29 @@
+.TH lis_vector_copy 3f "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+lis_vector_copy \- copy the values of the vector elements
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_vector_copy\fR(\fBLIS_VECTOR x\fR, \fBLIS_VECTOR y\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Copy the values of the vector elements.
+
+.SH INPUT
+
+.IP "\fBx\fR"
+The source vector
+
+.SH OUTPUT
+
+.IP "\fBy\fR"
+The destination vector
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

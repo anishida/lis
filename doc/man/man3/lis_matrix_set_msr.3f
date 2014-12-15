@@ -1,0 +1,43 @@
+.TH lis_matrix_set_msr 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_matrix_set_msr \- associate the arrays in the MSR format with the matrix
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_matrix_set_msr\fR(\fBLIS_INTEGER nnz\fR, \fBLIS_INTEGER ndz\fR[], \fBLIS_INTEGER index\fR[], \fBLIS_SCALAR value\fR[], \fBLIS_MATRIX A\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Associate the arrays in the MSR format with matrix A.
+
+.SH INPUT
+
+.IP "\fBnnz\fR"
+The number of nonzero elements 
+
+.IP "\fBndz\fR"
+The number of nonzero elements in the diagonal
+
+.IP "\fBptr, index, value\fR"
+The arrays in the MSR format
+
+.IP "\fBA\fR"
+The matrix
+
+.SH OUTPUT
+
+.IP "\fBA\fR"
+The matrix associated with the arrays
+
+.SH NOTE
+.PP
+After \fBlis_matrix_set_msr\fR is called, the function \fBlis_matrix_assemble\fR must be called.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

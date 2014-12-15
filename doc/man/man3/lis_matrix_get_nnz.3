@@ -1,0 +1,44 @@
+.TH lis_matrix_get_nnz 3 "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_matrix_get_nnz \- get the number of nonzero elements of the matrix
+
+.SH SYNOPSIS
+
+#include "lis.h"
+
+\fBLIS_INT lis_matrix_get_nnz\fR(\fBLIS_MATRIX A\fR, \fBLIS_INT *nnz\fR);
+
+.SH DESCRIPTION
+
+Get the number of nonzero elements of matrix \fIA\fR.
+
+.SH INPUT
+
+.IP "\fBA\fR"
+The matrix
+
+.SH OUTPUT
+
+.IP "\fBnnz\fR"
+The number of nonzero elements
+
+.SH EXIT STATUS
+
+The following exit values are returned:
+.IP "0"
+The process is normally terminated
+.IP "unspecified"
+An error occurred
+
+.SH NOTE
+.PP
+For the multiprocessing environment, this function gets the number of nonzero elements of partial matrix \fIA\fR.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

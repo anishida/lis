@@ -1,0 +1,30 @@
+.TH lis_solver_get_preconname 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_solver_get_preconname \- get the preconditioner name from the preconditioner number
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_solver_get_preconname\fR(\fBLIS_INTEGER precon_type\fR, \fchar *name\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the preconditioner name from the preconditioner number.
+
+.SH INPUT
+
+.IP "\fBprecon_type\fR"
+The preconditioner number
+
+.SH OUTPUT
+
+.IP "\fBname\fR"
+The preconditioner name
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

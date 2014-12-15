@@ -1,0 +1,33 @@
+.TH lis_matvec 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_matvec \- calculate the matrix vector product
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_matvec\fR(\fBLIS_MATRIX A\fR, \fBLIS_VECTOR x\fR, \fBLIS_VECTOR y\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Calculate the matrix vector product \fIy = Ax\fR.
+
+.SH INPUT
+
+.IP "\fBA\fR"
+The matrix
+
+.IP "\fBx\fR"
+The vector
+
+.SH OUTPUT
+
+.IP "\fBy\fR"
+\fIAx\fR
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

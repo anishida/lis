@@ -1,0 +1,34 @@
+.TH lis_matrix_unset 3f "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_matrix_unset \- unassociate the arrays from the matrix
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_matrix_unset\fR(\fBLIS_MATRIX A\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Unassociate the arrays from matrix A.
+
+.SH INPUT
+
+.IP "\fBA\fR"
+The matrix associated with the arrays
+
+.SH OUTPUT
+
+.IP "\fBA\fR"
+The unassociated matrix
+
+.SH NOTE
+
+After \fBlis_matrix_unset\fR is called, the function \fBlis_matrix_destroy\fR must be called.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

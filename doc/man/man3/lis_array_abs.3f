@@ -1,0 +1,32 @@
+.TH lis_array_abs 3f "3 Dec 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+lis_array_abs \- get the absolute values of the elements of the vector
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_array_abs\fR(\fBLIS_INTEGER n\fR, \fBLIS_SCALAR x()\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the absolute values of the elements of vector \fIx\fR.
+
+.SH INPUT
+
+.IP "\fBn\fR"
+The size of the vector
+
+.IP "\fBx\fR"
+The array that stores the vector
+
+.SH OUTPUT
+
+.IP "\fBx\fR"
+The array that stores the absolute values
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

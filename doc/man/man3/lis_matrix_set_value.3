@@ -1,0 +1,62 @@
+.TH lis_matrix_set_value 3 "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_matrix_set_value \- assign the scalar value to the element of the matrix
+
+.SH SYNOPSIS
+
+#include "lis.h"
+
+\fBLIS_INT lis_matrix_set_value\fR(\fBLIS_INT flag\fR, \fBLIS_INT i\fR, \fBLIS_INT j\fR, \fBLIS_SCALAR value\fR, \fBLIS_MATRIX A\fR);
+
+.SH DESCRIPTION
+
+Assign the scalar value to the (\fIi\fR, \fIj\fR)-th element of matrix \fIA\fR.
+
+.SH INPUT
+
+.IP "\fBflag\fR"
+.RS
+.IP "\fBLIS_INS_VALUE\fR"
+\fIA\fR[\fIi\fR, \fIj\fR] = \fIvalue\fR
+.IP "\fBLIS_ADD_VALUE\fR"
+\fIA\fR[\fIi\fR, \fIj\fR] = \fIA\fR[\fIi\fR, \fIj\fR] + \fIvalue\fR
+
+.IP "\fBi\fR"
+The row number of the matrix
+
+.IP "\fBj\fR"
+The column number of the matrix
+
+.IP "\fBvalue\fR"
+The scalar value to be assigned
+
+.IP "\fBA\fR"
+The matrix
+
+.SH OUTPUT
+
+.IP "\fBA\fR"
+The matrix
+
+.SH EXIT STATUS
+
+The following exit values are returned:
+.IP "0"
+The process is normally terminated
+.IP "unspecified"
+An error occurred
+
+.SH NOTE
+
+For the multiprocessing environment, the \fIi\fR-th row and the \fIj\fR-th column of the global matrix must be specified.
+The function \fBlis_matrix_set_value\fR stores the assigned value in a temporary internal format. Therefore,
+after \fBlis_matrix_set_value\fR is called, the function \fBlis_matrix_assemble\fR must be called.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

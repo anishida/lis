@@ -1,0 +1,32 @@
+.TH lis_vector_shift 3f "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+lis_vector_shift \- get the shifted values of the elements of the vector
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_vector_shift\fR(\fBLIS_SCALAR alpha\fR, \fBLIS_VECTOR x\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the shifted values of the elements of vector \fIx\fR.
+
+.SH INPUT
+
+.IP "\fBalpha\fR"
+The amount of the shift
+
+.IP "\fBx\fR"
+The vector
+
+.SH OUTPUT
+
+.IP "\fBx\fR"
+The vector that stores the shifted values
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

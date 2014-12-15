@@ -1,0 +1,30 @@
+.TH lis_vector_sum 3f "9 Sep 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_vector_sum \- calculate the sum of the elements of the vector
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_vector_sum\fR(\fBLIS_VECTOR x\fR, \fBLIS_SCALAR *value\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Calculate the sum of the elements of vector \fIx\fR.
+
+.SH INPUT
+
+.IP "\fBx\fR"
+The vector
+
+.SH OUTPUT
+
+.IP "\fBvalue\fR"
+The sum of the vector elements
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

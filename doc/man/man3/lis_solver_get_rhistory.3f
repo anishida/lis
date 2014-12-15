@@ -1,0 +1,37 @@
+.TH lis_solver_get_rhistory 3f "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_solver_get_rhistory \- get the residual history of the solver
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_solver_get_rhistory\fR(\fBLIS_SOLVER solver\fR, \fBLIS_VECTOR v\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the residual history of the solver.
+
+.SH INPUT
+
+.IP "\fBsolver\fR"
+The solver
+
+.SH OUTPUT
+
+.IP "\fBv\fR"
+The vector
+
+.SH NOTE
+
+The vector \fIv\fR must be created in advance with the function 
+\fBlis_vector_create\fR. When the vector \fIv\fR is shorter than 
+the residual history, it stores the residual history in order to 
+the vector \fIv\fR.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

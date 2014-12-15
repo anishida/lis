@@ -1,0 +1,59 @@
+.TH lis_matrix_set_vbr 3 "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_matrix_set_vbr \- associate the arrays in the VBR format with the matrix
+
+.SH SYNOPSIS
+
+#include "lis.h"
+
+\fBLIS_INT lis_matrix_set_vbr\fR(\fBLIS_INT nnz\fR, \fBLIS_INT nr\fR, \fBLIS_INT nc\fR, \fBLIS_INT bnnz\fR, \fBLIS_INT row\fR[], \fBLIS_INT col\fR[], \fBLIS_INT ptr\fR[], \fBLIS_INT bptr\fR[], \fBLIS_INT bindex\fR[], \fBLIS_SCALAR value\fR[], \fBLIS_MATRIX A\fR);
+
+.SH DESCRIPTION
+
+Associate the arrays in the VBR format with matrix A.
+
+.SH INPUT
+
+.IP "\fBnnz\fR"
+The number of nonzero elements
+
+.IP "\fBnr\fR"
+The number of row blocks
+
+.IP "\fBbnc\fR"
+The number of column blocks
+
+.IP "\fBbnnz\fR"
+The number of nonzero blocks
+
+.IP "\fBrow, col, ptr, bptr, bindex, value\fR"
+The arrays in the VBR format
+
+.IP "\fBA\fR"
+The matrix
+
+.SH OUTPUT
+
+.IP "\fBA\fR"
+The matrix associated with the arrays
+
+.SH EXIT STATUS
+
+The following exit values are returned:
+.IP "0"
+The process is normally terminated
+.IP "unspecified"
+An error occurred
+
+.SH NOTE
+
+After \fBlis_matrix_set_vbr\fR is called, the function \fBlis_matrix_assemble\fR must be called.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

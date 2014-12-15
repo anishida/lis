@@ -1,0 +1,24 @@
+.TH lis_matrix_destroy 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+lis_matrix_destroy \- destroy the matrix
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_matrix_destroy\fR(\fBLIS_MATRIX A\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Destroy matrix \fIA\fR.
+
+.SH INPUT
+
+.IP "\fBA\fR"
+The matrix to be destroyed
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

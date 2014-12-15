@@ -1,0 +1,37 @@
+.TH lis_vector_get_size 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_vector_get_size \- get the size of the vector
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_vector_get_size\fR(\fBLIS_VECTOR v\fR, \fBLIS_INTEGER *local_n\fR, \fBLIS_INTEGER *global_n\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the size of vector \fIv\fR.
+
+.SH INPUT
+
+.IP "\fBv\fR"
+The vector
+
+.SH OUTPUT
+
+.IP "\fBlocal_n\fR"
+The size of the partial vector
+
+.IP "\fBglobal_n\fR"
+The size of the global vector
+
+.SH NOTE
+
+In the case of the serial and multithreaded environments, \fIlocal_n\fR is equal to \fIglobal_n\fR.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

@@ -1,0 +1,39 @@
+.TH lis_esolver_get_timeex 3f "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_esolver_get_timeex \- get the detailed information on the execution time for the specified eigenpair from the eigensolver
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_esolver_get_timeex\fR(\fBLIS_ESOLVER esolver\fR, \fBdouble *times\fR, \fBdouble *itimes\fR, \fBdouble *ptimes\fR, \fBdouble *p_c_times\fR, \fBdouble *p_i_times\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the detailed information on the execution time for the specified eigenpair from the eigensolver.
+
+.SH INPUT
+
+.IP "\fBesolver\fR"
+The eigensolver
+
+.SH OUTPUT
+
+.IP "\fBtimes\fR"
+The total time in seconds
+
+.IP "\fBitimes\fR"
+The time in seconds of the iterations
+
+.IP "\fBp_c_times\fR"
+The time in seconds of the creation of the preconditioner
+
+.IP "\fBp_i_times\fR"
+The time in seconds of the iterations of the preconditioner
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

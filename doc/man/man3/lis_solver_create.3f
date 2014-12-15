@@ -1,0 +1,32 @@
+.TH lis_solver_create 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+lis_solver_create \- create the solver
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_solver_create\fR(\fBLIS_SOLVER *solver\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Create the solver.
+
+.SH INPUT
+
+.IP "\fBNone\fR"
+
+.SH OUTPUT
+
+.IP "\fBsolver\fR"
+The solver
+
+.SH NOTE
+
+\fBsolver\fR has the information on the solver, the preconditioner, etc.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

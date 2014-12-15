@@ -1,0 +1,30 @@
+.TH lis_esolver_get_iter 3f "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_esolver_get_iter \- get the number of iterations for the specified eigenpair from the eigensolver
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_esolver_get_iter\fR(\fBLIS_ESOLVER esolver\fR, \fBLIS_INTEGER *iter\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the number of iterations for the specified eigenpair from the eigensolver.
+
+.SH INPUT
+
+.IP "\fBesolver\fR"
+The eigensolver
+
+.SH OUTPUT
+
+.IP "\fBiter\fR"
+The number of iterations
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

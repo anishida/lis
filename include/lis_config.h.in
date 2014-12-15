@@ -1,0 +1,142 @@
+/* include/lis_config.h.in.  Generated from configure.ac by autoheader.  */
+
+/* Define to dummy `main' function (if any) required to link to the Fortran
+   libraries. */
+#undef F77_DUMMY_MAIN
+
+/* Define to a macro mangling the given C identifier (in lower and upper
+   case), which must not contain underscores, for linking with Fortran. */
+#undef F77_FUNC
+
+/* As F77_FUNC, but for C identifiers containing underscores. */
+#undef F77_FUNC_
+
+/* Define if F77 and FC dummy `main' functions are identical. */
+#undef FC_DUMMY_MAIN_EQ_F77
+
+/* Define to 1 to enable quad precision operations using FMA. */
+#undef HAS_FMA
+
+/* Define to 1 to enable x87 FPU. */
+#undef HAS_X87_FPU
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the <malloc.h> header file. */
+#undef HAVE_MALLOC_H
+
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/time.h> header file. */
+#undef HAVE_SYS_TIME_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* Define to the sub-directory in which libtool stores uninstalled libraries.
+   */
+#undef LT_OBJDIR
+
+/* Name of package */
+#undef PACKAGE
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* Test the size of a `double', as computed by sizeof. */
+#undef SIZEOF_DOUBLE
+
+/* Test the size of a `float', as computed by sizeof. */
+#undef SIZEOF_FLOAT
+
+/* Test the size of a `int', as computed by sizeof. */
+#undef SIZEOF_INT
+
+/* Test the size of a `long', as computed by sizeof. */
+#undef SIZEOF_LONG
+
+/* Test the size of a `long double', as computed by sizeof. */
+#undef SIZEOF_LONG_DOUBLE
+
+/* Test the size of a `long long', as computed by sizeof. */
+#undef SIZEOF_LONG_LONG
+
+/* Test the size of a `size_t', as computed by sizeof. */
+#undef SIZEOF_SIZE_T
+
+/* Test the size of a `void *', as computed by sizeof. */
+#undef SIZEOF_VOID_P
+
+/* Define to 1 if you have the ANSI C header files. */
+#undef STDC_HEADERS
+
+/* Define to 1 to enable quad precision operations using fast quad add. */
+#undef USE_FAST_QUAD_ADD
+
+/* Define to 1 to enable quad precision operations using FMA and SSE2. */
+#undef USE_FMA2_SSE2
+
+/* Define to 1 to enable Fortran subroutines. */
+#undef USE_FORTRAN
+
+/* Use MAIN__ macro with Fortran. */
+#undef USE_MAIN__
+
+/* Define to 1 to enable quad precision operations. */
+#undef USE_QUAD_PRECISION
+
+/* Define to 1 to enable SA-AMG preconditioner. */
+#undef USE_SAAMG
+
+/* Define to 1 to enable quad precision operations using SSE2. */
+#undef USE_SSE2
+
+/* Define to 1 to use vectorization. */
+#undef USE_VEC_COMP
+
+/* Version number of package */
+#undef VERSION
+
+/* Define to empty if `const' does not conform to ANSI C. */
+#undef const
+
+/* Define to `unsigned int' if <sys/types.h> does not define. */
+#undef size_t

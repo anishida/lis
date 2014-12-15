@@ -1,0 +1,34 @@
+.TH lis_vector_create 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_vector_create \- create the vector
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_vector_create\fR(\fBLis_Comm comm\fR, \fBLIS_VECTOR v\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Create vector \fIv\fR.
+
+.SH INPUT
+
+.IP "\fBLIS_Comm\fR"
+The MPI communicator
+
+.SH OUTPUT
+
+.IP "\fBv\fR"
+The vector
+
+.SH NOTE
+.PP
+For the serial and multithreaded environments, the value of \fBcomm\fR is ignored.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

@@ -1,0 +1,51 @@
+.TH lis_solve_kernel 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_solve_kernel \- solve the linear equation with the predefined preconditioner
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_solve_kernel\fR(\fBLIS_SOLVER solver\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Solve the linear equation with the specified solver and the predefined 
+preconditioner.
+
+.SH INPUT
+
+.IP "\fBA\fR"
+The coefficient matrix
+
+.IP "\fBb\fR"
+The right hand side vector
+
+.IP "\fBx\fR"
+The initial vector
+
+.IP "\fBsolver\fR"
+The solver
+
+.IP "\fBprecon\fR"
+The preconditioner
+
+.SH OUTPUT
+
+.IP "\fBx\fR"
+The solution
+
+.IP "\fBsolver\fR"
+The number of iterations, the execution time, etc.
+
+.SH NOTE
+
+See \fBlis-($VERSION)/src/esolver/lis esolver ii.c\fR, which computes 
+the smallest eigenvalue by calling \fBlis_solve_kernel\fR multiple times, for example.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

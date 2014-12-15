@@ -1,0 +1,30 @@
+.TH lis_solver_get_residualnorm 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_solver_get_residualnorm \- calculate the relative residual norm from the solution 
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_solver_get_residualnorm\fR(\fBLIS_SOLVER solver\fR, \fBLIS_INTEGER *residual\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Calculate the relative residual norm \fI||b - Ax||_2/||b||_2\fR from the solution \fIx\fR.
+
+.SH INPUT
+
+.IP "\fBsolver\fR"
+The solver
+
+.SH OUTPUT
+
+.IP "\fBresidual\fR"
+The relative residual norm \fI||b - Ax||_2/||b||_2\fR 
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

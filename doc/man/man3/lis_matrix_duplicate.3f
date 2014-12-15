@@ -1,0 +1,35 @@
+.TH lis_matrix_duplicate 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+lis_matrix_duplicate \- duplicate the matrix
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_matrix_duplicate\fR(\fBMATRIX *Ain\fR, \fBLIS_MATRIX *Aout\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Create matrix \fIAout\fR which has the same information as \fIAin\fR.
+
+.SH INPUT
+
+.IP "\fBAin\fR"
+The source matrix
+
+.SH OUTPUT
+
+.IP "\fBAout\fR"
+The destination matrix
+
+.SH NOTE
+
+The function \fBlis_matrix_duplicate\fR does not copy the elements of the matrix, but 
+allocates only the memory. To copy the values as well, the function \fBlis_matrix_copy\fR 
+must be called after this function.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

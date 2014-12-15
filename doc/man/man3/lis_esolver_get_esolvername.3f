@@ -1,0 +1,30 @@
+.TH lis_esolver_get_esolvername 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_esolver_get_esolvername \- get the eigensolver name from the eigensolver number
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_esolver_get_esolvername\fR(\fBLIS_INTEGER nsol\fR, \fchar *name\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the eigensolver name from the eigensolver number.
+
+.SH INPUT
+
+.IP "\fBnsol\fR"
+The eigensolver number
+
+.SH OUTPUT
+
+.IP "\fBname\fR"
+The eigensolver name
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

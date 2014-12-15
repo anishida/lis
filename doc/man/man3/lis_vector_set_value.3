@@ -1,0 +1,58 @@
+.TH lis_vector_set_value 3 "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_vector_set_value \- assign the scalar value to the row of the vector
+
+.SH SYNOPSIS
+
+#include "lis.h"
+
+\fBLIS_INT lis_vector_set_value\fR(\fBLIS_INT flag\fR, \fBLIS_INT i\fR, \fBLIS_SCALAR value\fR, \fBLIS_VECTOR v\fR);
+
+.SH DESCRIPTION
+
+Assign the scalar value to the \fIi\fR-th row of vector \fIv\fR.
+
+.SH INPUT
+
+.IP "\fBflag\fR"
+.RS
+.IP "\fBLIS_INS_VALUE\fR"
+\fIv\fR[\fIi\fR] = \fIvalue\fR
+.IP "\fBLIS_ADD_VALUE\fR"
+\fIv\fR[\fIi\fR] = \fIv\fR[\fIi\fR] + \fIvalue\fR
+
+.IP "\fBi\fR"
+The location where the value is assigned
+
+.IP "\fBvalue\fR"
+The scalar value to be assigned
+
+.IP "\fBv\fR"
+The destination vector
+
+.SH OUTPUT
+
+.IP "\fBv\fR"
+The vector with the scalar value assigned to the \fIi\fR-th row
+
+.SH EXIT STATUS
+
+The following exit values are returned:
+.IP "0"
+The process is normally terminated
+.IP "unspecified"
+An error occurred
+
+.SH NOTE
+
+For the multiprocessing environment, the \fIi\fR-th row of the global vector must be specified instead of
+the \fIi\fR-th row of the partial vector.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

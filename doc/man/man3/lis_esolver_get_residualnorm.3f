@@ -1,0 +1,30 @@
+.TH lis_esolver_get_residualnorm 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_esolver_get_residualnorm \- calculate the relative residual norm from the eigenvector
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_esolver_get_residualnorm\fR(\fBLIS_ESOLVER esolver\fR, \fBLIS_INTEGER *residual\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Calculate the relative residual norm \fI||lx - Ax||_2/l\fR from the eigenvector \fIx\fR.
+
+.SH INPUT
+
+.IP "\fBesolver\fR"
+The eigensolver
+
+.SH OUTPUT
+
+.IP "\fBresidual\fR"
+The relative residual norm \fI||lx - Ax||_2/l\fR
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

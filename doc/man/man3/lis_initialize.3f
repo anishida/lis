@@ -1,0 +1,29 @@
+.TH lis_initialize 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+lis_initialize \- initialize the execution environment
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_initialize\fR(\fBLIS_INT* argc\fR, \fBchar** argv\fR[], \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Initialize the execution environment.
+
+.SH INPUT
+
+.IP "\fBargc\fR"
+The number of command line arguments
+
+.IP "\fBargv\fR"
+The command line argument
+
+.SH OUTPUT
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

@@ -1,0 +1,44 @@
+.TH lis_output 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_output \- write the matrix and vector data 
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_output\fR(\fBLIS_MATRIX A\fR, \fBLIS_VECTOR b\fR, \fBLIS_VECTOR x\fR, \fBLIS_INTEGER format\fI, \fBchar *filename\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Write the matrix and vector data to the external file.
+
+.SH INPUT
+
+.IP "\fBA\fR"
+The matrix
+
+.IP "\fBb\fR"
+The right hand side vector (If no vector is written to the external file, then \fBNULL\fR must be input.)
+
+.IP "\fBx\fR"
+The solution (If no vector is written to the external file, then \fBNULL\fR must be input.)
+
+.IP "\fBformat\fR"
+.RS
+.IP "LIS_FMT_MM"
+The Matrix Market format
+.RE
+
+.IP "\fBfilename\fR"
+The destination file
+
+.SH OUTPUT
+
+.IP "\fBNone\fR"
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

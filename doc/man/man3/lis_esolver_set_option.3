@@ -1,0 +1,401 @@
+.TH lis_esolver_set_option 3 "8 Dec 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_esolver_set_option \- set the options for the eigensolver
+
+.SH SYNOPSIS
+
+#include "lis.h"
+
+\fBLIS_INT lis_esolver_set_option\fR(\fBchar *text\fR, \fBLIS_ESOLVER *esolver\fR);
+
+.SH DESCRIPTION
+
+Set the options for the eigensolver.
+
+.SH INPUT
+
+.IP "\fBtext\fR"
+The command line options
+
+.SH OUTPUT
+
+.IP "\fBesolver\fR"
+The eigensolver
+
+.SH EXIT STATUS
+
+The following exit values are returned:
+.IP "0"
+The process is normally terminated
+.IP "unspecified"
+An error occurred
+
+.SH NOTE
+
+The table below shows the available command line options, where -e {\fIpi\fR|1} means -e \fIpi\fR 
+or -e 1 and -emaxiter [1000] indicates that -emaxiter defaults to 1,000.
+
+.SH OPTIONS
+
+The following options are supported:
+.IP "-e \fIeigensolver\fR"
+The following options are supported for \fIeigensolver\fR:
+.RS
+.IP "-e {\fIpi\fR|1}"
+Power
+.IP "-e {\fIii\fR|2}"
+Inverse
+.RS
+.IP "-i [\fIbicg\fR]"
+The linear solver
+.RE
+.IP "-e {\fIaii\fR|3}"
+Approximate Inverse
+.RS
+.IP "-i [\fIbicg\fR]"
+The linear solver
+.RE
+.IP "-e {\fIrqi\fR|4}"
+Rayleigh Quotient
+.RS
+.IP "-i [\fIbicg\fR]"
+The linear solver
+.RE
+.IP "-e {\fIcg\fR|5}"
+CG
+.RS
+.IP "-i [\fIcg\fR]"
+The linear solver
+.RE
+.IP "-e {\fIcr\fR|6}"
+CR
+.RS
+.IP "-i [\fIbicg\fR]"
+The linear solver
+.RE
+.IP "-e {\fIjd\fR|7}"
+Jacobi-Davidson
+.RS
+.IP "-i [\fIcg\fR]"
+The linear solver
+.RE
+.IP "-e {\fIsi\fR|8}"
+Subspace
+.RS
+.IP "-ss [1]"
+The size of the subspace
+.RE
+.IP "-e {\fIli\fR|9}"
+Lanczos
+.RS
+.IP "-ss [1]"
+The size of the subspace
+.RE
+.IP "-e {\fIli\fR|10}"
+Arnoldi
+.RS
+.IP "-ss [1]"
+The size of the subspace
+.RE
+.RE
+.IP "-i \fIlinear solver\fR"
+The following options are supported for inner \fIlinear solver\fR:
+.RS 
+.IP "-i {\fIcg\fR|1}"
+CG
+.IP "-i {\fIbicg\fR|2}"
+BiCG
+.IP "-i {\fIcgs\fR|3}"
+CGS
+.IP "-i {\fIbicgstab\fR|4}"
+BiCGSTAB
+.IP "-i {\fIbicgstabl\fR|5}"
+BiCGSTAB(l)
+.RS
+.IP "-ell [2]"
+The degree \fIl\fR
+.RE
+.IP "-i {\fIgpbicg\fR|6}"
+GPBiCG
+.IP "-i {\fItfqmr\fR|7}"
+TFQMR
+.IP "-i {\fIorthomin\fR|8}"
+Orthomin(m)
+.RS
+.IP "-restart [40]"
+The restart value \fIm\fR
+.RE
+.IP "-i {\fIgmres\fR|9}"
+GMRES(m)
+.RS
+.IP "-restart [40]"
+The restart value \fIm\fR
+.RE
+.IP "-i {\fIjacobi\fR|10}"
+Jacobi
+.IP "-i {\fIgs\fR|11}"
+Gauss-Seidel
+.IP "-i {\fIsor\fR|12}"
+SOR
+.RS
+.IP "-omega [1.9]"
+The relaxation coefficient \fIomega\fR (0<\fIomega\fR<2)
+.RE
+.IP "-i {\fIbicgsafe\fR|13}"
+BiCGSafe
+.IP "-i {\fIcr\fR|14}"
+CR
+.IP "-i {\fIbicr\fR|15}"
+BiCR
+.IP "-i {\fIcrs\fR|16}"
+CRS
+.IP "-i {\fIbicrstab\fR|17}"
+BiCRSTAB
+.IP "-i {\fIgpbicr\fR|18}"
+GPBiCR
+.IP "-i {\fIbicrsafe\fR|19}"
+BiCRSafe
+.IP "-i {\fIfgmres\fR|20}"
+FGMRES(m)
+.RS
+.IP "-restart [40]"
+The restart value \fIm\fR
+.RE
+.IP "-i {\fIidrs\fR|21}"
+IDR(s)
+.RS
+.IP "-irestart [2]"
+The restart value \fIs\fR
+.RE
+.IP "-i {\fIminres\fR|22}"
+MINRES
+.RE
+
+.IP "-p \fIpreconditioner\fR"
+The following options are supported for \fIpreconditioner\fR:
+.RS 
+.IP "-p {\fInone\fR|0}"
+None
+.IP "-p {\fIjacobi\fR|1}"
+Jacobi
+.IP "-p {\fIilu\fR|2}"
+ILU(k)
+.RS 
+.IP "-ilu_fill [0]"
+The fill level \fIk\fR
+.RE
+.IP "-p {\fIssor\fR|3}"
+SSOR
+.RS 
+.IP "-ssor_w [1.0]"
+The relaxation coefficient \fIomega\fR (0<\fIomega\fR<2)
+.RE
+.IP "-p {\fIhybrid\fR|4}"
+Hybrid
+.RS 
+.IP "-hybrid_i [\fIsor\fR]"
+The linear solver
+.RE
+.RS 
+.IP "-hybrid_maxiter [25]"
+The maximum number of iterations
+.RE
+.RS 
+.IP "-hybrid_tol [1.0e-3]"
+The convergence criterion
+.RE
+.RS 
+.IP "-hybrid_w [1.5]"
+The relaxation coefficient \fIomega\fR of the SOR (0<\fIomega\fR<2)
+.RE
+.RS 
+.IP "-hybrid_ell [2]"
+The degree \fIl\fR of the BiCGSTAB(l)
+.RE
+.RS 
+.IP "-hybrid_restart [40]"
+The restart values of the GMRES and Orthomin
+.RE
+.IP "-p {\fIis\fR|5}"
+I+S
+.RS 
+.IP "-is_alpha [1.0]"
+The parameter \fIalpha\fR of \fII+alpha*S(m)\fR
+.RE
+.RS 
+.IP "-is_m [3]"
+The parameter \fIm\fR of \fII+alpha*S(m)\fR
+.RE
+.IP "-p {\fIsainv\fR|6}"
+SAINV
+.RS 
+.IP "-sainv_drop [0.05]"
+The drop criterion
+.RE
+.IP "-p {\fIsaamg\fR|7}"
+SA-AMG
+.RS 
+.IP "-saamg_unsym [\fIfalse\fR]"
+Select the unsymmetric version (The matrix structure must be symmetric)
+.RE
+.RS 
+.IP "-saamg_theta [0.05|0.12]"
+The drop criterion
+.RE
+.IP "-p {\fIiluc\fR|8}"
+Crout ILU
+.RS 
+.IP "-iluc_drop [0.05]"
+The drop criterion
+.RE
+.RS 
+.IP "-iluc_rate [5.0]"
+The ration of maximum fill-in
+.RE
+.IP "-p {\fIilut\fR|9}"
+ILUT
+.RS 
+.IP "-ilut_drop [0.05]"
+The drop criterion
+.RE
+.RS 
+.IP "-ilut_rate [5.0]"
+The ration of maximum fill-in
+.RE
+.IP "-adds \fItrue\fR"
+Additive Schwarz
+.RS 
+.IP "-adds_iter [1]"
+The number of iteration
+.RE
+.RE
+
+Other Options for eigensolver:
+.IP "-emaxiter [1000]"
+The maximum number of iterations
+.IP "-etol [1.0e-12]"
+The convergence criterion
+.IP "-eprint [0]"
+The display of the residual
+.RS 
+.IP "-eprint {\fInone\fR|0}"
+None
+.RE
+.RS 
+.IP "-eprint {\fImem\fR|1}"
+Save the residual history
+.RE
+.RS 
+.IP "-eprint {\fIout\fR|2}"
+Display the residual history
+.RE
+.RS 
+.IP "-eprint {\fIall\fR|3}"
+Save the residual history and display it on the screen
+.RE
+.IP "-ie [ii]"
+The inner eigensolver used in the Lanczos and Subspace
+.IP "-shift [0.0]"
+The amount of the shift
+.IP "-initx_ones [\fItrue\fR]"
+The behavior of the initial vector \fIx_0\fR
+.RS 
+.IP "-initx_ones {\fIfalse\fR|0}"
+Given values
+.RE
+.RS 
+.IP "-initx_ones {\fItrue\fR|1}"
+All values are set to 1
+.RE
+.IP "-omp_num_threads [\fIt\fR]"
+The number of threads (\fIt\fR represents the maximum number of threads)
+.IP "-estorage [0]"
+The matrix storage format
+.IP "-estorage_block [2]"
+The block size of the BSR and BSC formats
+.IP "-ef [0]"
+The precision of the eigensolver
+.RS 
+.IP "-ef {\fIdouble\fR|0}"
+Double precision
+.RE
+.RS
+.IP "-ef {\fIquad\fR|1}"
+Quadruple precision
+.RE
+
+Other options for inner linear solver:
+.IP "-maxiter [1000]"
+The maximum number of iterations
+.IP "-tol [1.0e-12]"
+The convergence criterion
+.IP "-print [0]"
+The display of the residual
+.RS 
+.IP "-print {\fInone\fR|0}"
+None
+.RE
+.RS 
+.IP "-print {\fImem\fR|1}"
+Save the residual history
+.RE
+.RS 
+.IP "-print {\fIout\fR|2}"
+Display the residual history
+.RE
+.RS 
+.IP "-print {\fIall\fR|3}"
+Save the residual history and display it on the screen
+.RE
+.IP "-scale [0]"
+The scaling
+.RS
+.IP "-scale {\fInone\fR|0}"
+No scaling
+.RE
+.RS
+.IP "-scale {\fIjacobi\fR|1}"
+The Jacobi scaling
+.RE
+.RS
+.IP "-scale {\fIsymm_diag\fR|2}"
+The diagonal scaling
+.RE
+.IP "-initx_zeros [\fItrue\fR]"
+The behavior of the initial vector \fIx_0\fR
+.RS 
+.IP "-initx_zero {\fIfalse\fR|0}"
+Given values
+.RE
+.RS 
+.IP "-initx_zero {\fItrue\fR|1}"
+All values are set to 0
+.RE
+.IP "-omp_num_threads [\fIt\fR]"
+The number of threads (\fIt\fR represents the maximum number of threads)
+.IP "-storage [0]"
+The matrix storage format
+.IP "-storage_block [2]"
+The block size of the BSR and BSC formats
+.IP "-f [0]"
+The precision of the linear solver
+.RS 
+.IP "-f {\fIdouble\fR|0}"
+Double precision
+.RE
+.RS
+.IP "-f {\fIquad\fR|1}"
+Quadruple precision
+.RE
+.RE
+
+See Lis User Guide for full description.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

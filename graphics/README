@@ -1,0 +1,62 @@
+## README for graphics ##
+
+
+* GNUPLOT
+
+
+- Residual Histories
+
+To generate example file 'residual_histories.eps' on UNIX systems, 
+run the following sample script:
+
+> ./gnuplot1.sh
+
+On Windows systems, edit the path to gnuplot.exe in gnuplot1.bat
+and run the script as follows:
+
+> gnuplot1.bat
+
+gnuplot1b.sh and gnuplot1b.bat are more sophisticated versions
+for gnuplot 4.4 or later. 
+
+
+- Matrix Pattern
+
+To generate example file 'matrix_pattern.eps' on UNIX systems, 
+run gnuplot2.sh as follows:
+
+> ./gnuplot2.sh ../test/testmat.mtx
+
+On Windows systems, edit the path to gnuplot.exe in gnuplot2.bat
+and run as follows:
+
+> gnuplot2.bat ..\test\testmat.mtx
+
+
+- Eigenvalue Distribution
+
+To generate example file 'eigenvalue_distribution.eps' on UNIX systems, 
+run the following sample script:
+
+> ./gnuplot3.sh
+
+On Windows systems, edit the path to gnuplot.exe in gnuplot3.bat
+and run the script as follows:
+
+> gnuplot3.bat
+
+
+- Eigenvectors
+
+To generate example file 'eigenvectors.eps' on UNIX systems, 
+run the following sample script:
+
+> ./gnuplot4.sh
+
+On Windows systems, edit the path to gnuplot.exe in gnuplot4.bat
+and run the script as follows:
+
+> gnuplot4.bat
+
+gnuplot4.sh and gnuplot4.bat are for gnuplot 4.4 or later. 
+

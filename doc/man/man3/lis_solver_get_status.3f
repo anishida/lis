@@ -1,0 +1,30 @@
+.TH lis_solver_get_status 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_solver_get_status \- get the status from the solver
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_solver_get_status\fR(\fBLIS_SOLVER solver\fR, \fBLIS_INTEGER *status\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the status from the solver.
+
+.SH INPUT
+
+.IP "\fBsolver\fR"
+The solver
+
+.SH OUTPUT
+
+.IP "\fBstatus\fR"
+The status
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

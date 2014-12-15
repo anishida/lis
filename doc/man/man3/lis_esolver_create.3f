@@ -1,0 +1,33 @@
+.TH lis_esolver_create 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_esolver_create \- create the eigensolver
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_esolver_create\fR(\fBLIS_ESOLVER *esolver\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Create the eigensolver.
+
+.SH INPUT
+
+.IP "\fBNone\fR"
+
+.SH OUTPUT
+
+.IP "\fBesolver\fR"
+The eigensolver
+
+.SH NOTE
+
+\fBesolver\fR has the information on the eigensolver, the preconditioner, etc.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

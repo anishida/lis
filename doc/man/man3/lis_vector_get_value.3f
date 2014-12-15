@@ -1,0 +1,37 @@
+.TH lis_vector_get_value 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_vector_get_value \- get the value of the row of the vector
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_vector_get_value\fR(\fBLIS_INTEGER flag\fR, \fBLIS_INTEGER i\fR, \fBLIS_SCALAR value\fR, \fBLIS_VECTOR v\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the scalar value of the \fIi\fR-th row of the vector.
+
+.SH INPUT
+
+.IP "\fBi\fR"
+The location where the value is assigned
+
+.IP "\fBv\fR"
+The source vector
+
+.SH OUTPUT
+
+.IP "\fBvalue\fR"
+The value of the \fIi\fR-th row
+
+.SH NOTE
+
+For the multiprocessing environment, the \fIi\fR-th row of the global vector must be specified.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

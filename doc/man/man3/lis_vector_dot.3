@@ -1,0 +1,43 @@
+.TH lis_vector_dot 3 "9 Sep 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_vector_dot \- calculate the inner product of the vectors
+
+.SH SYNOPSIS
+
+#include "lis.h"
+
+\fBLIS_INT lis_vector_dot\fR(\fBLIS_VECTOR x\fR, \fBLIS_VECTOR y\fR, \fBLIS_SCALAR *value\fR);
+
+.SH DESCRIPTION
+
+Calculate the inner product \fIx^T y\fR of vectors \fIx\fR and \fIy\fR.
+
+.SH INPUT
+
+.IP "\fBx\fR"
+The vector
+
+.IP "\fBy\fR"
+The vector
+
+.SH OUTPUT
+
+.IP "\fBvalue\fR"
+The inner product
+
+.SH EXIT STATUS
+
+The following exit values are returned:
+.IP "0"
+The process is normally terminated
+.IP "unspecified"
+An error occurred
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

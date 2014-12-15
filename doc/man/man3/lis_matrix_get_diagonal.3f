@@ -1,0 +1,29 @@
+.TH lis_matrix_get_diagonal 3f "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+lis_matrix_get_diagonal \- get the digonal elemments of the matrix
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_matrix_get_diagonal\fR(\fBLIS_MATRIX A\fR, \fBLIS_VECTOR d\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the diagonal elements of matrix.
+
+.SH INPUT
+
+.IP "\fBA\fR"
+The matrix
+
+.SH OUTPUT
+
+.IP "\fBd\fR"
+The vector which stores the diagonal elements of the matrix
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

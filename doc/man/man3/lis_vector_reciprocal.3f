@@ -1,0 +1,29 @@
+.TH lis_vector_reciprocal 3f "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+lis_vector_reciprocal \- get the reciprocal values of the elements of the vector
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_vector_reciprocal\fR(\fBLIS_VECTOR x\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the reciprocal values of the elements of vector \fIx\fR.
+
+.SH INPUT
+
+.IP "\fBx\fR"
+The vector
+
+.SH OUTPUT
+
+.IP "\fBx\fR"
+The vector that stores the reciprocal values
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

@@ -1,0 +1,33 @@
+.TH lis_array_sum 3f "3 Dec 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_array_sum \- calculate the sum of the elements of the vector
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_array_sum\fR(\fBLIS_INTEGER n\fR, \fBLIS_SCALAR x()\fR, \fBLIS_SCALAR *value\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Calculate the sum of the elements of vector \fIx\fR.
+
+.SH INPUT
+
+.IP "\fBn\fR"
+The size of the vector
+
+.IP "\fBx\fR"
+The array that stores the vector
+
+.SH OUTPUT
+
+.IP "\fBvalue\fR"
+The sum of the vector elements
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

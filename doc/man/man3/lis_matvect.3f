@@ -1,0 +1,33 @@
+.TH lis_matvect 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_matvect \- calculate the matrix vector product
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_matvect\fR(\fBLIS_MATRIX A\fR, \fBLIS_VECTOR x\fR, \fBLIS_VECTOR y\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Calculate the transposed matrix vector product \fIy = A^T x\fR.
+
+.SH INPUT
+
+.IP "\fBA\fR"
+The matrix
+
+.IP "\fBx\fR"
+The vector
+
+.SH OUTPUT
+
+.IP "\fBy\fR"
+\fIA^T x\fR
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

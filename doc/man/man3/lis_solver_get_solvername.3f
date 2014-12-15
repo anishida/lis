@@ -1,0 +1,30 @@
+.TH lis_solver_get_solvername 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_solver_get_solvername \- get the solver name from the solver number
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_solver_get_solvername\fR(\fBLIS_INTEGER nsol\fR, \fchar *name\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the solver name from the solver number.
+
+.SH INPUT
+
+.IP "\fBnsol\fR"
+The solver number
+
+.SH OUTPUT
+
+.IP "\fBname\fR"
+The solver name
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

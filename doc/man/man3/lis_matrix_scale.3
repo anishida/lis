@@ -1,0 +1,59 @@
+.TH lis_matrix_scale 3 "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_matrix_scale \- scale the matrix
+
+.SH SYNOPSIS
+
+#include "lis.h"
+
+\fBLIS_INT lis_matrix_scale\fR(\fBLIS_MATRIX A\fR, \fBLIS_VECTOR b\fR, \fBLIS_VECTOR d\fR, \fBLIS_INT action\fR);
+
+.SH DESCRIPTION
+
+Scale matrix \fIA\fR.
+
+.SH INPUT
+
+.IP "\fBi\fR"
+The row number of the matrix
+
+.IP "\fBj\fR"
+The column number of the matrix
+
+.IP "\fBvalue\fR"
+The scalar value to be assigned
+
+.IP "\fBA\fR"
+The matrix
+
+.IP "\fBb\fR"
+The vector
+
+.IP "\fBaction\fR"
+.RS
+.IP "\fBLIS_SCALE_JACOBI\fR"
+Jacobi scaling \fID^-1 A x = D^-1 b, where \fID\fR represents the diagonal of \fIA=(a_ij)\fR
+.IP "\fBLIS_SCALE_SYMM_DIAG\fR"
+Diagonal scaling \fID^-1/2 A D^-1/2 x = D^-1/2 b, where \fID^-1/2\fR represents the diagonal matrix with \fI(a_ii)^-1/2\fR as the diagonal
+
+.SH OUTPUT
+
+.IP "\fBd\fR"
+The vector which stores the diagonal elements of \fID^-1\fR or \fID^-1/2\fR 
+
+.SH EXIT STATUS
+
+The following exit values are returned:
+.IP "0"
+The process is normally terminated
+.IP "unspecified"
+An error occurred
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

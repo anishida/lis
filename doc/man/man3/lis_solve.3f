@@ -1,0 +1,42 @@
+.TH lis_solve 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_solve \- solve the linear equation
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_solve\fR(\fBLIS_MATRIX A\fR, \fBLIS_VECTOR b\fR, \fBLIS_VECTOR x\fR, \fBLIS_SOLVER solver\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Solve the linear equation with the specified solver.
+
+.SH INPUT
+
+.IP "\fBA\fR"
+The coefficient matrix
+
+.IP "\fBb\fR"
+The right hand side vector
+
+.IP "\fBx\fR"
+The initial vector
+
+.IP "\fBsolver\fR"
+The solver
+
+.SH OUTPUT
+
+.IP "\fBx\fR"
+The solution
+
+.IP "\fBsolver\fR"
+The number of iterations, the execution time, etc.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

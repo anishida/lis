@@ -1,0 +1,39 @@
+.TH lis_output_vector 3f "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+lis_output_vector \- write the vector data 
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_output_vector\fR(\fBLIS_VECTOR v\fR, \fBLIS_INTEGER format\fI, \fBchar *filename\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Write the vector data to the external file.
+
+.SH INPUT
+
+.IP "\fBv\fR"
+The vector
+
+.IP "\fBformat\fR"
+.RS
+.IP "LIS_FMT_PLAIN"
+The PLAIN format
+.IP "LIS_FMT_MM"
+The Matrix Market format
+.RE
+
+.IP "\fBfilename\fR"
+The destination file
+
+.SH OUTPUT
+
+.IP "\fBNone\fR"
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

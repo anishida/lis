@@ -1,0 +1,32 @@
+.TH lis_array_copy 3f "3 Dec 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+lis_array_copy \- copy the values of the vector elements
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_array_copy\fR(\fBLIS_INTEGER n\fR, \fBLIS_SCALAR x()\fR, \fBLIS_SCALAR y()\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Copy the values of the vector elements.
+
+.SH INPUT
+
+.IP "\fBn\fR"
+The size of the vectors
+
+.IP "\fBx\fR"
+The source array
+
+.SH OUTPUT
+
+.IP "\fBy\fR"
+The destination array
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

@@ -1,0 +1,19 @@
+## README for Microsoft Build Engine ##
+
+Run the following command to generate Makefile 
+(See configure --help for details): 
+
+> configure
+ 
+To build the library, run the following command:
+
+> nmake 
+
+To ensure that the library has been built successfully, enter
+
+> nmake check
+
+The following command copies the library files to lis-($VERSION)\lib 
+and the executable files to lis-($VERSION)\bin, respectively:
+
+> nmake install
