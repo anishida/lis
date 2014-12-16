@@ -1,0 +1,15 @@
+# for all subdirectories
+*.o
+*.orig
+*~
+\#*#
+Makefile
+Makefile.in
+
+# autotools stuff
+autom4te.cache/
+config.*
+include/stamp-h1
+libtool
+
+

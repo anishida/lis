@@ -1,13 +1,11 @@
+# Process this file with reconfigure.sh to update configure script.
 
-# Process this file with autoconf to produce a configure script.
-
-AC_INIT(lis, 1.5.38, devel@ssisc.org)
+AC_INIT(lis, 1.5.39, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
 
 AC_CANONICAL_SYSTEM
-#AM_INIT_AUTOMAKE(lis,1.5.38,devel@ssisc.org)
 AM_INIT_AUTOMAKE
 AM_CONFIG_HEADER(include/lis_config.h)
 
@@ -41,6 +39,9 @@ AC_ARG_WITH(library-suffix,
 	[LIBSUFFIX="${withval}"],
 	[LIBSUFFIX=])
 AC_SUBST(LIBSUFFIX)
+
+
+# Checks for Targets
 
 if test "$TARGET" != ""; then
 	case "$TARGET" in
@@ -101,7 +102,7 @@ if test "$TARGET" != ""; then
                     MPINP="-n"
                     OMPFLAG="-KOMP"
 	  ;;
-# Fujitsu Techcal Computing Suite (for FX and PRIMERGY)
+# Fujitsu Technical Computing Suite (for FX and PRIMERGY)
           fujitsu_tcs) CC="fcc"
                     F77="frt"
                     FC="frt"
@@ -310,7 +311,7 @@ fi
 enable_dependency_tracking="no"
 
 
-# Checks for C and Fortran compilers
+# Checks for C and Fortran Compilers
 
 ########## Check C Compilers ##########
 cflags_save="$CFLAGS"
@@ -650,9 +651,9 @@ if test "$enable_fortran" = "yes" || test "$enable_f90" = "yes" || test "$enable
 fi
 
 
-# Checks for configuration options
+# Checks for Configuration Options
 
-######### Enable Fortran interface ##########
+######### Enable Fortran Interface ##########
 if test "$enable_fortran" = "yes"; then
   AC_DEFINE([USE_FORTRAN], [1], [Define to 1 to enable Fortran subroutines.])
 else
@@ -674,7 +675,7 @@ if test "$enable_fortran" = "yes"; then
   fi
 fi
  
-######### Enable SA-AMG preconditioner ##########
+######### Enable SA-AMG Preconditioner ##########
 if test "$enable_saamg" = "yes"; then
   AC_DEFINE([USE_FORTRAN], [1], [Define to 1 to enable Fortran subroutines.])
   AC_DEFINE([USE_SAAMG], [1], [Define to 1 to enable SA-AMG preconditioner.])
@@ -707,7 +708,7 @@ else
   fi
 fi
 
-########## Enable MPI and OpenMP directives ##########
+########## Enable MPI and OpenMP Directives ##########
 if test "$TARGET" = ""; then
   if test -z "$enable_mpi"; then
     enable_mpi="no"
@@ -887,7 +888,7 @@ else
   enable_quad="no"
 fi
 
-########## Enable SIMD optimization for Intel fused multiply and add ##########
+########## Enable SIMD Optimization for Intel Fused Multiply and Add ##########
 if test "$enable_fma" = "yes"; then
   AC_DEFINE([HAS_FMA], [1], [Define to 1 to enable quad precision operations using FMA.])
   case $ax_cv_c_compiler_vendor in
@@ -897,14 +898,14 @@ else
   enable_fma="no"
 fi
 
-########## Enable vectorization for NEC SX Series ##########
+########## Enable Vectorization for NEC SX Series ##########
 if test "$ax_vector_machine" = "yes"; then
   AC_DEFINE([USE_VEC_COMP], [1], [Define to 1 to use vectorization.])
 else
   ax_vector_machine="no"
 fi
 
-########## Enable debugging ###########
+########## Enable Debugging ###########
 if test "$enable_debug" = "yes"; then
   CFLAGS="$CFLAGS -g -D_DEBUG"
   if test "$enable_fortran" = "yes"; then
@@ -919,7 +920,7 @@ else
   enable_debug="no"
 fi
 
-########## Enable profiling ##########
+########## Enable Profiling ##########
 if test "$enable_gprof" = "yes"; then
   case $ax_cv_c_compiler_vendor in
     sun)     CFLAGS="$CFLAGS -xpg" 
@@ -952,7 +953,7 @@ else
   enable_gprof="no"
 fi
 
-########## Enable 64bit binary executables ##########
+########## Enable 64bit Binary Executables ##########
 if test "$enable_64bit" = "yes"; then
   case $ax_cv_c_compiler_vendor in
     sun)     CFLAGS="$CFLAGS -m64" 
@@ -970,7 +971,7 @@ else
   enable_64bit="no"
 fi
 
-########## Enable 64bit integer ##########
+########## Enable 64bit Integer ##########
 if test "$enable_longlong" = "yes"; then
 
   case $ax_cv_c_compiler_vendor in
@@ -1008,7 +1009,7 @@ else
   enable_longlong="no"
 fi
 
-########## Enable long double (quadruple) precision operations ##########
+########## Enable Long Double (Quadruple) Precision Operations ##########
 if test "$enable_longdouble" = "yes"; then
 
   case $ax_cv_c_compiler_vendor in
@@ -1030,58 +1031,58 @@ else
 fi
 
 
-# Checks for environment-dependent data sizes
+# Checks for Environment-Dependent Data Sizes
 
-########## Check size of int ##########
+########## Check Size of int ##########
 if test "$TARGET" = ""; then
   AC_CHECK_SIZEOF(int)
 else
   AC_DEFINE([SIZEOF_INT], [$ac_cv_sizeof_int], [Test the size of a `int', as computed by sizeof.])
 fi
 
-########## Check size of long int ##########
+########## Check Size of long int ##########
 if test "$TARGET" = ""; then
   AC_CHECK_SIZEOF(long)
 else
   AC_DEFINE([SIZEOF_LONG], [$ac_cv_sizeof_long], [Test the size of a `long', as computed by sizeof.])
 fi
 
-########## Check size of long long int ##########
+########## Check Size of long long int ##########
 if test "$TARGET" = ""; then
   AC_CHECK_SIZEOF(long long)
 else
   AC_DEFINE([SIZEOF_LONG_LONG], [$ac_cv_sizeof_long_long], [Test the size of a `long long', as computed by sizeof.])
 fi
 
-########## Check size of float ##########
+########## Check Size of float ##########
 if test "$TARGET" = ""; then
   AC_CHECK_SIZEOF(float)
 else
   AC_DEFINE([SIZEOF_FLOAT], [$ac_cv_sizeof_float], [Test the size of a `float', as computed by sizeof.])
 fi
 
-########## Check size of double ##########
+########## Check Size of double ##########
 if test "$TARGET" = ""; then
   AC_CHECK_SIZEOF(double)
 else
   AC_DEFINE([SIZEOF_DOUBLE], [$ac_cv_sizeof_double], [Test the size of a `double', as computed by sizeof.])
 fi
 
-########## Check size of long double ##########
+########## Check Size of long double ##########
 if test "$TARGET" = ""; then
   AC_CHECK_SIZEOF(long double)
 else
   AC_DEFINE([SIZEOF_LONG_DOUBLE], [$ac_cv_sizeof_long_double], [Test the size of a `long double', as computed by sizeof.])
 fi
 
-########## Check size of size_t ##########
+########## Check Size of size_t ##########
 if test "$TARGET" = ""; then
   AC_CHECK_SIZEOF(size_t)
 else
   AC_DEFINE([SIZEOF_SIZE_T], [$ac_cv_sizeof_size_t], [Test the size of a `size_t', as computed by sizeof.])
 fi
 
-########## Check size of void_p ##########
+########## Check Size of void_p ##########
 if test "$TARGET" = ""; then
   AC_CHECK_SIZEOF(void *)
 else
@@ -1117,18 +1118,18 @@ AC_SUBST(SIZEOF_VOID_P, $ac_cv_sizeof_void_p)
 AC_SUBST(FCLDFLAGS)
 
 
-# Checks for header files and libraries
+# Checks for Header Files and Libraries
 
-# Checks for header files
+# Checks for Header Files
 AC_HEADER_STDC
 AC_CHECK_HEADERS([malloc.h stdlib.h string.h sys/time.h])
 
-# Checks for typedefs, structures, and compiler characteristics
+# Checks for Types, Structures, and Compiler Characteristics
 AC_C_CONST
 AC_TYPE_SIZE_T
 #AC_HEADER_TIME
 
-# Checks for library functions
+# Checks for Library Functions
 #AC_FUNC_MALLOC
 #AC_FUNC_VPRINTF
 #AC_CHECK_FUNCS([clock_gettime floor gettimeofday memset sqrt])
