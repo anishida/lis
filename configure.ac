@@ -1124,7 +1124,7 @@ AC_SUBST(FCLDFLAGS)
 AC_HEADER_STDC
 AC_CHECK_HEADERS([malloc.h stdlib.h string.h sys/time.h])
 
-# Checks for Types, Structures, and Compiler Characteristics
+# Checks for Type Definitions, Structures, and Compiler Characteristics
 AC_C_CONST
 AC_TYPE_SIZE_T
 #AC_HEADER_TIME
