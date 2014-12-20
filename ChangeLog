@@ -1,3 +1,7 @@
+Version 1.5.40  December 20, 2014
+
+  - Fixed variable declaration bug in lis_precision_vec.c.
+
 Version 1.5.39  December 16, 2014
 
   - Updated documents.

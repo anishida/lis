@@ -1,6 +1,6 @@
 # Process this file with reconfigure.sh to update configure script.
 
-AC_INIT(lis, 1.5.39, devel@ssisc.org)
+AC_INIT(lis, 1.5.40, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -1124,7 +1124,7 @@ AC_SUBST(FCLDFLAGS)
 AC_HEADER_STDC
 AC_CHECK_HEADERS([malloc.h stdlib.h string.h sys/time.h])
 
-# Checks for Types, Structures, and Compiler Characteristics
+# Checks for Type Definitions, Structures, and Compiler Characteristics
 AC_C_CONST
 AC_TYPE_SIZE_T
 #AC_HEADER_TIME

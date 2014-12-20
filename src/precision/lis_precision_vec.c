@@ -263,7 +263,7 @@ LIS_INT lis_vector_dotex_mmm(LIS_VECTOR vx, LIS_VECTOR vy, LIS_QUAD_PTR *val)
 {
 	LIS_INT i,n;
 	LIS_SCALAR *x,*y,*xl,*yl;
-	LIS_QUAD_PTR dotm,tmpm;
+	LIS_QUAD_PTR dotm,dotm2,tmpm;
 	#ifdef _OPENMP
 		LIS_INT is,ie,nprocs,my_rank;
 		LIS_SCALAR *gt;
@@ -380,7 +380,7 @@ LIS_INT lis_vector_nrm2ex_mm(LIS_VECTOR vx, LIS_QUAD_PTR *val)
 {
 	LIS_INT i,n;
 	LIS_SCALAR *x,*xl;
-	LIS_QUAD_PTR dotm,tmpm;
+	LIS_QUAD_PTR dotm,dotm2,tmpm;
 	#ifdef _OPENMP
 		LIS_INT is,ie,nprocs,my_rank;
 		LIS_SCALAR *gt;
