@@ -39,7 +39,7 @@ LDFLAGS = $(LDFLAGS) $(conlibs)
 
 # Configuration for Intel FPU
 
-!ifndef difpu
+!ifndef noifpu
 CFLAGS = $(CFLAGS) -DHAS_X87_FPU -DUSE_QUAD_PRECISION -DUSE_FMA2_SSE2 -DUSE_SSE2 -DUSE_FAST_QUAD_ADD
 !endif
 
