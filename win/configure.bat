@@ -14,7 +14,7 @@
 @set longlong=0
 @set longdouble=0
 @set debug=0
-@set ifpu=1
+@set difpu=0
 @set usercflags=
 @set userfflags=
 @set userldflags=
@@ -34,7 +34,7 @@
 @if "%1" == "--enable-longlong" goto setlonglong
 @if "%1" == "--enable-longdouble" goto setlongdouble
 @if "%1" == "--enable-debug" goto setdebug
-@if "%1" == "--disable-ifpu" goto setifpu
+@if "%1" == "--disable-ifpu" goto setdifpu
 @if "%1" == "--cflags" goto setusercflags
 @if "%1" == "--fflags" goto setuserfflags
 @if "%1" == "--ldflags" goto setuserldflags
@@ -134,9 +134,9 @@
 @shift
 @goto again
 
-:setifpu
+:setdifpu
 
-@set ifpu=0
+@set difpu=1
 @shift
 @goto again
 
@@ -261,9 +261,9 @@
 @echo.	Enable debug mode			= no
 )
 
-@if (%ifpu%) == (0) (
+@if (%difpu%) == (1) (
 @echo # Disable Intel FPU support >> Makefile
-@echo ifpu=0 >> Makefile
+@echo difpu=1 >> Makefile
 @echo. >> Makefile
 @echo.	Disable Intel FPU support		= yes
 ) else (
