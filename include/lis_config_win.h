@@ -9,17 +9,17 @@
 #define F77_FUNC_(name,NAME) NAME
 
 /* Define to 1 to have x87 FPU. */
-/* #undef HAS_X87_FPU 1 */
+/* #undef HAS_X87_FPU */
 
 /* Define to 1 to build Quad precision. */
-/* #undef USE_QUAD_PRECISION 1 */
+/* #undef USE_QUAD_PRECISION */
 
 /* Define to 1 to build Quad precision. */
-/* #undef USE_FMA2_SSE2 1 */
+/* #undef USE_FMA2_SSE2 */
 
 /* Define to 1 to build Quad precision. */
-/* #undef USE_SSE2 1 */
-/* #undef USE_FAST_QUAD_ADD 1 */
+/* #undef USE_SSE2 */
+/* #undef USE_FAST_QUAD_ADD */
 
 /* Define to the address where bug reports for this package should be sent. */
 #define PACKAGE_BUGREPORT "devel@ssisc.org"
