@@ -14,7 +14,7 @@
 @set longlong=0
 @set longdouble=0
 @set debug=0
-@set ifpu=0
+@set ifpu=1
 @set usercflags=
 @set userfflags=
 @set userldflags=
@@ -136,7 +136,7 @@
 
 :setifpu
 
-@set ifpu=1
+@set ifpu=0
 @shift
 @goto again
 
@@ -261,9 +261,9 @@
 @echo.	Enable debug mode			= no
 )
 
-@if (%ifpu%) == (1) (
+@if (%ifpu%) == (0) (
 @echo # Disable Intel FPU support >> Makefile
-@echo ifpu=1 >> Makefile
+@echo ifpu=0 >> Makefile
 @echo. >> Makefile
 @echo.	Disable Intel FPU support		= yes
 ) else (
