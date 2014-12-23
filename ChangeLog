@@ -1,3 +1,7 @@
+Version 1.5.41  December 23, 2014
+
+  - Fixed bug in win\Makefile.in.
+
 Version 1.5.40  December 20, 2014
 
   - Fixed variable declaration bug in lis_precision_vec.c.
