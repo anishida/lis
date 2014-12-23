@@ -14,6 +14,7 @@
 @set longlong=0
 @set longdouble=0
 @set debug=0
+@set noifpu=0
 @set usercflags=
 @set userfflags=
 @set userldflags=
@@ -33,6 +34,7 @@
 @if "%1" == "--enable-longlong" goto setlonglong
 @if "%1" == "--enable-longdouble" goto setlongdouble
 @if "%1" == "--enable-debug" goto setdebug
+@if "%1" == "--disable-ifpu" goto setnoifpu
 @if "%1" == "--cflags" goto setusercflags
 @if "%1" == "--fflags" goto setuserfflags
 @if "%1" == "--ldflags" goto setuserldflags
@@ -55,6 +57,7 @@
 @echo.	--enable-longlong	Enable 64bit integer support
 @echo.	--enable-longdouble	Enable long double support
 @echo.	--enable-debug		Enable debugging
+@echo.	--disable-ifpu		Disable Intel FPU support
 @echo.	--cflags FLAG		Pass FLAG to C compiler
 @echo.	--fflags FLAG		Pass FLAG to Fortran compiler
 @echo.	--ldflags FLAG		Pass FLAG to linker
@@ -128,6 +131,12 @@
 :setdebug
 
 @set debug=1
+@shift
+@goto again
+
+:setnoifpu
+
+@set noifpu=1
 @shift
 @goto again
 
@@ -250,6 +259,15 @@
 @echo.	Enable debug mode			= yes
 ) else (
 @echo.	Enable debug mode			= no
+)
+
+@if (%noifpu%) == (1) (
+@echo # Disable Intel FPU support >> Makefile
+@echo noifpu=1 >> Makefile
+@echo. >> Makefile
+@echo.	Disable Intel FPU support		= yes
+) else (
+@echo.	Disable Intel FPU support		= no
 )
 
 @echo # User-defined C flags >> Makefile

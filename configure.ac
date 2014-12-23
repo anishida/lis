@@ -1,6 +1,6 @@
 # Process this file with reconfigure.sh to update configure script.
 
-AC_INIT(lis, 1.5.40, devel@ssisc.org)
+AC_INIT(lis, 1.5.41, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -1104,7 +1104,6 @@ AM_CONDITIONAL(ENABLE_MPI, test x"$enable_mpi" = xyes)
 AM_CONDITIONAL(ENABLE_OMP, test x"$enable_omp" = xyes)
 AM_CONDITIONAL(ENABLE_QUAD, test x$enable_quad = xyes)
 AM_CONDITIONAL(ENABLE_SSE2, test x$enable_sse2 = xyes)
-AM_CONDITIONAL(ENABLE_DEVELOP, test x$enable_develop = xyes)
 AC_SUBST(enable_mpi)
 AC_SUBST(enable_omp)
 AC_SUBST(enable_saamg)
