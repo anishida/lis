@@ -1093,7 +1093,7 @@ else
 fi
 
 
-# Checks for Autotools
+# Checks for Autotools Configurations
 
 AC_DISABLE_SHARED
 AC_PROG_LIBTOOL
