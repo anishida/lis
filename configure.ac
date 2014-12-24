@@ -18,6 +18,9 @@ AC_ARG_VAR(OMPFLAG,[OpenMP flags])
 AC_ARG_VAR(MPFLAG,[floating point precision flags])
 AC_ARG_VAR(TARGET,[system architecture])
 
+
+# Build Options
+
 AC_ARG_ENABLE(fortran, AC_HELP_STRING(--enable-fortran, [enable FORTRAN 77 compatible interfaces [[default=no]]]))
 AC_ARG_ENABLE(f90, AC_HELP_STRING(--enable-f90, [enable Fortran 90 compatible interface [[default=no]]]))
 AC_ARG_ENABLE(saamg, AC_HELP_STRING(--enable-saamg, [enable SA-AMG preconditioner [[default=no]]]))
@@ -1089,6 +1092,8 @@ else
   AC_DEFINE([SIZEOF_VOID_P], [$ac_cv_sizeof_void_p], [Test the size of a `void *', as computed by sizeof.])
 fi
 
+
+# Checks for Autotools
 
 AC_DISABLE_SHARED
 AC_PROG_LIBTOOL
