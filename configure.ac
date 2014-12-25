@@ -1131,7 +1131,7 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS([malloc.h stdlib.h string.h sys/time.h])
 
 
-# Configurations for Type Definitions, Structures, and Compiler Characteristics
+# Configurations for Compiler Characteristics and Type Definitions
 
 AC_C_CONST
 AC_TYPE_SIZE_T
