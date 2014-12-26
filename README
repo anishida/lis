@@ -17,7 +17,7 @@ Lis provides facilities for:
 
 * Basic linear algebra operations for dense and sparse matrices
 
-* Parallel iterative methods for linear equations and  standard
+* Parallel iterative methods for linear equations and standard
 eigenvalue problems
 
 * Parallel preconditioners for iterative methods
@@ -29,10 +29,10 @@ eigenvalue problems
 * Command-line interface to solvers and benchmarks
 
 
-The  installation  of  Lis requires a C compiler. The Fortran interface
+The installation of Lis requires a C compiler. The Fortran interface
 requires a Fortran compiler, and the algebraic multigrid preconditioner
 requires a Fortran 90 compiler. For parallel computing environments, an
-OpenMP or an MPI-1 library is used. Both the Harwell-Boeing and  Matrix
+OpenMP or an MPI library is used. Both the Harwell-Boeing and Matrix
 Market formats are supported to import and export user data.
 
 
