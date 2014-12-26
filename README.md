@@ -1,4 +1,5 @@
-## README ##
+README
+======
 
 
 Lis (Library of Iterative Solvers for linear systems, pronounced [lis])
@@ -40,6 +41,7 @@ See PDF files in directory doc for full description.
 
 
 References
+----------
 
 * Akira Nishida (2010). "Experience in Developing an Open Source 
 Scalable Software Infrastructure in Japan". Computational Science and
@@ -65,5 +67,6 @@ Springer. pp. 99-122. doi:10.1007/0-387-24049-7_6. ISBN 1-4419-3684-X.
 
 
 Official Website
+----------------
 
 http://www.ssisc.org/lis/
