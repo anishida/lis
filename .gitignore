@@ -1,9 +1,9 @@
 # for all subdirectories
+*.la
+*.lo
 *.o
 *.orig
 *~
-*.lo
-*.la
 \#*#
 Makefile
 
