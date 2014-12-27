@@ -2,8 +2,8 @@ README
 ======
 
 
-Lis (Library of Iterative Solvers for linear systems, pronounced [lis])
-is a parallel library for solving linear equations and eigenvalue
+Lis (Library of Iterative Solvers for linear systems, pronounced [lis]) 
+is a parallel software library for solving linear equations and eigenvalue
 problems that arise in the numerical solution of partial differential
 equations using iterative methods.
 
