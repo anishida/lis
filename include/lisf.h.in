@@ -235,8 +235,17 @@
 #define lis_matrix_copy			lis_matrix_copy_f
 #define LIS_MATRIX_COPY			lis_matrix_copy_f
 
-#define lis_matrix_scaling		lis_matrix_scaling_f
-#define LIS_MATRIX_SCALING		lis_matrix_scaling_f
+#define lis_matrix_axpy			lis_matrix_axpy_f
+#define LIS_MATRIX_AXPY			lis_matrix_axpy_f
+
+#define lis_matrix_xpay			lis_matrix_xpay_f
+#define LIS_MATRIX_XPAY			lis_matrix_xpay_f
+
+#define lis_matrix_axpyz       		lis_matrix_axpyz_f
+#define LIS_MATRIX_AXPYZ		lis_matrix_axpyz_f
+
+#define lis_matrix_scale		lis_matrix_scale_f
+#define LIS_MATRIX_SCALE		lis_matrix_scale_f
 
 #define lis_matrix_get_diagonal		lis_matrix_get_diagonal_f
 #define LIS_MATRIX_GET_DIAGONAL		lis_matrix_get_diagonal_f
