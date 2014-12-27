@@ -42,7 +42,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.5.42
+Version 1.5.43
 \end{flushleft}
 
 \vspace*{2cm}
@@ -4971,29 +4971,6 @@ Copy the values of the vector elements.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
-\subsubsection{lis\_vector\_scale}
-\begin{screen}
-\verb|C       LIS_INT lis_vector_scale(LIS_SCALAR alpha, LIS_VECTOR x)|
-\verb|Fortran subroutine lis_vector_scale(LIS_SCALAR alpha, LIS_VECTOR x,|\\
-\verb|         LIS_INTEGER ierr)|
-\end{screen}
-{\bf Description}\\
-\indent
-Multiply vector $x$ by scalar $\alpha$.
-\\ \\
-\noindent
-{\bf Input}
-\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt alpha] The scalar value
-\item[\tt x] The vector
-\end{namelist}
-{\bf Output}
-\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt x] $\alpha x$ (vector $x$ is overwritten)
-\item[\tt ierr] The return code
-\end{namelist}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_axpy}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_axpy(LIS_SCALAR alpha, LIS_VECTOR x, LIS_VECTOR y)|
@@ -5017,7 +4994,6 @@ Calculate the sum of the vectors $y = \alpha x + y$.
 \end{namelist}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\newpage
 \subsubsection{lis\_vector\_xpay}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_xpay(LIS_VECTOR x, LIS_SCALAR alpha, LIS_VECTOR y)|
@@ -5041,6 +5017,7 @@ Calculate the sum of the vectors $y = x + \alpha y$.
 \end{namelist}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
 \subsubsection{lis\_vector\_axpyz}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_axpyz(LIS_SCALAR alpha, LIS_VECTOR x, LIS_VECTOR y,|\\
@@ -5061,6 +5038,29 @@ Calculate the sum of the vectors $z = \alpha x + y$.
 {\bf Output}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt z] $x + \alpha y$
+\item[\tt ierr] The return code
+\end{namelist}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{lis\_vector\_scale}
+\begin{screen}
+\verb|C       LIS_INT lis_vector_scale(LIS_SCALAR alpha, LIS_VECTOR x)|
+\verb|Fortran subroutine lis_vector_scale(LIS_SCALAR alpha, LIS_VECTOR x,|\\
+\verb|         LIS_INTEGER ierr)|
+\end{screen}
+{\bf Description}\\
+\indent
+Multiply vector $x$ by scalar $\alpha$.
+\\ \\
+\noindent
+{\bf Input}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt alpha] The scalar value
+\item[\tt x] The vector
+\end{namelist}
+{\bf Output}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt x] $\alpha x$ (vector $x$ is overwritten)
 \item[\tt ierr] The return code
 \end{namelist}
 
@@ -6745,30 +6745,6 @@ Copy the values of the vector elements.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
-\subsubsection{lis\_array\_scale}
-\begin{screen}
-\verb|C       LIS_INT lis_array_scale(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR x[])|
-\verb|Fortran subroutine lis_array_scale(LIS_INTEGER n, LIS_SCALAR alpha, LIS_SCALAR x(),|\\
-\verb|         LIS_INTEGER ierr)|
-\end{screen}
-{\bf Description}\\
-\indent
-Multiply vector $x$ by scalar $\alpha$.
-\\ \\
-\noindent
-{\bf Input}
-\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt n] The size of the vector  
-\item[\tt alpha] The scalar value
-\item[\tt x] The array that stores vector $x$
-\end{namelist}
-{\bf Output}
-\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt x] $\alpha x$ (vector $x$ is overwritten)
-\item[\tt ierr] The return code
-\end{namelist}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_axpy}
 \begin{screen}
   \verb|C       LIS_INT lis_array_axpy(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR x[],|\\
@@ -6794,7 +6770,6 @@ Calculate the sum of the vectors $y = \alpha x + y$.
 \end{namelist}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\newpage
 \subsubsection{lis\_array\_xpay}
 \begin{screen}
 \verb|C       LIS_INT lis_array_xpay(LIS_INT n, LIS_SCALAR x[], LIS_SCALAR alpha,|\\
@@ -6820,6 +6795,7 @@ Calculate the sum of the vectors $y = x + \alpha y$.
 \end{namelist}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
 \subsubsection{lis\_array\_axpyz}
 \begin{screen}
 \verb|C       LIS_INT lis_array_axpyz(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR x[],|\\
@@ -6841,6 +6817,30 @@ Calculate the sum of the vectors $z = \alpha x + y$.
 {\bf Output}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt z] $x + \alpha y$
+\item[\tt ierr] The return code
+\end{namelist}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{lis\_array\_scale}
+\begin{screen}
+\verb|C       LIS_INT lis_array_scale(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR x[])|
+\verb|Fortran subroutine lis_array_scale(LIS_INTEGER n, LIS_SCALAR alpha, LIS_SCALAR x(),|\\
+\verb|         LIS_INTEGER ierr)|
+\end{screen}
+{\bf Description}\\
+\indent
+Multiply vector $x$ by scalar $\alpha$.
+\\ \\
+\noindent
+{\bf Input}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt n] The size of the vector  
+\item[\tt alpha] The scalar value
+\item[\tt x] The array that stores vector $x$
+\end{namelist}
+{\bf Output}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt x] $\alpha x$ (vector $x$ is overwritten)
 \item[\tt ierr] The return code
 \end{namelist}
 

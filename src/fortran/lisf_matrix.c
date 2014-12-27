@@ -590,6 +590,24 @@ void lis_matrix_axpyz_f(LIS_SCALAR_F *alpha, LIS_MATRIX_F *A, LIS_MATRIX_F *B, L
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_matrix_scale_f"
+void lis_matrix_scale_f(LIS_MATRIX_F *A, LIS_VECTOR_F *b, LIS_VECTOR_F *d, LIS_INT *action, LIS_INT *ierr)
+{
+	LIS_MATRIX AA;
+	LIS_VECTOR dd,bb;
+
+	LIS_DEBUG_FUNC_IN;
+
+	AA    = (LIS_MATRIX)LIS_V2P(A);
+	bb    = (LIS_VECTOR)LIS_V2P(b);
+	dd    = (LIS_VECTOR)LIS_V2P(d);
+	*ierr = lis_matrix_scale(AA,bb,dd,*action);
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_matrix_get_diagonal_f"
 void lis_matrix_get_diagonal_f(LIS_MATRIX_F *A, LIS_VECTOR_F *d, LIS_INT *ierr)
 {
@@ -618,24 +636,6 @@ void lis_matrix_shift_diagonal_f(LIS_MATRIX_F *A, LIS_SCALAR_F *alpha, LIS_INT *
 	AA    = (LIS_MATRIX)LIS_V2P(A);
 	ss    = (LIS_SCALAR)LIS_V2P(alpha);
 	*ierr = lis_matrix_shift_diagonal(AA,ss);
-
-	LIS_DEBUG_FUNC_OUT;
-	return;
-}
-
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_scale_f"
-void lis_matrix_scale_f(LIS_MATRIX_F *A, LIS_VECTOR_F *b, LIS_VECTOR_F *d, LIS_INT *action, LIS_INT *ierr)
-{
-	LIS_MATRIX AA;
-	LIS_VECTOR dd,bb;
-
-	LIS_DEBUG_FUNC_IN;
-
-	AA    = (LIS_MATRIX)LIS_V2P(A);
-	bb    = (LIS_VECTOR)LIS_V2P(b);
-	dd    = (LIS_VECTOR)LIS_V2P(d);
-	*ierr = lis_matrix_scale(AA,bb,dd,*action);
 
 	LIS_DEBUG_FUNC_OUT;
 	return;

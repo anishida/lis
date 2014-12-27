@@ -44,10 +44,10 @@
 /********************************************************
  * lis_vector_swap		x <-> y
  * lis_vector_copy		y <- x
- * lis_vector_scale		y <- alpha * x
  * lis_vector_axpy		y <- y + alpha * x
  * lis_vector_xpay		y <- x + alpha * y
  * lis_vector_axpyz		z <- y + alpha * x
+ * lis_vector_scale		y <- alpha * x
  * lis_vector_pmul		z_i <- x_i * y_i
  * lis_vector_pdiv		z_i <- x_i / y_i
  * lis_vector_set_all		x_i <- alpha
@@ -131,37 +131,6 @@ LIS_INT lis_vector_copy(LIS_VECTOR vx, LIS_VECTOR vy)
 	for(i=0; i<n; i++)
 	{
 		y[i] = x[i];
-	}
-
-	LIS_DEBUG_FUNC_OUT;
-	return LIS_SUCCESS;
-}
-
-
-/********************/
-/* y <- alpha * x   */
-/********************/
-#undef __FUNC__
-#define __FUNC__ "lis_vector_scale"
-LIS_INT lis_vector_scale(LIS_SCALAR alpha, LIS_VECTOR vx)
-{
-	LIS_INT i,n;
-	LIS_SCALAR *x;
-
-	LIS_DEBUG_FUNC_IN;
-
-	n = vx->n;
-
-	x = vx->value;
-	#ifdef USE_VEC_COMP
-    #pragma cdir nodep
-	#endif
-	#ifdef _OPENMP
-	#pragma omp parallel for private(i)
-	#endif
-	for(i=0; i<n; i++)
-	{
-		x[i] = alpha * x[i];
 	}
 
 	LIS_DEBUG_FUNC_OUT;
@@ -280,6 +249,37 @@ LIS_INT lis_vector_axpyz(LIS_SCALAR alpha, LIS_VECTOR vx, LIS_VECTOR vy, LIS_VEC
 	{
 		z[i] = alpha * x[i] + y[i];
 	}
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+
+/********************/
+/* y <- alpha * x   */
+/********************/
+#undef __FUNC__
+#define __FUNC__ "lis_vector_scale"
+LIS_INT lis_vector_scale(LIS_SCALAR alpha, LIS_VECTOR vx)
+{
+	LIS_INT i,n;
+	LIS_SCALAR *x;
+
+	LIS_DEBUG_FUNC_IN;
+
+	n = vx->n;
+
+	x = vx->value;
+	#ifdef USE_VEC_COMP
+    #pragma cdir nodep
+	#endif
+	#ifdef _OPENMP
+	#pragma omp parallel for private(i)
+	#endif
+	for(i=0; i<n; i++)
+	{
+		x[i] = alpha * x[i];
+	}
+
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 }

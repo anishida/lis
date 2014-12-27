@@ -291,18 +291,6 @@ void lis_vector_copy_f(LIS_VECTOR_F *x, LIS_VECTOR_F *y, LIS_INT *ierr)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_vector_scale_f"
-void lis_vector_scale_f(LIS_SCALAR *alpha, LIS_VECTOR_F *x, LIS_INT *ierr)
-{
-	LIS_DEBUG_FUNC_IN;
-
-	*ierr = lis_vector_scale(*alpha,(LIS_VECTOR)LIS_V2P(x));
-
-	LIS_DEBUG_FUNC_OUT;
-	return;
-}
-
-#undef __FUNC__
 #define __FUNC__ "lis_vector_axpy_f"
 void lis_vector_axpy_f(LIS_SCALAR *alpha, LIS_VECTOR_F *x, LIS_VECTOR_F *y, LIS_INT *ierr)
 {
@@ -333,6 +321,18 @@ void lis_vector_axpyz_f(LIS_SCALAR *alpha, LIS_VECTOR_F *x, LIS_VECTOR_F *y, LIS
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_axpyz(*alpha,(LIS_VECTOR)LIS_V2P(x),(LIS_VECTOR)LIS_V2P(y),(LIS_VECTOR)LIS_V2P(z));
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_vector_scale_f"
+void lis_vector_scale_f(LIS_SCALAR *alpha, LIS_VECTOR_F *x, LIS_INT *ierr)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	*ierr = lis_vector_scale(*alpha,(LIS_VECTOR)LIS_V2P(x));
 
 	LIS_DEBUG_FUNC_OUT;
 	return;

@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"1.5.42"
+#define LIS_VERSION	"1.5.43"
 /**************************************/
 #include <stdio.h>
 
@@ -689,10 +689,10 @@ extern "C"
 	extern LIS_INT lis_vector_is_null(LIS_VECTOR v);
 	extern LIS_INT lis_vector_swap(LIS_VECTOR vsrc, LIS_VECTOR vdst);
 	extern LIS_INT lis_vector_copy(LIS_VECTOR vsrc, LIS_VECTOR vdst);
-	extern LIS_INT lis_vector_scale(LIS_SCALAR alpha, LIS_VECTOR vx);
 	extern LIS_INT lis_vector_axpy(LIS_SCALAR alpha, LIS_VECTOR vx, LIS_VECTOR vy);
 	extern LIS_INT lis_vector_xpay(LIS_VECTOR vx, LIS_SCALAR alpha, LIS_VECTOR vy);
 	extern LIS_INT lis_vector_axpyz(LIS_SCALAR alpha, LIS_VECTOR vx, LIS_VECTOR vy, LIS_VECTOR vz);
+	extern LIS_INT lis_vector_scale(LIS_SCALAR alpha, LIS_VECTOR vx);
 	extern LIS_INT lis_vector_pmul(LIS_VECTOR vx,LIS_VECTOR vy,LIS_VECTOR vz);
 	extern LIS_INT lis_vector_pdiv(LIS_VECTOR vx,LIS_VECTOR vy,LIS_VECTOR vz);
 	extern LIS_INT lis_vector_set_all(LIS_SCALAR alpha, LIS_VECTOR vx);
@@ -766,10 +766,10 @@ extern "C"
 
         extern LIS_INT lis_array_swap(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y);
         extern LIS_INT lis_array_copy(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y);
-        extern LIS_INT lis_array_scale(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR *x);
         extern LIS_INT lis_array_axpy(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR *x, LIS_SCALAR *y);
         extern LIS_INT lis_array_xpay(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR alpha, LIS_SCALAR *y);
         extern LIS_INT lis_array_axpyz(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *z);
+        extern LIS_INT lis_array_scale(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR *x);
         extern LIS_INT lis_array_pmul(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *z);
         extern LIS_INT lis_array_pdiv(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *z);
         extern LIS_INT lis_array_set_all(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR *x);

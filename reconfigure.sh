@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Shell script for the GNU Build System
-# To remake ./configure, edit ./configure.in and run the following command:
+# To remake ./configure, edit ./configure.ac and run the following command:
 #
 # > ./reconfigure.sh
 #

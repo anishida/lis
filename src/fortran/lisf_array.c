@@ -52,10 +52,10 @@
 /************************************************
  * lis_array_swap_f
  * lis_array_copy_f
- * lis_array_scale_f
  * lis_array_axpy_f
  * lis_array_xpay_f
  * lis_array_axpyz_f
+ * lis_array_scale_f
  * lis_array_pmul_f
  * lis_array_pdiv_f
  * lis_array_set_all_f
@@ -106,18 +106,6 @@ void lis_array_copy_f(LIS_INT *n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_INT *ierr)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_array_scale_f"
-void lis_array_scale_f(LIS_INT *n, LIS_SCALAR *alpha, LIS_SCALAR *x, LIS_INT *ierr)
-{
-	LIS_DEBUG_FUNC_IN;
-
-	*ierr = lis_array_scale(*n,*alpha,x);
-
-	LIS_DEBUG_FUNC_OUT;
-	return;
-}
-
-#undef __FUNC__
 #define __FUNC__ "lis_array_axpy_f"
 void lis_array_axpy_f(LIS_INT *n, LIS_SCALAR *alpha, LIS_SCALAR *x, LIS_SCALAR *y, LIS_INT *ierr)
 {
@@ -148,6 +136,18 @@ void lis_array_axpyz_f(LIS_INT *n, LIS_SCALAR *alpha, LIS_SCALAR *x, LIS_SCALAR 
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_axpyz(*n,*alpha,x,y,z);
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_array_scale_f"
+void lis_array_scale_f(LIS_INT *n, LIS_SCALAR *alpha, LIS_SCALAR *x, LIS_INT *ierr)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	*ierr = lis_array_scale(*n,*alpha,x);
 
 	LIS_DEBUG_FUNC_OUT;
 	return;

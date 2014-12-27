@@ -50,10 +50,10 @@
 /*************************************************************************
  * lis_array_swap		x <-> y
  * lis_array_copy		y <- x
- * lis_array_scale		y <- alpha * x
  * lis_array_axpy		y <- y + alpha * x
  * lis_array_xpay		y <- x + alpha * y
  * lis_array_axpyz		z <- y + alpha * x
+ * lis_array_scale		y <- alpha * x
  * lis_array_pmul		z_i <- x_i * y_i
  * lis_array_pdiv		z_i <- x_i / y_i
  * lis_array_set_all		x_i <- alpha
@@ -115,23 +115,6 @@ LIS_INT lis_array_copy(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_array_scale"
-LIS_INT lis_array_scale(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR *x)
-{
-  LIS_INT i;
-
-  LIS_DEBUG_FUNC_IN;
-
-  for(i=0;i<n;i++)
-    {
-      x[i] = alpha * x[i];
-    }
-
-  LIS_DEBUG_FUNC_OUT;
-  return LIS_SUCCESS;
-}
-
-#undef __FUNC__
 #define __FUNC__ "lis_array_axpy"
 LIS_INT lis_array_axpy(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR *x, LIS_SCALAR *y)
 {
@@ -176,6 +159,23 @@ LIS_INT lis_array_axpyz(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR *x, LIS_SCALAR *
   for(i=0;i<n;i++)
     {
       z[i] = alpha * x[i] + y[i];
+    }
+
+  LIS_DEBUG_FUNC_OUT;
+  return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_array_scale"
+LIS_INT lis_array_scale(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR *x)
+{
+  LIS_INT i;
+
+  LIS_DEBUG_FUNC_IN;
+
+  for(i=0;i<n;i++)
+    {
+      x[i] = alpha * x[i];
     }
 
   LIS_DEBUG_FUNC_OUT;
