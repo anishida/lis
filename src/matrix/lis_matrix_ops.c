@@ -53,6 +53,9 @@
  * lis_matrix_convert_self
  * lis_matrix_copy
  * lis_matrix_copyDLU
+ * lis_matrix_axpy
+ * lis_matrix_xpay
+ * lis_matrix_axpyz
  * lis_matrix_scale
  * lis_matrix_get_diagonal
  * lis_matrix_shift_diagonal
@@ -481,6 +484,96 @@ LIS_INT lis_matrix_copyDLU(LIS_MATRIX Ain, LIS_MATRIX_DIAG *D, LIS_MATRIX *L, LI
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_matrix_axpy"
+LIS_INT lis_matrix_axpy(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)
+{
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	err = lis_matrix_check(A,LIS_MATRIX_CHECK_ALL);
+	if( err ) return err;
+
+	err = lis_matrix_check(B,LIS_MATRIX_CHECK_ALL);
+	if( err ) return err;
+	
+	switch( A->matrix_type )
+	{
+	case LIS_MATRIX_DNS:
+		err = lis_matrix_axpy_dns(alpha,A,B);
+		break;
+
+		default:
+			LIS_SETERR_IMP;
+			return LIS_ERR_NOT_IMPLEMENTED;
+			break;
+	}
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_xpay"
+LIS_INT lis_matrix_xpay(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)
+{
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	err = lis_matrix_check(A,LIS_MATRIX_CHECK_ALL);
+	if( err ) return err;
+
+	err = lis_matrix_check(B,LIS_MATRIX_CHECK_ALL);
+	if( err ) return err;
+	
+	switch( A->matrix_type )
+	{
+	case LIS_MATRIX_DNS:
+		err = lis_matrix_xpay_dns(alpha,A,B);
+		break;
+
+		default:
+			LIS_SETERR_IMP;
+			return LIS_ERR_NOT_IMPLEMENTED;
+			break;
+	}
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_axpyz"
+LIS_INT lis_matrix_axpyz(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B, LIS_MATRIX C)
+{
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	err = lis_matrix_check(A,LIS_MATRIX_CHECK_ALL);
+	if( err ) return err;
+
+	err = lis_matrix_check(B,LIS_MATRIX_CHECK_ALL);
+	if( err ) return err;
+	
+	err = lis_matrix_check(C,LIS_MATRIX_CHECK_ALL);
+	if( err ) return err;
+	
+	switch( A->matrix_type )
+	{
+	case LIS_MATRIX_DNS:
+		err = lis_matrix_axpyz_dns(alpha,A,B,C);
+		break;
+
+		default:
+			LIS_SETERR_IMP;
+			return LIS_ERR_NOT_IMPLEMENTED;
+			break;
+	}
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_matrix_scale"
 LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR D, LIS_INT action)
 {
@@ -619,7 +712,7 @@ LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR D, LIS_INT actio
 	B->is_scaled = LIS_TRUE;
 	return LIS_SUCCESS;
 }
-
+ 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_get_diagonal"
 LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR D)
