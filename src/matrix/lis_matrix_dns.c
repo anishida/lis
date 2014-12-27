@@ -65,6 +65,9 @@
  * lis_matrix_copy             | o   | o   |
  * lis_matrix_get_diagonal     | o   | o   |
  * lis_matrix_shift_diagonal   | o   | o   |
+ * lis_matrix_axpy             | o   | o   |
+ * lis_matrix_xpay             | o   | o   |
+ * lis_matrix_axpyz            | o   | o   |
  * lis_matrix_scale            | o   | o   |
  * lis_matrix_scale_symm       | o   | o   |
  * lis_matrix_normf            | o   | o   |
@@ -124,7 +127,7 @@ LIS_INT lis_matrix_elements_copy_dns(LIS_INT n, LIS_INT np, LIS_SCALAR *value, L
 {
 	LIS_INT i,j,is,ie;
 	LIS_INT nprocs,my_rank;
-
+ 
 	LIS_DEBUG_FUNC_IN;
 
 	#ifdef _OPENMP
@@ -268,6 +271,165 @@ LIS_INT lis_matrix_shift_diagonal_dns(LIS_MATRIX A, LIS_SCALAR alpha)
 			A->value[i*n + i] += alpha;
 		}
 	}
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_axpy_dns"
+LIS_INT lis_matrix_axpy_dns(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)
+{
+	LIS_INT i,j,is,ie,n,np;
+	LIS_INT nprocs,my_rank;
+	
+	LIS_DEBUG_FUNC_IN;
+
+	n       = A->n;
+	np      = A->np;
+
+	#ifdef _OPENMP
+		nprocs = omp_get_max_threads();
+	#else
+		nprocs = 1;
+	#endif
+ 
+	#ifdef _OPENMP
+	#pragma omp parallel private(i,j,is,ie,my_rank)
+	#endif
+	{
+		#ifdef _OPENMP
+			my_rank = omp_get_thread_num();
+		#else
+			my_rank = 0;
+		#endif
+		LIS_GET_ISIE(my_rank,nprocs,n,is,ie);
+
+		for(j=0;j<np;j++)
+		{
+			for(i=is;i<ie;i++)
+			{
+				B->value[j*n + i] += alpha * A->value[j*n + i];
+			}
+		}
+	}
+
+	if( A->is_splited )
+	{
+		#ifdef _OPENMP
+		#pragma omp parallel for private(i)
+		#endif
+		for(i=0;i<n;i++)
+		{
+			B->D->value[i] += alpha * A->D->value[i];
+		}
+	}
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_xpay_dns"
+LIS_INT lis_matrix_xpay_dns(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)
+{
+	LIS_INT i,j,is,ie,n,np;
+	LIS_INT nprocs,my_rank;
+
+	LIS_DEBUG_FUNC_IN;
+
+	n       = A->n;
+	np      = A->np;
+
+	#ifdef _OPENMP
+		nprocs = omp_get_max_threads();
+	#else
+		nprocs = 1;
+	#endif
+ 
+	#ifdef _OPENMP
+	#pragma omp parallel private(i,j,is,ie,my_rank)
+	#endif
+	{
+		#ifdef _OPENMP
+			my_rank = omp_get_thread_num();
+		#else
+			my_rank = 0;
+		#endif
+		LIS_GET_ISIE(my_rank,nprocs,n,is,ie);
+
+		for(j=0;j<np;j++)
+		{
+			for(i=is;i<ie;i++)
+			{
+				B->value[j*n + i] = A->value[j*n + i] + alpha * B->value[j*n + i];
+			}
+		}
+	}
+
+	if( A->is_splited )
+	{
+		#ifdef _OPENMP
+		#pragma omp parallel for private(i)
+		#endif
+		for(i=0;i<n;i++)
+		{
+			B->D->value[i] = A->D->value[i] + alpha * B->D->value[i];
+		}
+	}
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_axpyz_dns"
+LIS_INT lis_matrix_axpyz_dns(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B, LIS_MATRIX C)
+{
+	LIS_INT i,j,is,ie,n,np;
+	LIS_INT nprocs,my_rank;
+
+	LIS_DEBUG_FUNC_IN;
+
+	n       = A->n;
+	np      = A->np;
+
+	#ifdef _OPENMP
+		nprocs = omp_get_max_threads();
+	#else
+		nprocs = 1;
+	#endif
+ 
+	#ifdef _OPENMP
+	#pragma omp parallel private(i,j,is,ie,my_rank)
+	#endif
+	{
+		#ifdef _OPENMP
+			my_rank = omp_get_thread_num();
+		#else
+			my_rank = 0;
+		#endif
+		LIS_GET_ISIE(my_rank,nprocs,n,is,ie);
+
+		for(j=0;j<np;j++)
+		{
+			for(i=is;i<ie;i++)
+			{
+				C->value[j*n + i] = alpha * A->value[j*n + i] + B->value[j*n + i];
+			}
+		}
+	}
+
+	if( A->is_splited )
+	{
+		#ifdef _OPENMP
+		#pragma omp parallel for private(i)
+		#endif
+		for(i=0;i<n;i++)
+		{
+			C->D->value[i] = alpha * A->D->value[i] + B->D->value[i];
+		}
+	}
+
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 }
