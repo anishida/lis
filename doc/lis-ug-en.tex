@@ -5401,6 +5401,86 @@ Copy the values of the matrix elements.
 \end{namelist}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{lis\_matrix\_axpy}
+\begin{screen}
+\verb|C       LIS_INT lis_matrix_axpy(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)|\\
+\verb|Fortran subroutine lis_matrix_axpy(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B,|\\
+\verb|         LIS_INTEGER ierr) |
+\end{screen}
+{\bf Description}\\
+\indent
+Calculate the sum of the matrices $B = \alpha A + B$.
+\\ \\
+\noindent
+{\bf Input}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt alpha] The scalar value
+\item[\tt A, B] The matrices
+\end{namelist}
+{\bf Output}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt B] The destination matrix
+\item[\tt ierr] The return code
+\end{namelist}
+\indent
+Matrices $A$, $B$ must be in the DNS format.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\subsubsection{lis\_matrix\_xpay}
+\begin{screen}
+\verb|C       LIS_INT lis_matrix_xpay(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)|\\
+\verb|Fortran subroutine lis_matrix_xpay(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B,|\\
+\verb|         LIS_INTEGER ierr) |
+\end{screen}
+{\bf Description}\\
+\indent
+Calculate the sum of the matrices $B = A + \alpha B$.
+\\ \\
+\noindent
+{\bf Input}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt alpha] The scalar value
+\item[\tt A, B] The matrices
+\end{namelist}
+{\bf Output}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt B] The destination matrix
+\item[\tt ierr] The return code
+\end{namelist}
+{\bf Note}\\
+\indent
+Matrices $A$, $B$ must be in the DNS format.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{lis\_matrix\_axpyz}
+\begin{screen}
+\verb|C       LIS_INT lis_matrix_axpyz(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B,|\\
+\verb|         LIS_MATRIX C)|\\
+\verb|Fortran subroutine lis_matrix_axpyz(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B,|\\
+\verb|         LIS_MATRIX C, LIS_INTEGER ierr) |
+\end{screen}
+{\bf Description}\\
+\indent
+Calculate the sum of the matrices $C = \alpha A + B$.
+\\ \\
+\noindent
+{\bf Input}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt alpha] The scalar value
+\item[\tt A, B] The matrices
+\end{namelist}
+{\bf Output}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt C] The destination matrix
+\item[\tt ierr] The return code
+\end{namelist}
+{\bf Note}\\
+\indent
+Matrices $A$, $B$, and $C$ must be in the DNS format.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
 \subsubsection{lis\_matrix\_scale}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR d,|\\
