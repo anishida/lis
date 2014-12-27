@@ -1,10 +1,11 @@
 # for all subdirectories
+*.la
+*.lo
 *.o
 *.orig
 *~
 \#*#
 Makefile
-Makefile.in
 
 # autotools stuff
 autom4te.cache/

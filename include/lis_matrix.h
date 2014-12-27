@@ -80,6 +80,12 @@ extern "C"
 	extern LIS_INT lis_matrix_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT flag);
 	extern LIS_INT lis_matrix_solvet(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT flag);
 	extern LIS_INT lis_matrix_copyDLU(LIS_MATRIX Ain, LIS_MATRIX_DIAG *D, LIS_MATRIX *L, LIS_MATRIX *U);
+	extern LIS_INT lis_matrix_axpy(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B);
+	extern LIS_INT lis_matrix_xpay(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B);
+	extern LIS_INT lis_matrix_axpyz(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B, LIS_MATRIX C);  
+	extern LIS_INT lis_matrix_axpy_dns(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B);
+	extern LIS_INT lis_matrix_xpay_dns(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B);
+	extern LIS_INT lis_matrix_axpyz_dns(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B, LIS_MATRIX C);  
         extern LIS_INT lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR alpha);
         extern LIS_INT lis_matrix_shift_diagonal_csr(LIS_MATRIX A, LIS_SCALAR alpha);
 	extern LIS_INT lis_matrix_shift_diagonal_csc(LIS_MATRIX A, LIS_SCALAR alpha);

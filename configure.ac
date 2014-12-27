@@ -1,6 +1,9 @@
 # Process this file with reconfigure.sh to update configure script.
 
-AC_INIT(lis, 1.5.41, devel@ssisc.org)
+
+# General Configurations
+
+AC_INIT(lis, 1.5.42, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -17,6 +20,9 @@ AC_ARG_VAR(MPIRUN,[command to execute MPI programs])
 AC_ARG_VAR(OMPFLAG,[OpenMP flags])
 AC_ARG_VAR(MPFLAG,[floating point precision flags])
 AC_ARG_VAR(TARGET,[system architecture])
+
+
+# Build Options
 
 AC_ARG_ENABLE(fortran, AC_HELP_STRING(--enable-fortran, [enable FORTRAN 77 compatible interfaces [[default=no]]]))
 AC_ARG_ENABLE(f90, AC_HELP_STRING(--enable-f90, [enable Fortran 90 compatible interface [[default=no]]]))
@@ -41,7 +47,7 @@ AC_ARG_WITH(library-suffix,
 AC_SUBST(LIBSUFFIX)
 
 
-# Checks for Targets
+# Configurations for Target Systems
 
 if test "$TARGET" != ""; then
 	case "$TARGET" in
@@ -311,7 +317,7 @@ fi
 enable_dependency_tracking="no"
 
 
-# Checks for C and Fortran Compilers
+# Configurations for C and Fortran Compilers
 
 ########## Check C Compilers ##########
 cflags_save="$CFLAGS"
@@ -651,7 +657,7 @@ if test "$enable_fortran" = "yes" || test "$enable_f90" = "yes" || test "$enable
 fi
 
 
-# Checks for Configuration Options
+# Configurations for Build Options
 
 ######### Enable Fortran Interface ##########
 if test "$enable_fortran" = "yes"; then
@@ -1031,7 +1037,7 @@ else
 fi
 
 
-# Checks for Environment-Dependent Data Sizes
+# Configurations for Environment-Dependent Data Sizes
 
 ########## Check Size of int ##########
 if test "$TARGET" = ""; then
@@ -1090,6 +1096,8 @@ else
 fi
 
 
+# Configurations for Autotools
+
 AC_DISABLE_SHARED
 AC_PROG_LIBTOOL
 AC_PROG_INSTALL
@@ -1117,26 +1125,21 @@ AC_SUBST(SIZEOF_VOID_P, $ac_cv_sizeof_void_p)
 AC_SUBST(FCLDFLAGS)
 
 
-# Checks for Header Files and Libraries
+# Configurations for Header Files
 
-# Checks for Header Files
 AC_HEADER_STDC
 AC_CHECK_HEADERS([malloc.h stdlib.h string.h sys/time.h])
 
-# Checks for Type Definitions, Structures, and Compiler Characteristics
+
+# Configurations for Compiler Characteristics and Type Definitions
+
 AC_C_CONST
 AC_TYPE_SIZE_T
-#AC_HEADER_TIME
 
-# Checks for Library Functions
-#AC_FUNC_MALLOC
-#AC_FUNC_VPRINTF
-#AC_CHECK_FUNCS([clock_gettime floor gettimeofday memset sqrt])
+
+# Configurations for Library Functions
 
 LIBS="-lm $LIBS"
-#if test -z "`echo $LIBS | grep '\-lm'`"; then
-#  LIBS="-lm $LIBS"
-#fi
 
 
 # Output

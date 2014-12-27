@@ -42,7 +42,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis ユーザガイド}\\
-バージョン 1.5.41
+バージョン 1.5.42
 \end{flushleft}
 
 \vspace*{2cm}
@@ -5312,6 +5312,84 @@ COO    &  ○  &  ○  &  ○  & CSR  & CSR & CSR & CSR & CSC & C
 \end{namelist}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{lis\_matrix\_axpy}
+\begin{screen}
+\verb|C       LIS_INT lis_matrix_axpy(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)|\\
+\verb|Fortran subroutine lis_matrix_axpy(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B,|\\
+\verb|         LIS_INTEGER ierr) |
+\end{screen}
+{\bf 機能}\\
+\indent
+行列和$B = \alpha A + B$を計算する. 
+\\ \\
+\noindent
+{\bf 入力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt alpha] スカラ値
+\item[\tt A, B] 行列
+\end{namelist}
+{\bf 出力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt B] $\alpha A + B$
+\end{namelist}
+{\bf Note}\\
+\indent
+行列$A, B$はDNS形式でなければならない．
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\subsubsection{lis\_matrix\_xpay}
+\begin{screen}
+\verb|C       LIS_INT lis_matrix_xpay(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)|\\
+\verb|Fortran subroutine lis_matrix_xpay(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B,|\\
+\verb|         LIS_INTEGER ierr) |
+\end{screen}
+{\bf 機能}\\
+\indent
+行列和$B = A + \alpha B$を計算する. 
+\\ \\
+\noindent
+{\bf 入力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt alpha] スカラ値
+\item[\tt A, B] 行列
+\end{namelist}
+{\bf 出力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt B] $A + \alpha B$
+\end{namelist}
+{\bf Note}\\
+\indent
+行列$A, B$はDNS形式でなければならない．
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{lis\_matrix\_axpyz}
+\begin{screen}
+\verb|C       LIS_INT lis_matrix_axpyz(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B,|\\
+\verb|         LIS_MATRIX C)|\\
+\verb|Fortran subroutine lis_matrix_axpyz(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B,|\\
+\verb|         LIS_MATRIX C, LIS_INTEGER ierr) |
+\end{screen}
+{\bf 機能}\\
+\indent
+行列和$C = A + \alpha B$を計算する. 
+\\ \\
+\noindent
+{\bf 入力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt alpha] スカラ値
+\item[\tt A, B] 行列
+\end{namelist}
+{\bf 出力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt C] $\alpha A + B$
+\end{namelist}
+{\bf Note}\\
+\indent
+行列$A, B, C$はDNS形式でなければならない．
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
 \subsubsection{lis\_matrix\_scale}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR d,|\\
