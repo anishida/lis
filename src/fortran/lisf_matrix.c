@@ -535,6 +535,61 @@ void lis_matrix_copy_f(LIS_MATRIX_F *Ain, LIS_MATRIX_F *Aout, LIS_INT *ierr)
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_matrix_axpy_f"
+void lis_matrix_axpy_f(LIS_SCALAR_F *alpha, LIS_MATRIX_F *A, LIS_MATRIX_F *B, LIS_INT *ierr)
+{
+	LIS_MATRIX AA,BB;
+	LIS_SCALAR ss;
+
+	LIS_DEBUG_FUNC_IN;
+
+	ss      = (LIS_SCALAR)LIS_V2P(alpha);
+	AA      = (LIS_MATRIX)LIS_V2P(A);
+	BB      = (LIS_MATRIX)LIS_V2P(B);
+	*ierr   = lis_matrix_axpy(ss,AA,BB);
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_xpay_f"
+void lis_matrix_xpay_f(LIS_SCALAR_F *alpha, LIS_MATRIX_F *A, LIS_MATRIX_F *B, LIS_INT *ierr)
+{
+	LIS_MATRIX AA,BB;
+	LIS_SCALAR ss;
+
+	LIS_DEBUG_FUNC_IN;
+
+	ss      = (LIS_SCALAR)LIS_V2P(alpha);
+	AA      = (LIS_MATRIX)LIS_V2P(A);
+	BB      = (LIS_MATRIX)LIS_V2P(B);
+	*ierr   = lis_matrix_xpay(ss,AA,BB);
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_axpyz_f"
+void lis_matrix_axpyz_f(LIS_SCALAR_F *alpha, LIS_MATRIX_F *A, LIS_MATRIX_F *B, LIS_MATRIX_F *C, LIS_INT *ierr)
+{
+	LIS_MATRIX AA,BB,CC;
+	LIS_SCALAR ss;
+
+	LIS_DEBUG_FUNC_IN;
+
+	ss      = (LIS_SCALAR)LIS_V2P(alpha);
+	AA      = (LIS_MATRIX)LIS_V2P(A);
+	BB      = (LIS_MATRIX)LIS_V2P(B);
+	CC      = (LIS_MATRIX)LIS_V2P(C);	
+	*ierr   = lis_matrix_axpyz(ss,AA,BB,CC);
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_matrix_get_diagonal_f"
 void lis_matrix_get_diagonal_f(LIS_MATRIX_F *A, LIS_VECTOR_F *d, LIS_INT *ierr)
 {
