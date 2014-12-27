@@ -689,10 +689,10 @@ extern "C"
 	extern LIS_INT lis_vector_is_null(LIS_VECTOR v);
 	extern LIS_INT lis_vector_swap(LIS_VECTOR vsrc, LIS_VECTOR vdst);
 	extern LIS_INT lis_vector_copy(LIS_VECTOR vsrc, LIS_VECTOR vdst);
-	extern LIS_INT lis_vector_scale(LIS_SCALAR alpha, LIS_VECTOR vx);
 	extern LIS_INT lis_vector_axpy(LIS_SCALAR alpha, LIS_VECTOR vx, LIS_VECTOR vy);
 	extern LIS_INT lis_vector_xpay(LIS_VECTOR vx, LIS_SCALAR alpha, LIS_VECTOR vy);
 	extern LIS_INT lis_vector_axpyz(LIS_SCALAR alpha, LIS_VECTOR vx, LIS_VECTOR vy, LIS_VECTOR vz);
+	extern LIS_INT lis_vector_scale(LIS_SCALAR alpha, LIS_VECTOR vx);
 	extern LIS_INT lis_vector_pmul(LIS_VECTOR vx,LIS_VECTOR vy,LIS_VECTOR vz);
 	extern LIS_INT lis_vector_pdiv(LIS_VECTOR vx,LIS_VECTOR vy,LIS_VECTOR vz);
 	extern LIS_INT lis_vector_set_all(LIS_SCALAR alpha, LIS_VECTOR vx);

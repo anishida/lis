@@ -4882,29 +4882,6 @@ DNS形式の配列を行列$A$に関連付ける.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
-\subsubsection{lis\_vector\_scale}
-\begin{screen}
-\verb|C       LIS_INT lis_vector_scale(LIS_SCALAR alpha, LIS_VECTOR x)|\\
-\verb|Fortran subroutine lis_vector_scale(LIS_SCALAR alpha, LIS_VECTOR x,|\\
-\verb|         LIS_INTEGER ierr)|
-\end{screen}
-{\bf 機能}\\
-\indent
-ベクトル$x$の要素を$\alpha$倍する. 
-\\ \\
-\noindent
-{\bf 入力}
-\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt alpha] スカラ値
-\item[\tt x] ベクトル
-\end{namelist}
-{\bf 出力}
-\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt x] $\alpha x$ (ベクトル$x$の値は上書きされる) 
-\item[\tt ierr] リターンコード
-\end{namelist}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_axpy}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_axpy(LIS_SCALAR alpha, LIS_VECTOR x, LIS_VECTOR y)|
@@ -4928,7 +4905,6 @@ DNS形式の配列を行列$A$に関連付ける.
 \end{namelist}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\newpage
 \subsubsection{lis\_vector\_xpay}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_xpay(LIS_VECTOR x, LIS_SCALAR alpha, LIS_VECTOR y)|
@@ -4952,6 +4928,7 @@ DNS形式の配列を行列$A$に関連付ける.
 \end{namelist}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
 \subsubsection{lis\_vector\_axpyz}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_axpyz(LIS_SCALAR alpha, LIS_VECTOR x, LIS_VECTOR y,|\\
@@ -4972,6 +4949,29 @@ DNS形式の配列を行列$A$に関連付ける.
 {\bf 出力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt z] $x + \alpha y$
+\item[\tt ierr] リターンコード
+\end{namelist}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{lis\_vector\_scale}
+\begin{screen}
+\verb|C       LIS_INT lis_vector_scale(LIS_SCALAR alpha, LIS_VECTOR x)|\\
+\verb|Fortran subroutine lis_vector_scale(LIS_SCALAR alpha, LIS_VECTOR x,|\\
+\verb|         LIS_INTEGER ierr)|
+\end{screen}
+{\bf 機能}\\
+\indent
+ベクトル$x$の要素を$\alpha$倍する. 
+\\ \\
+\noindent
+{\bf 入力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt alpha] スカラ値
+\item[\tt x] ベクトル
+\end{namelist}
+{\bf 出力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt x] $\alpha x$ (ベクトル$x$の値は上書きされる) 
 \item[\tt ierr] リターンコード
 \end{namelist}
 
