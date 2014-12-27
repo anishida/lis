@@ -6616,30 +6616,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
-\subsubsection{lis\_array\_scale}
-\begin{screen}
-\verb|C       LIS_INT lis_array_scale(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR x[])|\\
-\verb|Fortran subroutine lis_array_scale(LIS_INTEGER n, LIS_SCALAR alpha, LIS_SCALAR x(),|\\
-\verb|         LIS_INTEGER ierr)|
-\end{screen}
-{\bf $B5!G=(B}\\
-\indent
-$B%Y%/%H%k(B$x$$B$NMWAG$r(B$\alpha$$BG\$9$k(B. 
-\\ \\
-\noindent
-{\bf $BF~NO(B}
-\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt n] $B%Y%/%H%k$N<!?t(B  
-\item[\tt alpha] $B%9%+%iCM(B
-\item[\tt x] $B%Y%/%H%k(B$x$$B$r3JG<$9$kG[Ns(B
-\end{namelist}
-{\bf $B=PNO(B}
-\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt x] $\alpha x$ ($B%Y%/%H%k(B$x$$B$NCM$O>e=q$-$5$l$k(B) 
-\item[\tt ierr] $B%j%?!<%s%3!<%I(B
-\end{namelist}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_axpy}
 \begin{screen}
 \verb|C       LIS_INT lis_array_axpy(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR x[],|\\
@@ -6665,7 +6641,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \end{namelist}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\newpage
 \subsubsection{lis\_array\_xpay}
 \begin{screen}
 \verb|C       LIS_INT lis_array_xpay(LIS_INT n, LIS_SCALAR x[], LIS_SCALAR alpha,|\\
@@ -6691,6 +6666,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \end{namelist}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
 \subsubsection{lis\_array\_axpyz}
 \begin{screen}
 \verb|C       LIS_INT lis_array_axpyz(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR x[],|\\
@@ -6712,6 +6688,30 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 {\bf $B=PNO(B}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt z] $x + \alpha y$
+\item[\tt ierr] $B%j%?!<%s%3!<%I(B
+\end{namelist}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{lis\_array\_scale}
+\begin{screen}
+\verb|C       LIS_INT lis_array_scale(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR x[])|\\
+\verb|Fortran subroutine lis_array_scale(LIS_INTEGER n, LIS_SCALAR alpha, LIS_SCALAR x(),|\\
+\verb|         LIS_INTEGER ierr)|
+\end{screen}
+{\bf $B5!G=(B}\\
+\indent
+$B%Y%/%H%k(B$x$$B$NMWAG$r(B$\alpha$$BG\$9$k(B. 
+\\ \\
+\noindent
+{\bf $BF~NO(B}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt n] $B%Y%/%H%k$N<!?t(B  
+\item[\tt alpha] $B%9%+%iCM(B
+\item[\tt x] $B%Y%/%H%k(B$x$$B$r3JG<$9$kG[Ns(B
+\end{namelist}
+{\bf $B=PNO(B}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt x] $\alpha x$ ($B%Y%/%H%k(B$x$$B$NCM$O>e=q$-$5$l$k(B) 
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
