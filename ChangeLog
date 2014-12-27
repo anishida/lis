@@ -1,3 +1,7 @@
+Version 1.5.42  December 27, 2014
+
+  - Added functions for matrix-matrix additions.
+
 Version 1.5.41  December 23, 2014
 
   - Fixed bug in win/Makefile.in.
