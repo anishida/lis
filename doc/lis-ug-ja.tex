@@ -42,7 +42,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis ユーザガイド}\\
-バージョン 1.5.43
+バージョン 1.5.44
 \end{flushleft}
 
 \vspace*{2cm}
@@ -5330,7 +5330,8 @@ COO    &  ○  &  ○  &  ○  & CSR  & CSR & CSR & CSR & CSC & C
 \end{namelist}
 {\bf 出力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt B] $\alpha A + B$
+\item[\tt B] $\alpha A + B$ (行列$B$の値は上書きされる) 
+\item[\tt ierr] リターンコード
 \end{namelist}
 {\bf 注釈}\\
 \indent
@@ -5356,7 +5357,8 @@ COO    &  ○  &  ○  &  ○  & CSR  & CSR & CSR & CSR & CSC & C
 \end{namelist}
 {\bf 出力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt B] $A + \alpha B$
+\item[\tt B] $A + \alpha B$ (行列$B$の値は上書きされる) 
+\item[\tt ierr] リターンコード
 \end{namelist}
 {\bf 注釈}\\
 \indent
@@ -5383,6 +5385,7 @@ COO    &  ○  &  ○  &  ○  & CSR  & CSR & CSR & CSR & CSC & C
 {\bf 出力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt C] $\alpha A + B$
+\item[\tt ierr] リターンコード
 \end{namelist}
 {\bf 注釈}\\
 \indent

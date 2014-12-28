@@ -313,7 +313,7 @@ LIS_INT lis_matrix_axpy_dns(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)
 		}
 	}
 
-	if( A->is_splited )
+	if( A->is_splited && B->is_splited )
 	{
 		#ifdef _OPENMP
 		#pragma omp parallel for private(i)
@@ -322,6 +322,11 @@ LIS_INT lis_matrix_axpy_dns(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)
 		{
 			B->D->value[i] += alpha * A->D->value[i];
 		}
+	}
+	else if( A->is_splited || B->is_splited )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"either A or B is not splited\n");
+		return LIS_ERR_ILL_ARG;
 	}
 
 	LIS_DEBUG_FUNC_OUT;
@@ -366,7 +371,7 @@ LIS_INT lis_matrix_xpay_dns(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)
 		}
 	}
 
-	if( A->is_splited )
+	if( A->is_splited && B->is_splited )
 	{
 		#ifdef _OPENMP
 		#pragma omp parallel for private(i)
@@ -375,6 +380,11 @@ LIS_INT lis_matrix_xpay_dns(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)
 		{
 			B->D->value[i] = A->D->value[i] + alpha * B->D->value[i];
 		}
+	}
+	else if( A->is_splited || B->is_splited )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"either A or B is not splited\n");
+		return LIS_ERR_ILL_ARG;
 	}
 
 	LIS_DEBUG_FUNC_OUT;
@@ -419,7 +429,7 @@ LIS_INT lis_matrix_axpyz_dns(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B, LIS_M
 		}
 	}
 
-	if( A->is_splited )
+	if( A->is_splited && B->is_splited && C->is_splited )
 	{
 		#ifdef _OPENMP
 		#pragma omp parallel for private(i)
@@ -428,6 +438,11 @@ LIS_INT lis_matrix_axpyz_dns(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B, LIS_M
 		{
 			C->D->value[i] = alpha * A->D->value[i] + B->D->value[i];
 		}
+	}
+	else if( A->is_splited || B->is_splited || C->is_splited )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"either A, B or C is not splited\n");
+		return LIS_ERR_ILL_ARG;
 	}
 
 	LIS_DEBUG_FUNC_OUT;
