@@ -65,8 +65,6 @@
  * lis_matrix_solvet
  ************************************************/
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_set_blocksize"
 LIS_INT lis_matrix_set_blocksize(LIS_MATRIX A, LIS_INT bnr, LIS_INT bnc, LIS_INT row[], LIS_INT col[])
 {
 	LIS_INT i,n;
@@ -122,8 +120,6 @@ LIS_INT lis_matrix_set_blocksize(LIS_MATRIX A, LIS_INT bnr, LIS_INT bnc, LIS_INT
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_convert"
 LIS_INT lis_matrix_convert(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT err;
@@ -320,8 +316,6 @@ LIS_INT lis_matrix_convert(LIS_MATRIX Ain, LIS_MATRIX Aout)
 	return err;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_convert_self"
 LIS_INT lis_matrix_convert_self(LIS_SOLVER solver)
 {
 	LIS_INT err;
@@ -366,8 +360,6 @@ LIS_INT lis_matrix_convert_self(LIS_SOLVER solver)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_copy"
 LIS_INT lis_matrix_copy(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT err;
@@ -423,8 +415,6 @@ LIS_INT lis_matrix_copy(LIS_MATRIX Ain, LIS_MATRIX Aout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_copyDLU"
 LIS_INT lis_matrix_copyDLU(LIS_MATRIX Ain, LIS_MATRIX_DIAG *D, LIS_MATRIX *L, LIS_MATRIX *U)
 {
 	LIS_INT err;
@@ -483,8 +473,6 @@ LIS_INT lis_matrix_copyDLU(LIS_MATRIX Ain, LIS_MATRIX_DIAG *D, LIS_MATRIX *L, LI
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_axpy"
 LIS_INT lis_matrix_axpy(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)
 {
 	LIS_INT err;
@@ -512,8 +500,6 @@ LIS_INT lis_matrix_axpy(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_xpay"
 LIS_INT lis_matrix_xpay(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)
 {
 	LIS_INT err;
@@ -541,8 +527,6 @@ LIS_INT lis_matrix_xpay(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_axpyz"
 LIS_INT lis_matrix_axpyz(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B, LIS_MATRIX C)
 {
 	LIS_INT err;
@@ -573,8 +557,6 @@ LIS_INT lis_matrix_axpyz(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B, LIS_MATRI
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_scale"
 LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR D, LIS_INT action)
 {
 	LIS_INT i,n,np;
@@ -712,9 +694,7 @@ LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR D, LIS_INT actio
 	B->is_scaled = LIS_TRUE;
 	return LIS_SUCCESS;
 }
- 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_get_diagonal"
+
 LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR D)
 {
 	LIS_SCALAR *d;
@@ -766,8 +746,6 @@ LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR D)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_shift_diagonal"
 LIS_INT lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR alpha)
 {
 
@@ -818,8 +796,6 @@ LIS_INT lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR alpha)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_split"
 LIS_INT lis_matrix_split(LIS_MATRIX A)
 {
 	LIS_INT err;
@@ -885,8 +861,6 @@ LIS_INT lis_matrix_split(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_merge"
 LIS_INT lis_matrix_merge(LIS_MATRIX A)
 {
 	LIS_INT err;
@@ -951,8 +925,6 @@ LIS_INT lis_matrix_merge(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_solve"
 LIS_INT lis_matrix_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT flag)
 {
 	LIS_DEBUG_FUNC_IN;
@@ -1001,8 +973,6 @@ LIS_INT lis_matrix_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT flag)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_solvet"
 LIS_INT lis_matrix_solvet(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT flag)
 {
 	LIS_DEBUG_FUNC_IN;

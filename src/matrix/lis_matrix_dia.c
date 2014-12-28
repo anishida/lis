@@ -73,8 +73,6 @@
  * lis_matrix_solvet           | xxx | o   |
  ************************************************/
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_set_dia"
 LIS_INT lis_matrix_set_dia(LIS_INT nnd, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A)
 {
 	LIS_INT err;
@@ -102,8 +100,6 @@ LIS_INT lis_matrix_set_dia(LIS_INT nnd, LIS_INT *index, LIS_SCALAR *value, LIS_M
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_setDLU_dia"
 LIS_INT lis_matrix_setDLU_dia(LIS_INT lnnd, LIS_INT unnd, LIS_SCALAR *diag, LIS_INT *lindex, LIS_SCALAR *lvalue, LIS_INT *uindex, LIS_SCALAR *uvalue, LIS_MATRIX A)
 {
 	LIS_INT	err;
@@ -159,8 +155,6 @@ LIS_INT lis_matrix_setDLU_dia(LIS_INT lnnd, LIS_INT unnd, LIS_SCALAR *diag, LIS_
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_malloc_dia"
 LIS_INT lis_matrix_malloc_dia(LIS_INT n, LIS_INT nnd, LIS_INT **index, LIS_SCALAR **value)
 {
 	LIS_DEBUG_FUNC_IN;
@@ -186,9 +180,6 @@ LIS_INT lis_matrix_malloc_dia(LIS_INT n, LIS_INT nnd, LIS_INT **index, LIS_SCALA
 	return LIS_SUCCESS;
 }
 
-
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_elements_copy_dia"
 LIS_INT lis_matrix_elements_copy_dia(LIS_INT n, LIS_INT nnd, LIS_INT *index, LIS_SCALAR *value, LIS_INT *o_index, LIS_SCALAR *o_value)
 {
 	LIS_INT is,ie;
@@ -221,8 +212,6 @@ LIS_INT lis_matrix_elements_copy_dia(LIS_INT n, LIS_INT nnd, LIS_INT *index, LIS
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_copy_dia"
 LIS_INT lis_matrix_copy_dia(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT err;
@@ -310,8 +299,6 @@ LIS_INT lis_matrix_copy_dia(LIS_MATRIX Ain, LIS_MATRIX Aout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_get_diagonal_dia"
 LIS_INT lis_matrix_get_diagonal_dia(LIS_MATRIX A, LIS_SCALAR d[])
 {
 	LIS_INT i,j;
@@ -363,8 +350,6 @@ LIS_INT lis_matrix_get_diagonal_dia(LIS_MATRIX A, LIS_SCALAR d[])
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_shift_diagonal_dia"
 LIS_INT lis_matrix_shift_diagonal_dia(LIS_MATRIX A, LIS_SCALAR alpha)
 {
 	LIS_INT i,j,k;
@@ -422,8 +407,6 @@ LIS_INT lis_matrix_shift_diagonal_dia(LIS_MATRIX A, LIS_SCALAR alpha)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_scale_dia"
 LIS_INT lis_matrix_scale_dia(LIS_MATRIX A, LIS_SCALAR d[])
 {
 	LIS_INT i,j,js,je,jj;
@@ -566,8 +549,6 @@ LIS_INT lis_matrix_scale_dia(LIS_MATRIX A, LIS_SCALAR d[])
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_scale_symm_dia"
 LIS_INT lis_matrix_scale_symm_dia(LIS_MATRIX A, LIS_SCALAR d[])
 {
 	LIS_INT i,j,js,je,jj;
@@ -710,8 +691,6 @@ LIS_INT lis_matrix_scale_symm_dia(LIS_MATRIX A, LIS_SCALAR d[])
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_normf_dia"
 LIS_INT lis_matrix_normf_dia(LIS_MATRIX A, LIS_SCALAR *nrm)
 {
 	LIS_INT i,j;
@@ -759,8 +738,6 @@ LIS_INT lis_matrix_normf_dia(LIS_MATRIX A, LIS_SCALAR *nrm)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_transpose_dia"
 LIS_INT lis_matrix_transpose_dia(LIS_MATRIX Ain, LIS_MATRIX *Aout)
 {
 
@@ -774,8 +751,6 @@ LIS_INT lis_matrix_transpose_dia(LIS_MATRIX Ain, LIS_MATRIX *Aout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_split_dia"
 LIS_INT lis_matrix_split_dia(LIS_MATRIX A)
 {
 	LIS_INT i,j,n,nnd;
@@ -921,9 +896,6 @@ LIS_INT lis_matrix_split_dia(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_merge_dia"
 LIS_INT lis_matrix_merge_dia(LIS_MATRIX A)
 {
         LIS_INT i,j,k,n,is;
@@ -1019,8 +991,6 @@ LIS_INT lis_matrix_merge_dia(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_sort_dia"
 LIS_INT lis_matrix_sort_dia(LIS_MATRIX A)
 {
 	LIS_INT i,n;
@@ -1058,8 +1028,6 @@ LIS_INT lis_matrix_sort_dia(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_solve_dia"
 LIS_INT lis_matrix_solve_dia(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag)
 {
 	LIS_INT i,j,n;
@@ -1122,8 +1090,6 @@ LIS_INT lis_matrix_solve_dia(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT f
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_solvet_dia"
 LIS_INT lis_matrix_solvet_dia(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag)
 {
 	LIS_INT i,j,n;
@@ -1183,8 +1149,6 @@ LIS_INT lis_matrix_solvet_dia(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_convert_csr2dia"
 LIS_INT lis_matrix_convert_csr2dia(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT i,j,jj,k;
@@ -1300,8 +1264,6 @@ LIS_INT lis_matrix_convert_csr2dia(LIS_MATRIX Ain, LIS_MATRIX Aout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_convert_dia2csr"
 LIS_INT lis_matrix_convert_dia2csr(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT i,j,jj,k,l;

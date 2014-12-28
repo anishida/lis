@@ -73,8 +73,6 @@
  * lis_matrix_solvet           | xxx | o   |
  ************************************************/
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_set_coo"
 LIS_INT lis_matrix_set_coo(LIS_INT nnz, LIS_INT *row, LIS_INT *col, LIS_SCALAR *value, LIS_MATRIX A)
 {
 	LIS_INT err;
@@ -103,8 +101,6 @@ LIS_INT lis_matrix_set_coo(LIS_INT nnz, LIS_INT *row, LIS_INT *col, LIS_SCALAR *
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_setDLU_coo"
 LIS_INT lis_matrix_setDLU_coo(LIS_INT lnnz, LIS_INT unnz, LIS_SCALAR *diag, LIS_INT *lrow, LIS_INT *lcol, LIS_SCALAR *lvalue, LIS_INT *urow, LIS_INT *ucol, LIS_SCALAR *uvalue, LIS_MATRIX A)
 {
 	LIS_INT	err;
@@ -162,8 +158,6 @@ LIS_INT lis_matrix_setDLU_coo(LIS_INT lnnz, LIS_INT unnz, LIS_SCALAR *diag, LIS_
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_malloc_coo"
 LIS_INT lis_matrix_malloc_coo(LIS_INT nnz, LIS_INT **row, LIS_INT **col, LIS_SCALAR **value)
 {
 	LIS_DEBUG_FUNC_IN;
@@ -197,9 +191,6 @@ LIS_INT lis_matrix_malloc_coo(LIS_INT nnz, LIS_INT **row, LIS_INT **col, LIS_SCA
 	return LIS_SUCCESS;
 }
 
-
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_elements_copy_coo"
 LIS_INT lis_matrix_elements_copy_coo(LIS_INT nnz, LIS_INT *row, LIS_INT *col, LIS_SCALAR *value, LIS_INT *o_row, LIS_INT *o_col, LIS_SCALAR *o_value)
 {
 	LIS_INT	i;
@@ -221,8 +212,6 @@ LIS_INT lis_matrix_elements_copy_coo(LIS_INT nnz, LIS_INT *row, LIS_INT *col, LI
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_copy_coo"
 LIS_INT lis_matrix_copy_coo(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT err;
@@ -314,8 +303,6 @@ LIS_INT lis_matrix_copy_coo(LIS_MATRIX Ain, LIS_MATRIX Aout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_get_diagonal_coo"
 LIS_INT lis_matrix_get_diagonal_coo(LIS_MATRIX A, LIS_SCALAR d[])
 {
 	LIS_INT i;
@@ -349,8 +336,6 @@ LIS_INT lis_matrix_get_diagonal_coo(LIS_MATRIX A, LIS_SCALAR d[])
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_shift_diagonal_coo"
 LIS_INT lis_matrix_shift_diagonal_coo(LIS_MATRIX A, LIS_SCALAR alpha)
 {
 	LIS_INT i;
@@ -384,8 +369,6 @@ LIS_INT lis_matrix_shift_diagonal_coo(LIS_MATRIX A, LIS_SCALAR alpha)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_scale_coo"
 LIS_INT lis_matrix_scale_coo(LIS_MATRIX A, LIS_SCALAR d[])
 {
 	LIS_INT i,j;
@@ -421,8 +404,6 @@ LIS_INT lis_matrix_scale_coo(LIS_MATRIX A, LIS_SCALAR d[])
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_scale_symm_coo"
 LIS_INT lis_matrix_scale_symm_coo(LIS_MATRIX A, LIS_SCALAR d[])
 {
 	LIS_INT i,j,k;
@@ -461,8 +442,6 @@ LIS_INT lis_matrix_scale_symm_coo(LIS_MATRIX A, LIS_SCALAR d[])
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_normf_coo"
 LIS_INT lis_matrix_normf_coo(LIS_MATRIX A, LIS_SCALAR *nrm)
 {
 	LIS_INT i,j;
@@ -510,8 +489,6 @@ LIS_INT lis_matrix_normf_coo(LIS_MATRIX A, LIS_SCALAR *nrm)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_transpose_coo"
 LIS_INT lis_matrix_transpose_coo(LIS_MATRIX Ain, LIS_MATRIX *Aout)
 {
 
@@ -525,8 +502,6 @@ LIS_INT lis_matrix_transpose_coo(LIS_MATRIX Ain, LIS_MATRIX *Aout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_split_coo"
 LIS_INT lis_matrix_split_coo(LIS_MATRIX A)
 {
 	LIS_INT i,nnz;
@@ -622,9 +597,6 @@ LIS_INT lis_matrix_split_coo(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_merge_coo"
 LIS_INT lis_matrix_merge_coo(LIS_MATRIX A)
 {
 	LIS_INT i;
@@ -681,8 +653,6 @@ LIS_INT lis_matrix_merge_coo(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_sort_coo"
 LIS_INT lis_matrix_sort_coo(LIS_MATRIX A)
 {
 	LIS_INT i,n;
@@ -720,9 +690,6 @@ LIS_INT lis_matrix_sort_coo(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_convert_csr2coo"
 LIS_INT lis_matrix_convert_csr2coo(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT i,j,k;
@@ -776,8 +743,6 @@ LIS_INT lis_matrix_convert_csr2coo(LIS_MATRIX Ain, LIS_MATRIX Aout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_convert_coo2csr"
 LIS_INT lis_matrix_convert_coo2csr(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT i,j;

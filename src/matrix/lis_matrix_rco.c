@@ -53,8 +53,6 @@
  * lis_matrix_realloc
  ************************************************/
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_create_rco"
 LIS_INT lis_matrix_create_rco(LIS_INT local_n, LIS_INT global_n, LIS_Comm comm, LIS_INT annz, LIS_INT *nnz, LIS_MATRIX *Amat)
 {
 	LIS_INT nprocs,my_rank;
@@ -141,8 +139,6 @@ LIS_INT lis_matrix_create_rco(LIS_INT local_n, LIS_INT global_n, LIS_Comm comm, 
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_malloc_rco"
 LIS_INT lis_matrix_malloc_rco(LIS_INT n, LIS_INT nnz[], LIS_INT **row, LIS_INT ***index, LIS_SCALAR ***value)
 {
 	LIS_INT	i,j;
@@ -218,8 +214,6 @@ LIS_INT lis_matrix_malloc_rco(LIS_INT n, LIS_INT nnz[], LIS_INT **row, LIS_INT *
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_realloc_rco"
 LIS_INT lis_matrix_realloc_rco(LIS_INT row, LIS_INT nnz, LIS_INT ***index, LIS_SCALAR ***value)
 {
 	LIS_INT **w_index;
@@ -249,8 +243,6 @@ LIS_INT lis_matrix_realloc_rco(LIS_INT row, LIS_INT nnz, LIS_INT ***index, LIS_S
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_convert_rco2csr"
 LIS_INT lis_matrix_convert_rco2csr(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT i,j,k,n,nnz,err;
@@ -320,8 +312,6 @@ LIS_INT lis_matrix_convert_rco2csr(LIS_MATRIX Ain, LIS_MATRIX Aout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_convert_rco2bsr"
 LIS_INT lis_matrix_convert_rco2bsr(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT i,j,k,n,gn,nnz,bnnz,nr,nc,bnr,bnc,err;
@@ -484,8 +474,6 @@ LIS_INT lis_matrix_convert_rco2bsr(LIS_MATRIX Ain, LIS_MATRIX Aout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_convert_rco2csc"
 LIS_INT lis_matrix_convert_rco2csc(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT i,j,k,l,n,nnz,err;

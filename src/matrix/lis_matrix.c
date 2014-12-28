@@ -66,8 +66,6 @@
  * lis_matrix_set_option
  ************************************************/
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_init"
 LIS_INT lis_matrix_init(LIS_MATRIX *Amat)
 {
 
@@ -88,8 +86,6 @@ LIS_INT lis_matrix_init(LIS_MATRIX *Amat)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_check"
 LIS_INT lis_matrix_check(LIS_MATRIX A, LIS_INT level)
 {
 	LIS_DEBUG_FUNC_IN;
@@ -188,9 +184,6 @@ LIS_INT lis_matrix_check(LIS_MATRIX A, LIS_INT level)
 	return LIS_SUCCESS;
 }
 
-
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_create"
 LIS_INT lis_matrix_create(LIS_Comm comm, LIS_MATRIX *Amat)
 {
 	LIS_INT nprocs,my_rank;
@@ -225,8 +218,6 @@ LIS_INT lis_matrix_create(LIS_Comm comm, LIS_MATRIX *Amat)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_set_size"
 LIS_INT lis_matrix_set_size(LIS_MATRIX Amat, LIS_INT local_n, LIS_INT global_n)
 {
 	LIS_INT nprocs,my_rank;
@@ -283,8 +274,6 @@ LIS_INT lis_matrix_set_size(LIS_MATRIX Amat, LIS_INT local_n, LIS_INT global_n)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_LU_create"
 LIS_INT lis_matrix_LU_create(LIS_MATRIX A)
 {
 	LIS_MATRIX_CORE		L,U;
@@ -315,8 +304,6 @@ LIS_INT lis_matrix_LU_create(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_LU_destroy"
 LIS_INT lis_matrix_LU_destroy(LIS_MATRIX_CORE Amat)
 {
 	LIS_DEBUG_FUNC_IN;
@@ -338,8 +325,6 @@ LIS_INT lis_matrix_LU_destroy(LIS_MATRIX_CORE Amat)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_DLU_destroy"
 LIS_INT lis_matrix_DLU_destroy(LIS_MATRIX Amat)
 {
 	LIS_DEBUG_FUNC_IN;
@@ -358,8 +343,6 @@ LIS_INT lis_matrix_DLU_destroy(LIS_MATRIX Amat)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_storage_destroy"
 LIS_INT lis_matrix_storage_destroy(LIS_MATRIX Amat)
 {
 
@@ -415,8 +398,6 @@ LIS_INT lis_matrix_storage_destroy(LIS_MATRIX Amat)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_destroy"
 LIS_INT lis_matrix_destroy(LIS_MATRIX Amat)
 {
 	LIS_DEBUG_FUNC_IN;
@@ -436,8 +417,6 @@ LIS_INT lis_matrix_destroy(LIS_MATRIX Amat)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_duplicate"
 LIS_INT lis_matrix_duplicate(LIS_MATRIX Ain, LIS_MATRIX *Aout)
 {
 	LIS_INT err;
@@ -520,8 +499,6 @@ LIS_INT lis_matrix_duplicate(LIS_MATRIX Ain, LIS_MATRIX *Aout)
 #endif
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_copy_struct"
 LIS_INT lis_matrix_copy_struct(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_DEBUG_FUNC_IN;
@@ -532,8 +509,6 @@ LIS_INT lis_matrix_copy_struct(LIS_MATRIX Ain, LIS_MATRIX Aout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_get_range"
 LIS_INT lis_matrix_get_range(LIS_MATRIX A, LIS_INT *is, LIS_INT *ie)
 {
 	LIS_INT err;
@@ -550,8 +525,6 @@ LIS_INT lis_matrix_get_range(LIS_MATRIX A, LIS_INT *is, LIS_INT *ie)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_get_size"
 LIS_INT lis_matrix_get_size(LIS_MATRIX A, LIS_INT *local_n, LIS_INT *global_n)
 {
 	LIS_INT err;
@@ -568,8 +541,6 @@ LIS_INT lis_matrix_get_size(LIS_MATRIX A, LIS_INT *local_n, LIS_INT *global_n)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_get_nnz"
 LIS_INT lis_matrix_get_nnz(LIS_MATRIX A, LIS_INT *nnz)
 {
 	LIS_INT err;
@@ -585,8 +556,6 @@ LIS_INT lis_matrix_get_nnz(LIS_MATRIX A, LIS_INT *nnz)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_assemble"
 LIS_INT lis_matrix_assemble(LIS_MATRIX A)
 {
 	LIS_INT err;
@@ -670,16 +639,12 @@ LIS_INT lis_matrix_assemble(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_is_assembled"
 LIS_INT lis_matrix_is_assembled(LIS_MATRIX A)
 {
   if( A->status!=LIS_MATRIX_NULL ) return !LIS_SUCCESS;
   else                             return  LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_set_value"
 LIS_INT lis_matrix_set_value(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A)
 {
 	LIS_INT n,gn,is,k;
@@ -783,8 +748,6 @@ LIS_INT lis_matrix_set_value(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR valu
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_set_values"
 LIS_INT lis_matrix_set_values(LIS_INT flag, LIS_INT n, LIS_SCALAR value[], LIS_MATRIX A)
 {
   LIS_INT i,j;
@@ -802,8 +765,6 @@ LIS_INT lis_matrix_set_values(LIS_INT flag, LIS_INT n, LIS_SCALAR value[], LIS_M
   return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_set_type"
 LIS_INT lis_matrix_set_type(LIS_MATRIX A, LIS_INT matrix_type)
 {
 	LIS_INT err;
@@ -824,8 +785,6 @@ LIS_INT lis_matrix_set_type(LIS_MATRIX A, LIS_INT matrix_type)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_get_type"
 LIS_INT lis_matrix_get_type(LIS_MATRIX A, LIS_INT *matrix_type)
 {
 	LIS_INT err;
@@ -841,8 +800,6 @@ LIS_INT lis_matrix_get_type(LIS_MATRIX A, LIS_INT *matrix_type)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_set_destroyflag"
 LIS_INT lis_matrix_set_destroyflag(LIS_MATRIX A, LIS_INT flag)
 {
 	LIS_INT err;
@@ -865,8 +822,6 @@ LIS_INT lis_matrix_set_destroyflag(LIS_MATRIX A, LIS_INT flag)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_get_destroyflag"
 LIS_INT lis_matrix_get_destroyflag(LIS_MATRIX A, LIS_INT *flag)
 {
 	LIS_INT err;
@@ -882,8 +837,6 @@ LIS_INT lis_matrix_get_destroyflag(LIS_MATRIX A, LIS_INT *flag)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_malloc"
 LIS_INT lis_matrix_malloc(LIS_MATRIX A, LIS_INT nnz_row, LIS_INT nnz[])
 {
 	LIS_INT n,k;
@@ -918,8 +871,6 @@ LIS_INT lis_matrix_malloc(LIS_MATRIX A, LIS_INT nnz_row, LIS_INT nnz[])
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_unset"
 LIS_INT lis_matrix_unset(LIS_MATRIX A)
 {
 	LIS_INT err;

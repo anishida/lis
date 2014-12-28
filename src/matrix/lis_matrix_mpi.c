@@ -51,8 +51,6 @@
  * lis_matrix_g2l
  ************************************************/
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_g2l"
 LIS_INT lis_matrix_g2l(LIS_MATRIX A)
 {
 	LIS_INT err;
@@ -217,8 +215,6 @@ LIS_INT lis_matrix_g2l_csr(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 #else
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_g2l_csr"
 LIS_INT lis_matrix_g2l_csr(LIS_MATRIX A)
 {
 	LIS_INT i,j,jj,k;
@@ -320,8 +316,6 @@ LIS_INT lis_matrix_g2l_csr(LIS_MATRIX A)
 }
 #endif
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_g2l_rco"
 LIS_INT lis_matrix_g2l_rco(LIS_MATRIX A)
 {
 	LIS_INT i,j,jj,k;
@@ -418,8 +412,6 @@ LIS_INT lis_matrix_g2l_rco(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_commtable_destroy"
 void lis_commtable_destroy(LIS_COMMTABLE table)
 {
 	if( table )
@@ -447,8 +439,6 @@ void lis_commtable_destroy(LIS_COMMTABLE table)
 }
 
 #ifdef USE_MPI
-#undef __FUNC__
-#define __FUNC__ "lis_commtable_duplicate"
 LIS_INT lis_commtable_duplicate(LIS_COMMTABLE tin, LIS_COMMTABLE *tout)
 {
 	LIS_INT i;
@@ -571,8 +561,6 @@ LIS_INT lis_commtable_duplicate(LIS_COMMTABLE tin, LIS_COMMTABLE *tout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_commtable_duplicateM"
 LIS_INT lis_commtable_duplicateM(LIS_MATRIX Ain, LIS_MATRIX *Aout)
 {
 	LIS_INT err;
@@ -589,8 +577,6 @@ LIS_INT lis_commtable_duplicateM(LIS_MATRIX Ain, LIS_MATRIX *Aout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_commtable_create"
 LIS_INT lis_commtable_create(LIS_MATRIX A)
 {
 	LIS_INT i,k,excount;
@@ -829,8 +815,6 @@ LIS_INT lis_commtable_create(LIS_MATRIX A)
 #endif
 
 #ifdef USE_MPI
-#undef __FUNC__
-#define __FUNC__ "lis_send_recv"
 LIS_INT lis_send_recv(LIS_COMMTABLE commtable, LIS_SCALAR x[])
 {
 	LIS_INT neib,i,is,inum,neibpetot,k,pad;
@@ -954,8 +938,6 @@ LIS_INT lis_send_recv(LIS_COMMTABLE commtable, LIS_SCALAR x[])
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_reduce"
 LIS_INT lis_reduce(LIS_COMMTABLE commtable, LIS_SCALAR x[])
 {
 	LIS_INT neib,i,is,inum,neibpetot,pad;
@@ -1542,8 +1524,6 @@ LIS_INT lis_matrix_redistribute_csr(LIS_MATRIX Ain, LIS_MATRIX *Aout, LIS_INT re
 }
 #endif
 
-#undef __FUNC__
-#define __FUNC__ "lis_vector_redistribute"
 LIS_INT lis_vector_redistribute(LIS_MATRIX Ain, LIS_VECTOR vin, LIS_VECTOR *vout)
 {
 	LIS_INT i,k,count;
