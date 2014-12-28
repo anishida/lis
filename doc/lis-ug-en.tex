@@ -5419,7 +5419,7 @@ Calculate the sum of the matrices $B = \alpha A + B$.
 \end{namelist}
 {\bf Output}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt B] The destination matrix
+\item[\tt B] $\alpha A + B$ (matrix $B$ is overwritten)
 \item[\tt ierr] The return code
 \end{namelist}
 \indent
@@ -5445,7 +5445,7 @@ Calculate the sum of the matrices $B = A + \alpha B$.
 \end{namelist}
 {\bf Output}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt B] The destination matrix
+\item[\tt B] $A + \alpha B$ (matrix $B$ is overwritten)
 \item[\tt ierr] The return code
 \end{namelist}
 {\bf Note}\\
@@ -5472,7 +5472,7 @@ Calculate the sum of the matrices $C = \alpha A + B$.
 \end{namelist}
 {\bf Output}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt C] The destination matrix
+\item[\tt C] $\alpha A + B$
 \item[\tt ierr] The return code
 \end{namelist}
 {\bf Note}\\
