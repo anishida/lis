@@ -73,8 +73,6 @@
  * lis_matrix_solvet           | xxx | o   |
  ************************************************/
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_set_ell"
 LIS_INT lis_matrix_set_ell(LIS_INT maxnzr, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A)
 {
 	LIS_INT err;
@@ -101,8 +99,6 @@ LIS_INT lis_matrix_set_ell(LIS_INT maxnzr, LIS_INT *index, LIS_SCALAR *value, LI
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_setDLU_ell"
 LIS_INT lis_matrix_setDLU_ell(LIS_INT lmaxnzr, LIS_INT umaxnzr, LIS_SCALAR *diag, LIS_INT *lindex, LIS_SCALAR *lvalue, LIS_INT *uindex, LIS_SCALAR *uvalue, LIS_MATRIX A)
 {
 	LIS_INT	err;
@@ -158,8 +154,6 @@ LIS_INT lis_matrix_setDLU_ell(LIS_INT lmaxnzr, LIS_INT umaxnzr, LIS_SCALAR *diag
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_malloc_ell"
 LIS_INT lis_matrix_malloc_ell(LIS_INT n, LIS_INT maxnzr, LIS_INT **index, LIS_SCALAR **value)
 {
 	LIS_DEBUG_FUNC_IN;
@@ -185,8 +179,6 @@ LIS_INT lis_matrix_malloc_ell(LIS_INT n, LIS_INT maxnzr, LIS_INT **index, LIS_SC
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_elements_copy_ell"
 LIS_INT lis_matrix_elements_copy_ell(LIS_INT n, LIS_INT maxnzr, LIS_INT *index, LIS_SCALAR *value, LIS_INT *o_index, LIS_SCALAR *o_value)
 {
 	LIS_INT	i,j;
@@ -226,8 +218,6 @@ LIS_INT lis_matrix_elements_copy_ell(LIS_INT n, LIS_INT maxnzr, LIS_INT *index, 
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_copy_ell"
 LIS_INT lis_matrix_copy_ell(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT err;
@@ -316,8 +306,6 @@ LIS_INT lis_matrix_copy_ell(LIS_MATRIX Ain, LIS_MATRIX Aout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_split_ell"
 LIS_INT lis_matrix_split_ell(LIS_MATRIX A)
 {
 	LIS_INT i,j,n,maxnzr,my_rank,nprocs,is,ie;
@@ -494,8 +482,6 @@ LIS_INT lis_matrix_split_ell(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_merge_ell"
 LIS_INT lis_matrix_merge_ell(LIS_MATRIX A)
 {
 	LIS_INT i,j,n;
@@ -583,8 +569,6 @@ LIS_INT lis_matrix_merge_ell(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_get_diagonal_ell"
 LIS_INT lis_matrix_get_diagonal_ell(LIS_MATRIX A, LIS_SCALAR d[])
 {
 	LIS_INT i,j;
@@ -626,8 +610,6 @@ LIS_INT lis_matrix_get_diagonal_ell(LIS_MATRIX A, LIS_SCALAR d[])
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_shift_diagonal_ell"
 LIS_INT lis_matrix_shift_diagonal_ell(LIS_MATRIX A, LIS_SCALAR alpha)
 {
 	LIS_INT i,j;
@@ -668,8 +650,6 @@ LIS_INT lis_matrix_shift_diagonal_ell(LIS_MATRIX A, LIS_SCALAR alpha)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_scale_ell"
 LIS_INT lis_matrix_scale_ell(LIS_MATRIX A, LIS_SCALAR d[])
 {
 	LIS_INT i,j,is,ie;
@@ -746,8 +726,6 @@ LIS_INT lis_matrix_scale_ell(LIS_MATRIX A, LIS_SCALAR d[])
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_scale_symm_ell"
 LIS_INT lis_matrix_scale_symm_ell(LIS_MATRIX A, LIS_SCALAR d[])
 {
 	LIS_INT i,j,is,ie;
@@ -824,8 +802,6 @@ LIS_INT lis_matrix_scale_symm_ell(LIS_MATRIX A, LIS_SCALAR d[])
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_solve_ell"
 LIS_INT lis_matrix_solve_ell(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag)
 {
 	LIS_INT i,j,n;
@@ -889,8 +865,6 @@ LIS_INT lis_matrix_solve_ell(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT f
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_solvet_ell"
 LIS_INT lis_matrix_solvet_ell(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag)
 {
 	LIS_INT i,j,n;
@@ -950,8 +924,6 @@ LIS_INT lis_matrix_solvet_ell(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_convert_csr2ell"
 LIS_INT lis_matrix_convert_csr2ell(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT i,j,k;
@@ -1066,8 +1038,6 @@ LIS_INT lis_matrix_convert_csr2ell(LIS_MATRIX Ain, LIS_MATRIX Aout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_convert_ell2csr"
 LIS_INT lis_matrix_convert_ell2csr(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT i,j,k;

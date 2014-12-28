@@ -47,9 +47,6 @@
 #endif
 #include "lislib.h"
 
-
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_diag_init"
 LIS_INT lis_matrix_diag_init(LIS_MATRIX_DIAG *D)
 {
 	LIS_DEBUG_FUNC_IN;
@@ -61,8 +58,6 @@ LIS_INT lis_matrix_diag_init(LIS_MATRIX_DIAG *D)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_diag_check"
 LIS_INT lis_matrix_diag_check(LIS_MATRIX_DIAG D, LIS_INT level)
 {
 	LIS_DEBUG_FUNC_IN;
@@ -88,8 +83,6 @@ LIS_INT lis_matrix_diag_check(LIS_MATRIX_DIAG D, LIS_INT level)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_diag_create"
 LIS_INT lis_matrix_diag_create(LIS_INT local_n, LIS_INT global_n, LIS_Comm comm, LIS_MATRIX_DIAG *D)
 {
 	LIS_INT nprocs,my_rank;
@@ -205,8 +198,6 @@ LIS_INT lis_matrix_diag_create(LIS_INT local_n, LIS_INT global_n, LIS_Comm comm,
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_diag_destroy"
 LIS_INT lis_matrix_diag_destroy(LIS_MATRIX_DIAG D)
 {
 	LIS_INT i;
@@ -233,8 +224,6 @@ LIS_INT lis_matrix_diag_destroy(LIS_MATRIX_DIAG D)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_diag_duplicate"
 LIS_INT lis_matrix_diag_duplicate(LIS_MATRIX_DIAG Din, LIS_MATRIX_DIAG *Dout)
 {
 	LIS_INT err,nr,bnmax,t;
@@ -333,8 +322,6 @@ LIS_INT lis_matrix_diag_duplicate(LIS_MATRIX_DIAG Din, LIS_MATRIX_DIAG *Dout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_diag_duplicate"
 LIS_INT lis_matrix_diag_duplicateM(LIS_MATRIX Ain, LIS_MATRIX_DIAG *Dout)
 {
 	LIS_INT nr,err;
@@ -447,8 +434,6 @@ LIS_INT lis_matrix_diag_duplicateM(LIS_MATRIX Ain, LIS_MATRIX_DIAG *Dout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_diag_malloc"
 LIS_INT lis_matrix_diag_mallocM(LIS_MATRIX A, LIS_SCALAR **diag)
 {
 	LIS_INT err;
@@ -486,8 +471,6 @@ LIS_INT lis_matrix_diag_mallocM(LIS_MATRIX A, LIS_SCALAR **diag)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_diag_get_range"
 LIS_INT lis_matrix_diag_get_range(LIS_MATRIX_DIAG D, LIS_INT *is, LIS_INT *ie)
 {
 	LIS_INT err;
@@ -504,8 +487,6 @@ LIS_INT lis_matrix_diag_get_range(LIS_MATRIX_DIAG D, LIS_INT *is, LIS_INT *ie)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_diag_get_size"
 LIS_INT lis_matrix_diag_get_size(LIS_MATRIX_DIAG D, LIS_INT *local_n, LIS_INT *global_n)
 {
 	LIS_INT err;
@@ -522,9 +503,6 @@ LIS_INT lis_matrix_diag_get_size(LIS_MATRIX_DIAG D, LIS_INT *local_n, LIS_INT *g
 	return LIS_SUCCESS;
 }
 
-
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_diag_set_blocksize"
 LIS_INT lis_matrix_diag_set_blocksize(LIS_MATRIX_DIAG D, LIS_INT bn, LIS_INT *bns)
 {
 	LIS_INT i,n,nr,bnmax,t;
@@ -588,8 +566,6 @@ LIS_INT lis_matrix_diag_set_blocksize(LIS_MATRIX_DIAG D, LIS_INT bn, LIS_INT *bn
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_diag_copy"
 LIS_INT lis_matrix_diag_copy(LIS_MATRIX_DIAG X, LIS_MATRIX_DIAG Y)
 {
 	LIS_INT i,n,nr,bn;
@@ -632,8 +608,6 @@ LIS_INT lis_matrix_diag_copy(LIS_MATRIX_DIAG X, LIS_MATRIX_DIAG Y)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_diag_scale"
 LIS_INT lis_matrix_diag_scale(LIS_SCALAR alpha, LIS_MATRIX_DIAG D)
 {
 	LIS_INT i,j,nr,bn;
@@ -745,8 +719,6 @@ LIS_INT lis_matrix_diag_scale(LIS_SCALAR alpha, LIS_MATRIX_DIAG D)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_diag_inverse"
 LIS_INT lis_matrix_diag_inverse(LIS_MATRIX_DIAG D)
 {
 	LIS_INT i,k,nr,bn,bs,n;
@@ -805,8 +777,6 @@ LIS_INT lis_matrix_diag_inverse(LIS_MATRIX_DIAG D)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_diag_matvec"
 LIS_INT lis_matrix_diag_matvec(LIS_MATRIX_DIAG D, LIS_VECTOR X, LIS_VECTOR Y)
 {
 	LIS_INT i,nr,bn,bs;
@@ -894,8 +864,6 @@ LIS_INT lis_matrix_diag_matvec(LIS_MATRIX_DIAG D, LIS_VECTOR X, LIS_VECTOR Y)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_diag_matvect"
 LIS_INT lis_matrix_diag_matvect(LIS_MATRIX_DIAG D, LIS_VECTOR X, LIS_VECTOR Y)
 {
 	LIS_INT i,nr,bn,bs;
@@ -977,8 +945,6 @@ LIS_INT lis_matrix_diag_matvect(LIS_MATRIX_DIAG D, LIS_VECTOR X, LIS_VECTOR Y)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_diag_print"
 LIS_INT lis_matrix_diag_print(LIS_MATRIX_DIAG D)
 {
 	LIS_INT	k,i,j,nr,bn,nn;

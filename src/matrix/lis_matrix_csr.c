@@ -73,8 +73,6 @@
  * lis_matrix_solvet           | xxx | o   |
  ************************************************/
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_set_csr"
 LIS_INT lis_matrix_set_csr(LIS_INT nnz, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A)
 {
 	LIS_INT err;
@@ -103,8 +101,6 @@ LIS_INT lis_matrix_set_csr(LIS_INT nnz, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_setDLU_csr"
 LIS_INT lis_matrix_setDLU_csr(LIS_INT nnzl, LIS_INT nnzu, LIS_SCALAR *diag, LIS_INT *lptr, LIS_INT *lindex, LIS_SCALAR *lvalue, LIS_INT *uptr, LIS_INT *uindex, LIS_SCALAR *uvalue, LIS_MATRIX A)
 {
 	LIS_INT	err;
@@ -162,8 +158,6 @@ LIS_INT lis_matrix_setDLU_csr(LIS_INT nnzl, LIS_INT nnzu, LIS_SCALAR *diag, LIS_
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_malloc_csr"
 LIS_INT lis_matrix_malloc_csr(LIS_INT n, LIS_INT nnz, LIS_INT **ptr, LIS_INT **index, LIS_SCALAR **value)
 {
 	LIS_DEBUG_FUNC_IN;
@@ -197,9 +191,6 @@ LIS_INT lis_matrix_malloc_csr(LIS_INT n, LIS_INT nnz, LIS_INT **ptr, LIS_INT **i
 	return LIS_SUCCESS;
 }
 
-
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_elements_copy_csr"
 LIS_INT lis_matrix_elements_copy_csr(LIS_INT n, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR *value, LIS_INT *o_ptr, LIS_INT *o_index, LIS_SCALAR *o_value)
 {
 	LIS_INT	i,j;
@@ -234,8 +225,6 @@ LIS_INT lis_matrix_elements_copy_csr(LIS_INT n, LIS_INT *ptr, LIS_INT *index, LI
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_copy_csr"
 LIS_INT lis_matrix_copy_csr(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT err;
@@ -335,8 +324,6 @@ LIS_INT lis_matrix_copy_csr(LIS_MATRIX Ain, LIS_MATRIX Aout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_copyDLU_csr"
 LIS_INT lis_matrix_copyDLU_csr(LIS_MATRIX Ain, LIS_MATRIX_DIAG *D, LIS_MATRIX *L, LIS_MATRIX *U)
 {
 	LIS_INT err;
@@ -444,8 +431,6 @@ LIS_INT lis_matrix_copyDLU_csr(LIS_MATRIX Ain, LIS_MATRIX_DIAG *D, LIS_MATRIX *L
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_get_diagonal_csr"
 LIS_INT lis_matrix_get_diagonal_csr(LIS_MATRIX A, LIS_SCALAR d[])
 {
 	LIS_INT i,j;
@@ -486,8 +471,6 @@ LIS_INT lis_matrix_get_diagonal_csr(LIS_MATRIX A, LIS_SCALAR d[])
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_shift_diagonal_csr"
 LIS_INT lis_matrix_shift_diagonal_csr(LIS_MATRIX A, LIS_SCALAR alpha)
 {
 	LIS_INT i,j;
@@ -527,8 +510,6 @@ LIS_INT lis_matrix_shift_diagonal_csr(LIS_MATRIX A, LIS_SCALAR alpha)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_scale_csr"
 LIS_INT lis_matrix_scale_csr(LIS_MATRIX A, LIS_SCALAR d[])
 {
 	LIS_INT i,j;
@@ -572,8 +553,6 @@ LIS_INT lis_matrix_scale_csr(LIS_MATRIX A, LIS_SCALAR d[])
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_scale_symm_csr"
 LIS_INT lis_matrix_scale_symm_csr(LIS_MATRIX A, LIS_SCALAR d[])
 {
 	LIS_INT i,j;
@@ -617,8 +596,6 @@ LIS_INT lis_matrix_scale_symm_csr(LIS_MATRIX A, LIS_SCALAR d[])
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_normf_csr"
 LIS_INT lis_matrix_normf_csr(LIS_MATRIX A, LIS_SCALAR *nrm)
 {
 	LIS_INT i,j;
@@ -665,8 +642,6 @@ LIS_INT lis_matrix_normf_csr(LIS_MATRIX A, LIS_SCALAR *nrm)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_transpose_csr"
 LIS_INT lis_matrix_transpose_csr(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT err;
@@ -685,8 +660,6 @@ LIS_INT lis_matrix_transpose_csr(LIS_MATRIX Ain, LIS_MATRIX Aout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_split_csr"
 LIS_INT lis_matrix_split_csr(LIS_MATRIX A)
 {
 	LIS_INT i,j,n;
@@ -873,9 +846,6 @@ LIS_INT lis_matrix_split_csr(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_merge_csr"
 LIS_INT lis_matrix_merge_csr(LIS_MATRIX A)
 {
 	LIS_INT i,j,n;
@@ -931,8 +901,6 @@ LIS_INT lis_matrix_merge_csr(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_split2_csr"
 LIS_INT lis_matrix_split2_csr(LIS_MATRIX A)
 {
 	LIS_INT i,j,n;
@@ -1102,8 +1070,6 @@ LIS_INT lis_matrix_split2_csr(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_sort_csr"
 LIS_INT lis_matrix_sort_csr(LIS_MATRIX A)
 {
 	LIS_INT i,n;
@@ -1141,8 +1107,6 @@ LIS_INT lis_matrix_sort_csr(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_solve_csr"
 LIS_INT lis_matrix_solve_csr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag)
 {
 	LIS_INT i,j,n,jj;
@@ -1364,8 +1328,6 @@ LIS_INT lis_matrix_solve_csr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT f
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_solvet_csr"
 LIS_INT lis_matrix_solvet_csr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag)
 {
 	LIS_INT i,j,jj,n;

@@ -47,8 +47,6 @@
 #endif
 #include "lislib.h"
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_ilu_create"
 LIS_INT lis_matrix_ilu_create(LIS_INT n, LIS_INT bs, LIS_MATRIX_ILU *A)
 {
 	LIS_INT i;
@@ -104,8 +102,6 @@ LIS_INT lis_matrix_ilu_create(LIS_INT n, LIS_INT bs, LIS_MATRIX_ILU *A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_ilu_setCR"
 LIS_INT lis_matrix_ilu_setCR(LIS_MATRIX_ILU A)
 {
 	LIS_INT n;
@@ -127,8 +123,6 @@ LIS_INT lis_matrix_ilu_setCR(LIS_MATRIX_ILU A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_ilu_setVR"
 LIS_INT lis_matrix_ilu_setVR(LIS_MATRIX_ILU A)
 {
 	LIS_INT n;
@@ -158,8 +152,6 @@ LIS_INT lis_matrix_ilu_setVR(LIS_MATRIX_ILU A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_ilu_destroy"
 LIS_INT lis_matrix_ilu_destroy(LIS_MATRIX_ILU A)
 {
 	LIS_INT i,j;
@@ -200,8 +192,6 @@ LIS_INT lis_matrix_ilu_destroy(LIS_MATRIX_ILU A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_ilu_create"
 LIS_INT lis_matrix_ilu_premalloc(LIS_INT nnzrow, LIS_MATRIX_ILU A)
 {
 	LIS_INT i,n;
@@ -247,8 +237,6 @@ LIS_INT lis_matrix_ilu_premalloc(LIS_INT nnzrow, LIS_MATRIX_ILU A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_ilu_realloc"
 LIS_INT lis_matrix_ilu_realloc(LIS_INT row, LIS_INT nnz, LIS_MATRIX_ILU A)
 {
 
@@ -272,8 +260,6 @@ LIS_INT lis_matrix_ilu_realloc(LIS_INT row, LIS_INT nnz, LIS_MATRIX_ILU A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matvect_ilu"
 LIS_INT lis_matvect_ilu(LIS_MATRIX A, LIS_MATRIX_ILU LU, LIS_VECTOR X, LIS_VECTOR Y)
 {
 	LIS_INT i,j,jj,n;
@@ -373,8 +359,6 @@ LIS_INT lis_matvect_ilu(LIS_MATRIX A, LIS_MATRIX_ILU LU, LIS_VECTOR X, LIS_VECTO
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matvec_ilu"
 LIS_INT lis_matvec_ilu(LIS_MATRIX A, LIS_MATRIX_ILU LU, LIS_VECTOR X, LIS_VECTOR Y)
 {
 	LIS_INT i,j,jj,n,np;

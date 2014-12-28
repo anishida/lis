@@ -76,8 +76,6 @@
  * lis_matrix_solvet           | xxx | o   |
  ************************************************/
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_set_dns"
 LIS_INT lis_matrix_set_dns(LIS_SCALAR *value, LIS_MATRIX A)
 {
 	LIS_INT err;
@@ -103,8 +101,6 @@ LIS_INT lis_matrix_set_dns(LIS_SCALAR *value, LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_malloc_dns"
 LIS_INT lis_matrix_malloc_dns(LIS_INT n, LIS_INT np, LIS_SCALAR **value)
 {
 	LIS_DEBUG_FUNC_IN;
@@ -121,8 +117,6 @@ LIS_INT lis_matrix_malloc_dns(LIS_INT n, LIS_INT np, LIS_SCALAR **value)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_elements_copy_dns"
 LIS_INT lis_matrix_elements_copy_dns(LIS_INT n, LIS_INT np, LIS_SCALAR *value, LIS_SCALAR *o_value)
 {
 	LIS_INT i,j,is,ie;
@@ -160,8 +154,6 @@ LIS_INT lis_matrix_elements_copy_dns(LIS_INT n, LIS_INT np, LIS_SCALAR *value, L
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_copy_dns"
 LIS_INT lis_matrix_copy_dns(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT err;
@@ -219,8 +211,6 @@ LIS_INT lis_matrix_copy_dns(LIS_MATRIX Ain, LIS_MATRIX Aout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_get_diagonal_dns"
 LIS_INT lis_matrix_get_diagonal_dns(LIS_MATRIX A, LIS_SCALAR d[])
 {
 	LIS_INT i;
@@ -240,8 +230,6 @@ LIS_INT lis_matrix_get_diagonal_dns(LIS_MATRIX A, LIS_SCALAR d[])
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_shift_diagonal_dns"
 LIS_INT lis_matrix_shift_diagonal_dns(LIS_MATRIX A, LIS_SCALAR alpha)
 {
 	LIS_INT i;
@@ -275,8 +263,6 @@ LIS_INT lis_matrix_shift_diagonal_dns(LIS_MATRIX A, LIS_SCALAR alpha)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_axpy_dns"
 LIS_INT lis_matrix_axpy_dns(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)
 {
 	LIS_INT i,j,is,ie,n,np;
@@ -333,8 +319,6 @@ LIS_INT lis_matrix_axpy_dns(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_xpay_dns"
 LIS_INT lis_matrix_xpay_dns(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)
 {
 	LIS_INT i,j,is,ie,n,np;
@@ -391,8 +375,6 @@ LIS_INT lis_matrix_xpay_dns(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_axpyz_dns"
 LIS_INT lis_matrix_axpyz_dns(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B, LIS_MATRIX C)
 {
 	LIS_INT i,j,is,ie,n,np;
@@ -449,8 +431,6 @@ LIS_INT lis_matrix_axpyz_dns(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B, LIS_M
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_scale_dns"
 LIS_INT lis_matrix_scale_dns(LIS_MATRIX A, LIS_SCALAR d[])
 {
 	LIS_INT i,j;
@@ -471,8 +451,6 @@ LIS_INT lis_matrix_scale_dns(LIS_MATRIX A, LIS_SCALAR d[])
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_scale_symm_dns"
 LIS_INT lis_matrix_scale_symm_dns(LIS_MATRIX A, LIS_SCALAR d[])
 {
 	LIS_INT i,j;
@@ -493,8 +471,6 @@ LIS_INT lis_matrix_scale_symm_dns(LIS_MATRIX A, LIS_SCALAR d[])
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_normf_dns"
 LIS_INT lis_matrix_normf_dns(LIS_MATRIX A, LIS_SCALAR *nrm)
 {
 	LIS_INT i,j;
@@ -542,8 +518,6 @@ LIS_INT lis_matrix_normf_dns(LIS_MATRIX A, LIS_SCALAR *nrm)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_transpose_dns"
 LIS_INT lis_matrix_transpose_dns(LIS_MATRIX Ain, LIS_MATRIX *Aout)
 {
 
@@ -557,8 +531,6 @@ LIS_INT lis_matrix_transpose_dns(LIS_MATRIX Ain, LIS_MATRIX *Aout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_split_dns"
 LIS_INT lis_matrix_split_dns(LIS_MATRIX A)
 {
 	LIS_INT i,n;
@@ -587,9 +559,6 @@ LIS_INT lis_matrix_split_dns(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_merge_dns"
 LIS_INT lis_matrix_merge_dns(LIS_MATRIX A)
 {
 	LIS_DEBUG_FUNC_IN;
@@ -600,8 +569,6 @@ LIS_INT lis_matrix_merge_dns(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_sort_dns"
 LIS_INT lis_matrix_sort_dns(LIS_MATRIX A)
 {
 	LIS_DEBUG_FUNC_IN;
@@ -612,8 +579,6 @@ LIS_INT lis_matrix_sort_dns(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_solve_dns"
 LIS_INT lis_matrix_solve_dns(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag)
 {
 	LIS_INT i,j,n,np;
@@ -678,8 +643,6 @@ LIS_INT lis_matrix_solve_dns(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT f
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_solvet_dns"
 LIS_INT lis_matrix_solvet_dns(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag)
 {
 	LIS_INT i,j,n,np;
@@ -740,8 +703,6 @@ LIS_INT lis_matrix_solvet_dns(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_convert_csr2dns"
 LIS_INT lis_matrix_convert_csr2dns(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT i,j;
@@ -814,8 +775,6 @@ LIS_INT lis_matrix_convert_csr2dns(LIS_MATRIX Ain, LIS_MATRIX Aout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_convert_dns2csr"
 LIS_INT lis_matrix_convert_dns2csr(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT i,j,k;

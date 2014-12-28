@@ -61,8 +61,6 @@
  * lis_matrix_transpose
  ************************************************/
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_set_vbr"
 LIS_INT lis_matrix_set_vbr(LIS_INT nnz, LIS_INT nr, LIS_INT nc, LIS_INT bnnz, LIS_INT *row, LIS_INT *col, LIS_INT *ptr, LIS_INT *bptr, LIS_INT *bindex, LIS_SCALAR *value, LIS_MATRIX A)
 {
 	LIS_INT err;
@@ -98,8 +96,6 @@ LIS_INT lis_matrix_set_vbr(LIS_INT nnz, LIS_INT nr, LIS_INT nc, LIS_INT bnnz, LI
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_malloc_vbr"
 LIS_INT lis_matrix_malloc_vbr(LIS_INT n, LIS_INT nnz, LIS_INT nr, LIS_INT nc, LIS_INT bnnz, LIS_INT **row, LIS_INT **col, LIS_INT **ptr, LIS_INT **bptr, LIS_INT **bindex, LIS_SCALAR **value)
 {
 
@@ -158,8 +154,6 @@ LIS_INT lis_matrix_malloc_vbr(LIS_INT n, LIS_INT nnz, LIS_INT nr, LIS_INT nc, LI
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_elements_copy_vbr"
 LIS_INT lis_matrix_elements_copy_vbr(LIS_INT n, LIS_INT nr, LIS_INT nc, LIS_INT bnnz, LIS_INT *row, LIS_INT *col, LIS_INT *ptr, LIS_INT *bptr, LIS_INT *bindex, LIS_SCALAR *value, LIS_INT *o_row, LIS_INT *o_col, LIS_INT *o_ptr, LIS_INT *o_bptr, LIS_INT *o_bindex, LIS_SCALAR *o_value)
 {
 	LIS_INT bi,bj,i,j,k;
@@ -213,8 +207,6 @@ LIS_INT lis_matrix_elements_copy_vbr(LIS_INT n, LIS_INT nr, LIS_INT nc, LIS_INT 
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_copy_vbr"
 LIS_INT lis_matrix_copy_vbr(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT err;
@@ -254,8 +246,6 @@ LIS_INT lis_matrix_copy_vbr(LIS_MATRIX Ain, LIS_MATRIX Aout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_get_vbr_rowcol"
 LIS_INT lis_matrix_get_vbr_rowcol(LIS_MATRIX Ain, LIS_INT *nr, LIS_INT *nc, LIS_INT **row, LIS_INT **col)
 {
 	LIS_INT i,j,k,jj,kk,n;
@@ -493,8 +483,6 @@ LIS_INT lis_matrix_get_vbr_rowcol(LIS_MATRIX Ain, LIS_INT *nr, LIS_INT *nc, LIS_
 }
 #endif
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_convert_csr2vbr"
 LIS_INT lis_matrix_convert_csr2vbr(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT i,j,k,n;
@@ -738,8 +726,6 @@ LIS_INT lis_matrix_convert_csr2vbr(LIS_MATRIX Ain, LIS_MATRIX Aout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_convert_vbr2csr"
 LIS_INT lis_matrix_convert_vbr2csr(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
 	LIS_INT i,j,k,l;
@@ -868,8 +854,6 @@ LIS_INT lis_matrix_convert_vbr2csr(LIS_MATRIX Ain, LIS_MATRIX Aout)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_get_diagonal_vbr"
 LIS_INT lis_matrix_get_diagonal_vbr(LIS_MATRIX A, LIS_SCALAR d[])
 {
 	LIS_INT i,j,k,bi,bj,bjj,nr;
@@ -929,8 +913,6 @@ LIS_INT lis_matrix_get_diagonal_vbr(LIS_MATRIX A, LIS_SCALAR d[])
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_shift_diagonal_vbr"
 LIS_INT lis_matrix_shift_diagonal_vbr(LIS_MATRIX A, LIS_SCALAR alpha)
 {
 	LIS_INT i,j,k,bi,bj,bjj,nr;
@@ -990,8 +972,6 @@ LIS_INT lis_matrix_shift_diagonal_vbr(LIS_MATRIX A, LIS_SCALAR alpha)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_scale_vbr"
 LIS_INT lis_matrix_scale_vbr(LIS_MATRIX A, LIS_SCALAR d[])
 {
 	LIS_INT i,j,k;
@@ -1069,8 +1049,6 @@ LIS_INT lis_matrix_scale_vbr(LIS_MATRIX A, LIS_SCALAR d[])
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_scale_symm_vbr"
 LIS_INT lis_matrix_scale_symm_vbr(LIS_MATRIX A, LIS_SCALAR d[])
 {
 	LIS_INT i,j,k;
@@ -1111,9 +1089,6 @@ LIS_INT lis_matrix_scale_symm_vbr(LIS_MATRIX A, LIS_SCALAR d[])
 	return LIS_SUCCESS;
 }
 
-
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_split_vbr"
 LIS_INT lis_matrix_split_vbr(LIS_MATRIX A)
 {
 	LIS_INT i,j,jj,n;
@@ -1400,8 +1375,6 @@ LIS_INT lis_matrix_split_vbr(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_merge_vbr"
 LIS_INT lis_matrix_merge_vbr(LIS_MATRIX A)
 {
 	LIS_INT i,j,jj,n,nnz;
@@ -1486,8 +1459,6 @@ LIS_INT lis_matrix_merge_vbr(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_solve_vbr"
 LIS_INT lis_matrix_solve_vbr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag)
 {
 	LIS_INT i,j,jj,nr,bnr,dim,sz;
@@ -1568,8 +1539,6 @@ LIS_INT lis_matrix_solve_vbr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT f
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_solvet_vbr"
 LIS_INT lis_matrix_solvet_vbr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag)
 {
 	LIS_INT i,j,jj,nr,bnr,dim,sz;
