@@ -114,6 +114,8 @@ EXTRA_DIST = reconfigure.sh \
              doc/man/man3/lis_input_matrix.3 \
              doc/man/man3/lis_input_vector.3 \
              doc/man/man3/lis_matrix_assemble.3 \
+             doc/man/man3/lis_matrix_axpy.3 \
+             doc/man/man3/lis_matrix_axpyz.3 \
              doc/man/man3/lis_matrix_convert.3 \
              doc/man/man3/lis_matrix_copy.3 \
              doc/man/man3/lis_matrix_create.3 \
@@ -143,6 +145,7 @@ EXTRA_DIST = reconfigure.sh \
              doc/man/man3/lis_matrix_set_vbr.3 \
              doc/man/man3/lis_matrix_shift_diagonal.3 \
              doc/man/man3/lis_matrix_unset.3 \
+             doc/man/man3/lis_matrix_xpay.3 \
              doc/man/man3/lis_matvec.3 \
              doc/man/man3/lis_matvect.3 \
              doc/man/man3/lis_output.3 \
@@ -246,6 +249,8 @@ EXTRA_DIST = reconfigure.sh \
              doc/man/man3/lis_input_matrix.3f \
              doc/man/man3/lis_input_vector.3f \
              doc/man/man3/lis_matrix_assemble.3f \
+             doc/man/man3/lis_matrix_axpy.3f \
+             doc/man/man3/lis_matrix_axpyz.3f \
              doc/man/man3/lis_matrix_convert.3f \
              doc/man/man3/lis_matrix_copy.3f \
              doc/man/man3/lis_matrix_create.3f \
@@ -275,6 +280,7 @@ EXTRA_DIST = reconfigure.sh \
              doc/man/man3/lis_matrix_set_vbr.3f \
              doc/man/man3/lis_matrix_shift_diagonal.3f \
              doc/man/man3/lis_matrix_unset.3f \
+             doc/man/man3/lis_matrix_xpay.3f \
              doc/man/man3/lis_matvec.3f \
              doc/man/man3/lis_matvect.3f \
              doc/man/man3/lis_output.3f \
@@ -391,6 +397,8 @@ man_MANS =   doc/man/man1/lsolve.1 \
              doc/man/man3/lis_input_matrix.3 \
              doc/man/man3/lis_input_vector.3 \
              doc/man/man3/lis_matrix_assemble.3 \
+             doc/man/man3/lis_matrix_axpy.3 \
+             doc/man/man3/lis_matrix_axpyz.3 \
              doc/man/man3/lis_matrix_convert.3 \
              doc/man/man3/lis_matrix_copy.3 \
              doc/man/man3/lis_matrix_create.3 \
@@ -420,6 +428,7 @@ man_MANS =   doc/man/man1/lsolve.1 \
              doc/man/man3/lis_matrix_set_vbr.3 \
              doc/man/man3/lis_matrix_shift_diagonal.3 \
              doc/man/man3/lis_matrix_unset.3 \
+             doc/man/man3/lis_matrix_xpay.3 \
              doc/man/man3/lis_matvec.3 \
              doc/man/man3/lis_matvect.3 \
              doc/man/man3/lis_output.3 \
@@ -523,6 +532,8 @@ man_MANS =   doc/man/man1/lsolve.1 \
              doc/man/man3/lis_input_matrix.3f \
              doc/man/man3/lis_input_vector.3f \
              doc/man/man3/lis_matrix_assemble.3f \
+             doc/man/man3/lis_matrix_axpy.3f \
+             doc/man/man3/lis_matrix_axpyz.3f \
              doc/man/man3/lis_matrix_convert.3f \
              doc/man/man3/lis_matrix_copy.3f \
              doc/man/man3/lis_matrix_create.3f \
@@ -552,6 +563,7 @@ man_MANS =   doc/man/man1/lsolve.1 \
              doc/man/man3/lis_matrix_set_vbr.3f \
              doc/man/man3/lis_matrix_shift_diagonal.3f \
              doc/man/man3/lis_matrix_unset.3f \
+             doc/man/man3/lis_matrix_xpay.3f \
              doc/man/man3/lis_matvec.3f \
              doc/man/man3/lis_matvect.3f \
              doc/man/man3/lis_output.3f \
