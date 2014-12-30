@@ -25,6 +25,10 @@ The matrices
 .IP "\fBB\fR"
 \fIA + alpha * B\fR (matrix \fIB\fR is overwritten)
 
+.SH NOTE
+
+Matrices \fIA\fR, \fIB\fR must be in the DNS format.
+
 .SH SEE ALSO
 
 .BR lis (3)
