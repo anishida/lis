@@ -1,3 +1,8 @@
+Version 1.5.45  December 30, 2014
+
+  - Added documents for matrix addition.
+  - Updated documents.
+
 Version 1.5.44  December 29, 2014
 
   - Fixed exception handling in matrix addition.
