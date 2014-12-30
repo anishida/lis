@@ -1,4 +1,5 @@
-## README for Microsoft Build Engine ##
+README for Microsoft Build Engine
+=================================
 
 Run the following command to generate Makefile 
 (See configure --help for details): 

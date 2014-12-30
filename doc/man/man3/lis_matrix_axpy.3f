@@ -1,0 +1,33 @@
+.TH lis_matrix_axpy 3f "30 Dec 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_matrix_axpy \- calculate the sum of the matrices
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_matrix_axpy\fR(\fBLIS_SCALAR alpha\fR, \fBLIS_MATRIX A\fR, \fBLIS_MATRIX B\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Calculate the sum of the matrices \fIB = alpha * A + B\fR.
+
+.SH INPUT
+
+.IP "\fBalpha\fR"
+The scalar value
+
+.IP "\fBA, B\fR"
+The matrices
+
+.SH OUTPUT
+
+.IP "\fBB\fR"
+\fIalpha * A + B\fR (matrix \fIB\fR is overwritten)
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+
