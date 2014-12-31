@@ -47,7 +47,7 @@ AC_ARG_WITH(library-suffix,
 AC_SUBST(LIBSUFFIX)
 
 
-# Configurations for Target Systems
+# Configurations for Some Specific Systems
 
 if test "$TARGET" != ""; then
 	case "$TARGET" in
