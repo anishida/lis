@@ -1,6 +1,6 @@
 %%MatrixMarket matrix coordinate real general
 %  discretized two dimensional convection-diffusion 
-%  operator, using five point central difference scheme 
+%  operator, using five point central difference scheme, 
 %  with cell Pecret number Pe = 1
 100 100 460
 1 11  -5.00000000000000000000e-01
