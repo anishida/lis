@@ -231,7 +231,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LTLIBRARIES = libprecision.la
-libprecision_la_SOURCES = lis_precision.c        \
+libprecision_la_SOURCES = lis_precision.c \
 lis_precision_matvec.c \
 lis_precision_vec.c
 
