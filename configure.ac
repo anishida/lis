@@ -1,4 +1,5 @@
 # Process this file with reconfigure.sh to update configure script.
+# See also config/config.*.
 
 
 # General Configurations
