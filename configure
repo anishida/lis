@@ -3644,7 +3644,7 @@ fi
 
 
 
-# Configurations for Target Systems
+# Configurations for Some Specific Systems
 
 if test "$TARGET" != ""; then
 	case "$TARGET" in

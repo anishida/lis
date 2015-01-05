@@ -67,8 +67,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libprecision_la_LIBADD =
-am_libprecision_la_OBJECTS = lis_precision.lo lis_precision_vec.lo \
-	lis_precision_matvec.lo
+am_libprecision_la_OBJECTS = lis_precision.lo lis_precision_matvec.lo \
+	lis_precision_vec.lo
 libprecision_la_OBJECTS = $(am_libprecision_la_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/include
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
@@ -232,8 +232,8 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LTLIBRARIES = libprecision.la
 libprecision_la_SOURCES = lis_precision.c        \
-lis_precision_vec.c    \
-lis_precision_matvec.c    
+lis_precision_matvec.c \
+lis_precision_vec.c
 
 AM_CFLAGS = -I$(top_srcdir)/include $(MPFLAG)
 CLEANFILES = *.il

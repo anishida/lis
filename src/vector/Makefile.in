@@ -231,8 +231,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LTLIBRARIES = libvector.la
-libvector_la_SOURCES = lis_vector.c      \
-lis_vector_ops.c  \
+libvector_la_SOURCES = lis_vector.c \
+lis_vector_ops.c \
 lis_vector_opv.c
 
 AM_CFLAGS = -I$(top_srcdir)/include

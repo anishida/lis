@@ -1,13 +1,13 @@
 noinst_LTLIBRARIES = libfortran.la
-libfortran_la_SOURCES = lisf_vector.c  \
-lisf_matrix.c  \
-lisf_matvec.c  \
-lisf_array.c  \
-lisf_system.c  \
-lisf_solver.c  \
-lisf_precon.c  \
-lisf_esolver.c  \
-lisf_init.F    
+libfortran_la_SOURCES = lisf_array.c \
+lisf_esolver.c \
+lisf_init.F \
+lisf_matrix.c \
+lisf_matvec.c \
+lisf_precon.c \
+lisf_solver.c \
+lisf_system.c \
+lisf_vector.c
 
 
 AM_CPPFLAGS = -I$(top_srcdir)/include
