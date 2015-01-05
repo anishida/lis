@@ -235,23 +235,22 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LTLIBRARIES = libmatrix.la
-libmatrix_la_SOURCES = \
-lis_matrix.c               \
-lis_matrix_bsc.c           \
-lis_matrix_bsr.c           \
-lis_matrix_csc.c           \
-lis_matrix_coo.c           \
-lis_matrix_csr.c           \
-lis_matrix_dia.c           \
-lis_matrix_diag.c          \
-lis_matrix_dns.c           \
-lis_matrix_ell.c           \
-lis_matrix_ilu.c           \
-lis_matrix_jad.c           \
-lis_matrix_mpi.c           \
-lis_matrix_msr.c           \
-lis_matrix_ops.c           \
-lis_matrix_rco.c           \
+libmatrix_la_SOURCES = lis_matrix.c \
+lis_matrix_bsc.c \
+lis_matrix_bsr.c \
+lis_matrix_csc.c \
+lis_matrix_coo.c \
+lis_matrix_csr.c \
+lis_matrix_dia.c \
+lis_matrix_diag.c \
+lis_matrix_dns.c \
+lis_matrix_ell.c \
+lis_matrix_ilu.c \
+lis_matrix_jad.c \
+lis_matrix_mpi.c \
+lis_matrix_msr.c \
+lis_matrix_ops.c \
+lis_matrix_rco.c \
 lis_matrix_vbr.c           
 
 AM_CFLAGS = -I$(top_srcdir)/include $(ILIBS)
