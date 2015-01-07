@@ -113,7 +113,7 @@ extern "C"
 #endif
 
 /****************************/
-/* Matrix INPUT             */
+/* Matrix Input             */
 /****************************/
 
 	extern LIS_INT lis_input_mm(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file);
@@ -122,22 +122,14 @@ extern "C"
        	extern LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file);
 
 /****************************/
-/* Matrix OUTPUT            */
+/* Matrix Output            */
 /****************************/
 
 	extern LIS_INT lis_output_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT format, char *path);
 	extern LIS_INT lis_output_mm_csc(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT format, char *path);
 
 /****************************/
-/* Vector OUTPUT            */
-/****************************/
-
-	extern LIS_INT lis_output_vector_plain(LIS_VECTOR v, char *path);
-	extern LIS_INT lis_output_vector_mm(LIS_VECTOR v, char *path);
-	extern LIS_INT lis_output_vector_lis_ascii(LIS_VECTOR v, char *path);
-
-/****************************/
-/* Vector INPUT             */
+/* Vector Input             */
 /****************************/
 
 	extern LIS_INT lis_input_vector_plain(LIS_VECTOR v, FILE *file);
@@ -146,6 +138,14 @@ extern "C"
 	extern LIS_INT lis_input_vector_lis_ascii(LIS_VECTOR v, FILE *file);
 	extern LIS_INT lis_fscan_int(LIS_INT n, FILE *file, LIS_INT val[], LIS_INT origin);
 	extern LIS_INT lis_fscan_scalar(LIS_INT n, FILE *file, LIS_SCALAR val[]);
+
+/****************************/
+/* Vector Output            */
+/****************************/
+
+	extern LIS_INT lis_output_vector_plain(LIS_VECTOR v, char *path);
+	extern LIS_INT lis_output_vector_mm(LIS_VECTOR v, char *path);
+	extern LIS_INT lis_output_vector_lis_ascii(LIS_VECTOR v, char *path);
 
 
 #ifdef __cplusplus
