@@ -42,22 +42,22 @@ test4_SOURCES = test4.c
 test5_SOURCES = test5.c
 test6_SOURCES = test6.c
 if ENABLE_FORTRAN
-  test1f_SOURCES = test1f.F
-  test4f_SOURCES = test4f.F
   etest1f_SOURCES = etest1f.F
   etest4f_SOURCES = etest4f.F
+  test1f_SOURCES = test1f.F
+  test4f_SOURCES = test4f.F
 endif
 if ENABLE_F90
   test2f_SOURCES = test2f.F90
   test6f_SOURCES = test6f.F90
 endif
 
-bin_PROGRAMS = lsolve esolve hpcg_kernel hpcg_spmvtest spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b spmvtest4 spmvtest5
+bin_PROGRAMS = esolve hpcg_kernel hpcg_spmvtest lsolve spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b spmvtest4 spmvtest5
 
-lsolve_SOURCES = test1.c
 esolve_SOURCES = etest5.c
 hpcg_kernel_SOURCES = test3b.c
 hpcg_spmvtest_SOURCES = spmvtest3b.c
+lsolve_SOURCES = test1.c
 
 PPF77COMPILE = $(F77) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_FFLAGS) $(FFLAGS)
@@ -90,12 +90,12 @@ CLEANFILES = *.il
 
 
 TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
-                    enable_mpi=$(enable_mpi) \
-                    enable_omp=$(enable_omp) \
-                    enable_saamg=$(enable_saamg) \
                     enable_f90=$(enable_f90) \
                     enable_fortran=$(enable_fortran) \
+                    enable_mpi=$(enable_mpi) \
+                    enable_omp=$(enable_omp) \
                     enable_quad=$(enable_quad) \
+                    enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
 TESTS = test.sh
