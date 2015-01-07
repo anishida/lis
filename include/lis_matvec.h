@@ -84,9 +84,9 @@ extern "C"
 	extern LIS_MATVEC_FUNC LIS_MATVEC;
 	extern LIS_MATVEC_FUNC LIS_MATVECT;
 
-	/*******************/
-	/* CSR             */
-	/*******************/
+/*******************/
+/* CSR             */
+/*******************/
 
 	extern void lis_matvec_csr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
 	extern void lis_matvect_csr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
@@ -95,9 +95,9 @@ extern "C"
 	extern void lis_matvect_csr_mp(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y);
 	extern void lis_matvect_csr_mp2(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y);
 
-	/*******************/
-	/* CSC             */
-	/*******************/
+/*******************/
+/* CSC             */
+/*******************/
 
 	extern void lis_matvec_csc(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
 	extern void lis_matvect_csc(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
@@ -106,59 +106,59 @@ extern "C"
 	extern void lis_matvec_csc_mp(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y);
 	extern void lis_matvec_csc_mp2(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y);
 
-	/*******************/
-	/* MSR             */
-	/*******************/
+/*******************/
+/* MSR             */
+/*******************/
 
 	extern void lis_matvec_msr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
 	extern void lis_matvect_msr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
 
-	/*******************/
-	/* ELL             */
-	/*******************/
+/*******************/
+/* ELL             */
+/*******************/
 
 	extern void lis_matvec_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
 	extern void lis_matvect_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
 
-	/*******************/
-	/* DIA             */
-	/*******************/
+/*******************/
+/* DIA             */
+/*******************/
 
 	extern void lis_matvec_dia(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
 	extern void lis_matvect_dia(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
 
-	/*******************/
-	/* JAD             */
-	/*******************/
+/*******************/
+/* JAD             */
+/*******************/
 
 	extern void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
 		extern void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
 	extern void lis_matvect_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
 
-	/*******************/
-	/* DNS             */
-	/*******************/
+/*******************/
+/* DNS             */
+/*******************/
 
 	extern void lis_matvec_dns(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
 	extern void lis_matvect_dns(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
 
-	/*******************/
-	/* COO             */
-	/*******************/
+/*******************/
+/* COO             */
+/*******************/
 
 	extern void lis_matvec_coo(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
 	extern void lis_matvect_coo(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
 
-	/*******************/
-	/* VBR             */
-	/*******************/
+/*******************/
+/* VBR             */
+/*******************/
 
 	extern void lis_matvec_vbr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
 	extern void lis_matvect_vbr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
 
-	/*******************/
-	/* BSR             */
-	/*******************/
+/*******************/
+/* BSR             */
+/*******************/
 
 	extern LIS_MATVEC_XXX lis_matvec_bsr_xxx[4][4];
 	extern void lis_matvec_bsr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
@@ -180,9 +180,9 @@ extern "C"
 	extern void lis_matvec_bsr_4x4(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
 	extern void lis_matvect_bsr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
 
-	/*******************/
-	/* BSC             */
-	/*******************/
+/*******************/
+/* BSC             */
+/*******************/
 
 	extern LIS_MATVEC_XXX lis_matvec_bsc_xxx[4][4];
 	extern void lis_matvec_bsc(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);

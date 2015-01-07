@@ -29,37 +29,37 @@
 #define __LIS_FORTRAN_H__
 
 #ifdef _WIN64
-typedef long long		LIS_MATRIX_F;
-typedef long long		LIS_VECTOR_F;
-typedef long long		LIS_SOLVER_F;
-typedef long long		LIS_PRECON_F;
-typedef long long		LIS_ESOLVER_F;
-typedef long long		LIS_SCALAR_F;
+typedef long long LIS_MATRIX_F;
+typedef long long LIS_VECTOR_F;
+typedef long long LIS_SOLVER_F;
+typedef long long LIS_PRECON_F;
+typedef long long LIS_ESOLVER_F;
+typedef long long LIS_SCALAR_F;
 #else
-typedef long			LIS_MATRIX_F;
-typedef long			LIS_VECTOR_F;
-typedef long			LIS_SOLVER_F;
-typedef long			LIS_PRECON_F;
-typedef long			LIS_ESOLVER_F;
-typedef long			LIS_SCALAR_F;
+typedef long LIS_MATRIX_F;
+typedef long LIS_VECTOR_F;
+typedef long LIS_SOLVER_F;
+typedef long LIS_PRECON_F;
+typedef long LIS_ESOLVER_F;
+typedef long LIS_SCALAR_F;
 #endif
 
 #ifdef USE_MPI
 	#include <mpi.h>
-	typedef MPI_Fint	LIS_Comm_f;
+	typedef MPI_Fint LIS_Comm_f;
 #else
-	typedef LIS_INT		LIS_Comm_f;
+	typedef LIS_INT	LIS_Comm_f;
 #endif
 
 #ifdef _WIN64
-#define LIS_V2P(a)	(*(long long *)(a))
-#define LIS_P2V(a)	((long long)(a))
+#define LIS_V2P(a) (*(long long *)(a))
+#define LIS_P2V(a) ((long long)(a))
 #else
-#define LIS_V2P(a)	(*(long *)(a))
-#define LIS_P2V(a)	((long)(a))
+#define LIS_V2P(a) (*(long *)(a))
+#define LIS_P2V(a) ((long)(a))
 #endif
 
-extern LIS_Comm_f	lis_comm_world_f;
+extern LIS_Comm_f lis_comm_world_f;
 
 /**************/
 /* MATRIX     */
@@ -110,7 +110,6 @@ extern LIS_Comm_f	lis_comm_world_f;
 #define lis_matrix_shift_diagonal_f F77_FUNC_(lis_matrix_shift_diagonal_f, LIS_MATRIX_SHIFT_DIAGONAL_F)
 #define lis_matrix_set_blocksize_f F77_FUNC_(lis_matrix_set_blocksize_f, LIS_MATRIX_SET_BLOCKSIZE_F)
 #define lis_matrix_unset_f F77_FUNC_(lis_matrix_unset_f, LIS_MATRIX_UNSET_F)
-
 
 /**************/
 /* VECTOR     */

@@ -31,28 +31,28 @@
 #include <stdarg.h>
 
 
-#define LIS_SETERR(code,mess)			lis_error(__FILE__,__FUNC__,__LINE__,code,mess)
-#define LIS_SETERR1(code,mess,a1)		lis_error(__FILE__,__FUNC__,__LINE__,code,mess,a1)
-#define LIS_SETERR2(code,mess,a1,a2)	lis_error(__FILE__,__FUNC__,__LINE__,code,mess,a1,a2)
+#define LIS_SETERR(code,mess) lis_error(__FILE__,__FUNC__,__LINE__,code,mess)
+#define LIS_SETERR1(code,mess,a1) lis_error(__FILE__,__FUNC__,__LINE__,code,mess,a1)
+#define LIS_SETERR2(code,mess,a1,a2) lis_error(__FILE__,__FUNC__,__LINE__,code,mess,a1,a2)
 #define LIS_SETERR3(code,mess,a1,a2,a3)	lis_error(__FILE__,__FUNC__,__LINE__,code,mess,a1,a2,a3)
-#define LIS_SETERR4(code,mess,a1,a2,a3,a4)	lis_error(__FILE__,__FUNC__,__LINE__,code,mess,a1,a2,a3,a4)
-#define LIS_SETERR_MEM(sz)				lis_error(__FILE__,__FUNC__,__LINE__,LIS_ERR_OUT_OF_MEMORY,"malloc size = %d\n",sz)
-#define LIS_SETERR_IMP					lis_error(__FILE__,__FUNC__,__LINE__,LIS_ERR_NOT_IMPLEMENTED,"not implemented\n")
-#define LIS_SETERR_FIO					lis_error(__FILE__,__FUNC__,__LINE__,LIS_ERR_FILE_IO,"file i/o error\n")
+#define LIS_SETERR4(code,mess,a1,a2,a3,a4) lis_error(__FILE__,__FUNC__,__LINE__,code,mess,a1,a2,a3,a4)
+#define LIS_SETERR_MEM(sz) lis_error(__FILE__,__FUNC__,__LINE__,LIS_ERR_OUT_OF_MEMORY,"malloc size = %d\n",sz)
+#define LIS_SETERR_IMP lis_error(__FILE__,__FUNC__,__LINE__,LIS_ERR_NOT_IMPLEMENTED,"not implemented\n")
+#define LIS_SETERR_FIO lis_error(__FILE__,__FUNC__,__LINE__,LIS_ERR_FILE_IO,"file i/o error\n")
 
 
 typedef struct LIS_ARGS_STRUCT
 {
   struct LIS_ARGS_STRUCT *next, *prev;
-  char   *arg1;
-  char   *arg2;
+  char *arg1;
+  char *arg2;
 } *LIS_ARGS;
 
 typedef struct LIS_HASH_STRUCT
 {
 	struct LIS_HASH_STRUCT *next;
-	LIS_INT		index;
-	LIS_INT		value;
+	LIS_INT	index;
+	LIS_INT	value;
 } *LIS_HASH;
 
 typedef struct LIS_HASH_STRUCT **LIS_HASHTABLE;
@@ -64,7 +64,7 @@ extern "C"
 {
 #endif
 	extern LIS_ARGS cmd_args;
-	extern LIS_SCALAR	*lis_vec_tmp;
+	extern LIS_SCALAR *lis_vec_tmp;
 	extern LIS_INT lis_mpi_initialized;
 #ifdef USE_MPI
 	extern MPI_Op LIS_MPI_MSUM;

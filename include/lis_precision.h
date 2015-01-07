@@ -38,9 +38,9 @@
 	#define LIS_QUAD_DECLAR			
 #else
 #ifdef USE_SSE2
-	#define LIS_QUAD_DECLAR			__m128d bh,ch,sh,wh,th,bl,cl,sl,wl,tl,p1,p2,t0,t1,t2,eh
+	#define LIS_QUAD_DECLAR __m128d bh,ch,sh,wh,th,bl,cl,sl,wl,tl,p1,p2,t0,t1,t2,eh
 #else
-	#define LIS_QUAD_DECLAR			double p1,p2,tq,bhi,blo,chi,clo,sh,eh,sl,el,th,tl
+	#define LIS_QUAD_DECLAR double p1,p2,tq,bhi,blo,chi,clo,sh,eh,sl,el,th,tl
 #endif
 #endif
 
@@ -92,9 +92,9 @@
  **********************************************************/
 
 #define LIS_QUAD_TWO_SUM(a,b,r,e)   \
-				(r) =  (a) + (b); \
-				th  =  (r) - (a); \
-				(e) =  ((a) - ((r) - th)) + ((b) - th)
+				(r) = (a) + (b); \
+				th  = (r) - (a); \
+				(e) = ((a) - ((r) - th)) + ((b) - th)
 
 /**********************************************************
  * LIS_QUAD_TWO_DIFF(a,b,r,e)                             *
@@ -103,9 +103,9 @@
  **********************************************************/
 
 #define LIS_QUAD_TWO_DIFF(a,b,r,e)   \
-				(r) =  (a) - (b); \
-				th  =  (r) - (a); \
-				(e) =  ((a) - ((r) - th)) - ((b) + th)
+				(r) = (a) - (b); \
+				th  = (r) - (a); \
+				(e) = ((a) - ((r) - th)) - ((b) + th)
 
 /**********************************************************
  * LIS_QUAD_SPLIT(b,b_hi,b_lo)                            *
@@ -113,7 +113,7 @@
   b -> (b_hi,b_lo)
  **********************************************************/
 
-#define LIS_QUAD_SPLIT(b,b_hi,b_lo) \
+#define LIS_QUAD_SPLIT(b,b_hi,b_lo)   \
 				tq     = SPLITTER * (b); \
 				(b_hi) = tq - (tq-(b));  \
 				(b_lo) = (b) - (b_hi);   \
@@ -126,14 +126,14 @@
 
 #ifndef HAS_FMA
 #define LIS_QUAD_TWO_PROD(a,b,r,e)   \
-				(r)  = (a) * (b); \
-	            LIS_QUAD_SPLIT((a),bhi,blo); \
-	            LIS_QUAD_SPLIT((b),chi,clo); \
-				(e)  = ((bhi*chi-(r))+bhi*clo+blo*chi)+blo*clo
+				(r) = (a) * (b); \
+				LIS_QUAD_SPLIT((a),bhi,blo); \
+				LIS_QUAD_SPLIT((b),chi,clo); \
+				(e) = ((bhi*chi-(r))+bhi*clo+blo*chi)+blo*clo
 #else
 #define LIS_QUAD_TWO_PROD(a,b,r,e)   \
-				(r)  = (-(a)) * (b); \
-				(e)  = (a) * (b) + (r)
+				(r) = (-(a)) * (b); \
+				(e) = (a) * (b) + (r)
 #endif
 
 /**********************************************************
@@ -144,13 +144,13 @@
 
 #ifndef HAS_FMA
 #define LIS_QUAD_TWO_SQR(a,r,e)   \
-				(r)  = (a) * (a); \
-	            LIS_QUAD_SPLIT((a),bhi,blo); \
-				(e)  = ((bhi*bhi-(r))+2.0*bhi*blo)+blo*blo
+				(r) = (a) * (a); \
+				LIS_QUAD_SPLIT((a),bhi,blo); \
+				(e) = ((bhi*bhi-(r))+2.0*bhi*blo)+blo*blo
 #else
 #define LIS_QUAD_TWO_SQR(a,r,e)   \
-				(r)  = (-(a)) * (a); \
-				(e)  = (a) * (a) + (r)
+				(r) = (-(a)) * (a); \
+				(e) = (a) * (a) + (r)
 #endif
 
 /**********************************************************
@@ -243,12 +243,12 @@
 					(a_hi) = (a_lo) = 0.0; \
 					return LIS_FAILS; \
 				} \
-				p1  = 1.0 / sqrt((b_hi)); \
+				p1 = 1.0 / sqrt((b_hi)); \
 				p2 = (b_hi) * p1; \
-				p1  = p1 * 0.5; \
+				p1 = p1 * 0.5; \
 				LIS_QUAD_TWO_SQR(p2,chi,clo); \
 				LIS_QUAD_ADD(th,eh,(b_hi),(b_lo),-chi,-clo); \
-				p1  = p1 * th; \
+				p1 = p1 * th; \
 				LIS_QUAD_FAST_TWO_SUM(p1,p2,(a_hi),(a_lo))
 
 /**********************************************************
@@ -295,8 +295,8 @@
 
 #define LIS_QUAD_MUL_SSE2_STORE(a_hi,a_lo) \
 				_mm_store_sd(&(a_hi),sh); \
-				sh  = _mm_sub_sd(sh,bh); \
-				wh  = _mm_sub_sd(wh,sh); \
+				sh = _mm_sub_sd(sh,bh); \
+				wh = _mm_sub_sd(wh,sh); \
 				_mm_store_sd(&(a_lo),wh)
 
 /**********************************************************
@@ -325,14 +325,14 @@
 
 #ifndef USE_FAST_QUAD_ADD
 #define LIS_QUAD_FMA_SSE2_LOAD(a_hi,a_lo) \
-				th  = _mm_sub_sd(sh,bh); \
-				wh  = _mm_sub_sd(wh,th); \
-				bl  = _mm_set_pd((a_lo),(a_hi)); \
-				sh  = _mm_unpacklo_pd(sh,wh)
+				th = _mm_sub_sd(sh,bh); \
+				wh = _mm_sub_sd(wh,th); \
+				bl = _mm_set_pd((a_lo),(a_hi)); \
+				sh = _mm_unpacklo_pd(sh,wh)
 #else
 #define LIS_QUAD_FMA_SSE2_LOAD(a_hi,a_lo) \
-				th  = _mm_sub_sd(sh,bh); \
-				wh  = _mm_sub_sd(wh,th); \
+				th = _mm_sub_sd(sh,bh); \
+				wh = _mm_sub_sd(wh,th); \
  				eh = _mm_set_sd((a_hi)); \
 				cl = _mm_set_sd((a_lo))
 #endif
@@ -344,31 +344,31 @@
  **********************************************************/
 
 #define LIS_QUAD_MUL_SSE2_CORE(b_hi,b_lo,c_hi,c_lo) \
-				sh  = _mm_set_pd(SPLITTER,SPLITTER); \
+				sh = _mm_set_pd(SPLITTER,SPLITTER); \
 				ch = _mm_set_pd((c_hi),(b_hi)); \
-				bh  = _mm_unpackhi_pd(ch,ch); \
+				bh = _mm_unpackhi_pd(ch,ch); \
 				tl = _mm_set_pd((b_lo),(c_lo)); \
-				bh  = _mm_mul_sd(bh,ch); \
-				sh  = _mm_mul_pd(sh,ch); \
-				th  = _mm_sub_pd(sh,ch); \
-				sh  = _mm_sub_pd(sh,th); \
-				th  = _mm_mul_pd(ch,tl); \
+				bh = _mm_mul_sd(bh,ch); \
+				sh = _mm_mul_pd(sh,ch); \
+				th = _mm_sub_pd(sh,ch); \
+				sh = _mm_sub_pd(sh,th); \
+				th = _mm_mul_pd(ch,tl); \
 				ch = _mm_sub_pd(ch,sh); \
-				eh  = _mm_unpackhi_pd(sh,ch); \
-				wh  = _mm_unpacklo_pd(sh,ch); \
+				eh = _mm_unpackhi_pd(sh,ch); \
+				wh = _mm_unpacklo_pd(sh,ch); \
 				ch = _mm_unpackhi_pd(ch,wh);  \
-				wh  = _mm_mul_pd(wh,eh); \
-				sh  = _mm_mul_pd(sh,ch); \
+				wh = _mm_mul_pd(wh,eh); \
+				sh = _mm_mul_pd(sh,ch); \
 				ch = _mm_unpackhi_pd(sh,sh); \
 				tl = _mm_unpackhi_pd(wh,wh); \
-				eh  = _mm_unpackhi_pd(th,th); \
-				wh  = _mm_sub_sd(wh,bh); \
-				wh  = _mm_add_sd(wh,ch); \
-				wh  = _mm_add_sd(wh,sh); \
-				wh  = _mm_add_sd(wh,tl); \
-				wh  = _mm_add_sd(wh,eh); \
-				wh  = _mm_add_sd(wh,th); \
-				sh  = _mm_add_sd(wh,bh)
+				eh = _mm_unpackhi_pd(th,th); \
+				wh = _mm_sub_sd(wh,bh); \
+				wh = _mm_add_sd(wh,ch); \
+				wh = _mm_add_sd(wh,sh); \
+				wh = _mm_add_sd(wh,tl); \
+				wh = _mm_add_sd(wh,eh); \
+				wh = _mm_add_sd(wh,th); \
+				sh = _mm_add_sd(wh,bh)
 
 /**********************************************************
  * LIS_QUAD_MULD_SSE2_CORE(b_hi,b_lo,c)                   *
@@ -377,29 +377,29 @@
  **********************************************************/
 
 #define LIS_QUAD_MULD_SSE2_CORE(b_hi,b_lo,c) \
-				sh  = _mm_set_pd(SPLITTER,SPLITTER); \
+				sh = _mm_set_pd(SPLITTER,SPLITTER); \
 				ch = _mm_set_pd((b_hi),(c)); \
-				bh  = _mm_unpackhi_pd(ch,ch); \
+				bh = _mm_unpackhi_pd(ch,ch); \
 				sl = _mm_load_sd(&(b_lo)); \
-				bh  = _mm_mul_sd(bh,ch); \
+				bh = _mm_mul_sd(bh,ch); \
 				sl = _mm_mul_sd(sl,ch); \
-				sh  = _mm_mul_pd(sh,ch); \
-				th  = _mm_sub_pd(sh,ch); \
-				sh  = _mm_sub_pd(sh,th); \
+				sh = _mm_mul_pd(sh,ch); \
+				th = _mm_sub_pd(sh,ch); \
+				sh = _mm_sub_pd(sh,th); \
 				ch = _mm_sub_pd(ch,sh); \
-				t1  = _mm_unpackhi_pd(sh,ch); \
-				wh  = _mm_unpacklo_pd(sh,ch); \
+				t1 = _mm_unpackhi_pd(sh,ch); \
+				wh = _mm_unpacklo_pd(sh,ch); \
 				ch = _mm_unpackhi_pd(ch,wh);  \
-				wh  = _mm_mul_pd(wh,t1); \
-				sh  = _mm_mul_pd(sh,ch); \
+				wh = _mm_mul_pd(wh,t1); \
+				sh = _mm_mul_pd(sh,ch); \
 				ch = _mm_unpackhi_pd(sh,sh); \
-				th  = _mm_unpackhi_pd(wh,wh); \
-				wh  = _mm_sub_sd(wh,bh); \
-				wh  = _mm_add_sd(wh,ch); \
-				wh  = _mm_add_sd(wh,sh); \
-				wh  = _mm_add_sd(wh,th); \
-				wh  = _mm_add_sd(wh,sl); \
-				sh  = _mm_add_sd(wh,bh)
+				th = _mm_unpackhi_pd(wh,wh); \
+				wh = _mm_sub_sd(wh,bh); \
+				wh = _mm_add_sd(wh,ch); \
+				wh = _mm_add_sd(wh,sh); \
+				wh = _mm_add_sd(wh,th); \
+				wh = _mm_add_sd(wh,sl); \
+				sh = _mm_add_sd(wh,bh)
 
 /**********************************************************
  * LIS_QUAD_SQR_SSE2_CORE(b_hi,b_lo)                      *
@@ -408,27 +408,27 @@
  **********************************************************/
 
 #define LIS_QUAD_SQR_SSE2_CORE(b_hi,b_lo) \
-				sh  = _mm_set_sd(SPLITTER); \
-				th  = _mm_load_sd(&(b_hi)); \
-				bl  = _mm_load_sd(&(b_lo)); \
-				bh  = _mm_mul_sd(th,th); \
-				sh  = _mm_mul_sd(sh,th); \
-				wh  = _mm_sub_sd(sh,th); \
-				sh  = _mm_sub_sd(sh,wh); \
-				cl  = _mm_sub_sd(th,sh); \
-				wh  = _mm_mul_sd(sh,sh); \
-				sh  = _mm_add_sd(sh,sh); \
-				sh  = _mm_mul_sd(sh,cl); \
-				cl  = _mm_mul_sd(cl,cl); \
-				wh  = _mm_sub_sd(wh,bh); \
-				wh  = _mm_add_sd(wh,sh); \
-				wh  = _mm_add_sd(wh,cl); \
-				th  = _mm_add_sd(th,th); \
-				th  = _mm_mul_sd(th,bl); \
-				bl  = _mm_mul_sd(bl,bl); \
-				wh  = _mm_add_sd(wh,th); \
-				wh  = _mm_add_sd(wh,bl); \
-				sh  = _mm_add_sd(wh,bh)
+				sh = _mm_set_sd(SPLITTER); \
+				th = _mm_load_sd(&(b_hi)); \
+				bl = _mm_load_sd(&(b_lo)); \
+				bh = _mm_mul_sd(th,th); \
+				sh = _mm_mul_sd(sh,th); \
+				wh = _mm_sub_sd(sh,th); \
+				sh = _mm_sub_sd(sh,wh); \
+				cl = _mm_sub_sd(th,sh); \
+				wh = _mm_mul_sd(sh,sh); \
+				sh = _mm_add_sd(sh,sh); \
+				sh = _mm_mul_sd(sh,cl); \
+				cl = _mm_mul_sd(cl,cl); \
+				wh = _mm_sub_sd(wh,bh); \
+				wh = _mm_add_sd(wh,sh); \
+				wh = _mm_add_sd(wh,cl); \
+				th = _mm_add_sd(th,th); \
+				th = _mm_mul_sd(th,bl); \
+				bl = _mm_mul_sd(bl,bl); \
+				wh = _mm_add_sd(wh,th); \
+				wh = _mm_add_sd(wh,bl); \
+				sh = _mm_add_sd(wh,bh)
 
 /**********************************************************
  * LIS_QUAD_ADD_SSE2_CORE(a_hi,a_lo)                      *
@@ -521,63 +521,63 @@
  **********************************************************/
 
 #define LIS_QUAD_DIV_SSE2(a_hi,a_lo,b_hi,b_lo,c_hi,c_lo) \
-				sh  = _mm_set_pd(SPLITTER,SPLITTER); \
-				bh  = _mm_set_pd((b_lo),(b_hi)); \
-				ch  = _mm_set_pd((c_lo),(c_hi)); \
-				p2  = bh; \
-				wh  = ch; \
-				p2  = _mm_div_sd(p2,ch); \
-				wh  = _mm_unpacklo_pd(wh,p2); \
-				ch  = _mm_move_sd(ch,p2); \
-				p2  = wh; \
-				sh  = _mm_mul_pd(sh,wh); \
-				th  = _mm_sub_pd(sh,wh); \
-				sh  = _mm_sub_pd(sh,th); \
-				ch  = _mm_mul_pd(ch,wh); \
-				wh  = _mm_sub_pd(wh,sh); \
-				th  = sh; \
-				p1  = wh; \
-				th  = _mm_unpackhi_pd(th,th); \
-				p1  = _mm_unpackhi_pd(p1,p1); \
-				eh  = th; \
-				th  = _mm_mul_sd(th,wh); \
-				eh  = _mm_mul_sd(eh,sh); \
-				wh  = _mm_mul_sd(wh,p1); \
-				sh  = _mm_mul_sd(sh,p1); \
-				p1  = ch; \
-				p1  = _mm_unpackhi_pd(p1,p1); \
-				eh  = _mm_sub_sd(eh,ch); \
-				eh  = _mm_add_sd(eh,sh); \
-				eh  = _mm_add_sd(eh,th); \
-				eh  = _mm_add_sd(eh,wh); \
-				eh  = _mm_add_sd(eh,p1); \
-				p1  = ch; \
-				p1  = _mm_add_sd(p1,eh); \
-				wh  = p1; \
-				wh  = _mm_sub_sd(wh,ch); \
-				sh  = bh; \
-				sh  = _mm_sub_sd(sh,p1); \
-				eh  = _mm_sub_sd(eh,wh); \
-				th  = sh; \
-				th  = _mm_sub_sd(th,bh); \
-				p1  = _mm_add_sd(p1,th); \
-				wh  = sh; \
-				wh  = _mm_sub_sd(wh,th); \
-				th  = bh; \
-				th  = _mm_unpackhi_pd(th,th); \
-				bh  = _mm_sub_sd(bh,wh); \
-				bh  = _mm_sub_sd(bh,p1); \
-				bh  = _mm_sub_sd(bh,eh); \
-				bh  = _mm_add_sd(bh,th); \
-				th  = p2; \
-				th  = _mm_unpackhi_pd(th,th); \
-				eh  = th; \
-				sh  = _mm_add_sd(sh,bh); \
-				sh  = _mm_div_sd(sh,p2); \
-				th  = _mm_add_sd(th,sh); \
+				sh = _mm_set_pd(SPLITTER,SPLITTER); \
+				bh = _mm_set_pd((b_lo),(b_hi)); \
+				ch = _mm_set_pd((c_lo),(c_hi)); \
+				p2 = bh; \
+				wh = ch; \
+				p2 = _mm_div_sd(p2,ch); \
+				wh = _mm_unpacklo_pd(wh,p2); \
+				ch = _mm_move_sd(ch,p2); \
+				p2 = wh; \
+				sh = _mm_mul_pd(sh,wh); \
+				th = _mm_sub_pd(sh,wh); \
+				sh = _mm_sub_pd(sh,th); \
+				ch = _mm_mul_pd(ch,wh); \
+				wh = _mm_sub_pd(wh,sh); \
+				th = sh; \
+				p1 = wh; \
+				th = _mm_unpackhi_pd(th,th); \
+				p1 = _mm_unpackhi_pd(p1,p1); \
+				eh = th; \
+				th = _mm_mul_sd(th,wh); \
+				eh = _mm_mul_sd(eh,sh); \
+				wh = _mm_mul_sd(wh,p1); \
+				sh = _mm_mul_sd(sh,p1); \
+				p1 = ch; \
+				p1 = _mm_unpackhi_pd(p1,p1); \
+				eh = _mm_sub_sd(eh,ch); \
+				eh = _mm_add_sd(eh,sh); \
+				eh = _mm_add_sd(eh,th); \
+				eh = _mm_add_sd(eh,wh); \
+				eh = _mm_add_sd(eh,p1); \
+				p1 = ch; \
+				p1 = _mm_add_sd(p1,eh); \
+				wh = p1; \
+				wh = _mm_sub_sd(wh,ch); \
+				sh = bh; \
+				sh = _mm_sub_sd(sh,p1); \
+				eh = _mm_sub_sd(eh,wh); \
+				th = sh; \
+				th = _mm_sub_sd(th,bh); \
+				p1 = _mm_add_sd(p1,th); \
+				wh = sh; \
+				wh = _mm_sub_sd(wh,th); \
+				th = bh; \
+				th = _mm_unpackhi_pd(th,th); \
+				bh = _mm_sub_sd(bh,wh); \
+				bh = _mm_sub_sd(bh,p1); \
+				bh = _mm_sub_sd(bh,eh); \
+				bh = _mm_add_sd(bh,th); \
+				th = p2; \
+				th = _mm_unpackhi_pd(th,th); \
+				eh = th; \
+				sh = _mm_add_sd(sh,bh); \
+				sh = _mm_div_sd(sh,p2); \
+				th = _mm_add_sd(th,sh); \
 				_mm_store_sd(&(a_hi),th); \
-				th  = _mm_sub_sd(th,eh); \
-				sh  = _mm_sub_sd(sh,th); \
+				th = _mm_sub_sd(th,eh); \
+				sh = _mm_sub_sd(sh,th); \
 				_mm_store_sd(&(a_lo),sh)
 
 /**********************************************************
@@ -598,7 +598,7 @@
 					(a_hi) = (a_lo) = 0.0; \
 					return LIS_FAILS; \
 				} \
-				wh  = _mm_set_sd(SPLITTER); \
+				wh = _mm_set_sd(SPLITTER); \
 				bh = _mm_load_pd(&(b_hi)); \
 				bh = bh; \
 				t0 = _mm_set_sd(1.0); \
@@ -607,18 +607,18 @@
 				t0 = _mm_div_sd(t0,t2); \
 				t2 = _mm_mul_sd(bh,t0); \
 				t0 = _mm_mul_sd(t0,t1); \
-				p1  = _mm_mul_sd(t2,t2); \
-				wh  = _mm_mul_sd(wh,t2); \
-				t1  = _mm_sub_sd(wh,t2); \
-				wh  = _mm_sub_sd(wh,t1); \
-				wl  = _mm_sub_sd(t2,wh); \
-				t1  = _mm_mul_sd(wh,wh); \
-				wh  = _mm_add_sd(wh,wh); \
-				wh  = _mm_mul_sd(wh,wl); \
-				wl  = _mm_mul_sd(wl,wl); \
-				t1  = _mm_sub_sd(t1,p1); \
-				t1  = _mm_add_sd(t1,wh); \
-				t1  = _mm_add_sd(t1,wl); \
+				p1 = _mm_mul_sd(t2,t2); \
+				wh = _mm_mul_sd(wh,t2); \
+				t1 = _mm_sub_sd(wh,t2); \
+				wh = _mm_sub_sd(wh,t1); \
+				wl = _mm_sub_sd(t2,wh); \
+				t1 = _mm_mul_sd(wh,wh); \
+				wh = _mm_add_sd(wh,wh); \
+				wh = _mm_mul_sd(wh,wl); \
+				wl = _mm_mul_sd(wl,wl); \
+				t1 = _mm_sub_sd(t1,p1); \
+				t1 = _mm_add_sd(t1,wh); \
+				t1 = _mm_add_sd(t1,wl); \
 				p1 = _mm_unpacklo_pd(p1,t1); \
 				sh = _mm_sub_pd(bh,p1); \
 				eh = _mm_sub_pd(sh,bh); \
@@ -688,7 +688,7 @@
  **********************************************************/
 
 #define LIS_QUAD_MUL2_SSE2_LOAD(b_hi,b_lo,c_hi,c_lo) \
-				t0  = _mm_set_pd(SPLITTER,SPLITTER); \
+				t0 = _mm_set_pd(SPLITTER,SPLITTER); \
 				bh = _mm_loadu_pd(&(b_hi)); \
 				ch = _mm_loadu_pd(&(c_hi)); \
 				bl = _mm_loadu_pd(&(b_lo)); \
@@ -701,15 +701,15 @@
  **********************************************************/
 
 #define LIS_QUAD_MULD2_SSE2_LOAD(b_hi,b_lo,c) \
-				t0  = _mm_set_pd(SPLITTER,SPLITTER); \
-				bh  = _mm_loadu_pd(&(b_hi)); \
-				bl  = _mm_loadu_pd(&(b_lo)); \
-				ch  = _mm_loadu_pd(&(c))
+				t0 = _mm_set_pd(SPLITTER,SPLITTER); \
+				bh = _mm_loadu_pd(&(b_hi)); \
+				bl = _mm_loadu_pd(&(b_lo)); \
+				ch = _mm_loadu_pd(&(c))
 #define LIS_QUAD_MULD2_SSE2_LOAD_SD(b0_hi,b0_lo,b1_hi,b1_lo,c) \
-				t0  = _mm_set_pd(SPLITTER,SPLITTER); \
-				bh  = _mm_set_pd((b1_hi),(b0_hi)); \
-				bl  = _mm_set_pd((b1_lo),(b0_lo)); \
-				ch  = _mm_loadu_pd(&(c))
+				t0 = _mm_set_pd(SPLITTER,SPLITTER); \
+				bh = _mm_set_pd((b1_hi),(b0_hi)); \
+				bl = _mm_set_pd((b1_lo),(b0_lo)); \
+				ch = _mm_loadu_pd(&(c))
 
 /**********************************************************
  * LIS_QUAD_SQR2_SSE2_LOAD(b_hi,b_lo)                     *
@@ -718,7 +718,7 @@
  **********************************************************/
 
 #define LIS_QUAD_SQR2_SSE2_LOAD(b_hi,b_lo) \
-				ch  = _mm_set_pd(SPLITTER,SPLITTER); \
+				ch = _mm_set_pd(SPLITTER,SPLITTER); \
 				bh = _mm_loadu_pd(&(b_hi)); \
 				bl = _mm_loadu_pd(&(b_lo))
 
@@ -730,13 +730,13 @@
 
 #define LIS_QUAD_MUL2_SSE2_STORE(a_hi,a_lo) \
 				_mm_storeu_pd(&(a_hi),ch); \
-				ch  = _mm_sub_pd(ch,p1); \
-				p2  = _mm_sub_pd(p2,ch); \
+				ch = _mm_sub_pd(ch,p1); \
+				p2 = _mm_sub_pd(p2,ch); \
 				_mm_storeu_pd(&(a_lo),p2)
 #define LIS_QUAD_MUL2_SSE2_STOREU(a_hi,a_lo) \
 				_mm_storeu_pd(&(a_hi),ch); \
-				ch  = _mm_sub_pd(ch,p1); \
-				p2  = _mm_sub_pd(p2,ch); \
+				ch = _mm_sub_pd(ch,p1); \
+				p2 = _mm_sub_pd(p2,ch); \
 				_mm_storeu_pd(&(a_lo),p2)
 
 /**********************************************************
@@ -783,15 +783,15 @@
  **********************************************************/
 
 #define LIS_QUAD_FMA2_SSE2_LOAD(a_hi,a_lo) \
-				t1  = _mm_sub_pd(ch,p1); \
-				p2  = _mm_sub_pd(p2,t1); \
+				t1 = _mm_sub_pd(ch,p1); \
+				p2 = _mm_sub_pd(p2,t1); \
 				bh = _mm_loadu_pd(&(a_hi)); \
 				bl = _mm_loadu_pd(&(a_lo))
 #define LIS_QUAD_FMA2_SSE2_LOAD_SD(a0_hi,a0_lo,a1_hi,a1_lo) \
-				t1  = _mm_sub_pd(ch,p1); \
-				p2  = _mm_sub_pd(p2,t1); \
-				bh  = _mm_set_pd((a1_hi),(a0_hi)); \
-				bl  = _mm_set_pd((a1_lo),(a0_lo))
+				t1 = _mm_sub_pd(ch,p1); \
+				p2 = _mm_sub_pd(p2,t1); \
+				bh = _mm_set_pd((a1_hi),(a0_hi)); \
+				bl = _mm_set_pd((a1_lo),(a0_lo))
 
 /**********************************************************
  * LIS_QUAD_MUL2_SSE2_CORE                                *
@@ -800,28 +800,28 @@
  **********************************************************/
 
 #define LIS_QUAD_MUL2_SSE2_CORE \
-				p1  = _mm_mul_pd(bh,ch); \
-				sh  = _mm_mul_pd(t0,bh); \
-				sl  = _mm_mul_pd(t0,ch); \
-				th  = _mm_sub_pd(sh,bh); \
-				tl  = _mm_sub_pd(sl,ch); \
-				sh  = _mm_sub_pd(sh,th); \
-				sl  = _mm_sub_pd(sl,tl); \
-				t1  = _mm_mul_pd(bh,cl); \
-				wh  = _mm_sub_pd(bh,sh); \
-				t2  = _mm_mul_pd(ch,bl); \
-				wl  = _mm_sub_pd(ch,sl); \
-				t0  = _mm_mul_pd(wh,wl); \
-				p2  = _mm_mul_pd(sh,sl); \
-				sh  = _mm_mul_pd(sh,wl); \
-				sl  = _mm_mul_pd(sl,wh); \
-				p2  = _mm_sub_pd(p2,p1); \
-				p2  = _mm_add_pd(p2,sh); \
-				p2  = _mm_add_pd(p2,sl); \
-				p2  = _mm_add_pd(p2,t0); \
-				p2  = _mm_add_pd(p2,t1); \
-				p2  = _mm_add_pd(p2,t2); \
-				ch  = _mm_add_pd(p1,p2)
+				p1 = _mm_mul_pd(bh,ch); \
+				sh = _mm_mul_pd(t0,bh); \
+				sl = _mm_mul_pd(t0,ch); \
+				th = _mm_sub_pd(sh,bh); \
+				tl = _mm_sub_pd(sl,ch); \
+				sh = _mm_sub_pd(sh,th); \
+				sl = _mm_sub_pd(sl,tl); \
+				t1 = _mm_mul_pd(bh,cl); \
+				wh = _mm_sub_pd(bh,sh); \
+				t2 = _mm_mul_pd(ch,bl); \
+				wl = _mm_sub_pd(ch,sl); \
+				t0 = _mm_mul_pd(wh,wl); \
+				p2 = _mm_mul_pd(sh,sl); \
+				sh = _mm_mul_pd(sh,wl); \
+				sl = _mm_mul_pd(sl,wh); \
+				p2 = _mm_sub_pd(p2,p1); \
+				p2 = _mm_add_pd(p2,sh); \
+				p2 = _mm_add_pd(p2,sl); \
+				p2 = _mm_add_pd(p2,t0); \
+				p2 = _mm_add_pd(p2,t1); \
+				p2 = _mm_add_pd(p2,t2); \
+				ch = _mm_add_pd(p1,p2)
 
 /**********************************************************
  * LIS_QUAD_MULD2_SSE2_CORE                               *
@@ -830,26 +830,26 @@
  **********************************************************/
 
 #define LIS_QUAD_MULD2_SSE2_CORE \
-				p1  = _mm_mul_pd(bh,ch); \
-				bl  = _mm_mul_pd(bl,ch); \
-				sh  = _mm_mul_pd(t0,bh); \
-				th  = _mm_sub_pd(sh,bh); \
-				sh  = _mm_sub_pd(sh,th); \
-				bh  = _mm_sub_pd(bh,sh); \
-				sl  = _mm_mul_pd(t0,ch); \
-				tl  = _mm_sub_pd(sl,ch); \
-				sl  = _mm_sub_pd(sl,tl); \
-				ch  = _mm_sub_pd(ch,sl); \
-				t2  = _mm_mul_pd(bh,ch); \
-				p2  = _mm_mul_pd(sh,sl); \
-				t0  = _mm_mul_pd(sh,ch); \
-				t1  = _mm_mul_pd(sl,bh); \
-				p2  = _mm_sub_pd(p2,p1); \
-				p2  = _mm_add_pd(p2,t0); \
-				p2  = _mm_add_pd(p2,t1); \
-				p2  = _mm_add_pd(p2,t2); \
-				p2  = _mm_add_pd(p2,bl); \
-				ch  = _mm_add_pd(p1,p2)
+				p1 = _mm_mul_pd(bh,ch); \
+				bl = _mm_mul_pd(bl,ch); \
+				sh = _mm_mul_pd(t0,bh); \
+				th = _mm_sub_pd(sh,bh); \
+				sh = _mm_sub_pd(sh,th); \
+				bh = _mm_sub_pd(bh,sh); \
+				sl = _mm_mul_pd(t0,ch); \
+				tl = _mm_sub_pd(sl,ch); \
+				sl = _mm_sub_pd(sl,tl); \
+				ch = _mm_sub_pd(ch,sl); \
+				t2 = _mm_mul_pd(bh,ch); \
+				p2 = _mm_mul_pd(sh,sl); \
+				t0 = _mm_mul_pd(sh,ch); \
+				t1 = _mm_mul_pd(sl,bh); \
+				p2 = _mm_sub_pd(p2,p1); \
+				p2 = _mm_add_pd(p2,t0); \
+				p2 = _mm_add_pd(p2,t1); \
+				p2 = _mm_add_pd(p2,t2); \
+				p2 = _mm_add_pd(p2,bl); \
+				ch = _mm_add_pd(p1,p2)
 
 /**********************************************************
  * LIS_QUAD_SQR2_SSE2_CORE                                *
@@ -858,24 +858,24 @@
  **********************************************************/
 
 #define LIS_QUAD_SQR2_SSE2_CORE \
-				p1  = _mm_mul_pd(bh,bh); \
-				ch  = _mm_mul_pd(ch,bh); \
-				p2  = _mm_sub_pd(ch,bh); \
-				ch  = _mm_sub_pd(ch,p2); \
-				cl  = _mm_sub_pd(bh,ch); \
-				p2  = _mm_mul_pd(ch,ch); \
-				ch  = _mm_add_pd(ch,ch); \
-				ch  = _mm_mul_pd(ch,cl); \
-				cl  = _mm_mul_pd(cl,cl); \
-				p2  = _mm_sub_pd(p2,p1); \
-				p2  = _mm_add_pd(p2,ch); \
-				p2  = _mm_add_pd(p2,cl); \
-				bh  = _mm_add_pd(bh,bh); \
-				bh  = _mm_mul_pd(bh,bl); \
-				bl  = _mm_mul_pd(bl,bl); \
-				p2  = _mm_add_pd(p2,bh); \
-				p2  = _mm_add_pd(p2,bl); \
-				ch  = _mm_add_pd(p1,p2)
+				p1 = _mm_mul_pd(bh,bh); \
+				ch = _mm_mul_pd(ch,bh); \
+				p2 = _mm_sub_pd(ch,bh); \
+				ch = _mm_sub_pd(ch,p2); \
+				cl = _mm_sub_pd(bh,ch); \
+				p2 = _mm_mul_pd(ch,ch); \
+				ch = _mm_add_pd(ch,ch); \
+				ch = _mm_mul_pd(ch,cl); \
+				cl = _mm_mul_pd(cl,cl); \
+				p2 = _mm_sub_pd(p2,p1); \
+				p2 = _mm_add_pd(p2,ch); \
+				p2 = _mm_add_pd(p2,cl); \
+				bh = _mm_add_pd(bh,bh); \
+				bh = _mm_mul_pd(bh,bl); \
+				bl = _mm_mul_pd(bl,bl); \
+				p2 = _mm_add_pd(p2,bh); \
+				p2 = _mm_add_pd(p2,bl); \
+				ch = _mm_add_pd(p1,p2)
 
 /**********************************************************
  * LIS_QUAD_ADD2_SSE2_CORE                                *
