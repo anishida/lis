@@ -5,26 +5,26 @@
 \setlength{\oddsidemargin}{0.0cm}
 \setlength{\textwidth}{16cm}
 \setlength{\textheight}{22.4cm}
- \newcommand{\R}{\mbox{\boldmath $R$}}
- \newcommand{\vx}{\mbox{\boldmath $x$}}
- \newcommand{\vy}{\mbox{\boldmath $y$}}
- \newcommand{\va}{\mbox{\boldmath $a$}}
- \newcommand{\vr}{\mbox{\boldmath $r$}}
- \newcommand{\vf}{\mbox{\boldmath $f$}}
- \newcommand{\vb}{\mbox{\boldmath $b$}}
- \newcommand{\vc}{\mbox{\boldmath $c$}}
- \newcommand{\vu}{\mbox{\boldmath $u$}}
- \newcommand{\vz}{\mbox{\boldmath $z$}}
- \newcommand{\ve}{\mbox{\boldmath $e$}}
- \newcommand{\vv}{\mbox{\boldmath $v$}}
- \newcommand{\vzero}{\mbox{\boldmath $0$}}
- \newcommand{\vd}{\mbox{\boldmath $d$}}
- \newcommand{\vxi}{\mbox{\boldmath $\xi$}}
- \newcommand{\vZ}{\mbox{\boldmath $Z$}^{n \times n}}
- \newcommand{\vepsilon}{\mbox{\boldmath $\varepsilon$}}
+\newcommand{\R}{\mbox{\boldmath $R$}}
+\newcommand{\vx}{\mbox{\boldmath $x$}}
+\newcommand{\vy}{\mbox{\boldmath $y$}}
+\newcommand{\va}{\mbox{\boldmath $a$}}
+\newcommand{\vr}{\mbox{\boldmath $r$}}
+\newcommand{\vf}{\mbox{\boldmath $f$}}
+\newcommand{\vb}{\mbox{\boldmath $b$}}
+\newcommand{\vc}{\mbox{\boldmath $c$}}
+\newcommand{\vu}{\mbox{\boldmath $u$}}
+\newcommand{\vz}{\mbox{\boldmath $z$}}
+\newcommand{\ve}{\mbox{\boldmath $e$}}
+\newcommand{\vv}{\mbox{\boldmath $v$}}
+\newcommand{\vzero}{\mbox{\boldmath $0$}}
+\newcommand{\vd}{\mbox{\boldmath $d$}}
+\newcommand{\vxi}{\mbox{\boldmath $\xi$}}
+\newcommand{\vZ}{\mbox{\boldmath $Z$}^{n \times n}}
+\newcommand{\vepsilon}{\mbox{\boldmath $\varepsilon$}}
 \newcommand{\namelistlabel}[1]{\mbox{#1}\hfill}
 \newenvironment{namelist}[1]{%
- \begin{list}{}
+\begin{list}{}
   {\let\makelabel\namelistlabel
   \settowidth{\labelwidth}{#1}
   \setlength{\leftmargin}{1.1\labelwidth}}
@@ -34,6 +34,7 @@
 \@addtoreset{equation}{section}
 \def\theequation{\thesection.\arabic{equation}}
 \makeatother
+
 \title{Lis $B%f!<%6%,%$%IF|K\8lHG(B}
 \author{}
 \date{}
@@ -115,8 +116,6 @@ All rights reserved.
 \setcounter{section}{0}
 \pagenumbering{arabic}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \section*{$B%P!<%8%g%s(B 1.0 $B$+$i$NJQ99E@(B}
 \begin{enumerate}
@@ -209,8 +208,6 @@ All rights reserved.
   {\tt lis\_array\_matmat\_ns()}$B$KJQ99(B.
 \end{enumerate}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \section{$B$O$8$a$K(B}
 Lis (Library of Iterative Solvers for linear systems, $BH/2;$O(B[lis])$B$O(B, 
@@ -317,8 +314,6 @@ Dense &	(DNS) \\
 \end{minipage}
 \end{table}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \section{$BF3F~(B}
 $BK\@a$G$O(B, $BF3F~(B, $B8!>Z$N<j=g$K$D$$$F=R$Y$k(B. 
@@ -986,8 +981,6 @@ $(1,\dots,1)^T$$B$H$N@Q$r<B9T2DG=$J9TNs3JG<7A<0$K$D$$$F(B
 \end{itemize}
 \vspace*{5mm}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \section{$B4pK\A`:n(B}
 $BK\@a$G$O(B, $B%i%$%V%i%j$N;HMQJ}K!$K$D$$$F=R$Y$k(B. 
@@ -2236,8 +2229,6 @@ linear solver status  : normal end
     11  1.000000e-00
 \end{verbatim}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \section{4$BG\@:EY1i;;(B}
 \label{sec:quadruple}
@@ -2339,8 +2330,6 @@ BiCG:   linear solver      = 2.221918e-02 sec.
 BiCG: relative residual    = 6.499145e-11
 \end{verbatim}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \section{$B9TNs3JG<7A<0(B}
 \label{sec:storages}
@@ -2348,9 +2337,6 @@ BiCG: relative residual    = 6.499145e-11
 $B9TNs$N9T(B($BNs(B)$BHV9f$O(B0$B$+$i;O$^$k$b$N$H$9$k(B. 
 $B<!?t(B$n \times n$$B$N9TNs(B$A=(a_{ij})$$B$NHsNmMWAG?t$r(B$nnz$$B$H$9$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Compressed Sparse Row (CSR)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Compressed Sparse Row (CSR)}
 CSR$B7A<0$G$O(B, $B%G!<%?$r(B3$B$D$NG[Ns(B({\ttfamily ptr,index,value})$B$K3JG<$9$k(B. 
 \begin{itemize}
@@ -2460,9 +2446,6 @@ CSR$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k$K$O(B, $B4X?t(B
 
 $B$rMQ$$$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Compressed Sparse Column (CSC)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Compressed Sparse Column (CSC)}
 CSC$B7A<0$G$O(B, $B%G!<%?$r(B3$B$D$NG[Ns(B({\ttfamily ptr,index,value})$B$K3JG<$9$k(B. 
@@ -2574,9 +2557,6 @@ CSC$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k$K$O(B, $B4X?t(B
 \end{itemize}
 $B$rMQ$$$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Modified Compressed Sparse Row (MSR)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Modified Compressed Sparse Row (MSR)}
 MSR$B7A<0$G$O(B, $B%G!<%?$r(B2$B$D$NG[Ns(B({\ttfamily index,value})$B$K3JG<$9$k(B. $ndz$$B$rBP3QItJ,$NNmMWAG?t$H$9$k(B. 
@@ -2689,9 +2669,6 @@ MSR$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k$K$O(B, $B4X?t(B
 \end{itemize}
 $B$rMQ$$$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Diagonal (DIA)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Diagonal (DIA)}
 DIA$B7A<0$G$O(B, $B%G!<%?$r(B2$B$D$NG[Ns(B({\ttfamily index, value})$B$K3JG<$9$k(B. 
@@ -2839,9 +2816,6 @@ DIA$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k$K$O(B, $B4X?t(B
 \end{itemize}
 $B$rMQ$$$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Ellpack-Itpack Generalized Diagonal (ELL)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Ellpack-Itpack Generalized Diagonal (ELL)}
 ELL$B7A<0$G$O(B, $B%G!<%?$r(B2$B$D$NG[Ns(B({\ttfamily index, value})$B$K3JG<$9$k(B. 
@@ -2952,9 +2926,6 @@ ELL$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k$K$O(B, $B4X?t(B
 \end{itemize}
 $B$rMQ$$$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Jagged Diagonal (JAD)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Jagged Diagonal (JAD)}
 JAD$B7A<0$G$O(B, $B:G=i$K3F9T$NHsNmMWAG?t$NBg$-$$=g$K9T$NJB$SBX$($r9T$$(B, 
@@ -3132,9 +3103,6 @@ JAD$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k$K$O(B, $B4X?t(B
 \end{itemize}
 $B$rMQ$$$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Block Sparse Row (BSR)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Block Sparse Row (BSR)}
 BSR$B7A<0$G$O(B, $B9TNs$r(B$r \times c$$B$NBg$-$5$NItJ,9TNs(B ($B%V%m%C%/$H8F$V(B) $B$KJ,2r$9$k(B. 
@@ -3251,9 +3219,6 @@ BSR$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k$K$O(B, $B4X?t(B
 \end{itemize}
 $B$rMQ$$$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Block Sparse Column (BSC)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Block Sparse Column (BSC)}
 BSC$B7A<0$G$O(B, $B9TNs$r(B$r \times c$$B$NBg$-$5$NItJ,9TNs(B ($B%V%m%C%/$H8F$V(B) $B$KJ,2r$9$k(B. 
 BSC$B7A<0$G$O(B, CSC$B7A<0$HF1MM$N<j=g$GHsNm%V%m%C%/(B ($B>/$J$/$H$b(B1$B$D$N(B
@@ -3369,9 +3334,6 @@ BSC$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k$K$O(B, $B4X?t(B
 \end{itemize}
 $B$rMQ$$$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Variable Block Row (VBR)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Variable Block Row (VBR)}
 VBR$B7A<0$O(BBSR$B7A<0$r0lHL2=$7$?$b$N$G$"$k(B. 
@@ -3514,9 +3476,6 @@ VBR$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k$K$O(B, $B4X?t(B
 \end{itemize}
 $B$rMQ$$$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Coordinate (COO)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Coordinate (COO)}
 COO$B7A<0$G$O(B, $B%G!<%?$r(B3$B$D$NG[Ns(B({\ttfamily row, col, value})$B$K3JG<$9$k(B. 
@@ -3628,9 +3587,6 @@ COO$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k$K$O(B, $B4X?t(B
 \end{itemize}
 $B$rMQ$$$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Dense (DNS)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Dense (DNS)}
 DNS$B7A<0$G$O(B, $B%G!<%?$r(B1$B$D$NG[Ns(B({\ttfamily value})$B$K3JG<$9$k(B. 
@@ -3729,8 +3685,6 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k$K$O(B, $B4X?t(B
 \end{itemize}
 $B$rMQ$$$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \section{$B4X?t(B}\label{sec:func}
 $BK\@a$G$O(B, $B%f!<%6$,;HMQ$G$-$k4X?t$K$D$$$F=R$Y$k(B. 
@@ -3780,7 +3734,6 @@ $global\_n$$B$r%0%m!<%P%k$J<!?t(B, $local\_n$$B$r%m!<%+%k$J<!?t$H8F$V(B.
 \indent
 $BC`<!(B, $B%^%k%A%9%l%C%I4D6-$G$O(B, {\tt comm}$B$NCM$OL5;k$5$l$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_destroy}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_destroy(LIS_VECTOR v)|\\
@@ -3800,7 +3753,6 @@ $global\_n$$B$r%0%m!<%P%k$J<!?t(B, $local\_n$$B$r%m!<%+%k$J<!?t$H8F$V(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_duplicate}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_duplicate(void *vin, LIS_VECTOR *vout)|
@@ -3828,7 +3780,6 @@ $global\_n$$B$r%0%m!<%P%k$J<!?t(B, $local\_n$$B$r%m!<%+%k$J<!?t$H8F$V(B.
 $BCM$bJ#@=$9$k>l9g$O!$$3$N4X?t$N8e$K(B
 $B4X?t(B\verb|lis_vector_copy|$B$r8F$S=P$9(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_set\_size}
 \begin{screen}
@@ -3865,7 +3816,6 @@ $local\_n$ $B$+(B $global\_n$ $B$N$I$A$i$+0lJ}$rM?$($J$1$l$P$J$i$J$$(B.
 $B3F%W%m%;%9>e$K<!?t(B$n$$B$NItJ,%Y%/%H%k$r:n@.$9$k(B. 
 $B0lJ}(B, \verb|lis_vector_set_size(v,0,n)|$B$O3F%W%m%;%9(B$p$$B>e$K<!?t(B$m_p$$B$NItJ,%Y%/%H%k$r:n@.$9$k(B. $m_p$$B$O%i%$%V%i%jB&$G7hDj$5$l$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_get\_size}
 \begin{screen}
@@ -3893,7 +3843,6 @@ $local\_n$ $B$+(B $global\_n$ $B$N$I$A$i$+0lJ}$rM?$($J$1$l$P$J$i$J$$(B.
 \indent
 $BC`<!(B, $B%^%k%A%9%l%C%I4D6-$G$O(B, $local\_n$ $$B$O(B$ $global\_n$$B$KEy$7$$(B.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_get\_range}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_get_range(LIS_VECTOR v, LIS_INT *is, LIS_INT *ie)|
@@ -3919,7 +3868,6 @@ $local\_n$ $B$+(B $global\_n$ $B$N$I$A$i$+0lJ}$rM?$($J$1$l$P$J$i$J$$(B.
 \indent
 $BC`<!(B, $B%^%k%A%9%l%C%I4D6-$G$O(B, $B%Y%/%H%k$N<!?t$,(B$n$$B$J$i$P(B, $is=0$, $ie=n$$B$G$"$k(B.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_set\_value}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_set_value(LIS_INT flag, LIS_INT i, LIS_SCALAR value,|\\
@@ -3951,7 +3899,6 @@ $local\_n$ $B$+(B $global\_n$ $B$N$I$A$i$+0lJ}$rM?$($J$1$l$P$J$i$J$$(B.
 \indent
 $B%^%k%A%W%m%;%94D6-$G$O(B, $BA4BN%Y%/%H%k$NBh(B$i$$B9T$r;XDj$9$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_get\_value}
 \begin{screen}
@@ -3978,7 +3925,6 @@ $local\_n$ $B$+(B $global\_n$ $B$N$I$A$i$+0lJ}$rM?$($J$1$l$P$J$i$J$$(B.
 \indent
 $B%^%k%A%W%m%;%94D6-$G$O(B, $BA4BN%Y%/%H%k$NBh(B$i$$B9T$r;XDj$9$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_set\_values}
 \begin{screen}
@@ -4012,7 +3958,6 @@ $local\_n$ $B$+(B $global\_n$ $B$N$I$A$i$+0lJ}$rM?$($J$1$l$P$J$i$J$$(B.
 \indent
 $B%^%k%A%W%m%;%94D6-$G$O(B, $BA4BN%Y%/%H%k$NBh(B$index[i]$$B9T$r;XDj$9$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_get\_values}
 \begin{screen}
@@ -4041,7 +3986,6 @@ $local\_n$ $B$+(B $global\_n$ $B$N$I$A$i$+0lJ}$rM?$($J$1$l$P$J$i$J$$(B.
 \indent
 $B%^%k%A%W%m%;%94D6-$G$O(B, $BA4BN%Y%/%H%k$NBh(B$start+i$$B9T$r;XDj$9$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_scatter}
 \begin{screen}
@@ -4065,7 +4009,6 @@ $local\_n$ $B$+(B $global\_n$ $B$N$I$A$i$+0lJ}$rM?$($J$1$l$P$J$i$J$$(B.
 \end{namelist}
 \indent
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_gather}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_gather(LIS_VECTOR v, LIS_SCALAR value[])|\\
@@ -4088,7 +4031,6 @@ $local\_n$ $B$+(B $global\_n$ $B$N$I$A$i$+0lJ}$rM?$($J$1$l$P$J$i$J$$(B.
 \end{namelist}
 \indent
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_is\_null}
 \begin{screen}
@@ -4119,7 +4061,6 @@ $local\_n$ $B$+(B $global\_n$ $B$N$I$A$i$+0lJ}$rM?$($J$1$l$P$J$i$J$$(B.
 $B3FItJ,9TNs$N9T?t$r(B$local\_n$$B$H$9$k(B. 
 $global\_n$$B$r%0%m!<%P%k$J9T?t(B, $local\_n$$B$r%m!<%+%k$J9T?t$H8F$V(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_create}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_create(LIS_Comm comm, LIS_MATRIX *A)|
@@ -4143,7 +4084,6 @@ $global\_n$$B$r%0%m!<%P%k$J9T?t(B, $local\_n$$B$r%m!<%+%k$J9T?t$H8F$V(B.
 \indent
 $BC`<!(B, $B%^%k%A%9%l%C%I4D6-$G$O(B, {\tt comm}$B$NCM$OL5;k$5$l$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_destroy}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_destroy(LIS_MATRIX A)|\\
@@ -4166,7 +4106,6 @@ $global\_n$$B$r%0%m!<%P%k$J9T?t(B, $local\_n$$B$r%m!<%+%k$J9T?t$H8F$V(B.
 \indent
 $B4X?t(B\verb|lis_matrix_destroy|$B$K$h$j(B, $B9TNs(B$A$$B$K4XO"IU$1$i$l$?G[Ns$bGK4~$5$l$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_duplicate}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_duplicate(LIS_MATRIX Ain, LIS_MATRIX *Aout)|
@@ -4192,7 +4131,6 @@ $global\_n$$B$r%0%m!<%P%k$J9T?t(B, $local\_n$$B$r%m!<%+%k$J9T?t$H8F$V(B.
 $B4X?t(B\verb|lis_matrix_duplicate|$B$O9TNs$NMWAG$NCM$OJ#@=$;$:(B, $B%a%b%jNN0h$N$_3NJ]$9$k(B. 
 $BCM$bJ#@=$9$k>l9g$O!$$3$N4X?t$N8e$K4X?t(B\verb|lis_matrix_copy|$B$r8F$S=P$9(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_malloc}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_malloc(LIS_MATRIX A, LIS_INT nnz_row, LIS_INT nnz[])|
@@ -4220,7 +4158,6 @@ $nnz\_row$ $B$^$?$O(B $nnz$ $B$N$I$A$i$+0lJ}$r;XDj$9$k(B.
 $B$3$N4X?t$O(B, \verb|lis_matrix_set_value|$B$G8zN($h$/MWAG$KCM$rBeF~$G$-$k$h$&$K(B, $B$"$i$+$8$a(B
 $B%a%b%jNN0h$r3NJ]$9$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_set\_value}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_set_value(LIS_INT flag, LIS_INT i, LIS_INT j,|\\
@@ -4263,7 +4200,6 @@ $nnz\_row$ $B$^$?$O(B $nnz$ $B$N$I$A$i$+0lJ}$r;XDj$9$k(B.
 {\tt lis-(\$VERSION)/test/test2.c}$B5Z$S(B{\tt lis-(\$VERSION)/test/test2f.F90}
 $B$r;2>H$N$3$H(B.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_assemble}
 \begin{screen}
@@ -4285,7 +4221,6 @@ $nnz\_row$ $B$^$?$O(B $nnz$ $B$N$I$A$i$+0lJ}$r;XDj$9$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_set\_size}
 \begin{screen}
 \verb|LIS_INT lis_matrix_set_size(LIS_MATRIX A, LIS_INT local_n, LIS_INT global_n)|
@@ -4319,7 +4254,6 @@ $local\_n$ $B$+(B $global\_n$ $B$N$I$A$i$+0lJ}$rM?$($J$1$l$P$J$i$J$$(B.
 $B%^%k%A%W%m%;%94D6-$K$*$$$F$O(B, \verb|lis_matrix_set_size(A,n,0)|$B$O3F%W%m%;%9>e$K<!?t(B$n \times N$$B$NItJ,9TNs$r:n@.$9$k(B. $N$$B$O(B$n$$B$NAmOB$G$"$k(B. \\
 $B0lJ}(B, \verb|lis_matrix_set_size(A,0,n)|$B$O3F%W%m%;%9(B$p$$B>e$K<!?t(B$m_p \times n$$B$NItJ,9TNs$r:n@.$9$k(B. $m_p$$B$O%i%$%V%i%jB&$G7hDj$5$l$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_get\_size}
 \begin{screen}
@@ -4347,7 +4281,6 @@ $local\_n$ $B$+(B $global\_n$ $B$N$I$A$i$+0lJ}$rM?$($J$1$l$P$J$i$J$$(B.
 \indent
 $BC`<!(B, $B%^%k%A%9%l%C%I4D6-$G$O(B, $local\_n$ $$B$O(B$ $global\_n$$B$KEy$7$$(B.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_get\_range}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_get_range(LIS_MATRIX A, LIS_INT *is, LIS_INT *ie)|
@@ -4373,7 +4306,6 @@ $local\_n$ $B$+(B $global\_n$ $B$N$I$A$i$+0lJ}$rM?$($J$1$l$P$J$i$J$$(B.
 \indent
 $BC`<!(B, $B%^%k%A%9%l%C%I4D6-$G$O(B, $B9TNs$N<!?t$,(B$n \times n$$B$J$i$P(B, $is=0$, $ie=n$$B$G$"$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_get\_nnz}
 \begin{screen}
@@ -4399,7 +4331,6 @@ $local\_n$ $B$+(B $global\_n$ $B$N$I$A$i$+0lJ}$rM?$($J$1$l$P$J$i$J$$(B.
 \indent
 $B%^%k%A%W%m%;%94D6-$G$O(B, $BItJ,9TNs(B$A$$B$NHsNmMWAG?t$r<hF@$9$k(B.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_set\_type}
 \begin{screen}
@@ -4447,7 +4378,6 @@ Dense &	(DNS) & \verb={LIS_MATRIX_DNS|11}= \\
 \end{center}
 \end{minipage}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_get\_type}
 \begin{screen}
@@ -4470,7 +4400,6 @@ Dense &	(DNS) & \verb={LIS_MATRIX_DNS|11}= \\
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_set\_csr}
 \begin{screen}
@@ -4501,7 +4430,6 @@ CSR$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \verb|lis_matrix_set_csr|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_set\_csc}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_set_csc(LIS_INT nnz, LIS_INT ptr[], LIS_INT index[],|\\
@@ -4530,7 +4458,6 @@ CSC$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \verb|lis_matrix_set_csc|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_set\_msr}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_set_msr(LIS_INT nnz, LIS_INT ndz, LIS_INT index[],|\\
@@ -4560,7 +4487,6 @@ MSR$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \verb|lis_matrix_set_msr|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_set\_dia}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_set_dia(LIS_INT nnd, LIS_INT index[],|\\
@@ -4589,7 +4515,6 @@ DIA$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \verb|lis_matrix_set_dia|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_set\_ell}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_set_ell(LIS_INT maxnzr, LIS_INT index[],|\\
@@ -4618,7 +4543,6 @@ ELL$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \verb|lis_matrix_set_ell|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_set\_jad}
 \begin{screen}
@@ -4650,7 +4574,6 @@ JAD$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \verb|lis_matrix_set_jad|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_set\_bsr}
 \begin{screen}
@@ -4684,7 +4607,6 @@ BSR$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \verb|lis_matrix_set_bsr|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_set\_bsc}
 \begin{screen}
@@ -4717,7 +4639,6 @@ BSC$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \verb|lis_matrix_set_bsc|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_set\_vbr}
 \begin{screen}
@@ -4753,7 +4674,6 @@ VBR$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \verb|lis_matrix_set_vbr|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_set\_coo}
 \begin{screen}
@@ -4783,7 +4703,6 @@ COO$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \verb|lis_matrix_set_coo|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_set\_dns}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_set_dns(LIS_SCALAR value[], LIS_MATRIX A)|\\
@@ -4810,7 +4729,6 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \verb|lis_matrix_set_dns|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_unset}
 \begin{screen}
@@ -4836,7 +4754,6 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \verb|lis_matrix_unset|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_destroy|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{$B%Y%/%H%k$H9TNs$rMQ$$$?7W;;(B}
 \subsubsection{lis\_vector\_swap}
@@ -4859,7 +4776,6 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_copy}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_copy(LIS_VECTOR x, LIS_VECTOR y)|\\
@@ -4880,7 +4796,6 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_axpy}
 \begin{screen}
@@ -4904,7 +4819,6 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_xpay}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_xpay(LIS_VECTOR x, LIS_SCALAR alpha, LIS_VECTOR y)|
@@ -4927,7 +4841,6 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_axpyz}
 \begin{screen}
@@ -4952,7 +4865,6 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_scale}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_scale(LIS_SCALAR alpha, LIS_VECTOR x)|\\
@@ -4975,7 +4887,6 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_pmul}
 \begin{screen}
@@ -4998,7 +4909,6 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_pdiv}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_pdiv(LIS_VECTOR x, LIS_VECTOR y, LIS_VECTOR z)|\\
@@ -5020,7 +4930,6 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_set\_all}
 \begin{screen}
@@ -5044,7 +4953,6 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_abs}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_abs(LIS_VECTOR x)|\\
@@ -5065,7 +4973,6 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_reciprocal}
 \begin{screen}
@@ -5087,7 +4994,6 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_shift}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_shift(LIS_SCALAR alpha, LIS_VECTOR x)|\\
@@ -5110,7 +5016,6 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_dot}
 \begin{screen}
@@ -5133,7 +5038,6 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_nrm1}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_nrm1(LIS_VECTOR x, LIS_REAL *value)|\\
@@ -5154,7 +5058,6 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_nrm2}
 \begin{screen}
@@ -5176,7 +5079,6 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_nrmi}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_nrmi(LIS_VECTOR x, LIS_REAL *value)|\\
@@ -5197,7 +5099,6 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_sum}
 \begin{screen}
@@ -5219,7 +5120,6 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_set\_blocksize}
 \begin{screen}
@@ -5246,7 +5146,6 @@ BSR, BSC, VBR$B7A<0$N%V%m%C%/%5%$%:(B, $BJ,3d>pJs$r@_Dj$9$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_convert}
 \begin{screen}
@@ -5288,7 +5187,6 @@ CSR    &     &  $B!{(B  &  $B!{(B  &  $B!{(B  &  $B!{(B  &  $B!{(B  & 
 COO    &  $B!{(B  &  $B!{(B  &  $B!{(B  & CSR  & CSR & CSR & CSR & CSC & CSR &     & CSR \\ \hline
 \end{tabular}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_copy}
 \begin{screen}
@@ -5311,7 +5209,6 @@ COO    &  $B!{(B  &  $B!{(B  &  $B!{(B  & CSR  & CSR & CSR & CSR & CSC & C
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_axpy}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_axpy(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)|\\
@@ -5337,7 +5234,6 @@ COO    &  $B!{(B  &  $B!{(B  &  $B!{(B  & CSR  & CSR & CSR & CSR & CSC & C
 \indent
 $B9TNs(B$A, B$$B$O(BDNS$B7A<0$G$J$1$l$P$J$i$J$$!%(B
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_xpay}
 \begin{screen}
@@ -5364,7 +5260,6 @@ COO    &  $B!{(B  &  $B!{(B  &  $B!{(B  & CSR  & CSR & CSR & CSR & CSC & C
 \indent
 $B9TNs(B$A, B$$B$O(BDNS$B7A<0$G$J$1$l$P$J$i$J$$!%(B
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_axpyz}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_axpyz(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B,|\\
@@ -5391,7 +5286,6 @@ COO    &  $B!{(B  &  $B!{(B  &  $B!{(B  & CSR  & CSR & CSR & CSR & CSC & C
 \indent
 $B9TNs(B$A, B, C$$B$O(BDNS$B7A<0$G$J$1$l$P$J$i$J$$!%(B
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_scale}
 \begin{screen}
@@ -5423,7 +5317,6 @@ COO    &  $B!{(B  &  $B!{(B  &  $B!{(B  & CSR  & CSR & CSR & CSR & CSC & C
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_get\_diagonal}
 \begin{screen}
@@ -5446,7 +5339,6 @@ COO    &  $B!{(B  &  $B!{(B  &  $B!{(B  & CSR  & CSR & CSR & CSR & CSC & C
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_shift\_diagonal}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR alpha)|\\
@@ -5470,7 +5362,6 @@ COO    &  $B!{(B  &  $B!{(B  &  $B!{(B  & CSR  & CSR & CSR & CSR & CSC & C
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matvec}
 \begin{screen}
@@ -5494,7 +5385,6 @@ COO    &  $B!{(B  &  $B!{(B  &  $B!{(B  & CSR  & CSR & CSR & CSR & CSC & C
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matvect}
 \begin{screen}
 \verb|C       LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y)|\\
@@ -5542,7 +5432,6 @@ COO    &  $B!{(B  &  $B!{(B  &  $B!{(B  & CSR  & CSR & CSR & CSR & CSC & C
 \indent
 $B%=%k%P$O@~7?J}Dx<02rK!$N>pJs$r;}$D(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_solver\_destroy}
 \begin{screen}
 \verb|C       LIS_INT lis_solver_destroy(LIS_SOLVER solver)|\\
@@ -5562,7 +5451,6 @@ COO    &  $B!{(B  &  $B!{(B  &  $B!{(B  & CSR  & CSR & CSR & CSR & CSC & C
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_solver\_set\_option}
   \label{sec:setoptions}
@@ -5696,7 +5584,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \end{minipage}
 \\ \\
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_solver\_set\_optionC}
 \begin{screen}
@@ -5718,7 +5605,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_solve}
 \begin{screen}
 \verb|C       LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x,|\\
@@ -5745,7 +5631,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_solve\_kernel}
 \begin{screen}
@@ -5778,10 +5663,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 {\tt lis-(\$VERSION)/src/esolver/lis\_esolver\_ii.c}$B$J$I$r;2>H$N$3$H(B.
 $B$3$N%W%m%0%i%`$G$O(B, \verb|lis_solve_kernel|$B$rJ#?t2s8F$S=P$7$F(B
 $B:G>.8GM-CM$r7W;;$9$k(B. \\
-\\
-\\
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_solver\_get\_status}
 \begin{screen}
@@ -5804,7 +5686,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_solver\_get\_iter}
 \begin{screen}
 \verb|C       LIS_INT lis_solver_get_iter(LIS_SOLVER solver, LIS_INT *iter)|\\
@@ -5826,7 +5707,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_solver\_get\_iterex}
 \begin{screen}
@@ -5852,7 +5732,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_solver\_get\_time}
 \begin{screen}
 \verb|C       LIS_INT lis_solver_get_time(LIS_SOLVER solver, double *time)|\\
@@ -5874,7 +5753,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_solver\_get\_timeex}
 \begin{screen}
 \verb|C       LIS_INT lis_solver_get_timeex(LIS_SOLVER solver, double *time,|\\
@@ -5902,7 +5780,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_solver\_get\_residualnorm}
 \begin{screen}
 \verb|C       LIS_INT lis_solver_get_residualnorm(LIS_SOLVER solver, LIS_REAL *residual)|\\
@@ -5924,7 +5801,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_solver\_get\_rhistory}
 \begin{screen}
 \verb|C       LIS_INT lis_solver_get_rhistory(LIS_SOLVER solver, LIS_VECTOR v)|\\
@@ -5951,7 +5827,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 $B%Y%/%H%k(B $v$ $B$N<!?t(B $n$ $B$,;D:9MzNr$ND9$5$h$j$b>.$5$$>l9g$O(B
 $B;D:9MzNr$N:G=i$+$i(B $n$ $B8D$^$G$r<hF@$9$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_solver\_get\_solver}
 \begin{screen}
@@ -5974,7 +5849,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_solver\_get\_precon}
 \begin{screen}
 \verb|C       LIS_INT lis_solver_get_precon(LIS_SOLVER solver, LIS_INT *precon_type)|\\
@@ -5996,7 +5870,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_solver\_get\_solvername}
 \begin{screen}
@@ -6019,7 +5892,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_solver\_get\_preconname}
 \begin{screen}
 \verb|C       LIS_INT lis_solver_get_preconname(LIS_INT precon_type, char *name)|\\
@@ -6041,7 +5913,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{$B8GM-CMLdBj$N5a2r(B}
 \subsubsection{lis\_esolver\_create}
@@ -6067,7 +5938,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \indent
 $B%=%k%P$O8GM-CM2rK!$N>pJs$r;}$D(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_esolver\_destroy}
 \begin{screen}
 \verb|C       LIS_INT lis_esolver_destroy(LIS_ESOLVER esolver)|\\
@@ -6087,7 +5957,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_esolver\_set\_option}
   \label{sec:setoptions}
@@ -6207,7 +6076,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \end{minipage}
 \\ \\
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_esolver\_set\_optionC}
 \begin{screen}
@@ -6229,7 +6097,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_esolve}
 \begin{screen}
 \verb|C       LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x,|\\
@@ -6256,7 +6123,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_esolver\_get\_status}
 \begin{screen}
 \verb|C       LIS_INT lis_esolver_get_status(LIS_ESOLVER esolver, LIS_INT *status)|\\
@@ -6278,7 +6144,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_esolver\_get\_iter}
 \begin{screen}
 \verb|C       LIS_INT lis_esolver_get_iter(LIS_ESOLVER esolver, LIS_INT *iter)|\\
@@ -6300,7 +6165,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_esolver\_get\_iterex}
 \begin{screen}
@@ -6325,7 +6189,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_esolver\_get\_time}
 \begin{screen}
 \verb|C       LIS_INT lis_esolver_get_time(LIS_ESOLVER esolver, double *time)|\\
@@ -6347,7 +6210,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_esolver\_get\_timeex}
 \begin{screen}
 \verb|C       LIS_INT lis_esolver_get_timeex(LIS_ESOLVER esolver, double *time,|\\
@@ -6375,7 +6237,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_esolver\_get\_residualnorm}
 \begin{screen}
 \verb|C       LIS_INT lis_esolver_get_residualnorm(LIS_ESOLVER esolver,|\\
@@ -6398,7 +6259,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_esolver\_get\_rhistory}
 \begin{screen}
 \verb|C       LIS_INT lis_esolver_get_rhistory(LIS_ESOLVER esolver, LIS_VECTOR v)|\\
@@ -6425,7 +6285,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 $B%Y%/%H%k(B$v$$B$N<!?t(B$n$$B$,;D:9MzNr$ND9$5$h$j$b>.$5$$>l9g$O(B
 $B;D:9MzNr$N:G=i$+$i(B$n$$B8D$^$G$r<hF@$9$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_esolver\_get\_evalues}
 \begin{screen}
 \verb|C       LIS_INT lis_esolver_get_evalues(LIS_ESOLVER esolver, LIS_VECTOR v)|\\
@@ -6450,7 +6309,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \indent
 $B%Y%/%H%k(B$v$$B$O$"$i$+$8$a4X?t(B\verb|lis_vector_create|$B$G:n@.$7$F$*$+$J$1$l$P$J$i$J$$(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_esolver\_get\_evectors}
 \begin{screen}
 \verb|C       LIS_INT lis_esolver_get_evectors(LIS_ESOLVER esolver, LIS_MATRIX M)|\\
@@ -6475,7 +6333,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \indent
 $B9TNs(B$M$$B$O$"$i$+$8$a4X?t(B\verb|lis_matrix_create|$B$G:n@.$7$F$*$+$J$1$l$P$J$i$J$$(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_esolver\_get\_residualnorms}
 \begin{screen}
 \verb|C       LIS_INT lis_esolver_get_residualnorms(LIS_ESOLVER esolver, LIS_VECTOR v)|\\
@@ -6500,7 +6357,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \indent
 $B%Y%/%H%k(B$v$$B$O$"$i$+$8$a4X?t(B\verb|lis_vector_create|$B$G:n@.$7$F$*$+$J$1$l$P$J$i$J$$(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_esolver\_get\_iters}
 \begin{screen}
@@ -6523,7 +6379,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_esolver\_get\_esolver}
 \begin{screen}
 \verb|C       LIS_INT lis_esolver_get_esolver(LIS_ESOLVER esolver, LIS_INT *nsol)|\\
@@ -6545,7 +6400,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_esolver\_get\_esolvername}
 \begin{screen}
@@ -6568,7 +6422,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{$BG[Ns$rMQ$$$?7W;;(B}
 $B0J2<$O%m!<%+%k$J=hM}$N$?$a$N4X?t$G$"$j(B, $BJBNs2=$5$l$J$$(B. $BG[Ns%G!<%?$O(B0$B$r5/E@$H$7(B, $BNsM%@h=g=x$G3JG<$5$l$k!%(B
@@ -6594,7 +6447,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_copy}
 \begin{screen}
 \verb|C       LIS_INT lis_array_copy(LIS_INT n, LIS_SCALAR x[], LIS_SCALAR y[])|\\
@@ -6617,7 +6469,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_axpy}
 \begin{screen}
@@ -6643,7 +6494,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_xpay}
 \begin{screen}
 \verb|C       LIS_INT lis_array_xpay(LIS_INT n, LIS_SCALAR x[], LIS_SCALAR alpha,|\\
@@ -6668,7 +6518,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_axpyz}
 \begin{screen}
@@ -6694,7 +6543,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_scale}
 \begin{screen}
 \verb|C       LIS_INT lis_array_scale(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR x[])|\\
@@ -6718,7 +6566,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_pmul}
 \begin{screen}
@@ -6743,7 +6590,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_pdiv}
 \begin{screen}
 \verb|C       LIS_INT lis_array_pdiv(LIS_INT n, LIS_SCALAR x[], LIS_SCALAR y[],|\\
@@ -6767,7 +6613,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_set\_all}
 \begin{screen}
@@ -6792,7 +6637,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_abs}
 \begin{screen}
 \verb|C       LIS_INT lis_array_abs(LIS_INT n, LIS_SCALAR x[])|\\
@@ -6814,7 +6658,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_reciprocal}
 \begin{screen}
@@ -6838,7 +6681,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_shift}
 \begin{screen}
 \verb|C       LIS_INT lis_array_shift(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR x[])|\\
@@ -6862,7 +6704,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_dot}
 \begin{screen}
@@ -6887,7 +6728,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_nrm1}
 \begin{screen}
 \verb|C       LIS_INT lis_array_nrm1(LIS_INT n, LIS_SCALAR x[], LIS_REAL *value)|\\
@@ -6910,7 +6750,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_nrm2}
 \begin{screen}
@@ -6934,7 +6773,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_nrmi}
 \begin{screen}
 \verb|C       LIS_INT lis_array_nrmi(LIS_INT n, LIS_SCALAR x[], LIS_REAL *value)|\\
@@ -6957,7 +6795,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_sum}
 \begin{screen}
@@ -6981,7 +6818,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_matvec}
 \begin{screen}
@@ -7012,7 +6848,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_matvect}
 \begin{screen}
@@ -7043,7 +6878,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_matvec\_ns}
 \begin{screen}
@@ -7076,7 +6910,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_matmat}
 \begin{screen}
@@ -7107,7 +6940,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_matmat\_ns}
 \begin{screen}
@@ -7143,7 +6975,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_ge}
 \begin{screen}
@@ -7166,7 +6997,6 @@ Gauss$B$N>C5nK!$rMQ$$$F9TNs(B$A$$B$N5U$r7W;;$9$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_solve}
 \begin{screen}
 \verb|C       LIS_INT lis_array_solve(LIS_INT n, LIS_SCALAR a[], LIS_SCALAR b[],|\\
@@ -7192,7 +7022,6 @@ Gauss$B$N>C5nK!$rMQ$$$F9TNs(B$A$$B$N5U$r7W;;$9$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_cgs}
 \begin{screen}
@@ -7218,7 +7047,6 @@ Gauss$B$N>C5nK!$rMQ$$$F9TNs(B$A$$B$N5U$r7W;;$9$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_mgs}
 \begin{screen}
 \verb|C       LIS_INT lis_array_mgs(LIS_INT n, LIS_SCALAR a[], LIS_SCALAR q[],|\\
@@ -7243,7 +7071,6 @@ Gauss$B$N>C5nK!$rMQ$$$F9TNs(B$A$$B$N5U$r7W;;$9$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_qr}
 \begin{screen}
@@ -7272,7 +7099,6 @@ QR$BK!$rMQ$$$F9TNs(B$A$$B$N8GM-CM$r7W;;$9$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{$B%U%!%$%k$NA`:n(B}
 \subsubsection{lis\_input}
@@ -7306,7 +7132,6 @@ QR$BK!$rMQ$$$F9TNs(B$A$$B$N8GM-CM$r7W;;$9$k(B.
 \end{itemize}
 $B$3$l$i$N%G!<%?9=B$$K$D$$$F$OIUO?(B\ref{sec:matinp}$B$r;2>H$;$h(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_input\_vector}
 \begin{screen}
@@ -7337,7 +7162,6 @@ QR$BK!$rMQ$$$F9TNs(B$A$$B$N8GM-CM$r7W;;$9$k(B.
 \end{itemize}
 $B$3$l$i$N%G!<%?9=B$$K$D$$$F$OIUO?(B\ref{sec:matinp}$B$r;2>H$;$h(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_input\_matrix}
 \begin{screen}
@@ -7368,7 +7192,6 @@ QR$BK!$rMQ$$$F9TNs(B$A$$B$N8GM-CM$r7W;;$9$k(B.
 \end{itemize}
 $B$3$l$i$N%G!<%?9=B$$K$D$$$F$OIUO?(B\ref{sec:matinp}$B$r;2>H$;$h(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_output}
 \begin{screen}
@@ -7402,7 +7225,6 @@ QR$BK!$rMQ$$$F9TNs(B$A$$B$N8GM-CM$r7W;;$9$k(B.
 \indent
 $B%U%!%$%k7A<0$N%G!<%?9=B$$OIUO?(B\ref{sec:matinp}$B$r;2>H$;$h(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_output\_vector}
 \begin{screen}
@@ -7433,7 +7255,6 @@ QR$BK!$rMQ$$$F9TNs(B$A$$B$N8GM-CM$r7W;;$9$k(B.
 \indent
 $B%U%!%$%k7A<0$N%G!<%?9=B$$OIUO?(B\ref{sec:matinp}$B$r;2>H$;$h(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_output\_matrix}
 \begin{screen}
@@ -7461,7 +7282,6 @@ QR$BK!$rMQ$$$F9TNs(B$A$$B$N8GM-CM$r7W;;$9$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{$B$=$NB>(B}
 \subsubsection{lis\_initialize}
@@ -7484,7 +7304,6 @@ MPI$B$N=i4|2=(B, $B%3%^%s%I%i%$%s0z?t$N<hF@Ey$N=i4|2==hM}$r9T$&(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_finalize}
 \begin{screen}
 \verb|C       LIS_INT lis_finalize()|\\
@@ -7504,7 +7323,6 @@ MPI$B$N=i4|2=(B, $B%3%^%s%I%i%$%s0z?t$N<hF@Ey$N=i4|2==hM}$r9T$&(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_wtime}
 \begin{screen}
@@ -7531,7 +7349,6 @@ MPI$B$N=i4|2=(B, $B%3%^%s%I%i%$%s0z?t$N<hF@Ey$N=i4|2==hM}$r9T$&(B.
 $B=hM}$N3+;O;~$H=*N;;~$N;~4V$r(B\verb|lis_wtime|$B$K$h$jB,Dj$7(B, 
 $B$=$N:9$r5a$a$k(B. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{CHKERR}
 \begin{screen}
 \verb|C       void CHKERR(LIS_INT ierr)|\\
@@ -8027,8 +7844,6 @@ J. Dongarra and M. Heroux.
 
 \end{thebibliography}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \appendix
 \section{$B%U%!%$%k7A<0(B}

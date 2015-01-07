@@ -5,35 +5,37 @@
 \setlength{\oddsidemargin}{0.0cm}
 \setlength{\textwidth}{16cm}
 \setlength{\textheight}{22.4cm}
- \newcommand{\R}{\mbox{\boldmath $R$}}
- \newcommand{\vx}{\mbox{\boldmath $x$}}
- \newcommand{\vy}{\mbox{\boldmath $y$}}
- \newcommand{\va}{\mbox{\boldmath $a$}}
- \newcommand{\vr}{\mbox{\boldmath $r$}}
- \newcommand{\vf}{\mbox{\boldmath $f$}}
- \newcommand{\vb}{\mbox{\boldmath $b$}}
- \newcommand{\vc}{\mbox{\boldmath $c$}}
- \newcommand{\vu}{\mbox{\boldmath $u$}}
- \newcommand{\vz}{\mbox{\boldmath $z$}}
- \newcommand{\ve}{\mbox{\boldmath $e$}}
- \newcommand{\vv}{\mbox{\boldmath $v$}}
- \newcommand{\vzero}{\mbox{\boldmath $0$}}
- \newcommand{\vd}{\mbox{\boldmath $d$}}
- \newcommand{\vxi}{\mbox{\boldmath $\xi$}}
- \newcommand{\vZ}{\mbox{\boldmath $Z$}^{n \times n}}
- \newcommand{\vepsilon}{\mbox{\boldmath $\varepsilon$}}
+
+\newcommand{\R}{\mbox{\boldmath $R$}}
+\newcommand{\vx}{\mbox{\boldmath $x$}}
+\newcommand{\vy}{\mbox{\boldmath $y$}}
+\newcommand{\va}{\mbox{\boldmath $a$}}
+\newcommand{\vr}{\mbox{\boldmath $r$}}
+\newcommand{\vf}{\mbox{\boldmath $f$}}
+\newcommand{\vb}{\mbox{\boldmath $b$}}
+\newcommand{\vc}{\mbox{\boldmath $c$}}
+\newcommand{\vu}{\mbox{\boldmath $u$}}
+\newcommand{\vz}{\mbox{\boldmath $z$}}
+\newcommand{\ve}{\mbox{\boldmath $e$}}
+\newcommand{\vv}{\mbox{\boldmath $v$}}
+\newcommand{\vzero}{\mbox{\boldmath $0$}}
+\newcommand{\vd}{\mbox{\boldmath $d$}}
+\newcommand{\vxi}{\mbox{\boldmath $\xi$}}
+\newcommand{\vZ}{\mbox{\boldmath $Z$}^{n \times n}}
+\newcommand{\vepsilon}{\mbox{\boldmath $\varepsilon$}}
 \newcommand{\namelistlabel}[1]{\mbox{#1}\hfill}
 \newenvironment{namelist}[1]{%
- \begin{list}{}
+\begin{list}{}
   {\let\makelabel\namelistlabel
   \settowidth{\labelwidth}{#1}
   \setlength{\leftmargin}{1.1\labelwidth}}
-}{%
+  }{%
 \end{list}}
 \makeatletter
 \@addtoreset{equation}{section}
 \def\theequation{\thesection.\arabic{equation}}
 \makeatother
+
 \title{Lis User Guide English Version}
 \author{}
 \date{}
@@ -48,7 +50,6 @@ Version 1.5.45
 \vspace*{2cm}
 \begin{figure}[h]
 \includegraphics[scale=0.7]{irises_korin.eps}
-%\includegraphics[scale=0.3]{shobuen_hiroshige.eps}
 \end{figure}
 
 \vspace*{2cm}
@@ -60,6 +61,7 @@ Project\\
 
 \vspace*{5mm}
 \thispagestyle{empty}
+
 \newpage
 \begin{flushleft}
 {\small
@@ -115,8 +117,6 @@ Cover: Ogata Korin. Irises. c1705. Nezu Museum.
 \setcounter{section}{0}
 \pagenumbering{arabic}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \section*{Changes from Version 1.0}
 \begin{enumerate}
@@ -225,8 +225,6 @@ Cover: Ogata Korin. Irises. c1705. Nezu Museum.
       {\tt lis\_array\_matvec\_ns()} and {\tt lis\_array\_matmat\_ns()}, respectively.
 \end{enumerate}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \section{Introduction}
 Lis (Library of Iterative Solvers for linear systems, pronounced [lis])
@@ -333,8 +331,6 @@ Dense &	(DNS) \\
 \end{minipage}
 \end{table}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \section{Installation}
 This section describes the instructions for installing and testing Lis. 
@@ -1098,8 +1094,6 @@ The current version has the following limitations:
 \end{itemize}
 \vspace*{5mm}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \section{Basic Operations}
 This section describes how to use the library. 
@@ -2361,8 +2355,6 @@ linear solver status  : normal end
    11 1.000000e+000
 \end{verbatim}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \section{Quadruple Precision Operations}
 \label{sec:quadruple}
@@ -2448,8 +2440,6 @@ BiCG:   linear solver      = 2.221918e-02 sec.
 BiCG: relative residual    = 6.499145e-11
 \end{verbatim}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \section{Matrix Storage Formats}
 \label{sec:storages}
@@ -2458,9 +2448,6 @@ Assume that the matrix row (column) number begins with $0$ and
 that the number of nonzero elements of matrix $A$ of size $n \times
 n$ is $nnz$.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Compressed Sparse Row (CSR)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Compressed Sparse Row (CSR)}
 The CSR format uses three arrays {\ttfamily ptr}, {\ttfamily index} and {\ttfamily value} to store data.
 \begin{itemize}
@@ -2570,9 +2557,6 @@ To associate the arrays in the CSR format with matrix $A$, the following functio
       \verb| LIS_INTEGER index(), LIS_SCALAR value(), LIS_MATRIX A, LIS_INTEGER ierr)|
 \end{itemize}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Compressed Sparse Column (CSC)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Compressed Sparse Column (CSC)}
 The CSS format uses three arrays {\ttfamily ptr}, {\ttfamily index} and
@@ -2684,9 +2668,6 @@ To associate the arrays in the CSC format with matrix $A$, the following functio
       \verb| LIS_INTEGER index(), LIS_SCALAR value(), LIS_MATRIX A, LIS_INTEGER ierr)|
 \end{itemize}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Modified Compressed Sparse Row (MSR)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Modified Compressed Sparse Row (MSR)}
 The MSR format uses two arrays {\ttfamily index} and {\ttfamily value} to store data. 
@@ -2798,9 +2779,6 @@ To associate the arrays in the MSR format with matrix $A$, the following functio
       \verb| LIS_INTEGER index(), LIS_SCALAR value(), LIS_MATRIX A, LIS_INTEGER ierr)|
 \end{itemize}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Diagonal (DIA)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Diagonal (DIA)}
 The DIA format uses two arrays {\ttfamily index} and {\ttfamily value} to store
@@ -2946,9 +2924,6 @@ To associate the arrays in the DIA format with matrix $A$, the following functio
       \verb| LIS_SCALAR value(), LIS_MATRIX A, LIS_INTEGER ierr)|
 \end{itemize}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Ellpack-Itpack Generalized Diagonal (ELL)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Ellpack-Itpack Generalized Diagonal (ELL)}
 The ELL format uses two arrays {\ttfamily index} and {\ttfamily value} to store
@@ -3056,9 +3031,6 @@ To associate an array required by the ELL format with matrix $A$, the following 
       \verb| LIS_SCALAR value(), LIS_MATRIX A, LIS_INTEGER ierr)|
 \end{itemize}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Jagged Diagonal (JAD)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Jagged Diagonal (JAD)}
 The JAD format first sorts the nonzero elements of the rows in decreasing order of
@@ -3238,9 +3210,6 @@ To associate an array required by the JAD format with matrix $A$, the following 
       \verb| LIS_MATRIX A, LIS_INTEGER ierr)|
 \end{itemize}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Block Sparse Row (BSR)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Block Sparse Row (BSR)}
 The BSR format breaks down matrix $A$ into partial matrices called blocks of size $r \times c$. 
@@ -3353,9 +3322,6 @@ To associate the arrays in the BSR format with matrix $A$, the following functio
       \verb| LIS_MATRIX A, LIS_INTEGER ierr)|
 \end{itemize}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Block Sparse Column (BSC)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Block Sparse Column (BSC)}
 The BSC format breaks down matrix $A$ into partial matrices called
@@ -3472,9 +3438,6 @@ To associate the arrays in the BSC format with matrix $A$, the following functio
       \verb| LIS_MATRIX A, LIS_INTEGER ierr)|
 \end{itemize}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Variable Block Row (VBR)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Variable Block Row (VBR)}
 The VBR format is the generalized version of the BSR format. The division points of the rows and columns are given by the arrays {\ttfamily row} and {\ttfamily col}. 
@@ -3617,9 +3580,6 @@ To associate the arrays in the VBR format with matrix $A$, the following functio
       \verb| LIS_SCALAR value(), LIS_MATRIX A, LIS_INTEGER ierr)|
 \end{itemize}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Coordinate (COO)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Coordinate (COO)}
 The COO format uses three arrays {\ttfamily row}, {\ttfamily col} and {\ttfamily value} to store data.
@@ -3727,9 +3687,6 @@ To associate the arrays in the COO format with matrix $A$, the following functio
       \verb| LIS_INTEGER col(), LIS_SCALAR value(), LIS_MATRIX A, LIS_INTEGER ierr)|
 \end{itemize}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Dense (DNS)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Dense (DNS)}
 The DNS format uses one array {\ttfamily value} to store data.
@@ -3825,8 +3782,6 @@ To associate the arrays in the DNS format with matrix $A$, the following functio
       \verb| LIS_INTEGER ierr)|
 \end{itemize}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \section{Functions}\label{sec:func}
 This section describes the functions which can be employed by the user.
@@ -3843,7 +3798,6 @@ The statuses of the solvers are defined as follows:
 \item[\tt LIS\_ERR\_FILE\_IO(6)] ~~~~~File I/O error
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Operating Vector Elements}
 Assume that the size of vector $v$ is $global\_n$ and that the size
@@ -3851,7 +3805,6 @@ of the partial vectors stored on $nprocs$ processing elements
 is $local\_n$. $global\_n$ and $local\_n$ 
 are called the global size and the local size, respectively.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_create}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_create(LIS_Comm comm, LIS_VECTOR *v)|\\
@@ -3877,7 +3830,6 @@ Create vector $v$.
 \indent
 For the serial and multithreaded environments, the value of {\tt comm} is ignored.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_destroy}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_destroy(LIS_VECTOR v)|\\
@@ -3897,7 +3849,6 @@ Destroy vector $v$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_duplicate}
 \begin{screen}
@@ -3925,7 +3876,6 @@ The function \verb|lis_vector_duplicate| does not copy the values,
 but allocates only the memory. To copy the values as well, 
 the function \verb|lis_vector_copy| must be called after this function.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_set\_size}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_set_size(LIS_VECTOR v, LIS_INT local_n,|\\
@@ -3962,7 +3912,6 @@ creates a partial vector of size $n$ on each processing element. On the other ha
 \verb|lis_vector_set_size(v,0,n)| creates a partial vector of size 
 $m_p$ on processing element $p$. The values of $m_p$ are determined by the library. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_get\_size}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_get_size(LIS_VECTOR v, LIS_INT *local_n,|\\
@@ -3989,7 +3938,6 @@ Get the size of vector $v$.
 \indent
 For the serial and multithreaded environments, $local\_n$ is equal to $global\_n$. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_get\_range}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_get_range(LIS_VECTOR v, LIS_INT *is, LIS_INT *ie)|
@@ -4015,7 +3963,6 @@ Get the location of the partial vector $v$ in the global vector.
 \indent
 For the serial and multithreaded environments, a vector of size $n$ results in $is = 0$ and $ie = n$. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_set\_value}
 \begin{screen}
@@ -4049,7 +3996,6 @@ Assign the scalar value to the $i$-th row of vector $v$.
 For the multiprocessing environment, the $i$-th row of the global vector must be specified instead 
 of the $i$-th row of the partial vector.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_get\_value}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_get_value(LIS_VECTOR v, LIS_INT i, LIS_SCALAR *value)|
@@ -4076,7 +4022,6 @@ Get the scalar value of the $i$-th row of vector $v$.
 For the multiprocessing environment, the $i$-th row of the global vector must be
 specified.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_set\_values}
 \begin{screen}
@@ -4113,7 +4058,6 @@ vector $v$, where $i=0,1,...,count-1$.
 For the multiprocessing environment, the $index[i]$-th row of the global vector must be specified instead 
 of the $index[i]$-th row of the partial vector.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_get\_values}
 \begin{screen}
@@ -4144,7 +4088,6 @@ where $i=0,1,...,count-1$.
 For the multiprocessing environment, the $start+i$-th row of the global vector
 must be specified.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_scatter}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_scatter(LIS_SCALAR value[], LIS_VECTOR v)|\\
@@ -4169,7 +4112,6 @@ where $i=0,1,..., global\_n-1$.
 {\bf Note}\\
 \indent
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_gather}
 \begin{screen}
@@ -4195,7 +4137,6 @@ where $i=0,1,..., global\_n-1$.
 {\bf Note}\\
 \indent
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Operating Matrix Elements}
 Assume that the size of matrix $A$ is $global\_n$ $\times$ $global\_n$
@@ -4226,7 +4167,6 @@ Create matrix $A$.
 \indent
 For the serial and multithreaded environments, the value of {\tt comm} is ignored. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_destroy}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_destroy(LIS_MATRIX A)|\\
@@ -4250,7 +4190,6 @@ Destroy matrix $A$.
 The function \verb|lis_matrix_destroy| frees the memory 
 for the set of arrays associated with matrix $A$.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_duplicate}
 \begin{screen}
@@ -4279,7 +4218,6 @@ the elements of the matrix, but allocates only the memory.
 To copy the values of the elements as well, the function
 \verb|lis_matrix_copy| must be called after this function.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_malloc}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_malloc(LIS_MATRIX A, LIS_INT nnz_row, LIS_INT nnz[])|
@@ -4305,7 +4243,6 @@ Allocate the memory for matrix $A$.
 \indent
 Either \verb|nnz_row| or \verb|nnz| must be provided.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_set\_value}
 \begin{screen}
@@ -4349,7 +4286,7 @@ For large matrices, the introduction of the function \verb|lis_matrix_set_type|
 should be considered. See {\tt lis-(\$VERSION)/test/test2.c} and
 {\tt lis-(\$VERSION)/test/test2f.F90} for details.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsubsection{lis\_matrix\_assemble}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_assemble(LIS_MATRIX A)|\\
@@ -4370,7 +4307,6 @@ Assemble matrix $A$ into the specified storage format.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_set\_size}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_set_size(LIS_MATRIX A, LIS_INT local_n,|\\
@@ -4411,7 +4347,6 @@ On the other hand, \\
 a partial matrix of size $m_p \times n$ on processing element $p$.
 The values of $m_p$ are determined by the library.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_get\_size}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_get_size(LIS_MATRIX A, LIS_INT *local_n,|
@@ -4439,7 +4374,6 @@ Get the size of matrix $A$.
 For the serial and multithreaded environments, $local\_n$ is
 equal to $global\_n$. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_get\_range}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_get_range(LIS_MATRIX A, LIS_INT *is, LIS_INT *ie)|
@@ -4465,7 +4399,7 @@ Get the location of partial matrix $A$ in the global matrix.
 \indent
 For the serial and multithreaded environments, a matrix of $n \times n$ results in $is = 0$ and $ie = n$.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsubsection{lis\_matrix\_get\_nnz}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_get_nnz(LIS_MATRIX A, LIS_INT *nnz)|
@@ -4491,7 +4425,6 @@ Get the number of nonzero elements of matrix $A$.
 For the multiprocessing environment, this function gets  
 the number of nonzero elements of partial matrix $A$. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_set\_type}
 \begin{screen}
@@ -4539,7 +4472,6 @@ Dense &	(DNS) & \verb={LIS_MATRIX_DNS|11}= \\
 \end{center}
 \end{minipage}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_get\_type}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_get_type(LIS_MATRIX A, LIS_INT *matrix_type)|
@@ -4561,7 +4493,6 @@ Get the storage format.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_set\_csr}
 \begin{screen}
@@ -4591,7 +4522,6 @@ Associate the arrays in the CSR format with matrix $A$.
 After \verb|lis_matrix_set_csr| is called, 
 the function \verb|lis_matrix_assemble| must be called. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_set\_csc}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_set_csc(LIS_INT nnz, LIS_INT ptr[], LIS_INT index[],|\\
@@ -4620,7 +4550,6 @@ Associate the arrays in the CSC format with matrix $A$.
 After \verb|lis_matrix_set_csc| is called, 
 the function \verb|lis_matrix_assemble| must be called. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_set\_msr}
 \begin{screen}
@@ -4651,7 +4580,6 @@ Associate the arrays in the MSR format with matrix $A$.
 After \verb|lis_matrix_set_msr| is called, 
 the function \verb|lis_matrix_assemble| must be called. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_set\_dia}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_set_dia(LIS_INT nnd, LIS_INT index[],|\\
@@ -4680,7 +4608,6 @@ Associate the arrays in the DIA format with matrix $A$.
 After \verb|lis_matrix_set_dia| is called, 
 the function \verb|lis_matrix_assemble| must be called. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_set\_ell}
 \begin{screen}
@@ -4711,7 +4638,6 @@ Associate the arrays in the ELL format with matrix $A$.
 After \verb|lis_matrix_set_ell| is called, 
 the function \verb|lis_matrix_assemble| must be called. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_set\_jad}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_set_jad(LIS_INT nnz, LIS_INT maxnzr, LIS_INT perm[],|\\
@@ -4742,7 +4668,6 @@ Associate the arrays in the JAD format with matrix $A$.
 After \verb|lis_matrix_set_jad| is called, 
 the function \verb|lis_matrix_assemble| must be called. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_set\_bsr}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_set_bsr(LIS_INT bnr, LIS_INT bnc, LIS_INT bnnz,|\\
@@ -4774,7 +4699,6 @@ Associate the arrays in the BSR format with matrix $A$.
 After \verb|lis_matrix_set_bsr| is called, 
 the function \verb|lis_matrix_assemble| must be called. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_set\_bsc}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_set_bsc(LIS_INT bnr, LIS_INT bnc, LIS_INT bnnz,|\\
@@ -4806,7 +4730,6 @@ Associate the arrays in the BSC format with matrix $A$.
 After \verb|lis_matrix_set_bsc| is called, 
 the function \verb|lis_matrix_assemble| must be called. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_set\_vbr}
 \begin{screen}
@@ -4844,7 +4767,6 @@ Associate the arrays in the VBR format with matrix $A$.
 After \verb|lis_matrix_set_vbr| is called, 
 the function \verb|lis_matrix_assemble| must be called. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_set\_coo}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_set_coo(LIS_INT nnz, LIS_INT row[], LIS_INT col[],|\\
@@ -4873,7 +4795,6 @@ Associate the arrays in the COO format with matrix $A$.
 After \verb|lis_matrix_set_coo| is called, 
 the function \verb|lis_matrix_assemble| must be called. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_set\_dns}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_set_dns(LIS_SCALAR value[], LIS_MATRIX A)|\\
@@ -4900,7 +4821,6 @@ Associate the array in the DNS format with matrix $A$.
 After \verb|lis_matrix_set_dns| is called, 
 the function \verb|lis_matrix_assemble| must be called. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_unset}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_unset(LIS_MATRIX A)|\\
@@ -4925,7 +4845,6 @@ Unassociate the arrays from matrix $A$.
 After \verb|lis_matrix_unset| is called, 
 the function \verb|lis_matrix_destroy| must be called. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Computing with Vectors and Matrices}
 \subsubsection{lis\_vector\_swap}
@@ -4948,7 +4867,6 @@ Swap the values of the vector elements.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_copy}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_copy(LIS_VECTOR x, LIS_VECTOR y)|\\
@@ -4969,7 +4887,6 @@ Copy the values of the vector elements.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_axpy}
 \begin{screen}
@@ -4993,7 +4910,6 @@ Calculate the sum of the vectors $y = \alpha x + y$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_xpay}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_xpay(LIS_VECTOR x, LIS_SCALAR alpha, LIS_VECTOR y)|
@@ -5016,7 +4932,6 @@ Calculate the sum of the vectors $y = x + \alpha y$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_axpyz}
 \begin{screen}
@@ -5041,7 +4956,6 @@ Calculate the sum of the vectors $z = \alpha x + y$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_scale}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_scale(LIS_SCALAR alpha, LIS_VECTOR x)|
@@ -5064,7 +4978,6 @@ Multiply vector $x$ by scalar $\alpha$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_pmul}
 \begin{screen}
@@ -5087,7 +5000,6 @@ Multiply each element of vector $x$ by the corresponding element of $y$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_pdiv}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_pdiv(LIS_VECTOR x, LIS_VECTOR y, LIS_VECTOR z)|
@@ -5109,7 +5021,6 @@ Divide each element of vector $x$ by the corresponding element of $y$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_set\_all}
 \begin{screen}
@@ -5133,7 +5044,6 @@ Assign the scalar value to the elements of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_abs}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_abs(LIS_VECTOR x)|\\
@@ -5154,7 +5064,6 @@ Get the absolute values of the elements of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_reciprocal}
 \begin{screen}
@@ -5176,7 +5085,6 @@ Get the reciprocal values of the elements of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_shift}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_shift(LIS_SCALAR alpha, LIS_VECTOR x)|\\
@@ -5199,7 +5107,6 @@ Get the shifted values of the elements of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_dot}
 \begin{screen}
@@ -5222,7 +5129,6 @@ Calculate the inner product $x^{T}y$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_nrm1}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_nrm1(LIS_VECTOR x, LIS_SCALAR *value)|\\
@@ -5243,7 +5149,6 @@ Calculate the 1-norm of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_nrm2}
 \begin{screen}
@@ -5265,7 +5170,6 @@ Calculate the 2-norm of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_vector\_nrmi}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_nrmi(LIS_VECTOR x, LIS_SCALAR *value)|\\
@@ -5286,7 +5190,6 @@ Calculate the infinity norm of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_vector\_sum}
 \begin{screen}
@@ -5308,7 +5211,6 @@ Calculate the sum of the elements of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_set\_blocksize}
 \begin{screen}
@@ -5338,7 +5240,6 @@ Assign the block size of the BSR, BSC, and VBR formats.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_convert}
 \begin{screen}
@@ -5377,7 +5278,6 @@ CSR    &     &  1  &  1  &  1  &  1  &  1  &  1  &  CSC  &  1  &  1  &  1  \\ \h
 COO    &  1  &  1  &  1  & CSR  & CSR & CSR & CSR & CSC & CSR &     & CSR   \\ \hline
 \end{tabular}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_copy}
 \begin{screen}
@@ -5400,7 +5300,6 @@ Copy the values of the matrix elements.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_axpy}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_axpy(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B)|\\
@@ -5425,7 +5324,6 @@ Calculate the sum of the matrices $B = \alpha A + B$.
 \indent
 Matrices $A$, $B$ must be in the DNS format.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_xpay}
 \begin{screen}
@@ -5452,7 +5350,6 @@ Calculate the sum of the matrices $B = A + \alpha B$.
 \indent
 Matrices $A$, $B$ must be in the DNS format.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_axpyz}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_axpyz(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B,|\\
@@ -5479,7 +5376,6 @@ Calculate the sum of the matrices $C = \alpha A + B$.
 \indent
 Matrices $A$, $B$, and $C$ must be in the DNS format.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_scale}
 \begin{screen}
@@ -5513,7 +5409,6 @@ Scale matrix $A$ and vector $b$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matrix\_get\_diagonal}
 \begin{screen}
@@ -5536,7 +5431,6 @@ Store the diagonal elements of matrix $A$ to vector $d$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matrix\_shift\_diagonal}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR alpha)|\\
@@ -5559,7 +5453,6 @@ Shift the diagonal of matrix $A$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_matvec}
 \begin{screen}
@@ -5583,7 +5476,6 @@ Calculate the matrix-vector product $y=Ax$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_matvect}
 \begin{screen}
 \verb|C       LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y)|\\
@@ -5606,7 +5498,6 @@ Calculate the matrix-vector product $y=A^{T}x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Solving Linear Equations}
 \subsubsection{lis\_solver\_create}
@@ -5632,7 +5523,6 @@ Create the solver.
 \indent
 \verb|solver| has the information on the solver, the preconditioner, etc.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_solver\_destroy}
 \begin{screen}
 \verb|C       LIS_INT lis_solver_destroy(LIS_SOLVER solver)|\\
@@ -5652,7 +5542,6 @@ Destroy the solver.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_solver\_set\_option}
   \label{sec:setoptions}
@@ -5797,7 +5686,6 @@ Option &                          \\ \hline
 \end{center}
 \end{minipage}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_solver\_set\_optionC}
 \begin{screen}
@@ -5819,7 +5707,6 @@ Set the options for the solver on the command line.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_solve}
 \begin{screen}
 \verb|C       LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x,|\\
@@ -5846,7 +5733,6 @@ Solve the linear equation $Ax = b$ with the specified solver.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_solve\_kernel}
 \begin{screen}
@@ -5879,10 +5765,7 @@ Solve the linear equation $Ax = b$ with the specified solver and the predefined 
 See {\tt lis-(\$VERSION)/src/esolver/lis\_esolver\_ii.c}, 
 which computes the smallest eigenvalue by calling 
 \verb|lis_solve_kernel| multiple times, for example. 
-\\
-\\
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_solver\_get\_status}
 \begin{screen}
@@ -5905,7 +5788,6 @@ Get the status from the solver.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_solver\_get\_iter}
 \begin{screen}
 \verb|C       LIS_INT lis_solver_get_iter(LIS_SOLVER solver, LIS_INT *iter)|\\
@@ -5927,7 +5809,6 @@ Get the number of iterations from the solver.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_solver\_get\_iterex}
 \begin{screen}
@@ -5953,7 +5834,6 @@ Get the detailed information on the number of iterations from the solver.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_solver\_get\_time}
 \begin{screen}
 \verb|C       LIS_INT lis_solver_get_time(LIS_SOLVER solver, double *time)|\\
@@ -5975,7 +5855,6 @@ Get the execution time from the solver.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_solver\_get\_timeex}
 \begin{screen}
@@ -6004,7 +5883,6 @@ Get the detailed information on the execution time from the solver.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_solver\_get\_residualnorm}
 \begin{screen}
 \verb|C       LIS_INT lis_solver_get_residualnorm(LIS_SOLVER solver, LIS_REAL *residual)|\\
@@ -6026,7 +5904,6 @@ Get the relative residual norm $||b - Ax||_2 / ||b||_2$ from the solver.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_solver\_get\_rhistory}
 \begin{screen}
@@ -6054,7 +5931,6 @@ Vector $v$ must be created in advance with the function \verb|lis_vector_create|
 When vector $v$ is shorter than the residual history, 
 it stores the residual history in order to vector $v$.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_solver\_get\_solver}
 \begin{screen}
@@ -6077,7 +5953,6 @@ Get the solver number from the solver.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_solver\_get\_precon}
 \begin{screen}
 \verb|C       LIS_INT lis_solver_get_precon(LIS_SOLVER solver, LIS_INT *precon_type)|\\
@@ -6099,7 +5974,6 @@ Get the preconditioner number from the solver.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_solver\_get\_solvername}
 \begin{screen}
@@ -6122,7 +5996,6 @@ Get the solver name from the solver number.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_solver\_get\_preconname}
 \begin{screen}
 \verb|C       LIS_INT lis_solver_get_preconname(LIS_INT precon_type, char *name)|\\
@@ -6144,7 +6017,6 @@ Get the preconditioner name from the preconditioner number.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Solving Eigenvalue Problems}
 \subsubsection{lis\_esolver\_create}
@@ -6170,7 +6042,6 @@ Create the eigensolver.
 \indent
 \verb|esolver| has the information on the eigensolver, the preconditioner, etc.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_esolver\_destroy}
 \begin{screen}
 \verb|C       LIS_INT lis_esolver_destroy(LIS_ESOLVER esolver)|\\
@@ -6190,7 +6061,6 @@ Destroy the eigensolver.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_esolver\_set\_option}
   \label{sec:setoptions}
@@ -6325,7 +6195,6 @@ Option &                          \\ \hline
 \end{center}
 \end{minipage}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_esolver\_set\_optionC}
 \begin{screen}
@@ -6347,7 +6216,6 @@ Set the options for the eigensolver on the command line.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_esolve}
 \begin{screen}
 \verb|C       LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x,|\\ 
@@ -6374,7 +6242,6 @@ Solve the eigenvalue problem $Ax = \lambda x$ with the specified eigensolver.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_esolver\_get\_status}
 \begin{screen}
@@ -6397,7 +6264,6 @@ Get the status for the specified eigenpair from the eigensolver.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_esolver\_get\_iter}
 \begin{screen}
 \verb|C       LIS_INT lis_esolver_get_iter(LIS_ESOLVER esolver, LIS_INT *iter)|\\
@@ -6419,7 +6285,6 @@ Get the number of iterations for the specified eigenpair from the eigensolver.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_esolver\_get\_iterex}
 \begin{screen}
@@ -6445,7 +6310,6 @@ Get the detailed information on the number of iterations for the specified eigen
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_esolver\_get\_time}
 \begin{screen}
 \verb|C       LIS_INT lis_esolver_get_time(LIS_ESOLVER esolver, double *time)|\\
@@ -6467,7 +6331,6 @@ Get the execution time for the specified eigenpair from the eigensolver.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_esolver\_get\_timeex}
 \begin{screen}
@@ -6496,7 +6359,6 @@ Get the detailed information on the execution time for the specified eigenpair f
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_esolver\_get\_residualnorm}
 \begin{screen}
 \verb|C       LIS_INT lis_esolver_get_residualnorm(LIS_ESOLVER esolver,|\\
@@ -6519,7 +6381,6 @@ Get the relative residual norm $||\lambda x-Ax||_2/||\lambda x||_2$ for the spec
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_esolver\_get\_rhistory}
 \begin{screen}
@@ -6547,7 +6408,6 @@ Vector $v$ must be created in advance with the function \verb|lis_vector_create|
 When vector $v$ is shorter than the residual history, 
 it stores the residual history in order to vector $v$.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_esolver\_get\_evalues}
 \begin{screen}
 \verb|C       LIS_INT lis_esolver_get_evalues(LIS_ESOLVER esolver, LIS_VECTOR v)|\\
@@ -6572,7 +6432,6 @@ Get all the eigenvalues from the eigensolver.
 \indent
 Vector $v$ must be created in advance with the function \verb|lis_vector_create|. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_esolver\_get\_evectors}
 \begin{screen}
@@ -6598,7 +6457,6 @@ Get all the eigenvectors from the eigensolver.
 \indent
 Matrix $M$ must be created in advance with the function \verb|lis_matrix_create|. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_esolver\_get\_residualnorms}
 \begin{screen}
 \verb|C       LIS_INT lis_esolver_get_residualnorms(LIS_ESOLVER esolver, LIS_VECTOR v)|\\
@@ -6623,7 +6481,6 @@ Get the relative residual norms $||\lambda x-Ax||_2/||\lambda x||_2$ of all the 
 \indent
 Vector $v$ must be created in advance with the function \verb|lis_vector_create|. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_esolver\_get\_iters}
 \begin{screen}
@@ -6649,7 +6506,6 @@ Get the numbers of iterations of all the eigenpairs from the eigensolver.
 \indent
 Vector $v$ must be created in advance with the function \verb|lis_vector_create|. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_esolver\_get\_esolver}
 \begin{screen}
 \verb|C       LIS_INT lis_esolver_get_esolver(LIS_ESOLVER esolver, LIS_INT *nesol)|\\
@@ -6671,7 +6527,6 @@ Get the eigensolver number from the eigensolver.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_esolver\_get\_esolvername}
 \begin{screen}
 \verb|C       LIS_INT lis_esolver_get_esolvername(LIS_INT nesol, char *ename)|\\
@@ -6693,7 +6548,6 @@ Get the eigensolver name from the eigensolver number.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Computing with Arrays}
 The following functions, which are not parallelized, are for local processing.
@@ -6720,7 +6574,6 @@ Swap the values of the vector elements.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_copy}
 \begin{screen}
 \verb|C       LIS_INT lis_array_copy(LIS_INT n, LIS_SCALAR x[], LIS_SCALAR y[])|\\
@@ -6743,7 +6596,6 @@ Copy the values of the vector elements.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_axpy}
 \begin{screen}
@@ -6769,7 +6621,6 @@ Calculate the sum of the vectors $y = \alpha x + y$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_xpay}
 \begin{screen}
 \verb|C       LIS_INT lis_array_xpay(LIS_INT n, LIS_SCALAR x[], LIS_SCALAR alpha,|\\
@@ -6794,7 +6645,6 @@ Calculate the sum of the vectors $y = x + \alpha y$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_axpyz}
 \begin{screen}
@@ -6820,7 +6670,6 @@ Calculate the sum of the vectors $z = \alpha x + y$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_scale}
 \begin{screen}
 \verb|C       LIS_INT lis_array_scale(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR x[])|
@@ -6844,7 +6693,6 @@ Multiply vector $x$ by scalar $\alpha$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_pmul}
 \begin{screen}
@@ -6869,7 +6717,6 @@ Multiply each element of vector $x$ by the corresponding element of $y$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_pdiv}
 \begin{screen}
 \verb|C       LIS_INT lis_array_pdiv(LIS_INT n, LIS_SCALAR x[], LIS_SCALAR y[],|\\
@@ -6893,7 +6740,6 @@ Divide each element of vector $x$ by the corresponding element of $y$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_set\_all}
 \begin{screen}
@@ -6918,7 +6764,6 @@ Assign the scalar value to the elements of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_abs}
 \begin{screen}
 \verb|C       LIS_INT lis_array_abs(LIS_INT n, LIS_SCALAR x[])|\\
@@ -6940,7 +6785,6 @@ Get the absolute values of the elements of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_reciprocal}
 \begin{screen}
@@ -6964,7 +6808,6 @@ Get the reciprocal values of the elements of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_shift}
 \begin{screen}
 \verb|C       LIS_INT lis_array_shift(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR x[])|\\
@@ -6988,7 +6831,6 @@ Get the shifted values of the elements of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_dot}
 \begin{screen}
@@ -7013,7 +6855,6 @@ Calculate the inner product $x^{T}y$ of vectors $x, y$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_nrm1}
 \begin{screen}
 \verb|C       LIS_INT lis_array_nrm1(LIS_INT n, LIS_SCALAR x[], LIS_REAL *value)|\\
@@ -7036,7 +6877,6 @@ Calculate the 1-norm of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_nrm2}
 \begin{screen}
@@ -7060,7 +6900,6 @@ Calculate the 2-norm of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_nrmi}
 \begin{screen}
 \verb|C       LIS_INT lis_array_nrmi(LIS_INT n, LIS_SCALAR x[], LIS_REAL *value)|\\
@@ -7083,7 +6922,6 @@ Calculate the infinity norm of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_sum}
 \begin{screen}
@@ -7107,7 +6945,6 @@ Calculate the sum of the elements of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_matvec}
 \begin{screen}
@@ -7138,7 +6975,6 @@ Calculate the matrix-vector product $Ax$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_matvect}
 \begin{screen}
 \verb|C       LIS_INT lis_array_matvect(LIS_INT n, LIS_SCALAR a[], LIS_SCALAR x[],|\\
@@ -7168,7 +7004,6 @@ Calculate the matrix-vector product $A^{T}x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_matvec\_ns}
 \begin{screen}
@@ -7201,7 +7036,6 @@ Calculate the matrix-vector product $Ax$, where matrix $A$ is not square.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_matmat}
 \begin{screen}
@@ -7232,7 +7066,6 @@ Calculate the matrix-matrix product $AB$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_matmat\_ns}
 \begin{screen}
@@ -7268,7 +7101,6 @@ Calculate the matrix-matrix product $AB$, where matrices $A, B$ are not square.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_ge}
 \begin{screen}
@@ -7291,7 +7123,6 @@ Calculate the inverse of matrix $A$ with the Gaussian elimination.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_solve}
 \begin{screen}
 \verb|C       LIS_INT lis_array_solve(LIS_INT n, LIS_SCALAR a[], LIS_SCALAR b[],|\\
@@ -7317,7 +7148,6 @@ Solve the linear equation $Ax = b$ with the direct method.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_cgs}
 \begin{screen}
@@ -7343,7 +7173,6 @@ Calculate the QR factorization $QR=A$ with the classical Gram-Schmidt process.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_array\_mgs}
 \begin{screen}
 \verb|C       LIS_INT lis_array_mgs(LIS_INT n, LIS_SCALAR a[], LIS_SCALAR q[],|\\
@@ -7368,7 +7197,6 @@ Calculate the QR factorization $QR=A$ with the modified Gram-Schmidt process.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_array\_qr}
 \begin{screen}
@@ -7397,7 +7225,6 @@ Calculate the eigenvalues of matrix $A$ with the QR algorithm.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Operating External Files}
 \subsubsection{lis\_input}
@@ -7430,7 +7257,6 @@ The following file formats are supported:
 \item The Harwell-Boeing format
 \end{itemize}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_input\_vector}
 \begin{screen}
 \verb|C       LIS_INT lis_input_vector(LIS_VECTOR v, char *filename)|\\
@@ -7459,7 +7285,6 @@ The following file formats are supported:
 \item The extended Matrix Market format (extended to allow vector data)
 \end{itemize}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_input\_matrix}
 \begin{screen}
 \verb|C       LIS_INT lis_input_matrix(LIS_MATRIX A, char *filename)|\\
@@ -7489,7 +7314,6 @@ The following file formats are supported:
 \item The Harwell-Boeing format
 \end{itemize}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_output}
 \begin{screen}
 \verb|C       LIS_INT lis_output(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x,|\\
@@ -7518,7 +7342,6 @@ Write the matrix and vector data into the external file.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_output\_vector}
 \begin{screen}
 \verb|C       LIS_INT lis_output_vector(LIS_VECTOR v, LIS_INT format, char *filename)|
@@ -7545,7 +7368,6 @@ Write the vector data into the external file.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_output\_matrix}
 \begin{screen}
 \verb|C       LIS_INT lis_output_matrix(LIS_MATRIX A, LIS_INT format, char *filename)|\\
@@ -7571,7 +7393,6 @@ Write the matrix data into the external file.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Other Functions}
 \subsubsection{lis\_initialize}
@@ -7594,7 +7415,6 @@ Initialize the execution environment.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{lis\_finalize}
 \begin{screen}
 \verb|C       LIS_INT lis_finalize()|\\
@@ -7614,7 +7434,6 @@ Finalize the execution environment.
 \item[\tt ierr] The return code
 \end{namelist}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsubsection{lis\_wtime}
 \begin{screen}
@@ -7642,7 +7461,6 @@ To measure the processing time, call \verb|lis_wtime| to get
 the starting time, call it again to get the ending time, 
 and calculate the difference. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{CHKERR}
 \begin{screen}
 \verb|C       void CHKERR(LIS_INT ierr)|\\
@@ -7667,7 +7485,6 @@ Check the value of the return code.
 If the value of the return code is not 0, it calls \verb|lis_finalize| 
 and terminates the program. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \addcontentsline{toc}{section}{References}
 \begin{thebibliography}{10}
@@ -8142,8 +7959,6 @@ J. Dongarra and M. Heroux.
 
 \end{thebibliography}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \appendix
 \section{File Formats}
