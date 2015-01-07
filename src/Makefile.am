@@ -1,4 +1,4 @@
-SUBDIRS = vector matrix matvec array precon solver esolver system precision
+SUBDIRS = array esolver matrix matvec precision precon solver system vector 
 if ENABLE_SAAMG
   SUBDIRS += fortran
   SUBDIRS += fortran/amg
@@ -9,18 +9,18 @@ endif
 endif
 
 lib_LTLIBRARIES  = liblis@LIBSUFFIX@.la
-liblis@LIBSUFFIX@_la_LIBADD = vector/libvector.la \
+liblis@LIBSUFFIX@_la_LIBADD = array/libarray.la \
+                   esolver/libesolver.la \
                    matrix/libmatrix.la \
                    matvec/libmatvec.la \
-                   array/libarray.la \
+                   precision/libprecision.la \
                    precon/libprecon.la \
                    solver/libsolver.la \
-                   esolver/libesolver.la \
                    system/libsystem.la \
-                   precision/libprecision.la 
+                   vector/libvector.la
 if ENABLE_SAAMG
-  liblis@LIBSUFFIX@_la_LIBADD += fortran/libfortran.la
   liblis@LIBSUFFIX@_la_LIBADD += fortran/amg/libsaamg.la
+  liblis@LIBSUFFIX@_la_LIBADD += fortran/libfortran.la
 else
 if ENABLE_FORTRAN
   liblis@LIBSUFFIX@_la_LIBADD += fortran/libfortran.la

@@ -54,8 +54,8 @@ host_triplet = @host@
 target_triplet = @target@
 @ENABLE_SAAMG_TRUE@am__append_1 = fortran fortran/amg
 @ENABLE_FORTRAN_TRUE@@ENABLE_SAAMG_FALSE@am__append_2 = fortran
-@ENABLE_SAAMG_TRUE@am__append_3 = fortran/libfortran.la \
-@ENABLE_SAAMG_TRUE@	fortran/amg/libsaamg.la
+@ENABLE_SAAMG_TRUE@am__append_3 = fortran/amg/libsaamg.la \
+@ENABLE_SAAMG_TRUE@	fortran/libfortran.la
 @ENABLE_FORTRAN_TRUE@@ENABLE_SAAMG_FALSE@am__append_4 = fortran/libfortran.la
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
@@ -99,11 +99,11 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
-liblis@LIBSUFFIX@_la_DEPENDENCIES = vector/libvector.la \
-	matrix/libmatrix.la matvec/libmatvec.la array/libarray.la \
-	precon/libprecon.la solver/libsolver.la esolver/libesolver.la \
-	system/libsystem.la precision/libprecision.la $(am__append_3) \
-	$(am__append_4)
+liblis@LIBSUFFIX@_la_DEPENDENCIES = array/libarray.la \
+	esolver/libesolver.la matrix/libmatrix.la matvec/libmatvec.la \
+	precision/libprecision.la precon/libprecon.la \
+	solver/libsolver.la system/libsystem.la vector/libvector.la \
+	$(am__append_3) $(am__append_4)
 am_liblis@LIBSUFFIX@_la_OBJECTS =
 liblis@LIBSUFFIX@_la_OBJECTS = $(am_liblis@LIBSUFFIX@_la_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/include
@@ -137,8 +137,8 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = vector matrix matvec array precon solver esolver system \
-	precision fortran fortran/amg
+DIST_SUBDIRS = array esolver matrix matvec precision precon solver \
+	system vector fortran fortran/amg
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -307,13 +307,14 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = vector matrix matvec array precon solver esolver system \
-	precision $(am__append_1) $(am__append_2)
+SUBDIRS = array esolver matrix matvec precision precon solver system \
+	vector $(am__append_1) $(am__append_2)
 lib_LTLIBRARIES = liblis@LIBSUFFIX@.la
-liblis@LIBSUFFIX@_la_LIBADD = vector/libvector.la matrix/libmatrix.la \
-	matvec/libmatvec.la array/libarray.la precon/libprecon.la \
-	solver/libsolver.la esolver/libesolver.la system/libsystem.la \
-	precision/libprecision.la $(am__append_3) $(am__append_4)
+liblis@LIBSUFFIX@_la_LIBADD = array/libarray.la esolver/libesolver.la \
+	matrix/libmatrix.la matvec/libmatvec.la \
+	precision/libprecision.la precon/libprecon.la \
+	solver/libsolver.la system/libsystem.la vector/libvector.la \
+	$(am__append_3) $(am__append_4)
 liblis@LIBSUFFIX@_la_SOURCES = 
 all: all-recursive
 
