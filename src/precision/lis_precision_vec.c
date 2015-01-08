@@ -1,4 +1,4 @@
-/* Copyright (C) The Scalable Software Infrastructure Project. All rights reserved.
+/* Copyright (C) 2005 The Scalable Software Infrastructure Project. All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
@@ -861,7 +861,7 @@ LIS_INT lis_send_recv_mp(LIS_COMMTABLE commtable, LIS_VECTOR X)
 #define __FUNC__ "lis_reduce_mp"
 LIS_INT lis_reduce_mp(LIS_COMMTABLE commtable, LIS_VECTOR X)
 {
-	LIS_INT neib,i,k,is,inum,neibpetot,pad;
+	LIS_INT neib,i,is,inum,neibpetot,pad;
 	LIS_SCALAR *x,*xl;
 	LIS_SCALAR *ws,*wr;
 	LIS_QUAD_DECLAR;
