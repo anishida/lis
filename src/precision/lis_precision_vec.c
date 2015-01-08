@@ -290,7 +290,7 @@ LIS_INT lis_vector_dotex_mmm(LIS_VECTOR vx, LIS_VECTOR vy, LIS_QUAD_PTR *val)
 
 	LIS_DEBUG_FUNC_IN;
 
-	n      = vx->n;
+	n  = vx->n;
 	x  = vx->value;
 	y  = vy->value;
 	xl = vx->value_lo;
@@ -808,7 +808,6 @@ LIS_INT lis_send_recv_mp(LIS_COMMTABLE commtable, LIS_VECTOR X)
 	LIS_INT neib,i,is,inum,neibpetot,k,pad;
 	LIS_SCALAR *ws,*wr;
 	LIS_SCALAR *x,*xl;
-	LIS_INT	*iw,err;
 
 	LIS_DEBUG_FUNC_IN;
 
