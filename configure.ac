@@ -1,9 +1,10 @@
 # Process this file with reconfigure.sh to update configure script.
+# See also config/config.*.
 
 
 # General Configurations
 
-AC_INIT(lis, 1.5.45, devel@ssisc.org)
+AC_INIT(lis, 1.5.46, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -47,7 +48,7 @@ AC_ARG_WITH(library-suffix,
 AC_SUBST(LIBSUFFIX)
 
 
-# Configurations for Target Systems
+# Configurations for Some Specific Systems
 
 if test "$TARGET" != ""; then
 	case "$TARGET" in

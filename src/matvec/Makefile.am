@@ -1,5 +1,5 @@
 noinst_LTLIBRARIES = libmatvec.la
-libmatvec_la_SOURCES = lis_matvec.c     \
+libmatvec_la_SOURCES = lis_matvec.c \
 lis_matvec_bsc.c \
 lis_matvec_bsr.c \
 lis_matvec_csc.c \

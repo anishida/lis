@@ -46,86 +46,86 @@ extern "C"
 	extern LIS_INT lis_esolver_set_option_eprecision(char *argv, LIS_INT opt, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_option_storage(char *argv, LIS_ESOLVER esolver);
 
-        /*******************/
-	/* Power Iteration */
-        /*******************/
+/*******************/
+/* Power Iteration */
+/*******************/
 
 	extern LIS_INT lis_epi(LIS_ESOLVER esolver);
 	extern LIS_INT lis_epi_quad(LIS_ESOLVER esolver);
 	extern LIS_INT lis_epi_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_epi_malloc_work(LIS_ESOLVER esolver);
 
-        /*********************/
-	/* Inverse Iteration */
-	/*********************/
+/*********************/
+/* Inverse Iteration */
+/*********************/
 
 	extern LIS_INT lis_eii(LIS_ESOLVER esolver);
 	extern LIS_INT lis_eii_quad(LIS_ESOLVER esolver);
 	extern LIS_INT lis_eii_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_eii_malloc_work(LIS_ESOLVER esolver);
 
-        /*********************************/
-	/* Approximate Inverse Iteration */
-        /*********************************/
+/*********************************/
+/* Approximate Inverse Iteration */
+/*********************************/
 
 	extern LIS_INT lis_eaii(LIS_ESOLVER esolver);
 	extern LIS_INT lis_eaii_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_eaii_malloc_work(LIS_ESOLVER esolver);
 
-        /*******************************/
-	/* Rayleigh Quotient Iteration */
-        /*******************************/
+/*******************************/
+/* Rayleigh Quotient Iteration */
+/*******************************/
 
 	extern LIS_INT lis_erqi(LIS_ESOLVER esolver);
 	extern LIS_INT lis_erqi_quad(LIS_ESOLVER esolver);
 	extern LIS_INT lis_erqi_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_erqi_malloc_work(LIS_ESOLVER esolver);
 
-        /**********************/
-	/* Conjugate Gradient */
-	/**********************/
+/**********************/
+/* Conjugate Gradient */
+/**********************/
 
 	extern LIS_INT lis_ecg(LIS_ESOLVER esolver);
 	extern LIS_INT lis_ecg_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_ecg_malloc_work(LIS_ESOLVER esolver);
 
-        /**********************/
-	/* Conjugate Residual */
-	/**********************/
+/**********************/
+/* Conjugate Residual */
+/**********************/
 
 	extern LIS_INT lis_ecr(LIS_ESOLVER esolver);
 	extern LIS_INT lis_ecr_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_ecr_malloc_work(LIS_ESOLVER esolver);
 
-        /**********************/
-	/* Jacobi-Davidson    */
-	/**********************/
+/**********************/
+/* Jacobi-Davidson    */
+/**********************/
 
 	extern LIS_INT lis_ejd(LIS_ESOLVER esolver);
 	extern LIS_INT lis_ejd_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_ejd_malloc_work(LIS_ESOLVER esolver);
 
-	/**********************/
-	/* Subspace Iteration */
-	/**********************/
+/**********************/
+/* Subspace Iteration */
+/**********************/
 
 	extern LIS_INT lis_esi(LIS_ESOLVER esolver);
 	extern LIS_INT lis_esi_quad(LIS_ESOLVER esolver);
 	extern LIS_INT lis_esi_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_esi_malloc_work(LIS_ESOLVER esolver);
 
-	/*********************/
-	/* Lanczos Iteration */
-	/*********************/
+/*********************/
+/* Lanczos Iteration */
+/*********************/
 
 	extern LIS_INT lis_eli(LIS_ESOLVER esolver);
 	extern LIS_INT lis_eli_quad(LIS_ESOLVER esolver);
 	extern LIS_INT lis_eli_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_eli_malloc_work(LIS_ESOLVER esolver);
 
-        /**********************/
-	/* Arnoldi Iteration  */
-	/**********************/
+/**********************/
+/* Arnoldi Iteration  */
+/**********************/
 
 	extern LIS_INT lis_eai(LIS_ESOLVER esolver);
 	extern LIS_INT lis_eai_quad(LIS_ESOLVER esolver);  

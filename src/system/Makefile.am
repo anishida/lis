@@ -1,15 +1,15 @@
 noinst_LTLIBRARIES = libsystem.la
-libsystem_la_SOURCES = lis_error.c     \
-lis_hash.c      \
-lis_init.c      \
-lis_input.c     \
-lis_input_hb.c  \
-lis_input_mm.c  \
-lis_memory.c    \
-lis_output.c    \
+libsystem_la_SOURCES = lis_error.c \
+lis_hash.c \
+lis_init.c \
+lis_input.c \
+lis_input_hb.c \
+lis_input_mm.c \
+lis_memory.c \
+lis_output.c \
 lis_output_mm.c \
-lis_sort.c      \
-lis_time.c      \
+lis_sort.c \
+lis_time.c \
 mt19937ar.c
 
 

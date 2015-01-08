@@ -29,32 +29,32 @@
 #define __LIS_MATRIX_H__
 
 
-#define LIS_MATRIX_CSR_STR			"csr"
-#define LIS_MATRIX_CSC_STR			"csc"
-#define LIS_MATRIX_MSR_STR			"msr"
-#define LIS_MATRIX_DIA_STR			"dia"
-#define LIS_MATRIX_ELL_STR			"ell"
-#define LIS_MATRIX_JAD_STR			"jad"
-#define LIS_MATRIX_BSR_STR			"bsr"
-#define LIS_MATRIX_BSC_STR			"bsc"
-#define LIS_MATRIX_VBR_STR			"vbr"
-#define LIS_MATRIX_DNS_STR			"dns"
-#define LIS_MATRIX_COO_STR			"coo"
-#define LIS_MATRIX_TJD_STR			"tjd"
+#define LIS_MATRIX_CSR_STR "csr"
+#define LIS_MATRIX_CSC_STR "csc"
+#define LIS_MATRIX_MSR_STR "msr"
+#define LIS_MATRIX_DIA_STR "dia"
+#define LIS_MATRIX_ELL_STR "ell"
+#define LIS_MATRIX_JAD_STR "jad"
+#define LIS_MATRIX_BSR_STR "bsr"
+#define LIS_MATRIX_BSC_STR "bsc"
+#define LIS_MATRIX_VBR_STR "vbr"
+#define LIS_MATRIX_DNS_STR "dns"
+#define LIS_MATRIX_COO_STR "coo"
+#define LIS_MATRIX_TJD_STR "tjd"
 
-#define LIS_MATRIX_CHECK_ALL			0
-#define LIS_MATRIX_CHECK_SIZE			1
-#define LIS_MATRIX_CHECK_NULL			2
-#define LIS_MATRIX_CHECK_TYPE			3
-#define LIS_MATRIX_CHECK_NOT_ASSEMBLED		4
-#define LIS_MATRIX_CHECK_SET			5
+#define LIS_MATRIX_CHECK_ALL 0
+#define LIS_MATRIX_CHECK_SIZE 1
+#define LIS_MATRIX_CHECK_NULL 2
+#define LIS_MATRIX_CHECK_TYPE 3
+#define LIS_MATRIX_CHECK_NOT_ASSEMBLED 4
+#define LIS_MATRIX_CHECK_SET 5
 
-#define LIS_MATRIX_OPTION_CALL_BY		0
+#define LIS_MATRIX_OPTION_CALL_BY 0
 
-#define LIS_CALL_BY_REFERENCE			0
-#define LIS_CALL_BY_VALUE			1
+#define LIS_CALL_BY_REFERENCE 0
+#define LIS_CALL_BY_VALUE 1
 
-#define LIS_MATRIX_W_ANNZ			10
+#define LIS_MATRIX_W_ANNZ 10
 
 #ifdef __cplusplus
 extern "C"
@@ -71,9 +71,9 @@ extern "C"
 	extern LIS_INT lis_matrix_copy_struct(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_convert_self(LIS_SOLVER solver);
 
-	/*******************/
-	/* Operations      */
-	/*******************/
+/*******************/
+/* Operations      */
+/*******************/
 
 	extern LIS_INT lis_matrix_split(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_merge(LIS_MATRIX A);
@@ -99,9 +99,9 @@ extern "C"
 	extern LIS_INT lis_matrix_shift_diagonal_coo(LIS_MATRIX A, LIS_SCALAR alpha);
 	extern LIS_INT lis_matrix_shift_diagonal_vbr(LIS_MATRIX A, LIS_SCALAR alpha);
 
-	/*******************/
-	/* Diagonal Matrix */
-	/*******************/
+/*******************/
+/* Diagonal Matrix */
+/*******************/
 
 	extern LIS_INT lis_matrix_diag_init(LIS_MATRIX_DIAG *D);
 	extern LIS_INT lis_matrix_diag_check(LIS_MATRIX_DIAG D, LIS_INT level);
@@ -120,9 +120,9 @@ extern "C"
 	extern LIS_INT lis_matrix_diag_matvec(LIS_MATRIX_DIAG D, LIS_VECTOR X, LIS_VECTOR Y);
 	extern LIS_INT lis_matrix_diag_matvect(LIS_MATRIX_DIAG D, LIS_VECTOR X, LIS_VECTOR Y);
 
-	/*******************/
-	/* CSR             */
-	/*******************/
+/*******************/
+/* CSR             */
+/*******************/
 
 	extern LIS_INT lis_matrix_setDLU_csr(LIS_INT nnzl, LIS_INT nnzu, LIS_SCALAR *diag, LIS_INT *lptr, LIS_INT *lindex, LIS_SCALAR *lvalue, LIS_INT *uptr, LIS_INT *uindex, LIS_SCALAR *uvalue, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_elements_copy_csr(LIS_INT n, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR *value, LIS_INT *o_ptr, LIS_INT *o_index, LIS_SCALAR *o_value);
@@ -140,9 +140,9 @@ extern "C"
 	extern LIS_INT lis_matrix_solvet_csr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
 	extern LIS_INT lis_matrix_split2_csr(LIS_MATRIX A);
 
-	/*******************/
-	/* CSC             */
-	/*******************/
+/*******************/
+/* CSC             */
+/*******************/
 
 	extern LIS_INT lis_matrix_setDLU_csc(LIS_INT nnzl, LIS_INT nnzu, LIS_SCALAR *diag, LIS_INT *lptr, LIS_INT *lindex, LIS_SCALAR *lvalue, LIS_INT *uptr, LIS_INT *uindex, LIS_SCALAR *uvalue, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_elements_copy_csc(LIS_INT n, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR *value, LIS_INT *o_ptr, LIS_INT *o_index, LIS_SCALAR *o_value);
@@ -160,9 +160,9 @@ extern "C"
 	extern LIS_INT lis_matrix_convert_csr2csc(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_convert_csc2csr(LIS_MATRIX Ain, LIS_MATRIX Aout);
 
-	/*******************/
-	/* BSR             */
-	/*******************/
+/*******************/
+/* BSR             */
+/*******************/
 
 	extern LIS_INT lis_matrix_setDLU_bsr(LIS_INT bnr, LIS_INT bnc, LIS_INT lbnnz, LIS_INT ubnnz, LIS_MATRIX_DIAG D, LIS_INT *lbptr, LIS_INT *lbindex, LIS_SCALAR *lvalue, LIS_INT *ubptr, LIS_INT *ubindex, LIS_SCALAR *uvalue, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_elements_copy_bsr(LIS_INT n, LIS_INT bnr, LIS_INT bnc, LIS_INT bnnz, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR *value, LIS_INT *o_ptr, LIS_INT *o_index, LIS_SCALAR *o_value);
@@ -179,9 +179,9 @@ extern "C"
 	extern LIS_INT lis_matrix_solvet_bsr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
 	extern LIS_INT lis_matrix_sort_bsr(LIS_MATRIX A);
 
-	/*******************/
-	/* MSR             */
-	/*******************/
+/*******************/
+/* MSR             */
+/*******************/
 
 	extern LIS_INT lis_matrix_setDLU_msr(LIS_INT lnnz, LIS_INT unnz, LIS_INT lndz, LIS_INT undz, LIS_SCALAR *diag, LIS_INT *lindex, LIS_SCALAR *lvalue, LIS_INT *uindex, LIS_SCALAR *uvalue, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_elements_copy_msr(LIS_INT n, LIS_INT *index, LIS_SCALAR *value, LIS_INT *o_index, LIS_SCALAR *o_value);
@@ -196,9 +196,9 @@ extern "C"
 	extern LIS_INT lis_matrix_convert_csr2msr(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_convert_msr2csr(LIS_MATRIX Ain, LIS_MATRIX Aout);
 
-	/*******************/
-	/* ELL             */
-	/*******************/
+/*******************/
+/* ELL             */
+/*******************/
 
 	extern LIS_INT lis_matrix_setDLU_ell(LIS_INT lmaxnzr, LIS_INT umaxnzr, LIS_SCALAR *diag, LIS_INT *lindex, LIS_SCALAR *lvalue, LIS_INT *uindex, LIS_SCALAR *uvalue, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_elements_copy_ell(LIS_INT n, LIS_INT maxnzr, LIS_INT *index, LIS_SCALAR *value, LIS_INT *o_index, LIS_SCALAR *o_value);
@@ -213,9 +213,9 @@ extern "C"
 	extern LIS_INT lis_matrix_convert_csr2ell(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_convert_ell2csr(LIS_MATRIX Ain, LIS_MATRIX Aout);
 
-	/*******************/
-	/* JAD             */
-	/*******************/
+/*******************/
+/* JAD             */
+/*******************/
 
 	extern LIS_INT lis_matrix_setDLU_jad(LIS_INT lnnz, LIS_INT unnz, LIS_INT lmaxnzr, LIS_INT umaxnzr, LIS_SCALAR *diag, LIS_INT *lperm, LIS_INT *lptr, LIS_INT *lindex, LIS_SCALAR *lvalue, LIS_INT *uperm, LIS_INT *uptr, LIS_INT *uindex, LIS_SCALAR *uvalue, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_elements_copy_jad(LIS_INT n, LIS_INT maxnzr, LIS_INT *perm, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR *value, LIS_INT *o_perm, LIS_INT *o_ptr, LIS_INT *o_index, LIS_SCALAR *o_value);
@@ -230,9 +230,9 @@ extern "C"
 	extern LIS_INT lis_matrix_convert_csr2jad(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_convert_jad2csr(LIS_MATRIX Ain, LIS_MATRIX Aout);
 
-	/*******************/
-	/* DIA             */
-	/*******************/
+/*******************/
+/* DIA             */
+/*******************/
 
 	extern LIS_INT lis_matrix_setDLU_dia(LIS_INT lnnd, LIS_INT unnd, LIS_SCALAR *diag, LIS_INT *lindex, LIS_SCALAR *lvalue, LIS_INT *uindex, LIS_SCALAR *uvalue, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_elements_copy_dia(LIS_INT n, LIS_INT nnd, LIS_INT *index, LIS_SCALAR *value, LIS_INT *o_index, LIS_SCALAR *o_value);
@@ -247,9 +247,9 @@ extern "C"
 	extern LIS_INT lis_matrix_convert_csr2dia(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_convert_dia2csr(LIS_MATRIX Ain, LIS_MATRIX Aout);
 
-	/*******************/
-	/* BSC             */
-	/*******************/
+/*******************/
+/* BSC             */
+/*******************/
 
 	extern LIS_INT lis_matrix_setDLU_bsc(LIS_INT bnr, LIS_INT bnc, LIS_INT lbnnz, LIS_INT ubnnz, LIS_MATRIX_DIAG D, LIS_INT *lbptr, LIS_INT *lbindex, LIS_SCALAR *lvalue, LIS_INT *ubptr, LIS_INT *ubindex, LIS_SCALAR *uvalue, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_elements_copy_bsc(LIS_INT n, LIS_INT bnr, LIS_INT bnc, LIS_INT bnnz, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR *value, LIS_INT *o_ptr, LIS_INT *o_index, LIS_SCALAR *o_value);
@@ -264,9 +264,9 @@ extern "C"
 	extern LIS_INT lis_matrix_solve_bsc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
 	extern LIS_INT lis_matrix_solvet_bsc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
 
-	/*******************/
-	/* VBR             */
-	/*******************/
+/*******************/
+/* VBR             */
+/*******************/
 
 	extern LIS_INT lis_matrix_elements_copy_vbr(LIS_INT n, LIS_INT nr, LIS_INT nc, LIS_INT bnnz, LIS_INT *row, LIS_INT *col, LIS_INT *ptr, LIS_INT *bptr, LIS_INT *bindex, LIS_SCALAR *value, LIS_INT *o_row, LIS_INT *o_col, LIS_INT *o_ptr, LIS_INT *o_bptr, LIS_INT *o_bindex, LIS_SCALAR *o_value);
 	extern LIS_INT lis_matrix_copy_vbr(LIS_MATRIX Ain, LIS_MATRIX Aout);
@@ -280,9 +280,9 @@ extern "C"
 	extern LIS_INT lis_matrix_solve_vbr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
 	extern LIS_INT lis_matrix_solvet_vbr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
 
-	/*******************/
-	/* DNS             */
-	/*******************/
+/*******************/
+/* DNS             */
+/*******************/
 
 	extern LIS_INT lis_matrix_setDLU_dns(LIS_SCALAR *diag, LIS_SCALAR *lvalue, LIS_SCALAR *uvalue, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_elements_copy_dns(LIS_INT n, LIS_INT gn, LIS_SCALAR *value, LIS_SCALAR *o_value);
@@ -297,9 +297,9 @@ extern "C"
 	extern LIS_INT lis_matrix_convert_csr2dns(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_convert_dns2csr(LIS_MATRIX Ain, LIS_MATRIX Aout);
 
-	/*******************/
-	/* COO             */
-	/*******************/
+/*******************/
+/* COO             */
+/*******************/
 
 	extern LIS_INT lis_matrix_copy_coo(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_get_diagonal_coo(LIS_MATRIX A, LIS_SCALAR d[]);
@@ -313,9 +313,9 @@ extern "C"
 	extern LIS_INT lis_matrix_convert_csr2coo(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_convert_coo2csr(LIS_MATRIX Ain, LIS_MATRIX Aout);
 
-	/*******************/
-	/* RCO             */
-	/*******************/
+/*******************/
+/* RCO             */
+/*******************/
 
 	extern LIS_INT lis_matrix_create_rco(LIS_INT local_n, LIS_INT global_n, LIS_Comm comm, LIS_INT annz, LIS_INT *nnz, LIS_MATRIX *Amat);
 	extern LIS_INT lis_matrix_malloc_rco(LIS_INT n, LIS_INT nnz[], LIS_INT **row, LIS_INT ***index, LIS_SCALAR ***value);
@@ -324,9 +324,9 @@ extern "C"
 	extern LIS_INT lis_matrix_convert_rco2bsr(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_convert_rco2csc(LIS_MATRIX Ain, LIS_MATRIX Aout);
 
-	/*******************/
-	/* ILU             */
-	/*******************/
+/*******************/
+/* ILU             */
+/*******************/
 
 	extern LIS_INT lis_matrix_ilu_create(LIS_INT n, LIS_INT bs, LIS_MATRIX_ILU *A);
 	extern LIS_INT lis_matrix_ilu_setCR(LIS_MATRIX_ILU A);

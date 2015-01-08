@@ -1,6 +1,10 @@
-:start
+@echo off
+rem   Configuration Script for Microsoft Build Engine
 
-@echo # Configuration for Microsoft Build Engine > Makefile
+:start
+rem   Default Configurations
+
+@echo # Configurations for Microsoft Build Engine > Makefile
 @echo. >> Makefile
 @echo. 
 @set prefix=
@@ -20,6 +24,7 @@
 @set userldflags=
 
 :again
+rem   Build Options
 
 @if "%1" == "-h" goto usage
 @if "%1" == "--help" goto usage

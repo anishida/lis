@@ -1,6 +1,6 @@
 noinst_LTLIBRARIES = libvector.la
-libvector_la_SOURCES = lis_vector.c      \
-lis_vector_ops.c  \
+libvector_la_SOURCES = lis_vector.c \
+lis_vector_ops.c \
 lis_vector_opv.c
 
 

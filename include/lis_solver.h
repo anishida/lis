@@ -56,9 +56,9 @@ extern "C"
 	extern LIS_INT lis_solver_set_shadowresidual(LIS_SOLVER solver, LIS_VECTOR r0, LIS_VECTOR rs0);
 	extern LIS_SOLVER_GET_RESIDUAL lis_solver_get_residual[3];
 
-	/*******************/
-	/* CG              */
-	/*******************/
+/*******************/
+/* CG              */
+/*******************/
 
 	extern LIS_INT lis_cg(LIS_SOLVER solver);
 	extern LIS_INT lis_cg_quad(LIS_SOLVER solver);
@@ -66,9 +66,9 @@ extern "C"
 	extern LIS_INT lis_cg_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_cg_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* BiCG            */
-	/*******************/
+/*******************/
+/* BiCG            */
+/*******************/
 
 	extern LIS_INT lis_bicg(LIS_SOLVER solver);
 	extern LIS_INT lis_bicg_quad(LIS_SOLVER solver);
@@ -76,9 +76,9 @@ extern "C"
 	extern LIS_INT lis_bicg_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_bicg_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* CGS             */
-	/*******************/
+/*******************/
+/* CGS             */
+/*******************/
 
 	extern LIS_INT lis_cgs(LIS_SOLVER solver);
 	extern LIS_INT lis_cgs_quad(LIS_SOLVER solver);
@@ -86,9 +86,9 @@ extern "C"
 	extern LIS_INT lis_cgs_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_cgs_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* BiCGSTAB        */
-	/*******************/
+/*******************/
+/* BiCGSTAB        */
+/*******************/
 
 	extern LIS_INT lis_bicgstab(LIS_SOLVER solver);
 	extern LIS_INT lis_bicgstab_quad(LIS_SOLVER solver);
@@ -96,18 +96,18 @@ extern "C"
 	extern LIS_INT lis_bicgstab_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_bicgstab_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* BiCGSTAB(l)     */
-	/*******************/
+/*******************/
+/* BiCGSTAB(l)     */
+/*******************/
 
 	extern LIS_INT lis_bicgstabl(LIS_SOLVER solver);
 	extern LIS_INT lis_bicgstabl_quad(LIS_SOLVER solver);
 	extern LIS_INT lis_bicgstabl_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_bicgstabl_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* GPBiCG          */
-	/*******************/
+/*******************/
+/* GPBiCG          */
+/*******************/
 
 	extern LIS_INT lis_gpbicg(LIS_SOLVER solver);
 	extern LIS_INT lis_gpbicg_quad(LIS_SOLVER solver);
@@ -115,9 +115,9 @@ extern "C"
 	extern LIS_INT lis_gpbicg_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_gpbicg_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* BiCGSafe        */
-	/*******************/
+/*******************/
+/* BiCGSafe        */
+/*******************/
 
 	extern LIS_INT lis_bicgsafe(LIS_SOLVER solver);
 	extern LIS_INT lis_bicgsafe_quad(LIS_SOLVER solver);
@@ -125,27 +125,27 @@ extern "C"
 	extern LIS_INT lis_bicgsafe_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_bicgsafe_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* TFQMR           */
-	/*******************/
+/*******************/
+/* TFQMR           */
+/*******************/
 
 	extern LIS_INT lis_tfqmr(LIS_SOLVER solver);
 	extern LIS_INT lis_tfqmr_quad(LIS_SOLVER solver);
 	extern LIS_INT lis_tfqmr_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_tfqmr_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* Orthomin(m)     */
-	/*******************/
+/*******************/
+/* Orthomin(m)     */
+/*******************/
 
 	extern LIS_INT lis_orthomin(LIS_SOLVER solver);
 	extern LIS_INT lis_orthomin_quad(LIS_SOLVER solver);
 	extern LIS_INT lis_orthomin_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_orthomin_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* GMRES(m)        */
-	/*******************/
+/*******************/
+/* GMRES(m)        */
+/*******************/
 
 	extern LIS_INT lis_gmres(LIS_SOLVER solver);
 	extern LIS_INT lis_gmres_quad(LIS_SOLVER solver);
@@ -153,33 +153,33 @@ extern "C"
 	extern LIS_INT lis_gmres_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_gmres_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* Jacobi          */
-	/*******************/
+/*******************/
+/* Jacobi          */
+/*******************/
 
 	extern LIS_INT lis_jacobi(LIS_SOLVER solver);
 	extern LIS_INT lis_jacobi_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_jacobi_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* Gauss-Seidel    */
-	/*******************/
+/*******************/
+/* Gauss-Seidel    */
+/*******************/
 
 	extern LIS_INT lis_gs(LIS_SOLVER solver);
 	extern LIS_INT lis_gs_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_gs_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* SOR             */
-	/*******************/
+/*******************/
+/* SOR             */
+/*******************/
 
 	extern LIS_INT lis_sor(LIS_SOLVER solver);
 	extern LIS_INT lis_sor_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_sor_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* CR              */
-	/*******************/
+/*******************/
+/* CR              */
+/*******************/
 
 	extern LIS_INT lis_cr(LIS_SOLVER solver);
 	extern LIS_INT lis_cr_quad(LIS_SOLVER solver);
@@ -187,9 +187,9 @@ extern "C"
 	extern LIS_INT lis_cr_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_cr_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* BiCR            */
-	/*******************/
+/*******************/
+/* BiCR            */
+/*******************/
 
 	extern LIS_INT lis_bicr(LIS_SOLVER solver);
 	extern LIS_INT lis_bicr_quad(LIS_SOLVER solver);
@@ -197,9 +197,9 @@ extern "C"
 	extern LIS_INT lis_bicr_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_bicr_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* CRS             */
-	/*******************/
+/*******************/
+/* CRS             */
+/*******************/
 
 	extern LIS_INT lis_crs(LIS_SOLVER solver);
 	extern LIS_INT lis_crs_quad(LIS_SOLVER solver);
@@ -207,9 +207,9 @@ extern "C"
 	extern LIS_INT lis_crs_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_crs_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* BiCRSTAB        */
-	/*******************/
+/*******************/
+/* BiCRSTAB        */
+/*******************/
 
 	extern LIS_INT lis_bicrstab(LIS_SOLVER solver);
 	extern LIS_INT lis_bicrstab_quad(LIS_SOLVER solver);
@@ -217,9 +217,9 @@ extern "C"
 	extern LIS_INT lis_bicrstab_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_bicrstab_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* GPBiCR          */
-	/*******************/
+/*******************/
+/* GPBiCR          */
+/*******************/
 
 	extern LIS_INT lis_gpbicr(LIS_SOLVER solver);
 	extern LIS_INT lis_gpbicr_quad(LIS_SOLVER solver);
@@ -227,9 +227,9 @@ extern "C"
 	extern LIS_INT lis_gpbicr_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_gpbicr_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* BiCRSafe        */
-	/*******************/
+/*******************/
+/* BiCRSafe        */
+/*******************/
 
 	extern LIS_INT lis_bicrsafe(LIS_SOLVER solver);
 	extern LIS_INT lis_bicrsafe_quad(LIS_SOLVER solver);
@@ -237,9 +237,9 @@ extern "C"
 	extern LIS_INT lis_bicrsafe_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_bicrsafe_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* FGMRES(m)       */
-	/*******************/
+/*******************/
+/* FGMRES(m)       */
+/*******************/
 
 	extern LIS_INT lis_fgmres(LIS_SOLVER solver);
 	extern LIS_INT lis_fgmres_quad(LIS_SOLVER solver);
@@ -247,25 +247,25 @@ extern "C"
 	extern LIS_INT lis_fgmres_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_fgmres_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* IDR(s)          */
-	/*******************/
+/*******************/
+/* IDR(s)          */
+/*******************/
 
 	extern LIS_INT lis_idrs(LIS_SOLVER solver);
 	extern LIS_INT lis_idrs_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_idrs_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* IDR(1)          */
-	/*******************/
+/*******************/
+/* IDR(1)          */
+/*******************/
 
 	extern LIS_INT lis_idr1(LIS_SOLVER solver);
 	extern LIS_INT lis_idr1_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_idr1_malloc_work(LIS_SOLVER solver);
 
-	/*******************/
-	/* GMRES(m)        */
-	/*******************/
+/*******************/
+/* GMRES(m)        */
+/*******************/
 
 	extern LIS_INT lis_minres(LIS_SOLVER solver);
 	extern LIS_INT lis_minres_check_params(LIS_SOLVER solver);

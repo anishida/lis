@@ -28,9 +28,9 @@
 #ifndef __LIS_VECTOR_H__
 #define __LIS_VECTOR_H__
 
-#define LIS_VECTOR_CHECK_ALL		0
-#define LIS_VECTOR_CHECK_NULL		1
-#define LIS_VECTOR_CHECK_ASSEMBLE	2
+#define LIS_VECTOR_CHECK_ALL 0
+#define LIS_VECTOR_CHECK_NULL 1
+#define LIS_VECTOR_CHECK_ASSEMBLE 2
 
 
 
@@ -49,9 +49,9 @@ extern "C"
 	extern LIS_INT lis_vector_get_destroyflag(LIS_VECTOR v, LIS_INT *flag);
 	extern LIS_INT lis_vector_check(LIS_VECTOR v, LIS_INT level);
 
-	/*******************/
-	/* Operations      */
-	/*******************/
+/*******************/
+/* Operations      */
+/*******************/
 
 	extern LIS_INT lis_vector_axpyex_mmm(LIS_QUAD_PTR alpha, LIS_VECTOR vx, LIS_VECTOR vy);
 	extern LIS_INT lis_vector_xpayex_mmm(LIS_VECTOR vx, LIS_QUAD_PTR alpha, LIS_VECTOR vy);

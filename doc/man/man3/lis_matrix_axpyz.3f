@@ -25,6 +25,10 @@ The matrices
 .IP "\fBC\fR"
 \fIalpha * A + B\fR
 
+.SH NOTE
+
+Matrices \fIA\fR, \fIB\fR and \fIC\fR must be in the DNS format.
+
 .SH SEE ALSO
 
 .BR lis (3)

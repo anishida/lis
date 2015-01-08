@@ -1,56 +1,12 @@
-SUBDIRS = src include test
+SUBDIRS = include src test
 
-EXTRA_DIST = reconfigure.sh \
-             win/README \
-             win/Makefile.in \
-             win/configure.bat \
-             graphics/README \
-             graphics/gnuplot1.sh \
-             graphics/gnuplot1.bat \
-             graphics/gnuplot1.plt \
-             graphics/gnuplot1b.sh \
-             graphics/gnuplot1b.bat \
-             graphics/gnuplot1b.plt \
-             graphics/gnuplot2.sh \
-             graphics/gnuplot2.bat \
-             graphics/gnuplot2.plt \
-             graphics/gnuplot3.sh \
-             graphics/gnuplot3.bat \
-             graphics/gnuplot3.plt \
-             graphics/gnuplot4.sh \
-             graphics/gnuplot4.bat \
-             graphics/gnuplot4.plt \
-             doc/Makefile \
+EXTRA_DIST = doc/Makefile \
              doc/double-double.eps \
+             doc/irises_korin.eps \
              doc/lis-ug-en.tex \
              doc/lis-ug-en.pdf \
              doc/lis-ug-ja.tex \
              doc/lis-ug-ja.pdf \
-             doc/irises_korin.eps \
-             doc/storage01.eps \
-             doc/storage01_mpi.eps \
-             doc/storage02.eps \
-             doc/storage02_mpi.eps \
-             doc/storage03.eps \
-             doc/storage03_mpi.eps \
-             doc/storage04.eps \
-             doc/storage04_mpi.eps \
-             doc/storage04_omp.eps \
-             doc/storage05.eps \
-             doc/storage05_mpi.eps \
-             doc/storage06.eps \
-             doc/storage06_mpi.eps \
-             doc/storage06_omp.eps \
-             doc/storage07.eps \
-             doc/storage07_mpi.eps \
-             doc/storage08.eps \
-             doc/storage08_mpi.eps \
-             doc/storage09.eps \
-             doc/storage09_mpi.eps \
-             doc/storage10.eps \
-             doc/storage10_mpi.eps \
-             doc/storage11.eps \
-             doc/storage11_mpi.eps \
              doc/man/man1/lsolve.1 \
              doc/man/man1/esolve.1 \
              doc/man/man1/hpcg_kernel.1 \
@@ -332,7 +288,51 @@ EXTRA_DIST = reconfigure.sh \
              doc/man/man3/lis_vector_sum.3f \
              doc/man/man3/lis_vector_swap.3f \
              doc/man/man3/lis_vector_xpay.3f \
-             doc/man/man3/lis_wtime.3f
+             doc/man/man3/lis_wtime.3f \
+             doc/storage01.eps \
+             doc/storage01_mpi.eps \
+             doc/storage02.eps \
+             doc/storage02_mpi.eps \
+             doc/storage03.eps \
+             doc/storage03_mpi.eps \
+             doc/storage04.eps \
+             doc/storage04_mpi.eps \
+             doc/storage04_omp.eps \
+             doc/storage05.eps \
+             doc/storage05_mpi.eps \
+             doc/storage06.eps \
+             doc/storage06_mpi.eps \
+             doc/storage06_omp.eps \
+             doc/storage07.eps \
+             doc/storage07_mpi.eps \
+             doc/storage08.eps \
+             doc/storage08_mpi.eps \
+             doc/storage09.eps \
+             doc/storage09_mpi.eps \
+             doc/storage10.eps \
+             doc/storage10_mpi.eps \
+             doc/storage11.eps \
+             doc/storage11_mpi.eps \
+             graphics/README \
+             graphics/gnuplot1.sh \
+             graphics/gnuplot1.bat \
+             graphics/gnuplot1.plt \
+             graphics/gnuplot1b.sh \
+             graphics/gnuplot1b.bat \
+             graphics/gnuplot1b.plt \
+             graphics/gnuplot2.sh \
+             graphics/gnuplot2.bat \
+             graphics/gnuplot2.plt \
+             graphics/gnuplot3.sh \
+             graphics/gnuplot3.bat \
+             graphics/gnuplot3.plt \
+             graphics/gnuplot4.sh \
+             graphics/gnuplot4.bat \
+             graphics/gnuplot4.plt \
+             reconfigure.sh \
+             win/README \
+             win/Makefile.in \
+             win/configure.bat
 
 man_MANS =   doc/man/man1/lsolve.1 \
              doc/man/man1/esolve.1 \

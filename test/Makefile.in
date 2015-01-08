@@ -54,20 +54,20 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-test_PROGRAMS = test1$(EXEEXT) test2$(EXEEXT) test2b$(EXEEXT) \
-	test3$(EXEEXT) test3b$(EXEEXT) test4$(EXEEXT) test5$(EXEEXT) \
-	test6$(EXEEXT) etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
+test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	etest4$(EXEEXT) etest5$(EXEEXT) etest6$(EXEEXT) \
 	etest7$(EXEEXT) spmvtest1$(EXEEXT) spmvtest2$(EXEEXT) \
 	spmvtest2b$(EXEEXT) spmvtest3$(EXEEXT) spmvtest3b$(EXEEXT) \
-	spmvtest4$(EXEEXT) spmvtest5$(EXEEXT) $(am__EXEEXT_1) \
+	spmvtest4$(EXEEXT) spmvtest5$(EXEEXT) test1$(EXEEXT) \
+	test2$(EXEEXT) test2b$(EXEEXT) test3$(EXEEXT) test3b$(EXEEXT) \
+	test4$(EXEEXT) test5$(EXEEXT) test6$(EXEEXT) $(am__EXEEXT_1) \
 	$(am__EXEEXT_2)
-@ENABLE_FORTRAN_TRUE@am__append_1 = test1f test4f etest1f etest4f
+@ENABLE_FORTRAN_TRUE@am__append_1 = etest1f etest4f test1f test4f 
 @ENABLE_F90_TRUE@am__append_2 = test2f test6f
-bin_PROGRAMS = lsolve$(EXEEXT) esolve$(EXEEXT) hpcg_kernel$(EXEEXT) \
-	hpcg_spmvtest$(EXEEXT) spmvtest1$(EXEEXT) spmvtest2$(EXEEXT) \
-	spmvtest2b$(EXEEXT) spmvtest3$(EXEEXT) spmvtest3b$(EXEEXT) \
-	spmvtest4$(EXEEXT) spmvtest5$(EXEEXT)
+bin_PROGRAMS = esolve$(EXEEXT) hpcg_kernel$(EXEEXT) \
+	hpcg_spmvtest$(EXEEXT) lsolve$(EXEEXT) spmvtest1$(EXEEXT) \
+	spmvtest2$(EXEEXT) spmvtest2b$(EXEEXT) spmvtest3$(EXEEXT) \
+	spmvtest3b$(EXEEXT) spmvtest4$(EXEEXT) spmvtest5$(EXEEXT)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -89,8 +89,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(testdir)" \
 	"$(DESTDIR)$(testdir)" "$(DESTDIR)$(testdir)"
-@ENABLE_FORTRAN_TRUE@am__EXEEXT_1 = test1f$(EXEEXT) test4f$(EXEEXT) \
-@ENABLE_FORTRAN_TRUE@	etest1f$(EXEEXT) etest4f$(EXEEXT)
+@ENABLE_FORTRAN_TRUE@am__EXEEXT_1 = etest1f$(EXEEXT) etest4f$(EXEEXT) \
+@ENABLE_FORTRAN_TRUE@	test1f$(EXEEXT) test4f$(EXEEXT)
 @ENABLE_F90_TRUE@am__EXEEXT_2 = test2f$(EXEEXT) test6f$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(test_PROGRAMS)
 am_esolve_OBJECTS = etest5.$(OBJEXT)
@@ -458,14 +458,6 @@ EXTRA_DIST = defs test.sh testmat.mtx testmat2.mtx
 testdir = ${prefix}/share/examples/lis
 test_DATA = testmat.mtx testmat2.mtx
 test_SCRIPTS = defs test.sh
-test1_SOURCES = test1.c
-test2_SOURCES = test2.c
-test2b_SOURCES = test2b.c
-test3_SOURCES = test3.c
-test3b_SOURCES = test3b.c
-test4_SOURCES = test4.c
-test5_SOURCES = test5.c
-test6_SOURCES = test6.c
 etest1_SOURCES = etest1.c
 etest2_SOURCES = etest2.c
 etest3_SOURCES = etest3.c
@@ -480,16 +472,24 @@ spmvtest3_SOURCES = spmvtest3.c
 spmvtest3b_SOURCES = spmvtest3b.c
 spmvtest4_SOURCES = spmvtest4.c
 spmvtest5_SOURCES = spmvtest5.c
-@ENABLE_FORTRAN_TRUE@test1f_SOURCES = test1f.F
-@ENABLE_FORTRAN_TRUE@test4f_SOURCES = test4f.F
+test1_SOURCES = test1.c
+test2_SOURCES = test2.c
+test2b_SOURCES = test2b.c
+test3_SOURCES = test3.c
+test3b_SOURCES = test3b.c
+test4_SOURCES = test4.c
+test5_SOURCES = test5.c
+test6_SOURCES = test6.c
 @ENABLE_FORTRAN_TRUE@etest1f_SOURCES = etest1f.F
 @ENABLE_FORTRAN_TRUE@etest4f_SOURCES = etest4f.F
+@ENABLE_FORTRAN_TRUE@test1f_SOURCES = test1f.F
+@ENABLE_FORTRAN_TRUE@test4f_SOURCES = test4f.F
 @ENABLE_F90_TRUE@test2f_SOURCES = test2f.F90
 @ENABLE_F90_TRUE@test6f_SOURCES = test6f.F90
-lsolve_SOURCES = test1.c
 esolve_SOURCES = etest5.c
 hpcg_kernel_SOURCES = test3b.c
 hpcg_spmvtest_SOURCES = spmvtest3b.c
+lsolve_SOURCES = test1.c
 PPF77COMPILE = $(F77) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_FFLAGS) $(FFLAGS)
 
@@ -519,12 +519,12 @@ LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) \
 
 CLEANFILES = *.il
 TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
-                    enable_mpi=$(enable_mpi) \
-                    enable_omp=$(enable_omp) \
-                    enable_saamg=$(enable_saamg) \
                     enable_f90=$(enable_f90) \
                     enable_fortran=$(enable_fortran) \
+                    enable_mpi=$(enable_mpi) \
+                    enable_omp=$(enable_omp) \
                     enable_quad=$(enable_quad) \
+                    enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
 TESTS = test.sh

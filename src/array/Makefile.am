@@ -1,6 +1,5 @@
 noinst_LTLIBRARIES = libarray.la
-libarray_la_SOURCES = \
-lis_array.c
+libarray_la_SOURCES = lis_array.c
 
 AM_CFLAGS = -I$(top_srcdir)/include $(ILIBS)
 CLEANFILES = *.il

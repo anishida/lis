@@ -67,9 +67,9 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libfortran_la_LIBADD =
-am_libfortran_la_OBJECTS = lisf_vector.lo lisf_matrix.lo \
-	lisf_matvec.lo lisf_array.lo lisf_system.lo lisf_solver.lo \
-	lisf_precon.lo lisf_esolver.lo lisf_init.lo
+am_libfortran_la_OBJECTS = lisf_array.lo lisf_esolver.lo lisf_init.lo \
+	lisf_matrix.lo lisf_matvec.lo lisf_precon.lo lisf_solver.lo \
+	lisf_system.lo lisf_vector.lo
 libfortran_la_OBJECTS = $(am_libfortran_la_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/include
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
@@ -236,15 +236,15 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LTLIBRARIES = libfortran.la
-libfortran_la_SOURCES = lisf_vector.c  \
-lisf_matrix.c  \
-lisf_matvec.c  \
-lisf_array.c  \
-lisf_system.c  \
-lisf_solver.c  \
-lisf_precon.c  \
-lisf_esolver.c  \
-lisf_init.F    
+libfortran_la_SOURCES = lisf_array.c \
+lisf_esolver.c \
+lisf_init.F \
+lisf_matrix.c \
+lisf_matvec.c \
+lisf_precon.c \
+lisf_solver.c \
+lisf_system.c \
+lisf_vector.c
 
 AM_CPPFLAGS = -I$(top_srcdir)/include
 CLEANFILES = *.il
