@@ -1,3 +1,7 @@
+Version 1.5.47  January 10, 2015
+
+  - Removed unused variables.
+
 Version 1.5.46  January 8, 2015
 
   - Fixed quad precision bug.
