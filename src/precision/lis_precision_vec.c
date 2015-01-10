@@ -82,8 +82,7 @@ LIS_INT lis_quad_free(LIS_QUAD_PTR *a)
 LIS_INT lis_vector_axpyex_mmm(LIS_QUAD_PTR alpha, LIS_VECTOR vx, LIS_VECTOR vy)
 {
 	LIS_INT i,n,is,ie,nprocs,my_rank;
-	LIS_QUAD_PTR bx,aa;
-	LIS_QUAD_PTR ax;
+	LIS_QUAD_PTR aa;
 	LIS_SCALAR *x,*xl,*y,*yl;
 	LIS_QUAD_DECLAR;
 
@@ -94,12 +93,8 @@ LIS_INT lis_vector_axpyex_mmm(LIS_QUAD_PTR alpha, LIS_VECTOR vx, LIS_VECTOR vy)
 	y   = vy->value;
 	xl  = vx->value_lo;
 	yl  = vy->value_lo;
-	bx.hi = &vx->work[0];
-	bx.lo = &vx->work[2];
 	aa.hi = &vx->work[4];
 	aa.lo = &vx->work[6];
-	ax.hi = &vx->work[8];
-	ax.lo = &vx->work[9];
 	#ifndef USE_FMA2_SSE2
 	    #pragma cdir nodep
 		#pragma omp parallel for private(i,p1,p2,tq,bhi,blo,chi,clo,sh,sl,th,tl,eh,el)
@@ -146,8 +141,7 @@ LIS_INT lis_vector_axpyex_mmm(LIS_QUAD_PTR alpha, LIS_VECTOR vx, LIS_VECTOR vy)
 LIS_INT lis_vector_axpyzex_mmmm(LIS_QUAD_PTR alpha, LIS_VECTOR vx, LIS_VECTOR vy, LIS_VECTOR vz)
 {
 	LIS_INT i,n,is,ie,nprocs,my_rank;
-	LIS_QUAD_PTR bx,aa;
-	LIS_QUAD_PTR ax;
+	LIS_QUAD_PTR aa;
 	LIS_SCALAR *x,*y,*z;
 	LIS_SCALAR *xl,*yl,*zl;
 	LIS_QUAD_DECLAR;
@@ -161,12 +155,8 @@ LIS_INT lis_vector_axpyzex_mmmm(LIS_QUAD_PTR alpha, LIS_VECTOR vx, LIS_VECTOR vy
 	xl   = vx->value_lo;
 	yl   = vy->value_lo;
 	zl   = vz->value_lo;
-	bx.hi = &vx->work[0];
-	bx.lo = &vx->work[2];
 	aa.hi = &vx->work[4];
 	aa.lo = &vx->work[6];
-	ax.hi = &vx->work[8];
-	ax.lo = &vx->work[9];
 	#ifndef USE_FMA2_SSE2
 	    #pragma cdir nodep
 		#pragma omp parallel for private(i,p1,p2,tq,bhi,blo,chi,clo,sh,sl,th,tl,eh,el)
@@ -213,8 +203,7 @@ LIS_INT lis_vector_axpyzex_mmmm(LIS_QUAD_PTR alpha, LIS_VECTOR vx, LIS_VECTOR vy
 LIS_INT lis_vector_xpayex_mmm(LIS_VECTOR vx, LIS_QUAD_PTR alpha, LIS_VECTOR vy)
 {
 	LIS_INT i,n,is,ie,nprocs,my_rank;
-	LIS_QUAD_PTR by,aa;
-	LIS_QUAD_PTR ay;
+	LIS_QUAD_PTR aa;
 	LIS_SCALAR *x,*y,*xl,*yl;
 	LIS_QUAD_DECLAR;
 
@@ -225,12 +214,8 @@ LIS_INT lis_vector_xpayex_mmm(LIS_VECTOR vx, LIS_QUAD_PTR alpha, LIS_VECTOR vy)
 	y   = vy->value;
 	xl  = vx->value_lo;
 	yl  = vy->value_lo;
-	by.hi = &vx->work[0];
-	by.lo = &vx->work[2];
 	aa.hi = &vx->work[4];
 	aa.lo = &vx->work[6];
-	ay.hi = &vx->work[8];
-	ay.lo = &vx->work[9];
 	#ifndef USE_FMA2_SSE2
 	    #pragma cdir nodep
 		#pragma omp parallel for private(i,p1,p2,tq,bhi,blo,chi,clo,sh,sl,th,tl,eh,el)
@@ -278,7 +263,7 @@ LIS_INT lis_vector_dotex_mmm(LIS_VECTOR vx, LIS_VECTOR vy, LIS_QUAD_PTR *val)
 {
 	LIS_INT i,n;
 	LIS_SCALAR *x,*y,*xl,*yl;
-	LIS_QUAD_PTR dotm2,xy2,dotm,tmpm,xy;
+	LIS_QUAD_PTR dotm2,dotm,tmpm;
 	#ifdef _OPENMP
 		LIS_INT is,ie,nprocs,my_rank;
 		LIS_SCALAR *gt;
@@ -297,14 +282,10 @@ LIS_INT lis_vector_dotex_mmm(LIS_VECTOR vx, LIS_VECTOR vy, LIS_QUAD_PTR *val)
 	yl = vy->value_lo;
 	dotm2.hi = &vx->work[0];
 	dotm2.lo = &vx->work[2];
-	xy2.hi = &vx->work[4];
-	xy2.lo = &vx->work[6];
 	dotm.hi = &vx->work[8];
 	dotm.lo = &vx->work[9];
 	tmpm.hi = &vx->work[10];
 	tmpm.lo = &vx->work[11];
-	xy.hi = &vx->work[12];
-	xy.lo = &vx->work[13];
 	#ifndef NO_ERROR_CHECK
 		if( n!=vy->n )
 		{
@@ -401,7 +382,7 @@ LIS_INT lis_vector_nrm2ex_mm(LIS_VECTOR vx, LIS_QUAD_PTR *val)
 {
 	LIS_INT i,n;
 	LIS_SCALAR *x,*xl;
-	LIS_QUAD_PTR dotm2,xy2,dotm,tmpm,xx;
+	LIS_QUAD_PTR dotm2,dotm,tmpm;
 	#ifdef _OPENMP
 		LIS_INT is,ie,nprocs,my_rank;
 		LIS_SCALAR *gt;
@@ -418,14 +399,10 @@ LIS_INT lis_vector_nrm2ex_mm(LIS_VECTOR vx, LIS_QUAD_PTR *val)
 	xl = vx->value_lo;
 	dotm2.hi = &vx->work[0];
 	dotm2.lo = &vx->work[2];
-	xy2.hi = &vx->work[4];
-	xy2.lo = &vx->work[6];
 	dotm.hi = &vx->work[8];
 	dotm.lo = &vx->work[9];
 	tmpm.hi = &vx->work[10];
 	tmpm.lo = &vx->work[11];
-	xx.hi = &vx->work[12];
-	xx.lo = &vx->work[13];
 	#ifdef USE_MPI
 		comm   = vx->comm;
 	#endif
