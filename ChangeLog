@@ -1,10 +1,15 @@
+Version 1.5.48  February 6, 2015
+
+  - Fixed exception handling bug in lis_matrix_set_size() (thanks to
+    Carlo De Falco).
+
 Version 1.5.47  January 10, 2015
 
-  - Removed unused variables.
+  - Removed unused variables in lis_precision_vec.c.
 
 Version 1.5.46  January 8, 2015
 
-  - Fixed quad precision bug.
+  - Fixed quad precision bug in lis_precision_vec.c.
   - Updated config/config.*.
   - Cleaned up programs.
 
