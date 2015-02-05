@@ -637,8 +637,8 @@ EXTRA_DIST = doc/Makefile \
              graphics/gnuplot4.bat \
              graphics/gnuplot4.plt \
              reconfigure.sh \
-             win/README \
              win/Makefile.in \
+             win/README \
              win/configure.bat
 
 man_MANS = doc/man/man1/lsolve.1 \
