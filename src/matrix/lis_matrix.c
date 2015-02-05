@@ -256,7 +256,7 @@ LIS_INT lis_matrix_set_size(LIS_MATRIX Amat, LIS_INT local_n, LIS_INT global_n)
 	}
 	#ifdef USE_MPI
 	MPI_Comm_size(Amat->comm,&nprocs);
-	if( global_n<nprocs )
+	if( local_n==0 && global_n<nprocs )
 	  {
 	    LIS_SETERR2(LIS_ERR_ILL_ARG,"global n(=%d) is smaller than nprocs(=%d)\n",global_n,nprocs);
 	    return LIS_ERR_ILL_ARG;
