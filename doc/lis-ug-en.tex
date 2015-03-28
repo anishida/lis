@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.5.51
+Version 1.5.52
 \end{flushleft}
 
 \vspace*{2cm}
@@ -4398,7 +4398,7 @@ Get the location of partial matrix $A$ in the global matrix.
 \end{namelist}
 {\bf Note}\\
 \indent
-For the serial and multithreaded environments, a matrix of $n \times n$ results in $is = 0$ and $ie = n$.
+For the serial and multithreaded environments, a matrix of $n \times n$ results in $is = 0$ and $ie = n$ in the C version, and $is = 1$ and $ie = n+1$ in the Fortran version.
 
 
 \subsubsection{lis\_matrix\_get\_nnz}

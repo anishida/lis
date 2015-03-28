@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis ユーザガイド}\\
-バージョン 1.5.51
+バージョン 1.5.52
 \end{flushleft}
 
 \vspace*{2cm}
@@ -4305,7 +4305,7 @@ $local\_n$ か $global\_n$ のどちらか一方を与えなければならない.
 \end{namelist}
 {\bf 注釈}\\
 \indent
-逐次, マルチスレッド環境では, 行列の次数が$n \times n$ならば, $is=0$, $ie=n$である. 
+逐次, マルチスレッド環境では, 行列の次数が$n \times n$ならば, C版では$is=0$, $ie=n$, Fortran版では$is=1$, $ie=n+1$である. 
 
 \newpage
 \subsubsection{lis\_matrix\_get\_nnz}
