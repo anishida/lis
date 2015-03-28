@@ -158,7 +158,7 @@ LIS_INT lis_esolver_init(LIS_ESOLVER esolver)
 	esolver->tol        = 0;
 	esolver->eprecision = LIS_PRECISION_DOUBLE;
 
-	esolver->options[LIS_EOPTIONS_ESOLVER]                = LIS_ESOLVER_PI;
+	esolver->options[LIS_EOPTIONS_ESOLVER]                = LIS_ESOLVER_CR;
 	esolver->options[LIS_EOPTIONS_MAXITER]                = 1000;
 	esolver->options[LIS_EOPTIONS_SUBSPACE]               = 1;
 	esolver->options[LIS_EOPTIONS_MODE]                   = 0;
