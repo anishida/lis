@@ -3867,7 +3867,7 @@ $local\_n$ か $global\_n$ のどちらか一方を与えなければならない.
 \end{namelist}
 {\bf 注釈}\\
 \indent
-逐次, マルチスレッド環境では, ベクトルの次数が$n$ならば, $is=0$, $ie=n$である.
+逐次, マルチスレッド環境では, ベクトルの次数が$n$ならば, C版では$is=0$, $ie=n$, Fortran版では$is=1$, $ie=n+1$である. 
 
 \subsubsection{lis\_vector\_set\_value}
 \begin{screen}

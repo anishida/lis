@@ -3962,7 +3962,7 @@ Get the location of the partial vector $v$ in the global vector.
 \end{namelist}
 {\bf Note}\\
 \indent
-For the serial and multithreaded environments, a vector of size $n$ results in $is = 0$ and $ie = n$. 
+For the serial and multithreaded environments, a vector of size $n$ results in $is = 0$ and $ie = n$ in the C version, and $is = 1$ and $ie = n+1$ in the Fortran version.
 
 \newpage
 \subsubsection{lis\_vector\_set\_value}
