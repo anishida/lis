@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis ユーザガイド}\\
-バージョン 1.5.52
+バージョン 1.5.53
 \end{flushleft}
 
 \vspace*{2cm}
@@ -3109,11 +3109,11 @@ JAD形式の配列を行列$A$に関連付けるには, 関数
 BSR形式では, 行列を$r \times c$の大きさの部分行列 (ブロックと呼ぶ) に分解する. 
 BSR形式では, CSR形式と同様の手順で非零ブロック (少なくとも1つの
 非零要素が存在する) を格納する. 
-$nr=n/r$, $nnzb$を$A$の非零ブロック数とする. 
+$nr=n/r$, $bnnz$を$A$の非零ブロック数とする. 
 BSR形式では, データを3つの配列({\ttfamily bptr, bindex, value})に格納する. 
 \begin{itemize}
-\item 長さ$nnzb \times r \times c$の倍精度配列{\ttfamily value}は, 非零ブロックの全要素の値を格納する. 
-\item 長さ$nnzb$の整数配列{\ttfamily bindex}は, 非零ブロックのブロック列番号を格納する. 
+\item 長さ$bnnz \times r \times c$の倍精度配列{\ttfamily value}は, 非零ブロックの全要素の値を格納する. 
+\item 長さ$bnnz$の整数配列{\ttfamily bindex}は, 非零ブロックのブロック列番号を格納する. 
 \item 長さ$nr+1$の整数配列{\ttfamily bptr}は, 配列{\ttfamily bindex}のブロック行の開始位置を格納する. 
 \end{itemize}
 
@@ -3224,11 +3224,11 @@ BSR形式の配列を行列$A$に関連付けるには, 関数
 BSC形式では, 行列を$r \times c$の大きさの部分行列 (ブロックと呼ぶ) に分解する. 
 BSC形式では, CSC形式と同様の手順で非零ブロック (少なくとも1つの
 非零要素が存在する) を格納する. 
-$nc=n/c$, $nnzb$を$A$の非零ブロック数とする. 
+$nc=n/c$, $bnnz$を$A$の非零ブロック数とする. 
 BSC形式では, データを3つの配列({\ttfamily bptr, bindex, value})に格納する. 
 \begin{itemize}
-\item 長さ$nnzb \times r \times c$の倍精度配列{\ttfamily value}は, 非零ブロックの全要素の値を格納する. 
-\item 長さ$nnzb$の整数配列{\ttfamily bindex}は, 非零ブロックのブロック行番号を格納する. 
+\item 長さ$bnnz \times r \times c$の倍精度配列{\ttfamily value}は, 非零ブロックの全要素の値を格納する. 
+\item 長さ$bnnz$の整数配列{\ttfamily bindex}は, 非零ブロックのブロック行番号を格納する. 
 \item 長さ$nc+1$の整数配列{\ttfamily bptr}は, 配列{\ttfamily bindex}のブロック列の開始位置を格納する. 
 \end{itemize}
 
@@ -3342,15 +3342,15 @@ VBR形式はBSR形式を一般化したものである.
 VBR形式では, CSR形式と同様の手順で非零ブロック (少なくとも1つの
 非零要素が存在する) を格納する. 
 $nr$, $nc$をそれぞれ行分割数, 列分割数とする. 
-$nnzb$を$A$の非零ブロック数, $nnz$を非零ブロックの全要素数とする. 
+$bnnz$を$A$の非零ブロック数, $nnz$を非零ブロックの全要素数とする. 
 VBR形式では, データを6つの配列({\ttfamily bptr, bindex, row, col, ptr, value})に格納する. 
 \begin{itemize}
 \item 長さ$nr+1$の整数配列{\ttfamily row}は, ブロック行の開始行番号を格納する. 
 \item 長さ$nc+1$の整数配列{\ttfamily col}は, ブロック列の開始列番号を格納する. 
-\item 長さ$nnzb$の整数配列{\ttfamily bindex}は, 非零ブロックのブロック列番号を格納する. 
+\item 長さ$bnnz$の整数配列{\ttfamily bindex}は, 非零ブロックのブロック列番号を格納する. 
 \item 長さ$nr+1$の整数配列{\ttfamily bptr}は, 配列{\ttfamily bindex}のブロック行の開始位置を格納する. 
 \item 長さ$nnz$の倍精度配列{\ttfamily value}は, 非零ブロックの全要素の値を格納する. 
-\item 長さ$nnzb+1$の整数配列{\ttfamily ptr}は, 配列{\ttfamily value}の非
+\item 長さ$bnnz+1$の整数配列{\ttfamily ptr}は, 配列{\ttfamily value}の非
       零ブロックの開始位置を格納する. 
 
 \newpage
