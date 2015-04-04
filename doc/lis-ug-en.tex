@@ -3216,12 +3216,12 @@ To associate an array required by the JAD format with matrix $A$, the following 
 The BSR format breaks down matrix $A$ into partial matrices called blocks of size $r \times c$. 
 The BSR format stores the nonzero blocks, in which at least one nonzero
 element exists, in a format similar to that of CSR. 
-Assume that $nr=n/r$ and $nnzb$ are the numbers of nonzero blocks of $A$. 
+Assume that $nr=n/r$ and $bnnz$ are the numbers of nonzero blocks of $A$. 
 The BSR format uses three arrays {\ttfamily bptr}, {\ttfamily bindex} and {\ttfamily value} to store data.
 \begin{itemize}
 \item {\ttfamily value} is a double precision array of length
-      $nnzb \times r \times c$, which stores the values of the elements of the nonzero blocks.
-\item {\ttfamily bindex} is an integer array of length $nnzb$,
+      $bnnz \times r \times c$, which stores the values of the elements of the nonzero blocks.
+\item {\ttfamily bindex} is an integer array of length $bnnz$,
       which stores the block column numbers of the nonzero blocks.
 \item {\ttfamily bptr} is an integer array of length $nr+1$,
       which stores the starting points of the block rows in the array {\ttfamily bindex}.
@@ -3328,13 +3328,13 @@ To associate the arrays in the BSR format with matrix $A$, the following functio
 The BSC format breaks down matrix $A$ into partial matrices called
 blocks of size $r \times c$. The BSC format stores the nonzero blocks, in which at
 least one nonzero element exists, in a format similar to that of CSC. Assume
-that $nc=n/c$ and $nnzb$ are the numbers of the nonzero
+that $nc=n/c$ and $bnnz$ are the numbers of the nonzero
 blocks of A. The BSC format uses three arrays {\ttfamily bptr}, {\ttfamily bindex}
 and {\ttfamily value} to store data. 
 \begin{itemize}
 \item {\ttfamily value} is a double precision array of length
-      $nnzb \times r \times c$, which stores the values of the elements of the nonzero blocks.
-\item {\ttfamily bindex} is an integer array of length $nnzb$,
+      $bnnz \times r \times c$, which stores the values of the elements of the nonzero blocks.
+\item {\ttfamily bindex} is an integer array of length $bnnz$,
       which stores the block row numbers of the nonzero blocks.
 \item {\ttfamily bptr} is an integer array of length $nc+1$,
       which stores the starting points of the block columns in the array
@@ -3445,7 +3445,7 @@ The VBR format is the generalized version of the BSR format. The division points
 The VBR format stores the nonzero blocks (the blocks in which at least
 one nonzero element exists) in a format similar to that of CSR. 
 Assume that $nr$ and $nc$ are the numbers of row and column divisions, respectively, 
-and that $nnzb$ denotes the number of nonzero blocks of A, 
+and that $bnnz$ denotes the number of nonzero blocks of A, 
 and $nnz$ denotes the total number of elements of the nonzero blocks. 
 The VBR format uses six arrays, {\ttfamily bptr}, {\ttfamily bindex}, {\ttfamily
 row}, {\ttfamily col}, {\ttfamily ptr}, and {\ttfamily value}, to store data.
@@ -3454,13 +3454,13 @@ row}, {\ttfamily col}, {\ttfamily ptr}, and {\ttfamily value}, to store data.
       stores the starting row number of the block rows.
 \item {\ttfamily col} is an integer array of length $nc+1$, which
       stores the starting column number of the block columns.
-\item {\ttfamily bindex} is an integer array of length $nnzb$,
+\item {\ttfamily bindex} is an integer array of length $bnnz$,
       which stores the block column numbers of the nonzero blocks.
 \item {\ttfamily bptr} is an integer array of length $nr+1$,
       which stores the starting points of the block rows in the array {\ttfamily bindex}.
 \item {\ttfamily value} is a double precision array of length
       $nnz$, which stores the values of the elements of the nonzero blocks.
-\item {\ttfamily ptr} is an integer array of length $nnzb+1$,
+\item {\ttfamily ptr} is an integer array of length $bnnz+1$,
       which stores the starting points of the nonzero blocks in the
       array {\ttfamily value}.
 \end{itemize}
