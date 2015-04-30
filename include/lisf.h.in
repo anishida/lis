@@ -47,7 +47,11 @@
 
 
 #ifdef USE_MPI
+#ifndef WIN32
       include 'mpif.h'
+#else
+      #include 'mpif.h'
+#endif
 
 #ifdef LONGLONG
 #define LIS_MPI_INTEGER MPI_INTEGER

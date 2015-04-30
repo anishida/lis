@@ -44,9 +44,9 @@ CFLAGS = $(CFLAGS) -DHAS_X87_FPU -DUSE_QUAD_PRECISION -DUSE_FMA2_SSE2 -DUSE_SSE2
 !endif
 
 
-# Configuration for Intel Compiler 
+# Configuration for Intel C Compiler 
 
-!ifdef intel
+!ifdef intelc
 CC = icl
 CFLAGS = $(cflags) $(USER_CFLAGS) \
        -O3 -Qansi_alias -DHAVE_CONFIG_WIN_H -I ../include -w 
@@ -61,9 +61,13 @@ CFLAGS = $(CFLAGS) $(cvarsmt) -MT -Qopenmp -Qopenmp-lib:compat
 !ifdef debug
 CFLAGS = $(CFLAGS) $(cdebug) $(cvars)
 !else
-CFLAGS = $(CFLAGS) $(cvars) -ML -MT 
+CFLAGS = $(CFLAGS) $(cvars) -MT 
 !endif
 !endif
+!endif
+
+
+# Configuration for Fortran Interface
 
 !ifdef fortran
 FC = ifort
@@ -74,10 +78,9 @@ FFLAGS = $(USER_FFLAGS) \
 !ifdef omp
 FFLAGS = $(FFLAGS) -Qopenmp -Qopenmp-lib:compat 
 !else
-FFLAGS = $(FFLAGS) -ML
+FFLAGS = $(FFLAGS) -MT
 !endif
 !endif
-!endif 
 
 
 # Configuration for SA-AMG
@@ -116,7 +119,7 @@ FFLAGS = $(FFLAGS) -real-size:128
 MPIDIR = "C:\Program Files\Microsoft MPI"
 CFLAGS = $(CFLAGS) -DUSE_MPI -I $(MPIDIR)\Inc
 FFLAGS = $(FFLAGS) -DUSE_MPI -I $(MPIDIR)\Inc
-LDFLAGS = $(LDFLAGS) $(MPIDIR)\Lib\i386\msmpi.lib
+LDFLAGS = $(LDFLAGS) $(MPIDIR)\Lib\i386\msmpi.lib $(MPIDIR)\Lib\i386\msmpifec.lib
 MPIRUN = "mpiexec -n 2"
 !endif
 
@@ -128,7 +131,7 @@ MPIRUN = "mpiexec -n 2"
 MPIDIR = "C:\Program Files\Microsoft MPI"
 CFLAGS = $(CFLAGS) -DUSE_MPI -I $(MPIDIR)\Inc
 FFLAGS = $(FFLAGS) -DUSE_MPI -I $(MPIDIR)\Inc
-LDFLAGS = $(LDFLAGS) $(MPIDIR)\Lib\amd64\msmpi.lib
+LDFLAGS = $(LDFLAGS) $(MPIDIR)\Lib\amd64\msmpi.lib $(MPIDIR)\Lib\amd64\msmpifec.lib
 MPIRUN = "mpiexec -n 2"
 !endif
 !endif
