@@ -1868,8 +1868,7 @@ SA-AMG   & \verb=-p {saamg|7}=   & \verb=-saamg_unsym [false]=    &
 Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criterion    \\
          &                       & \verb=-iluc_rate [5.0]=     & The
  ratio of the maximum fill-in \\
-ILUT     & \verb=-p {ilut|9}=    & \verb=-ilut_drop [0.05]=    & The drop criterion    \\
-         &                       & \verb=-ilut_rate [5.0]=     & The ratio of the maximum fill-in \\
+ILUT     & \verb=-p {ilut|9}=    &     \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -2056,8 +2055,7 @@ SA-AMG   & \verb=-p {saamg|7}=   & \verb=-saamg_unsym [false]= & Select the unsy
          &                       &                             & (symmetric or unsymmetric) \\
 Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criterion    \\
          &                       & \verb=-iluc_rate [5.0]=     & The ratio of the maximum fill-in \\
-ILUT     & \verb=-p {ilut|9}=    & \verb=-ilut_drop [0.05]=    & The drop criterion    \\
-         &                       & \verb=-ilut_rate [5.0]=     & The ratio of the maximum fill-in \\
+ILUT     & \verb=-p {ilut|9}=    &     \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -4521,7 +4519,8 @@ Associate the arrays in the CSR format with matrix $A$.
 {\bf Note}\\
 \indent
 After \verb|lis_matrix_set_csr| is called, 
-the function \verb|lis_matrix_assemble| must be called. 
+the function \verb|lis_matrix_assemble| must be called.
+Array indexing is zero-origin in the Fortran version.
 
 \subsubsection{lis\_matrix\_set\_csc}
 \begin{screen}
@@ -4550,6 +4549,7 @@ Associate the arrays in the CSC format with matrix $A$.
 \indent
 After \verb|lis_matrix_set_csc| is called, 
 the function \verb|lis_matrix_assemble| must be called. 
+Array indexing is zero-origin in the Fortran version.
 
 \newpage
 \subsubsection{lis\_matrix\_set\_msr}
@@ -4580,6 +4580,7 @@ Associate the arrays in the MSR format with matrix $A$.
 \indent
 After \verb|lis_matrix_set_msr| is called, 
 the function \verb|lis_matrix_assemble| must be called. 
+Array indexing is zero-origin in the Fortran version.
 
 \subsubsection{lis\_matrix\_set\_dia}
 \begin{screen}
@@ -4608,6 +4609,7 @@ Associate the arrays in the DIA format with matrix $A$.
 \indent
 After \verb|lis_matrix_set_dia| is called, 
 the function \verb|lis_matrix_assemble| must be called. 
+Array indexing is zero-origin in the Fortran version.
 
 \newpage
 \subsubsection{lis\_matrix\_set\_ell}
@@ -4638,6 +4640,7 @@ Associate the arrays in the ELL format with matrix $A$.
 \indent
 After \verb|lis_matrix_set_ell| is called, 
 the function \verb|lis_matrix_assemble| must be called. 
+Array indexing is zero-origin in the Fortran version.
 
 \subsubsection{lis\_matrix\_set\_jad}
 \begin{screen}
@@ -4668,6 +4671,7 @@ Associate the arrays in the JAD format with matrix $A$.
 \indent
 After \verb|lis_matrix_set_jad| is called, 
 the function \verb|lis_matrix_assemble| must be called. 
+Array indexing is zero-origin in the Fortran version.
 
 \subsubsection{lis\_matrix\_set\_bsr}
 \begin{screen}
@@ -4699,6 +4703,7 @@ Associate the arrays in the BSR format with matrix $A$.
 \indent
 After \verb|lis_matrix_set_bsr| is called, 
 the function \verb|lis_matrix_assemble| must be called. 
+Array indexing is zero-origin in the Fortran version.
 
 \subsubsection{lis\_matrix\_set\_bsc}
 \begin{screen}
@@ -4730,6 +4735,7 @@ Associate the arrays in the BSC format with matrix $A$.
 \indent
 After \verb|lis_matrix_set_bsc| is called, 
 the function \verb|lis_matrix_assemble| must be called. 
+Array indexing is zero-origin in the Fortran version.
 
 \newpage
 \subsubsection{lis\_matrix\_set\_vbr}
@@ -4767,7 +4773,9 @@ Associate the arrays in the VBR format with matrix $A$.
 \indent
 After \verb|lis_matrix_set_vbr| is called, 
 the function \verb|lis_matrix_assemble| must be called. 
+Array indexing is zero-origin in the Fortran version.
 
+\newpage
 \subsubsection{lis\_matrix\_set\_coo}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_set_coo(LIS_INT nnz, LIS_INT row[], LIS_INT col[],|\\
@@ -4795,7 +4803,9 @@ Associate the arrays in the COO format with matrix $A$.
 \indent
 After \verb|lis_matrix_set_coo| is called, 
 the function \verb|lis_matrix_assemble| must be called. 
+Array indexing is zero-origin in the Fortran version.
 
+\newpage
 \subsubsection{lis\_matrix\_set\_dns}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_set_dns(LIS_SCALAR value[], LIS_MATRIX A)|\\
@@ -4821,6 +4831,7 @@ Associate the array in the DNS format with matrix $A$.
 \indent
 After \verb|lis_matrix_set_dns| is called, 
 the function \verb|lis_matrix_assemble| must be called. 
+Array indexing is zero-origin in the Fortran version.
 
 \subsubsection{lis\_matrix\_unset}
 \begin{screen}
@@ -5544,6 +5555,48 @@ Destroy the solver.
 \end{namelist}
 
 \newpage
+\subsubsection{lis\_precon\_create}
+\begin{screen}
+\verb|C       LIS_INT lis_precon_create(LIS_SOLVER solver, LIS_PRECON *precon)|\\
+\verb|Fortran subroutine lis_precon_create(LIS_SOLVER solver, LIS_PRECON precon,|\\
+\verb|         LIS_INTEGER ierr)|
+\end{screen}
+{\bf Description}\\
+\indent
+Create the preconditioner.
+\\ \\
+\noindent
+{\bf Input}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[None]
+\end{namelist}
+{\bf Output}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt solver] The solver
+\item[\tt precon] The preconditioner
+\item[\tt ierr] The return code
+\end{namelist}
+
+\subsubsection{lis\_precon\_destroy}
+\begin{screen}
+\verb|C       LIS_INT lis_precon_destroy(LIS_PRECON precon)|\\
+\verb|Fortran subroutine lis_precon_destroy(LIS_PRECON precon, LIS_INTEGER ierr)|
+\end{screen}
+{\bf Description}\\
+\indent
+Destroy the preconditioner.
+\\ \\
+\noindent
+{\bf Input}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt precon] The preconditioner to be destroyed
+\end{namelist}
+{\bf Output}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt ierr] The return code
+\end{namelist}
+
+\newpage
 \subsubsection{lis\_solver\_set\_option}
   \label{sec:setoptions}
 \begin{screen}
@@ -5634,9 +5687,8 @@ SA-AMG   & \verb=-p {saamg|7}=   & \verb=-saamg_unsym [false]= & Select the unsy
          &                       & \verb=-saamg_theta [0.05|0.12]= & The drop criterion $a^2_{ij}\le\theta^2|a_{ii}||a_{jj}|$ \\
          &                       &                             & (symmetric or unsymmetric) \\
 Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criterion    \\
-         &                       & \verb=-iluc_rate [5.0]=     & The ratio of the maximum fill-in \\
-ILUT     & \verb=-p {ilut|9}=    & \verb=-ilut_drop [0.05]=    & The drop criterion    \\
-         &                       & \verb=-ilut_rate [5.0]=     & The ratio of the maximum fill-in \\
+&                       & \verb=-iluc_rate [5.0]=     & The ratio of the maximum fill-in \\
+ILUT     & \verb=-p {ilut|9}=    &     \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -6149,8 +6201,7 @@ SA-AMG   & \verb=-p {saamg|7}=   & \verb=-saamg_unsym [false]= & Select the unsy
          &                       &                             & (symmetric or unsymmetric) \\
 Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criterion    \\
          &                       & \verb=-iluc_rate [5.0]=     & The ratio of the maximum fill-in \\
-ILUT     & \verb=-p {ilut|9}=    & \verb=-ilut_drop [0.05]=    & The drop criterion    \\
-         &                       & \verb=-ilut_rate [5.0]=     & The ratio of the maximum fill-in \\
+ILUT     & \verb=-p {ilut|9}=    &     \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         

@@ -1756,8 +1756,7 @@ SA-AMG   & \verb=-p {saamg|7}=   & \verb=-saamg_unsym [false]=     & $BHsBP>NHG
          &                       &                             & ($BBP>N(B\verb=|=$BHsBP>N(B) \\
 Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & $B%I%m%C%W4p=`(B    \\
          &                       & \verb=-iluc_rate [5.0]=     & $B:GBg%U%#%k%$%s?t$NG\N((B \\
-ILUT     & \verb=-p {ilut|9}=    & \verb=-ilut_drop [0.05]=    & $B%I%m%C%W4p=`(B    \\
-         &                       & \verb=-ilut_rate [5.0]=     & $B:GBg%U%#%k%$%s?t$NG\N((B \\
+ILUT     & \verb=-p {ilut|9}=    &     \\
 Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(B   \\
 \hline         
 \end{tabular}
@@ -1927,8 +1926,7 @@ SA-AMG   & \verb=-p {saamg|7}=   & \verb=-saamg_unsym [false]=     & $BHsBP>NHG
          &                       &                             & ($BBP>N(B\verb=|=$BHsBP>N(B) \\
 crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & $B%I%m%C%W4p=`(B    \\
          &                       & \verb=-iluc_rate [5.0]=     & $B:GBg%U%#%k%$%s?t$NG\N((B \\
-ILUT     & \verb=-p {ilut|9}=    & \verb=-ilut_drop [0.05]=    & $B%I%m%C%W4p=`(B    \\
-         &                       & \verb=-ilut_rate [5.0]=     & $B:GBg%U%#%k%$%s?t$NG\N((B \\
+ILUT     & \verb=-p {ilut|9}=    &     \\
 Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(B   \\
 \hline         
 \end{tabular}
@@ -4429,7 +4427,8 @@ CSR$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 {\bf $BCm<a(B}\\
 \indent
 \verb|lis_matrix_set_csr|$B$rMQ$$$?8e$K$O(B, 
-\verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
+\verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B.
+Fortran$BHG$NG[Ns%G!<%?$O(B0$B$r5/E@$H$9$k(B.
 
 \subsubsection{lis\_matrix\_set\_csc}
 \begin{screen}
@@ -4458,6 +4457,7 @@ CSC$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \indent
 \verb|lis_matrix_set_csc|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
+Fortran$BHG$NG[Ns%G!<%?$O(B0$B$r5/E@$H$9$k(B.
 
 \subsubsection{lis\_matrix\_set\_msr}
 \begin{screen}
@@ -4487,7 +4487,9 @@ MSR$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \indent
 \verb|lis_matrix_set_msr|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
+Fortran$BHG$NG[Ns%G!<%?$O(B0$B$r5/E@$H$9$k(B.
 
+\newpage
 \subsubsection{lis\_matrix\_set\_dia}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_set_dia(LIS_INT nnd, LIS_INT index[],|\\
@@ -4515,6 +4517,7 @@ DIA$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \indent
 \verb|lis_matrix_set_dia|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
+Fortran$BHG$NG[Ns%G!<%?$O(B0$B$r5/E@$H$9$k(B.
 
 \subsubsection{lis\_matrix\_set\_ell}
 \begin{screen}
@@ -4543,6 +4546,7 @@ ELL$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \indent
 \verb|lis_matrix_set_ell|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
+Fortran$BHG$NG[Ns%G!<%?$O(B0$B$r5/E@$H$9$k(B.
 
 \newpage
 \subsubsection{lis\_matrix\_set\_jad}
@@ -4574,6 +4578,7 @@ JAD$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \indent
 \verb|lis_matrix_set_jad|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
+Fortran$BHG$NG[Ns%G!<%?$O(B0$B$r5/E@$H$9$k(B.
 
 \newpage
 \subsubsection{lis\_matrix\_set\_bsr}
@@ -4607,6 +4612,7 @@ BSR$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \indent
 \verb|lis_matrix_set_bsr|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
+Fortran$BHG$NG[Ns%G!<%?$O(B0$B$r5/E@$H$9$k(B.
 
 \newpage
 \subsubsection{lis\_matrix\_set\_bsc}
@@ -4639,6 +4645,7 @@ BSC$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \indent
 \verb|lis_matrix_set_bsc|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
+Fortran$BHG$NG[Ns%G!<%?$O(B0$B$r5/E@$H$9$k(B.
 
 \newpage
 \subsubsection{lis\_matrix\_set\_vbr}
@@ -4674,6 +4681,7 @@ VBR$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \indent
 \verb|lis_matrix_set_vbr|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
+Fortran$BHG$NG[Ns%G!<%?$O(B0$B$r5/E@$H$9$k(B.
 
 \newpage
 \subsubsection{lis\_matrix\_set\_coo}
@@ -4703,6 +4711,7 @@ COO$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \indent
 \verb|lis_matrix_set_coo|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
+Fortran$BHG$NG[Ns%G!<%?$O(B0$B$r5/E@$H$9$k(B.
 
 \subsubsection{lis\_matrix\_set\_dns}
 \begin{screen}
@@ -4729,6 +4738,7 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \indent
 \verb|lis_matrix_set_dns|$B$rMQ$$$?8e$K$O(B, 
 \verb|lis_matrix_assemble|$B$r8F$S=P$5$J$1$l$P$J$i$J$$(B. 
+Fortran$BHG$NG[Ns%G!<%?$O(B0$B$r5/E@$H$9$k(B.
 
 \newpage
 \subsubsection{lis\_matrix\_unset}
@@ -5453,6 +5463,47 @@ COO    &  $B!{(B  &  $B!{(B  &  $B!{(B  & CSR  & CSR & CSR & CSR & CSC & C
 \end{namelist}
 
 \newpage
+\subsubsection{lis\_precon\_create}
+\begin{screen}
+\verb|C       LIS_INT lis_precon_create(LIS_SOLVER solver, LIS_PRECON *precon)|\\
+\verb|Fortran subroutine lis_precon_create(LIS_SOLVER solver, LIS_PRECON precon,|\\
+\verb|         LIS_INTEGER ierr)|
+\end{screen}
+{\bf $B5!G=(B}\\
+\indent
+$BA0=hM}9TNs$r:n@.$9$k(B. 
+\\ \\
+\noindent
+{\bf $BF~NO(B}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt $B$J$7(B]
+\end{namelist}
+{\bf $B=PNO(B}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt precon] $BA0=hM}9TNs(B
+\item[\tt ierr] $B%j%?!<%s%3!<%I(B
+\end{namelist}
+
+\subsubsection{lis\_precon\_destroy}
+\begin{screen}
+\verb|C       LIS_INT lis_precon_destroy(LIS_PRECON precon)|\\
+\verb|Fortran subroutine lis_precon_destroy(LIS_PRECON precon, LIS_INTEGER ierr)|
+\end{screen}
+{\bf $B5!G=(B}\\
+\indent
+$BITMW$K$J$C$?A0=hM}9TNs$r%a%b%j$+$iGK4~$9$k(B. 
+\\ \\
+\noindent
+{\bf $BF~NO(B}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt solver] $B%a%b%j$+$iGK4~$9$kA0=hM}9TNs(B
+\end{namelist}
+{\bf $B=PNO(B}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt ierr] $B%j%?!<%s%3!<%I(B
+\end{namelist}
+
+\newpage
 \subsubsection{lis\_solver\_set\_option}
   \label{sec:setoptions}
 \begin{screen}
@@ -5538,8 +5589,7 @@ SA-AMG   & \verb=-p {saamg|7}=   & \verb=-saamg_unsym [false]=     & $BHsBP>NHG
          &                       &                             & ($BBP>N(B\verb=|=$BHsBP>N(B) \\
 Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & $B%I%m%C%W4p=`(B    \\
          &                       & \verb=-iluc_rate [5.0]=     & $B:GBg%U%#%k%$%s?t$NG\N((B \\
-ILUT     & \verb=-p {ilut|9}=    & \verb=-ilut_drop [0.05]=    & $B%I%m%C%W4p=`(B    \\
-         &                       & \verb=-ilut_rate [5.0]=     & $B:GBg%U%#%k%$%s?t$NG\N((B \\
+ILUT     & \verb=-p {ilut|9}=    &     \\
 Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(B   \\
 \hline         
 \end{tabular}
@@ -6032,8 +6082,7 @@ SA-AMG   & \verb=-p {saamg|7}=   & \verb=-saamg_unsym [false]=     & $BHsBP>NHG
          &                       &                             & ($BBP>N(B\verb=|=$BHsBP>N(B) \\
 Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & $B%I%m%C%W4p=`(B    \\
          &                       & \verb=-iluc_rate [5.0]=     & $B:GBg%U%#%k%$%s?t$NG\N((B \\
-ILUT     & \verb=-p {ilut|9}=    & \verb=-ilut_drop [0.05]=    & $B%I%m%C%W4p=`(B    \\
-         &                       & \verb=-ilut_rate [5.0]=     & $B:GBg%U%#%k%$%s?t$NG\N((B \\
+ILUT     & \verb=-p {ilut|9}=    &     \\
 Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(B   \\
 \hline         
 \end{tabular}
