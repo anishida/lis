@@ -232,4 +232,30 @@ void lis_solve_kernel_f(LIS_MATRIX_F *A, LIS_VECTOR_F b, LIS_VECTOR_F x, LIS_SOL
 	return;
 }
 
+#undef __FUNC__
+#define __FUNC__ "lis_solver_get_precon_f"
+void lis_solver_get_precon_f(LIS_SOLVER_F *solver, LIS_INT *nsol, LIS_INT *ierr)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	*ierr = lis_solver_get_precon((LIS_SOLVER)LIS_V2P(solver),nsol);
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_get_preconname_f"
+void lis_solver_get_preconname_f(LIS_INT *solver, char *name, LIS_INT *ierr, LIS_INT len)
+{
+	char buf[1024];
+	LIS_DEBUG_FUNC_IN;
+
+	*ierr = lis_solver_get_preconname(*solver, buf);
+	strncpy(name,buf,len);
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
 #endif
