@@ -38,9 +38,11 @@
 #ifdef LONG__DOUBLE
 #define LIS_SCALAR real*16
 #define LIS_REAL real*16
+#define LIS_COMPLEX complex*16
 #else
 #define LIS_SCALAR real*8
 #define LIS_REAL real*8
+#define LIS_COMPLEX complex*8
 #endif
 
 #define LIS_Comm LIS_INTEGER

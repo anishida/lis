@@ -190,6 +190,7 @@ datadir = @datadir@
 datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
+enable_complex = @enable_complex@
 enable_f90 = @enable_f90@
 enable_fortran = @enable_fortran@
 enable_mpi = @enable_mpi@

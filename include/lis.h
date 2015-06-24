@@ -30,6 +30,9 @@
 #define LIS_VERSION	"1.5.55"
 /**************************************/
 #include <stdio.h>
+#if defined(_COMPLEX)
+#include <complex.h>
+#endif
 
 #define _max(a,b) ((a) >= (b) ? (a) : (b))
 #define _min(a,b) ((a) <= (b) ? (a) : (b))
@@ -288,6 +291,9 @@ typedef struct
 #if defined(_LONG__DOUBLE)
 typedef long double LIS_SCALAR;
 typedef long double LIS_REAL;
+#if defined(_COMPLEX)
+typedef long double complex LIS_COMPLEX;
+#endif
 #define sin(x) sinl(x)
 #define cos(x) cosl(x)
 #define tan(x) tanl(x)
@@ -306,6 +312,9 @@ typedef long double LIS_REAL;
 #else
 typedef double LIS_SCALAR;
 typedef double LIS_REAL;
+#if defined(_COMPLEX)
+typedef double complex LIS_COMPLEX;
+#endif
 #endif
 typedef LIS_DOUBLE_DOUBLE LIS_QUAD;
 typedef LIS_DOUBLE_DOUBLE_PD LIS_QUAD_PD;

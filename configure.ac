@@ -39,6 +39,7 @@ AC_ARG_ENABLE(64bit, AC_HELP_STRING(--enable-64bit, [build 64bit binary on AIX a
 AC_ARG_ENABLE(32bit, AC_HELP_STRING(--enable-32bit, [build 32bit binary on Mac OS X [[default=no]]]))
 AC_ARG_ENABLE(longlong, AC_HELP_STRING(--enable-longlong, [enable long long int support [[default=no]]]))
 AC_ARG_ENABLE(longdouble, AC_HELP_STRING(--enable-longdouble, [enable long double support [[default=no]]]))
+AC_ARG_ENABLE(complex, AC_HELP_STRING(--enable-complex, [enable complex support [[default=no]]]))
 
 AC_MSG_CHECKING([for a library suffix to use])
 AC_ARG_WITH(library-suffix,
@@ -1037,6 +1038,25 @@ else
   enable_longdouble="no"
 fi
 
+########## Enable Complex Operations ##########
+if test "$enable_complex" = "yes"; then
+
+  CFLAGS="$CFLAGS -D_COMPLEX"
+  case $ax_cv_f77_compiler_vendor in
+    ibm) FCFLAGS="$FCFLAGS -WF,-D_COMPLEX" 
+         FFLAGS="$FFLAGS -WF,-D_COMPLEX"
+         ;;
+    gnu) FCFLAGS="$FCFLAGS -Wp,-D_COMPLEX"
+         FFLAGS="$FFLAGS -Wp,-D_COMPLEX"
+         ;;
+    *)   FCFLAGS="$FCFLAGS -D_COMPLEX"
+         FFLAGS="$FFLAGS -D_COMPLEX"
+         ;;
+  esac
+else
+  enable_complex="no"
+fi
+
 
 # Configurations for Environment-Dependent Data Sizes
 
@@ -1113,12 +1133,14 @@ AM_CONDITIONAL(ENABLE_MPI, test x"$enable_mpi" = xyes)
 AM_CONDITIONAL(ENABLE_OMP, test x"$enable_omp" = xyes)
 AM_CONDITIONAL(ENABLE_QUAD, test x$enable_quad = xyes)
 AM_CONDITIONAL(ENABLE_SSE2, test x$enable_sse2 = xyes)
+AM_CONDITIONAL(ENABLE_COMPLEX, test x"$enable_complex" = xyes)
 AC_SUBST(enable_mpi)
 AC_SUBST(enable_omp)
 AC_SUBST(enable_saamg)
 AC_SUBST(enable_quad)
 AC_SUBST(enable_fortran)
 AC_SUBST(enable_f90)
+AC_SUBST(enable_complex)
 AC_SUBST(MPIRUN)
 AC_SUBST(MPINP)
 AC_SUBST(AMDEFS)
@@ -1179,6 +1201,7 @@ echo "  Enable FMA                                 = $enable_fma"
 fi
 echo "  Enable long double precision support       = $enable_longdouble"
 echo "  Enable 64bit integer support               = $enable_longlong"
+echo "  Enable complex operation support           = $enable_complex"
 if test "$enable_debug" = "yes"; then
 echo "  Enable debugging                           = $enable_debug"
 fi
