@@ -4,7 +4,7 @@
 
 # General Configurations
 
-AC_INIT(lis, 1.5.55, devel@ssisc.org)
+AC_INIT(lis, 1.5.56, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -1130,6 +1130,7 @@ AC_SUBST(FCLDFLAGS)
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS([malloc.h stdlib.h string.h sys/time.h])
+AC_CHECK_HEADERS([complex.h])
 
 
 # Configurations for Compiler Characteristics and Type Definitions

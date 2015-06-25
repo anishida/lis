@@ -20,6 +20,9 @@
 /* Define to 1 to enable x87 FPU. */
 #undef HAS_X87_FPU
 
+/* Define to 1 if you have the <complex.h> header file. */
+#undef HAVE_COMPLEX_H
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
