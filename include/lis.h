@@ -30,7 +30,7 @@
 #define LIS_VERSION	"1.5.55"
 /**************************************/
 #include <stdio.h>
-#if defined(_COMPLEX)
+#ifdef HAVE_COMPLEX_H
 #include <complex.h>
 #endif
 
@@ -291,7 +291,7 @@ typedef struct
 #if defined(_LONG__DOUBLE)
 typedef long double LIS_SCALAR;
 typedef long double LIS_REAL;
-#if defined(_COMPLEX)
+#ifdef HAVE_COMPLEX_H
 typedef long double complex LIS_COMPLEX;
 #endif
 #define sin(x) sinl(x)
@@ -312,7 +312,7 @@ typedef long double complex LIS_COMPLEX;
 #else
 typedef double LIS_SCALAR;
 typedef double LIS_REAL;
-#if defined(_COMPLEX)
+#ifdef HAVE_COMPLEX_H
 typedef double complex LIS_COMPLEX;
 #endif
 #endif

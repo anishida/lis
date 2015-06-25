@@ -1152,6 +1152,7 @@ AC_SUBST(FCLDFLAGS)
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS([malloc.h stdlib.h string.h sys/time.h])
+AC_CHECK_HEADERS([complex.h])
 
 
 # Configurations for Compiler Characteristics and Type Definitions
