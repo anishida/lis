@@ -138,7 +138,8 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 	LIS_VECTOR b,x;
 	LIS_VECTOR r,s,z,*v;
 	LIS_SCALAR *h;
-	LIS_SCALAR aa,bb,rr,a2,b2,t;
+	LIS_SCALAR aa,bb,rr,a2,b2;
+	LIS_REAL t;
 
 	LIS_REAL bnrm2,nrm2,tol;
 	LIS_INT iter,maxiter,n,output;
@@ -1121,7 +1122,8 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 	LIS_VECTOR b,x;
 	LIS_VECTOR s,*z,*v;
 	LIS_SCALAR *h;
-	LIS_SCALAR aa,bb,rr,a2,b2,t;
+	LIS_SCALAR aa,bb,rr,a2,b2;
+	LIS_REAL t;
 
 	LIS_REAL bnrm2,nrm2,tol;
 	LIS_INT iter,maxiter,output;

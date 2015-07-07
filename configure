@@ -946,6 +946,7 @@ enable_64bit
 enable_32bit
 enable_longlong
 enable_longdouble
+enable_complex
 with_library_suffix
 enable_dependency_tracking
 enable_shared
@@ -1612,6 +1613,7 @@ Optional Features:
   --enable-32bit          build 32bit binary on Mac OS X [[default=no]]
   --enable-longlong       enable long long int support [[default=no]]
   --enable-longdouble     enable long double support [[default=no]]
+  --enable-complex        enable complex scalar support [[default=no]]
   --disable-dependency-tracking  speeds up one-time build
   --enable-dependency-tracking   do not reject slow dependency extractors
   --enable-shared[=PKGS]  build shared libraries [default=no]
@@ -3630,6 +3632,11 @@ if test "${enable_longdouble+set}" = set; then :
   enableval=$enable_longdouble;
 fi
 
+# Check whether --enable-complex was given.
+if test "${enable_complex+set}" = set; then :
+  enableval=$enable_complex;
+fi
+
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a library suffix to use" >&5
 $as_echo_n "checking for a library suffix to use... " >&6; }
@@ -4978,7 +4985,7 @@ _ACEOF
 	# flags.
 	ac_save_CFLAGS=$CFLAGS
 	CFLAGS="$CFLAGS $ac_verb"
-	(eval echo $as_me:4981: \"$ac_link\") >&5
+	(eval echo $as_me:4988: \"$ac_link\") >&5
 	ac_c_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 	echo "$ac_c_v_output" >&5
 	CFLAGS=$ac_save_CFLAGS
@@ -5051,7 +5058,7 @@ _ACEOF
 	# flags.
 	ac_save_CFLAGS=$CFLAGS
 	CFLAGS="$CFLAGS $ac_cv_prog_c_v"
-	(eval echo $as_me:5054: \"$ac_link\") >&5
+	(eval echo $as_me:5061: \"$ac_link\") >&5
 	ac_c_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 	echo "$ac_c_v_output" >&5
 	CFLAGS=$ac_save_CFLAGS
@@ -7236,6 +7243,17 @@ else
 fi
 
 
+########## Enable Complex Scalar Operations ##########
+if test "$enable_complex" = "yes"; then
+
+  CFLAGS="$CFLAGS -D_COMPLEX"
+  FFLAGS="$FFLAGS -DCOMPLEX"
+  FCFLAGS="$FCFLAGS -DCOMPLEX"
+else
+  enable_complex="no"
+fi
+
+
 # Configurations for Environment-Dependent Data Sizes
 
 ########## Check Size of int ##########
@@ -8484,13 +8502,13 @@ if ${lt_cv_nm_interface+:} false; then :
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:8487: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:8505: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:8490: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:8508: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:8493: output\"" >&5)
+  (eval echo "\"\$as_me:8511: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -9695,7 +9713,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 9698 "configure"' > conftest.$ac_ext
+  echo '#line 9716 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -11380,11 +11398,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:11383: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:11401: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:11387: \$? = $ac_status" >&5
+   echo "$as_me:11405: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -11719,11 +11737,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:11722: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:11740: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:11726: \$? = $ac_status" >&5
+   echo "$as_me:11744: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -11824,11 +11842,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:11827: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:11845: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:11831: \$? = $ac_status" >&5
+   echo "$as_me:11849: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11879,11 +11897,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:11882: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:11900: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:11886: \$? = $ac_status" >&5
+   echo "$as_me:11904: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14310,7 +14328,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 14313 "configure"
+#line 14331 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14406,7 +14424,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 14409 "configure"
+#line 14427 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -15061,11 +15079,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15064: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15082: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15068: \$? = $ac_status" >&5
+   echo "$as_me:15086: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15160,11 +15178,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15163: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15181: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15167: \$? = $ac_status" >&5
+   echo "$as_me:15185: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15212,11 +15230,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15215: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15233: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15219: \$? = $ac_status" >&5
+   echo "$as_me:15237: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -17671,11 +17689,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17674: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17692: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17678: \$? = $ac_status" >&5
+   echo "$as_me:17696: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17770,11 +17788,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17773: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17791: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:17777: \$? = $ac_status" >&5
+   echo "$as_me:17795: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -17822,11 +17840,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17825: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17843: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:17829: \$? = $ac_status" >&5
+   echo "$as_me:17847: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -22954,6 +22972,7 @@ echo "  Enable FMA                                 = $enable_fma"
 fi
 echo "  Enable long double precision support       = $enable_longdouble"
 echo "  Enable 64bit integer support               = $enable_longlong"
+echo "  Enable complex scalar support              = $enable_complex"
 if test "$enable_debug" = "yes"; then
 echo "  Enable debugging                           = $enable_debug"
 fi

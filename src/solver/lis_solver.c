@@ -893,7 +893,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 
 #undef __FUNC__
 #define __FUNC__ "lis_solver_get_initial_residual"
-LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VECTOR t, LIS_VECTOR r, LIS_SCALAR *bnrm2)
+LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VECTOR t, LIS_VECTOR r, LIS_REAL *bnrm2)
 {
 	LIS_INT	output,conv;
 	#ifdef USE_QUAD_PRECISION
@@ -901,7 +901,7 @@ LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VEC
 	#endif
 	LIS_MATRIX A;
 	LIS_VECTOR x,xx,b,p;
-	LIS_SCALAR nrm2;
+	LIS_REAL nrm2;
 	LIS_REAL tol,tol_w,tol_switch;
 	
 	LIS_DEBUG_FUNC_IN;
@@ -1010,7 +1010,7 @@ LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VEC
 		if( output & LIS_PRINT_OUT && A->my_rank==0 ) printf("iteration: %5d  relative residual = %e\n", 0, nrm2); 
 #endif
 	}
-	if( nrm2 <= solver->params[LIS_PARAMS_RESID-LIS_OPTIONS_LEN] )
+	if( nrm2 <= fabs(solver->params[LIS_PARAMS_RESID-LIS_OPTIONS_LEN]) )
 	{
 		solver->retcode = LIS_SUCCESS;
 		solver->iter    = 1;

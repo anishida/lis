@@ -37,7 +37,6 @@
 #define _max(a,b) ((a) >= (b) ? (a) : (b))
 #define _min(a,b) ((a) <= (b) ? (a) : (b))
 
-
 #define LIS_FMT_AUTO 0
 #define LIS_FMT_PLAIN 1
 #define LIS_FMT_MM 2
@@ -289,10 +288,32 @@ typedef struct
 } LIS_DOUBLE_DOUBLE_PTR;
 
 #if defined(_LONG__DOUBLE)
-typedef long double LIS_SCALAR;
 typedef long double LIS_REAL;
 #ifdef HAVE_COMPLEX_H
 typedef long double complex LIS_COMPLEX;
+#endif
+#if defined(_COMPLEX)
+typedef long double complex LIS_SCALAR;
+#define acos(x) cacosl(x)
+#define acosh(x) cacoshl(x)
+#define asin(x) casinl(x)
+#define asinh(x) casinhl(x)
+#define atan(x) catanl(x)
+#define atanh(x) catanhl(x)
+#define cos(x) ccosl(x)
+#define cosh(x) ccoshl(x)
+#define exp(x) cexpl(x)
+#define log(x) clogl(x)
+#define onj(x) conjl(x)
+#define pow(x,y) cpowl(x,y)
+#define proj(x) cprojl(x)
+#define sin(x) csinl(x)
+#define sinh(x) csinhl(x)
+#define sqrt(x) csqrtl(x)
+#define tan(x) ctanl(x)
+#define tanh(x) ctanhl(x)
+#else
+typedef long double LIS_SCALAR;
 #endif
 #define sin(x) sinl(x)
 #define cos(x) cosl(x)
@@ -310,10 +331,32 @@ typedef long double complex LIS_COMPLEX;
 #define pow(x,y) powl((x),(y))
 #define MPI_DOUBLE MPI_LONG_DOUBLE
 #else
-typedef double LIS_SCALAR;
 typedef double LIS_REAL;
 #ifdef HAVE_COMPLEX_H
 typedef double complex LIS_COMPLEX;
+#endif
+#if defined(_COMPLEX)
+typedef double complex LIS_SCALAR;
+#define acos(x) cacos(x)
+#define acosh(x) cacosh(x)
+#define asin(x) casin(x)
+#define asinh(x) casinh(x)
+#define atan(x) catan(x)
+#define atanh(x) catanh(x)
+#define cos(x) ccos(x)
+#define cosh(x) ccosh(x)
+#define exp(x) cexp(x)
+#define log(x) clog(x)
+#define onj(x) conj(x)
+#define pow(x,y) cpow(x,y)
+#define proj(x) cproj(x)
+#define sin(x) csin(x)
+#define sinh(x) csinh(x)
+#define sqrt(x) csqrt(x)
+#define tan(x) ctan(x)
+#define tanh(x) ctanh(x)
+#else
+typedef double LIS_SCALAR;
 #endif
 #endif
 typedef LIS_DOUBLE_DOUBLE LIS_QUAD;
@@ -836,7 +879,7 @@ extern "C"
 	extern LIS_INT lis_iesolver_destroy(LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_option(char *text, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_optionC(LIS_ESOLVER esolver);
-	extern LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_REAL *evalue0, LIS_ESOLVER esolver);
+	extern LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_get_iter(LIS_ESOLVER esolver, LIS_INT *iter);
 	extern LIS_INT lis_esolver_get_iterex(LIS_ESOLVER esolver, LIS_INT *iter, LIS_INT *iter_double, LIS_INT *iter_quad);
 	extern LIS_INT lis_esolver_get_time(LIS_ESOLVER esolver, double *time);

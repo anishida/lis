@@ -39,6 +39,7 @@ AC_ARG_ENABLE(64bit, AC_HELP_STRING(--enable-64bit, [build 64bit binary on AIX a
 AC_ARG_ENABLE(32bit, AC_HELP_STRING(--enable-32bit, [build 32bit binary on Mac OS X [[default=no]]]))
 AC_ARG_ENABLE(longlong, AC_HELP_STRING(--enable-longlong, [enable long long int support [[default=no]]]))
 AC_ARG_ENABLE(longdouble, AC_HELP_STRING(--enable-longdouble, [enable long double support [[default=no]]]))
+AC_ARG_ENABLE(complex, AC_HELP_STRING(--enable-complex, [enable complex scalar support [[default=no]]]))
 
 AC_MSG_CHECKING([for a library suffix to use])
 AC_ARG_WITH(library-suffix,
@@ -1038,6 +1039,17 @@ else
 fi
 
 
+########## Enable Complex Scalar Operations ##########
+if test "$enable_complex" = "yes"; then
+
+  CFLAGS="$CFLAGS -D_COMPLEX"
+  FFLAGS="$FFLAGS -DCOMPLEX" 
+  FCFLAGS="$FCFLAGS -DCOMPLEX" 
+else
+  enable_complex="no"
+fi
+
+
 # Configurations for Environment-Dependent Data Sizes
 
 ########## Check Size of int ##########
@@ -1180,6 +1192,7 @@ echo "  Enable FMA                                 = $enable_fma"
 fi
 echo "  Enable long double precision support       = $enable_longdouble"
 echo "  Enable 64bit integer support               = $enable_longlong"
+echo "  Enable complex scalar support              = $enable_complex"
 if test "$enable_debug" = "yes"; then
 echo "  Enable debugging                           = $enable_debug"
 fi

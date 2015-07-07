@@ -229,7 +229,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
       lis_vector_nrm2(r, &t[(j-1)*ss+j]);
 
       /* convergence check */
-      if (t[(j-1)*ss+j]<tol) break;  
+      if (fabs(t[(j-1)*ss+j])<tol) break;  
       t[j*ss+j-1] = t[(j-1)*ss+j];
     }
 
@@ -432,7 +432,7 @@ LIS_INT lis_eli_quad(LIS_ESOLVER esolver)
       lis_vector_nrm2(r, &t[(j-1)*ss+j]);
 
       /* convergence check */
-      if (t[(j-1)*ss+j]<tol) break;  
+      if (fabs(t[(j-1)*ss+j])<tol) break;  
       t[j*ss+j-1] = t[(j-1)*ss+j];
     }
 

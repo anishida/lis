@@ -39,7 +39,7 @@ extern "C"
 #endif
 	extern LIS_INT lis_solver_init(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_work_destroy(LIS_SOLVER solver);
-	extern LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VECTOR t, LIS_VECTOR r, LIS_SCALAR *bnrm2);
+	extern LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VECTOR t, LIS_VECTOR r, LIS_REAL *bnrm2);
 	extern LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_option_solver(char *argv, LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_option_psolver(char *argv, LIS_SOLVER solver);

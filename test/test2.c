@@ -219,7 +219,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	}
 
 	/* write solution */
-	lis_output_vector(x,LIS_FMT_MM,argv[4]); 
+	lis_output_vector(x,LIS_FMT_MM,argv[4]);
 
 	/* write residual history */
 	lis_solver_output_rhistory(solver, argv[5]); 

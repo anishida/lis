@@ -125,8 +125,8 @@ LIS_INT lis_precon_create_sainv_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	LIS_INT	i,j,k,ii,jj,ik,jk;
 	LIS_INT	n,annz,cl,cu;
 	LIS_INT	*ww,*il,*iu;
-	LIS_SCALAR t,dd,tol;
-	LIS_SCALAR nrm;
+	LIS_SCALAR t,dd;
+	LIS_REAL tol,nrm;
 	LIS_SCALAR *d,*l,*u;
 	LIS_MATRIX A,B;
 	LIS_MATRIX_ILU W,Z;
@@ -398,8 +398,8 @@ LIS_INT lis_precon_create_sainv_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	LIS_INT	i,j,k,ii,jj,len,lfil;
 	LIS_INT	n,nnz,annz,cl,cu,cc,m;
 	LIS_INT	*wu,*wl,*il,*iu,*ic,*pc;
-	LIS_SCALAR t,tol_dd,tol,v;
-	LIS_SCALAR nrm;
+	LIS_SCALAR t,v;
+	LIS_REAL tol,tol_dd,nrm;
 	LIS_SCALAR *d,*r,*c,*l,*u,*tmp;
 	LIS_MATRIX A,B;
 	LIS_MATRIX_ILU W,Z;

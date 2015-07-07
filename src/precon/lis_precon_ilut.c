@@ -114,7 +114,7 @@ LIS_INT lis_precon_create_ilut_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	LIS_MATRIX_ILU L,U;
 	LIS_VECTOR D;
 
-	LIS_SCALAR tnorm, tolnorm;
+	LIS_REAL tnorm, tolnorm;
 	LIS_SCALAR fact,lxu,*wn,*w;
 	LIS_INT	lenu,lenl,col,jpos,jrow,upos;
 	LIS_INT	*jbuf,*iw;
@@ -370,7 +370,7 @@ LIS_INT lis_precon_create_ilut_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	LIS_MATRIX_ILU L,U;
 	LIS_VECTOR D;
 
-	LIS_SCALAR tnorm, tolnorm;
+	LIS_REAL tnorm, tolnorm;
 	LIS_SCALAR fact,lxu,*wn,*w;
 	LIS_INT	lenu,lenl,col,jpos,jrow,upos;
 	LIS_INT	*jbuf,*iw;

@@ -63,7 +63,7 @@ LIS_INT lis_sor_check_params(LIS_SOLVER solver)
 	LIS_DEBUG_FUNC_IN;
 
 	w = solver->params[LIS_PARAMS_W-LIS_OPTIONS_LEN];
-	if( w<=0 || w>=2 )
+	if( fabs(w)<=0 || fabs(w)>=2 )
 	{
 		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_PARAMS_W is %f (set 0 < w < 2)\n",w);
 		return LIS_ERR_ILL_ARG;

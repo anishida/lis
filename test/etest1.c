@@ -46,7 +46,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
   LIS_INT nsol;
   LIS_MATRIX A;
   LIS_VECTOR x;
-  LIS_REAL evalue0;
+  LIS_SCALAR evalue0;
   LIS_ESOLVER esolver;
   LIS_REAL residual;
   LIS_INT iter;
@@ -116,9 +116,9 @@ LIS_INT main(LIS_INT argc, char* argv[])
   if( my_rank==0 ) {
     printf("%s: mode number          = %d\n", esolvername, 0);
 #ifdef _LONG__DOUBLE
-    printf("%s: eigenvalue           = %Le\n", esolvername, evalue0);
+    printf("%s: eigenvalue           = %Le\n", esolvername, (double)evalue0);
 #else
-    printf("%s: eigenvalue           = %e\n", esolvername, evalue0);
+    printf("%s: eigenvalue           = %e\n", esolvername, (double)evalue0);
 #endif
 #ifdef _LONGLONG
     printf("%s: number of iterations = %lld\n",esolvername, iter);
