@@ -142,7 +142,8 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	LIS_INT	cz,cw;
 	LIS_INT	*iw,*iw2,*wc,*wl,*iz,*zc,*zl;
 	LIS_INT	*index,*ptr;
-	LIS_SCALAR val,t,tol,toldd;
+	LIS_SCALAR val;
+	LIS_REAL t,tol,toldd;
 	LIS_SCALAR *z,*w,*tmp;
 	LIS_SCALAR *value;
 	LIS_SCALAR m;
@@ -563,7 +564,8 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	LIS_INT	cz,cw;
 	LIS_INT	*iw,*wc,*wl,*iz,*zc,*zl;
 	LIS_INT	*index,*ptr;
-	LIS_SCALAR gamma,val,t,tol,toldd;
+	LIS_SCALAR gamma,val;
+	LIS_REAL t,tol,toldd;
 	LIS_SCALAR *z,*w,*tmp;
 	LIS_SCALAR *value;
 	LIS_SCALAR m;
@@ -930,7 +932,8 @@ LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 	LIS_INT	cz,cw;
 	LIS_INT	*iw,*wc,*wl,*iz,*zc,*zl;
 	LIS_INT	*index,*ptr;
-	LIS_SCALAR gamma,val,t,tol,toldd;
+	LIS_SCALAR gamma,val;
+	LIS_REAL t,tol,toldd;
 	LIS_SCALAR *z,*w,*tmp,wz[9],lu[9];
 	LIS_SCALAR *value;
 	LIS_SCALAR m,a;

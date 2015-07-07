@@ -268,7 +268,7 @@ LIS_INT lis_vector_nrmi(LIS_VECTOR vx, LIS_REAL *value)
 {
 	LIS_INT i,n;
 	LIS_SCALAR *x;
-	LIS_SCALAR tmp;
+	LIS_REAL tmp;
 
 	#ifdef _OPENMP
 		LIS_INT nprocs,my_rank;

@@ -216,7 +216,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
       lis_vector_nrm2(w, &h[j+1+j*ss]);
 
       /* convergence check */
-      if (h[j+1+j*ss]<tol) break;
+      if (fabs(h[j+1+j*ss])<tol) break;
 
       /* v(j+1) = w / h(i+1,j) */
       lis_vector_scale(1/h[j+1+j*ss],w);
@@ -243,7 +243,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
       while (i<ss-1) 
 	{
 	  i = i + 1;
-	  if (h[i+(i-1)*ss]<tol)
+	  if (fabs(h[i+(i-1)*ss])<tol)
 	    {
 #ifdef _LONGLONG
 	      printf("Arnoldi: mode number              = %lld\n",i-1);
@@ -475,7 +475,7 @@ LIS_INT lis_eai_quad(LIS_ESOLVER esolver)
       lis_vector_nrm2(w, &h[j+1+j*ss]);
 
       /* convergence check */
-      if (h[j+1+j*ss]<tol) break;
+      if (fabs(h[j+1+j*ss])<tol) break;
 
       /* v(j+1) = w / h(i+1,j) */
       lis_vector_scale(1/h[j+1+j*ss],w);
@@ -502,7 +502,7 @@ LIS_INT lis_eai_quad(LIS_ESOLVER esolver)
       while (i<ss-1) 
 	{
 	  i = i + 1;
-	  if (h[i+(i-1)*ss]<tol)
+	  if (fabs(h[i+(i-1)*ss])<tol)
 	    {
 #ifdef _LONGLONG
 	      printf("Arnoldi: mode number              = %lld\n",i-1);

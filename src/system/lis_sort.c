@@ -415,8 +415,8 @@ void lis_sort_di(LIS_INT is, LIS_INT ie, LIS_SCALAR *d1, LIS_INT *i1)
 	i = is; j = ie;
 	while(i<=j)
 	{
-		while(d1[i] < v) { i++; }
-		while(d1[j] > v) { j--; }
+	  while(d1[i] < v) { i++; }
+	  while(d1[j] > v) { j--; }
 		if( i<=j )
 		{
 			lis_swap(i1[i],i1[j],t1);
@@ -444,8 +444,8 @@ void lis_sort_d(LIS_INT is, LIS_INT ie, LIS_SCALAR *d1)
 	i = is; j = ie;
 	while(i<=j)
 	{
-		while(d1[i] < v) { i++; }
-		while(d1[j] > v) { j--; }
+	  while(d1[i] < v) { i++; }
+	  while(d1[j] > v) { j--; }
 		if( i<=j )
 		{
 			lis_swap(d1[i],d1[j],s1);
@@ -474,8 +474,8 @@ void lis_sort_dd(LIS_INT is, LIS_INT ie, LIS_SCALAR *d1, LIS_VECTOR *d2)
 	i = is; j = ie;
 	while(i<=j)
 	{
-		while(d1[i] < v) { i++; }
-		while(d1[j] > v) { j--; }
+	  while(d1[i] < v) { i++; }
+	  while(d1[j] > v) { j--; }
 		if( i<=j )
 		{
 			lis_swap(d1[i],d1[j],s1);

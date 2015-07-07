@@ -490,7 +490,7 @@ LIS_INT lis_vector_cgs(LIS_INT n, LIS_VECTOR *x, LIS_VECTOR *q, LIS_VECTOR *r)
 {
   LIS_INT i, j, k; 
   LIS_VECTOR x_k; 
-  LIS_SCALAR nrm2;
+  LIS_REAL nrm2;
   LIS_REAL tol;
 
   lis_vector_duplicate(x[0], &x_k);

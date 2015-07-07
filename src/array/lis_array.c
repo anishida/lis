@@ -347,7 +347,7 @@ LIS_INT lis_array_nrm2(LIS_INT n, LIS_SCALAR *x, LIS_REAL *value)
 LIS_INT lis_array_nrmi(LIS_INT n, LIS_SCALAR *x, LIS_REAL *value)
 {
 	LIS_INT i;
-	LIS_SCALAR t;
+	LIS_REAL t;
 
 	LIS_DEBUG_FUNC_IN;
 
@@ -356,7 +356,7 @@ LIS_INT lis_array_nrmi(LIS_INT n, LIS_SCALAR *x, LIS_REAL *value)
 	{
 	  if (t < fabs(x[i]))
 	    {
-		t = fabs(x[i]);
+	      t = fabs(x[i]);
 	    }
 	}
 	*value = t;
