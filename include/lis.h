@@ -780,6 +780,7 @@ extern "C"
 	extern LIS_INT lis_matrix_convert(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_copy(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_set_blocksize(LIS_MATRIX A, LIS_INT bnr, LIS_INT bnc, LIS_INT row[], LIS_INT col[]);
+	extern LIS_INT lis_matrix_unset(LIS_MATRIX A);  
 
 	extern LIS_INT lis_matrix_malloc_csr(LIS_INT n, LIS_INT nnz, LIS_INT **ptr, LIS_INT **index, LIS_SCALAR **value);
 	extern LIS_INT lis_matrix_set_csr(LIS_INT nnz, LIS_INT *row, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);
