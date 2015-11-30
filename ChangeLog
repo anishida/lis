@@ -1,3 +1,7 @@
+Version 1.5.58  November 31, 2015
+
+  - Fixed bug in lis_solver.c and lis_esolver.c (thanks to James Liu).
+
 Version 1.5.57  July 7, 2015
 
   - Fixed bug in lis.h (thanks to Norihiro Watanabe).
