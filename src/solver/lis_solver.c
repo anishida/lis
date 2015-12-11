@@ -39,8 +39,8 @@
 #endif
 #include <string.h>
 #include <stdarg.h>
-#include <math.h>
 #include <ctype.h>
+#include <math.h>
 #ifdef _OPENMP
 	#include <omp.h>
 #endif
