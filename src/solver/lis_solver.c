@@ -40,7 +40,6 @@
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
-#include <math.h>
 #ifdef _OPENMP
 	#include <omp.h>
 #endif

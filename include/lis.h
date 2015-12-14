@@ -30,6 +30,7 @@
 #define LIS_VERSION	"1.5.58"
 /**************************************/
 #include <stdio.h>
+#include <math.h>
 #ifdef HAVE_COMPLEX_H
 #include <complex.h>
 #endif
