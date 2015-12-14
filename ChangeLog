@@ -1,3 +1,8 @@
+Version 1.5.59  December 15, 2015
+
+  - Added include statements for math.h to lis.h
+    (thanks to Neil Hodge).
+
 Version 1.5.58  November 31, 2015
 
   - Added include statements for math.h to lis_solver.c and lis_esolver.c
