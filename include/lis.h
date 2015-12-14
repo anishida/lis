@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"1.5.58"
+#define LIS_VERSION	"1.5.59"
 /**************************************/
 #include <stdio.h>
 #include <math.h>
