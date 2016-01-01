@@ -30,7 +30,6 @@
 #define LIS_VERSION	"1.5.59"
 /**************************************/
 #include <stdio.h>
-#include <math.h>
 #ifdef HAVE_COMPLEX_H
 #include <complex.h>
 #endif
@@ -226,8 +225,6 @@
 
 #define LIS_MATRIX_ASSEMBLING 0
 #define LIS_MATRIX_CSR 1
-#define LIS_MATRIX_CSR 1
-#define LIS_MATRIX_CSC 2
 #define LIS_MATRIX_CSC 2
 #define LIS_MATRIX_MSR 3
 #define LIS_MATRIX_DIA 4
