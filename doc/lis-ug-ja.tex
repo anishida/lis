@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis ユーザガイド}\\
-バージョン 1.5.59
+バージョン 1.5.60
 \end{flushleft}
 
 \vspace*{2cm}
@@ -2227,6 +2227,12 @@ linear solver status  : normal end
     10  1.000000e+00
     11  1.000000e-00
 \end{verbatim}
+
+\subsection{プロセス上での自由度について}
+MPIプロセスを複数使用する場合には, $global\_n=0$, $local\_n \ge 0$
+であってもよい. すなわち, 一つ以上のプロセスにおいて自由度を0とする
+ことができる. ただし, その場合においても$global\_n=0$ならば$local\_n$の
+総和は0より大きくなければならない. 
 
 \newpage
 \section{4倍精度演算}
