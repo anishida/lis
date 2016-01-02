@@ -4,7 +4,7 @@
 
 # General Configurations
 
-AC_INIT(lis, 1.5.59, devel@ssisc.org)
+AC_INIT(lis, 1.5.60, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -375,7 +375,7 @@ if test "$TARGET" = ""; then
 	  case $ax_cv_c_compiler_vendor in
 	    dec) CFLAGS="-newc -w0 -O5 -ansi_alias -ansi_args -fp_reorder -tune host $CFLAGS" ;;
 	    gnu) CFLAGS="-O3 -fomit-frame-pointer $CFLAGS" ;;
-	    intel) CFLAGS="-O3 -ansi_alias $CFLAGS" ;;
+	    intel) CFLAGS="-ansi_alias $CFLAGS" ;;	    
 	    portland) CFLAGS="-O3 -B -fastsse $CFLAGS" ;;
 	    pathscale) CFLAGS="-O3 $CFLAGS" ;;
 	    ibm) CFLAGS="-O3 -qansialias -w -qarch=auto -qtune=auto $CFLAGS"
@@ -585,8 +585,8 @@ if test "$TARGET" = ""; then
   case $ax_cv_f77_compiler_vendor in
     gnu) FFLAGS="-O3 -fomit-frame-pointer $FFLAGS" 
          FCFLAGS="-O3 -fomit-frame-pointer $FCFLAGS" ;;
-    intel) FFLAGS="-O3 -fpp $FFLAGS" 
-         FCFLAGS="-O3 -fpp $FCFLAGS" 
+    intel) FFLAGS="-fpp $FFLAGS"
+         FCFLAGS="-fpp $FCFLAGS"
          LDFLAGS="-Vaxlib"
          FCLDFLAGS="-nofor_main" ;;
     portland) FFLAGS="-O3 -fastsse -Mpreprocess $FFLAGS" 

@@ -126,9 +126,13 @@ LIS_INT lis_matrix_check(LIS_MATRIX A, LIS_INT level)
 			LIS_SETERR(LIS_ERR_ILL_ARG,"matrix size is undefined\n");
 			return LIS_ERR_ILL_ARG;
 		}
-		if( A->status==LIS_MATRIX_NULL )
+        /* only want this condition satisfied for the case of non-zero number of DOFs */
+        /* on the current process */
+		if( A->status==LIS_MATRIX_NULL && A->n>0 )
 		{
-			LIS_SETERR(LIS_ERR_ILL_ARG,"matrix type is undefined\n");
+            /* as the status is actually changed from ...NULL to ...ASSEMBLING in lis_matrix_set_value, */
+            /* ...NULL here really means that the components are undefined, not the type */
+			LIS_SETERR(LIS_ERR_ILL_ARG,"matrix components undefined\n");
 			return LIS_ERR_ILL_ARG;
 		}
 		break;
@@ -249,14 +253,19 @@ LIS_INT lis_matrix_set_size(LIS_MATRIX Amat, LIS_INT local_n, LIS_INT global_n)
 		LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%d) or global n(=%d) are less than 0\n",local_n,global_n);
 		return LIS_ERR_ILL_ARG;
 	}
-	if( local_n==0 && global_n==0 )
-	{
-		LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%d) and global n(=%d) are 0\n",local_n,global_n);
-		return LIS_ERR_ILL_ARG;
-	}
+    /* actually want to allow this case for MPI, but not otherwise */
+    #ifndef USE_MPI
+    if( local_n==0 && global_n==0 )
+    {
+        LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%d) and global n(=%d) are 0\n",local_n,global_n);
+        return LIS_ERR_ILL_ARG;
+    }
+    #endif
 	#ifdef USE_MPI
 	MPI_Comm_size(Amat->comm,&nprocs);
-	if( local_n==0 && global_n<nprocs )
+    /* change the logic to something a little more direct, i.e., that will not */
+    /* throw an error if local_n=0 . . . */
+	if( global_n>0 && global_n<nprocs )
 	  {
 	    LIS_SETERR2(LIS_ERR_ILL_ARG,"global n(=%d) is smaller than nprocs(=%d)\n",global_n,nprocs);
 	    return LIS_ERR_ILL_ARG;
@@ -637,7 +646,7 @@ LIS_INT lis_matrix_assemble(LIS_MATRIX A)
 		LIS_DEBUG_FUNC_OUT;
 		return LIS_SUCCESS;
 	}
-	else if( A->status<0 )
+	else if( A->status<0 && A->n>0 )
 	{
 		A->status      = -A->status;
 		A->matrix_type = A->status;

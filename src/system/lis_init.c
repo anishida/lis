@@ -259,7 +259,7 @@ LIS_INT lis_text2args(char *text, LIS_ARGS *args)
 		}
 		if( *p=='\0' ) break;
 		*p++ = '\0';
-		while( *p==' ' && *p=='\t' && *p=='\n' && *p=='\r' )
+		while( *p==' ' || *p=='\t' || *p=='\n' || *p=='\r' )
 		{
 			p++;
 		}

@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.5.59
+Version 1.5.60
 \end{flushleft}
 
 \vspace*{2cm}
@@ -2353,6 +2353,13 @@ linear solver status  : normal end
    10 1.000000e+000
    11 1.000000e+000
 \end{verbatim}
+
+\subsection{Zero DOFs on a Process}
+For the case of multiple MPI processes, it is possible to specify
+$global\_n = 0$ and $local\_n \ge 0$. This will allow one or more
+MPI processes to have zero DOFs. However, it is still the case that,
+for $global\_n = 0$, the summation of $local\_n$ over all processes
+should be greater than zero. 
 
 \newpage
 \section{Quadruple Precision Operations}
