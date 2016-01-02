@@ -5,7 +5,7 @@ Version 1.5.60  January 2, 2016
     (thanks to Neil Hodge).
   - Moved inclusion of math.h from lis.h to lis_solver.c
     (thanks to Neil Hodge).
-  - Deleted duplicat defines in lis.h
+  - Deleted duplicate defines in lis.h
     (thanks to Neil Hodge).
   - Fixed bug in lis_init.c associated with extra whitespace between
     solver options (thanks to Neil Hodge).
