@@ -27,7 +27,7 @@
 #define ZERO_ORIGIN 0
 #endif
 
-#ifdef LONGLONG
+#ifdef LONG__LONG
 #define LIS_MPI_INTEGER MPI_INTEGER8
 #else
 #define LIS_MPI_INTEGER MPI_INTEGER
@@ -1544,7 +1544,7 @@ CONTAINS
   SUBROUTINE assign_aggregate_table(aggregate_number_in_table, aggregate_table_array, &
        & aggregate_table_size, global_nd, local_nd, neib, NPROCS, size_of_aggregates)
     implicit NONE
-#ifdef LONGLONG
+#ifdef LONG__LONG
     include 'precision_longlong.inc'
 #else
     include 'precision.inc'

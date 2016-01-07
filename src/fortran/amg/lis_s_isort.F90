@@ -33,7 +33,7 @@ module isort
 contains
   subroutine  qsorti(ord,N,A)
     implicit none
-#ifdef LONGLONG
+#ifdef LONG__LONG
     include 'precision_longlong.inc'
 #else
     include 'precision.inc'
@@ -51,7 +51,7 @@ contains
 
       recursive subroutine qsort_rec(ord,N,A,l,h)
         implicit none
-#ifdef LONGLONG
+#ifdef LONG__LONG
     include 'precision_longlong.inc'
 #else
     include 'precision.inc'

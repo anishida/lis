@@ -29,7 +29,7 @@
 #define ZERO_ORIGIN 0
 #endif
 
-#ifdef LONGLONG
+#ifdef LONG__LONG
 #define LIS_MPI_INTEGER MPI_INTEGER8
 #else
 #define LIS_MPI_INTEGER MPI_INTEGER
@@ -1212,7 +1212,7 @@ CONTAINS
       USE isort
       IMPLICIT NONE
       INCLUDE  'mpif.h'
-#ifdef LONGLONG
+#ifdef LONG__LONG
       include 'precision_longlong.inc'
 #else
       include 'precision.inc'
@@ -1956,7 +1956,7 @@ CONTAINS
   SUBROUTINE  DEBUG_BARRIER_PRINT(string, comm, my_rank)
     IMPLICIT NONE
     INCLUDE 'mpif.h'
-#ifdef LONGLONG
+#ifdef LONG__LONG
     include 'precision_longlong.inc'
 #else
     include 'precision.inc'
@@ -3426,7 +3426,7 @@ CONTAINS
   
   SUBROUTINE left_looking_chorescky(lower_mat,N)
     IMPLICIT NONE
-#ifdef LONGLONG
+#ifdef LONG__LONG
     include 'precision_longlong.inc'
 #else
     include 'precision.inc'

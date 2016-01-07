@@ -29,7 +29,7 @@
 
 MODULE data_structure_for_AMG
   IMPLICIT NONE
-#ifdef LONGLONG
+#ifdef LONG__LONG
   include 'precision_longlong.inc'
 #else
   include 'precision.inc'
