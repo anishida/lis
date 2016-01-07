@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"1.5.60"
+#define LIS_VERSION	"1.5.61"
 /**************************************/
 #include <stdio.h>
 #ifdef HAVE_COMPLEX_H
@@ -361,7 +361,7 @@ typedef LIS_DOUBLE_DOUBLE LIS_QUAD;
 typedef LIS_DOUBLE_DOUBLE_PD LIS_QUAD_PD;
 typedef LIS_DOUBLE_DOUBLE_PTR LIS_QUAD_PTR;
 
-#if defined(_LONGLONG)
+#if defined(_LONGLONG) && !defined(_MSC_VER)
 typedef long long int LIS_INT;
 typedef unsigned long long int LIS_UNSIGNED_INT;
 #else
@@ -381,7 +381,7 @@ typedef unsigned int LIS_UNSIGNED_INT;
 	#include <mpi.h>
 	typedef MPI_Comm LIS_Comm;
 	#define LIS_COMM_WORLD	((LIS_Comm)MPI_COMM_WORLD)
-#if defined(_LONGLONG)
+#if defined(_LONGLONG) && !defined(_MSC_VER)
 	#define LIS_MPI_INT     MPI_LONG_LONG_INT
 	#define LIS_MPI_Fint    MPI_Fint
 #else
