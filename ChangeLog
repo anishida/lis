@@ -1,3 +1,8 @@
+Version 1.5.61  January 7, 2016
+
+  - Fixed _LONGLONG related bug in lis.h for Visual C++.
+    (thanks to Takeshi Takeda).
+
 Version 1.5.60  January 2, 2016
 
   - Deleted "-O3" options associated with Intel compilers
