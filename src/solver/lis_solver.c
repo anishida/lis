@@ -673,7 +673,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 #else
  	  if( output ) printf("precision             : %s\n", lis_precisionname[precision]); 
 #endif
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	  if( output ) printf("linear solver         : %s\n", lis_solvername[nsolver]); 
 #else
 	  if( output ) printf("linear solver         : %s\n", lis_solvername[nsolver]); 
@@ -684,7 +684,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 			i = solver->options[LIS_OPTIONS_FILL];
 			if( A->matrix_type==LIS_MATRIX_BSR || A->matrix_type==LIS_MATRIX_VBR )
 			{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 			  if( output ) sprintf(buf,"Block %s(%lld)",lis_preconname[precon_type],i); 
 #else
 			  if( output ) sprintf(buf,"Block %s(%d)",lis_preconname[precon_type],i); 
@@ -692,7 +692,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 			}
 			else
 			{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 			  if( output ) sprintf(buf,"%s(%lld)",lis_preconname[precon_type],i); 
 #else
 			  if( output ) sprintf(buf,"%s(%d)",lis_preconname[precon_type],i); 
@@ -753,7 +753,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	{
 		if( AA->matrix_type==LIS_MATRIX_BSR || AA->matrix_type==LIS_MATRIX_BSC )
 		{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		  if( output ) printf("matrix storage format : %s(%lld x %lld)\n", lis_storagename[AA->matrix_type-1],block,block);
 #else
 		  if( output ) printf("matrix storage format : %s(%d x %d)\n", lis_storagename[AA->matrix_type-1],block,block); 
@@ -862,7 +862,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	{
 		if( err )
 		{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		  if( output ) printf("linear solvef status  : %s(code=%lld)\n\n",lis_returncode[err],err);
 #else
 		  if( output ) printf("linear solver status  : %s(code=%d)\n\n",lis_returncode[err],err); 
@@ -1136,7 +1136,7 @@ LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 			default:
 				if( LIS_SOLVER_OPTACT[i] < LIS_OPTIONS_LEN )
 				{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 					sscanf(arg2, "%lld", &solver->options[LIS_SOLVER_OPTACT[i]]);
 #else
 					sscanf(arg2, "%d", &solver->options[LIS_SOLVER_OPTACT[i]]);
@@ -1168,7 +1168,7 @@ LIS_INT lis_solver_set_option_solver(char *argv, LIS_SOLVER solver)
 
 	if( argv[0]>='0' && argv[0]<='9' )
 	{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		sscanf(argv, "%lld", &solver->options[LIS_OPTIONS_SOLVER]);
 #else
 		sscanf(argv, "%d", &solver->options[LIS_OPTIONS_SOLVER]);
@@ -1199,7 +1199,7 @@ LIS_INT lis_solver_set_option_psolver(char *argv, LIS_SOLVER solver)
 
 	if( argv[0]>='0' && argv[0]<='9' )
 	{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		sscanf(argv, "%lld", &solver->options[LIS_OPTIONS_PSOLVER]);
 #else
 		sscanf(argv, "%d", &solver->options[LIS_OPTIONS_PSOLVER]);
@@ -1230,7 +1230,7 @@ LIS_INT lis_solver_set_option_precon(char *argv, LIS_SOLVER solver)
 
 	if( argv[0]>='0' && argv[0]<='9' )
 	{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		sscanf(argv, "%lld", &solver->options[LIS_OPTIONS_PRECON]);
 #else
 		sscanf(argv, "%d", &solver->options[LIS_OPTIONS_PRECON]);
@@ -1271,7 +1271,7 @@ LIS_INT lis_solver_set_option_pprecon(char *argv, LIS_SOLVER solver)
 
 	if( argv[0]>='0' && argv[0]<='9' )
 	{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		sscanf(argv, "%lld", &solver->options[LIS_OPTIONS_PPRECON]);
 #else
 		sscanf(argv, "%d", &solver->options[LIS_OPTIONS_PPRECON]);
@@ -1312,7 +1312,7 @@ LIS_INT lis_solver_set_option_print(char *argv, LIS_SOLVER solver)
 
 	if( argv[0]>='0' && argv[0]<='3' )
 	{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		sscanf(argv, "%lld", &solver->options[LIS_OPTIONS_OUTPUT]);
 #else
 		sscanf(argv, "%d", &solver->options[LIS_OPTIONS_OUTPUT]);
@@ -1343,7 +1343,7 @@ LIS_INT lis_solver_set_option_scale(char *argv, LIS_SOLVER solver)
 
 	if( argv[0]>='0' && argv[0]<='2' )
 	{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		sscanf(argv, "%lld", &solver->options[LIS_OPTIONS_SCALE]);
 #else
 		sscanf(argv, "%d", &solver->options[LIS_OPTIONS_SCALE]);
@@ -1374,7 +1374,7 @@ LIS_INT lis_solver_set_option_truefalse(char *argv, LIS_INT opt, LIS_SOLVER solv
 
 	if( argv[0]>='0' && argv[0]<='1' )
 	{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		sscanf(argv, "%lld", &solver->options[opt]);
 #else
 		sscanf(argv, "%d", &solver->options[opt]);
@@ -1405,7 +1405,7 @@ LIS_INT lis_solver_set_option_precision(char *argv, LIS_INT opt, LIS_SOLVER solv
 
 	if( argv[0]>='0' && argv[0]<='1' )
 	{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		sscanf(argv, "%lld", &solver->options[opt]);
 #else
 		sscanf(argv, "%d", &solver->options[opt]);
@@ -1436,7 +1436,7 @@ LIS_INT lis_solver_set_option_storage(char *argv, LIS_SOLVER solver)
 
 	if( argv[0]>='0' && argv[0]<='9' )
 	{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		sscanf(argv, "%lld", &solver->options[LIS_OPTIONS_STORAGE]);
 #else
 		sscanf(argv, "%d", &solver->options[LIS_OPTIONS_STORAGE]);
@@ -1467,7 +1467,7 @@ LIS_INT lis_solver_set_option_conv_cond(char *argv, LIS_SOLVER solver)
 
 	if( argv[0]>='0' && argv[0]<='3' )
 	{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		sscanf(argv, "%lld", &solver->options[LIS_OPTIONS_CONV_COND]);
 #else
 		sscanf(argv, "%d", &solver->options[LIS_OPTIONS_CONV_COND]);

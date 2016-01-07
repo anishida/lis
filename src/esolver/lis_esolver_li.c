@@ -244,7 +244,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
 
   if( A->my_rank==0 ) 
     {
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
       printf("size of subspace      : %lld\n\n", ss);
 #else
       printf("size of subspace      : %d\n\n", ss);
@@ -252,7 +252,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
       if( output ) printf("approximate eigenvalues in subspace:\n\n");
       for (i=0;i<ss;i++)
 	{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	  if( output ) printf("Lanczos: mode number              = %lld\n", i);
 #else
 	  if( output ) printf("Lanczos: mode number              = %d\n", i);
@@ -306,7 +306,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
       if (A->my_rank==0) 
 	{
 
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	  if( output ) printf("Lanczos: mode number          = %lld\n", i);
 #else
 	  if( output ) printf("Lanczos: mode number          = %d\n", i);
@@ -316,7 +316,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
 #else
 	  if( output ) printf("Lanczos: eigenvalue           = %e\n", esolver->evalue[i]);
 #endif
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	  if( output ) printf("Lanczos: number of iterations = %lld\n",esolver2->iter[0]);
 #else
 	  if( output ) printf("Lanczos: number of iterations = %d\n",esolver2->iter[0]);
@@ -447,7 +447,7 @@ LIS_INT lis_eli_quad(LIS_ESOLVER esolver)
 
   if( A->my_rank==0 ) 
     {
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
       printf("size of subspace = %lld\n\n", ss);
 #else
       printf("size of subspace = %d\n\n", ss);
@@ -455,7 +455,7 @@ LIS_INT lis_eli_quad(LIS_ESOLVER esolver)
       if( output & LIS_PRINT_OUT ) printf("approximate eigenvalues in subspace:\n\n");
       for (i=0;i<ss;i++)
 	{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	  if( output ) if( output & LIS_PRINT_OUT ) printf("Lanczos: mode number              = %lld\n", i);
 #else
 	  if( output ) if( output & LIS_PRINT_OUT ) printf("Lanczos: mode number              = %d\n", i);
@@ -509,7 +509,7 @@ LIS_INT lis_eli_quad(LIS_ESOLVER esolver)
       if (A->my_rank==0) 
 	{
 
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	  if( output ) printf("Lanczos: mode number          = %lld\n", i);
 #else
 	  if( output ) printf("Lanczos: mode number          = %d\n", i);
@@ -519,7 +519,7 @@ LIS_INT lis_eli_quad(LIS_ESOLVER esolver)
 #else
 	  if( output ) printf("Lanczos: eigenvalue           = %e\n", esolver->evalue[i]);
 #endif
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	  if( output ) printf("Lanczos: number of iterations = %lld\n",esolver2->iter[0]);
 #else
 	  if( output ) printf("Lanczos: number of iterations = %d\n",esolver2->iter[0]);

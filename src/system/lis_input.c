@@ -389,7 +389,7 @@ LIS_INT lis_input_vector_mm(LIS_VECTOR v, FILE *file)
 			return LIS_ERR_FILE_IO;
 		}
 	}while( buf[0]=='%' );
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	if( sscanf(buf, "%lld", &n) != 1 )
 #else
 	if( sscanf(buf, "%d", &n) != 1 )
@@ -414,7 +414,7 @@ LIS_INT lis_input_vector_mm(LIS_VECTOR v, FILE *file)
 			LIS_SETERR_FIO;
 			return LIS_ERR_FILE_IO;
 		}
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 		if( sscanf(buf, "%lld %Lg", &idx, &val) != 2 )
 #else
@@ -590,7 +590,7 @@ LIS_INT lis_input_vector_lis_ascii(LIS_VECTOR v, FILE *file)
 		LIS_SETERR_FIO;
 		return LIS_ERR_FILE_IO;
 	}
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	if( sscanf(cbuf, "%lld",&ibuf[0])!=1 )
 #else
 	if( sscanf(cbuf, "%d",&ibuf[0])!=1 )
@@ -601,7 +601,7 @@ LIS_INT lis_input_vector_lis_ascii(LIS_VECTOR v, FILE *file)
 	}
 	if( nprocs!=ibuf[0] )
 	{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		LIS_SETERR2(LIS_ERR_FILE_IO,"The number of PE=(%lld) is different (in file PE=%lld)\n",nprocs,ibuf[0]);
 #else
 		LIS_SETERR2(LIS_ERR_FILE_IO,"The number of PE=(%d) is different (in file PE=%d)\n",nprocs,ibuf[0]);
@@ -618,7 +618,7 @@ LIS_INT lis_input_vector_lis_ascii(LIS_VECTOR v, FILE *file)
 		}
 		if( cbuf[0]=='#' )
 		{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 			if( sscanf(cbuf, "%c %lld %lld",&c, &pe, &ibuf[1])!=3 )
 #else
 			if( sscanf(cbuf, "%c %d %d",&c, &pe, &ibuf[1])!=3 )

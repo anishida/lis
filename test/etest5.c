@@ -111,7 +111,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 #else
     printf("%s: eigenvalue           = %e\n", esolvername, evalue0);
 #endif
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
     printf("%s: number of iterations = %lld\n",esolvername, iter);
 #else
     printf("%s: number of iterations = %d\n",esolvername, iter);

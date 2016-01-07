@@ -85,7 +85,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
   if( my_rank==0 )
     {
       printf("\n");
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
       printf("number of processes = %lld\n",nprocs);
 #else
       printf("number of processes = %d\n",nprocs);
@@ -95,7 +95,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 #ifdef _OPENMP
   if( my_rank==0 )
     {
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
       printf("max number of threads = %lld\n",omp_get_num_procs());
       printf("number of threads = %lld\n",omp_get_max_threads());
 #else
@@ -112,7 +112,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
     mtype  = atoi(argv[4]);
     if( l<=0 || m<=0 || n<=0 )
       {
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	if( my_rank==0 ) printf("l=%lld <=0, m=%lld <=0 or n=%lld <=0\n",l,m,n);
 #else
 	if( my_rank==0 ) printf("l=%d <=0, m=%d <=0 or n=%d <=0\n",l,m,n);
@@ -159,7 +159,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
     MPI_Allreduce(&nnz,&i,1,LIS_MPI_INT,MPI_SUM,A->comm);
     nnz   = i;
 #endif
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
     if( my_rank==0 ) printf("matrix size = %lld x %lld (%lld nonzero entries)\n\n",nn,nn,nnz);
 #else
     if( my_rank==0 ) printf("matrix size = %d x %d (%d nonzero entries)\n\n",nn,nn,nnz);
@@ -186,7 +186,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
     lis_esolver_get_iter(esolver, &iter);
     lis_esolver_get_timeex(esolver,&time,&itime,&ptime,&p_c_time,&p_i_time);
     if( my_rank==0 ) {
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
       printf("%s: mode number          = %lld\n", esolvername, 0);
 #else
       printf("%s: mode number          = %d\n", esolvername, 0);
@@ -196,7 +196,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 #else
       printf("%s: eigenvalue           = %e\n", esolvername, evalue0);
 #endif
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
       printf("%s: number of iterations = %lld\n",esolvername, iter);
 #else
       printf("%s: number of iterations = %d\n",esolvername, iter);

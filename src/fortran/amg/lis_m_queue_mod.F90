@@ -27,7 +27,7 @@
 #define ZERO_ORIGIN 0
 #endif
 
-#ifdef LONGLONG
+#ifdef LONG__LONG
 #define LIS_MPI_INTEGER MPI_INTEGER8
 #else
 #define LIS_MPI_INTEGER MPI_INTEGER
@@ -44,7 +44,7 @@
 MODULE queue_mod
 contains
   SUBROUTINE score_up(node, P_queue, node_index, n)
-#ifdef LONGLONG
+#ifdef LONG__LONG
     include 'precision_longlong.inc'
 #else
     include 'precision.inc'
@@ -84,7 +84,7 @@ contains
 
   SUBROUTINE dequeue(node, P_queue, node_index, n)
     IMPLICIT NONE
-#ifdef LONGLONG
+#ifdef LONG__LONG
     include 'precision_longlong.inc'
 #else
     include 'precision.inc'
@@ -132,7 +132,7 @@ contains
 
   SUBROUTINE dequeue_scoreup_Layer23(i, N, queue_size, P_queue, node_index, & 
        &  aggregate_flags, node_record, NI, PNI, IAL, IAU)
-#ifdef LONGLONG
+#ifdef LONG__LONG
     include 'precision_longlong.inc'
 #else
     include 'precision.inc'

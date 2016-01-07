@@ -4,7 +4,7 @@
 
 # General Configurations
 
-AC_INIT(lis, 1.5.61, devel@ssisc.org)
+AC_INIT(lis, 1.5.62, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -994,23 +994,23 @@ if test "$enable_longlong" = "yes"; then
              LDFLAGS="$LDFLAGS -q64"
              ;;
   esac
-  CFLAGS="$CFLAGS -D_LONGLONG"
+  CFLAGS="$CFLAGS -D_LONG__LONG"
 
   case $ax_cv_f77_compiler_vendor in
-    intel) FFLAGS="$FFLAGS -DLONGLONG -integer-size 64"
-         FCFLAGS="$FCFLAGS -DLONGLONG -integer-size 64"
+    intel) FFLAGS="$FFLAGS -DLONG__LONG -integer-size 64"
+         FCFLAGS="$FCFLAGS -DLONG__LONG -integer-size 64"
 	 ;;
-    ibm) FFLAGS="$FFLAGS -WF,-DLONGLONG -qintsize=8"
-         FCFLAGS="$FCFLAGS -WF,-DLONGLONG -qintsize=8"
+    ibm) FFLAGS="$FFLAGS -WF,-DLONG__LONG -qintsize=8"
+         FCFLAGS="$FCFLAGS -WF,-DLONG__LONG -qintsize=8"
 	 ;;
-    fujitsu) FFLAGS="$FFLAGS -DLONGLONG -CcdII8"
-         FCFLAGS="$FCFLAGS -DLONGLONG -CcdII8"
+    fujitsu) FFLAGS="$FFLAGS -DLONG__LONG -CcdII8"
+         FCFLAGS="$FCFLAGS -DLONG__LONG -CcdII8"
          ;;
-    gnu) FFLAGS="$FFLAGS -Wp,-DLONGLONG -fdefault-integer-8"
-         FCFLAGS="$FCFLAGS -Wp,-DLONGLONG -fdefault-integer-8"
+    gnu) FFLAGS="$FFLAGS -Wp,-DLONG__LONG -fdefault-integer-8"
+         FCFLAGS="$FCFLAGS -Wp,-DLONG__LONG -fdefault-integer-8"
          ;;
-    *)   FFLAGS="$FFLAGS -DLONGLONG" 
-	 FCFLAGS="$FCFLAGS -DLONGLONG" 
+    *)   FFLAGS="$FFLAGS -DLONG__LONG" 
+	 FCFLAGS="$FCFLAGS -DLONG__LONG" 
 	 ;;
   esac
 else

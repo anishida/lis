@@ -27,7 +27,7 @@
 #define ZERO_ORIGIN 0
 #endif
 
-#ifdef LONGLONG
+#ifdef LONG__LONG
 #define LIS_MPI_INTEGER MPI_INTEGER8
 #else
 #define LIS_MPI_INTEGER MPI_INTEGER
@@ -105,7 +105,7 @@ CONTAINS
 
   subroutine clear_matrix_ssi_amg(LEVEL_NUM)
     IMPLICIT NONE
-#ifdef LONGLONG
+#ifdef LONG__LONG
     include 'precision_longlong.inc'
 #else
     include 'precision.inc'
@@ -120,7 +120,7 @@ CONTAINS
   SUBROUTINE v_cycle_ssi_amg(B, X, TEMP, LEVEL_NUM, SOLVER_COMM, WS, WR, NP, WSIZE)
     IMPLICIT NONE
     include 'mpif.h'
-#ifdef LONGLONG
+#ifdef LONG__LONG
     include 'precision_longlong.inc'
 #else
     include 'precision.inc'
@@ -607,7 +607,7 @@ CONTAINS
 
   SUBROUTINE ll_slv(lower_mat, b, N)
     IMPLICIT NONE
-#ifdef LONGLONG
+#ifdef LONG__LONG
     include 'precision_longlong.inc'
 #else
     include 'precision.inc'
@@ -840,7 +840,7 @@ CONTAINS
   SUBROUTINE matrix_arrange (N,NP,D,AL,INL,IAL,AU,INU,IAU)
 
     IMPLICIT NONE
-#ifdef LONGLONG
+#ifdef LONG__LONG
     include 'precision_longlong.inc'
 #else
     include 'precision.inc'

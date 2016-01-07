@@ -188,7 +188,7 @@ LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 		LIS_SETERR_FIO;
 		return LIS_ERR_FILE_IO;
 	}
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	if( sscanf(buf, "%14lld%14lld%14lld%14lld%14lld", &TOTCRD, &PTRCRD, &INDCRD, &VALCRD, &RHSCRD) != 5 )
 #else
 	if( sscanf(buf, "%14d%14d%14d%14d%14d", &TOTCRD, &PTRCRD, &INDCRD, &VALCRD, &RHSCRD) != 5 )
@@ -197,7 +197,7 @@ LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 		LIS_SETERR_FIO;
 		return LIS_ERR_FILE_IO;
 	}
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	printf("%14lld%14lld%14lld%14lld%14lld\n",TOTCRD, PTRCRD, INDCRD, VALCRD, RHSCRD);
 #else
 	printf("%14d%14d%14d%14d%14d\n",TOTCRD, PTRCRD, INDCRD, VALCRD, RHSCRD);
@@ -209,7 +209,7 @@ LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 		LIS_SETERR_FIO;
 		return LIS_ERR_FILE_IO;
 	}
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	if( sscanf(buf, "%s %lld %lld %lld %lld", mtx, &NROW, &NCOL, &NNZERO, &NELTVL) != 5 )
 #else
 	if( sscanf(buf, "%s %d %d %d %d", mtx, &NROW, &NCOL, &NNZERO, &NELTVL) != 5 )
@@ -244,7 +244,7 @@ LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 		LIS_SETERR(LIS_ERR_FILE_IO,"matrix is not square\n");
 		return LIS_ERR_FILE_IO;
 	}
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	printf("%c%c%c %lld %lld %lld %lld\n",MXTYPE_F, MXTYPE_S, MXTYPE_T, NROW, NCOL, NNZERO, NELTVL);
 #else
 	printf("%c%c%c %d %d %d %d\n",MXTYPE_F, MXTYPE_S, MXTYPE_T, NROW, NCOL, NNZERO, NELTVL);
@@ -260,7 +260,7 @@ LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 	lis_input_hb_get_fmt(&buf[16],16,&iind,&wind);
 	lis_input_hb_get_fmt(&buf[32],20,&ival,&wval);
 	lis_input_hb_get_fmt(&buf[52],20,&irhs,&wrhs);
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	printf("%lld %lld %lld %lld\n",iptr,iind,ival,irhs);
 	printf("%lld %lld %lld %lld\n",wptr,wind,wval,wrhs);
 #else
@@ -276,13 +276,13 @@ LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 			LIS_SETERR_FIO;
 			return LIS_ERR_FILE_IO;
 		}
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		sscanf(buf, "%s %lld %lld", mtx, &NRHS, &NRHSIX);
 #else
 		sscanf(buf, "%s %d %d", mtx, &NRHS, &NRHSIX);
 #endif
 /*
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		if( sscanf(buf, "%s %lld %lld", mtx, &NRHS, &NRHSIX) != 3 )
 #else
 		if( sscanf(buf, "%s %d %d", mtx, &NRHS, &NRHSIX) != 3 )
@@ -296,7 +296,7 @@ LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 		RHSTYP_F = mtx[0];
 		RHSTYP_S = mtx[1];
 		RHSTYP_T = mtx[2];
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		printf("%c%c%c %lld %lld\n",RHSTYP_F, RHSTYP_S, RHSTYP_T, NRHS, NRHSIX);
 #else
 		printf("%c%c%c %d %d\n",RHSTYP_F, RHSTYP_S, RHSTYP_T, NRHS, NRHSIX);

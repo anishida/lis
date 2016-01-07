@@ -994,7 +994,7 @@ LIS_INT lis_matrix_diag_print(LIS_MATRIX_DIAG D)
 			bn = D->bns[k];
 			for(i=0;i<bn;i++)
 			{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 				printf("%4lld (", nn+i);
 #else
 				printf("%4d (", nn+i);
@@ -1020,7 +1020,7 @@ LIS_INT lis_matrix_diag_print(LIS_MATRIX_DIAG D)
 		{
 			for(i=0;i<bn;i++)
 			{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 				printf("%4lld (", k*nn+i);
 #else
 				printf("%4d (", k*nn+i);

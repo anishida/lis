@@ -79,7 +79,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
     lis_solver_get_iter(solver,&iter);
     if (my_rank==0)
       {
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	printf("number of iterations = %lld\n",iter);
 #else
 	printf("number of iterations = %d\n",iter);

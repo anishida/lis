@@ -38,7 +38,7 @@
 MODULE queue_mod
   CONTAINS
   SUBROUTINE score_up(node, P_queue, node_index, n)
-#ifdef LONGLONG
+#ifdef LONG__LONG
     include 'precision_longlong.inc'
 #else
     include 'precision.inc'
@@ -76,7 +76,7 @@ MODULE queue_mod
 
   SUBROUTINE dequeue(node, P_queue, node_index,n)
     IMPLICIT NONE
-#ifdef LONGLONG
+#ifdef LONG__LONG
     include 'precision_longlong.inc'
 #else
     include 'precision.inc'
@@ -118,7 +118,7 @@ MODULE queue_mod
 
   SUBROUTINE dequeue_scoreup_Layer23(i, N, NP, queue_size, P_queue, node_index, & 
        &  aggregate_flags, node_record, NI, PNI, IAL, IAU)
-#ifdef LONGLONG
+#ifdef LONG__LONG
     include 'precision_longlong.inc'
 #else
     include 'precision.inc'

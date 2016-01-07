@@ -87,7 +87,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	mtype  = atoi(argv[3]);
 	if( m<=0 || n<=0 )
 	{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	  if( my_rank==0 ) printf("m=%lld <=0 or n=%lld <=0\n",m,n);
 #else
 	  if( my_rank==0 ) printf("m=%d <=0 or n=%d <=0\n",m,n);
@@ -98,7 +98,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	if( my_rank==0 )
 	  {
 	    printf("\n");
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	    printf("number of processes = %lld\n",nprocs);
 #else
 	    printf("number of processes = %d\n",nprocs);
@@ -108,7 +108,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 #ifdef _OPENMP
 	if( my_rank==0 )
 	  {
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	    printf("max number of threads = %lld\n",omp_get_num_procs());
 	    printf("number of threads = %lld\n",omp_get_max_threads());
 #else
@@ -163,7 +163,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	nnz   = i;
 #endif
 
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	if( my_rank==0 ) printf("matrix size = %lld x %lld (%lld nonzero entries)\n\n",nn,nn,nnz);
 #else
 	if( my_rank==0 ) printf("matrix size = %d x %d (%d nonzero entries)\n\n",nn,nn,nnz);
@@ -201,7 +201,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	if( my_rank==0 )
 	{
 
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 		printf("%s: number of iterations = %lld \n",solvername, iter);
 #else

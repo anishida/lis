@@ -88,7 +88,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 
 	if( l<=0 || m<=0 || n<=0 )
 	  {
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	    if( my_rank==0 ) printf("l=%lld <=0, m=%lld <=0 or n=%lld <=0\n",l,m,n);
 #else
 	    if( my_rank==0 ) printf("l=%d <=0, m=%d <=0 or n=%d <=0\n",l,m,n);
@@ -99,7 +99,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	if( my_rank==0 )
 	  {
 	    printf("\n");
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	    printf("number of processes = %lld\n",nprocs);
 #else
 	    printf("number of processes = %d\n",nprocs);
@@ -109,7 +109,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 #ifdef _OPENMP
 	if( my_rank==0 )
 	  {
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	    printf("max number of threads = %lld\n",omp_get_num_procs());
 	    printf("number of threads = %lld\n",omp_get_max_threads());
 #else
@@ -168,7 +168,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	MPI_Allreduce(&nnz,&i,1,LIS_MPI_INT,MPI_SUM,A->comm);
 	nnz   = i;
 #endif
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	if( my_rank==0 ) printf("matrix size = %lld x %lld (%lld nonzero entries)\n\n",nn,nn,nnz);
 #else
 	if( my_rank==0 ) printf("matrix size = %d x %d (%d nonzero entries)\n\n",nn,nn,nnz);
@@ -209,7 +209,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	lis_solver_get_solvername(nsol,solvername);
 	if( my_rank==0 )
 	{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 		printf("%s: number of iterations = %lld \n",solvername, iter);
 #else
