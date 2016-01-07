@@ -255,7 +255,7 @@ SUBROUTINE indpdt_agrgt (PNI,NI,LEVEL_NO,node_index,in_aggregates_result, &
 
   SUBROUTINE agrgt_dealloc ( in_aggregates_result,aggregates_result )
     implicit none
-#ifdef LONGLONG
+#ifdef LONG__LONG
     include 'precision_longlong.inc'
 #else
     include 'precision.inc'

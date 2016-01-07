@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.5.61
+Version 1.5.62
 \end{flushleft}
 
 \vspace*{2cm}
@@ -223,6 +223,8 @@ Cover: Ogata Korin. Irises. c1705. Nezu Museum.
 \item Change: Names of the functions
       {\tt lis\_array\_matvec2()} and {\tt lis\_array\_matmat2()} to \\
       {\tt lis\_array\_matvec\_ns()} and {\tt lis\_array\_matmat\_ns()}, respectively.
+\item Change: Names of the preprossor macros {\tt \_LONGLONG} and 
+      {\tt LONGLONG} to {\tt \_LONG\_\_LONG} and {\tt LONG\_\_LONG}, respectively.
 \end{enumerate}
 
 \newpage
@@ -1154,11 +1156,11 @@ This function initializes the MPI execution environment,
 and specifies the options on the command line.
 
 The default type of the integer in the C programs is {\tt LIS\_INT}, which
-is equivalent to {\tt int}.  If the preprossor macro {\tt \_LONGLONG}
+is equivalent to {\tt int}.  If the preprossor macro {\tt \_LONG\_\_LONG}
 is defined, it is replaced with {\tt long long int}.
 The default type of the integer in the Fortran programs is 
 {\tt LIS\_INTEGER}, which is equivalent to {\tt integer}.  If the
-preprocessor macro {\tt LONGLONG} is defined, it is replaced with 
+preprocessor macro {\tt LONG\_\_LONG} is defined, it is replaced with 
 {\tt integer*8}.
 \\ \\
 \noindent
@@ -2242,7 +2244,7 @@ when the SA-AMG preconditioner is selected,
 a Fortran 90 compiler must be used for the linking. 
 The preprocessor macro \verb|USE_MPI| must be defined for the
 multiprocessing environment. 
-The preprocessor macros \verb|_LONGLONG| for C and \verb|LONGLONG| 
+The preprocessor macros {\tt \_LONG\_\_LONG} for C and {\tt LONG\_\_LONG} 
 for Fortran must be defined when using the 64bit integer.
 
 \begin{itemsquarebox}[l]{For the serial environment}

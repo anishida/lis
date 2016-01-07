@@ -23,7 +23,7 @@
 !C   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 !C   POSSIBILITY OF SUCH DAMAGE.
 
-#ifdef LONGLONG
+#ifdef LONG__LONG
 #define LIS_MPI_INTEGER MPI_INTEGER8
 #else
 #define LIS_MPI_INTEGER MPI_INTEGER
@@ -45,7 +45,7 @@ MODULE hash_mod
     SUBROUTINE hash_zero(hash_size, hash_array, val, position, id)
     implicit none
     
-#ifdef LONGLONG
+#ifdef LONG__LONG
     include 'precision_longlong.inc'
 #else
     include 'precision.inc'
@@ -86,7 +86,7 @@ MODULE hash_mod
 
   SUBROUTINE hash(hash_size, hash_array, val, position, id)
     implicit none
-#ifdef LONGLONG
+#ifdef LONG__LONG
     include 'precision_longlong.inc'
 #else
     include 'precision.inc'

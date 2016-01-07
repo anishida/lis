@@ -349,7 +349,7 @@ CONTAINS
   SUBROUTINE matrix_arrange (N,NP,D,AL,INL,IAL,AU,INU,IAU)
 
     IMPLICIT NONE
-#ifdef LONGLONG
+#ifdef LONG__LONG
     include 'precision_longlong.inc'
 #else
     include 'precision.inc'

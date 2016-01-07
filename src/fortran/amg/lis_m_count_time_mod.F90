@@ -23,7 +23,7 @@
 !C   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 !C   POSSIBILITY OF SUCH DAMAGE.
 
-#ifdef LONGLONG
+#ifdef LONG__LONG
 #define LIS_MPI_INTEGER MPI_INTEGER8
 #else
 #define LIS_MPI_INTEGER MPI_INTEGER
@@ -39,7 +39,7 @@ MODULE count_time_mod
 contains
   SUBROUTINE count_time(op, SOLVER_COMM, my_rank, time_kind)
     IMPLICIT NONE
-#ifdef LONGLONG
+#ifdef LONG__LONG
     include 'precision_longlong.inc'
 #else
     include 'precision.inc'

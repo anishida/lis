@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis $B%f!<%6%,%$%I(B}\\
-$B%P!<%8%g%s(B 1.5.61
+$B%P!<%8%g%s(B 1.5.62
 \end{flushleft}
 
 \vspace*{2cm}
@@ -206,6 +206,8 @@ All rights reserved.
 \item $B4X?t(B{\tt lis\_array\_matvec2()}, {\tt lis\_array\_matmat2()}$B$NL>>N$r$=$l$>$l(B
   {\tt lis\_array\_matvec\_ns()}, \\
   {\tt lis\_array\_matmat\_ns()}$B$KJQ99(B.
+\item $B%W%j%W%m%;%C%5%^%/%m(B{\tt \_LONGLONG}, {\tt LONGLONG}$B$NL>>N$r$=$l$>$l(B
+      {\tt \_LONG\_\_LONG}, {\tt LONG\_\_LONG}$B$KJQ99(B.
 \end{enumerate}
 
 \newpage
@@ -1041,9 +1043,9 @@ $(1,\dots,1)^T$$B$H$N@Q$r<B9T2DG=$J9TNs3JG<7A<0$K$D$$$F(B
 $B$3$N4X?t$O(B, MPI$B$N=i4|2=(B, $B%3%^%s%I%i%$%s0z?t$N<hF@Ey$N=i4|2==hM}$r9T$&(B. 
 
 {\tt LIS\_INT}$B$N4{DjCM(B{\tt int}$B$O(B, $B%W%j%W%m%;%C%5%^%/%m(B
-{\tt \_LONGLONG}$B$,Dj5A$5$l$?>l9g$K$O(B{\tt long long int}$B$K(B, $B$^$?(B
+{\tt \_LONG\_\_LONG}$B$,Dj5A$5$l$?>l9g$K$O(B{\tt long long int}$B$K(B, $B$^$?(B
 {\tt LIS\_INTEGER}$B$N4{DjCM(B{\tt integer}$B$O(B, 
-$B%W%j%W%m%;%C%5%^%/%m(B{\tt LONGLONG}$B$,Dj5A$5$l$?>l9g$K$O(B
+$B%W%j%W%m%;%C%5%^%/%m(B{\tt LONG\_\_LONG}$B$,Dj5A$5$l$?>l9g$K$O(B
 {\tt integer*8}$B$KCV$-49$($i$l$k(B. 
 \\ \\
 \noindent
@@ -2115,8 +2117,8 @@ SA-AMG$BA0=hM}$K$O(BFortran 90$B$G5-=R$5$l$?%3!<%I$,4^$^$l$k$?$a(B, SA-AMG$
 $B$^$?(B, $B%^%k%A%W%m%;%94D6-$G$O%W%j%W%m%;%C%5%^%/%m(B\verb|USE_MPI|$B$,Dj5A(B
 $B$5$l$J$1$l$P$J$i$J$$(B. 
 64bit$B@0?t7?$r;HMQ$9$k>l9g$O(B, C$B%W%m%0%i%`$G$O%W%j%W%m%;%C%5(B
-$B%^%/%m(B\verb|_LONGLONG|, Fortran$B%W%m%0%i%`$G$O(B
-$B%W%j%W%m%;%C%5%^%/%m(B\verb|LONGLONG|$B$,Dj5A$5$l$J$1$l$P$J$i$J$$(B. 
+$B%^%/%m(B{\tt \_LONG\_\_LONG}, Fortran$B%W%m%0%i%`$G$O(B
+$B%W%j%W%m%;%C%5%^%/%m(B{\tt LONG\_\_LONG}$B$,Dj5A$5$l$J$1$l$P$J$i$J$$(B. 
 
 \begin{itembox}[l]{$BC`<!4D6-(B}
 \small

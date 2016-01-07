@@ -1,3 +1,8 @@
+Version 1.5.62  January 7, 2016
+
+  - Changed names of preprocessor macros _LONGLONG and LONGLONG to
+    _LONG__LONG and LONG__LONG, respectively, to avoid conflict with __int64.
+
 Version 1.5.61  January 7, 2016
 
   - Fixed __int64 related bug in lis.h for Visual C++
