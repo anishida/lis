@@ -161,7 +161,7 @@ LIS_INT lis_input_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, L
 					LIS_SETERR_FIO;
 					return LIS_ERR_FILE_IO;
 				}
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 				if( sscanf(buf, "%lld %Lg", &idx, &val) != 2 )
 #else
@@ -213,7 +213,7 @@ LIS_INT lis_input_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, L
 					LIS_SETERR_FIO;
 					return LIS_ERR_FILE_IO;
 				}
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 				if( sscanf(buf, "%lld %Lg", &idx, &val) != 2 )
 #else
@@ -315,7 +315,7 @@ LIS_INT lis_input_mm_size(FILE *file, LIS_INT *nr, LIS_INT *nc, LIS_INT *nnz, LI
 			return LIS_ERR_FILE_IO;
 		}
 	}while( buf[0]=='%' );
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	err = sscanf(buf, "%lld %lld %lld %lld %lld %lld", nr, nc, nnz, isb, isx, isbin);
 #else
 	err = sscanf(buf, "%d %d %d %d %d %d", nr, nc, nnz, isb, isx, isbin);
@@ -376,7 +376,7 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 	err = lis_matrix_set_size(A,0,nr);
 	if( err ) return err;
 
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	if( my_rank==0 ) printf("matrix size = %lld x %lld (%lld nonzero entries)\n\n",nr,nc,nnz);
 #else
 	if( my_rank==0 ) printf("matrix size = %d x %d (%d nonzero entries)\n\n",nr,nc,nnz);
@@ -452,7 +452,7 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 				lis_free2(4,ptr,index,value,work);
 				return LIS_ERR_FILE_IO;
 			}
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 			if( sscanf(buf, "%lld %lld %Lg", &ridx, &cidx, &val) != 3 )
 #else
@@ -570,7 +570,7 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 				lis_free2(4,ptr,index,value,work);
 				return LIS_ERR_FILE_IO;
 			}
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 			if( sscanf(buf, "%lld %lld %Lg", &ridx, &cidx, &val) != 3 )
 #else
@@ -593,7 +593,7 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 		cidx--;
 		if( ridx==cidx && val==0.0 )
 		{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 			printf("diagonal element is zero (i=%lld)\n",ridx);
 #else
 			printf("diagonal element is zero (i=%d)\n",ridx);

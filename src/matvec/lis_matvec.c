@@ -386,7 +386,7 @@ LIS_INT lis_matvec_optimize(LIS_MATRIX A, LIS_INT *matrix_type_maxperf)
 	printf("\nmeasuring matvec performance...\n");
 	iter = (int)(10000000 / A->nnz) + 1; 
 	flops_maxperf = 0.0;
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	printf("number of iterations = 1e7 / %lld + 1 = %lld\n", A->nnz, iter);
 #else
 	printf("number of iterations = 1e7 / %d + 1 = %d\n", A->nnz, iter);
@@ -421,13 +421,13 @@ LIS_INT lis_matvec_optimize(LIS_MATRIX A, LIS_INT *matrix_type_maxperf)
 		flops = 2.0*A->nnz*iter*1.0e-6 / comptime;
 #ifdef USE_MPI
 #ifdef _LONG__DOUBLE
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		printf("matrix_type = %2lld (%s), computation = %e sec, %8.3f MFLOPS, communication = %e sec, communication/computation = %3.3f\n",matrix_type,lis_storagename2[matrix_type-1],comptime,flops,commtime,commtime/comptime*100);
 #else
 		printf("matrix_type = %2d (%s), computation = %e sec, %8.3f MFLOPS, communication = %e sec, communication/computation = %3.3f\n",matrix_type,lis_storagename2[matrix_type-1],comptime,flops,commtime,commtime/comptime*100);
 #endif
 #else
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		printf("matrix_type = %2lld (%s), computation = %e sec, %8.3f MFLOPS, communication = %e sec, communication/computation = %3.3f\n",matrix_type,lis_storagename2[matrix_type-1],comptime,flops,commtime,commtime/comptime*100);
 #else
 		printf("matrix_type = %2d (%s), computation = %e sec, %8.3f MFLOPS, communication = %e sec, communication/computation = %3.3f\n",matrix_type,lis_storagename2[matrix_type-1],comptime,flops,commtime,commtime/comptime*100);
@@ -435,13 +435,13 @@ LIS_INT lis_matvec_optimize(LIS_MATRIX A, LIS_INT *matrix_type_maxperf)
 #endif
 #else
 #ifdef _LONG__DOUBLE
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		printf("matrix_type = %2lld (%s), computation = %e sec, %8.3f MFLOPS\n",matrix_type,lis_storagename2[matrix_type-1],comptime,flops);
 #else
 		printf("matrix_type = %2d (%s), computation = %e sec, %8.3f MFLOPS\n",matrix_type,lis_storagename2[matrix_type-1],comptime,flops);
 #endif
 #else
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		printf("matrix_type = %2lld (%s), computation = %e sec, %8.3f MFLOPS\n",matrix_type,lis_storagename2[matrix_type-1],comptime,flops);
 #else
 		printf("matrix_type = %2d (%s), computation = %e sec, %8.3f MFLOPS\n",matrix_type,lis_storagename2[matrix_type-1],comptime,flops);

@@ -144,7 +144,7 @@ void CHKERR(LIS_INT ierr)
 LIS_INT lis_print_rhistory(LIS_INT iter, LIS_REAL resid)
 {
 
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 	printf("iteration: %5lld  relative residual = %Le\n", iter, resid);
 #else

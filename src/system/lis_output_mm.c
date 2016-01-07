@@ -102,7 +102,7 @@ LIS_INT lis_output_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT form
 						{
 						  if (b->intvalue)
 						    {
-#ifdef _LONGLONG						     
+#ifdef _LONG__LONG						     
 						      fprintf(file, "%lld %28lld\n", is+i+1,(long long int)b->value[i]);
 #else
 						      fprintf(file, "%d %28d\n", is+i+1,(int)b->value[i]);
@@ -110,7 +110,7 @@ LIS_INT lis_output_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT form
 						    }
 						  else
 						    {
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 							fprintf(file, "%lld %28.20Le\n", is+i+1,b->value[i]);
 #else
@@ -174,7 +174,7 @@ LIS_INT lis_output_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT form
 						{
 						  if (x->intvalue)
 						    {
-#ifdef _LONGLONG						     
+#ifdef _LONG__LONG						     
 						      fprintf(file, "%lld %28lld\n", is+i+1,(long long int)x->value[i]);
 #else
 						      fprintf(file, "%d %28d\n", is+i+1,(int)x->value[i]);
@@ -182,7 +182,7 @@ LIS_INT lis_output_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT form
 						    }
 						  else
 						    {
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 							fprintf(file, "%lld %28.20Le\n", is+i+1,x->value[i]);
 #else
@@ -240,7 +240,7 @@ LIS_INT lis_output_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT form
 			{
 			  if (b->intvalue)
 			    {
-#ifdef _LONGLONG						     
+#ifdef _LONG__LONG						     
 			      fprintf(file, "%lld %28lld\n", i+1,(long long int)b->value[i]);
 #else
 			      fprintf(file, "%d %28d\n", i+1,(int)b->value[i]);
@@ -248,7 +248,7 @@ LIS_INT lis_output_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT form
 			    }
 			  else
 			    {
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 				fprintf(file, "%lld %28.20Le\n", i+1,b->value[i]);
 #else
@@ -282,7 +282,7 @@ LIS_INT lis_output_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT form
 			{
 			  if (x->intvalue)
 			    {
-#ifdef _LONGLONG						     
+#ifdef _LONG__LONG						     
 			      fprintf(file, "%lld %28lld\n", i+1,(long long int)x->value[i]);
 #else
 			      fprintf(file, "%d %28d\n", i+1,(int)x->value[i]);
@@ -290,7 +290,7 @@ LIS_INT lis_output_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT form
 			    }
 			  else
 			    {
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 				fprintf(file, "%lld %28.20Le\n", i+1,x->value[i]);
 #else
@@ -366,7 +366,7 @@ LIS_INT lis_output_mm_header(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT f
 			{
 				if( isb==0 && isx==0 )
 				{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 					fprintf(*file, "%lld %lld %lld\n", A->gn, A->gn, nnz);
 #else
 					fprintf(*file, "%d %d %d\n", A->gn, A->gn, nnz);
@@ -374,7 +374,7 @@ LIS_INT lis_output_mm_header(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT f
 				}
 				else
 				{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 					fprintf(*file, "%lld %lld %lld %lld %lld\n", A->gn, A->gn, nnz, isb, isx);
 #else
 					fprintf(*file, "%d %d %d %d %d\n", A->gn, A->gn, nnz, isb, isx);
@@ -383,7 +383,7 @@ LIS_INT lis_output_mm_header(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT f
 			}
 			else
 			{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 				fprintf(*file, "%lld %lld %lld %lld %lld %lld\n", A->gn, A->gn, nnz, isb, isx, endian+1);
 #else
 				fprintf(*file, "%d %d %d %d %d %d\n", A->gn, A->gn, nnz, isb, isx, endian+1);
@@ -436,7 +436,7 @@ LIS_INT lis_output_mm_header(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT f
 	{
 		if( isb==0 && isx==0 )
 		{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 			fprintf(*file, "%lld %lld %lld\n", A->gn, A->gn, nnz);
 #else
 			fprintf(*file, "%d %d %d\n", A->gn, A->gn, nnz);
@@ -444,7 +444,7 @@ LIS_INT lis_output_mm_header(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT f
 		}
 		else
 		{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 			fprintf(*file, "%lld %lld %lld %lld %lld\n", A->gn, A->gn, nnz, isb, isx);
 #else
 			fprintf(*file, "%d %d %d %d %d\n", A->gn, A->gn, nnz, isb, isx);
@@ -453,7 +453,7 @@ LIS_INT lis_output_mm_header(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT f
 	}
 	else
 	{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		fprintf(*file, "%lld %lld %lld %lld %lld %lld\n", A->gn, A->gn, nnz, isb, isx, endian+1);
 #else
 		fprintf(*file, "%d %d %d %d %d %d\n", A->gn, A->gn, nnz, isb, isx, endian+1);
@@ -514,7 +514,7 @@ LIS_INT lis_output_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT form
 							{
 								jj = is + A->index[j]+1;
 							}
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 							fprintf(file, "%lld %lld %28.20Le\n", is+i+1,jj,A->value[j]);
 #else
@@ -568,7 +568,7 @@ LIS_INT lis_output_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT form
 							{
 								jj = is + A->index[j]+1;
 							}
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 							fprintf(file, "%lld %lld %28.20Le\n", jj,is+i+1,A->value[j]);
 #else
@@ -642,7 +642,7 @@ LIS_INT lis_output_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT form
 				for(j=A->ptr[i];j<A->ptr[i+1];j++)
 				{
 					jj = A->index[j]+1;
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 					fprintf(file, "%lld %lld %28.20Le\n", i+1,jj,A->value[j]);
 #else
@@ -682,7 +682,7 @@ LIS_INT lis_output_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT form
 				for(j=A->ptr[i];j<A->ptr[i+1];j++)
 				{
 					jj = A->index[j]+1;
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 					fprintf(file, "%lld %lld %28.20Le\n", jj,i+1,A->value[j]);
 #else

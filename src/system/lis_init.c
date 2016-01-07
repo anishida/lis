@@ -141,7 +141,7 @@ LIS_INT lis_initialize(LIS_INT* argc, char** argv[])
 				switch( LIS_INIT_OPTACT[i] )
 				{
 				case LIS_INIT_OPTIONS_OMPNUMTHREADS:
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 					sscanf(p->arg2, "%lld", &nprocs);
 #else
 					sscanf(p->arg2, "%d", &nprocs);

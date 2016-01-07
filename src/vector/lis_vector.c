@@ -857,7 +857,7 @@ LIS_INT lis_vector_print(LIS_VECTOR x)
 			{
 				ii = i+is;
 				if( x->origin ) ii++;
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 				printf("%6lld  %Le\n",ii,x->value[i]);
 #else
@@ -889,7 +889,7 @@ LIS_INT lis_vector_print(LIS_VECTOR x)
 		if( x->origin ) ii++;
 		if( x->precision==LIS_PRECISION_DEFAULT )
 		{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 			printf("%6lld  %Le\n",ii,x->value[i]);
 #else
@@ -905,7 +905,7 @@ LIS_INT lis_vector_print(LIS_VECTOR x)
 		}
 		else
 		{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 			printf("%6lld  %Le,%Le\n",ii,x->value[i],x->value_lo[i]);
 #else

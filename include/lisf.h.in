@@ -7,7 +7,7 @@
 #define SIZEOF_VOID_P 4
 #endif
 
-#ifdef LONGLONG
+#ifdef LONG__LONG
 #define LIS_INTEGER integer*8
 #else
 #define LIS_INTEGER integer
@@ -20,7 +20,7 @@
 #define LIS_PRECON integer*8
 #define LIS_ESOLVER integer*8
 #else
-#ifdef LONGLONG
+#ifdef LONG__LONG
 #define LIS_MATRIX integer*8
 #define LIS_VECTOR integer*8
 #define LIS_SOLVER integer*8
@@ -63,7 +63,7 @@
       #include 'mpif.h'
 #endif
 
-#ifdef LONGLONG
+#ifdef LONG__LONG
 #define LIS_MPI_INTEGER MPI_INTEGER
 #else
 #define LIS_MPI_INTEGER MPI_INTEGER

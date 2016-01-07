@@ -1489,7 +1489,7 @@ LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 		}
 		memcpy(&D->value[bs*k],lu,bs*sizeof(LIS_SCALAR));
 		switch(bnr)
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 		{
 		case 1:

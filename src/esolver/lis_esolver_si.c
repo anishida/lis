@@ -253,7 +253,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 
   if( A->my_rank==0 ) 
     {
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
       printf("size of subspace      : %lld\n\n", ss);
 #else
       printf("size of subspace      : %d\n\n", ss);
@@ -417,7 +417,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
       
       if (A->my_rank==0 && ss>1)
 	{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	  if( output ) printf("Subspace: mode number          = %lld\n", j-1);
 #else
 	  if( output ) printf("Subspace: mode number          = %d\n", j-1);
@@ -427,7 +427,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 #else
 	  if( output ) printf("Subspace: eigenvalue           = %e\n", esolver->evalue[j-1]);
 #endif
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	  if( output ) printf("Subspace: number of iterations = %lld\n",iter);
 #else
 	  if( output ) printf("Subspace: number of iterations = %d\n",iter);
@@ -725,7 +725,7 @@ LIS_INT lis_esi_quad(LIS_ESOLVER esolver)
 
       if (A->my_rank==0 && ss>1)
 	{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	  if( output ) printf("Subspace: mode number          = %lld\n", j-1);
 #else
 	  if( output ) printf("Subspace: mode number          = %d\n", j-1);
@@ -735,7 +735,7 @@ LIS_INT lis_esi_quad(LIS_ESOLVER esolver)
 #else
 	  if( output ) printf("Subspace: eigenvalue           = %e\n", esolver->evalue[j-1]);
 #endif
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	  if( output ) printf("Subspace: number of iterations = %lld\n",iter);
 #else
 	  if( output ) printf("Subspace: number of iterations = %d\n",iter);

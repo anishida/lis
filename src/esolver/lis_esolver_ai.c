@@ -231,7 +231,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 
   if( A->my_rank==0 ) 
     {
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
       printf("size of subspace      : %lld\n\n", ss);
 #else
       printf("size of subspace      : %d\n\n", ss);
@@ -245,7 +245,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 	  i = i + 1;
 	  if (fabs(h[i+(i-1)*ss])<tol)
 	    {
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	      printf("Arnoldi: mode number              = %lld\n",i-1);
 #else
 	      printf("Arnoldi: mode number              = %d\n",i-1);
@@ -263,7 +263,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 		+ 4 * h[i-1+i*ss] * h[i+(i-1)*ss];
 	      if (D<0)
 		{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		  printf("Arnoldi: mode number              = %lld\n",i-1);
 #else
 		  printf("Arnoldi: mode number              = %d\n",i-1);
@@ -273,7 +273,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 #else
 		  printf("Arnoldi: eigenvalue               = %e + %e i\n", (h[i-1+(i-1)*ss]+h[i+i*ss])/2, sqrt(-D)/2);
 #endif
-#ifdef _LONGLONG	      
+#ifdef _LONG__LONG	      
 		  printf("Arnoldi: mode number              = %lld\n",i);
 #else
 		  printf("Arnoldi: mode number              = %d\n",i);
@@ -289,7 +289,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 		}
 	      else
 		{
-#ifdef _LONGLONG	      	      
+#ifdef _LONG__LONG	      	      
 		  printf("Arnoldi: mode number              = %lld\n",i-1);
 #else
 		  printf("Arnoldi: mode number              = %d\n",i-1);
@@ -305,7 +305,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 	}
       if (i<ss)
 	{
-#ifdef _LONGLONG	            
+#ifdef _LONG__LONG	            
 	  printf("Arnoldi: mode number              = %lld\n",i);
 #else
 	  printf("Arnoldi: mode number              = %d\n",i);
@@ -362,7 +362,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
       if (A->my_rank==0) 
 	{
 
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	  if( output ) printf("Arnoldi: mode number          = %lld\n", i);
 #else
 	  if( output ) printf("Arnoldi: mode number          = %d\n", i);
@@ -372,7 +372,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 #else
 	  if( output ) printf("Arnoldi: eigenvalue           = %e\n", esolver->evalue[i]);
 #endif
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	  if( output ) printf("Arnoldi: number of iterations = %lld\n",esolver2->iter[0]);
 #else
 	  if( output ) printf("Arnoldi: number of iterations = %d\n",esolver2->iter[0]);
@@ -490,7 +490,7 @@ LIS_INT lis_eai_quad(LIS_ESOLVER esolver)
 
   if( A->my_rank==0 ) 
     {
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
       printf("size of subspace      : %lld\n\n", ss);
 #else
       printf("size of subspace      : %d\n\n", ss);
@@ -504,7 +504,7 @@ LIS_INT lis_eai_quad(LIS_ESOLVER esolver)
 	  i = i + 1;
 	  if (fabs(h[i+(i-1)*ss])<tol)
 	    {
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	      printf("Arnoldi: mode number              = %lld\n",i-1);
 #else
 	      printf("Arnoldi: mode number              = %d\n",i-1);
@@ -522,7 +522,7 @@ LIS_INT lis_eai_quad(LIS_ESOLVER esolver)
 		+ 4 * h[i-1+i*ss] * h[i+(i-1)*ss];
 	      if (D<0)
 		{
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 		  printf("Arnoldi: mode number              = %lld\n",i-1);
 #else
 		  printf("Arnoldi: mode number              = %d\n",i-1);
@@ -532,7 +532,7 @@ LIS_INT lis_eai_quad(LIS_ESOLVER esolver)
 #else
 		  printf("Arnoldi: eigenvalue               = %e + %e i\n", (h[i-1+(i-1)*ss]+h[i+i*ss])/2, sqrt(-D)/2);
 #endif
-#ifdef _LONGLONG	      
+#ifdef _LONG__LONG	      
 		  printf("Arnoldi: mode number              = %lld\n",i);
 #else
 		  printf("Arnoldi: mode number              = %d\n",i);
@@ -548,7 +548,7 @@ LIS_INT lis_eai_quad(LIS_ESOLVER esolver)
 		}
 	      else
 		{
-#ifdef _LONGLONG	      	      
+#ifdef _LONG__LONG	      	      
 		  printf("Arnoldi: mode number              = %lld\n",i-1);
 #else
 		  printf("Arnoldi: mode number              = %d\n",i-1);
@@ -564,7 +564,7 @@ LIS_INT lis_eai_quad(LIS_ESOLVER esolver)
 	}
       if (i<ss)
 	{
-#ifdef _LONGLONG	            
+#ifdef _LONG__LONG	            
 	  printf("Arnoldi: mode number              = %lld\n",i);
 #else
 	  printf("Arnoldi: mode number              = %d\n",i);
@@ -622,7 +622,7 @@ LIS_INT lis_eai_quad(LIS_ESOLVER esolver)
       if (A->my_rank==0) 
 	{
 
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	  if( output ) printf("Arnoldi: mode number          = %lld\n", i);
 #else
 	  if( output ) printf("Arnoldi: mode number          = %d\n", i);
@@ -632,7 +632,7 @@ LIS_INT lis_eai_quad(LIS_ESOLVER esolver)
 #else
 	  if( output ) printf("Arnoldi: eigenvalue           = %e\n", esolver->evalue[i]);
 #endif
-#ifdef _LONGLONG
+#ifdef _LONG__LONG
 	  if( output ) printf("Arnoldi: number of iterations = %lld\n",esolver2->iter[0]);
 #else
 	  if( output ) printf("Arnoldi: number of iterations = %d\n",esolver2->iter[0]);
