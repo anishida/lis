@@ -1,6 +1,6 @@
 noinst_LTLIBRARIES = libprecision.la
 libprecision_la_SOURCES = lis_precision.c \
-lis_precision_matvec.c \   
+lis_precision_matvec.c \
 lis_precision_vec.c
 
 
