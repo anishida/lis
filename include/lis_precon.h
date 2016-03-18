@@ -71,6 +71,10 @@ extern "C"
 /*******************/
 
 	extern LIS_INT lis_precon_create_iluk(LIS_SOLVER solver, LIS_PRECON precon);
+/*NEH support for extended "solve_kernel" workflow*/
+	extern LIS_INT lis_precon_psd_create_iluk(LIS_SOLVER solver, LIS_PRECON precon);
+/*NEH support for extended "solve_kernel" workflow*/
+	extern LIS_INT lis_precon_psd_update_iluk(LIS_SOLVER solver, LIS_PRECON precon);
 	extern LIS_INT lis_psolve_iluk_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X);
 	extern LIS_INT lis_psolve_iluk_bsr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X);
 	extern LIS_INT lis_psolve_iluk_vbr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X);
@@ -116,6 +120,10 @@ extern "C"
 /*******************/
 
 	extern LIS_INT lis_precon_create_saamg(LIS_SOLVER solver, LIS_PRECON precon);
+/*NEH support for extended "solve_kernel" workflow*/
+	extern LIS_INT lis_precon_psd_create_saamg(LIS_SOLVER solver, LIS_PRECON precon);
+/*NEH support for extended "solve_kernel" workflow*/
+    extern LIS_INT lis_precon_psd_update_saamg(LIS_SOLVER solver, LIS_PRECON precon);
 	extern LIS_INT lis_psolve_saamg(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X);
 	extern LIS_INT lis_psolvet_saamg(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X);
 

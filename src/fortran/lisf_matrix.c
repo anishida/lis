@@ -177,6 +177,19 @@ void lis_matrix_set_value_f(LIS_INT *flag, LIS_INT *i, LIS_INT *j, LIS_SCALAR *v
 	return;
 }
 
+/*NEH support for extended "solve_kernel" workflow*/
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_psd_set_value_f"
+void lis_matrix_psd_set_value_f(LIS_INT *flag, LIS_INT *i, LIS_INT *j, LIS_SCALAR *value, LIS_MATRIX_F *A, LIS_INT *ierr)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	*ierr = lis_matrix_psd_set_value(*flag,*i,*j,*value,(LIS_MATRIX)LIS_V2P(A));
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_set_type_f"
 void lis_matrix_set_type_f(LIS_MATRIX_F *A, LIS_INT *matrix_type, LIS_INT *ierr)
@@ -606,6 +619,23 @@ void lis_matrix_scale_f(LIS_MATRIX_F *A, LIS_VECTOR_F *b, LIS_VECTOR_F *d, LIS_I
 	LIS_DEBUG_FUNC_OUT;
 	return;
 }
+
+/*NEH support for extended "solve_kernel" workflow*/
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_psd_reset_scale_f"
+void lis_matrix_psd_reset_scale_f(LIS_MATRIX_F *A, LIS_INT *ierr)
+{
+	LIS_MATRIX AA;
+
+	LIS_DEBUG_FUNC_IN;
+
+	AA    = (LIS_MATRIX)LIS_V2P(A);
+	*ierr = lis_matrix_psd_reset_scale(AA);
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_get_diagonal_f"

@@ -189,6 +189,135 @@ LIS_INT lis_precon_create_saamg(LIS_SOLVER solver, LIS_PRECON precon)
 #endif
 }
 
+/*NEH support for extended "solve_kernel" workflow*/
+#undef __FUNC__
+#define __FUNC__ "lis_precon_psd_create_saamg"
+LIS_INT lis_precon_psd_create_saamg(LIS_SOLVER solver, LIS_PRECON precon)
+{
+#if defined(USE_SAAMG)
+	LIS_MATRIX A,B;
+	LIS_INT	err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	if( solver->A->matrix_type!=LIS_MATRIX_CSR )
+	{
+		A = solver->A;
+		err = lis_matrix_duplicate(A,&B);
+		if( err ) return err;
+		lis_matrix_set_type(B,LIS_MATRIX_CSR);
+		err = lis_matrix_convert(A,B);
+		if( err ) return err;
+		solver->A = B;
+		lis_matrix_destroy(B);
+		solver->A = A;
+	}
+	precon->A       = solver->A;
+	precon->is_copy = LIS_FALSE;
+	A               = precon->A;
+
+
+	err = lis_vector_duplicate(A,&precon->temp);
+	if( err )
+	{
+		return err;
+	}
+	F77_FUNC_(finit_data_creation,FINIT_DATA_CREATION)(c_data_creation_ptr_bar);
+	F77_FUNC_(finit_data_creation_unsym,FINIT_DATA_CREATION_UNSYM)(c_data_creation_unsym_ptr_bar);
+	F77_FUNC_(finit_v_cycle,FINIT_V_CYCLE)(c_v_cycle_ptr_bar);
+	F77_FUNC_(finit_clear_matrix,FINIT_CLEAR_MATRIX)(c_clear_matrix_ptr_bar);
+	
+    lis_matrix_split_create(A);
+
+	LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+#else
+	LIS_DEBUG_FUNC_IN;
+
+    precon->A       = solver->A;
+    precon->is_copy = LIS_FALSE;
+
+	LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+#endif
+}
+
+/*NEH support for extended "solve_kernel" workflow*/
+#undef __FUNC__
+#define __FUNC__ "lis_precon_psd_update_saamg"
+LIS_INT lis_precon_psd_update_saamg(LIS_SOLVER solver, LIS_PRECON precon)
+{
+#if defined(USE_SAAMG)
+	LIS_MATRIX A;
+	LIS_COMMTABLE table;
+    LIS_INT	unsym,sol;
+	LIS_INT	err;
+	LIS_REAL theta; 
+	#ifdef USE_MPI
+		LIS_MPI_Fint comm;
+	#endif
+
+	LIS_DEBUG_FUNC_IN;
+
+    A               = precon->A;
+    sol             = solver->options[LIS_OPTIONS_SOLVER];
+    unsym           = solver->options[LIS_OPTIONS_SAAMG_UNSYM];
+    theta           = solver->params[LIS_PARAMS_SAAMG_THETA - LIS_OPTIONS_LEN];
+
+
+#if 0
+    if( sol!=LIS_SOLVER_CG && !unsym )
+    {
+        unsym = LIS_TRUE;
+    }
+#endif
+
+    lis_matrix_split_update(A);
+
+	#ifdef USE_MPI
+		comm = MPI_Comm_c2f(A->comm);
+		lis_send_recv(A->commtable,A->D->value); // this line should probably only be in the "update" version . . .
+		table = A->commtable;
+		if( !unsym )
+		{
+			(*(void (*)())f_data_creation_ptr)(&A->n,&A->np,&A->L->nnz,&A->U->nnz,
+				A->D->value,A->L->value,A->L->ptr,A->L->index,
+				A->U->value, A->U->ptr, A->U->index,
+				&table->neibpetot, table->neibpe, table->import_ptr,
+				table->import_index, table->export_ptr, table->export_index,
+				&table->imnnz,&table->exnnz,
+				&comm, &precon->level_num,&precon->wsize, &theta);
+		}
+		else
+		{
+			(*(void (*)())f_data_creation_unsym_ptr)(&A->n,&A->np,&A->L->nnz,&A->U->nnz,
+				A->D->value,A->L->value,A->L->ptr,A->L->index,
+				A->U->value, A->U->ptr, A->U->index,
+				&table->neibpetot, table->neibpe, table->import_ptr,
+				table->import_index, table->export_ptr, table->export_index,
+				&table->imnnz,&table->exnnz,
+				&comm, &precon->level_num,&precon->wsize, &theta);
+		}
+	#else
+		if( !unsym )
+		{
+			(*(void (*)())f_data_creation_ptr)(&A->n,&A->L->nnz,&A->U->nnz,
+				A->D->value,A->L->value,A->L->ptr,A->L->index,
+				A->U->value, A->U->ptr, A->U->index, &precon->level_num, &theta);
+		}
+		else
+		{
+			(*(void (*)())f_data_creation_unsym_ptr)(&A->n,&A->L->nnz,&A->U->nnz,
+				A->D->value,A->L->value,A->L->ptr,A->L->index,
+				A->U->value, A->U->ptr, A->U->index, &precon->level_num, &theta);
+		}
+	#endif
+
+	LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+#endif
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_psolve_saamg"
 LIS_INT lis_psolve_saamg(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)

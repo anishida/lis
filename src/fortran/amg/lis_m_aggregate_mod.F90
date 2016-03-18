@@ -336,6 +336,7 @@ CONTAINS
   END SUBROUTINE indpdt_agrgt
 
 
+!==========================================================================
   SUBROUTINE border_aggregate (PNI, NI, LEVEL_NO, node_index, sorted_NEIBPE, my_rank,     &
        &                      PE_num_size,PE_nums,nodes_for_each_PE,in_nodes_for_each_PE, &
        &                      PE_list_size,PE_list,NPROCS,SOLVER_COMM)
@@ -470,20 +471,22 @@ CONTAINS
        END DO
     END DO
     
+    IF (NEIBPETOT>0) THEN
     ALLOCATE(WSI(STACK_EXPORT(NEIBPETOT)))
     ALLOCATE(WRI(STACK_IMPORT(NEIBPETOT)))
     CALL SOLVER_SEND_RECV2I(NP, STACK_EXPORT(NEIBPETOT),                 &
          &       STACK_IMPORT(NEIBPETOT), NEIBPETOT, NEIBPE(1:NEIBPETOT),&
          &       STACK_IMPORT(0:NEIBPETOT), &
          &       NOD_IMPORT(1:STACK_IMPORT(NEIBPETOT)), &
-	 &       STACK_EXPORT(0:NEIBPETOT), &
+     &       STACK_EXPORT(0:NEIBPETOT), &
          &       NOD_EXPORT(1:STACK_EXPORT(NEIBPETOT)), &
          &       WSI(1:STACK_EXPORT(NEIBPETOT)), &
          &       WRI(1:STACK_IMPORT(NEIBPETOT)), &
-	 &       PE_in_charge(1:NP), SOLVER_COMM, my_rank)
+     &       PE_in_charge(1:NP), SOLVER_COMM, my_rank)
 
     DEALLOCATE(WSI)
     DEALLOCATE(WRI)
+    END IF
 
     !C-- end: PE_in_charge has its PE in charge
 
@@ -492,7 +495,11 @@ CONTAINS
     !C   * change_vector has serial number of nod_import,
     !C    node_export, nodes_for_each_PE. irrelevant node has 0.
     ALLOCATE(change_vector(NP))
-    send_buf_size = NEIBPETOT + STACK_EXPORT(NEIBPETOT) + PNI(2 * N)
+    IF (NEIBPETOT>0) THEN
+        send_buf_size = NEIBPETOT + STACK_EXPORT(NEIBPETOT) + PNI(2 * N)
+    ELSE
+        send_buf_size=0
+    END IF
     ALLOCATE(send_buf(send_buf_size))
     ALLOCATE(in_send_buf(0:NEIBPETOT))
     
@@ -784,9 +791,14 @@ CONTAINS
     !C== the result of aggregation is communicated
     k=0
     l=0
-    send_buf_size=STACK_IMPORT(NEIBPETOT)+1
+    IF (NEIBPETOT>0) THEN
+        send_buf_size=STACK_IMPORT(NEIBPETOT)+1
+        recv_buf_size=STACK_EXPORT(NEIBPETOT)+1
+    ELSE
+        send_buf_size=0
+        recv_buf_size=0
+    END IF
     ALLOCATE(send_buf(send_buf_size))
-    recv_buf_size=STACK_EXPORT(NEIBPETOT)+1
     ALLOCATE(recv_buf2(recv_buf_size))
 
     DO i=1,NEIBPETOT
@@ -979,9 +991,14 @@ CONTAINS
     !C   the result of aggregation is communicated
     k = 0
     l = 0
-    send_buf_size = STACK_IMPORT(NEIBPETOT)
+    IF (NEIBPETOT>0) THEN
+        send_buf_size = STACK_IMPORT(NEIBPETOT)
+        recv_buf_size = STACK_EXPORT(NEIBPETOT) + 1
+    ELSE
+        send_buf_size=0
+        recv_buf_size=0
+    END IF
     ALLOCATE(send_buf(send_buf_size))
-    recv_buf_size = STACK_EXPORT(NEIBPETOT) + 1
     ALLOCATE(recv_buf2(recv_buf_size))
 
     DO i = 1, NEIBPETOT
@@ -1039,6 +1056,7 @@ CONTAINS
 
   END SUBROUTINE border_aggregate
 
+!==========================================================================
   SUBROUTINE aggregate(PNI, NI, LEVEL_NO, node_index, in_aggregates_result,           &
        &               aggregates_result, in_aggregates_result_size, my_rank,         &
        &               aggregate_table_size, aggregate_table_array,                   &
@@ -1206,9 +1224,11 @@ CONTAINS
        !C== root, determined, undtermined
        !C== node_index 0 -> part of the queue data >0
        aggregate_flags(1:N) = 1
+       IF (N>0) THEN
        DO i = 1, STACK_EXPORT(NEIBPETOT)
           aggregate_flags(NOD_EXPORT(i)+ZERO_ORIGIN) = 0
        END DO
+       END IF
 
 
        
@@ -1228,6 +1248,7 @@ CONTAINS
        !C== dequeue on nodes around the nodes on EXPORT TABLE with score -1 
        !C== node_index -2 -1 0 >0
        !C== root, determined, undetermined but not root, undetermined and part of queue
+       IF (N>0) THEN
        DO l = 1, STACK_EXPORT(NEIBPETOT)
           i = NOD_EXPORT(l)+ZERO_ORIGIN
           if(node_index(i) == -1) then
@@ -1249,6 +1270,7 @@ CONTAINS
           end if
 
        END DO
+       END IF
        
 
        !C== creating aggregates which are predetermined on borders
@@ -1349,7 +1371,11 @@ CONTAINS
     
 
     aggregate_number_in_table=0
-    maxbufsize = STACK_IMPORT(NEIBPETOT)+STACK_EXPORT(NEIBPETOT)
+    IF (N>0) THEN
+        maxbufsize = STACK_IMPORT(NEIBPETOT)+STACK_EXPORT(NEIBPETOT)
+    ELSE
+        maxbufsize=0
+    END IF
     if(PE_num_size /= 0) maxbufsize=maxbufsize+in_nodes_for_each_PE(PE_num_size)+1
     
     allocate(req1(PE_list_size))
@@ -1539,6 +1565,7 @@ CONTAINS
 
   END SUBROUTINE aggregate
 
+!==========================================================================
   !C-- insert node into aggregate table
   !C-- global_nd -> aggregate_table(:,neib) and local aggregate number is in local_nd
   SUBROUTINE assign_aggregate_table(aggregate_number_in_table, aggregate_table_array, &

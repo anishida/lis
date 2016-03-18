@@ -231,7 +231,6 @@
 #define LIS_MATRIX_CDS 4
 #define LIS_MATRIX_ELL 5
 #define LIS_MATRIX_JAD 6
-#define LIS_MATRIX_JAD 6
 #define LIS_MATRIX_BSR 7
 #define LIS_MATRIX_BSC 8
 #define LIS_MATRIX_VBR 9
@@ -700,6 +699,10 @@ struct LIS_CONV_OPTIONS_STRUCT
 typedef struct LIS_CONV_OPTIONS_STRUCT LIS_CONV_OPTIONS;
 
 typedef LIS_INT (*LIS_PRECON_CREATE_XXX)(LIS_SOLVER solver, LIS_PRECON precon);
+/*NEH support for extended "solve_kernel" workflow*/
+typedef LIS_INT (*LIS_PRECON_PSD_CREATE_XXX)(LIS_SOLVER solver, LIS_PRECON precon);
+/*NEH support for extended "solve_kernel" workflow*/
+typedef LIS_INT (*LIS_PRECON_PSD_UPDATE_XXX)(LIS_SOLVER solver, LIS_PRECON precon);
 typedef LIS_INT (*LIS_PSOLVE_XXX)(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
 typedef LIS_INT (*LIS_PSOLVET_XXX)(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
 
@@ -724,6 +727,8 @@ extern "C"
 
 	extern LIS_INT lis_vector_create(LIS_Comm comm, LIS_VECTOR *vec); 
 	extern LIS_INT lis_vector_set_size(LIS_VECTOR vec, LIS_INT local_n, LIS_INT global_n); 
+/*NEH support for extended "solve_kernel" workflow*/
+	extern LIS_INT lis_vector_psd_reset_scale(LIS_VECTOR vec); 
 	extern LIS_INT lis_vector_destroy(LIS_VECTOR vec);
 	extern LIS_INT lis_vector_duplicate(void *vin, LIS_VECTOR *vout);
 	extern LIS_INT lis_vector_get_size(LIS_VECTOR v, LIS_INT *local_n, LIS_INT *global_n);
@@ -771,16 +776,20 @@ extern "C"
 	extern LIS_INT lis_matrix_set_type(LIS_MATRIX A, LIS_INT matrix_type);
 	extern LIS_INT lis_matrix_get_type(LIS_MATRIX A, LIS_INT *matrix_type);
 	extern LIS_INT lis_matrix_set_value(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);
+	extern LIS_INT lis_matrix_set_value_new(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_set_values(LIS_INT flag, LIS_INT n, LIS_SCALAR value[], LIS_MATRIX A);
 	extern LIS_INT lis_matrix_malloc(LIS_MATRIX A, LIS_INT nnz_row, LIS_INT nnz[]);
 	extern LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR d);
 	extern LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR D, LIS_INT action);
+/*NEH support for extended "solve_kernel" workflow*/
+	extern LIS_INT lis_matrix_psd_reset_scale(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_convert(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_copy(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_set_blocksize(LIS_MATRIX A, LIS_INT bnr, LIS_INT bnc, LIS_INT row[], LIS_INT col[]);
 	extern LIS_INT lis_matrix_unset(LIS_MATRIX A);  
 
 	extern LIS_INT lis_matrix_malloc_csr(LIS_INT n, LIS_INT nnz, LIS_INT **ptr, LIS_INT **index, LIS_SCALAR **value);
+	extern LIS_INT lis_matrix_set_value_csr(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_set_csr(LIS_INT nnz, LIS_INT *row, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_malloc_csc(LIS_INT n, LIS_INT nnz, LIS_INT **ptr, LIS_INT **index, LIS_SCALAR **value);
 	extern LIS_INT lis_matrix_set_csc(LIS_INT nnz, LIS_INT *row, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);
@@ -847,7 +856,7 @@ extern "C"
 /* Linear Solvers           */
 /****************************/
 
-	extern LIS_INT lis_solver_create(LIS_SOLVER *solver);
+    extern LIS_INT lis_solver_create(LIS_SOLVER *solver);
 	extern LIS_INT lis_solver_destroy(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_get_iter(LIS_SOLVER solver, LIS_INT *iter);
 	extern LIS_INT lis_solver_get_iterex(LIS_SOLVER solver, LIS_INT *iter, LIS_INT *iter_double, LIS_INT *iter_quad);
@@ -860,6 +869,8 @@ extern "C"
         extern LIS_INT lis_solver_get_rhistory(LIS_SOLVER solver, LIS_VECTOR v);
 	extern LIS_INT lis_solver_set_option(char *text, LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_optionC(LIS_SOLVER solver);
+/*NEH support for extended "solve_kernel" workflow*/
+    extern LIS_INT lis_solver_set_matrix(LIS_MATRIX A, LIS_SOLVER solver);
 	extern LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver);
 	extern LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver, LIS_PRECON precon);
 	extern LIS_PRECON_REGISTER *precon_register_top;

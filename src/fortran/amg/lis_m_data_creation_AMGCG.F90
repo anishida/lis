@@ -205,11 +205,11 @@ CONTAINS
 
     PRECOND = "SHA2"
 
-    call data_creation(N, NP, NPL, NPU, D(1:NP), AL(1:NPL), INL(0:N), IAL(1:NPL), &
-         & AU(1:NPU), INU(0:N), IAU(1:NPU), LEVEL_NUM,   &
-         & my_rank, NEIBPETOT, NEIBPE(1:NEIBPETOT), STACK_IMPORT(0:NEIBPETOT), &
-         & NOD_IMPORT(1:STACK_IMPORT(NEIBPETOT)), STACK_EXPORT(0:NEIBPETOT),      &
-         & NOD_EXPORT(1:STACK_EXPORT(NEIBPETOT)), SOLVER_COMM, PRECOND, 0, theta)
+    call data_creation(N, NP, NPL, NPU, D, AL, INL, IAL, &
+         & AU, INU, IAU, LEVEL_NUM, &
+         & my_rank, NEIBPETOT, NEIBPE, STACK_IMPORT(0:NEIBPETOT), &
+         & NOD_IMPORT, STACK_EXPORT(0:NEIBPETOT), &
+         & NOD_EXPORT, SOLVER_COMM, PRECOND, 0, theta)
 
     !C- WSIZE
 
@@ -247,6 +247,7 @@ CONTAINS
   END SUBROUTINE data_creation_unsym_ssi_amg
 
 
+!==========================================================================
   SUBROUTINE data_creation(N, NP, NPL, NPU, D, AL, INL, IAL, AU, INU, IAU, LEVEL_NUM, &
        & my_rank, NEIBPETOT, NEIBPE, STACK_IMPORT, NOD_IMPORT, STACK_EXPORT,          &
        & NOD_EXPORT, SOLVER_COMM, PRECOND, symmetric_mat, theta)
@@ -372,6 +373,11 @@ CONTAINS
 
     !C debug
     CHARACTER(len= 4 )  :: penum
+
+    EX_INL=>NULL()
+    EX_IAL=>NULL()
+    EX_AL=>NULL()
+
 
     CALL MPI_COMM_SIZE(SOLVER_COMM, NPROCS, IERR)
 
@@ -518,7 +524,7 @@ CONTAINS
        
        
        ALLOCATE(sorted_fNEIBPE(finerNEIBPETOT))
-       IF(NPROCS > 1) THEN
+       IF(NPROCS > 1 .AND. N>0) THEN
           CALL QSORTI(sorted_fNEIBPE, finerNEIBPETOT, finerNEIBPE)
        END IF
 
@@ -544,18 +550,26 @@ CONTAINS
        CALL DEBUG_BARRIER_PRINT("## repeated_nds_tbl_crtn ##", SOLVER_COMM, my_rank)
        
        IF(NPROCS > 1) THEN
-          CALL repeated_nds_tbl_crtn(level, sorted_fNEIBPE, SOLVER_COMM, my_rank, &
+           IF (N>0) THEN
+               CALL repeated_nds_tbl_crtn(level, sorted_fNEIBPE, SOLVER_COMM, my_rank, &
                & PE_num_size, PE_nums, nodes_for_each_PE, in_nodes_for_each_PE, NPROCS)
+           ELSE
+               PE_num_size=0
+           END IF
        END IF
 
        CALL DEBUG_BARRIER_PRINT("## lower_ext_matrix_crtn ##", SOLVER_COMM, my_rank)
        
        if(.not.SYMMETRIC_FLAG) then
-          CALL lower_ext_matrix_crtn(EX_NPL, EX_INL, EX_IAL, EX_AL, level, my_rank,  &
-               & SOLVER_COMM, NPROCS)
-       else
-          EX_NPL = 0
-       end if
+            IF (N>0) THEN
+                CALL lower_ext_matrix_crtn(EX_NPL, EX_INL, EX_IAL, EX_AL, level, my_rank, &
+                                           SOLVER_COMM, NPROCS)
+            ELSE
+                EX_NPL=0
+            END IF
+        else
+            EX_NPL = 0
+        end if
           
        CALL DEBUG_BARRIER_PRINT("## neighbors             ##", SOLVER_COMM, my_rank)
        
@@ -820,6 +834,7 @@ CONTAINS
        ALLOCATE(global_local_hash_table(HASH_TABLE_SIZE, 2))
        
        IF(NPROCS > 1) THEN
+          IF (N>0) THEN
           CALL count_time(1, solver_comm, my_rank, 2)       
           nfepe_size = in_nodes_for_each_PE(PE_num_size)          
           !C own aggregates is exchanged           
@@ -838,6 +853,9 @@ CONTAINS
           DEALLOCATE(PE_nums)
           DEALLOCATE(nodes_for_each_PE)
           DEALLOCATE(in_nodes_for_each_PE)
+          ELSE
+              local_aggre_size=0
+          END IF
        ELSE
           !C for single CPU case
           local_aggre_size = in_aggregates_result_size
@@ -987,7 +1005,9 @@ CONTAINS
 #endif
        
        if(.not.SYMMETRIC_FLAG) then       
-          deallocate(EX_INL, EX_IAL, EX_AL)       
+          IF (ASSOCIATED(EX_INL)) DEALLOCATE(EX_INL)
+          IF (ASSOCIATED(EX_IAL)) DEALLOCATE(EX_IAL)
+          IF (ASSOCIATED(EX_AL)) DEALLOCATE(EX_AL)
        end if
        
        IF(global_finish_flag)   EXIT
@@ -1007,6 +1027,7 @@ CONTAINS
   END SUBROUTINE data_creation
 
   
+!==========================================================================
   SUBROUTINE repeated_nds_tbl_crtn(LEVEL_NO,sorted_NEIBPE,SOLVER_COMM,my_rank, &
        &       PE_num_size,PE_nums,nodes_for_each_PE,in_nodes_for_each_PE,NPROCS)
     USE data_structure_for_AMG
@@ -1468,6 +1489,7 @@ CONTAINS
   END SUBROUTINE make_PE_lists
   
   
+!==========================================================================
   SUBROUTINE RAP(Temp_N, Temp_CN, Temp_V, hash_size, s, ownaggre_size, LEVEL_NO, local_aggre_size, my_rank)
     
     USE data_structure_for_AMG
@@ -1598,6 +1620,7 @@ CONTAINS
   END SUBROUTINE RAP
 
 
+!==========================================================================
   SUBROUTINE RAP_unsym(Temp_N, Temp_CN, Temp_V, hash_size, s, ownaggre_size, LEVEL_NO, local_aggre_size)
     
     USE data_structure_for_AMG
@@ -1977,6 +2000,7 @@ CONTAINS
   END SUBROUTINE DEBUG_BARRIER_PRINT
   
   
+!==========================================================================
   SUBROUTINE make_rap(LEVEL_NO, my_rank, SOLVER_COMM, NPROCS,                      &
        & coarser_level_size, global_finish_flag, GIN_aggregate,                    &
        & PE_list_size, PE_list, aggregate_table_size, aggregate_table_array,       &
@@ -2108,9 +2132,11 @@ CONTAINS
 
 
     else
+       IF (N>0) THEN
        call RAP_unsym(Temp_N(1:local_aggre_size), Temp_CN(1:TEMP_COLSIZE,1:local_aggre_size), &
             & Temp_V(1:TEMP_COLSIZE,1:local_aggre_size), TEMP_COLSIZE, N, &
             & coarser_level_size, LEVEL_NO, local_aggre_size)
+       END IF
     end if
 
 
@@ -2133,8 +2159,8 @@ CONTAINS
             & aggregate_table_array(:, :), &
 !!$            & aggregate_number_in_table(1:max_neib_pe_size), local_aggre_size, PE_list(1:NPROCS,1:3), &
             & aggregate_number_in_table(:), local_aggre_size, PE_list(1:NPROCS,1:3), &
-            & PE_list_size, Temp_CN(1:TEMP_COLSIZE, 1:i), Temp_N(1:i), &
-            & Temp_V(1:TEMP_COLSIZE, 1:i), TEMP_COLSIZE, i) 
+            & PE_list_size, Temp_CN, Temp_N, &
+            & Temp_V, TEMP_COLSIZE, i)
     END IF
 
 

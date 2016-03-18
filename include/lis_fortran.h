@@ -133,6 +133,8 @@ extern LIS_Comm_f lis_comm_world_f;
 #define lis_matrix_get_range_f F77_FUNC_(lis_matrix_get_range_f, LIS_MATRIX_GET_RANGE_F) 
 #define lis_matrix_get_nnz_f F77_FUNC_(lis_matrix_get_nnz_f, LIS_MATRIX_GET_NNZ_F) 
 #define lis_matrix_set_value_f F77_FUNC_(lis_matrix_set_value_f, LIS_MATRIX_SET_VALUE_F) 
+/*NEH support for extended "solve_kernel" workflow*/
+#define lis_matrix_psd_set_value_f F77_FUNC_(lis_matrix_psd_set_value_f, LIS_MATRIX_PSD_SET_VALUE_F) 
 #define lis_matrix_get_type_f F77_FUNC_(lis_matrix_get_type_f, LIS_MATRIX_GET_TYPE_F) 
 #define lis_matrix_set_type_f F77_FUNC_(lis_matrix_set_type_f, LIS_MATRIX_SET_TYPE_F)
 #define lis_matrix_set_csr_f F77_FUNC_(lis_matrix_set_csr_f, LIS_MATRIX_SET_CSR_F)
@@ -166,6 +168,7 @@ extern LIS_Comm_f lis_comm_world_f;
 #define lis_matrix_xpay_f F77_FUNC_(lis_matrix_xpay_f, LIS_MATRIX_XPAY_F)
 #define lis_matrix_axpyz_f F77_FUNC_(lis_matrix_axpyz_f, LIS_MATRIX_AXPYZ_F)  
 #define lis_matrix_scale_f F77_FUNC_(lis_matrix_scale_f, LIS_MATRIX_SCALE_F)
+#define lis_matrix_psd_reset_scale_f F77_FUNC_(lis_matrix_psd_reset_scale_f, LIS_MATRIX_PSD_RESET_SCALE_F)
 #define lis_matrix_get_diagonal_f F77_FUNC_(lis_matrix_get_diagonal_f, LIS_MATRIX_GET_DIAGONAL_F)
 #define lis_matrix_shift_diagonal_f F77_FUNC_(lis_matrix_shift_diagonal_f, LIS_MATRIX_SHIFT_DIAGONAL_F)
 #define lis_matrix_set_blocksize_f F77_FUNC_(lis_matrix_set_blocksize_f, LIS_MATRIX_SET_BLOCKSIZE_F)
@@ -183,6 +186,10 @@ extern LIS_Comm_f lis_comm_world_f;
 /**************/
 
 #define lis_precon_create_f F77_FUNC_(lis_precon_create_f, LIS_PRECON_CREATE_F) 
+/*NEH support for extended "solve_kernel" workflow*/
+#define lis_precon_psd_create_f F77_FUNC_(lis_precon_psd_create_f, LIS_PRECON_PSD_CREATE_F) 
+/*NEH support for extended "solve_kernel" workflow*/
+#define lis_precon_psd_update_f F77_FUNC_(lis_precon_psd_update_f, LIS_PRECON_PSD_UPDATE_F) 
 #define lis_precon_destroy_f F77_FUNC_(lis_precon_destroy_f, LIS_PRECON_DESTROY_F) 
 
 /**************/
@@ -191,6 +198,8 @@ extern LIS_Comm_f lis_comm_world_f;
 
 #define lis_solver_create_f F77_FUNC_(lis_solver_create_f, LIS_SOLVER_CREATE_F) 
 #define lis_solver_destroy_f F77_FUNC_(lis_solver_destroy_f, LIS_SOLVER_DESTROY_F) 
+/*NEH support for extended "solve_kernel" workflow*/
+#define lis_solver_set_matrix_f F77_FUNC_(lis_solver_set_matrix_f, LIS_SOLVER_SET_MATRIX_F) 
 #define lis_solve_f F77_FUNC_(lis_solve_f, LIS_SOLVE_F) 
 #define lis_solver_set_option_f F77_FUNC_(lis_solver_set_option_f, LIS_SOLVER_SET_OPTION_F) 
 #define lis_solver_get_iter_f F77_FUNC_(lis_solver_get_iter_f, LIS_SOLVER_GET_ITER_F) 
@@ -236,6 +245,8 @@ extern LIS_Comm_f lis_comm_world_f;
 #define lis_vector_duplicate_f F77_FUNC_(lis_vector_duplicate_f, LIS_VECTOR_DUPLICATE_F) 
 #define lis_vector_destroy_f F77_FUNC_(lis_vector_destroy_f, LIS_VECTOR_DESTROY_F) 
 #define lis_vector_set_size_f F77_FUNC_(lis_vector_set_size_f, LIS_VECTOR_SET_SIZE_F) 
+/*NEH support for extended "solve_kernel" workflow*/
+#define lis_vector_psd_reset_scale_f F77_FUNC_(lis_vector_psd_reset_scale_f, LIS_VECTOR_PSD_RESET_SCALE_F) 
 #define lis_vector_get_size_f F77_FUNC_(lis_vector_get_size_f, LIS_VECTOR_GET_SIZE_F) 
 #define lis_vector_get_range_f F77_FUNC_(lis_vector_get_range_f, LIS_VECTOR_GET_RANGE_F) 
 #define lis_vector_set_value_f F77_FUNC_(lis_vector_set_value_f, LIS_VECTOR_SET_VALUE_F) 

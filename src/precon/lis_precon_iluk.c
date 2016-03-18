@@ -54,6 +54,8 @@
 
 /************************************************
  * lis_precon_create
+ * lis_precon_psd_create
+ * lis_precon_psd_update
  * lis_psolve
  * lis_psolvet
  ************************************************/
@@ -137,6 +139,124 @@ LIS_INT lis_precon_create_iluk(LIS_SOLVER solver, LIS_PRECON precon)
     return LIS_SUCCESS;
 }
 
+/*NEH support for extended "solve_kernel" workflow*/
+#undef __FUNC__
+#define __FUNC__ "lis_precon_psd_create_iluk"
+LIS_INT lis_precon_psd_create_iluk(LIS_SOLVER solver, LIS_PRECON precon)
+{
+	LIS_INT	storage,err;
+	LIS_MATRIX A,B;
+
+	LIS_DEBUG_FUNC_IN;
+
+	storage     = solver->options[LIS_OPTIONS_STORAGE];
+
+	if( storage==LIS_MATRIX_BSR || storage==LIS_MATRIX_VBR )
+	{
+		if( solver->A->matrix_type!=storage )
+		{
+			err = lis_matrix_convert_self(solver);
+			if( err ) return err;
+		}
+	}
+
+	switch( solver->A->matrix_type )
+	{
+	case LIS_MATRIX_CSR:
+		err = lis_symbolic_fact_csr(solver,precon);
+		if( err ) return err;
+        lis_psolve_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolve_iluk_csr;
+        lis_psolvet_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolvet_iluk_csr;
+        precon->is_copy = LIS_TRUE;
+		break;
+	case LIS_MATRIX_BSR:
+/*        err = lis_symbolic_fact_bsr(solver,precon);*/
+/*        if( err ) return err;*/
+/*        err = lis_numerical_fact_bsr(solver,precon);*/
+/*        if( err ) return err;*/
+/*        lis_psolve_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolve_iluk_bsr;*/
+/*        lis_psolvet_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolvet_iluk_bsr;*/
+/*        break;*/
+        err = LIS_ERR_NOT_IMPLEMENTED;
+		return err;
+	case LIS_MATRIX_VBR:
+/*        err = lis_symbolic_fact_vbr(solver,precon);*/
+/*        if( err ) return err;*/
+/*        err = lis_numerical_fact_vbr(solver,precon);*/
+/*        if( err ) return err;*/
+/*        lis_psolve_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolve_iluk_vbr;*/
+/*		lis_psolvet_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolvet_iluk_vbr;*/
+/*        break;*/
+        err = LIS_ERR_NOT_IMPLEMENTED;
+		return err;
+	default:
+		A = solver->A;
+		err = lis_matrix_duplicate(A,&B);
+		if( err ) return err;
+		lis_matrix_set_type(B,LIS_MATRIX_CSR);
+		err = lis_matrix_convert(A,B);
+		if( err ) return err;
+		solver->A = B;
+		err = lis_symbolic_fact_csr(solver,precon);
+		if( err ) return err;
+		lis_psolve_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolve_iluk_csr;
+		lis_psolvet_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolvet_iluk_csr;
+		lis_matrix_destroy(B);
+		solver->A = A;
+		precon->is_copy = LIS_TRUE;
+		break;
+	}
+
+	LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+/*NEH support for extended "solve_kernel" workflow*/
+#undef __FUNC__
+#define __FUNC__ "lis_precon_psd_update_iluk"
+LIS_INT lis_precon_psd_update_iluk(LIS_SOLVER solver, LIS_PRECON precon)
+{
+/*    LIS_INT	storage,err;*/
+	LIS_INT	err;
+	LIS_MATRIX A;
+
+	LIS_DEBUG_FUNC_IN;
+
+	switch( solver->A->matrix_type )
+	{
+	case LIS_MATRIX_CSR:
+		err = lis_numerical_fact_csr(solver,precon);
+		if( err ) return err;
+		break;
+	case LIS_MATRIX_BSR:
+/*        err = lis_symbolic_fact_bsr(solver,precon);*/
+/*        if( err ) return err;*/
+/*        err = lis_numerical_fact_bsr(solver,precon);*/
+/*        if( err ) return err;*/
+/*        lis_psolve_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolve_iluk_bsr;*/
+/*        lis_psolvet_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolvet_iluk_bsr;*/
+/*        break;*/
+        err = LIS_ERR_NOT_IMPLEMENTED;
+		return err;
+	case LIS_MATRIX_VBR:
+/*        err = lis_symbolic_fact_vbr(solver,precon);*/
+/*        if( err ) return err;*/
+/*        err = lis_numerical_fact_vbr(solver,precon);*/
+/*        if( err ) return err;*/
+/*        lis_psolve_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolve_iluk_vbr;*/
+/*		lis_psolvet_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolvet_iluk_vbr;*/
+/*        break;*/
+        err = LIS_ERR_NOT_IMPLEMENTED;
+		return err;
+	default:
+/*        nothing should ever really happen here, as any undetermined matrix_type*/
+/*        should have been handled in "psd_create"*/
+		break;
+	}
+
+	LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
 
 #undef __FUNC__
 #define __FUNC__ "lis_symbolic_fact_csr"

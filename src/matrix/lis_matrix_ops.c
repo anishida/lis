@@ -650,7 +650,7 @@ LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR D, LIS_INT actio
 			break;
 		}
 	}
-	else
+	else if (action==LIS_SCALE_JACOBI)
 	{
 		#ifdef _OPENMP
 		#pragma omp parallel for private(i)
@@ -712,7 +712,16 @@ LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR D, LIS_INT actio
 	B->is_scaled = LIS_TRUE;
 	return LIS_SUCCESS;
 }
- 
+
+/*NEH support for extended "solve_kernel" workflow*/
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_psd_reset_scale"
+LIS_INT lis_matrix_psd_reset_scale(LIS_MATRIX A)
+{
+	A->is_scaled=LIS_FALSE;
+	return LIS_SUCCESS;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_get_diagonal"
 LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR D)
@@ -880,6 +889,131 @@ LIS_INT lis_matrix_split(LIS_MATRIX A)
        	}
 	*/
 	A->is_splited = LIS_TRUE;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+/*NEH support for extended "solve_kernel" workflow*/
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_split_create"
+LIS_INT lis_matrix_split_create(LIS_MATRIX A)
+{
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+    /* don't try to split if it is already split */
+	if( A->is_splited )
+	{
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
+
+	switch( A->matrix_type )
+	{
+	case LIS_MATRIX_CSR:
+		err = lis_matrix_split_create_csr(A);
+		break;
+    case LIS_MATRIX_CSC:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+    case LIS_MATRIX_BSR:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+    case LIS_MATRIX_MSR:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+    case LIS_MATRIX_ELL:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+    case LIS_MATRIX_DIA:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+    case LIS_MATRIX_JAD:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+    case LIS_MATRIX_BSC:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+    case LIS_MATRIX_DNS:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+    case LIS_MATRIX_COO:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+    case LIS_MATRIX_VBR:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+	default:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
+	if( err ) return err;
+
+	A->is_splited = LIS_TRUE;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+/*NEH support for extended "solve_kernel" workflow*/
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_split_update"
+LIS_INT lis_matrix_split_update(LIS_MATRIX A)
+{
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+    /* don't try to perform "split_update" if the matrix is not already split */
+    if( !A->is_splited )
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+	switch( A->matrix_type )
+	{
+	case LIS_MATRIX_CSR:
+		err = lis_matrix_split_update_csr(A);
+		break;
+    case LIS_MATRIX_CSC:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+    case LIS_MATRIX_BSR:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+    case LIS_MATRIX_MSR:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+    case LIS_MATRIX_ELL:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+    case LIS_MATRIX_DIA:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+    case LIS_MATRIX_JAD:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+    case LIS_MATRIX_BSC:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+    case LIS_MATRIX_DNS:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+    case LIS_MATRIX_COO:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+    case LIS_MATRIX_VBR:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+	default:
+		LIS_SETERR_IMP;
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
+	if( err ) return err;
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
