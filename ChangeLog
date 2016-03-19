@@ -1,3 +1,7 @@
+Version 1.5.65  March 19, 2016
+
+  - Fixed bug in lis_matrix_csr.c.
+
 Version 1.5.64  March 19, 2016
 
   - Added support for alternative workflow PSD (Preconditioner and Solver
@@ -6,7 +10,7 @@ Version 1.5.64  March 19, 2016
 
 Version 1.5.63  January 31, 2016
 
-  - Fixed autoconf related bugs (thanks to Florian Lehner).
+  - Fixed autoreconf related bugs (thanks to Florian Lehner).
 
 Version 1.5.62  January 7, 2016
 
