@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.5.63
+Version 1.5.64
 \end{flushleft}
 
 \vspace*{2cm}
@@ -217,6 +217,8 @@ Cover: Ogata Korin. Irises. c1705. Nezu Museum.
 \section*{Changes from Version 1.4}
 \begin{enumerate}
 \item Addition: Support for array operations.
+\item Addition: Support for alternative workflow PSD (Preconditioner and Solver
+      Decoupled). 
 \item Change: Specification of the function 
       {\tt lis\_array\_qr()} to return 
       the number of iterations and error of the QR algorithm. 
@@ -2276,8 +2278,8 @@ running.
 
 \vspace{1pc}
 
-The following pseudo-code listing presents an example of the workflow.  An
-actual implementation can be seen in test problem XXX.F90.
+The following pseudo-code listing presents an example of the workflow.
+An actual implementation can be seen in test problem test7f.F90.
 
 \vspace{1pc}
 
