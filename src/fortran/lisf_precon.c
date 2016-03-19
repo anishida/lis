@@ -50,6 +50,8 @@
 
 /************************************************
  * lis_precon_create
+ * lis_precon_psd_create
+ * lis_precon_psd_update
  * lis_precon_destroy
  * lis_precon_set_option
  * lis_precon_get_option
@@ -70,6 +72,37 @@ void lis_precon_create_f(LIS_SOLVER_F solver, LIS_PRECON_F *precon, LIS_INT *ier
 	if( *ierr )	return;
 
 	*precon = LIS_P2V(p);
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+/*NEH support for extended "solve_kernel" workflow*/
+#undef __FUNC__
+#define __FUNC__ "lis_precon_psd_create_f"
+void lis_precon_psd_create_f(LIS_SOLVER_F solver, LIS_PRECON_F *precon, LIS_INT *ierr)
+{
+	LIS_PRECON p;
+
+	LIS_DEBUG_FUNC_IN;
+
+	*ierr = lis_precon_psd_create((LIS_SOLVER)LIS_V2P(solver), &p);
+	if( *ierr )	return;
+
+	*precon = LIS_P2V(p);
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+/*NEH support for extended "solve_kernel" workflow*/
+#undef __FUNC__
+#define __FUNC__ "lis_precon_psd_update_f"
+void lis_precon_psd_update_f(LIS_SOLVER_F solver, LIS_PRECON_F precon, LIS_INT *ierr)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	*ierr = lis_precon_psd_update((LIS_SOLVER)LIS_V2P(solver),(LIS_PRECON)LIS_V2P(precon));
+	if( *ierr )	return;
+
 	LIS_DEBUG_FUNC_OUT;
 	return;
 }

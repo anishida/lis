@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.5.63
+Version 1.5.64
 \end{flushleft}
 
 \vspace*{2cm}
@@ -217,6 +217,8 @@ Cover: Ogata Korin. Irises. c1705. Nezu Museum.
 \section*{Changes from Version 1.4}
 \begin{enumerate}
 \item Addition: Support for array operations.
+\item Addition: Support for alternative workflow PSD (Preconditioner and Solver
+      Decoupled). 
 \item Change: Specification of the function 
       {\tt lis\_array\_qr()} to return 
       the number of iterations and error of the QR algorithm. 
@@ -2235,6 +2237,169 @@ The program is located in the directory \verb|lis-($VERSION)/test|.
 }
 \end{itemsquarebox}
 
+\newpage
+\subsection{An Alternate Workflow: PSD}
+The previous section represents one of two workflows in Lis.  The present
+workflow represents a decoupling of the preconditioner and the solver
+(Preconditioner and Solver Decoupled, or PSD), in the sense that the
+preconditioner can be updated \textit{separately} from the solver; in the
+workflow presented in the previous section, the preconditioner is updated with
+\textit{every} call to lis\_solve.  This property (conditional updating of the
+preconditioner) turns out to be quite useful in solving certain problems,
+including some nonlinear partial differential equations.  For nonlinear PDEs,
+iterative solution methods are used (\textit{e.g.}, Newton-Raphson) to
+calculate a solution.  In the current context, each Newton-Raphson iteration
+calculates an incremental improvement to a solution vector via the solution of
+a linear system of equations.  To support this functionality, the following
+(additional) functions must be used:
+%
+\begin{itemize}
+\item lis\_matrix\_psd\_set\_value: Re-define the value of an existing matrix component.
+\item lis\_matrix\_psd\_reset\_scale: Set the matrix ``scaled'' status to
+\textit{false}.  Note that this call and the following one are only needed for
+the case non-trivial scaling.
+\item lis\_vector\_psd\_reset\_scale: Set the vector ``scaled'' status to \textit{false}.
+\item lis\_solver\_set\_matrix: Associate the given matrix and solver.  Note that this must be done
+before the call to lis\_precon\_psd\_create.
+\item lis\_precon\_psd\_create: Create data structures associated with the chosen preconditioner.
+\item lis\_precon\_psd\_update: Evaluate the preconditioner.
+\end{itemize}
+%
+It is noted that this workflow currently has the following restrictions:
+%
+\begin{itemize}
+\item The only matrix format currently supported is CSR.
+\item The only solver currently supported is GMRES.
+\item The only preconditioners currently supported are ILU(k) and SA-AMG.
+\end{itemize}
+%
+Error checking has been implemented to prevent any unsupported cases from
+running.
+
+\vspace{1pc}
+
+The following pseudo-code listing presents an example of the workflow.
+An actual implementation can be seen in test problem test7f.F90.
+
+\vspace{1pc}
+
+\begin{itemsquarebox}[l]{Pseudo-code example of workflow}
+{\small
+\begin{verbatim}
+  1:      PROGRAM psd_driver
+  2:
+  3:      implicit none
+  4:      
+  5:#include "lisf.h"
+  6:
+  7:      LIS_INTEGER i,n,gn,is,ie,iter,ierr
+  8:      LIS_MATRIX A
+  9:      LIS_VECTOR b,x
+ 10:      LIS_SOLVER solver
+ 11:      REAL :: u(:),du
+ 12:
+ 13:      CALL lis_initialize(ierr)
+ 14:
+ 15:     !==================================================================
+ 16:     ! initialization, only done once
+ 17:     !==================================================================
+ 18:      CALL lis_matrix_create(LIS_COMM_WORLD,A,ierr)
+ 19:      CALL lis_matrix_set_size(A,0,n,ierr)
+ 20:      CALL lis_matrix_get_size(A,n,gn,ierr)
+ 21:      CALL lis_matrix_get_range(A,is,ie,ierr)
+ 22:
+ 23:      CALL UpdateLinearSystem(RHS,LHS)
+ 24:      DO i=is,ie-1
+ 25:         DO j=1,gn
+ 26:             IF (LHS(i,j) exists) THEN
+ 27:                   CALL lis_matrix_set_value(LIS_INS_VALUE,i,j,LHS(i,j),A,ierr)
+ 28:             END IF
+ 29:         END DO
+ 30:      END DO
+ 31:      CALL lis_matrix_set_type(A,LIS_MATRIX_CSR,ierr)
+ 32:      CALL lis_matrix_assemble(A,ierr)
+ 33:
+ 34:      CALL lis_vector_duplicate(A,b,ierr)
+ 35:      CALL lis_vector_duplicate(A,x,ierr)
+ 36:      DO i=is,ie-1
+ 37:           CALL lis_vector_set_value(LIS_INS_VALUE,i,RHS(i),b,ierr)
+ 38:      END DO
+ 39:      u = u_initial
+ 40:
+ 41:      CALL lis_solver_create(solver,ierr)
+ 42:      WRITE(UNIT=options,FMT='(a)') "-p ilu -i gmres -print out -scale none"
+ 43:      CALL lis_solver_set_option(TRIM(options),solver,ierr)
+ 44:
+ 45:     !==================================================================
+ 46:     ! everything up to this point is more or less identical to the standard workflow.
+ 47:     ! Now comes the preconditioner initialization, and the Newton-Raphson
+ 48:     ! iteration.
+ 49:     !==================================================================
+ 50:     CALL lis_solver_set_matrix(A,solver,ierr)
+ 51:     CALL lis_precon_psd_create(solver,precon,ierr)
+ 52:     ! evaluate the preconditioner, at least once . . .
+ 53:     CALL lis_precon_psd_update(solver,precon,ierr)
+ 54:
+\end{verbatim}
+}
+\end{itemsquarebox}
+\begin{itemsquarebox}[l]{Pseudo-code example of workflow (contd.)}
+{\small
+\begin{verbatim}
+ 55:     DO
+ 56:
+ 57:         IF (UpdateLHS) THEN
+ 58:             DO i=is,ie-1
+ 59:                 DO j=1,gn
+ 60:                     IF (component (i,j) exists) THEN
+ 61:                         CALL lis_matrix_psd_set_value(LIS_INS_VALUE,i,j,LHS(i,j),A,ierr)
+ 62:                     END IF
+ 63:                 END DO
+ 64:              END DO
+ 65:              CALL lis_matrix_psd_reset_scale(A,ierr)
+ 66:         END IF
+ 67:
+ 68:         ! update RHS every iteration
+ 69:         DO i=is,ie-1
+ 70:             CALL lis_vector_set_value(LIS_INS_VALUE,i,RHS(i),b,ierr)
+ 71:         END DO
+ 72:         CALL lis_vector_psd_reset_scale(A,ierr)
+ 73:
+ 74:         IF (UpdateLHS) THEN
+ 75:             CALL lis_precon_psd_update(solver,precon,ierr)
+ 76:         END IF
+ 77:         CALL lis_solve_kernel(A,b,x,solver,precon,ierr)
+ 78:         CALL lis_solver_get_iter(solver,iter,ierr)
+ 79:         write(*,*) 'number of iterations = ',iter
+ 80:         CALL lis_vector_print(x,ierr)
+ 81:
+ 82:         ! update the solution
+ 83:         DO i=is,ie-1
+ 84:             CALL lis_vector_get_value(x,i,du,ierr)
+ 85:             u(i)=u(i)-du
+ 86:         END DO
+ 87:
+ 88:         CALL UpdateLinearSystem(RHS,LHS)
+ 89:
+ 90:         IF (termination criteria satisfied) EXIT
+ 91:
+ 92:     END DO
+ 93:
+ 94:
+ 95:      CALL lis_matrix_destroy(A,ierr)
+ 96:      CALL lis_vector_destroy(b,ierr)
+ 97:      CALL lis_vector_destroy(x,ierr)
+ 98:      CALL lis_vector_destroy(u,ierr)
+ 99:      CALL lis_solver_destroy(solver,ierr)
+100:
+101:      CALL lis_finalize(ierr)
+102:
+103:      END PROGRAM psd_driver
+\end{verbatim}
+}
+\end{itemsquarebox}
+
+\newpage
 \subsection{Compiling and Linking}
 Provided below is an example {\tt test4.c} located in
 the directory \verb|lis-($VERSION)/test|, 

@@ -73,7 +73,7 @@ LIS_INT lis_precon_create_hybrid(LIS_SOLVER solver, LIS_PRECON precon)
 
 	A           = solver->A;
 
-	err = lis_solver_create(&psolver);
+    err = lis_solver_create(&psolver);
 	if( err )
 	{
 		return err;

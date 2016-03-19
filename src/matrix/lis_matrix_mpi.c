@@ -366,7 +366,7 @@ LIS_INT lis_matrix_g2l_rco(LIS_MATRIX A)
 	}
 
 	l2g_map = (LIS_INT *)lis_malloc( (np-n)*sizeof(LIS_INT),"lis_matrix_g2l_rco::l2g_map" );
-	if( g2l_map==NULL )
+	if( l2g_map==NULL )
 	{
 		lis_free(g2l_map);
 		LIS_SETERR_MEM((np-n)*sizeof(LIS_INT));

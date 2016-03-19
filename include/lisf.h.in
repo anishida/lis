@@ -156,6 +156,10 @@
 #define lis_matrix_set_value lis_matrix_set_value_f
 #define LIS_MATRIX_SET_VALUE lis_matrix_set_value_f
 
+/*NEH support for extended "solve_kernel" workflow*/
+#define lis_matrix_psd_set_value lis_matrix_psd_set_value_f
+#define LIS_MATRIX_PSD_SET_VALUE lis_matrix_psd_set_value_f
+
 #define lis_matrix_get_type lis_matrix_get_type_f
 #define LIS_MATRIX_GET_TYPE lis_matrix_get_type_f
 
@@ -261,6 +265,10 @@
 #define lis_matrix_scale lis_matrix_scale_f
 #define LIS_MATRIX_SCALE lis_matrix_scale_f
 
+/*NEH support for extended "solve_kernel" workflow*/
+#define lis_matrix_psd_reset_scale lis_matrix_psd_reset_scale_f
+#define LIS_MATRIX_PSD_RESET_SCALE lis_matrix_psd_reset_scale_f
+
 #define lis_matrix_get_diagonal lis_matrix_get_diagonal_f
 #define LIS_MATRIX_GET_DIAGONAL lis_matrix_get_diagonal_f
 
@@ -287,6 +295,10 @@
 
 #define lis_vector_set_size lis_vector_set_size_f
 #define LIS_VECTOR_SET_SIZE lis_vector_set_size_f
+
+/*NEH support for extended "solve_kernel" workflow*/
+#define lis_vector_psd_reset_scale lis_vector_psd_reset_scale_f
+#define LIS_VECTOR_PSD_RESET_SCALE lis_vector_psd_reset_scale_f
 
 #define lis_vector_get_range lis_vector_get_range_f
 #define LIS_VECTOR_GET_RANGE lis_vector_get_range_f
@@ -375,6 +387,10 @@
 #define lis_solver_destroy lis_solver_destroy_f
 #define LIS_SOLVER_DESTROY lis_solver_destroy_f
 
+/*NEH support for extended "solve_kernel" workflow*/
+#define lis_solver_set_matrix lis_solver_set_matrix_f
+#define LIS_SOLVER_SET_MATRIX lis_solver_set_matrix_f
+
 #define lis_solve lis_solve_f
 #define LIS_SOLVE lis_solve_f
 
@@ -416,6 +432,29 @@
 
 #define lis_precon_create lis_precon_create_f
 #define LIS_PRECON_CREATE lis_precon_create_f
+
+/*NEH support for extended "solve_kernel" workflow*/
+#define lis_precon_psd_create lis_precon_psd_create_f
+#define LIS_PRECON_PSD_CREATE lis_precon_psd_create_f
+
+/*NEH support for extended "solve_kernel" workflow*/
+#define lis_precon_psd_update lis_precon_psd_update_f
+#define LIS_PRECON_PSD_UPDATE lis_precon_psd_update_f
+
+#define lis_precon_destroy lis_precon_destroy_f
+#define LIS_PRECON_DESTROY lis_precon_destroy_f
+
+#define lis_esolver_create lis_esolver_create_f
+#define LIS_ESOLVER_CREATE lis_esolver_create_f
+
+#define lis_esolver_destroy lis_esolver_destroy_f
+#define LIS_ESOLVER_DESTROY lis_esolver_destroy_f
+
+#define lis_esolve lis_esolve_f
+#define LIS_ESOLVE lis_esolve_f
+
+#define lis_esolver_set_option lis_esolver_set_option_f
+#define LIS_ESOLVER_SET_OPTION lis_esolver_set_option_f
 
 #define lis_precon_destroy lis_precon_destroy_f
 #define LIS_PRECON_DESTROY lis_precon_destroy_f

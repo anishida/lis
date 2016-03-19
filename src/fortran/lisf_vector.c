@@ -100,6 +100,20 @@ void lis_vector_set_size_f(LIS_VECTOR_F *vec, LIS_INT *local_n, LIS_INT *global_
 	return;
 }
 
+/*NEH support for extended "solve_kernel" workflow*/
+#undef __FUNC__
+#define __FUNC__ "lis_vector_psd_reset_scale_f"
+void lis_vector_psd_reset_scale_f(LIS_VECTOR_F *vec, LIS_INT *ierr)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	*ierr = lis_vector_psd_reset_scale((LIS_VECTOR)LIS_V2P(vec));
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_vector_duplicate_f"
 void lis_vector_duplicate_f(LIS_VECTOR_F *vin, LIS_VECTOR_F *vout, LIS_INT *ierr)

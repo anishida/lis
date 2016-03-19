@@ -62,6 +62,22 @@ LIS_PRECON_CREATE_XXX lis_precon_create_xxx[] = {
 	lis_precon_create_ilut, lis_precon_create_bjacobi
 };
 
+/*NEH support for extended "solve_kernel" workflow*/
+LIS_PRECON_PSD_CREATE_XXX lis_precon_psd_create_xxx[] = {
+	lis_precon_create_none, NULL,                        lis_precon_psd_create_iluk,
+	NULL,                   NULL,                        NULL,
+	NULL,                   lis_precon_psd_create_saamg, NULL,
+	NULL,                   NULL
+};
+
+/*NEH support for extended "solve_kernel" workflow*/
+LIS_PRECON_PSD_UPDATE_XXX lis_precon_psd_update_xxx[] = {
+	NULL,                   NULL,                        lis_precon_psd_update_iluk,
+	NULL,                   NULL,                        NULL,
+	NULL,                   lis_precon_psd_update_saamg, NULL,
+	NULL,                   NULL
+};
+
 LIS_PSOLVE_XXX lis_psolve_xxx[] = {
 	lis_psolve_none,     lis_psolve_jacobi, lis_psolve_iluk_csr,
 	lis_psolve_ssor,     lis_psolve_hybrid, lis_psolve_none,
@@ -135,6 +151,149 @@ LIS_INT lis_precon_create(LIS_SOLVER solver, LIS_PRECON *precon)
 	if( err )
 	{
 		lis_precon_destroy(*precon);
+		return err;
+	}
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+/*NEH support for extended "solve_kernel" workflow*/
+#undef __FUNC__
+#define __FUNC__ "lis_precon_psd_create"
+LIS_INT lis_precon_psd_create(LIS_SOLVER solver, LIS_PRECON *precon)
+{
+	LIS_INT	err;
+	LIS_INT	precon_type;
+
+	LIS_DEBUG_FUNC_IN;
+
+	*precon     = NULL;
+	precon_type = solver->options[LIS_OPTIONS_PRECON];
+
+	*precon = (LIS_PRECON)lis_malloc( sizeof(struct LIS_PRECON_STRUCT),"lis_precon_psd_create::precon" );
+	if( NULL==*precon )
+	{
+		LIS_SETERR_MEM(sizeof(struct LIS_PRECON_STRUCT));
+		return LIS_OUT_OF_MEMORY;
+	}
+	lis_precon_init(*precon);
+	(*precon)->precon_type = precon_type;
+
+	if( precon_type>=LIS_PRECON_TYPE_USERDEF )
+	{
+/*        err = precon_register_top[precon_type-LIS_PRECON_TYPE_USERDEF].pcreate(solver,*precon);*/
+        err = LIS_ERR_NOT_IMPLEMENTED;
+	}
+	else if( precon_type && solver->options[LIS_OPTIONS_ADDS] )
+	{
+/*        err = lis_precon_create_adds(solver,*precon);*/
+/*        (*precon)->precon_type = LIS_PRECON_TYPE_ADDS;*/
+        err = LIS_ERR_NOT_IMPLEMENTED;
+	}
+	else
+	{
+        switch(precon_type) {
+            case LIS_PRECON_TYPE_JACOBI:
+                err = LIS_ERR_NOT_IMPLEMENTED;
+                break;
+            case LIS_PRECON_TYPE_SSOR:
+                err = LIS_ERR_NOT_IMPLEMENTED;
+                break;
+            case LIS_PRECON_TYPE_HYBRID:
+                err = LIS_ERR_NOT_IMPLEMENTED;
+                break;
+            case LIS_PRECON_TYPE_IS:
+                err = LIS_ERR_NOT_IMPLEMENTED;
+                break;
+            case LIS_PRECON_TYPE_SAI:
+                err = LIS_ERR_NOT_IMPLEMENTED;
+                break;
+            case LIS_PRECON_TYPE_ILUC:
+                err = LIS_ERR_NOT_IMPLEMENTED;
+                break;
+            case LIS_PRECON_TYPE_ILUT:
+                err = LIS_ERR_NOT_IMPLEMENTED;
+                break;
+            case LIS_PRECON_TYPE_BJACOBI:
+                err = LIS_ERR_NOT_IMPLEMENTED;
+                break;
+            default:
+                err = lis_precon_psd_create_xxx[precon_type](solver,*precon);
+        }
+	}
+	if( err )
+	{
+		lis_precon_destroy(*precon);
+		return err;
+	}
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+/*NEH support for extended "solve_kernel" workflow*/
+#undef __FUNC__
+#define __FUNC__ "lis_precon_psd_update"
+LIS_INT lis_precon_psd_update(LIS_SOLVER solver, LIS_PRECON precon)
+{
+	LIS_INT	err;
+	LIS_INT	precon_type;
+
+	LIS_DEBUG_FUNC_IN;
+
+    precon_type = precon->precon_type;
+
+	if( precon_type>=LIS_PRECON_TYPE_USERDEF )
+	{
+/*        err = precon_register_top[precon_type-LIS_PRECON_TYPE_USERDEF].pcreate(solver,*precon);*/
+        err = LIS_ERR_NOT_IMPLEMENTED;
+	}
+	else if( precon_type && solver->options[LIS_OPTIONS_ADDS] )
+	{
+/*        err = lis_precon_create_adds(solver,*precon);*/
+/*        (*precon)->precon_type = LIS_PRECON_TYPE_ADDS;*/
+        err = LIS_ERR_NOT_IMPLEMENTED;
+	}
+	else
+	{
+        switch(precon_type) {
+            case LIS_PRECON_TYPE_NONE:
+                /* its not that its not implemented, */
+                /* but there is just nothing to do here . . . */
+                err=0;
+                break;
+            case LIS_PRECON_TYPE_JACOBI:
+                err = LIS_ERR_NOT_IMPLEMENTED;
+                break;
+            case LIS_PRECON_TYPE_SSOR:
+                err = LIS_ERR_NOT_IMPLEMENTED;
+                break;
+            case LIS_PRECON_TYPE_HYBRID:
+                err = LIS_ERR_NOT_IMPLEMENTED;
+                break;
+            case LIS_PRECON_TYPE_IS:
+                err = LIS_ERR_NOT_IMPLEMENTED;
+                break;
+            case LIS_PRECON_TYPE_SAI:
+                err = LIS_ERR_NOT_IMPLEMENTED;
+                break;
+            case LIS_PRECON_TYPE_ILUC:
+                err = LIS_ERR_NOT_IMPLEMENTED;
+                break;
+            case LIS_PRECON_TYPE_ILUT:
+                err = LIS_ERR_NOT_IMPLEMENTED;
+                break;
+            case LIS_PRECON_TYPE_BJACOBI:
+                err = LIS_ERR_NOT_IMPLEMENTED;
+                break;
+            default:
+                err = lis_precon_psd_update_xxx[precon_type](solver,precon);
+        }
+	}
+	if( err )
+	{
+		lis_precon_destroy(precon);
 		return err;
 	}
 

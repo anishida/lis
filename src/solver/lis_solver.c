@@ -39,6 +39,8 @@
 #endif
 #include <string.h>
 #include <stdarg.h>
+/*NEH deleted reference to "math.h" from lis.h, and placed here,*/
+/*NEH for consistency . . .*/
 #include <math.h>
 #include <ctype.h>
 #ifdef _OPENMP
@@ -324,12 +326,24 @@ LIS_INT lis_solver_destroy(LIS_SOLVER solver)
 	return LIS_SUCCESS;
 }
 
+/*NEH support for extended "solve_kernel" workflow*/
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_matrix"
+LIS_INT lis_solver_set_matrix(LIS_MATRIX A, LIS_SOLVER solver)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	solver->A = A;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
 
 #undef __FUNC__
 #define __FUNC__ "lis_solve"
 LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
 {
-        LIS_INT	err;
+    LIS_INT	err;
 	LIS_PRECON precon;
 
 	LIS_DEBUG_FUNC_IN;

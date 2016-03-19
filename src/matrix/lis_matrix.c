@@ -176,12 +176,14 @@ LIS_INT lis_matrix_check(LIS_MATRIX A, LIS_INT level)
 			LIS_SETERR(LIS_ERR_ILL_ARG,"matrix size is undefined\n");
 			return LIS_ERR_ILL_ARG;
 		}
-		if( A->status==LIS_MATRIX_NULL )
+/*        if( A->status==LIS_MATRIX_NULL )*/
+		if( A->status==LIS_MATRIX_NULL && A->n>0 )
 		{
 			LIS_SETERR(LIS_ERR_ILL_ARG,"matrix type is undefined\n");
 			return LIS_ERR_ILL_ARG;
 		}
-		if( A->status<=LIS_MATRIX_ASSEMBLING )
+/*        if( A->status<=LIS_MATRIX_ASSEMBLING )*/
+		if( A->status<=LIS_MATRIX_ASSEMBLING && A->n>0 )
 		{
 			LIS_SETERR(LIS_ERR_ILL_ARG,"matrix A is assembling\n");
 			return LIS_ERR_ILL_ARG;
@@ -787,6 +789,61 @@ LIS_INT lis_matrix_set_value(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR valu
 		A->w_index[i-is][k] = j;
 		A->w_value[i-is][k] = value;
 	}
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+/*NEH support for extended "solve_kernel" workflow*/
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_psd_set_value"
+LIS_INT lis_matrix_psd_set_value(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A)
+{
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+    /* presuming that the matrix is assembled */
+    /* still, if not, default defined below */
+    switch(A->status) {
+        case LIS_MATRIX_CSR:
+            err=lis_matrix_psd_set_value_csr(flag,i,j,value,A);
+            if (err) return err;
+            break;
+        case LIS_MATRIX_CSC:
+            err = LIS_ERR_NOT_IMPLEMENTED;
+            return err;
+        case LIS_MATRIX_MSR:
+            err = LIS_ERR_NOT_IMPLEMENTED;
+            return err;
+        case LIS_MATRIX_DIA:
+            err = LIS_ERR_NOT_IMPLEMENTED;
+            return err;
+        case LIS_MATRIX_ELL:
+            err = LIS_ERR_NOT_IMPLEMENTED;
+            return err;
+        case LIS_MATRIX_JAD:
+            err = LIS_ERR_NOT_IMPLEMENTED;
+            return err;
+        case LIS_MATRIX_BSR:
+            err = LIS_ERR_NOT_IMPLEMENTED;
+            return err;
+        case LIS_MATRIX_BSC:
+            err = LIS_ERR_NOT_IMPLEMENTED;
+            return err;
+        case LIS_MATRIX_VBR:
+            err = LIS_ERR_NOT_IMPLEMENTED;
+            return err;
+        case LIS_MATRIX_COO:
+            err = LIS_ERR_NOT_IMPLEMENTED;
+            return err;
+        case LIS_MATRIX_DNS:
+            err = LIS_ERR_NOT_IMPLEMENTED;
+            return err;
+        default:
+            err = LIS_ERR_NOT_IMPLEMENTED;
+            return err;
+    }
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;

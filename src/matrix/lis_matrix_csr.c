@@ -197,6 +197,78 @@ LIS_INT lis_matrix_malloc_csr(LIS_INT n, LIS_INT nnz, LIS_INT **ptr, LIS_INT **i
 	return LIS_SUCCESS;
 }
 
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_psd_set_value_csr"
+LIS_INT lis_matrix_psd_set_value_csr(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A)
+{
+    LIS_INT n,gn,is,ie,k,k0,k1,j_global_test,j_global;
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+    n   = A->n;
+	gn  = A->gn;
+    is  = A->is;
+    ie  = A->ie;
+
+	if( A->origin )
+	{
+		i--;
+		j--;
+	}
+
+	if( i<0  || j<0 )
+	{
+		k = 0;
+		if( A->origin )
+		{
+			i++;
+			j++;
+			k++;
+		}
+		LIS_SETERR3(LIS_ERR_ILL_ARG,"i(=%d) or j(=%d) are less than %d\n",i,j,k);
+		return LIS_ERR_ILL_ARG;
+	}
+	if( i>=gn || j>=gn )
+	{
+		if( A->origin )
+		{
+			i++;
+			j++;
+		}
+		LIS_SETERR3(LIS_ERR_ILL_ARG,"i(=%d) or j(=%d) are larger than global n=(%d)\n",i,j,gn);
+		return LIS_ERR_ILL_ARG;
+	}
+
+
+    k0 = A->ptr[i-is];
+    k1 = A->ptr[i-is+1];
+
+    for(k=k0;k<k1;k++)
+    {
+        j_global_test=A->index[k]+is;
+        if ( j_global_test>=is && j_global_test<ie ) {
+            j_global=j_global_test;
+        } else {
+            j_global=A->l2g_map[A->index[k]-n];
+        }
+
+        if (j_global==j) {
+            if(flag==LIS_INS_VALUE)
+            {
+                A->value[k]=value;
+            }
+            else 
+            {
+                A->value[k]+=value;
+            }
+            break;
+        }
+    }
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_elements_copy_csr"
@@ -873,6 +945,310 @@ LIS_INT lis_matrix_split_csr(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
+/*NEH support for extended "solve_kernel" workflow*/
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_split_create_csr"
+LIS_INT lis_matrix_split_create_csr(LIS_MATRIX A)
+{
+	LIS_INT i,j,n;
+	LIS_INT nnzl,nnzu;
+	LIS_INT err;
+	LIS_INT *lptr,*lindex,*uptr,*uindex;
+	LIS_SCALAR *lvalue,*uvalue;
+	LIS_MATRIX_DIAG	D;
+	#ifdef _OPENMP
+		LIS_INT kl,ku;
+		LIS_INT *liw,*uiw;
+	#endif
+
+	LIS_DEBUG_FUNC_IN;
+
+	n        = A->n;
+	nnzl     = 0;
+	nnzu     = 0;
+	D        = NULL;
+	lptr     = NULL;
+	lindex   = NULL;
+	lvalue   = NULL;
+	uptr     = NULL;
+	uindex   = NULL;
+	uvalue   = NULL;
+
+	#ifdef _OPENMP
+		liw = (LIS_INT *)lis_malloc((n+1)*sizeof(LIS_INT),"lis_matrix_split_create_csr::liw");
+		if( liw==NULL )
+		{
+			LIS_SETERR_MEM((n+1)*sizeof(LIS_INT));
+			return LIS_OUT_OF_MEMORY;
+		}
+		uiw = (LIS_INT *)lis_malloc((n+1)*sizeof(LIS_INT),"lis_matrix_split_create_csr::uiw");
+		if( uiw==NULL )
+		{
+			LIS_SETERR_MEM((n+1)*sizeof(LIS_INT));
+			lis_free(liw);
+			return LIS_OUT_OF_MEMORY;
+		}
+		#pragma omp parallel for private(i)
+		for(i=0;i<n+1;i++)
+		{
+			liw[i] = 0;
+			uiw[i] = 0;
+		}
+		#pragma omp parallel for private(i,j)
+		for(i=0;i<n;i++)
+		{
+			for(j=A->ptr[i];j<A->ptr[i+1];j++)
+			{
+				if( A->index[j]<i )
+				{
+					liw[i+1]++;
+				}
+				else if( A->index[j]>i )
+				{
+					uiw[i+1]++;
+				}
+			}
+		}
+		for(i=0;i<n;i++)
+		{
+			liw[i+1] += liw[i];
+			uiw[i+1] += uiw[i];
+		}
+		nnzl = liw[n];
+		nnzu = uiw[n];
+	#else
+		for(i=0;i<n;i++)
+		{
+			for(j=A->ptr[i];j<A->ptr[i+1];j++)
+			{
+				if( A->index[j]<i )
+				{
+					nnzl++;
+				}
+				else if( A->index[j]>i )
+				{
+					nnzu++;
+				}
+			}
+		}
+	#endif
+
+	err = lis_matrix_LU_create(A);
+	if( err )
+	{
+		return err;
+	}
+	err = lis_matrix_malloc_csr(n,nnzl,&lptr,&lindex,&lvalue);
+	if( err )
+	{
+		return err;
+	}
+	err = lis_matrix_malloc_csr(n,nnzu,&uptr,&uindex,&uvalue);
+	if( err )
+	{
+		lis_free2(6,lptr,lindex,lvalue,uptr,uindex,uvalue);
+		return err;
+	}
+	err = lis_matrix_diag_duplicateM(A,&D);
+	if( err )
+	{
+		lis_free2(6,lptr,lindex,lvalue,uptr,uindex,uvalue);
+		return err;
+	}
+
+	#ifdef _OPENMP
+		#pragma omp parallel for private(i)
+		for(i=0;i<n+1;i++)
+		{
+			lptr[i] = liw[i];
+			uptr[i] = uiw[i];
+		}
+		#pragma omp parallel for private(i,j,kl,ku)
+		for(i=0;i<n;i++)
+		{
+			kl = lptr[i];
+			ku = uptr[i];
+			for(j=A->ptr[i];j<A->ptr[i+1];j++)
+			{
+				if( A->index[j]<i )
+				{
+					lindex[kl]   = A->index[j];
+					kl++;
+				}
+				else if( A->index[j]>i )
+				{
+					uindex[ku]   = A->index[j];
+					ku++;
+				}
+			}
+		}
+		lis_free2(2,liw,uiw);
+	#else
+		nnzl = 0;
+		nnzu = 0;
+		lptr[0] = 0;
+		uptr[0] = 0;
+		for(i=0;i<n;i++)
+		{
+			for(j=A->ptr[i];j<A->ptr[i+1];j++)
+			{
+				if( A->index[j]<i )
+				{
+					lindex[nnzl]   = A->index[j];
+					nnzl++;
+				}
+				else if( A->index[j]>i )
+				{
+					uindex[nnzu]   = A->index[j];
+					nnzu++;
+				}
+			}
+			lptr[i+1] = nnzl;
+			uptr[i+1] = nnzu;
+		}
+	#endif
+	A->L->nnz     = nnzl;
+	A->L->ptr     = lptr;
+	A->L->index   = lindex;
+	A->L->value   = lvalue;
+	A->U->nnz     = nnzu;
+	A->U->ptr     = uptr;
+	A->U->index   = uindex;
+	A->U->value   = uvalue;
+	A->D          = D;
+	A->is_splited = LIS_TRUE;
+	
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+/*NEH support for extended "solve_kernel" workflow*/
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_split_update_csr"
+LIS_INT lis_matrix_split_update_csr(LIS_MATRIX A)
+{
+	LIS_INT i,j,n;
+	LIS_INT nnzl,nnzu;
+	LIS_INT err;
+/*    LIS_INT *lptr,*uptr;*/
+	#ifdef _OPENMP
+		LIS_INT kl,ku;
+		LIS_INT *liw,*uiw;
+	#endif
+
+	LIS_DEBUG_FUNC_IN;
+
+	n        = A->n;
+	nnzl     = 0;
+	nnzu     = 0;
+/*    lptr     = NULL;*/
+/*    uptr     = NULL;*/
+
+    #ifdef _OPENMP
+        liw = (LIS_INT *)lis_malloc((n+1)*sizeof(LIS_INT),"lis_matrix_split_update_csr::liw");
+        if( liw==NULL )
+        {
+            LIS_SETERR_MEM((n+1)*sizeof(LIS_INT));
+            return LIS_OUT_OF_MEMORY;
+        }
+        uiw = (LIS_INT *)lis_malloc((n+1)*sizeof(LIS_INT),"lis_matrix_split_update_csr::uiw");
+        if( uiw==NULL )
+        {
+            LIS_SETERR_MEM((n+1)*sizeof(LIS_INT));
+            lis_free(liw);
+            return LIS_OUT_OF_MEMORY;
+        }
+        #pragma omp parallel for private(i)
+        for(i=0;i<n+1;i++)
+        {
+            liw[i] = 0;
+            uiw[i] = 0;
+        }
+        #pragma omp parallel for private(i,j)
+        for(i=0;i<n;i++)
+        {
+            for(j=A->ptr[i];j<A->ptr[i+1];j++)
+            {
+                if( A->index[j]<i )
+                {
+                    liw[i+1]++;
+                }
+                else if( A->index[j]>i )
+                {
+                    uiw[i+1]++;
+                }
+            }
+        }
+        for(i=0;i<n;i++)
+        {
+            liw[i+1] += liw[i];
+            uiw[i+1] += uiw[i];
+        }
+    #endif
+
+	#ifdef _OPENMP
+        /*NEH I have made the changes here that I think will be necessary, */
+        /*NEH but as we don't use threads, this hasn't actually been checked at all . . . */
+		#pragma omp parallel for private(i)
+/*        for(i=0;i<n+1;i++)*/
+/*        {*/
+/*            lptr[i] = liw[i];*/
+/*            uptr[i] = uiw[i];*/
+/*        }*/
+		#pragma omp parallel for private(i,j,kl,ku)
+		for(i=0;i<n;i++)
+		{
+/*            kl = lptr[i];*/
+/*            ku = uptr[i];*/
+			kl = A->L->ptr[i];
+			ku = A->U->ptr[i];
+			for(j=A->ptr[i];j<A->ptr[i+1];j++)
+			{
+				if( A->index[j]<i )
+				{
+					A->L->value[kl]   = A->value[j];
+					kl++;
+				}
+				else if( A->index[j]>i )
+				{
+					A->U->value[ku]   = A->value[j];
+					ku++;
+				}
+				else
+				{
+					A->D->value[i] = A->value[j];
+				}
+			}
+		}
+		lis_free2(2,liw,uiw);
+	#else
+		nnzl = 0;
+		nnzu = 0;
+		for(i=0;i<n;i++)
+		{
+			for(j=A->ptr[i];j<A->ptr[i+1];j++)
+			{
+				if( A->index[j]<i )
+				{
+					A->L->value[nnzl]   = A->value[j];
+					nnzl++;
+				}
+				else if( A->index[j]>i )
+				{
+					A->U->value[nnzu]   = A->value[j];
+					nnzu++;
+				}
+				else
+				{
+					A->D->value[i] = A->value[j];
+				}
+			}
+		}
+	#endif
+	
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_merge_csr"

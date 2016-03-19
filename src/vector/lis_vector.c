@@ -151,7 +151,6 @@ LIS_INT lis_vector_createex(LIS_INT precision, LIS_Comm comm, LIS_VECTOR *vec)
 	return LIS_SUCCESS;
 }
 
-
 #undef __FUNC__
 #define __FUNC__ "lis_vector_set_size"
 LIS_INT lis_vector_set_size(LIS_VECTOR vec, LIS_INT local_n, LIS_INT global_n)
@@ -173,9 +172,12 @@ LIS_INT lis_vector_set_size(LIS_VECTOR vec, LIS_INT local_n, LIS_INT global_n)
 		LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%d) or global n(=%d) are less than 0\n",local_n,global_n);
 		return LIS_ERR_ILL_ARG;
 	}
-    /* the condition (local_n=0 and global_n=0) deleted, as it is now allowed . . . */
-    /* satisfaction of that condition implies that local sizes were specified, and the */
-    /* local size on the current process is zero */
+//NEH
+/*    if( local_n==0 && global_n==0 )*/
+/*    {*/
+/*        LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%d) and global n(=%d) are 0\n",local_n,global_n);*/
+/*        return LIS_ERR_ILL_ARG;*/
+/*    }*/
 
 
 	err = lis_ranges_create(vec->comm,&local_n,&global_n,&ranges,&is,&ie,&nprocs,&my_rank);
@@ -241,6 +243,15 @@ LIS_INT lis_vector_set_size(LIS_VECTOR vec, LIS_INT local_n, LIS_INT global_n)
 	vec->ie          = ie;
 
 	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+/*NEH support for extended "solve_kernel" workflow*/
+#undef __FUNC__
+#define __FUNC__ "lis_vector_psd_reset_scale"
+LIS_INT lis_vector_psd_reset_scale(LIS_VECTOR vec)
+{
+	vec->is_scaled=LIS_FALSE;
 	return LIS_SUCCESS;
 }
 

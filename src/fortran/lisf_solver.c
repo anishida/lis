@@ -66,7 +66,7 @@ void lis_solver_create_f(LIS_SOLVER_F *solver, LIS_INT *ierr)
 
 	LIS_DEBUG_FUNC_IN;
 
-	*ierr = lis_solver_create(&s);
+    *ierr = lis_solver_create(&s);
 	if( *ierr )	return;
 
 	*solver = LIS_P2V(s);
@@ -81,6 +81,20 @@ void lis_solver_destroy_f(LIS_SOLVER_F *solver, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_solver_destroy((LIS_SOLVER)LIS_V2P(solver));
+	if( *ierr )	return;
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+/*NEH support for extended "solve_kernel" workflow*/
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_matrix_f"
+void lis_solver_set_matrix_f(LIS_MATRIX_F *A, LIS_SOLVER_F *solver, LIS_INT *ierr)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	*ierr = lis_solver_set_matrix((LIS_MATRIX)LIS_V2P(A), (LIS_SOLVER)LIS_V2P(solver));
 	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;

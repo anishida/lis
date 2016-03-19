@@ -259,6 +259,8 @@ LIS_INT lis_text2args(char *text, LIS_ARGS *args)
 		}
 		if( *p=='\0' ) break;
 		*p++ = '\0';
+/*NEH pretty sure the following logic was goofed up . . .*/
+/*        while( *p==' ' && *p=='\t' && *p=='\n' && *p=='\r' )*/
 		while( *p==' ' || *p=='\t' || *p=='\n' || *p=='\r' )
 		{
 			p++;
@@ -412,9 +414,9 @@ LIS_INT lis_ranges_create(LIS_Comm comm, LIS_INT *local_n, LIS_INT *global_n, LI
 
 	#ifdef USE_MPI
 		MPI_Allreduce(local_n,&i,1,LIS_MPI_INT,MPI_SUM,comm);
-		if( i==0 )
+        if( i==0 )
 	#else
-		if( *local_n==0 )
+        if( *local_n==0 )
 	#endif
 	{
 		#ifdef USE_MPI

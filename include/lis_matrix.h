@@ -76,6 +76,8 @@ extern "C"
 /*******************/
 
 	extern LIS_INT lis_matrix_split(LIS_MATRIX A);
+	extern LIS_INT lis_matrix_split_create(LIS_MATRIX A);
+	extern LIS_INT lis_matrix_split_update(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_merge(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT flag);
 	extern LIS_INT lis_matrix_solvet(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT flag);
@@ -135,6 +137,8 @@ extern "C"
 	extern LIS_INT lis_matrix_normf_csr(LIS_MATRIX A, LIS_SCALAR *nrm);
 	extern LIS_INT lis_matrix_transpose_csr(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_split_csr(LIS_MATRIX A);
+	extern LIS_INT lis_matrix_split_create_csr(LIS_MATRIX A);
+	extern LIS_INT lis_matrix_split_update_csr(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_merge_csr(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_solve_csr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
 	extern LIS_INT lis_matrix_solvet_csr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
