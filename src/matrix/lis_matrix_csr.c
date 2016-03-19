@@ -1189,7 +1189,7 @@ LIS_INT lis_matrix_split_update_csr(LIS_MATRIX A)
 	#ifdef _OPENMP
         /*NEH I have made the changes here that I think will be necessary, */
         /*NEH but as we don't use threads, this hasn't actually been checked at all . . . */
-		#pragma omp parallel for private(i)
+/*	  #pragma omp parallel for private(i)*/
 /*        for(i=0;i<n+1;i++)*/
 /*        {*/
 /*            lptr[i] = liw[i];*/
