@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis ユーザガイド}\\
-バージョン 1.5.63
+バージョン 1.5.64
 \end{flushleft}
 
 \vspace*{2cm}
@@ -202,6 +202,7 @@ All rights reserved.
 \section*{バージョン 1.4 からの変更点}
 \begin{enumerate}
 \item 配列操作に対応.
+\item 前処理とソルバの分離に対応.
 \item 関数{\tt lis\_array\_qr()}の仕様をQR法の反復回数及び誤差を返すよう変更. 
 \item 関数{\tt lis\_array\_matvec2()}, {\tt lis\_array\_matmat2()}の名称をそれぞれ
   {\tt lis\_array\_matvec\_ns()}, \\
@@ -2136,7 +2137,7 @@ A =
 
 \vspace{1pc}
 
-上記の方法の例を疑似コードにより示す. 実際のプログラムは XXX.F90 を参照されたい. 
+実装例を疑似コードにより示す. 詳細はtest7f.F90を参照のこと. 
 
 \vspace{1pc}
 
