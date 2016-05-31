@@ -10,6 +10,7 @@ RM = del
 # See win32.mak for details. 
 
 !include <win32.mak>
+#!include <C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\Include\win32.mak>
 
 
 # Configuration for Microsoft Visual C++
