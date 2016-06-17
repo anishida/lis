@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.5.65
+Version 1.5.66
 \end{flushleft}
 
 \vspace*{2cm}
@@ -8190,6 +8190,9 @@ J. Dongarra and M. Heroux.
 \section{File Formats}
 \label{sec:matinp}
 This section describes the file formats available for the library.
+Note that both the upper and lower triangular entries need to be stored
+irrespective of whether the matrix is symmetric or not. 
+
 \subsection{Extended Matrix Market Format}
 The Matrix Market format does not support 
 the vector data. The extended Matrix Market format is the extension of
