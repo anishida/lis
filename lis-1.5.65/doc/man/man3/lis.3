@@ -1,0 +1,92 @@
+.TH lis 3 "26 Mar 2014" "Man Page" "Introduction to Library Functions"
+
+.SH NAME
+
+lis \- library of iterative solvers for linear systems
+
+.SH SYNOPSIS
+
+[see Lis User Guide for full description]
+
+.SH DESCRIPTION
+
+Lis (Library of Iterative Solvers for linear systems, pronounced [lis]) is 
+a parallel software library for solving linear equations and eigenvalue
+problems that arise in the numerical solution of partial differential 
+equations using iterative methods.
+
+.PP
+Lis provides facilities for:
+.PP 
+* Automatic program configuration
+.PP 
+* NUMA aware hybrid implementation with MPI and OpenMP
+.PP 
+* Exchangeable dense and sparse matrix storage formats
+.PP 
+* Basic linear algebra operations for dense and sparse matrices
+.PP 
+* Parallel iterative methods for linear equations and standard eigenvalue problems
+.PP 
+* Parallel preconditioners for iterative methods
+.PP 
+* Quadruple precision floating point operations
+.PP 
+* Performance analysis
+.PP 
+* Command-line interface to solvers and benchmarks
+
+.SH SYSTEM REQUIREMENTS
+
+The installation of Lis requires a C compiler. The Fortran interface
+requires a Fortran compiler, and the algebraic multigrid
+preconditioner requires a Fortran 90 compiler. For parallel computing
+environments, an OpenMP or an MPI-1 library is used. Both the
+Harwell-Boeing and Matrix Market formats are supported to import and
+export user data.
+
+.SH REFERENCES
+
+* Akira Nishida (2010). "Experience in Developing an Open Source
+Scalable Software Infrastructure in Japan". Computational Science and
+Its Applications - ICCSA 2010. Lecture Notes in Computer Science
+6017. Springer. pp. 87-98. doi:10.1007/978-3-642-12165-4_36. ISBN
+3-642-12164-0.
+.PP
+* Hisashi Kotakemori, Hidehiko Hasegawa, Tamito Kajiyama, Akira Nukada,
+Reiji Suda, and Akira Nishida (2008). "Performance Evaluation of
+Parallel Sparse Matrix-Vector Products on SGI Altix 3700". OpenMP
+Shared Memory Parallel Programming. Lecture Notes in Computer Science
+4315. Springer. pp. 153-163. doi:10.1007/978-3-540-68555-5_13. ISBN
+3-540-68554-5.
+.PP
+* Hisashi Kotakemori, Hidehiko Hasegawa, and Akira Nishida
+(2005). "Performance Evaluation of a Parallel Iterative Method Library
+using OpenMP". Proceedings of the 8th International Conference on High
+Performance Computing in Asia Pacific Region (HPC Asia 2005). Beijing:
+IEEE. pp. 432-436. doi:10.1109/HPCASIA.2005.74. ISBN 0-7695-2486-9.
+.PP
+* Akihiro Fujii, Akira Nishida, and Yoshio Oyanagi (2005). "Evaluation
+of Parallel Aggregate Creation Orders : Smoothed Aggregation Algebraic
+Multigrid Method". High Performance Computational Science and
+Engineering. Springer. pp. 99-122. doi:10.1007/0-387-24049-7_6. ISBN
+1-4419-3684-X.
+
+.SH SEE ALSO
+
+.BR lsolve (1),
+.BR esolve (1),
+.BR hpcg_kernel (1),
+.BR hpcg_spmvtest (1),
+.BR spmvtest1 (1),
+.BR spmvtest2 (1),
+.BR spmvtest2b (1),
+.BR spmvtest3 (1),
+.BR spmvtest3b (1),
+.BR spmvtest4 (1),
+.BR spmvtest5 (1)
+.PP
+http://www.ssisc.org/lis/
+.br
+http://math.nist.gov/MatrixMarket/
+

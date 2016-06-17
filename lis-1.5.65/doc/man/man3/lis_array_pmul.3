@@ -1,0 +1,43 @@
+.TH lis_array_pmul 3 "3 Dec 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_array_pmul \- multiply each element of a vector by the corresponding element of another
+
+.SH SYNOPSIS
+
+#include "lis.h"
+
+\fBLIS_INT lis_array_pmul\fR(\fBLIS_INT n\fR, \fBLIS_SCALAR x[]\fR, \fBLIS_SCALAR y[]\fR, \fBLIS_SCALAR z[]\fR);
+
+.SH DESCRIPTION
+
+Multiply each element of vector \fIx\fR by the corresponding element of vector \fIy\fR.
+
+.SH INPUT
+
+.IP "\fBn\fR"
+The size of the vectors
+
+.IP "\fBx, y\fR"
+The arrays that store the vectors
+
+.SH OUTPUT
+
+.IP "\fBz\fR"
+The array that stores the multiplied elements of \fIx\fR 
+
+.SH EXIT STATUS
+
+The following exit values are returned:
+.IP "0"
+The process is normally terminated
+.IP "unspecified"
+An error occurred
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

@@ -1,0 +1,43 @@
+.TH lis_esolver_get_evectors 3 "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_esolver_get_evectors \- get all the eigenvectors from the eigensolver
+
+.SH SYNOPSIS
+
+#include "lis.h"
+
+\fBLIS_INT lis_esolver_get_evectors\fR(\fBLIS_ESOLVER esolver\fR, \fBLIS_MATRIX A\fR);
+
+.SH DESCRIPTION
+
+Get all the eigenvectors from the eigensolver.
+
+.SH INPUT
+
+.IP "\fBesolver\fR"
+The eigensolver
+
+.SH OUTPUT
+
+.IP "\fBv\fR"
+The matrix in the COO format which stores the eigenvectors
+
+.SH EXIT STATUS
+
+The following exit values are returned:
+.IP "0"
+The process is normally terminated
+.IP "unspecified"
+An error occurred
+
+.SH NOTE
+Matrix \fIA\fR must be created in advance with the function \fBlis_matrix_create\fR.
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

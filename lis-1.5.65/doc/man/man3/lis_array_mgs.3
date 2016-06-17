@@ -1,0 +1,46 @@
+.TH lis_array_mgs 3 "3 Dec 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_array_mgs \- calculate the QR factorization with the modified Gram-Schmidt process
+
+.SH SYNOPSIS
+
+#include "lis.h"
+
+\fBLIS_INT lis_array_mgs\fR(\fBLIS_INT n\fR, \fBLIS_SCALAR a[]\fR, \fBLIS_SCALAR q[]\fR, \fBLIS_SCALAR r[]\fR);
+
+.SH DESCRIPTION
+
+Calculate the QR factorization \fIQR=A\fR with the modified Gram-Schmidt process.
+
+.SH INPUT
+
+.IP "\fBn\fR"
+The size of the matrices
+
+.IP "\fBa\fR"
+The array that stores matrix \fIA\fR of size \fIn * n\fR
+
+.SH OUTPUT
+
+.IP "\fBq\fR"
+The array that stores matrix \fIQ\fR of size \fIn * n\fR
+
+.IP "\fBr\fR"
+The array that stores matrix \fIR\fR of size \fIn * n\fR
+
+.SH EXIT STATUS
+
+The following exit values are returned:
+.IP "0"
+The process is normally terminated
+.IP "unspecified"
+An error occurred
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+
