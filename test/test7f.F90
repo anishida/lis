@@ -1,15 +1,13 @@
-
 PROGRAM lis_driver
 
     IMPLICIT NONE
 
-    INCLUDE 'mpif.h'
-! (demo program for alternative workflow PSD, or Preconditioner
-! and Solver Decoupled, thanks to Neil Hodge.)
+! (demo program for alternative workflow PSD, or Preconditioner and Solver
+! Decoupled, thanks to Neil Hodge)
 ! per the Intel fortran user forums, including a *.h file
 ! via the preprocessor mechanism works properly, versus using
 ! the fortran include mechanism
-#include 'lisf.h'
+#include "lisf.h"
 
     INTERFACE
         SUBROUTINE plotxy(plotdata,filename,datalength, &
@@ -304,7 +302,8 @@ PROGRAM lis_driver
 !            WRITE(UNIT=options,FMT='(a)') "-p none -i gmres -print out -scale jacobi"
 !            WRITE(UNIT=options,FMT='(a)') "-p ilu -i gmres -print out -scale none"
             WRITE(UNIT=options,FMT='(a)') "-p saamg -saamg_unsym true -i gmres -print out -scale none"
-            WRITE(UNIT=options,FMT='(a,a,es22.15)') TRIM(options)," -tol ",MAX(MIN(AbsResTol/ResNorm,ONE),MIN(RelResTol*ResNorm0/ResNorm,ONE))/TEN
+            WRITE(UNIT=options,FMT='(a,a,es22.15)') TRIM(options)," -tol ", &
+                 & MAX(MIN(AbsResTol/ResNorm,ONE),MIN(RelResTol*ResNorm0/ResNorm,ONE))/TEN
             IF (rank==0) WRITE(UNIT=*,FMT='(a,a,a)') "solver options: """,TRIM(options),""""
             CALL lis_solver_set_option(TRIM(options),solver,ierr)
 !            CALL ErrorCheck("lis_solver_set_option",ierr)
@@ -398,7 +397,9 @@ PROGRAM lis_driver
 
         IF (IterCount==MaxIterCount) THEN
             IF (rank==0) WRITE(UNIT=*,FMT='(a)') ""
-            IF (rank==0) WRITE(UNIT=*,FMT='(a,i0,a)') "nonlinear termination criterion num_iter=",MaxIterCount," satisfied, stopping"
+            IF (rank==0) WRITE(UNIT=*,FMT='(a,i0,a)') &
+                 & "nonlinear termination criterion num_iter=", &
+                 & MaxIterCount," satisfied, stopping"
             EXIT
         END IF
     END DO
