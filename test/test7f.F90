@@ -4,6 +4,8 @@ PROGRAM lis_driver
     IMPLICIT NONE
 
     INCLUDE 'mpif.h'
+! (demo program for alternative workflow PSD, or Preconditioner
+! and Solver Decoupled, thanks to Neil Hodge.)
 ! per the Intel fortran user forums, including a *.h file
 ! via the preprocessor mechanism works properly, versus using
 ! the fortran include mechanism
