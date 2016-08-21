@@ -1,3 +1,7 @@
+Version 1.5.69  August 21, 2016
+
+  - Fixed bug in test/Makefile.am.
+
 Version 1.5.68  August 21, 2016
 
   - Added test7.F90 to test_PROGRAMS in test/Makefile.am.
