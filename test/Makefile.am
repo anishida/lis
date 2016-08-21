@@ -3,11 +3,11 @@ AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)/include
 AM_FFLAGS = -I$(top_builddir) -I$(top_srcdir)/include
 AM_LDFLAGS = $(AMDEFS)
 
-EXTRA_DIST = defs test.sh testmat.mtx testmat2.mtx test7f.F90
+EXTRA_DIST = defs test.sh testmat.mtx testmat2.mtx
 
 testdir = ${prefix}/share/examples/lis
 
-test_DATA = testmat.mtx testmat2.mtx 
+test_DATA = testmat.mtx testmat2.mtx
 
 test_SCRIPTS = defs test.sh
 
@@ -16,7 +16,12 @@ if ENABLE_FORTRAN
   test_PROGRAMS += etest1f etest4f test1f test4f 
 endif
 if ENABLE_F90
-  test_PROGRAMS += test2f test6f
+  test_PROGRAMS += test2f test6f 
+endif
+if ENABLE_SAAMG
+if ENABLE_MPI
+  test_PROGRAMS += test7f
+endif
 endif
 
 etest1_SOURCES = etest1.c
@@ -50,6 +55,7 @@ endif
 if ENABLE_F90
   test2f_SOURCES = test2f.F90
   test6f_SOURCES = test6f.F90
+  test7f_SOURCES = test7f.F90
 endif
 
 bin_PROGRAMS = esolve hpcg_kernel hpcg_spmvtest lsolve spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b spmvtest4 spmvtest5
