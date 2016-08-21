@@ -17,10 +17,10 @@ if ENABLE_FORTRAN
 endif
 if ENABLE_F90
   test_PROGRAMS += test2f test6f 
-endif
 if ENABLE_SAAMG
 if ENABLE_MPI
   test_PROGRAMS += test7f
+endif
 endif
 endif
 
