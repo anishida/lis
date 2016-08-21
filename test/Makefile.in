@@ -64,7 +64,7 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	$(am__EXEEXT_2) $(am__EXEEXT_3)
 @ENABLE_FORTRAN_TRUE@am__append_1 = etest1f etest4f test1f test4f 
 @ENABLE_F90_TRUE@am__append_2 = test2f test6f 
-@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__append_3 = test7f
+@ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__append_3 = test7f
 bin_PROGRAMS = esolve$(EXEEXT) hpcg_kernel$(EXEEXT) \
 	hpcg_spmvtest$(EXEEXT) lsolve$(EXEEXT) spmvtest1$(EXEEXT) \
 	spmvtest2$(EXEEXT) spmvtest2b$(EXEEXT) spmvtest3$(EXEEXT) \
@@ -93,7 +93,7 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(testdir)" \
 @ENABLE_FORTRAN_TRUE@am__EXEEXT_1 = etest1f$(EXEEXT) etest4f$(EXEEXT) \
 @ENABLE_FORTRAN_TRUE@	test1f$(EXEEXT) test4f$(EXEEXT)
 @ENABLE_F90_TRUE@am__EXEEXT_2 = test2f$(EXEEXT) test6f$(EXEEXT)
-@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__EXEEXT_3 = test7f$(EXEEXT)
+@ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__EXEEXT_3 = test7f$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(test_PROGRAMS)
 am_esolve_OBJECTS = etest5.$(OBJEXT)
 esolve_OBJECTS = $(am_esolve_OBJECTS)
