@@ -286,11 +286,25 @@ typedef struct
 
 #if defined(_LONG__DOUBLE)
 typedef long double LIS_REAL;
-#ifdef HAVE_COMPLEX_H
+#if defined(HAVE_COMPLEX_H)
 typedef long double complex LIS_COMPLEX;
+#else
+#if defined(_Complex_I) && defined(complex) && defined(I)
+typedef struct
+{
+        long double R;
+        long double _Complex C;
+} LIS_COMPLEX;
+#else
+typedef struct
+{
+	long double R;
+	long double C;
+} LIS_COMPLEX;
 #endif
-#if defined(_COMPLEX)
-typedef long double complex LIS_SCALAR;
+#endif
+#if defined(_COMPLEX) && defined(HAVE_COMPLEX_H)
+typedef LIS_COMPLEX LIS_SCALAR;
 #define acos(x) cacosl(x)
 #define acosh(x) cacoshl(x)
 #define asin(x) casinl(x)
@@ -329,11 +343,25 @@ typedef long double LIS_SCALAR;
 #define MPI_DOUBLE MPI_LONG_DOUBLE
 #else
 typedef double LIS_REAL;
-#ifdef HAVE_COMPLEX_H
+#if defined(HAVE_COMPLEX_H)
 typedef double complex LIS_COMPLEX;
+#else
+#if defined(_Complex_I) && defined(complex) && defined(I)
+typedef struct
+{
+        double R;
+        double _Complex C;
+} LIS_COMPLEX;
+#else
+typedef struct
+{
+	double R;
+	double C;
+} LIS_COMPLEX;
 #endif
-#if defined(_COMPLEX)
-typedef double complex LIS_SCALAR;
+#endif
+#if defined(_COMPLEX) && defined(HAVE_COMPLEX_H)
+typedef LIS_COMPLEX LIS_SCALAR;
 #define acos(x) cacos(x)
 #define acosh(x) cacosh(x)
 #define asin(x) casin(x)
