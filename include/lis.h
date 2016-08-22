@@ -292,8 +292,8 @@ typedef long double complex LIS_COMPLEX;
 #if defined(_Complex_I) && defined(complex) && defined(I)
 typedef struct
 {
-        long double R;
-        long double _Complex C;
+	long double R;
+	long double _Complex C;
 } LIS_COMPLEX;
 #else
 typedef struct
@@ -349,8 +349,8 @@ typedef double complex LIS_COMPLEX;
 #if defined(_Complex_I) && defined(complex) && defined(I)
 typedef struct
 {
-        double R;
-        double _Complex C;
+	double R;
+	double _Complex C;
 } LIS_COMPLEX;
 #else
 typedef struct
