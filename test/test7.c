@@ -45,7 +45,6 @@ LIS_INT main(LIS_INT argc, char* argv[])
 {
 	LIS_COMPLEX z;
 
-	/* define complex number */
 #if defined(_Complex_I)	
 	z = 1.2 + 3.4 * _Complex_I;
 #else
@@ -53,11 +52,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	z.C = 3.4;
 #endif
 
-#if defined(_Complex_I)		
 	printf("complex number z = %f + %f * I\n", creal(z), cimag(z));
-#else
-	printf("complex number z = %f + %f * I\n", z.R, z.C);	
-#endif
 
 	return 0;
 }

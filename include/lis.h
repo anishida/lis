@@ -302,6 +302,8 @@ typedef struct
 	long double C;
 } LIS_COMPLEX;
 #endif
+#define creal(x) x.R
+#define cimag(x) x.C
 #endif
 #if defined(_COMPLEX) && defined(HAVE_COMPLEX_H)
 typedef LIS_COMPLEX LIS_SCALAR;
@@ -359,6 +361,8 @@ typedef struct
 	double C;
 } LIS_COMPLEX;
 #endif
+#define creal(x) x.R
+#define cimag(x) x.C
 #endif
 #if defined(_COMPLEX) && defined(HAVE_COMPLEX_H)
 typedef LIS_COMPLEX LIS_SCALAR;
