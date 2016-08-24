@@ -11,15 +11,15 @@ test_DATA = testmat.mtx testmat2.mtx
 
 test_SCRIPTS = defs test.sh
 
-test_PROGRAMS = etest1 etest2 etest3 etest4 etest5 etest6 etest7 spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b spmvtest4 spmvtest5 test1 test2 test2b test3 test3b test4 test5 test6 
+test_PROGRAMS = etest1 etest2 etest3 etest4 etest5 etest6 etest7 spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b spmvtest4 spmvtest5 test1 test2 test2b test3 test3b test4 test5 test6 test7
 if ENABLE_FORTRAN
-  test_PROGRAMS += etest1f etest4f test1f test4f 
+  test_PROGRAMS += etest1f etest4f test1f test4f test7f
 endif
 if ENABLE_F90
   test_PROGRAMS += test2f test6f 
 if ENABLE_SAAMG
 if ENABLE_MPI
-  test_PROGRAMS += test7f
+  test_PROGRAMS += test8f
 endif
 endif
 endif
@@ -46,16 +46,18 @@ test3b_SOURCES = test3b.c
 test4_SOURCES = test4.c
 test5_SOURCES = test5.c
 test6_SOURCES = test6.c
+test7_SOURCES = test7.c
 if ENABLE_FORTRAN
   etest1f_SOURCES = etest1f.F
   etest4f_SOURCES = etest4f.F
   test1f_SOURCES = test1f.F
   test4f_SOURCES = test4f.F
+  test7f_SOURCES = test7f.F
 endif
 if ENABLE_F90
   test2f_SOURCES = test2f.F90
   test6f_SOURCES = test6f.F90
-  test7f_SOURCES = test7f.F90
+  test8f_SOURCES = test8f.F90
 endif
 
 bin_PROGRAMS = esolve hpcg_kernel hpcg_spmvtest lsolve spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b spmvtest4 spmvtest5
