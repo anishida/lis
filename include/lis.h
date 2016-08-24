@@ -290,20 +290,12 @@ typedef long double LIS_REAL;
 typedef long double complex LIS_COMPLEX;
 #else
 #if defined(_Complex_I) && defined(complex) && defined(I)
-typedef struct
-{
-	long double R;
-	long double _Complex C;
-} LIS_COMPLEX;
+typedef long double _Complex LIS_COMPLEX;
 #else
-typedef struct
-{
-	long double R;
-	long double C;
-} LIS_COMPLEX;
+typedef long double LIS_COMPLEX[2];
+#define creal(x) x[0];
+#define cimag(x) x[1];
 #endif
-#define creal(x) x.R
-#define cimag(x) x.C
 #endif
 #if defined(_COMPLEX) && defined(HAVE_COMPLEX_H)
 typedef LIS_COMPLEX LIS_SCALAR;
@@ -349,20 +341,12 @@ typedef double LIS_REAL;
 typedef double complex LIS_COMPLEX;
 #else
 #if defined(_Complex_I) && defined(complex) && defined(I)
-typedef struct
-{
-	double R;
-	double _Complex C;
-} LIS_COMPLEX;
+typedef double _Complex LIS_COMPLEX;
 #else
-typedef struct
-{
-	double R;
-	double C;
-} LIS_COMPLEX;
+typedef double LIS_COMPLEX[2];
+#define creal(x) x[0];
+#define cimag(x) x[1];
 #endif
-#define creal(x) x.R
-#define cimag(x) x.C
 #endif
 #if defined(_COMPLEX) && defined(HAVE_COMPLEX_H)
 typedef LIS_COMPLEX LIS_SCALAR;

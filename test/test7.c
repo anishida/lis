@@ -48,8 +48,8 @@ LIS_INT main(LIS_INT argc, char* argv[])
 #if defined(_Complex_I)	
 	z = 1.2 + 3.4 * _Complex_I;
 #else
-	z.R = 1.2;
-	z.C = 3.4;
+	z[0] = 1.2;
+	z[1] = 3.4;
 #endif
 
 	printf("complex number z = %f + %f * I\n", creal(z), cimag(z));
