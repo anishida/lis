@@ -37,20 +37,20 @@
 
 #ifdef LONG__DOUBLE
 #ifdef COMPLEX
-#define LIS_SCALAR complex*16
+#define LIS_SCALAR complex*32
 #else
 #define LIS_SCALAR real*16
 #endif
 #define LIS_REAL real*16
-#define LIS_COMPLEX complex*16
+#define LIS_COMPLEX complex*32
 #else
 #ifdef COMPLEX
-#define LIS_SCALAR complex*8
+#define LIS_SCALAR complex*16
 #else
 #define LIS_SCALAR real*8
 #endif
 #define LIS_REAL real*8
-#define LIS_COMPLEX complex*8
+#define LIS_COMPLEX complex*16
 #endif
 
 #define LIS_Comm LIS_INTEGER
