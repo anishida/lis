@@ -1,6 +1,8 @@
 Version 1.5.70  August 25, 2016
 
   - Added official support for complex numbers.
+  - Changed name of test7f.F90 to test8f.F90.
+  - Added test7.c and test7f.F for complex numbers.
   - Added decralations for PSD functions.
 
 Version 1.5.69  August 21, 2016
