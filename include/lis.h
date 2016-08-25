@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"1.5.70"
+#define LIS_VERSION	"1.5.71"
 /**************************************/
 #include <stdio.h>
 #ifdef HAVE_COMPLEX_H
@@ -293,8 +293,8 @@ typedef long double complex LIS_COMPLEX;
 typedef long double _Complex LIS_COMPLEX;
 #else
 typedef long double LIS_COMPLEX[2];
-#define creal(x) x[0];
-#define cimag(x) x[1];
+#define creall(x) x[0]
+#define cimagl(x) x[1]
 #endif
 #endif
 #if defined(_COMPLEX) && defined(HAVE_COMPLEX_H)
@@ -344,8 +344,8 @@ typedef double complex LIS_COMPLEX;
 typedef double _Complex LIS_COMPLEX;
 #else
 typedef double LIS_COMPLEX[2];
-#define creal(x) x[0];
-#define cimag(x) x[1];
+#define creal(x) x[0]
+#define cimag(x) x[1]
 #endif
 #endif
 #if defined(_COMPLEX) && defined(HAVE_COMPLEX_H)

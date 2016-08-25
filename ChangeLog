@@ -1,6 +1,12 @@
+Version 1.5.71  August 25, 2016
+
+  - Fixed bugs in Fortran configurations for complex*32.
+
 Version 1.5.70  August 25, 2016
 
   - Added official support for complex numbers.
+  - Renamed test7f.F90 test8f.F90.
+  - Added test7.c and test7f.F for complex numbers.
   - Added decralations for PSD functions.
 
 Version 1.5.69  August 21, 2016
