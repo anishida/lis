@@ -1,3 +1,8 @@
+Version 1.5.70  August 25, 2016
+
+  - Added official support for complex numbers.
+  - Added decralations for PSD functions.
+
 Version 1.5.69  August 21, 2016
 
   - Fixed bug in test/Makefile.am.
