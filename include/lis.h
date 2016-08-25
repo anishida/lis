@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"1.5.69"
+#define LIS_VERSION	"1.5.70"
 /**************************************/
 #include <stdio.h>
 #ifdef HAVE_COMPLEX_H
@@ -286,11 +286,19 @@ typedef struct
 
 #if defined(_LONG__DOUBLE)
 typedef long double LIS_REAL;
-#ifdef HAVE_COMPLEX_H
+#if defined(HAVE_COMPLEX_H)
 typedef long double complex LIS_COMPLEX;
+#else
+#if defined(_Complex_I) && defined(complex) && defined(I)
+typedef long double _Complex LIS_COMPLEX;
+#else
+typedef long double LIS_COMPLEX[2];
+#define creal(x) x[0];
+#define cimag(x) x[1];
 #endif
-#if defined(_COMPLEX)
-typedef long double complex LIS_SCALAR;
+#endif
+#if defined(_COMPLEX) && defined(HAVE_COMPLEX_H)
+typedef LIS_COMPLEX LIS_SCALAR;
 #define acos(x) cacosl(x)
 #define acosh(x) cacoshl(x)
 #define asin(x) casinl(x)
@@ -329,11 +337,19 @@ typedef long double LIS_SCALAR;
 #define MPI_DOUBLE MPI_LONG_DOUBLE
 #else
 typedef double LIS_REAL;
-#ifdef HAVE_COMPLEX_H
+#if defined(HAVE_COMPLEX_H)
 typedef double complex LIS_COMPLEX;
+#else
+#if defined(_Complex_I) && defined(complex) && defined(I)
+typedef double _Complex LIS_COMPLEX;
+#else
+typedef double LIS_COMPLEX[2];
+#define creal(x) x[0];
+#define cimag(x) x[1];
 #endif
-#if defined(_COMPLEX)
-typedef double complex LIS_SCALAR;
+#endif
+#if defined(_COMPLEX) && defined(HAVE_COMPLEX_H)
+typedef LIS_COMPLEX LIS_SCALAR;
 #define acos(x) cacos(x)
 #define acosh(x) cacosh(x)
 #define asin(x) casin(x)
@@ -778,6 +794,7 @@ extern "C"
 	extern LIS_INT lis_matrix_set_value(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_set_value_new(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_set_values(LIS_INT flag, LIS_INT n, LIS_SCALAR value[], LIS_MATRIX A);
+	extern LIS_INT lis_matrix_psd_set_value(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);  
 	extern LIS_INT lis_matrix_malloc(LIS_MATRIX A, LIS_INT nnz_row, LIS_INT nnz[]);
 	extern LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR d);
 	extern LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR D, LIS_INT action);
@@ -790,6 +807,7 @@ extern "C"
 
 	extern LIS_INT lis_matrix_malloc_csr(LIS_INT n, LIS_INT nnz, LIS_INT **ptr, LIS_INT **index, LIS_SCALAR **value);
 	extern LIS_INT lis_matrix_set_value_csr(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);
+	extern LIS_INT lis_matrix_psd_set_value_csr(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);  
 	extern LIS_INT lis_matrix_set_csr(LIS_INT nnz, LIS_INT *row, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_malloc_csc(LIS_INT n, LIS_INT nnz, LIS_INT **ptr, LIS_INT **index, LIS_SCALAR **value);
 	extern LIS_INT lis_matrix_set_csc(LIS_INT nnz, LIS_INT *row, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);

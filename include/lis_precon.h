@@ -41,6 +41,8 @@ extern "C"
 #endif
 	extern LIS_INT lis_precon_init(LIS_PRECON precon);
 	extern LIS_INT lis_precon_create(LIS_SOLVER solver, LIS_PRECON *precon);
+	extern LIS_INT lis_precon_psd_create(LIS_SOLVER solver, LIS_PRECON *precon);
+	extern LIS_INT lis_precon_psd_update(LIS_SOLVER solver, LIS_PRECON precon);
 	extern LIS_INT lis_precon_destroy(LIS_PRECON precon);
 
 	extern LIS_PRECON_CREATE_XXX lis_precon_create_xxx[];

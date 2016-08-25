@@ -60,11 +60,11 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	spmvtest2b$(EXEEXT) spmvtest3$(EXEEXT) spmvtest3b$(EXEEXT) \
 	spmvtest4$(EXEEXT) spmvtest5$(EXEEXT) test1$(EXEEXT) \
 	test2$(EXEEXT) test2b$(EXEEXT) test3$(EXEEXT) test3b$(EXEEXT) \
-	test4$(EXEEXT) test5$(EXEEXT) test6$(EXEEXT) $(am__EXEEXT_1) \
-	$(am__EXEEXT_2) $(am__EXEEXT_3)
-@ENABLE_FORTRAN_TRUE@am__append_1 = etest1f etest4f test1f test4f 
+	test4$(EXEEXT) test5$(EXEEXT) test6$(EXEEXT) test7$(EXEEXT) \
+	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
+@ENABLE_FORTRAN_TRUE@am__append_1 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_2 = test2f test6f 
-@ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__append_3 = test7f
+@ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__append_3 = test8f
 bin_PROGRAMS = esolve$(EXEEXT) hpcg_kernel$(EXEEXT) \
 	hpcg_spmvtest$(EXEEXT) lsolve$(EXEEXT) spmvtest1$(EXEEXT) \
 	spmvtest2$(EXEEXT) spmvtest2b$(EXEEXT) spmvtest3$(EXEEXT) \
@@ -91,9 +91,10 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(testdir)" \
 	"$(DESTDIR)$(testdir)" "$(DESTDIR)$(testdir)"
 @ENABLE_FORTRAN_TRUE@am__EXEEXT_1 = etest1f$(EXEEXT) etest4f$(EXEEXT) \
-@ENABLE_FORTRAN_TRUE@	test1f$(EXEEXT) test4f$(EXEEXT)
+@ENABLE_FORTRAN_TRUE@	test1f$(EXEEXT) test4f$(EXEEXT) \
+@ENABLE_FORTRAN_TRUE@	test7f$(EXEEXT)
 @ENABLE_F90_TRUE@am__EXEEXT_2 = test2f$(EXEEXT) test6f$(EXEEXT)
-@ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__EXEEXT_3 = test7f$(EXEEXT)
+@ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__EXEEXT_3 = test8f$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(test_PROGRAMS)
 am_esolve_OBJECTS = etest5.$(OBJEXT)
 esolve_OBJECTS = $(am_esolve_OBJECTS)
@@ -229,11 +230,20 @@ am__test6f_SOURCES_DIST = test6f.F90
 test6f_OBJECTS = $(am_test6f_OBJECTS)
 test6f_LDADD = $(LDADD)
 test6f_DEPENDENCIES =
-am__test7f_SOURCES_DIST = test7f.F90
-@ENABLE_F90_TRUE@am_test7f_OBJECTS = test7f.$(OBJEXT)
+am_test7_OBJECTS = test7.$(OBJEXT)
+test7_OBJECTS = $(am_test7_OBJECTS)
+test7_LDADD = $(LDADD)
+test7_DEPENDENCIES =
+am__test7f_SOURCES_DIST = test7f.F
+@ENABLE_FORTRAN_TRUE@am_test7f_OBJECTS = test7f.$(OBJEXT)
 test7f_OBJECTS = $(am_test7f_OBJECTS)
 test7f_LDADD = $(LDADD)
 test7f_DEPENDENCIES =
+am__test8f_SOURCES_DIST = test8f.F90
+@ENABLE_F90_TRUE@am_test8f_OBJECTS = test8f.$(OBJEXT)
+test8f_OBJECTS = $(am_test8f_OBJECTS)
+test8f_LDADD = $(LDADD)
+test8f_DEPENDENCIES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -289,7 +299,8 @@ SOURCES = $(esolve_SOURCES) $(etest1_SOURCES) $(etest1f_SOURCES) \
 	$(test2_SOURCES) $(test2b_SOURCES) $(test2f_SOURCES) \
 	$(test3_SOURCES) $(test3b_SOURCES) $(test4_SOURCES) \
 	$(test4f_SOURCES) $(test5_SOURCES) $(test6_SOURCES) \
-	$(test6f_SOURCES) $(test7f_SOURCES)
+	$(test6f_SOURCES) $(test7_SOURCES) $(test7f_SOURCES) \
+	$(test8f_SOURCES)
 DIST_SOURCES = $(esolve_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
 	$(etest3_SOURCES) $(etest4_SOURCES) \
@@ -303,8 +314,8 @@ DIST_SOURCES = $(esolve_SOURCES) $(etest1_SOURCES) \
 	$(am__test1f_SOURCES_DIST) $(test2_SOURCES) $(test2b_SOURCES) \
 	$(am__test2f_SOURCES_DIST) $(test3_SOURCES) $(test3b_SOURCES) \
 	$(test4_SOURCES) $(am__test4f_SOURCES_DIST) $(test5_SOURCES) \
-	$(test6_SOURCES) $(am__test6f_SOURCES_DIST) \
-	$(am__test7f_SOURCES_DIST)
+	$(test6_SOURCES) $(am__test6f_SOURCES_DIST) $(test7_SOURCES) \
+	$(am__test7f_SOURCES_DIST) $(am__test8f_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -488,13 +499,15 @@ test3b_SOURCES = test3b.c
 test4_SOURCES = test4.c
 test5_SOURCES = test5.c
 test6_SOURCES = test6.c
+test7_SOURCES = test7.c
 @ENABLE_FORTRAN_TRUE@etest1f_SOURCES = etest1f.F
 @ENABLE_FORTRAN_TRUE@etest4f_SOURCES = etest4f.F
 @ENABLE_FORTRAN_TRUE@test1f_SOURCES = test1f.F
 @ENABLE_FORTRAN_TRUE@test4f_SOURCES = test4f.F
+@ENABLE_FORTRAN_TRUE@test7f_SOURCES = test7f.F
 @ENABLE_F90_TRUE@test2f_SOURCES = test2f.F90
 @ENABLE_F90_TRUE@test6f_SOURCES = test6f.F90
-@ENABLE_F90_TRUE@test7f_SOURCES = test7f.F90
+@ENABLE_F90_TRUE@test8f_SOURCES = test8f.F90
 esolve_SOURCES = etest5.c
 hpcg_kernel_SOURCES = test3b.c
 hpcg_spmvtest_SOURCES = spmvtest3b.c
@@ -759,9 +772,15 @@ test6$(EXEEXT): $(test6_OBJECTS) $(test6_DEPENDENCIES) $(EXTRA_test6_DEPENDENCIE
 test6f$(EXEEXT): $(test6f_OBJECTS) $(test6f_DEPENDENCIES) $(EXTRA_test6f_DEPENDENCIES) 
 	@rm -f test6f$(EXEEXT)
 	$(FCLINK) $(test6f_OBJECTS) $(test6f_LDADD) $(LIBS)
+test7$(EXEEXT): $(test7_OBJECTS) $(test7_DEPENDENCIES) $(EXTRA_test7_DEPENDENCIES) 
+	@rm -f test7$(EXEEXT)
+	$(LINK) $(test7_OBJECTS) $(test7_LDADD) $(LIBS)
 test7f$(EXEEXT): $(test7f_OBJECTS) $(test7f_DEPENDENCIES) $(EXTRA_test7f_DEPENDENCIES) 
 	@rm -f test7f$(EXEEXT)
-	$(FCLINK) $(test7f_OBJECTS) $(test7f_LDADD) $(LIBS)
+	$(F77LINK) $(test7f_OBJECTS) $(test7f_LDADD) $(LIBS)
+test8f$(EXEEXT): $(test8f_OBJECTS) $(test8f_DEPENDENCIES) $(EXTRA_test8f_DEPENDENCIES) 
+	@rm -f test8f$(EXEEXT)
+	$(FCLINK) $(test8f_OBJECTS) $(test8f_LDADD) $(LIBS)
 install-testSCRIPTS: $(test_SCRIPTS)
 	@$(NORMAL_INSTALL)
 	@list='$(test_SCRIPTS)'; test -n "$(testdir)" || list=; \
@@ -826,6 +845,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test4.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test5.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test6.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test7.Po@am__quote@
 
 .F.o:
 	$(PPF77COMPILE) -c -o $@ $<

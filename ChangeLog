@@ -1,3 +1,8 @@
+Version 1.5.70  August 25, 2016
+
+  - Added official support for complex numbers.
+  - Added decralations for PSD functions.
+
 Version 1.5.69  August 21, 2016
 
   - Fixed bug in test/Makefile.am.
@@ -21,8 +26,8 @@ Version 1.5.65  March 19, 2016
 
 Version 1.5.64  March 19, 2016
 
-  - Added support for alternative workflow PSD (Preconditioner and Solver
-    Decoupled) (thanks to Neil Hodge).
+  - Added support for alternative workflow PSD, or Preconditioner and Solver
+    Decoupled (thanks to Neil Hodge).
   - Updated documents.
 
 Version 1.5.63  January 31, 2016
