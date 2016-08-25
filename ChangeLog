@@ -1,6 +1,10 @@
+Version 1.5.72  August 25, 2016
+
+  - Fixed bug in test7f.F.
+
 Version 1.5.71  August 25, 2016
 
-  - Fixed bugs in Fortran configurations for complex*32.
+  - Fixed bug in Fortran configuration for complex*32.
 
 Version 1.5.70  August 25, 2016
 
