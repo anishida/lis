@@ -51,11 +51,19 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	z[0] = 1.2;
 	z[1] = 3.4;
 #endif
-	
+
+#if defined(_Complex_I)	
 #ifdef _LONG__DOUBLE
-	printf("complex number z = %Lf + %Lf * I\n", creall(z), cimagl(z));
+	printf("complex number z = %Lf + %Lf * I\n", __real__ z, __imag__ z);
 #else
-	printf("complex number z = %f + %f * I\n", creal(z), cimag(z));
+	printf("complex number z = %f + %f * I\n", __real__ z, __imag__ z);
+#endif
+#else
+#ifdef _LONG__DOUBLE
+	printf("complex number z = %Lf + %Lf * I\n", z[0], z[1]);
+#else
+	printf("complex number z = %f + %f * I\n", z[0], z[1]);
+#endif
 #endif
 
 	return 0;
