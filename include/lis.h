@@ -293,6 +293,8 @@ typedef long double complex LIS_COMPLEX;
 typedef long double _Complex LIS_COMPLEX;
 #else
 typedef long double LIS_COMPLEX[2];
+#define creall(x) x[0]
+#define cimagl(x) x[1]
 #endif
 #endif
 #if defined(_COMPLEX) && defined(HAVE_COMPLEX_H)
@@ -342,6 +344,8 @@ typedef double complex LIS_COMPLEX;
 typedef double _Complex LIS_COMPLEX;
 #else
 typedef double LIS_COMPLEX[2];
+#define creal(x) x[0]
+#define cimag(x) x[1]
 #endif
 #endif
 #if defined(_COMPLEX) && defined(HAVE_COMPLEX_H)

@@ -34,7 +34,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       LIS_COMPLEX z
 
       z = (1.2, 3.4);
-      
+
       write(*,*) 'complex number z = ', dble(z), '+', imag(z), '*I'
 
       stop
