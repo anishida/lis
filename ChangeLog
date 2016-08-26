@@ -1,6 +1,10 @@
+Version 1.5.74  August 26, 2016
+
+  - Fixed configurations for complex.h.
+
 Version 1.5.73  August 25, 2016
 
-  - Fixed configuration for complex numbers.
+  - Fixed configurations for complex numbers.
 
 Version 1.5.72  August 25, 2016
 
