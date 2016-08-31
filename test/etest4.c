@@ -47,7 +47,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
     LIS_INT nesol;
     LIS_MATRIX A;
     LIS_VECTOR x;
-    LIS_REAL evalue0;
+    LIS_SCALAR evalue0;
     LIS_ESOLVER esolver;
     LIS_REAL residual;
     LIS_INT iter;

@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis ユーザガイド}\\
-バージョン 1.5.74
+バージョン 1.5.75
 \end{flushleft}
 
 \vspace*{2cm}
@@ -132,7 +132,7 @@ All rights reserved.
 
 \section*{バージョン 1.1 からの変更点}
 \begin{enumerate}
-\item 固有値解法に対応.
+\item 固有値計算に対応.
 \item 64ビット整数型に対応.
 \item 
 \begin{enumerate}
@@ -320,7 +320,6 @@ Dense &	(DNS) \\
 \newpage
 \section{導入}
 本節では, 導入, 検証の手順について述べる. 
-なおここではLinuxオペレーティングシステムを用いたサーバクラスタへの導入を想定する. 
 
 \subsection{システム要件}
 Lisの導入にはCコンパイラが必要である. 
@@ -342,7 +341,7 @@ AMG前処理ルーチンを使用する場合はFortran 90コンパイラが必要
 \hline
 \multicolumn{1}{c|}{Cコンパイラ (必須) } & \multicolumn{1}{c}{OS} \\
 \hline
-Intel C/C++ Compiler 7.0, 8.0, 9.1, 10.1, 11.1, 12.1, 14.0 & Linux \\
+Intel C/C++ Compiler 7.0, 8.0, 9.1, 10.1, 11.1, 12.1, 14.0, 16.0 & Linux \\
                                                      & Windows  \\
 \hline
 IBM XL C/C++ V7.0, 9.0                     & AIX   \\
@@ -353,16 +352,16 @@ Sun Studio 11, 12                          &         \\
 \hline
 PGI C++ 6.0, 7.1, 10.5                     & Linux \\
 \hline
-gcc 3.3, 4.4                               & Linux \\
+gcc 3.3, 4.4, 5.3                          & Linux \\
                                            & Mac OS X \\
                                            & Windows \\
 \hline
-Microsoft Visual C++ 2008, 2010, 2012, 2013       & Windows \\
+Microsoft Visual C++ 2008, 2010, 2012, 2013, 2015       & Windows \\
 \hline
 \hline
 \multicolumn{1}{c|}{Fortranコンパイラ (オプション) } & \multicolumn{1}{c}{OS} \\
 \hline
-Intel Fortran Compiler 8.1, 9.1, 10.1, 11.1, 12.1, 14.0 & Linux \\
+Intel Fortran Compiler 8.1, 9.1, 10.1, 11.1, 12.1, 14.0, 16.0 & Linux \\
                                                   & Windows  \\
 \hline
 IBM XL Fortran V9.1, 11.1                  & AIX     \\
@@ -374,7 +373,7 @@ Sun Studio 11, 12                          &         \\
 PGI Fortran 6.0, 7.1, 10.5                 & Linux \\
 \hline
 g77 3.3                                    & Linux \\
-gfortran 4.4                               & Mac OS X \\
+gfortran 4.4, 5.3                          & Mac OS X \\
                                            & Windows \\
 \hline
 \end{tabular}
@@ -435,6 +434,7 @@ lis-($VERSION)
 \verb+--enable-quad+     & double-double型4倍精度演算を使用\\ \hline
 \verb+--enable-longdouble+ & long double型4倍精度演算を使用\\ \hline
 \verb+--enable-longlong+ & 64ビット整数型を使用\\ \hline
+\verb+--enable-complex+  & スカラ型として複素数型を使用\\ \hline
 \verb+--enable-debug+    & デバッグモードを使用\\ \hline
 \verb+--enable-shared+   & 動的リンクを使用\\ \hline
 \verb+--enable-gprof+    & プロファイラを使用\\ \hline

@@ -358,7 +358,7 @@ LIS_INT lis_matvec_optimize(LIS_MATRIX A, LIS_INT *matrix_type_maxperf)
   int    	   int_nprocs,int_my_rank;
   LIS_INT	   err,iter,i,matrix_type,ss,se;
   double	   time,time2,convtime;
-  LIS_SCALAR       val;
+  LIS_REAL         val;
   double	   commtime,comptime,flops,flops_maxperf;
   LIS_MATRIX       A1;
   LIS_VECTOR       X, Y;

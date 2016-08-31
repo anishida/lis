@@ -126,7 +126,7 @@ LIS_INT lis_eaii(LIS_ESOLVER esolver)
   LIS_MATRIX A;
   LIS_VECTOR x;
   LIS_SCALAR evalue, ievalue;
-  LIS_SCALAR lshift;
+  LIS_REAL lshift;
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,output;

@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.5.74
+Version 1.5.75
 \end{flushleft}
 
 \vspace*{2cm}
@@ -338,7 +338,6 @@ Dense &	(DNS) \\
 \newpage
 \section{Installation}
 This section describes the instructions for installing and testing Lis. 
-We assume Lis being installed on a server cluster running Linux operating system.
 
 \subsection{System Requirements}
 The installation of Lis requires a C compiler. The Fortran interface
@@ -361,7 +360,7 @@ Lis has been tested in the environments listed in Table \ref{platforms}
 \hline
 \multicolumn{1}{c|}{C Compilers} & \multicolumn{1}{c}{OS} \\
 \hline
-Intel C/C++ Compiler 7.0, 8.0, 9.1, 10.1, 11.1, 12.1, 14.0 & Linux \\
+Intel C/C++ Compiler 7.0, 8.0, 9.1, 10.1, 11.1, 12.1, 14.0, 16.0 & Linux \\
                                                      & Windows  \\
 \hline
 IBM XL C/C++ V7.0, 9.0                     & AIX     \\
@@ -372,16 +371,16 @@ Sun Studio 11, 12                          &         \\
 \hline
 PGI C++ 6.0, 7.1, 10.5                     & Linux \\
 \hline
-gcc 3.3, 4.4                               & Linux \\
+gcc 3.3, 4.4, 5.3                          & Linux \\
                                            & Mac OS X \\
                                            & Windows \\
 \hline
-Microsoft Visual C++ 2008, 2010, 2012, 2013       & Windows \\
+Microsoft Visual C++ 2008, 2010, 2012, 2013, 2015       & Windows \\
 \hline
 \hline
 \multicolumn{1}{c|}{Fortran Compilers (Optional)} & \multicolumn{1}{c}{OS} \\
 \hline
-Intel Fortran Compiler 8.1, 9.1, 10.1, 11.1, 12.1, 14.0 & Linux \\
+Intel Fortran Compiler 8.1, 9.1, 10.1, 11.1, 12.1, 14.0, 16.0 & Linux \\
                                                   & Windows  \\
 \hline
 IBM XL Fortran V9.1, 11.1                  & AIX     \\
@@ -393,7 +392,7 @@ Sun Studio 11, 12                          &         \\
 PGI Fortran 6.0, 7.1, 10.5                 & Linux \\
 \hline
 g77 3.3                                    & Linux \\
-gfortran 4.4                               & Mac OS X \\
+gfortran 4.4, 5.3                          & Mac OS X \\
                                            & Windows \\
 \hline
 \end{tabular}
@@ -460,12 +459,13 @@ by \verb+TARGET+.
 \verb+--enable-longdouble+ & Enable long double (quadruple)
  precision support\\ \hline
 \verb+--enable-longlong+ & Enable 64bit integer support\\ \hline
+\verb+--enable-complex+  & Enable complex scalar support\\ \hline 
 \verb+--enable-debug+    & Enable debugging\\ \hline
-\verb+--enable-shared+    & Enable dynamic linking\\ \hline
+\verb+--enable-shared+   & Enable dynamic linking\\ \hline
 \verb+--enable-gprof+    & Enable profiling\\ \hline
 \verb+--prefix=<install-dir>+    & Specify installation destination\\ \hline
-\verb+TARGET=<target>+    & Specify computing environment\\ \hline
-\verb+CC=<c_compiler>+    & Specify C compiler\\ \hline
+\verb+TARGET=<target>+   & Specify computing environment\\ \hline
+\verb+CC=<c_compiler>+   & Specify C compiler\\ \hline
 \verb+CFLAGS=<c_flags>+    & Specify options for C compiler\\ \hline
 \verb+F77=<f77_compiler>+    & Specify FORTRAN 77 compiler\\ \hline
 \verb+F77FLAGS=<f77_flags>+    & Specify options for FORTRAN 77 compiler\\ \hline
