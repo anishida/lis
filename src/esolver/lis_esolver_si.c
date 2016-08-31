@@ -423,11 +423,19 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 #else
 	  if( output ) printf("Subspace: mode number          = %d\n", j-1);
 #endif
+#ifdef _COMPLEX	  
+#ifdef _LONG__DOUBLE
+	  if( output ) printf("Subspace: eigenvalue           = %Le + %Le * I\n", creall(esolver->evalue[j-1]), cimagll(esolver->evalue[j-1]));
+#else
+	  if( output ) printf("Subspace: eigenvalue           = %e + %e * I\n", creal(esolver->evalue[j-1]), cimag(esolver->evalue[j-1]));
+#endif
+#else
 #ifdef _LONG__DOUBLE
 	  if( output ) printf("Subspace: eigenvalue           = %Le\n", esolver->evalue[j-1]);
 #else
 	  if( output ) printf("Subspace: eigenvalue           = %e\n", esolver->evalue[j-1]);
 #endif
+#endif	  
 #ifdef _LONG__LONG
 	  if( output ) printf("Subspace: number of iterations = %lld\n",iter);
 #else
@@ -437,7 +445,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	  if( output ) printf("Subspace: relative residual    = %Le\n\n",resid);
 #else
 	  if( output ) printf("Subspace: relative residual    = %e\n\n",resid);
-#endif
+#endif	  
 	}
     }
   
@@ -732,11 +740,19 @@ LIS_INT lis_esi_quad(LIS_ESOLVER esolver)
 #else
 	  if( output ) printf("Subspace: mode number          = %d\n", j-1);
 #endif
+#ifdef _COMPLEX	  
+#ifdef _LONG__DOUBLE
+	  if( output ) printf("Subspace: eigenvalue           = %Le + %Le * I\n", creall(esolver->evalue[j-1]), cimagl(esolver->evalue[j-1]));
+#else
+	  if( output ) printf("Subspace: eigenvalue           = %e + %e * I\n", creal(esolver->evalue[j-1]), cimag(esolver->evalue[j-1]));
+#endif
+#else
 #ifdef _LONG__DOUBLE
 	  if( output ) printf("Subspace: eigenvalue           = %Le\n", esolver->evalue[j-1]);
 #else
 	  if( output ) printf("Subspace: eigenvalue           = %e\n", esolver->evalue[j-1]);
 #endif
+#endif	  
 #ifdef _LONG__LONG
 	  if( output ) printf("Subspace: number of iterations = %lld\n",iter);
 #else

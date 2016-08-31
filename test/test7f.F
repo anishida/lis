@@ -43,7 +43,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
       z = (1.2, 3.4);
 
-      write(*,*) 'complex number z = ', real(z), '+', imag(z), '*I'
+      write(*,*) 'complex number z = ', real(z), '+', imag(z), ' * I'
 
       call lis_vector_create(comm_world,v,ierr)
       call lis_vector_set_size(v,ln,n,ierr)

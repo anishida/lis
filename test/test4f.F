@@ -72,7 +72,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      .                                        A,ierr)
         if( i<gn ) call lis_matrix_set_value(LIS_INS_VALUE,i,i+1,-1.0d0,
      .                                        A,ierr)
-        call lis_matrix_set_value(LIS_INS_VALUE,i,i,2.0d0,A,ierr)
+        call lis_matrix_set_value(LIS_INS_VALUE,i,i,2.0d0,A,ierr)   
       enddo
       call lis_matrix_set_type(A,matrix_type,ierr)
       call lis_matrix_assemble(A,ierr)
