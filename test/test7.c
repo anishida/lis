@@ -44,6 +44,10 @@
 LIS_INT main(LIS_INT argc, char* argv[])
 {
 	LIS_COMPLEX z;
+	LIS_VECTOR v;
+	LIS_INT n,ln;
+
+	lis_initialize(&argc, &argv);
 
 #ifdef _Complex_I
 	z = 1.2 + 3.4 * _Complex_I;
@@ -72,7 +76,18 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	printf("complex number z = %f + %f * I\n", z[0], z[1]);
 #endif
 #endif
-#endif	
+#endif
+
+	n = 12;
+	ln = 0;
+
+	lis_vector_create(LIS_COMM_WORLD,&v);
+	lis_vector_set_size(v,ln,n);
+	lis_vector_set_all(z,v);
+	lis_vector_print(v);
+	lis_vector_destroy(v);	
+
+	lis_finalize();
 
 	return 0;
 }
