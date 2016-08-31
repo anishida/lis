@@ -868,6 +868,21 @@ LIS_INT lis_vector_print(LIS_VECTOR x)
 			{
 				ii = i+is;
 				if( x->origin ) ii++;
+#ifdef _COMPLEX
+#ifdef _LONG__LONG
+#ifdef _LONG__DOUBLE
+				printf("%6lld  %Le + %Le * I\n",ii,creall(x->value[i]),cimagl(x->value[i]));
+#else
+				printf("%6lld  %e + %e * I\n",ii,creal(x->value[i]),cimag(x->value[i]));
+#endif
+#else
+#ifdef _LONG__DOUBLE
+				printf("%6d  %Le + %Le * I\n",ii,creall(x->value[i]),cimagl(x->value[i]));
+#else
+				printf("%6d  %e + %e * I\n",ii,creal(x->value[i]),cimag(x->value[i]));
+#endif
+#endif
+#else
 #ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 				printf("%6lld  %Le\n",ii,x->value[i]);
@@ -881,6 +896,7 @@ LIS_INT lis_vector_print(LIS_VECTOR x)
 				printf("%6d  %e\n",ii,x->value[i]);
 #endif
 #endif
+#endif				
 			}
 		}
 		MPI_Barrier(x->comm);
@@ -900,6 +916,21 @@ LIS_INT lis_vector_print(LIS_VECTOR x)
 		if( x->origin ) ii++;
 		if( x->precision==LIS_PRECISION_DEFAULT )
 		{
+#ifdef _COMPLEX
+#ifdef _LONG__LONG
+#ifdef _LONG__DOUBLE
+			printf("%6lld  %Le + %Le * I\n",ii,creall(x->value[i]),cimagl(x->value[i]));
+#else
+			printf("%6lld  %e + %e * I\n",ii,creal(x->value[i]),cimag(x->value[i]));
+#endif
+#else
+#ifdef _LONG__DOUBLE
+			printf("%6d  %Le + %Le * I\n",ii,creall(x->value[i]),cimagl(x->value[i]));
+#else
+			printf("%6d  %e + %e * I\n",ii,creal(x->value[i]),cimag(x->value[i]));
+#endif
+#endif
+#else		  
 #ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 			printf("%6lld  %Le\n",ii,x->value[i]);
@@ -913,9 +944,25 @@ LIS_INT lis_vector_print(LIS_VECTOR x)
 			printf("%6d  %e\n",ii,x->value[i]);
 #endif
 #endif
+#endif			
 		}
 		else
 		{
+#ifdef _COMPLEX
+#ifdef _LONG__LONG
+#ifdef _LONG__DOUBLE
+			printf("%6lld  %Le,%Le + %Le,%Le * I\n",ii,creall(x->value[i]),creall(x->value_lo[i]),cimagl(x->value[i]),cimagl(x->value_lo[i]));
+#else
+			printf("%6lld  %e,%e + %e,%e * I\n",ii,creal(x->value[i]),creal(x->value_lo[i]),cimag(x->value[i]),cimag(x->value_lo[i]));
+#endif
+#else
+#ifdef _LONG__DOUBLE
+			printf("%6d  %Le,%Le + %Le,%Le * I\n",ii,creall(x->value[i]),creall(x->value_lo[i]),cimagl(x->value[i]),cimagl(x->value_lo[i]));
+#else
+			printf("%6d  %e,%e + %e,%e * I\n",ii,creal(x->value[i]),creal(x->value_lo[i]),cimag(x->value[i]),cimag(x->value_lo[i]));
+#endif
+#endif
+#else		  
 #ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 			printf("%6lld  %Le,%Le\n",ii,x->value[i],x->value_lo[i]);
@@ -929,6 +976,7 @@ LIS_INT lis_vector_print(LIS_VECTOR x)
 			printf("%6d  %e,%e\n",ii,x->value[i],x->value_lo[i]);
 #endif
 #endif
+#endif			
 		}
 	}
 
