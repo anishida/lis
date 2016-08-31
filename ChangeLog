@@ -1,4 +1,8 @@
-Version 1.5.75  August 26, 2016
+Version 1.5.76  August 31, 2016
+
+  - Fixed complex related bugs.
+
+Version 1.5.75  August 31, 2016
 
   - Added experimental support for flag --enable-complex for complex scalar.
   - Updated documents.
