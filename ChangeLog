@@ -1,3 +1,8 @@
+Version 1.5.75  August 26, 2016
+
+  - Added experimental support for flag --enable-complex for complex scalar.
+  - Updated documents.
+
 Version 1.5.74  August 26, 2016
 
   - Fixed configurations for complex.h.
