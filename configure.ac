@@ -1040,11 +1040,16 @@ fi
 
 
 ########## Enable Complex Scalar Operations ##########
+AC_CHECK_HEADERS([complex.h])
 if test "$enable_complex" = "yes"; then
-
-  CFLAGS="$CFLAGS -D_COMPLEX"
-  FFLAGS="$FFLAGS -DCOMPLEX" 
-  FCFLAGS="$FCFLAGS -DCOMPLEX" 
+  if test -z "$HAVE_COMPLEX_H"; then
+    CFLAGS="$CFLAGS -D_COMPLEX"
+    FFLAGS="$FFLAGS -DCOMPLEX" 
+    FCFLAGS="$FCFLAGS -DCOMPLEX" 
+  else
+    AC_MSG_WARN([no complex.h])
+    enable_complex="no"
+  fi
 else
   enable_complex="no"
 fi
@@ -1138,11 +1143,10 @@ AC_SUBST(SIZEOF_VOID_P, $ac_cv_sizeof_void_p)
 AC_SUBST(FCLDFLAGS)
 
 
-# Configurations for Header Files
+# Configurations for Some Header Files
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS([malloc.h stdlib.h string.h sys/time.h])
-AC_CHECK_HEADERS([complex.h])
 
 
 # Configurations for Compiler Characteristics and Type Definitions

@@ -295,7 +295,7 @@ typedef long double _Complex LIS_COMPLEX;
 typedef long double LIS_COMPLEX[2];
 #endif
 #endif
-#if defined(_COMPLEX) && defined(HAVE_COMPLEX_H)
+#if defined(_COMPLEX)
 typedef LIS_COMPLEX LIS_SCALAR;
 #define acos(x) cacosl(x)
 #define acosh(x) cacoshl(x)
@@ -317,7 +317,6 @@ typedef LIS_COMPLEX LIS_SCALAR;
 #define tanh(x) ctanhl(x)
 #else
 typedef long double LIS_SCALAR;
-#endif
 #define sin(x) sinl(x)
 #define cos(x) cosl(x)
 #define tan(x) tanl(x)
@@ -333,6 +332,7 @@ typedef long double LIS_SCALAR;
 #define exp(x) expl(x)
 #define pow(x,y) powl((x),(y))
 #define MPI_DOUBLE MPI_LONG_DOUBLE
+#endif
 #else
 typedef double LIS_REAL;
 #if defined(HAVE_COMPLEX_H)
@@ -344,7 +344,7 @@ typedef double _Complex LIS_COMPLEX;
 typedef double LIS_COMPLEX[2];
 #endif
 #endif
-#if defined(_COMPLEX) && defined(HAVE_COMPLEX_H)
+#if defined(_COMPLEX)
 typedef LIS_COMPLEX LIS_SCALAR;
 #define acos(x) cacos(x)
 #define acosh(x) cacosh(x)
@@ -766,7 +766,7 @@ extern "C"
 	extern LIS_INT lis_vector_abs(LIS_VECTOR vx);
 	extern LIS_INT lis_vector_reciprocal(LIS_VECTOR vx);
 	extern LIS_INT lis_vector_shift(LIS_SCALAR alpha, LIS_VECTOR vx);
-	extern LIS_INT lis_vector_dot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_SCALAR *value);
+	extern LIS_INT lis_vector_dot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_REAL *value);
 	extern LIS_INT lis_vector_nrm1(LIS_VECTOR vx, LIS_REAL *value);
 	extern LIS_INT lis_vector_nrm2(LIS_VECTOR vx, LIS_REAL *value);
 	extern LIS_INT lis_vector_nrmi(LIS_VECTOR vx, LIS_REAL *value);

@@ -142,7 +142,8 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 {
   LIS_MATRIX A;
   LIS_VECTOR x, Ax;
-  LIS_SCALAR xAx, xx, mu, lshift;
+  LIS_SCALAR xAx, xx, mu;
+  LIS_REAL lshift;
   LIS_INT ss;
   LIS_INT emaxiter;
   LIS_REAL tol;
@@ -472,7 +473,8 @@ LIS_INT lis_esi_quad(LIS_ESOLVER esolver)
 {
   LIS_MATRIX A;
   LIS_VECTOR x, Ax;
-  LIS_SCALAR xAx, xx, mu, lshift;
+  LIS_SCALAR xAx, xx, mu;
+  LIS_REAL lshift;
   LIS_INT ss;
   LIS_INT emaxiter;
   LIS_REAL tol;

@@ -54,7 +54,7 @@
 /**********************/
 #undef __FUNC__
 #define __FUNC__ "lis_vector_dot"
-LIS_INT lis_vector_dot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_SCALAR *value)
+LIS_INT lis_vector_dot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_REAL *value)
 {
 	LIS_INT i,n;
 	LIS_SCALAR dot;

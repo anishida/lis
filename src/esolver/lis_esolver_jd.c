@@ -133,7 +133,7 @@ LIS_INT lis_ejd(LIS_ESOLVER esolver)
   LIS_REAL tol;
   LIS_INT iter,iter3,output;
   LIS_REAL nrm2,resid,resid3;
-  LIS_SCALAR lshift;
+  LIS_REAL lshift;
   LIS_VECTOR r,w,p,Aw,Ax,Ap;
   LIS_SCALAR *A3,*B3,*W3,*v3,*A3v3,*B3v3,*z3,*q3,*B3z3,ievalue3;
   LIS_SOLVER solver;

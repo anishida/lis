@@ -128,7 +128,8 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   LIS_MATRIX A;
   LIS_VECTOR x;
   LIS_SCALAR ievalue;
-  LIS_SCALAR mu, lshift;
+  LIS_SCALAR mu;
+  LIS_REAL lshift;
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter2,output;
@@ -265,7 +266,8 @@ LIS_INT lis_erqi_quad(LIS_ESOLVER esolver)
   LIS_MATRIX A;
   LIS_VECTOR x;
   LIS_SCALAR ievalue;
-  LIS_SCALAR mu, lshift;
+  LIS_SCALAR mu;
+  LIS_REAL lshift;
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter2,output;
