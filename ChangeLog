@@ -1,3 +1,7 @@
+Version 1.5.77  September 1, 2016
+
+  - Added support for inputting complex matrices in Matrix Market format.
+
 Version 1.5.76  August 31, 2016
 
   - Fixed complex related bugs.
