@@ -34,11 +34,15 @@
 #define MM_VEC "vector"
 #define MM_FMT "coordinate"
 #define MM_TYPE_REAL "real"
+#define MM_TYPE_COMPLEX "complex"
 #define MM_TYPE_GENERAL	"general"
 #define MM_TYPE_SYMM "symmetric"
+#define MM_TYPE_HERM "hermitian"
 #define MM_REAL	0
+#define MM_COMPLEX 1
 #define MM_GENERAL 0
 #define MM_SYMM	1
+#define MM_HERM	1
 
 #define LISBanner "#LIS"
 #define ITBLBanner "#ITBL"
