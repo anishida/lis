@@ -189,7 +189,7 @@ memset(work[i]->value_lo,0,solver->A->np*sizeof(LIS_SCALAR));
 void lis_idrs_omega(LIS_VECTOR t, LIS_VECTOR s, LIS_SCALAR angle, LIS_SCALAR
 *om)
 {
-	LIS_REAL nt;
+	LIS_SCALAR nt;
 	LIS_SCALAR ts;
 
 	lis_vector_dot(t,t,&nt);
