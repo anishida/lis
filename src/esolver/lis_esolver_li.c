@@ -154,7 +154,8 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   LIS_REAL tol,qrerr;
   LIS_INT i,j,k;
   LIS_INT output, niesolver;
-  LIS_REAL nrm2,dot,resid0; 
+  LIS_REAL nrm2,resid0;
+  LIS_SCALAR dot;
   LIS_VECTOR *v,r;
   LIS_SCALAR *t,*tq,*tr,evalue,evalue0;
   LIS_SOLVER solver;

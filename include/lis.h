@@ -766,7 +766,7 @@ extern "C"
 	extern LIS_INT lis_vector_abs(LIS_VECTOR vx);
 	extern LIS_INT lis_vector_reciprocal(LIS_VECTOR vx);
 	extern LIS_INT lis_vector_shift(LIS_SCALAR alpha, LIS_VECTOR vx);
-	extern LIS_INT lis_vector_dot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_REAL *value);
+	extern LIS_INT lis_vector_dot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_SCALAR *value);
 	extern LIS_INT lis_vector_nrm1(LIS_VECTOR vx, LIS_REAL *value);
 	extern LIS_INT lis_vector_nrm2(LIS_VECTOR vx, LIS_REAL *value);
 	extern LIS_INT lis_vector_nrmi(LIS_VECTOR vx, LIS_REAL *value);

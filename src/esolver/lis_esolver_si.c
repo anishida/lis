@@ -150,7 +150,8 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   LIS_INT j,k;
   LIS_SCALAR dotvr;
   LIS_INT iter,giter,output,niesolver;
-  LIS_REAL nrm2,dot,resid;
+  LIS_REAL nrm2,resid;
+  LIS_SCALAR dot;
   LIS_VECTOR *v,r,q;
   LIS_SOLVER solver;
   LIS_PRECON precon;
