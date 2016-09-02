@@ -228,7 +228,7 @@ LIS_INT lis_output_vector_plain(LIS_VECTOR v, char *path)
 #ifdef _LONG__DOUBLE
 			        fprintf(file, "%28.20Le %28.20Le\n", creall(v->value[i]), cimagl(v->value[i]));
 #else
-			        fprintf(file, "%28.20e %28.20e\n", creal(v->value[i], cimag(v->value[i]));
+			        fprintf(file, "%28.20e %28.20e\n", creal(v->value[i]), cimag(v->value[i]));
 #endif
 #else
 #ifdef _LONG__DOUBLE
@@ -374,7 +374,7 @@ LIS_INT lis_output_vector_mm(LIS_VECTOR v, char *path)
 #ifdef _LONG__DOUBLE
 					fprintf(file, "%lld %28.20Le %28.20Le\n", i+is+1, creall(v->value[i]), cimagl(v->value[i])); 
 #else
-					fprintf(file, "%lld %28.20e %28.20e\n", i+is+1, creal(v->value[i]), cimal(v->value[i])); 
+					fprintf(file, "%lld %28.20e %28.20e\n", i+is+1, creal(v->value[i]), cimag(v->value[i])); 
 #endif
 #else
 #ifdef _LONG__DOUBLE

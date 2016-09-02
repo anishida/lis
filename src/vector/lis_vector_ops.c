@@ -338,7 +338,7 @@ LIS_INT lis_vector_nrmi(LIS_VECTOR vx, LIS_REAL *value)
 		}
 		for(i=0;i<nprocs;i++)
 		{
-		  if (lis_vec_tmp[i*LIS_VEC_TMP_PADD] > tmp) 
+		  if ((LIS_REAL)lis_vec_tmp[i*LIS_VEC_TMP_PADD] > tmp) 
 		    {
 		      tmp = lis_vec_tmp[i*LIS_VEC_TMP_PADD];
 		    }
