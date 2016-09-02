@@ -126,11 +126,11 @@ LIS_INT lis_bicgstabl(LIS_SOLVER solver)
 	LIS_VECTOR x;
 	LIS_VECTOR rtld, bp,t,xp, *r,*u;
 	LIS_SCALAR *tau, *gamma, *gamma1, *gamma2;
-	LIS_REAL *sigma;
+	LIS_SCALAR *sigma;
 	LIS_SCALAR alpha, beta, omega, rho0, rho1;
 	LIS_REAL rnorm0, rnorm;
 	LIS_REAL normx, normr;
-	LIS_REAL nu;
+	LIS_SCALAR nu;
 
 	LIS_REAL bnrm2, nrm2, tol;
 	LIS_INT iter,maxiter,output,conv;

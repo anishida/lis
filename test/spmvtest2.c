@@ -62,7 +62,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
   LIS_INT err,iter,matrix_type,storage,ss,se;
   LIS_INT *ptr,*index;
   double time,time2,nnzs,nnzap,nnzt;
-  LIS_SCALAR val;
+  LIS_REAL val;
   double commtime,comptime,flops;
 
   LIS_DEBUG_FUNC_IN;

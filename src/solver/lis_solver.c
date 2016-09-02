@@ -390,7 +390,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	LIS_INT precision,is_use_at,storage,block;
 	LIS_INT i,n;
 	double p_c_time, p_i_time,itime;
-	LIS_SCALAR nrm2,tol,tol_w;
+	LIS_REAL nrm2,tol,tol_w;
 	LIS_VECTOR t;
 	LIS_VECTOR bb;
 	LIS_MATRIX AA,B;

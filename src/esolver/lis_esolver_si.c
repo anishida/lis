@@ -150,7 +150,8 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   LIS_INT j,k;
   LIS_SCALAR dotvr;
   LIS_INT iter,giter,output,niesolver;
-  LIS_REAL nrm2,dot,resid;
+  LIS_REAL nrm2,resid;
+  LIS_SCALAR dot;
   LIS_VECTOR *v,r,q;
   LIS_SOLVER solver;
   LIS_PRECON precon;
@@ -425,7 +426,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 #endif
 #ifdef _COMPLEX	  
 #ifdef _LONG__DOUBLE
-	  if( output ) printf("Subspace: eigenvalue           = %Le + %Le * I\n", creall(esolver->evalue[j-1]), cimagll(esolver->evalue[j-1]));
+	  if( output ) printf("Subspace: eigenvalue           = %Le + %Le * I\n", creall(esolver->evalue[j-1]), cimagl(esolver->evalue[j-1]));
 #else
 	  if( output ) printf("Subspace: eigenvalue           = %e + %e * I\n", creal(esolver->evalue[j-1]), cimag(esolver->evalue[j-1]));
 #endif
