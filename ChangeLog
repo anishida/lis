@@ -1,3 +1,7 @@
+Version 1.5.79  September 3, 2016
+
+  - Fixed complex related bugs.
+
 Version 1.5.78  September 2, 2016
 
   - Added support for outputting complex vectors.
