@@ -161,6 +161,7 @@ LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 	LIS_INT	*ptr, *index;
 	LIS_INT	matrix_type;
 	LIS_SCALAR *value;
+	LIS_REAL re,im;
 	LIS_MATRIX B;
 
 	#ifdef USE_MPI
@@ -364,10 +365,31 @@ LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 		p = buf;
 		for(j=0;j<ival&&k<NNZERO;j++)
 		{
-			strncpy(dat, p, wval); dat[wval] = '\0';
-			value[k] = atof(dat);
-			p += wval;
-			k++;
+			if (MXTYPE_F == 'r')
+			  {
+			    strncpy(dat, p, wval); dat[wval] = '\0';
+			    value[k] = atof(dat);
+			    p += wval;
+			    k++;
+			  }
+#ifdef _COMPLEX
+			else if (MXTYPE_F == 'c')
+			  {
+			    strncpy(dat, p, wval); dat[wval] = '\0'; 
+			    re = atof(dat);
+			    p += wval;
+			    strncpy(dat, p, wval); dat[wval] = '\0'; 
+			    im = atof(dat);
+			    p += wval;			    
+			    value[k] = re + im * _Complex_I;
+			    k++;
+			  }
+#endif
+			else
+			  {
+			    LIS_SETERR_FIO;
+			    return LIS_ERR_FILE_IO;
+			  }
 		}
 	}
 
