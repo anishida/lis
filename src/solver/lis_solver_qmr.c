@@ -304,8 +304,7 @@ LIS_INT lis_tfqmr_quad(LIS_SOLVER solver)
 	LIS_PRECON M;
 	LIS_VECTOR x;
 	LIS_VECTOR r, rtld, u, p, d, t, t1, q, v;
-	LIS_REAL w;
-	LIS_QUAD_PTR tau,rho, rhoold, theta,eta,beta,alpha,ww,wold,s,c,etaold,thetaold,one;
+	LIS_QUAD_PTR tau,rho, rhoold, theta,eta,beta,alpha,w,ww,wold,s,c,etaold,thetaold,one;
 	LIS_REAL bnrm2, nrm2, tol;
 	LIS_INT iter,maxiter,output;
 	double time,ptime;
