@@ -1,3 +1,9 @@
+Version 1.6.0  September 4, 2016
+
+  - Added official support for flag --enable-complex.
+  - Fixed complex related bugs in parallel processing.
+  - Added support for inputting complex matrices in Harwell-Boeing format.
+
 Version 1.5.79  September 3, 2016
 
   - Fixed complex related bugs.
