@@ -1,6 +1,10 @@
+Version 1.6.2  September 6, 2016
+
+  - Fixed complex related bug in test4f.F.
+
 Version 1.6.1  September 5, 2016
 
-  - Fixed complex related bug (thanks to Florian Lehner).
+  - Fixed quad precision bug (thanks to Florian Lehner).
 
 Version 1.6.0  September 4, 2016
 
