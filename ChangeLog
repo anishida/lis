@@ -1,6 +1,6 @@
 Version 1.6.1  September 5, 2016
 
-  - Fixed complex related quad precision bug (thanks to Florian Lehner).
+  - Fixed quad precision bug (thanks to Florian Lehner).
 
 Version 1.6.0  September 4, 2016
 

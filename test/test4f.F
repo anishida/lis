@@ -79,11 +79,11 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       call lis_vector_duplicate(A,u,ierr)
       call lis_vector_duplicate(A,b,ierr)
       call lis_vector_duplicate(A,x,ierr)
-#ifdef COMPLEX      
+#ifdef COMPLEX
       call lis_vector_set_all((1.0d0,0.0d0),u,ierr)
 #else
       call lis_vector_set_all(1.0d0,u,ierr)
-#endif      
+#endif
       call lis_matvec(A,u,b,ierr)
       
       call lis_solver_create(solver,ierr)
