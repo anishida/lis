@@ -213,7 +213,8 @@ extern LIS_Comm_f lis_comm_world_f;
 #define lis_solver_get_solvername_f F77_FUNC_(lis_solver_get_solvername_f, LIS_SOLVER_GET_SOLVERNAME_F) 
 #define lis_solver_get_preconname_f F77_FUNC_(lis_solver_get_preconname_f, LIS_SOLVER_GET_PRECONNAME_F) 
 #define lis_solver_set_optionC_f F77_FUNC_(lis_solver_set_optionc_f, LIS_SOLVER_SET_OPTIONC_F) 
-#define lis_solve_kernel_f F77_FUNC_(lis_solve_kernel_f, LIS_SOLVE_KERNEL_F) 
+#define lis_solve_kernel_f F77_FUNC_(lis_solve_kernel_f, LIS_SOLVE_KERNEL_F)
+#define lis_solver_get_status_f F77_FUNC_(lis_solver_get_status_f, LIS_SOLVER_GET_STATUS_F) 
 
 /**************/
 /* SYSTEM     */
