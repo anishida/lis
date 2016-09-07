@@ -1,3 +1,7 @@
+Version 1.6.3  September 7, 2016
+
+  - Added support for lis_solver_get_status_f() (thanks to Alessandro Brovelli).
+
 Version 1.6.2  September 6, 2016
 
   - Fixed complex related bug in test4f.F.
