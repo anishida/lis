@@ -272,4 +272,16 @@ void lis_solver_get_preconname_f(LIS_INT *solver, char *name, LIS_INT *ierr, LIS
 	return;
 }
 
+#undef __FUNC__
+#define __FUNC__ "lis_solver_get_status_f"
+void lis_solver_get_status_f(LIS_SOLVER_F *solver, LIS_INT *status, LIS_INT *ierr)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	*ierr = lis_solver_get_status((LIS_SOLVER)LIS_V2P(solver),status);
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
 #endif
