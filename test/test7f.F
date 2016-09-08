@@ -34,24 +34,27 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       LIS_COMPLEX z
       LIS_VECTOR v
       LIS_INTEGER n,ln,comm_world,ierr
+      LIS_REAL nrm2
 
-      call lis_initialize(ierr)
-
-      n = 12
+      n = 10
       ln = 0
       comm_world = LIS_COMM_WORLD      
 
-      z = (1.2, 3.4);
+      z = (1.0, 2.0);
 
       write(*,*) 'complex number z = ', real(z), '+', imag(z), ' * I'
 
+#ifdef COMPLEX      
+      call lis_initialize(ierr)
       call lis_vector_create(comm_world,v,ierr)
       call lis_vector_set_size(v,ln,n,ierr)
       call lis_vector_set_all(z,v,ierr)
       call lis_vector_print(v,ierr)
+      call lis_vector_nrm2(v,nrm2,ierr)
+      write(*,*) '2-norm of v = ', nrm2
       call lis_vector_destroy(v,ierr)
-
       call lis_finalize(ierr)
+#endif      
 
       stop
       end

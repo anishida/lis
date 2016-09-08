@@ -46,14 +46,14 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	LIS_COMPLEX z;
 	LIS_VECTOR v;
 	LIS_INT n,ln;
-
-	lis_initialize(&argc, &argv);
+	LIS_REAL nrm2;
 
 #ifdef _Complex_I
-	z = 1.2 + 3.4 * _Complex_I;
+	z = 1.0 + 2.0 * _Complex_I;
 #else
-	z[0] = 1.2;
-	z[1] = 3.4;
+	z[0] = 1.0;
+	z[1] = 2.0;
+	
 #endif
 
 #ifdef HAVE_COMPLEX_H
@@ -78,16 +78,26 @@ LIS_INT main(LIS_INT argc, char* argv[])
 #endif
 #endif
 
-	n = 12;
+#ifdef _COMPLEX	
+	lis_initialize(&argc, &argv);
+
+	n = 10;
 	ln = 0;
 
 	lis_vector_create(LIS_COMM_WORLD,&v);
 	lis_vector_set_size(v,ln,n);
 	lis_vector_set_all(z,v);
 	lis_vector_print(v);
-	lis_vector_destroy(v);	
+	lis_vector_nrm2(v,&nrm2);
+#ifdef _LONG__DOUBLE
+	printf("2-norm of v = %Lf\n", nrm2);
+#else
+	printf("2-norm of v = %f\n", nrm2);
+#endif								 
+	lis_vector_destroy(v);
 
 	lis_finalize();
+#endif	
 
 	return 0;
 }

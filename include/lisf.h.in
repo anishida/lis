@@ -434,7 +434,7 @@
 #define LIS_PRECON_CREATE lis_precon_create_f
 
 #define lis_solver_get_status lis_solver_get_status_f
-#define LIS_SOLVER_GET_PRECON lis_solver_get_status_f
+#define LIS_SOLVER_GET_STATUS lis_solver_get_status_f
 
 /*NEH support for extended "solve_kernel" workflow*/
 #define lis_precon_psd_create lis_precon_psd_create_f
