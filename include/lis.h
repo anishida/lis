@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"1.6.3"
+#define LIS_VERSION	"1.6.4"
 /**************************************/
 #include <stdio.h>
 #ifdef HAVE_COMPLEX_H
