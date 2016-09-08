@@ -1,7 +1,7 @@
 Version 1.6.4  September 8, 2016
 
   - Fixed bug in lisf.h.in.
-  - Fixed bug in test7.c and test7f.F.
+  - Updated test7.c and test7f.F.
 
 Version 1.6.3  September 7, 2016
 
