@@ -91,8 +91,10 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	lis_vector_nrm2(v,&nrm2);
 #ifdef _LONG__DOUBLE
 	printf("2-norm of v = %Lf\n", nrm2);
+	printf("abs(z) = %Lf\n", fabs(z));
 #else
 	printf("2-norm of v = %f\n", nrm2);
+	printf("abs(z) = %f\n", fabs(z));	
 #endif								 
 	lis_vector_destroy(v);
 
