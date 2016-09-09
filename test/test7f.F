@@ -52,6 +52,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       call lis_vector_print(v,ierr)
       call lis_vector_nrm2(v,nrm2,ierr)
       write(*,*) '2-norm of v = ', nrm2
+      write(*,*) 'abs(z) = ', abs(z)      
       call lis_vector_destroy(v,ierr)
       call lis_finalize(ierr)
 #endif      

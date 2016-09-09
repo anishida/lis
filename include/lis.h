@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"1.6.4"
+#define LIS_VERSION	"1.6.5"
 /**************************************/
 #include <stdio.h>
 #ifdef HAVE_COMPLEX_H
@@ -297,6 +297,7 @@ typedef long double LIS_COMPLEX[2];
 #endif
 #if defined(_COMPLEX)
 typedef LIS_COMPLEX LIS_SCALAR;
+#define fabsl(x) cabsl(x)
 #define acos(x) cacosl(x)
 #define acosh(x) cacoshl(x)
 #define asin(x) casinl(x)
@@ -346,6 +347,7 @@ typedef double LIS_COMPLEX[2];
 #endif
 #if defined(_COMPLEX)
 typedef LIS_COMPLEX LIS_SCALAR;
+#define fabs(x) cabs(x)
 #define acos(x) cacos(x)
 #define acosh(x) cacosh(x)
 #define asin(x) casin(x)
