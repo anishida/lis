@@ -1,3 +1,4 @@
+
 /* Copyright (C) 2005 The Scalable Software Infrastructure Project. All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -43,7 +44,7 @@
 #define __FUNC__ "main"
 LIS_INT main(LIS_INT argc, char* argv[])
 {
-	LIS_COMPLEX z;
+	LIS_COMPLEX z,dot;
 	LIS_VECTOR v;
 	LIS_INT n,ln;
 	LIS_REAL nrm2;
@@ -53,9 +54,8 @@ LIS_INT main(LIS_INT argc, char* argv[])
 #else
 	z[0] = 1.0;
 	z[1] = 2.0;
-	
 #endif
-
+	
 #ifdef HAVE_COMPLEX_H
 #ifdef _LONG__DOUBLE
 	printf("complex number z = %Lf + %Lf * I\n", creall(z), cimagl(z));
@@ -80,24 +80,25 @@ LIS_INT main(LIS_INT argc, char* argv[])
 
 #ifdef _COMPLEX	
 	lis_initialize(&argc, &argv);
-
 	n = 10;
 	ln = 0;
-
 	lis_vector_create(LIS_COMM_WORLD,&v);
 	lis_vector_set_size(v,ln,n);
 	lis_vector_set_all(z,v);
+	printf("complex vector v =\n");	
 	lis_vector_print(v);
+	lis_vector_dot(v,v,&dot);
 	lis_vector_nrm2(v,&nrm2);
 #ifdef _LONG__DOUBLE
+	printf("inner product (v,v) = %Lf + %Lf * I\n", creall(dot), cimagl(dot));
 	printf("2-norm of v = %Lf\n", nrm2);
 	printf("abs(z) = %Lf\n", fabs(z));
 #else
+	printf("inner product (v,v) = %f + %f * I\n", creal(dot), cimag(dot));
 	printf("2-norm of v = %f\n", nrm2);
 	printf("abs(z) = %f\n", fabs(z));	
-#endif								 
+#endif
 	lis_vector_destroy(v);
-
 	lis_finalize();
 #endif	
 

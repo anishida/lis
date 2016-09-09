@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"1.6.5"
+#define LIS_VERSION	"1.6.6"
 /**************************************/
 #include <stdio.h>
 #ifdef HAVE_COMPLEX_H
@@ -297,7 +297,6 @@ typedef long double LIS_COMPLEX[2];
 #endif
 #if defined(_COMPLEX)
 typedef LIS_COMPLEX LIS_SCALAR;
-#define fabsl(x) cabsl(x)
 #define acos(x) cacosl(x)
 #define acosh(x) cacoshl(x)
 #define asin(x) casinl(x)
@@ -307,8 +306,9 @@ typedef LIS_COMPLEX LIS_SCALAR;
 #define cos(x) ccosl(x)
 #define cosh(x) ccoshl(x)
 #define exp(x) cexpl(x)
+#define fabs(x) cabsl(x)
 #define log(x) clogl(x)
-#define onj(x) conjl(x)
+#define conj(x) conjl(x)
 #define pow(x,y) cpowl(x,y)
 #define proj(x) cprojl(x)
 #define sin(x) csinl(x)
@@ -347,7 +347,6 @@ typedef double LIS_COMPLEX[2];
 #endif
 #if defined(_COMPLEX)
 typedef LIS_COMPLEX LIS_SCALAR;
-#define fabs(x) cabs(x)
 #define acos(x) cacos(x)
 #define acosh(x) cacosh(x)
 #define asin(x) casin(x)
@@ -357,8 +356,8 @@ typedef LIS_COMPLEX LIS_SCALAR;
 #define cos(x) ccos(x)
 #define cosh(x) ccosh(x)
 #define exp(x) cexp(x)
+#define fabs(x) cabs(x)
 #define log(x) clog(x)
-#define onj(x) conj(x)
 #define pow(x,y) cpow(x,y)
 #define proj(x) cproj(x)
 #define sin(x) csin(x)

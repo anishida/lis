@@ -31,7 +31,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       
 #include "lisf.h"
 
-      LIS_COMPLEX z
+      LIS_COMPLEX z,dot
       LIS_VECTOR v
       LIS_INTEGER n,ln,comm_world,ierr
       LIS_REAL nrm2
@@ -41,7 +41,6 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       comm_world = LIS_COMM_WORLD      
 
       z = (1.0, 2.0);
-
       write(*,*) 'complex number z = ', real(z), '+', imag(z), ' * I'
 
 #ifdef COMPLEX      
@@ -49,8 +48,11 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       call lis_vector_create(comm_world,v,ierr)
       call lis_vector_set_size(v,ln,n,ierr)
       call lis_vector_set_all(z,v,ierr)
+      write(*,*) 'complex vector v = '
       call lis_vector_print(v,ierr)
+      call lis_vector_dot(v,v,dot,ierr)      
       call lis_vector_nrm2(v,nrm2,ierr)
+      write(*,*) 'inner product (v,v) = ', dot
       write(*,*) '2-norm of v = ', nrm2
       write(*,*) 'abs(z) = ', abs(z)      
       call lis_vector_destroy(v,ierr)
