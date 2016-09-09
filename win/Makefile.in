@@ -9,8 +9,8 @@ RM = del
 
 # See win32.mak for details. 
 
-!include <win32.mak>
-#!include <C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\Include\win32.mak>
+#!include <win32.mak>
+!include <C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\Include\win32.mak>
 
 
 # Configuration for Microsoft Visual C++
@@ -94,8 +94,8 @@ CFLAGS = $(CFLAGS) -DUSE_SAAMG
 # Configuration for 64bit integer
 
 !ifdef longlong
-CFLAGS = $(CFLAGS) -D_LONGLONG
-FFLAGS = $(FFLAGS) -DLONGLONG 
+CFLAGS = $(CFLAGS) -D_LONG__LONG
+FFLAGS = $(FFLAGS) -DLONG__LONG 
 !ifdef intel
 FFLAGS = $(FFLAGS) -integer-size:64
 !endif
