@@ -413,6 +413,18 @@ void lis_vector_reciprocal_f(LIS_VECTOR_F *x, LIS_INT *ierr)
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_vector_conjugate_f"
+void lis_vector_conjugate_f(LIS_VECTOR_F *x, LIS_INT *ierr)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	*ierr = lis_vector_conjugate((LIS_VECTOR)LIS_V2P(x));
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_vector_shift_f"
 void lis_vector_shift_f(LIS_SCALAR *alpha, LIS_VECTOR_F *x, LIS_INT *ierr)
 {

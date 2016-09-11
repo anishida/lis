@@ -50,6 +50,9 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       call lis_vector_set_all(z,v,ierr)
       write(*,*) 'complex vector v = '
       call lis_vector_print(v,ierr)
+      call lis_vector_conjugate(v,ierr)
+      write(*,*) 'conj(v) = '      
+      call lis_vector_print(v,ierr)      
       call lis_vector_dot(v,v,dot,ierr)      
       call lis_vector_nrm2(v,nrm2,ierr)
       write(*,*) 'inner product (v,v) = ', dot

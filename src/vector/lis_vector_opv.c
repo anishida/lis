@@ -53,6 +53,7 @@
  * lis_vector_set_all		x_i <- alpha
  * lis_vector_abs		x_i <- |x_i|
  * lis_vector_reciprocal	x_i <- 1 / x_i
+ * lis_vector_conjugate		x_i <- conj(x_i)
  * lis_vector_shift		x_i <- alpha + x_i
  * lis_vector_cgs		classical Gram-Schmidt
  ********************************************************/
@@ -446,6 +447,41 @@ LIS_INT lis_vector_reciprocal(LIS_VECTOR vx)
 	for(i=0; i<n; i++)
 	{
 		x[i] = 1.0 / x[i];
+	}
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+
+/********************/
+/* x_i <- conj(x_i) */
+/********************/
+#undef __FUNC__
+#define __FUNC__ "lis_vector_conjugate"
+LIS_INT lis_vector_conjugate(LIS_VECTOR vx)
+{
+	LIS_INT i,n;
+	LIS_SCALAR *x;
+
+	LIS_DEBUG_FUNC_IN;
+
+	x = vx->value;
+	n = vx->n;
+	#ifdef USE_VEC_COMP
+    #pragma cdir nodep
+	#endif
+	#ifdef _OPENMP
+	#pragma omp parallel for private(i)
+	#endif
+	for(i=0; i<n; i++)
+	{
+#ifdef _COMPLEX	  
+#ifdef _LONG__DOUBLE
+		x[i] = conjl(x[i]);
+#else
+		x[i] = conj(x[i]);
+#endif
+#endif		
 	}
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
