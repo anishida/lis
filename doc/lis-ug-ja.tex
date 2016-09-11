@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis ユーザガイド}\\
-バージョン 1.6.6
+バージョン 1.6.7
 \end{flushleft}
 
 \vspace*{2cm}
@@ -5170,6 +5170,27 @@ DNS形式の配列を行列$A$に関連付ける.
 \item[\tt ierr] リターンコード
 \end{namelist}
 
+\subsubsection{lis\_vector\_conjugate}
+\begin{screen}
+\verb|C       LIS_INT lis_vector_conjugate(LIS_VECTOR x)|\\
+\verb|Fortran subroutine lis_vector_conjugate(LIS_VECTOR x, LIS_INTEGER ierr)|
+\end{screen}
+{\bf 機能}\\
+\indent
+ベクトル$x$の要素の共役複素数を求める.
+\\ \\
+\noindent
+{\bf 入力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt x] ベクトル
+\end{namelist}
+{\bf 出力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt x] 各要素の共役複素数を格納したベクトル
+\item[\tt ierr] リターンコード
+\end{namelist}
+
+\newpage
 \subsubsection{lis\_vector\_shift}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_shift(LIS_SCALAR alpha, LIS_VECTOR x)|\\
@@ -5192,7 +5213,6 @@ DNS形式の配列を行列$A$に関連付ける.
 \item[\tt ierr] リターンコード
 \end{namelist}
 
-\newpage
 \subsubsection{lis\_vector\_dot}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_dot(LIS_VECTOR x, LIS_VECTOR y, LIS_SCALAR *value)|
@@ -5214,6 +5234,7 @@ DNS形式の配列を行列$A$に関連付ける.
 \item[\tt ierr] リターンコード
 \end{namelist}
 
+\newpage
 \subsubsection{lis\_vector\_nrm1}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_nrm1(LIS_VECTOR x, LIS_REAL *value)|\\
@@ -5234,7 +5255,6 @@ DNS形式の配列を行列$A$に関連付ける.
 \item[\tt ierr] リターンコード
 \end{namelist}
 
-\newpage
 \subsubsection{lis\_vector\_nrm2}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_nrm2(LIS_VECTOR x, LIS_REAL *value)|\\
@@ -5255,6 +5275,7 @@ DNS形式の配列を行列$A$に関連付ける.
 \item[\tt ierr] リターンコード
 \end{namelist}
 
+\newpage
 \subsubsection{lis\_vector\_nrmi}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_nrmi(LIS_VECTOR x, LIS_REAL *value)|\\
@@ -5275,7 +5296,6 @@ DNS形式の配列を行列$A$に関連付ける.
 \item[\tt ierr] リターンコード
 \end{namelist}
 
-\newpage
 \subsubsection{lis\_vector\_sum}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_sum(LIS_VECTOR x, LIS_SCALAR *value)|\\
