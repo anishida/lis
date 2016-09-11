@@ -87,6 +87,9 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	lis_vector_set_all(z,v);
 	printf("complex vector v =\n");	
 	lis_vector_print(v);
+	lis_vector_conjugate(v);
+	printf("conj(v) =\n");		
+	lis_vector_print(v);	
 	lis_vector_dot(v,v,&dot);
 	lis_vector_nrm2(v,&nrm2);
 #ifdef _LONG__DOUBLE

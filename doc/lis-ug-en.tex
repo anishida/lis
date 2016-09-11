@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.6.6
+Version 1.6.7
 \end{flushleft}
 
 \vspace*{2cm}
@@ -5276,6 +5276,27 @@ Get the reciprocal values of the elements of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
+\subsubsection{lis\_vector\_conjugate}
+\begin{screen}
+\verb|C       LIS_INT lis_vector_conjugate(LIS_VECTOR x)|\\
+\verb|Fortran subroutine lis_vector_conjugate(LIS_VECTOR x, LIS_INTEGER ierr)|
+\end{screen}
+{\bf Description}\\
+\indent
+Get the conjugate complex values of the elements of vector $x$.
+\\ \\
+\noindent
+{\bf Input}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt x] The vector
+\end{namelist}
+{\bf Output}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt x] The vector that stores the conjugate complex values
+\item[\tt ierr] The return code
+\end{namelist}
+
+\newpage
 \subsubsection{lis\_vector\_shift}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_shift(LIS_SCALAR alpha, LIS_VECTOR x)|\\
@@ -5298,7 +5319,6 @@ Get the shifted values of the elements of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-\newpage
 \subsubsection{lis\_vector\_dot}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_dot(LIS_VECTOR x, LIS_VECTOR y, LIS_SCALAR *value)|
@@ -5320,6 +5340,7 @@ Calculate the inner product $x^{T}y$.
 \item[\tt ierr] The return code
 \end{namelist}
 
+\newpage
 \subsubsection{lis\_vector\_nrm1}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_nrm1(LIS_VECTOR x, LIS_SCALAR *value)|\\
@@ -5340,7 +5361,6 @@ Calculate the 1-norm of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-\newpage
 \subsubsection{lis\_vector\_nrm2}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_nrm2(LIS_VECTOR x, LIS_SCALAR *value)|\\
@@ -5361,6 +5381,7 @@ Calculate the 2-norm of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
+\newpage
 \subsubsection{lis\_vector\_nrmi}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_nrmi(LIS_VECTOR x, LIS_SCALAR *value)|\\
@@ -5381,7 +5402,6 @@ Calculate the infinity norm of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-\newpage
 \subsubsection{lis\_vector\_sum}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_sum(LIS_VECTOR x, LIS_SCALAR *value)|\\

@@ -1,6 +1,8 @@
-Authors of Lis (reachable at devel **at** ssisc.org):
+Authors of Lis (reachable at devel **at** ssisc.org) are as follows:
 
 NISHIDA, Akira 		author of version 1.2-1.5, former CREST team director
 KOTAKEMORI, Hisashi	author of version 1.0-1.1
 FUJII, Akihiro 		author of SA-AMG preconditioner
 HASEGAWA, Hidehiko  	former CREST subteam director
+
+Other contributers are listed in ChangeLog.

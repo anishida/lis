@@ -360,6 +360,9 @@
 #define lis_vector_reciprocal lis_vector_reciprocal_f
 #define LIS_VECTOR_RECIPROCAL lis_vector_reciprocal_f
 
+#define lis_vector_conjugate lis_vector_conjugate_f
+#define LIS_VECTOR_CONJUGATE lis_vector_conjugate_f
+
 #define lis_vector_shift lis_vector_shift_f
 #define LIS_VECTOR_SHIFT lis_vector_shift_f
 
