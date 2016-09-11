@@ -1,3 +1,7 @@
+Version 1.6.7  September 11, 2016
+
+  - Added support for lis_vector_conjugate().
+
 Version 1.6.6  September 10, 2016
 
   - Fixed bug in win/Makefile.in.
