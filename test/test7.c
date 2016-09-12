@@ -103,7 +103,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 #endif
 	lis_vector_destroy(v);
 	lis_finalize();
-#endif	
+#endif
 
 	return 0;
 }
