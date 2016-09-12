@@ -1,3 +1,7 @@
+Version 1.6.8  September 12, 2016
+
+  - Fixed critical bug in lis_input_mm.c for reading symmetric matrices.
+
 Version 1.6.7  September 11, 2016
 
   - Added support for lis_vector_conjugate().
