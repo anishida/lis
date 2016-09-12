@@ -114,7 +114,6 @@ LIS_INT lis_input_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, L
 	LIS_INT	gn,n,is,ie;
 	LIS_INT	idx;
 	LIS_SCALAR val;
-	LIS_REAL re,im;
 	LIS_MM_VECFMT vecfmt;
 
 	LIS_DEBUG_FUNC_IN;
@@ -162,7 +161,6 @@ LIS_INT lis_input_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, L
 					LIS_SETERR_FIO;
 					return LIS_ERR_FILE_IO;
 				}
-
 #ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 				if( sscanf(buf, "%lld %Lg", &idx, &val) != 2 )
@@ -184,7 +182,7 @@ LIS_INT lis_input_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, L
 			idx--;
 			if( idx>=is && idx<ie )
 			{
-			  b->value[idx-is] = val;
+				b->value[idx-is] = val;
 			}
 		}
 	}
@@ -307,23 +305,11 @@ LIS_INT lis_input_mm_banner(FILE *file, LIS_INT *mmtype, LIS_INT *mmstruct)
 	{
 		*mmstruct = MM_SYMM;
 	}
-#ifdef _COMPLEX	
-	else if( strncmp(dstruct, MM_TYPE_HERM, strlen(MM_TYPE_HERM))==0)
-	{
-		*mmstruct = MM_HERM;
-	}
-	else
-	{
-		LIS_SETERR(LIS_ERR_FILE_IO,"Not general, symmetric or Hermitian\n");
-		return LIS_ERR_FILE_IO;
-	}
-#else
 	else
 	{
 		LIS_SETERR(LIS_ERR_FILE_IO,"Not general or symmetric\n");
 		return LIS_ERR_FILE_IO;
 	}
-#endif	
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 }
@@ -384,7 +370,7 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 	LIS_INT	*work;
 	LIS_INT	isb,isx,isbin;
 	LIS_SCALAR val;
-	LIS_REAL re,im;
+	LIS_REAL re,im;	
 	LIS_SCALAR *value;
 	LIS_MM_MATFMT matfmt;
 
@@ -522,7 +508,7 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 		}
 /*		if( val!=0.0 )*/
 		{
-		        if((mmstruct==MM_SYMM || mmstruct==MM_HERM ) && ridx!=cidx )
+			if( mmstruct==MM_SYMM && ridx!=cidx )
 			{
 				if( cidx>is && cidx<=ie ) work[cidx-is-1]++;
 			}
@@ -537,7 +523,7 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 	ptr[0] = 0;
 	for( i=0; i<n; i++ )
 	{
-		if( mmstruct==MM_SYMM || mmstruct==MM_HERM )
+		if( mmstruct==MM_SYMM )
 		{
 			ptr[i+1] += ptr[i] + work[i];
 		}
@@ -658,7 +644,7 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 		}
 		ridx--;
 		cidx--;
-		if( ridx==cidx && (( mmtype==MM_REAL && val==0.0 ) || ( mmtype==MM_COMPLEX && re==0.0 && im==0.0 )))
+		if( ridx==cidx && val==0.0 )
 		{
 #ifdef _LONG__LONG
 			printf("diagonal element is zero (i=%lld)\n",ridx);
@@ -680,24 +666,6 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 					else
 					  {
 					    value[ptr[cidx-is]+work[cidx-is]] = re + im * _Complex_I;
-					  }
-#endif					
-					index[ptr[cidx-is]+work[cidx-is]] = ridx;
-					work[cidx-is]++;
-				}
-			}
-			if( mmstruct==MM_HERM && ridx!=cidx )
-			{
-				if( cidx>=is && cidx<ie )
-				{
-				        if( mmtype==MM_REAL )
-					  {
-					    value[ptr[cidx-is]+work[cidx-is]] = val;
-					  }
-#ifdef _COMPLEX					
-					else
-					  {
-					    value[ptr[cidx-is]+work[cidx-is]] = re - im * _Complex_I;
 					  }
 #endif					
 					index[ptr[cidx-is]+work[cidx-is]] = ridx;
