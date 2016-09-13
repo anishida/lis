@@ -189,10 +189,11 @@ LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 		LIS_SETERR_FIO;
 		return LIS_ERR_FILE_IO;
 	}
+	RHSCRD = 0;
 #ifdef _LONG__LONG
-	if( sscanf(buf, "%14lld%14lld%14lld%14lld%14lld", &TOTCRD, &PTRCRD, &INDCRD, &VALCRD, &RHSCRD) != 5 )
+	if( sscanf(buf, "%14lld%14lld%14lld%14lld%14lld", &TOTCRD, &PTRCRD, &INDCRD, &VALCRD, &RHSCRD) < 4 )
 #else
-	if( sscanf(buf, "%14d%14d%14d%14d%14d", &TOTCRD, &PTRCRD, &INDCRD, &VALCRD, &RHSCRD) != 5 )
+	if( sscanf(buf, "%14d%14d%14d%14d%14d", &TOTCRD, &PTRCRD, &INDCRD, &VALCRD, &RHSCRD) < 4 )
 #endif
 	{
 		LIS_SETERR_FIO;
@@ -223,18 +224,24 @@ LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 	MXTYPE_F = mtx[0];
 	MXTYPE_S = mtx[1];
 	MXTYPE_T = mtx[2];
+#ifdef _COMPLEX	
+	if( mtx[0]!='r' && mtx[0]!='c' )
+	{
+		LIS_SETERR(LIS_ERR_FILE_IO,"Not real or complex\n");
+		return LIS_ERR_FILE_IO;
+	}
+#else
 	if( mtx[0]!='r' )
 	{
 		LIS_SETERR(LIS_ERR_FILE_IO,"Not real\n");
 		return LIS_ERR_FILE_IO;
 	}
-	/*
+#endif	
 	if( mtx[1]!='u' )
 	{
 		LIS_SETERR(LIS_ERR_FILE_IO,"Not unsymmetric\n");
 		return LIS_ERR_FILE_IO;
 	}
-	*/
 	if( mtx[2]!='a' )
 	{
 		LIS_SETERR(LIS_ERR_FILE_IO,"Not assembled\n");
@@ -383,6 +390,7 @@ LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 			    p += wval;			    
 			    value[k] = re + im * _Complex_I;
 			    k++;
+			    j++;
 			  }
 #endif
 			else

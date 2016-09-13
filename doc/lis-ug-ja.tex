@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis ユーザガイド}\\
-バージョン 1.6.8
+バージョン 1.6.9
 \end{flushleft}
 
 \vspace*{2cm}
@@ -8084,7 +8084,7 @@ J. Dongarra and M. Heroux.
 \section{ファイル形式}
 \label{sec:matinp}
 本節では, 本ライブラリで使用できるファイル形式について述べる.
-なお, Harwell-Boeing形式では行列が対称である場合にも
+なおHarwell-Boeing形式では, 行列が対称である場合にも
 上三角及び下三角要素の双方を格納する必要がある. 
 
 \subsection{拡張Matrix Market形式}
@@ -8180,9 +8180,9 @@ Harwell-Boeing形式では, CSC形式で行列を格納する.
 第3行 (A3,11X,4I14)
    1 -  3 行列の種類
             第1列: R Real matrix
-                   C Complex matrix (非対応)
+                   C Complex matrix
                    P Pattern only (非対応)
-            第2列: S Symmetric
+            第2列: S Symmetric (非対応)
                    U Unsymmetric
                    H Hermitian (非対応)
                    Z Skew symmetric (非対応)
