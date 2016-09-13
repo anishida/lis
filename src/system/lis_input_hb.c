@@ -224,11 +224,19 @@ LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 	MXTYPE_F = mtx[0];
 	MXTYPE_S = mtx[1];
 	MXTYPE_T = mtx[2];
+#ifdef _COMPLEX	
 	if( mtx[0]!='r' && mtx[0]!='c' )
 	{
 		LIS_SETERR(LIS_ERR_FILE_IO,"Not real or complex\n");
 		return LIS_ERR_FILE_IO;
 	}
+#else
+	if( mtx[0]!='r' )
+	{
+		LIS_SETERR(LIS_ERR_FILE_IO,"Not real\n");
+		return LIS_ERR_FILE_IO;
+	}
+#endif	
 	if( mtx[1]!='u' )
 	{
 		LIS_SETERR(LIS_ERR_FILE_IO,"Not unsymmetric\n");
