@@ -1,3 +1,8 @@
+Version 1.6.9  September 13, 2016
+
+  - Fixed bugs in lis_input_hb.c.
+  - Updated documents.
+
 Version 1.6.8  September 12, 2016
 
   - Fixed critical bug in lis_input_mm.c for reading symmetric matrices.
