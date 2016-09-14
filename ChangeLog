@@ -1,3 +1,8 @@
+Version 1.6.10  September 14, 2016
+
+  - Added support for outputting complex matrices.
+  - Added support for Hermitian matrices in Matrix Market format.
+
 Version 1.6.9  September 13, 2016
 
   - Fixed bugs in lis_input_hb.c.
