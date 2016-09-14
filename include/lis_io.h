@@ -42,7 +42,7 @@
 #define MM_COMPLEX 1
 #define MM_GENERAL 0
 #define MM_SYMM	1
-#define MM_HERM	1
+#define MM_HERM	2
 
 #define LISBanner "#LIS"
 #define ITBLBanner "#ITBL"

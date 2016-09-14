@@ -305,11 +305,23 @@ LIS_INT lis_input_mm_banner(FILE *file, LIS_INT *mmtype, LIS_INT *mmstruct)
 	{
 		*mmstruct = MM_SYMM;
 	}
+#ifdef _COMPLEX	
+	else if( strncmp(dstruct, MM_TYPE_HERM, strlen(MM_TYPE_HERM))==0)
+	{
+		*mmstruct = MM_HERM;
+	}
+	else
+	{
+		LIS_SETERR(LIS_ERR_FILE_IO,"Not general, symmetric, or Hermitian\n");
+		return LIS_ERR_FILE_IO;
+	}
+#else
 	else
 	{
 		LIS_SETERR(LIS_ERR_FILE_IO,"Not general or symmetric\n");
 		return LIS_ERR_FILE_IO;
 	}
+#endif	
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 }
@@ -508,7 +520,11 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 		}
 /*		if( val!=0.0 )*/
 		{
+#ifdef _COMPLEX		  
+			if((mmstruct==MM_SYMM || mmstruct==MM_HERM) && ridx!=cidx )
+#else
 			if( mmstruct==MM_SYMM && ridx!=cidx )
+#endif			  
 			{
 				if( cidx>is && cidx<=ie ) work[cidx-is-1]++;
 			}
@@ -523,7 +539,11 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 	ptr[0] = 0;
 	for( i=0; i<n; i++ )
 	{
+#ifdef _COMPLEX	  
+		if( mmstruct==MM_SYMM || mmstruct==MM_HERM )
+#else
 		if( mmstruct==MM_SYMM )
+#endif		  
 		{
 			ptr[i+1] += ptr[i] + work[i];
 		}
@@ -654,7 +674,11 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 		}
 /*		if( val!=0.0 )*/
 		{
+#ifdef _COMPLEX		  
+			if((mmstruct==MM_SYMM || mmstruct==MM_HERM) && ridx!=cidx )
+#else
 			if( mmstruct==MM_SYMM && ridx!=cidx )
+#endif			  
 			{
 				if( cidx>=is && cidx<ie )
 				{
@@ -679,7 +703,11 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 				    value[ptr[ridx-is]+work[ridx-is]] = val;
 				  }
 #ifdef _COMPLEX				
-				else
+				else if( mmstruct==MM_HERM )
+				  {
+				    value[ptr[ridx-is]+work[ridx-is]] = re - im * _Complex_I;
+				  }
+				else 
 				  {
 				    value[ptr[ridx-is]+work[ridx-is]] = re + im * _Complex_I;
 				  }

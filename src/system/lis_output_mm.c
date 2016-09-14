@@ -494,8 +494,11 @@ LIS_INT lis_output_mm_header(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT f
 		LIS_SETERR1(LIS_ERR_FILE_IO,"cannot open file %s\n",path);
 		return LIS_ERR_FILE_IO;
 	}
+#ifdef _COMPLEX	
+	fprintf(*file, "%%%%MatrixMarket matrix coordinate complex general\n");
+#else
 	fprintf(*file, "%%%%MatrixMarket matrix coordinate real general\n");
-
+#endif	
 	if( format==LIS_FMT_MM )
 	{
 		if( isb==0 && isx==0 )
