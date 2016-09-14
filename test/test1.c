@@ -122,6 +122,9 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	err = lis_vector_create(LIS_COMM_WORLD,&b); CHKERR(err);
 	err = lis_vector_create(LIS_COMM_WORLD,&x); CHKERR(err);
 	err = lis_input(A,b,x,argv[1]);
+	/*
+	lis_output_matrix(A,LIS_FMT_MM,"matrix.out");
+	*/
 	CHKERR(err);
 
 	err = lis_matrix_duplicate(A,&A0);
