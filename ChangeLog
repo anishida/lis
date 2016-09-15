@@ -1,7 +1,7 @@
 Version 1.6.10  September 14, 2016
 
   - Added support for outputting complex matrices.
-  - Added support for Hermitian matrices in Matrix Market format.
+  - Added support for reading Hermitian matrices.
 
 Version 1.6.9  September 13, 2016
 
