@@ -180,8 +180,10 @@ LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 	}
 	strncpy(title, buf    ,72); title[72] = '\0';
 	strncpy(key  ,&buf[72], 8); key[8]    = '\0';
+	/*
 	printf("title: %s\n",title);
 	printf("key  : %s\n",key);
+	*/
 
 	/* Line 2 */
 	if( fgets(buf, BUFSIZE, file) == NULL )
@@ -199,11 +201,13 @@ LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 		LIS_SETERR_FIO;
 		return LIS_ERR_FILE_IO;
 	}
+	/*
 #ifdef _LONG__LONG
 	printf("%14lld%14lld%14lld%14lld%14lld\n",TOTCRD, PTRCRD, INDCRD, VALCRD, RHSCRD);
 #else
 	printf("%14d%14d%14d%14d%14d\n",TOTCRD, PTRCRD, INDCRD, VALCRD, RHSCRD);
 #endif
+	*/
 
 	/* Line 3 */
 	if( fgets(buf, BUFSIZE, file) == NULL )
@@ -253,9 +257,9 @@ LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 		return LIS_ERR_FILE_IO;
 	}
 #ifdef _LONG__LONG
-	printf("%c%c%c %lld %lld %lld %lld\n",MXTYPE_F, MXTYPE_S, MXTYPE_T, NROW, NCOL, NNZERO, NELTVL);
+	if( my_rank==0 ) printf("matrix size = %lld x %lld (%lld nonzero entries)\n\n",NROW,NCOL,NNZERO);
 #else
-	printf("%c%c%c %d %d %d %d\n",MXTYPE_F, MXTYPE_S, MXTYPE_T, NROW, NCOL, NNZERO, NELTVL);
+	if( my_rank==0 ) printf("matrix size = %d x %d (%d nonzero entries)\n\n",NROW,NCOL,NNZERO);
 #endif
 
 	/* Line 4 */
@@ -268,6 +272,7 @@ LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 	lis_input_hb_get_fmt(&buf[16],16,&iind,&wind);
 	lis_input_hb_get_fmt(&buf[32],20,&ival,&wval);
 	lis_input_hb_get_fmt(&buf[52],20,&irhs,&wrhs);
+	/*
 #ifdef _LONG__LONG
 	printf("%lld %lld %lld %lld\n",iptr,iind,ival,irhs);
 	printf("%lld %lld %lld %lld\n",wptr,wind,wval,wrhs);
@@ -275,6 +280,7 @@ LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 	printf("%d %d %d %d\n",iptr,iind,ival,irhs);
 	printf("%d %d %d %d\n",wptr,wind,wval,wrhs);
 #endif
+	*/
 
 	/* Line 5 */
 	if( RHSCRD!=0 )
@@ -304,11 +310,13 @@ LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 		RHSTYP_F = mtx[0];
 		RHSTYP_S = mtx[1];
 		RHSTYP_T = mtx[2];
+		/*
 #ifdef _LONG__LONG
 		printf("%c%c%c %lld %lld\n",RHSTYP_F, RHSTYP_S, RHSTYP_T, NRHS, NRHSIX);
 #else
 		printf("%c%c%c %d %d\n",RHSTYP_F, RHSTYP_S, RHSTYP_T, NRHS, NRHSIX);
 #endif
+		*/
 	}
 
 	err = lis_matrix_set_size(A,0,NROW);

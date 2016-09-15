@@ -9,33 +9,33 @@ RM = del
 
 # See win32.mak for details. 
 
-!include <win32.mak>
-#!include <C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\Include\win32.mak>
+#!include <win32.mak>
+!include <C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\Include\win32.mak>
 
 
 # Configuration for Microsoft Visual C++
 
 CC = cl
-CFLAGS = $(cflags) $(USER_CFLAGS) -DHAVE_CONFIG_WIN_H -I ../include -w 
-LDFLAGS = $(conlflags) $(USER_LDFLAGS) 
+CFLAGS = $(cflags) -DHAVE_CONFIG_WIN_H -I ../include -w 
 
+!ifdef msvcrt
+CFLAGS = $(CFLAGS) $(cvarsdll)
+LDFLAGS = $(LDFLAGS) $(conlflags) $(conlibsdll)
 !ifdef omp
-!ifdef debug
-CFLAGS = $(CFLAGS) $(cdebug) $(cvarsmt) -openmp
-LDFLAGS = $(LDFLAGS) $(ldebug) $(conlibsmt)
+CFLAGS = $(CFLAGS) -openmp
+!endif
 !else
-CFLAGS = $(CFLAGS) $(cvarsmt) -MT -openmp 
+!ifdef omp
+CFLAGS = $(CFLAGS) $(cvarsmt) -openmp
 LDFLAGS = $(LDFLAGS) $(conlibsmt) 
-!endif
 !else
-!ifdef debug
-CFLAGS = $(CFLAGS) $(cdebug) $(cvars) 
-LDFLAGS = $(LDFLAGS) $(ldebug) $(conlibs)
-!else
-CFLAGS = $(CFLAGS) $(cvars) -ML -MT
-LDFLAGS = $(LDFLAGS) $(conlibs) 
+CFLAGS = $(CFLAGS) $(cvars)
+LDFLAGS = $(LDFLAGS) $(conlibs)
 !endif
 !endif
+
+CFLAGS = $(cdebug) $(CFLAGS) $(USER_CFLAGS)
+LDFLAGS = $(ldebug) $(conlflags) $(LDFLAGS) $(USER_LDFLAGS)
 
 
 # Configuration for Intel FPU
@@ -53,17 +53,9 @@ CFLAGS = $(cflags) $(USER_CFLAGS) \
        -O3 -Qansi_alias -DHAVE_CONFIG_WIN_H -I ../include -w 
 
 !ifdef omp
-!ifdef debug
 CFLAGS = $(CFLAGS) $(cdebug) $(cvarsmt) -Qopenmp -Qopenmp-lib:compat
 !else
-CFLAGS = $(CFLAGS) $(cvarsmt) -MT -Qopenmp -Qopenmp-lib:compat 
-!endif
-!else
-!ifdef debug
 CFLAGS = $(CFLAGS) $(cdebug) $(cvars)
-!else
-CFLAGS = $(CFLAGS) $(cvars) -MT 
-!endif
 !endif
 !endif
 
@@ -111,6 +103,14 @@ FFLAGS = $(FFLAGS) -DLONG__DOUBLE
 CFLAGS = $(CFLAGS) -Qlong-double
 FFLAGS = $(FFLAGS) -real-size:128
 !endif
+!endif
+
+
+# Configuration for complex
+
+!ifdef complex
+CFLAGS = $(CFLAGS) -D_COMPLEX
+FFLAGS = $(FFLAGS) -DCOMPLEX
 !endif
 
 
