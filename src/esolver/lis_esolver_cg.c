@@ -554,6 +554,9 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
       
     }
 
+  lis_precon_destroy(precon);
+  lis_solver_destroy(solver);
+
   esolver->iter[0]    = iter;
   esolver->resid[0]   = resid;
   esolver->evalue[0]  = evalue;
