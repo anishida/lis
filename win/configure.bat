@@ -8,6 +8,7 @@ rem   Default Configurations
 @echo. >> Makefile
 @echo. 
 @set prefix=
+@set msvcrt=0
 @set omp=0
 @set intelc=0
 @set fortran=0
@@ -17,6 +18,7 @@ rem   Default Configurations
 @set saamg=0
 @set longlong=0
 @set longdouble=0
+@set complex=0
 @set debug=0
 @set noifpu=0
 @set usercflags=
@@ -29,6 +31,7 @@ rem   Build Options
 @if "%1" == "-h" goto usage
 @if "%1" == "--help" goto usage
 @if "%1" == "--prefix" goto setprefix
+@if "%1" == "--msvcrt" goto setmsvcrt
 @if "%1" == "--enable-omp" goto setomp
 @if "%1" == "--enable-mpi" goto setmpi
 @if "%1" == "--enable-mpich" goto setmpich
@@ -38,6 +41,7 @@ rem   Build Options
 @if "%1" == "--enable-saamg" goto setsaamg
 @if "%1" == "--enable-longlong" goto setlonglong
 @if "%1" == "--enable-longdouble" goto setlongdouble
+@if "%1" == "--enable-complex" goto setcomplex
 @if "%1" == "--enable-debug" goto setdebug
 @if "%1" == "--disable-ifpu" goto setnoifpu
 @if "%1" == "--cflags" goto setusercflags
@@ -52,6 +56,7 @@ rem   Build Options
 @echo Options:
 @echo.	
 @echo.	--prefix PREFIX		Install Lis in directory PREFIX
+@echo.	--msvcrt		Use msvcrt*.dll instead of static crt
 @echo.	--enable-omp		Build with OpenMP library
 @echo.	--enable-mpi		Build with Microsoft MPI library
 @echo.	--enable-mpich		Build with MPICH library
@@ -73,6 +78,13 @@ rem   Build Options
 
 @shift
 @set prefix=%1
+@shift
+@goto again
+
+:setmsvcrt
+
+@shift
+@set msvcrt=1
 @shift
 @goto again
 
@@ -132,6 +144,12 @@ rem   Build Options
 @shift
 @goto again
 
+:setcomplex
+
+@set complex=1
+@shift
+@goto again
+
 :setdebug
 
 @set debug=1
@@ -147,21 +165,21 @@ rem   Build Options
 :setusercflags
 
 @shift
-@set usercflags=%1
+@set usercflags=%~1
 @shift
 @goto again
 
 :setuserfflags
 
 @shift
-@set userfflags=%1
+@set userfflags=%~1
 @shift
 @goto again
 
 :setuserldflags
 
 @shift
-@set userldflags=%1
+@set userldflags=%~1
 @shift
 @goto again
 
@@ -174,6 +192,15 @@ rem   Build Options
 @echo PREFIX=.. >> Makefile
 )
 @echo. >> Makefile
+
+@if (%msvcrt%) == (1) (
+@echo # Use msvcrt*.dll instead of static runtime library >> Makefile
+@echo msvcrt=1 >> Makefile
+@echo. >> Makefile
+@echo.	Use msvcrt*.dll instead of static crt	= yes
+) else (
+@echo.	Use msvcrt*.dll instead of static crt	= no
+)
 
 @if (%omp%) == (1) (
 @echo # Build with OpenMP library >> Makefile
@@ -256,12 +283,22 @@ rem   Build Options
 @echo.	Enable long double support		= no
 )
 
+@if (%complex%) == (1) (
+@echo # Enable complex support >> Makefile
+@echo complex=1 >> Makefile
+@echo. >> Makefile
+@echo.	Enable complex support			= yes
+) else (
+@echo.	Enable complex support			= no
+)
+
 @if (%debug%) == (1) (
-@echo # Enable Debugging >> Makefile
-@echo debug=1 >> Makefile
 @echo. >> Makefile
 @echo.	Enable debug mode			= yes
 ) else (
+@echo # Disable Debugging >> Makefile
+@echo NODEBUG=1 >> Makefile
+@echo. >> Makefile
 @echo.	Enable debug mode			= no
 )
 
