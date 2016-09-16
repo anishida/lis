@@ -66,6 +66,7 @@ rem   Build Options
 @echo.	--enable-saamg		Enable SA-AMG preconditioner
 @echo.	--enable-longlong	Enable 64bit integer support
 @echo.	--enable-longdouble	Enable long double support
+@echo.	--enable-complex	Complex scalar support (for Intel Compilers)
 @echo.	--enable-debug		Enable debugging
 @echo.	--disable-ifpu		Disable Intel FPU support
 @echo.	--cflags FLAG		Pass FLAG to C compiler
@@ -122,6 +123,7 @@ rem   Build Options
 :setfortran
 
 @set fortran=1
+@set intel=1
 @shift
 @goto again
 
@@ -283,13 +285,13 @@ rem   Build Options
 @echo.	Enable long double support		= no
 )
 
-@if (%complex%) == (1) (
-@echo # Enable complex support >> Makefile
+@if (%complex%) == (1) if (%intelc%) == (1) (
+@echo # Enable complex scalar support >> Makefile
 @echo complex=1 >> Makefile
 @echo. >> Makefile
-@echo.	Enable complex support			= yes
+@echo.	Enable complex scalar support		= yes
 ) else (
-@echo.	Enable complex support			= no
+@echo.	Enable complex scalar support		= no
 )
 
 @if (%debug%) == (1) (
