@@ -213,7 +213,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 	}
 
       /* h(j+1,j) = ||w||_2 */
-      lis_vector_nrm2(w, &h[j+1+j*ss]);
+      lis_vector_nrm2(w, (LIS_REAL *)&h[j+1+j*ss]);
 
       /* convergence check */
       if (fabs(h[j+1+j*ss])<tol) break;
