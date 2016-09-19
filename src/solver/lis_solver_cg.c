@@ -172,13 +172,7 @@ LIS_INT lis_cg(LIS_SOLVER solver)
 		ptime += lis_wtime() - time;
 
 		/* rho = <r,z> */
-#ifdef _COMPLEX
-		lis_vector_conjugate(r);
-#endif		
 		lis_vector_dot(r,z,&rho);
-#ifdef _COMPLEX		
-		lis_vector_conjugate(r);
-#endif		
 
 		/* beta = rho / rho_old */
 		beta = rho / rho_old;
@@ -190,13 +184,7 @@ LIS_INT lis_cg(LIS_SOLVER solver)
 		lis_matvec(A,p,q);
 		
 		/* dot_pq = <p,q> */
-#ifdef _COMPLEX		
-		lis_vector_conjugate(p);
-#endif		
 		lis_vector_dot(p,q,&dot_pq);
-#ifdef _COMPLEX		
-		lis_vector_conjugate(p);
-#endif		
 
 		/* breakdown check */
 		if( dot_pq==0.0 )
