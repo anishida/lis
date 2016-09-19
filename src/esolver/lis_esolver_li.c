@@ -227,7 +227,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
 	}
 
       /* beta(j) = ||r||_2 */
-      lis_vector_nrm2(r, &t[(j-1)*ss+j]);
+      lis_vector_nrm2(r, (LIS_REAL *)&t[(j-1)*ss+j]);
 
       /* convergence check */
       if (fabs(t[(j-1)*ss+j])<tol) break;  

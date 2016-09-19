@@ -229,7 +229,7 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 			}
 			/* h[i+1,i] = ||w||          */
 			/* v[i+1]   = w / h[i+1,i]   */
-			lis_vector_nrm2(v[i1v],&t);
+			lis_vector_nrm2(v[i1v],(LIS_REAL *)&t);
 			h[i1+iih] = t;
 			lis_vector_scale(1.0/t,v[i1v]);
 
@@ -1205,7 +1205,7 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 			}
 			/* h[i+1,i] = ||w||          */
 			/* v[i+1]   = w / h[i+1,i]   */
-			lis_vector_nrm2(v[i1v],&t);
+			lis_vector_nrm2(v[i1v],(LIS_REAL *)&t);
 			h[i1+iih] = t;
 			lis_vector_scale(1.0/t,v[i1v]);
 
