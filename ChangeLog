@@ -1,6 +1,6 @@
 Version 1.6.13  September 19, 2016
 
-  - Fixed complex related configuration in lis_esolver_cg.c.
+  - Fixed complex related configuration in lis_solver_cg.c.
 
 Version 1.6.12  September 16, 2016
 
