@@ -473,19 +473,16 @@ LIS_INT lis_vector_conjugate(LIS_VECTOR vx)
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)
 	#endif
+	for(i=0; i<n; i++)
+	{
 #ifdef _COMPLEX	  
 #ifdef _LONG__DOUBLE
-	for(i=0; i<n; i++)
-	{
 		x[i] = conjl(x[i]);
-	}
 #else
-	for(i=0; i<n; i++)
-	{
 		x[i] = conj(x[i]);
-	}
 #endif
-#endif		
+#endif
+	}
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 }
