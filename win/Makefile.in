@@ -108,7 +108,7 @@ FFLAGS = $(FFLAGS) -real-size:128
 # Configuration for complex
 
 !ifdef complex
-CFLAGS = $(CFLAGS) -D_COMPLEX
+CFLAGS = $(CFLAGS) -DHAVE_COMPLEX_H -D_COMPLEX
 FFLAGS = $(FFLAGS) -DCOMPLEX
 !endif
 
