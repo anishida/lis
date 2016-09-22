@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"1.6.16"
+#define LIS_VERSION	"1.6.17"
 /**************************************/
 #include <stdio.h>
 #ifdef HAVE_COMPLEX_H
@@ -654,14 +654,14 @@ struct LIS_SOLVER_STRUCT
 	LIS_MATRIX_DIAG WD;
 	LIS_PRECON precon;
 	LIS_VECTOR *work;
-	LIS_SCALAR *rhistory;
+	LIS_REAL *rhistory;
 	LIS_INT worklen;
 	LIS_INT options[LIS_OPTIONS_LEN];
 	LIS_SCALAR params[LIS_PARAMS_LEN];
 	LIS_INT retcode;
 	LIS_INT iter;
 	LIS_INT iter2;
-	LIS_SCALAR resid;
+	LIS_REAL resid;
 	double time;
 	double itime;
 	double ptime;
@@ -680,9 +680,9 @@ struct LIS_ESOLVER_STRUCT
         LIS_VECTOR x,xx,d; 
         LIS_SCALAR *evalue;
         LIS_VECTOR *evector;
-	LIS_SCALAR *resid;
+	LIS_REAL *resid;
 	LIS_VECTOR *work;
-	LIS_SCALAR *rhistory;
+	LIS_REAL *rhistory;
 	LIS_INT worklen;
 	LIS_INT options[LIS_EOPTIONS_LEN];
 	LIS_SCALAR params[LIS_EPARAMS_LEN];

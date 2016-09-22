@@ -255,8 +255,8 @@ LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER 
         LIS_INT	nesolver,niesolver,emaxiter; 
 	LIS_SCALAR *evalue;
 	LIS_VECTOR *evector;
-	LIS_SCALAR *resid;
-	LIS_SCALAR *rhistory;
+	LIS_REAL *resid;
+	LIS_REAL *rhistory;
 	LIS_INT	*iter,*iter2;
 	LIS_INT	err;
 	LIS_INT output;
@@ -386,7 +386,7 @@ LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER 
 
 	/* create residual norm array */
 	if( esolver->resid ) lis_free(esolver->resid);
-	resid = (LIS_SCALAR *)lis_malloc((ss+2)*sizeof(LIS_SCALAR),"lis_esolve::resid");
+	resid = (LIS_REAL *)lis_malloc((ss+2)*sizeof(LIS_REAL),"lis_esolve::resid");
 	if( resid==NULL )
 	{
 		LIS_SETERR_MEM((ss+2)*sizeof(LIS_SCALAR));
@@ -480,7 +480,7 @@ LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER 
 
 	/* create residual history array */
 	if( esolver->rhistory ) lis_free(esolver->rhistory);
-	rhistory = (LIS_SCALAR *)lis_malloc((emaxiter+2)*sizeof(LIS_SCALAR),"lis_esolve::rhistory");
+	rhistory = (LIS_REAL *)lis_malloc((emaxiter+2)*sizeof(LIS_REAL),"lis_esolve::rhistory");
 	if( rhistory==NULL )
 	{
 		LIS_SETERR_MEM((emaxiter+2)*sizeof(LIS_SCALAR));
