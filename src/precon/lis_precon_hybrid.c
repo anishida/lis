@@ -62,7 +62,7 @@ LIS_INT lis_precon_create_hybrid(LIS_SOLVER solver, LIS_PRECON precon)
 {
         LIS_INT	nsolver, maxiter, precision;
 	LIS_INT	err;
-	LIS_SCALAR *rhistory;
+	LIS_REAL *rhistory;
 	LIS_VECTOR xx;
 	LIS_SOLVER psolver;
 	LIS_MATRIX A;
@@ -120,7 +120,7 @@ LIS_INT lis_precon_create_hybrid(LIS_SOLVER solver, LIS_PRECON precon)
 	}
 
 	/* create residual history vector */
-	rhistory = (LIS_SCALAR *)lis_malloc((maxiter+2)*sizeof(LIS_SCALAR),"lis_precon_create_hybrid::rhistory");
+	rhistory = (LIS_REAL *)lis_malloc((maxiter+2)*sizeof(LIS_REAL),"lis_precon_create_hybrid::rhistory");
 	if( rhistory==NULL )
 	{
 		LIS_SETERR_MEM((maxiter+2)*sizeof(LIS_SCALAR));

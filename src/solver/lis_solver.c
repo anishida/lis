@@ -381,7 +381,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 {
 	LIS_INT	nsolver, precon_type, maxiter;
 	LIS_INT	err;
-	LIS_SCALAR *rhistory;
+	LIS_REAL *rhistory;
 	LIS_VECTOR xx;
 
 	LIS_INT output;
@@ -516,7 +516,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 
 	/* create residual history vector */
 	if( solver->rhistory ) lis_free(solver->rhistory);
-	rhistory = (LIS_SCALAR *)lis_malloc((maxiter+2)*sizeof(LIS_SCALAR),"lis_solve::rhistory");
+	rhistory = (LIS_REAL *)lis_malloc((maxiter+2)*sizeof(LIS_REAL),"lis_solve::rhistory");
 	if( rhistory==NULL )
 	{
 		LIS_SETERR_MEM((maxiter+2)*sizeof(LIS_SCALAR));
