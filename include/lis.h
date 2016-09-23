@@ -316,6 +316,7 @@ typedef LIS_COMPLEX LIS_SCALAR;
 #define sqrt(x) csqrtl(x)
 #define tan(x) ctanl(x)
 #define tanh(x) ctanhl(x)
+/*#define MPI_DOUBLE MPI_LONG_DOUBLE_COMPLEX*/
 #else
 typedef long double LIS_SCALAR;
 #define sin(x) sinl(x)
@@ -365,6 +366,7 @@ typedef LIS_COMPLEX LIS_SCALAR;
 #define sqrt(x) csqrt(x)
 #define tan(x) ctan(x)
 #define tanh(x) ctanh(x)
+/*#define MPI_DOUBLE MPI_DOUBLE_COMPLEX*/
 #else
 typedef double LIS_SCALAR;
 #endif
@@ -696,7 +698,7 @@ struct LIS_ESOLVER_STRUCT
         double p_c_time;
         double p_i_time;
 	LIS_INT eprecision;
-        LIS_SCALAR lshift;
+        LIS_REAL lshift;
 	LIS_REAL nrm2;
         LIS_REAL tol;
 };
