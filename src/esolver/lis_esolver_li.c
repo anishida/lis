@@ -338,18 +338,10 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
 #else
 	  if( output ) printf("Lanczos: number of iterations = %d\n",esolver2->iter[0]);
 #endif
-#ifdef _COMPLEX	  
-#ifdef _LONG__DOUBLE
-	  if( output ) printf("Lanczos: relative residual    = %Le\n\n",creall(esolver2->resid[0]));
-#else
-	  if( output ) printf("Lanczos: relative residual    = %e\n\n",creal(esolver2->resid[0]));
-#endif
-#else
 #ifdef _LONG__DOUBLE
 	  if( output ) printf("Lanczos: relative residual    = %Le\n\n",esolver2->resid[0]);
 #else
 	  if( output ) printf("Lanczos: relative residual    = %e\n\n",esolver2->resid[0]);
-#endif
 #endif	  
 	}
     }
@@ -565,18 +557,10 @@ LIS_INT lis_eli_quad(LIS_ESOLVER esolver)
 #else
 	  if( output ) printf("Lanczos: number of iterations = %d\n",esolver2->iter[0]);
 #endif
-#ifdef _COMPLEX	  
-#ifdef _LONG__DOUBLE
-	  if( output ) printf("Lanczos: relative residual    = %Le\n\n",creall(esolver2->resid[0]));
-#else
-	  if( output ) printf("Lanczos: relative residual    = %e\n\n",creal(esolver2->resid[0]));
-#endif
-#else
 #ifdef _LONG__DOUBLE
 	  if( output ) printf("Lanczos: relative residual    = %Le\n\n",esolver2->resid[0]);
 #else
 	  if( output ) printf("Lanczos: relative residual    = %e\n\n",esolver2->resid[0]);
-#endif
 #endif	  
 	}
     }
