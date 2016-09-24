@@ -689,9 +689,9 @@ LIS_INT lis_solver_output_rhistory(LIS_SOLVER solver, char *filename)
 			{
 #ifdef _COMPLEX
 #ifdef _LONG__DOUBLE
-				fprintf(file, "%Le\n", creall(solver->rhistory[i]));
+				fprintf(file, "%Le\n", solver->rhistory[i]);
 #else
-				fprintf(file, "%e\n", creal(solver->rhistory[i]));
+				fprintf(file, "%e\n", solver->rhistory[i]);
 #endif
 #else			  
 #ifdef _LONG__DOUBLE
@@ -724,9 +724,9 @@ LIS_INT lis_solver_output_rhistory(LIS_SOLVER solver, char *filename)
 	{
 #ifdef _COMPLEX
 #ifdef _LONG__DOUBLE
-		fprintf(file, "%Le\n", creall(solver->rhistory[i]));
+		fprintf(file, "%Le\n", solver->rhistory[i]);
 #else
-		fprintf(file, "%e\n", creal(solver->rhistory[i]));
+		fprintf(file, "%e\n", solver->rhistory[i]);
 #endif
 #else
 #ifdef _LONG__DOUBLE
@@ -786,9 +786,9 @@ LIS_INT lis_esolver_output_rhistory(LIS_ESOLVER esolver, char *filename)
 			{
 #ifdef _COMPLEX
 #ifdef _LONG__DOUBLE
-				fprintf(file, "%Le\n", creall(esolver->rhistory[i]));
+				fprintf(file, "%Le\n", esolver->rhistory[i]);
 #else
-				fprintf(file, "%e\n", creal(esolver->rhistory[i]));
+				fprintf(file, "%e\n", esolver->rhistory[i]);
 #endif
 #else
 #ifdef _LONG__DOUBLE
@@ -821,9 +821,9 @@ LIS_INT lis_esolver_output_rhistory(LIS_ESOLVER esolver, char *filename)
 	{
 #ifdef _COMPLEX
 #ifdef _LONG__DOUBLE
-		fprintf(file, "%Le\n", creall(esolver->rhistory[i]));
+		fprintf(file, "%Le\n", esolver->rhistory[i]);
 #else
-		fprintf(file, "%e\n", creal(esolver->rhistory[i]));
+		fprintf(file, "%e\n", esolver->rhistory[i]);
 #endif
 #else	  
 #ifdef _LONG__DOUBLE

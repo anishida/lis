@@ -58,22 +58,22 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	
 #ifdef HAVE_COMPLEX_H
 #ifdef _LONG__DOUBLE
-	printf("complex number z = %Lf + %Lf * I\n", creall(z), cimagl(z));
+	printf("complex number z = (%Lf, %Lf)\n", creall(z), cimagl(z));
 #else
-	printf("complex number z = %f + %f * I\n", creal(z), cimag(z));
+	printf("complex number z = (%f, %f)\n", creal(z), cimag(z));
 #endif
 #else	
 #ifdef _Complex_I
 #ifdef _LONG__DOUBLE
-	printf("complex number z = %Lf + %Lf * I\n", __real__ z, __imag__ z);
+	printf("complex number z = (%Lf, %Lf)\n", __real__ z, __imag__ z);
 #else
-	printf("complex number z = %f + %f * I\n", __real__ z, __imag__ z);
+	printf("complex number z = (%f, %f)\n", __real__ z, __imag__ z);
 #endif
 #else
 #ifdef _LONG__DOUBLE
-	printf("complex number z = %Lf + %Lf * I\n", z[0], z[1]);
+	printf("complex number z = (%Lf, %Lf)\n", z[0], z[1]);
 #else
-	printf("complex number z = %f + %f * I\n", z[0], z[1]);
+	printf("complex number z = (%f, %f)\n", z[0], z[1]);
 #endif
 #endif
 #endif
@@ -93,11 +93,11 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	lis_vector_dot(v,v,&dot);
 	lis_vector_nrm2(v,&nrm2);
 #ifdef _LONG__DOUBLE
-	printf("inner product (v,v) = %Lf + %Lf * I\n", creall(dot), cimagl(dot));
+	printf("inner product (v,v) = (%Lf, %Lf)\n", creall(dot), cimagl(dot));
 	printf("2-norm of v = %Lf\n", nrm2);
 	printf("abs(z) = %Lf\n", fabs(z));
 #else
-	printf("inner product (v,v) = %f + %f * I\n", creal(dot), cimag(dot));
+	printf("inner product (v,v) = (%f, %f)\n", creal(dot), cimag(dot));
 	printf("2-norm of v = %f\n", nrm2);
 	printf("abs(z) = %f\n", fabs(z));	
 #endif

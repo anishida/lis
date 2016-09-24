@@ -535,19 +535,11 @@ LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER 
 
 	if( A->my_rank==0 )
 	  {
-#ifdef _COMPLEX
 #ifdef _LONG__DOUBLE
-	    if ( output ) printf("convergence condition : ||lx-Ax||_2 <= %6.1Le * ||lx||_2\n", creall(esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]));
+	    if ( output ) printf("convergence condition : ||lx-Ax||_2 <= %6.1Le * ||lx||_2\n", (LIS_REAL)esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]);
 #else
-	    if ( output ) printf("convergence condition : ||lx-Ax||_2 <= %6.1e * ||lx||_2\n", creal(esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN])); 
+	    if ( output ) printf("convergence condition : ||lx-Ax||_2 <= %6.1e * ||lx||_2\n", (LIS_REAL)esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]); 
 #endif
-#else	    
-#ifdef _LONG__DOUBLE
-	    if ( output ) printf("convergence condition : ||lx-Ax||_2 <= %6.1Le * ||lx||_2\n", esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]);
-#else
-	    if ( output ) printf("convergence condition : ||lx-Ax||_2 <= %6.1e * ||lx||_2\n", esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]); 
-#endif
-#endif	    
 	  }
 
 	if( A->my_rank==0 )
