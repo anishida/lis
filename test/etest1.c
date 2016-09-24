@@ -117,9 +117,9 @@ LIS_INT main(LIS_INT argc, char* argv[])
     printf("%s: mode number          = %d\n", esolvername, 0);
 #ifdef _COMPLEX      
 #ifdef _LONG__DOUBLE
-    printf("%s: eigenvalue           = %Le + %Le * I\n", esolvername, creall(evalue0), cimagl(evalue0));
+    printf("%s: eigenvalue           = (%Le, %Le)\n", esolvername, creall(evalue0), cimagl(evalue0));
 #else
-    printf("%s: eigenvalue           = %e + %e * I\n", esolvername, creal(evalue0), cimag(evalue0));
+    printf("%s: eigenvalue           = (%e, %e)\n", esolvername, creal(evalue0), cimag(evalue0));
 #endif
 #else
 #ifdef _LONG__DOUBLE
