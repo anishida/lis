@@ -41,7 +41,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       comm_world = LIS_COMM_WORLD      
 
       z = (1.0, 2.0);
-      write(*,*) 'complex number z = ', real(z), '+', imag(z), ' * I'
+      write(*,*) 'complex number z = ', z
 
 #ifdef COMPLEX      
       call lis_initialize(ierr)

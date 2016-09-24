@@ -269,9 +269,9 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 		  printf("Arnoldi: mode number              = %d\n",i-1);
 #endif
 #ifdef _LONG__DOUBLE	      
-		  printf("Arnoldi: eigenvalue               = %Le + %Le * I\n", (LIS_REAL)(h[i-1+(i-1)*ss]+h[i+i*ss])/2, (LIS_REAL)sqrt(-D)/2);
+		  printf("Arnoldi: eigenvalue               = (%Le, %Le)\n", (LIS_REAL)(h[i-1+(i-1)*ss]+h[i+i*ss])/2, (LIS_REAL)sqrt(-D)/2);
 #else
-		  printf("Arnoldi: eigenvalue               = %e + %e * I\n", (LIS_REAL)(h[i-1+(i-1)*ss]+h[i+i*ss])/2, (LIS_REAL)sqrt(-D)/2);
+		  printf("Arnoldi: eigenvalue               = (%e, %e)\n", (LIS_REAL)(h[i-1+(i-1)*ss]+h[i+i*ss])/2, (LIS_REAL)sqrt(-D)/2);
 #endif
 #ifdef _LONG__LONG	      
 		  printf("Arnoldi: mode number              = %lld\n",i);
@@ -279,9 +279,9 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 		  printf("Arnoldi: mode number              = %d\n",i);
 #endif
 #ifdef _LONG__DOUBLE	      	      
-		  printf("Arnoldi: eigenvalue               = %Le - %Le * I\n", (LIS_REAL)(h[i-1+(i-1)*ss]+h[i+i*ss])/2, (LIS_REAL)sqrt(-D)/2);
+		  printf("Arnoldi: eigenvalue               = (%Le, %Le)\n", (LIS_REAL)(h[i-1+(i-1)*ss]+h[i+i*ss])/2, (LIS_REAL)-sqrt(-D)/2);
 #else
-		  printf("Arnoldi: eigenvalue               = %e - %e * I\n", (LIS_REAL)(h[i-1+(i-1)*ss]+h[i+i*ss])/2, (LIS_REAL)sqrt(-D)/2);
+		  printf("Arnoldi: eigenvalue               = (%e, %e)\n", (LIS_REAL)(h[i-1+(i-1)*ss]+h[i+i*ss])/2, (LIS_REAL)-sqrt(-D)/2);
 #endif
 		  
 #ifdef _COMPLEX		  
@@ -301,19 +301,11 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 #else
 		  printf("Arnoldi: mode number              = %d\n",i-1);
 #endif
-#ifdef _COMPLEX
 #ifdef _LONG__DOUBLE	      	      	      
-		  printf("Arnoldi: eigenvalue               = %Le\n",creall(h[i-1+(i-1)*ss]));
+		  printf("Arnoldi: eigenvalue               = %Le\n",(LIS_REAL)h[i-1+(i-1)*ss]);
 #else
-		  printf("Arnoldi: eigenvalue               = %e\n",creal(h[i-1+(i-1)*ss]));
+		  printf("Arnoldi: eigenvalue               = %e\n",(LIS_REAL)h[i-1+(i-1)*ss]);
 #endif	      
-#else		  
-#ifdef _LONG__DOUBLE	      	      	      
-		  printf("Arnoldi: eigenvalue               = %Le\n",h[i-1+(i-1)*ss]);
-#else
-		  printf("Arnoldi: eigenvalue               = %e\n",h[i-1+(i-1)*ss]);
-#endif
-#endif		  
 		  esolver->evalue[i-1] = h[i-1+(i-1)*ss];
 		}
 	    }
@@ -325,19 +317,11 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 #else
 	  printf("Arnoldi: mode number              = %d\n",i);
 #endif
-#ifdef _COMPLEX
 #ifdef _LONG__DOUBLE	      	      	      	      
-	  printf("Arnoldi: eigenvalue               = %Le\n",creall(h[i+i*ss]));
+	  printf("Arnoldi: eigenvalue               = %Le\n",(LIS_REAL)h[i+i*ss]);
 #else
-	  printf("Arnoldi: eigenvalue               = %e\n",creal(h[i+i*ss]));
+	  printf("Arnoldi: eigenvalue               = %e\n",(LIS_REAL)h[i+i*ss]);
 #endif	      
-#else	  
-#ifdef _LONG__DOUBLE	      	      	      	      
-	  printf("Arnoldi: eigenvalue               = %Le\n",h[i+i*ss]);
-#else
-	  printf("Arnoldi: eigenvalue               = %e\n",h[i+i*ss]);
-#endif
-#endif	  
 	}
 
       if( output ) printf("\n");
@@ -551,9 +535,9 @@ LIS_INT lis_eai_quad(LIS_ESOLVER esolver)
 		  printf("Arnoldi: mode number              = %d\n",i-1);
 #endif
 #ifdef _LONG__DOUBLE	      
-		  printf("Arnoldi: eigenvalue               = %Le + %Le * I\n", (h[i-1+(i-1)*ss]+h[i+i*ss])/2, sqrt(-D)/2);
+		  printf("Arnoldi: eigenvalue               = (%Le, %Le)\n", (h[i-1+(i-1)*ss]+h[i+i*ss])/2, sqrt(-D)/2);
 #else
-		  printf("Arnoldi: eigenvalue               = %e + %e * I\n", (h[i-1+(i-1)*ss]+h[i+i*ss])/2, sqrt(-D)/2);
+		  printf("Arnoldi: eigenvalue               = (%e, %e)\n", (h[i-1+(i-1)*ss]+h[i+i*ss])/2, sqrt(-D)/2);
 #endif
 #ifdef _LONG__LONG	      
 		  printf("Arnoldi: mode number              = %lld\n",i);
@@ -561,9 +545,9 @@ LIS_INT lis_eai_quad(LIS_ESOLVER esolver)
 		  printf("Arnoldi: mode number              = %d\n",i);
 #endif
 #ifdef _LONG__DOUBLE	      	      
-		  printf("Arnoldi: eigenvalue               = %Le - %Le * I\n", (h[i-1+(i-1)*ss]+h[i+i*ss])/2, sqrt(-D)/2);
+		  printf("Arnoldi: eigenvalue               = (%Le, %Le)\n", (h[i-1+(i-1)*ss]+h[i+i*ss])/2, -sqrt(-D)/2);
 #else
-		  printf("Arnoldi: eigenvalue               = %e - %e * I\n", (h[i-1+(i-1)*ss]+h[i+i*ss])/2, sqrt(-D)/2);
+		  printf("Arnoldi: eigenvalue               = (%e, %e)\n", (h[i-1+(i-1)*ss]+h[i+i*ss])/2, -sqrt(-D)/2);
 #endif	      
 #ifdef _COMPLEX		  
 		  esolver->evalue[i-1] = (h[i-1+(i-1)*ss]+h[i+i*ss])/2 + sqrt(-D)/2 * _Complex_I;
