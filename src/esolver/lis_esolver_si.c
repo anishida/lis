@@ -302,7 +302,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 
 	  /* QR factorization VR = Z for starting vector Z */
 	  for (k=1;k<j;k++)
-	    { 
+	    {
 	      lis_vector_dot(v[j], v[k], &dot); 
 	      lis_vector_axpy(-dot, v[k], v[j]);
 	    }
