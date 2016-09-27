@@ -103,6 +103,8 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_mpi=$(enable_mpi) \
                     enable_omp=$(enable_omp) \
                     enable_quad=$(enable_quad) \
+                    enable_longdouble=$(enable_longdouble) \
+                    enable_complex=$(enable_complex) \
                     enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 

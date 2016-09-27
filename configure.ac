@@ -4,7 +4,7 @@
 
 # General Configurations
 
-AC_INIT(lis, 1.6.20, devel@ssisc.org)
+AC_INIT(lis, 1.6.21, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -1134,6 +1134,8 @@ AC_SUBST(enable_mpi)
 AC_SUBST(enable_omp)
 AC_SUBST(enable_saamg)
 AC_SUBST(enable_quad)
+AC_SUBST(enable_longdouble)
+AC_SUBST(enable_complex)
 AC_SUBST(enable_fortran)
 AC_SUBST(enable_f90)
 AC_SUBST(MPIRUN)

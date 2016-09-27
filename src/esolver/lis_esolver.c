@@ -80,7 +80,8 @@ LIS_ESOLVER_CHECK_PARAMS lis_esolver_check_params[] = {
   NULL,
   lis_epi_check_params,  lis_eii_check_params, lis_eaii_check_params, 
   lis_erqi_check_params, lis_ecg_check_params, lis_ecr_check_params,
-  lis_ejd_check_params,  lis_esi_check_params,  lis_eli_check_params
+  lis_ejd_check_params,  lis_esi_check_params,  lis_eli_check_params,
+  lis_eai_check_params
 };
 
 LIS_ESOLVER_MALLOC_WORK lis_esolver_malloc_work[] = {
@@ -371,6 +372,14 @@ LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER 
 			esolver->options[LIS_EOPTIONS_SWITCH_MAXITER] = emaxiter;
 		}
 	#endif
+
+	err = lis_esolver_check_params[nesolver](esolver);
+	if( err )
+	{
+		esolver->retcode = err;
+		return err;
+	}
+	/* end parameter check */
 
 	/* create eigenvalue array */
 	if( esolver->evalue ) lis_free(esolver->evalue);
