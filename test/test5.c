@@ -127,9 +127,17 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	if(my_rank==0) 
 	  {
 #ifdef _LONG__LONG
+#ifdef _LONG__DOUBLE	    
+	    printf("n = %lld, gamma = %Lf\n\n",gn,gamma);
+#else
 	    printf("n = %lld, gamma = %f\n\n",gn,gamma);
+#endif	    
+#else
+#ifdef _LONG__DOUBLE	    
+	    printf("n = %d, gamma = %Lf\n\n",gn,gamma);
 #else
 	    printf("n = %d, gamma = %f\n\n",gn,gamma);
+#endif	    
 #endif
 	  }
 		
