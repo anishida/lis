@@ -1,3 +1,7 @@
+Version 1.6.22  September 28, 2016
+
+  - Added support for lis_vector_nhdot().
+
 Version 1.6.21  September 27, 2016
 
   - Fixed bug in lis_esolver.c.
