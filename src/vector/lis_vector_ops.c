@@ -42,8 +42,8 @@
 #include "lislib.h"
 
 /**************************************************************
- * lis_vector_dot		v   <- x^T * y (Hermitian)
- * lis_vector_nhdot		v   <- x^T * y (non Hermitian)
+ * lis_vector_dot		v   <- x^H * y (Hermitian)
+ * lis_vector_nhdot		v   <- x^T * y (non-Hermitian)
  * lis_vector_nrm2		v   <- ||x||_2
  * lis_vector_nrm1		v   <- ||x||_1
  * lis_vector_nrmi		v   <- ||x||_infinity
@@ -51,7 +51,7 @@
  **************************************************************/
 
 /**********************/
-/* v <- x^T * y       */
+/* v <- x^H * y       */
 /**********************/
 #undef __FUNC__
 #define __FUNC__ "lis_vector_dot"
@@ -143,7 +143,7 @@ LIS_INT lis_vector_dot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_SCALAR *value)
 }
 
 /**********************/
-/* v <- x^T * y (nh)  */
+/* v <- x^T * y       */
 /**********************/
 #undef __FUNC__
 #define __FUNC__ "lis_vector_nhdot"

@@ -269,6 +269,7 @@ Jacobi\cite{jacobi}     & Orthomin(m)\cite{orthomin} \\
 Gauss-Seidel\cite{gauss,seidel} & GMRES(m)\cite{gmres} \\
 SOR\cite{young,frankel} & FGMRES(m)\cite{fgmres} \\
 IDR(s)\cite{idrs}       & MINRES\cite{minres} \\
+COCG\cite{cocg}         & COCR\cite{cocr} \\
 \hline         
 \end{tabular}
 \hfil}
@@ -1833,8 +1834,11 @@ where \verb=-i {cg|1}= means \verb=-i cg= or \verb=-i 1= and \verb=-maxiter [100
  BiCRSafe    & \verb=-i {bicrsafe|19}=  &    \\
  FGMRES(m)   & \verb=-i {fgmres|20}=    & \verb=-restart [40]= & The restart value $m$   \\ 
  IDR(s)      & \verb=-i {idrs|21}=      & \verb=-irestart [2]= & The restart
- value $s$  \\ 
- MINRES      & \verb=-i {minres|22}=    &    \\
+ value $s$  \\
+ IDR(1)      & \verb=-i {idr1|22}=      &    \\
+ MINRES      & \verb=-i {minres|23}=    &    \\
+ COCG        & \verb=-i {cocg|24}=      &    \\
+ COCR        & \verb=-i {cocr|25}=      &    \\  
 \hline         
 \end{tabular}
 \end{center}
@@ -5319,6 +5323,7 @@ Get the shifted values of the elements of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
+\newpage
 \subsubsection{lis\_vector\_dot}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_dot(LIS_VECTOR x, LIS_VECTOR y, LIS_SCALAR *value)|
@@ -5327,7 +5332,28 @@ Get the shifted values of the elements of vector $x$.
 \end{screen}
 {\bf Description}\\
 \indent
-Calculate the inner product $x^{T}y$.
+Calculate the Hermitian inner product $y^{H}x$.
+\\ \\
+\noindent
+{\bf Input}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt x, y] The vectors
+\end{namelist}
+{\bf Output}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt value] The inner product
+\item[\tt ierr] The return code
+\end{namelist}
+
+\subsubsection{lis\_vector\_nhdot}
+\begin{screen}
+\verb|C       LIS_INT lis_vector_nhdot(LIS_VECTOR x, LIS_VECTOR y, LIS_SCALAR *value)|
+\verb|Fortran subroutine lis_vector_nhdot(LIS_VECTOR x, LIS_VECTOR y, LIS_SCALAR value,|\\
+\verb|         LIS_INTEGER ierr)|
+\end{screen}
+{\bf Description}\\
+\indent
+Calculate the non-Hermitian inner product $y^{T}x$.
 \\ \\
 \noindent
 {\bf Input}
@@ -5852,8 +5878,11 @@ that \verb=-maxiter= defaults to $1,000$.
  BiCRSafe    & \verb=-i {bicrsafe|19}=  &    \\
  FGMRES(m)   & \verb=-i {fgmres|20}=    & \verb=-restart [40]= & The restart value $m$   \\ 
  IDR(s)      & \verb=-i {idrs|21}=      & \verb=-irestart [2]= & The restart
- value $s$  \\ 
- MINRES      & \verb=-i {minres|22}=    &    \\
+ value $s$  \\
+ IDR(1)      & \verb=-i {idr1|22}=      &    \\ 
+ MINRES      & \verb=-i {minres|23}=    &    \\
+ COCG        & \verb=-i {cocg|24}=      &    \\
+ COCR        & \verb=-i {cocr|25}=      &    \\   
 \hline         
 \end{tabular}
 \end{center}
@@ -7868,6 +7897,16 @@ P. Sonnerveld and M. B. van Gijzen.
 C. C. Paige and M. A. Saunders.
 \newblock Solution of Sparse Indefinite Systems of Linear Equations.
 \newblock SIAM Journal on Numerical Analysis, Vol.~12, No.~4, pp.\ 617--629, 1975.
+
+\bibitem{cocg}
+H. A. van der Vorst and J. B. M. Melissen.
+\newblock A Petrov-Galerkin Type Method for Solving $Ax=b$, where $A$ is Symmetric Complex.
+\newblock IEEE Transactions on Magnetics, Vol.~26, No.~2, pp.\ 706--708, 1990.
+
+\bibitem{cocr}
+T. Sogabe and S. Zhang.
+\newblock A COCR Method for Solving Complex Symmetric Linear Systems.
+\newblock Journal of Computational and Applied Mathematics, Vol.~199, No.~2, pp.\ 297--303, 2007.
 
 \bibitem{power}
 R. von Mises and H. Pollaczek-Geiringer.
