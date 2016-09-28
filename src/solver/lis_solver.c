@@ -61,7 +61,7 @@
  * lis_solve
  ************************************************/
 
-#define LIS_SOLVERS_LEN			23
+#define LIS_SOLVERS_LEN			25
 #define LIS_PRECON_TYPE_LEN		12
 
 
@@ -74,7 +74,8 @@ LIS_SOLVER_CHECK_PARAMS lis_solver_check_params[] = {
 	lis_bicgsafe_check_params , lis_cr_check_params        , lis_bicr_check_params,
 	lis_crs_check_params      , lis_bicrstab_check_params  , lis_gpbicr_check_params,
 	lis_bicrsafe_check_params , lis_fgmres_check_params    , lis_idrs_check_params,
-	lis_minres_check_params   , lis_idr1_check_params
+	lis_idr1_check_params     , lis_minres_check_params    , lis_cocg_check_params,
+	lis_cocr_check_params
 };
 
 LIS_SOLVER_MALLOC_WORK lis_solver_malloc_work[] = {
@@ -86,7 +87,8 @@ LIS_SOLVER_MALLOC_WORK lis_solver_malloc_work[] = {
 	lis_bicgsafe_malloc_work , lis_cr_malloc_work        , lis_bicr_malloc_work,
 	lis_crs_malloc_work      , lis_bicrstab_malloc_work  , lis_gpbicr_malloc_work,
 	lis_bicrsafe_malloc_work , lis_fgmres_malloc_work    , lis_idrs_malloc_work,
-	lis_minres_malloc_work   , lis_idr1_malloc_work
+	lis_idr1_malloc_work     , lis_minres_malloc_work    , lis_cocg_malloc_work,
+        lis_cocr_malloc_work
 };
 
 LIS_SOLVER_EXECUTE lis_solver_execute[] = {
@@ -98,7 +100,8 @@ LIS_SOLVER_EXECUTE lis_solver_execute[] = {
 	lis_bicgsafe , lis_cr        , lis_bicr,
 	lis_crs      , lis_bicrstab  , lis_gpbicr,
 	lis_bicrsafe , lis_fgmres    , lis_idrs, 
-	lis_minres   , lis_idr1
+	lis_idr1     , lis_minres    , lis_cocg,
+	lis_cocr
 };
 
 #ifdef USE_QUAD_PRECISION
@@ -110,7 +113,9 @@ LIS_SOLVER_EXECUTE lis_solver_execute[] = {
 		NULL              , NULL               , NULL,
 		lis_bicgsafe_quad , lis_cr_quad        , lis_bicr_quad,
 		lis_crs_quad      , lis_bicrstab_quad  , lis_gpbicr_quad,
-		lis_bicrsafe_quad , lis_fgmres_quad    , NULL
+		lis_bicrsafe_quad , lis_fgmres_quad    , NULL,
+		NULL              , NULL               , NULL,
+		NULL
 	};
 	LIS_SOLVER_EXECUTE lis_solver_execute_switch[] = {
 		NULL,
@@ -120,7 +125,9 @@ LIS_SOLVER_EXECUTE lis_solver_execute[] = {
 		NULL                , NULL            , NULL,
 		NULL                , NULL            , NULL,
 		NULL                , NULL            , NULL,
-		NULL                , NULL            , NULL
+		NULL                , NULL            , NULL,
+		NULL                , NULL            , NULL,
+		NULL
 	};
 	/*
 	LIS_SOLVER_EXECUTE lis_solver_execute_periodic[] = {
@@ -176,7 +183,7 @@ LIS_INT LIS_SOLVER_OPTACT[] = {
 	LIS_OPTIONS_STORAGE          , LIS_OPTIONS_STORAGE_BLOCK , LIS_OPTIONS_CONV_COND     , LIS_PARAMS_RESID_WEIGHT  , LIS_PARAMS_SAAMG_THETA, LIS_OPTIONS_IDRS_RESTART
 };
 
-char *lis_solver_atoi[]    = {"cg", "bicg", "cgs", "bicgstab", "bicgstabl", "gpbicg", "tfqmr","orthomin", "gmres", "jacobi", "gs", "sor", "bicgsafe", "cr", "bicr", "crs", "bicrstab", "gpbicr", "bicrsafe", "fgmres", "idrs", "minres", "idr1"};
+char *lis_solver_atoi[]    = {"cg", "bicg", "cgs", "bicgstab", "bicgstabl", "gpbicg", "tfqmr","orthomin", "gmres", "jacobi", "gs", "sor", "bicgsafe", "cr", "bicr", "crs", "bicrstab", "gpbicr", "bicrsafe", "fgmres", "idrs", "idr1", "minres", "cocg", "cocr"};
 char *lis_precon_atoi[]    = {"none", "jacobi", "ilu", "ssor", "hybrid", "is", "sainv", "saamg", "iluc", "ilut", "bjacobi", ""};
 char *lis_storage_atoi[]   = {"csr", "csc", "msr", "dia", "ell", "jad", "bsr", "bsc", "vbr", "coo", "dns"};
 char *lis_print_atoi[]     = {"none", "mem", "out", "all"};
@@ -185,7 +192,7 @@ char *lis_truefalse_atoi[] = {"false", "true"};
 char *lis_precision_atoi[] = {"double", "quad", "switch"};
 char *lis_conv_cond_atoi[] = {"nrm2_r", "nrm2_b", "nrm1_b"};
 
-char *lis_solvername[] = {"", "CG", "BiCG", "CGS", "BiCGSTAB", "BiCGSTAB(l)", "GPBiCG", "TFQMR", "Orthomin", "GMRES", "Jacobi",	"Gauss-Seidel", "SOR", "BiCGSafe", "CR", "BiCR", "CRS", "BiCRSTAB", "GPBiCR", "BiCRSafe", "FGMRES", "IDR(s)", "MINRES", "IDR(1)"};
+char *lis_solvername[] = {"", "CG", "BiCG", "CGS", "BiCGSTAB", "BiCGSTAB(l)", "GPBiCG", "TFQMR", "Orthomin", "GMRES", "Jacobi",	"Gauss-Seidel", "SOR", "BiCGSafe", "CR", "BiCR", "CRS", "BiCRSTAB", "GPBiCR", "BiCRSafe", "FGMRES", "IDR(s)", "IDR(1)", "MINRES", "COCG", "COCR"};
 char *lis_preconname[] = {"none", "Jacobi", "ILU", "SSOR", "Hybrid", "I+S", "SAINV", "SAAMG", "Crout ILU", "ILUT", "Block Jacobi"};
 
 char *lis_returncode[] = {"LIS_SUCCESS", "LIS_ILL_OPTION", "LIS_BREAKDOWN", "LIS_OUT_OF_MEMORY", "LIS_MAXITER", "LIS_NOT_IMPLEMENTED", "LIS_ERR_FILE_IO"};

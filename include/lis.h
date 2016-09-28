@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"1.6.22"
+#define LIS_VERSION	"1.6.23"
 /**************************************/
 #include <stdio.h>
 #ifdef HAVE_COMPLEX_H
@@ -139,7 +139,7 @@
 #define LIS_CONV_COND_NRM2_B 1
 #define LIS_CONV_COND_NRM1_B 2
 
-#define LIS_SOLVER_LEN 23
+#define LIS_SOLVER_LEN 25
 #define LIS_SOLVER_CG 1
 #define LIS_SOLVER_BICG 2
 #define LIS_SOLVER_CGS 3
@@ -162,8 +162,10 @@
 #define LIS_SOLVER_BICRSAFE 19
 #define LIS_SOLVER_FGMRES 20
 #define LIS_SOLVER_IDRS 21
-#define LIS_SOLVER_MINRES 22
-#define LIS_SOLVER_IDR1 23
+#define LIS_SOLVER_IDR1 22
+#define LIS_SOLVER_MINRES 23
+#define LIS_SOLVER_COCG 24
+#define LIS_SOLVER_COCR 25
 
 #define LIS_ESOLVER_LEN 10
 #define LIS_ESOLVER_PI 1

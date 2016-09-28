@@ -271,6 +271,23 @@ extern "C"
 	extern LIS_INT lis_minres_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_minres_malloc_work(LIS_SOLVER solver);
 
+/*******************/
+/* COCG            */
+/*******************/
+
+	extern LIS_INT lis_cocg(LIS_SOLVER solver);
+	extern LIS_INT lis_cocg_check_params(LIS_SOLVER solver);
+	extern LIS_INT lis_cocg_malloc_work(LIS_SOLVER solver);
+
+/*******************/
+/* COCR            */
+/*******************/
+
+	extern LIS_INT lis_cocr(LIS_SOLVER solver);
+	extern LIS_INT lis_cocr_check_params(LIS_SOLVER solver);
+	extern LIS_INT lis_cocr_malloc_work(LIS_SOLVER solver);
+
+  
 #ifdef __cplusplus
 }
 #endif

@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis $B%f!<%6%,%$%I(B}\\
-$B%P!<%8%g%s(B 1.6.22
+$B%P!<%8%g%s(B 1.6.23
 \end{flushleft}
 
 \vspace*{2cm}
@@ -251,6 +251,7 @@ Jacobi\cite{jacobi}     & Orthomin(m)\cite{orthomin} \\
 Gauss-Seidel\cite{gauss,seidel} & GMRES(m)\cite{gmres} \\
 SOR\cite{young,frankel} & FGMRES(m)\cite{fgmres} \\
 IDR(s)\cite{idrs}       & MINRES\cite{minres} \\
+COCG\cite{cocg}         & COCR\cite{cocr} \\
 \hline         
 \end{tabular}
 \hfil}
@@ -1732,8 +1733,11 @@ Matrix Market$B7A<0$K$h$k30It%U%!%$%k(B{\tt matvec.mtx}$B$N5-=RNc$r0J2<$K<($9
  GPBiCR      & \verb=-i {gpbicr|18}=    &    \\
  BiCRSafe    & \verb=-i {bicrsafe|19}=  &    \\
  FGMRES(m)   & \verb=-i {fgmres|20}=    & \verb=-restart [40]= & $B%j%9%?!<%HCM(B$m$  \\ 
- IDR(s)      & \verb=-i {idrs|21}=      & \verb=-irestart [2]= & $B%j%9%?!<%HCM(B$s$  \\ 
- MINRES      & \verb=-i {minres|22}=    &    \\
+ IDR(s)      & \verb=-i {idrs|21}=      & \verb=-irestart [2]= & $B%j%9%?!<%HCM(B$s$  \\
+ IDR(1)      & \verb=-i {idr1|22}=      &    \\
+ MINRES      & \verb=-i {minres|23}=    &    \\
+ COCG        & \verb=-i {cocg|24}=      &    \\
+ COCR        & \verb=-i {cocr|25}=      &    \\   
 \hline         
 \end{tabular}
 \end{center}
@@ -5213,6 +5217,7 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
+\newpage
 \subsubsection{lis\_vector\_dot}
 \begin{screen}
 \verb|C       LIS_INT lis_vector_dot(LIS_VECTOR x, LIS_VECTOR y, LIS_SCALAR *value)|
@@ -5221,7 +5226,7 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \end{screen}
 {\bf $B5!G=(B}\\
 \indent
-$B%Y%/%H%kFb@Q(B$x^{T}y$$B$r7W;;$9$k(B.  
+$B%(%k%_!<%HFb@Q(B$y^{H}x$$B$r7W;;$9$k(B.  
 \\ \\
 \noindent
 {\bf $BF~NO(B}
@@ -5230,7 +5235,28 @@ DNS$B7A<0$NG[Ns$r9TNs(B$A$$B$K4XO"IU$1$k(B.
 \end{namelist}
 {\bf $B=PNO(B}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt value] $BFb@Q(B
+\item[\tt value] $B%(%k%_!<%HFb@Q(B
+\item[\tt ierr] $B%j%?!<%s%3!<%I(B
+\end{namelist}
+
+\subsubsection{lis\_vector\_nhdot}
+\begin{screen}
+\verb|C       LIS_INT lis_vector_nhdot(LIS_VECTOR x, LIS_VECTOR y, LIS_SCALAR *value)|
+\verb|Fortran subroutine lis_vector_nhdot(LIS_VECTOR x, LIS_VECTOR y, LIS_SCALAR value,|\\
+\verb|         LIS_INTEGER ierr)|
+\end{screen}
+{\bf $B5!G=(B}\\
+\indent
+$BHs%(%k%_!<%HFb@Q(B$y^{T}x$$B$r7W;;$9$k(B.  
+\\ \\
+\noindent
+{\bf $BF~NO(B}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt x, y] $B%Y%/%H%k(B
+\end{namelist}
+{\bf $B=PNO(B}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt value] $BHs%(%k%_!<%HFb@Q(B
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
@@ -5742,8 +5768,11 @@ COO    &  $B!{(B  &  $B!{(B  &  $B!{(B  & CSR  & CSR & CSR & CSR & CSC & C
  GPBiCR      & \verb=-i {gpbicr|18}=    &    \\
  BiCRSafe    & \verb=-i {bicrsafe|19}=  &    \\
  FGMRES(m)   & \verb=-i {fgmres|20}=    & \verb=-restart [40]= & $B%j%9%?!<%HCM(B$m$  \\ 
- IDR(s)      & \verb=-i {idrs|21}=      & \verb=-irestart [2]= & $B%j%9%?!<%HCM(B$s$  \\ 
- MINRES      & \verb=-i {minres|22}=    &    \\
+ IDR(s)      & \verb=-i {idrs|21}=      & \verb=-irestart [2]= & $B%j%9%?!<%HCM(B$s$  \\
+ IDR(1)      & \verb=-i {idr1|22}=      &    \\ 
+ MINRES      & \verb=-i {minres|23}=    &    \\
+ COCG        & \verb=-i {cocg|24}=      &    \\
+ COCR        & \verb=-i {cocr|25}=      &    \\   
 \hline         
 \end{tabular}
 \end{center}
@@ -7739,6 +7768,16 @@ P. Sonnerveld and M. B. van Gijzen.
 C. C. Paige and M. A. Saunders.
 \newblock Solution of Sparse Indefinite Systems of Linear Equations.
 \newblock SIAM Journal on Numerical Analysis, Vol.~12, No.~4, pp.\ 617--629, 1975.
+
+\bibitem{cocg}
+H. A. van der Vorst and J. B. M. Melissen.
+\newblock A Petrov-Galerkin Type Method for Solving $Ax=b$, where $A$ is Symmetric Complex.
+\newblock IEEE Transactioins on Magnetics, Vol.~26, No.~2, pp.\ 706--708, 1990.
+
+\bibitem{cocr}
+T. Sogabe and S. Zhang.
+\newblock A COCR Method for Solving Complex Symmetric Linear Systems.
+\newblock Journal of Computational and Applied Mathematics, Vol.~199, No.~2, pp.\ 297--303, 2007.
 
 \bibitem{power}
 R. von Mises and H. Pollaczek-Geiringer.
