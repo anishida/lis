@@ -369,6 +369,9 @@
 #define lis_vector_dot lis_vector_dot_f
 #define LIS_VECTOR_DOT lis_vector_dot_f
 
+#define lis_vector_nhdot lis_vector_nhdot_f
+#define LIS_VECTOR_NHDOT lis_vector_nhdot_f
+
 #define lis_vector_nrm1 lis_vector_nrm1_f
 #define LIS_VECTOR_NRM1 lis_vector_nrm1_f
 
