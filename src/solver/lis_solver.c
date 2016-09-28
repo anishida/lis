@@ -687,11 +687,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 #else
  	  if( output ) printf("precision             : %s\n", lis_precisionname[precision]); 
 #endif
-#ifdef _LONG__LONG
 	  if( output ) printf("linear solver         : %s\n", lis_solvername[nsolver]); 
-#else
-	  if( output ) printf("linear solver         : %s\n", lis_solvername[nsolver]); 
-#endif
 		switch( precon_type )
 		{
 		case LIS_PRECON_TYPE_ILU:

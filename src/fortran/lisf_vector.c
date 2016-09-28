@@ -449,6 +449,18 @@ void lis_vector_dot_f(LIS_VECTOR_F *x, LIS_VECTOR_F *y, LIS_SCALAR *value, LIS_I
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_vector_nhdot_f"
+void lis_vector_nhdot_f(LIS_VECTOR_F *x, LIS_VECTOR_F *y, LIS_SCALAR *value, LIS_INT *ierr)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	*ierr = lis_vector_nhdot((LIS_VECTOR)LIS_V2P(x),(LIS_VECTOR)LIS_V2P(y),value);
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_vector_nrm2_f"
 void lis_vector_nrm2_f(LIS_VECTOR_F *x, LIS_REAL *value, LIS_INT *ierr)
 {

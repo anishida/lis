@@ -41,13 +41,14 @@
 #endif
 #include "lislib.h"
 
-/******************************************************
- * lis_vector_dot		v   <- x^T * y
+/**************************************************************
+ * lis_vector_dot		v   <- x^T * y (Hermitian)
+ * lis_vector_nhdot		v   <- x^T * y (non Hermitian)
  * lis_vector_nrm2		v   <- ||x||_2
  * lis_vector_nrm1		v   <- ||x||_1
  * lis_vector_nrmi		v   <- ||x||_infinity
  * lis_vector_sum		v   <- sum x_i
- ******************************************************/
+ **************************************************************/
 
 /**********************/
 /* v <- x^T * y       */
@@ -128,6 +129,82 @@ LIS_INT lis_vector_dot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_SCALAR *value)
 #else
 			dot += x[i]*y[i];
 #endif			
+		}
+	#endif
+	#ifdef USE_MPI
+		MPI_Allreduce(&dot,&tmp,1,MPI_DOUBLE,MPI_SUM,comm);
+		*value = tmp;
+	#else
+		*value = dot;
+	#endif
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+/**********************/
+/* v <- x^T * y (nh)  */
+/**********************/
+#undef __FUNC__
+#define __FUNC__ "lis_vector_nhdot"
+LIS_INT lis_vector_nhdot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_SCALAR *value)
+{
+	LIS_INT i,n;
+	LIS_SCALAR dot;
+	LIS_SCALAR *x,*y;
+	LIS_SCALAR tmp;
+	#ifdef _OPENMP
+		LIS_INT nprocs,my_rank;
+	#endif
+	#ifdef USE_MPI
+		MPI_Comm comm;
+	#endif
+
+	LIS_DEBUG_FUNC_IN;
+
+	n = vx->n;
+	#ifndef NO_ERROR_CHECK
+		if( n!=vy->n )
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,"length of vector x and y is not equal\n");
+			return LIS_ERR_ILL_ARG;
+		}
+	#endif
+
+	x      = vx->value;
+	y      = vy->value;
+	#ifdef USE_MPI
+		comm   = vx->comm;
+	#endif
+	#ifdef _OPENMP
+		nprocs = omp_get_max_threads();
+		#pragma omp parallel private(i,tmp,my_rank)
+		{
+			my_rank = omp_get_thread_num();
+			tmp     = 0.0;
+			#ifdef USE_VEC_COMP
+		    #pragma cdir nodep
+			#endif
+			#pragma omp for
+			for(i=0; i<n; i++)
+			{
+				tmp += x[i]*y[i];
+			}
+			lis_vec_tmp[my_rank*LIS_VEC_TMP_PADD] = tmp;
+		}
+		dot = 0.0;
+		for(i=0;i<nprocs;i++)
+		{
+			dot += lis_vec_tmp[i*LIS_VEC_TMP_PADD];
+		}
+	#else
+		dot  = 0.0;
+		#ifdef USE_VEC_COMP
+	    #pragma cdir nodep
+		#endif
+		for(i=0; i<n; i++)
+		{
+			dot += x[i]*y[i];
 		}
 	#endif
 	#ifdef USE_MPI
