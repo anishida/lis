@@ -1,3 +1,7 @@
+Version 1.6.24  September 30, 2016
+
+  - Fixed bugs in test/test1f.F.
+
 Version 1.6.23  September 29, 2016
 
   - Added support for COCG and COCR.
