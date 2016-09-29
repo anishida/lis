@@ -31,7 +31,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       
 #include "lisf.h"
 
-      LIS_MATRIX A
+      LIS_MATRIX A,A0
       LIS_VECTOR b,x,u
       LIS_SOLVER solver
       LIS_INTEGER ierr
@@ -100,8 +100,8 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       call lis_input(A,b,x,fname,ierr)
       call CHKERR(ierr);
 
-      call lis_vector_duplicate(b,u,ierr)
-
+      call lis_vector_duplicate(A,u,ierr)
+      
       call lis_matrix_get_size(A,n,gn,ierr)
 
       call CHKERR(ierr)
@@ -114,9 +114,17 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           call lis_finalize(ierr)
           stop
         elseif( rhs.eq.1 ) then
-          call lis_vector_set_all(1.0d0,b,ierr)
+#ifdef COMPLEX
+           call lis_vector_set_all((1.0d0,0.0d0),b,ierr)
+#else
+           call lis_vector_set_all(1.0d0,b,ierr)
+#endif           
         else
+#ifdef COMPLEX          
+          call lis_vector_set_all((1.0d0,0.0d0),u,ierr)
+#else
           call lis_vector_set_all(1.0d0,u,ierr)
+#endif          
           call lis_matvec(A,u,b,ierr)
         endif
       endif
@@ -137,7 +145,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       call CHKERR(ierr)
       call lis_solver_set_option('-print mem',solver,ierr)
       call lis_solver_set_optionC(solver,ierr)
-      
+
       call lis_solve(A,b,x,solver,ierr)
 
       call CHKERR(ierr)
