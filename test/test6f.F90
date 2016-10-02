@@ -62,41 +62,79 @@
 
 ! define two-dimensional Laplacian
 
+#ifdef COMPLEX      
+      call lis_array_set_all(nn*nn,(0.0d0,0.0d0),a,ierr)
+#else      
       call lis_array_set_all(nn*nn,0.0d0,a,ierr)
+#endif      
 
       nnz = 0
+#ifdef COMPLEX      
       do ii=0,nn-1
          i = ii/m
          j = ii - i*m
          if (i .GT. 0) then
             jj = ii - m
-            a(ii + nn * jj) = -1.0
+            a(ii + nn * jj) = (-1.0d0,0.0d0)
             nnz = nnz + 1
          end if
          if (i .LT. n-1) then
             jj = ii + m
-            a(ii + nn * jj) = -1.0
+            a(ii + nn * jj) = (-1.0d0,0.0d0)
             nnz = nnz + 1
          end if
          if (j .GT. 0) then
             jj = ii - 1
-            a(ii + nn * jj) = -1.0
+            a(ii + nn * jj) = (-1.0d0,0.0d0)
             nnz = nnz + 1
          end if
          if (j .LT. m-1) then
             jj = ii + 1
-            a(ii + nn * jj) = -1.0
+            a(ii + nn * jj) = (-1.0d0,0.0d0)
             nnz = nnz + 1
          end if
          jj = ii
-         a(ii + nn * jj) = 4.0
+         a(ii + nn * jj) = (4.0d0,0.0d0)
          nnz = nnz + 1
       end do
+#else
+      do ii=0,nn-1
+         i = ii/m
+         j = ii - i*m
+         if (i .GT. 0) then
+            jj = ii - m
+            a(ii + nn * jj) = -1.0d0
+            nnz = nnz + 1
+         end if
+         if (i .LT. n-1) then
+            jj = ii + m
+            a(ii + nn * jj) = -1.0d0
+            nnz = nnz + 1
+         end if
+         if (j .GT. 0) then
+            jj = ii - 1
+            a(ii + nn * jj) = -1.0d0
+            nnz = nnz + 1
+         end if
+         if (j .LT. m-1) then
+            jj = ii + 1
+            a(ii + nn * jj) = -1.0d0
+            nnz = nnz + 1
+         end if
+         jj = ii
+         a(ii + nn * jj) = 4.0d0
+         nnz = nnz + 1
+      end do
+#endif      
       
       write(*,*) 'matrix size =', nn, 'x', nn, '(', nnz, 'nonzero entries)'
       write(*,*)
 
+#ifdef COMPLEX      
+      call lis_array_set_all(nn,(1.0d0,0.0d0),u,ierr)
+#else
       call lis_array_set_all(nn,1.0d0,u,ierr)
+#endif      
       call lis_array_matvec(nn,a,u,b,LIS_INS_VALUE,ierr)
 
 ! solve linear system

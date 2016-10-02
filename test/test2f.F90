@@ -97,38 +97,73 @@
 
       call lis_matrix_get_range(A,is,ie,ierr)
       ctr = 0
+#ifdef COMPLEX      
       do ii=is-1,ie-2
          i = ii/m
          j = ii - i*m
          if ( i .GT. 0 ) then
             jj = ii - m
             index(ctr) = jj
-            value(ctr) = -1.0
+            value(ctr) = (-1.0d0,0.0d0)
             ctr = ctr + 1
          end if
          if ( i .LT. n-1 ) then
             jj = ii + m
             index(ctr) = jj
-            value(ctr) = -1.0
+            value(ctr) = (-1.0d0,0.0d0)
             ctr = ctr + 1
          end if
          if ( j .GT. 0 ) then
             jj = ii - 1
             index(ctr) = jj
-            value(ctr) = -1.0
+            value(ctr) = (-1.0d0,0.0d0)
             ctr = ctr + 1
          end if
          if ( j .LT. m-1 ) then
             jj = ii + 1
             index(ctr) = jj
-            value(ctr) = -1.0
+            value(ctr) = (-1.0d0,0.0d0)
             ctr = ctr + 1
          end if
          index(ctr) = ii
-         value(ctr) = 4.0
+         value(ctr) = (4.0d0,0.0d0)
          ctr = ctr + 1
          ptr(ii-(is-1)+1) = ctr
       end do
+#else
+      do ii=is-1,ie-2
+         i = ii/m
+         j = ii - i*m
+         if ( i .GT. 0 ) then
+            jj = ii - m
+            index(ctr) = jj
+            value(ctr) = -1.0d0
+            ctr = ctr + 1
+         end if
+         if ( i .LT. n-1 ) then
+            jj = ii + m
+            index(ctr) = jj
+            value(ctr) = -1.0d0
+            ctr = ctr + 1
+         end if
+         if ( j .GT. 0 ) then
+            jj = ii - 1
+            index(ctr) = jj
+            value(ctr) = -1.0d0
+            ctr = ctr + 1
+         end if
+         if ( j .LT. m-1 ) then
+            jj = ii + 1
+            index(ctr) = jj
+            value(ctr) = -1.0d0
+            ctr = ctr + 1
+         end if
+         index(ctr) = ii
+         value(ctr) = 4.0d0
+         ctr = ctr + 1
+         ptr(ii-(is-1)+1) = ctr
+      end do
+#endif      
       ptr(0) = 0
       call lis_matrix_set_csr(ptr(ie-is),ptr,index,value,A,ierr)
       call CHKERR(ierr)
@@ -161,7 +196,7 @@
       call lis_vector_duplicate(A,x,ierr)
       call CHKERR(ierr)
 
-      call lis_vector_set_all(1.0d0,u,ierr)
+      call lis_vector_set_all((1.0d0,0.0d0),u,ierr)
       call lis_matvec(A,u,b,ierr)
 
       call lis_solver_create(solver,ierr)
