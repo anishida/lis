@@ -143,7 +143,11 @@
       call lis_array_solve(nn,a,b,x,w,ierr)
       time = lis_wtime() - time0
 
+#ifdef COMPLEX      
+      call lis_array_xpay(nn,x,(-1.0d0,0.0d0),u,ierr)
+#else      
       call lis_array_xpay(nn,x,-1.0d0,u,ierr)
+#endif      
       call lis_array_nrm2(nn,u,resid_r,ierr)
       call lis_array_nrm2(nn,b,resid_b,ierr)
       
