@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"1.6.27"
+#define LIS_VERSION	"1.6.28"
 /**************************************/
 #include <stdio.h>
 #ifdef HAVE_COMPLEX_H
@@ -700,7 +700,7 @@ struct LIS_ESOLVER_STRUCT
         double p_c_time;
         double p_i_time;
 	LIS_INT eprecision;
-        LIS_REAL lshift;
+        LIS_SCALAR lshift;
 	LIS_REAL nrm2;
         LIS_REAL tol;
 };

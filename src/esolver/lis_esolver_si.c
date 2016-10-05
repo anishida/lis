@@ -143,7 +143,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   LIS_MATRIX A;
   LIS_VECTOR x, Ax;
   LIS_SCALAR xAx, xx, mu;
-  LIS_REAL lshift;
+  LIS_SCALAR lshift;
   LIS_INT ss;
   LIS_INT emaxiter;
   LIS_REAL tol;
@@ -196,11 +196,19 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
       lis_solver_get_preconname(precon_type, preconname);
       if( A->my_rank==0 ) printf("linear solver         : %s\n", solvername);
       if( A->my_rank==0 ) printf("preconditioner        : %s\n", preconname);
+#ifdef _COMPLEX
+#ifdef _LONG__DOUBLE
+      if( A->my_rank==0 ) printf("local shift           : (%Le, %Le)\n", creall(lshift), cimagl(lshift));
+#else
+      if( A->my_rank==0 ) printf("local shift           : (%e, %e)\n", creal(lshift), cimag(lshift));
+#endif
+#else      
 #ifdef _LONG__DOUBLE
       if( A->my_rank==0 ) printf("local shift           : %Le\n", lshift);
 #else
       if( A->my_rank==0 ) printf("local shift           : %e\n", lshift);
 #endif
+#endif      
       if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
       break;
 
@@ -216,11 +224,19 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
       if( A->my_rank==0 ) printf("linear solver         : %s\n", solvername);
       if( A->my_rank==0 ) printf("preconditioner        : %s\n", preconname);
       if( A->my_rank==0 ) printf("\n");
+#ifdef _COMPLEX
+#ifdef _LONG__DOUBLE
+      if( A->my_rank==0 ) printf("local shift           : (%Le, %Le)\n", creall(lshift), cimagl(lshift));
+#else
+      if( A->my_rank==0 ) printf("local shift           : (%e, %e)\n", creal(lshift), cimag(lshift));
+#endif
+#else      
 #ifdef _LONG__DOUBLE
       if( A->my_rank==0 ) printf("local shift           : %Le\n", lshift);
 #else
       if( A->my_rank==0 ) printf("local shift           : %e\n", lshift);
 #endif
+#endif      
       if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
       lis_vector_set_all(1.0,q);
       lis_solve(A, q, x, solver);
@@ -240,11 +256,19 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
       if( A->my_rank==0 ) printf("linear solver         : %s\n", solvername);
       if( A->my_rank==0 ) printf("preconditioner        : %s\n", preconname);
       if( A->my_rank==0 ) printf("\n");
+#ifdef _COMPLEX
+#ifdef _LONG__DOUBLE
+      if( A->my_rank==0 ) printf("local shift           : (%Le, %Le)\n", creall(lshift), cimagl(lshift));
+#else
+      if( A->my_rank==0 ) printf("local shift           : (%e, %e)\n", creal(lshift), cimag(lshift));
+#endif
+#else      
 #ifdef _LONG__DOUBLE
       if( A->my_rank==0 ) printf("local shift           : %Le\n", lshift);
 #else
       if( A->my_rank==0 ) printf("local shift           : %e\n", lshift);
 #endif
+#endif      
       if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
       break;
 

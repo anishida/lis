@@ -132,7 +132,7 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
   LIS_REAL tol;
   LIS_INT iter,iter3,output;
   LIS_REAL nrm2,resid,resid3;
-  LIS_REAL lshift;
+  LIS_SCALAR lshift;
   LIS_VECTOR r,w,p,Aw,Ax,Ap;
   LIS_SCALAR *A3,*B3,*W3,*v3,*A3v3,*B3v3,*z3,*q3,*B3z3,ievalue3;
   LIS_SOLVER solver;
@@ -153,11 +153,19 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
   lshift = esolver->lshift;
 
+#ifdef _COMPLEX
+#ifdef _LONG__DOUBLE
+  if( A->my_rank==0 ) printf("local shift           : (%Le, %Le)\n", creall(lshift), cimagl(lshift));
+#else
+  if( A->my_rank==0 ) printf("local shift           : (%e, %e)\n", creal(lshift), cimag(lshift));
+#endif
+#else  
 #ifdef _LONG__DOUBLE
   if( A->my_rank==0 ) printf("local shift           : %Le\n", lshift);
 #else
   if( A->my_rank==0 ) printf("local shift           : %e\n", lshift);
 #endif
+#endif  
   if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
 
   A3 = (LIS_SCALAR *)lis_malloc(3*3*sizeof(LIS_SCALAR), "lis_ecg::A3");
@@ -423,7 +431,7 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
   LIS_REAL tol;
   LIS_INT iter,output;
   LIS_REAL nrm2,resid;
-  LIS_REAL lshift;
+  LIS_SCALAR lshift;
   LIS_VECTOR r,p,w,Ax,Ap,Aw;
   LIS_SCALAR alpha,beta;
   LIS_SCALAR rAp,rp,ApAp,pAp,pp,AwAp,pAw,wAp,wp;
@@ -445,11 +453,19 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
   lshift = esolver->lshift;
 
+#ifdef _COMPLEX
+#ifdef _LONG__DOUBLE
+  if( A->my_rank==0 ) printf("local shift           : (%Le, %Le)\n", creall(lshift), cimagl(lshift));
+#else
+  if( A->my_rank==0 ) printf("local shift           : (%e, %e)\n", creal(lshift), cimag(lshift));
+#endif
+#else  
 #ifdef _LONG__DOUBLE
   if( A->my_rank==0 ) printf("local shift           : %Le\n", lshift);
 #else
   if( A->my_rank==0 ) printf("local shift           : %e\n", lshift);
 #endif
+#endif  
   if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
 
   r = esolver->work[0];

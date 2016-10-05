@@ -475,7 +475,7 @@ LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER 
 	}
 
 	/* global shift */
-	if ( output ) if( A->my_rank==0 ) printf("shift                 : %e\n", gshift);		
+	if ( output ) if( A->my_rank==0 ) printf("global shift          : %e\n", gshift);
 
 	/* create eigenvector array */
 	if( esolver->evector ) lis_free(esolver->evector);
