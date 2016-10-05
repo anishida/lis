@@ -77,6 +77,16 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       call lis_matrix_set_size(A,ln,n,ierr)
       call lis_matrix_get_size(A,n,gn,ierr)
       call lis_matrix_get_range(A,is,ie,ierr)
+#ifdef COMPLEX
+      do i=is,ie-1
+        if( i>1  ) call lis_matrix_set_value(LIS_INS_VALUE,i,i-1,
+     .                                        (-1.0d0,0.0d0),A,ierr)
+        if( i<gn ) call lis_matrix_set_value(LIS_INS_VALUE,i,i+1,
+     .                                        (-1.0d0,0.0d0),A,ierr)
+        call lis_matrix_set_value(LIS_INS_VALUE,i,i,(2.0d0,0.0d0),
+     .                                        A,ierr)
+      enddo
+#else      
       do i=is,ie-1
         if( i>1  ) call lis_matrix_set_value(LIS_INS_VALUE,i,i-1,-1.0d0,
      .                                        A,ierr)
@@ -84,11 +94,16 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      .                                        A,ierr)
         call lis_matrix_set_value(LIS_INS_VALUE,i,i,2.0d0,A,ierr)
       enddo
+#endif      
       call lis_matrix_set_type(A,matrix_type,ierr)
       call lis_matrix_assemble(A,ierr)
       
       call lis_vector_duplicate(A,x,ierr)
+#ifdef COMPLEX      
+      call lis_vector_set_all((1.0d0,0.0d0),x,ierr)
+#else
       call lis_vector_set_all(1.0d0,x,ierr)
+#endif      
       
       call lis_esolver_create(esolver,ierr)
       call lis_esolver_set_option('-eprint mem',esolver,ierr)
