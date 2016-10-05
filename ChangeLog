@@ -1,3 +1,7 @@
+Version 1.6.27  October 5, 2016
+
+  - Updated lis_esolver_ai.c.
+
 Version 1.6.26  October 5, 2016
 
   - Fixed bugs in test/*.F.
