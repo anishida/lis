@@ -1,3 +1,7 @@
+Version 1.6.28  October 6, 2016
+
+  - Updated eigensolvers.
+
 Version 1.6.27  October 5, 2016
 
   - Updated lis_esolver_ai.c.
