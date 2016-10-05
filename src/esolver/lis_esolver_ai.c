@@ -325,7 +325,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 	}
 
       if( output ) printf("\n");
-      if( output ) printf("compute refined (real) eigenpairs, where imaginary parts are currently neglected:\n\n");
+      if( output ) printf("compute refined eigenpairs:\n\n");
   
     }
 
@@ -336,7 +336,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   esolver2->options[LIS_EOPTIONS_OUTPUT] = esolver->options[LIS_EOPTIONS_OUTPUT];
   esolver2->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN] = tol; 
 
-  /* compute refined (real) eigenpairs, where imaginary parts are currently neglected */
+  /* compute refined (real) eigenpairs */
 
   for (i=0;i<ss;i++)
     {
@@ -374,20 +374,28 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 #else
 	  if( output ) printf("Arnoldi: mode number          = %d\n", i);
 #endif
+#ifdef _COMPLEX	  
+#ifdef _LONG__DOUBLE
+	  if( output ) printf("Arnoldi: eigenvalue           = (%Le, %Le)\n", creall(esolver->evalue[i]), cimagl(esolver->evalue[i]));
+#else
+	  if( output ) printf("Arnoldi: eigenvalue           = (%e, %e)\n", creal(esolver->evalue[i]), cimag(esolver->evalue[i]));
+#endif
+#else
 #ifdef _LONG__DOUBLE
 	  if( output ) printf("Arnoldi: eigenvalue           = %Le\n", (LIS_REAL)esolver->evalue[i]);
 #else
 	  if( output ) printf("Arnoldi: eigenvalue           = %e\n", (LIS_REAL)esolver->evalue[i]);
 #endif
+#endif	  
 #ifdef _LONG__LONG
 	  if( output ) printf("Arnoldi: number of iterations = %lld\n",esolver2->iter[0]);
 #else
 	  if( output ) printf("Arnoldi: number of iterations = %d\n",esolver2->iter[0]);
 #endif
 #ifdef _LONG__DOUBLE
-	  if( output ) printf("Arnoldi: relative residual    = %Le\n\n",(LIS_REAL)esolver2->resid[0]);
+	  if( output ) printf("Arnoldi: relative residual    = %Le\n\n",esolver2->resid[0]);
 #else
-	  if( output ) printf("Arnoldi: relative residual    = %e\n\n",(LIS_REAL)esolver2->resid[0]);
+	  if( output ) printf("Arnoldi: relative residual    = %e\n\n",esolver2->resid[0]);
 #endif
 	}
     }
