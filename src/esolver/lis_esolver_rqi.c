@@ -129,7 +129,7 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   LIS_VECTOR x;
   LIS_SCALAR ievalue;
   LIS_SCALAR mu;
-  LIS_REAL lshift;
+  LIS_SCALAR lshift;
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter2,output;
@@ -158,11 +158,19 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   z = esolver->work[0];
   q = esolver->work[1];
 
+#ifdef _COMPLEX
+#ifdef _LONG__DOUBLE
+  if( output & (A->my_rank==0) ) printf("local shift           : (%Le, %Le)\n", creall(lshift), cimagl(lshift));
+#else
+  if( output & (A->my_rank==0) ) printf("local shift           : (%e, %e)\n", creal(lshift), cimag(lshift));
+#endif
+#else  
 #ifdef _LONG__DOUBLE
   if( output & (A->my_rank==0) ) printf("local shift           : %Le\n", lshift);
 #else
   if( output & (A->my_rank==0) ) printf("local shift           : %e\n", lshift);
 #endif
+#endif  
   if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
