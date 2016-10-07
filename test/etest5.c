@@ -43,7 +43,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 {
   LIS_INT nprocs,my_rank;
   int int_nprocs,int_my_rank;
-  LIS_INT nsol;
+  LIS_INT nesol;
   LIS_MATRIX A,B;
   LIS_VECTOR x,y,z,w;
   LIS_SCALAR evalue0;
@@ -99,8 +99,8 @@ LIS_INT main(LIS_INT argc, char* argv[])
   lis_esolver_set_option("-e si -ss 1 -eprint mem",esolver);
   lis_esolver_set_optionC(esolver);
   lis_esolve(A, x, &evalue0, esolver);
-  lis_esolver_get_esolver(esolver,&nsol);
-  lis_esolver_get_esolvername(nsol,esolvername);
+  lis_esolver_get_esolver(esolver,&nesol);
+  lis_esolver_get_esolvername(nesol,esolvername);
   lis_esolver_get_residualnorm(esolver, &residual);
   lis_esolver_get_iter(esolver, &iter);
   lis_esolver_get_timeex(esolver,&time,&itime,&ptime,&p_c_time,&p_i_time);

@@ -220,6 +220,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 
     lis_esolver_destroy(esolver);
     lis_matrix_destroy(A);
+    lis_matrix_destroy(A0);    
     lis_vector_destroy(x);
 
     lis_finalize();
