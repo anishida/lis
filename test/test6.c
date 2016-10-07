@@ -108,6 +108,26 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	lis_array_nrm2(nn,u,&resid_r);
 	lis_array_nrm2(nn,b,&resid_b);
 
+	/*
+	for (i=0;i<nn;i++)
+	  {
+#ifdef _COMPLEX
+#ifdef _LONG__DOUBLE	    
+	    printf("x(%d) = (%Le, %Le)\n", i, creall(x[i]), cimagl(x[i]));
+#else
+	    printf("x(%d) = (%e, %e)\n", i, creal(x[i]), cimag(x[i]));
+#endif
+#else
+#ifdef _LONG__DOUBLE
+	    printf("x(%d) = %Le\n", i, x[i]);
+#else
+	    printf("x(%d) = %e\n", i, x[i]);	    
+#endif	    
+#endif	    
+	  }
+	printf("\n");
+	*/
+
 	printf("Direct: elapsed time         = %e sec.\n", time);
 	printf("Direct:   linear solver      = %e sec.\n", time);
 #ifdef _LONG__DOUBLE

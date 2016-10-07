@@ -99,6 +99,26 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	lis_array_qr(nn,a,q,r,&qriter,&qrerr);
 	time = lis_wtime() - time0;
 
+	/*
+	for (i=0;i<nn;i++)
+	  {
+#ifdef _COMPLEX
+#ifdef _LONG__DOUBLE	    
+	    printf("A(%d,%d) = (%Le, %Le)\n", i, i, creall(a[i*nn+i]), cimagl(a[i*nn+i]));
+#else
+	    printf("A(%d,%d) = (%e, %e)\n", i, i, creal(a[i*nn+i]), cimag(a[i*nn+i]));
+#endif
+#else
+#ifdef _LONG__DOUBLE	    
+	    printf("A(%d,%d) = %Le\n", i, i, a[i*nn+i]);
+#else
+	    printf("A(%d,%d) = %e\n", i, i, a[i*nn+i]);
+#endif	    
+#endif	    
+	  }
+	printf("\n");	
+	*/
+
 	printf("QR    : number of iterations = %d\n", qriter);
 	printf("QR    : elapsed time         = %e sec.\n", time);
 	printf("QR    :   eigensolver        = %e sec.\n", time);
