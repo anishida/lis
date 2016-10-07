@@ -492,7 +492,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	{
 	  if( output ) lis_printf(A->comm,"initial vector x      : 0\n");
 		#ifndef USE_QUAD_PRECISION
-			lis_vector_set_all(0.0,xx);
+	                lis_vector_set_all(0.0,xx);
 		#else
 			if( precision==LIS_PRECISION_DOUBLE )
 			{
@@ -927,6 +927,7 @@ LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VEC
 	A  = solver->A;
 	b  = solver->b;
 	x  = solver->x;
+	xx = solver->x;
 	output     = solver->options[LIS_OPTIONS_OUTPUT];
 	conv       = solver->options[LIS_OPTIONS_CONV_COND];
 	tol        = solver->params[LIS_PARAMS_RESID-LIS_OPTIONS_LEN];
