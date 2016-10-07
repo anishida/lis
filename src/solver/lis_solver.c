@@ -927,6 +927,7 @@ LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VEC
 	A  = solver->A;
 	b  = solver->b;
 	x  = solver->x;
+	xx = solver->x;
 	output     = solver->options[LIS_OPTIONS_OUTPUT];
 	conv       = solver->options[LIS_OPTIONS_CONV_COND];
 	tol        = solver->params[LIS_PARAMS_RESID-LIS_OPTIONS_LEN];
