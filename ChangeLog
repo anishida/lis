@@ -1,6 +1,8 @@
 Version 1.6.30  October 10, 2016
 
   - Updated documents (thanks to Hiroshi Kanayama).
+  - Updated man pages.
+  - Updated include/lis.h.
 
 Version 1.6.29  October 7, 2016
 
