@@ -1,0 +1,29 @@
+.TH lis_vector_conjugate 3f "10 Oct 2016" "Man Page" "Lis Library Functions"
+
+.SH NAME
+lis_vector_conjugate \- get the conjugate values of the elements of the vector
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_vector_conjugate\fR(\fBLIS_VECTOR x\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the conjugate values of the elements of vector \fIx\fR.
+
+.SH INPUT
+
+.IP "\fBx\fR"
+The vector
+
+.SH OUTPUT
+
+.IP "\fBx\fR"
+The vector that stores the conjugate values
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

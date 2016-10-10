@@ -1,4 +1,4 @@
-.TH lis_vector_nrm2 3f "9 Sep 2014" "Man Page" "Lis Library Functions"
+.TH lis_vector_nrm2 3f "10 Oct 2016" "Man Page" "Lis Library Functions"
 
 .SH NAME
 
@@ -6,7 +6,7 @@ lis_vector_nrm2 \- calculate the 2-norm of the vector
 
 .SH SYNOPSIS
 
-\fBsubroutine lis_vector_nrm2\fR(\fBLIS_VECTOR x\fR, \fBLIS_SCALAR *value\fR, \fBLIS_INTEGER ierr\fR);
+\fBsubroutine lis_vector_nrm2\fR(\fBLIS_VECTOR x\fR, \fBLIS_REAL *value\fR, \fBLIS_INTEGER ierr\fR);
 
 .SH DESCRIPTION
 
