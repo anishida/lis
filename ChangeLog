@@ -1,3 +1,7 @@
+Version 1.6.30  October 10, 2016
+
+  - Updated documents (thanks to Hiroshi Kanayama).
+
 Version 1.6.29  October 7, 2016
 
   - Fixed quad precision bug in lis_solver.c (thanks to Yonggwi Cho).
