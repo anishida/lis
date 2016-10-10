@@ -1,0 +1,33 @@
+.TH lis_vector_nhdot 3f "10 Oct 2016" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_vector_nhdot \- calculate the non-Hermitian inner product of the vectors
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_vector_nhdot\fR(\fBLIS_VECTOR x\fR, \fBLIS_VECTOR y\fR, \fBLIS_SCALAR *value\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Calculate the non-Hermitian inner product \fIx^T y\fR of vectors \fIx\fR and \fIy\fR.
+
+.SH INPUT
+
+.IP "\fBx\fR"
+The vector
+
+.IP "\fBy\fR"
+The vector
+
+.SH OUTPUT
+
+.IP "\fBvalue\fR"
+The inner product
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

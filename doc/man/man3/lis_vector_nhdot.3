@@ -1,18 +1,18 @@
-.TH lis_vector_dot 3 "10 Oct 2016" "Man Page" "Lis Library Functions"
+.TH lis_vector_nhdot 3 "10 Oct 2016" "Man Page" "Lis Library Functions"
 
 .SH NAME
 
-lis_vector_dot \- calculate the Hermitian inner product of the vectors
+lis_vector_nhdot \- calculate the non-Hermitian inner product of the vectors
 
 .SH SYNOPSIS
 
 #include "lis.h"
 
-\fBLIS_INT lis_vector_dot\fR(\fBLIS_VECTOR x\fR, \fBLIS_VECTOR y\fR, \fBLIS_SCALAR *value\fR);
+\fBLIS_INT lis_vector_nhdot\fR(\fBLIS_VECTOR x\fR, \fBLIS_VECTOR y\fR, \fBLIS_SCALAR *value\fR);
 
 .SH DESCRIPTION
 
-Calculate the Hermitian inner product \fIx^H y\fR of vectors \fIx\fR and \fIy\fR.
+Calculate the non-Hermitian inner product \fIx^T y\fR of vectors \fIx\fR and \fIy\fR.
 
 .SH INPUT
 
