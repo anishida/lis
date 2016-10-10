@@ -265,7 +265,7 @@ LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER 
 	double time;
 	double gshift;
 	LIS_INT	estorage,eblock;
-	LIS_MATRIX B;
+	LIS_MATRIX A0;
 	LIS_INT eprecision;
 	LIS_VECTOR xx;
 
@@ -501,11 +501,11 @@ LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER 
 	/* convert matrix */
 	if( estorage>0 && A->matrix_type!=estorage )
 	{
-		err = lis_matrix_duplicate(A,&B);
+		err = lis_matrix_duplicate(A,&A0);
 		if( err ) return err;
-		lis_matrix_set_blocksize(B,eblock,eblock,NULL,NULL);
-		lis_matrix_set_type(B,estorage);
-		err = lis_matrix_convert(A,B);
+		lis_matrix_set_blocksize(A0,eblock,eblock,NULL,NULL);
+		lis_matrix_set_type(A0,estorage);
+		err = lis_matrix_convert(A,A0);
 		if( err ) return err;
 		lis_matrix_storage_destroy(A);
 		lis_matrix_DLU_destroy(A);
@@ -513,9 +513,9 @@ LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER 
 		if( A->l2g_map ) lis_free( A->l2g_map );
 		if( A->commtable ) lis_commtable_destroy( A->commtable );
 		if( A->ranges ) lis_free( A->ranges );
-		err = lis_matrix_copy_struct(B,A);
+		err = lis_matrix_copy_struct(A0,A);
 		if( err ) return err;
-		lis_free(B);
+		lis_free(A0);
 	}
 
 	esolver->A        = A;
