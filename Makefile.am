@@ -176,7 +176,6 @@ EXTRA_DIST = doc/Makefile \
              doc/man/man3/lis_array_pmul.3f \
              doc/man/man3/lis_array_qr.3f \
              doc/man/man3/lis_array_reciprocal.3f \
-             doc/man/man3/lis_array_conjugate.3f \
              doc/man/man3/lis_array_scale.3f \
              doc/man/man3/lis_array_set_all.3f \
              doc/man/man3/lis_array_shift.3f \
@@ -282,6 +281,7 @@ EXTRA_DIST = doc/Makefile \
              doc/man/man3/lis_vector_pdiv.3f \
              doc/man/man3/lis_vector_pmul.3f \
              doc/man/man3/lis_vector_reciprocal.3f \
+             doc/man/man3/lis_vector_conjugate.3f \
              doc/man/man3/lis_vector_scale.3f \
              doc/man/man3/lis_vector_scatter.3f \
              doc/man/man3/lis_vector_set_all.3f \
