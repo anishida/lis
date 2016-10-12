@@ -59,8 +59,10 @@
  * lis_array_set_all		x_i <- alpha
  * lis_array_abs		x_i <- |x_i|
  * lis_array_reciprocal		x_i <- 1 / x_i
+ * lis_array_conjugate		x_i <- conj(x_i)
  * lis_array_shift		x_i <- alpha + x_i
- * lis_array_dot		v <- x^T * y
+ * lis_array_dot		v <- y^H * x
+ * lis_array_nhdot		v <- y^T * x
  * lis_array_nrm1		v <- ||x||_1
  * lis_array_nrm2		v <- ||x||_2
  * lis_array_nrmi		v <- ||x||_infinity
@@ -268,6 +270,29 @@ LIS_INT lis_array_reciprocal(LIS_INT n, LIS_SCALAR *x)
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_array_conjugate"
+LIS_INT lis_array_conjugate(LIS_INT n, LIS_SCALAR *x)
+{
+  LIS_INT i;
+
+  LIS_DEBUG_FUNC_IN;
+
+  for(i=0;i<n;i++)
+    {
+#ifdef _COMPLEX
+#ifdef _DOUBLE__COMPLEX      
+      x[i] = conjl(x[i]);
+#else
+      x[i] = conj(x[i]);
+#endif
+#endif      
+    }
+
+  LIS_DEBUG_FUNC_OUT;
+  return LIS_SUCCESS;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_array_shift"
 LIS_INT lis_array_shift(LIS_INT n, LIS_SCALAR t, LIS_SCALAR *x)
 {
@@ -287,6 +312,32 @@ LIS_INT lis_array_shift(LIS_INT n, LIS_SCALAR t, LIS_SCALAR *x)
 #undef __FUNC__
 #define __FUNC__ "lis_array_dot"
 LIS_INT lis_array_dot(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *value)
+{
+  LIS_INT i;
+
+  LIS_DEBUG_FUNC_IN;
+
+  *value = 0;
+  for(i=0;i<n;i++)
+    {
+#ifdef _COMPLEX
+#ifdef _LONG__DOUBLE
+      *value = *value + x[i] * conjl(y[i]);
+#else      
+      *value = *value + x[i] * conj(y[i]);
+#endif
+#else      
+      *value = *value + x[i] * y[i];
+#endif      
+    }
+
+  LIS_DEBUG_FUNC_OUT;
+  return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_array_nhdot"
+LIS_INT lis_array_nhdot(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *value)
 {
   LIS_INT i;
 
@@ -334,7 +385,15 @@ LIS_INT lis_array_nrm2(LIS_INT n, LIS_SCALAR *x, LIS_REAL *value)
 	t = 0.0;
 	for(i=0;i<n;i++)
 	{
+#ifdef _COMPLEX
+#ifdef _LONG__DOUBLE	  
+		t += x[i]*conjl(x[i]);
+#else
+		t += x[i]*conj(x[i]);
+#endif
+#else		
 		t += x[i]*x[i];
+#endif		
 	}
 	*value = sqrt(t);
 

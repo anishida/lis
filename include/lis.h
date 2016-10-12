@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"1.6.31"
+#define LIS_VERSION	"1.6.32"
 /**************************************/
 #include <stdio.h>
 #ifdef HAVE_COMPLEX_H
@@ -856,8 +856,10 @@ extern "C"
         extern LIS_INT lis_array_set_all(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR *x);
         extern LIS_INT lis_array_abs(LIS_INT n, LIS_SCALAR *x);
         extern LIS_INT lis_array_reciprocal(LIS_INT n, LIS_SCALAR *x);
+        extern LIS_INT lis_array_conjugate(LIS_INT n, LIS_SCALAR *x);  
         extern LIS_INT lis_array_shift(LIS_INT n, LIS_SCALAR t, LIS_SCALAR *x);
         extern LIS_INT lis_array_dot(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *value);
+        extern LIS_INT lis_array_nhdot(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *value);  
 	extern LIS_INT lis_array_nrm1(LIS_INT n, LIS_SCALAR *x, LIS_REAL *value);
 	extern LIS_INT lis_array_nrm2(LIS_INT n, LIS_SCALAR *x, LIS_REAL *value);
 	extern LIS_INT lis_array_nrmi(LIS_INT n, LIS_SCALAR *x, LIS_REAL *value);

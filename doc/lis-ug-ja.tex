@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis $B%f!<%6%,%$%I(B}\\
-$B%P!<%8%g%s(B 1.6.31
+$B%P!<%8%g%s(B 1.6.32
 \end{flushleft}
 
 \vspace*{2cm}
@@ -6948,6 +6948,29 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
+\subsubsection{lis\_array\_conjugate}
+\begin{screen}
+\verb|C       LIS_INT lis_array_conjugate(LIS_INT n, LIS_SCALAR x[])|\\
+\verb|Fortran subroutine lis_array_conjugate(LIS_INTEGER n, LIS_SCALAR x(),|\\
+\verb|         LIS_INTEGER ierr)|
+\end{screen}
+{\bf $B5!G=(B}\\
+\indent
+$B%Y%/%H%k(B$x$$B$NMWAG$N6&LrJ#AG?t$r5a$a$k(B.
+\\ \\
+\noindent
+{\bf $BF~NO(B}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt n] $B%Y%/%H%k$N<!?t(B
+\item[\tt x] $B%Y%/%H%k(B$x$$B$r3JG<$9$kG[Ns(B
+\end{namelist}
+{\bf $B=PNO(B}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt x] $B3FMWAG$N6&LrJ#AG?t$,3JG<$5$l$?G[Ns(B
+\item[\tt ierr] $B%j%?!<%s%3!<%I(B
+\end{namelist}
+
+\newpage
 \subsubsection{lis\_array\_shift}
 \begin{screen}
 \verb|C       LIS_INT lis_array_shift(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR x[])|\\
@@ -6971,7 +6994,6 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
-\newpage
 \subsubsection{lis\_array\_dot}
 \begin{screen}
 \verb|C       LIS_INT lis_array_dot(LIS_INT n, LIS_SCALAR x[], LIS_SCALAR y[],|\\
@@ -6981,7 +7003,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \end{screen}
 {\bf $B5!G=(B}\\
 \indent
-$B%Y%/%H%kFb@Q(B$x^{T}y$$B$r7W;;$9$k(B.  
+$B%(%k%_!<%HFb@Q(B$y^{H}x$$B$r7W;;$9$k(B.  
 \\ \\
 \noindent
 {\bf $BF~NO(B}
@@ -6991,7 +7013,31 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \end{namelist}
 {\bf $B=PNO(B}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt value] $B%Y%/%H%kFb@Q(B
+\item[\tt value] $B%(%k%_!<%HFb@Q(B
+\item[\tt ierr] $B%j%?!<%s%3!<%I(B
+\end{namelist}
+
+\newpage
+\subsubsection{lis\_array\_nhdot}
+\begin{screen}
+\verb|C       LIS_INT lis_array_nhdot(LIS_INT n, LIS_SCALAR x[], LIS_SCALAR y[],|\\
+\verb|         LIS_SCALAR *value)|\\
+\verb|Fortran subroutine lis_array_nhdot(LIS_INTEGER n, LIS_SCALAR x(), LIS_SCALAR y(),|\\
+\verb|         LIS_SCALAR value, LIS_INTEGER ierr)|
+\end{screen}
+{\bf $B5!G=(B}\\
+\indent
+$BHs%(%k%_!<%HFb@Q(B$y^{T}x$$B$r7W;;$9$k(B.  
+\\ \\
+\noindent
+{\bf $BF~NO(B}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt n] $B%Y%/%H%k$N<!?t(B
+\item[\tt x, y] $B%Y%/%H%k(B$x, y$$B$r3JG<$9$kG[Ns(B
+\end{namelist}
+{\bf $B=PNO(B}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt value] $BHs%(%k%_!<%HFb@Q(B
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 

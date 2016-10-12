@@ -61,8 +61,10 @@
  * lis_array_set_all_f
  * lis_array_abs_f
  * lis_array_reciprocal_f
+ * lis_array_conjugate_f
  * lis_array_shift_f
  * lis_array_dot_f
+ * lis_array_nhdot_f
  * lis_array_nrm1_f
  * lis_array_nrm2_f
  * lis_array_nrmi_f
@@ -214,6 +216,18 @@ void lis_array_reciprocal_f(LIS_INT *n, LIS_SCALAR *x, LIS_INT *ierr)
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_array_conjugate_f"
+void lis_array_conjugate_f(LIS_INT *n, LIS_SCALAR *x, LIS_INT *ierr)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	*ierr = lis_array_conjugate(*n,x);
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_array_shift_f"
 void lis_array_shift_f(LIS_INT *n, LIS_SCALAR *t, LIS_SCALAR *x, LIS_INT *ierr)
 {
@@ -232,6 +246,18 @@ void lis_array_dot_f(LIS_INT *n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *value
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_dot(*n,x,y,value);
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_array_nhdot_f"
+void lis_array_nhdot_f(LIS_INT *n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *value, LIS_INT *ierr)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	*ierr = lis_array_nhdot(*n,x,y,value);
 
 	LIS_DEBUG_FUNC_OUT;
 	return;

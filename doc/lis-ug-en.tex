@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.6.31
+Version 1.6.32
 \end{flushleft}
 
 \vspace*{2cm}
@@ -7091,6 +7091,29 @@ Get the reciprocal values of the elements of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
+\subsubsection{lis\_array\_conjugate}
+\begin{screen}
+\verb|C       LIS_INT lis_array_conjugate(LIS_INT n, LIS_SCALAR x[])|\\
+\verb|Fortran subroutine lis_array_conjugate(LIS_INTEGER n, LIS_SCALAR x(),|\\
+\verb|         LIS_INTEGER ierr)|
+\end{screen}
+{\bf Description}\\
+\indent
+Get the conjugate values of the elements of vector $x$.
+\\ \\
+\noindent
+{\bf Input}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt n] The size of the vector
+\item[\tt x] The array that stores vector $x$
+\end{namelist}
+{\bf Output}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt x] The array that stores the conjugate values
+\item[\tt ierr] The return code
+\end{namelist}
+
+\newpage
 \subsubsection{lis\_array\_shift}
 \begin{screen}
 \verb|C       LIS_INT lis_array_shift(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR x[])|\\
@@ -7114,7 +7137,6 @@ Get the shifted values of the elements of vector $x$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-\newpage
 \subsubsection{lis\_array\_dot}
 \begin{screen}
 \verb|C       LIS_INT lis_array_dot(LIS_INT n, LIS_SCALAR x[], LIS_SCALAR y[],|\\
@@ -7124,7 +7146,7 @@ Get the shifted values of the elements of vector $x$.
 \end{screen}
 {\bf Description}\\
 \indent
-Calculate the inner product $x^{T}y$ of vectors $x, y$.
+Calculate the Hermitian inner product $y^{H}x$ of vectors $x, y$.
 \\ \\
 \noindent
 {\bf Input}
@@ -7134,7 +7156,31 @@ Calculate the inner product $x^{T}y$ of vectors $x, y$.
 \end{namelist}
 {\bf Output}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt value] The inner product
+\item[\tt value] The Hermitian inner product
+\item[\tt ierr] The return code
+\end{namelist}
+
+\newpage
+\subsubsection{lis\_array\_nhdot}
+\begin{screen}
+\verb|C       LIS_INT lis_array_nhdot(LIS_INT n, LIS_SCALAR x[], LIS_SCALAR y[],|\\
+\verb|         LIS_SCALAR *value)|\\
+\verb|Fortran subroutine lis_array_nhdot(LIS_INTEGER n, LIS_SCALAR x(), LIS_SCALAR y(),|\\
+\verb|         LIS_SCALAR value, LIS_INTEGER ierr)|
+\end{screen}
+{\bf Description}\\
+\indent
+Calculate the non-Hermitian inner product $y^{T}x$ of vectors $x, y$.
+\\ \\
+\noindent
+{\bf Input}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt n] The size of the vectors  
+\item[\tt x, y] The arrays that store vectors $x, y$
+\end{namelist}
+{\bf Output}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt value] The non-Hermitian inner product
 \item[\tt ierr] The return code
 \end{namelist}
 
