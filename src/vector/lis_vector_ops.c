@@ -42,8 +42,8 @@
 #include "lislib.h"
 
 /**************************************************************
- * lis_vector_dot		v   <- x^H * y (Hermitian)
- * lis_vector_nhdot		v   <- x^T * y (non-Hermitian)
+ * lis_vector_dot		v   <- y^H * x (Hermitian)
+ * lis_vector_nhdot		v   <- y^T * x (non-Hermitian)
  * lis_vector_nrm2		v   <- ||x||_2
  * lis_vector_nrm1		v   <- ||x||_1
  * lis_vector_nrmi		v   <- ||x||_infinity

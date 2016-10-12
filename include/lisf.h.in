@@ -555,12 +555,18 @@
 #define lis_array_reciprocal lis_array_reciprocal_f
 #define LIS_ARRAY_RECIPROCAL lis_array_reciprocal_f
 
+#define lis_array_conjugate lis_array_conjugate_f
+#define LIS_ARRAY_CONJUGATE lis_array_conjugate_f
+
 #define lis_array_shift lis_array_shift_f
 #define LIS_ARRAY_SHIFT lis_array_shift_f
 
 #define lis_array_dot lis_array_dot_f
 #define LIS_ARRAY_DOT lis_array_dot_f
 
+#define lis_array_nhdot lis_array_nhdot_f
+#define LIS_ARRAY_NHDOT lis_array_nhdot_f
+      
 #define lis_array_nrm2 lis_array_nrm2_f
 #define LIS_ARRAY_NRM2 lis_array_nrm2_f
 
