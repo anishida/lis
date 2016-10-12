@@ -1,0 +1,43 @@
+.TH lis_array_conjugate 3 "12 Oct 2016" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_array_conjugate \- get the conjugate values of the elements of the vector
+
+.SH SYNOPSIS
+
+#include "lis.h"
+
+\fBLIS_INT lis_array_conjugate\fR(\fBLIS_INT n\fR, \fBLIS_SCALAR x[]\fR);
+
+.SH DESCRIPTION
+
+Get the conjugate values of the elements of vector \fIx\fR.
+
+.SH INPUT
+
+.IP "\fBn\fR"
+The size of the vector
+
+.IP "\fBx\fR"
+The array that stores the vector
+
+.SH OUTPUT
+
+.IP "\fBx\fR"
+The array that stores the conjugate values
+
+.SH EXIT STATUS
+
+The following exit values are returned:
+.IP "0"
+The process is normally terminated
+.IP "unspecified"
+An error occurred
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+
