@@ -25,6 +25,7 @@ EXTRA_DIST = doc/Makefile \
              doc/man/man3/lis_array_cgs.3 \
              doc/man/man3/lis_array_copy.3 \
              doc/man/man3/lis_array_dot.3 \
+             doc/man/man3/lis_array_nhdot.3 \
              doc/man/man3/lis_array_ge.3 \
              doc/man/man3/lis_array_matmat.3 \
              doc/man/man3/lis_array_matmat_ns.3 \
@@ -39,6 +40,7 @@ EXTRA_DIST = doc/Makefile \
              doc/man/man3/lis_array_pmul.3 \
              doc/man/man3/lis_array_qr.3 \
              doc/man/man3/lis_array_reciprocal.3 \
+             doc/man/man3/lis_array_conjugate.3 \
              doc/man/man3/lis_array_scale.3 \
              doc/man/man3/lis_array_set_all.3 \
              doc/man/man3/lis_array_shift.3 \
@@ -162,6 +164,7 @@ EXTRA_DIST = doc/Makefile \
              doc/man/man3/lis_array_cgs.3f \
              doc/man/man3/lis_array_copy.3f \
              doc/man/man3/lis_array_dot.3f \
+             doc/man/man3/lis_array_nhdot.3f \
              doc/man/man3/lis_array_ge.3f \
              doc/man/man3/lis_array_matmat.3f \
              doc/man/man3/lis_array_matmat_ns.3f \
@@ -176,6 +179,7 @@ EXTRA_DIST = doc/Makefile \
              doc/man/man3/lis_array_pmul.3f \
              doc/man/man3/lis_array_qr.3f \
              doc/man/man3/lis_array_reciprocal.3f \
+             doc/man/man3/lis_array_conjugate.3f \
              doc/man/man3/lis_array_scale.3f \
              doc/man/man3/lis_array_set_all.3f \
              doc/man/man3/lis_array_shift.3f \
