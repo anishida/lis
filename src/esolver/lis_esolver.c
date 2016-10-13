@@ -253,6 +253,22 @@ LIS_INT lis_esolver_destroy(LIS_ESOLVER esolver)
 #define __FUNC__ "lis_esolve"
 LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver)
 {
+	LIS_SCALAR *evalue;
+	LIS_INT	err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	/* call generalized eigensolver */
+	err = lis_gesolve(A,NULL,x,evalue0,esolver);
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_gesolve"
+LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver)
+{
         LIS_INT	nesolver,niesolver,emaxiter; 
 	LIS_SCALAR *evalue;
 	LIS_VECTOR *evector;
@@ -284,9 +300,18 @@ LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER 
 	{
 		return LIS_ERR_ILL_ARG;
 	}
+	if( B!=NULL && B->n!=x->n )
+	{
+		return LIS_ERR_ILL_ARG;
+	}
 	if( A->gn<=0 )
 	{
 		LIS_SETERR1(LIS_ERR_ILL_ARG,"Size n(=%d) of matrix A is less than 0\n",A->gn);
+		return LIS_ERR_ILL_ARG;
+	}
+	if( B!=NULL && B->gn<=0 )
+	{
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Size n(=%d) of matrix B is less than 0\n",B->gn);
 		return LIS_ERR_ILL_ARG;
 	}
 
@@ -519,6 +544,7 @@ LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER 
 	}
 
 	esolver->A        = A;
+	esolver->B        = B;
 	esolver->evalue   = evalue;
 	esolver->x        = x;
 	esolver->evector  = evector;

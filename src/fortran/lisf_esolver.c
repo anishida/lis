@@ -89,11 +89,20 @@ void lis_esolver_destroy_f(LIS_ESOLVER_F *esolver, LIS_INT *ierr)
 
 #undef __FUNC__
 #define __FUNC__ "lis_esolve_f"
-void lis_esolve_f(LIS_MATRIX_F *A, LIS_VECTOR_F x, LIS_SCALAR *evalue0, LIS_ESOLVER_F *esolver, LIS_INT *ierr)
+void lis_esolve_f(LIS_MATRIX_F *A, LIS_MATRIX_F *B, LIS_VECTOR_F x, LIS_SCALAR *evalue0, LIS_ESOLVER_F *esolver, LIS_INT *ierr)
 {
 	LIS_DEBUG_FUNC_IN;
 
-	*ierr = lis_esolve((LIS_MATRIX)LIS_V2P(A), (LIS_VECTOR)LIS_V2P(x), evalue0, (LIS_ESOLVER)LIS_V2P(esolver));
+	printf("lis-test0\n");
+	if( (LIS_MATRIX)LIS_V2P(B) == NULL ) 
+	  {
+	    printf("lis-test1\n");
+	    *ierr = lis_esolve((LIS_MATRIX)LIS_V2P(A), NULL, (LIS_VECTOR)LIS_V2P(x), evalue0, (LIS_ESOLVER)LIS_V2P(esolver));
+	  }
+	else
+	  {
+	    *ierr = lis_esolve((LIS_MATRIX)LIS_V2P(A), (LIS_MATRIX)LIS_V2P(B), (LIS_VECTOR)LIS_V2P(x), evalue0, (LIS_ESOLVER)LIS_V2P(esolver));
+	  }
 	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;

@@ -149,7 +149,7 @@ LIS_INT lis_eai_malloc_work(LIS_ESOLVER esolver)
 #define __FUNC__ "lis_eai"
 LIS_INT lis_eai(LIS_ESOLVER esolver)
 {
-  LIS_MATRIX A;
+  LIS_MATRIX A,B;
   LIS_INT ss,ic;
   LIS_INT emaxiter,iter0,hqriter;
   LIS_REAL tol,hqrerr,D;
@@ -174,6 +174,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   hr = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_eai::hr");
   
   A = esolver->A;
+  B = esolver->B;
   w = esolver->work[0];
   v = &esolver->work[1];
   lis_vector_set_all(0.0,v[0]);
@@ -342,7 +343,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
     {
       lis_vector_duplicate(A, &esolver->evector[i]); 
       esolver2->lshift = -(esolver->evalue[i]);
-      lis_esolve(A, esolver->evector[i], &evalue, esolver2);
+      lis_gesolve(A, B, esolver->evector[i], &evalue, esolver2);
       lis_esolver_work_destroy(esolver2); 
       esolver->evalue[i] = evalue - esolver2->lshift;
       esolver->iter[i] = esolver2->iter[0];
@@ -615,7 +616,7 @@ LIS_INT lis_eai_quad(LIS_ESOLVER esolver)
     {
       lis_vector_duplicate(A, &esolver->evector[i]); 
       esolver2->lshift = -(esolver->evalue[i]);
-      lis_esolve(A, esolver->evector[i], &evalue, esolver2);
+      lis_gesolve(A, B, esolver->evector[i], &evalue, esolver2);
       lis_esolver_work_destroy(esolver2); 
       esolver->evalue[i] = evalue - esolver2->lshift;
       esolver->iter[i] = esolver2->iter[0];            

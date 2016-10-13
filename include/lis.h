@@ -680,7 +680,7 @@ typedef struct LIS_SOLVER_STRUCT *LIS_SOLVER;
 
 struct LIS_ESOLVER_STRUCT
 {
-        LIS_MATRIX A;
+        LIS_MATRIX A,B;
         LIS_VECTOR x,xx,d; 
         LIS_SCALAR *evalue;
         LIS_VECTOR *evector;
@@ -913,6 +913,7 @@ extern "C"
 	extern LIS_INT lis_esolver_set_option(char *text, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_optionC(LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver);
+	extern LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver);  
 	extern LIS_INT lis_esolver_get_iter(LIS_ESOLVER esolver, LIS_INT *iter);
 	extern LIS_INT lis_esolver_get_iterex(LIS_ESOLVER esolver, LIS_INT *iter, LIS_INT *iter_double, LIS_INT *iter_quad);
 	extern LIS_INT lis_esolver_get_time(LIS_ESOLVER esolver, double *time);
