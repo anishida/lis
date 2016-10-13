@@ -462,6 +462,9 @@
 #define lis_esolve lis_esolve_f
 #define LIS_ESOLVE lis_esolve_f
 
+#define lis_gesolve lis_gesolve_f
+#define LIS_GESOLVE lis_gesolve_f
+
 #define lis_esolver_set_option lis_esolver_set_option_f
 #define LIS_ESOLVER_SET_OPTION lis_esolver_set_option_f
 
