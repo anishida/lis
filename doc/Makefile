@@ -4,7 +4,7 @@ DOC=lis-ug
 
 LATEX=platex
 
-DVIPDF=dvipdfmx
+DVIPDF=dvipdfmx 
 
 all: en ja 
 

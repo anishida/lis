@@ -1,3 +1,7 @@
+Version 1.6.33  October 13, 2016
+
+  - Added support for lis_gesolve().
+
 Version 1.6.32  October 12, 2016
 
   - Updated lis_array_*().
