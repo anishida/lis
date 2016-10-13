@@ -107,7 +107,8 @@ extern LIS_Comm_f lis_comm_world_f;
 
 #define lis_esolver_create_f F77_FUNC_(lis_esolver_create_f, LIS_ESOLVER_CREATE_F) 
 #define lis_esolver_destroy_f F77_FUNC_(lis_esolver_destroy_f, LIS_ESOLVER_DESTROY_F) 
-#define lis_esolve_f F77_FUNC_(lis_esolve_f, LIS_ESOLVE_F) 
+#define lis_esolve_f F77_FUNC_(lis_esolve_f, LIS_ESOLVE_F)
+#define lis_gesolve_f F77_FUNC_(lis_gesolve_f, LIS_GESOLVE_F)   
 #define lis_esolver_set_option_f F77_FUNC_(lis_esolver_set_option_f, LIS_ESOLVER_SET_OPTION_F) 
 #define lis_esolver_get_iter_f F77_FUNC_(lis_esolver_get_iter_f, LIS_ESOLVER_GET_ITER_F) 
 #define lis_esolver_get_iterex_f F77_FUNC_(lis_esolver_get_iterex_f, LIS_ESOLVER_GET_ITEREX_F) 
