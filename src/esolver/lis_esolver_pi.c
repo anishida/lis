@@ -154,7 +154,7 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
 
       /* x = x / ||x||_2 */
       lis_vector_nrm2(x, &nrm2);
-      lis_vector_scale(1/nrm2, x);
+      lis_vector_scale(1.0/nrm2, x);
 
       /* z = A * x */
       lis_matvec(A,x,z);
@@ -163,9 +163,9 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
       lis_vector_dot(x, z, &evalue);   
 
       /* resid = ||z - evalue * x||_2 / |evalue| */
-      lis_vector_axpyz(-evalue,x,z,q); 
+      lis_vector_axpyz(-evalue, x, z, q); 
       lis_vector_nrm2(q, &resid); 
-      resid = fabs(resid / evalue);
+      resid = resid / fabs(evalue);
 
       /* x = z */
       lis_vector_copy(z, x);
@@ -184,7 +184,7 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
 	  esolver->resid[0]   = resid;
 	  esolver->evalue[0]  = evalue;
 	  lis_vector_nrm2(x, &nrm2);
-	  lis_vector_scale(1/nrm2, x);
+	  lis_vector_scale(1.0/nrm2, x);
 	  LIS_DEBUG_FUNC_OUT;
 	  return LIS_SUCCESS;
 	}
@@ -195,7 +195,7 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
   esolver->resid[0]  = resid;
   esolver->evalue[0] = evalue;
   lis_vector_nrm2(x, &nrm2);
-  lis_vector_scale(1/nrm2, x);
+  lis_vector_scale(1.0/nrm2, x);
   LIS_DEBUG_FUNC_OUT;
   return LIS_MAXITER;
 }
@@ -239,21 +239,21 @@ LIS_INT lis_epi_quad(LIS_ESOLVER esolver)
 
       /* x = x / ||x||_2 */
       lis_vector_nrm2(x, &nrm2);
-      lis_vector_scale(1/nrm2, x);
+      lis_vector_scale(1.0/nrm2, x);
 
       /* z = A * x */
-      lis_matvec(A,x,z);
+      lis_matvec(A, x, z);
 
       /* evalue = <x,z> */
       lis_vector_dotex_mmm(x, z, &qdot_xz);
       lis_quad_minus((LIS_QUAD *)qdot_xz.hi);
 
       /* resid = ||z - evalue * x||_2 / |evalue| */
-      lis_vector_axpyzex_mmmm(qdot_xz,x,z,q);
-      lis_quad_minus((LIS_QUAD *)qdot_xz.hi);
+      lis_vector_axpyzex_mmmm(qdot_xz, x, z, q);
+      lis_quad_minus((LIS_QUAD *)qdot_xz. hi);
       lis_vector_nrm2(q, &resid); 
       evalue = qdot_xz.hi[0];
-      resid = fabs(resid / evalue);
+      resid = resid / fabs(evalue);
 
       /* x = z */
       lis_vector_copy(z, x);
@@ -272,7 +272,7 @@ LIS_INT lis_epi_quad(LIS_ESOLVER esolver)
 	  esolver->resid[0]   = resid;
 	  esolver->evalue[0]  = evalue;
 	  lis_vector_nrm2(x, &nrm2);
-	  lis_vector_scale(1/nrm2, x);
+	  lis_vector_scale(1.0/nrm2, x);
 	  LIS_DEBUG_FUNC_OUT;
 	  return LIS_SUCCESS;
 	}
@@ -282,7 +282,7 @@ LIS_INT lis_epi_quad(LIS_ESOLVER esolver)
   esolver->resid[0]  = resid;
   esolver->evalue[0] = evalue;
   lis_vector_nrm2(x, &nrm2);
-  lis_vector_scale(1/nrm2, x);
+  lis_vector_scale(1.0/nrm2, x);
   LIS_DEBUG_FUNC_OUT;
   return LIS_MAXITER;
 }

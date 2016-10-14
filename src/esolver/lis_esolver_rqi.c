@@ -55,14 +55,13 @@
  * Rayleigh Quotient Iteration         *
  ***************************************
  x(0)    = (1,...,1)^T
- mu      = 0
+ evalue  = 0
  ***************************************
  for k=1,2,...
    x(k-1)    = x(k-1)/||x(k-1)||_2
-   z         = (A - mu I)^-1 * x(k-1)
-   1/evalue  = <x(k-1),z>
-   mu        = evalue + mu
-   resid     = ||z - 1/evalue * x||_2 / |1/evalue|
+   z         = (A - evalue * I)^-1 * x(k-1)
+   evalue    = evalue + <x(k-1),z> / <z,z>
+   resid     = ||z - <x(k-1),z> * x||_2 / <x(k-1),z>
    x(k)      = z         
  ***************************************/
 
@@ -127,8 +126,8 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
 {
   LIS_MATRIX A;
   LIS_VECTOR x;
-  LIS_SCALAR ievalue;
-  LIS_SCALAR mu;
+  LIS_SCALAR dotxz,dotzz;
+  LIS_SCALAR evalue;
   LIS_SCALAR lshift;
   LIS_INT emaxiter;
   LIS_REAL tol;
@@ -192,7 +191,7 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
       return err;
     }
 
-  mu = 0.0;
+  evalue = 0.0;
   iter=0;
 
   while (iter<emaxiter)
@@ -201,24 +200,27 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
 
       /* x = x / ||x||_2 */
       lis_vector_nrm2(x, &nrm2);
-      lis_vector_scale(1/nrm2, x);
+      lis_vector_scale(1.0/nrm2, x);
 
-      /* z = (A - mu I)^-1 * x */
-      lis_matrix_shift_diagonal(A, -mu);
+      /* z = (A - evalue * I)^-1 * x */
+      lis_matrix_shift_diagonal(A, -evalue);
       lis_solve_kernel(A, x, z, solver, precon);
-      lis_matrix_shift_diagonal(A, mu);
+      lis_matrix_shift_diagonal(A, evalue);
       lis_solver_get_iter(solver,&iter2);
 
-      /* 1/evalue = <x,z> */
-      lis_vector_dot(x, z, &ievalue); 
- 
-      /* mu = evalue + mu */
-      mu = 1/ievalue + mu;
+      /* <x,z> */
+      lis_vector_dot(x, z, &dotxz);
 
-      /* resid = ||z - 1/evalue * x||_2 / |1/evalue| */
-      lis_vector_axpyz(-ievalue,x,z,q); 
+      /* <z,z> */      
+      lis_vector_dot(z, z, &dotzz);      
+ 
+      /* evalue = <x,z> / <z,z> + evalue */
+      evalue = dotxz / dotzz + evalue;
+
+      /* resid = ||z - <x,z> * x||_2 / <x,z> */
+      lis_vector_axpyz(-dotxz,x,z,q); 
       lis_vector_nrm2(q, &resid); 
-      resid = fabs(resid/ievalue);
+      resid = resid / fabs(dotxz);
 
       if( output )
 	{
@@ -241,9 +243,9 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
 	  esolver->retcode    = LIS_SUCCESS;
 	  esolver->iter[0]    = iter;
 	  esolver->resid[0]   = resid;
-	  esolver->evalue[0]  = mu;
+	  esolver->evalue[0]  = evalue;
 	  lis_vector_nrm2(x, &nrm2);
-	  lis_vector_scale(1/nrm2, x);
+	  lis_vector_scale(1.0/nrm2, x);
 	  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
 	  lis_precon_destroy(precon);
 	  lis_solver_destroy(solver); 
@@ -257,9 +259,9 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   esolver->retcode    = LIS_MAXITER;
   esolver->iter[0]    = iter;
   esolver->resid[0]   = resid;
-  esolver->evalue[0]  = mu;
+  esolver->evalue[0]  = evalue;
   lis_vector_nrm2(x, &nrm2);
-  lis_vector_scale(1/nrm2, x);
+  lis_vector_scale(1.0/nrm2, x);
   if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
   lis_solver_destroy(solver); 
   LIS_DEBUG_FUNC_OUT;
@@ -273,14 +275,13 @@ LIS_INT lis_erqi_quad(LIS_ESOLVER esolver)
 {
   LIS_MATRIX A;
   LIS_VECTOR x;
-  LIS_SCALAR ievalue;
-  LIS_SCALAR mu;
+  LIS_SCALAR evalue;
   LIS_REAL lshift;
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter2,output;
   LIS_REAL nrm2,resid;
-  LIS_QUAD_PTR qdot_xz;
+  LIS_QUAD_PTR qdot_xz,qdot_zz;
   LIS_VECTOR z,q;
   LIS_SOLVER solver;
   double time,itime,ptime,p_c_time,p_i_time;
@@ -325,7 +326,7 @@ LIS_INT lis_erqi_quad(LIS_ESOLVER esolver)
       return err;
     }
 
-  mu = 0.0;
+  evalue = 0.0;
   iter=0;
 
   while (iter<emaxiter)
@@ -334,28 +335,33 @@ LIS_INT lis_erqi_quad(LIS_ESOLVER esolver)
 
       /* x = x / ||x||_2 */
       lis_vector_nrm2(x, &nrm2);
-      lis_vector_scale(1/nrm2, x);
+      lis_vector_scale(1.0/nrm2, x);
 
-      /* z = (A - mu I)^-1 * x */
-      lis_matrix_shift_diagonal(A, -mu);
+      /* z = (A - evalue * I)^-1 * x */
+      lis_matrix_shift_diagonal(A, -evalue);
       lis_solve_kernel(A, x, z, solver, precon);
-      lis_matrix_shift_diagonal(A, mu);
+      lis_matrix_shift_diagonal(A, evalue);
       lis_solver_get_iter(solver,&iter2);
 
-      /* 1/evalue = <x,z> */
+      /* <x,z> */
       lis_vector_dotex_mmm(x, z, &qdot_xz);
       lis_quad_minus((LIS_QUAD *)qdot_xz.hi);
       lis_vector_axpyzex_mmmm(qdot_xz,x,z,q);
       lis_quad_minus((LIS_QUAD *)qdot_xz.hi);
-      ievalue = qdot_xz.hi[0];
 
-      /* mu = mu + evalue */
-      mu = mu + 1/ievalue;
+      /* <z,z> */
+      lis_vector_dotex_mmm(z, z, &qdot_zz);
+      lis_quad_minus((LIS_QUAD *)qdot_zz.hi);
+      lis_vector_axpyzex_mmmm(qdot_zz,z,z,q);
+      lis_quad_minus((LIS_QUAD *)qdot_zz.hi);
 
-      /* resid = ||z - 1/evalue * x||_2 / |1/evalue| */
-      lis_vector_axpyz(-ievalue,x,z,q); 
+      /* evalue = evalue + <x(k-1),z> / <z,z> */
+      evalue = evalue + qdot_xz.hi[0] / qdot_zz.hi[0];
+      
+      /* resid = ||z - <x(k-1),z> * x||_2 / <x(k-1),z> */
+      lis_vector_axpyz(-qdot_xz.hi[0],x,z,q); 
       lis_vector_nrm2(q, &resid); 
-      resid = fabs(resid/ievalue);
+      resid = resid / fabs(qdot_xz.hi[0]);
 
       if( output )
 	{
@@ -378,9 +384,9 @@ LIS_INT lis_erqi_quad(LIS_ESOLVER esolver)
 	  esolver->retcode    = LIS_SUCCESS;
 	  esolver->iter[0]    = iter;
 	  esolver->resid[0]   = resid;
-	  esolver->evalue[0]  = mu;
+	  esolver->evalue[0]  = evalue;
 	  lis_vector_nrm2(x, &nrm2);
-	  lis_vector_scale(1/nrm2, x);
+	  lis_vector_scale(1.0/nrm2, x);
 	  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
 	  lis_precon_destroy(precon);
 	  lis_solver_destroy(solver); 
@@ -394,9 +400,9 @@ LIS_INT lis_erqi_quad(LIS_ESOLVER esolver)
   esolver->retcode    = LIS_MAXITER;
   esolver->iter[0]    = iter;
   esolver->resid[0]   = resid;
-  esolver->evalue[0]  = mu;
+  esolver->evalue[0]  = evalue;
   lis_vector_nrm2(x, &nrm2);
-  lis_vector_scale(1/nrm2, x);
+  lis_vector_scale(1.0/nrm2, x);
   if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
   lis_solver_destroy(solver); 
   LIS_DEBUG_FUNC_OUT;

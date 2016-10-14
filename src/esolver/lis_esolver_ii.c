@@ -58,7 +58,7 @@
  ***************************************
  for k=1,2,...
    x(k-1)    = x(k-1)/||x(k-1)||_2
-   z         = (A - lshift I)^-1 * x(k-1)
+   z         = (A - lshift * I)^-1 * x(k-1)
    1/evalue  = <x(k-1),z>
    resid     = ||z - 1/evalue * x||_2 / |1/evalue|
    x(k)      = z         
@@ -199,7 +199,7 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
 
       /* x = x / ||x||_2 */
       lis_vector_nrm2(x, &nrm2);
-      lis_vector_scale(1/nrm2, x);
+      lis_vector_scale(1.0/nrm2, x);
 
       /* z = (A - lshift I)^-1 * x */
       lis_solve_kernel(A, x, z, solver, precon);
@@ -211,7 +211,7 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
       /* resid = ||z - 1/evalue * x||_2 / |1/evalue| */
       lis_vector_axpyz(-ievalue,x,z,q); 
       lis_vector_nrm2(q, &resid); 
-      resid = fabs(resid/ievalue);
+      resid = resid / fabs(ievalue);
 
       /* x = z */
       lis_vector_copy(z,x);
@@ -236,7 +236,7 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
 	  esolver->resid[0]   = resid;
 	  esolver->evalue[0]  = 1/ievalue;
 	  lis_vector_nrm2(x, &nrm2);
-	  lis_vector_scale(1/nrm2, x);
+	  lis_vector_scale(1.0/nrm2, x);
 	  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
 	  lis_precon_destroy(precon);
 	  lis_solver_destroy(solver); 
@@ -252,7 +252,7 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
   esolver->resid[0]   = resid;
   esolver->evalue[0]  = 1/ievalue;
   lis_vector_nrm2(x, &nrm2);
-  lis_vector_scale(1/nrm2, x);
+  lis_vector_scale(1.0/nrm2, x);
   if (lshift != 0) 
     {
       lis_matrix_shift_diagonal(A, -lshift);
@@ -337,7 +337,7 @@ LIS_INT lis_eii_quad(LIS_ESOLVER esolver)
 
       /* x = x / ||x||_2 */
       lis_vector_nrm2(x, &nrm2);
-      lis_vector_scale(1/nrm2, x);
+      lis_vector_scale(1.0/nrm2, x);
 
       /* z = (A - lshift I)^-1 * x */
       lis_solve_kernel(A, x, z, solver, precon);
@@ -352,7 +352,7 @@ LIS_INT lis_eii_quad(LIS_ESOLVER esolver)
 
       /* resid = ||z - 1/evalue * x||_2 / |1/evalue| */
       lis_vector_nrm2(q, &resid);
-      resid = fabs(resid/ievalue);
+      resid = resid / fabs(ievalue);
 
       /* x = z */
       lis_vector_copy(z,x);
@@ -377,7 +377,7 @@ LIS_INT lis_eii_quad(LIS_ESOLVER esolver)
 	  esolver->resid[0]   = resid;
 	  esolver->evalue[0]  = 1/ievalue;
 	  lis_vector_nrm2(x, &nrm2);
-	  lis_vector_scale(1/nrm2, x);
+	  lis_vector_scale(1.0/nrm2, x);
 	  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
 	  lis_precon_destroy(precon);
 	  lis_solver_destroy(solver); 
@@ -393,7 +393,7 @@ LIS_INT lis_eii_quad(LIS_ESOLVER esolver)
   esolver->resid[0]   = resid;
   esolver->evalue[0]  = 1/ievalue;
   lis_vector_nrm2(x, &nrm2);
-  lis_vector_scale(1/nrm2, x);
+  lis_vector_scale(1.0/nrm2, x);
   if (lshift != 0) 
     {
       lis_matrix_shift_diagonal(A, -lshift);
