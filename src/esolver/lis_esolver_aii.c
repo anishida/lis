@@ -58,9 +58,8 @@
  ***************************************
  for k=1,2,...
    x(k-1)    = x(k-1)/||x(k-1)||_2
-   z         = (M - lshift I)^-1 * x(k-1)
-   1/evalue  = <x(k-1),z>
-   resid     = ||z - 1/evalue * x||_2 / |1/evalue|
+   z         = (M - lshift * I)^-1 * x(k-1)
+   resid     = ||z - <x(k-1),z> * x||_2 / <x(k-1),z>
    x(k)      = z         
  ***************************************/
 
@@ -125,7 +124,7 @@ LIS_INT lis_eaii(LIS_ESOLVER esolver)
 {
   LIS_MATRIX A;
   LIS_VECTOR x;
-  LIS_SCALAR evalue, ievalue;
+  LIS_SCALAR evalue,dotxz;
   LIS_SCALAR lshift;
   LIS_INT emaxiter;
   LIS_REAL tol;
@@ -157,7 +156,6 @@ LIS_INT lis_eaii(LIS_ESOLVER esolver)
   ptime = 0;
 
   iter=0;
-  ievalue = 1/(evalue);
 #ifdef _COMPLEX  
 #ifdef _LONG__DOUBLE
   if( output & (A->my_rank==0) ) printf("local shift           : (%Le, %Le)\n", creall(lshift), cimagl(lshift));
@@ -193,20 +191,20 @@ LIS_INT lis_eaii(LIS_ESOLVER esolver)
 
       /* x = x / ||x||_2 */
       lis_vector_nrm2(x, &nrm2);
-      lis_vector_scale(1/nrm2, x);
+      lis_vector_scale(1.0/nrm2, x);
 
       /* z = (M - lshift I)^-1 * x */
       time = lis_wtime();
       lis_psolve(solver, x, z);
       ptime += lis_wtime() - time;
 
-      /* 1/evalue = <x,z> */
-      lis_vector_dot(x, z, &ievalue); 
+      /* <x,z> */
+      lis_vector_dot(x, z, &dotxz); 
 
-      /* resid = ||z - 1/evalue * x||_2 / |1/evalue| */
-      lis_vector_axpyz(-ievalue,x,z,q); 
+      /* resid = ||z - <x,z> * x||_2 / |<x,z>| */
+      lis_vector_axpyz(-dotxz,x,z,q); 
       lis_vector_nrm2(q, &resid); 
-      resid = fabs(resid/ievalue);
+      resid = resid / fabs(dotxz);
 
       if( output )
 	{
@@ -223,9 +221,9 @@ LIS_INT lis_eaii(LIS_ESOLVER esolver)
 	  esolver->retcode    = LIS_SUCCESS;
 	  esolver->iter[0]    = iter;
 	  esolver->resid[0]   = resid;
-	  esolver->evalue[0]  = 1/ievalue;
+	  esolver->evalue[0]  = 1.0/dotxz;
 	  lis_vector_nrm2(x, &nrm2);
-	  lis_vector_scale(1/nrm2, x);
+	  lis_vector_scale(1.0/nrm2, x);
 	  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
 	  lis_precon_destroy(precon);
 	  lis_solver_destroy(solver);
@@ -236,9 +234,9 @@ LIS_INT lis_eaii(LIS_ESOLVER esolver)
   esolver->retcode    = LIS_MAXITER;
   esolver->iter[0]    = iter;
   esolver->resid[0]   = resid;
-  esolver->evalue[0]  = 1/ievalue;
+  esolver->evalue[0]  = 1.0/dotxz;
   lis_vector_nrm2(x, &nrm2);
-  lis_vector_scale(1/nrm2, x);
+  lis_vector_scale(1.0/nrm2, x);
 
   lis_solver_get_timeex(solver,&time,&itime,&ptime,&p_c_time,&p_i_time);
   esolver->itime = solver->itime;
