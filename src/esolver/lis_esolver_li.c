@@ -369,7 +369,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
 #define __FUNC__ "lis_eli_quad"
 LIS_INT lis_eli_quad(LIS_ESOLVER esolver)
 {
-  LIS_MATRIX A;
+  LIS_MATRIX A,B;
   LIS_INT ss,ic;
   LIS_INT emaxiter,iter0,qriter;
   LIS_REAL tol,qrerr;
