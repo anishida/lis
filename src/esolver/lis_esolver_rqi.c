@@ -60,7 +60,7 @@
  for k=1,2,...
    x(k-1)    = x(k-1)/||x(k-1)||_2
    z         = (A - evalue * I)^-1 * x(k-1)
-   evalue    = evalue + <x(k-1),z> / <z,z>
+   evalue(k) = evalue(k-1) + <x(k-1),z> / <z,z>
    resid     = ||z - <x(k-1),z> * x||_2 / <x(k-1),z>
    x(k)      = z         
  ***************************************/
