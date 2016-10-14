@@ -54,6 +54,7 @@
  * lis_esolver_set_option
  * lis_esolver_get_option
  * lis_esolve
+ * lis_gesolve
  ************************************************/
 
 #ifdef USE_FORTRAN
