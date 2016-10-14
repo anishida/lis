@@ -54,19 +54,19 @@
 /***************************************
  * Subspace Iteration                  *
  ***************************************
- QR factorization VR = Z for the starting matrix Z
+ QR factorization V * R = Z for the starting matrix Z
  for k=1,2,...
    if Power Iteration
      R = A * V
    if Inverse Iteration
-     R = (A - lshift I)^-1 * V
+     R = (A - lshift * I)^-1 * V
    if Approximate Inverse Iteration
-     R = (M - lshift I)^-1 * V
+     R = (M - lshift * I)^-1 * V
    if Rayleigh Quotient Iteration
-     R = (A - mu I)^-1 * V
+     R = (A - mu * I)^-1 * V
    R = V*R
-   resid     = ||Z - VR||_2
-   QR factorization VR = Z
+   resid     = ||Z - V * R||_2
+   QR factorization V * R = Z
  ***************************************/
 
 #define NWORK 4
