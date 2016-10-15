@@ -64,6 +64,7 @@
    rho   = rho + <v,y> / theta^2
    resid = ||y - <v,y> * v||_2 / <v,y>
    v     = y
+   if resid < tol then stop
  lambda  = rho
  x       = v / ||v||_2
  ***************************************/

@@ -59,11 +59,9 @@
    if Power Iteration
      R = A * V
    if Inverse Iteration
-     R = (A - lshift * I)^-1 * V
-   if Approximate Inverse Iteration
-     R = (M - lshift * I)^-1 * V
+     R = A^-1 * V
    if Rayleigh Quotient Iteration
-     R = (A - mu * I)^-1 * V
+     R = (A - rho * I)^-1 * V
    R = V*R
    resid     = ||Z - V * R||_2
    QR factorization V * R = Z
@@ -142,7 +140,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 {
   LIS_MATRIX A;
   LIS_VECTOR x, Ax;
-  LIS_SCALAR xAx, xx, mu;
+  LIS_SCALAR xAx, xx, rho;
   LIS_SCALAR gshift,lshift;
   LIS_INT ss;
   LIS_INT emaxiter;
@@ -282,7 +280,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	  lis_matvec(A, x, Ax);
 	  lis_vector_dot(x, Ax, &xAx);
 	  lis_vector_dot(x, x, &xx);
-	  mu = xAx / xx;
+	  rho = xAx / xx;
 	}
 
       iter = 0;
@@ -312,19 +310,19 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 
 	    case LIS_ESOLVER_II:
 
-	      /* R = (A - lshift * I)^-1 * V */
+	      /* R = A^-1 * V */
 	      lis_solve_kernel(A, v[j], r, solver, precon);
 
 	      break;
 
 	    case LIS_ESOLVER_RQI:
 
-	      /* R = (A - mu * I)^-1 * V */
+	      /* R = (A - rho * I)^-1 * V */
 	      lis_vector_nrm2(v[j], &nrm2);
 	      lis_vector_scale(1/nrm2, v[j]);
-	      lis_matrix_shift_diagonal(A, -mu);
+	      lis_matrix_shift_diagonal(A, -rho);
 	      lis_solve_kernel(A, v[j], r, solver, precon);
-	      lis_matrix_shift_diagonal(A, mu);
+	      lis_matrix_shift_diagonal(A, rho);
 
 	      break;
 	    }
@@ -342,7 +340,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	  /* R = V*R */
 	  lis_vector_nrm2(r, &nrm2);
 	  lis_vector_dot(v[j],r,&dotvr);
-	  mu = mu + 1/dotvr;
+	  rho = rho + 1/dotvr;
 
 	  /* resid = ||Z - VR||_2 */
 	  lis_vector_axpyz(-dotvr,v[j],r,q);
@@ -378,7 +376,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	  esolver->iter[j-1] = iter;
 	  break;
 	case LIS_ESOLVER_RQI:
-	  esolver->evalue[j-1] = mu;
+	  esolver->evalue[j-1] = rho;
 	  esolver->resid[j-1] = resid;
 	  esolver->iter[j-1] = iter;
 	  break;
