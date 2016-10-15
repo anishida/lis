@@ -347,7 +347,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
       esolver2->lshift = -(esolver->evalue[i]);
       lis_gesolve(A, B, esolver->evector[i], &evalue, esolver2);
       lis_esolver_work_destroy(esolver2); 
-      esolver->evalue[i] = evalue - esolver2->lshift - gshift;
+      esolver->evalue[i] = evalue - esolver2->lshift;
       esolver->iter[i] = esolver2->iter[0];
       esolver->resid[i] = esolver2->resid[0];
 
@@ -402,10 +402,6 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 #endif
 	}
     }
-
-  esolver->evalue[0] = evalue0; 
-  esolver->iter[0] = iter0;
-  esolver->resid[0] = resid0;
 
   lis_vector_copy(esolver->evector[0], esolver->x);
 
