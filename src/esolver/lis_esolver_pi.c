@@ -62,6 +62,7 @@
    theta     = <v,y>
    resid     = ||y - theta * v||_2 / |theta|
    v         = y
+   if resid < tol then stop
  lambda      = theta
  x           = v / ||v||_2
  ***************************************/
