@@ -337,21 +337,21 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 		return LIS_ERR_ILL_ARG;
 	}
 
-	if ( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_SI && niesolver > 3 )
+	if ( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_SI && niesolver > 6 )
 	{
-		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_INNER_ESOLVER is %d (Set between 1 to 3 for Subspace)\n", niesolver);
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_INNER_ESOLVER is %d (Set Power or Inverse for Subspace)\n", niesolver);
 		return LIS_ERR_ILL_ARG;
 	}
 
 	if ( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_LI && niesolver == LIS_ESOLVER_PI )
 	{
-		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_INNER_ESOLVER is %d (Set between 2 to 6 for Lanczos)\n", niesolver);
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_INNER_ESOLVER is %d (Power cannot used for Lanczos)\n", niesolver);
 		return LIS_ERR_ILL_ARG;
 	}
 
-	if ( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_AI && (( niesolver == LIS_ESOLVER_PI ) || ( niesolver == LIS_ESOLVER_CG) || ( niesolver == LIS_ESOLVER_JD)) )
+	if ( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_AI && niesolver == LIS_ESOLVER_PI )
 	{
-		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_INNER_ESOLVER is %d (Set between 2 to 3 or 5 for Arnoldi)\n", niesolver);
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_INNER_ESOLVER is %d (Power cannot used for Arnoldi)\n", niesolver);
 		return LIS_ERR_ILL_ARG;
 	}
 
