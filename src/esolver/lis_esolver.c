@@ -62,34 +62,32 @@
 
 LIS_ESOLVER_EXECUTE lis_esolver_execute[] = {
   NULL,
-  lis_epi, lis_eii, lis_eaii, lis_erqi, lis_ecg, lis_ecr, lis_ejd, lis_esi, lis_eli, lis_eai
+  lis_epi, lis_eii, lis_erqi, lis_ecg, lis_ecr, lis_ejd, lis_esi, lis_eli, lis_eai
 };
 
 #ifdef USE_QUAD_PRECISION
 LIS_ESOLVER_EXECUTE lis_esolver_execute_quad[] = {
   NULL,
-  lis_epi_quad, lis_eii_quad, NULL, lis_erqi_quad, NULL, NULL, NULL, lis_esi_quad, lis_eli_quad, lis_eai_quad
+  NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
 };
 LIS_ESOLVER_EXECUTE lis_esolver_execute_switch[] = {
   NULL,
-  NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+  NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
 };
 #endif
 
 LIS_ESOLVER_CHECK_PARAMS lis_esolver_check_params[] = {
   NULL,
-  lis_epi_check_params,  lis_eii_check_params, lis_eaii_check_params, 
-  lis_erqi_check_params, lis_ecg_check_params, lis_ecr_check_params,
-  lis_ejd_check_params,  lis_esi_check_params,  lis_eli_check_params,
-  lis_eai_check_params
+  lis_epi_check_params,  lis_eii_check_params, lis_erqi_check_params, 
+  lis_ecg_check_params,  lis_ecr_check_params, lis_ejd_check_params, 
+  lis_esi_check_params,  lis_eli_check_params, lis_eai_check_params
 };
 
 LIS_ESOLVER_MALLOC_WORK lis_esolver_malloc_work[] = {
   NULL,
-  lis_epi_malloc_work,  lis_eii_malloc_work, lis_eaii_malloc_work, 
-  lis_erqi_malloc_work, lis_ecg_malloc_work, lis_ecr_malloc_work, 
-  lis_ejd_malloc_work,  lis_esi_malloc_work,  lis_eli_malloc_work,
-  lis_eai_malloc_work
+  lis_epi_malloc_work,  lis_eii_malloc_work, lis_erqi_malloc_work, 
+  lis_ecg_malloc_work,  lis_ecr_malloc_work, lis_ejd_malloc_work, 
+  lis_esi_malloc_work,  lis_eli_malloc_work, lis_eai_malloc_work
 };
 
 #define LIS_ESOLVER_OPTION_LEN		12
@@ -110,13 +108,13 @@ LIS_EOPTIONS_INNER_ESOLVER, LIS_EOPTIONS_STORAGE,
 LIS_EOPTIONS_STORAGE_BLOCK, LIS_EOPTIONS_PRECISION
 };
 
-char *lis_esolver_atoi[] = {"pi", "ii", "aii", "rqi", "cg", "cr", "jd", "si", "li", "ai"};
+char *lis_esolver_atoi[] = {"pi", "ii", "rqi", "cg", "cr", "jd", "si", "li", "ai"};
 char *lis_eprint_atoi[] = {"none", "mem", "out", "all"};
 char *lis_etruefalse_atoi[] = {"false", "true"};
 char *lis_estorage_atoi[] = {"csr", "csc", "msr", "dia", "ell", "jad", "bsr", "bsc", "vbr", "coo", "dns"};
 char *lis_eprecision_atoi[] = {"double", "quad", "switch"};
 
-char *lis_esolvername[] = {"", "Power", "Inverse", "Approximate Inverse", "Rayleigh Quotient", "CG", "CR", "JD", "Subspace", "Lanczos", "Arnoldi"};
+char *lis_esolvername[] = {"", "Power", "Inverse", "Rayleigh Quotient", "CG", "CR", "JD", "Subspace", "Lanczos", "Arnoldi"};
 
 char *lis_estoragename[]   = {"CSR", "CSC", "MSR", "DIA", "ELL", "JAD", "BSR", "BSC", "VBR", "COO", "DNS"};
 
@@ -333,27 +331,27 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 		return LIS_ERR_ILL_ARG;
 	}
 
-	if( niesolver < 1 || niesolver > 7 ) 
+	if( niesolver < 1 || niesolver > 6 ) 
 	{
-		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_INNER_ESOLVER is %d (Set between 1 to 7)\n", niesolver);
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_INNER_ESOLVER is %d (Set between 1 to 6)\n", niesolver);
 		return LIS_ERR_ILL_ARG;
 	}
 
-	if ( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_SI && niesolver > 4 )
+	if ( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_SI && niesolver > 3 )
 	{
-		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_INNER_ESOLVER is %d (Set between 1 to 4 for Subspace)\n", niesolver);
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_INNER_ESOLVER is %d (Set between 1 to 3 for Subspace)\n", niesolver);
 		return LIS_ERR_ILL_ARG;
 	}
 
 	if ( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_LI && niesolver == LIS_ESOLVER_PI )
 	{
-		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_INNER_ESOLVER is %d (Set between 2 to 7 for Lanczos)\n", niesolver);
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_INNER_ESOLVER is %d (Set between 2 to 6 for Lanczos)\n", niesolver);
 		return LIS_ERR_ILL_ARG;
 	}
 
 	if ( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_AI && (( niesolver == LIS_ESOLVER_PI ) || ( niesolver == LIS_ESOLVER_CG) || ( niesolver == LIS_ESOLVER_JD)) )
 	{
-		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_INNER_ESOLVER is %d (Set between 2 to 4 or 6 for Arnoldi)\n", niesolver);
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_INNER_ESOLVER is %d (Set between 2 to 3 or 5 for Arnoldi)\n", niesolver);
 		return LIS_ERR_ILL_ARG;
 	}
 
@@ -634,7 +632,7 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	#endif
 	esolver->retcode = err;
 
-	*evalue0 = esolver->evalue[0];
+	*evalue0 = esolver->evalue[0] - gshift;
 	lis_vector_copy(esolver->x, x);
 
 	esolver->time = lis_wtime() - time; 

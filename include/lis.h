@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"1.6.34"
+#define LIS_VERSION	"1.6.35"
 /**************************************/
 #include <stdio.h>
 #ifdef HAVE_COMPLEX_H
@@ -167,17 +167,16 @@
 #define LIS_SOLVER_COCG 24
 #define LIS_SOLVER_COCR 25
 
-#define LIS_ESOLVER_LEN 10
+#define LIS_ESOLVER_LEN 9
 #define LIS_ESOLVER_PI 1
 #define LIS_ESOLVER_II 2
-#define LIS_ESOLVER_AII 3
-#define LIS_ESOLVER_RQI 4
-#define LIS_ESOLVER_CG 5
-#define LIS_ESOLVER_CR 6
-#define LIS_ESOLVER_JD 7
-#define LIS_ESOLVER_SI 8
-#define LIS_ESOLVER_LI 9
-#define LIS_ESOLVER_AI 10
+#define LIS_ESOLVER_RQI 3
+#define LIS_ESOLVER_CG 4
+#define LIS_ESOLVER_CR 5
+#define LIS_ESOLVER_JD 6
+#define LIS_ESOLVER_SI 7
+#define LIS_ESOLVER_LI 8
+#define LIS_ESOLVER_AI 9
 
 #define LIS_INS_VALUE 0
 #define LIS_ADD_VALUE 1

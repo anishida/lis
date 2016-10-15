@@ -54,17 +54,19 @@
 /***************************************
  * Power Iteration                     *
  ***************************************
- x(0)    = (1,...,1)^T
+ v    = (1,...,1)^T
  ***************************************
  for k=1,2,...
-   x(k-1)    = x(k-1) / ||x(k-1)||_2
-   z         = A * x(k-1)
-   evalue(k) = <x(k-1),z>
-   resid     = ||z - <x(k-1),z> * x||_2 / |<x(k-1),z>|
-   x(k)      = z         
+   v         = v / ||v||_2
+   y         = A * v
+   theta     = <v,y>
+   resid     = ||y - theta * v||_2 / |theta|
+   v         = y
+ lambda      = theta
+ x           = v / ||v||_2
  ***************************************/
 
-#define NWORK 2			       
+#define NWORK 2
 #undef __FUNC__
 #define __FUNC__ "lis_epi_check_params"
 LIS_INT lis_epi_check_params(LIS_ESOLVER esolver)
@@ -124,13 +126,12 @@ LIS_INT lis_epi_malloc_work(LIS_ESOLVER esolver)
 LIS_INT lis_epi(LIS_ESOLVER esolver)
 {
   LIS_MATRIX A;
-  LIS_VECTOR x;
-  LIS_SCALAR evalue;
+  LIS_VECTOR v,y,q;
+  LIS_SCALAR theta;
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,output;
   LIS_REAL nrm2,resid;
-  LIS_VECTOR z,q;
 
   LIS_DEBUG_FUNC_IN;
 
@@ -139,36 +140,36 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
 
   A = esolver->A;
-  x = esolver->x;
+  v = esolver->x;
   if (esolver->options[LIS_EOPTIONS_INITGUESS_ONES] ) 
     {
-      lis_vector_set_all(1.0,x);
+      lis_vector_set_all(1.0,v);
     }
-  z = esolver->work[0];
-  q = esolver->work[1];
+  y = esolver->work[0];
+  q = esolver->work[1];  
 
   iter=0;
   while (iter<emaxiter)
     {
       iter = iter+1;
 
-      /* x = x / ||x||_2 */
-      lis_vector_nrm2(x, &nrm2);
-      lis_vector_scale(1.0/nrm2, x);
+      /* v = v / ||v||_2 */
+      lis_vector_nrm2(v, &nrm2);
+      lis_vector_scale(1.0/nrm2, v);
 
-      /* z = A * x */
-      lis_matvec(A,x,z);
+      /* y = A * v */
+      lis_matvec(A,v,y);
 
-      /* evalue = <x,z> */
-      lis_vector_dot(x, z, &evalue);   
+      /* theta = <v,y> */
+      lis_vector_dot(v, y, &theta);   
 
-      /* resid = ||z - evalue * x||_2 / |evalue| */
-      lis_vector_axpyz(-evalue, x, z, q); 
+      /* resid = ||y - theta * v||_2 / |theta| */
+      lis_vector_axpyz(-theta, v, y, q); 
       lis_vector_nrm2(q, &resid); 
-      resid = resid / fabs(evalue);
+      resid = resid / fabs(theta);
 
-      /* x = z */
-      lis_vector_copy(z, x);
+      /* v = y */
+      lis_vector_copy(y, v);
 
       /* convergence check */
       if( output )
@@ -182,9 +183,9 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
 	  esolver->retcode    = LIS_SUCCESS;
 	  esolver->iter[0]    = iter;
 	  esolver->resid[0]   = resid;
-	  esolver->evalue[0]  = evalue;
-	  lis_vector_nrm2(x, &nrm2);
-	  lis_vector_scale(1.0/nrm2, x);
+	  esolver->evalue[0]  = theta;
+	  lis_vector_nrm2(v, &nrm2);
+	  lis_vector_scale(1.0/nrm2, v);
 	  LIS_DEBUG_FUNC_OUT;
 	  return LIS_SUCCESS;
 	}
@@ -193,97 +194,10 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
   esolver->retcode   = LIS_MAXITER;
   esolver->iter[0]   = iter;
   esolver->resid[0]  = resid;
-  esolver->evalue[0] = evalue;
-  lis_vector_nrm2(x, &nrm2);
-  lis_vector_scale(1.0/nrm2, x);
+  esolver->evalue[0] = theta;
+  lis_vector_nrm2(v, &nrm2);
+  lis_vector_scale(1.0/nrm2, v);
   LIS_DEBUG_FUNC_OUT;
   return LIS_MAXITER;
 }
 
-#ifdef USE_QUAD_PRECISION
-#undef __FUNC__
-#define __FUNC__ "lis_epi_quad"
-LIS_INT lis_epi_quad(LIS_ESOLVER esolver)
-{
-  LIS_MATRIX A;
-  LIS_VECTOR x;
-  LIS_SCALAR evalue;
-  LIS_INT emaxiter;
-  LIS_REAL tol;
-  LIS_INT iter,output;
-  LIS_REAL nrm2,resid;
-  LIS_QUAD_PTR qdot_xz;
-  LIS_VECTOR z,q;
-
-  LIS_DEBUG_FUNC_IN;
-
-  emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
-  tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
-  output  = esolver->options[LIS_EOPTIONS_OUTPUT];
-
-  A = esolver->A;
-  x = esolver->x;
-  if (esolver->options[LIS_EOPTIONS_INITGUESS_ONES] ) 
-    {
-      lis_vector_set_all(1.0,x);
-    }
-  z = esolver->work[0];
-  q = esolver->work[1];
-
-  LIS_QUAD_SCALAR_MALLOC(qdot_xz,0,1);
-
-  iter=0;
-  while (iter<emaxiter)
-    {
-      iter = iter+1;
-
-      /* x = x / ||x||_2 */
-      lis_vector_nrm2(x, &nrm2);
-      lis_vector_scale(1.0/nrm2, x);
-
-      /* z = A * x */
-      lis_matvec(A, x, z);
-
-      /* evalue = <x,z> */
-      lis_vector_dotex_mmm(x, z, &qdot_xz);
-      lis_quad_minus((LIS_QUAD *)qdot_xz.hi);
-
-      /* resid = ||z - evalue * x||_2 / |evalue| */
-      lis_vector_axpyzex_mmmm(qdot_xz, x, z, q);
-      lis_quad_minus((LIS_QUAD *)qdot_xz. hi);
-      lis_vector_nrm2(q, &resid); 
-      evalue = qdot_xz.hi[0];
-      resid = resid / fabs(evalue);
-
-      /* x = z */
-      lis_vector_copy(z, x);
-
-      /* convergence check */
-      if( output )
-	{
-	  if( output & LIS_EPRINT_MEM ) esolver->rhistory[iter] = resid;
-	  if( output & LIS_EPRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,resid);
-	}
-
-      if( tol >= resid )
-	{
-	  esolver->retcode    = LIS_SUCCESS;
-	  esolver->iter[0]    = iter;
-	  esolver->resid[0]   = resid;
-	  esolver->evalue[0]  = evalue;
-	  lis_vector_nrm2(x, &nrm2);
-	  lis_vector_scale(1.0/nrm2, x);
-	  LIS_DEBUG_FUNC_OUT;
-	  return LIS_SUCCESS;
-	}
-    }
-  esolver->retcode   = LIS_MAXITER;
-  esolver->iter[0]   = iter;
-  esolver->resid[0]  = resid;
-  esolver->evalue[0] = evalue;
-  lis_vector_nrm2(x, &nrm2);
-  lis_vector_scale(1.0/nrm2, x);
-  LIS_DEBUG_FUNC_OUT;
-  return LIS_MAXITER;
-}
-#endif
