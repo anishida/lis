@@ -283,7 +283,6 @@ COCG\cite{cocg}         & COCR\cite{cocr} \\
 \begin{tabular}{l}\hline\hline
 Power\cite{power} \\
 Inverse\cite{inverse} \\
-Approximate Inverse\cite{nishida} \\
 Rayleigh Quotient\cite{rayleigh} \\
 CG\cite{knyazev} \\
 CR\cite{suetomi} \\
@@ -2019,21 +2018,19 @@ that \verb=-emaxiter= defaults to $1,000$.
  Power                             & \verb=-e {pi|1}=        &    \\ 
  Inverse                           & \verb=-e {ii|2}=        & 
  \verb=-i [bicg]= & The linear solver \\
- Approximate Inverse               & \verb=-e {aii|3}=       & 
+ Rayleigh Quotient                 & \verb=-e {rqi|3}=       &
  \verb=-i [bicg]= & The linear solver \\
- Rayleigh Quotient                 & \verb=-e {rqi|4}=       &
- \verb=-i [bicg]= & The linear solver \\
- CG                                & \verb=-e {cg|5}=        &
+ CG                                & \verb=-e {cg|4}=        &
  \verb=-i [cg]= & The linear solver \\ 
- CR                                & \verb=-e {cr|6}=        &
+ CR                                & \verb=-e {cr|5}=        &
  \verb=-i [bicg]= & The linear solver \\ 
- Jacobi-Davidson                   & \verb=-e {jd|7}=        &
+ Jacobi-Davidson                   & \verb=-e {jd|6}=        &
  \verb=-i [cg]= & The linear solver \\ 
- Subspace                          & \verb=-e {si|8}=        &
+ Subspace                          & \verb=-e {si|7}=        &
  \verb=-ss [1]= & The size of the subspace \\
- Lanczos                           & \verb=-e {li|9}=        &
+ Lanczos                           & \verb=-e {li|8}=        &
  \verb=-ss [1]= & The size of the subspace \\
- Arnoldi                           & \verb=-e {ai|10}=        &
+ Arnoldi                           & \verb=-e {ai|9}=        &
  \verb=-ss [1]= & The size of the subspace \\
 \hline         
 \end{tabular}
@@ -2092,11 +2089,10 @@ Option &                          \\ \hline
 \verb=-ie [ii]= & The inner eigensolver used in the subspace, Lanczos, and Arnoldi iterations\\
                        & \verb=-ie {pi|1}           =  Power (Subspace only)\\
                        & \verb=-ie {ii|2}           =  Inverse \\
-                       & \verb=-ie {aii|3}          =  Approximate Inverse \\
-                       & \verb=-ie {rqi|4}          =  Rayleigh Quotient \\
-                       & \verb=-ie {cg|5}           =  CG (Lanczos only) \\
-                       & \verb=-ie {cr|6}           =  CR (Lanczos and Arnoldi) \\
-                       & \verb=-ie {jd|7}           =  Jacobi-Davidson (Lanczos only) \\
+                       & \verb=-ie {rqi|3}          =  Rayleigh Quotient \\
+                       & \verb=-ie {cg|4}           =  CG (Lanczos only) \\
+                       & \verb=-ie {cr|5}           =  CR (Lanczos and Arnoldi) \\
+                       & \verb=-ie {jd|6}           =  Jacobi-Davidson (Lanczos only) \\
 \verb=-shift [0.0]= & The amount of the shift  \\
 \verb=-initx_ones [1]= & The behavior of the initial vector $x_{0}$  \\
                        & \verb=-initx_ones {false|0}     =  Given values \\
@@ -6381,21 +6377,19 @@ that \verb=-emaxiter= defaults to $1,000$.
  Power                             & \verb=-e {pi|1}=        &    \\ 
  Inverse                           & \verb=-e {ii|2}=        &
  \verb=-i [bicg]= & The linear solver \\
- Approximate Inverse               & \verb=-e {aii|3}=       & 
+ Rayleigh Quotient                 & \verb=-e {rqi|3}=       &
  \verb=-i [bicg]= & The linear solver \\
- Rayleigh Quotient                 & \verb=-e {rqi|4}=       &
- \verb=-i [bicg]= & The linear solver \\
- CG                                & \verb=-e {cg|5}=        &
+ CG                                & \verb=-e {cg|4}=        &
  \verb=-i [cg]= & The linear solver \\ 
- CR                                & \verb=-e {cr|6}=        &
+ CR                                & \verb=-e {cr|5}=        &
  \verb=-i [bicg]= & The linear solver \\ 
- Jacobi-Davidson                   & \verb=-e {jd|7}=        &
+ Jacobi-Davidson                   & \verb=-e {jd|6}=        &
  \verb=-i [bicg]= & The linear solver \\ 
- Subspace                          & \verb=-e {si|8}=        &
+ Subspace                          & \verb=-e {si|7}=        &
  \verb=-ss [1]= & The size of the subspace \\
- Lanczos                           & \verb=-e {li|9}=        &
+ Lanczos                           & \verb=-e {li|8}=        &
  \verb=-ss [1]= & The size of the subspace \\
- Arnoldi                           & \verb=-e {ai|10}=        &
+ Arnoldi                           & \verb=-e {ai|9}=        &
  \verb=-ss [1]= & The size of the subspace \\
 \hline         
 \end{tabular}
@@ -6454,11 +6448,10 @@ Option &                          \\ \hline
 \verb=-ie [ii]= & The inner eigensolver used in the subspace, Lanczos, and Arnoldi iterations\\
                        & \verb=-ie {pi|1}           =  Power (Subspace only) \\
                        & \verb=-ie {ii|2}           =  Inverse \\
-                       & \verb=-ie {aii|3}          =  Approximate Inverse \\
-                       & \verb=-ie {rqi|4}          =  Rayleigh Quotient \\
-                       & \verb=-ie {cg|5}           =  CG (Lanczos only) \\
-                       & \verb=-ie {cr|6}           =  CR (Lanczos and Arnoldi) \\
-                       & \verb=-ie {jd|7}           =  Jacobi-Davidson (Lanczos only) \\
+                       & \verb=-ie {rqi|3}          =  Rayleigh Quotient \\
+                       & \verb=-ie {cg|4}           =  CG (Lanczos only) \\
+                       & \verb=-ie {cr|5}           =  CR (Lanczos and Arnoldi) \\
+                       & \verb=-ie {jd|6}           =  Jacobi-Davidson (Lanczos only) \\
 \verb=-shift [0.0]= & The amount of the shift  \\
 \verb=-initx_ones [1]= & The behavior of the initial vector $x_{0}$  \\
                        & \verb=-initx_ones {false|0}     =  Given values \\  

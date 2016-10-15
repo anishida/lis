@@ -64,14 +64,6 @@ extern "C"
 	extern LIS_INT lis_eii_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_eii_malloc_work(LIS_ESOLVER esolver);
 
-/*********************************/
-/* Approximate Inverse Iteration */
-/*********************************/
-
-	extern LIS_INT lis_eaii(LIS_ESOLVER esolver);
-	extern LIS_INT lis_eaii_check_params(LIS_ESOLVER esolver);
-	extern LIS_INT lis_eaii_malloc_work(LIS_ESOLVER esolver);
-
 /*******************************/
 /* Rayleigh Quotient Iteration */
 /*******************************/

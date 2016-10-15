@@ -212,38 +212,6 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
       if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
       break;
 
-    case LIS_ESOLVER_AII:
-
-      lis_solver_create(&solver);
-      lis_solver_set_option("-i bicg -p none",solver);
-      lis_solver_set_optionC(solver);
-      lis_solver_get_solver(solver, &nsol);
-      lis_solver_get_precon(solver, &precon_type);
-      lis_solver_get_solvername(nsol, solvername);
-      lis_solver_get_preconname(precon_type, preconname);
-      if( A->my_rank==0 ) printf("linear solver         : %s\n", solvername);
-      if( A->my_rank==0 ) printf("preconditioner        : %s\n", preconname);
-      if( A->my_rank==0 ) printf("\n");
-#ifdef _COMPLEX
-#ifdef _LONG__DOUBLE
-      if( A->my_rank==0 ) printf("local shift           : (%Le, %Le)\n", creall(lshift), cimagl(lshift));
-#else
-      if( A->my_rank==0 ) printf("local shift           : (%e, %e)\n", creal(lshift), cimag(lshift));
-#endif
-#else      
-#ifdef _LONG__DOUBLE
-      if( A->my_rank==0 ) printf("local shift           : %Le\n", lshift);
-#else
-      if( A->my_rank==0 ) printf("local shift           : %e\n", lshift);
-#endif
-#endif      
-      if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
-      lis_vector_set_all(1.0,q);
-      lis_solve(A, q, x, solver);
-      lis_precon_create(solver, &precon);
-      solver->precon = precon;
-      break;
-
     case LIS_ESOLVER_RQI:
 
       lis_solver_create(&solver);
@@ -343,23 +311,14 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 
 	    case LIS_ESOLVER_II:
 
-	      /* R = (A - lshift I)^-1 * V */
+	      /* R = (A - lshift * I)^-1 * V */
 	      lis_solve_kernel(A, v[j], r, solver, precon);
-
-	      break;
-
-	    case LIS_ESOLVER_AII:
-
- 	      /* R = (M - lshift I)^-1 * V */
-	      time = lis_wtime();
-	      lis_psolve(solver, v[j], r); 
-	      ptime += lis_wtime() - time;
 
 	      break;
 
 	    case LIS_ESOLVER_RQI:
 
-	      /* R = (A - mu I)^-1 * V */
+	      /* R = (A - mu * I)^-1 * V */
 	      lis_vector_nrm2(v[j], &nrm2);
 	      lis_vector_scale(1/nrm2, v[j]);
 	      lis_matrix_shift_diagonal(A, -mu);
@@ -370,7 +329,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	    }
 
 	  /* elapsed time of linear solver */
-	  if ( j==1 && ( niesolver==LIS_ESOLVER_II || niesolver==LIS_ESOLVER_AII || niesolver==LIS_ESOLVER_RQI ))
+	  if ( j==1 && ( niesolver==LIS_ESOLVER_II || niesolver==LIS_ESOLVER_RQI ))
 	    {
 	      lis_solver_get_timeex(solver,&time,&itime,&ptime,&p_c_time,&p_i_time);
 	      esolver->ptime += solver->ptime;
@@ -417,11 +376,6 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	  esolver->resid[j-1] = resid;
 	  esolver->iter[j-1] = iter;
 	  break;
-	case LIS_ESOLVER_AII:
-	  esolver->evalue[j-1] = 1/dotvr;
-	  esolver->resid[j-1] = resid;
-	  esolver->iter[j-1] = iter;
-	  break;
 	case LIS_ESOLVER_RQI:
 	  esolver->evalue[j-1] = mu;
 	  esolver->resid[j-1] = resid;
@@ -431,16 +385,6 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 
       lis_vector_copy(v[j], esolver->evector[j-1]);  
 
-      /* elapsed time of linear solver for Approximate Inverse */
-      if ( niesolver==LIS_ESOLVER_AII )
-	{
-	  lis_solver_get_timeex(solver,&time,&itime,&ptime,&p_c_time,&p_i_time);
-	  esolver->ptime = ptime;
-	  esolver->itime = solver->itime;
-	  esolver->p_c_time = solver->p_c_time;
-	  esolver->p_i_time = solver->p_i_time;
-	}
-      
       if (A->my_rank==0 && ss>1)
 	{
 #ifdef _LONG__LONG
@@ -479,11 +423,6 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   switch ( niesolver )
     {
     case LIS_ESOLVER_II:
-      if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
-      lis_precon_destroy(precon);
-      lis_solver_destroy(solver);
-      break;
-    case LIS_ESOLVER_AII:
       if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
       lis_precon_destroy(precon);
       lis_solver_destroy(solver);
@@ -570,30 +509,6 @@ LIS_INT lis_esi_quad(LIS_ESOLVER esolver)
       if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
       break;
 
-    case LIS_ESOLVER_AII:
-
-      lis_solver_create(&solver);
-      lis_solver_set_option("-i bicg -p none -precision quad",solver);
-      lis_solver_set_optionC(solver);
-      lis_solver_get_solver(solver, &nsol);
-      lis_solver_get_precon(solver, &precon_type);
-      lis_solver_get_solvername(nsol, solvername);
-      lis_solver_get_preconname(precon_type, preconname);
-      if( A->my_rank==0 ) printf("linear solver         : %s\n", solvername);
-      if( A->my_rank==0 ) printf("preconditioner        : %s\n", preconname);
-      if( A->my_rank==0 ) printf("\n");
-#ifdef _LONG__DOUBLE
-      if( A->my_rank==0 ) printf("local shift           : %Le\n", lshift);
-#else
-      if( A->my_rank==0 ) printf("local shift           : %e\n", lshift);
-#endif
-      if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
-      lis_vector_set_all(1.0,q);
-      lis_solve(A, q, x, solver);
-      lis_precon_create(solver, &precon);
-      solver->precon = precon;
-      break;
-
     case LIS_ESOLVER_RQI:
 
       lis_solver_create(&solver);
@@ -673,21 +588,14 @@ LIS_INT lis_esi_quad(LIS_ESOLVER esolver)
 
 	    case LIS_ESOLVER_II:
 
-	      /* R = (A - lshift I)^-1 * V */
+	      /* R = (A - lshift * I)^-1 * V */
 	      lis_solve_kernel(A, v[j], r, solver, precon);
-
-	      break;
-
-	    case LIS_ESOLVER_AII:
-
- 	      /* R = (M - lshift I)^-1 * V */
-	      lis_psolve(solver, v[j], r); 
 
 	      break;
 
 	    case LIS_ESOLVER_RQI:
 
-	      /* R = (A - mu I)^-1 * V */
+	      /* R = (A - mu * I)^-1 * V */
 	      lis_vector_nrm2(v[j], &nrm2);
 	      lis_vector_scale(1/nrm2, v[j]);
 	      lis_matrix_shift_diagonal(A, -mu);
@@ -698,7 +606,7 @@ LIS_INT lis_esi_quad(LIS_ESOLVER esolver)
 	    }
 
 	  /* elapsed time of linear solver */
-	  if ( j==1 && ( niesolver==LIS_ESOLVER_II || niesolver==LIS_ESOLVER_AII || niesolver==LIS_ESOLVER_RQI ))
+	  if ( j==1 && ( niesolver==LIS_ESOLVER_II || niesolver==LIS_ESOLVER_RQI ))
 	    {
 	      lis_solver_get_timeex(solver,&time,&itime,&ptime,&p_c_time,&p_i_time);
 	      esolver->ptime += solver->ptime;
@@ -741,11 +649,6 @@ LIS_INT lis_esi_quad(LIS_ESOLVER esolver)
 	  esolver->iter[j-1] = iter;
 	  break;
 	case LIS_ESOLVER_II:
-	  esolver->evalue[j-1] = 1/dotvr;
-	  esolver->resid[j-1] = resid;
-	  esolver->iter[j-1] = iter;
-	  break;
-	case LIS_ESOLVER_AII:
 	  esolver->evalue[j-1] = 1/dotvr;
 	  esolver->resid[j-1] = resid;
 	  esolver->iter[j-1] = iter;
@@ -796,11 +699,6 @@ LIS_INT lis_esi_quad(LIS_ESOLVER esolver)
   switch ( niesolver )
     {
     case LIS_ESOLVER_II:
-      if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
-      lis_precon_destroy(precon);
-      lis_solver_destroy(solver);
-      break;
-    case LIS_ESOLVER_AII:
       if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
       lis_precon_destroy(precon);
       lis_solver_destroy(solver);

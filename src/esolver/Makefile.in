@@ -68,9 +68,9 @@ CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libesolver_la_LIBADD =
 am_libesolver_la_OBJECTS = lis_esolver.lo lis_esolver_ai.lo \
-	lis_esolver_aii.lo lis_esolver_cg.lo lis_esolver_ii.lo \
-	lis_esolver_jd.lo lis_esolver_li.lo lis_esolver_pi.lo \
-	lis_esolver_rqi.lo lis_esolver_si.lo
+	lis_esolver_cg.lo lis_esolver_ii.lo lis_esolver_jd.lo \
+	lis_esolver_li.lo lis_esolver_pi.lo lis_esolver_rqi.lo \
+	lis_esolver_si.lo
 libesolver_la_OBJECTS = $(am_libesolver_la_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/include
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
@@ -237,7 +237,6 @@ top_srcdir = @top_srcdir@
 noinst_LTLIBRARIES = libesolver.la
 libesolver_la_SOURCES = lis_esolver.c \
 lis_esolver_ai.c \
-lis_esolver_aii.c \
 lis_esolver_cg.c \
 lis_esolver_ii.c \
 lis_esolver_jd.c \
@@ -316,7 +315,6 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_ai.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_aii.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_cg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_ii.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_jd.Plo@am__quote@

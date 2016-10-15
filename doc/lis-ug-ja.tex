@@ -265,7 +265,6 @@ COCG\cite{cocg}         & COCR\cite{cocr} \\
 \begin{tabular}{l}\hline\hline
 Power\cite{power} \\
 Inverse\cite{inverse} \\
-Approximate Inverse\cite{nishida1} \\
 Rayleigh Quotient\cite{rayleigh} \\
 CG\cite{knyazev} \\
 CR\cite{suetomi} \\
@@ -1900,14 +1899,13 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
  $B8GM-CM2rK!(B               & $B%*%W%7%g%s(B              &  $BJd=u%*%W%7%g%s(B    & \\ \hline
  Power                   & \verb=-e {pi|1}=        &    \\ 
  Inverse                 & \verb=-e {ii|2}=        &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
- Approximate Inverse     & \verb=-e {aii|3}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
- Rayleigh Quotient       & \verb=-e {rqi|4}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
- CG                      & \verb=-e {cg|5}=        &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
- CR                      & \verb=-e {cr|6}=        &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
- Jacobi-Davidson         & \verb=-e {jd|7}=        &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
- Subspace                & \verb=-e {si|8}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
- Lanczos                 & \verb=-e {li|9}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
- Arnoldi                 & \verb=-e {ai|10}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Rayleigh Quotient       & \verb=-e {rqi|3}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
+ CG                      & \verb=-e {cg|4}=        &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
+ CR                      & \verb=-e {cr|5}=        &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
+ Jacobi-Davidson         & \verb=-e {jd|6}=        &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
+ Subspace                & \verb=-e {si|7}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Lanczos                 & \verb=-e {li|8}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Arnoldi                 & \verb=-e {ai|9}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
 \hline         
 \end{tabular}
 \end{center}
@@ -1960,11 +1958,10 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \verb=-ie [ii]= & Subspace, Lanczos, Arnoldi$BK!$NFbIt$G;HMQ$9$k8GM-CM2rK!$N;XDj(B  \\
                        & \verb=-ie {pi|1}           =  Power (Subspace$B$N$_(B) \\
                        & \verb=-ie {ii|2}           =  Inverse \\
-                       & \verb=-ie {aii|3}          =  Approximate Inverse \\
-                       & \verb=-ie {rqi|4}          =  Rayleigh Quotient \\
-                       & \verb=-ie {cg|5}           =  CG (Lanczos$B$N$_(B)\\
-                       & \verb=-ie {cr|6}           =  CR (Lanczos, Arnoldi)\\
-                       & \verb=-ie {jd|7}           =  Jacobi-Davidson (Lanczos$B$N$_(B)\\
+                       & \verb=-ie {rqi|3}          =  Rayleigh Quotient \\
+                       & \verb=-ie {cg|4}           =  CG (Lanczos$B$N$_(B)\\
+                       & \verb=-ie {cr|5}           =  CR (Lanczos, Arnoldi)\\
+                       & \verb=-ie {jd|6}           =  Jacobi-Davidson (Lanczos$B$N$_(B)\\
 \verb=-shift [0.0]= & $B8GM-CM$N%7%U%HNL(B  \\
 \verb=-initx_ones [1]= & $B=i4|%Y%/%H%k(B$x_{0}$  \\
                        & \verb=-initx_ones {false|0}     =  $BM?$($i$l$?CM$r;HMQ(B \\
@@ -6260,14 +6257,13 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
  $B8GM-CM2rK!(B               & $B%*%W%7%g%s(B              &  $BJd=u%*%W%7%g%s(B    & \\ \hline
  Power                   & \verb=-e {pi|1}=        &    \\ 
  Inverse                 & \verb=-e {ii|2}=        &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
- Approximate Inverse     & \verb=-e {aii|3}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
- Rayleigh Quotient       & \verb=-e {rqi|4}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
- CG                      & \verb=-e {cg|5}=        &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
- CR                      & \verb=-e {cr|6}=        &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
- Jacobi-Davidson         & \verb=-e {jd|7}=        &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
- Subspace                & \verb=-e {si|8}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
- Lanczos                 & \verb=-e {li|9}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
- Arnoldi                 & \verb=-e {ai|10}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Rayleigh Quotient       & \verb=-e {rqi|3}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
+ CG                      & \verb=-e {cg|4}=        &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
+ CR                      & \verb=-e {cr|5}=        &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
+ Jacobi-Davidson         & \verb=-e {jd|6}=        &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
+ Subspace                & \verb=-e {si|7}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Lanczos                 & \verb=-e {li|8}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Arnoldi                 & \verb=-e {ai|9}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
 \hline         
 \end{tabular}
 \end{center}
@@ -6320,11 +6316,10 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \verb=-ie [ii]= & Subspace, Lanczos, Arnoldi$BK!$NFbIt$G;HMQ$9$k8GM-CM2rK!$N;XDj(B  \\
                        & \verb=-ie {pi|1}           =  Power (Subspace$B$N$_(B) \\
                        & \verb=-ie {ii|2}           =  Inverse \\
-                       & \verb=-ie {aii|3}          =  Approximate Inverse \\
-                       & \verb=-ie {rqi|4}          =  Rayleigh Quotient \\
-                       & \verb=-ie {cg|5}           =  CG (Lanczos$B$N$_(B)\\
-                       & \verb=-ie {cr|6}           =  CR (Lanczos, Arnoldi)\\
-                       & \verb=-ie {jd|7}           =  Jacobi-Davidson (Lanczos$B$N$_(B)\\
+                       & \verb=-ie {rqi|3}          =  Rayleigh Quotient \\
+                       & \verb=-ie {cg|4}           =  CG (Lanczos$B$N$_(B)\\
+                       & \verb=-ie {cr|5}           =  CR (Lanczos, Arnoldi)\\
+                       & \verb=-ie {jd|6}           =  Jacobi-Davidson (Lanczos$B$N$_(B)\\
 \verb=-shift [0.0]= & $B8GM-CM$N%7%U%HNL(B  \\
 \verb=-initx_ones [1]= & $B=i4|%Y%/%H%k(B$x_{0}$  \\
                        & \verb=-initx_ones {false|0}     =  $BM?$($i$l$?CM$r;HMQ(B \\
