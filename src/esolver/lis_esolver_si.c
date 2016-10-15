@@ -143,7 +143,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   LIS_MATRIX A;
   LIS_VECTOR x, Ax;
   LIS_SCALAR xAx, xx, mu;
-  LIS_SCALAR lshift;
+  LIS_SCALAR gshift,lshift;
   LIS_INT ss;
   LIS_INT emaxiter;
   LIS_REAL tol;
@@ -167,7 +167,8 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 
   ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
-  tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
+  tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN];
+  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];  
   lshift = esolver->lshift;
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
   niesolver = esolver->options[LIS_EOPTIONS_INNER_ESOLVER];
@@ -394,15 +395,15 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 #endif
 #ifdef _COMPLEX	  
 #ifdef _LONG__DOUBLE
-	  if( output ) printf("Subspace: eigenvalue           = (Le, %Le)\n", creall(esolver->evalue[j-1]), cimagl(esolver->evalue[j-1]));
+	  if( output ) printf("Subspace: eigenvalue           = (Le, %Le)\n", creall(esolver->evalue[j-1] - gshift), cimagl(esolver->evalue[j-1] - gshift));
 #else
-	  if( output ) printf("Subspace: eigenvalue           = (%e, %e)\n", creal(esolver->evalue[j-1]), cimag(esolver->evalue[j-1]));
+	  if( output ) printf("Subspace: eigenvalue           = (%e, %e)\n", creal(esolver->evalue[j-1] - gshift), cimag(esolver->evalue[j-1] - gshift));
 #endif
 #else
 #ifdef _LONG__DOUBLE
-	  if( output ) printf("Subspace: eigenvalue           = %Le\n", esolver->evalue[j-1]);
+	  if( output ) printf("Subspace: eigenvalue           = %Le\n", esolver->evalue[j-1] - gshift);
 #else
-	  if( output ) printf("Subspace: eigenvalue           = %e\n", esolver->evalue[j-1]);
+	  if( output ) printf("Subspace: eigenvalue           = %e\n", esolver->evalue[j-1] - gshift);
 #endif
 #endif	  
 #ifdef _LONG__LONG
@@ -437,281 +438,4 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   LIS_DEBUG_FUNC_OUT;
   return LIS_SUCCESS;
 }
-
-#ifdef USE_QUAD_PRECISION
-#undef __FUNC__
-#define __FUNC__ "lis_esi_quad"
-LIS_INT lis_esi_quad(LIS_ESOLVER esolver)
-{
-  LIS_MATRIX A;
-  LIS_VECTOR x, Ax;
-  LIS_SCALAR xAx, xx, mu;
-  LIS_REAL lshift;
-  LIS_INT ss;
-  LIS_INT emaxiter;
-  LIS_REAL tol;
-  LIS_INT j,k;
-  LIS_SCALAR dotvr;
-  LIS_INT iter,giter,output,niesolver;
-  LIS_REAL nrm2,resid;
-  LIS_QUAD_PTR qdot_vv, qdot_vr;
-  LIS_VECTOR *v,r,q;
-  LIS_SOLVER solver;
-  LIS_PRECON precon;
-  double time,itime,ptime,p_c_time,p_i_time;
-  LIS_INT err;
-  LIS_INT nsol, precon_type;
-  char solvername[128], preconname[128];
-
-  LIS_DEBUG_FUNC_IN;
-
-  A = esolver->A;
-  x = esolver->x;
-
-  ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
-  emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
-  tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
-  lshift = esolver->lshift;
-  output  = esolver->options[LIS_EOPTIONS_OUTPUT];
-  niesolver = esolver->options[LIS_EOPTIONS_INNER_ESOLVER];
-
-  r = esolver->work[0];
-  q = esolver->work[1];
-  v = &esolver->work[2];
-  Ax = esolver->work[3];
-
-  LIS_QUAD_SCALAR_MALLOC(qdot_vv,0,1);
-  LIS_QUAD_SCALAR_MALLOC(qdot_vr,1,1);
-
-  lis_vector_set_all(1.0,r);
-  lis_vector_nrm2(r, &nrm2);
-  lis_vector_scale(1/nrm2,r);
-	  
-  switch ( niesolver )
-    {
-    case LIS_ESOLVER_II:
-
-      lis_solver_create(&solver);
-      lis_solver_set_option("-i bicg -p none -precision quad",solver);
-      lis_solver_set_optionC(solver);
-      lis_solver_get_solver(solver, &nsol);
-      lis_solver_get_precon(solver, &precon_type);
-      lis_solver_get_solvername(nsol, solvername);
-      lis_solver_get_preconname(precon_type, preconname);
-      if( A->my_rank==0 ) printf("linear solver         : %s\n", solvername);
-      if( A->my_rank==0 ) printf("preconditioner        : %s\n", preconname);
-      if( A->my_rank==0 ) printf("\n");
-#ifdef _LONG__DOUBLE
-      if( A->my_rank==0 ) printf("local shift           : %Le\n", lshift);
-#else
-      if( A->my_rank==0 ) printf("local shift           : %e\n", lshift);
-#endif
-      if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
-      break;
-
-    case LIS_ESOLVER_RQI:
-
-      lis_solver_create(&solver);
-      lis_solver_set_option("-p none -precision quad -maxiter 10",solver);
-      lis_solver_set_optionC(solver);
-      lis_solver_get_solver(solver, &nsol);
-      lis_solver_get_precon(solver, &precon_type);
-      lis_solver_get_solvername(nsol, solvername);
-      lis_solver_get_preconname(precon_type, preconname);
-      if( A->my_rank==0 ) printf("linear solver         : %s\n", solvername);
-      if( A->my_rank==0 ) printf("preconditioner        : %s\n", preconname);
-      if( A->my_rank==0 ) printf("\n");
-#ifdef _LONG__DOUBLE
-      if( A->my_rank==0 ) printf("local shift           : %Le\n", lshift);
-#else
-      if( A->my_rank==0 ) printf("local shift           : %e\n", lshift);
-#endif
-      if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
-      break;
-
-    }
-
-  giter=0;
-  j=0;
-  while (j<ss)
-    {
-      lis_vector_duplicate(A,&esolver->evector[j]); 
-      j = j+1;
-      lis_vector_copy(r, v[j]);
-
-      if (niesolver==LIS_ESOLVER_II || niesolver==LIS_ESOLVER_RQI)
-	{
-	  /* create preconditioner */
-	  solver->A = A;
-	  err = lis_precon_create(solver, &precon);
-	  if( err )
-	    {
-	      lis_solver_work_destroy(solver);
-	      solver->retcode = err;
-	      return err;
-	    }
-	}
-
-      if (niesolver==LIS_ESOLVER_RQI)
-	{
-	  lis_vector_nrm2(x, &nrm2);
-	  lis_vector_scale(1/nrm2, x);
-	  lis_matvec(A, x, Ax);
-	  lis_vector_dot(x, Ax, &xAx);
-	  lis_vector_dot(x, x, &xx);
-	  mu = xAx / xx;
-	}
-
-      iter = 0;
-      while (iter<emaxiter)
-	{
-	  iter = iter+1;
-	  giter = giter+1;
-
-	  /* QR factorization VR = Z for starting vector Z */
-	  for (k=1;k<j;k++)
-	    { 
-	      lis_vector_dotex_mmm(v[j], v[k], &qdot_vv);
-	      lis_quad_minus((LIS_QUAD *)qdot_vv.hi);
-	      lis_vector_axpyex_mmm(qdot_vv,v[k],v[j]);
-	    }
-
-	  /* kernel */
-	  switch( niesolver )
-	    {
-	    case LIS_ESOLVER_PI:
-
-	      /* R = A * V */
-	      lis_matvec(A,v[j],r); 
-
-	      break;
-
-	    case LIS_ESOLVER_II:
-
-	      /* R = (A - lshift * I)^-1 * V */
-	      lis_solve_kernel(A, v[j], r, solver, precon);
-
-	      break;
-
-	    case LIS_ESOLVER_RQI:
-
-	      /* R = (A - mu * I)^-1 * V */
-	      lis_vector_nrm2(v[j], &nrm2);
-	      lis_vector_scale(1/nrm2, v[j]);
-	      lis_matrix_shift_diagonal(A, -mu);
-	      lis_solve_kernel(A, v[j], r, solver, precon);
-	      lis_matrix_shift_diagonal(A, mu);
-
-	      break;
-	    }
-
-	  /* elapsed time of linear solver */
-	  if ( j==1 && ( niesolver==LIS_ESOLVER_II || niesolver==LIS_ESOLVER_RQI ))
-	    {
-	      lis_solver_get_timeex(solver,&time,&itime,&ptime,&p_c_time,&p_i_time);
-	      esolver->ptime += solver->ptime;
-	      esolver->itime += solver->itime;
-	      esolver->p_c_time += solver->p_c_time;
-	      esolver->p_i_time += solver->p_i_time;
-	    }
-
-	  /* R = V*R */
-	  lis_vector_nrm2(r, &nrm2);
-	  lis_vector_dotex_mmm(v[j], r, &qdot_vr);
-	  lis_quad_minus((LIS_QUAD *)qdot_vr.hi);
-	  lis_vector_axpyzex_mmmm(qdot_vr,v[j],r,q);
-	  lis_quad_minus((LIS_QUAD *)qdot_vr.hi);	  
-	  dotvr = qdot_vr.hi[0];
-	  mu = mu + 1/dotvr;
-
-	  /* resid = ||Z - VR||_2 */
-	  lis_vector_nrm2(q, &resid);
-	  resid = fabs(resid / dotvr);
-	  lis_vector_scale(1/nrm2,r);
-	  lis_vector_copy(r, v[j]);
-
-	  /* convergence check */
-	  if ( j==1 ) 
-	    {
-	      if( output & LIS_PRINT_MEM ) esolver->rhistory[iter] = resid; 
-	      esolver->iter[j-1] = iter;
-	      /* esolver->resid = resid;*/
-	    }
-	  if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,resid);
-	  if (tol>resid) break;
-	}
-
-      switch ( niesolver )
-	{
-	case LIS_ESOLVER_PI:
-  	  esolver->evalue[j-1] = dotvr;
-	  esolver->resid[j-1] = resid;
-	  esolver->iter[j-1] = iter;
-	  break;
-	case LIS_ESOLVER_II:
-	  esolver->evalue[j-1] = 1/dotvr;
-	  esolver->resid[j-1] = resid;
-	  esolver->iter[j-1] = iter;
-	  break;
-	case LIS_ESOLVER_RQI:
-	  esolver->evalue[j-1] = mu;
-	  esolver->resid[j-1] = resid;
-	  esolver->iter[j-1] = iter;
-	  break;
-	}
-      lis_vector_copy(v[j], esolver->evector[j-1]);  
-
-      if (A->my_rank==0 && ss>1)
-	{
-#ifdef _LONG__LONG
-	  if( output ) printf("Subspace: mode number          = %lld\n", j-1);
-#else
-	  if( output ) printf("Subspace: mode number          = %d\n", j-1);
-#endif
-#ifdef _COMPLEX	  
-#ifdef _LONG__DOUBLE
-	  if( output ) printf("Subspace: eigenvalue           = (%Le, %Le)\n", creall(esolver->evalue[j-1]), cimagl(esolver->evalue[j-1]));
-#else
-	  if( output ) printf("Subspace: eigenvalue           = (%e, %e)\n", creal(esolver->evalue[j-1]), cimag(esolver->evalue[j-1]));
-#endif
-#else
-#ifdef _LONG__DOUBLE
-	  if( output ) printf("Subspace: eigenvalue           = %Le\n", esolver->evalue[j-1]);
-#else
-	  if( output ) printf("Subspace: eigenvalue           = %e\n", esolver->evalue[j-1]);
-#endif
-#endif	  
-#ifdef _LONG__LONG
-	  if( output ) printf("Subspace: number of iterations = %lld\n",iter);
-#else
-	  if( output ) printf("Subspace: number of iterations = %d\n",iter);
-#endif
-#ifdef _LONG__DOUBLE
-	  if( output ) printf("Subspace: relative residual    = %Le\n\n",resid);
-#else
-	  if( output ) printf("Subspace: relative residual    = %e\n\n",resid);
-#endif
-	}
-    }
-  
-  lis_vector_copy(esolver->evector[0], esolver->x);
-
-  switch ( niesolver )
-    {
-    case LIS_ESOLVER_II:
-      if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
-      lis_precon_destroy(precon);
-      lis_solver_destroy(solver);
-      break;
-    case LIS_ESOLVER_RQI:
-      if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
-      lis_precon_destroy(precon);
-      lis_solver_destroy(solver);
-      break;
-    }
-
-  LIS_DEBUG_FUNC_OUT;
-  return LIS_SUCCESS;
-}
-#endif
 

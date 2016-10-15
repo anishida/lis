@@ -53,7 +53,7 @@
  * lis_array_axpy		y <- y + alpha * x
  * lis_array_xpay		y <- x + alpha * y
  * lis_array_axpyz		z <- y + alpha * x
- * lis_array_scale		y <- alpha * x
+ * lis_array_scale		x <- alpha * x
  * lis_array_pmul		z_i <- x_i * y_i
  * lis_array_pdiv		z_i <- x_i / y_i
  * lis_array_set_all		x_i <- alpha

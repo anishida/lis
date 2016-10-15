@@ -47,7 +47,7 @@
  * lis_vector_axpy		y <- y + alpha * x
  * lis_vector_xpay		y <- x + alpha * y
  * lis_vector_axpyz		z <- y + alpha * x
- * lis_vector_scale		y <- alpha * x
+ * lis_vector_scale		x <- alpha * x
  * lis_vector_pmul		z_i <- x_i * y_i
  * lis_vector_pdiv		z_i <- x_i / y_i
  * lis_vector_set_all		x_i <- alpha

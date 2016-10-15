@@ -54,14 +54,16 @@
 /***************************************
  * Inverse Iteration                   *
  ***************************************
- x(0)    = (1,...,1)^T
+ v    = (1,...,1)^T
  ***************************************
  for k=1,2,...
-   x(k-1)    = x(k-1) / ||x(k-1)||_2
-   z         = (A - lshift * I)^-1 * x(k-1)
-   evalue(k) = 1 / <x(k-1),z>
-   resid     = ||z - <x(k-1),z> * x||_2 / |<x(k-1),z>|
-   x(k)      = z         
+   v     = v / ||v||_2
+   y     = A^-1 * v
+   theta = 1 / <v,y>
+   resid = ||y - <v,y> * v||_2 / |<v,y>|
+   v     = y
+ lambda  = 1 / theta
+ x       = v / ||v||_2
  ***************************************/
 
 #define NWORK 2
@@ -124,14 +126,14 @@ LIS_INT lis_eii_malloc_work(LIS_ESOLVER esolver)
 LIS_INT lis_eii(LIS_ESOLVER esolver)
 {
   LIS_MATRIX A;
-  LIS_VECTOR x;
-  LIS_SCALAR evalue,dotxz;
+  LIS_VECTOR v;
+  LIS_SCALAR theta;
   LIS_SCALAR lshift;
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter2,output;
   LIS_REAL nrm2,resid;
-  LIS_VECTOR z,q;
+  LIS_VECTOR y,q;
   LIS_SOLVER solver;
   double time,itime,ptime,p_c_time,p_i_time;
 
@@ -148,12 +150,12 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
 
   A = esolver->A;
-  x = esolver->x;
+  v = esolver->x;
   if (esolver->options[LIS_EOPTIONS_INITGUESS_ONES] ) 
     {
-      lis_vector_set_all(1.0,x);
+      lis_vector_set_all(1.0,v);
     }
-  z = esolver->work[0];
+  y = esolver->work[0];
   q = esolver->work[1];
 
   iter=0;
@@ -195,162 +197,24 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
     {
       iter = iter+1;
 
-      /* x = x / ||x||_2 */
-      lis_vector_nrm2(x, &nrm2);
-      lis_vector_scale(1.0/nrm2, x);
+      /* v = v / ||v||_2 */
+      lis_vector_nrm2(v, &nrm2);
+      lis_vector_scale(1.0/nrm2, v);
 
-      /* z = (A - lshift * I)^-1 * x */
-      lis_solve_kernel(A, x, z, solver, precon);
+      /* y = A^-1 * v */
+      lis_solve_kernel(A, v, y, solver, precon);
       lis_solver_get_iter(solver,&iter2);
 
-      /* <x,z> */
-      lis_vector_dot(x, z, &dotxz); 
+      /* theta = <v,y> */
+      lis_vector_dot(v, y, &theta); 
 
-      /* resid = ||z - <x,z> * x||_2 / |<x,z>| */
-      lis_vector_axpyz(-dotxz,x,z,q); 
+      /* resid = ||y - theta * x||_2 / |theta| */
+      lis_vector_axpyz(-theta,v,y,q); 
       lis_vector_nrm2(q, &resid); 
-      resid = resid / fabs(dotxz);
+      resid = resid / fabs(theta);
 
-      /* x = z */
-      lis_vector_copy(z,x);
-
-      /* convergence check */
-      lis_solver_get_timeex(solver,&time,&itime,&ptime,&p_c_time,&p_i_time);
-      esolver->ptime += solver->ptime;
-      esolver->itime += solver->itime;
-      esolver->p_c_time += solver->p_c_time;
-      esolver->p_i_time += solver->p_i_time;
-
-      if( output )
-	{
-	  if( output & LIS_EPRINT_MEM ) esolver->rhistory[iter] = resid;
-	  if( output & LIS_EPRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,resid);
-	}
-
-      if( tol >= resid ) 
-	{
-	  esolver->retcode    = LIS_SUCCESS;
-	  esolver->iter[0]    = iter;
-	  esolver->resid[0]   = resid;
-	  esolver->evalue[0]  = 1.0/dotxz;
-	  lis_vector_nrm2(x, &nrm2);
-	  lis_vector_scale(1.0/nrm2, x);
-	  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
-	  lis_precon_destroy(precon);
-	  lis_solver_destroy(solver); 
-	  LIS_DEBUG_FUNC_OUT;
-	  return LIS_SUCCESS;
-	}
-    }
-
-  lis_precon_destroy(precon);
-
-  esolver->retcode    = LIS_MAXITER;
-  esolver->iter[0]    = iter;
-  esolver->resid[0]   = resid;
-  esolver->evalue[0]  = 1.0/dotxz;
-  lis_vector_nrm2(x, &nrm2);
-  lis_vector_scale(1.0/nrm2, x);
-  if (lshift != 0) 
-    {
-      lis_matrix_shift_diagonal(A, -lshift);
-    }
-  lis_solver_destroy(solver); 
-  LIS_DEBUG_FUNC_OUT;
-  return LIS_MAXITER;
-}
-
-#ifdef USE_QUAD_PRECISION
-#undef __FUNC__
-#define __FUNC__ "lis_eii_quad"
-LIS_INT lis_eii_quad(LIS_ESOLVER esolver)
-{
-  LIS_MATRIX A;
-  LIS_VECTOR x;
-  LIS_SCALAR evalue,dotxz;
-  LIS_REAL lshift;
-  LIS_INT emaxiter;
-  LIS_REAL tol;
-  LIS_INT iter,iter2,output;
-  LIS_REAL nrm2,resid;
-  LIS_QUAD_PTR qdot_xz;
-  LIS_VECTOR z,q;
-  LIS_SOLVER solver;
-  double time,itime,ptime,p_c_time,p_i_time;
-  LIS_INT err;
-  LIS_PRECON precon;
-  LIS_INT nsol, precon_type;
-  char solvername[128], preconname[128];
-
-  LIS_DEBUG_FUNC_IN;
-
-  emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
-  tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
-  lshift = esolver->lshift;
-  output  = esolver->options[LIS_EOPTIONS_OUTPUT];
-
-  A = esolver->A;
-  x = esolver->x;
-  if (esolver->options[LIS_EOPTIONS_INITGUESS_ONES] ) 
-    {
-      lis_vector_set_all(1.0,x);
-    }
-  z = esolver->work[0];
-  q = esolver->work[1];
-
-  LIS_QUAD_SCALAR_MALLOC(qdot_xz,0,1);
-
-  iter=0;
-#ifdef _LONG__DOUBLE
-  if( output & (A->my_rank==0) ) printf("local shift           : %Le\n", lshift);
-#else
-  if( output & (A->my_rank==0) ) printf("local shift           : %e\n", lshift);
-#endif
-  if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
-  lis_solver_create(&solver);
-  lis_solver_set_option("-i bicg -p none -precision quad",solver);
-  lis_solver_set_optionC(solver);
-  lis_solver_get_solver(solver, &nsol);
-  lis_solver_get_precon(solver, &precon_type);
-  lis_solver_get_solvername(nsol, solvername);
-  lis_solver_get_preconname(precon_type, preconname);
-  if( output & (A->my_rank==0) ) printf("linear solver         : %s\n", solvername);
-  if( output & (A->my_rank==0) ) printf("preconditioner        : %s\n", preconname);
-
-  /* create preconditioner */
-  solver->A = A;
-  err = lis_precon_create(solver, &precon);
-  if( err )
-    {
-      lis_solver_work_destroy(solver);
-      solver->retcode = err;
-      return err;
-    }
-
-  while (iter<emaxiter)
-    {
-      iter = iter+1;
-
-      /* x = x / ||x||_2 */
-      lis_vector_nrm2(x, &nrm2);
-      lis_vector_scale(1.0/nrm2, x);
-
-      /* z = (A - lshift * I)^-1 * x */
-      lis_solve_kernel(A, x, z, solver, precon);
-      lis_solver_get_iter(solver,&iter2);
-
-      /* <x,z> */
-      lis_vector_dotex_mmm(x, z, &qdot_xz);
-      lis_quad_minus((LIS_QUAD *)qdot_xz.hi);
-      lis_vector_axpyzex_mmmm(qdot_xz,x,z,q);
-      lis_quad_minus((LIS_QUAD *)qdot_xz.hi);
-
-      /* resid = ||z - <x,z> * x||_2 / |<x,z>| */
-      lis_vector_nrm2(q, &resid);
-      resid = resid / fabs(qdot_xz.hi[0]);
-
-      /* x = z */
-      lis_vector_copy(z,x);
+      /* v = y */
+      lis_vector_copy(y, v);
 
       /* convergence check */
       lis_solver_get_timeex(solver,&time,&itime,&ptime,&p_c_time,&p_i_time);
@@ -370,10 +234,9 @@ LIS_INT lis_eii_quad(LIS_ESOLVER esolver)
 	  esolver->retcode    = LIS_SUCCESS;
 	  esolver->iter[0]    = iter;
 	  esolver->resid[0]   = resid;
-	  esolver->evalue[0]  = 1.0/qdot_xz.hi[0];
-;
-	  lis_vector_nrm2(x, &nrm2);
-	  lis_vector_scale(1.0/nrm2, x);
+	  esolver->evalue[0]  = 1.0/theta;
+	  lis_vector_nrm2(v, &nrm2);
+	  lis_vector_scale(1.0/nrm2, v);
 	  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
 	  lis_precon_destroy(precon);
 	  lis_solver_destroy(solver); 
@@ -387,15 +250,12 @@ LIS_INT lis_eii_quad(LIS_ESOLVER esolver)
   esolver->retcode    = LIS_MAXITER;
   esolver->iter[0]    = iter;
   esolver->resid[0]   = resid;
-  esolver->evalue[0]  = 1.0/qdot_xz.hi[0];
-  lis_vector_nrm2(x, &nrm2);
-  lis_vector_scale(1.0/nrm2, x);
-  if (lshift != 0) 
-    {
-      lis_matrix_shift_diagonal(A, -lshift);
-    }
+  esolver->evalue[0]  = 1.0/theta;
+  lis_vector_nrm2(v, &nrm2);
+  lis_vector_scale(1.0/nrm2, v);
+  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
   lis_solver_destroy(solver); 
   LIS_DEBUG_FUNC_OUT;
   return LIS_MAXITER;
 }
-#endif
+

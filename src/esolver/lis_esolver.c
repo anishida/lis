@@ -68,7 +68,7 @@ LIS_ESOLVER_EXECUTE lis_esolver_execute[] = {
 #ifdef USE_QUAD_PRECISION
 LIS_ESOLVER_EXECUTE lis_esolver_execute_quad[] = {
   NULL,
-  lis_epi_quad, lis_eii_quad, lis_erqi_quad, NULL, NULL, NULL, lis_esi_quad, lis_eli_quad, lis_eai_quad
+  NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
 };
 LIS_ESOLVER_EXECUTE lis_esolver_execute_switch[] = {
   NULL,
@@ -632,7 +632,7 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	#endif
 	esolver->retcode = err;
 
-	*evalue0 = esolver->evalue[0];
+	*evalue0 = esolver->evalue[0] - gshift;
 	lis_vector_copy(esolver->x, x);
 
 	esolver->time = lis_wtime() - time; 
