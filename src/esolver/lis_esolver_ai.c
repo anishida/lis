@@ -290,18 +290,10 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 #else
 		  printf("Arnoldi: mode number              = %d\n",i);
 #endif
-#ifdef _COMPLEX
-#ifdef _LONG__DOUBLE	      	      
-		  printf("Arnoldi: eigenvalue               = (%Le, %Le)\n", (h[i-1+(i-1)*ss]+h[i+i*ss])/2-gshift, -sqrt(-D)/2);
-#else
-		  printf("Arnoldi: eigenvalue               = (%e, %e)\n", (h[i-1+(i-1)*ss]+h[i+i*ss])/2-gshift, -sqrt(-D)/2);
-#endif
-#else		  
 #ifdef _LONG__DOUBLE	      	      
 		  printf("Arnoldi: eigenvalue               = (%Le, %Le)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2-gshift), (LIS_REAL)-sqrt(-D)/2);
 #else
 		  printf("Arnoldi: eigenvalue               = (%e, %e)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2-gshift), (LIS_REAL)-sqrt(-D)/2);
-#endif
 #endif		  
 		  
 #ifdef _COMPLEX		  
