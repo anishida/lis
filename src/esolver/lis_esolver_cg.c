@@ -520,7 +520,7 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
       lis_vector_dot(p,Ap,&pAp); 
       lis_vector_dot(p,p,&pp);
       alpha = (rAp - lambda * rp)
-	    / (ApAp - lambda * (2.0 * pAp - lambda * pp));
+	    / (ApAp - 2.0 * lambda * pAp + lambda * lambda * pp);
 
       /* x=x+alpha*p */
       lis_vector_axpy(alpha,p,x);
@@ -547,8 +547,8 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
       lis_vector_dot(p,Aw,&pAw);
       lis_vector_dot(w,Ap,&wAp);      
       lis_vector_dot(w,p,&wp);
-      beta = - (AwAp - lambda * ((pAw + wAp) - lambda * wp))
-	     / (ApAp - lambda * (2.0 * pAp - lambda * pp));
+      beta = - (AwAp - lambda * (pAw + wAp) + lambda * lambda * wp)
+	     / (ApAp - 2.0 * lambda * pAp + lambda * lambda * pp);
 
       /* p=w+beta*p */
       lis_vector_xpay(w,beta,p);
