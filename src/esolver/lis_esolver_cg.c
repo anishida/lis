@@ -127,14 +127,14 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
 {
   LIS_MATRIX A;
   LIS_VECTOR x;
-  LIS_SCALAR evalue;
+  LIS_SCALAR lambda;
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter3,output;
   LIS_REAL nrm2,resid,resid3;
   LIS_SCALAR lshift;
   LIS_VECTOR r,w,p,Aw,Ax,Ap;
-  LIS_SCALAR *A3,*B3,*W3,*v3,*A3v3,*B3v3,*z3,*q3,*B3z3,ievalue3;
+  LIS_SCALAR *A3,*B3,*W3,*v3,*A3v3,*B3v3,*z3,*q3,*B3z3,mu3;
   LIS_SOLVER solver;
   LIS_PRECON precon;
   double time,itime,ptime,p_c_time,p_i_time;
@@ -188,7 +188,7 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
   ptime = 0;
 
   lis_vector_nrm2(x, &nrm2);
-  lis_vector_scale(1/nrm2, x);
+  lis_vector_scale(1.0/nrm2, x);
   lis_matvec(A,x,Ax);
   lis_solver_create(&solver);
   lis_solver_set_option("-i cg -p none",solver);
@@ -217,10 +217,10 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
       iter=iter+1;
 
       /* mu=<x,x>/<x,A*x>, where mu=1/lambda */
-      lis_vector_dot(x,Ax,&evalue);
+      lis_vector_dot(x,Ax,&lambda);
 
       /* r=x-mu*A*x */
-      lis_vector_axpyz(-1/evalue,Ax,x,r); 
+      lis_vector_axpyz(-1.0/lambda,Ax,x,r); 
       lis_vector_nrm2(r,&nrm2);
  
       /* convergence check */
@@ -270,11 +270,11 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
 	{
 	  iter3=iter3+1;
 	  lis_array_nrm2(3,v3,&nrm2); 
-	  lis_array_scale(3,1/nrm2,v3);
+	  lis_array_scale(3,1.0/nrm2,v3);
 	  lis_array_matvec(3,B3,v3,B3v3,LIS_INS_VALUE);
 	  lis_array_solve(3,A3,B3v3,z3,W3);
-	  lis_array_dot(3,B3v3,z3,&ievalue3);
-	  lis_array_axpyz(3,-ievalue3,B3v3,z3,q3);
+	  lis_array_dot(3,B3v3,z3,&mu3);
+	  lis_array_axpyz(3,-mu3,B3v3,z3,q3);
 	  lis_array_nrm2(3,q3,&resid3); 
 	  if (resid3<tol) break;   
 	  lis_array_copy(3,z3,v3);
@@ -294,12 +294,12 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
       
       /* compute Ritz vector x corresponding to the smallest Ritz value */
       lis_vector_nrm2(x,&nrm2);
-      lis_vector_scale(1/nrm2,x);
-      lis_vector_scale(1/nrm2,Ax);
+      lis_vector_scale(1.0/nrm2,x);
+      lis_vector_scale(1.0/nrm2,Ax);
       
       lis_vector_nrm2(p,&nrm2);
-      lis_vector_scale(1/nrm2,p);
-      lis_vector_scale(1/nrm2,Ap);
+      lis_vector_scale(1.0/nrm2,p);
+      lis_vector_scale(1.0/nrm2,Ap);
       
     }
 
@@ -308,7 +308,7 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
 
   esolver->iter[0]    = iter;
   esolver->resid[0]   = resid;
-  esolver->evalue[0]  = evalue;
+  esolver->evalue[0]  = lambda;
 
   lis_solver_get_timeex(solver,&time,&itime,&ptime,&p_c_time,&p_i_time);
   esolver->ptime = ptime;
@@ -426,7 +426,7 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
 {
   LIS_MATRIX A;
   LIS_VECTOR x;
-  LIS_SCALAR evalue;
+  LIS_SCALAR lambda;
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,output;
@@ -478,7 +478,7 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
   ptime = 0;
 
   lis_vector_nrm2(x, &nrm2);
-  lis_vector_scale(1/nrm2, x);
+  lis_vector_scale(1.0/nrm2, x);
   lis_matvec(A,x,Ax);
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
@@ -500,10 +500,10 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
   solver->precon = precon;
 
   /* lambda=<A*x,x>/<x,x> */
-  lis_vector_dot(x,Ax,&evalue); 
+  lis_vector_dot(x,Ax,&lambda); 
   
   /* r=lambda*x-A*x */
-  lis_vector_axpyz(-evalue,x,Ax,r);
+  lis_vector_axpyz(-lambda,x,Ax,r);
   lis_vector_scale(-1.0,r);
 
   iter=0;
@@ -519,20 +519,20 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
       lis_vector_dot(Ap,Ap,&ApAp);
       lis_vector_dot(p,Ap,&pAp); 
       lis_vector_dot(p,p,&pp);
-      alpha = (rAp - evalue * rp)
-	    / (ApAp - evalue * (2.0 * pAp - evalue * pp));
+      alpha = (rAp - lambda * rp)
+	    / (ApAp - lambda * (2.0 * pAp - lambda * pp));
 
       /* x=x+alpha*p */
       lis_vector_axpy(alpha,p,x);
 
       /* lambda=<A*x,x>/<x,x> */
       lis_matvec(A,x,Ax);
-      lis_vector_dot(x,Ax,&evalue);
+      lis_vector_dot(x,Ax,&lambda);
       lis_vector_nrm2(x, &nrm2);
-      evalue = evalue / (nrm2 * nrm2);
+      lambda = lambda / (nrm2 * nrm2);
 
       /* r=lambda*x-A*x */
-      lis_vector_axpyz(-evalue,x,Ax,r); 
+      lis_vector_axpyz(-lambda,x,Ax,r); 
       lis_vector_scale(-1.0,r);
 
       /* w=M^-1*r */
@@ -547,8 +547,8 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
       lis_vector_dot(p,Aw,&pAw);
       lis_vector_dot(w,Ap,&wAp);      
       lis_vector_dot(w,p,&wp);
-      beta = - (AwAp - evalue * ((pAw + wAp) - evalue * wp))
-	     / (ApAp - evalue * (2.0 * pAp - evalue * pp));
+      beta = - (AwAp - lambda * ((pAw + wAp) - lambda * wp))
+	     / (ApAp - lambda * (2.0 * pAp - lambda * pp));
 
       /* p=w+beta*p */
       lis_vector_xpay(w,beta,p);
@@ -558,7 +558,7 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
 
       /* convergence check */
       lis_vector_nrm2(r,&nrm2);
-      resid = fabs(nrm2 / (evalue));
+      resid = nrm2 / fabs(lambda);
 
       if( output )
 	{
@@ -575,9 +575,9 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
 
   esolver->iter[0]    = iter;
   esolver->resid[0]   = resid;
-  esolver->evalue[0]  = evalue;
+  esolver->evalue[0]  = lambda;
   lis_vector_nrm2(x, &nrm2);
-  lis_vector_scale(1/nrm2, x);
+  lis_vector_scale(1.0/nrm2, x);
 
   lis_solver_get_timeex(solver,&time,&itime,&ptime,&p_c_time,&p_i_time);
   esolver->ptime = ptime;
