@@ -500,7 +500,7 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
   solver->precon = precon;
 
   /* lambda=<A*x,x>/<x,x> */
-  lis_vector_dot(x,Ax,&evalue);
+  lis_vector_dot(x,Ax,&evalue); 
   
   /* r=lambda*x-A*x */
   lis_vector_axpyz(-evalue,x,Ax,r);
