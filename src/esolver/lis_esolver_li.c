@@ -240,7 +240,6 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   /* compute eigenvalues of a real symmetric tridiagonal matrix 
      T(j) = ST'(j)S^* */
   lis_array_qr(ss,t,tq,tr,&qriter,&qrerr);
-  printf("lis-test-li:h[%d]=%e\n",j+(j-1)*ss,t[j+(j-1)*ss]);  
 
   for (i=0;i<ss;i++)
     {
