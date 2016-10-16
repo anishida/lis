@@ -231,9 +231,8 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   /* compute eigenvalues of a real upper
      Hessenberg matrix H(j) = SH'(j)S^* */
   lis_array_qr(ss,h,hq,hr,&hqriter,&hqrerr);
-  printf("lis-test-ai:h[%d]=%e\n",j+(j-1)*ss,h[j+(j-1)*ss]);
 
-
+  
   if( A->my_rank==0 ) 
     {
 #ifdef _LONG__LONG
