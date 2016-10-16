@@ -337,6 +337,7 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 		return LIS_ERR_ILL_ARG;
 	}
 
+	/*
 	if ( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_SI && niesolver > 6 )
 	{
 		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_INNER_ESOLVER is %d (Set Power or Inverse for Subspace)\n", niesolver);
@@ -354,6 +355,7 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_INNER_ESOLVER is %d (Power cannot used for Arnoldi)\n", niesolver);
 		return LIS_ERR_ILL_ARG;
 	}
+	*/
 
 	if ( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_SI && ss > A->gn )
 	{
