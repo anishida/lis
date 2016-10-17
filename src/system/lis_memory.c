@@ -282,29 +282,29 @@ void lis_free2(LIS_INT n, ...)
 
 void lis_free_all()
 {
-  malloc_address *ma;
-  malloc_address *ma_bak;
+	malloc_address *ma;
+	malloc_address *ma_bak;
 
-  ma = malloc_address_top.next;
-    while (ma->address) {
-  #ifdef USE_MALLOC_TAG
-	  lis_printf(LIS_COMM_WORLD,"memory leak: address = %x size=%d (%s)\n",ma->address,ma->size,ma->tag);
-  #endif
-    ma_bak = ma->next;
-    /*        	if (ma->real_address) free(ma->real_address); */
-	ma->real_address = NULL;
-	#ifdef USE_MALLOC_TAG
+	ma = malloc_address_top.next;
+	while (ma->address) {
+#ifdef USE_MALLOC_TAG
+		lis_printf(LIS_COMM_WORLD,"memory leak: address = %x size=%d (%s)\n",ma->address,ma->size,ma->tag);
+#endif
+		ma_bak = ma->next;
+		/*  if (ma->real_address) free(ma->real_address); */
+		ma->real_address = NULL;
+#ifdef USE_MALLOC_TAG
 		if (ma->tag) lis_free(ma->tag);
 		ma->tag = NULL;
-	#endif
-	ma = ma_bak;
-  }
-  malloc_address_top.next         = &malloc_address_top;
-  malloc_address_top.prev         = &malloc_address_top;
-  malloc_address_top.address      = NULL;
-  malloc_address_top.real_address = NULL;
-  malloc_address_top.size         = 0;
-  return;
+#endif
+		ma = ma_bak;
+	}
+	malloc_address_top.next         = &malloc_address_top;
+	malloc_address_top.prev         = &malloc_address_top;
+	malloc_address_top.address      = NULL;
+	malloc_address_top.real_address = NULL;
+	malloc_address_top.size         = 0;
+	return;
 }
 
 LIS_INT lis_is_malloc( void *p )
