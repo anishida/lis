@@ -166,14 +166,16 @@ LIS_INT main(LIS_INT argc, char* argv[])
     CHKERR(err);
     lis_matrix_destroy(A);
     A = A0;
-    lis_vector_duplicate(A,&x);
+    err = lis_vector_duplicate(A,&x);
+    CHKERR(err);
 
     err = lis_esolver_create(&esolver);
     CHKERR(err);
 
     lis_esolver_set_option("-eprint mem",esolver);
     lis_esolver_set_optionC(esolver);
-    lis_esolve(A, x, &evalue0, esolver);
+    err = lis_esolve(A, x, &evalue0, esolver);
+    CHKERR(err);
     lis_esolver_get_esolver(esolver,&nesol);
     lis_esolver_get_esolvername(nesol,esolvername);
     lis_esolver_get_residualnorm(esolver, &residual);
