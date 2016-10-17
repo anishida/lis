@@ -1,6 +1,7 @@
 Version 1.6.36  October 17, 2016
 
   - Updated test6.c (thanks to Hiroshi Kanayama).
+  - Updated lisf_solver.c (thanks to Florian Lehner).
   - Updated lis_esolver.c.
 
 Version 1.6.35  October 16, 2016
