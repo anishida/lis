@@ -137,6 +137,7 @@ void lis_solver_set_optionC_f(LIS_SOLVER solver, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_solver_set_optionC((LIS_SOLVER)LIS_V2P(solver));
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
