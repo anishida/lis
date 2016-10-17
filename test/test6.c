@@ -71,11 +71,11 @@ LIS_INT main(LIS_INT argc, char* argv[])
 
 	nn = m*n;
 
-	a = (LIS_SCALAR *)lis_malloc(nn*nn*sizeof(LIS_SCALAR),"test6:a");
-	b = (LIS_SCALAR *)lis_malloc(nn*sizeof(LIS_SCALAR),"test6:b");
-	x = (LIS_SCALAR *)lis_malloc(nn*sizeof(LIS_SCALAR),"test6:x");
-	u = (LIS_SCALAR *)lis_malloc(nn*sizeof(LIS_SCALAR),"test6:u");
-	w = (LIS_SCALAR *)lis_malloc(nn*nn*sizeof(LIS_SCALAR),"test6:w");
+	a = (LIS_SCALAR *)malloc(nn*nn*sizeof(LIS_SCALAR));
+	b = (LIS_SCALAR *)malloc(nn*sizeof(LIS_SCALAR));
+	x = (LIS_SCALAR *)malloc(nn*sizeof(LIS_SCALAR));
+	u = (LIS_SCALAR *)malloc(nn*sizeof(LIS_SCALAR));
+	w = (LIS_SCALAR *)malloc(nn*nn*sizeof(LIS_SCALAR));
 
 	/* define two-dimensional Laplacian */
 
@@ -136,7 +136,11 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	printf("Direct: relative residual    = %e\n\n", resid_r/resid_b);
 #endif
 
-	lis_free2(5,a,b,x,u,w);
+	free(a);
+	free(b);
+	free(x);
+	free(u);
+	free(w);
 	lis_finalize();
 
 	LIS_DEBUG_FUNC_OUT;
