@@ -203,7 +203,13 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
       lis_vector_scale(1.0/nrm2, v);
 
       /* y = A^-1 * v */
-      lis_solve_kernel(A, v, y, solver, precon);
+      err = lis_solve_kernel(A, v, y, solver, precon);
+      if( err )
+	{
+	  lis_solver_work_destroy(solver);	  
+	  solver->retcode = err;
+	  return err;
+	}
       lis_solver_get_iter(solver,&iter2);
 
       /* theta = <v,y> */

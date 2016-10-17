@@ -125,6 +125,7 @@ LIS_INT lis_ecg_malloc_work(LIS_ESOLVER esolver)
 #define __FUNC__ "lis_ecg"
 LIS_INT lis_ecg(LIS_ESOLVER esolver)
 {
+  LIS_INT err;
   LIS_MATRIX A;
   LIS_VECTOR x;
   LIS_SCALAR lambda;
@@ -204,10 +205,22 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
   /* lis_solve must be called before lis_precon_create */
   /* p=A^-1*x */
 
-  lis_solve(A,x,p,solver);
+  err = lis_solve(A,x,p,solver);
+  if( err )
+    {
+      lis_solver_work_destroy(solver);	  
+      solver->retcode = err;
+      return err;
+    }
   lis_vector_copy(x,Ap);
 
-  lis_precon_create(solver,&precon);
+  err = lis_precon_create(solver,&precon);
+  if( err )
+    {
+      lis_solver_work_destroy(solver);	  
+      solver->retcode = err;
+      return err;
+    }
   solver->precon = precon;
 
   iter=0;
@@ -424,6 +437,7 @@ LIS_INT lis_ecr_malloc_work(LIS_ESOLVER esolver)
 #define __FUNC__ "lis_ecr"
 LIS_INT lis_ecr(LIS_ESOLVER esolver)
 {
+  LIS_INT err;
   LIS_MATRIX A;
   LIS_VECTOR x;
   LIS_SCALAR lambda;
@@ -493,10 +507,22 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
 
   /* lis_solve must be called before lis_precon_create */
   /* p=A^-1*x */
-  lis_solve(A,x,p,solver);
+  err = lis_solve(A,x,p,solver);
+  if( err )
+    {
+      lis_solver_work_destroy(solver);	  
+      solver->retcode = err;
+      return err;
+    }
   lis_vector_copy(x,Ap);
 
-  lis_precon_create(solver,&precon);
+  err = lis_precon_create(solver,&precon);
+  if( err )
+    {
+      lis_solver_work_destroy(solver);	  
+      solver->retcode = err;
+      return err;
+    }
   solver->precon = precon;
 
   /* lambda=<A*x,x>/<x,x> */
