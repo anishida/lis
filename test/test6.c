@@ -136,6 +136,11 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	printf("Direct: relative residual    = %e\n\n", resid_r/resid_b);
 #endif
 
+	free(a);
+	free(b);
+	free(x);
+	free(u);
+	free(w);
 	lis_finalize();
 
 	LIS_DEBUG_FUNC_OUT;

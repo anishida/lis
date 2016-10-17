@@ -374,7 +374,13 @@ LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
 	}
 
 	/* core kernel of lis_solve() */
-	lis_solve_kernel(A, b, x, solver, precon);
+	err = lis_solve_kernel(A, b, x, solver, precon);
+	if( err )
+	{
+		lis_solver_work_destroy(solver);	  
+		solver->retcode = err;
+		return err;
+	}
 
 	lis_precon_destroy(precon);
 

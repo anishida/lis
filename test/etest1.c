@@ -41,7 +41,7 @@
 #define __FUNC__ "main"
 LIS_INT main(LIS_INT argc, char* argv[])
 {
-  LIS_INT nprocs,my_rank;
+  LIS_INT err,nprocs,my_rank;
   int int_nprocs,int_my_rank;
   LIS_INT nesol;
   LIS_MATRIX A;
@@ -107,7 +107,8 @@ LIS_INT main(LIS_INT argc, char* argv[])
   lis_esolver_create(&esolver);
   lis_esolver_set_option("-eprint mem",esolver);
   lis_esolver_set_optionC(esolver);
-  lis_esolve(A, x, &evalue0, esolver);
+  err = lis_esolve(A, x, &evalue0, esolver);
+  CHKERR(err);
   lis_esolver_get_esolver(esolver,&nesol);
   lis_esolver_get_esolvername(nesol,esolvername);
   lis_esolver_get_residualnorm(esolver, &residual);

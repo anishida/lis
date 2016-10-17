@@ -259,6 +259,12 @@ LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER 
 	/* call generalized eigensolver */
 	err = lis_gesolve(A,NULL,x,evalue0,esolver);
 
+	if( err )
+	{
+		esolver->retcode = err;
+		return err;
+	}
+	
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 }
