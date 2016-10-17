@@ -224,7 +224,13 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
 
       /* z = (A - rho * I)^-1 * v */
       lis_matrix_shift_diagonal(A, -rho);
-      lis_solve_kernel(A, v, y, solver, precon);
+      err = lis_solve_kernel(A, v, y, solver, precon);
+      if( err )
+	{
+	  lis_solver_work_destroy(solver);	  
+	  solver->retcode = err;
+	  return err;
+	}
       lis_matrix_shift_diagonal(A, rho);
       lis_solver_get_iter(solver,&iter2);
 

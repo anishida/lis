@@ -273,7 +273,13 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	    case LIS_ESOLVER_II:
 
 	      /* R = A^-1 * V */
-	      lis_solve_kernel(A, v[j], r, solver, precon);
+	      err = lis_solve_kernel(A, v[j], r, solver, precon);
+	      if( err )
+		{
+		  lis_solver_work_destroy(solver);	  
+		  solver->retcode = err;
+		  return err;
+		}
 
 	      break;
 
