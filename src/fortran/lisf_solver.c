@@ -215,7 +215,8 @@ void lis_solver_get_solver_f(LIS_SOLVER_F *solver, LIS_INT *nsol, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_solver_get_solver((LIS_SOLVER)LIS_V2P(solver),nsol);
-
+	if( *ierr )	return;
+	
 	LIS_DEBUG_FUNC_OUT;
 	return;
 }
@@ -228,6 +229,7 @@ void lis_solver_get_solvername_f(LIS_INT *solver, char *name, LIS_INT *ierr, LIS
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_solver_get_solvername(*solver, buf);
+	if( *ierr )	return;	
 	strncpy(name,buf,len);
 
 	LIS_DEBUG_FUNC_OUT;
@@ -254,6 +256,7 @@ void lis_solver_get_precon_f(LIS_SOLVER_F *solver, LIS_INT *nsol, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_solver_get_precon((LIS_SOLVER)LIS_V2P(solver),nsol);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -267,6 +270,7 @@ void lis_solver_get_preconname_f(LIS_INT *solver, char *name, LIS_INT *ierr, LIS
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_solver_get_preconname(*solver, buf);
+	if( *ierr )	return;	
 	strncpy(name,buf,len);
 
 	LIS_DEBUG_FUNC_OUT;
@@ -280,6 +284,7 @@ void lis_solver_get_status_f(LIS_SOLVER_F *solver, LIS_INT *status, LIS_INT *ier
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_solver_get_status((LIS_SOLVER)LIS_V2P(solver),status);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;

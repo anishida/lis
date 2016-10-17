@@ -137,7 +137,8 @@ void lis_esolver_set_optionC_f(LIS_ESOLVER esolver, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_esolver_set_optionC((LIS_ESOLVER)LIS_V2P(esolver));
-
+	if( *ierr )	return;
+	
 	LIS_DEBUG_FUNC_OUT;
 	return;
 }
@@ -266,7 +267,8 @@ void lis_esolver_get_esolver_f(LIS_ESOLVER_F *esolver, LIS_INT *nsol, LIS_INT *i
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_esolver_get_esolver((LIS_ESOLVER)LIS_V2P(esolver),nsol);
-
+	if( *ierr )	return;
+	
 	LIS_DEBUG_FUNC_OUT;
 	return;
 }
@@ -279,6 +281,7 @@ void lis_esolver_get_esolvername_f(LIS_INT *esolver, char *name, LIS_INT *ierr, 
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_esolver_get_esolvername(*esolver, buf);
+	if( *ierr )	return;
 	strncpy(name,buf,len);
 
 	LIS_DEBUG_FUNC_OUT;
