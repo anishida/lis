@@ -90,7 +90,8 @@ void lis_array_swap_f(LIS_INT *n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_swap(*n,x,y);
-
+	if( *ierr )	return;
+	
 	LIS_DEBUG_FUNC_OUT;
 	return;
 }
@@ -102,6 +103,7 @@ void lis_array_copy_f(LIS_INT *n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_copy(*n,x,y);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -114,6 +116,7 @@ void lis_array_axpy_f(LIS_INT *n, LIS_SCALAR *alpha, LIS_SCALAR *x, LIS_SCALAR *
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_axpy(*n,*alpha,x,y);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -126,6 +129,7 @@ void lis_array_xpay_f(LIS_INT *n, LIS_SCALAR *x, LIS_SCALAR *alpha, LIS_SCALAR *
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_xpay(*n,x,*alpha,y);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -138,6 +142,7 @@ void lis_array_axpyz_f(LIS_INT *n, LIS_SCALAR *alpha, LIS_SCALAR *x, LIS_SCALAR 
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_axpyz(*n,*alpha,x,y,z);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -150,6 +155,7 @@ void lis_array_scale_f(LIS_INT *n, LIS_SCALAR *alpha, LIS_SCALAR *x, LIS_INT *ie
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_scale(*n,*alpha,x);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -162,6 +168,7 @@ void lis_array_pmul_f(LIS_INT *n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *z, L
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_pmul(*n,x,y,z);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -174,6 +181,7 @@ void lis_array_pdiv_f(LIS_INT *n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *z, L
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_pdiv(*n,x,y,z);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -186,6 +194,7 @@ void lis_array_set_all_f(LIS_INT *n, LIS_SCALAR *alpha, LIS_SCALAR *x, LIS_INT *
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_set_all(*n,*alpha,x);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -198,6 +207,7 @@ void lis_array_abs_f(LIS_INT *n, LIS_SCALAR *x, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_abs(*n,x);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -210,6 +220,7 @@ void lis_array_reciprocal_f(LIS_INT *n, LIS_SCALAR *x, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_reciprocal(*n,x);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -222,6 +233,7 @@ void lis_array_conjugate_f(LIS_INT *n, LIS_SCALAR *x, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_conjugate(*n,x);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -234,6 +246,7 @@ void lis_array_shift_f(LIS_INT *n, LIS_SCALAR *t, LIS_SCALAR *x, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_shift(*n,*t,x);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -246,6 +259,7 @@ void lis_array_dot_f(LIS_INT *n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *value
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_dot(*n,x,y,value);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -258,6 +272,7 @@ void lis_array_nhdot_f(LIS_INT *n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *val
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_nhdot(*n,x,y,value);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -270,6 +285,7 @@ void lis_array_nrm1_f(LIS_INT *n, LIS_SCALAR *x, LIS_REAL *value, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_nrm1(*n,x,value);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -282,6 +298,7 @@ void lis_array_nrm2_f(LIS_INT *n, LIS_SCALAR *x, LIS_REAL *value, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_nrm2(*n,x,value);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -294,6 +311,7 @@ void lis_array_nrmi_f(LIS_INT *n, LIS_SCALAR *x, LIS_REAL *value, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_nrmi(*n,x,value);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -306,6 +324,7 @@ void lis_array_sum_f(LIS_INT *n, LIS_SCALAR *x, LIS_SCALAR *value, LIS_INT *ierr
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_sum(*n,x,value);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -318,6 +337,7 @@ void lis_array_matvec_f(LIS_INT *n, LIS_SCALAR *a, LIS_SCALAR *x, LIS_SCALAR *y,
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_matvec(*n,a,x,y,*op);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -330,6 +350,7 @@ void lis_array_matvect_f(LIS_INT *n, LIS_SCALAR *a, LIS_SCALAR *x, LIS_SCALAR *y
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_matvect(*n,a,x,y,*op);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -342,6 +363,7 @@ void lis_array_matvect_f(LIS_INT *n, LIS_SCALAR *a, LIS_SCALAR *x, LIS_SCALAR *y
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_matvec_ns(*m,*n,a,*lda,x,y,*op);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -354,6 +376,7 @@ void lis_array_matmat_f(LIS_INT *n, LIS_SCALAR *a, LIS_SCALAR *b, LIS_SCALAR *c,
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_matmat(*n,a,b,c,*op);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -366,6 +389,7 @@ void lis_array_matmat_f(LIS_INT *n, LIS_SCALAR *a, LIS_SCALAR *b, LIS_SCALAR *c,
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_matmat_ns(*m,*n,*k,a,*lda,b,*ldb,c,*ldc,*op);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -378,6 +402,7 @@ void lis_array_ge_f(LIS_INT *n, LIS_SCALAR *a, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_ge(*n,a);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -390,6 +415,7 @@ void lis_array_ge_f(LIS_INT *n, LIS_SCALAR *a, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_solve(*n,a,b,x,w);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -402,6 +428,7 @@ void lis_array_ge_f(LIS_INT *n, LIS_SCALAR *a, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_cgs(*n,a,q,r);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -414,6 +441,7 @@ void lis_array_ge_f(LIS_INT *n, LIS_SCALAR *a, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_mgs(*n,a,q,r);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -426,6 +454,7 @@ void lis_array_ge_f(LIS_INT *n, LIS_SCALAR *a, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_array_qr(*n,a,q,r,qriter,qrerr);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
