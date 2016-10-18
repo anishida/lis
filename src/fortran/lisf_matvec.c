@@ -63,6 +63,7 @@ void lis_matvec_f(LIS_MATRIX_F *A, LIS_VECTOR_F *x, LIS_VECTOR_F *y, LIS_INT *ie
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_matvec((LIS_MATRIX)LIS_V2P(A),(LIS_VECTOR)LIS_V2P(x),(LIS_VECTOR)LIS_V2P(y));
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -75,6 +76,7 @@ void lis_matvect_f(LIS_MATRIX_F *A, LIS_VECTOR_F *x, LIS_VECTOR_F *y, LIS_INT *i
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_matvect((LIS_MATRIX)LIS_V2P(A),(LIS_VECTOR)LIS_V2P(x),(LIS_VECTOR)LIS_V2P(y));
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;

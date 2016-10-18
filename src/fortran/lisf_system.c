@@ -81,7 +81,8 @@ void lis_finitialize_f(LIS_INT *ierr)
 {
 	LIS_DEBUG_FUNC_IN;
 
-	lis_initialize(&f_argc_tmp,&f_argv_tmp);
+	*ierr = lis_initialize(&f_argc_tmp,&f_argv_tmp);
+	if( *ierr )	return;	
 	/*
 	#ifdef USE_MPI
 		MPI_Init(&f_argc_tmp, &f_argv_tmp);
@@ -99,6 +100,7 @@ void lis_finalize_f(LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_finalize();
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -211,6 +213,7 @@ void lis_arg2args_f(LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_arg2args(f_argc_tmp,f_argv_tmp,&cmd_args);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -261,6 +264,7 @@ void lis_input_matrix_f(LIS_MATRIX_F *A, char *filename, LIS_INT *ierr, LIS_INT 
 	*p = '\0';
 
 	*ierr = lis_input_matrix((LIS_MATRIX)LIS_V2P(A),buf);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -286,6 +290,7 @@ void lis_input_vector_f(LIS_VECTOR_F *v, char *filename, LIS_INT *ierr, LIS_INT 
 	*p = '\0';
 
 	*ierr = lis_input_vector((LIS_VECTOR)LIS_V2P(v),buf);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -311,6 +316,7 @@ void lis_output_f(LIS_MATRIX_F *A, LIS_VECTOR_F *b, LIS_VECTOR_F *x, LIS_INT *mo
 	*p = '\0';
 
 	*ierr = lis_output((LIS_MATRIX)LIS_V2P(A),(LIS_VECTOR)LIS_V2P(b),(LIS_VECTOR)LIS_V2P(x),*mode,buf);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -336,6 +342,7 @@ void lis_output_matrix_f(LIS_MATRIX_F *A, LIS_INT *mode, char *path, LIS_INT *ie
 	*p = '\0';
 
 	*ierr = lis_output_matrix((LIS_MATRIX)LIS_V2P(A),*mode,buf);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -361,6 +368,7 @@ void lis_output_vector_f(LIS_VECTOR_F *v, LIS_INT *format, char *filename, LIS_I
 	*p = '\0';
 
 	*ierr = lis_output_vector((LIS_VECTOR)LIS_V2P(v),*format,buf);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -386,6 +394,7 @@ void lis_solver_output_rhistory_f(LIS_SOLVER_F *solver, char *filename, LIS_INT 
 	*p = '\0';
 
 	*ierr = lis_solver_output_rhistory((LIS_SOLVER)LIS_V2P(solver),buf);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -411,6 +420,7 @@ void lis_esolver_output_rhistory_f(LIS_ESOLVER_F *esolver, char *filename, LIS_I
 	*p = '\0';
 
 	*ierr = lis_esolver_output_rhistory((LIS_ESOLVER)LIS_V2P(esolver),buf);
+	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return;

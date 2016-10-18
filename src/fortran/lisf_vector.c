@@ -95,6 +95,7 @@ void lis_vector_set_size_f(LIS_VECTOR_F *vec, LIS_INT *local_n, LIS_INT *global_
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_set_size((LIS_VECTOR)LIS_V2P(vec),*local_n,*global_n);
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -108,6 +109,7 @@ void lis_vector_psd_reset_scale_f(LIS_VECTOR_F *vec, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_psd_reset_scale((LIS_VECTOR)LIS_V2P(vec));
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -123,6 +125,7 @@ void lis_vector_duplicate_f(LIS_VECTOR_F *vin, LIS_VECTOR_F *vout, LIS_INT *ierr
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_duplicate((LIS_VECTOR)LIS_V2P(vin),&v);
+	if( *ierr )	return;
 	*vout = LIS_P2V(v);
 
 	LIS_DEBUG_FUNC_OUT;
@@ -139,6 +142,7 @@ void lis_vector_duplicateM_f(LIS_MATRIX_F *Amat, LIS_VECTOR_F *vout, LIS_INT *ie
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_duplicateM((LIS_MATRIX)LIS_V2P(Amat),&v);
+	if( *ierr )	return;
 	*vout = LIS_P2V(v);
 
 	LIS_DEBUG_FUNC_OUT;
@@ -153,6 +157,7 @@ void lis_vector_destroy_f(LIS_VECTOR_F *vec, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_destroy((LIS_VECTOR)LIS_V2P(vec));
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -165,6 +170,7 @@ void lis_vector_get_range_f(LIS_VECTOR_F *vec, LIS_INT *is, LIS_INT *ie, LIS_INT
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_get_range((LIS_VECTOR)LIS_V2P(vec),is,ie);
+	if( *ierr )	return;
 	(*is)++;
 	(*ie)++;
 
@@ -179,6 +185,7 @@ void lis_vector_get_size_f(LIS_VECTOR_F *vec, LIS_INT *local_n, LIS_INT *global_
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_get_size((LIS_VECTOR)LIS_V2P(vec),local_n,global_n);
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -191,6 +198,7 @@ void lis_vector_set_value_f(LIS_INT *flag, LIS_INT *i, LIS_SCALAR *value, LIS_VE
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_set_value(*flag,*i,*value,((LIS_VECTOR)LIS_V2P(v)));
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -203,6 +211,7 @@ void lis_vector_set_values_f(LIS_INT *flag, LIS_INT *count, LIS_INT *index, LIS_
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_set_values(*flag,*count,index,values,((LIS_VECTOR)LIS_V2P(v)));
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -215,6 +224,7 @@ void lis_vector_set_values2_f(LIS_INT *flag, LIS_INT *start, LIS_INT *count, LIS
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_set_values2(*flag,*start,*count,values,((LIS_VECTOR)LIS_V2P(v)));
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -227,6 +237,7 @@ void lis_vector_get_value_f(LIS_VECTOR_F *v, LIS_INT *i, LIS_SCALAR *value, LIS_
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_get_value((LIS_VECTOR)LIS_V2P(v),*i,value);
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -239,6 +250,7 @@ void lis_vector_get_values_f(LIS_VECTOR_F *v, LIS_INT *start, LIS_INT *count, LI
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_get_values((LIS_VECTOR)LIS_V2P(v),*start,*count,values);
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -251,6 +263,7 @@ void lis_vector_scatter_f(LIS_SCALAR *values, LIS_VECTOR_F *v, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_scatter(values,(LIS_VECTOR)LIS_V2P(v));
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -263,6 +276,7 @@ void lis_vector_gather_f(LIS_VECTOR_F *v, LIS_SCALAR *values, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_gather((LIS_VECTOR)LIS_V2P(v),values);
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -287,6 +301,7 @@ void lis_vector_swap_f(LIS_VECTOR_F *x, LIS_VECTOR_F *y, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_swap((LIS_VECTOR)LIS_V2P(x),(LIS_VECTOR)LIS_V2P(y));
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -299,6 +314,7 @@ void lis_vector_copy_f(LIS_VECTOR_F *x, LIS_VECTOR_F *y, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_copy((LIS_VECTOR)LIS_V2P(x),(LIS_VECTOR)LIS_V2P(y));
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -311,6 +327,7 @@ void lis_vector_axpy_f(LIS_SCALAR *alpha, LIS_VECTOR_F *x, LIS_VECTOR_F *y, LIS_
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_axpy(*alpha,(LIS_VECTOR)LIS_V2P(x),(LIS_VECTOR)LIS_V2P(y));
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -323,6 +340,7 @@ void lis_vector_xpay_f(LIS_VECTOR_F *x, LIS_SCALAR *alpha, LIS_VECTOR_F *y, LIS_
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_xpay((LIS_VECTOR)LIS_V2P(x),*alpha,(LIS_VECTOR)LIS_V2P(y));
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -335,6 +353,7 @@ void lis_vector_axpyz_f(LIS_SCALAR *alpha, LIS_VECTOR_F *x, LIS_VECTOR_F *y, LIS
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_axpyz(*alpha,(LIS_VECTOR)LIS_V2P(x),(LIS_VECTOR)LIS_V2P(y),(LIS_VECTOR)LIS_V2P(z));
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -347,6 +366,7 @@ void lis_vector_scale_f(LIS_SCALAR *alpha, LIS_VECTOR_F *x, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_scale(*alpha,(LIS_VECTOR)LIS_V2P(x));
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -359,6 +379,7 @@ void lis_vector_pmul_f(LIS_VECTOR_F *x, LIS_VECTOR_F *y, LIS_VECTOR_F *z, LIS_IN
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_pmul((LIS_VECTOR)LIS_V2P(x),(LIS_VECTOR)LIS_V2P(y),(LIS_VECTOR)LIS_V2P(z));
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -371,6 +392,7 @@ void lis_vector_pdiv_f(LIS_VECTOR_F *x, LIS_VECTOR_F *y, LIS_VECTOR_F *z, LIS_IN
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_pdiv((LIS_VECTOR)LIS_V2P(x),(LIS_VECTOR)LIS_V2P(y),(LIS_VECTOR)LIS_V2P(z));
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -383,6 +405,7 @@ void lis_vector_set_all_f(LIS_SCALAR *alpha, LIS_VECTOR_F *v, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_set_all(*alpha,((LIS_VECTOR)LIS_V2P(v)));
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -395,6 +418,7 @@ void lis_vector_abs_f(LIS_VECTOR_F *x, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_abs((LIS_VECTOR)LIS_V2P(x));
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -407,6 +431,7 @@ void lis_vector_reciprocal_f(LIS_VECTOR_F *x, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_reciprocal((LIS_VECTOR)LIS_V2P(x));
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -419,6 +444,7 @@ void lis_vector_conjugate_f(LIS_VECTOR_F *x, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_conjugate((LIS_VECTOR)LIS_V2P(x));
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -431,6 +457,7 @@ void lis_vector_shift_f(LIS_SCALAR *alpha, LIS_VECTOR_F *x, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_shift(*alpha, (LIS_VECTOR)LIS_V2P(x));
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -443,6 +470,7 @@ void lis_vector_dot_f(LIS_VECTOR_F *x, LIS_VECTOR_F *y, LIS_SCALAR *value, LIS_I
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_dot((LIS_VECTOR)LIS_V2P(x),(LIS_VECTOR)LIS_V2P(y),value);
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -455,6 +483,7 @@ void lis_vector_nhdot_f(LIS_VECTOR_F *x, LIS_VECTOR_F *y, LIS_SCALAR *value, LIS
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_nhdot((LIS_VECTOR)LIS_V2P(x),(LIS_VECTOR)LIS_V2P(y),value);
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -467,6 +496,7 @@ void lis_vector_nrm2_f(LIS_VECTOR_F *x, LIS_REAL *value, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_nrm2((LIS_VECTOR)LIS_V2P(x),value);
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -479,6 +509,7 @@ void lis_vector_nrm1_f(LIS_VECTOR_F *x, LIS_REAL *value, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_nrm1((LIS_VECTOR)LIS_V2P(x),value);
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -491,6 +522,7 @@ void lis_vector_nrmi_f(LIS_VECTOR_F *x, LIS_REAL *value, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_nrmi((LIS_VECTOR)LIS_V2P(x),value);
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
@@ -503,6 +535,7 @@ void lis_vector_sum_f(LIS_VECTOR_F *x, LIS_SCALAR *value, LIS_INT *ierr)
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_vector_sum((LIS_VECTOR)LIS_V2P(x),value);
+	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
 	return;
