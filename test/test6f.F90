@@ -155,6 +155,12 @@
       write(*,*) 'Direct:   linear solver      = ',time
       write(*,*) 'Direct: relative residual    = ',resid_r/resid_b
 
+      deallocate(a)
+      deallocate(b)
+      deallocate(x)
+      deallocate(u)
+      deallocate(w)
+      
       call lis_finalize(ierr)
 
       stop

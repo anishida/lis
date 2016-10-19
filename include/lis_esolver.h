@@ -124,6 +124,14 @@ extern "C"
 	extern LIS_INT lis_eai_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_eai_malloc_work(LIS_ESOLVER esolver);
 
+/**********************************/
+/* Generalized Conjugate Residual */
+/**********************************/
+
+	extern LIS_INT lis_egcr(LIS_ESOLVER esolver);
+	extern LIS_INT lis_egcr_check_params(LIS_ESOLVER esolver);
+	extern LIS_INT lis_egcr_malloc_work(LIS_ESOLVER esolver);
+
 #ifdef __cplusplus
 }
 #endif

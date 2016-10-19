@@ -1,3 +1,8 @@
+Version 1.6.37  October 19, 2016
+
+  - Updated test6f.F90.
+  - Added experimental support for generalized CR.
+
 Version 1.6.36  October 17, 2016
 
   - Updated test6.c (thanks to Hiroshi Kanayama).
