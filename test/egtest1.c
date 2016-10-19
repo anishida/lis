@@ -102,8 +102,11 @@ LIS_INT main(LIS_INT argc, char* argv[])
 		
   /* create matrix and vectors */
   lis_matrix_create(LIS_COMM_WORLD,&A);  
-  lis_matrix_create(LIS_COMM_WORLD,&B);  
+  lis_matrix_create(LIS_COMM_WORLD,&B);
+  printf("\n");    
+  printf("matrix A:\n");  
   lis_input_matrix(A,argv[1]);
+  printf("matrix B:\n");    
   lis_input_matrix(B,argv[2]);  
   lis_vector_duplicate(A,&x);
   lis_esolver_create(&esolver);
