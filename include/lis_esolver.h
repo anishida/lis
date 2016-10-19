@@ -124,6 +124,14 @@ extern "C"
 	extern LIS_INT lis_eai_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_eai_malloc_work(LIS_ESOLVER esolver);
 
+/**********************************/
+/* Generalized Conjugate Gradient */
+/**********************************/
+
+	extern LIS_INT lis_gecg(LIS_ESOLVER esolver);
+	extern LIS_INT lis_gecg_check_params(LIS_ESOLVER esolver);
+	extern LIS_INT lis_gecg_malloc_work(LIS_ESOLVER esolver);
+
 #ifdef __cplusplus
 }
 #endif

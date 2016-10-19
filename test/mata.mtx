@@ -1,0 +1,11 @@
+%%MatrixMarket matrix coordinate real general
+%  discretized two dimensional Laplacian, using 
+%  five point central difference scheme, and 
+%  right hand side vector stored in extended 
+%  Matrix Market format
+2 2 4
+1 1 610e+5
+1 2 -260e+5
+2 1 -260e+5
+2 2 260e+5
+
