@@ -664,6 +664,7 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 		}
 		ridx--;
 		cidx--;
+		/*		  
 		if( ridx==cidx && val==0.0 )
 		{
 #ifdef _LONG__LONG
@@ -672,6 +673,8 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 			printf("diagonal element is zero (i=%d)\n",ridx);
 #endif
 		}
+		*/
+
 /*		if( val!=0.0 )*/
 		{
 #ifdef _COMPLEX		  
