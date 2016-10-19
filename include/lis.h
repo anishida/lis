@@ -177,7 +177,7 @@
 #define LIS_ESOLVER_SI 7
 #define LIS_ESOLVER_LI 8
 #define LIS_ESOLVER_AI 9
-#define LIS_ESOLVER_GCG 10
+#define LIS_ESOLVER_GCR 10
 
 #define LIS_INS_VALUE 0
 #define LIS_ADD_VALUE 1
