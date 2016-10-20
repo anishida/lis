@@ -1,3 +1,8 @@
+Version 1.6.38  October 20, 2016
+
+  - Fixed print statements in eigensolvers for option -eprint none.
+  - Added experimental support for generalized inverse iteration.
+
 Version 1.6.37  October 19, 2016
 
   - Updated test6f.F90.
