@@ -180,7 +180,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   lis_vector_scale(1/nrm2,r);
 
   lis_esolver_get_esolvername(niesolver, esolvername);
-  if( A->my_rank==0 ) printf("inner eigensolver     : %s\n", esolvername);
+  if( output & A->my_rank==0 ) printf("inner eigensolver     : %s\n", esolvername);
 
   switch ( niesolver )
     {
@@ -193,21 +193,24 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
       lis_solver_get_precon(solver, &precon_type);
       lis_solver_get_solvername(nsol, solvername);
       lis_solver_get_preconname(precon_type, preconname);
-      if( A->my_rank==0 ) printf("linear solver         : %s\n", solvername);
-      if( A->my_rank==0 ) printf("preconditioner        : %s\n", preconname);
+      if( output & A->my_rank==0 )
+	{
+	  printf("linear solver         : %s\n", solvername);
+	  printf("preconditioner        : %s\n", preconname);
 #ifdef _COMPLEX
 #ifdef _LONG__DOUBLE
-      if( A->my_rank==0 ) printf("local shift           : (%Le, %Le)\n", creall(lshift), cimagl(lshift));
+	  printf("local shift           : (%Le, %Le)\n", creall(lshift), cimagl(lshift));
 #else
-      if( A->my_rank==0 ) printf("local shift           : (%e, %e)\n", creal(lshift), cimag(lshift));
+	  printf("local shift           : (%e, %e)\n", creal(lshift), cimag(lshift));
 #endif
 #else      
 #ifdef _LONG__DOUBLE
-      if( A->my_rank==0 ) printf("local shift           : %Le\n", lshift);
+	  printf("local shift           : %Le\n", lshift);
 #else
-      if( A->my_rank==0 ) printf("local shift           : %e\n", lshift);
+	  printf("local shift           : %e\n", lshift);
 #endif
-#endif      
+#endif
+	}
       if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
       break;
 
@@ -216,14 +219,14 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   giter=0;
   j=0;
 
-  if( A->my_rank==0 ) 
+  if( output & A->my_rank==0 ) 
     {
 #ifdef _LONG__LONG
       printf("size of subspace      : %lld\n\n", ss);
 #else
       printf("size of subspace      : %d\n\n", ss);
 #endif
-      if( output ) printf("compute eigenpairs in subspace:\n\n");
+      printf("compute eigenpairs in subspace:\n\n");
     }
 
   while (j<ss)
@@ -337,35 +340,35 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 
       lis_vector_copy(v[j], esolver->evector[j-1]);  
 
-      if (A->my_rank==0 && ss>1)
+      if (output & A->my_rank==0 && ss>1)
 	{
 #ifdef _LONG__LONG
-	  if( output ) printf("Subspace: mode number          = %lld\n", j-1);
+	  printf("Subspace: mode number          = %lld\n", j-1);
 #else
-	  if( output ) printf("Subspace: mode number          = %d\n", j-1);
+	  printf("Subspace: mode number          = %d\n", j-1);
 #endif
 #ifdef _COMPLEX	  
 #ifdef _LONG__DOUBLE
-	  if( output ) printf("Subspace: eigenvalue           = (Le, %Le)\n", creall(esolver->evalue[j-1] - gshift), cimagl(esolver->evalue[j-1] - gshift));
+	  printf("Subspace: eigenvalue           = (Le, %Le)\n", creall(esolver->evalue[j-1] - gshift), cimagl(esolver->evalue[j-1] - gshift));
 #else
-	  if( output ) printf("Subspace: eigenvalue           = (%e, %e)\n", creal(esolver->evalue[j-1] - gshift), cimag(esolver->evalue[j-1] - gshift));
+	  printf("Subspace: eigenvalue           = (%e, %e)\n", creal(esolver->evalue[j-1] - gshift), cimag(esolver->evalue[j-1] - gshift));
 #endif
 #else
 #ifdef _LONG__DOUBLE
-	  if( output ) printf("Subspace: eigenvalue           = %Le\n", esolver->evalue[j-1] - gshift);
+	  printf("Subspace: eigenvalue           = %Le\n", esolver->evalue[j-1] - gshift);
 #else
-	  if( output ) printf("Subspace: eigenvalue           = %e\n", esolver->evalue[j-1] - gshift);
+	  printf("Subspace: eigenvalue           = %e\n", esolver->evalue[j-1] - gshift);
 #endif
 #endif	  
 #ifdef _LONG__LONG
-	  if( output ) printf("Subspace: number of iterations = %lld\n",iter);
+	  printf("Subspace: number of iterations = %lld\n",iter);
 #else
-	  if( output ) printf("Subspace: number of iterations = %d\n",iter);
+	  printf("Subspace: number of iterations = %d\n",iter);
 #endif
 #ifdef _LONG__DOUBLE
-	  if( output ) printf("Subspace: relative residual    = %Le\n\n",resid);
+	  printf("Subspace: relative residual    = %Le\n\n",resid);
 #else
-	  if( output ) printf("Subspace: relative residual    = %e\n\n",resid);
+	  printf("Subspace: relative residual    = %e\n\n",resid);
 #endif	  
 	}
     }

@@ -155,19 +155,22 @@ LIS_INT lis_ejd(LIS_ESOLVER esolver)
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
   lshift = esolver->lshift;
 
+  if( output & A->my_rank==0 )
+    {
 #ifdef _COMPLEX
 #ifdef _LONG__DOUBLE
-  if( A->my_rank==0 ) printf("local shift           : (%Le, %Le)\n", creall(lshift), cimagl(lshift));
+      printf("local shift           : (%Le, %Le)\n", creall(lshift), cimagl(lshift));
 #else
-  if( A->my_rank==0 ) printf("local shift           : (%e, %e)\n", creal(lshift), cimag(lshift));
+      printf("local shift           : (%e, %e)\n", creal(lshift), cimag(lshift));
 #endif
 #else  
 #ifdef _LONG__DOUBLE
-  if( A->my_rank==0 ) printf("local shift           : %Le\n", lshift);
+      printf("local shift           : %Le\n", lshift);
 #else
-  if( A->my_rank==0 ) printf("local shift           : %e\n", lshift);
+      printf("local shift           : %e\n", lshift);
 #endif
-#endif  
+#endif
+    }
   if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
 
   A3 = (LIS_SCALAR *)lis_malloc(3*3*sizeof(LIS_SCALAR), "lis_ejd::A3");
@@ -200,8 +203,11 @@ LIS_INT lis_ejd(LIS_ESOLVER esolver)
   lis_solver_get_solvername(nsol, solvername);
   lis_solver_get_preconname(precon_type, preconname);
 
-  if( A->my_rank==0 ) printf("linear solver         : %s\n", solvername);
-  if( A->my_rank==0 ) printf("preconditioner        : %s\n", preconname);
+  if( output & A->my_rank==0 )
+    {
+      printf("linear solver         : %s\n", solvername);
+      printf("preconditioner        : %s\n", preconname);
+    }
 
   /* lis_solve must be called before lis_precon_create */
   /* p=A^-1*x */

@@ -125,6 +125,14 @@ extern "C"
 	extern LIS_INT lis_eai_malloc_work(LIS_ESOLVER esolver);
 
 /**********************************/
+/* Generalized Inverse Iteration  */
+/**********************************/
+
+	extern LIS_INT lis_egii(LIS_ESOLVER esolver);
+	extern LIS_INT lis_egii_check_params(LIS_ESOLVER esolver);
+	extern LIS_INT lis_egii_malloc_work(LIS_ESOLVER esolver);
+
+/**********************************/
 /* Generalized Conjugate Residual */
 /**********************************/
 
