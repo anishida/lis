@@ -1,3 +1,7 @@
+Version 1.6.39  October 21, 2016
+
+  - Added experimental support for generalized power iteration.
+
 Version 1.6.38  October 20, 2016
 
   - Fixed print statements in eigensolvers for option -eprint none.
