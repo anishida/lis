@@ -45,7 +45,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
   int int_nprocs,int_my_rank;
   LIS_INT nesol;
   LIS_MATRIX A,B;
-  LIS_VECTOR x;
+  LIS_VECTOR x,y,z,w;
   LIS_SCALAR evalue0;
   LIS_ESOLVER esolver;
   LIS_REAL residual;
@@ -68,11 +68,11 @@ LIS_INT main(LIS_INT argc, char* argv[])
   my_rank = 0;
 #endif
     
-  if( argc < 5 )
+  if( argc < 7 )
     {
       if( my_rank==0 ) 
 	{
-	  printf("Usage: %s matrix_a_filename matrix_b_filename evector_filename rhistory_filename [options]\n", argv[0]);
+	  printf("Usage: %s matrix_a_filename matrix_b_filename evalues_filename evectors_filename residuals_filename iters_filename [options]\n", argv[0]);
 	}
       CHKERR(1);
     }
@@ -80,43 +80,35 @@ LIS_INT main(LIS_INT argc, char* argv[])
   if( my_rank==0 )
     {
       printf("\n");
-#ifdef _LONG__LONG
-      printf("number of processes = %lld\n",nprocs);
-#else
       printf("number of processes = %d\n",nprocs);
-#endif
     }
 
 #ifdef _OPENMP
   if( my_rank==0 )
     {
-#ifdef _LONG__LONG
-      printf("max number of threads = %lld\n",omp_get_num_procs());
-      printf("number of threads = %lld\n",omp_get_max_threads());
-#else
       printf("max number of threads = %d\n",omp_get_num_procs());
       printf("number of threads = %d\n",omp_get_max_threads());
-#endif
     }
 #endif
 		
   /* create matrix and vectors */
-  lis_matrix_create(LIS_COMM_WORLD,&A);  
+
+  lis_matrix_create(LIS_COMM_WORLD,&A);
   lis_matrix_create(LIS_COMM_WORLD,&B);
-  if( my_rank==0 ) printf("\nmatrix A:\n");  
+  if( my_rank==0 ) printf("\nmatrix A:\n");
   lis_input_matrix(A,argv[1]);
-  if( my_rank==0 ) printf("matrix B:\n");    
-  lis_input_matrix(B,argv[2]);  
+  if( my_rank==0 ) printf("matrix B:\n");
+  lis_input_matrix(B,argv[2]);
   lis_vector_duplicate(A,&x);
   lis_esolver_create(&esolver);
-  lis_esolver_set_option("-eprint mem",esolver);
+  lis_esolver_set_option("-e si -ss 1 -eprint mem",esolver);
   lis_esolver_set_optionC(esolver);
   err = lis_gesolve(A,B,x,&evalue0,esolver);
-  CHKERR(err);
+  CHKERR(err);  
   lis_esolver_get_esolver(esolver,&nesol);
   lis_esolver_get_esolvername(nesol,esolvername);
-  lis_esolver_get_residualnorm(esolver,&residual);
-  lis_esolver_get_iter(esolver,&iter);
+  lis_esolver_get_residualnorm(esolver, &residual);
+  lis_esolver_get_iter(esolver, &iter);
   lis_esolver_get_timeex(esolver,&time,&itime,&ptime,&p_c_time,&p_i_time);
   if( my_rank==0 ) {
     printf("%s: mode number          = %d\n", esolvername, 0);
@@ -149,16 +141,34 @@ LIS_INT main(LIS_INT argc, char* argv[])
 #endif
   }
 
-  /* write eigenvector */
-  lis_output_vector(x,LIS_FMT_MM,argv[3]);
+  lis_vector_create(LIS_COMM_WORLD,&y);
+  lis_vector_create(LIS_COMM_WORLD,&z);
+  lis_vector_create(LIS_COMM_WORLD,&w);
+  lis_matrix_create(LIS_COMM_WORLD,&B);
+  lis_esolver_get_evalues(esolver,y);
+  lis_esolver_get_residualnorms(esolver,z);
+  lis_esolver_get_iters(esolver,w);
+  lis_esolver_get_evectors(esolver,B);
 
-  /* write residual history */
-  lis_esolver_output_rhistory(esolver,argv[4]);
+  /* write eigenvalues */
+  lis_output_vector(y,LIS_FMT_MM,argv[3]);
+
+  /* write eigenvectors */
+  lis_output_matrix(B,LIS_FMT_MM,argv[4]);
+
+  /* write residual norms */
+  lis_output_vector(z,LIS_FMT_MM,argv[5]);
+
+  /* write numbers of iterations */
+  lis_output_vector(w,LIS_FMT_MM,argv[6]);
 
   lis_esolver_destroy(esolver);
   lis_matrix_destroy(A);
-  lis_matrix_destroy(B);  
+  lis_matrix_destroy(B);
   lis_vector_destroy(x);
+  lis_vector_destroy(y);
+  lis_vector_destroy(z);
+  lis_vector_destroy(w);
 
   lis_finalize();
 

@@ -924,8 +924,24 @@ of size $n \times n$.
 \verb+ iters_filename [options] +\\
 
 This program inputs the matrix data from {\tt matrix\_filename} and
-solves the eigenvalue problem $Ax=\lambda x$ with
+solves the standard eigenvalue problem $Ax=\lambda x$ with
 the solver specified by {\tt options}. 
+It outputs the eigenvalues specified by {\tt options} to 
+{\tt evalues\_filename} and the associated 
+eigenvectors, residual norms, and numbers of iterations  
+to \\ {\tt evectors\_filename}, {\tt residuals\_filename}, 
+and {\tt iters\_filename} respectively in the extended 
+Matrix Market format. The Matrix Market format is supported for 
+{\tt matrix\_filename}. 
+
+\subsubsection{getest5}
+
+\verb+Usage: getest5 matrix_a_filename matrix_b_filename evalues_filename evectors_filename +\\
+\verb+ residuals_filename iters_filename [options] +\\
+
+This program inputs the matrix data from {\tt matrix\_a\_filename} and
+{\tt matrix\_b\_filename}, and solves the generalized eigenvalue problem
+$Ax=\lambda Bx$ with the solver specified by {\tt options}. 
 It outputs the eigenvalues specified by {\tt options} to 
 {\tt evalues\_filename} and the associated 
 eigenvectors, residual norms, and numbers of iterations  
