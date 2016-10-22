@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis $B%f!<%6%,%$%I(B}\\
-$B%P!<%8%g%s(B 1.6.39
+$B%P!<%8%g%s(B 1.7.0
 \end{flushleft}
 
 \vspace*{2cm}
@@ -132,7 +132,7 @@ All rights reserved.
 
 \section*{$B%P!<%8%g%s(B 1.1 $B$+$i$NJQ99E@(B}
 \begin{enumerate}
-\item $B8GM-CM7W;;$KBP1~(B.
+\item $BI8=`8GM-CMLdBj$KBP1~(B.
 \item 64$B%S%C%H@0?t7?$KBP1~(B.
 \item 
 \begin{enumerate}
@@ -216,6 +216,11 @@ All rights reserved.
 \item $BJ#AG?t$KBP1~(B.
 \end{enumerate}
 
+\section*{$B%P!<%8%g%s(B 1.6 $B$+$i$NJQ99E@(B}
+\begin{enumerate}
+\item $B0lHL2=8GM-CMLdBj$KBP1~(B.
+\end{enumerate}
+
 \newpage
 \section{$B$O$8$a$K(B}
 Lis (Library of Iterative Solvers for linear systems, $BH/2;$O(B[lis])$B$O(B, 
@@ -224,9 +229,9 @@ Lis (Library of Iterative Solvers for linear systems, $BH/2;$O(B[lis])$B$O(B
 \[
 Ax = b
 \]
-$B5Z$SI8=`8GM-CMLdBj(B
+$B5Z$S8GM-CMLdBj(B
 \[
-Ax = \lambda x
+Ax = \lambda Bx
 \]
 $B$r2r$/$?$a$NJBNsH?I|K!%=%U%H%&%'%"%i%$%V%i%j$G$"$k(B\cite{nishida1}. 
 $BBP1~$9$k@~7?J}Dx<02rK!(B, $B8GM-CM2rK!$N0lMw$rI=(B\ref{tab:solvers}-\ref{tab:esolvers}, 
@@ -768,6 +773,18 @@ A = \left(
 {\tt rhistory\_filename}$B$K=q$-=P$9(B. 
 $BF~NO2DG=$J9TNs%G!<%?7A<0$O(BMatrix Market$B7A<0$G$"$k(B. 
 {\tt etest1f.F}$B$O(B{\tt etest1.c}$B$N(BFortran$BHG$G$"$k(B. 
+
+\subsubsection{egtest1}
+$B%G%#%l%/%H%j(B{\tt lis-(\$VERSION)/test}$B$K$*$$$F(B\\
+ \verb+      > egtest1 matrix_a_filename matrix_b_filename evector_filename rhistory_filename +\\
+\verb+ [options]+\\
+$B$HF~NO$9$k$H(B, {\tt matrix\_a\_filename}$B5Z$S(B{\tt matrix\_b\_filename}$B$+$i(B
+$B9TNs%G!<%?$rFI$_9~$_(B, 
+$B8GM-CMLdBj(B$Ax=\lambda Bx$$B$r(B{\tt options}$B$G;XDj$5$l$?2rK!$G2r$$$F(B, $B;XDj$5$l(B
+$B$?8GM-CM$rI8=`=PNO$K=q$-=P$9(B. $B$^$?(B, $BBP1~$9$k8GM-%Y%/%H%k$r3HD%(BMatrix
+ Market$B7A<0$G(B{\tt evector\_filename}$B$K(B, $B;D:9MzNr$r(BPLAIN$B7A<0$G(B
+{\tt rhistory\_filename}$B$K=q$-=P$9(B. 
+$BF~NO2DG=$J9TNs%G!<%?7A<0$O(BMatrix Market$B7A<0$G$"$k(B. 
 
 \subsubsection{etest2}
 $B%G%#%l%/%H%j(B{\tt lis-(\$VERSION)/test}$B$K$*$$$F(B\\
@@ -1825,7 +1842,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 $B$rMQ$$$k(B. 
 
 \subsection{$B8GM-CMLdBj$N5a2r(B}\label{subsec:esolve}
-$B8GM-CMLdBj(B$Ax=\lambda x$$B$r;XDj$5$l$?2rK!$G2r$/>l9g(B, $B%W%m%0%i%`$O0J2<$N$h$&$K5-=R$9$k(B. 
+$BI8=`8GM-CMLdBj(B$Ax=\lambda x$$B$r;XDj$5$l$?2rK!$G2r$/>l9g(B, $B%W%m%0%i%`$O0J2<$N$h$&$K5-=R$9$k(B. 
 \begin{itembox}[l]{C ($BC`<!!&%^%k%A%9%l%C%I!&%^%k%A%W%m%;%94D6-(B)}
 \small
 \begin{verbatim}
@@ -1906,6 +1923,10 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
  Subspace                & \verb=-e {si|7}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
  Lanczos                 & \verb=-e {li|8}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
  Arnoldi                 & \verb=-e {ai|9}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Generalized Power      & \verb=-e {gpi|10}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\ 
+ Generalized Inverse    & \verb=-e {gii|11}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\ 
+ Generalized CR         & \verb=-e {gcr|12}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
+ Generalized Subspace   & \verb=-e {gsi|13}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
 \hline         
 \end{tabular}
 \end{center}
@@ -1981,12 +2002,21 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \noindent
 {\bf $B5a2r(B}
 
-$B8GM-CMLdBj(B$Ax=\lambda x$$B$r2r$/$K$O(B, $B4X?t(B
+$BI8=`8GM-CMLdBj(B$Ax=\lambda x$$B$r2r$/$K$O(B, $B4X?t(B
 \begin{itemize}
 \item \verb|C       LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x,|\\
       \verb|         LIS_REAL evalue, LIS_ESOLVER esolver)|
 \item \verb|Fortran subroutine lis_esolve(LIS_MATRIX A, LIS_VECTOR x,|\\
       \verb|         LIS_ESOLVER esolver, LIS_INTEGER ierr)|
+\end{itemize}
+$B$rMQ$$$k(B. 
+
+$B0lHL2=8GM-CMLdBj(B$Ax=\lambda Bx$$B$r2r$/$K$O(B, $B4X?t(B
+\begin{itemize}
+\item \verb|C       LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B,|\\
+      \verb|         LIS_VECTOR x, LIS_REAL evalue, LIS_ESOLVER esolver)|
+\item \verb|Fortran subroutine lis_gesolve(LIS_MATRIX A, LIS_MATRIX B,|\\
+      \verb|         LIS_VECTOR x, LIS_ESOLVER esolver, LIS_INTEGER ierr)|
 \end{itemize}
 $B$rMQ$$$k(B. 
 
@@ -6264,6 +6294,10 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
  Subspace                & \verb=-e {si|7}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
  Lanczos                 & \verb=-e {li|8}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
  Arnoldi                 & \verb=-e {ai|9}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Generalized Power      & \verb=-e {gpi|10}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\ 
+ Generalized Inverse    & \verb=-e {gii|11}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\ 
+ Generalized CR         & \verb=-e {gcr|12}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
+ Generalized Subspace   & \verb=-e {gsi|13}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
 \hline         
 \end{tabular}
 \end{center}
@@ -6358,6 +6392,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
+\newpage
 \subsubsection{lis\_esolve}
 \begin{screen}
 \verb|C       LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x,|\\
@@ -6367,7 +6402,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \end{screen}
 {\bf $B5!G=(B}\\
 \indent
-$B;XDj$5$l$?2rK!$G8GM-CMLdBj(B$Ax=\lambda x$$B$r2r$/(B. 
+$B;XDj$5$l$?2rK!$GI8=`8GM-CMLdBj(B$Ax=\lambda x$$B$r2r$/(B. 
 \\ \\
 \noindent
 {\bf $BF~NO(B}
@@ -6384,6 +6419,35 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
+\newpage
+\subsubsection{lis\_gesolve}
+\begin{screen}
+\verb|C       LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B,|\\
+\verb|         LIS_VECTOR x, LIS_REAL evalue, LIS_ESOLVER esolver)|\\
+\verb|Fortran subroutine lis_gesolve(LIS_MATRIX A, LIS_MATRIX B,|\\
+\verb|         LIS_VECTOR x, LIS_ESOLVER esolver, LIS_INTEGER ierr)|
+\end{screen}
+{\bf $B5!G=(B}\\
+\indent
+$B;XDj$5$l$?2rK!$G0lHL2=8GM-CMLdBj(B$Ax=\lambda Bx$$B$r2r$/(B. 
+\\ \\
+\noindent
+{\bf $BF~NO(B}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt A] $B78?t9TNs(B
+\item[\tt B] $B78?t9TNs(B  
+\item[\tt x] $B=i4|%Y%/%H%k(B
+\item[\tt esolver] $B%=%k%P(B
+\end{namelist}
+{\bf $B=PNO(B}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt evalue] $B%b!<%I(B0$B$N8GM-CM(B
+\item[\tt x] $B8GM-CM$KBP1~$9$k8GM-%Y%/%H%k(B
+\item[\tt esolver] $BH?I|2s?t(B, $B7P2a;~4VEy$N>pJs(B
+\item[\tt ierr] $B%j%?!<%s%3!<%I(B
+\end{namelist}
+
+\newpage
 \subsubsection{lis\_esolver\_get\_status}
 \begin{screen}
 \verb|C       LIS_INT lis_esolver_get_status(LIS_ESOLVER esolver, LIS_INT *status)|\\
@@ -6507,7 +6571,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \end{screen}
 {\bf $B5!G=(B}\\
 \indent
-$B;XDj$5$l$?8GM-BP$NAjBP;D:9%N%k%`(B$||\lambda x-Ax||_2/||\lambda x||_2$$B$r%=%k%P$+$i<hF@$9$k(B. 
+$B;XDj$5$l$?8GM-BP$NAjBP;D:9%N%k%`(B$||\lambda x-(B^{-1})Ax||_2/||\lambda x||_2$$B$r%=%k%P$+$i<hF@$9$k(B. 
 \\ \\
 \noindent
 {\bf $BF~NO(B}
@@ -6602,7 +6666,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \end{screen}
 {\bf $B5!G=(B}\\
 \indent
-$B$9$Y$F$N8GM-BP$NAjBP;D:9%N%k%`(B$||\lambda x-Ax||_2/||\lambda x||_2$$B$r%=%k%P$+$i<hF@$9$k(B.
+$B$9$Y$F$N8GM-BP$NAjBP;D:9%N%k%`(B$||\lambda x-(B^{-1})Ax||_2/||\lambda x||_2$$B$r%=%k%P$+$i<hF@$9$k(B.
 \\ \\
 \noindent
 {\bf $BF~NO(B}

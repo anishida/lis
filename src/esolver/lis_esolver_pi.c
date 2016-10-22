@@ -203,16 +203,16 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
 }
 
 /***************************************
- * Beneralized Power Iteration         *
+ * Generalized Power Iteration         *
  ***************************************
  v    = (1,...,1)^T
  ***************************************
  for k=1,2,...
    v         = v / ||v||_2
-   w         = B^-1 * v 
+   y         = A * v
    v         = v / <v,w>^1/2
    w         = w / <v,w>^1/2 
-   y         = A * w
+   y         = B^-1 * w
    theta     = <w,y>
    resid     = ||y - theta * v||_2 / |theta|
    v         = y
@@ -363,15 +363,8 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
       lis_vector_nrm2(v, &nrm2);
       lis_vector_scale(1.0/nrm2, v);
 
-      /* w = B^-1 * v */
-      err = lis_solve_kernel(B, v, w, solver, precon);
-      if( err )
-	{
-	  lis_solver_work_destroy(solver);	  
-	  solver->retcode = err;
-	  return err;
-	}
-      lis_solver_get_iter(solver, &iter2);
+      /* w = A * v */
+      lis_matvec(A, v, w);
 
       /* v = v / <v,w>^1/2, w = w / <v,w>^1/2 */
       lis_vector_dot(v, w, &eta);
@@ -379,8 +372,15 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
       lis_vector_scale(1.0/eta, v);
       lis_vector_scale(1.0/eta, w);
 
-      /* y = A * w */
-      lis_matvec(A, w, y);
+      /* y = B^-1 * w */
+      err = lis_solve_kernel(B, w, y, solver, precon);
+      if( err )
+	{
+	  lis_solver_work_destroy(solver);	  
+	  solver->retcode = err;
+	  return err;
+	}
+      lis_solver_get_iter(solver, &iter2);
 
       /* theta = <w,y> */
       lis_vector_dot(w, y, &theta); 

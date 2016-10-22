@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.6.39
+Version 1.7.0
 \end{flushleft}
 
 \vspace*{2cm}
@@ -133,7 +133,7 @@ Cover: Ogata Korin. Irises. c1705. Nezu Museum.
 
 \section*{Changes from Version 1.1}
 \begin{enumerate}
-\item Addition: Support for eigensolvers.
+\item Addition: Support for standard eigenvalue problems.
 \item Addition: Support for 64bit integers.
 \item Changes: 
 \begin{enumerate}
@@ -234,6 +234,11 @@ Cover: Ogata Korin. Irises. c1705. Nezu Museum.
 \item Addition: Support for complex numbers.
 \end{enumerate}
   
+\section*{Changes from Version 1.6}
+\begin{enumerate}
+\item Addition: Support for generalized eigenvalue problems.
+\end{enumerate}
+  
 \newpage
 \section{Introduction}
 Lis (Library of Iterative Solvers for linear systems, pronounced [lis])
@@ -241,9 +246,9 @@ is a parallel software library for solving the linear equations
 \[
  Ax = b
 \]
-and the standard eigenvalue problems
+and the eigenvalue problems
 \[
- Ax = \lambda x
+ Ax = \lambda Bx
 \]
 with sparse matrices, which arise in the numerical solution of
 partial differential equations, using iterative methods\cite{nishida}.
@@ -841,8 +846,24 @@ the associated eigenvector to {\tt evector\_filename}
 in the extended Matrix Market format, and 
 the residual history to {\tt rhistory\_filename} 
 in the PLAIN format.
-The Matrix Market format is supported for {\tt matrix\_filename}. 
+The Matrix Market format is supported for the matrix filename. 
 {\tt etest1f.F} is the Fortran version of {\tt etest1.c}.
+
+\subsubsection{egtest1}
+
+\verb+Usage: egtest1 matrix_a_filename matrix_b_filename evector_filename rhistory_filename +\\
+\verb+ [options]+\\
+
+This program inputs the matrix data from {\tt matrix\_a\_filename}
+and {\tt matrix\_b\_filename}, and
+solves the eigenvalue problem $Ax=\lambda Bx$ with 
+the solver specified by {\tt options}. 
+It outputs the specified eigenvalue to the standard output, 
+the associated eigenvector to {\tt evector\_filename} 
+in the extended Matrix Market format, and 
+the residual history to {\tt rhistory\_filename} 
+in the PLAIN format.
+The Matrix Market format is supported for the matrix filenames. 
 
 \subsubsection{etest2}
 
@@ -1942,7 +1963,7 @@ To solve the linear equation $Ax = b$, the following functions are used:
 \end{itemize}
 
 \subsection{Solving Eigenvalue Problems}\label{subsec:solve}
-A program to solve the eigenvalue problem $Ax = \lambda x$ with a specified 
+A program to solve the standard eigenvalue problem $Ax = \lambda x$ with a specified 
 solver is as follows: 
 \begin{itemsquarebox}[l]{C (for serial, multithreaded and multiprocessing environments)}
 \small
@@ -2032,6 +2053,14 @@ that \verb=-emaxiter= defaults to $1,000$.
  \verb=-ss [1]= & The size of the subspace \\
  Arnoldi                           & \verb=-e {ai|9}=        &
  \verb=-ss [1]= & The size of the subspace \\
+ Generalized Power                 & \verb=-e {gpi|10}=      &
+ \verb=-i [bicg]= & The linear solver \\ 
+ Generalized Inverse               & \verb=-e {gii|11}=      & 
+ \verb=-i [bicg]= & The linear solver \\
+ Generalized CR                    & \verb=-e {gcr|12}=      & 
+ \verb=-i [bicg]= & The linear solver \\
+ Generalized Subspace              & \verb=-e {gsi|13}=      &
+ \verb=-ss [1]= & The size of the subspace \\
 \hline         
 \end{tabular}
 \end{center}
@@ -2113,12 +2142,19 @@ Option &                          \\ \hline
 \noindent
 {\bf Solving Eigenvalue Problems}
 
-To solve the eigenvalue problem $Ax = \lambda x$, the following functions are used:
+To solve the standard eigenvalue problem $Ax = \lambda x$, the following functions are used:
 \begin{itemize}
 \item \verb|C       LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x,|\\ 
       \verb|         LIS_REAL evalue, LIS_ESOLVER esolver)|
 \item \verb|Fortran subroutine lis_esolve(LIS_MATRIX A, LIS_VECTOR x,|\\
       \verb|         LIS_REAL evalue, LIS_ESOLVER esolver, LIS_INTEGER ierr)|
+\end{itemize}
+To solve the generalized eigenvalue problem $Ax = \lambda Bx$, the following functions are used instead:
+\begin{itemize}
+\item \verb|C       LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B,|\\ 
+      \verb|         LIS_VECTOR x, LIS_REAL evalue, LIS_ESOLVER esolver)|
+\item \verb|Fortran subroutine lis_gesolve(LIS_MATRIX A, LIS_MATRIX B,|\\
+      \verb|         LIS_VECTOR x, LIS_REAL evalue, LIS_ESOLVER esolver, LIS_INTEGER ierr)|
 \end{itemize}
 
 \subsection{Writing Programs}
@@ -6391,6 +6427,14 @@ that \verb=-emaxiter= defaults to $1,000$.
  \verb=-ss [1]= & The size of the subspace \\
  Arnoldi                           & \verb=-e {ai|9}=        &
  \verb=-ss [1]= & The size of the subspace \\
+ Generalized Power                 & \verb=-e {gpi|10}=      &
+ \verb=-i [bicg]= & The linear solver \\ 
+ Generalized Inverse               & \verb=-e {gii|11}=      & 
+ \verb=-i [bicg]= & The linear solver \\
+ Generalized CR                    & \verb=-e {gcr|12}=      & 
+ \verb=-i [bicg]= & The linear solver \\
+ Generalized Subspace              & \verb=-e {gsi|13}=      &
+ \verb=-ss [1]= & The size of the subspace \\
 \hline         
 \end{tabular}
 \end{center}
@@ -6490,6 +6534,7 @@ Set the options for the eigensolver on the command line.
 \item[\tt ierr] The return code
 \end{namelist}
 
+\newpage
 \subsubsection{lis\_esolve}
 \begin{screen}
 \verb|C       LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x,|\\ 
@@ -6499,12 +6544,39 @@ Set the options for the eigensolver on the command line.
 \end{screen}
 {\bf Description}\\
 \indent
-Solve the eigenvalue problem $Ax = \lambda x$ with the specified eigensolver.
+Solve the standard eigenvalue problem $Ax = \lambda x$ with the specified eigensolver.
 \\ \\
 \noindent
 {\bf Input}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt A] The matrix
+\item[\tt x] The initial vector
+\item[\tt esolver] The eigensolver
+\end{namelist}
+{\bf Output}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt evalue] The eigenvalue of mode 0
+\item[\tt x] The associated eigenvector
+\item[\tt esolver] The number of iterations, the execution time, etc.
+\item[\tt ierr] The return code
+\end{namelist}
+
+\subsubsection{lis\_gesolve}
+\begin{screen}
+\verb|C       LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B,|\\ 
+\verb|         LIS_VECTOR x, LIS_REAL evalue, LIS_ESOLVER esolver)|\\
+\verb|Fortran subroutine lis_gesolve(LIS_MATRIX A, LIS_MATRIX B,|\\
+\verb|         LIS_VECTOR x, LIS_REAL evalue, LIS_ESOLVER esolver, LIS_INTEGER ierr)|
+\end{screen}
+{\bf Description}\\
+\indent
+Solve the generalized eigenvalue problem $Ax = \lambda Bx$ with the specified eigensolver.
+\\ \\
+\noindent
+{\bf Input}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt A] The matrix
+\item[\tt B] The matrix  
 \item[\tt x] The initial vector
 \item[\tt esolver] The eigensolver
 \end{namelist}
@@ -6642,7 +6714,7 @@ Get the detailed information on the execution time for the specified eigenpair f
 \end{screen}
 {\bf Description}\\
 \indent
-Get the relative residual norm $||\lambda x-Ax||_2/||\lambda x||_2$ for the specified eigenpair from the eigensolver.
+Get the relative residual norm $||\lambda x-(B^{-1})Ax||_2/||\lambda x||_2$ for the specified eigenpair from the eigensolver.
 \\ \\
 \noindent
 {\bf Input}
@@ -6739,7 +6811,7 @@ Matrix $M$ must be created in advance with the function \verb|lis_matrix_create|
 \end{screen}
 {\bf Description}\\
 \indent
-Get the relative residual norms $||\lambda x-Ax||_2/||\lambda x||_2$ of all the eigenpairs from the eigensolver.
+Get the relative residual norms $||\lambda x-(B^{-1})Ax||_2/||\lambda x||_2$ of all the eigenpairs from the eigensolver.
 \\ \\
 \noindent
 {\bf Input}
