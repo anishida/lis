@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.6.39
+Version 1.7.0
 \end{flushleft}
 
 \vspace*{2cm}
@@ -133,7 +133,7 @@ Cover: Ogata Korin. Irises. c1705. Nezu Museum.
 
 \section*{Changes from Version 1.1}
 \begin{enumerate}
-\item Addition: Support for eigensolvers.
+\item Addition: Support for standard eigenvalue problems.
 \item Addition: Support for 64bit integers.
 \item Changes: 
 \begin{enumerate}
@@ -232,6 +232,11 @@ Cover: Ogata Korin. Irises. c1705. Nezu Museum.
 \section*{Changes from Version 1.5}
 \begin{enumerate}
 \item Addition: Support for complex numbers.
+\end{enumerate}
+  
+\section*{Changes from Version 1.6}
+\begin{enumerate}
+\item Addition: Support for generalized eigenvalue problems.
 \end{enumerate}
   
 \newpage
@@ -2047,6 +2052,14 @@ that \verb=-emaxiter= defaults to $1,000$.
  Lanczos                           & \verb=-e {li|8}=        &
  \verb=-ss [1]= & The size of the subspace \\
  Arnoldi                           & \verb=-e {ai|9}=        &
+ \verb=-ss [1]= & The size of the subspace \\
+ Generalized Power                 & \verb=-e {gpi|10}=      &
+ \verb=-i [bicg]= & The linear solver \\ 
+ Generalized Inverse               & \verb=-e {gii|11}=      & 
+ \verb=-i [bicg]= & The linear solver \\
+ Generalized CR                    & \verb=-e {gcr|12}=      & 
+ \verb=-i [bicg]= & The linear solver \\
+ Generalized Subspace              & \verb=-e {gsi|13}=      &
  \verb=-ss [1]= & The size of the subspace \\
 \hline         
 \end{tabular}
@@ -6413,6 +6426,14 @@ that \verb=-emaxiter= defaults to $1,000$.
  Lanczos                           & \verb=-e {li|8}=        &
  \verb=-ss [1]= & The size of the subspace \\
  Arnoldi                           & \verb=-e {ai|9}=        &
+ \verb=-ss [1]= & The size of the subspace \\
+ Generalized Power                 & \verb=-e {gpi|10}=      &
+ \verb=-i [bicg]= & The linear solver \\ 
+ Generalized Inverse               & \verb=-e {gii|11}=      & 
+ \verb=-i [bicg]= & The linear solver \\
+ Generalized CR                    & \verb=-e {gcr|12}=      & 
+ \verb=-i [bicg]= & The linear solver \\
+ Generalized Subspace              & \verb=-e {gsi|13}=      &
  \verb=-ss [1]= & The size of the subspace \\
 \hline         
 \end{tabular}
