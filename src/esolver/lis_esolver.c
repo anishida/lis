@@ -582,9 +582,9 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	if( A->my_rank==0 )
 	  {
 #ifdef _LONG__DOUBLE
-	    if ( output ) printf("convergence condition : ||lx-Ax||_2 <= %6.1Le * ||lx||_2\n", (LIS_REAL)esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]);
+	    if ( output ) printf("convergence condition : ||lx-(B^-1)Ax||_2 <= %6.1Le * ||lx||_2\n", (LIS_REAL)esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]);
 #else
-	    if ( output ) printf("convergence condition : ||lx-Ax||_2 <= %6.1e * ||lx||_2\n", (LIS_REAL)esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]); 
+	    if ( output ) printf("convergence condition : ||lx-(B^-1)Ax||_2 <= %6.1e * ||lx||_2\n", (LIS_REAL)esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]); 
 #endif
 	  }
 
