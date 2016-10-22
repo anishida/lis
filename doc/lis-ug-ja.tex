@@ -834,7 +834,20 @@ A =
  \verb+      > etest5 matrix_filename evalues_filename evectors_filename residuals_filename +\\
 \verb+ iters_filename [options] +\\
 と入力すると, {\tt matrix\_filename}から行列データを読み込み, 
-固有値問題$Ax=\lambda x$を{\tt options}で
+標準固有値問題$Ax=\lambda x$を{\tt options}で
+指定された解法で解いて, 指定された固有値を標準出力に書き出す. 
+また, 指定された個数の固有値を
+{\tt evalues\_filename}に, 対応する固有ベクトル, 残差ノルム及び反復回数を
+{\tt evectors\_filename}, {\tt residuals\_filename}及び{\tt iters\_filename}に
+拡張Matrix Market形式で書き出す. 
+入力可能な行列データ形式はMatrix Market形式である. 
+
+\subsubsection{getest5}
+ディレクトリ{\tt lis-(\$VERSION)/test}において\\
+ \verb+      > getest5 matrix_a_filename matrix_b_filename evalues_filename evectors_filename +\\
+\verb+ residuals_filename iters_filename [options] +\\
+と入力すると, {\tt matrix\_a\_filename}及び{\tt matrix\_b\_filename}から
+行列データを読み込み, 一般化固有値問題$Ax=\lambda Bx$を{\tt options}で
 指定された解法で解いて, 指定された固有値を標準出力に書き出す. 
 また, 指定された個数の固有値を
 {\tt evalues\_filename}に, 対応する固有ベクトル, 残差ノルム及び反復回数を
