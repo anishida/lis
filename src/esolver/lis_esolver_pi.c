@@ -203,7 +203,7 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
 }
 
 /***************************************
- * Beneralized Power Iteration         *
+ * Generalized Power Iteration         *
  ***************************************
  v    = (1,...,1)^T
  ***************************************

@@ -128,6 +128,9 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	printf("QR    : 2-norm of A(2,1)     = %e\n\n", qrerr);
 #endif
 
+	free(a);
+	free(q);
+	free(r);
 	lis_finalize();
 
 	LIS_DEBUG_FUNC_OUT;
