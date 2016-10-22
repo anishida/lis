@@ -391,7 +391,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
  QR factorization V * R = Z for the starting matrix Z
  for k=1,2,...
    if Power Iteration
-     R = A * B^-1 * V
+     R = B^-1 * A * V
    if Inverse Iteration
      R = A^-1 * B * V
    Z = V * R
@@ -611,14 +611,8 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	    {
 	    case LIS_ESOLVER_PI:
 
-	      /* w = B^-1 * v */
-	      err = lis_solve_kernel(B, v[j], w, solver, precon);
-	      if( err )
-		{
-		  lis_solver_work_destroy(solver);	  
-		  solver->retcode = err;
-		  return err;
-		}
+	      /* y = A * v */	      
+	      lis_matvec(A, v[j], w); 
 
 	      /* v = v / <v,w>^1/2, w = w / <v,w>^1/2 */	      
 	      lis_vector_dot(v[j], w, &eta);
@@ -626,8 +620,14 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	      lis_vector_scale(1.0/eta, v[j]);
 	      lis_vector_scale(1.0/eta, w);
 
-	      /* y = A * w */	      
-	      lis_matvec(A, w, y); 
+	      /* y = B^-1 * w */
+	      err = lis_solve_kernel(B, w, y, solver, precon);
+	      if( err )
+		{
+		  lis_solver_work_destroy(solver);	  
+		  solver->retcode = err;
+		  return err;
+		}
 
 	      break;
 

@@ -459,7 +459,6 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
       lis_vector_dot(w, y, &theta);
 
       /* resid = ||y - theta * v||_2 / |theta| */
-      lis_vector_print(v);
 
       lis_vector_axpyz(-theta, v, y, q); 
       lis_vector_nrm2(q, &resid); 
