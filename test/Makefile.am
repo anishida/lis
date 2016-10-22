@@ -11,7 +11,7 @@ test_DATA = testmat.mtx testmat2.mtx
 
 test_SCRIPTS = defs test.sh
 
-test_PROGRAMS = etest1 egtest1 etest2 etest3 etest4 etest5 etest6 etest7 spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b spmvtest4 spmvtest5 test1 test2 test2b test3 test3b test4 test5 test6 test7
+test_PROGRAMS = etest1 etest2 etest3 etest4 etest5 etest6 etest7 getest1 spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b spmvtest4 spmvtest5 test1 test2 test2b test3 test3b test4 test5 test6 test7
 if ENABLE_FORTRAN
   test_PROGRAMS += etest1f etest4f test1f test4f test7f
 endif
@@ -25,13 +25,13 @@ endif
 endif
 
 etest1_SOURCES = etest1.c
-egtest1_SOURCES = egtest1.c
 etest2_SOURCES = etest2.c
 etest3_SOURCES = etest3.c
 etest4_SOURCES = etest4.c
 etest5_SOURCES = etest5.c
 etest6_SOURCES = etest6.c
 etest7_SOURCES = etest7.c
+getest1_SOURCES = getest1.c
 spmvtest1_SOURCES = spmvtest1.c
 spmvtest2_SOURCES = spmvtest2.c
 spmvtest2b_SOURCES = spmvtest2b.c
