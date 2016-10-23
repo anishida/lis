@@ -59,6 +59,7 @@
  * lis_matrix_scale
  * lis_matrix_get_diagonal
  * lis_matrix_shift_diagonal
+ * lis_matrix_shift_general
  * lis_matrix_split
  * lis_matrix_merge
  * lis_matrix_solve
@@ -823,6 +824,33 @@ LIS_INT lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR alpha)
 		return LIS_ERR_NOT_IMPLEMENTED;
 		break;
 	}
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_shift_general"
+LIS_INT lis_matrix_shift_general(LIS_MATRIX A, LIS_MATRIX B, LIS_SCALAR alpha)
+{
+	LIS_INT err;
+	LIS_MATRIX Atmp,Btmp;
+  
+	LIS_DEBUG_FUNC_IN;
+
+	err = lis_matrix_duplicate(A,&Atmp);
+	err = lis_matrix_duplicate(B,&Btmp);	
+	if( err ) return err;
+	lis_matrix_set_type(Atmp,LIS_MATRIX_DNS);
+	err = lis_matrix_convert(A,Atmp);
+	if( err ) return err;
+	lis_matrix_set_type(Btmp,LIS_MATRIX_DNS);
+	err = lis_matrix_convert(B,Btmp);
+	if( err ) return err;
+	lis_matrix_axpy_dns(-alpha,Btmp,Atmp);
+	lis_matrix_convert(Atmp,A);
+	lis_matrix_destroy(Atmp);	
+	lis_matrix_destroy(Btmp);
+
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 }

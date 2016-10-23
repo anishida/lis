@@ -505,7 +505,7 @@ LIS_INT lis_matrix_shift_diagonal_jad(LIS_MATRIX A, LIS_SCALAR alpha)
 		#endif
 		for(i=0; i<n; i++)
 		{
-			A->D->value[i] += alpha;
+			A->D->value[i] -= alpha;
 		}
 	}
 	else
@@ -526,7 +526,7 @@ LIS_INT lis_matrix_shift_diagonal_jad(LIS_MATRIX A, LIS_SCALAR alpha)
 					{
 						if( A->row[l]==A->index[i] )
 						{
-							A->value[i] += alpha;
+							A->value[i] -= alpha;
 							k--;
 							if( k==0 ) goto get_diag_end;
 						}
@@ -544,7 +544,7 @@ LIS_INT lis_matrix_shift_diagonal_jad(LIS_MATRIX A, LIS_SCALAR alpha)
 				{
 					if( A->row[l]==A->index[i] )
 					{
-						A->value[i] += alpha;
+						A->value[i] -= alpha;
 						k--;
 						if( k==0 ) return LIS_SUCCESS;
 					}

@@ -331,7 +331,7 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
 #endif
 #endif
     }
-  if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
+  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
   lis_solver_set_optionC(solver);
@@ -414,7 +414,7 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
 	  esolver->evalue[0]  = theta;
 	  lis_vector_nrm2(v, &nrm2);
 	  lis_vector_scale(1.0/nrm2, v);
-	  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
+	  if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
 	  lis_precon_destroy(precon);
 	  lis_solver_destroy(solver); 
 	  LIS_DEBUG_FUNC_OUT;
@@ -430,7 +430,7 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
   esolver->evalue[0] = theta;
   lis_vector_nrm2(v, &nrm2);
   lis_vector_scale(1.0/nrm2, v);
-  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
+  if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
   lis_solver_destroy(solver); 
   LIS_DEBUG_FUNC_OUT;
   return LIS_MAXITER;

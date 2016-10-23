@@ -367,7 +367,7 @@ LIS_INT lis_matrix_shift_diagonal_coo(LIS_MATRIX A, LIS_SCALAR alpha)
 		#endif
 		for(i=0; i<n; i++)
 		{
-			A->D->value[i] += alpha;
+			A->D->value[i] -= alpha;
 		}
 	}
 	else
@@ -376,7 +376,7 @@ LIS_INT lis_matrix_shift_diagonal_coo(LIS_MATRIX A, LIS_SCALAR alpha)
 		{
 			if( A->row[i]==A->col[i] )
 			{
-				A->value[i] += alpha;
+				A->value[i] -= alpha;
 			}
 		}
 	}

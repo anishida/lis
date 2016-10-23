@@ -170,7 +170,7 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
 #endif
 #endif
     }
-  if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
+  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
 
   A3 = (LIS_SCALAR *)lis_malloc(3*3*sizeof(LIS_SCALAR), "lis_ecg::A3");
   B3 = (LIS_SCALAR *)lis_malloc(3*3*sizeof(LIS_SCALAR), "lis_ecg::B3");
@@ -335,7 +335,7 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
   esolver->p_c_time = solver->p_c_time;
   esolver->p_i_time = solver->p_i_time;
 
-  if (lshift != 0) lis_matrix_shift_diagonal(A,-lshift);
+  if (lshift != 0) lis_matrix_shift_diagonal(A,lshift);
 
   lis_free(A3);
   lis_free(B3);
@@ -489,7 +489,7 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
 #endif
 #endif
     }
-  if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
+  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
 
   r = esolver->work[0];
   p = esolver->work[1];
@@ -623,7 +623,7 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
   esolver->p_c_time = solver->p_c_time;
   esolver->p_i_time = solver->p_i_time;
 
-  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
+  if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
 
   if (resid<tol) 
     {
@@ -768,7 +768,7 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
 #endif
 #endif
     }
-  if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
+  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
 
   r = esolver->work[0];
   p = esolver->work[1];
@@ -914,7 +914,7 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   esolver->p_c_time = solver->p_c_time;
   esolver->p_i_time = solver->p_i_time;
 
-  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
+  if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
 
   if (resid<tol) 
     {

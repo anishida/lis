@@ -764,7 +764,7 @@ LIS_INT lis_matrix_shift_diagonal_bsr(LIS_MATRIX A, LIS_SCALAR alpha)
 		{
 			for(j=0;j<bnr;j++)
 			{
-				A->D->value[i*bs+j*bnr+j] += alpha;
+				A->D->value[i*bs+j*bnr+j] -= alpha;
 			}
 		}
 	}
@@ -784,7 +784,7 @@ LIS_INT lis_matrix_shift_diagonal_bsr(LIS_MATRIX A, LIS_SCALAR alpha)
 				{
 					for(j=i%bnc;j<bnc&&k<bnr&&i<n;j++)
 					{
-						A->value[bj*bs + j*bnr + k] += alpha;
+						A->value[bj*bs + j*bnr + k] -= alpha;
 						i++;
 						k++;
 					}

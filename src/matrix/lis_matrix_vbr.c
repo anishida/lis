@@ -953,7 +953,7 @@ LIS_INT lis_matrix_shift_diagonal_vbr(LIS_MATRIX A, LIS_SCALAR alpha)
 			bnr = A->D->bns[i];
 			for(j=0;j<bnr;j++)
 			{
-				A->D->v_value[i][j*bnr+j] += alpha;
+				A->D->v_value[i][j*bnr+j] -= alpha;
 			}
 
 		}
@@ -976,7 +976,7 @@ LIS_INT lis_matrix_shift_diagonal_vbr(LIS_MATRIX A, LIS_SCALAR alpha)
 				{
 					for(j=i%bnc;j<bnc&&k<bnr&&i<n;j++)
 					{
-						A->value[A->ptr[bj] + j*bnr + k] += alpha;
+						A->value[A->ptr[bj] + j*bnr + k] -= alpha;
 						i++;
 						k++;
 					}

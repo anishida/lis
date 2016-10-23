@@ -171,7 +171,7 @@ LIS_INT lis_ejd(LIS_ESOLVER esolver)
 #endif
 #endif
     }
-  if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
+  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
 
   A3 = (LIS_SCALAR *)lis_malloc(3*3*sizeof(LIS_SCALAR), "lis_ejd::A3");
   B3 = (LIS_SCALAR *)lis_malloc(3*3*sizeof(LIS_SCALAR), "lis_ejd::B3");
@@ -336,7 +336,7 @@ LIS_INT lis_ejd(LIS_ESOLVER esolver)
   esolver->p_c_time = solver->p_c_time;
   esolver->p_i_time = solver->p_i_time;
 
-  if (lshift != 0) lis_matrix_shift_diagonal(A,-lshift);
+  if (lshift != 0) lis_matrix_shift_diagonal(A,lshift);
 
   lis_free(A3);
   lis_free(B3);
