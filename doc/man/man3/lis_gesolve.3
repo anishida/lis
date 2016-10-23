@@ -1,23 +1,26 @@
-.TH lis_esolve 3 "23 Oct 2016" "Man Page" "Lis Library Functions"
+.TH lis_gesolve 3 "23 Oct 2017" "Man Page" "Lis Library Functions"
 
 .SH NAME
 
-lis_esolve \- solve the standard eigenvalue problem
+lis_esolve \- solve the generalized eigenvalue problem
 
 .SH SYNOPSIS
 
 #include "lis.h"
 
-\fBLIS_INT lis_esolve\fR(\fBLIS_MATRIX A\fR, \fBLIS_VECTOR x\fR, \fILIS_REAL evalue\fR, \fBLIS_ESOLVER esolver\fR);
+\fBLIS_INT lis_esolve\fR(\fBLIS_MATRIX A\fR, \fBLIS_MATRIX B\fR, \fBLIS_VECTOR x\fR, \fILIS_REAL evalue\fR, \fBLIS_ESOLVER esolver\fR);
 
 .SH DESCRIPTION
 
-Solve the standard eigenvalue problem \fIAx = lx\fR with the specified eigensolver.
+Solve the generalized eigenvalue problem \fIAx = lBx\fR with the specified eigensolver.
 
 .SH INPUT
 
 .IP "\fBA\fR"
-The coefficient matrix
+The coefficient matrix A
+
+.IP "\fBB\fR"
+The coefficient matrix B
 
 .IP "\fBx\fR"
 The initial vector

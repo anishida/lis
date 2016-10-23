@@ -1,39 +1,45 @@
-.TH lsolve 1 "23 Oct 2016" "Man Page" "Utility Commands"
+.TH gesolve 1 "23 Oct 2016" "Man Page" "Utility Commands"
 
 .SH NAME
 
-lsolve \- linear solver for sparse matrices
+gesolve \- eigensolver for generalized eigenvalue problems
 
 .SH SYNOPSIS
 
-\fBlsolve\fR \fImatrix_filename rhs_setting solution_filename rhistory_filename\fR [\fIoptions\fR]
+\fBgesolve\fR \fImatrix_a_filename matrix_b_filename evalues_filename evectors_filename residuals_filename iters_filename\fR [\fIoptions\fR]
 
 .SH DESCRIPTION
 
-This program inputs the data of the coefficient matrix from \fImatrix_filename\fR 
-and solves the linear equation A*x = b with the solver specified by \fIoptions\fR. 
-It outputs the solution to \fIsolution_filename\fR in the extended Matrix Market 
-format and the residual history to \fIrhistory_filename\fR in the PLAIN format
-(see Appendix of the Lis User Guide). Both the extended Matrix Market format and
-the Harwell-Boeing format are supported for the matrix filename.
-.PP
-One of the following values can be specified by rhs_setting:
-.IP "0"
-Use the right hand side vector b included in matrix_filename
-.IP "1"
-Use b = (1, ..., 1)^T
-.IP "2"
-Use b = A * (1, ..., 1)^T
-.IP "rhs_filename"
-The filename for the right-hand side vector
-.PP
-The PLAIN and Matrix Market formats are supported for rhs_filename.
+This program inputs the matrix data from \fImatrix_a_filename\fR \fImatrix_b_filename\fR, and solves the 
+generalized eigenvalue problem A*x = l*B*x with the solver specified by \fIoptions\fR. 
+It outputs the eigenvalues specified by \fIoptions\fR to \fIevalues_filename\fR
+and the associated eigenvectors, residual norms, and numbers of iterations to 
+\fIevectors_filename\fR, \fIresiduals_filename\fR, and \fIiters_filename\fR
+respectively
+in the extended Matrix Market format (see Appendix of Lis User Guide). Both the
+Matrix Market format and the Harwell-Boeing format are supported for the matrix filenames.
 
 .SH OPTIONS
 
 The following options are supported:
+.IP "-e \fIeigensolver\fR"
+The following options are supported for \fIeigensolver\fR:
+.RS 
+.IP "-e {\fIgpi\fR|10}"
+Generalized Power
+.IP "-e {\fIgii\fR|11}"
+Generalized Inverse
+.IP "-e {\fIgcr\fR|12}"
+Generalized CR
+.IP "-e {\fIgsi\fR|13}"
+Generalized Subspace
+.RS
+.IP "-ss [1]"
+The size of the subspace
+.RE
+.RE
 .IP "-i \fIlinear solver\fR"
-The following options are supported for \fIlinear solver\fR:
+The following options are supported for inner \fIlinear solver\fR:
 .RS 
 .IP "-i {\fIcg\fR|1}"
 CG
@@ -105,13 +111,13 @@ The restart value \fIs\fR
 IDR(1)
 .IP "-i {\fIminres\fR|23}"
 MINRES
-.IP "-i {\fICOCG\fR|24}"
+.IP "-i {\fIcocg\fR|24}"
 COCG
-.IP "-i {\fICOCR\fR|25}"
+.IP "-i {\fIcocr\fR|25}"
 COCG
 .RE
 
-.IP "-p \fIpreconditioner"
+.IP "-p \fIpreconditioner\fR"
 The following options are supported for \fIpreconditioner\fR:
 .RS 
 .IP "-p {\fInone\fR|0}"
@@ -210,7 +216,67 @@ The number of the iteration
 .RE
 .RE
 
-Other Options:
+Other Options for eigensolver:
+.IP "-emaxiter [1000]"
+The maximum number of the iterations
+.IP "-etol [1.0e-12]"
+The convergence criterion
+.IP "-eprint [0]"
+The output of the residual history
+.RS 
+.IP "-eprint {\fInone\fR|0}"
+None
+.RE
+.RS 
+.IP "-eprint {\fImem\fR|1}"
+Save the residual history
+.RE
+.RS 
+.IP "-eprint {\fIout\fR|2}"
+Output it to the standard output
+.RE
+.RS 
+.IP "-eprint {\fIall\fR|3}"
+Save the residual history and output it to the standard output
+.RE
+.IP "-ie [ii]"
+The inner eigensolver used in Subspace
+.RS 
+.IP "-ie {\fIpi\fR|1}"
+Power
+.IP "-ie {\fIii\fR|2}"
+Inverse
+.RE
+.IP "-shift [0.0]"
+The amount of the shift
+.IP "-initx_ones [\fItrue\fR]"
+The behavior of the initial vector \fIx_0\fR
+.RS 
+.IP "-initx_ones {\fIfalse\fR|0}"
+Given values
+.RE
+.RS 
+.IP "-initx_ones {\fItrue\fR|1}"
+All values are set to 1
+.RE
+.IP "-omp_num_threads [\fIt\fR]"
+The number of the threads (\fIt\fR represents the maximum number of the threads)
+.IP "-estorage [0]"
+The matrix storage format
+.IP "-estorage_block [2]"
+The block size of the BSR and BSC formats
+.IP "-ef [0]"
+The precision of the eigensolver
+.RS 
+.IP "-ef {\fIdouble\fR|0}"
+Double precision
+.RE
+.RS
+.IP "-ef {\fIquad\fR|1}"
+Quadruple precision
+.RE
+
+Other options for inner linear solver:
 .IP "-maxiter [1000]"
 The maximum number of the iterations
 .IP "-tol [1.0e-12]"
@@ -273,6 +339,7 @@ Double precision
 .IP "-f {\fIquad\fR|1}"
 Quadruple precision
 .RE
+.RE
 
 See Lis User Guide for full description.
 
@@ -287,7 +354,7 @@ An error occurred
 .SH SEE ALSO
 
 .BR lis (3),
-.BR esolve (1),
+.BR lsolve (1),
 .BR hpcg_kernel (1),
 .BR hpcg_spmvtest (1),
 .BR spmvtest1 (1),

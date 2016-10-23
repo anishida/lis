@@ -62,12 +62,13 @@ if ENABLE_F90
   test8f_SOURCES = test8f.F90
 endif
 
-bin_PROGRAMS = esolve hpcg_kernel hpcg_spmvtest lsolve spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b spmvtest4 spmvtest5
+bin_PROGRAMS = esolve gesolve hpcg_kernel hpcg_spmvtest lsolve spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b spmvtest4 spmvtest5
 
+lsolve_SOURCES = test1.c
 esolve_SOURCES = etest5.c
+gesolve_SOURCES = getest5.c
 hpcg_kernel_SOURCES = test3b.c
 hpcg_spmvtest_SOURCES = spmvtest3b.c
-lsolve_SOURCES = test1.c
 
 PPF77COMPILE = $(F77) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_FFLAGS) $(FFLAGS)

@@ -583,7 +583,7 @@ BiCG: relative residual    = 6.221213e-15
 \begin{verbatim}
 ($INSTALLDIR)
  +bin
- |   +lsolve esolve hpcg_kernel hpcg_spmvtest spmvtest*
+ |   +lsolve esolve gesolve hpcg_kernel hpcg_spmvtest spmvtest*
  +include
  |   +lis_config.h lis.h lisf.h
  +lib
@@ -598,10 +598,10 @@ BiCG: relative residual    = 6.221213e-15
 ディレクトリ{\tt lis-(\$VERSION)}において次のコマンドを入力し, ディレク
 トリ{\tt examples/lis}に生成された実行ファイルを用いて検証を行う. \\
  \verb+      > make installcheck+ \\
-{\tt examples/lis}下の{\tt test1}, {\tt etest5}, 
+{\tt examples/lis}下の{\tt test1}, {\tt etest5}, {\tt getest5}, 
 {{\tt test3b}, {{\tt spmvtest3b}は, 
-{\tt lsolve}, {\tt esolve}, {\tt hpcg\_kernel}, {\tt hpcg\_spmvtest}の別名で
-{\tt (\$INSTALLDIR)/bin}に複製される.
+{\tt lsolve}, {\tt esolve}, {\tt gesolve}, {\tt hpcg\_kernel},
+{\tt hpcg\_spmvtest}の別名で{\tt (\$INSTALLDIR)/bin}に複製される.
 {\tt examples/lis/spmvtest*}も, それぞれ{\tt (\$INSTALLDIR)/bin}に
 複製される.
 
