@@ -612,7 +612,7 @@ which copies the files to the destination directory as follows:
 \begin{verbatim}
 ($INSTALLDIR)
  +bin
- |   +lsolve esolve hpcg_kernel hpcg_spmvtest spmvtest*
+ |   +lsolve esolve gesolve hpcg_kernel hpcg_spmvtest spmvtest*
  +include
  |   +lis_config.h lis.h lisf.h
  +lib
@@ -630,10 +630,10 @@ To ensure that the library has been installed successfully, enter\\
 in {\tt lis-(\$VERSION)}.
 This runs a test script using the executable files installed 
 in {\tt examples/lis}. 
-{\tt test1}, {\tt etest5}, {\tt test3b}, and {\tt spmvtest3b} 
+{\tt test1}, {\tt etest5}, {\tt getest5}, {\tt test3b}, and {\tt spmvtest3b} 
 in {\tt examples/lis} 
 are copied in {\tt (\$INSTALLDIR)/bin} as {\tt lsolve}, {\tt esolve}, 
-{\tt hpcg\_kernel}, and {\tt hpcg\_spmvtest}, respectively.
+{\tt gesolve}, {\tt hpcg\_kernel}, and {\tt hpcg\_spmvtest}, respectively.
 {\tt examples/lis/spmvtest*} are also copied in \\
 {\tt (\$INSTALLDIR)/bin}.
 

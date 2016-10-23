@@ -1,8 +1,8 @@
-.TH esolve 1 "16 Oct 2016" "Man Page" "Utility Commands"
+.TH esolve 1 "23 Oct 2016" "Man Page" "Utility Commands"
 
 .SH NAME
 
-esolve \- eigensolver for real symmetric sparse matrices
+esolve \- eigensolver for standard eigenvalue problems
 
 .SH SYNOPSIS
 
@@ -11,19 +11,31 @@ esolve \- eigensolver for real symmetric sparse matrices
 .SH DESCRIPTION
 
 This program inputs the matrix data from \fImatrix_filename\fR and solves the 
-eigenvalue problem A*x = l*x with the solver specified by \fIoptions\fR. 
+standard eigenvalue problem A*x = l*x with the solver specified by \fIoptions\fR. 
 It outputs the eigenvalues specified by \fIoptions\fR to \fIevalues_filename\fR
 and the associated eigenvectors, residual norms, and numbers of iterations to 
 \fIevectors_filename\fR, \fIresiduals_filename\fR, and \fIiters_filename\fR 
 respectively in the extended Matrix Market format (see Appendix of Lis User 
-Guide). The Matrix Market format is supported for \fImatrix_filename\fR.
+Guide). Both the Matrix Market format and the Harwell-Boeing format are supported for the matrix filename.
 
 .SH OPTIONS
 
 The following options are supported:
 .IP "-e \fIeigensolver\fR"
 The following options are supported for \fIeigensolver\fR:
-.RS
+.RS 
+.IP "-e {\fIpi\fR|1}"
+Power
+.IP "-e {\fIii\fR|2}"
+Inverse
+.IP "-e {\fIrqi\fR|3}"
+Rayleigh Quotient
+.IP "-e {\fIcg\fR|4}"
+CG
+.IP "-e {\fIcr\fR|5}"
+CR
+.IP "-e {\fIjd\fR|6}"
+Jacobi Davidson
 .IP "-e {\fIsi\fR|7}"
 Subspace
 .RS
@@ -245,7 +257,13 @@ Output it to the standard output
 Save the residual history and output it to the standard output
 .RE
 .IP "-ie [ii]"
-The inner eigensolver used in the Lanczos and Subspace
+The inner eigensolver used in Subspace, Lanczos and Arnoldi
+.RS 
+.IP "-ie {\fIpi\fR|1}"
+Power
+.IP "-ie {\fIii\fR|2}"
+Inverse
+.RE
 .IP "-shift [0.0]"
 The amount of the shift
 .IP "-initx_ones [\fItrue\fR]"

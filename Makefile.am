@@ -9,6 +9,7 @@ EXTRA_DIST = doc/Makefile \
              doc/lis-ug-ja.pdf \
              doc/man/man1/lsolve.1 \
              doc/man/man1/esolve.1 \
+             doc/man/man1/gesolve.1 \
              doc/man/man1/hpcg_kernel.1 \
              doc/man/man1/hpcg_spmvtest.1 \
              doc/man/man1/spmvtest1.1 \
@@ -49,6 +50,7 @@ EXTRA_DIST = doc/Makefile \
              doc/man/man3/lis_array_swap.3 \
              doc/man/man3/lis_array_xpay.3 \
              doc/man/man3/lis_esolve.3 \
+             doc/man/man3/lis_gesolve.3 \
              doc/man/man3/lis_esolver_create.3 \
              doc/man/man3/lis_esolver_destroy.3 \
              doc/man/man3/lis_esolver_get_esolver.3 \
@@ -188,6 +190,7 @@ EXTRA_DIST = doc/Makefile \
              doc/man/man3/lis_array_swap.3f \
              doc/man/man3/lis_array_xpay.3f \
              doc/man/man3/lis_esolve.3f \
+             doc/man/man3/lis_gesolve.3f \
              doc/man/man3/lis_esolver_create.3f \
              doc/man/man3/lis_esolver_destroy.3f \
              doc/man/man3/lis_esolver_get_esolver.3f \
@@ -344,6 +347,7 @@ EXTRA_DIST = doc/Makefile \
 
 man_MANS =   doc/man/man1/lsolve.1 \
              doc/man/man1/esolve.1 \
+             doc/man/man1/gesolve.1 \
              doc/man/man1/hpcg_kernel.1 \
              doc/man/man1/hpcg_spmvtest.1 \
              doc/man/man1/spmvtest1.1 \

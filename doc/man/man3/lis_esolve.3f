@@ -1,7 +1,7 @@
-.TH lis_esolve 3f "8 Dec 2014" "Man Page" "Lis Library Functions"
+.TH lis_esolve 3f "23 Oct 2016" "Man Page" "Lis Library Functions"
 
 .SH NAME
-lis_esolve \- solve the eigenvalue problem
+lis_esolve \- solve the standard eigenvalue problem
 
 .SH SYNOPSIS
 
@@ -9,7 +9,7 @@ lis_esolve \- solve the eigenvalue problem
 
 .SH DESCRIPTION
 
-Solve the eigenvalue problem \fIAx = lx\fR with the specified eigensolver.
+Solve the standard eigenvalue problem \fIAx = lx\fR with the specified eigensolver.
 
 .SH INPUT
 
