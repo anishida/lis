@@ -266,15 +266,15 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
 #endif
 #ifdef _COMPLEX	  
 #ifdef _LONG__DOUBLE
-	  printf("Lanczos: eigenvalue               = (%Le, %Le)\n", creall(esolver->evalue[i] - gshift), cimagl(esolver->evalue[i] - gshift));
+	  printf("Lanczos: eigenvalue               = (%Le, %Le)\n", creall(esolver->evalue[i] + gshift), cimagl(esolver->evalue[i] + gshift));
 #else
-	  printf("Lanczos: eigenvalue               = (%e, %e)\n", creal(esolver->evalue[i] - gshift), cimag(esolver->evalue[i] - gshift));
+	  printf("Lanczos: eigenvalue               = (%e, %e)\n", creal(esolver->evalue[i] + gshift), cimag(esolver->evalue[i] + gshift));
 #endif
 #else
 #ifdef _LONG__DOUBLE
-	  printf("Lanczos: eigenvalue               = %Le\n", esolver->evalue[i] - gshift);
+	  printf("Lanczos: eigenvalue               = %Le\n", esolver->evalue[i] + gshift);
 #else
-	  printf("Lanczos: eigenvalue               = %e\n", esolver->evalue[i] - gshift);
+	  printf("Lanczos: eigenvalue               = %e\n", esolver->evalue[i] + gshift);
 #endif
 #endif	  
 	}
@@ -293,7 +293,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   for (i=0;i<ss;i++)
     {
       lis_vector_duplicate(A, &esolver->evector[i]); 
-      esolver2->lshift = -(esolver->evalue[i]);
+      esolver2->lshift = -esolver->evalue[i];
       lis_gesolve(A, B, esolver->evector[i], &evalue, esolver2);
       lis_esolver_work_destroy(esolver2); 
       esolver->evalue[i] = evalue - esolver2->lshift;
@@ -328,15 +328,15 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
 #endif
 #ifdef _COMPLEX
 #ifdef _LONG__DOUBLE
-	  printf("Lanczos: eigenvalue           = (%Le, %Le)\n", creall(esolver->evalue[i] - gshift), cimagl(esolver->evalue[i] - gshift));
+	  printf("Lanczos: eigenvalue           = (%Le, %Le)\n", creall(esolver->evalue[i] + gshift), cimagl(esolver->evalue[i] + gshift));
 #else
-	  printf("Lanczos: eigenvalue           = (%e, %e)\n", creal(esolver->evalue[i] - gshift), cimag(esolver->evalue[i] - gshift));
+	  printf("Lanczos: eigenvalue           = (%e, %e)\n", creal(esolver->evalue[i] + gshift), cimag(esolver->evalue[i] + gshift));
 #endif
 #else	  
 #ifdef _LONG__DOUBLE
-	  printf("Lanczos: eigenvalue           = %Le\n", esolver->evalue[i] - gshift);
+	  printf("Lanczos: eigenvalue           = %Le\n", esolver->evalue[i] + gshift);
 #else
-	  printf("Lanczos: eigenvalue           = %e\n", esolver->evalue[i] - gshift);
+	  printf("Lanczos: eigenvalue           = %e\n", esolver->evalue[i] + gshift);
 #endif
 #endif	  
 #ifdef _LONG__LONG

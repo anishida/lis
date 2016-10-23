@@ -612,7 +612,17 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	esolver->p_i_time = 0;
 
 
-	if (gshift != 0.0) lis_matrix_shift_diagonal(A, gshift);
+	if (gshift != 0.0)
+	  {
+	    if (B == NULL)
+	      {
+		lis_matrix_shift_diagonal(A, gshift);
+	      }
+	    else
+	      {
+		lis_matrix_shift_general(A, B, gshift);
+	      }
+	  }
 
 	/* create work vector */
 	err = lis_esolver_malloc_work[nesolver](esolver);
@@ -645,12 +655,22 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	#endif
 	esolver->retcode = err;
 
-	*evalue0 = esolver->evalue[0] - gshift;
+	*evalue0 = esolver->evalue[0] + gshift;
 	lis_vector_copy(esolver->x, x);
 
 	esolver->time = lis_wtime() - time; 
 
-	lis_matrix_shift_diagonal(A, -gshift);
+	if (gshift != 0.0)
+	  {
+	    if (B == NULL)
+	      {
+		lis_matrix_shift_diagonal(A, -gshift);
+	      }
+	    else
+	      {
+		lis_matrix_shift_general(A, B, -gshift);
+	      }
+	  }
 
         if( A->my_rank==0 )
         {

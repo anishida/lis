@@ -258,7 +258,7 @@ LIS_INT lis_matrix_shift_diagonal_dns(LIS_MATRIX A, LIS_SCALAR alpha)
 		#endif
 		for(i=0; i<n; i++)
 		{
-			A->D->value[i] += alpha;
+			A->D->value[i] -= alpha;
 		}
 	}
 	else
@@ -268,7 +268,7 @@ LIS_INT lis_matrix_shift_diagonal_dns(LIS_MATRIX A, LIS_SCALAR alpha)
 		#endif
 		for(i=0; i<n; i++)
 		{
-			A->value[i*n + i] += alpha;
+			A->value[i*n + i] -= alpha;
 		}
 	}
 	LIS_DEBUG_FUNC_OUT;

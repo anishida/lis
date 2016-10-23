@@ -714,6 +714,26 @@ void lis_matrix_shift_diagonal_f(LIS_MATRIX_F *A, LIS_SCALAR_F *alpha, LIS_INT *
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_matrix_shift_general_f"
+void lis_matrix_shift_general_f(LIS_MATRIX_F *A, LIS_MATRIX_F *B, LIS_SCALAR_F *alpha, LIS_INT *ierr)
+{
+	LIS_MATRIX AA;
+	LIS_MATRIX BB;	
+	LIS_SCALAR ss;
+
+	LIS_DEBUG_FUNC_IN;
+
+	AA    = (LIS_MATRIX)LIS_V2P(A);
+	BB    = (LIS_MATRIX)LIS_V2P(B);	
+	ss    = (LIS_SCALAR)LIS_V2P(alpha);
+	*ierr = lis_matrix_shift_general(AA,BB,ss);
+	if( *ierr )	return;	
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_matrix_set_blocksize_f"
 void lis_matrix_set_blocksize_f(LIS_MATRIX_F *A, LIS_INT *bnr, LIS_INT *bnc, LIS_INT *row, LIS_INT *col, LIS_INT *ierr)
 {

@@ -209,7 +209,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 #endif
 #endif
 	}
-      if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
+      if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
       break;
 
     }
@@ -346,15 +346,15 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 #endif
 #ifdef _COMPLEX	  
 #ifdef _LONG__DOUBLE
-	  printf("Subspace: eigenvalue           = (Le, %Le)\n", creall(esolver->evalue[j-1] - gshift), cimagl(esolver->evalue[j-1] - gshift));
+	  printf("Subspace: eigenvalue           = (Le, %Le)\n", creall(esolver->evalue[j-1] + gshift), cimagl(esolver->evalue[j-1] + gshift));
 #else
-	  printf("Subspace: eigenvalue           = (%e, %e)\n", creal(esolver->evalue[j-1] - gshift), cimag(esolver->evalue[j-1] - gshift));
+	  printf("Subspace: eigenvalue           = (%e, %e)\n", creal(esolver->evalue[j-1] + gshift), cimag(esolver->evalue[j-1] + gshift));
 #endif
 #else
 #ifdef _LONG__DOUBLE
-	  printf("Subspace: eigenvalue           = %Le\n", esolver->evalue[j-1] - gshift);
+	  printf("Subspace: eigenvalue           = %Le\n", esolver->evalue[j-1] + gshift);
 #else
-	  printf("Subspace: eigenvalue           = %e\n", esolver->evalue[j-1] - gshift);
+	  printf("Subspace: eigenvalue           = %e\n", esolver->evalue[j-1] + gshift);
 #endif
 #endif	  
 #ifdef _LONG__LONG
@@ -375,7 +375,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   switch ( niesolver )
     {
     case LIS_ESOLVER_II:
-      if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
+      if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
       lis_precon_destroy(precon);
       lis_solver_destroy(solver);
       break;
@@ -542,7 +542,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 #endif
 #endif
     }
-  if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
+  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
 
   giter=0;
   j=0;
@@ -717,15 +717,15 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 #endif
 #ifdef _COMPLEX	  
 #ifdef _LONG__DOUBLE
-	  printf("Subspace: eigenvalue           = (Le, %Le)\n", creall(esolver->evalue[j-1] - gshift), cimagl(esolver->evalue[j-1] - gshift));
+	  printf("Subspace: eigenvalue           = (Le, %Le)\n", creall(esolver->evalue[j-1] + gshift), cimagl(esolver->evalue[j-1] + gshift));
 #else
-	  printf("Subspace: eigenvalue           = (%e, %e)\n", creal(esolver->evalue[j-1] - gshift), cimag(esolver->evalue[j-1] - gshift));
+	  printf("Subspace: eigenvalue           = (%e, %e)\n", creal(esolver->evalue[j-1] + gshift), cimag(esolver->evalue[j-1] + gshift));
 #endif
 #else
 #ifdef _LONG__DOUBLE
-	  printf("Subspace: eigenvalue           = %Le\n", esolver->evalue[j-1] - gshift);
+	  printf("Subspace: eigenvalue           = %Le\n", esolver->evalue[j-1] + gshift);
 #else
-	  printf("Subspace: eigenvalue           = %e\n", esolver->evalue[j-1] - gshift);
+	  printf("Subspace: eigenvalue           = %e\n", esolver->evalue[j-1] + gshift);
 #endif
 #endif	  
 #ifdef _LONG__LONG
@@ -743,7 +743,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   
   lis_vector_copy(esolver->evector[0], esolver->x);
 
-  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
+  if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
   lis_precon_destroy(precon);
   lis_solver_destroy(solver);
   LIS_DEBUG_FUNC_OUT;

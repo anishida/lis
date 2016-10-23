@@ -384,7 +384,7 @@ LIS_INT lis_matrix_shift_diagonal_dia(LIS_MATRIX A, LIS_SCALAR alpha)
 		#endif
 		for(i=0; i<n; i++)
 		{
-			A->D->value[i] += alpha;
+			A->D->value[i] -= alpha;
 		}
 	}
 	else
@@ -404,7 +404,7 @@ LIS_INT lis_matrix_shift_diagonal_dia(LIS_MATRIX A, LIS_SCALAR alpha)
 				*/
 				for (k=is;k<ie;k++)
 				  {
-				    A->value[is*nnd+j*k] += alpha;
+				    A->value[is*nnd+j*k] -= alpha;
 				  }
 			}
 		#else
@@ -414,7 +414,7 @@ LIS_INT lis_matrix_shift_diagonal_dia(LIS_MATRIX A, LIS_SCALAR alpha)
 			}
 			for(i=0;i<n;i++)
 			{
-				A->value[j*n+i] += alpha;
+				A->value[j*n+i] -= alpha;
 			}
 		#endif
 	}
