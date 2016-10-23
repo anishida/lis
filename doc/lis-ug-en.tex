@@ -694,9 +694,9 @@ the solver specified by {\tt options}.
 It outputs the solution to 
 {\tt solution\_filename} in the extended 
 Matrix Market format and 
-the residual history to {\tt rhistory\_filename} in the PLAIN format (see Appendix). 
-The Matrix Market and extended Matrix Market formats are supported 
-for {\tt matrix\_filename}. 
+the residual history to {\tt rhistory\_filename} in the PLAIN format (see Appendix).
+Both the extended Matrix Market format and the Harwell-Boeing format are
+supported for {\tt matrix\_filename}. 
 One of the following values can be specified by {\tt rhs\_setting}:
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[0] Use the right-hand side vector $b$ included in the data file
@@ -846,8 +846,10 @@ the associated eigenvector to {\tt evector\_filename}
 in the extended Matrix Market format, and 
 the residual history to {\tt rhistory\_filename} 
 in the PLAIN format.
-The Matrix Market format is supported for the matrix filename. 
+Both the Matrix Market format and the Harwell-Boeing format are
+supported for the matrix filename. 
 {\tt etest1f.F} is the Fortran version of {\tt etest1.c}.
+See {\tt etest5} for obtaining multiple eigenpairs.
 
 \subsubsection{getest1}
 
@@ -863,7 +865,9 @@ the associated eigenvector to {\tt evector\_filename}
 in the extended Matrix Market format, and 
 the residual history to {\tt rhistory\_filename} 
 in the PLAIN format.
-The Matrix Market format is supported for the matrix filenames. 
+Both the Matrix Market format and the Harwell-Boeing format are
+supported for the matrix filenames. 
+See {\tt getest5} for obtaining multiple eigenpairs.
 
 \subsubsection{etest2}
 
@@ -896,6 +900,7 @@ the residual history to {\tt rhistory\_filename}
 in the PLAIN format. 
 The values {\tt l}, {\tt m} and {\tt n} represent the numbers of grid
 points in each dimension. 
+See {\tt etest6} for obtaining multiple eigenpairs.
 
 \subsubsection{etest4}
 
@@ -931,8 +936,9 @@ It outputs the eigenvalues specified by {\tt options} to
 eigenvectors, residual norms, and numbers of iterations  
 to \\ {\tt evectors\_filename}, {\tt residuals\_filename}, 
 and {\tt iters\_filename} respectively in the extended 
-Matrix Market format. The Matrix Market format is supported for 
-{\tt matrix\_filename}. 
+Matrix Market format.
+Both the Matrix Market format and the Harwell-Boeing format are
+supported for the matrix filename. 
 
 \subsubsection{getest5}
 
@@ -947,8 +953,9 @@ It outputs the eigenvalues specified by {\tt options} to
 eigenvectors, residual norms, and numbers of iterations  
 to \\ {\tt evectors\_filename}, {\tt residuals\_filename}, 
 and {\tt iters\_filename} respectively in the extended 
-Matrix Market format. The Matrix Market format is supported for 
-{\tt matrix\_filename}. 
+Matrix Market format.  
+Both the Matrix Market format and the Harwell-Boeing format are
+supported for the matrix filenames. 
 
 \subsubsection{etest6}
 
@@ -1083,8 +1090,9 @@ This program inputs the matrix data from the files listed in {\tt matrix\_filena
 and computes the multiplies of matrices in available matrix 
 storage formats and a vector $(1,\dots,1)^T$. 
 The FLOPS performance is measured as the average of {\tt iter}
-iterations. 
-The Matrix Market format is supported for {\tt matrix\_filename\_list}. 
+iterations.
+Both the Matrix Market format and the Harwell-Boeing format are
+supported for the matrix filenames. 
 If necessary, the block size of the BSR and BSC formats can be specified
 by {\tt block}.
 
@@ -1095,8 +1103,9 @@ by {\tt block}.
 This program inputs the matrix data from {\tt matrix\_filename} 
 and compute the multiply of the matrix 
 with \verb|matrix_type| and a vector $(1,\dots,1)^T$. 
-The FLOPS performance is measured as the average of {\tt iter} iterations. 
-The Matrix Market format is supported for {\tt matrix\_filename}. 
+The FLOPS performance is measured as the average of {\tt iter} iterations.
+Both the Matrix Market format and the Harwell-Boeing format are
+supported for {\tt matrix\_filename}. 
 If necessary, the block size of the BSR and BSC formats can be specified by {\tt block}.
 
 \subsection{Limitations}
