@@ -654,7 +654,7 @@ UNIX互換環境を使用する場合は前節を参照のこと.
 解を拡張Matrix Market形式で{\tt solution\_filename}に, 
 残差履歴をPLAIN形式で{\tt rhistory\_filename}に書き出す 
 (付録\ref{sec:matinp}を参照). 
-入力可能な行列データ形式はMatrix Market形式, 拡張Matrix Market形式である. 
+入力可能な行列データ形式は拡張Matrix Market形式, Harwell-Boeing形式のいずれかである. 
 {\tt rhs\_setting}には
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[0] 行列データファイルに含まれる右辺ベクトルを用いる
@@ -771,8 +771,10 @@ A = \left(
 た固有値を標準出力に書き出す. また, 対応する固有ベクトルを拡張Matrix
  Market形式で{\tt evector\_filename}に, 残差履歴をPLAIN形式で
 {\tt rhistory\_filename}に書き出す. 
-入力可能な行列データ形式はMatrix Market形式である. 
+入力可能な行列データ形式はMatrix Market形式, もしくはHarwell-Boeing形式の
+いずれかである. 
 {\tt etest1f.F}は{\tt etest1.c}のFortran版である. 
+複数の固有対を取得する場合は{\tt etest5}を参照のこと.
 
 \subsubsection{getest1}
 ディレクトリ{\tt lis-(\$VERSION)/test}において\\
@@ -784,7 +786,9 @@ A = \left(
 た固有値を標準出力に書き出す. また, 対応する固有ベクトルを拡張Matrix
  Market形式で{\tt evector\_filename}に, 残差履歴をPLAIN形式で
 {\tt rhistory\_filename}に書き出す. 
-入力可能な行列データ形式はMatrix Market形式である. 
+入力可能な行列データ形式はMatrix Market形式, もしくはHarwell-Boeing形式の
+いずれかである. 
+複数の固有対を取得する場合は{\tt getest5}を参照のこと.
 
 \subsubsection{etest2}
 ディレクトリ{\tt lis-(\$VERSION)/test}において\\
@@ -806,7 +810,8 @@ $Ax=\lambda x$を, \verb|matrix_type|で指定された行列格納形式,
 {\tt options}で指定された解法で解き, 指定された固有値を標準出力に書き出す. 
 また, 対応する固有ベクトルを拡張Matrix Market形式で{\tt evector\_filename}に, 
 残差履歴をPLAIN形式で{\tt rhistory\_filename}に書き出す. 
-{\tt l}, {\tt m}, {\tt n}は各次元の格子点数である. 
+{\tt l}, {\tt m}, {\tt n}は各次元の格子点数である.
+複数の固有対を取得する場合は{\tt etest6}を参照のこと.
 
 \subsubsection{etest4}
 ディレクトリ{\tt lis-(\$VERSION)/test}において\\
@@ -840,8 +845,9 @@ A =
 {\tt evalues\_filename}に, 対応する固有ベクトル, 残差ノルム及び反復回数を
 {\tt evectors\_filename}, \\
 {\tt residuals\_filename}及び{\tt iters\_filename}に
-拡張Matrix Market形式で書き出す. 
-入力可能な行列データ形式はMatrix Market形式である. 
+拡張Matrix Market形式で書き出す.
+入力可能な行列データ形式はMatrix Market形式, もしくはHarwell-Boeing形式の
+いずれかである. 
 
 \subsubsection{getest5}
 ディレクトリ{\tt lis-(\$VERSION)/test}において\\
@@ -854,7 +860,8 @@ A =
 {\tt evalues\_filename}に, 対応する固有ベクトル, 残差ノルム及び反復回数を
 {\tt evectors\_filename}, {\tt residuals\_filename}及び{\tt iters\_filename}に
 拡張Matrix Market形式で書き出す. 
-入力可能な行列データ形式はMatrix Market形式である. 
+入力可能な行列データ形式はMatrix Market形式, もしくはHarwell-Boeing形式の
+いずれかである. 
 
 \subsubsection{etest6}
 ディレクトリ{\tt lis-(\$VERSION)/test}において\\
@@ -966,8 +973,9 @@ $(1,\dots,1)^T$との積を
 と入力すると, {\tt matrix\_filename\_list}の示す行列データ
 ファイルリストから行列データを読み込み, 各行列とベクトル
 $(1,\dots,1)^T$との積を実行可能な行列格納形式について
-{\tt iter}で指定された回数実行し, FLOPS値を算出する. 
-入力可能な行列データ形式はMatrix Market形式である. 
+{\tt iter}で指定された回数実行し, FLOPS値を算出する.
+入力可能な行列データ形式はMatrix Market形式, もしくはHarwell-Boeing形式の
+いずれかである. 
 必要なら{\tt block}により, BSR, BSC形式のブロックサイズを指定する. 
 
 \subsubsection{spmvtest5}
@@ -977,7 +985,8 @@ $(1,\dots,1)^T$との積を実行可能な行列格納形式について
 から行列データを読み込み, 行列とベクトル$(1,\dots,1)^T$との
 積を行列格納形式{\tt matrix\_type}について{\tt iter}で
 指定された回数実行し, FLOPS値を算出する. 
-入力可能な行列データ形式はMatrix Market形式である. 
+入力可能な行列データ形式はMatrix Market形式, もしくはHarwell-Boeing形式の
+いずれかである. 
 必要なら{\tt block}により, BSR, BSC形式のブロックサイズを指定する. 
 
 \subsection{制限事項}
