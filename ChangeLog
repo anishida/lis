@@ -1,3 +1,7 @@
+Version 1.7.2  October 24, 2016
+
+  - Added support for generalized Lanczos iteration.
+
 Version 1.7.1  October 23, 2016
 
   - Inverted sign of shift for eigensolvers in accordance with custom.

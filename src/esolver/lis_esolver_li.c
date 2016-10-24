@@ -210,11 +210,11 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
       /* r = A * v(j) */
       /* r = r - beta(j-1) * v(j-1) */
       if (j==1) {
-	lis_vector_scale(1/nrm2, v[j]);
+	lis_vector_scale(1.0/nrm2, v[j]);
 	lis_matvec(A, v[j], r);
       }
       else {
-	lis_vector_scale(1/t[(j-2)*ss+j-1], v[j]);
+	lis_vector_scale(1.0/t[(j-2)*ss+j-1], v[j]);
 	lis_matvec(A, v[j], r);
 	lis_vector_axpy(-t[(j-2)*ss+j-1], v[j-1], r); 
       }
@@ -368,4 +368,367 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   LIS_DEBUG_FUNC_OUT;
   return LIS_SUCCESS;
 }
+
+/***************************************
+ * Generalized Lanczos Iteration       *
+ ***************************************
+ q       = (1,...,1)^T
+ ***************************************
+ r = Bq
+ beta(0) = <q,r>^1/2
+ for j=1,2,...
+   w(j)      = r / beta(j-1)
+   v(j)      = q / beta(j-1)
+   r         = A * v(j)
+   r         = r - beta(j-1) * w(j-1)
+   alpha(j)  = <v(j), r>
+   r         = r - alpha(j) * w(j)
+   reorthogonalization 
+   solve Bq = r for q
+   beta(j)   = <q,r>^1/2
+ end for
+ compute eigenvalues of a real symmetric tridiagonal matrix 
+ T(j) = ST'(j)S^*, where
+     (alpha(1) beta(1)                      )
+     (beta(1)  alpha(2)                     )
+ T = (               ...                    )
+     (                  alpha(j-1) beta(j-1))                       
+     (                  beta(j-1)  alpha(j) )
+ compute refined eigenpairs
+ ***************************************/
+
+#undef NWORK
+#define NWORK 4
+#undef __FUNC__
+#define __FUNC__ "lis_egli_check_params"
+LIS_INT lis_egli_check_params(LIS_ESOLVER esolver)
+{
+        LIS_INT ss;
+
+	LIS_DEBUG_FUNC_IN;
+
+	ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
+	if( ss<0 )
+	{
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_SUBSPACE(=%d) is less than 0\n",ss);
+		return LIS_ERR_ILL_ARG;
+	}
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_egli_malloc_work"
+LIS_INT lis_egli_malloc_work(LIS_ESOLVER esolver)
+{
+	LIS_VECTOR *work;
+	LIS_INT	i,j,worklen,err,ss;
+
+	LIS_DEBUG_FUNC_IN;
+
+	ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
+
+	worklen = NWORK + ss;
+	work    = (LIS_VECTOR *)lis_malloc( worklen*sizeof(LIS_VECTOR),"lis_egli_malloc_work::work" );
+	if( work==NULL )
+	{
+		LIS_SETERR_MEM(worklen*sizeof(LIS_VECTOR));
+		return LIS_ERR_OUT_OF_MEMORY;
+	}
+	if( esolver->eprecision==LIS_PRECISION_DEFAULT )
+	{
+		for(i=0;i<worklen;i++)
+		{
+			err = lis_vector_duplicate(esolver->A,&work[i]);
+			if( err ) break;
+		}
+	}
+	else
+	{
+		for(i=0;i<worklen;i++)
+		{
+			err = lis_vector_duplicateex(LIS_PRECISION_QUAD,esolver->A,&work[i]);
+			if( err ) break;
+		}
+	}
+	if( i<worklen )
+	{
+		for(j=0;j<i;j++) lis_vector_destroy(work[j]);
+		lis_free(work);
+		return err;
+	}
+	esolver->worklen = worklen;
+	esolver->work    = work;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_egli"
+LIS_INT lis_egli(LIS_ESOLVER esolver)
+{
+  LIS_INT err;
+  LIS_MATRIX A,B;
+  LIS_INT ss,ic;
+  LIS_SCALAR gshift;
+  LIS_INT emaxiter,iter0,qriter;
+  LIS_REAL tol,qrerr;
+  LIS_INT i,j,k;
+  LIS_INT output, niesolver;
+  LIS_REAL resid0;
+  LIS_SCALAR beta,dot;
+  LIS_VECTOR q,r,*w,*v;
+  LIS_SCALAR *t,*tq,*tr,evalue,evalue0;
+  LIS_SOLVER solver;
+  LIS_PRECON precon;
+  LIS_ESOLVER esolver2;
+  char esolvername[128],solvername[128],preconname[128];
+  LIS_INT nsol,precon_type;
+
+  ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
+  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];      
+  emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
+  tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
+  output  = esolver->options[LIS_EOPTIONS_OUTPUT];
+  niesolver = esolver->options[LIS_EOPTIONS_INNER_ESOLVER];
+
+  t = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_egli::t");
+  tq = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_egli::tq");
+  tr = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_egli::tr");
+  
+  A = esolver->A;
+  B = esolver->B;
+  q = esolver->work[0];  
+  r = esolver->work[1];
+  w = &esolver->work[2];  
+  v = &esolver->work[3];
+  lis_vector_set_all(0.0,w[0]);  
+  lis_vector_set_all(0.0,v[0]);
+  lis_vector_set_all(1.0,q);
+
+  /* create linear solver */
+  lis_solver_create(&solver);
+  lis_solver_set_option("-i bicg -p none",solver);
+  lis_solver_set_optionC(solver);
+  lis_solver_get_solver(solver, &nsol);
+  lis_solver_get_precon(solver, &precon_type);
+  lis_solver_get_solvername(nsol, solvername);
+  lis_solver_get_preconname(precon_type, preconname);
+  lis_esolver_get_esolvername(niesolver, esolvername);
+  if( output & A->my_rank==0 )
+    {
+      printf("inner eigensolver     : %s\n", esolvername);
+      printf("linear solver         : %s\n", solvername);
+      printf("preconditioner        : %s\n", preconname);
+    }
+
+  /* create preconditioner */
+  solver->A = B;
+  err = lis_precon_create(solver, &precon);
+  if( err )
+    {
+      lis_solver_work_destroy(solver);
+      solver->retcode = err;
+      return err;
+    }
+
+  for (i=0;i<ss*ss;i++) t[i] = 0.0;
+
+  j=0;
+  while (j<ss-1)
+    {
+      j = j+1;
+
+      /* w(j) = r / beta(j-1) */      
+      /* v(j) = r / beta(j-1) */
+      /* r = A * v(j) */
+      /* r = r - beta(j-1) * w(j-1) */
+      
+      if (j==1) {
+ 	lis_matvec(B, q, r);
+	lis_vector_dot(q, r, &beta);
+	beta = sqrt(beta);
+	lis_vector_copy(r, w[j]);
+	lis_vector_copy(q, v[j]);	
+	lis_vector_scale(1.0/beta, w[j]);
+	lis_vector_scale(1.0/beta, v[j]);	
+	lis_matvec(A, v[j], r);
+	lis_vector_axpy(-beta, w[j-1], r); 	
+      }
+      else {
+	lis_vector_copy(r, w[j]);
+	lis_vector_copy(q, v[j]);	
+	lis_vector_scale(1.0/t[(j-2)*ss+j-1], w[j]);	
+	lis_vector_scale(1.0/t[(j-2)*ss+j-1], v[j]);
+	lis_matvec(A, v[j], r);
+	lis_vector_axpy(-t[(j-2)*ss+j-1], w[j-1], r); 
+      }
+
+      /* alpha(j)  = <v(j), r> */
+      lis_vector_dot(v[j], r, &t[(j-1)*ss+j-1]); 
+
+      /* r = r - alpha(j) * w(j) */
+      lis_vector_axpy(-t[(j-1)*ss+j-1], w[j], r); 
+
+      /* reorthogonalization */
+      for (k=1;k<j;k++)
+	{ 
+	  lis_vector_dot(v[j], v[k], &dot); 
+	  lis_vector_axpy(-dot, v[k], v[j]);
+	}
+
+      /* solve Bq = r */
+      lis_vector_print(r);
+      err = lis_solve_kernel(B, r, q, solver, precon);
+      lis_vector_print(q);      
+      if( err )
+	{
+	  lis_solver_work_destroy(solver);	  
+	  solver->retcode = err;
+	  return err;
+	}
+
+      /* beta(j) = <q,r>^1/2 */
+      lis_vector_dot(q, r, &beta);
+      beta = sqrt(beta);
+      t[(j-1)*ss+j] = (LIS_REAL)beta;
+      
+      /* convergence check */
+      if (fabs(t[(j-1)*ss+j])<tol) break;  
+      t[j*ss+j-1] = t[(j-1)*ss+j];
+    }
+
+  /* compute eigenvalues of a real symmetric tridiagonal matrix 
+     T(j) = ST'(j)S^* */
+  lis_array_qr(ss,t,tq,tr,&qriter,&qrerr);
+
+  for (i=0;i<ss;i++)
+    {
+      esolver->evalue[i] = t[i*ss+i];
+    }
+
+  if( output & A->my_rank==0 ) 
+    {
+#ifdef _LONG__LONG
+      printf("size of subspace      : %lld\n\n", ss);
+#else
+      printf("size of subspace      : %d\n\n", ss);
+#endif
+      printf("approximate eigenvalues in subspace:\n\n");
+      for (i=0;i<ss;i++)
+	{
+#ifdef _LONG__LONG
+	  printf("Generalized Lanczos: mode number              = %lld\n", i);
+#else
+	  printf("Generalized Lanczos: mode number              = %d\n", i);
+#endif
+#ifdef _COMPLEX	  
+#ifdef _LONG__DOUBLE
+	  printf("Generalized Lanczos: eigenvalue               = (%Le, %Le)\n", creall(esolver->evalue[i] + gshift), cimagl(esolver->evalue[i] + gshift));
+#else
+	  printf("Generalized Lanczos: eigenvalue               = (%e, %e)\n", creal(esolver->evalue[i] + gshift), cimag(esolver->evalue[i] + gshift));
+#endif
+#else
+#ifdef _LONG__DOUBLE
+	  printf("Generalized Lanczos: eigenvalue               = %Le\n", esolver->evalue[i] + gshift);
+#else
+	  printf("Generalized Lanczos: eigenvalue               = %e\n", esolver->evalue[i] + gshift);
+#endif
+#endif	  
+	}
+      printf("\n");
+      printf("compute refined eigenpairs:\n\n");
+    }
+
+  lis_esolver_create(&esolver2);
+  esolver2->options[LIS_EOPTIONS_ESOLVER] = niesolver;
+  esolver2->options[LIS_EOPTIONS_SUBSPACE] = 1;
+  esolver2->options[LIS_EOPTIONS_MAXITER] = emaxiter;
+  esolver2->options[LIS_EOPTIONS_OUTPUT] = esolver->options[LIS_EOPTIONS_OUTPUT];
+  esolver2->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN] = tol; 
+
+  /* compute refined eigenpairs */
+  for (i=0;i<ss;i++)
+    {
+      lis_vector_duplicate(A, &esolver->evector[i]); 
+      esolver2->lshift = -esolver->evalue[i];
+      lis_gesolve(A, B, esolver->evector[i], &evalue, esolver2);
+      lis_esolver_work_destroy(esolver2); 
+      esolver->evalue[i] = evalue - esolver2->lshift;
+      esolver->iter[i] = esolver2->iter[0];      
+      esolver->resid[i] = esolver2->resid[0];
+
+      if (i==0) 
+	{
+	  evalue0 = esolver->evalue[0];
+	  iter0 = esolver2->iter[0];
+	  resid0 = esolver2->resid[0];
+	  if( output & LIS_EPRINT_MEM ) 
+	    {
+	      for (ic=0;ic<iter0+1;ic++)
+		{
+		  esolver->rhistory[ic] = esolver2->rhistory[ic]; 
+		}
+	    }
+	  esolver->ptime = esolver2->ptime;
+	  esolver->itime = esolver2->itime;
+	  esolver->p_c_time = esolver2->p_c_time;
+	  esolver->p_i_time = esolver2->p_i_time;
+	}
+
+      if (output & A->my_rank==0) 
+	{
+
+#ifdef _LONG__LONG
+	  printf("Generalized Lanczos: mode number          = %lld\n", i);
+#else
+	  printf("Generalized Lanczos: mode number          = %d\n", i);
+#endif
+#ifdef _COMPLEX
+#ifdef _LONG__DOUBLE
+	  printf("Generalized Lanczos: eigenvalue           = (%Le, %Le)\n", creall(esolver->evalue[i] + gshift), cimagl(esolver->evalue[i] + gshift));
+#else
+	  printf("Generalized Lanczos: eigenvalue           = (%e, %e)\n", creal(esolver->evalue[i] + gshift), cimag(esolver->evalue[i] + gshift));
+#endif
+#else	  
+#ifdef _LONG__DOUBLE
+	  printf("Generalized Lanczos: eigenvalue           = %Le\n", esolver->evalue[i] + gshift);
+#else
+	  printf("Generalized Lanczos: eigenvalue           = %e\n", esolver->evalue[i] + gshift);
+#endif
+#endif	  
+#ifdef _LONG__LONG
+	  printf("Generalized Lanczos: number of iterations = %lld\n",esolver2->iter[0]);
+#else
+	  printf("Generalized Lanczos: number of iterations = %d\n",esolver2->iter[0]);
+#endif
+#ifdef _LONG__DOUBLE
+	  printf("Generalized Lanczos: relative residual    = %Le\n\n",esolver2->resid[0]);
+#else
+	  printf("Generalized Lanczos: relative residual    = %e\n\n",esolver2->resid[0]);
+#endif	  
+	}
+    }
+  esolver->evalue[0] = evalue0; 
+  esolver->iter[0] = iter0;
+  esolver->resid[0] = resid0;
+
+  lis_vector_copy(esolver->evector[0], esolver->x);
+
+  lis_esolver_destroy(esolver2); 
+
+  lis_free(t); 
+  lis_free(tq);
+  lis_free(tr);
+  
+  lis_precon_destroy(precon);
+  lis_solver_destroy(solver);
+
+  LIS_DEBUG_FUNC_OUT;
+  return LIS_SUCCESS;
+}
+
+
 
