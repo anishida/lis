@@ -2089,6 +2089,8 @@ that \verb=-emaxiter= defaults to $1,000$.
  \verb=-i [bicg]= & The linear solver \\
  Generalized Subspace              & \verb=-e {gsi|13}=      &
  \verb=-ss [1]= & The size of the subspace \\
+ Generalized Lanczos               & \verb=-e {gli|14}=      &
+ \verb=-ss [1]= & The size of the subspace \\ 
 \hline         
 \end{tabular}
 \end{center}
@@ -2143,13 +2145,7 @@ Option &                          \\ \hline
                        & \verb=-eprint {out|2}      =  Output it to the standard output\\
                        & \verb=-print {all|3}       =  Save the residual history and output it \\
                        & \verb=                     =  to the standard output \\
-\verb=-ie [ii]= & The inner eigensolver used in the subspace, Lanczos, and Arnoldi iterations\\
-                       & \verb=-ie {pi|1}           =  Power (Subspace only)\\
-                       & \verb=-ie {ii|2}           =  Inverse \\
-                       & \verb=-ie {rqi|3}          =  Rayleigh Quotient \\
-                       & \verb=-ie {cg|4}           =  CG (Lanczos only) \\
-                       & \verb=-ie {cr|5}           =  CR (Lanczos and Arnoldi) \\
-                       & \verb=-ie {jd|6}           =  Jacobi-Davidson (Lanczos only) \\
+\verb=-ie [ii]= & The inner eigensolver used in (Generalized) Subspace, Lanczos, and Arnoldi iterations\\
 \verb=-shift [0.0]= & The amount of the shift $\sigma$ \\
 \verb=-initx_ones [1]= & The behavior of the initial vector $x_{0}$  \\
                        & \verb=-initx_ones {false|0}     =  Given values \\
@@ -6463,6 +6459,8 @@ that \verb=-emaxiter= defaults to $1,000$.
  \verb=-i [bicg]= & The linear solver \\
  Generalized Subspace              & \verb=-e {gsi|13}=      &
  \verb=-ss [1]= & The size of the subspace \\
+ Generalized Lanczos               & \verb=-e {gli|14}=      &
+ \verb=-ss [1]= & The size of the subspace \\ 
 \hline         
 \end{tabular}
 \end{center}
@@ -6517,13 +6515,7 @@ Option &                          \\ \hline
                        & \verb=-eprint {out|2}      =  Output it to the standard output\\
                        & \verb=-eprint {all|3}      =  Save the residual history and output it \\
                        & \verb=                     =  to the standard output\\
-\verb=-ie [ii]= & The inner eigensolver used in the subspace, Lanczos, and Arnoldi iterations\\
-                       & \verb=-ie {pi|1}           =  Power (Subspace only) \\
-                       & \verb=-ie {ii|2}           =  Inverse \\
-                       & \verb=-ie {rqi|3}          =  Rayleigh Quotient \\
-                       & \verb=-ie {cg|4}           =  CG (Lanczos only) \\
-                       & \verb=-ie {cr|5}           =  CR (Lanczos and Arnoldi) \\
-                       & \verb=-ie {jd|6}           =  Jacobi-Davidson (Lanczos only) \\
+\verb=-ie [ii]= & The inner eigensolver used in (Generalized) Subspace, Lanczos, and Arnoldi iterations\\
 \verb=-shift [0.0]= & The amount of the shift $\sigma$ \\
 \verb=-initx_ones [1]= & The behavior of the initial vector $x_{0}$  \\
                        & \verb=-initx_ones {false|0}     =  Given values \\  

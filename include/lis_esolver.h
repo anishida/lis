@@ -156,6 +156,14 @@ extern "C"
 	extern LIS_INT lis_egsi_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_egsi_malloc_work(LIS_ESOLVER esolver);
 
+/**********************************/
+/* Generalized Lanczos Iteration  */
+/**********************************/
+
+	extern LIS_INT lis_egli(LIS_ESOLVER esolver);
+	extern LIS_INT lis_egli_check_params(LIS_ESOLVER esolver);
+	extern LIS_INT lis_egli_malloc_work(LIS_ESOLVER esolver);
+
 #ifdef __cplusplus
 }
 #endif
