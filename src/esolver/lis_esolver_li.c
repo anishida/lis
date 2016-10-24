@@ -580,9 +580,7 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
 	}
 
       /* solve Bq = r */
-      lis_vector_print(r);
       err = lis_solve_kernel(B, r, q, solver, precon);
-      lis_vector_print(q);      
       if( err )
 	{
 	  lis_solver_work_destroy(solver);	  
