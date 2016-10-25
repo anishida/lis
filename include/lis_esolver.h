@@ -41,6 +41,7 @@ extern "C"
 	extern LIS_INT lis_esolver_set_option2(char* arg1, char *arg2, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_option_esolver(char *argv, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_option_iesolver(char *argv, LIS_ESOLVER esolver);
+	extern LIS_INT lis_esolver_set_option_igesolver(char *argv, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_option_print(char *argv, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_option_truefalse(char *argv, LIS_INT opt, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_option_eprecision(char *argv, LIS_INT opt, LIS_ESOLVER esolver);
