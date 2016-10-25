@@ -1,4 +1,4 @@
-.TH gesolve 1 "23 Oct 2016" "Man Page" "Utility Commands"
+.TH gesolve 1 "25 Oct 2016" "Man Page" "Utility Commands"
 
 .SH NAME
 
@@ -33,6 +33,8 @@ Generalized Inverse
 Generalized CR
 .IP "-e {\fIgsi\fR|13}"
 Generalized Subspace
+.IP "-e {\fIgli\fR|14}"
+Generalized Lanczos
 .RS
 .IP "-ss [1]"
 The size of the subspace
@@ -241,12 +243,6 @@ Save the residual history and output it to the standard output
 .RE
 .IP "-ie [ii]"
 The inner eigensolver used in Subspace
-.RS 
-.IP "-ie {\fIpi\fR|1}"
-Power
-.IP "-ie {\fIii\fR|2}"
-Inverse
-.RE
 .IP "-shift [0.0]"
 The amount of the shift
 .IP "-initx_ones [\fItrue\fR]"

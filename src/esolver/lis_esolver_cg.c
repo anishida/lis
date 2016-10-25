@@ -133,7 +133,7 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
   LIS_REAL tol;
   LIS_INT iter,iter3,output;
   LIS_REAL nrm2,resid,resid3;
-  LIS_SCALAR lshift;
+  LIS_SCALAR gshift,lshift;
   LIS_VECTOR r,w,p,Aw,Ax,Ap;
   LIS_SCALAR *A3,*B3,*W3,*v3,*A3v3,*B3v3,*z3,*q3,*B3z3,mu3;
   LIS_SOLVER solver;
@@ -148,10 +148,11 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
     {
       lis_vector_set_all(1.0,x);
     }
-  
+
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
+  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];          
   lshift = esolver->lshift;
 
   if( output & A->my_rank==0 )
@@ -170,7 +171,9 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
 #endif
 #endif
     }
-  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
+
+  if ( esolver->lshift != 0.0 ) gshift = lshift;
+  if ( gshift != 0.0 ) lis_matrix_shift_diagonal(A, gshift);
 
   A3 = (LIS_SCALAR *)lis_malloc(3*3*sizeof(LIS_SCALAR), "lis_ecg::A3");
   B3 = (LIS_SCALAR *)lis_malloc(3*3*sizeof(LIS_SCALAR), "lis_ecg::B3");
@@ -327,7 +330,7 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
 
   esolver->iter[0]    = iter;
   esolver->resid[0]   = resid;
-  esolver->evalue[0]  = lambda;
+  esolver->evalue[0]  = lambda + gshift;
 
   lis_solver_get_timeex(solver,&time,&itime,&ptime,&p_c_time,&p_i_time);
   esolver->ptime = ptime;
@@ -335,7 +338,7 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
   esolver->p_c_time = solver->p_c_time;
   esolver->p_i_time = solver->p_i_time;
 
-  if (lshift != 0) lis_matrix_shift_diagonal(A,lshift);
+  if ( gshift != 0.0 ) lis_matrix_shift_diagonal(A, -gshift);
 
   lis_free(A3);
   lis_free(B3);
@@ -451,7 +454,7 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
   LIS_REAL tol;
   LIS_INT iter,output;
   LIS_REAL nrm2,resid;
-  LIS_SCALAR lshift;
+  LIS_SCALAR gshift,lshift;
   LIS_VECTOR r,p,w,Ax,Ap,Aw;
   LIS_SCALAR alpha,beta;
   LIS_SCALAR rAp,rp,ApAp,pAp,pp,AwAp,pAw,wAp,wp;
@@ -471,6 +474,7 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
+  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];          
   lshift = esolver->lshift;
 
   if( output & A->my_rank==0 )
@@ -489,7 +493,6 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
 #endif
 #endif
     }
-  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
 
   r = esolver->work[0];
   p = esolver->work[1];
@@ -623,8 +626,6 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
   esolver->p_c_time = solver->p_c_time;
   esolver->p_i_time = solver->p_i_time;
 
-  if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
-
   if (resid<tol) 
     {
       esolver->retcode = LIS_SUCCESS;
@@ -729,7 +730,7 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   LIS_REAL tol;
   LIS_INT iter,output;
   LIS_REAL nrm2,resid;
-  LIS_SCALAR lshift;
+  LIS_SCALAR gshift,lshift;
   LIS_VECTOR r,p,w,Ax,Ap,Aw,Bx,Bp,Bw;
   LIS_SCALAR alpha,beta;
   LIS_SCALAR rAp,rBp,rp,BxBx,ApAp,ApBp,BpBp,AwAp,AwBp,ApBw,BwBp;
@@ -750,6 +751,7 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
+  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];          
   lshift = esolver->lshift;
 
   if( output & A->my_rank==0 )
@@ -768,7 +770,6 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
 #endif
 #endif
     }
-  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
 
   r = esolver->work[0];
   p = esolver->work[1];
@@ -913,8 +914,6 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   esolver->itime = solver->itime;
   esolver->p_c_time = solver->p_c_time;
   esolver->p_i_time = solver->p_i_time;
-
-  if (lshift != 0) lis_matrix_shift_diagonal(A, lshift);
 
   if (resid<tol) 
     {

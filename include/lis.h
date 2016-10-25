@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"1.7.2"
+#define LIS_VERSION	"1.7.3"
 /**************************************/
 #include <stdio.h>
 #ifdef HAVE_COMPLEX_H
@@ -292,16 +292,12 @@ typedef struct
 
 #if defined(_LONG__DOUBLE)
 typedef long double LIS_REAL;
-#if defined(HAVE_COMPLEX_H)
+#ifdef HAVE_COMPLEX_H
 typedef long double complex LIS_COMPLEX;
-#else
-#if defined(_Complex_I) && defined(complex) && defined(I)
-typedef long double _Complex LIS_COMPLEX;
 #else
 typedef long double LIS_COMPLEX[2];
 #endif
-#endif
-#if defined(_COMPLEX)
+#ifdef _COMPLEX
 typedef LIS_COMPLEX LIS_SCALAR;
 #define acos(x) cacosl(x)
 #define acosh(x) cacoshl(x)
@@ -343,16 +339,12 @@ typedef long double LIS_SCALAR;
 #endif
 #else
 typedef double LIS_REAL;
-#if defined(HAVE_COMPLEX_H)
+#ifdef HAVE_COMPLEX_H
 typedef double complex LIS_COMPLEX;
-#else
-#if defined(_Complex_I) && defined(complex) && defined(I)
-typedef double _Complex LIS_COMPLEX;
 #else
 typedef double LIS_COMPLEX[2];
 #endif
-#endif
-#if defined(_COMPLEX)
+#ifdef _COMPLEX
 typedef LIS_COMPLEX LIS_SCALAR;
 #define acos(x) cacos(x)
 #define acosh(x) cacosh(x)
@@ -705,6 +697,7 @@ struct LIS_ESOLVER_STRUCT
         double p_i_time;
 	LIS_INT eprecision;
         LIS_SCALAR lshift;
+        LIS_INT inner;  
 	LIS_REAL nrm2;
         LIS_REAL tol;
 };
