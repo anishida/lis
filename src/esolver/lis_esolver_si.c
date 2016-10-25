@@ -464,7 +464,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   LIS_REAL tol;
   LIS_INT j,k;
   LIS_SCALAR theta,eta;
-  LIS_INT iter,giter,output,niesolver;
+  LIS_INT iter,giter,output,nigesolver;
   LIS_REAL nrm2,resid;
   LIS_SCALAR dot;
   LIS_VECTOR *v,w,y,q;
@@ -486,7 +486,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN];
   gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];  
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
-  niesolver = esolver->options[LIS_EOPTIONS_INNER_ESOLVER];
+  nigesolver = esolver->options[LIS_EOPTIONS_INNER_GENERALIZED_ESOLVER];
 
   y = esolver->work[0];
   w = esolver->work[1];
@@ -497,7 +497,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   lis_vector_nrm2(y,&nrm2);
   lis_vector_scale(1.0/nrm2,y);
 
-  lis_esolver_get_esolvername(niesolver, esolvername);
+  lis_esolver_get_esolvername(nigesolver, esolvername);
   if( output & A->my_rank==0 ) printf("inner eigensolver     : %s\n", esolvername);
 
   lis_solver_create(&solver);
@@ -532,7 +532,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
       j = j+1;
       lis_vector_copy(y, v[j]);
 
-      switch ( niesolver )
+      switch ( nigesolver )
 	{
 	case LIS_ESOLVER_GII:
 	  {
@@ -576,7 +576,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	    }
 
 	  /* kernel */
-	  switch( niesolver )
+	  switch( nigesolver )
 	    {
 	    case LIS_ESOLVER_GPI:
 
@@ -661,7 +661,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	  if (tol>resid) break;
 	}
 
-      switch ( niesolver )
+      switch ( nigesolver )
 	{
 	case LIS_ESOLVER_GPI:
 	  esolver->evalue[j-1] = theta;

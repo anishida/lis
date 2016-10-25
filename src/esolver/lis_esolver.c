@@ -93,22 +93,22 @@ LIS_ESOLVER_MALLOC_WORK lis_esolver_malloc_work[] = {
   lis_egsi_malloc_work, lis_egli_malloc_work
 };
 
-#define LIS_ESOLVER_OPTION_LEN		12
+#define LIS_ESOLVER_OPTION_LEN		13
 #define LIS_EPRINT_LEN			 4
 #define LIS_TRUEFALSE_LEN		 2
 #define LIS_ESTORAGE_LEN		11
 #define LIS_PRECISION_LEN		 3
 
 char *LIS_ESOLVER_OPTNAME[] = {
-  "-emaxiter", "-etol", "-e", "-ss", "-m", "-shift", "-eprint", "-initx_ones", "-ie", "-estorage", "-estorage_block", "-ef"
+  "-emaxiter", "-etol", "-e", "-ss", "-m", "-shift", "-eprint", "-initx_ones", "-ie", "-ige", "-estorage", "-estorage_block", "-ef"
 };
 
 LIS_INT LIS_ESOLVER_OPTACT[] = {
 LIS_EOPTIONS_MAXITER, LIS_EPARAMS_RESID, LIS_EOPTIONS_ESOLVER, 
 LIS_EOPTIONS_SUBSPACE, LIS_EOPTIONS_MODE, LIS_EPARAMS_SHIFT, 
 LIS_EOPTIONS_OUTPUT, LIS_EOPTIONS_INITGUESS_ONES, 
-LIS_EOPTIONS_INNER_ESOLVER, LIS_EOPTIONS_STORAGE, 
-LIS_EOPTIONS_STORAGE_BLOCK, LIS_EOPTIONS_PRECISION
+LIS_EOPTIONS_INNER_ESOLVER, LIS_EOPTIONS_INNER_GENERALIZED_ESOLVER,
+LIS_EOPTIONS_STORAGE, LIS_EOPTIONS_STORAGE_BLOCK, LIS_EOPTIONS_PRECISION
 };
 
 char *lis_esolver_atoi[] = {"pi", "ii", "rqi", "cg", "cr", "jd", "si", "li", "ai", "gpi", "gii", "gcr", "gsi", "gli"};
@@ -167,7 +167,8 @@ LIS_INT lis_esolver_init(LIS_ESOLVER esolver)
 	esolver->options[LIS_EOPTIONS_MODE]                   = 0;
 	esolver->options[LIS_EOPTIONS_OUTPUT]                 = LIS_FALSE;
 	esolver->options[LIS_EOPTIONS_INITGUESS_ONES]         = LIS_TRUE;
-	esolver->options[LIS_EOPTIONS_INNER_ESOLVER]          = 2;
+	esolver->options[LIS_EOPTIONS_INNER_ESOLVER]          = LIS_ESOLVER_II;
+	esolver->options[LIS_EOPTIONS_INNER_GENERALIZED_ESOLVER] = LIS_ESOLVER_GII;	
 	esolver->options[LIS_EOPTIONS_STORAGE]                = 0;
 	esolver->options[LIS_EOPTIONS_STORAGE_BLOCK]          = 2;
 	esolver->options[LIS_EOPTIONS_PRECISION]              = LIS_PRECISION_DOUBLE;
@@ -276,7 +277,7 @@ LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER 
 #define __FUNC__ "lis_gesolve"
 LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver)
 {
-        LIS_INT	nesolver,niesolver,emaxiter; 
+  LIS_INT	nesolver,niesolver,nigesolver,emaxiter; 
 	LIS_SCALAR *evalue;
 	LIS_VECTOR *evector;
 	LIS_REAL *resid;
@@ -325,6 +326,7 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 
 	nesolver = esolver->options[LIS_EOPTIONS_ESOLVER];
 	niesolver = esolver->options[LIS_EOPTIONS_INNER_ESOLVER];
+	nigesolver = esolver->options[LIS_EOPTIONS_INNER_GENERALIZED_ESOLVER];	
 	ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
 	mode = esolver->options[LIS_EOPTIONS_MODE];
 	emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
@@ -745,6 +747,9 @@ LIS_INT lis_esolver_set_option2(char* arg1, char *arg2, LIS_ESOLVER esolver)
 			case LIS_EOPTIONS_INNER_ESOLVER:
 			  lis_esolver_set_option_iesolver(arg2,esolver);
 			  break;
+			case LIS_EOPTIONS_INNER_GENERALIZED_ESOLVER:
+			  lis_esolver_set_option_igesolver(arg2,esolver);
+			  break;
 			case LIS_EOPTIONS_STORAGE:
 				lis_esolver_set_option_storage(arg2,esolver);
 				break;
@@ -830,6 +835,37 @@ LIS_INT lis_esolver_set_option_iesolver(char *argv, LIS_ESOLVER esolver)
 			if( strcmp(argv,lis_esolver_atoi[i])==0 )
 			{
 				esolver->options[LIS_EOPTIONS_INNER_ESOLVER] = i+1;
+				break;
+			}
+		}
+	}
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_set_option_igesolver"
+LIS_INT lis_esolver_set_option_igesolver(char *argv, LIS_ESOLVER esolver)
+{
+	LIS_INT i;
+
+	LIS_DEBUG_FUNC_IN;
+
+	if( argv[0]>='0' && argv[0]<='9' )
+	{
+#ifdef _LONG__LONG
+		sscanf(argv, "%lld", &esolver->options[LIS_EOPTIONS_INNER_GENERALIZED_ESOLVER]);
+#else
+		sscanf(argv, "%d", &esolver->options[LIS_EOPTIONS_INNER_GENERALIZED_ESOLVER]);
+#endif
+	}
+	else
+	{
+		for(i=0;i<LIS_ESOLVER_LEN;i++)
+		{
+			if( strcmp(argv,lis_esolver_atoi[i])==0 )
+			{
+				esolver->options[LIS_EOPTIONS_INNER_GENERALIZED_ESOLVER] = i+1;
 				break;
 			}
 		}

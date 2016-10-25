@@ -148,7 +148,7 @@ LIS_INT lis_eli_malloc_work(LIS_ESOLVER esolver)
 #define __FUNC__ "lis_eli"
 LIS_INT lis_eli(LIS_ESOLVER esolver)
 {
-  LIS_MATRIX A,B;
+  LIS_MATRIX A;
   LIS_INT ss,ic;
   LIS_SCALAR gshift;
   LIS_INT emaxiter,iter0,qriter;
@@ -176,7 +176,6 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   tr = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_eli::tr");
   
   A = esolver->A;
-  B = esolver->B;
   r = esolver->work[0];
   v = &esolver->work[1];
   lis_vector_set_all(0.0,v[0]);
@@ -294,7 +293,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
     {
       lis_vector_duplicate(A, &esolver->evector[i]); 
       esolver2->lshift = esolver->evalue[i];
-      lis_gesolve(A, B, esolver->evector[i], &evalue, esolver2);
+      lis_esolve(A, esolver->evector[i], &evalue, esolver2);
       lis_esolver_work_destroy(esolver2); 
       esolver->evalue[i] = evalue;
       esolver->iter[i] = esolver2->iter[0];      
@@ -476,7 +475,7 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
   LIS_INT emaxiter,iter0,qriter;
   LIS_REAL tol,qrerr;
   LIS_INT i,j,k;
-  LIS_INT output, niesolver;
+  LIS_INT output, nigesolver;
   LIS_REAL resid0;
   LIS_SCALAR beta,dot;
   LIS_VECTOR q,r,*w,*v;
@@ -492,7 +491,7 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
-  niesolver = esolver->options[LIS_EOPTIONS_INNER_ESOLVER];
+  nigesolver = esolver->options[LIS_EOPTIONS_INNER_GENERALIZED_ESOLVER];
 
   t = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_egli::t");
   tq = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_egli::tq");
@@ -516,7 +515,7 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
   lis_solver_get_precon(solver, &precon_type);
   lis_solver_get_solvername(nsol, solvername);
   lis_solver_get_preconname(precon_type, preconname);
-  lis_esolver_get_esolvername(niesolver, esolvername);
+  lis_esolver_get_esolvername(nigesolver, esolvername);
   if( output & A->my_rank==0 )
     {
       printf("inner eigensolver     : %s\n", esolvername);
@@ -641,7 +640,7 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
     }
 
   lis_esolver_create(&esolver2);
-  esolver2->options[LIS_EOPTIONS_ESOLVER] = niesolver;
+  esolver2->options[LIS_EOPTIONS_ESOLVER] = nigesolver;
   esolver2->options[LIS_EOPTIONS_SUBSPACE] = 1;
   esolver2->options[LIS_EOPTIONS_MAXITER] = emaxiter;
   esolver2->options[LIS_EOPTIONS_OUTPUT] = esolver->options[LIS_EOPTIONS_OUTPUT];
