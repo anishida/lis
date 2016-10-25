@@ -8,6 +8,7 @@ Version 1.7.1  October 23, 2016
   - Inverted sign of shift in lis_matrix_shift_diagonal(), lis_vector_shift(),
     and lis_array_shift(), respectively.
   - Added support for shift for generalized eigenproblems.
+  - Updated man pages.
 
 Version 1.7.0  October 22, 2016
 
@@ -323,7 +324,7 @@ Version 1.5.55  May 14, 2015
 Version 1.5.54  April 30, 2015
 
   - Fixed configurations for Windows (thanks to Domenic D'Ambrosio).
-  - Added support for Intel Fortran Compiler with Visual C
+  - Added support for combining Intel Fortran Compiler with Visual C
     (thanks to Domenic D'Ambrosio).
 
 Version 1.5.53  April 5, 2015
