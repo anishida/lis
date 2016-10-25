@@ -1,8 +1,9 @@
 Version 1.7.3  October 25, 2016
 
   - Fixed shift related bugs.
+  - Added support for option -ige for generalized eigenproblems.
   - Disabled complex operations if complex.h is not available.
-  - Updated man pages.
+  - Updated documents.
 
 Version 1.7.2  October 24, 2016
 
