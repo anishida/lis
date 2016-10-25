@@ -368,25 +368,25 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	}
 	*/
 
-	if ( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_SI && ss > A->gn )
+	if (( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_SI || esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_GSI ) && ss > A->gn )
 	{
 		LIS_SETERR2(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_SUBSPACE is %d (Set less than or equal to matrix size %d for Subspace)\n", ss, A->gn);
 		return LIS_ERR_ILL_ARG;
 	}
 
-	if (( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_LI || esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_AI ) && ss > A->gn )
+	if (( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_LI || esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_AI || esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_GLI ) && ss > A->gn )
 	{
 		LIS_SETERR2(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_SUBSPACE is %d (Set less than or equal to matrix size %d for Lanczos and Arnoldi)\n", ss, A->gn);
 		return LIS_ERR_ILL_ARG;
 	}
 
-	if ( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_SI && mode >= ss )
+	if (( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_SI || esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_GSI ) && mode >= ss )
 	{
 		LIS_SETERR2(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_MODE is %d (Set less than subspace size %d for Subspace)\n", mode, ss);
 		return LIS_ERR_ILL_ARG;
 	}
 
-	if ( esolver->options[LIS_EOPTIONS_ESOLVER] == ( LIS_ESOLVER_LI || LIS_ESOLVER_AI ) && mode >= ss )
+	if (( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_LI || esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_AI || esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_GLI ) && mode >= ss )
 	{
 		LIS_SETERR2(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_MODE is %d (Set less than subspace size %d for Lanczos or Arnoldi)\n", mode, ss);
 		return LIS_ERR_ILL_ARG;
