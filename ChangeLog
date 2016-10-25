@@ -1,3 +1,9 @@
+Version 1.7.3  October 25, 2016
+
+  - Fixed shift related bugs.
+  - Disabled complex operations if complex.h is not available.
+  - Updated man pages.
+
 Version 1.7.2  October 24, 2016
 
   - Added support for generalized Lanczos iteration.
