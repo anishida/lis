@@ -534,7 +534,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 
       switch ( niesolver )
 	{
-	case LIS_ESOLVER_II:
+	case LIS_ESOLVER_GII:
 	  {
 	    /* create preconditioner */
 	    solver->A = A;
@@ -546,7 +546,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 		return err;
 	      }
 	  }
-	case LIS_ESOLVER_PI:
+	case LIS_ESOLVER_GPI:
 	  {
 	    /* create preconditioner */
 	    solver->A = B;
@@ -578,7 +578,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	  /* kernel */
 	  switch( niesolver )
 	    {
-	    case LIS_ESOLVER_PI:
+	    case LIS_ESOLVER_GPI:
 
 	      /* y = A * v */	      
 	      lis_matvec(A, v[j], w); 
@@ -600,7 +600,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 
 	      break;
 
-	    case LIS_ESOLVER_II:
+	    case LIS_ESOLVER_GII:
 
 	      /* w = B * v */
 	      lis_matvec(B, v[j], w);
@@ -663,12 +663,12 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 
       switch ( niesolver )
 	{
-	case LIS_ESOLVER_PI:
+	case LIS_ESOLVER_GPI:
 	  esolver->evalue[j-1] = theta;
 	  esolver->resid[j-1] = resid;
 	  esolver->iter[j-1] = iter;
 	  break;
-	case LIS_ESOLVER_II:
+	case LIS_ESOLVER_GII:
 	  esolver->evalue[j-1] = 1.0/theta;
 	  esolver->resid[j-1] = resid;
 	  esolver->iter[j-1] = iter;
