@@ -2,9 +2,9 @@ README for Microsoft Build Engine
 =================================
 
 Run the following command to generate Makefile 
-(See configure --help for details): 
+(See configure.bat --help for details): 
 
-> configure
+> configure.bat
  
 To build the library, run the following command:
 

@@ -51,7 +51,7 @@ rem   Build Options
 
 :usage
 
-@echo Usage: configure [options]
+@echo Usage: configure.bat [options]
 @echo.	
 @echo Options:
 @echo.	
