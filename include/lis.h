@@ -697,7 +697,6 @@ struct LIS_ESOLVER_STRUCT
         double p_i_time;
 	LIS_INT eprecision;
         LIS_SCALAR lshift;
-        LIS_INT inner;  
 	LIS_REAL nrm2;
         LIS_REAL tol;
 };

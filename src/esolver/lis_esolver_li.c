@@ -283,7 +283,6 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
     }
 
   lis_esolver_create(&esolver2);
-  esolver2->inner = LIS_TRUE;
   esolver2->options[LIS_EOPTIONS_ESOLVER] = niesolver;
   esolver2->options[LIS_EOPTIONS_SUBSPACE] = 1;
   esolver2->options[LIS_EOPTIONS_MAXITER] = emaxiter;
@@ -642,7 +641,6 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
     }
 
   lis_esolver_create(&esolver2);
-  esolver2->inner = LIS_TRUE;  
   esolver2->options[LIS_EOPTIONS_ESOLVER] = niesolver;
   esolver2->options[LIS_EOPTIONS_SUBSPACE] = 1;
   esolver2->options[LIS_EOPTIONS_MAXITER] = emaxiter;
