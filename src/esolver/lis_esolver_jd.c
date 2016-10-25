@@ -134,7 +134,7 @@ LIS_INT lis_ejd(LIS_ESOLVER esolver)
   LIS_REAL tol;
   LIS_INT iter,iter3,output;
   LIS_REAL nrm2,resid,resid3;
-  LIS_SCALAR lshift;
+  LIS_SCALAR gshift,lshift;
   LIS_VECTOR r,w,p,Aw,Ax,Ap;
   LIS_SCALAR *A3,*B3,*W3,*v3,*A3v3,*B3v3,*z3,*q3,*B3z3,ievalue3;
   LIS_SOLVER solver;
@@ -153,6 +153,7 @@ LIS_INT lis_ejd(LIS_ESOLVER esolver)
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
+  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];            
   lshift = esolver->lshift;
 
   if( output & A->my_rank==0 )
@@ -171,7 +172,9 @@ LIS_INT lis_ejd(LIS_ESOLVER esolver)
 #endif
 #endif
     }
-  if (lshift != 0) lis_matrix_shift_diagonal(A, -lshift);
+
+  if ( esolver->lshift != 0.0 ) gshift = lshift;
+  if ( gshift != 0.0 ) lis_matrix_shift_diagonal(A, gshift);
 
   A3 = (LIS_SCALAR *)lis_malloc(3*3*sizeof(LIS_SCALAR), "lis_ejd::A3");
   B3 = (LIS_SCALAR *)lis_malloc(3*3*sizeof(LIS_SCALAR), "lis_ejd::B3");
@@ -328,7 +331,7 @@ LIS_INT lis_ejd(LIS_ESOLVER esolver)
 
   esolver->iter[0]    = iter;
   esolver->resid[0]   = resid;
-  esolver->evalue[0]  = evalue;
+  esolver->evalue[0]  = evalue + gshift;
 
   lis_solver_get_timeex(solver,&time,&itime,&ptime,&p_c_time,&p_i_time);
   esolver->ptime = ptime;
@@ -336,7 +339,7 @@ LIS_INT lis_ejd(LIS_ESOLVER esolver)
   esolver->p_c_time = solver->p_c_time;
   esolver->p_i_time = solver->p_i_time;
 
-  if (lshift != 0) lis_matrix_shift_diagonal(A,lshift);
+  if ( gshift != 0.0 ) lis_matrix_shift_diagonal(A, -gshift);
 
   lis_free(A3);
   lis_free(B3);
