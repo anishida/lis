@@ -54,27 +54,28 @@
 /***************************************
  * Arnoldi Iteration                   *
  ***************************************
- v(0)    = (0,...,0)^T
+ v(0)    = (1,...,1)^T
+ v(0)    = v(0)/||v(0)||_2
  ***************************************
- for j=1,2,...,m
+ for j=0,1,2,...,m-1
    w = A * v(j)
-   for i=1,2,...,j
+   for i=0,1,2,...,j-1
      h(i,j) = <w, v(i)>
      w = w - h(i,j) * v(i)
    end for
    h(j+1,j) = ||w||_2
    if h(j+1,j) = 0, stop
-   u(j+1) = w / h(j+1,j)
+   v(j+1) = w / h(j+1,j)
  end for
  compute eigenvalues of a real upper Hessenberg matrix 
  H(m) = SH'(m)S^*, where
-       (h(1,1)   h(1,2)                            )
-       (h(2,1)   h(2,2)                            )
-       (  0      h(3,2)                            )
+       (h(0,0)   h(0,1)                            )
+       (h(1,0)   h(1,1)                            )
+       (  0      h(2,1)                            )
    H = (           0   ...                         )
-       (                      h(m-2,m-1)   h(m-2,m))
-       (                      h(m-1,m-1)   h(m-1,m))                       
-       (                   0   h(m,m-1)      h(m)  )
+       (                      h(m-3,m-2) h(m-3,m-1))
+       (                      h(m-2,m-2) h(m-2,m-1))                       
+       (                   0  h(m-1,m-2)   h(m-1)  )
  compute refined eigenpairs
  ***************************************/
 
@@ -178,10 +179,10 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   A = esolver->A;
   w = esolver->work[0];
   v = &esolver->work[1];
-  lis_vector_set_all(1.0,w);
-  lis_vector_nrm2(w,&nrm2);
-  lis_vector_scale(1.0/nrm2,w);
-
+  lis_vector_set_all(1.0,v[0]);
+  lis_vector_nrm2(v[0],&nrm2);
+  lis_vector_scale(1.0/nrm2,v[0]);
+  
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);  
   lis_solver_set_optionC(solver);
@@ -203,7 +204,6 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   while (j<ss-1)
     {
       j = j+1;
-      lis_vector_copy(w, v[j]);
 
       /* w = A * v(j) */
       lis_matvec(A, v[j], w);
