@@ -44,7 +44,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
   LIS_INT err,nprocs,my_rank;
   int int_nprocs,int_my_rank;
   LIS_INT nesol;
-  LIS_MATRIX A,B;
+  LIS_MATRIX A,X;
   LIS_VECTOR x,y,z,w;
   LIS_SCALAR evalue0;
   LIS_ESOLVER esolver;
@@ -139,17 +139,17 @@ LIS_INT main(LIS_INT argc, char* argv[])
   lis_vector_create(LIS_COMM_WORLD,&y);
   lis_vector_create(LIS_COMM_WORLD,&z);
   lis_vector_create(LIS_COMM_WORLD,&w);
-  lis_matrix_create(LIS_COMM_WORLD,&B);
+  lis_matrix_create(LIS_COMM_WORLD,&X);
   lis_esolver_get_evalues(esolver,y);
   lis_esolver_get_residualnorms(esolver,z);
   lis_esolver_get_iters(esolver,w);
-  lis_esolver_get_evectors(esolver,B);
+  lis_esolver_get_evectors(esolver,X);
 
   /* write eigenvalues */
   lis_output_vector(y,LIS_FMT_MM,argv[2]);
 
   /* write eigenvectors */
-  lis_output_matrix(B,LIS_FMT_MM,argv[3]);
+  lis_output_matrix(X,LIS_FMT_MM,argv[3]);
 
   /* write residual norms */
   lis_output_vector(z,LIS_FMT_MM,argv[4]);
@@ -160,7 +160,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
   lis_esolver_destroy(esolver);
   lis_matrix_destroy(A);
   lis_vector_destroy(x);
-  lis_matrix_destroy(B);
+  lis_matrix_destroy(X);
   lis_vector_destroy(y);
   lis_vector_destroy(z);
   lis_vector_destroy(w);
