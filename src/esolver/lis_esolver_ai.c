@@ -178,7 +178,6 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   A = esolver->A;
   w = esolver->work[0];
   v = &esolver->work[1];
-  lis_vector_set_all(0.0,v[0]);
   lis_vector_set_all(1.0,w);
   lis_vector_nrm2(w,&nrm2);
   lis_vector_scale(1.0/nrm2,w);
@@ -200,7 +199,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 
   for (i=0;i<ss*ss;i++) h[i] = 0.0;
 
-  j=0;
+  j=-1;
   while (j<ss-1)
     {
       j = j+1;
@@ -210,22 +209,22 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
       lis_matvec(A, v[j], w);
 
       /* reorthogonalization */
-      for (i=1;i<=j;i++)
+      for (i=0;i<=j;i++)
 	{
-	  /* h(i-1,j-1) = <v(i), w> */
-	  lis_vector_dot(v[i], w, &h[(i-1)+(j-1)*ss]);
-	  /* w = w - h(i-1,j-1) * v(i) */
-	  lis_vector_axpy(-h[(i-1)+(j-1)*ss], v[i], w); 
+	  /* h(i,j) = <v(i), w> */
+	  lis_vector_dot(v[i], w, &h[i+j*ss]);
+	  /* w = w - h(i,j) * v(i) */
+	  lis_vector_axpy(-h[i+j*ss], v[i], w); 
 	}
 
-      /* h(j,j-1) = ||w||_2 */
-      lis_vector_nrm2(w, (LIS_REAL *)&h[j+(j-1)*ss]);
+      /* h(j+1,j) = ||w||_2 */
+      lis_vector_nrm2(w, (LIS_REAL *)&h[j+1+j*ss]);
 
       /* convergence check */
-      if (fabs(h[j+(j-1)*ss])<tol) break;
+      if (fabs(h[j+1+j*ss])<tol) break;
 
-      /* v(j+1) = w / h(i,j-1) */
-      lis_vector_scale(1/h[j+(j-1)*ss],w);
+      /* v(j+1) = w / h(j,j-1) */
+      lis_vector_scale(1/h[j+1+j*ss],w);
       lis_vector_copy(w,v[j+1]);
       
     }
