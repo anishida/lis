@@ -286,9 +286,6 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   esolver2->options[LIS_EOPTIONS_SUBSPACE] = 1;
   esolver2->options[LIS_EOPTIONS_MAXITER] = emaxiter;
   esolver2->options[LIS_EOPTIONS_OUTPUT] = esolver->options[LIS_EOPTIONS_OUTPUT];
-  /*
-  esolver2->options[LIS_EOPTIONS_INITGUESS_ONES] = LIS_FALSE;
-  */
   esolver2->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN] = tol; 
 
   /* compute refined eigenpairs */
