@@ -248,6 +248,8 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
       while (i<ss) 
 	{
 	  i = i + 1;
+
+	  /* eigenvalues on the diagonal of H */
 	  if (fabs(h[i+(i-1)*ss])<tol)
 	    {
 #ifdef _LONG__LONG
@@ -270,6 +272,8 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 #endif	      
 	      esolver->evalue[i-1] = h[i-1+(i-1)*ss];
 	    }
+
+	  /* eigenvalues of 2x2 matrices on the diagonal of H */
 	  else
 	    {
 	      D = (h[i-1+(i-1)*ss]+h[i+i*ss])*(h[i-1+(i-1)*ss]+h[i+i*ss])
