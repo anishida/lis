@@ -272,8 +272,8 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 	    }
 	  else
 	    {
-	      D = (h[i-1+(i-1)*ss]-h[i+i*ss]) * (h[i-1+(i-1)*ss]-h[i+i*ss])
-		+ 4 * h[i-1+i*ss] * h[i+(i-1)*ss];
+	      D = (h[i-1+(i-1)*ss]+h[i+i*ss])*(h[i-1+(i-1)*ss]+h[i+i*ss])
+		- 4*(h[i-1+(i-1)*ss]*h[i+i*ss]-h[i-1+i*ss]*h[i+(i-1)*ss]);
 	      if (D<0)
 		{
 #ifdef _LONG__LONG
