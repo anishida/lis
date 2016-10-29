@@ -142,6 +142,14 @@ extern "C"
 	extern LIS_INT lis_egii_malloc_work(LIS_ESOLVER esolver);
 
 /**********************************/
+/* Generalized Conjugate Gradient */
+/**********************************/
+
+	extern LIS_INT lis_egcg(LIS_ESOLVER esolver);
+	extern LIS_INT lis_egcg_check_params(LIS_ESOLVER esolver);
+	extern LIS_INT lis_egcg_malloc_work(LIS_ESOLVER esolver);
+
+/**********************************/
 /* Generalized Conjugate Residual */
 /**********************************/
 

@@ -362,6 +362,328 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
     }
 }
 
+/*****************************************
+ * Generalized Conjugate Gradient Method *
+ *****************************************
+ x(0)=(1,...,1)^T 
+ x(0)=x(0)/||x(0)||_2
+ *****************************************
+ for k=0,1,...
+   mu=<B*x(k),B*x(k)>/<B*x(k),A*x(k)>
+   r=B*x(k)-mu*A*x(k)
+   w=M^-1*r
+   use Rayleigh-Ritz method for B-mu*A on span {w,x(k),x(k-1)}
+   x(k+1)=Ritz vector correspoinding to the smallest Ritz value
+*******************************************/
+
+#undef NWORK
+#define NWORK 9
+#undef __FUNC__
+#define __FUNC__ "lis_egcg_check_params"
+LIS_INT lis_egcg_check_params(LIS_ESOLVER esolver)
+{
+	LIS_DEBUG_FUNC_IN;
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_egcg_malloc_work"
+LIS_INT lis_egcg_malloc_work(LIS_ESOLVER esolver)
+{
+	LIS_VECTOR *work;
+	LIS_INT	i,j,worklen,err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	worklen = NWORK;
+
+	work    = (LIS_VECTOR *)lis_malloc( worklen*sizeof(LIS_VECTOR),"lis_egcg_malloc_work::work" );
+	if( work==NULL )
+	{
+		LIS_SETERR_MEM(worklen*sizeof(LIS_VECTOR));
+		return LIS_ERR_OUT_OF_MEMORY;
+	}
+	if( esolver->eprecision==LIS_PRECISION_DEFAULT )
+	{
+		for(i=0;i<worklen;i++)
+		{
+			err = lis_vector_duplicate(esolver->A,&work[i]);
+			if( err ) break;
+		}
+	}
+	else
+	{
+		for(i=0;i<worklen;i++)
+		{
+			err = lis_vector_duplicateex(LIS_PRECISION_QUAD,esolver->A,&work[i]);
+			if( err ) break;
+		}
+	}
+	if( i<worklen )
+	{
+		for(j=0;j<i;j++) lis_vector_destroy(work[j]);
+		lis_free(work);
+		return err;
+	}
+	esolver->worklen = worklen;
+	esolver->work    = work;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_egcg"
+LIS_INT lis_egcg(LIS_ESOLVER esolver)
+{
+  LIS_INT err;
+  LIS_MATRIX A,B;
+  LIS_VECTOR x;
+  LIS_SCALAR lambda;
+  LIS_INT emaxiter;
+  LIS_REAL tol;
+  LIS_INT iter,iter3,output;
+  LIS_REAL nrm2,resid,resid3;
+  LIS_SCALAR gshift,lshift;
+  LIS_VECTOR r,w,p,Aw,Ax,Ap,Bw,Bx,Bp;
+  LIS_SCALAR BxBx,*A3,*B3,*W3,*v3,*A3v3,*B3v3,*z3,*q3,*B3z3,mu3;
+  LIS_SOLVER solver;
+  LIS_PRECON precon;
+  double time,itime,ptime,p_c_time,p_i_time;
+  LIS_INT nsol,precon_type;
+  char solvername[128],preconname[128];
+
+  A = esolver->A;
+  B = esolver->B;
+  x = esolver->x;
+  if (esolver->options[LIS_EOPTIONS_INITGUESS_ONES] ) 
+    {
+      lis_vector_set_all(1.0,x);
+    }
+
+  emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
+  tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
+  output  = esolver->options[LIS_EOPTIONS_OUTPUT];
+  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];          
+  lshift = esolver->lshift;
+
+  if( output & A->my_rank==0 )
+    {
+#ifdef _COMPLEX
+#ifdef _LONG__DOUBLE
+      printf("local shift           : (%Le, %Le)\n", creall(lshift), cimagl(lshift));
+#else
+      printf("local shift           : (%e, %e)\n", creal(lshift), cimag(lshift));
+#endif
+#else  
+#ifdef _LONG__DOUBLE
+      printf("local shift           : %Le\n", lshift);
+#else
+      printf("local shift           : %e\n", lshift);
+#endif
+#endif
+    }
+
+  if ( esolver->lshift != 0.0 ) gshift = lshift;
+  if ( gshift != 0.0 ) lis_matrix_shift_general(A, B, gshift);
+
+  A3 = (LIS_SCALAR *)lis_malloc(3*3*sizeof(LIS_SCALAR), "lis_egcg::A3");
+  B3 = (LIS_SCALAR *)lis_malloc(3*3*sizeof(LIS_SCALAR), "lis_egcg::B3");
+  W3 = (LIS_SCALAR *)lis_malloc(3*3*sizeof(LIS_SCALAR), "lis_egcg::W3");
+  v3 = (LIS_SCALAR *)lis_malloc(3*sizeof(LIS_SCALAR), "lis_egcg::v3");
+  z3 = (LIS_SCALAR *)lis_malloc(3*sizeof(LIS_SCALAR), "lis_egcg::z3");
+  q3 = (LIS_SCALAR *)lis_malloc(3*sizeof(LIS_SCALAR), "lis_egcg::q3");
+  A3v3 = (LIS_SCALAR *)lis_malloc(3*sizeof(LIS_SCALAR), "lis_egcg::A3v3");
+  B3v3 = (LIS_SCALAR *)lis_malloc(3*sizeof(LIS_SCALAR), "lis_egcg::B3v3");
+  B3z3 = (LIS_SCALAR *)lis_malloc(3*sizeof(LIS_SCALAR), "lis_egcg::B3z3");
+
+  r = esolver->work[0];
+  w = esolver->work[1];
+  p = esolver->work[2];
+  Ax = esolver->work[3];
+  Aw = esolver->work[4];
+  Ap = esolver->work[5];
+  Bx = esolver->work[6];
+  Bw = esolver->work[7];
+  Bp = esolver->work[8];
+      
+  ptime = 0;
+
+  lis_vector_nrm2(x, &nrm2);
+  lis_vector_scale(1.0/nrm2, x);
+  lis_matvec(A,x,Ax);
+  lis_matvec(B,x,Bx);  
+  lis_solver_create(&solver);
+  lis_solver_set_option("-i cg -p none",solver);
+  lis_solver_set_optionC(solver);
+  lis_solver_get_solver(solver, &nsol);
+  lis_solver_get_precon(solver, &precon_type);
+  lis_solver_get_solvername(nsol, solvername);
+  lis_solver_get_preconname(precon_type, preconname);
+
+  if( output & A->my_rank==0 )
+    {
+      printf("linear solver         : %s\n", solvername);
+      printf("preconditioner        : %s\n", preconname);
+    }
+
+  /* lis_solve must be called before lis_precon_create */
+  /* p=A^-1*x */
+
+  err = lis_solve(A,x,p,solver);
+  if( err )
+    {
+      lis_solver_work_destroy(solver);	  
+      solver->retcode = err;
+      return err;
+    }
+  lis_vector_copy(x,Ap);
+  lis_matvec(B,p,Bp);
+
+  err = lis_precon_create(solver,&precon);
+  if( err )
+    {
+      lis_solver_work_destroy(solver);	  
+      solver->retcode = err;
+      return err;
+    }
+  solver->precon = precon;
+
+  iter=0;
+
+  while (iter<emaxiter)
+    {
+      iter=iter+1;
+
+      /* mu=<B*x,B*x>/<B*x,A*x>, where mu=1/lambda */
+      lis_vector_dot(Ax,Bx,&lambda);
+      lis_vector_dot(Bx,Bx,&BxBx);
+      lambda = lambda / BxBx;
+
+      /* r=B*x-mu*A*x */
+      lis_vector_axpyz(-1.0/lambda,Ax,Bx,r); 
+      lis_vector_nrm2(r,&nrm2);
+ 
+      /* convergence check */
+      resid = nrm2;
+      if( output )
+	{
+	  if( output & LIS_EPRINT_MEM ) esolver->rhistory[iter] = resid;
+	  if( output & LIS_EPRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,resid);
+	}
+      if (resid<tol) break;  
+
+      /* w=M^-1*r */
+      time = lis_wtime();
+      lis_psolve(solver,r,w);
+      ptime += lis_wtime() - time;
+      lis_matvec(A,w,Aw);
+      lis_matvec(B,w,Bw);      
+
+      /* Rayleigh-Ritz method for B-mu*A on span {w,x(k),x(k-1)} */
+
+      /* solve eigenproblem A_3*x=lambda*B_3*x, 
+         where A_3 and B_3 are matrices of size 3*3 */
+      lis_vector_dot(w,Aw,&A3[0]);
+      lis_vector_dot(x,Aw,&A3[3]);
+      lis_vector_dot(p,Aw,&A3[6]);
+      /* (w,A*x)=(x,A*w) */
+      A3[1]=A3[3];
+      lis_vector_dot(x,Ax,&A3[4]);
+      lis_vector_dot(p,Ax,&A3[7]);
+      A3[2]=A3[6];
+      A3[5]=A3[7];
+      lis_vector_dot(p,Ap,&A3[8]);
+
+      lis_vector_dot(w,Bw,&B3[0]);
+      lis_vector_dot(x,Bw,&B3[3]);
+      lis_vector_dot(p,Bw,&B3[6]);
+      B3[1]=B3[3];
+      lis_vector_dot(x,Bx,&B3[4]);
+      lis_vector_dot(p,Bx,&B3[7]);
+      B3[2]=B3[6];
+      B3[5]=B3[7];
+      lis_vector_dot(p,Bp,&B3[8]);
+      
+      /* compute eigenvector v_3 of size 3 using 
+	 generalized inverse iteration */
+      lis_array_set_all(3,1.0,v3);
+      iter3=0;
+      while (iter3<emaxiter)
+	{
+	  iter3=iter3+1;
+	  lis_array_nrm2(3,v3,&nrm2); 
+	  lis_array_scale(3,1.0/nrm2,v3);
+	  lis_array_matvec(3,B3,v3,B3v3,LIS_INS_VALUE);
+	  lis_array_solve(3,A3,B3v3,z3,W3);
+	  lis_array_dot(3,B3v3,z3,&mu3);
+	  lis_array_axpyz(3,-mu3,B3v3,z3,q3);
+	  lis_array_nrm2(3,q3,&resid3); 
+	  if (resid3<tol) break;   
+	  lis_array_copy(3,z3,v3);
+	}
+
+      /* update B*w, B*x, and B*p */
+      lis_vector_scale(v3[0],Bw);  
+      lis_vector_axpy(v3[2],Bp,Bw);
+      lis_vector_xpay(Bw,v3[1],Bx);
+      lis_vector_copy(Bw,Bp);
+
+      /* update A*w, A*x, and A*p */      
+      lis_vector_scale(v3[0],Aw);  
+      lis_vector_axpy(v3[2],Ap,Aw);
+      lis_vector_xpay(Aw,v3[1],Ax);
+      lis_vector_copy(Aw,Ap);
+      
+      /* compute Ritz vector x corresponding to the smallest Ritz value */
+      lis_vector_nrm2(x,&nrm2);
+      lis_vector_scale(1.0/nrm2,x);
+      lis_vector_scale(1.0/nrm2,Ax);
+      
+      lis_vector_nrm2(p,&nrm2);
+      lis_vector_scale(1.0/nrm2,p);
+      lis_vector_scale(1.0/nrm2,Ap);
+      
+    }
+
+  lis_precon_destroy(precon);
+  lis_solver_destroy(solver);
+
+  esolver->iter[0]    = iter;
+  esolver->resid[0]   = resid;
+  esolver->evalue[0]  = lambda + gshift;
+
+  lis_solver_get_timeex(solver,&time,&itime,&ptime,&p_c_time,&p_i_time);
+  esolver->ptime = ptime;
+  esolver->itime = solver->itime;
+  esolver->p_c_time = solver->p_c_time;
+  esolver->p_i_time = solver->p_i_time;
+
+  if ( gshift != 0.0 ) lis_matrix_shift_general(A, B, -gshift);
+
+  lis_free(A3);
+  lis_free(B3);
+  lis_free(W3);
+  lis_free(v3);
+  lis_free(z3);
+  lis_free(q3);
+  lis_free(A3v3);
+  lis_free(B3v3);
+  lis_free(B3z3);
+
+  if (resid<tol) 
+    {
+      esolver->retcode = LIS_SUCCESS;
+      return LIS_SUCCESS;
+    }
+  else
+    {
+      esolver->retcode = LIS_MAXITER;
+      return LIS_MAXITER;
+    }
+}
+
 /***************************************
  * Conjugate Residual Method           *
  ***************************************
@@ -383,7 +705,7 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
    p=w+beta*p
    A*p=A*w+beta*A*p
    convergence check
- ***************************************/
+******************************************/
 
 #undef NWORK
 #define NWORK 6
