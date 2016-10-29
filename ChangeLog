@@ -1,6 +1,7 @@
 Version 1.7.5  October 29, 2016
 
-  - Added support for generalized CG and generalized Arnoldi iteration.
+  - Added support for generalized Rayleigh Quotient, generalized CG,
+    and generalized Arnoldi iteration.
 
 Version 1.7.4  October 26, 2016
 
