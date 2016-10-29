@@ -598,7 +598,7 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
       /* w = A * v(j) */
       lis_matvec(A, v[j], w);
 
-      /* y = B^-1 * w */
+      /* w = B^-1 * w */
       err = lis_solve_kernel(B, w, y, solver, precon);
       if( err )
 	{
