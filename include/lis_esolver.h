@@ -141,6 +141,14 @@ extern "C"
 	extern LIS_INT lis_egii_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_egii_malloc_work(LIS_ESOLVER esolver);
 
+  /*****************************************/
+/* Generalized Rayleigh Quotient Iteration */
+/*******************************************/
+
+	extern LIS_INT lis_egrqi(LIS_ESOLVER esolver);
+	extern LIS_INT lis_egrqi_check_params(LIS_ESOLVER esolver);
+	extern LIS_INT lis_egrqi_malloc_work(LIS_ESOLVER esolver);
+
 /**********************************/
 /* Generalized Conjugate Gradient */
 /**********************************/

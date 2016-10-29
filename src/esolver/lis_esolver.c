@@ -62,16 +62,16 @@
 
 LIS_ESOLVER_EXECUTE lis_esolver_execute[] = {
   NULL,
-  lis_epi, lis_eii, lis_erqi, lis_ecg, lis_ecr, lis_ejd, lis_esi, lis_eli, lis_eai, lis_egpi, lis_egii, lis_egcg, lis_egcr, lis_egsi, lis_egli, lis_egai
+  lis_epi, lis_eii, lis_erqi, lis_ecg, lis_ecr, lis_ejd, lis_esi, lis_eli, lis_eai, lis_egpi, lis_egii, lis_egrqi, lis_egcg, lis_egcr, lis_egsi, lis_egli, lis_egai
 };
 
 #ifdef USE_QUAD_PRECISION
 LIS_ESOLVER_EXECUTE lis_esolver_execute_quad[] = {
   NULL,
-  NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+  NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 LIS_ESOLVER_EXECUTE lis_esolver_execute_switch[] = {
   NULL,
-  NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+  NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 #endif
 
 LIS_ESOLVER_CHECK_PARAMS lis_esolver_check_params[] = {
@@ -79,9 +79,9 @@ LIS_ESOLVER_CHECK_PARAMS lis_esolver_check_params[] = {
   lis_epi_check_params,  lis_eii_check_params, lis_erqi_check_params, 
   lis_ecg_check_params,  lis_ecr_check_params, lis_ejd_check_params, 
   lis_esi_check_params,  lis_eli_check_params, lis_eai_check_params,
-  lis_egpi_check_params, lis_egii_check_params, lis_egcg_check_params,
-  lis_egcr_check_params, lis_egsi_check_params, lis_egli_check_params,
-  lis_egai_check_params
+  lis_egpi_check_params, lis_egii_check_params, lis_egrqi_check_params,
+  lis_egcg_check_params, lis_egcr_check_params, lis_egsi_check_params,
+  lis_egli_check_params, lis_egai_check_params
 };
 
 LIS_ESOLVER_MALLOC_WORK lis_esolver_malloc_work[] = {
@@ -89,9 +89,9 @@ LIS_ESOLVER_MALLOC_WORK lis_esolver_malloc_work[] = {
   lis_epi_malloc_work,  lis_eii_malloc_work, lis_erqi_malloc_work, 
   lis_ecg_malloc_work,  lis_ecr_malloc_work, lis_ejd_malloc_work, 
   lis_esi_malloc_work,  lis_eli_malloc_work, lis_eai_malloc_work,
-  lis_egpi_malloc_work, lis_egii_malloc_work, lis_egcg_malloc_work,
-  lis_egcr_malloc_work, lis_egsi_malloc_work, lis_egli_malloc_work,
-  lis_egai_malloc_work
+  lis_egpi_malloc_work, lis_egii_malloc_work, lis_egrqi_malloc_work,
+  lis_egcg_malloc_work, lis_egcr_malloc_work, lis_egsi_malloc_work,
+  lis_egli_malloc_work, lis_egai_malloc_work
 };
 
 #define LIS_ESOLVER_OPTION_LEN		13
@@ -112,13 +112,13 @@ LIS_EOPTIONS_INNER_ESOLVER, LIS_EOPTIONS_INNER_GENERALIZED_ESOLVER,
 LIS_EOPTIONS_STORAGE, LIS_EOPTIONS_STORAGE_BLOCK, LIS_EOPTIONS_PRECISION
 };
 
-char *lis_esolver_atoi[] = {"pi", "ii", "rqi", "cg", "cr", "jd", "si", "li", "ai", "gpi", "gii", "gcg", "gcr", "gsi", "gli", "gai"};
+char *lis_esolver_atoi[] = {"pi", "ii", "rqi", "cg", "cr", "jd", "si", "li", "ai", "gpi", "gii", "grqi", "gcg", "gcr", "gsi", "gli", "gai"};
 char *lis_eprint_atoi[] = {"none", "mem", "out", "all"};
 char *lis_etruefalse_atoi[] = {"false", "true"};
 char *lis_estorage_atoi[] = {"csr", "csc", "msr", "dia", "ell", "jad", "bsr", "bsc", "vbr", "coo", "dns"};
 char *lis_eprecision_atoi[] = {"double", "quad", "switch"};
 
-char *lis_esolvername[] = {"", "Power", "Inverse", "Rayleigh Quotient", "CG", "CR", "JD", "Subspace", "Lanczos", "Arnoldi", "Generalized Power", "Generalized Inverse", "Generalized CG", "Generalized CR", "Generalized Subspace", "Generalized Lanczos", "Generalized Arnoldi"};
+char *lis_esolvername[] = {"", "Power", "Inverse", "Rayleigh Quotient", "CG", "CR", "JD", "Subspace", "Lanczos", "Arnoldi", "Generalized Power", "Generalized Inverse", "Generalized Rayleigh Quotient", "Generalized CG", "Generalized CR", "Generalized Subspace", "Generalized Lanczos", "Generalized Arnoldi"};
 
 char *lis_estoragename[]   = {"CSR", "CSC", "MSR", "DIA", "ELL", "JAD", "BSR", "BSC", "VBR", "COO", "DNS"};
 
