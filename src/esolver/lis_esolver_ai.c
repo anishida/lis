@@ -426,3 +426,405 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   return LIS_SUCCESS;
 } 
 
+/***************************************
+ * Generalized Arnoldi Iteration       *
+ ***************************************
+ v(0)    = (1,...,1)^T
+ v(0)    = v(0)/||v(0)||_2
+ ***************************************
+ for j=0,1,2,...,m-1
+   w = B^-1 * A * v(j)
+   for i=0,1,2,...,j-1
+     h(i,j) = <w, v(i)>
+     w = w - h(i,j) * v(i)
+   end for
+   h(j+1,j) = ||w||_2
+   if h(j+1,j) = 0, stop
+   v(j+1) = w / h(j+1,j)
+ end for
+ compute eigenvalues of a real upper Hessenberg matrix 
+ H(m) = SH'(m)S^*, where
+       (h(0,0)   h(0,1)                            )
+       (h(1,0)   h(1,1)                            )
+       (  0      h(2,1)                            )
+   H = (           0   ...                         )
+       (                      h(m-3,m-2) h(m-3,m-1))
+       (                      h(m-2,m-2) h(m-2,m-1))                       
+       (                   0  h(m-1,m-2)   h(m-1)  )
+ compute refined eigenpairs
+ ***************************************/
+
+#undef NWORK
+#define NWORK 3
+#undef __FUNC__
+#define __FUNC__ "lis_egai_check_params"
+LIS_INT lis_egai_check_params(LIS_ESOLVER esolver)
+{
+        LIS_INT ss;
+
+	LIS_DEBUG_FUNC_IN;
+
+	ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
+	if( ss<0 )
+	{
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_SUBSPACE(=%d) is less than 0\n",ss);
+		return LIS_ERR_ILL_ARG;
+	}
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_egai_malloc_work"
+LIS_INT lis_egai_malloc_work(LIS_ESOLVER esolver)
+{
+	LIS_VECTOR *work;
+	LIS_INT	i,j,worklen,err,ss;
+
+	LIS_DEBUG_FUNC_IN;
+
+	ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
+
+	worklen = NWORK + ss;
+	work    = (LIS_VECTOR *)lis_malloc( worklen*sizeof(LIS_VECTOR),"lis_egai_malloc_work::work" );
+	if( work==NULL )
+	{
+		LIS_SETERR_MEM(worklen*sizeof(LIS_VECTOR));
+		return LIS_ERR_OUT_OF_MEMORY;
+	}
+	if( esolver->eprecision==LIS_PRECISION_DEFAULT )
+	{
+		for(i=0;i<worklen;i++)
+		{
+			err = lis_vector_duplicate(esolver->A,&work[i]);
+			if( err ) break;
+		}
+	}
+	else
+	{
+		for(i=0;i<worklen;i++)
+		{
+			err = lis_vector_duplicateex(LIS_PRECISION_QUAD,esolver->A,&work[i]);
+			if( err ) break;
+		}
+	}
+	if( i<worklen )
+	{
+		for(j=0;j<i;j++) lis_vector_destroy(work[j]);
+		lis_free(work);
+		return err;
+	}
+	esolver->worklen = worklen;
+	esolver->work    = work;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_egai"
+LIS_INT lis_egai(LIS_ESOLVER esolver)
+{
+  LIS_INT err;
+  LIS_MATRIX A,B;
+  LIS_INT ss,ic;
+  LIS_SCALAR gshift;
+  LIS_INT emaxiter,iter0,hqriter,iter2;
+  LIS_REAL tol,hqrerr,D;
+  LIS_INT i,j;
+  LIS_INT output, nigesolver;
+  LIS_REAL nrm2,resid0; 
+  LIS_VECTOR *v,w,y;
+  LIS_SCALAR *h,*hq,*hr,evalue,evalue0;
+  LIS_SOLVER solver;
+  LIS_PRECON precon;
+  LIS_ESOLVER esolver2;
+  char esolvername[128],solvername[128],preconname[128];
+  LIS_INT nsol,precon_type;
+
+  ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
+  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];      
+  emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
+  tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
+  output  = esolver->options[LIS_EOPTIONS_OUTPUT];
+  nigesolver = esolver->options[LIS_EOPTIONS_INNER_GENERALIZED_ESOLVER];
+
+  h = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_egai::h");
+  hq = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_egai::hq");
+  hr = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_egai::hr");
+  
+  A = esolver->A;
+  B = esolver->B;  
+  w = esolver->work[0];
+  y = esolver->work[1];
+  v = &esolver->work[2];
+  lis_vector_set_all(1.0,v[0]);
+  lis_vector_nrm2(v[0],&nrm2);
+  lis_vector_scale(1.0/nrm2,v[0]);
+  
+  lis_solver_create(&solver);
+  lis_solver_set_option("-i bicg -p none",solver);
+  lis_solver_set_optionC(solver);
+  lis_solver_get_solver(solver, &nsol);
+  lis_solver_get_precon(solver, &precon_type);
+  lis_solver_get_solvername(nsol, solvername);
+  lis_solver_get_preconname(precon_type, preconname);
+  lis_esolver_get_esolvername(nigesolver, esolvername);
+  if( output & A->my_rank==0 )
+    {
+      printf("inner eigensolver     : %s\n", esolvername);
+      printf("linear solver         : %s\n", solvername);
+      printf("preconditioner        : %s\n", preconname);
+    }
+
+  /* create preconditioner */
+  solver->A = B;
+  err = lis_precon_create(solver, &precon);
+  if( err )
+    {
+      lis_solver_work_destroy(solver);
+      solver->retcode = err;
+      return err;
+    }
+
+  for (i=0;i<ss*ss;i++) h[i] = 0.0;
+
+  j=-1;
+  while (j<ss-1)
+    {
+      j = j+1;
+
+      /* w = A * v(j) */
+      lis_matvec(A, v[j], w);
+
+      /* y = B^-1 * w */
+      err = lis_solve_kernel(B, w, y, solver, precon);
+      if( err )
+	{
+	  lis_solver_work_destroy(solver);	  
+	  solver->retcode = err;
+	  return err;
+	}
+      lis_solver_get_iter(solver, &iter2);
+      lis_vector_copy(y, w);
+      
+      /* reorthogonalization */
+      for (i=0;i<=j;i++)
+	{
+	  /* h(i,j) = <v(i), w> */
+	  lis_vector_dot(v[i], w, &h[i+j*ss]);
+	  /* w = w - h(i,j) * v(i) */
+	  lis_vector_axpy(-h[i+j*ss], v[i], w); 
+	}
+
+      /* h(j+1,j) = ||w||_2 */
+      lis_vector_nrm2(w, (LIS_REAL *)&h[j+1+j*ss]);
+
+      /* convergence check */
+      if (fabs(h[j+1+j*ss])<tol) break;
+
+      /* v(j+1) = w / h(j,j-1) */
+      lis_vector_scale(1/h[j+1+j*ss],w);
+      lis_vector_copy(w,v[j+1]);
+      
+    }
+
+  /* compute eigenvalues of a real upper
+     Hessenberg matrix H(j) = SH'(j)S^* */
+  lis_array_qr(ss,h,hq,hr,&hqriter,&hqrerr);
+
+  
+  if( output & A->my_rank==0 ) 
+    {
+#ifdef _LONG__LONG
+      printf("size of subspace      : %lld\n\n", ss);
+#else
+      printf("size of subspace      : %d\n\n", ss);
+#endif
+      printf("approximate eigenvalues in subspace:\n\n");
+
+
+      i=0;
+      while (i<ss) 
+	{
+	  i = i + 1;
+
+	  /* eigenvalues on the diagonal of H */
+	  if (fabs(h[i+(i-1)*ss])<tol)
+	    {
+#ifdef _LONG__LONG
+	      printf("Arnoldi: mode number              = %lld\n",i-1);
+#else
+	      printf("Arnoldi: mode number              = %d\n",i-1);
+#endif
+#ifdef _COMPLEX
+#ifdef _LONG__DOUBLE
+	      printf("Arnoldi: eigenvalue               = (%Le, %Le)\n",creall(h[i-1+(i-1)*ss]),cimagl(h[i-1+(i-1)*ss]));
+#else
+	      printf("Arnoldi: eigenvalue               = (%e, %e)\n",creal(h[i-1+(i-1)*ss]),cimag(h[i-1+(i-1)*ss]));
+#endif
+#else	      
+#ifdef _LONG__DOUBLE
+	      printf("Arnoldi: eigenvalue               = %Le\n",(LIS_REAL)(h[i-1+(i-1)*ss]));
+#else
+	      printf("Arnoldi: eigenvalue               = %e\n",(LIS_REAL)(h[i-1+(i-1)*ss]));
+#endif
+#endif	      
+	      esolver->evalue[i-1] = h[i-1+(i-1)*ss];
+	    }
+
+	  /* eigenvalues of 2x2 matrices on the diagonal of H */
+	  else
+	    {
+	      D = (h[i-1+(i-1)*ss]+h[i+i*ss])*(h[i-1+(i-1)*ss]+h[i+i*ss])
+		- 4*(h[i-1+(i-1)*ss]*h[i+i*ss]-h[i-1+i*ss]*h[i+(i-1)*ss]);
+	      if (D<0)
+		{
+#ifdef _LONG__LONG
+		  printf("Arnoldi: mode number              = %lld\n",i-1);
+#else
+		  printf("Arnoldi: mode number              = %d\n",i-1);
+#endif
+#ifdef _LONG__DOUBLE	      
+		  printf("Arnoldi: eigenvalue               = (%Le, %Le)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)sqrt(-D)/2);
+#else
+		  printf("Arnoldi: eigenvalue               = (%e, %e)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)sqrt(-D)/2);
+#endif
+#ifdef _LONG__LONG	      
+		  printf("Arnoldi: mode number              = %lld\n",i);
+#else
+		  printf("Arnoldi: mode number              = %d\n",i);
+#endif
+#ifdef _LONG__DOUBLE	      	      
+		  printf("Arnoldi: eigenvalue               = (%Le, %Le)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)-sqrt(-D)/2);
+#else
+		  printf("Arnoldi: eigenvalue               = (%e, %e)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)-sqrt(-D)/2);
+#endif		  
+		  
+#ifdef _COMPLEX		  
+		  esolver->evalue[i-1] = (h[i-1+(i-1)*ss]+h[i+i*ss])/2 + sqrt(-D)/2 * _Complex_I;
+		  esolver->evalue[i]   = (h[i-1+(i-1)*ss]+h[i+i*ss])/2 - sqrt(-D)/2 * _Complex_I;
+#else
+		  esolver->evalue[i-1] = (h[i-1+(i-1)*ss]+h[i+i*ss])/2;
+		  esolver->evalue[i]   = (h[i-1+(i-1)*ss]+h[i+i*ss])/2;     
+#endif
+		  
+		  i=i+1;
+		}
+	      else
+		{
+#ifdef _LONG__LONG	      	      
+		  printf("Arnoldi: mode number              = %lld\n",i-1);
+#else
+		  printf("Arnoldi: mode number              = %d\n",i-1);
+#endif
+#ifdef _COMPLEX
+#ifdef _LONG__DOUBLE	      	      	      
+		  printf("Arnoldi: eigenvalue               = (%Le, %Le)\n",creall(h[i-1+(i-1)*ss]),cimagl(h[i-1+(i-1)*ss]));
+#else
+		  printf("Arnoldi: eigenvalue               = (%e, %e)\n",creal(h[i-1+(i-1)*ss]),cimag(h[i-1+(i-1)*ss]));
+#endif	      
+#else		  
+#ifdef _LONG__DOUBLE	      	      	      
+		  printf("Arnoldi: eigenvalue               = %Le\n",(LIS_REAL)(h[i-1+(i-1)*ss]));
+#else
+		  printf("Arnoldi: eigenvalue               = %e\n",(LIS_REAL)(h[i-1+(i-1)*ss]));
+#endif
+#endif		  
+		  esolver->evalue[i-1] = h[i-1+(i-1)*ss];
+		}
+	    }
+	}
+
+      printf("\n");
+      printf("compute refined eigenpairs:\n\n");
+  
+    }
+
+  lis_esolver_create(&esolver2);
+  esolver2->options[LIS_EOPTIONS_ESOLVER] = nigesolver;
+  esolver2->options[LIS_EOPTIONS_SUBSPACE] = 1;
+  esolver2->options[LIS_EOPTIONS_MAXITER] = emaxiter;
+  esolver2->options[LIS_EOPTIONS_OUTPUT] = esolver->options[LIS_EOPTIONS_OUTPUT];
+  esolver2->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN] = tol; 
+
+  /* compute refined (real) eigenpairs */
+
+  for (i=0;i<ss;i++)
+    {
+      lis_vector_duplicate(A, &esolver->evector[i]); 
+      esolver2->lshift = esolver->evalue[i];
+      lis_gesolve(A, B, esolver->evector[i], &evalue, esolver2);      
+      lis_esolver_work_destroy(esolver2); 
+      esolver->evalue[i] = evalue;
+      esolver->iter[i] = esolver2->iter[0];
+      esolver->resid[i] = esolver2->resid[0];
+
+      if (i==0) 
+	{
+	  evalue0 = esolver->evalue[0];
+	  iter0 = esolver2->iter[0];
+	  resid0 = esolver2->resid[0];
+	  if( output & LIS_EPRINT_MEM ) 
+	    {
+	      for (ic=0;ic<iter0+1;ic++)
+		{
+		  esolver->rhistory[ic] = esolver2->rhistory[ic]; 
+		}
+	    }
+	  esolver->ptime = esolver2->ptime;
+	  esolver->itime = esolver2->itime;
+	  esolver->p_c_time = esolver2->p_c_time;
+	  esolver->p_i_time = esolver2->p_i_time;
+	}
+
+      if (output & A->my_rank==0) 
+	{
+
+#ifdef _LONG__LONG
+	  printf("Arnoldi: mode number          = %lld\n", i);
+#else
+	  printf("Arnoldi: mode number          = %d\n", i);
+#endif
+#ifdef _COMPLEX	  
+#ifdef _LONG__DOUBLE
+	  printf("Arnoldi: eigenvalue           = (%Le, %Le)\n", creall(esolver->evalue[i]),cimagl(esolver->evalue[i]));
+#else
+	  printf("Arnoldi: eigenvalue           = (%e, %e)\n", creal(esolver->evalue[i]),cimag(esolver->evalue[i]));
+#endif
+#else
+#ifdef _LONG__DOUBLE
+	  printf("Arnoldi: eigenvalue           = %Le\n", (LIS_REAL)esolver->evalue[i]);
+#else
+	  printf("Arnoldi: eigenvalue           = %e\n", (LIS_REAL)esolver->evalue[i]);
+#endif
+#endif	  
+#ifdef _LONG__LONG
+	  printf("Arnoldi: number of iterations = %lld\n",esolver2->iter[0]);
+#else
+	  printf("Arnoldi: number of iterations = %d\n",esolver2->iter[0]);
+#endif
+#ifdef _LONG__DOUBLE
+	  printf("Arnoldi: relative residual    = %Le\n\n",esolver2->resid[0]);
+#else
+	  printf("Arnoldi: relative residual    = %e\n\n",esolver2->resid[0]);
+#endif
+	}
+    }
+
+  lis_vector_copy(esolver->evector[0], esolver->x);
+
+  lis_esolver_destroy(esolver2); 
+
+  lis_free(h); 
+  lis_free(hq);
+  lis_free(hr);
+
+  lis_precon_destroy(precon);  
+  lis_solver_destroy(solver);
+
+  LIS_DEBUG_FUNC_OUT;
+  return LIS_SUCCESS;
+} 
+
