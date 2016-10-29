@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis $B%f!<%6%,%$%I(B}\\
-$B%P!<%8%g%s(B 1.7.4
+$B%P!<%8%g%s(B 1.7.5
 \end{flushleft}
 
 \vspace*{2cm}
@@ -1953,6 +1953,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
  Generalized CR         & \verb=-e {gcr|12}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
  Generalized Subspace   & \verb=-e {gsi|13}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
  Generalized Lanczos    & \verb=-e {gli|14}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\ 
+ Generalized Arnoldi    & \verb=-e {gai|15}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\ 
 \hline         
 \end{tabular}
 \end{center}
@@ -2003,7 +2004,8 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
                        & \verb=-eprint {out|2}      =  $B;D:9MzNr$rI8=`=PNO$K=q$-=P$9(B\\
                        & \verb=-eprint {all|3}      =  $B;D:9MzNr$r%a%b%j$KJ]B8$7(B, $BI8=`=PNO$K=q$-=P$9(B\\
 \verb=-ie [ii]= & Subspace, Lanczos, Arnoldi$B$NFbIt$G;HMQ$9$k8GM-CM2rK!$N;XDj(B  \\
-\verb=-ige [gii]= & Generalized Subspace, Generalized Lanczos$B$NFbIt$G;HMQ$9$k8GM-CM2rK!$N;XDj(B  \\
+\verb=-ige [gii]= & Generalized Subspace, Generalized Lanczos, Generalized Arnoldi$B$NFbIt$G;HMQ$9$k(B\\
+                       & $B8GM-CM2rK!$N;XDj(B  \\
 \verb=-shift [0.0]= & $B8GM-CM$N%7%U%HNL(B$\sigma$ \\
 \verb=-initx_ones [1]= & $B=i4|%Y%/%H%k(B$x_{0}$  \\
                        & \verb=-initx_ones {false|0}     =  $BM?$($i$l$?CM$r;HMQ(B \\
@@ -6320,6 +6322,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
  Generalized CR         & \verb=-e {gcr|12}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
  Generalized Subspace   & \verb=-e {gsi|13}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
  Generalized Lanczos    & \verb=-e {gli|14}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\ 
+ Generalized Arnoldi    & \verb=-e {gai|15}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\ 
 \hline         
 \end{tabular}
 \end{center}
@@ -6370,7 +6373,8 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
                        & \verb=-eprint {out|2}      =  $B;D:9MzNr$rI8=`=PNO$K=q$-=P$9(B\\
                        & \verb=-eprint {all|3}      =  $B;D:9MzNr$r%a%b%j$KJ]B8$7(B, $BI8=`=PNO$K=q$-=P$9(B\\
 \verb=-ie [ii]= & Subspace, Lanczos, Arnoldi$B$NFbIt$G;HMQ$9$k8GM-CM2rK!$N;XDj(B  \\
-\verb=-ige [gii]= & Generalized Subspace, Generalized Lanczos$B$NFbIt$G;HMQ$9$k8GM-CM2rK!$N;XDj(B  \\
+\verb=-ige [gii]= & Generalized Subspace, Generalized Lanczos, Generalized Arnoldi$B$NFbIt$G;HMQ$9$k(B\\
+                       & $B8GM-CM2rK!$N;XDj(B  \\
 \verb=-shift [0.0]= & $B8GM-CM$N%7%U%HNL(B$\sigma$ \\
 \verb=-initx_ones [1]= & $B=i4|%Y%/%H%k(B$x_{0}$  \\
                        & \verb=-initx_ones {false|0}     =  $BM?$($i$l$?CM$r;HMQ(B \\
