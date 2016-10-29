@@ -1,4 +1,4 @@
-.TH gesolve 1 "26 Oct 2016" "Man Page" "Utility Commands"
+.TH gesolve 1 "29 Oct 2016" "Man Page" "Utility Commands"
 
 .SH NAME
 
@@ -35,6 +35,8 @@ Generalized CR
 Generalized Subspace
 .IP "-e {\fIgli\fR|14}"
 Generalized Lanczos
+.IP "-e {\fIgai\fR|15}"
+Generalized Arnoldi
 .RS
 .IP "-ss [1]"
 The size of the subspace
@@ -241,8 +243,8 @@ Output it to the standard output
 .IP "-eprint {\fIall\fR|3}"
 Save the residual history and output it to the standard output
 .RE
-.IP "-ige [ii]"
-The inner eigensolver used in generalized Subspace and generalized Lanczos
+.IP "-ige [gii]"
+The inner eigensolver used in generalized Subspace, generalized Lanczos, and generalized Arnoldi
 .IP "-shift [0.0]"
 The amount of the shift
 .IP "-initx_ones [\fItrue\fR]"

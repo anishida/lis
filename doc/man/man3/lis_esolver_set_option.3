@@ -1,4 +1,4 @@
-.TH lis_esolver_set_option 3 "16 Oct 2016" "Man Page" "Lis Library Functions"
+.TH lis_esolver_set_option 3 "29 Oct 2016" "Man Page" "Lis Library Functions"
 
 .SH NAME
 
@@ -51,50 +51,76 @@ Inverse
 .IP "-i [\fIbicg\fR]"
 The linear solver
 .RE
-.IP "-e {\fIaii\fR|3}"
-Approximate Inverse
-.RS
-.IP "-i [\fIbicg\fR]"
-The linear solver
-.RE
-.IP "-e {\fIrqi\fR|4}"
+.IP "-e {\fIrqi\fR|3}"
 Rayleigh Quotient
 .RS
 .IP "-i [\fIbicg\fR]"
 The linear solver
 .RE
-.IP "-e {\fIcg\fR|5}"
+.IP "-e {\fIcg\fR|4}"
 CG
 .RS
 .IP "-i [\fIcg\fR]"
 The linear solver
 .RE
-.IP "-e {\fIcr\fR|6}"
+.IP "-e {\fIcr\fR|5}"
 CR
 .RS
 .IP "-i [\fIbicg\fR]"
 The linear solver
 .RE
-.IP "-e {\fIjd\fR|7}"
+.IP "-e {\fIjd\fR|6}"
 Jacobi-Davidson
 .RS
 .IP "-i [\fIcg\fR]"
 The linear solver
 .RE
-.IP "-e {\fIsi\fR|8}"
+.IP "-e {\fIsi\fR|7}"
 Subspace
 .RS
 .IP "-ss [1]"
 The size of the subspace
 .RE
-.IP "-e {\fIli\fR|9}"
+.IP "-e {\fIli\fR|8}"
 Lanczos
 .RS
 .IP "-ss [1]"
 The size of the subspace
 .RE
-.IP "-e {\fIli\fR|10}"
+.IP "-e {\fIai\fR|9}"
 Arnoldi
+.RS
+.IP "-ss [1]"
+The size of the subspace
+.RE
+.IP "-e {\fIgpi\fR|10}"
+Generalized Power
+.IP "-e {\fIgii\fR|11}"
+Generalized Inverse
+.RS
+.IP "-i [\fIbicg\fR]"
+The linear solver
+.RE
+.IP "-e {\fIgcr\fR|12}"
+Generalized CR
+.RS
+.IP "-i [\fIbicg\fR]"
+The linear solver
+.RE
+.IP "-e {\fIgsi\fR|13}"
+Generalized Subspace
+.RS
+.IP "-ss [1]"
+The size of the subspace
+.RE
+.IP "-e {\fIgli\fR|14}"
+Generalized Lanczos
+.RS
+.IP "-ss [1]"
+The size of the subspace
+.RE
+.IP "-e {\fIgai\fR|15}"
+Generalized Arnoldi
 .RS
 .IP "-ss [1]"
 The size of the subspace
@@ -302,7 +328,9 @@ Display the residual history
 Save the residual history and display it on the screen
 .RE
 .IP "-ie [ii]"
-The inner eigensolver used in the Lanczos and Subspace
+The inner eigensolver used in Subspace, Lanczos, and Arnoldi
+.IP "-ige [ii]"
+The inner eigensolver used in Generalized Subspace, Generalized Lanczos, and Generalized Arnoldi
 .IP "-shift [0.0]"
 The amount of the shift
 .IP "-initx_ones [\fItrue\fR]"
