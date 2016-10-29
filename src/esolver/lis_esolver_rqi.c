@@ -54,19 +54,19 @@
 /***************************************
  * Rayleigh Quotient Iteration         *
  ***************************************
- v    = (1,...,1)^T
- rho  = <v,A*v> / <v,v> 
+ v      = (1,...,1)^T
+ v      = v/||v||_2
+ rho(1) = <v,A*v> / <v,v> 
  ***************************************
  for k=1,2,...
-   v     = v/||v||_2
-   y     = (A - rho * I)^-1 * v
-   theta = ||y||_2
-   rho   = rho + <v,y> / theta^2
-   resid = ||y - <v,y> * v||_2 / <v,y>
-   v     = y
+   y        = (A - rho(k) * I)^-1 * v
+   theta    = ||y||_2
+   rho(k+1) = rho(k) + <v,y> / theta^2
+   resid    = ||y - <v,y> * v||_2 / <v,y>
+   v        = y / theta
    if resid < tol then stop
- lambda  = rho
- x       = v / ||v||_2
+ lambda     = rho(k)
+ x          = v / ||v||_2
  ***************************************/
 
 #define NWORK 2
@@ -130,7 +130,7 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
 {
   LIS_MATRIX A;
   LIS_VECTOR v;
-  LIS_SCALAR theta2,dotvy;
+  LIS_SCALAR theta,dotvy;
   LIS_SCALAR rho;
   LIS_SCALAR lshift;
   LIS_INT emaxiter;
@@ -194,34 +194,21 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
       return err;
     }
 
-  /* rho = <v,A*v> / <v,v> */
-  lis_matvec(A,v,y);
-  lis_vector_dot(v,y,&rho);
+  /* v = v / ||v||_2 */
   lis_vector_nrm2(v, &nrm2);
-  rho = rho / nrm2;
+  lis_vector_scale(1.0/nrm2, v);
+
+  /* rho = <v,A*v> / <v,v> */
+  lis_matvec(A, v, y);
+  lis_vector_dot(v, y, &rho);
   
   iter=0;
 
   while (iter<emaxiter)
     {
       iter = iter+1;
- /***************************************
- for k=1,2,...
-   v     = v/||v||_2
-   y     = (A - rho * I)^-1 * v
-   theta = ||y||_2
-   rho   = rho + <v,y> / theta^2
-   resid = ||y - <v,y> * v||_2 / <v,y>
-   v     = y
- lambda  = rho
- x       = v / ||v||_2
- ***************************************/
 
-      /* v = v / ||v||_2 */
-      lis_vector_nrm2(v, &nrm2);
-      lis_vector_scale(1.0/nrm2, v);
-
-      /* z = (A - rho * I)^-1 * v */
+      /* y = (A - rho * I)^-1 * v */
       lis_matrix_shift_diagonal(A, rho);
       err = lis_solve_kernel(A, v, y, solver, precon);
       if( err )
@@ -234,21 +221,22 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
       lis_solver_get_iter(solver,&iter2);
 
       /* theta = ||y||_2 */      
-      lis_vector_dot(y, y, &theta2);
+      lis_vector_nrm2(y, &(LIS_REAL)theta);
  
       /* <v,y> */
       lis_vector_dot(v, y, &dotvy);
 
       /* rho = rho + <v,y> / theta^2 */
-      rho = rho + dotvy / theta2;
+      rho = rho + dotvy / (theta * theta);
 
       /* resid = ||y - <v,y> * v||_2 / <v,y> */
       lis_vector_axpyz(-dotvy,v,y,q); 
       lis_vector_nrm2(q, &resid); 
       resid = resid / fabs(dotvy);
 
-      /* v = y */
-      lis_vector_copy(y,v);
+      /* v = y / theta */
+      lis_vector_scale(1.0/theta, y);
+      lis_vector_copy(y, v);
 
       if( output )
 	{
