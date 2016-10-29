@@ -165,6 +165,14 @@ extern "C"
 	extern LIS_INT lis_egli_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_egli_malloc_work(LIS_ESOLVER esolver);
 
+/**********************************/
+/* Generalized Arnoldi Iteration  */
+/**********************************/
+
+	extern LIS_INT lis_egai(LIS_ESOLVER esolver);
+	extern LIS_INT lis_egai_check_params(LIS_ESOLVER esolver);
+	extern LIS_INT lis_egai_malloc_work(LIS_ESOLVER esolver);
+
 #ifdef __cplusplus
 }
 #endif
