@@ -290,12 +290,12 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
  for k=1,2,...
    y        = (A - rho(k) * B)^-1 * w
    theta    = <w,y>
-   resid    = ||y - theta * v||_2 / |theta|
    w        = B * y
    eta      = <w,y>^1/2
    v        = y / eta
    w        = w / eta
    rho(k+1) = rho(k) + theta / eta^2
+   resid    = 1 / |theta| 
    if resid < tol then stop
  lambda     = rho(k)
  x          = v / ||v||_2
