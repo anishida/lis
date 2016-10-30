@@ -198,7 +198,8 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
   lis_vector_scale(1.0/nrm2, x);
   lis_matvec(A,x,Ax);
   lis_vector_set_all(1.0,p);
-  lis_vector_set_all(1.0,Ap);
+  /* temporary */
+  lis_vector_set_all(1.0,Ap);  
 
   lis_solver_create(&solver);
   lis_solver_set_option("-i cg -p none",solver);
@@ -278,7 +279,7 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
       B3[2]=B3[6];
       B3[5]=B3[7];
       lis_vector_dot(p,p,&B3[8]);
-      
+
       /* compute eigenvector v_3 of size 3 using inverse iteration */
       lis_array_set_all(3,1.0,v3);
       iter3=0;
@@ -511,10 +512,6 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
   lis_vector_set_all(1.0,p);
   lis_matvec(A,p,Ap);
   lis_matvec(B,p,Bp);
-  /*
-  lis_vector_set_all(1.0,Ap);
-  lis_vector_set_all(1.0,Bp);
-  */
 
   lis_solver_create(&solver);
   lis_solver_set_option("-i cg -p none",solver);
