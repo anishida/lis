@@ -389,6 +389,36 @@ LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_solve_setup"
+LIS_INT lis_solve_setup(LIS_MATRIX A, LIS_SOLVER solver)
+{
+        LIS_INT	err;
+	LIS_PRECON precon;
+	LIS_VECTOR b,x;
+
+	LIS_DEBUG_FUNC_IN;
+
+	lis_vector_duplicate(A,&b);
+	lis_vector_duplicate(A,&x);
+
+	/* setup solver for preconditioning */
+	solver->setup = LIS_TRUE;
+	err = lis_solve(A,b,x,solver);
+	if( err )
+	  {
+	    lis_solver_work_destroy(solver);
+	    solver->retcode = err;
+	    return err;
+	  }
+
+	lis_vector_destroy(b);
+	lis_vector_destroy(x);
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_solve_kernel"
 LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver, LIS_PRECON precon)
 {
@@ -819,9 +849,8 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	   called for preconditioning */
 	if (solver->setup)
 	  {
-	    lis_vector_set_all(1.0, solver->x);
+	    lis_vector_set_all(1.0,x);
 	  }
-	/* else execute solver */
 	else
 	  {
 	#ifndef USE_QUAD_PRECISION

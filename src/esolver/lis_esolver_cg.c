@@ -197,8 +197,8 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
   lis_vector_nrm2(x, &nrm2);
   lis_vector_scale(1.0/nrm2, x);
   lis_matvec(A,x,Ax);
-  lis_vector_set_all(0.0,p);
-  lis_vector_set_all(0.0,Ap);  
+  lis_vector_set_all(1.0,p);
+  lis_vector_set_all(1.0,Ap);
 
   lis_solver_create(&solver);
   lis_solver_set_option("-i cg -p none",solver);
@@ -215,14 +215,7 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
     }
 
   /* setup solver for preconditioning */
-  solver->setup = LIS_TRUE;
-  err = lis_solve(A,x,p,solver);
-  if( err )
-    {
-      lis_solver_work_destroy(solver);	  
-      solver->retcode = err;
-      return err;
-    }
+  lis_solve_setup(A,solver);
 
   err = lis_precon_create(solver,&precon);
   if( err )
@@ -515,9 +508,13 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
   lis_vector_scale(1.0/nrm2,x);
   lis_matvec(A,x,Ax);
   lis_matvec(B,x,Bx);  
-  lis_vector_set_all(0.0,p);
-  lis_vector_set_all(0.0,Ap);
-  lis_vector_set_all(0.0,Bp);
+  lis_vector_set_all(1.0,p);
+  lis_matvec(A,p,Ap);
+  lis_matvec(B,p,Bp);
+  /*
+  lis_vector_set_all(1.0,Ap);
+  lis_vector_set_all(1.0,Bp);
+  */
 
   lis_solver_create(&solver);
   lis_solver_set_option("-i cg -p none",solver);
@@ -534,14 +531,7 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
     }
 
   /* setup solver for preconditioning */
-  solver->setup = LIS_TRUE;
-  err = lis_solve(A,x,p,solver);
-  if( err )
-    {
-      lis_solver_work_destroy(solver);	  
-      solver->retcode = err;
-      return err;
-    }
+  lis_solve_setup(A,solver);
 
   err = lis_precon_create(solver,&precon);
   if( err )
@@ -848,14 +838,7 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
     }
 
   /* setup solver for preconditioning */
-  solver->setup = LIS_TRUE;
-  err = lis_solve(A,x,p,solver);
-  if( err )
-    {
-      lis_solver_work_destroy(solver);	  
-      solver->retcode = err;
-      return err;
-    }
+  lis_solve_setup(A,solver);
 
   err = lis_precon_create(solver,&precon);
   if( err )
@@ -1132,14 +1115,7 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
     }
 
   /* setup solver for preconditioning */
-  solver->setup = LIS_TRUE;
-  err = lis_solve(A,x,p,solver);
-  if( err )
-    {
-      lis_solver_work_destroy(solver);	  
-      solver->retcode = err;
-      return err;
-    }
+  lis_solve_setup(A,solver);
 
   err = lis_precon_create(solver,&precon);
   if( err )
