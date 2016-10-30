@@ -410,6 +410,8 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	LIS_MATRIX At;
 	char buf[64];
 
+	LIS_VECTOR r,z;
+
 	LIS_DEBUG_FUNC_IN;
 
 	nsolver     = solver->options[LIS_OPTIONS_SOLVER];
@@ -812,7 +814,16 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	solver->precon   = precon;
 	solver->rhistory = rhistory;
 
-	/* execute solver */
+	/* do not call lis_solver_execute if setup is true
+	   see esolver/lis_esolver_cg.c, in which lis_solve is 
+	   called for preconditioning */
+	if (solver->setup)
+	  {
+	    lis_vector_set_all(1.0, solver->x);
+	  }
+	/* else execute solver */
+	else
+	  {
 	#ifndef USE_QUAD_PRECISION
 		err = lis_solver_execute[nsolver](solver);
 	#else
@@ -830,6 +841,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 		}
 	#endif
 	solver->retcode = err;
+	  }
 
 	if( scale==LIS_SCALE_SYMM_DIAG && precon_type!=LIS_PRECON_TYPE_IS)
 	{

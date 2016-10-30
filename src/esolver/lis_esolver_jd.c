@@ -195,9 +195,12 @@ LIS_INT lis_ejd(LIS_ESOLVER esolver)
 
   ptime = 0;
 
-  lis_vector_nrm2(x, &nrm2);
-  lis_vector_scale(1/nrm2, x);
+  lis_vector_nrm2(x,&nrm2);
+  lis_vector_scale(1/nrm2,x);
   lis_matvec(A,x,Ax);
+  lis_vector_set_all(0.0,p);
+  lis_vector_set_all(0.0,Ap);
+  
   lis_solver_create(&solver);
   lis_solver_set_option("-i cg -p none",solver);
   lis_solver_set_optionC(solver);
@@ -212,9 +215,8 @@ LIS_INT lis_ejd(LIS_ESOLVER esolver)
       printf("preconditioner        : %s\n", preconname);
     }
 
-  /* lis_solve must be called before lis_precon_create */
-  /* p=A^-1*x */
-
+  /* setup  solver for preconditioning */
+  solver->setup = LIS_TRUE;
   err = lis_solve(A,x,p,solver);
   if( err )
     {
@@ -222,7 +224,6 @@ LIS_INT lis_ejd(LIS_ESOLVER esolver)
       solver->retcode = err;
       return err;
     }
-  lis_vector_copy(x,Ap);
 
   err = lis_precon_create(solver,&precon);
   if( err )

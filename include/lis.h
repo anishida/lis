@@ -675,6 +675,7 @@ struct LIS_SOLVER_STRUCT
 	LIS_REAL bnrm;
 	LIS_REAL tol;
 	LIS_REAL tol_switch;
+	LIS_INT setup;
 };
 typedef struct LIS_SOLVER_STRUCT *LIS_SOLVER;
 
