@@ -198,7 +198,7 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
   lis_vector_scale(1.0/nrm2, x);
   lis_matvec(A,x,Ax);
   lis_vector_set_all(0.0,p);
-  lis_vector_set_all(0.0,Ap);
+  lis_vector_set_all(0.0,Ap);  
 
   lis_solver_create(&solver);
   lis_solver_set_option("-i cg -p none",solver);
