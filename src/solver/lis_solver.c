@@ -270,6 +270,8 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->params[LIS_PARAMS_RATE         -LIS_OPTIONS_LEN] = 5.0;
 	solver->params[LIS_PARAMS_SAAMG_THETA  -LIS_OPTIONS_LEN] = 0.05;
 
+	solver->setup = LIS_FALSE;
+
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 }
@@ -410,6 +412,16 @@ LIS_INT lis_solve_setup(LIS_MATRIX A, LIS_SOLVER solver)
 	    solver->retcode = err;
 	    return err;
 	  }
+
+	/* create preconditioner */
+	err = lis_precon_create(solver,&precon);
+	if( err )
+	  {
+	    lis_solver_work_destroy(solver);
+	    solver->retcode = err;
+	    return err;
+	  }
+	solver->precon = precon;
 
 	lis_vector_destroy(b);
 	lis_vector_destroy(x);
@@ -844,14 +856,12 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	solver->precon   = precon;
 	solver->rhistory = rhistory;
 
-	/* do not call lis_solver_execute if setup is true
-	   see esolver/lis_esolver_cg.c, in which lis_solve is 
-	   called for preconditioning */
-	if (solver->setup)
-	  {
-	    lis_vector_set_all(1.0,x);
-	  }
-	else
+	/* Do not call lis_solver_execute if solver->setup is true. 
+	   See esolver/lis_esolver_cg.c, in which lis_solve is 
+	   called only for preconditioning. 
+	   solver->setup is initialized in lis_solver_init, 
+	   and set by lis_solve_setup.*/
+	if (!solver->setup)
 	  {
 	#ifndef USE_QUAD_PRECISION
 		err = lis_solver_execute[nsolver](solver);
