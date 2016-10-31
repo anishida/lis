@@ -860,7 +860,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	   See esolver/lis_esolver_cg.c, in which lis_solve is 
 	   called only for preconditioning. 
 	   solver->setup is initialized in lis_solver_init, 
-	   and set by lis_solve_setup.*/
+	   and reset by lis_solve_setup.*/
 	if (!solver->setup)
 	  {
 	#ifndef USE_QUAD_PRECISION

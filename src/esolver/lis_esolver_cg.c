@@ -627,13 +627,13 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
 	  lis_array_copy(3,z3,v3);
 	}
 
-      /* update B*w, B*x, and B*p */
+      /* update B*x and B*p */
       lis_vector_scale(v3[0],Bw);  
       lis_vector_axpy(v3[2],Bp,Bw);
       lis_vector_xpay(Bw,v3[1],Bx);
       lis_vector_copy(Bw,Bp);
 
-      /* update A*w, A*x, and A*p */      
+      /* update A*x and A*p */      
       lis_vector_scale(v3[0],Aw);  
       lis_vector_axpy(v3[2],Ap,Aw);
       lis_vector_xpay(Aw,v3[1],Ax);
