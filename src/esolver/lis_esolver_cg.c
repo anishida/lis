@@ -194,9 +194,10 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
       
   ptime = 0;
 
-  lis_vector_nrm2(x, &nrm2);
-  lis_vector_scale(1.0/nrm2, x);
+  lis_vector_nrm2(x,&nrm2);
+  lis_vector_scale(1.0/nrm2,x);
   lis_matvec(A,x,Ax);
+
   lis_solver_create(&solver);
   lis_solver_set_option("-i cg -p none",solver);
   lis_solver_set_optionC(solver);
@@ -211,13 +212,11 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
       printf("preconditioner        : %s\n", preconname);
     }
 
-  /* lis_solve must be called before lis_precon_create */
   /* p=A^-1*x */
-
   err = lis_solve(A,x,p,solver);
   if( err )
     {
-      lis_solver_work_destroy(solver);	  
+      lis_solver_work_destroy(solver);
       solver->retcode = err;
       return err;
     }
@@ -258,6 +257,8 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
       time = lis_wtime();
       lis_psolve(solver,r,w);
       ptime += lis_wtime() - time;
+      lis_vector_nrm2(w,&nrm2);
+      lis_vector_scale(1.0/nrm2,w);
       lis_matvec(A,w,Aw);
 
       /* Rayleigh-Ritz method for I-mu*A on span {w,x(k),x(k-1)} */
@@ -267,7 +268,7 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
       lis_vector_dot(w,Aw,&A3[0]);
       lis_vector_dot(x,Aw,&A3[3]);
       lis_vector_dot(p,Aw,&A3[6]);
-      /* (w,A*x)=(x,A*w) */
+      /* (w,A*x)=(x,A*w), where A is symmetric */
       A3[1]=A3[3];
       lis_vector_dot(x,Ax,&A3[4]);
       lis_vector_dot(p,Ax,&A3[7]);
@@ -284,14 +285,14 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
       B3[2]=B3[6];
       B3[5]=B3[7];
       lis_vector_dot(p,p,&B3[8]);
-      
+
       /* compute eigenvector v_3 of size 3 using inverse iteration */
       lis_array_set_all(3,1.0,v3);
       iter3=0;
       while (iter3<emaxiter)
 	{
 	  iter3=iter3+1;
-	  lis_array_nrm2(3,v3,&nrm2); 
+	  lis_array_nrm2(3,v3,&nrm2);
 	  lis_array_scale(3,1.0/nrm2,v3);
 	  lis_array_matvec(3,B3,v3,B3v3,LIS_INS_VALUE);
 	  lis_array_solve(3,A3,B3v3,z3,W3);
@@ -302,13 +303,13 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
 	  lis_array_copy(3,z3,v3);
 	}
 
-      /* update w, x, and p */
+      /* update x and p */
       lis_vector_scale(v3[0],w);  
       lis_vector_axpy(v3[2],p,w);
       lis_vector_xpay(w,v3[1],x);
       lis_vector_copy(w,p);
 
-      /* update A*w, A*x, and A*p */      
+      /* update A*x and A*p */      
       lis_vector_scale(v3[0],Aw);  
       lis_vector_axpy(v3[2],Ap,Aw);
       lis_vector_xpay(Aw,v3[1],Ax);
@@ -317,7 +318,7 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
       /* compute Ritz vector x corresponding to the smallest Ritz value */
       lis_vector_nrm2(x,&nrm2);
       lis_vector_scale(1.0/nrm2,x);
-      lis_vector_scale(1.0/nrm2,Ax);
+      lis_vector_scale(1.0/nrm2,Ax);      
       
       lis_vector_nrm2(p,&nrm2);
       lis_vector_scale(1.0/nrm2,p);
@@ -510,10 +511,11 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
       
   ptime = 0;
 
-  lis_vector_nrm2(x, &nrm2);
-  lis_vector_scale(1.0/nrm2, x);
+  lis_vector_nrm2(x,&nrm2);
+  lis_vector_scale(1.0/nrm2,x);
   lis_matvec(A,x,Ax);
-  lis_matvec(B,x,Bx);  
+  lis_matvec(B,x,Bx);
+
   lis_solver_create(&solver);
   lis_solver_set_option("-i cg -p none",solver);
   lis_solver_set_optionC(solver);
@@ -528,19 +530,18 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
       printf("preconditioner        : %s\n", preconname);
     }
 
-  /* lis_solve must be called before lis_precon_create */
   /* p=A^-1*x */
-
   err = lis_solve(A,x,p,solver);
   if( err )
     {
-      lis_solver_work_destroy(solver);	  
+      lis_solver_work_destroy(solver);
       solver->retcode = err;
       return err;
     }
   lis_vector_copy(x,Ap);
   lis_matvec(B,p,Bp);
 
+  /* create preconditioner */
   err = lis_precon_create(solver,&precon);
   if( err )
     {
@@ -578,8 +579,10 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
       time = lis_wtime();
       lis_psolve(solver,r,w);
       ptime += lis_wtime() - time;
+      lis_vector_nrm2(w,&nrm2);
+      lis_vector_scale(1.0/nrm2,w);
       lis_matvec(A,w,Aw);
-      lis_matvec(B,w,Bw);      
+      lis_matvec(B,w,Bw);
 
       /* Rayleigh-Ritz method for B-mu*A on span {w,x(k),x(k-1)} */
 
@@ -640,10 +643,12 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
       lis_vector_nrm2(x,&nrm2);
       lis_vector_scale(1.0/nrm2,x);
       lis_vector_scale(1.0/nrm2,Ax);
+      lis_vector_scale(1.0/nrm2,Bx);      
       
       lis_vector_nrm2(p,&nrm2);
       lis_vector_scale(1.0/nrm2,p);
       lis_vector_scale(1.0/nrm2,Ap);
+      lis_vector_scale(1.0/nrm2,Bp);      
       
     }
 
@@ -825,9 +830,12 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
 
   ptime = 0;
 
-  lis_vector_nrm2(x, &nrm2);
-  lis_vector_scale(1.0/nrm2, x);
+  lis_vector_nrm2(x,&nrm2);
+  lis_vector_scale(1.0/nrm2,x);
   lis_matvec(A,x,Ax);
+  lis_vector_set_all(0.0,p);
+  lis_vector_set_all(0.0,Ap);
+  
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
   lis_solver_set_optionC(solver);
@@ -842,25 +850,8 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
       printf("preconditioner        : %s\n", preconname);
     }
 
-  /* lis_solve must be called before lis_precon_create */
-  /* p=A^-1*x */
-  err = lis_solve(A,x,p,solver);
-  if( err )
-    {
-      lis_solver_work_destroy(solver);	  
-      solver->retcode = err;
-      return err;
-    }
-  lis_vector_copy(x,Ap);
-
-  err = lis_precon_create(solver,&precon);
-  if( err )
-    {
-      lis_solver_work_destroy(solver);	  
-      solver->retcode = err;
-      return err;
-    }
-  solver->precon = precon;
+  /* setup solver for preconditioning */
+  lis_solve_setup(A,solver);
 
   /* lambda=<A*x,x>/<x,x> */
   lis_vector_dot(x,Ax,&lambda); 
@@ -868,6 +859,9 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
   /* r=lambda*x-A*x */
   lis_vector_axpyz(-lambda,x,Ax,r);
   lis_vector_scale(-1.0,r);
+
+  lis_vector_copy(r,p);
+  lis_matvec(A,p,Ap);
 
   iter=0;
 
@@ -933,7 +927,6 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
       
     }
 
-  lis_precon_destroy(precon);
   lis_solver_destroy(solver);
 
   esolver->iter[0]    = iter;
@@ -1105,10 +1098,11 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
 
   ptime = 0;
 
-  lis_vector_nrm2(x, &nrm2);
-  lis_vector_scale(1.0/nrm2, x);
+  lis_vector_nrm2(x,&nrm2);
+  lis_vector_scale(1.0/nrm2,x);
   lis_matvec(A,x,Ax);
-  lis_matvec(B,x,Bx);  
+  lis_matvec(B,x,Bx);
+  
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
   lis_solver_set_optionC(solver);
@@ -1123,26 +1117,8 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
       printf("preconditioner        : %s\n", preconname);
     }
 
-  /* lis_solve must be called before lis_precon_create */
-  /* p=A^-1*x */
-  err = lis_solve(A,x,p,solver);
-  if( err )
-    {
-      lis_solver_work_destroy(solver);	  
-      solver->retcode = err;
-      return err;
-    }
-  lis_vector_copy(x,Ap);
-  lis_matvec(B,p,Bp);
-
-  err = lis_precon_create(solver,&precon);
-  if( err )
-    {
-      lis_solver_work_destroy(solver);	  
-      solver->retcode = err;
-      return err;
-    }
-  solver->precon = precon;
+  /* setup solver for preconditioning */
+  lis_solve_setup(A,solver);
 
   /* lambda=<A*x,B*x>/<B*x,B*x> */
   lis_vector_dot(Ax,Bx,&lambda);
@@ -1152,6 +1128,10 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   /* r=lambda*B*x-A*x */
   lis_vector_axpyz(-lambda,Bx,Ax,r);
   lis_vector_scale(-1.0,r);
+
+  lis_vector_copy(r,p);
+  lis_matvec(A,p,Ap);
+  lis_matvec(B,p,Bp);
 
   iter=0;
 
@@ -1222,7 +1202,6 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
       
     }
 
-  lis_precon_destroy(precon);
   lis_solver_destroy(solver);
 
   esolver->iter[0]    = iter;

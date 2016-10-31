@@ -154,7 +154,6 @@ LIS_INT lis_cg(LIS_SOLVER solver)
 	rho_old = (LIS_SCALAR)1.0;
 	beta    = (LIS_SCALAR)0.0;
 
-
 	if( lis_solver_get_initial_residual(solver,NULL,NULL,r,&bnrm2) )
 	{
 		LIS_DEBUG_FUNC_OUT;
@@ -170,7 +169,7 @@ LIS_INT lis_cg(LIS_SOLVER solver)
 		time = lis_wtime();
 		lis_psolve(solver,r,z);
 		ptime += lis_wtime() - time;
-
+ 
 		/* rho = <r,z> */
 		lis_vector_dot(r,z,&rho);
 
