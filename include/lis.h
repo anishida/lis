@@ -896,7 +896,7 @@ extern "C"
 /*NEH support for extended "solve_kernel" workflow*/
     extern LIS_INT lis_solver_set_matrix(LIS_MATRIX A, LIS_SOLVER solver);
 	extern LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver);
-	extern LIS_INT lis_solve_setup(LIS_MATRIX A, LIS_SOLVER solver);  
+	extern LIS_INT lis_solve_setup(LIS_MATRIX A, LIS_SOLVER solver);
 	extern LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver, LIS_PRECON precon);
 	extern LIS_PRECON_REGISTER *precon_register_top;
 	extern LIS_INT precon_register_type;
