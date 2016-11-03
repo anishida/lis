@@ -1,3 +1,7 @@
+Version 1.7.7  November 3, 2016
+
+  - Fixed bug in generalized Lanczos.
+
 Version 1.7.6  November 1, 2016
 
   - Fixed bug in generalized CG.
