@@ -67,7 +67,7 @@
    reorthogonalization 
    beta(j)   = ||r||_2
  end for
- compute eigenvalues of a real symmetric tridiagonal matrix 
+ compute eigenvalues of a symmetric tridiagonal matrix 
  T(j) = ST'(j)S^*, where
      (alpha(1) beta(1)                      )
      (beta(1)  alpha(2)                     )
@@ -239,7 +239,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
       t[j*ss+j-1] = t[(j-1)*ss+j];
     }
 
-  /* compute eigenvalues of a real symmetric tridiagonal matrix 
+  /* compute eigenvalues of a symmetric tridiagonal matrix 
      T(j) = ST'(j)S^* */
   lis_array_qr(ss,t,tq,tr,&qriter,&qrerr);
 
@@ -373,8 +373,8 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
  ***************************************
  q       = (1,...,1)^T
  ***************************************
- r = Bq
- beta(0) = <q,r>^1/2
+ r = B * q
+ beta(0) = |<q,r>|^1/2
  for j=1,2,...
    w(j)      = r / beta(j-1)
    v(j)      = q / beta(j-1)
@@ -383,10 +383,10 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
    alpha(j)  = <v(j), r>
    r         = r - alpha(j) * w(j)
    reorthogonalization 
-   solve Bq = r for q
-   beta(j)   = <q,r>^1/2
+   solve B * q = r for q
+   beta(j)   = |<q,r>|^1/2
  end for
- compute eigenvalues of a real symmetric tridiagonal matrix 
+ compute eigenvalues of a symmetric tridiagonal matrix 
  T(j) = ST'(j)S^*, where
      (alpha(1) beta(1)                      )
      (beta(1)  alpha(2)                     )
@@ -548,7 +548,7 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
       if (j==1) {
  	lis_matvec(B, q, r);
 	lis_vector_dot(q, r, &beta);
-	beta = sqrt(beta);
+	beta = sqrt(fabs(beta));
 	lis_vector_copy(r, w[j]);
 	lis_vector_copy(q, v[j]);	
 	lis_vector_scale(1.0/beta, w[j]);
@@ -578,7 +578,7 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
 	  lis_vector_axpy(-dot, v[k], v[j]);
 	}
 
-      /* solve Bq = r */
+      /* solve B * q = r */
       err = lis_solve_kernel(B, r, q, solver, precon);
       if( err )
 	{
@@ -587,9 +587,9 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
 	  return err;
 	}
 
-      /* beta(j) = <q,r>^1/2 */
+      /* beta(j) = |<q,r>|^1/2 */
       lis_vector_dot(q, r, &beta);
-      beta = sqrt(beta);
+      beta = sqrt(fabs(beta));
       t[(j-1)*ss+j] = (LIS_REAL)beta;
       
       /* convergence check */
@@ -597,7 +597,7 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
       t[j*ss+j-1] = t[(j-1)*ss+j];
     }
 
-  /* compute eigenvalues of a real symmetric tridiagonal matrix 
+  /* compute eigenvalues of a symmetric tridiagonal matrix 
      T(j) = ST'(j)S^* */
   lis_array_qr(ss,t,tq,tr,&qriter,&qrerr);
 

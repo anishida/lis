@@ -303,6 +303,8 @@ typedef long double LIS_COMPLEX[2];
 #endif
 #ifdef _COMPLEX
 typedef LIS_COMPLEX LIS_SCALAR;
+#define creal(x) creall(x)
+#define cimag(x) cimagl(x)
 #define acos(x) cacosl(x)
 #define acosh(x) cacoshl(x)
 #define asin(x) casinl(x)
