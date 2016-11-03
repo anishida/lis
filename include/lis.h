@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"1.7.6"
+#define LIS_VERSION	"1.7.7"
 /**************************************/
 #include <stdio.h>
 #ifdef HAVE_COMPLEX_H
@@ -303,6 +303,8 @@ typedef long double LIS_COMPLEX[2];
 #endif
 #ifdef _COMPLEX
 typedef LIS_COMPLEX LIS_SCALAR;
+#define creal(x) creall(x)
+#define cimag(x) cimagl(x)
 #define acos(x) cacosl(x)
 #define acosh(x) cacoshl(x)
 #define asin(x) casinl(x)
@@ -896,7 +898,7 @@ extern "C"
 /*NEH support for extended "solve_kernel" workflow*/
     extern LIS_INT lis_solver_set_matrix(LIS_MATRIX A, LIS_SOLVER solver);
 	extern LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver);
-	extern LIS_INT lis_solve_setup(LIS_MATRIX A, LIS_SOLVER solver);  
+	extern LIS_INT lis_solve_setup(LIS_MATRIX A, LIS_SOLVER solver);
 	extern LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver, LIS_PRECON precon);
 	extern LIS_PRECON_REGISTER *precon_register_top;
 	extern LIS_INT precon_register_type;

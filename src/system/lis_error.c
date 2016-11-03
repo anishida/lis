@@ -98,7 +98,7 @@ LIS_INT lis_debug_trace_func(LIS_INT flag, char *func)
 LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)
 {
 	va_list vvlist;
-	LIS_INT		my_rank;
+	LIS_INT	my_rank;
 
 	#ifdef USE_MPI
 		MPI_Barrier(comm);
@@ -109,7 +109,7 @@ LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)
 
 	if( my_rank==0 )
 	{
-		va_start( vvlist, mess );
+		va_start(vvlist,mess);
 		vprintf(mess,vvlist);
 		va_end(vvlist);
 	}
@@ -124,7 +124,7 @@ LIS_INT lis_error(const char *file, const char *func, const LIS_INT line, const 
 {
 	va_list vvlist;
 
-	va_start( vvlist, mess );
+	va_start(vvlist, mess);
 	lis_printf(lis_debug_comm,"%s(%d) : %s : error %s :",file,line,func,LIS_ERR_MESS[code-LIS_ERR_ILL_ARG]);
 	if( mess ) vprintf(mess,vvlist);
 	va_end(vvlist);
@@ -160,4 +160,6 @@ LIS_INT lis_print_rhistory(LIS_INT iter, LIS_REAL resid)
 
 	return LIS_SUCCESS;
 }
+
+
 

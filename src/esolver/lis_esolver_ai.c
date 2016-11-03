@@ -67,7 +67,7 @@
    if h(j+1,j) = 0, stop
    v(j+1) = w / h(j+1,j)
  end for
- compute eigenvalues of a real upper Hessenberg matrix 
+ compute eigenvalues of an upper Hessenberg matrix 
  H(m) = SH'(m)S^*, where
        (h(0,0)   h(0,1)                            )
        (h(1,0)   h(1,1)                            )
@@ -229,7 +229,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
       
     }
 
-  /* compute eigenvalues of a real upper
+  /* compute eigenvalues of an upper
      Hessenberg matrix H(j) = SH'(j)S^* */
   lis_array_qr(ss,h,hq,hr,&hqriter,&hqrerr);
 
@@ -442,7 +442,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
    if h(j+1,j) = 0, stop
    v(j+1) = w / h(j+1,j)
  end for
- compute eigenvalues of a real upper Hessenberg matrix 
+ compute eigenvalues of an upper Hessenberg matrix 
  H(m) = SH'(m)S^*, where
        (h(0,0)   h(0,1)                            )
        (h(1,0)   h(1,1)                            )
@@ -630,7 +630,7 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
       
     }
 
-  /* compute eigenvalues of a real upper
+  /* compute eigenvalues of an upper
      Hessenberg matrix H(j) = SH'(j)S^* */
   lis_array_qr(ss,h,hq,hr,&hqriter,&hqrerr);
 

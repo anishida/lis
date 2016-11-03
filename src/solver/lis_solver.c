@@ -270,6 +270,7 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->params[LIS_PARAMS_RATE         -LIS_OPTIONS_LEN] = 5.0;
 	solver->params[LIS_PARAMS_SAAMG_THETA  -LIS_OPTIONS_LEN] = 0.05;
 
+	/* reset solver->setup */
 	solver->setup = LIS_FALSE;
 
 	LIS_DEBUG_FUNC_OUT;
@@ -856,30 +857,31 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	solver->precon   = precon;
 	solver->rhistory = rhistory;
 
-	/* Do not call lis_solver_execute if solver->setup is true. 
-	   See esolver/lis_esolver_cg.c, in which lis_solve is 
-	   called only for preconditioning. 
+	/* Do not call lis_solve_execute if solver->setup is true. 
+	   See esolver/lis_esolver_cg.c, where only preconditioner is called.
 	   solver->setup is initialized in lis_solver_init, 
-	   and reset by lis_solve_setup.*/
+	   and reset by lis_solve_setup.
+	*/
+	
 	if (!solver->setup)
 	  {
-	#ifndef USE_QUAD_PRECISION
+#ifndef USE_QUAD_PRECISION
+	    err = lis_solver_execute[nsolver](solver);
+#else
+	    if( precision==LIS_PRECISION_DOUBLE )
+	      {
 		err = lis_solver_execute[nsolver](solver);
-	#else
-		if( precision==LIS_PRECISION_DOUBLE )
-		{
-			err = lis_solver_execute[nsolver](solver);
-		}
-		else if( precision==LIS_PRECISION_QUAD )
-		{
-			err = lis_solver_execute_quad[nsolver](solver);
-		}
-		else if( precision==LIS_PRECISION_SWITCH )
-		{
-			err = lis_solver_execute_switch[nsolver](solver);
-		}
-	#endif
-	solver->retcode = err;
+	      }
+	    else if( precision==LIS_PRECISION_QUAD )
+	      {
+		err = lis_solver_execute_quad[nsolver](solver);
+	      }
+	    else if( precision==LIS_PRECISION_SWITCH )
+	      {
+		err = lis_solver_execute_switch[nsolver](solver);
+	      }
+#endif
+	    solver->retcode = err;
 	  }
 
 	if( scale==LIS_SCALE_SYMM_DIAG && precon_type!=LIS_PRECON_TYPE_IS)

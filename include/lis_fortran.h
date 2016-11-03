@@ -204,7 +204,10 @@ extern LIS_Comm_f lis_comm_world_f;
 #define lis_solver_destroy_f F77_FUNC_(lis_solver_destroy_f, LIS_SOLVER_DESTROY_F) 
 /*NEH support for extended "solve_kernel" workflow*/
 #define lis_solver_set_matrix_f F77_FUNC_(lis_solver_set_matrix_f, LIS_SOLVER_SET_MATRIX_F) 
-#define lis_solve_f F77_FUNC_(lis_solve_f, LIS_SOLVE_F) 
+#define lis_solve_f F77_FUNC_(lis_solve_f, LIS_SOLVE_F)
+#define lis_solve_setup_f F77_FUNC_(lis_solve_setup_f, LIS_SOLVE_SETUP_F) 
+#define lis_solve_kernel_f F77_FUNC_(lis_solve_kernel_f, LIS_SOLVE_KERNEL_F)
+#define lis_solver_get_status_f F77_FUNC_(lis_solver_get_status_f, LIS_SOLVER_GET_STATUS_F) 
 #define lis_solver_set_option_f F77_FUNC_(lis_solver_set_option_f, LIS_SOLVER_SET_OPTION_F) 
 #define lis_solver_get_iter_f F77_FUNC_(lis_solver_get_iter_f, LIS_SOLVER_GET_ITER_F) 
 #define lis_solver_get_iterex_f F77_FUNC_(lis_solver_get_iterex_f, LIS_SOLVER_GET_ITEREX_F) 
@@ -217,8 +220,6 @@ extern LIS_Comm_f lis_comm_world_f;
 #define lis_solver_get_solvername_f F77_FUNC_(lis_solver_get_solvername_f, LIS_SOLVER_GET_SOLVERNAME_F) 
 #define lis_solver_get_preconname_f F77_FUNC_(lis_solver_get_preconname_f, LIS_SOLVER_GET_PRECONNAME_F) 
 #define lis_solver_set_optionC_f F77_FUNC_(lis_solver_set_optionc_f, LIS_SOLVER_SET_OPTIONC_F) 
-#define lis_solve_kernel_f F77_FUNC_(lis_solve_kernel_f, LIS_SOLVE_KERNEL_F)
-#define lis_solver_get_status_f F77_FUNC_(lis_solver_get_status_f, LIS_SOLVER_GET_STATUS_F) 
 
 /**************/
 /* SYSTEM     */

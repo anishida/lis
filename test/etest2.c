@@ -181,6 +181,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
     lis_esolver_get_residualnorm(esolver, &residual);
     lis_esolver_get_iter(esolver, &iter);
     lis_esolver_get_timeex(esolver,&time,&itime,&ptime,&p_c_time,&p_i_time);
+
     if( my_rank==0 ) {
       printf("%s: mode number          = %d\n", esolvername, 0);
 #ifdef _COMPLEX      
