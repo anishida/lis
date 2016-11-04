@@ -300,7 +300,7 @@ install:
 !ifdef prefix
 	mkdir $(PREFIX)
 !endif
-	mkdir $(PREFIX)\bin $(PREFIX)\lib
+	mkdir $(PREFIX)\bin $(PREFIX)\lib $(PREFIX)\share
 	$(CP) test1.exe $(PREFIX)\bin\lsolve.exe
 	$(CP) etest5.exe $(PREFIX)\bin\esolve.exe
 	$(CP) getest5.exe $(PREFIX)\bin\gesolve.exe
