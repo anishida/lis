@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.7.7
+Version 1.7.8
 \end{flushleft}
 
 \vspace*{2cm}
@@ -231,7 +231,7 @@ Cover: Ogata Korin. Irises. c1705. Nezu Museum.
 
 \section*{Changes from Version 1.5}
 \begin{enumerate}
-\item Addition: Support for complex matrices.
+\item Addition: Support for complex arithmetic.
 \end{enumerate}
   
 \section*{Changes from Version 1.6}
@@ -658,28 +658,28 @@ for details): \\
  \verb+      > configure.bat+\\
 The default configuration of {\tt Makefile} is defined in {\tt Makefile.in}.
 To build the library, run the following command in the directory {\tt
-lis-(\$VERSION)\textbackslash win}: \\
+lis-(\$VERSION)\textbackslash win}:\\
  \verb+      > nmake+\\
 To ensure that the library has been built successfully, enter\\
  \verb+      > nmake check+\\
-The following command copies the library to {\tt lis-(\$VERSION)\textbackslash lib}
-and the executable files to\\
-{\tt lis-(\$VERSION)\textbackslash bin}, respectively:\\
- \verb+      > nmake install+
-
-To remove the copied files in
-{\tt lis-(\$VERSION)\textbackslash lib}
-and {\tt lis-(\$VERSION)\textbackslash bin}, enter 
-\\
+The following command copies
+the library to {\tt (\$INSTALLDIR)\textbackslash lib}, 
+the executable files to
+{\tt (\$INSTALLDIR)\textbackslash bin},
+the header files to
+{\tt (\$INSTALLDIR)\textbackslash include},
+and the PDF documents to
+{\tt (\$INSTALLDIR)\textbackslash doc},
+respectively:\\
+ \verb+      > nmake install+\\
+To remove the copied files in {\tt (\$INSTALLDIR)}, enter\\
  \verb+      > nmake uninstall+\\
 To remove the generated library and executables files in
-{\tt lis-(\$VERSION)\textbackslash win}, enter 
-\\
+{\tt lis-(\$VERSION)\textbackslash win}, enter\\
  \verb+      > nmake clean+\\
 To remove the configuration files in addition to the other
-generated files, enter 
-\\
- \verb+      > nmake distclean+
+generated files, enter\\
+\verb+      > nmake distclean+
 
 To use UNIX compatible environments, follow the instructions in the
 previous section. 
