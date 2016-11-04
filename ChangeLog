@@ -1,3 +1,8 @@
+Version 1.7.8  November 4, 2016
+
+  - Fixed installation bugs in win\Makefile.in.
+  - Updated documents.
+
 Version 1.7.7  November 3, 2016
 
   - Fixed bug in generalized Lanczos.
