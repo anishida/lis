@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis ユーザガイド}\\
-バージョン 1.7.7
+バージョン 1.7.8
 \end{flushleft}
 
 \vspace*{2cm}
@@ -629,16 +629,18 @@ Microsoft Build Engineを使用する場合は,
 実行ファイルが正常に生成されたかどうかを確認するには, 
 次のコマンドを入力し, 生成された実行ファイルを用いて検証を行う. \\
  \verb+      > nmake check+\\
-生成されたライブラリ及び検証プログラムの実行ファイルは,
-以下のコマンドにより{\tt lis-(\$VERSION)\textbackslash lib}, 
-{\tt lis-(\$VERSION)\textbackslash bin}にそれぞれ格納される. \\
- \verb+      > nmake install+
-
-{\tt lis-(\$VERSION)\textbackslash lib}, 
-{\tt lis-(\$VERSION)\textbackslash bin}に複製されたファイルを削除するには，
+生成されたライブラリ, 実行ファイル, ヘッダファイル, 及びPDF文書は,
+以下のコマンドにより\\
+{\tt (\$INSTALLDIR)\textbackslash lib}, 
+{\tt (\$INSTALLDIR)\textbackslash bin},
+{\tt (\$INSTALLDIR)\textbackslash include}, 
+及び{\tt (\$INSTALLDIR)\textbackslash doc}
+にそれぞれ格納される. \\
+ \verb+      > nmake install+\\
+{\tt (\$INSTALLDIR)}に複製されたファイルを削除するには，
 次のコマンドを入力する. \\
  \verb+      > nmake uninstall+\\
-{\tt lis-(\$VERSION)\textbackslash win}に生成されたライブラリ,
+{\tt (\$INSTALLDIR)\textbackslash win}に生成されたライブラリ,
 及び実行ファイルを削除するには，次のコマンドを入力する. \\
  \verb+      > nmake clean+\\
 生成された設定ファイルを合わせて削除するには，次のコマンドを入力する. \\
