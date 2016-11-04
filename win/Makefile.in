@@ -59,7 +59,7 @@ CFLAGS = $(CFLAGS) $(cdebug) $(cvars)
 !endif
 
 
-# Configuration for Fortran Interface
+# Configuration for Fortran interface
 
 !ifdef fortran
 FC = ifort
@@ -75,7 +75,7 @@ FFLAGS = $(FFLAGS) -MT
 !endif
 
 
-# Configuration for SA-AMG
+# Configuration for SA-AMG preconditioning
 
 !ifdef saamg
 CFLAGS = $(CFLAGS) -DUSE_SAAMG
@@ -93,7 +93,7 @@ FFLAGS = $(FFLAGS) -integer-size:64
 !endif
 
 
-# Configuration for long double
+# Configuration for long double precision operations
 
 !ifdef longdouble
 CFLAGS = $(CFLAGS) -D_LONG__DOUBLE
@@ -105,7 +105,7 @@ FFLAGS = $(FFLAGS) -real-size:128
 !endif
 
 
-# Configuration for complex numbers
+# Configuration for complex arithmetic
 
 !ifdef complex
 CFLAGS = $(CFLAGS) -D_COMPLEX
