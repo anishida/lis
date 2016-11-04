@@ -105,7 +105,7 @@ FFLAGS = $(FFLAGS) -real-size:128
 !endif
 
 
-# Configuration for complex
+# Configuration for complex numbers
 
 !ifdef complex
 CFLAGS = $(CFLAGS) -D_COMPLEX
@@ -211,7 +211,7 @@ objs_saamg: ..\src\fortran\amg\lis_s_data_type_AMGCG.obj \
 !endif
 
 exes_test: test1.exe test2.exe test2b.exe test3.exe test3b.exe test4.exe test5.exe test6.exe
-exes_etest: etest1.exe etest2.exe etest3.exe etest4.exe etest5.exe etest6.exe etest7.exe
+exes_etest: etest1.exe getest1.exe etest2.exe etest3.exe etest4.exe etest5.exe getest5.exe etest6.exe etest7.exe
 exes_spmvtest: spmvtest1.exe spmvtest2.exe spmvtest2b.exe spmvtest3.exe spmvtest3b.exe spmvtest4.exe spmvtest5.exe
 
 exes_testf: test1f.exe test2f.exe test4f.exe test6f.exe
@@ -226,10 +226,12 @@ test4.exe: ..\test\$*.obj
 test5.exe: ..\test\$*.obj
 test6.exe: ..\test\$*.obj
 etest1.exe: ..\test\$*.obj
+getest1.exe: ..\test\$*.obj
 etest2.exe: ..\test\$*.obj
 etest3.exe: ..\test\$*.obj
 etest4.exe: ..\test\$*.obj
 etest5.exe: ..\test\$*.obj
+getest5.exe: ..\test\$*.obj
 etest6.exe: ..\test\$*.obj
 etest7.exe: ..\test\$*.obj
 spmvtest1.exe: ..\test\$*.obj
@@ -301,6 +303,7 @@ install:
 	mkdir $(PREFIX)\bin $(PREFIX)\lib
 	$(CP) test1.exe $(PREFIX)\bin\lsolve.exe
 	$(CP) etest5.exe $(PREFIX)\bin\esolve.exe
+	$(CP) getest5.exe $(PREFIX)\bin\gesolve.exe
 	$(CP) test3b.exe $(PREFIX)\bin\hpcg_kernel.exe
 	$(CP) spmvtest3b.exe $(PREFIX)\bin\hpcg_spmvtest.exe
 	$(CP) spmvtest*.exe $(PREFIX)\bin
