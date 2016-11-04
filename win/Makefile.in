@@ -307,12 +307,19 @@ install:
 	$(CP) getest5.exe $(PREFIX)\bin\gesolve.exe
 	$(CP) test3b.exe $(PREFIX)\bin\hpcg_kernel.exe
 	$(CP) spmvtest3b.exe $(PREFIX)\bin\hpcg_spmvtest.exe
-	$(CP) spmvtest*.exe $(PREFIX)\bin
+	$(CP) spmvtest1.exe $(PREFIX)\bin
+	$(CP) spmvtest2.exe $(PREFIX)\bin
+	$(CP) spmvtest2b.exe $(PREFIX)\bin
+	$(CP) spmvtest3.exe $(PREFIX)\bin
+	$(CP) spmvtest3b.exe $(PREFIX)\bin
+	$(CP) spmvtest4.exe $(PREFIX)\bin
+	$(CP) spmvtest5.exe $(PREFIX)\bin
 	$(CP) lis.lib $(PREFIX)\lib
 	$(CP) ..\include\lis_config.h $(PREFIX)\include
 	$(CP) ..\include\lis.h $(PREFIX)\include
 	$(CP) ..\include\lisf.h $(PREFIX)\include
-	$(CP) ..\doc\lis-ug-*.pdf $(PREFIX)\doc
+	$(CP) ..\doc\lis-ug-en.pdf $(PREFIX)\doc
+	$(CP) ..\doc\lis-ug-ja.pdf $(PREFIX)\doc
 
 uninstall: 
 	$(RM) $(PREFIX)\bin\lsolve.exe
@@ -320,12 +327,19 @@ uninstall:
 	$(RM) $(PREFIX)\bin\gesolve.exe
 	$(RM) $(PREFIX)\bin\hpcg_kernel.exe
 	$(RM) $(PREFIX)\bin\hpcg_spmvtest.exe
-	$(RM) $(PREFIX)\bin\spmvtest*.exe
+	$(RM) $(PREFIX)\bin\spmvtest1.exe
+	$(RM) $(PREFIX)\bin\spmvtest2.exe
+	$(RM) $(PREFIX)\bin\spmvtest2b.exe
+	$(RM) $(PREFIX)\bin\spmvtest3.exe
+	$(RM) $(PREFIX)\bin\spmvtest3b.exe
+	$(RM) $(PREFIX)\bin\spmvtest4.exe
+	$(RM) $(PREFIX)\bin\spmvtest5.exe
 	$(RM) $(PREFIX)\lib\lis.lib
 	$(RM) $(PREFIX)\include\lis_config.h
 	$(RM) $(PREFIX)\include\lis.h
 	$(RM) $(PREFIX)\include\lisf.h
-	$(RM) $(PREFIX)\doc\lis-ug-*.pdf
+	$(RM) $(PREFIX)\doc\lis-ug-en.pdf
+	$(RM) $(PREFIX)\doc\lis-ug-ja.pdf
 	rmdir $(PREFIX)\bin $(PREFIX)\lib $(PREFIX)\include $(PREFIX)\doc
 	rmdir $(PREFIX)
 
