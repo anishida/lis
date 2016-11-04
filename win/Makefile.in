@@ -297,10 +297,11 @@ check:
 !endif
 
 install:
-!ifdef prefix
-	mkdir $(PREFIX)
-!endif
-	mkdir $(PREFIX)\bin $(PREFIX)\lib $(PREFIX)\share
+	if not exist $(PREFIX) mkdir $(PREFIX)
+	if not exist $(PREFIX)\bin mkdir $(PREFIX)\bin
+	if not exist $(PREFIX)\include mkdir $(PREFIX)\include
+	if not exist $(PREFIX)\lib mkdir $(PREFIX)\lib
+	if not exist $(PREFIX)\doc mkdir $(PREFIX)\doc
 	$(CP) test1.exe $(PREFIX)\bin\lsolve.exe
 	$(CP) etest5.exe $(PREFIX)\bin\esolve.exe
 	$(CP) getest5.exe $(PREFIX)\bin\gesolve.exe
@@ -308,10 +309,25 @@ install:
 	$(CP) spmvtest3b.exe $(PREFIX)\bin\hpcg_spmvtest.exe
 	$(CP) spmvtest*.exe $(PREFIX)\bin
 	$(CP) lis.lib $(PREFIX)\lib
+	$(CP) ..\include\lis_config.h $(PREFIX)\include
+	$(CP) ..\include\lis.h $(PREFIX)\include
+	$(CP) ..\include\lisf.h $(PREFIX)\include
+	$(CP) ..\doc\lis-ug-*.pdf $(PREFIX)\doc
 
 uninstall: 
-	$(RM) $(PREFIX)\bin\*.exe $(PREFIX)\lib\lis.lib
-	rmdir $(PREFIX)\bin $(PREFIX)\lib
+	$(RM) $(PREFIX)\bin\lsolve.exe
+	$(RM) $(PREFIX)\bin\esolve.exe
+	$(RM) $(PREFIX)\bin\gesolve.exe
+	$(RM) $(PREFIX)\bin\hpcg_kernel.exe
+	$(RM) $(PREFIX)\bin\hpcg_spmvtest.exe
+	$(RM) $(PREFIX)\bin\spmvtest*.exe
+	$(RM) $(PREFIX)\lib\lis.lib
+	$(RM) $(PREFIX)\include\lis_config.h
+	$(RM) $(PREFIX)\include\lis.h
+	$(RM) $(PREFIX)\include\lisf.h
+	$(RM) $(PREFIX)\doc\lis-ug-*.pdf
+	rmdir $(PREFIX)\bin $(PREFIX)\lib $(PREFIX)\include $(PREFIX)\doc
+	rmdir $(PREFIX)
 
 clean:
 	$(RM) *.obj *.mod *.pdb 
