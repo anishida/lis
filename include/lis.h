@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"1.7.8"
+#define LIS_VERSION	"1.7.9"
 /**************************************/
 #include <stdio.h>
 #ifdef HAVE_COMPLEX_H
@@ -961,6 +961,7 @@ extern "C"
 	extern void lis_free2(LIS_INT n, ...);
 	extern LIS_INT lis_is_malloc( void *p );
 	extern void lis_date(char *date);
+	extern LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...);
 
 
 #ifdef __cplusplus
