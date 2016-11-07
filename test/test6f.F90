@@ -27,7 +27,9 @@
       
 #include "lisf.h"
 
+      LIS_Comm comm
       LIS_SCALAR,allocatable :: a(:),x(:),b(:),u(:),w(:)
+      LIS_INTEGER my_rank,nprocs      
       LIS_INTEGER :: m,n,nn
       LIS_INTEGER :: i,j,ii,jj,nnz
       LIS_INTEGER :: ia,ierr
@@ -38,10 +40,22 @@
 
       call lis_initialize(ierr) 
 
+      comm = LIS_COMM_WORLD
+
+#ifdef USE_MPI
+      call MPI_Comm_size(comm,nprocs,ierr)
+      call MPI_Comm_rank(comm,my_rank,ierr)
+#else
+      nprocs  = 1
+      my_rank = 0
+#endif
+
       ia = iargc()
       if( ia.lt.2 ) then
-         write(*,*) 'Usage: test6f m n'
-         call lis_finalize(ierr)
+         if( my_rank.eq.0 ) then         
+            write(*,*) 'Usage: test6f m n'
+            call lis_finalize(ierr)
+         endif
          stop
       end if
 
