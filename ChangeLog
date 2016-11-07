@@ -1,3 +1,7 @@
+Version 1.7.9  November 7, 2016
+
+  - Added experimental support for lis_replace() for print statement.
+
 Version 1.7.8  November 4, 2016
 
   - Fixed installation bugs in win\Makefile.in.
