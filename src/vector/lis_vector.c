@@ -871,13 +871,13 @@ LIS_INT lis_vector_print(LIS_VECTOR x)
 #ifdef _COMPLEX
 #ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
-				printf("%6lld  (Le, %Le)\n",ii,creall(x->value[i]),cimagl(x->value[i]));
+				printf("%6lld  (Le, %Le)\n",ii,creal(x->value[i]),cimag(x->value[i]));
 #else
 				printf("%6lld  (%e, %e)\n",ii,creal(x->value[i]),cimag(x->value[i]));
 #endif
 #else
 #ifdef _LONG__DOUBLE
-				printf("%6d  (%Le, %Le)\n",ii,creall(x->value[i]),cimagl(x->value[i]));
+				printf("%6d  (%Le, %Le)\n",ii,creal(x->value[i]),cimag(x->value[i]));
 #else
 				printf("%6d  (%e, %e)\n",ii,creal(x->value[i]),cimag(x->value[i]));
 #endif
@@ -919,13 +919,13 @@ LIS_INT lis_vector_print(LIS_VECTOR x)
 #ifdef _COMPLEX
 #ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
-			printf("%6lld  (%Le, %Le)\n",ii,creall(x->value[i]),cimagl(x->value[i]));
+			printf("%6lld  (%Le, %Le)\n",ii,creal(x->value[i]),cimag(x->value[i]));
 #else
 			printf("%6lld  (%e, %e)\n",ii,creal(x->value[i]),cimag(x->value[i]));
 #endif
 #else
 #ifdef _LONG__DOUBLE
-			printf("%6d  (%Le, %Le)\n",ii,creall(x->value[i]),cimagl(x->value[i]));
+			printf("%6d  (%Le, %Le)\n",ii,creal(x->value[i]),cimag(x->value[i]));
 #else
 			printf("%6d  (%e, %e)\n",ii,creal(x->value[i]),cimag(x->value[i]));
 #endif

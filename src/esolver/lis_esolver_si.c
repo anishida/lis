@@ -136,6 +136,7 @@ LIS_INT lis_esi_malloc_work(LIS_ESOLVER esolver)
 #define __FUNC__ "lis_esi"
 LIS_INT lis_esi(LIS_ESOLVER esolver)
 {
+  LIS_Comm comm;  
   LIS_MATRIX A;
   LIS_VECTOR x, Ax;
   LIS_SCALAR xAx, xx;
@@ -158,6 +159,8 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 
   LIS_DEBUG_FUNC_IN;
 
+  comm = LIS_COMM_WORLD;
+
   A = esolver->A;
   x = esolver->x;
 
@@ -177,7 +180,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   lis_vector_scale(1.0/nrm2,r);
 
   lis_esolver_get_esolvername(niesolver, esolvername);
-  if( output & A->my_rank==0 ) printf("inner eigensolver     : %s\n", esolvername);
+  if( output ) lis_printf(comm,"inner eigensolver     : %s\n", esolvername);
 
   switch ( niesolver )
     {
@@ -190,10 +193,10 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
       lis_solver_get_precon(solver, &precon_type);
       lis_solver_get_solvername(nsol, solvername);
       lis_solver_get_preconname(precon_type, preconname);
-      if( output & A->my_rank==0 )
+      if( output )
 	{
-	  printf("linear solver         : %s\n", solvername);
-	  printf("preconditioner        : %s\n", preconname);
+	  lis_printf(comm,"linear solver         : %E\n", solvername);
+	  lis_printf(comm,"preconditioner        : %E\n", preconname);
 	}
       break;
 
@@ -202,14 +205,10 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   giter=0;
   j=0;
 
-  if( output & A->my_rank==0 ) 
+  if( output ) 
     {
-#ifdef _LONG__LONG
-      printf("size of subspace      : %lld\n\n", ss);
-#else
-      printf("size of subspace      : %d\n\n", ss);
-#endif
-      printf("compute eigenpairs in subspace:\n\n");
+      lis_printf(comm,"size of subspace      : %D\n\n", ss);
+      lis_printf(comm,"compute eigenpairs in subspace:\n\n");
     }
 
   while (j<ss)
@@ -322,36 +321,16 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 
       lis_vector_copy(v[j], esolver->evector[j-1]);  
 
-      if (output & A->my_rank==0 && ss>1)
+      if (output & ss>1)
 	{
-#ifdef _LONG__LONG
-	  printf("Subspace: mode number          = %lld\n", j-1);
-#else
-	  printf("Subspace: mode number          = %d\n", j-1);
-#endif
+	  lis_printf(comm,"Subspace: mode number          = %D\n", j-1);
 #ifdef _COMPLEX	  
-#ifdef _LONG__DOUBLE
-	  printf("Subspace: eigenvalue           = (Le, %Le)\n", creall(esolver->evalue[j-1]), cimagl(esolver->evalue[j-1]));
+	  lis_printf(comm,"Subspace: eigenvalue           = (%E, %E)\n", creal(esolver->evalue[j-1]), cimag(esolver->evalue[j-1]));
 #else
-	  printf("Subspace: eigenvalue           = (%e, %e)\n", creal(esolver->evalue[j-1]), cimag(esolver->evalue[j-1]));
-#endif
-#else
-#ifdef _LONG__DOUBLE
-	  printf("Subspace: eigenvalue           = %Le\n", esolver->evalue[j-1]);
-#else
-	  printf("Subspace: eigenvalue           = %e\n", esolver->evalue[j-1]);
-#endif
+	  lis_printf(comm,"Subspace: eigenvalue           = %E\n", esolver->evalue[j-1]);
 #endif	  
-#ifdef _LONG__LONG
-	  printf("Subspace: number of iterations = %lld\n",iter);
-#else
-	  printf("Subspace: number of iterations = %d\n",iter);
-#endif
-#ifdef _LONG__DOUBLE
-	  printf("Subspace: relative residual    = %Le\n\n",resid);
-#else
-	  printf("Subspace: relative residual    = %e\n\n",resid);
-#endif	  
+	  lis_printf(comm,"Subspace: number of iterations = %D\n",iter);
+	  lis_printf(comm,"Subspace: relative residual    = %E\n\n",resid);
 	}
     }
   
@@ -455,6 +434,7 @@ LIS_INT lis_egsi_malloc_work(LIS_ESOLVER esolver)
 #define __FUNC__ "lis_egsi"
 LIS_INT lis_egsi(LIS_ESOLVER esolver)
 {
+  LIS_Comm comm;  
   LIS_MATRIX A, B;
   LIS_VECTOR x, Ax;
   LIS_SCALAR xAx, xx;
@@ -477,6 +457,8 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 
   LIS_DEBUG_FUNC_IN;
 
+  comm = LIS_COMM_WORLD;
+
   A = esolver->A;
   B = esolver->B;
   x = esolver->x;
@@ -498,7 +480,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   lis_vector_scale(1.0/nrm2,y);
 
   lis_esolver_get_esolvername(nigesolver, esolvername);
-  if( output & A->my_rank==0 ) printf("inner eigensolver     : %s\n", esolvername);
+  if( output ) lis_printf(comm,"inner eigensolver     : %s\n", esolvername);
 
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
@@ -507,23 +489,19 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   lis_solver_get_precon(solver, &precon_type);
   lis_solver_get_solvername(nsol, solvername);
   lis_solver_get_preconname(precon_type, preconname);
-  if( output & A->my_rank==0 )
+  if( output )
     {
-      printf("linear solver         : %s\n", solvername);
-      printf("preconditioner        : %s\n", preconname);
+      lis_printf(comm,"linear solver         : %s\n", solvername);
+      lis_printf(comm,"preconditioner        : %s\n", preconname);
     }
 
   giter=0;
   j=0;
 
-  if( output & A->my_rank==0 ) 
+  if( output ) 
     {
-#ifdef _LONG__LONG
-      printf("size of subspace      : %lld\n\n", ss);
-#else
-      printf("size of subspace      : %d\n\n", ss);
-#endif
-      printf("compute eigenpairs in subspace:\n\n");
+      lis_printf(comm,"size of subspace      : %D\n\n", ss);
+      lis_printf(comm,"compute eigenpairs in subspace:\n\n");
     }
 
   while (j<ss)
@@ -677,36 +655,16 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 
       lis_vector_copy(v[j], esolver->evector[j-1]);  
 
-      if (output & A->my_rank==0 && ss>1)
+      if (output & ss>1)
 	{
-#ifdef _LONG__LONG
-	  printf("Subspace: mode number          = %lld\n", j-1);
-#else
-	  printf("Subspace: mode number          = %d\n", j-1);
-#endif
+	  lis_printf(comm,"Subspace: mode number          = %D\n", j-1);
 #ifdef _COMPLEX	  
-#ifdef _LONG__DOUBLE
-	  printf("Subspace: eigenvalue           = (Le, %Le)\n", creall(esolver->evalue[j-1]), cimagl(esolver->evalue[j-1]));
+	  lis_printf(comm,"Subspace: eigenvalue           = (%E, %E)\n", creal(esolver->evalue[j-1]), cimag(esolver->evalue[j-1]));
 #else
-	  printf("Subspace: eigenvalue           = (%e, %e)\n", creal(esolver->evalue[j-1]), cimag(esolver->evalue[j-1]));
-#endif
-#else
-#ifdef _LONG__DOUBLE
-	  printf("Subspace: eigenvalue           = %Le\n", esolver->evalue[j-1]);
-#else
-	  printf("Subspace: eigenvalue           = %e\n", esolver->evalue[j-1]);
-#endif
+	  lis_printf(comm,"Subspace: eigenvalue           = %E\n", esolver->evalue[j-1]);
 #endif	  
-#ifdef _LONG__LONG
-	  printf("Subspace: number of iterations = %lld\n",iter);
-#else
-	  printf("Subspace: number of iterations = %d\n",iter);
-#endif
-#ifdef _LONG__DOUBLE
-	  printf("Subspace: relative residual    = %Le\n\n",resid);
-#else
-	  printf("Subspace: relative residual    = %e\n\n",resid);
-#endif	  
+	  lis_printf(comm,"Subspace: number of iterations = %D\n",iter);
+	  lis_printf(comm,"Subspace: relative residual    = %E\n\n",resid);
 	}
     }
   

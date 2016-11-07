@@ -926,7 +926,8 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 #define __FUNC__ "lis_precon_create_iluc_bsr"
 LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 {
-	LIS_INT	err;
+	LIS_Comm comm;  
+	LIS_INT err;
 	LIS_INT	i,j,k,l,ii,jj,kk,ll,bnr,bs;
 	LIS_INT	n,nr,nnz,bnnz,lfil,len;
 	LIS_INT	cz,cw;
@@ -943,6 +944,7 @@ LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 
 	LIS_DEBUG_FUNC_IN;
 
+	comm = LIS_COMM_WORLD;
 
 	A      = solver->A;
 	n      = A->n;
@@ -1489,83 +1491,23 @@ LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 		}
 		memcpy(&D->value[bs*k],lu,bs*sizeof(LIS_SCALAR));
 		switch(bnr)
-#ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
 		{
 		case 1:
-			printf("k=%lld toldd=%Le\n",k,toldd);
-			printf("k=%lld %Le\n",k,D->value[k]);
-			break;
+		  lis_printf(comm,"k=%d toldd=%e\n",k,toldd);
+		  lis_printf(comm,"k=%d %e\n",k,D->value[k]);
+		  break;
 		case 2:
-			printf("k=%lld toldd=%Le\n",k,toldd);
-			printf("k=%lld %Le %Le\n",k,D->value[4*k+0],D->value[4*k+2]);
-			printf("k=%lld %Le %Le\n",k,D->value[4*k+1],D->value[4*k+3]);
-			break;
+		  lis_printf(comm,"k=%d toldd=%e\n",k,toldd);
+		  lis_printf(comm,"k=%d %e %e\n",k,D->value[4*k+0],D->value[4*k+2]);
+		  lis_printf(comm,"k=%d %e %e\n",k,D->value[4*k+1],D->value[4*k+3]);
+		  break;
 		case 3:
-			printf("k=%lld toldd=%Le\n",k,toldd);
-			printf("k=%lld %Le %Le %Le\n",k,D->value[9*k+0],D->value[9*k+3],D->value[9*k+6]);
-			printf("k=%lld %Le %Le %Le\n",k,D->value[9*k+1],D->value[9*k+4],D->value[9*k+7]);
-			printf("k=%lld %Le %Le %Le\n",k,D->value[9*k+2],D->value[9*k+5],D->value[9*k+8]);
-			break;
+		  lis_printf(comm,"k=%d toldd=%e\n",k,toldd);
+		  lis_printf(comm,"k=%d %e %e %e\n",k,D->value[9*k+0],D->value[9*k+3],D->value[9*k+6]);
+		  lis_printf(comm,"k=%d %e %e %e\n",k,D->value[9*k+1],D->value[9*k+4],D->value[9*k+7]);
+		  lis_printf(comm,"k=%d %e %e %e\n",k,D->value[9*k+2],D->value[9*k+5],D->value[9*k+8]);
+		  break;
 		}
-#else
-		{
-		case 1:
-			printf("k=%lld toldd=%e\n",k,toldd);
-			printf("k=%lld %e\n",k,D->value[k]);
-			break;
-		case 2:
-			printf("k=%lld toldd=%e\n",k,toldd);
-			printf("k=%lld %e %e\n",k,D->value[4*k+0],D->value[4*k+2]);
-			printf("k=%lld %e %e\n",k,D->value[4*k+1],D->value[4*k+3]);
-			break;
-		case 3:
-			printf("k=%lld toldd=%e\n",k,toldd);
-			printf("k=%lld %e %e %e\n",k,D->value[9*k+0],D->value[9*k+3],D->value[9*k+6]);
-			printf("k=%lld %e %e %e\n",k,D->value[9*k+1],D->value[9*k+4],D->value[9*k+7]);
-			printf("k=%lld %e %e %e\n",k,D->value[9*k+2],D->value[9*k+5],D->value[9*k+8]);
-			break;
-		}
-#endif
-#else
-#ifdef _LONG__DOUBLE
-		{
-		case 1:
-			printf("k=%d toldd=%Le\n",k,toldd);
-			printf("k=%d %Le\n",k,D->value[k]);
-			break;
-		case 2:
-			printf("k=%d toldd=%Le\n",k,toldd);
-			printf("k=%d %Le %Le\n",k,D->value[4*k+0],D->value[4*k+2]);
-			printf("k=%d %Le %Le\n",k,D->value[4*k+1],D->value[4*k+3]);
-			break;
-		case 3:
-			printf("k=%d toldd=%Le\n",k,toldd);
-			printf("k=%d %Le %Le %Le\n",k,D->value[9*k+0],D->value[9*k+3],D->value[9*k+6]);
-			printf("k=%d %Le %Le %Le\n",k,D->value[9*k+1],D->value[9*k+4],D->value[9*k+7]);
-			printf("k=%d %Le %Le %Le\n",k,D->value[9*k+2],D->value[9*k+5],D->value[9*k+8]);
-			break;
-		}
-#else
-		{
-		case 1:
-			printf("k=%d toldd=%e\n",k,toldd);
-			printf("k=%d %e\n",k,D->value[k]);
-			break;
-		case 2:
-			printf("k=%d toldd=%e\n",k,toldd);
-			printf("k=%d %e %e\n",k,D->value[4*k+0],D->value[4*k+2]);
-			printf("k=%d %e %e\n",k,D->value[4*k+1],D->value[4*k+3]);
-			break;
-		case 3:
-			printf("k=%d toldd=%e\n",k,toldd);
-			printf("k=%d %e %e %e\n",k,D->value[9*k+0],D->value[9*k+3],D->value[9*k+6]);
-			printf("k=%d %e %e %e\n",k,D->value[9*k+1],D->value[9*k+4],D->value[9*k+7]);
-			printf("k=%d %e %e %e\n",k,D->value[9*k+2],D->value[9*k+5],D->value[9*k+8]);
-			break;
-		}
-#endif
-#endif
 #endif
 #if 0
 		switch(bnr)
@@ -1581,9 +1523,9 @@ LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 			t        = 1.0/(D->value[4*k]*D->value[4*k+3] - D->value[4*k+1]*D->value[4*k+2]);
 
 			a        = D->value[4*k];
-			printf("k=%d t=%e\n",k,t);
-			printf("k=%d %e %e\n",k,D->value[4*k+0],D->value[4*k+2]);
-			printf("k=%d %e %e\n",k,D->value[4*k+1],D->value[4*k+3]);
+			lis_printf(comm,"k=%d t=%e\n",k,t);
+			lis_printf(comm,"k=%d %e %e\n",k,D->value[4*k+0],D->value[4*k+2]);
+			lis_printf(comm,"k=%d %e %e\n",k,D->value[4*k+1],D->value[4*k+3]);
 			D->value[4*k]   = t*D->value[4*k+3];
 			D->value[4*k+1] = -t*D->value[4*k+1];
 			D->value[4*k+2] = -t*D->value[4*k+2];
@@ -1597,7 +1539,7 @@ LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 				*/
 			t       = D->value[9*k]*D->value[9*k+4]*D->value[9*k+8] + D->value[9*k+1]*D->value[9*k+5]*D->value[9*k+6] + D->value[9*k+2]*D->value[9*k+3]*D->value[9*k+7];
 			t      -= D->value[9*k]*D->value[9*k+5]*D->value[9*k+7] + D->value[9*k+1]*D->value[9*k+3]*D->value[9*k+8] + D->value[9*k+2]*D->value[9*k+4]*D->value[9*k+6];
-			printf("k=%d t=%e\n",k,t);
+			lis_printf(comm,"k=%d t=%e\n",k,t);
 			t       = 1.0 / t;
 			b[0]    = t*(D->value[9*k+4]*D->value[9*k+8] - D->value[9*k+5]*D->value[9*k+7]);
 			b[1]    = t*(D->value[9*k+5]*D->value[9*k+6] - D->value[9*k+3]*D->value[9*k+8]);
@@ -1609,10 +1551,10 @@ LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 			b[7]    = t*(D->value[9*k+2]*D->value[9*k+3] - D->value[9*k+0]*D->value[9*k+5]);
 			b[8]    = t*(D->value[9*k+0]*D->value[9*k+4] - D->value[9*k+1]*D->value[9*k+3]);
 			memcpy(&D->value[9*k],b,9*sizeof(LIS_SCALAR));
-/*			printf("k=%d t=%e\n",k,t);
-			printf("k=%d %e %e %e\n",k,b[0],b[3],b[6]);
-			printf("k=%d %e %e %e\n",k,b[1],b[4],b[7]);
-			printf("k=%d %e %e %e\n",k,b[2],b[5],b[8]);*/
+/*			lis_printf(comm,"k=%d t=%e\n",k,t);
+			lis_printf(comm,"k=%d %e %e %e\n",k,b[0],b[3],b[6]);
+			lis_printf(comm,"k=%d %e %e %e\n",k,b[1],b[4],b[7]);
+			lis_printf(comm,"k=%d %e %e %e\n",k,b[2],b[5],b[8]);*/
 			break;
 		}
 		memcpy(tt,&D->value[bs*k],bs*sizeof(LIS_SCALAR));
@@ -1875,17 +1817,17 @@ LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 			memcpy(&U->value[k][bs*j],&z[bs*jj],bs*sizeof(LIS_SCALAR));
 /*			for(i=0;i<bnr;i++)
 			{
-				printf("U:k=%d j=%d",k,jj);
+				lis_printf(comm,"U:k=%d j=%d",k,jj);
 				for(ii=0;ii<bnr;ii++)
 				{
-					printf(" %e",z[bs*jj+ii*bnr+i]);
+					lis_printf(comm," %e",z[bs*jj+ii*bnr+i]);
 				}
-				printf("\n");
+				lis_printf(comm,"\n");
 			}*/
 		}
 		for(j=len;j<cz;j++) zc[iz[j]] = 0;
 		cz = nnz;
-/*		printf("k=%d U:lfil=%d nnz=%d len=%d\n",k,lfil,nnz,len);*/
+/*		lis_printf(comm,"k=%d U:lfil=%d nnz=%d len=%d\n",k,lfil,nnz,len);*/
 
 		/* drop L */
 		nnz = 0;
@@ -1909,7 +1851,7 @@ LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 /*				t       = sqrt(t);*/
 				break;
 			}
-/*			printf("k=%d L:jj=%d t=%e tol=%e\n",k,jj,t,toldd);*/
+/*			lis_printf(comm,"k=%d L:jj=%d t=%e tol=%e\n",k,jj,t,toldd);*/
 			if( t>toldd )
 			{
 				iw[nnz++]    = jj;
@@ -1988,18 +1930,18 @@ LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 			}
 /*			for(i=0;i<bnr;i++)
 			{
-				printf("L:k=%d j=%d",k,jj);
+				lis_printf(comm,"L:k=%d j=%d",k,jj);
 				for(ii=0;ii<bnr;ii++)
 				{
-					printf(" %e",L->value[k][bs*j+ii*bnr+i]);
+					lis_printf(comm," %e",L->value[k][bs*j+ii*bnr+i]);
 				}
-				printf("\n");
+				lis_printf(comm,"\n");
 			}*/
 #endif
 		}
 		for(j=len;j<cw;j++) wc[iw[j]] = 0;
 		cw = nnz;
-/*		printf("k=%d L:lfil=%d nnz=%d len=%d\n",k,lfil,nnz,len);*/
+/*		lis_printf(comm,"k=%d L:lfil=%d nnz=%d len=%d\n",k,lfil,nnz,len);*/
 
 
 		/**/

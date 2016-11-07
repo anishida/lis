@@ -41,7 +41,8 @@
 #define __FUNC__ "main"
 LIS_INT main(LIS_INT argc, char* argv[])
 {
-  LIS_INT err,nprocs,my_rank,comm;
+  LIS_Comm comm;
+  LIS_INT err,nprocs,my_ran;
   int int_nprocs,int_my_rank;
   LIS_INT nesol;
   LIS_MATRIX A;
@@ -80,8 +81,8 @@ LIS_INT main(LIS_INT argc, char* argv[])
   lis_printf(comm,"number of processes = %D\n",nprocs);
 
 #ifdef _OPENMP
-  lis_printf(comm,"max number of threads = %D\n",omp_get_num_procs());
-  lis_printf(comm,"number of threads = %D\n",omp_get_max_threads());
+  lis_printf(comm,"max number of threads = %d\n",omp_get_num_procs());
+  lis_printf(comm,"number of threads = %d\n",omp_get_max_threads());
 #endif
 		
   /* create matrix and vectors */
@@ -98,7 +99,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
   lis_esolver_get_residualnorm(esolver, &residual);
   lis_esolver_get_iter(esolver, &iter);
   lis_esolver_get_timeex(esolver,&time,&itime,&ptime,&p_c_time,&p_i_time);
-  lis_printf(comm,"%s: mode number          = %D\n", esolvername, 0);
+  lis_printf(comm,"%s: mode number          = %d\n", esolvername, 0);
 #ifdef _COMPLEX      
   lis_printf(comm,"%s: eigenvalue           = (%E, %E)\n", esolvername, creal(evalue0), cimag(evalue0));
 #else

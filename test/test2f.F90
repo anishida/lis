@@ -32,7 +32,7 @@
       LIS_SOLVER :: solver
       LIS_INTEGER :: ia,ierr
       LIS_INTEGER :: nprocs,my_rank
-      LIS_INTEGER :: matrix_type,comm_world
+      LIS_INTEGER :: matrix_type,comm
       LIS_INTEGER :: omp_get_num_procs,omp_get_max_threads
       LIS_INTEGER :: m,n,nn,nnz,innz
       LIS_INTEGER :: i,j,ii,jj,ctr
@@ -46,18 +46,19 @@
       character*20 :: m_char,n_char,mt_char,solvername
       integer*4 :: iargc
       
-      call lis_initialize(ierr) 
+      call lis_initialize(ierr)
+
+      comm = LIS_COMM_WORLD
 
 #ifdef USE_MPI
-      call MPI_Comm_size(MPI_COMM_WORLD,nprocs,ierr)
-      call MPI_Comm_rank(MPI_COMM_WORLD,my_rank,ierr)
+      call MPI_Comm_size(comm,nprocs,ierr)
+      call MPI_Comm_rank(comm,my_rank,ierr)
 #else
       nprocs  = 1
       my_rank = 0
 #endif
 
       matrix_type = LIS_MATRIX_CSR
-      comm_world = LIS_COMM_WORLD
 
       ia = iargc()
       if( ia.lt.5 ) then
@@ -86,7 +87,7 @@
       read(mt_char,*) matrix_type
 
       nn = m * n
-      call lis_matrix_create(comm_world,A,ierr)
+      call lis_matrix_create(comm,A,ierr)
       call CHKERR(ierr)
       call lis_matrix_set_size(A,0,nn,ierr)
       call CHKERR(ierr)
@@ -172,7 +173,7 @@
       call lis_matrix_get_nnz(A,nnz,ierr)
 
 #ifdef USE_MPI
-      call MPI_Allreduce(nnz,innz,1,LIS_MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,ierr)
+      call MPI_Allreduce(nnz,innz,1,LIS_MPI_INTEGER,MPI_SUM,comm,ierr)
       nnz = innz
 #endif
 

@@ -148,6 +148,7 @@ LIS_INT lis_eli_malloc_work(LIS_ESOLVER esolver)
 #define __FUNC__ "lis_eli"
 LIS_INT lis_eli(LIS_ESOLVER esolver)
 {
+  LIS_Comm comm; 
   LIS_MATRIX A;
   LIS_INT ss,ic;
   LIS_SCALAR gshift;
@@ -163,6 +164,8 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   LIS_ESOLVER esolver2;
   char esolvername[128],solvername[128],preconname[128];
   LIS_INT nsol,precon_type;
+
+  comm = LIS_COMM_WORLD;
 
   ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
   gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];      
@@ -190,11 +193,11 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   lis_solver_get_solvername(nsol, solvername);
   lis_solver_get_preconname(precon_type, preconname);
   lis_esolver_get_esolvername(niesolver, esolvername);
-  if( output & A->my_rank==0 )
+  if( output )
     {
-      printf("inner eigensolver     : %s\n", esolvername);
-      printf("linear solver         : %s\n", solvername);
-      printf("preconditioner        : %s\n", preconname);
+      lis_printf(comm,"inner eigensolver     : %s\n", esolvername);
+      lis_printf(comm,"linear solver         : %s\n", solvername);
+      lis_printf(comm,"preconditioner        : %s\n", preconname);
     }
 
   for (i=0;i<ss*ss;i++) t[i] = 0.0;
@@ -248,37 +251,21 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
       esolver->evalue[i] = t[i*ss+i];
     }
 
-  if( output & A->my_rank==0 ) 
+  if( output ) 
     {
-#ifdef _LONG__LONG
-      printf("size of subspace      : %lld\n\n", ss);
-#else
-      printf("size of subspace      : %d\n\n", ss);
-#endif
-      printf("approximate eigenvalues in subspace:\n\n");
+      lis_printf(comm,"size of subspace      : %D\n\n", ss);
+      lis_printf(comm,"approximate eigenvalues in subspace:\n\n");
       for (i=0;i<ss;i++)
 	{
-#ifdef _LONG__LONG
-	  printf("Lanczos: mode number              = %lld\n", i);
-#else
-	  printf("Lanczos: mode number              = %d\n", i);
-#endif
+	  lis_printf(comm,"Lanczos: mode number              = %D\n", i);
 #ifdef _COMPLEX	  
-#ifdef _LONG__DOUBLE
-	  printf("Lanczos: eigenvalue               = (%Le, %Le)\n", creall(esolver->evalue[i]), cimagl(esolver->evalue[i]));
+	  lis_printf(comm,"Lanczos: eigenvalue               = (%E, %E)\n", creal(esolver->evalue[i]), cimag(esolver->evalue[i]));
 #else
-	  printf("Lanczos: eigenvalue               = (%e, %e)\n", creal(esolver->evalue[i]), cimag(esolver->evalue[i]));
-#endif
-#else
-#ifdef _LONG__DOUBLE
-	  printf("Lanczos: eigenvalue               = %Le\n", esolver->evalue[i]);
-#else
-	  printf("Lanczos: eigenvalue               = %e\n", esolver->evalue[i]);
-#endif
+	  lis_printf(comm,"Lanczos: eigenvalue               = %E\n", esolver->evalue[i]);
 #endif	  
 	}
-      printf("\n");
-      printf("compute refined eigenpairs:\n\n");
+      lis_printf(comm,"\n");
+      lis_printf(comm,"compute refined eigenpairs:\n\n");
     }
 
   lis_esolver_create(&esolver2);
@@ -317,37 +304,16 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
 	  esolver->p_i_time = esolver2->p_i_time;
 	}
 
-      if (output & A->my_rank==0) 
+      if (output) 
 	{
-
-#ifdef _LONG__LONG
-	  printf("Lanczos: mode number          = %lld\n", i);
-#else
-	  printf("Lanczos: mode number          = %d\n", i);
-#endif
+	  lis_printf(comm,"Lanczos: mode number          = %D\n", i);
 #ifdef _COMPLEX
-#ifdef _LONG__DOUBLE
-	  printf("Lanczos: eigenvalue           = (%Le, %Le)\n", creall(esolver->evalue[i]), cimagl(esolver->evalue[i]));
-#else
-	  printf("Lanczos: eigenvalue           = (%e, %e)\n", creal(esolver->evalue[i]), cimag(esolver->evalue[i]));
-#endif
+	  lis_printf(comm,"Lanczos: eigenvalue           = (%E, %E)\n", creal(esolver->evalue[i]), cimag(esolver->evalue[i]));
 #else	  
-#ifdef _LONG__DOUBLE
-	  printf("Lanczos: eigenvalue           = %Le\n", esolver->evalue[i]);
-#else
-	  printf("Lanczos: eigenvalue           = %e\n", esolver->evalue[i]);
-#endif
+	  lis_printf(comm,"Lanczos: eigenvalue           = %E\n", esolver->evalue[i]);
 #endif	  
-#ifdef _LONG__LONG
-	  printf("Lanczos: number of iterations = %lld\n",esolver2->iter[0]);
-#else
-	  printf("Lanczos: number of iterations = %d\n",esolver2->iter[0]);
-#endif
-#ifdef _LONG__DOUBLE
-	  printf("Lanczos: relative residual    = %Le\n\n",esolver2->resid[0]);
-#else
-	  printf("Lanczos: relative residual    = %e\n\n",esolver2->resid[0]);
-#endif	  
+	  lis_printf(comm,"Lanczos: number of iterations = %D\n",esolver2->iter[0]);
+	  lis_printf(comm,"Lanczos: relative residual    = %E\n\n",esolver2->resid[0]);
 	}
     }
   esolver->evalue[0] = evalue0; 
@@ -468,6 +434,7 @@ LIS_INT lis_egli_malloc_work(LIS_ESOLVER esolver)
 #define __FUNC__ "lis_egli"
 LIS_INT lis_egli(LIS_ESOLVER esolver)
 {
+  LIS_Comm comm;  
   LIS_INT err;
   LIS_MATRIX A,B;
   LIS_INT ss,ic;
@@ -485,6 +452,8 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
   LIS_ESOLVER esolver2;
   char esolvername[128],solvername[128],preconname[128];
   LIS_INT nsol,precon_type;
+
+  comm = LIS_COMM_WORLD;
 
   ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
   gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];      
@@ -516,11 +485,11 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
   lis_solver_get_solvername(nsol, solvername);
   lis_solver_get_preconname(precon_type, preconname);
   lis_esolver_get_esolvername(nigesolver, esolvername);
-  if( output & A->my_rank==0 )
+  if( output )
     {
-      printf("inner eigensolver     : %s\n", esolvername);
-      printf("linear solver         : %s\n", solvername);
-      printf("preconditioner        : %s\n", preconname);
+      lis_printf(comm,"inner eigensolver     : %s\n", esolvername);
+      lis_printf(comm,"linear solver         : %s\n", solvername);
+      lis_printf(comm,"preconditioner        : %s\n", preconname);
     }
 
   /* create preconditioner */
@@ -606,33 +575,17 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
       esolver->evalue[i] = t[i*ss+i];
     }
 
-  if( output & A->my_rank==0 ) 
+  if( output ) 
     {
-#ifdef _LONG__LONG
-      printf("size of subspace      : %lld\n\n", ss);
-#else
-      printf("size of subspace      : %d\n\n", ss);
-#endif
-      printf("approximate eigenvalues in subspace:\n\n");
+      lis_printf(comm,"size of subspace      : %D\n\n", ss);
+      lis_printf(comm,"approximate eigenvalues in subspace:\n\n");
       for (i=0;i<ss;i++)
 	{
-#ifdef _LONG__LONG
-	  printf("Generalized Lanczos: mode number              = %lld\n", i);
-#else
-	  printf("Generalized Lanczos: mode number              = %d\n", i);
-#endif
+	  lis_printf(comm,"Generalized Lanczos: mode number              = %D\n", i);
 #ifdef _COMPLEX	  
-#ifdef _LONG__DOUBLE
-	  printf("Generalized Lanczos: eigenvalue               = (%Le, %Le)\n", creall(esolver->evalue[i]), cimagl(esolver->evalue[i]));
+	  lis_printf(comm,"Generalized Lanczos: eigenvalue               = (%E, %E)\n", creal(esolver->evalue[i]), cimag(esolver->evalue[i]));
 #else
-	  printf("Generalized Lanczos: eigenvalue               = (%e, %e)\n", creal(esolver->evalue[i]), cimag(esolver->evalue[i]));
-#endif
-#else
-#ifdef _LONG__DOUBLE
-	  printf("Generalized Lanczos: eigenvalue               = %Le\n", esolver->evalue[i]);
-#else
-	  printf("Generalized Lanczos: eigenvalue               = %e\n", esolver->evalue[i]);
-#endif
+	  lis_printf(comm,"Generalized Lanczos: eigenvalue               = %E\n", esolver->evalue[i]);
 #endif	  
 	}
       printf("\n");
@@ -675,37 +628,16 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
 	  esolver->p_i_time = esolver2->p_i_time;
 	}
 
-      if (output & A->my_rank==0) 
+      if (output) 
 	{
-
-#ifdef _LONG__LONG
-	  printf("Generalized Lanczos: mode number          = %lld\n", i);
-#else
-	  printf("Generalized Lanczos: mode number          = %d\n", i);
-#endif
+	  lis_printf(comm,"Generalized Lanczos: mode number          = %D\n", i);
 #ifdef _COMPLEX
-#ifdef _LONG__DOUBLE
-	  printf("Generalized Lanczos: eigenvalue           = (%Le, %Le)\n", creall(esolver->evalue[i]), cimagl(esolver->evalue[i]));
-#else
-	  printf("Generalized Lanczos: eigenvalue           = (%e, %e)\n", creal(esolver->evalue[i]), cimag(esolver->evalue[i]));
-#endif
+	  lis_printf(comm,"Generalized Lanczos: eigenvalue           = (%E, %E)\n", creal(esolver->evalue[i]), cimag(esolver->evalue[i]));
 #else	  
-#ifdef _LONG__DOUBLE
-	  printf("Generalized Lanczos: eigenvalue           = %Le\n", esolver->evalue[i]);
-#else
-	  printf("Generalized Lanczos: eigenvalue           = %e\n", esolver->evalue[i]);
-#endif
+	  lis_printf(comm,"Generalized Lanczos: eigenvalue           = %E\n", esolver->evalue[i]);
 #endif	  
-#ifdef _LONG__LONG
-	  printf("Generalized Lanczos: number of iterations = %lld\n",esolver2->iter[0]);
-#else
-	  printf("Generalized Lanczos: number of iterations = %d\n",esolver2->iter[0]);
-#endif
-#ifdef _LONG__DOUBLE
-	  printf("Generalized Lanczos: relative residual    = %Le\n\n",esolver2->resid[0]);
-#else
-	  printf("Generalized Lanczos: relative residual    = %e\n\n",esolver2->resid[0]);
-#endif	  
+	  lis_printf(comm,"Generalized Lanczos: number of iterations = %D\n",esolver2->iter[0]);
+	  lis_printf(comm,"Generalized Lanczos: relative residual    = %E\n\n",esolver2->resid[0]);
 	}
     }
   esolver->evalue[0] = evalue0; 

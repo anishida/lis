@@ -32,7 +32,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "lisf.h"
 
       LIS_INTEGER my_rank,nprocs
-      LIS_INTEGER matrix_type,comm_world
+      LIS_INTEGER matrix_type,comm
       LIS_INTEGER omp_get_num_procs,omp_get_max_threads
       LIS_INTEGER i,n,gn,ln,is,ie,iter,ierr
       LIS_MATRIX A
@@ -41,9 +41,11 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       
       call lis_initialize(ierr)
 
+      comm = LIS_COMM_WORLD
+
 #ifdef USE_MPI
-      call MPI_Comm_size(MPI_COMM_WORLD,nprocs,ierr)
-      call MPI_Comm_rank(MPI_COMM_WORLD,my_rank,ierr)
+      call MPI_Comm_size(comm,nprocs,ierr)
+      call MPI_Comm_rank(comm,my_rank,ierr)
 #else
       nprocs  = 1
       my_rank = 0
@@ -52,7 +54,6 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       n = 12
       ln = 0
       matrix_type = LIS_MATRIX_CSR
-      comm_world = LIS_COMM_WORLD
 
       if (my_rank .eq. 0) then
          write(*,*) ''
@@ -63,7 +64,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
       endif
 
-      call lis_matrix_create(comm_world,A,ierr)
+      call lis_matrix_create(comm,A,ierr)
       call lis_matrix_set_size(A,ln,n,ierr)
       call lis_matrix_get_size(A,n,gn,ierr)
       call lis_matrix_get_range(A,is,ie,ierr)

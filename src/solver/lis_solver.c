@@ -435,6 +435,7 @@ LIS_INT lis_solve_setup(LIS_MATRIX A, LIS_SOLVER solver)
 #define __FUNC__ "lis_solve_kernel"
 LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver, LIS_PRECON precon)
 {
+	LIS_Comm comm;  
 	LIS_INT	nsolver, precon_type, maxiter;
 	LIS_INT	err;
 	LIS_REAL *rhistory;
@@ -456,6 +457,8 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	LIS_VECTOR r,z;
 
 	LIS_DEBUG_FUNC_IN;
+
+	comm = LIS_COMM_WORLD;
 
 	nsolver     = solver->options[LIS_OPTIONS_SOLVER];
 	precon_type = solver->options[LIS_OPTIONS_PRECON];
@@ -541,7 +544,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	}
 	if( solver->options[LIS_OPTIONS_INITGUESS_ZEROS] )
 	{
-	  if( output ) lis_printf(A->comm,"initial vector x      : 0\n");
+	  if( output ) lis_printf(comm,"initial vector x      : 0\n");
 		#ifndef USE_QUAD_PRECISION
 	                lis_vector_set_all(0.0,xx);
 		#else
@@ -557,7 +560,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	}
 	else
 	{
-	  if( output ) lis_printf(A->comm,"initial vector x      : user defined\n"); 
+	  if( output ) lis_printf(comm,"initial vector x      : user defined\n"); 
 		#ifndef USE_QUAD_PRECISION
 			lis_vector_copy(x,xx);
 		#else
@@ -783,56 +786,27 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	switch(conv_cond)
 	{
 	case LIS_CONV_COND_NRM2_R:
-		if( A->my_rank==0 )
-		{
-#ifdef _LONG__DOUBLE
-		  if( output ) printf("convergence condition : ||b-Ax||_2 <= %6.1Le * ||b-Ax_0||_2\n", tol); 		  
-#else 
-		  if( output ) printf("convergence condition : ||b-Ax||_2 <= %6.1e * ||b-Ax_0||_2\n", tol); 		  
-#endif
-		}
+	  if( output ) lis_printf(comm,"convergence condition : ||b-Ax||_2 <= %E * ||b-Ax_0||_2\n", tol); 		  
 		break;		
 	case LIS_CONV_COND_NRM2_B:
 		lis_vector_nrm2(b,&nrm2);
 		nrm2 = nrm2*tol;
-		if( A->my_rank==0 )
-		{
-#ifdef _LONG__DOUBLE
-		  if( output ) printf("convergence condition : ||b-Ax||_2 <= %6.1Le*||b||_2 = %6.1Le\n", tol,nrm2);
-#else
-		  if( output ) printf("convergence condition : ||b-Ax||_2 <= %6.1e*||b||_2 = %6.1e\n", tol,nrm2);
-#endif
-		}
+		if( output ) lis_printf(comm,"convergence condition : ||b-Ax||_2 <= %E*||b||_2 = %E\n", tol,nrm2);
 		break;
 	case LIS_CONV_COND_NRM1_B:
 		lis_vector_nrm1(b,&nrm2);
 		nrm2 = nrm2*tol_w + tol;
-		if( A->my_rank==0 )
-		{
-#ifdef _LONG__DOUBLE
-		  if( output ) printf("convergence condition : ||b-Ax||_1 <= %6.1Le*||b||_1 + %6.1Le = %6.1Le\n", tol_w,tol,nrm2);
-#else
-		  if( output ) printf("convergence condition : ||b-Ax||_1 <= %6.1e*||b||_1 + %6.1e = %6.1e\n", tol_w,tol,nrm2);
-#endif
-		}
+		if( output ) lis_printf(comm,"convergence condition : ||b-Ax||_1 <= %E*||b||_1 + %E = %E\n", tol_w,tol,nrm2);
 		break;
 	}
-	if( A->my_rank==0 )
-	{
-		if( AA->matrix_type==LIS_MATRIX_BSR || AA->matrix_type==LIS_MATRIX_BSC )
-		{
-#ifdef _LONG__LONG
-		  if( output ) printf("matrix storage format : %s(%lld x %lld)\n", lis_storagename[AA->matrix_type-1],block,block);
-#else
-		  if( output ) printf("matrix storage format : %s(%d x %d)\n", lis_storagename[AA->matrix_type-1],block,block); 
-#endif
-		}
-		else
-		{
-		  if( output ) printf("matrix storage format : %s\n", lis_storagename[AA->matrix_type-1]); 
-		}
-	}
-
+	if( AA->matrix_type==LIS_MATRIX_BSR || AA->matrix_type==LIS_MATRIX_BSC )
+	  {
+	    if( output ) lis_printf(comm,"matrix storage format : %s(%D x %D)\n", lis_storagename[AA->matrix_type-1],block,block); 
+	  }
+	else
+	  {
+	    if( output ) lis_printf(comm,"matrix storage format : %s\n", lis_storagename[AA->matrix_type-1]); 
+	  }
 
 	/* create work vector */
 	err = lis_solver_malloc_work[nsolver](solver); 
@@ -845,11 +819,11 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	}
 	if( nsolver==LIS_SOLVER_BICG && is_use_at )
 	{
-	  if( output ) lis_printf(A->comm,"Use At\n"); 
-		lis_matrix_duplicate(AA,&At);
-		lis_matrix_set_type(At,LIS_USE_AT_TYPE[AA->matrix_type]);
-		lis_matrix_convert(AA,At);
-		solver->At = At;
+	  if( output ) lis_printf(comm,"Use At\n"); 
+	  lis_matrix_duplicate(AA,&At);
+	  lis_matrix_set_type(At,LIS_USE_AT_TYPE[AA->matrix_type]);
+	  lis_matrix_convert(AA,At);
+	  solver->At = At;
 	}
 
 	solver->x        = xx;
@@ -934,21 +908,15 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	lis_vector_nrm2(t,&nrm2);
 
 	/* solver->resid = nrm2; */
-	if( A->my_rank==0 )
-	{
-		if( err )
-		{
-#ifdef _LONG__LONG
-		  if( output ) printf("linear solvef status  : %s(code=%lld)\n\n",lis_returncode[err],err);
-#else
-		  if( output ) printf("linear solver status  : %s(code=%d)\n\n",lis_returncode[err],err); 
-#endif
-		}
-		else
-		{
-		  if( output ) printf("linear solver status  : normal end\n\n"); 
-		}
-	}
+	if( err )
+	  {
+	    if( output ) lis_printf(comm,"linear solver status  : %s(code=%D)\n\n",lis_returncode[err],err); 
+	  }
+	else
+	  {
+	    if( output ) lis_printf(comm,"linear solver status  : normal end\n\n"); 
+	  }
+
 	if( precision==LIS_PRECISION_DOUBLE )
 	{
 		solver->iter2 = solver->iter;
@@ -972,9 +940,10 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 #define __FUNC__ "lis_solver_get_initial_residual"
 LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VECTOR t, LIS_VECTOR r, LIS_REAL *bnrm2)
 {
+	LIS_Comm comm;  
 	LIS_INT	output,conv;
 	#ifdef USE_QUAD_PRECISION
-		LIS_INT	i;
+	LIS_INT	i;
 	#endif
 	LIS_MATRIX A;
 	LIS_VECTOR x,xx,b,p;
@@ -982,6 +951,8 @@ LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VEC
 	LIS_REAL tol,tol_w,tol_switch;
 	
 	LIS_DEBUG_FUNC_IN;
+
+	comm = LIS_COMM_WORLD;
 
 	A  = solver->A;
 	b  = solver->b;
@@ -1081,12 +1052,8 @@ LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VEC
 
 	if( output && (r->precision==LIS_PRECISION_QUAD && solver->precision!=LIS_PRECISION_SWITCH) )
 	{
-		if( output & LIS_PRINT_MEM ) solver->rhistory[0] = nrm2;
-#ifdef _LONG__DOUBLE
-		if( output & LIS_PRINT_OUT && A->my_rank==0 ) printf("iteration: %5d  relative residual = %Le\n", 0, nrm2); 
-#else
-		if( output & LIS_PRINT_OUT && A->my_rank==0 ) printf("iteration: %5d  relative residual = %e\n", 0, nrm2); 
-#endif
+	  if( output & LIS_PRINT_MEM ) solver->rhistory[0] = nrm2;
+	  if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5d  relative residual = %E\n", 0, nrm2); 
 	}
 	if( nrm2 <= fabs(solver->params[LIS_PARAMS_RESID-LIS_OPTIONS_LEN]) )
 	{

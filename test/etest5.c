@@ -41,6 +41,7 @@
 #define __FUNC__ "main"
 LIS_INT main(LIS_INT argc, char* argv[])
 {
+  LIS_Comm comm;
   LIS_INT err,nprocs,my_rank;
   int int_nprocs,int_my_rank;
   LIS_INT nesol;
@@ -58,9 +59,11 @@ LIS_INT main(LIS_INT argc, char* argv[])
     
   lis_initialize(&argc, &argv);
 
+  comm = LIS_COMM_WORLD;
+
 #ifdef USE_MPI
-  MPI_Comm_size(MPI_COMM_WORLD,&int_nprocs);
-  MPI_Comm_rank(MPI_COMM_WORLD,&int_my_rank);
+  MPI_Comm_size(comm,&int_nprocs);
+  MPI_Comm_rank(comm,&int_my_rank);
   nprocs = int_nprocs;
   my_rank = int_my_rank;
 #else
@@ -70,25 +73,16 @@ LIS_INT main(LIS_INT argc, char* argv[])
     
   if( argc < 6 )
     {
-      if( my_rank==0 ) 
-	{
-	  printf("Usage: %s matrix_filename evalues_filename evectors_filename residuals_filename iters_filename [options]\n", argv[0]);
-	}
+      lis_printf(comm,"Usage: %s matrix_filename evalues_filename evectors_filename residuals_filename iters_filename [options]\n", argv[0]);
       CHKERR(1);
     }
 
-  if( my_rank==0 )
-    {
-      printf("\n");
-      printf("number of processes = %d\n",nprocs);
-    }
+  lis_printf(comm,"\n");
+  lis_printf(comm,"number of processes = %D\n",nprocs);
 
 #ifdef _OPENMP
-  if( my_rank==0 )
-    {
-      printf("max number of threads = %d\n",omp_get_num_procs());
-      printf("number of threads = %d\n",omp_get_max_threads());
-    }
+  lis_printf(comm,"max number of threads = %d\n",omp_get_num_procs());
+  lis_printf(comm,"number of threads = %d\n",omp_get_max_threads());
 #endif
 		
   /* create matrix and vectors */
@@ -105,36 +99,19 @@ LIS_INT main(LIS_INT argc, char* argv[])
   lis_esolver_get_residualnorm(esolver, &residual);
   lis_esolver_get_iter(esolver, &iter);
   lis_esolver_get_timeex(esolver,&time,&itime,&ptime,&p_c_time,&p_i_time);
-  if( my_rank==0 ) {
-    printf("%s: mode number          = %d\n", esolvername, 0);
+
+  lis_printf(comm,"%s: mode number          = %d\n", esolvername, 0);
 #ifdef _COMPLEX      
-#ifdef _LONG__DOUBLE
-    printf("%s: eigenvalue           = (%Le, %Le)\n", esolvername, creall(evalue0), cimagl(evalue0));
+  lis_printf(comm,"%s: eigenvalue           = (%E, %E)\n", esolvername, creal(evalue0), cimag(evalue0));
 #else
-    printf("%s: eigenvalue           = (%e, %e)\n", esolvername, creal(evalue0), cimag(evalue0));
-#endif
-#else
-#ifdef _LONG__DOUBLE
-    printf("%s: eigenvalue           = %Le\n", esolvername, evalue0);
-#else
-    printf("%s: eigenvalue           = %e\n", esolvername, evalue0);
-#endif
+  lis_printf(comm,"%s: eigenvalue           = %E\n", esolvername, evalue0);
 #endif      
-#ifdef _LONG__LONG
-    printf("%s: number of iterations = %lld\n",esolvername, iter);
-#else
-    printf("%s: number of iterations = %d\n",esolvername, iter);
-#endif
-    printf("%s: elapsed time         = %e sec.\n", esolvername, time);
-    printf("%s:   preconditioner     = %e sec.\n", esolvername, ptime);
-    printf("%s:     matrix creation  = %e sec.\n", esolvername, p_c_time);
-    printf("%s:   linear solver      = %e sec.\n", esolvername, itime);
-#ifdef _LONG__DOUBLE
-    printf("%s: relative residual    = %Le\n\n",esolvername, residual);
-#else
-    printf("%s: relative residual    = %e\n\n",esolvername, residual);
-#endif
-  }
+  lis_printf(comm,"%s: number of iterations = %D\n",esolvername, iter);
+  lis_printf(comm,"%s: elapsed time         = %e sec.\n", esolvername, time);
+  lis_printf(comm,"%s:   preconditioner     = %e sec.\n", esolvername, ptime);
+  lis_printf(comm,"%s:     matrix creation  = %e sec.\n", esolvername, p_c_time);
+  lis_printf(comm,"%s:   linear solver      = %e sec.\n", esolvername, itime);
+  lis_printf(comm,"%s: relative residual    = %E\n\n",esolvername, residual);
 
   lis_vector_create(LIS_COMM_WORLD,&y);
   lis_vector_create(LIS_COMM_WORLD,&z);

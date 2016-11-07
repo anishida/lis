@@ -41,6 +41,7 @@
 #define __FUNC__ "main"
 LIS_INT main(LIS_INT argc, char* argv[])
 {
+	LIS_Comm comm;
         LIS_SCALAR *a,*q,*r;
 	LIS_INT m,n,nn;
 	LIS_INT	i,j,ii,jj,nnz,qriter;
@@ -51,9 +52,11 @@ LIS_INT main(LIS_INT argc, char* argv[])
 
 	lis_initialize(&argc, &argv);
 
+	comm = LIS_COMM_WORLD;
+
 	if( argc < 3 )
 	{
-	  printf("Usage: %s m n\n", argv[0]);
+	  lis_printf(comm,"Usage: %s m n\n", argv[0]);
 	  CHKERR(1);
 	}
 
@@ -61,11 +64,11 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	n  = atoi(argv[2]);
 	if( m<=0 || n<=0 )
 	{
-	  printf("m=%d <=0 or n=%d <=0\n", m,n);
+	  lis_printf(comm,"m=%D <=0 or n=%D <=0\n", m,n);
 	  CHKERR(1);
 	}
 	
-	printf("\n");
+	lis_printf(comm,"\n");
 
 	/* create arrays */
 
@@ -91,7 +94,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	    jj = ii; a[ii + jj * nn] = 4.0; nnz++;
 	  }
 
-	printf("matrix size = %d x %d (%d nonzero entries)\n\n", nn,nn,nnz);
+	lis_printf(comm,"matrix size = %D x %D (%D nonzero entries)\n\n", nn,nn,nnz);
 
 	/* solve eigenproblem */
 
@@ -103,30 +106,18 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	for (i=0;i<nn;i++)
 	  {
 #ifdef _COMPLEX
-#ifdef _LONG__DOUBLE	    
-	    printf("A(%d,%d) = (%Le, %Le)\n", i, i, creall(a[i*nn+i]), cimagl(a[i*nn+i]));
+	    lis_printf(comm,"A(%D,%D) = (%E, %E)\n", i, i, creal(a[i*nn+i]), cimag(a[i*nn+i]));
 #else
-	    printf("A(%d,%d) = (%e, %e)\n", i, i, creal(a[i*nn+i]), cimag(a[i*nn+i]));
-#endif
-#else
-#ifdef _LONG__DOUBLE	    
-	    printf("A(%d,%d) = %Le\n", i, i, a[i*nn+i]);
-#else
-	    printf("A(%d,%d) = %e\n", i, i, a[i*nn+i]);
-#endif	    
+	    lis_printf(comm,"A(%D,%D) = %E\n", i, i, a[i*nn+i]);
 #endif	    
 	  }
-	printf("\n");	
+	lis_printf(comm,"\n");	
 	*/
 
-	printf("QR    : number of iterations = %d\n", qriter);
-	printf("QR    : elapsed time         = %e sec.\n", time);
-	printf("QR    :   eigensolver        = %e sec.\n", time);
-#ifdef _LONG__DOUBLE
-	printf("QR    : 2-norm of A(2,1)     = %Le\n\n", qrerr);
-#else
-	printf("QR    : 2-norm of A(2,1)     = %e\n\n", qrerr);
-#endif
+	lis_printf(comm,"QR    : number of iterations = %D\n", qriter);
+	lis_printf(comm,"QR    : elapsed time         = %e sec.\n", time);
+	lis_printf(comm,"QR    :   eigensolver        = %e sec.\n", time);
+	lis_printf(comm,"QR    : 2-norm of A(2,1)     = %E\n\n", qrerr);
 
 	free(a);
 	free(q);

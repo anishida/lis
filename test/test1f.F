@@ -36,7 +36,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       LIS_SOLVER solver
       LIS_INTEGER ierr
       LIS_INTEGER my_rank,nprocs
-      LIS_INTEGER matrix_type,comm_world
+      LIS_INTEGER matrix_type,comm
       LIS_INTEGER omp_get_num_procs,omp_get_max_threads
       LIS_INTEGER n,gn,i
       LIS_INTEGER nsol,iter,rhs,iter_double,iter_quad
@@ -46,18 +46,19 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       character*20 solvername
       integer*4 iargc
       
-      call lis_initialize(ierr) 
+      call lis_initialize(ierr)
+
+      comm = LIS_COMM_WORLD
 
 #ifdef USE_MPI
-      call MPI_Comm_size(MPI_COMM_WORLD,nprocs,ierr)
-      call MPI_Comm_rank(MPI_COMM_WORLD,my_rank,ierr)
+      call MPI_Comm_size(comm,nprocs,ierr)
+      call MPI_Comm_rank(comm,my_rank,ierr)
 #else
       nprocs  = 1
       my_rank = 0
 #endif
 
       matrix_type = LIS_MATRIX_CSR
-      comm_world = LIS_COMM_WORLD
 
       i = iargc()
       if( i.lt.4 ) then
@@ -90,11 +91,11 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ! read matrix and vectors from file 
       call getarg(1,fname)
-      call lis_matrix_create(comm_world,A,ierr)
+      call lis_matrix_create(comm,A,ierr)
       call CHKERR(ierr)
-      call lis_vector_create(comm_world,b,ierr)
+      call lis_vector_create(comm,b,ierr)
       call CHKERR(ierr)
-      call lis_vector_create(comm_world,x,ierr)
+      call lis_vector_create(comm,x,ierr)
       call CHKERR(ierr)
       call lis_matrix_set_type(A,matrix_type,ierr)
       call lis_input(A,b,x,fname,ierr)

@@ -278,7 +278,8 @@ LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER 
 #define __FUNC__ "lis_gesolve"
 LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver)
 {
-  LIS_INT	nesolver,niesolver,nigesolver,emaxiter; 
+	LIS_Comm comm;   
+	LIS_INT	nesolver,niesolver,nigesolver,emaxiter; 
 	LIS_SCALAR *evalue;
 	LIS_VECTOR *evector;
 	LIS_REAL *resid;
@@ -295,6 +296,8 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	LIS_VECTOR xx;
 
 	LIS_DEBUG_FUNC_IN;
+
+	comm = LIS_COMM_WORLD;
 
 	/* begin parameter check */
 	err = lis_matrix_check(A,LIS_MATRIX_CHECK_ALL);
@@ -482,7 +485,7 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	}
 	if( esolver->options[LIS_EOPTIONS_INITGUESS_ONES] )
 	{
-	  if( output ) lis_printf(A->comm,"initial vector x      : 1\n");
+	  if( output ) lis_printf(comm,"initial vector x      : 1\n");
 		#ifndef USE_QUAD_PRECISION
 			lis_vector_set_all(1.0,xx);
 		#else
@@ -498,7 +501,7 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	}
 	else
 	{
-	  if( output ) lis_printf(A->comm,"initial vector x      : user defined\n"); 
+	  if( output ) lis_printf(comm,"initial vector x      : user defined\n"); 
 		#ifndef USE_QUAD_PRECISION
 			lis_vector_copy(x,xx);
 		#else
@@ -514,7 +517,7 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	}
 
 	/* global shift */
-	if ( output ) if( A->my_rank==0 ) printf("global shift          : %e\n", gshift);
+	if ( output ) lis_printf(comm,"global shift          : %E\n", gshift);
 
 	/* create eigenvector array */
 	if( esolver->evector ) lis_free(esolver->evector);
@@ -568,43 +571,22 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	esolver->iter     = iter;
 	esolver->iter2    = iter2;
 
-        if( A->my_rank==0 )
-	  {
 #ifdef _LONG__DOUBLE
-  	    if ( output ) printf("precision             : long double\n");
+	if ( output ) lis_printf(comm,"precision             : long double\n");
 #else
-	    if ( output ) printf("precision             : %s\n", lis_eprecisionname[eprecision]);
+	if ( output ) lis_printf(comm,"precision             : %s\n", lis_eprecisionname[eprecision]);
 #endif
-#ifdef _LONG__LONG
-	    if ( output ) printf("eigensolver           : %s\n", lis_esolvername[nesolver]);
-#else
-	    if ( output ) printf("eigensolver           : %s\n", lis_esolvername[nesolver]);
-#endif
-	  }
+	if ( output ) lis_printf(comm,"eigensolver           : %s\n", lis_esolvername[nesolver]);
 
-	if( A->my_rank==0 )
-	  {
-#ifdef _LONG__DOUBLE
-	    if ( output ) printf("convergence condition : ||lx-(B^-1)Ax||_2 <= %6.1Le * ||lx||_2\n", (LIS_REAL)esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]);
-#else
-	    if ( output ) printf("convergence condition : ||lx-(B^-1)Ax||_2 <= %6.1e * ||lx||_2\n", (LIS_REAL)esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]); 
-#endif
-	  }
+	if ( output ) lis_printf(comm,"convergence condition : ||lx-(B^-1)Ax||_2 <= %E * ||lx||_2\n", (LIS_REAL)esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]); 
 
-	if( A->my_rank==0 )
+	if( A->matrix_type==LIS_MATRIX_BSR || A->matrix_type==LIS_MATRIX_BSC )
 	  {
-	    if( A->matrix_type==LIS_MATRIX_BSR || A->matrix_type==LIS_MATRIX_BSC )
-	      {
-#ifdef _LONG__LONG
-		if ( output ) printf("matrix storage format : %s(%lld x %lld)\n", lis_estoragename[A->matrix_type-1],eblock,eblock);
-#else
-		if ( output ) printf("matrix storage format : %s(%d x %d)\n", lis_estoragename[A->matrix_type-1],eblock,eblock); 
-#endif
-	      }
-	    else
-	      {
-		if ( output ) printf("matrix storage format : %s\n", lis_estoragename[A->matrix_type-1]); 
-	      }
+	    if ( output ) lis_printf(comm,"matrix storage format : %s(%D x %D)\n", lis_estoragename[A->matrix_type-1],eblock,eblock); 
+	  }
+	else
+	  {
+	    if ( output ) lis_printf(comm,"matrix storage format : %s\n", lis_estoragename[A->matrix_type-1]); 
 	  }
 	
 	time = lis_wtime();
@@ -650,31 +632,23 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 
 	esolver->time = lis_wtime() - time; 
 
-        if( A->my_rank==0 )
-        {
-                if( err )
-                {
-#ifdef _LONG__LONG
-                  if ( output ) printf("eigensolver status    : %s(code=%lld)\n\n",lis_ereturncode[err],err);
-#else
-                  if ( output ) printf("eigensolver status    : %s(code=%d)\n\n",lis_ereturncode[err],err);
-#endif
-
-                }
-                else
-                {
-                  if ( output ) printf("eigensolver status    : normal end\n\n");
-                }
-        }
+	if( err )
+	  {
+	    if ( output ) lis_printf(comm,"eigensolver status    : %s(code=%D)\n\n",lis_ereturncode[err],err);
+	  }
+	else
+	  {
+	    if ( output ) lis_printf(comm,"eigensolver status    : normal end\n\n");
+	  }
 
 	if( eprecision==LIS_PRECISION_DOUBLE )
-	{
-		esolver->iter2[mode] = esolver->iter[mode];
-	}
+	  {
+	    esolver->iter2[mode] = esolver->iter[mode];
+	  }
 	else if( eprecision==LIS_PRECISION_QUAD )
-	{
-		esolver->iter2[mode] = 0;
-	}
+	  {
+	    esolver->iter2[mode] = 0;
+	  }
 
 	lis_vector_destroy(xx);
 
