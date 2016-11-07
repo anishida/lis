@@ -364,7 +364,7 @@ LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
 
 	if( solver->options[LIS_OPTIONS_PRECON] < 0 || solver->options[LIS_OPTIONS_PRECON] > LIS_PRECONNAME_MAX )
 	{
-		LIS_SETERR2(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_PRECON is %d (Set between 0 to %d)\n",solver->options[LIS_OPTIONS_PRECON], LIS_PRECONNAME_MAX);
+		LIS_SETERR2(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_PRECON is %D (Set between 0 to %D)\n",solver->options[LIS_OPTIONS_PRECON], LIS_PRECONNAME_MAX);
 		return LIS_ERR_ILL_ARG;
 	}
 
@@ -468,23 +468,23 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 
 	if( nsolver < 1 || nsolver > LIS_SOLVERS_LEN )
 	{
-		LIS_SETERR2(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_SOLVER is %d (Set between 1 to %d)\n",nsolver, LIS_SOLVERS_LEN);
+		LIS_SETERR2(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_SOLVER is %D (Set between 1 to %D)\n",nsolver, LIS_SOLVERS_LEN);
 		return LIS_ERR_ILL_ARG;
 	}
 	if( precon_type < 0 || precon_type > precon_register_type )
 	{
-		LIS_SETERR2(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_PRECON is %d (Set between 0 to %d)\n",precon_type, precon_register_type-1);
+		LIS_SETERR2(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_PRECON is %D (Set between 0 to %D)\n",precon_type, precon_register_type-1);
 		return LIS_ERR_ILL_ARG;
 	}
 	if( maxiter<0 )
 	{
-		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_MAXITER(=%d) is less than 0\n",maxiter);
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_MAXITER(=%D) is less than 0\n",maxiter);
 		return LIS_ERR_ILL_ARG;
 	}
 	#ifdef USE_MPI
 	if( precon_type == LIS_PRECON_TYPE_SAAMG  && solver->A->nprocs < 2)
 	{
-		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter A->nprocs (=%d) is less than 2 (Set more than 1 when using parallel version of SAAMG)\n",solver->A->nprocs);
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter A->nprocs (=%D) is less than 2 (Set more than 1 when using parallel version of SAAMG)\n",solver->A->nprocs);
 		return LIS_ERR_ILL_ARG;
 	}
 	#endif

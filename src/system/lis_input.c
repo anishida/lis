@@ -601,11 +601,7 @@ LIS_INT lis_input_vector_lis_ascii(LIS_VECTOR v, FILE *file)
 	}
 	if( nprocs!=ibuf[0] )
 	{
-#ifdef _LONG__LONG
-		LIS_SETERR2(LIS_ERR_FILE_IO,"The number of PE=(%lld) is different (in file PE=%lld)\n",nprocs,ibuf[0]);
-#else
-		LIS_SETERR2(LIS_ERR_FILE_IO,"The number of PE=(%d) is different (in file PE=%d)\n",nprocs,ibuf[0]);
-#endif
+		LIS_SETERR2(LIS_ERR_FILE_IO,"The number of PE=(%D) is different (in file PE=%D)\n",nprocs,ibuf[0]);
 		return LIS_ERR_FILE_IO;
 	}
 	pe=-1;

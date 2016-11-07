@@ -81,7 +81,7 @@ LIS_INT lis_matrix_set_blocksize(LIS_MATRIX A, LIS_INT bnr, LIS_INT bnc, LIS_INT
 
 	if( bnr<=0 || bnc<=0 )
 	{
-		LIS_SETERR2(LIS_ERR_ILL_ARG,"bnr=%d <= 0 or bnc=%d <= 0\n",bnr,bnc);
+		LIS_SETERR2(LIS_ERR_ILL_ARG,"bnr=%D <= 0 or bnc=%D <= 0\n",bnr,bnc);
 		return LIS_ERR_ILL_ARG;
 	}
 	if( (row==NULL && col!=NULL) || (row!=NULL && col==NULL) )

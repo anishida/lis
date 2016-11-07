@@ -226,7 +226,7 @@ LIS_INT lis_matrix_psd_set_value_csr(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCA
 			j++;
 			k++;
 		}
-		LIS_SETERR3(LIS_ERR_ILL_ARG,"i(=%d) or j(=%d) are less than %d\n",i,j,k);
+		LIS_SETERR3(LIS_ERR_ILL_ARG,"i(=%D) or j(=%D) are less than %D\n",i,j,k);
 		return LIS_ERR_ILL_ARG;
 	}
 	if( i>=gn || j>=gn )
@@ -236,7 +236,7 @@ LIS_INT lis_matrix_psd_set_value_csr(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCA
 			i++;
 			j++;
 		}
-		LIS_SETERR3(LIS_ERR_ILL_ARG,"i(=%d) or j(=%d) are larger than global n=(%d)\n",i,j,gn);
+		LIS_SETERR3(LIS_ERR_ILL_ARG,"i(=%D) or j(=%D) are larger than global n=(%D)\n",i,j,gn);
 		return LIS_ERR_ILL_ARG;
 	}
 
