@@ -961,6 +961,7 @@ extern "C"
 	extern void lis_free2(LIS_INT n, ...);
 	extern LIS_INT lis_is_malloc( void *p );
 	extern void lis_date(char *date);
+	extern LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...);
 
 
 #ifdef __cplusplus

@@ -95,10 +95,26 @@ LIS_INT lis_debug_trace_func(LIS_INT flag, char *func)
 	return LIS_SUCCESS;
 }
 
+LIS_INT lis_replace(char *buf, const char *str1, const char *str2)
+{
+  char tmp[1024+1];
+  char *p;
+
+  while ((p = strstr(buf,str1)) != NULL)
+    {
+      *p = '\0';
+      p += strlen(str1);
+      strcpy(tmp,p);
+      strcat(buf,str2);
+      strcat(buf,tmp);
+    }
+}
+
 LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)
 {
 	va_list vvlist;
 	LIS_INT	my_rank;
+	char str[1024];
 
 	#ifdef USE_MPI
 		MPI_Barrier(comm);
@@ -107,10 +123,24 @@ LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)
 		my_rank = 0;
 	#endif
 
+		strcpy(str,mess);
+
 	if( my_rank==0 )
 	{
+	#ifdef _LONG__LONG
+		lis_replace(str,"%D","%lld");
+	#else
+		lis_replace(str,"%D","%d");
+	#endif
+	#ifdef _LONG__DOUBLE
+		lis_replace(str,"%E","%Le");
+		lis_replace(str,"%G","%Lg");
+	#else
+		lis_replace(str,"%E","%e");
+		lis_replace(str,"%G","%g");		
+	#endif
 		va_start(vvlist,mess);
-		vprintf(mess,vvlist);
+		vprintf(str,vvlist);
 		va_end(vvlist);
 	}
 	#ifdef USE_MPI
