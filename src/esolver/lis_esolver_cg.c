@@ -838,6 +838,16 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
   /* setup solver for preconditioning */
   lis_solve_setup(A,solver);
 
+  /* create preconditioner */
+  err = lis_precon_create(solver,&precon);
+  if( err )
+    {
+      lis_solver_work_destroy(solver);
+      solver->retcode = err;
+      return err;
+    }
+  solver->precon = precon;
+
   /* lambda=<A*x,x>/<x,x> */
   lis_vector_dot(x,Ax,&lambda); 
   
@@ -912,6 +922,7 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
       
     }
 
+  lis_precon_destroy(precon);
   lis_solver_destroy(solver);
 
   esolver->iter[0]    = iter;
@@ -1100,6 +1111,16 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   /* setup solver for preconditioning */
   lis_solve_setup(A,solver);
 
+  /* create preconditioner */
+  err = lis_precon_create(solver,&precon);
+  if( err )
+    {
+      lis_solver_work_destroy(solver);
+      solver->retcode = err;
+      return err;
+    }
+  solver->precon = precon;
+
   /* lambda=<A*x,B*x>/<B*x,B*x> */
   lis_vector_dot(Ax,Bx,&lambda);
   lis_vector_dot(Bx,Bx,&BxBx);
@@ -1182,6 +1203,7 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
       
     }
 
+  lis_precon_destroy(precon);
   lis_solver_destroy(solver);
 
   esolver->iter[0]    = iter;

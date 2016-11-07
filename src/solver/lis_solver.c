@@ -405,6 +405,8 @@ LIS_INT lis_solve_setup(LIS_MATRIX A, LIS_SOLVER solver)
 	lis_vector_duplicate(A,&x);
 
 	/* setup solver for preconditioning */
+	/* Do not call lis_solve_execute if solver->setup is true. 
+	   See esolver/lis_esolver_cg.c, where only preconditioner is called. */
 	solver->setup = LIS_TRUE;
 	err = lis_solve(A,b,x,solver);
 	if( err )
@@ -413,16 +415,6 @@ LIS_INT lis_solve_setup(LIS_MATRIX A, LIS_SOLVER solver)
 	    solver->retcode = err;
 	    return err;
 	  }
-
-	/* create preconditioner */
-	err = lis_precon_create(solver,&precon);
-	if( err )
-	  {
-	    lis_solver_work_destroy(solver);
-	    solver->retcode = err;
-	    return err;
-	  }
-	solver->precon = precon;
 
 	lis_vector_destroy(b);
 	lis_vector_destroy(x);
