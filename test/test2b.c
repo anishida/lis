@@ -47,7 +47,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	LIS_INT n,nnz,m,nn;
 	LIS_INT	i,j,si,sj,ii,jj,ctr;
 	LIS_INT	is,ie;
-	LIS_INT	nprocs,my_rank;
+	LIS_INT	nprocs,my_rank,comm;
 	int int_nprocs,int_my_rank;
 	LIS_INT	nsol;
 	LIS_INT	err,iter,mtype,iter_double,iter_quad;
@@ -60,12 +60,13 @@ LIS_INT main(LIS_INT argc, char* argv[])
 
 	LIS_DEBUG_FUNC_IN;
 
-
 	lis_initialize(&argc, &argv);
 
+	comm = LIS_COMM_WORLD;
+
 	#ifdef USE_MPI
-	        MPI_Comm_size(MPI_COMM_WORLD,&int_nprocs);
-		MPI_Comm_rank(MPI_COMM_WORLD,&int_my_rank);
+	        MPI_Comm_size(comm,&int_nprocs);
+		MPI_Comm_rank(comm,&int_my_rank);
 		nprocs = int_nprocs;
 		my_rank = int_my_rank;
 	#else
@@ -77,7 +78,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	{
 	  if( my_rank==0 ) 
 {
-	      printf("Usage: %s m n matrix_type solution_filename residual_filename [options]\n", argv[0]);
+	      lis_printf(comm,"Usage: %s m n matrix_type solution_filename residual_filename [options]\n", argv[0]);
  }
 	  CHKERR(1);
 	}
@@ -87,35 +88,16 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	mtype  = atoi(argv[3]);
 	if( m<=0 || n<=0 )
 	{
-#ifdef _LONG__LONG
-	  if( my_rank==0 ) printf("m=%lld <=0 or n=%lld <=0\n",m,n);
-#else
-	  if( my_rank==0 ) printf("m=%d <=0 or n=%d <=0\n",m,n);
-#endif
+	  lis_printf(comm,"m=%D <=0 or n=%D <=0\n",m,n);
 	  CHKERR(1);
 	}
 	
-	if( my_rank==0 )
-	  {
-	    printf("\n");
-#ifdef _LONG__LONG
-	    printf("number of processes = %lld\n",nprocs);
-#else
-	    printf("number of processes = %d\n",nprocs);
-#endif
-	  }
+	lis_printf(comm,"\n");
+	lis_printf(comm,"number of processes = %D\n",nprocs);
 
 #ifdef _OPENMP
-	if( my_rank==0 )
-	  {
-#ifdef _LONG__LONG
-	    printf("max number of threads = %lld\n",omp_get_num_procs());
-	    printf("number of threads = %lld\n",omp_get_max_threads());
-#else
-	    printf("max number of threads = %d\n",omp_get_num_procs());
-	    printf("number of threads = %d\n",omp_get_max_threads());
-#endif
-	  }
+	lis_printf(comm,"max number of threads = %d\n",omp_get_num_procs());
+	lis_printf(comm,"number of threads = %d\n",omp_get_max_threads());
 #endif
 		
 	/* create matrix and vectors */
@@ -163,11 +145,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	nnz   = i;
 #endif
 
-#ifdef _LONG__LONG
-	if( my_rank==0 ) printf("matrix size = %lld x %lld (%lld nonzero entries)\n\n",nn,nn,nnz);
-#else
-	if( my_rank==0 ) printf("matrix size = %d x %d (%d nonzero entries)\n\n",nn,nn,nnz);
-#endif
+	lis_printf(comm,"matrix size = %D x %D (%D nonzero entries)\n\n",nn,nn,nnz);
 
 	err = lis_matrix_duplicate(A,&A0);
 	CHKERR(err);
@@ -188,7 +166,12 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	lis_matvec(A,u,b);
 
 	err = lis_solver_create(&solver); CHKERR(err);
+
+#ifdef USE_SAAMG
+	lis_solver_set_option("-print mem -i cg -p saamg",solver);
+#else	
 	lis_solver_set_option("-print mem -i cg -p ssor -adds true",solver);
+#endif	
 	lis_solver_set_optionC(solver);
 
 	err = lis_solve(A,b,x,solver);
@@ -198,32 +181,13 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	lis_solver_get_residualnorm(solver,&resid);
 	lis_solver_get_solver(solver,&nsol);
 	lis_solver_get_solvername(nsol,solvername);
-	if( my_rank==0 )
-	{
 
-#ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-		printf("%s: number of iterations = %lld \n",solvername, iter);
-#else
-		printf("%s: number of iterations = %lld (double = %lld, quad = %lld)\n",solvername,iter, iter_double, iter_quad);
-#endif
-#else
-#ifdef _LONG__DOUBLE
-		printf("%s: number of iterations = %d \n",solvername, iter);
-#else
-		printf("%s: number of iterations = %d (double = %d, quad = %d)\n",solvername,iter, iter_double, iter_quad);
-#endif
-#endif
-		printf("%s: elapsed time         = %e sec.\n",solvername,time);
-		printf("%s:   preconditioner     = %e sec.\n",solvername, ptime);
-		printf("%s:     matrix creation  = %e sec.\n",solvername, p_c_time);
-		printf("%s:   linear solver      = %e sec.\n",solvername, itime);
-#ifdef _LONG__DOUBLE
-		printf("%s: relative residual    = %Le\n\n",solvername,resid);
-#else
-		printf("%s: relative residual    = %e\n\n",solvername,resid);
-#endif
-	}
+	lis_printf(comm,"%s: number of iterations = %D (double = %D, quad = %D)\n",solvername,iter, iter_double, iter_quad);
+	lis_printf(comm,"%s: elapsed time         = %e sec.\n",solvername,time);
+	lis_printf(comm,"%s:   preconditioner     = %e sec.\n",solvername, ptime);
+	lis_printf(comm,"%s:     matrix creation  = %e sec.\n",solvername, p_c_time);
+	lis_printf(comm,"%s:   linear solver      = %e sec.\n",solvername, itime);
+	lis_printf(comm,"%s: relative residual    = %E\n\n",solvername,resid);
 
 	/* write solution */
 	lis_output_vector(x,LIS_FMT_MM,argv[4]); 
@@ -240,6 +204,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	lis_finalize();
 
 	LIS_DEBUG_FUNC_OUT;
+
 	return 0;
 }
 

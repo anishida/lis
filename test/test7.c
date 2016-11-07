@@ -44,6 +44,7 @@
 #define __FUNC__ "main"
 LIS_INT main(LIS_INT argc, char* argv[])
 {
+	LIS_INT comm;
 	LIS_COMPLEX z,dot;
 	LIS_VECTOR v;
 	LIS_INT n,ln;
@@ -57,42 +58,28 @@ LIS_INT main(LIS_INT argc, char* argv[])
 #endif
 	
 #ifdef HAVE_COMPLEX_H
-#ifdef _LONG__DOUBLE
-	printf("complex number z = (%Lf, %Lf)\n", creall(z), cimagl(z));
-#else
-	printf("complex number z = (%f, %f)\n", creal(z), cimag(z));
-#endif
+	lis_printf(comm,"complex number z = (%F, %F)\n", creal(z), cimag(z));
 #else	
-#ifdef _LONG__DOUBLE
-	printf("complex number z = (%Lf, %Lf)\n", z[0], z[1]);
-#else
-	printf("complex number z = (%f, %f)\n", z[0], z[1]);
-#endif
+	lis_printf(comm,"complex number z = (%F, %F)\n", z[0], z[1]);
 #endif
 
 #ifdef _COMPLEX	
 	lis_initialize(&argc, &argv);
 	n = 10;
 	ln = 0;
-	lis_vector_create(LIS_COMM_WORLD,&v);
+	lis_vector_create(comm,&v);
 	lis_vector_set_size(v,ln,n);
 	lis_vector_set_all(z,v);
-	printf("complex vector v =\n");	
+	lis_printf(comm,"complex vector v =\n");	
 	lis_vector_print(v);
 	lis_vector_conjugate(v);
-	printf("conj(v) =\n");		
+	lis_printf(comm,"conj(v) =\n");		
 	lis_vector_print(v);	
 	lis_vector_dot(v,v,&dot);
 	lis_vector_nrm2(v,&nrm2);
-#ifdef _LONG__DOUBLE
-	printf("inner product (v,v) = (%Lf, %Lf)\n", creall(dot), cimagl(dot));
-	printf("2-norm of v = %Lf\n", nrm2);
-	printf("abs(z) = %Lf\n", fabs(z));
-#else
-	printf("inner product (v,v) = (%f, %f)\n", creal(dot), cimag(dot));
-	printf("2-norm of v = %f\n", nrm2);
-	printf("abs(z) = %f\n", fabs(z));	
-#endif
+	lis_printf(comm,"inner product (v,v) = (%F, %F)\n", creal(dot), cimag(dot));
+	lis_printf(comm,"2-norm of v = %F\n", nrm2);
+	lis_printf(comm,"abs(z) = %F\n", fabs(z));	
 	lis_vector_destroy(v);
 	lis_finalize();
 #endif

@@ -33,19 +33,19 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
       LIS_COMPLEX z,dot
       LIS_VECTOR v
-      LIS_INTEGER n,ln,comm_world,ierr
+      LIS_INTEGER n,ln,comm,ierr
       LIS_REAL nrm2
 
       n = 10
       ln = 0
-      comm_world = LIS_COMM_WORLD      
+      comm = LIS_COMM_WORLD      
 
       z = (1.0, 2.0);
       write(*,*) 'complex number z = ', z
 
 #ifdef COMPLEX      
       call lis_initialize(ierr)
-      call lis_vector_create(comm_world,v,ierr)
+      call lis_vector_create(comm,v,ierr)
       call lis_vector_set_size(v,ln,n,ierr)
       call lis_vector_set_all(z,v,ierr)
       write(*,*) 'complex vector v = '

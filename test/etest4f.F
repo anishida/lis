@@ -36,28 +36,29 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       LIS_VECTOR x
       LIS_REAL evalue0
       LIS_ESOLVER esolver
-      LIS_INTEGER my_rank,nprocs
-      LIS_INTEGER matrix_type,comm_world
+      LIS_INTEGER my_rank,nprocs,comm
+      LIS_INTEGER matrix_type
       LIS_INTEGER nsol,iter_double,iter_quad
       real*8 time,itime,ptime,p_c_time,p_i_time
       LIS_REAL resid
       character*30 nchar,esolvername
       integer*4 iargc
       
-      call lis_initialize(ierr) 
+      call lis_initialize(ierr)
+
+      comm = LIS_COMM_WORLD
 
 #ifdef USE_MPI
-      call MPI_Comm_size(MPI_COMM_WORLD,nprocs,ierr)
-      call MPI_Comm_rank(MPI_COMM_WORLD,my_rank,ierr)
+      call MPI_Comm_size(comm,nprocs,ierr)
+      call MPI_Comm_rank(comm,my_rank,ierr)
 #else
       nprocs  = 1
       my_rank = 0
 #endif
 
       matrix_type = LIS_MATRIX_CSR
-      comm_world = LIS_COMM_WORLD
 
-      call lis_matrix_create(comm_world,A,ierr)
+      call lis_matrix_create(comm,A,ierr)
       i = iargc()
 
       if( i.lt.1 ) then
@@ -73,7 +74,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
       ln = 0
 
-      call lis_matrix_create(comm_world,A,ierr)
+      call lis_matrix_create(comm,A,ierr)
       call lis_matrix_set_size(A,ln,n,ierr)
       call lis_matrix_get_size(A,n,gn,ierr)
       call lis_matrix_get_range(A,is,ie,ierr)

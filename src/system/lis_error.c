@@ -135,9 +135,11 @@ LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)
 	#ifdef _LONG__DOUBLE
 		lis_replace(str,"%E","%Le");
 		lis_replace(str,"%G","%Lg");
+		lis_replace(str,"%F","%Lf");		
 	#else
 		lis_replace(str,"%E","%e");
-		lis_replace(str,"%G","%g");		
+		lis_replace(str,"%G","%g");
+		lis_replace(str,"%F","%f");		
 	#endif
 		va_start(vvlist,mess);
 		vprintf(str,vvlist);

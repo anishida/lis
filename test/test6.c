@@ -41,19 +41,22 @@
 #define __FUNC__ "main"
 LIS_INT main(LIS_INT argc, char* argv[])
 {
-        LIS_SCALAR *a,*x,*b,*u,*w;
+        LIS_INT comm;
+	LIS_SCALAR *a,*x,*b,*u,*w;
 	LIS_INT m,n,nn;
 	LIS_INT	i,j,ii,jj,nnz;
 	double time,time0;
 	LIS_REAL resid_r,resid_b;	
 
- 	LIS_DEBUG_FUNC_IN;
+	LIS_DEBUG_FUNC_IN;
 
 	lis_initialize(&argc, &argv);
 
+	comm = LIS_COMM_WORLD;
+
 	if( argc < 3 )
 	{
-	  printf("Usage: %s m n\n", argv[0]);
+	  lis_printf(comm,"Usage: %s m n\n", argv[0]);
 	  CHKERR(1);
 	}
 
@@ -61,11 +64,11 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	n  = atoi(argv[2]);
 	if( m<=0 || n<=0 )
 	{
-	  printf("m=%d <=0 or n=%d <=0\n", m,n);
+	  lis_printf(comm,"m=%D <=0 or n=%D <=0\n", m,n);
 	  CHKERR(1);
 	}
 	
-	printf("\n");
+	lis_printf(comm,"\n");
 
 	/* create arrays */
 
@@ -93,7 +96,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	    jj = ii; a[ii + jj * nn] = 4.0; nnz++;
 	  }
 
-	printf("matrix size = %d x %d (%d nonzero entries)\n\n", nn,nn,nnz);
+	lis_printf(comm,"matrix size = %D x %D (%D nonzero entries)\n\n", nn,nn,nnz);
 
 	lis_array_set_all(nn,(LIS_SCALAR)1.0,u);
  	lis_array_matvec(nn,a,u,b,LIS_INS_VALUE);
@@ -112,38 +115,28 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	for (i=0;i<nn;i++)
 	  {
 #ifdef _COMPLEX
-#ifdef _LONG__DOUBLE	    
-	    printf("x(%d) = (%Le, %Le)\n", i, creall(x[i]), cimagl(x[i]));
+	    lis_printf(comm,"x(%D) = (%E, %E)\n", i, creal(x[i]), cimag(x[i]));
 #else
-	    printf("x(%d) = (%e, %e)\n", i, creal(x[i]), cimag(x[i]));
-#endif
-#else
-#ifdef _LONG__DOUBLE
-	    printf("x(%d) = %Le\n", i, x[i]);
-#else
-	    printf("x(%d) = %e\n", i, x[i]);	    
-#endif	    
+	    lis_printf(comm,"x(%D) = %E\n", i, x[i]);	    
 #endif	    
 	  }
-	printf("\n");
+	lis_printf(comm,"\n");
 	*/
 
-	printf("Direct: elapsed time         = %e sec.\n", time);
-	printf("Direct:   linear solver      = %e sec.\n", time);
-#ifdef _LONG__DOUBLE
-	printf("Direct: relative residual    = %Le\n\n", resid_r/resid_b);
-#else
-	printf("Direct: relative residual    = %e\n\n", resid_r/resid_b);
-#endif
+	lis_printf(comm,"Direct: elapsed time         = %e sec.\n", time);
+	lis_printf(comm,"Direct:   linear solver      = %e sec.\n", time);
+	lis_printf(comm,"Direct: relative residual    = %E\n\n", resid_r/resid_b);
 
 	free(a);
 	free(b);
 	free(x);
 	free(u);
 	free(w);
+
 	lis_finalize();
 
 	LIS_DEBUG_FUNC_OUT;
+
 	return 0;
 }
 

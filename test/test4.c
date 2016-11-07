@@ -39,21 +39,23 @@ LIS_INT main(LIS_INT argc, char* argv[])
     LIS_MATRIX A;
     LIS_VECTOR b,x,u;
     LIS_SOLVER solver;
-    LIS_INT my_rank;
+    LIS_INT my_rank,comm;
     int int_nprocs,int_my_rank;
     LIS_INT err,i,n,gn,is,ie,iter;
-    n  = 12;
+
+    n = 12;
     lis_initialize(&argc, &argv);
+    comm = LIS_COMM_WORLD;
 
 #ifdef USE_MPI
-    MPI_Comm_size(MPI_COMM_WORLD,&int_nprocs);
-    MPI_Comm_rank(MPI_COMM_WORLD,&int_my_rank);
+    MPI_Comm_size(comm,&int_nprocs);
+    MPI_Comm_rank(comm,&int_my_rank);
     my_rank = int_my_rank;
 #else
     my_rank = 0;
 #endif
 
-    lis_matrix_create(LIS_COMM_WORLD,&A); 
+    lis_matrix_create(comm,&A); 
     err = lis_matrix_set_size(A,0,n);
     CHKERR(err);
     lis_matrix_get_size(A,&n,&gn);
@@ -77,15 +79,8 @@ LIS_INT main(LIS_INT argc, char* argv[])
     lis_solver_set_optionC(solver);
     lis_solve(A,b,x,solver);
     lis_solver_get_iter(solver,&iter);
-    if (my_rank==0)
-      {
-#ifdef _LONG__LONG
-	printf("number of iterations = %lld\n",iter);
-#else
-	printf("number of iterations = %d\n",iter);
-#endif
-	printf("\n");
-      }
+    lis_printf(comm,"number of iterations = %D\n",iter);
+    lis_printf(comm,"\n");
     lis_vector_print(x);
 
     lis_matrix_destroy(A);
