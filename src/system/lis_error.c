@@ -117,7 +117,7 @@ LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)
 	char str[1024];
 
 	#ifdef USE_MPI
-        #if defined(_DEBUG)	
+        #ifdef _DEBUG
 	MPI_Barrier(comm);
 	#endif
 	MPI_Comm_rank(comm,&my_rank);
@@ -148,7 +148,9 @@ LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)
 		va_end(vvlist);
 	}
 	#ifdef USE_MPI
+        #ifdef _DEBUG
 	MPI_Barrier(comm);
+	#endif
 	#endif
 	return LIS_SUCCESS;
 }
