@@ -42,7 +42,7 @@
 LIS_INT main(LIS_INT argc, char* argv[])
 {
   LIS_Comm comm;
-  LIS_INT err,nprocs,my_ran;
+  LIS_INT err,nprocs,my_rank;
   int int_nprocs,int_my_rank;
   LIS_INT nesol;
   LIS_MATRIX A;
