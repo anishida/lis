@@ -117,13 +117,15 @@ LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)
 	char str[1024];
 
 	#ifdef USE_MPI
-		MPI_Barrier(comm);
-	    MPI_Comm_rank(comm,&my_rank);
+        #ifdef _DEBUG
+	MPI_Barrier(comm);
+	#endif
+	MPI_Comm_rank(comm,&my_rank);
 	#else
-		my_rank = 0;
+	my_rank = 0;
 	#endif
 
-		strcpy(str,mess);
+	strcpy(str,mess);
 
 	if( my_rank==0 )
 	{
@@ -146,7 +148,9 @@ LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)
 		va_end(vvlist);
 	}
 	#ifdef USE_MPI
-		MPI_Barrier(comm);
+        #ifdef _DEBUG
+	MPI_Barrier(comm);
+	#endif
 	#endif
 	return LIS_SUCCESS;
 }
