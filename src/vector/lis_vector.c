@@ -164,18 +164,18 @@ LIS_INT lis_vector_set_size(LIS_VECTOR vec, LIS_INT local_n, LIS_INT global_n)
 
 	if( global_n>0 && local_n>global_n )
 	{
-		LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%d) is larger than global n(=%d)\n",local_n,global_n);
+		LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%D) is larger than global n(=%D)\n",local_n,global_n);
 		return LIS_ERR_ILL_ARG;
 	}
 	if( local_n<0 || global_n<0 )
 	{
-		LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%d) or global n(=%d) are less than 0\n",local_n,global_n);
+		LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%D) or global n(=%D) are less than 0\n",local_n,global_n);
 		return LIS_ERR_ILL_ARG;
 	}
 //NEH
 /*    if( local_n==0 && global_n==0 )*/
 /*    {*/
-/*        LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%d) and global n(=%d) are 0\n",local_n,global_n);*/
+/*        LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%D) and global n(=%D) are 0\n",local_n,global_n);*/
 /*        return LIS_ERR_ILL_ARG;*/
 /*    }*/
 
@@ -527,7 +527,7 @@ LIS_INT lis_vector_set_value0(LIS_INT flag, LIS_INT i, LIS_SCALAR value, LIS_VEC
 			ie++;
 			i++;
 		}
-		LIS_SETERR3(LIS_ERR_ILL_ARG, "i(=%d) is less than %d or not less than %d\n",i,is,ie);
+		LIS_SETERR3(LIS_ERR_ILL_ARG, "i(=%D) is less than %D or not less than %D\n",i,is,ie);
 		return LIS_ERR_ILL_ARG;
 	}
 
@@ -574,7 +574,7 @@ LIS_INT lis_vector_set_value(LIS_INT flag, LIS_INT i, LIS_SCALAR value, LIS_VECT
 			ie++;
 			i++;
 		}
-		LIS_SETERR3(LIS_ERR_ILL_ARG, "i(=%d) is less than %d or larger than %d\n",i,is,ie);
+		LIS_SETERR3(LIS_ERR_ILL_ARG, "i(=%D) is less than %D or larger than %D\n",i,is,ie);
 		return LIS_ERR_ILL_ARG;
 	}
 
@@ -639,7 +639,7 @@ LIS_INT lis_vector_set_values(LIS_INT flag, LIS_INT count, LIS_INT index[], LIS_
 					ii++;
 					i++;
 				}
-				LIS_SETERR4(LIS_ERR_ILL_ARG, "index[%d](=%d) is less than %d or not less than %d\n",i,ii,is,ie);
+				LIS_SETERR4(LIS_ERR_ILL_ARG, "index[%D](=%D) is less than %D or not less than %D\n",i,ii,is,ie);
 				return LIS_ERR_ILL_ARG;
 			}
 			v->value[ii-is] = value[i];
@@ -660,7 +660,7 @@ LIS_INT lis_vector_set_values(LIS_INT flag, LIS_INT count, LIS_INT index[], LIS_
 					ii++;
 					i++;
 				}
-				LIS_SETERR4(LIS_ERR_ILL_ARG, "index[%d](=%d) is less than %d or not less than %d\n",i,ii,is,ie);
+				LIS_SETERR4(LIS_ERR_ILL_ARG, "index[%D](=%D) is less than %D or not less than %D\n",i,ii,is,ie);
 				return LIS_ERR_ILL_ARG;
 			}
 			v->value[ii-is] += value[i];
@@ -708,7 +708,7 @@ LIS_INT lis_vector_set_values2(LIS_INT flag, LIS_INT start, LIS_INT count, LIS_S
 					start++;
 					i++;
 				}
-				LIS_SETERR3(LIS_ERR_ILL_ARG, "%d is less than %d or not less than %d\n",start,is,ie);
+				LIS_SETERR3(LIS_ERR_ILL_ARG, "%D is less than %D or not less than %D\n",start,is,ie);
 				return LIS_ERR_ILL_ARG;
 			}
 			v->value[start-is] = value[i];
@@ -729,7 +729,7 @@ LIS_INT lis_vector_set_values2(LIS_INT flag, LIS_INT start, LIS_INT count, LIS_S
 					start++;
 					i++;
 				}
-				LIS_SETERR3(LIS_ERR_ILL_ARG, "%d is less than %d or not less than %d\n",start,is,ie);
+				LIS_SETERR3(LIS_ERR_ILL_ARG, "%D is less than %D or not less than %D\n",start,is,ie);
 				return LIS_ERR_ILL_ARG;
 			}
 			v->value[start-is] += value[i];
@@ -798,7 +798,7 @@ LIS_INT lis_vector_get_value(LIS_VECTOR v, LIS_INT i, LIS_SCALAR *value)
 			is++;
 			ie++;
 		}
-		LIS_SETERR3(LIS_ERR_ILL_ARG, "i(=%d) is less than %d or not less than %d\n",i,is,ie);
+		LIS_SETERR3(LIS_ERR_ILL_ARG, "i(=%D) is less than %D or not less than %D\n",i,is,ie);
 		return LIS_ERR_ILL_ARG;
 	}
 
@@ -830,12 +830,12 @@ LIS_INT lis_vector_get_values(LIS_VECTOR v, LIS_INT start, LIS_INT count, LIS_SC
 			is++;
 			ie++;
 		}
-		LIS_SETERR3(LIS_ERR_ILL_ARG, "start(=%d) is less than %d or not less than %d\n",start,is,ie);
+		LIS_SETERR3(LIS_ERR_ILL_ARG, "start(=%D) is less than %D or not less than %D\n",start,is,ie);
 		return LIS_ERR_ILL_ARG;
 	}
 	if( (start-is+count)>n )
 	{
-		LIS_SETERR3(LIS_ERR_ILL_ARG, "start(=%d) + count(=%d) exceeds the range of vector v(=%d).\n",start,count,ie);
+		LIS_SETERR3(LIS_ERR_ILL_ARG, "start(=%D) + count(=%D) exceeds the range of vector v(=%D).\n",start,count,ie);
 		return LIS_ERR_ILL_ARG;
 	}
 	for(i=0;i<count;i++)

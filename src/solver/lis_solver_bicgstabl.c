@@ -64,7 +64,7 @@ LIS_INT lis_bicgstabl_check_params(LIS_SOLVER solver)
 	ell = solver->options[LIS_OPTIONS_ELL];
 	if( ell<1 )
 	{
-		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_ELL(=%d) is less than 1\n",ell);
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_ELL(=%D) is less than 1\n",ell);
 		return LIS_ERR_ILL_ARG;
 	}
 	LIS_DEBUG_FUNC_OUT;

@@ -247,19 +247,19 @@ LIS_INT lis_matrix_set_size(LIS_MATRIX Amat, LIS_INT local_n, LIS_INT global_n)
 
 	if( global_n>0 && local_n>global_n )
 	{
-		LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%d) is larger than global n(=%d)\n",local_n,global_n);
+		LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%D) is larger than global n(=%D)\n",local_n,global_n);
 		return LIS_ERR_ILL_ARG;
 	}
 	if( local_n<0 || global_n<0 )
 	{
-		LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%d) or global n(=%d) are less than 0\n",local_n,global_n);
+		LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%D) or global n(=%D) are less than 0\n",local_n,global_n);
 		return LIS_ERR_ILL_ARG;
 	}
     /* actually want to allow this case for MPI, but not otherwise */
     #ifndef USE_MPI
     if( local_n==0 && global_n==0 )
     {
-        LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%d) and global n(=%d) are 0\n",local_n,global_n);
+        LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%D) and global n(=%D) are 0\n",local_n,global_n);
         return LIS_ERR_ILL_ARG;
     }
     #endif
@@ -269,7 +269,7 @@ LIS_INT lis_matrix_set_size(LIS_MATRIX Amat, LIS_INT local_n, LIS_INT global_n)
     /* throw an error if local_n=0 . . . */
 	if( global_n>0 && global_n<nprocs )
 	  {
-	    LIS_SETERR2(LIS_ERR_ILL_ARG,"global n(=%d) is smaller than nprocs(=%d)\n",global_n,nprocs);
+	    LIS_SETERR2(LIS_ERR_ILL_ARG,"global n(=%D) is smaller than nprocs(=%D)\n",global_n,nprocs);
 	    return LIS_ERR_ILL_ARG;
 	  }
 	#endif
@@ -718,7 +718,7 @@ LIS_INT lis_matrix_set_value(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR valu
 			j++;
 			k++;
 		}
-		LIS_SETERR3(LIS_ERR_ILL_ARG,"i(=%d) or j(=%d) are less than %d\n",i,j,k);
+		LIS_SETERR3(LIS_ERR_ILL_ARG,"i(=%D) or j(=%D) are less than %D\n",i,j,k);
 		return LIS_ERR_ILL_ARG;
 	}
 	if( i>=gn || j>=gn )
@@ -728,7 +728,7 @@ LIS_INT lis_matrix_set_value(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR valu
 			i++;
 			j++;
 		}
-		LIS_SETERR3(LIS_ERR_ILL_ARG,"i(=%d) or j(=%d) are larger than global n=(%d)\n",i,j,gn);
+		LIS_SETERR3(LIS_ERR_ILL_ARG,"i(=%D) or j(=%D) are larger than global n=(%D)\n",i,j,gn);
 		return LIS_ERR_ILL_ARG;
 	}
 
@@ -880,7 +880,7 @@ LIS_INT lis_matrix_set_type(LIS_MATRIX A, LIS_INT matrix_type)
 	if( err ) return err;
 	if( matrix_type < LIS_MATRIX_CSR || matrix_type > LIS_MATRIX_DNS )
 	{
-		LIS_SETERR2(LIS_ERR_ILL_ARG,"matrix_type is %d (Set between 1 to %d)\n", matrix_type, LIS_MATRIX_DNS);
+		LIS_SETERR2(LIS_ERR_ILL_ARG,"matrix_type is %D (Set between 1 to %D)\n", matrix_type, LIS_MATRIX_DNS);
 		return LIS_ERR_ILL_ARG;
 	}
 

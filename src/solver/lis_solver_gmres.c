@@ -65,7 +65,7 @@ LIS_INT lis_gmres_check_params(LIS_SOLVER solver)
 	restart = solver->options[LIS_OPTIONS_RESTART];
 	if( restart<0 )
 	{
-		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_RESTART(=%d) is less than 0\n",restart);
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_RESTART(=%D) is less than 0\n",restart);
 		return LIS_ERR_ILL_ARG;
 	}
 
@@ -1049,7 +1049,7 @@ LIS_INT lis_fgmres_check_params(LIS_SOLVER solver)
 	restart = solver->options[LIS_OPTIONS_RESTART];
 	if( restart<0 )
 	{
-		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_RESTART(=%d) is less than 0\n",restart);
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_RESTART(=%D) is less than 0\n",restart);
 		return LIS_ERR_ILL_ARG;
 	}
 

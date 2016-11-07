@@ -105,17 +105,17 @@ LIS_INT lis_matrix_diag_create(LIS_INT local_n, LIS_INT global_n, LIS_Comm comm,
 
 	if( global_n>0 && local_n>global_n )
 	{
-		LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%d) is larger than global n(=%d)\n",local_n,global_n);
+		LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%D) is larger than global n(=%D)\n",local_n,global_n);
 		return LIS_ERR_ILL_ARG;
 	}
 	if( local_n<0 || global_n<0 )
 	{
-		LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%d) or global n(=%d) are less than 0\n",local_n,global_n);
+		LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%D) or global n(=%D) are less than 0\n",local_n,global_n);
 		return LIS_ERR_ILL_ARG;
 	}
 	if( local_n==0 && global_n==0 )
 	{
-		LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%d) and global n(=%d) are 0\n",local_n,global_n);
+		LIS_SETERR2(LIS_ERR_ILL_ARG,"local n(=%D) and global n(=%D) are 0\n",local_n,global_n);
 		return LIS_ERR_ILL_ARG;
 	}
 

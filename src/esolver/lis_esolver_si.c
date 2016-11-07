@@ -77,7 +77,7 @@ LIS_INT lis_esi_check_params(LIS_ESOLVER esolver)
 	ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
 	if( ss<0 )
 	{
-		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_SUBSPACE(=%d) is less than 0\n",ss);
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_SUBSPACE(=%D) is less than 0\n",ss);
 		return LIS_ERR_ILL_ARG;
 	}
 
@@ -375,7 +375,7 @@ LIS_INT lis_egsi_check_params(LIS_ESOLVER esolver)
 	ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
 	if( ss<0 )
 	{
-		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_SUBSPACE(=%d) is less than 0\n",ss);
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_SUBSPACE(=%D) is less than 0\n",ss);
 		return LIS_ERR_ILL_ARG;
 	}
 
