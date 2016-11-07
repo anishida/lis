@@ -44,7 +44,7 @@
 #define __FUNC__ "main"
 LIS_INT main(LIS_INT argc, char* argv[])
 {
-	LIS_INT comm;
+	LIS_Comm comm;  
 	LIS_COMPLEX z,dot;
 	LIS_VECTOR v;
 	LIS_INT n,ln;

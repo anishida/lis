@@ -42,9 +42,10 @@
 #define __FUNC__ "main"
 LIS_INT main(LIS_INT argc, char* argv[])
 {
+    LIS_Comm comm;
     LIS_INT err,nnz,is,ie;
     LIS_INT l,m,n,nn,i,j,k,ii,jj,kk,ctr;
-    LIS_INT nprocs,mtype,my_rank,comm;
+    LIS_INT nprocs,mtype,my_rank;
     int int_nprocs,int_my_rank;
     LIS_INT nesol;
     LIS_MATRIX A,A0,B;

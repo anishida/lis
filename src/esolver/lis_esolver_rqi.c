@@ -128,6 +128,7 @@ LIS_INT lis_erqi_malloc_work(LIS_ESOLVER esolver)
 #define __FUNC__ "lis_erqi"
 LIS_INT lis_erqi(LIS_ESOLVER esolver)
 {
+  LIS_Comm comm;  
   LIS_MATRIX A;
   LIS_VECTOR v;
   LIS_SCALAR theta,dotvy;
@@ -147,6 +148,8 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
 
   LIS_DEBUG_FUNC_IN;
 
+  comm = LIS_COMM_WORLD;
+
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
   lshift = esolver->lshift;
@@ -162,17 +165,9 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   q = esolver->work[1];
 
 #ifdef _COMPLEX
-#ifdef _LONG__DOUBLE
-  if( output & (A->my_rank==0) ) printf("local shift           : (%Le, %Le)\n", creall(lshift), cimagl(lshift));
-#else
-  if( output & (A->my_rank==0) ) printf("local shift           : (%e, %e)\n", creal(lshift), cimag(lshift));
-#endif
+  if( output ) lis_printf(comm,"local shift           : (%E, %E)\n", creal(lshift), cimag(lshift));
 #else  
-#ifdef _LONG__DOUBLE
-  if( output & (A->my_rank==0) ) printf("local shift           : %Le\n", lshift);
-#else
-  if( output & (A->my_rank==0) ) printf("local shift           : %e\n", lshift);
-#endif
+  if( output ) lis_printf(comm,"local shift           : %E\n", lshift);
 #endif  
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
@@ -181,8 +176,8 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   lis_solver_get_precon(solver, &precon_type);
   lis_solver_get_solvername(nsol, solvername);
   lis_solver_get_preconname(precon_type, preconname);
-  if( output & (A->my_rank==0) ) printf("linear solver         : %s\n", solvername);
-  if( output & (A->my_rank==0) ) printf("preconditioner        : %s\n", preconname);
+  if( output ) lis_printf(comm,"linear solver         : %s\n", solvername);
+  if( output ) lis_printf(comm,"preconditioner        : %s\n", preconname);
 
   /* create preconditioner */
   solver->A = A;
@@ -361,6 +356,7 @@ LIS_INT lis_egrqi_malloc_work(LIS_ESOLVER esolver)
 #define __FUNC__ "lis_egrqi"
 LIS_INT lis_egrqi(LIS_ESOLVER esolver)
 {
+  LIS_Comm comm;  
   LIS_MATRIX A,B;
   LIS_VECTOR v;
   LIS_SCALAR theta,eta,dotvy,dotww;
@@ -380,6 +376,8 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
 
   LIS_DEBUG_FUNC_IN;
 
+  comm = LIS_COMM_WORLD;
+
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
   lshift = esolver->lshift;
@@ -397,17 +395,9 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
   q = esolver->work[2];
 
 #ifdef _COMPLEX
-#ifdef _LONG__DOUBLE
-  if( output & (A->my_rank==0) ) printf("local shift           : (%Le, %Le)\n", creall(lshift), cimagl(lshift));
-#else
-  if( output & (A->my_rank==0) ) printf("local shift           : (%e, %e)\n", creal(lshift), cimag(lshift));
-#endif
+  if( output ) lis_printf(comm,"local shift           : (%E, %E)\n", creal(lshift), cimag(lshift));
 #else  
-#ifdef _LONG__DOUBLE
-  if( output & (A->my_rank==0) ) printf("local shift           : %Le\n", lshift);
-#else
-  if( output & (A->my_rank==0) ) printf("local shift           : %e\n", lshift);
-#endif
+  if( output ) lis_printf(comm,"local shift           : %E\n", lshift);
 #endif  
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
@@ -416,8 +406,8 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
   lis_solver_get_precon(solver, &precon_type);
   lis_solver_get_solvername(nsol, solvername);
   lis_solver_get_preconname(precon_type, preconname);
-  if( output & (A->my_rank==0) ) printf("linear solver         : %s\n", solvername);
-  if( output & (A->my_rank==0) ) printf("preconditioner        : %s\n", preconname);
+  if( output ) lis_printf(comm,"linear solver         : %s\n", solvername);
+  if( output ) lis_printf(comm,"preconditioner        : %s\n", preconname);
 
   /* create preconditioner */
   solver->A = A;

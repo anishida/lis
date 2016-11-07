@@ -50,13 +50,14 @@
 #define __FUNC__ "main"
 LIS_INT main(LIS_INT argc, char* argv[])
 {
+	LIS_Comm comm;  
 	LIS_MATRIX A;
 	LIS_VECTOR x,b,u;
 	LIS_SOLVER solver;
 	LIS_INT	k,n,gn,ii,jj;
 	LIS_INT	is,ie;
 	LIS_INT	nprocs,my_rank;
-	int int_nprocs,int_my_rank,comm;
+	int int_nprocs,int_my_rank;
 	LIS_INT	nsol;
 	LIS_INT	err,iter,iter_double,iter_quad;
 	double time,itime,ptime,p_c_time,p_i_time;

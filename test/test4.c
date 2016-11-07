@@ -36,10 +36,11 @@
 #include "lis.h"
 LIS_INT main(LIS_INT argc, char* argv[])
 {
+    LIS_Comm comm;  
     LIS_MATRIX A;
     LIS_VECTOR b,x,u;
     LIS_SOLVER solver;
-    LIS_INT my_rank,comm;
+    LIS_INT my_rank;
     int int_nprocs,int_my_rank;
     LIS_INT err,i,n,gn,is,ie,iter;
 

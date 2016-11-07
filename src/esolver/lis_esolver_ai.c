@@ -150,6 +150,7 @@ LIS_INT lis_eai_malloc_work(LIS_ESOLVER esolver)
 #define __FUNC__ "lis_eai"
 LIS_INT lis_eai(LIS_ESOLVER esolver)
 {
+  LIS_Comm comm;  
   LIS_MATRIX A;
   LIS_INT ss,ic;
   LIS_SCALAR gshift;
@@ -165,6 +166,8 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   char esolvername[128],solvername[128],preconname[128];
   LIS_INT nsol,precon_type;
 
+  comm = LIS_COMM_WORLD;
+  
   ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
   gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];      
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
@@ -191,11 +194,11 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   lis_solver_get_solvername(nsol, solvername);
   lis_solver_get_preconname(precon_type, preconname);
   lis_esolver_get_esolvername(niesolver, esolvername);
-  if( output & A->my_rank==0 )
+  if( output )
     {
-      printf("inner eigensolver     : %s\n", esolvername);
-      printf("linear solver         : %s\n", solvername);
-      printf("preconditioner        : %s\n", preconname);
+      lis_printf(comm,"inner eigensolver     : %s\n", esolvername);
+      lis_printf(comm,"linear solver         : %s\n", solvername);
+      lis_printf(comm,"preconditioner        : %s\n", preconname);
     }
 
   for (i=0;i<ss*ss;i++) h[i] = 0.0;
@@ -234,16 +237,11 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   lis_array_qr(ss,h,hq,hr,&hqriter,&hqrerr);
 
   
-  if( output & A->my_rank==0 ) 
+  if( output ) 
     {
-#ifdef _LONG__LONG
-      printf("size of subspace      : %lld\n\n", ss);
-#else
-      printf("size of subspace      : %d\n\n", ss);
-#endif
-      printf("approximate eigenvalues in subspace:\n\n");
-
-
+      lis_printf(comm,"size of subspace      : %D\n\n", ss);
+      lis_printf(comm,"approximate eigenvalues in subspace:\n\n");
+      
       i=0;
       while (i<ss) 
 	{
@@ -252,23 +250,11 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 	  /* eigenvalues on the diagonal of H */
 	  if (fabs(h[i+(i-1)*ss])<tol)
 	    {
-#ifdef _LONG__LONG
-	      printf("Arnoldi: mode number              = %lld\n",i-1);
-#else
-	      printf("Arnoldi: mode number              = %d\n",i-1);
-#endif
+	      lis_printf(comm,"Arnoldi: mode number              = %D\n",i-1);
 #ifdef _COMPLEX
-#ifdef _LONG__DOUBLE
-	      printf("Arnoldi: eigenvalue               = (%Le, %Le)\n",creall(h[i-1+(i-1)*ss]),cimagl(h[i-1+(i-1)*ss]));
-#else
-	      printf("Arnoldi: eigenvalue               = (%e, %e)\n",creal(h[i-1+(i-1)*ss]),cimag(h[i-1+(i-1)*ss]));
-#endif
+	      lis_printf(comm,"Arnoldi: eigenvalue               = (%E, %E)\n",creal(h[i-1+(i-1)*ss]),cimag(h[i-1+(i-1)*ss]));
 #else	      
-#ifdef _LONG__DOUBLE
-	      printf("Arnoldi: eigenvalue               = %Le\n",(LIS_REAL)(h[i-1+(i-1)*ss]));
-#else
-	      printf("Arnoldi: eigenvalue               = %e\n",(LIS_REAL)(h[i-1+(i-1)*ss]));
-#endif
+	      lis_printf(comm,"Arnoldi: eigenvalue               = %E\n",(LIS_REAL)(h[i-1+(i-1)*ss]));
 #endif	      
 	      esolver->evalue[i-1] = h[i-1+(i-1)*ss];
 	    }
@@ -280,26 +266,10 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 		- 4*(h[i-1+(i-1)*ss]*h[i+i*ss]-h[i-1+i*ss]*h[i+(i-1)*ss]);
 	      if (D<0)
 		{
-#ifdef _LONG__LONG
-		  printf("Arnoldi: mode number              = %lld\n",i-1);
-#else
-		  printf("Arnoldi: mode number              = %d\n",i-1);
-#endif
-#ifdef _LONG__DOUBLE	      
-		  printf("Arnoldi: eigenvalue               = (%Le, %Le)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)sqrt(-D)/2);
-#else
-		  printf("Arnoldi: eigenvalue               = (%e, %e)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)sqrt(-D)/2);
-#endif
-#ifdef _LONG__LONG	      
-		  printf("Arnoldi: mode number              = %lld\n",i);
-#else
-		  printf("Arnoldi: mode number              = %d\n",i);
-#endif
-#ifdef _LONG__DOUBLE	      	      
-		  printf("Arnoldi: eigenvalue               = (%Le, %Le)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)-sqrt(-D)/2);
-#else
-		  printf("Arnoldi: eigenvalue               = (%e, %e)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)-sqrt(-D)/2);
-#endif		  
+		  lis_printf(comm,"Arnoldi: mode number              = %D\n",i-1);
+		  lis_printf(comm,"Arnoldi: eigenvalue               = (%E, %E)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)sqrt(-D)/2);
+		  lis_printf(comm,"Arnoldi: mode number              = %E\n",i);
+		  lis_printf(comm,"Arnoldi: eigenvalue               = (%E, %E)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)-sqrt(-D)/2);
 		  
 #ifdef _COMPLEX		  
 		  esolver->evalue[i-1] = (h[i-1+(i-1)*ss]+h[i+i*ss])/2 + sqrt(-D)/2 * _Complex_I;
@@ -313,31 +283,19 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 		}
 	      else
 		{
-#ifdef _LONG__LONG	      	      
-		  printf("Arnoldi: mode number              = %lld\n",i-1);
-#else
-		  printf("Arnoldi: mode number              = %d\n",i-1);
-#endif
+		  lis_printf(comm,"Arnoldi: mode number              = %D\n",i-1);
 #ifdef _COMPLEX
-#ifdef _LONG__DOUBLE	      	      	      
-		  printf("Arnoldi: eigenvalue               = (%Le, %Le)\n",creall(h[i-1+(i-1)*ss]),cimagl(h[i-1+(i-1)*ss]));
-#else
-		  printf("Arnoldi: eigenvalue               = (%e, %e)\n",creal(h[i-1+(i-1)*ss]),cimag(h[i-1+(i-1)*ss]));
-#endif	      
+		  lis_printf(comm,"Arnoldi: eigenvalue               = (%E, %E)\n",creal(h[i-1+(i-1)*ss]),cimag(h[i-1+(i-1)*ss]));
 #else		  
-#ifdef _LONG__DOUBLE	      	      	      
-		  printf("Arnoldi: eigenvalue               = %Le\n",(LIS_REAL)(h[i-1+(i-1)*ss]));
-#else
-		  printf("Arnoldi: eigenvalue               = %e\n",(LIS_REAL)(h[i-1+(i-1)*ss]));
-#endif
+		  lis_printf(comm,"Arnoldi: eigenvalue               = %E\n",(LIS_REAL)(h[i-1+(i-1)*ss]));
 #endif		  
 		  esolver->evalue[i-1] = h[i-1+(i-1)*ss];
 		}
 	    }
 	}
 
-      printf("\n");
-      printf("compute refined eigenpairs:\n\n");
+      lis_printf(comm,"\n");
+      lis_printf(comm,"compute refined eigenpairs:\n\n");
   
     }
 
@@ -378,37 +336,16 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 	  esolver->p_i_time = esolver2->p_i_time;
 	}
 
-      if (output & A->my_rank==0) 
+      if (output) 
 	{
-
-#ifdef _LONG__LONG
-	  printf("Arnoldi: mode number          = %lld\n", i);
-#else
-	  printf("Arnoldi: mode number          = %d\n", i);
-#endif
+	  lis_printf(comm,"Arnoldi: mode number          = %D\n", i);
 #ifdef _COMPLEX	  
-#ifdef _LONG__DOUBLE
-	  printf("Arnoldi: eigenvalue           = (%Le, %Le)\n", creall(esolver->evalue[i]),cimagl(esolver->evalue[i]));
+	  lis_printf(comm,"Arnoldi: eigenvalue           = (%E, %E)\n", creal(esolver->evalue[i]),cimag(esolver->evalue[i]));
 #else
-	  printf("Arnoldi: eigenvalue           = (%e, %e)\n", creal(esolver->evalue[i]),cimag(esolver->evalue[i]));
-#endif
-#else
-#ifdef _LONG__DOUBLE
-	  printf("Arnoldi: eigenvalue           = %Le\n", (LIS_REAL)esolver->evalue[i]);
-#else
-	  printf("Arnoldi: eigenvalue           = %e\n", (LIS_REAL)esolver->evalue[i]);
-#endif
+	  lis_printf(comm,"Arnoldi: eigenvalue           = %E\n", (LIS_REAL)esolver->evalue[i]);
 #endif	  
-#ifdef _LONG__LONG
-	  printf("Arnoldi: number of iterations = %lld\n",esolver2->iter[0]);
-#else
-	  printf("Arnoldi: number of iterations = %d\n",esolver2->iter[0]);
-#endif
-#ifdef _LONG__DOUBLE
-	  printf("Arnoldi: relative residual    = %Le\n\n",esolver2->resid[0]);
-#else
-	  printf("Arnoldi: relative residual    = %e\n\n",esolver2->resid[0]);
-#endif
+	  lis_printf(comm,"Arnoldi: number of iterations = %D\n",esolver2->iter[0]);
+	  lis_printf(comm,"Arnoldi: relative residual    = %E\n\n",esolver2->resid[0]);
 	}
     }
 
@@ -526,6 +463,7 @@ LIS_INT lis_egai_malloc_work(LIS_ESOLVER esolver)
 #define __FUNC__ "lis_egai"
 LIS_INT lis_egai(LIS_ESOLVER esolver)
 {
+  LIS_Comm comm;  
   LIS_INT err;
   LIS_MATRIX A,B;
   LIS_INT ss,ic;
@@ -543,6 +481,8 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
   char esolvername[128],solvername[128],preconname[128];
   LIS_INT nsol,precon_type;
 
+  comm = LIS_COMM_WORLD;
+  
   ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
   gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];      
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
@@ -571,11 +511,11 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
   lis_solver_get_solvername(nsol, solvername);
   lis_solver_get_preconname(precon_type, preconname);
   lis_esolver_get_esolvername(nigesolver, esolvername);
-  if( output & A->my_rank==0 )
+  if( output )
     {
-      printf("inner eigensolver     : %s\n", esolvername);
-      printf("linear solver         : %s\n", solvername);
-      printf("preconditioner        : %s\n", preconname);
+      lis_printf(comm,"inner eigensolver     : %s\n", esolvername);
+      lis_printf(comm,"linear solver         : %s\n", solvername);
+      lis_printf(comm,"preconditioner        : %s\n", preconname);
     }
 
   /* create preconditioner */
@@ -635,14 +575,10 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
   lis_array_qr(ss,h,hq,hr,&hqriter,&hqrerr);
 
   
-  if( output & A->my_rank==0 ) 
+  if( output ) 
     {
-#ifdef _LONG__LONG
-      printf("size of subspace      : %lld\n\n", ss);
-#else
-      printf("size of subspace      : %d\n\n", ss);
-#endif
-      printf("approximate eigenvalues in subspace:\n\n");
+      lis_printf(comm,"size of subspace      : %D\n\n", ss);
+      lis_printf(comm,"approximate eigenvalues in subspace:\n\n");
 
 
       i=0;
@@ -653,23 +589,11 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
 	  /* eigenvalues on the diagonal of H */
 	  if (fabs(h[i+(i-1)*ss])<tol)
 	    {
-#ifdef _LONG__LONG
-	      printf("Generalized Arnoldi: mode number              = %lld\n",i-1);
-#else
-	      printf("Generalized Arnoldi: mode number              = %d\n",i-1);
-#endif
+	      lis_printf(comm,"Generalized Arnoldi: mode number              = %D\n",i-1);
 #ifdef _COMPLEX
-#ifdef _LONG__DOUBLE
-	      printf("Generalized Arnoldi: eigenvalue               = (%Le, %Le)\n",creall(h[i-1+(i-1)*ss]),cimagl(h[i-1+(i-1)*ss]));
-#else
-	      printf("Generalized Arnoldi: eigenvalue               = (%e, %e)\n",creal(h[i-1+(i-1)*ss]),cimag(h[i-1+(i-1)*ss]));
-#endif
+	      lis_printf(comm,"Generalized Arnoldi: eigenvalue               = (%E, %E)\n",creal(h[i-1+(i-1)*ss]),cimag(h[i-1+(i-1)*ss]));
 #else	      
-#ifdef _LONG__DOUBLE
-	      printf("Generalized Arnoldi: eigenvalue               = %Le\n",(LIS_REAL)(h[i-1+(i-1)*ss]));
-#else
-	      printf("Generalized Arnoldi: eigenvalue               = %e\n",(LIS_REAL)(h[i-1+(i-1)*ss]));
-#endif
+	      lis_printf(comm,"Generalized Arnoldi: eigenvalue               = %e\n",(LIS_REAL)(h[i-1+(i-1)*ss]));
 #endif	      
 	      esolver->evalue[i-1] = h[i-1+(i-1)*ss];
 	    }
@@ -681,26 +605,10 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
 		- 4*(h[i-1+(i-1)*ss]*h[i+i*ss]-h[i-1+i*ss]*h[i+(i-1)*ss]);
 	      if (D<0)
 		{
-#ifdef _LONG__LONG
-		  printf("Generalized Arnoldi: mode number              = %lld\n",i-1);
-#else
-		  printf("Generalized Arnoldi: mode number              = %d\n",i-1);
-#endif
-#ifdef _LONG__DOUBLE	      
-		  printf("Generalized Arnoldi: eigenvalue               = (%Le, %Le)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)sqrt(-D)/2);
-#else
-		  printf("Generalized Arnoldi: eigenvalue               = (%e, %e)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)sqrt(-D)/2);
-#endif
-#ifdef _LONG__LONG	      
-		  printf("Generalized Arnoldi: mode number              = %lld\n",i);
-#else
-		  printf("Generalized Arnoldi: mode number              = %d\n",i);
-#endif
-#ifdef _LONG__DOUBLE	      	      
-		  printf("Generalized Arnoldi: eigenvalue               = (%Le, %Le)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)-sqrt(-D)/2);
-#else
-		  printf("Generalized Arnoldi: eigenvalue               = (%e, %e)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)-sqrt(-D)/2);
-#endif		  
+		  lis_printf(comm,"Generalized Arnoldi: mode number              = %D\n",i-1);
+		  lis_printf(comm,"Generalized Arnoldi: eigenvalue               = (%E, %E)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)sqrt(-D)/2);
+		  lis_printf(comm,"Generalized Arnoldi: mode number              = %D\n",i);
+		  lis_printf(comm,"Generalized Arnoldi: eigenvalue               = (%E, %E)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)-sqrt(-D)/2);
 		  
 #ifdef _COMPLEX		  
 		  esolver->evalue[i-1] = (h[i-1+(i-1)*ss]+h[i+i*ss])/2 + sqrt(-D)/2 * _Complex_I;
@@ -714,31 +622,19 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
 		}
 	      else
 		{
-#ifdef _LONG__LONG	      	      
-		  printf("Generalized Arnoldi: mode number              = %lld\n",i-1);
-#else
-		  printf("Generalized Arnoldi: mode number              = %d\n",i-1);
-#endif
+		  lis_printf(comm,"Generalized Arnoldi: mode number              = %D\n",i-1);
 #ifdef _COMPLEX
-#ifdef _LONG__DOUBLE	      	      	      
-		  printf("Generalized Arnoldi: eigenvalue               = (%Le, %Le)\n",creall(h[i-1+(i-1)*ss]),cimagl(h[i-1+(i-1)*ss]));
-#else
-		  printf("Generalized Arnoldi: eigenvalue               = (%e, %e)\n",creal(h[i-1+(i-1)*ss]),cimag(h[i-1+(i-1)*ss]));
-#endif	      
+		  lis_printf(comm,"Generalized Arnoldi: eigenvalue               = (%E, %E)\n",creal(h[i-1+(i-1)*ss]),cimag(h[i-1+(i-1)*ss]));
 #else		  
-#ifdef _LONG__DOUBLE	      	      	      
-		  printf("Generalized Arnoldi: eigenvalue               = %Le\n",(LIS_REAL)(h[i-1+(i-1)*ss]));
-#else
-		  printf("Generalized Arnoldi: eigenvalue               = %e\n",(LIS_REAL)(h[i-1+(i-1)*ss]));
-#endif
+		  lis_printf(comm,"Generalized Arnoldi: eigenvalue               = %E\n",(LIS_REAL)(h[i-1+(i-1)*ss]));
 #endif		  
 		  esolver->evalue[i-1] = h[i-1+(i-1)*ss];
 		}
 	    }
 	}
 
-      printf("\n");
-      printf("compute refined eigenpairs:\n\n");
+      lis_printf(comm,"\n");
+      lis_printf(comm,"compute refined eigenpairs:\n\n");
   
     }
 
@@ -779,37 +675,17 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
 	  esolver->p_i_time = esolver2->p_i_time;
 	}
 
-      if (output & A->my_rank==0) 
+      if (output) 
 	{
 
-#ifdef _LONG__LONG
-	  printf("Generalized Arnoldi: mode number          = %lld\n", i);
-#else
-	  printf("Generalized Arnoldi: mode number          = %d\n", i);
-#endif
+	  lis_printf(comm,"Generalized Arnoldi: mode number          = %D\n", i);
 #ifdef _COMPLEX	  
-#ifdef _LONG__DOUBLE
-	  printf("Generalized Arnoldi: eigenvalue           = (%Le, %Le)\n", creall(esolver->evalue[i]),cimagl(esolver->evalue[i]));
+	  lis_printf(comm,"Generalized Arnoldi: eigenvalue           = (%E, %E)\n", creal(esolver->evalue[i]),cimag(esolver->evalue[i]));
 #else
-	  printf("Generalized Arnoldi: eigenvalue           = (%e, %e)\n", creal(esolver->evalue[i]),cimag(esolver->evalue[i]));
-#endif
-#else
-#ifdef _LONG__DOUBLE
-	  printf("Generalized Arnoldi: eigenvalue           = %Le\n", (LIS_REAL)esolver->evalue[i]);
-#else
-	  printf("Generalized Arnoldi: eigenvalue           = %e\n", (LIS_REAL)esolver->evalue[i]);
-#endif
+	  lis_printf(comm,"Generalized Arnoldi: eigenvalue           = %E\n", (LIS_REAL)esolver->evalue[i]);
 #endif	  
-#ifdef _LONG__LONG
-	  printf("Generalized Arnoldi: number of iterations = %lld\n",esolver2->iter[0]);
-#else
-	  printf("Generalized Arnoldi: number of iterations = %d\n",esolver2->iter[0]);
-#endif
-#ifdef _LONG__DOUBLE
-	  printf("Generalized Arnoldi: relative residual    = %Le\n\n",esolver2->resid[0]);
-#else
-	  printf("Generalized Arnoldi: relative residual    = %e\n\n",esolver2->resid[0]);
-#endif
+	  lis_printf(comm,"Generalized Arnoldi: number of iterations = %D\n",esolver2->iter[0]);
+	  lis_printf(comm,"Generalized Arnoldi: relative residual    = %E\n\n",esolver2->resid[0]);
 	}
     }
 

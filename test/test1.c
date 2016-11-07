@@ -43,10 +43,11 @@
 #define __FUNC__ "main"
 LIS_INT main(LIS_INT argc, char* argv[])
 {
+	LIS_Comm comm;
 	LIS_MATRIX A0,A;
 	LIS_VECTOR x,b,u;
 	LIS_SOLVER solver;
-	LIS_INT	nprocs,my_rank,comm;
+	LIS_INT	nprocs,my_rank;
 	int int_nprocs,int_my_rank;
 	LIS_INT nsol,rhs,len;
 	LIS_INT	err,iter,iter_double,iter_quad;

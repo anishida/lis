@@ -125,6 +125,7 @@ LIS_INT lis_ecg_malloc_work(LIS_ESOLVER esolver)
 #define __FUNC__ "lis_ecg"
 LIS_INT lis_ecg(LIS_ESOLVER esolver)
 {
+  LIS_Comm comm;  
   LIS_INT err;
   LIS_MATRIX A;
   LIS_VECTOR x;
@@ -142,6 +143,8 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
   LIS_INT nsol,precon_type;
   char solvername[128],preconname[128];
 
+  comm = LIS_COMM_WORLD;
+
   A = esolver->A;
   x = esolver->x;
   if (esolver->options[LIS_EOPTIONS_INITGUESS_ONES] ) 
@@ -151,24 +154,16 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
 
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
-  output  = esolver->options[LIS_EOPTIONS_OUTPUT];
+  output = esolver->options[LIS_EOPTIONS_OUTPUT];
   gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];          
   lshift = esolver->lshift;
 
-  if( output & A->my_rank==0 )
+  if( output )
     {
 #ifdef _COMPLEX
-#ifdef _LONG__DOUBLE
-      printf("local shift           : (%Le, %Le)\n", creall(lshift), cimagl(lshift));
-#else
-      printf("local shift           : (%e, %e)\n", creal(lshift), cimag(lshift));
-#endif
+      lis_printf(comm,"local shift           : (%E, %E)\n", creal(lshift), cimag(lshift));
 #else  
-#ifdef _LONG__DOUBLE
-      printf("local shift           : %Le\n", lshift);
-#else
-      printf("local shift           : %e\n", lshift);
-#endif
+      lis_printf(comm,"local shift           : %e\n", lshift);
 #endif
     }
 
@@ -206,10 +201,10 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
   lis_solver_get_solvername(nsol, solvername);
   lis_solver_get_preconname(precon_type, preconname);
 
-  if( output & A->my_rank==0 )
+  if( output )
     {
-      printf("linear solver         : %s\n", solvername);
-      printf("preconditioner        : %s\n", preconname);
+      lis_printf(comm,"linear solver         : %s\n", solvername);
+      lis_printf(comm,"preconditioner        : %s\n", preconname);
     }
 
   /* p=A^-1*x */
@@ -438,6 +433,7 @@ LIS_INT lis_egcg_malloc_work(LIS_ESOLVER esolver)
 #define __FUNC__ "lis_egcg"
 LIS_INT lis_egcg(LIS_ESOLVER esolver)
 {
+  LIS_Comm comm;  
   LIS_INT err;
   LIS_MATRIX A,B;
   LIS_VECTOR x;
@@ -455,6 +451,8 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
   LIS_INT nsol,precon_type;
   char solvername[128],preconname[128];
 
+  comm = LIS_COMM_WORLD;
+
   A = esolver->A;
   B = esolver->B;
   x = esolver->x;
@@ -469,20 +467,12 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
   gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];          
   lshift = esolver->lshift;
 
-  if( output & A->my_rank==0 )
+  if( output )
     {
 #ifdef _COMPLEX
-#ifdef _LONG__DOUBLE
-      printf("local shift           : (%Le, %Le)\n", creall(lshift), cimagl(lshift));
-#else
-      printf("local shift           : (%e, %e)\n", creal(lshift), cimag(lshift));
-#endif
+      lis_printf(comm,"local shift           : (%E, %E)\n", creal(lshift), cimag(lshift));
 #else  
-#ifdef _LONG__DOUBLE
-      printf("local shift           : %Le\n", lshift);
-#else
-      printf("local shift           : %e\n", lshift);
-#endif
+      lis_printf(comm,"local shift           : %E\n", lshift);
 #endif
     }
 
@@ -524,10 +514,10 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
   lis_solver_get_solvername(nsol, solvername);
   lis_solver_get_preconname(precon_type, preconname);
 
-  if( output & A->my_rank==0 )
+  if( output )
     {
-      printf("linear solver         : %s\n", solvername);
-      printf("preconditioner        : %s\n", preconname);
+      lis_printf(comm,"linear solver         : %s\n", solvername);
+      lis_printf(comm,"preconditioner        : %s\n", preconname);
     }
 
   /* p=A^-1*x */
@@ -773,6 +763,7 @@ LIS_INT lis_ecr_malloc_work(LIS_ESOLVER esolver)
 #define __FUNC__ "lis_ecr"
 LIS_INT lis_ecr(LIS_ESOLVER esolver)
 {
+  LIS_Comm comm;  
   LIS_INT err;
   LIS_MATRIX A;
   LIS_VECTOR x;
@@ -791,6 +782,8 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
   LIS_INT nsol,precon_type;
   char solvername[128],preconname[128];
 
+  comm = LIS_COMM_WORLD;
+  
   A = esolver->A;
   x = esolver->x;
   if (esolver->options[LIS_EOPTIONS_INITGUESS_ONES] ) 
@@ -804,20 +797,12 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
   gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];          
   lshift = esolver->lshift;
 
-  if( output & A->my_rank==0 )
+  if( output )
     {
 #ifdef _COMPLEX
-#ifdef _LONG__DOUBLE
-      printf("local shift           : (%Le, %Le)\n", creall(lshift), cimagl(lshift));
-#else
-      printf("local shift           : (%e, %e)\n", creal(lshift), cimag(lshift));
-#endif
+      lis_printf(comm,"local shift           : (%E, %E)\n", creal(lshift), cimag(lshift));
 #else  
-#ifdef _LONG__DOUBLE
-      printf("local shift           : %Le\n", lshift);
-#else
-      printf("local shift           : %e\n", lshift);
-#endif
+      lis_printf(comm,"local shift           : %E\n", lshift);
 #endif
     }
 
@@ -844,10 +829,10 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
   lis_solver_get_solvername(nsol, solvername);
   lis_solver_get_preconname(precon_type, preconname);
 
-  if( output & A->my_rank==0 )
+  if( output )
     {
-      printf("linear solver         : %s\n", solvername);
-      printf("preconditioner        : %s\n", preconname);
+      lis_printf(comm,"linear solver         : %s\n", solvername);
+      lis_printf(comm,"preconditioner        : %s\n", preconname);
     }
 
   /* setup solver for preconditioning */
@@ -1037,6 +1022,7 @@ LIS_INT lis_egcr_malloc_work(LIS_ESOLVER esolver)
 #define __FUNC__ "lis_egcr"
 LIS_INT lis_egcr(LIS_ESOLVER esolver)
 {
+  LIS_Comm comm;  
   LIS_INT err;
   LIS_MATRIX A,B;
   LIS_VECTOR x;
@@ -1055,6 +1041,8 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   LIS_INT nsol,precon_type;
   char solvername[128],preconname[128];
 
+  comm = LIS_COMM_WORLD;
+  
   A = esolver->A;
   B = esolver->B;  
   x = esolver->x;
@@ -1069,20 +1057,12 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];          
   lshift = esolver->lshift;
 
-  if( output & A->my_rank==0 )
+  if( output )
     {
 #ifdef _COMPLEX
-#ifdef _LONG__DOUBLE
-      printf("local shift           : (%Le, %Le)\n", creall(lshift), cimagl(lshift));
-#else
-      printf("local shift           : (%e, %e)\n", creal(lshift), cimag(lshift));
-#endif
+      lis_printf(comm,"local shift           : (%E, %E)\n", creal(lshift), cimag(lshift));
 #else  
-#ifdef _LONG__DOUBLE
-      printf("local shift           : %Le\n", lshift);
-#else
-      printf("local shift           : %e\n", lshift);
-#endif
+      lis_printf(comm,"local shift           : %E\n", lshift);
 #endif
     }
 
@@ -1111,10 +1091,10 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   lis_solver_get_solvername(nsol, solvername);
   lis_solver_get_preconname(precon_type, preconname);
 
-  if( output & A->my_rank==0 )
+  if( output )
     {
-      printf("linear solver         : %s\n", solvername);
-      printf("preconditioner        : %s\n", preconname);
+      lis_printf(comm,"linear solver         : %s\n", solvername);
+      lis_printf(comm,"preconditioner        : %s\n", preconname);
     }
 
   /* setup solver for preconditioning */

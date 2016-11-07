@@ -41,7 +41,7 @@
 #define __FUNC__ "main"
 LIS_INT main(LIS_INT argc, char* argv[])
 {
-        LIS_INT comm;
+	LIS_Comm comm;
 	LIS_SCALAR *a,*x,*b,*u,*w;
 	LIS_INT m,n,nn;
 	LIS_INT	i,j,ii,jj,nnz;
