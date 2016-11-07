@@ -49,6 +49,7 @@ char *lis_storagename2[]   = {"CSR", "CSC", "MSR", "DIA", "ELL", "JAD", "BSR", "
 #define __FUNC__ "main"
 LIS_INT main(LIS_INT argc, char* argv[])
 {
+  LIS_Comm comm;
   LIS_MATRIX A,A0;
   LIS_VECTOR b,x;
   LIS_INT nprocs,my_rank;
@@ -63,12 +64,14 @@ LIS_INT main(LIS_INT argc, char* argv[])
   double commtime,comptime,flops;
 
   LIS_DEBUG_FUNC_IN;
-    
+
   lis_initialize(&argc, &argv);
 
+  comm = LIS_COMM_WORLD;
+    
 #ifdef USE_MPI
-  MPI_Comm_size(MPI_COMM_WORLD,&int_nprocs);
-  MPI_Comm_rank(MPI_COMM_WORLD,&int_my_rank);
+  MPI_Comm_size(comm,&int_nprocs);
+  MPI_Comm_rank(comm,&int_my_rank);
   nprocs = int_nprocs;
   my_rank = int_my_rank;
 #else
@@ -78,11 +81,9 @@ LIS_INT main(LIS_INT argc, char* argv[])
 
   if( argc < 3 )
     {
-      if( my_rank==0 ) 
-	{
-	  printf("Usage: %s n iter [matrix_type]\n", argv[0]);
-	}
-      CHKERR(1);	  
+      lis_printf(comm,"Usage: %s n iter [matrix_type]\n", argv[0]);
+      lis_finalize();
+      exit(0);
     }
   
   n  = atoi(argv[1]);
@@ -96,62 +97,35 @@ LIS_INT main(LIS_INT argc, char* argv[])
 
   if( n<=0 )
     {
-#ifdef _LONG__LONG
-      if( my_rank==0 ) printf("n=%lld <=0\n",n);
-#else
-      if( my_rank==0 ) printf("n=%d <=0\n",n);
-#endif
+      lis_printf(comm,"n=%D <=0\n",n);
       CHKERR(1);	  
     }
   if( iter<=0 )
     {
-#ifdef _LONG__LONG
-      if( my_rank==0 ) printf("iter=%lld <= 0\n",iter);
-#else
-      if( my_rank==0 ) printf("iter=%d <= 0\n",iter);
-#endif
+      lis_printf(comm,"iter=%D <= 0\n",iter);
       CHKERR(1);
     }
   if( storage<0 || storage>11 )
     {
-#ifdef _LONG__LONG
-      if( my_rank==0 ) printf("matrix_type=%lld < 0 or matrix_type=%lld > 11\n",storage,storage);
-#else
-      if( my_rank==0 ) printf("matrix_type=%d < 0 or matrix_type=%d > 11\n",storage,storage);
-#endif
+      lis_printf(comm,"matrix_type=%D < 0 or matrix_type=%D > 11\n",storage,storage);
       CHKERR(1);
     }
 
-  if( my_rank==0 ) 
-    {
-      printf("\n");
-#ifdef _LONG__LONG
-      printf("number of processes = %lld\n",nprocs);
-#else
-      printf("number of processes = %d\n",nprocs);
-#endif
-    }
+  lis_printf(comm,"\n");
+  lis_printf(comm,"number of processes = %D\n",nprocs);
 
 #ifdef _OPENMP
   nthreads = omp_get_num_procs();
   maxthreads = omp_get_max_threads();
-  if( my_rank==0 ) 
-    {
-#ifdef _LONG__LONG
-      printf("max number of threads = %lld\n", nthreads);
-      printf("number of threads = %lld\n", maxthreads);
-#else
-      printf("max number of threads = %d\n", nthreads);
-      printf("number of threads = %d\n", maxthreads);
-#endif
-    }
+  lis_printf(comm,"max number of threads = %d\n", nthreads);
+  lis_printf(comm,"number of threads = %d\n", maxthreads);
 #else
   nthreads = 1;
   maxthreads = 1;
 #endif
 
   /* create matrix and vectors */
-  lis_matrix_create(LIS_COMM_WORLD,&A0);
+  lis_matrix_create(comm,&A0);
   lis_matrix_set_size(A0,0,n);
   lis_matrix_get_size(A0,&n,&gn);
   lis_matrix_get_range(A0,&is,&ie);
@@ -180,16 +154,8 @@ LIS_INT main(LIS_INT argc, char* argv[])
   np = i;
 #endif
 
-  if( my_rank==0 ) 
-    {
-#ifdef _LONG__LONG
-      printf("matrix size = %lld x %lld (%lld nonzero entries)\n",gn,gn,nnz);
-      printf("number of iterations = %lld\n\n",iter);
-#else
-      printf("matrix size = %d x %d (%d nonzero entries)\n",gn,gn,nnz);
-      printf("number of iterations = %d\n\n",iter);
-#endif
-    }
+  lis_printf(comm,"matrix size = %D x %D (%D nonzero entries)\n",gn,gn,nnz);
+  lis_printf(comm,"number of iterations = %D\n\n",iter);
 
   err = lis_vector_duplicate(A0,&x);
   if( err ) CHKERR(err);
@@ -245,39 +211,12 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	}
       lis_vector_nrm2(b,&val);
 
-      if( my_rank==0 )
-	{
-	  flops = 2.0*nnz*iter*1.0e-6 / comptime;
+      flops = 2.0*nnz*iter*1.0e-6 / comptime;
 #ifdef USE_MPI
-#ifdef _LONG__DOUBLE
-#ifdef _LONG__LONG
-	  printf("matrix_type = %2lld (%s), computation = %e sec, %8.3f MFLOPS, communication = %e sec, communication/computation = %3.3f %%, 2-norm = %Le\n",matrix_type,lis_storagename2[matrix_type-1],comptime,flops,commtime,commtime/comptime*100,val);
+      lis_printf(comm,"matrix_type = %D (%s), computation = %E sec, %G MFLOPS, communication = %E sec, communication/computation = %G %%, 2-norm = %E\n",matrix_type,lis_storagename2[matrix_type-1],comptime,flops,commtime,commtime/comptime*100,val);
 #else
-	  printf("matrix_type = %2d (%s), computation = %e sec, %8.3f MFLOPS, communication = %e sec, communication/computation = %3.3f %%, 2-norm = %Le\n",matrix_type,lis_storagename2[matrix_type-1],comptime,flops,commtime,commtime/comptime*100,val);
+      lis_printf(comm,"matrix_type = %D (%s), computation = %E sec, %G MFLOPS, 2-norm = %E\n",matrix_type,lis_storagename2[matrix_type-1],comptime,flops,val);
 #endif
-#else
-#ifdef _LONG__LONG
-	  printf("matrix_type = %2lld (%s), computation = %e sec, %8.3f MFLOPS, communication = %e sec, communication/computation = %3.3f %%, 2-norm = %e\n",matrix_type,lis_storagename2[matrix_type-1],comptime,flops,commtime,commtime/comptime*100,val);
-#else
-	  printf("matrix_type = %2d (%s), computation = %e sec, %8.3f MFLOPS, communication = %e sec, communication/computation = %3.3f %%, 2-norm = %e\n",matrix_type,lis_storagename2[matrix_type-1],comptime,flops,commtime,commtime/comptime*100,val);
-#endif
-#endif
-#else
-#ifdef _LONG__DOUBLE
-#ifdef _LONG__LONG
-	  printf("matrix_type = %2lld (%s), computation = %e sec, %8.3f MFLOPS, 2-norm = %Le\n",matrix_type,lis_storagename2[matrix_type-1],comptime,flops,val);
-#else
-	  printf("matrix_type = %2d (%s), computation = %e sec, %8.3f MFLOPS, 2-norm = %Le\n",matrix_type,lis_storagename2[matrix_type-1],comptime,flops,val);
-#endif
-#else
-#ifdef _LONG__LONG
-	  printf("matrix_type = %2lld (%s), computation = %e sec, %8.3f MFLOPS, 2-norm = %e\n",matrix_type,lis_storagename2[matrix_type-1],comptime,flops,val);
-#else
-	  printf("matrix_type = %2d (%s), computation = %e sec, %8.3f MFLOPS, 2-norm = %e\n",matrix_type,lis_storagename2[matrix_type-1],comptime,flops,val);
-#endif
-#endif
-#endif
-	}
       lis_matrix_destroy(A);
     }
 

@@ -63,11 +63,11 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       i = iargc()
       if( i.lt.4 ) then
          if( my_rank.eq.0 ) then
-          write(*,*) 'Usage: test1f matrix_filename rhs_setting ',
+            write(*,*) 'Usage: test1f matrix_filename rhs_setting ',
      .              'solution_filename rhistory_filename [options]'
-          call lis_finalize(ierr)
-        endif
-        stop
+            call lis_finalize(ierr)
+         endif
+         stop
       endif
       call getarg(2,argc)
       if( argc.eq.'0' ) then

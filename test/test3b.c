@@ -77,7 +77,8 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	if( argc < 7 )
 	  {
 	    lis_printf(comm,"Usage: %s l m n matrix_type solution_filename residual_filename [options]\n", argv[0]);
-	    CHKERR(1);
+	    lis_finalize();
+	    exit(0);
 	  }
 
 	l = atoi(argv[1]);

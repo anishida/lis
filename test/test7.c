@@ -50,6 +50,12 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	LIS_INT n,ln;
 	LIS_REAL nrm2;
 
+	LIS_DEBUG_FUNC_IN;
+
+	lis_initialize(&argc, &argv);
+
+	comm = LIS_COMM_WORLD;
+
 #ifdef HAVE_COMPLEX_H
 	z = 1.0 + 2.0 * _Complex_I;
 #else
@@ -64,7 +70,6 @@ LIS_INT main(LIS_INT argc, char* argv[])
 #endif
 
 #ifdef _COMPLEX	
-	lis_initialize(&argc, &argv);
 	n = 10;
 	ln = 0;
 	lis_vector_create(comm,&v);
@@ -81,8 +86,11 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	lis_printf(comm,"2-norm of v = %F\n", nrm2);
 	lis_printf(comm,"abs(z) = %F\n", fabs(z));	
 	lis_vector_destroy(v);
-	lis_finalize();
 #endif
+
+	lis_finalize();
+
+	LIS_DEBUG_FUNC_OUT;
 
 	return 0;
 }

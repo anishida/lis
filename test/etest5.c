@@ -74,7 +74,8 @@ LIS_INT main(LIS_INT argc, char* argv[])
   if( argc < 6 )
     {
       lis_printf(comm,"Usage: %s matrix_filename evalues_filename evectors_filename residuals_filename iters_filename [options]\n", argv[0]);
-      CHKERR(1);
+      lis_finalize();
+      exit(0);
     }
 
   lis_printf(comm,"\n");

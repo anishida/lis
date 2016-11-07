@@ -38,13 +38,15 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
       n = 10
       ln = 0
+
+      call lis_initialize(ierr)
+
       comm = LIS_COMM_WORLD      
 
       z = (1.0, 2.0);
       write(*,*) 'complex number z = ', z
 
 #ifdef COMPLEX      
-      call lis_initialize(ierr)
       call lis_vector_create(comm,v,ierr)
       call lis_vector_set_size(v,ln,n,ierr)
       call lis_vector_set_all(z,v,ierr)
@@ -59,8 +61,9 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       write(*,*) '2-norm of v = ', nrm2
       write(*,*) 'abs(z) = ', abs(z)      
       call lis_vector_destroy(v,ierr)
-      call lis_finalize(ierr)
 #endif      
+
+      call lis_finalize(ierr)
 
       stop
       end
