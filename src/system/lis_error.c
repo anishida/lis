@@ -125,10 +125,9 @@ LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)
 	my_rank = 0;
 	#endif
 
-	strcpy(str,mess);
-
 	if( my_rank==0 )
 	{
+		strcpy(str,mess);
 	#ifdef _LONG__LONG
 		lis_replace(str,"%D","%lld");
 	#else
