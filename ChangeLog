@@ -1,6 +1,11 @@
+Version 1.7.10  November 8, 2016
+
+  - Fixed type related print bug in lis_esolver.c.
+
 Version 1.7.9  November 7, 2016
 
   - Cleaned up print statements using lis_printf().
+  - Fixed type related print bugs in error messages.
 
 Version 1.7.8  November 4, 2016
 
