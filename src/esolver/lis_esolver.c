@@ -578,7 +578,7 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 #endif
 	if ( output ) lis_printf(comm,"eigensolver           : %s\n", lis_esolvername[nesolver]);
 
-	if ( output ) lis_printf(comm,"convergence condition : ||lx-(B^-1)Ax||_2 <= %E * ||lx||_2\n", (LIS_REAL)esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]); 
+	if ( output ) lis_printf(comm,"convergence condition : ||lx-(B^-1)Ax||_2 <= %6.1e * ||lx||_2\n", (double)esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]); 
 
 	if( A->matrix_type==LIS_MATRIX_BSR || A->matrix_type==LIS_MATRIX_BSC )
 	  {

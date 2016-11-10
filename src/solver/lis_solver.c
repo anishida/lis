@@ -778,17 +778,17 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	switch(conv_cond)
 	{
 	case LIS_CONV_COND_NRM2_R:
-	  if( output ) lis_printf(comm,"convergence condition : ||b-Ax||_2 <= %E * ||b-Ax_0||_2\n", tol); 		  
+	  if( output ) lis_printf(comm,"convergence condition : ||b-Ax||_2 <= %6.1e * ||b-Ax_0||_2\n", (double)tol); 		  
 		break;		
 	case LIS_CONV_COND_NRM2_B:
 		lis_vector_nrm2(b,&nrm2);
 		nrm2 = nrm2*tol;
-		if( output ) lis_printf(comm,"convergence condition : ||b-Ax||_2 <= %E*||b||_2 = %E\n", tol,nrm2);
+		if( output ) lis_printf(comm,"convergence condition : ||b-Ax||_2 <= %6.1e*||b||_2 = %6.1e\n", (double)tol,(double)nrm2);
 		break;
 	case LIS_CONV_COND_NRM1_B:
 		lis_vector_nrm1(b,&nrm2);
 		nrm2 = nrm2*tol_w + tol;
-		if( output ) lis_printf(comm,"convergence condition : ||b-Ax||_1 <= %E*||b||_1 + %E = %E\n", tol_w,tol,nrm2);
+		if( output ) lis_printf(comm,"convergence condition : ||b-Ax||_1 <= %6.1e*||b||_1 + %6.1e = %6.1e\n", (double)tol_w,(double)tol,(double)nrm2);
 		break;
 	}
 	if( AA->matrix_type==LIS_MATRIX_BSR || AA->matrix_type==LIS_MATRIX_BSC )
