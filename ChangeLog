@@ -1,3 +1,7 @@
+Version 1.7.11  November 10, 2016
+
+  - Fixed type related print bugs in test/spmvtest*.c.
+
 Version 1.7.10  November 8, 2016
 
   - Fixed type related print bug in lis_esolver.c.
