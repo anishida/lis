@@ -185,7 +185,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
   lis_vector_nrm2(b,&val);
 
   flops = 2.0*nnz*iter*1.0e-6 / comptime;
-  lis_printf(comm,"matrix_type = %D (%s), computation = %E sec, %G MFLOPS, communication = %E sec, communication/computation = %G %%, 2-norm = %E\n",matrix_type,lis_storagename2[matrix_type-1],comptime,flops,commtime,commtime/comptime*100,val);
+  lis_printf(comm,"matrix_type = %2d (%s), computation = %e sec, %8.3f MFLOPS, communication = %e sec, communication/computation = %3.3f %%, 2-norm = %E\n",(int)matrix_type,lis_storagename2[matrix_type-1],comptime,flops,commtime,commtime/comptime*100,val);
 
   lis_matrix_destroy(A);
   lis_matrix_destroy(A0);
