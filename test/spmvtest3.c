@@ -85,8 +85,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
   if( argc < 5 )
     {
       lis_printf(comm,"Usage: %s l m n iter [matrix_type]\n", argv[0]);
-      lis_finalize();
-      exit(0);
+      CHKERR(1);
     }
 
   l  = atoi(argv[1]);

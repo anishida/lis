@@ -160,7 +160,7 @@ LIS_INT lis_error(const char *file, const char *func, const LIS_INT line, const 
 	va_list vvlist;
 
 	va_start(vvlist, mess);
-	lis_printf(lis_debug_comm,"%s(%d) : %s : error %s :",file,line,func,LIS_ERR_MESS[code-LIS_ERR_ILL_ARG]);
+	lis_printf(lis_debug_comm,"%s(%D) : %s : error %s :",file,line,func,LIS_ERR_MESS[code-LIS_ERR_ILL_ARG]);
 	if( mess ) vprintf(mess,vvlist);
 	va_end(vvlist);
 	return LIS_SUCCESS;
@@ -171,7 +171,7 @@ void CHKERR(LIS_INT ierr)
 	if(ierr)
 	{
 		lis_finalize();
-		exit(ierr);
+		exit((int)ierr);
 	}
 }
 

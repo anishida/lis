@@ -86,8 +86,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	if( argc < 3 )
 	{
 	  lis_printf(comm,"Usage: %s n gamma [options]\n", argv[0]);
-	  lis_finalize();
-	  exit(0);
+	  CHKERR(1);	  	    	    	  
 	}
 
 	gn  = atoi(argv[1]);
