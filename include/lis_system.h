@@ -36,7 +36,7 @@
 #define LIS_SETERR2(code,mess,a1,a2) lis_error(__FILE__,__FUNC__,__LINE__,code,mess,a1,a2)
 #define LIS_SETERR3(code,mess,a1,a2,a3)	lis_error(__FILE__,__FUNC__,__LINE__,code,mess,a1,a2,a3)
 #define LIS_SETERR4(code,mess,a1,a2,a3,a4) lis_error(__FILE__,__FUNC__,__LINE__,code,mess,a1,a2,a3,a4)
-#define LIS_SETERR_MEM(sz) lis_error(__FILE__,__FUNC__,__LINE__,LIS_ERR_OUT_OF_MEMORY,"malloc size = %d\n",sz)
+#define LIS_SETERR_MEM(sz) lis_error(__FILE__,__FUNC__,__LINE__,LIS_ERR_OUT_OF_MEMORY,"malloc size = %D\n",sz)
 #define LIS_SETERR_IMP lis_error(__FILE__,__FUNC__,__LINE__,LIS_ERR_NOT_IMPLEMENTED,"not implemented\n")
 #define LIS_SETERR_FIO lis_error(__FILE__,__FUNC__,__LINE__,LIS_ERR_FILE_IO,"file i/o error\n")
 
