@@ -84,8 +84,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
   if( argc < 4 )
     {
       lis_printf(comm,"Usage: %s matrix_filename matrix_type iter [block] \n", argv[0]);
-      lis_finalize();
-      exit(0);
+      CHKERR(1);
     }
 
   file = fopen(argv[1], "r");

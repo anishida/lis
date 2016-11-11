@@ -75,8 +75,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
     if( argc < 2 )
       {
 	lis_printf(comm,"Usage: %s n [eoptions]\n", argv[0]);
-	lis_finalize();
-	exit(0);
+	CHKERR(1);			
       }
 
     lis_printf(comm,"\n");

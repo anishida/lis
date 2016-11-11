@@ -82,8 +82,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
   if( argc < 3 )
     {
       lis_printf(comm,"Usage: %s n iter [matrix_type]\n", argv[0]);
-      lis_finalize();
-      exit(0);
+      CHKERR(1);				      
     }
   
   n  = atoi(argv[1]);
