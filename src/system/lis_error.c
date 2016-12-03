@@ -158,10 +158,26 @@ LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)
 LIS_INT lis_error(const char *file, const char *func, const LIS_INT line, const LIS_INT code, const char *mess, ...)
 {
 	va_list vvlist;
+	char str[1024];
 
+	strcpy(str,mess);
+	#ifdef _LONG__LONG
+		lis_replace(str,"%D","%lld");
+	#else
+		lis_replace(str,"%D","%d");
+	#endif
+	#ifdef _LONG__DOUBLE
+		lis_replace(str,"%E","%Le");
+		lis_replace(str,"%G","%Lg");
+		lis_replace(str,"%F","%Lf");
+	#else
+		lis_replace(str,"%E","%e");
+		lis_replace(str,"%G","%g");
+		lis_replace(str,"%F","%f");
+	#endif
 	va_start(vvlist, mess);
 	lis_printf(lis_debug_comm,"%s(%D) : %s : error %s :",file,line,func,LIS_ERR_MESS[code-LIS_ERR_ILL_ARG]);
-	if( mess ) vprintf(mess,vvlist);
+	if( mess ) vprintf(str,vvlist);
 	va_end(vvlist);
 	return LIS_SUCCESS;
 }
