@@ -170,99 +170,15 @@ LIS_INT lis_input(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, char *filename)
 
 
 #undef __FUNC__
-#define __FUNC__ "lis_input"
+#define __FUNC__ "lis_input_matrix"
 LIS_INT lis_input_matrix(LIS_MATRIX A, char *filename)
 {
 	LIS_INT	err;
-	LIS_INT	fileformat;
-	char buf[256],banner[128];
-	FILE *file;
 
 	LIS_DEBUG_FUNC_IN;
 
-	err = lis_matrix_check(A,LIS_MATRIX_CHECK_NULL);
+	err = lis_input(A,NULL,NULL,filename);
 	if( err ) return err;
-
-	if( filename==NULL )
-	{
-		LIS_SETERR(LIS_ERR_ILL_ARG,"filname is NULL\n");
-		return LIS_ERR_ILL_ARG;
-	}
-	file = fopen(filename, "r");
-	if( file==NULL )
-	{
-		LIS_SETERR1(LIS_ERR_FILE_IO,"cannot open file %s\n",filename);
-		return LIS_ERR_FILE_IO;
-	}
-
-	/* file format check */
-	if( fgets(buf, 256, file) == NULL )
-	{
-		fclose(file);
-		return LIS_ERR_FILE_IO;
-	}
-	sscanf(buf, "%s", banner);
-	if( strncmp(banner, MM_BANNER, strlen(MM_BANNER)) == 0)
-	{
-		fileformat = LIS_FMT_MM;
-	}
-/*	else if( strncmp(banner, LISBanner, strlen(LISBanner)) == 0)
-	{
-		fileformat = LIS_FMT_LIS;
-	}
-	else if( strncmp(banner, ITBLBanner, strlen(ITBLBanner)) == 0)
-	{
-		fileformat = LIS_FMT_ITBL;
-	}
-*/
-	else
-	{
-		fileformat = LIS_FMT_HB;
-	}
-	rewind(file);
-
-/*
-	if( fileformat==LIS_FMT_FREE )
-	{
-		fclose(file);
-		err = lis_input_option(&option, filename);
-		if( err ) return err;
-		file = fopen(option.filename, "r");
-		if( file==NULL )
-		{
-			LIS_SETERR1(LIS_ERR_FILE_IO,"cannot open file %s\n",filename);
-			return LIS_ERR_FILE_IO;
-		}
-	}
-*/
-
-	switch( fileformat )
-	{
-	case LIS_FMT_MM:
-		err = lis_input_mm(A,NULL,NULL,file);
-		break;
-	case LIS_FMT_HB:
-		err = lis_input_hb(A,NULL,NULL,file);
-		break;
-/*
-	case LIS_FMT_ITBL:
-		err = lis_input_mmm(A,NULL,NULL,file,comm,matrix_type,bnr,bnc,row,col);
-		break;
-	case LIS_FMT_LIS:
-		err = lis_input_lis(A,NULL,NULL,filename,file,comm,matrix_type,bnr,bnc,row,col);
-		break;
-	case LIS_FMT_FREE:
-		err = lis_input_free(A,NULL,NULL,option,file,comm,matrix_type,bnr,bnc,row,col);
-		break;
-*/
-	default:
-		fclose(file);
-		return err;
-	}
-	fclose(file);
-#ifdef USE_MPI
-	MPI_Barrier(A->comm);
-#endif
 
 	LIS_DEBUG_FUNC_OUT;
 	return err;
