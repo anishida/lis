@@ -325,6 +325,7 @@ typedef LIS_COMPLEX LIS_SCALAR;
 #define tan(x) ctanl(x)
 #define tanh(x) ctanhl(x)
 #define LIS_MPI_SCALAR MPI_C_LONG_DOUBLE_COMPLEX
+#define LIS_MPI_REAL MPI_LONG_DOUBLE
 #else
 typedef long double LIS_SCALAR;
 #define sin(x) sinl(x)
@@ -342,6 +343,7 @@ typedef long double LIS_SCALAR;
 #define exp(x) expl(x)
 #define pow(x,y) powl((x),(y))
 #define LIS_MPI_SCALAR MPI_LONG_DOUBLE
+#define LIS_MPI_REAL MPI_LONG_DOUBLE
 #endif
 #else
 typedef double LIS_REAL;
@@ -371,9 +373,11 @@ typedef LIS_COMPLEX LIS_SCALAR;
 #define tan(x) ctan(x)
 #define tanh(x) ctanh(x)
 #define LIS_MPI_SCALAR MPI_C_DOUBLE_COMPLEX
+#define LIS_MPI_REAL MPI_DOUBLE
 #else
 typedef double LIS_SCALAR;
 #define LIS_MPI_SCALAR MPI_DOUBLE
+#define LIS_MPI_REAL MPI_DOUBLE
 #endif
 #endif
 typedef LIS_DOUBLE_DOUBLE LIS_QUAD;
