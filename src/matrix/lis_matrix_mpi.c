@@ -909,13 +909,13 @@ LIS_INT lis_send_recv(LIS_COMMTABLE commtable, LIS_SCALAR x[])
 		{
 			ws[i] = x[commtable->export_index[i]];
 		}
-		MPI_Isend(&ws[is],inum,MPI_DOUBLE,commtable->neibpe[neib],0,commtable->comm,&commtable->req1[neib]);
+		MPI_Isend(&ws[is],inum,LIS_MPI_SCALAR,commtable->neibpe[neib],0,commtable->comm,&commtable->req1[neib]);
 	}
 	for(neib=0;neib<neibpetot;neib++)
 	{
 		is = commtable->import_ptr[neib];
 		inum = commtable->import_ptr[neib+1] - is;
-		MPI_Irecv(&wr[is],inum,MPI_DOUBLE,commtable->neibpe[neib],0,commtable->comm,&commtable->req2[neib]);
+		MPI_Irecv(&wr[is],inum,LIS_MPI_SCALAR,commtable->neibpe[neib],0,commtable->comm,&commtable->req2[neib]);
 	}
 	MPI_Waitall(neibpetot, commtable->req2, commtable->sta2);
 
@@ -924,7 +924,7 @@ LIS_INT lis_send_recv(LIS_COMMTABLE commtable, LIS_SCALAR x[])
 	{
 		is = commtable->index_import[neib];
 		inum = commtable->index_import[neib+1] - is;
-		MPI_Get_count(&commtable->sta2[neib],MPI_DOUBLE,&is);
+		MPI_Get_count(&commtable->sta2[neib],LIS_MPI_SCALAR,&is);
 		printf("sndre rank=%d pe=%d rec_count=%d act_count=%d\n",0,commtable->neibpe[neib],inum,is);
 	}
 		printf("x[%d]=%f\n",commtable->node_import[0],wr[0]);
@@ -976,13 +976,13 @@ LIS_INT lis_reduce(LIS_COMMTABLE commtable, LIS_SCALAR x[])
 		{
 			wr[i] = x[commtable->import_index[i]+pad];
 		}
-		MPI_Isend(&wr[is],inum,MPI_DOUBLE,commtable->neibpe[neib],0,commtable->comm,&commtable->req1[neib]);
+		MPI_Isend(&wr[is],inum,LIS_MPI_SCALAR,commtable->neibpe[neib],0,commtable->comm,&commtable->req1[neib]);
 	}
 	for(neib=0;neib<neibpetot;neib++)
 	{
 		is = commtable->export_ptr[neib];
 		inum = commtable->export_ptr[neib+1] - is;
-		MPI_Irecv(&ws[is],inum,MPI_DOUBLE,commtable->neibpe[neib],0,commtable->comm,&commtable->req2[neib]);
+		MPI_Irecv(&ws[is],inum,LIS_MPI_SCALAR,commtable->neibpe[neib],0,commtable->comm,&commtable->req2[neib]);
 	}
 	MPI_Waitall(neibpetot, commtable->req2, commtable->sta2);
 	for(neib=0;neib<neibpetot;neib++)
@@ -1488,18 +1488,18 @@ LIS_INT lis_matrix_redistribute_csr(LIS_MATRIX Ain, LIS_MATRIX *Aout, LIS_INT re
 	for(k=0;k<snd_n;k++)
 	{
 		j     = Ain->ptr[snd_is[k]];
-		MPI_Isend(&Ain->value[j],snd_count[k],MPI_DOUBLE,snd_pe[k],0,Ain->comm,&req1[k]);
+		MPI_Isend(&Ain->value[j],snd_count[k],LIS_MPI_SCALAR,snd_pe[k],0,Ain->comm,&req1[k]);
 	}
 	j = 0;
 	for(k=0;k<up_n;k++)
 	{
-		MPI_Irecv(&value[j],rec_count[k],MPI_DOUBLE,rec_pe[k],0,Ain->comm,&req2[k]);
+		MPI_Irecv(&value[j],rec_count[k],LIS_MPI_SCALAR,rec_pe[k],0,Ain->comm,&req2[k]);
 		j += rec_count[k];
 	}
 	j = l;
 	for(;k<rec_n;k++)
 	{
-		MPI_Irecv(&value[j],rec_count[k],MPI_DOUBLE,rec_pe[k],0,Ain->comm,&req2[k]);
+		MPI_Irecv(&value[j],rec_count[k],LIS_MPI_SCALAR,rec_pe[k],0,Ain->comm,&req2[k]);
 		j += rec_count[k];
 	}
 	if( rec_n>0 ) MPI_Waitall(rec_n, req2, sta2);
@@ -1507,7 +1507,7 @@ LIS_INT lis_matrix_redistribute_csr(LIS_MATRIX Ain, LIS_MATRIX *Aout, LIS_INT re
 #if 0
 	for(k=0;k<rec_n;k++)
 	{
-		MPI_Get_count(&sta2[k],MPI_DOUBLE,&count);
+		MPI_Get_count(&sta2[k],LIS_MPI_SCALAR,&count);
 		printf("value rank=%d pe=%d rec_count=%d act_count=%d\n",my_rank,rec_pe[k],rec_count[k],count);
 	}
 #endif
@@ -1820,15 +1820,15 @@ LIS_INT lis_vector_redistribute(LIS_MATRIX Ain, LIS_VECTOR vin, LIS_VECTOR *vout
 	count = i;
 	for(k=0;k<snd_n;k++)
 	{
-		MPI_Isend(&vin->value[snd_is[k]],snd_count[k],MPI_DOUBLE,snd_pe[k],0,vin->comm,&req1[k]);
+		MPI_Isend(&vin->value[snd_is[k]],snd_count[k],LIS_MPI_SCALAR,snd_pe[k],0,vin->comm,&req1[k]);
 	}
 	for(k=0;k<up_n;k++)
 	{
-		MPI_Irecv((*vout)->value,rec_count[k],MPI_DOUBLE,rec_pe[k],0,vin->comm,&req2[k]);
+		MPI_Irecv((*vout)->value,rec_count[k],LIS_MPI_SCALAR,rec_pe[k],0,vin->comm,&req2[k]);
 	}
 	for(;k<rec_n;k++)
 	{
-		MPI_Irecv(&(*vout)->value[count],rec_count[k],MPI_DOUBLE,rec_pe[k],0,vin->comm,&req2[k]);
+		MPI_Irecv(&(*vout)->value[count],rec_count[k],LIS_MPI_SCALAR,rec_pe[k],0,vin->comm,&req2[k]);
 	}
 	MPI_Waitall(rec_n, req2, sta2);
 	MPI_Waitall(snd_n, req1, sta1);

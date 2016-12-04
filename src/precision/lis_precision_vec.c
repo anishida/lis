@@ -804,13 +804,13 @@ LIS_INT lis_send_recv_mp(LIS_COMMTABLE commtable, LIS_VECTOR X)
 			ws[is*2+i]      = x[commtable->export_index[is+i]];
 			ws[is*2+inum+i] = xl[commtable->export_index[is+i]];
 		}
-		MPI_Isend(&ws[is*2],inum*2,MPI_DOUBLE,commtable->neibpe[neib],0,commtable->comm,&commtable->req1[neib]);
+		MPI_Isend(&ws[is*2],inum*2,LIS_MPI_SCALAR,commtable->neibpe[neib],0,commtable->comm,&commtable->req1[neib]);
 	}
 	for(neib=0;neib<neibpetot;neib++)
 	{
 		is = commtable->import_ptr[neib];
 		inum = commtable->import_ptr[neib+1] - is;
-		MPI_Irecv(&wr[is*2],inum*2,MPI_DOUBLE,commtable->neibpe[neib],0,commtable->comm,&commtable->req2[neib]);
+		MPI_Irecv(&wr[is*2],inum*2,LIS_MPI_SCALAR,commtable->neibpe[neib],0,commtable->comm,&commtable->req2[neib]);
 	}
 	MPI_Waitall(neibpetot, commtable->req2, commtable->sta2);
 
@@ -860,13 +860,13 @@ LIS_INT lis_reduce_mp(LIS_COMMTABLE commtable, LIS_VECTOR X)
 			wr[is*2+i]      = x[commtable->import_index[is+i]+pad];
 			wr[is*2+inum+i] = xl[commtable->import_index[is+i]+pad];
 		}
-		MPI_Isend(&wr[is*2],inum*2,MPI_DOUBLE,commtable->neibpe[neib],0,commtable->comm,&commtable->req1[neib]);
+		MPI_Isend(&wr[is*2],inum*2,LIS_MPI_SCALAR,commtable->neibpe[neib],0,commtable->comm,&commtable->req1[neib]);
 	}
 	for(neib=0;neib<neibpetot;neib++)
 	{
 		is = commtable->export_ptr[neib];
 		inum = commtable->export_ptr[neib+1] - is;
-		MPI_Irecv(&ws[is*2],inum*2,MPI_DOUBLE,commtable->neibpe[neib],0,commtable->comm,&commtable->req2[neib]);
+		MPI_Irecv(&ws[is*2],inum*2,LIS_MPI_SCALAR,commtable->neibpe[neib],0,commtable->comm,&commtable->req2[neib]);
 	}
 	MPI_Waitall(neibpetot, commtable->req2, commtable->sta2);
 	for(neib=0;neib<neibpetot;neib++)

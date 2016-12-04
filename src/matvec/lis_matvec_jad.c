@@ -217,7 +217,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		{
 			ws[i] = x[commtable->export_index[i]];
 		}
-		MPI_Isend(&ws[is],inum,MPI_DOUBLE,commtable->neibpe[neib],0,commtable->comm,&commtable->req1[neib]);
+		MPI_Isend(&ws[is],inum,LIS_MPI_SCALAR,commtable->neibpe[neib],0,commtable->comm,&commtable->req1[neib]);
 	}
 
 	if( A->is_splited )
@@ -332,7 +332,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	{
 		is = commtable->import_ptr[neib];
 		inum = commtable->import_ptr[neib+1] - is;
-		MPI_Irecv(&wr[is],inum,MPI_DOUBLE,commtable->neibpe[neib],0,commtable->comm,&commtable->req2[neib]);
+		MPI_Irecv(&wr[is],inum,LIS_MPI_SCALAR,commtable->neibpe[neib],0,commtable->comm,&commtable->req2[neib]);
 	}
 	MPI_Waitall(neibpetot, commtable->req2, commtable->sta2);
 
