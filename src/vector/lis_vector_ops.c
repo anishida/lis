@@ -292,7 +292,7 @@ LIS_INT lis_vector_nrm2(LIS_VECTOR vx, LIS_REAL *value)
 		}
 	#endif
 	#ifdef USE_MPI
-		MPI_Allreduce(&dot,&tmp,1,MPI_DOUBLE,MPI_SUM,comm);
+		MPI_Allreduce(&dot,&tmp,1,LIS_MPI_REAL,MPI_SUM,comm);
 		*value = sqrt(tmp);
 	#else
 		*value = sqrt(dot);
@@ -359,7 +359,7 @@ LIS_INT lis_vector_nrm1(LIS_VECTOR vx, LIS_REAL *value)
 		}
 	#endif
 	#ifdef USE_MPI
-		MPI_Allreduce(&sum,value,1,MPI_DOUBLE,MPI_SUM,comm);
+		MPI_Allreduce(&sum,value,1,LIS_MPI_REAL,MPI_SUM,comm);
 	#else
 		*value = sum;
 	#endif
@@ -433,7 +433,7 @@ LIS_INT lis_vector_nrmi(LIS_VECTOR vx, LIS_REAL *value)
 		}
 	#endif
 	#ifdef USE_MPI
-		MPI_Allreduce(&tmp,value,1,MPI_DOUBLE,MPI_MAX,comm);
+		MPI_Allreduce(&tmp,value,1,LIS_MPI_REAL,MPI_MAX,comm);
 	#else
 		*value = tmp;
 	#endif
