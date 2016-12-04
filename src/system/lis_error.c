@@ -121,7 +121,7 @@ LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)
         #ifdef _DEBUG
 	MPI_Barrier(comm);
 	#endif
-	MPI_Comm_rank(comm,&my_rank);
+	MPI_Comm_rank(comm,&int_my_rank);
 	my_rank = int_my_rank;
 	#else
 	my_rank = 0;
