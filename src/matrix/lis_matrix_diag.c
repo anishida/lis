@@ -1004,11 +1004,19 @@ LIS_INT lis_matrix_diag_print(LIS_MATRIX_DIAG D)
 #endif
 				for(j=0; j<bn; j++)
 				{
+#ifdef _COMPLEX				  
+#ifdef _LONG__DOUBLE
+					printf("%6.2Lf %6.2Lf ", creal(D->v_value[k][j*bn+i]), cimag(D->v_value[k][j*bn+i]));
+#else
+					printf("%6.2f %6.2f ", creal(D->v_value[k][j*bn+i]), cimag(D->v_value[k][j*bn+i]));
+#endif
+#else
 #ifdef _LONG__DOUBLE
 					printf("%6.2Lf ", D->v_value[k][j*bn+i]);
 #else
 					printf("%6.2f ", D->v_value[k][j*bn+i]);
 #endif
+#endif					
 				}
 				printf(")\n");
 			}
@@ -1030,11 +1038,19 @@ LIS_INT lis_matrix_diag_print(LIS_MATRIX_DIAG D)
 #endif
 				for(j=0; j<bn; j++)
 				{
+#ifdef _COMPLEX
+#ifdef _LONG__DOUBLE
+				  printf("%6.2Lf %6.2Lf ", creal(D->value[k*nn + j*bn+i]), cimag(D->value[k*nn + j*bn+i]));
+#else
+				  printf("%6.2f %6.2f ", creal(D->value[k*nn + j*bn+i]), cimag(D->value[k*nn + j*bn+i]));
+#endif
+#else				  
 #ifdef _LONG__DOUBLE
 					printf("%6.2Lf ", D->value[k*nn + j*bn+i]);
 #else
 					printf("%6.2f ", D->value[k*nn + j*bn+i]);
 #endif
+#endif					
 				}
 				printf(")\n");
 			}
