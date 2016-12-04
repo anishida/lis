@@ -132,7 +132,7 @@ LIS_INT lis_vector_dot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_SCALAR *value)
 		}
 	#endif
 	#ifdef USE_MPI
-		MPI_Allreduce(&dot,&tmp,1,MPI_DOUBLE,MPI_SUM,comm);
+		MPI_Allreduce(&dot,&tmp,1,LIS_MPI_SCALAR,MPI_SUM,comm);
 		*value = tmp;
 	#else
 		*value = dot;
@@ -208,7 +208,7 @@ LIS_INT lis_vector_nhdot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_SCALAR *value)
 		}
 	#endif
 	#ifdef USE_MPI
-		MPI_Allreduce(&dot,&tmp,1,MPI_DOUBLE,MPI_SUM,comm);
+		MPI_Allreduce(&dot,&tmp,1,LIS_MPI_SCALAR,MPI_SUM,comm);
 		*value = tmp;
 	#else
 		*value = dot;
@@ -499,7 +499,7 @@ LIS_INT lis_vector_sum(LIS_VECTOR vx, LIS_SCALAR *value)
 		}
 	#endif
 	#ifdef USE_MPI
-		MPI_Allreduce(&sum,value,1,MPI_DOUBLE,MPI_SUM,comm);
+		MPI_Allreduce(&sum,value,1,LIS_MPI_SCALAR,MPI_SUM,comm);
 	#else
 		*value = sum;
 	#endif
