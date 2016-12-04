@@ -3,6 +3,7 @@ Version 1.7.14  December 3, 2016
   - Fixed bug in src/system/lis_error.c.
   - Updated src/system/lis_input.c.
   - Updated documents.
+  - Fixed type related bugs for MPI.
 
 Version 1.7.13  November 22, 2016
 
