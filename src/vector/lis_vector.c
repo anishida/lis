@@ -948,6 +948,21 @@ LIS_INT lis_vector_print(LIS_VECTOR x)
 		}
 		else
 		{
+#ifdef _COMPLEX		  
+#ifdef _LONG__LONG
+#ifdef _LONG__DOUBLE
+			printf("%6lld  %Le,%Le\n",ii,creal(x->value[i]),x->value_lo[i]);
+#else
+			printf("%6lld  %e,%e\n",ii,creal(x->value[i]),x->value_lo[i]);
+#endif
+#else
+#ifdef _LONG__DOUBLE
+			printf("%6d  %Le,%Le\n",ii,creal(x->value[i]),x->value_lo[i]);
+#else
+			printf("%6d  %e,%e\n",ii,creal(x->value[i]),x->value_lo[i]);
+#endif
+#endif
+#else
 #ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 			printf("%6lld  %Le,%Le\n",ii,x->value[i],x->value_lo[i]);
@@ -961,6 +976,7 @@ LIS_INT lis_vector_print(LIS_VECTOR x)
 			printf("%6d  %e,%e\n",ii,x->value[i],x->value_lo[i]);
 #endif
 #endif
+#endif			
 		}
 	}
 

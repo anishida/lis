@@ -114,6 +114,7 @@ LIS_INT lis_input_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, L
 	LIS_INT	gn,n,is,ie;
 	LIS_INT	idx;
 	LIS_SCALAR val;
+	LIS_REAL re,im;		
 	LIS_MM_VECFMT vecfmt;
 
 	LIS_DEBUG_FUNC_IN;
@@ -161,6 +162,21 @@ LIS_INT lis_input_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, L
 					LIS_SETERR_FIO;
 					return LIS_ERR_FILE_IO;
 				}
+#ifdef _COMPLEX				
+#ifdef _LONG__LONG
+#ifdef _LONG__DOUBLE
+				if( sscanf(buf, "%lld %Lg", &idx, &re) != 2 )
+#else
+				if( sscanf(buf, "%lld %lg", &idx, &re) != 2 )
+#endif
+#else
+#ifdef _LONG__DOUBLE
+				if( sscanf(buf, "%d %Lg", &idx, &re) != 2 )
+#else
+				if( sscanf(buf, "%d %lg", &idx, &re) != 2 )
+#endif
+#endif
+#else
 #ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 				if( sscanf(buf, "%lld %Lg", &idx, &val) != 2 )
@@ -174,6 +190,7 @@ LIS_INT lis_input_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, L
 				if( sscanf(buf, "%d %lg", &idx, &val) != 2 )
 #endif
 #endif
+#endif				  
 				{
 					LIS_SETERR_FIO;
 					return LIS_ERR_FILE_IO;
@@ -182,7 +199,11 @@ LIS_INT lis_input_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, L
 			idx--;
 			if( idx>=is && idx<ie )
 			{
+#ifdef _COMPLEX			  
+				b->value[idx-is] = re;
+#else
 				b->value[idx-is] = val;
+#endif				
 			}
 		}
 	}
@@ -213,6 +234,21 @@ LIS_INT lis_input_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, L
 					LIS_SETERR_FIO;
 					return LIS_ERR_FILE_IO;
 				}
+#ifdef _COMPLEX				
+#ifdef _LONG__LONG
+#ifdef _LONG__DOUBLE
+				if( sscanf(buf, "%lld %Lg", &idx, &re) != 2 )
+#else
+				if( sscanf(buf, "%lld %lg", &idx, &re) != 2 )
+#endif
+#else
+#ifdef _LONG__DOUBLE
+				if( sscanf(buf, "%d %Lg", &idx, &re) != 2 )
+#else
+				if( sscanf(buf, "%d %lg", &idx, &re) != 2 )
+#endif
+#endif
+#else
 #ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 				if( sscanf(buf, "%lld %Lg", &idx, &val) != 2 )
@@ -226,6 +262,7 @@ LIS_INT lis_input_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, L
 				if( sscanf(buf, "%d %lg", &idx, &val) != 2 )
 #endif
 #endif
+#endif				  
 				{
 					LIS_SETERR_FIO;
 					return LIS_ERR_FILE_IO;
@@ -234,7 +271,11 @@ LIS_INT lis_input_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, L
 			idx--;
 			if( idx>=is && idx<ie )
 			{
+#ifdef _COMPLEX			  
+				x->value[idx-is] = re;
+#else
 				x->value[idx-is] = val;
+#endif				
 			}
 		}
 	}
@@ -481,6 +522,21 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 				lis_free2(4,ptr,index,value,work);
 				return LIS_ERR_FILE_IO;
 			}
+#ifdef _COMPLEX			
+#ifdef _LONG__LONG
+#ifdef _LONG__DOUBLE
+			if( mmtype==MM_REAL && sscanf(buf, "%lld %lld %Lg", &ridx, &cidx, &re) != 3 )
+#else
+			if( mmtype==MM_REAL && sscanf(buf, "%lld %lld %lg", &ridx, &cidx, &re) != 3 )
+#endif
+#else
+#ifdef _LONG__DOUBLE
+			if( mmtype==MM_REAL && sscanf(buf, "%d %d %Lg", &ridx, &cidx, &re) != 3 )
+#else
+			if( mmtype==MM_REAL && sscanf(buf, "%d %d %lg", &ridx, &cidx, &re) != 3 )
+#endif
+#endif
+#else
 #ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 			if( mmtype==MM_REAL && sscanf(buf, "%lld %lld %Lg", &ridx, &cidx, &val) != 3 )
@@ -494,6 +550,7 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 			if( mmtype==MM_REAL && sscanf(buf, "%d %d %lg", &ridx, &cidx, &val) != 3 )
 #endif
 #endif
+#endif			  
 			{
 				LIS_SETERR_FIO;
 				lis_free2(4,ptr,index,value,work);
@@ -625,6 +682,21 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 				lis_free2(4,ptr,index,value,work);
 				return LIS_ERR_FILE_IO;
 			}
+#ifdef _COMPLEX			
+#ifdef _LONG__LONG
+#ifdef _LONG__DOUBLE
+			if( mmtype==MM_REAL && sscanf(buf, "%lld %lld %Lg", &ridx, &cidx, &re) != 3 )
+#else
+			if( mmtype==MM_REAL && sscanf(buf, "%lld %lld %lg", &ridx, &cidx, &re) != 3 )
+#endif
+#else
+#ifdef _LONG__DOUBLE
+			if( mmtype==MM_REAL && sscanf(buf, "%d %d %Lg", &ridx, &cidx, &re) != 3 )
+#else
+			if( mmtype==MM_REAL && sscanf(buf, "%d %d %lg", &ridx, &cidx, &re) != 3 )
+#endif
+#endif
+#else
 #ifdef _LONG__LONG
 #ifdef _LONG__DOUBLE
 			if( mmtype==MM_REAL && sscanf(buf, "%lld %lld %Lg", &ridx, &cidx, &val) != 3 )
@@ -638,6 +710,7 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 			if( mmtype==MM_REAL && sscanf(buf, "%d %d %lg", &ridx, &cidx, &val) != 3 )
 #endif
 #endif 
+#endif			  
 			{
 				LIS_SETERR_FIO;
 				lis_free2(4,ptr,index,value,work);
@@ -687,7 +760,11 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 				{
 				        if( mmtype==MM_REAL )
 					  {
+#ifdef _COMPLEX					    
+					    value[ptr[cidx-is]+work[cidx-is]] = re;
+#else
 					    value[ptr[cidx-is]+work[cidx-is]] = val;
+#endif					    
 					  }
 #ifdef _COMPLEX					
 					else
@@ -703,7 +780,11 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 			{
 			        if( mmtype==MM_REAL )
 				  {
+#ifdef _COMPLEX				    
+				    value[ptr[ridx-is]+work[ridx-is]] = re;
+#else
 				    value[ptr[ridx-is]+work[ridx-is]] = val;
+#endif				    
 				  }
 #ifdef _COMPLEX				
 				else if( mmstruct==MM_HERM )
