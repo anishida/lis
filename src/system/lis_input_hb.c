@@ -156,6 +156,7 @@ LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 	LIS_INT	iptr,iind,ival,irhs;
 	LIS_INT	wptr,wind,wval,wrhs;
 	LIS_INT	i,k,j,my_rank;
+	int int_my_rank;
 	LIS_INT	err;
 	LIS_INT	n,is,ie;
 	LIS_INT	*ptr, *index;
@@ -165,7 +166,8 @@ LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 	LIS_MATRIX B;
 
 	#ifdef USE_MPI
-		MPI_Comm_rank(A->comm,&my_rank);
+		MPI_Comm_rank(A->comm,&int_my_rank);
+		my_rank = int_my_rank;
 	#else
 		my_rank = 0;
 	#endif
