@@ -114,6 +114,7 @@ LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)
 {
 	va_list vvlist;
 	LIS_INT	my_rank;
+	int int_my_rank;
 	char str[1024];
 
 	#ifdef USE_MPI
@@ -121,6 +122,7 @@ LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)
 	MPI_Barrier(comm);
 	#endif
 	MPI_Comm_rank(comm,&my_rank);
+	my_rank = int_my_rank;
 	#else
 	my_rank = 0;
 	#endif
