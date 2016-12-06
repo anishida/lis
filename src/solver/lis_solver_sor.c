@@ -122,6 +122,7 @@ LIS_INT lis_sor_malloc_work(LIS_SOLVER solver)
 #define __FUNC__ "lis_sor"
 LIS_INT lis_sor(LIS_SOLVER solver)
 {
+	LIS_Comm comm;  
 	LIS_MATRIX A;
 	LIS_VECTOR b,x;
 	LIS_VECTOR r,t,s;
@@ -133,6 +134,8 @@ LIS_INT lis_sor(LIS_SOLVER solver)
 	LIS_INT	err;
 
 	LIS_DEBUG_FUNC_IN;
+
+	comm = LIS_COMM_WORLD;
 
 	A       = solver->A;
 	b       = solver->b;
@@ -184,7 +187,7 @@ LIS_INT lis_sor(LIS_SOLVER solver)
 		if( output )
 		{
 			if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-			if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+			if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 		}
 
 		if( tol >= nrm2 )

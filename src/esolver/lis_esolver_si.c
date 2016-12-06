@@ -301,7 +301,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	    }
 
 
-	  if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,resid);
+	  if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,resid);
 	  if (tol>resid) break;
 	}
 
@@ -635,7 +635,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	    }
 
 
-	  if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,resid);
+	  if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,resid);
 	  if (tol>resid) break;
 	}
 

@@ -78,7 +78,7 @@ extern "C"
 	extern void lis_debug_set_comm(LIS_Comm comm);
 	extern LIS_INT lis_replace(char *buf, const char *str1, const char *str2);
 	extern LIS_INT lis_error(const char *file, const char *func, const LIS_INT line, const LIS_INT code, const char *mess, ...);
-	extern LIS_INT lis_print_rhistory(LIS_INT iter, LIS_REAL resid);
+	extern LIS_INT lis_print_rhistory(LIS_Comm comm,LIS_INT iter, LIS_REAL resid);
 	extern void lis_free_all(void);
 	extern void lis_sort_i(LIS_INT is, LIS_INT ie, LIS_INT *i1);
 	extern void lis_sort_ii(LIS_INT is, LIS_INT ie, LIS_INT *i1, LIS_INT *i2);

@@ -133,6 +133,7 @@ LIS_INT lis_cgs_malloc_work(LIS_SOLVER solver)
 #define __FUNC__ "lis_cgs"
 LIS_INT lis_cgs(LIS_SOLVER solver)
 {
+	LIS_Comm comm;  
 	LIS_MATRIX A;
 	LIS_VECTOR x;
 	LIS_VECTOR r,rtld, p,phat, q, qhat, u, uhat, vhat;
@@ -142,6 +143,8 @@ LIS_INT lis_cgs(LIS_SOLVER solver)
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
+
+	comm = LIS_COMM_WORLD;
 
 	A       = solver->A;
 	x       = solver->x;
@@ -249,7 +252,7 @@ LIS_INT lis_cgs(LIS_SOLVER solver)
 		if( output )
 		{
 			if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-			if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+			if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 		}
 		
 		if( tol >= nrm2 )
@@ -277,6 +280,7 @@ LIS_INT lis_cgs(LIS_SOLVER solver)
 #define __FUNC__ "lis_cgs_quad"
 LIS_INT lis_cgs_quad(LIS_SOLVER solver)
 {
+	LIS_Comm comm;  
 	LIS_MATRIX A;
 	LIS_VECTOR x;
 	LIS_VECTOR r,rtld, p,phat, q, qhat, u, uhat, vhat;
@@ -286,6 +290,8 @@ LIS_INT lis_cgs_quad(LIS_SOLVER solver)
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
+
+	comm = LIS_COMM_WORLD;
 
 	A       = solver->A;
 	x       = solver->x;
@@ -407,7 +413,7 @@ LIS_INT lis_cgs_quad(LIS_SOLVER solver)
 		if( output )
 		{
 			if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-			if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+			if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 		}
 		
 		if( tol > nrm2 )
@@ -436,6 +442,7 @@ LIS_INT lis_cgs_quad(LIS_SOLVER solver)
 #define __FUNC__ "lis_cgs_switch"
 LIS_INT lis_cgs_switch(LIS_SOLVER solver)
 {
+	LIS_Comm comm;  
 	LIS_MATRIX A;
 	LIS_VECTOR x;
 	LIS_VECTOR r,rtld, p,phat, q, qhat, u, uhat, vhat;
@@ -446,6 +453,8 @@ LIS_INT lis_cgs_switch(LIS_SOLVER solver)
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
+
+	comm = LIS_COMM_WORLD;
 
 	A       = solver->A;
 	x       = solver->x;
@@ -571,7 +580,7 @@ LIS_INT lis_cgs_switch(LIS_SOLVER solver)
 			if( output )
 			{
 				if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-				if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+				if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 			}
 
 			if( nrm2 <= tol2 )
@@ -679,7 +688,7 @@ LIS_INT lis_cgs_switch(LIS_SOLVER solver)
 			if( output )
 			{
 				if( output & LIS_PRINT_MEM ) solver->rhistory[iter2] = nrm2;
-				if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+				if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 			}
 			
 			if( tol > nrm2 )
@@ -795,6 +804,7 @@ LIS_INT lis_crs_malloc_work(LIS_SOLVER solver)
 #define __FUNC__ "lis_crs"
 LIS_INT lis_crs(LIS_SOLVER solver)
 {
+	LIS_Comm comm;  
 	LIS_MATRIX A;
 	LIS_VECTOR x;
 	LIS_VECTOR r,rtld, p, q, u, z, ap, map, uq, auq;
@@ -804,6 +814,8 @@ LIS_INT lis_crs(LIS_SOLVER solver)
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
+
+	comm = LIS_COMM_WORLD;
 
 	A       = solver->A;
 	x       = solver->x;
@@ -902,7 +914,7 @@ LIS_INT lis_crs(LIS_SOLVER solver)
 		if( output )
 		{
 			if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-			if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+			if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 		}
 		
 		if( tol >= nrm2 )
@@ -930,6 +942,7 @@ LIS_INT lis_crs(LIS_SOLVER solver)
 #define __FUNC__ "lis_crs_quad"
 LIS_INT lis_crs_quad(LIS_SOLVER solver)
 {
+	LIS_Comm comm;  
 	LIS_MATRIX A;
 	LIS_VECTOR x;
 	LIS_VECTOR r,rtld, p, q, u, z, ap, map, uq, auq;
@@ -939,6 +952,8 @@ LIS_INT lis_crs_quad(LIS_SOLVER solver)
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
+
+	comm = LIS_COMM_WORLD;
 
 	A       = solver->A;
 	x       = solver->x;
@@ -1048,7 +1063,7 @@ LIS_INT lis_crs_quad(LIS_SOLVER solver)
 		if( output )
 		{
 			if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-			if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+			if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 		}
 		
 		if( tol >= nrm2 )

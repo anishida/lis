@@ -144,6 +144,7 @@ LIS_INT lis_gpbicg_malloc_work(LIS_SOLVER solver)
 #define __FUNC__ "lis_gpbicg"
 LIS_INT lis_gpbicg(LIS_SOLVER solver)
 {
+	LIS_Comm comm;  
 	LIS_MATRIX A;
 	LIS_VECTOR x;
 	LIS_VECTOR r, rtld, mr, p, ap, map, t, mt_old, mt, amt, y, u, w, z;
@@ -155,6 +156,8 @@ LIS_INT lis_gpbicg(LIS_SOLVER solver)
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
+
+	comm = LIS_COMM_WORLD;
 
 	A       = solver->A;
 	x       = solver->x;
@@ -234,7 +237,7 @@ LIS_INT lis_gpbicg(LIS_SOLVER solver)
 			if( output )
 			{
 				if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-				if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+				if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 			}
 
 			lis_vector_axpy(alpha,p,x);
@@ -299,7 +302,7 @@ LIS_INT lis_gpbicg(LIS_SOLVER solver)
 		if( output )
 		{
 			if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-			if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+			if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 		}
 
 		if( tol >= nrm2 )
@@ -352,6 +355,7 @@ LIS_INT lis_gpbicg(LIS_SOLVER solver)
 #define __FUNC__ "lis_gpbicg"
 LIS_INT lis_gpbicg(LIS_SOLVER solver)
 {
+	LIS_Comm comm;  
 	LIS_MATRIX A;
 	LIS_PRECON M;
 	LIS_VECTOR b,x;
@@ -366,6 +370,8 @@ LIS_INT lis_gpbicg(LIS_SOLVER solver)
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
+
+	comm = LIS_COMM_WORLD;
 
 	A       = solver->A;
 	M       = solver->precon;
@@ -471,7 +477,7 @@ LIS_INT lis_gpbicg(LIS_SOLVER solver)
 			if( output )
 			{
 				if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-				if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+				if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 			}
 
 			lis_vector_axpy(alpha,p,x);
@@ -542,7 +548,7 @@ LIS_INT lis_gpbicg(LIS_SOLVER solver)
 		if( output )
 		{
 			if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-			if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+			if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 		}
 
 		if( tol >= nrm2 )
@@ -572,6 +578,7 @@ LIS_INT lis_gpbicg(LIS_SOLVER solver)
 #define __FUNC__ "lis_gpbicg_quad"
 LIS_INT lis_gpbicg_quad(LIS_SOLVER solver)
 {
+	LIS_Comm comm;  
 	LIS_MATRIX A;
 	LIS_VECTOR x;
 	LIS_VECTOR r, rtld, mr, p, ap, map, t, mt_old, mt, amt, y, u, w, z;
@@ -583,6 +590,8 @@ LIS_INT lis_gpbicg_quad(LIS_SOLVER solver)
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
+
+	comm = LIS_COMM_WORLD;
 
 	A       = solver->A;
 	x       = solver->x;
@@ -677,7 +686,7 @@ LIS_INT lis_gpbicg_quad(LIS_SOLVER solver)
 			if( output )
 			{
 				if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-				if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+				if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 			}
 
 			lis_quad_minus((LIS_QUAD *)alpha.hi);
@@ -759,7 +768,7 @@ LIS_INT lis_gpbicg_quad(LIS_SOLVER solver)
 		if( output )
 		{
 			if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-			if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+			if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 		}
 
 		if( tol >= nrm2 )
@@ -817,6 +826,7 @@ LIS_INT lis_gpbicg_quad(LIS_SOLVER solver)
 #define __FUNC__ "lis_gpbicg_switch"
 LIS_INT lis_gpbicg_switch(LIS_SOLVER solver)
 {
+	LIS_Comm comm;  
 	LIS_MATRIX A;
 	LIS_VECTOR x;
 	LIS_VECTOR r, rtld, mr, p, ap, map, t, mt_old, mt, amt, y, u, w, z;
@@ -829,6 +839,8 @@ LIS_INT lis_gpbicg_switch(LIS_SOLVER solver)
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
+
+	comm = LIS_COMM_WORLD;
 
 	A       = solver->A;
 	x       = solver->x;
@@ -930,7 +942,7 @@ LIS_INT lis_gpbicg_switch(LIS_SOLVER solver)
 			if( output )
 			{
 				if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-				if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+				if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 			}
 
 			lis_vector_axpy(alpha.hi[0],p,x);
@@ -993,7 +1005,7 @@ LIS_INT lis_gpbicg_switch(LIS_SOLVER solver)
 		if( output )
 		{
 			if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-			if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+			if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 		}
 
 		if( tol >= nrm2 )
@@ -1098,7 +1110,7 @@ LIS_INT lis_gpbicg_switch(LIS_SOLVER solver)
 			if( output )
 			{
 				if( output & LIS_PRINT_MEM ) solver->rhistory[iter2] = nrm2;
-				if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+				if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 			}
 
 			lis_quad_minus((LIS_QUAD *)alpha.hi);
@@ -1181,7 +1193,7 @@ LIS_INT lis_gpbicg_switch(LIS_SOLVER solver)
 		if( output )
 		{
 			if( output & LIS_PRINT_MEM ) solver->rhistory[iter2] = nrm2;
-			if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+			if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 		}
 
 		if( tol >= nrm2 )
@@ -1336,6 +1348,7 @@ LIS_INT lis_gpbicr_malloc_work(LIS_SOLVER solver)
 #define __FUNC__ "lis_gpbicg"
 LIS_INT lis_gpbicr(LIS_SOLVER solver)
 {
+	LIS_Comm comm;  
 	LIS_MATRIX A;
 	LIS_VECTOR x;
 	LIS_VECTOR r, rtld, mr, p, ap, map, t, mt_old, mt, amt, y, u, w, z;
@@ -1347,6 +1360,8 @@ LIS_INT lis_gpbicr(LIS_SOLVER solver)
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
+
+	comm = LIS_COMM_WORLD;
 
 	A       = solver->A;
 	x       = solver->x;
@@ -1427,7 +1442,7 @@ LIS_INT lis_gpbicr(LIS_SOLVER solver)
 			if( output )
 			{
 				if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-				if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+				if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 			}
 
 			lis_vector_axpy(alpha,p,x);
@@ -1492,7 +1507,7 @@ LIS_INT lis_gpbicr(LIS_SOLVER solver)
 		if( output )
 		{
 			if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-			if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+			if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 		}
 
 		if( tol >= nrm2 )
@@ -1545,6 +1560,7 @@ LIS_INT lis_gpbicr(LIS_SOLVER solver)
 #define __FUNC__ "lis_gpbicg_quad"
 LIS_INT lis_gpbicr_quad(LIS_SOLVER solver)
 {
+	LIS_Comm comm;  
 	LIS_MATRIX A;
 	LIS_VECTOR x;
 	LIS_VECTOR r, rtld, mr, p, ap, map, t, mt_old, mt, amt, y, u, w, z;
@@ -1556,6 +1572,8 @@ LIS_INT lis_gpbicr_quad(LIS_SOLVER solver)
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
+
+	comm = LIS_COMM_WORLD;
 
 	A       = solver->A;
 	x       = solver->x;
@@ -1651,7 +1669,7 @@ LIS_INT lis_gpbicr_quad(LIS_SOLVER solver)
 			if( output )
 			{
 				if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-				if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+				if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 			}
 
 			lis_quad_minus((LIS_QUAD *)alpha.hi);
@@ -1733,7 +1751,7 @@ LIS_INT lis_gpbicr_quad(LIS_SOLVER solver)
 		if( output )
 		{
 			if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-			if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+			if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 		}
 
 		if( tol >= nrm2 )
