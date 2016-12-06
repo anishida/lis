@@ -120,6 +120,7 @@ LIS_INT lis_minres_malloc_work(LIS_SOLVER solver)
 #define __FUNC__ "lis_minres"
 LIS_INT lis_minres(LIS_SOLVER solver)
 {
+  LIS_Comm comm;  
   LIS_MATRIX A;
   LIS_VECTOR b,x;
   LIS_VECTOR v1,v2,v3,v4,w0,w1,w2;
@@ -135,6 +136,8 @@ LIS_INT lis_minres(LIS_SOLVER solver)
   double time,ptime;
 
   LIS_DEBUG_FUNC_IN;
+
+  comm = LIS_COMM_WORLD;
   
   A       = solver->A;
   b       = solver->b;
@@ -211,7 +214,7 @@ LIS_INT lis_minres(LIS_SOLVER solver)
       if( output )
 	{
 	  if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-	  if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+	  if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 	}
       
       if( nrm2 <= tol )

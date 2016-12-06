@@ -236,7 +236,7 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
       if( output )
 	{
 	  if( output & LIS_EPRINT_MEM ) esolver->rhistory[iter] = resid;
-	  if( output & LIS_EPRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,resid);
+	  if( output & LIS_EPRINT_OUT ) lis_print_rhistory(comm,iter,resid);
 	}
 
       lis_solver_get_timeex(solver,&time,&itime,&ptime,&p_c_time,&p_i_time);
@@ -476,7 +476,7 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
       if( output )
 	{
 	  if( output & LIS_EPRINT_MEM ) esolver->rhistory[iter] = resid;
-	  if( output & LIS_EPRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,resid);
+	  if( output & LIS_EPRINT_OUT ) lis_print_rhistory(comm,iter,resid);
 	}
 
       lis_solver_get_timeex(solver,&time,&itime,&ptime,&p_c_time,&p_i_time);

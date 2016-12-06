@@ -65,7 +65,7 @@ LIS_INT lis_sor_check_params(LIS_SOLVER solver)
 	w = solver->params[LIS_PARAMS_W-LIS_OPTIONS_LEN];
 	if( fabs(w)<=0 || fabs(w)>=2 )
 	{
-		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_PARAMS_W is %f (set 0 < w < 2)\n",w);
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_PARAMS_W is %F (set 0 < w < 2)\n",w);
 		return LIS_ERR_ILL_ARG;
 	}
 
@@ -122,6 +122,7 @@ LIS_INT lis_sor_malloc_work(LIS_SOLVER solver)
 #define __FUNC__ "lis_sor"
 LIS_INT lis_sor(LIS_SOLVER solver)
 {
+	LIS_Comm comm;  
 	LIS_MATRIX A;
 	LIS_VECTOR b,x;
 	LIS_VECTOR r,t,s;
@@ -133,6 +134,8 @@ LIS_INT lis_sor(LIS_SOLVER solver)
 	LIS_INT	err;
 
 	LIS_DEBUG_FUNC_IN;
+
+	comm = LIS_COMM_WORLD;
 
 	A       = solver->A;
 	b       = solver->b;
@@ -184,7 +187,7 @@ LIS_INT lis_sor(LIS_SOLVER solver)
 		if( output )
 		{
 			if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-			if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+			if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 		}
 
 		if( tol >= nrm2 )
