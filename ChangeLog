@@ -1,3 +1,8 @@
+Version 1.7.15  December 6, 2016
+
+  - Fixed print bugs.
+  - Change specification of lis_print_rhistory().
+
 Version 1.7.14  December 3, 2016
 
   - Fixed type related bugs for MPI.
