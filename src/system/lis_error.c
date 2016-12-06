@@ -194,22 +194,26 @@ void CHKERR(LIS_INT ierr)
 }
 
 
-LIS_INT lis_print_rhistory(LIS_INT iter, LIS_REAL resid)
+LIS_INT lis_print_rhistory(LIS_Comm comm, LIS_INT iter, LIS_REAL resid)
 {
+	LIS_INT	my_rank;
+	int int_my_rank;
 
-#ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-	printf("iteration: %5lld  relative residual = %Le\n", iter, resid);
+#ifdef USE_MPI
+	MPI_Comm_rank(comm,&int_my_rank);
+	my_rank = int_my_rank;
 #else
-	printf("iteration: %5lld  relative residual = %e\n", iter, resid);
+	my_rank = 0;
 #endif
+
+	if( my_rank==0 )
+	{
+#ifdef _LONG__LONG	
+	lis_printf(comm,"iteration: %5lld  relative residual = %E\n", iter, resid);
 #else
-#ifdef _LONG__DOUBLE
-	printf("iteration: %5d  relative residual = %Le\n", iter, resid);
-#else
-	printf("iteration: %5d  relative residual = %e\n", iter, resid);
+	lis_printf(comm,"iteration: %5d  relative residual = %E\n", iter, resid);
 #endif
-#endif
+	}
 
 	return LIS_SUCCESS;
 }

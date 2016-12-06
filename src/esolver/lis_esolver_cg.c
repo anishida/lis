@@ -244,7 +244,7 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
       if( output )
 	{
 	  if( output & LIS_EPRINT_MEM ) esolver->rhistory[iter] = resid;
-	  if( output & LIS_EPRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,resid);
+	  if( output & LIS_EPRINT_OUT ) lis_print_rhistory(comm,iter,resid);
 	}
       if (resid<tol) break;  
 
@@ -561,7 +561,7 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
       if( output )
 	{
 	  if( output & LIS_EPRINT_MEM ) esolver->rhistory[iter] = resid;
-	  if( output & LIS_EPRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,resid);
+	  if( output & LIS_EPRINT_OUT ) lis_print_rhistory(comm,iter,resid);
 	}
       if (resid<tol) break;  
 
@@ -915,7 +915,7 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
       if( output )
 	{
 	  if( output & LIS_EPRINT_MEM ) esolver->rhistory[iter] = resid;
-	  if( output & LIS_EPRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,resid);
+	  if( output & LIS_EPRINT_OUT ) lis_print_rhistory(comm,iter,resid);
 	}
 
       if (resid<tol) break;  
@@ -1196,7 +1196,7 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
       if( output )
 	{
 	  if( output & LIS_EPRINT_MEM ) esolver->rhistory[iter] = resid;
-	  if( output & LIS_EPRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,resid);
+	  if( output & LIS_EPRINT_OUT ) lis_print_rhistory(comm,iter,resid);
 	}
 
       if (resid<tol) break;  

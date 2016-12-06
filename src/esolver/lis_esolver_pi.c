@@ -126,6 +126,7 @@ LIS_INT lis_epi_malloc_work(LIS_ESOLVER esolver)
 #define __FUNC__ "lis_epi"
 LIS_INT lis_epi(LIS_ESOLVER esolver)
 {
+  LIS_Comm comm;
   LIS_MATRIX A;
   LIS_VECTOR v,y,q;
   LIS_SCALAR theta;
@@ -137,6 +138,8 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
 
   LIS_DEBUG_FUNC_IN;
   
+  comm = LIS_COMM_WORLD;  
+
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
@@ -178,7 +181,7 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
       if( output )
 	{
 	  if( output & LIS_EPRINT_MEM ) esolver->rhistory[iter] = resid;
-	  if( output & LIS_EPRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,resid);
+	  if( output & LIS_EPRINT_OUT ) lis_print_rhistory(comm,iter,resid);
 	}
 
       if( tol >= resid )
@@ -283,6 +286,7 @@ LIS_INT lis_egpi_malloc_work(LIS_ESOLVER esolver)
 #define __FUNC__ "lis_egpi"
 LIS_INT lis_egpi(LIS_ESOLVER esolver)
 {
+  LIS_Comm comm;
   LIS_MATRIX A,B;
   LIS_VECTOR w,v,y,q;
   LIS_SCALAR eta,theta;
@@ -300,6 +304,8 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
   char solvername[128], preconname[128];
 
   LIS_DEBUG_FUNC_IN;
+
+  comm = LIS_COMM_WORLD;  
 
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
@@ -390,7 +396,7 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
       if( output )
 	{
 	  if( output & LIS_EPRINT_MEM ) esolver->rhistory[iter] = resid;
-	  if( output & LIS_EPRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,resid);
+	  if( output & LIS_EPRINT_OUT ) lis_print_rhistory(comm,iter,resid);
 	}
 
       if( tol >= resid )

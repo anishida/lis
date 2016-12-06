@@ -123,6 +123,7 @@ LIS_INT lis_orthomin_malloc_work(LIS_SOLVER solver)
 #define __FUNC__ "lis_orthomin"
 LIS_INT lis_orthomin(LIS_SOLVER solver)
 {
+	LIS_Comm comm;  
 	LIS_MATRIX A;
 	LIS_PRECON M;
 	LIS_VECTOR x;
@@ -136,6 +137,8 @@ LIS_INT lis_orthomin(LIS_SOLVER solver)
 	LIS_INT m,l,lmax,ip,ip0;
 
 	LIS_DEBUG_FUNC_IN;
+
+	comm = LIS_COMM_WORLD;
 
 	A       = solver->A;
 	M       = solver->precon;
@@ -221,7 +224,7 @@ LIS_INT lis_orthomin(LIS_SOLVER solver)
 		if( output )
 		{
 			if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-			if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+			if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 		}
 
 		if( tol >= nrm2 )
@@ -251,6 +254,7 @@ LIS_INT lis_orthomin(LIS_SOLVER solver)
 #define __FUNC__ "lis_orthomin_quad"
 LIS_INT lis_orthomin_quad(LIS_SOLVER solver)
 {
+	LIS_Comm comm;  
 	LIS_MATRIX A;
 	LIS_PRECON M;
 	LIS_VECTOR x;
@@ -265,6 +269,8 @@ LIS_INT lis_orthomin_quad(LIS_SOLVER solver)
 	LIS_INT m,l,lmax,ip,ip0;
 
 	LIS_DEBUG_FUNC_IN;
+
+	comm = LIS_COMM_WORLD;
 
 	A       = solver->A;
 	M       = solver->precon;
@@ -363,7 +369,7 @@ LIS_INT lis_orthomin_quad(LIS_SOLVER solver)
 		if( output )
 		{
 			if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-			if( output & LIS_PRINT_OUT && A->my_rank==0 ) lis_print_rhistory(iter,nrm2);
+			if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 		}
 
 		if( tol > nrm2 )
