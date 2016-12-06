@@ -199,21 +199,11 @@ LIS_INT lis_print_rhistory(LIS_Comm comm, LIS_INT iter, LIS_REAL resid)
 	LIS_INT	my_rank;
 	int int_my_rank;
 
-#ifdef USE_MPI
-	MPI_Comm_rank(comm,&int_my_rank);
-	my_rank = int_my_rank;
-#else
-	my_rank = 0;
-#endif
-
-	if( my_rank==0 )
-	{
 #ifdef _LONG__LONG	
 	lis_printf(comm,"iteration: %5lld  relative residual = %E\n", iter, resid);
 #else
 	lis_printf(comm,"iteration: %5d  relative residual = %E\n", iter, resid);
 #endif
-	}
 
 	return LIS_SUCCESS;
 }

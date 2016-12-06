@@ -165,6 +165,8 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   char esolvername[128],solvername[128],preconname[128];
   LIS_INT nsol,precon_type;
 
+  LIS_DEBUG_FUNC_IN;
+
   comm = LIS_COMM_WORLD;
 
   ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
@@ -452,6 +454,8 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
   LIS_ESOLVER esolver2;
   char esolvername[128],solvername[128],preconname[128];
   LIS_INT nsol,precon_type;
+
+  LIS_DEBUG_FUNC_IN;
 
   comm = LIS_COMM_WORLD;
 
