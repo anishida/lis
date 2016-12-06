@@ -144,6 +144,8 @@ LIS_INT lis_ejd(LIS_ESOLVER esolver)
   LIS_INT nsol,precon_type;
   char solvername[128],preconname[128];
 
+  LIS_DEBUG_FUNC_IN;
+
   comm = LIS_COMM_WORLD;
 
   A = esolver->A;
@@ -350,11 +352,13 @@ LIS_INT lis_ejd(LIS_ESOLVER esolver)
   if (resid<tol) 
     {
       esolver->retcode = LIS_SUCCESS;
+      LIS_DEBUG_FUNC_OUT;      
       return LIS_SUCCESS;
     }
   else
     {
       esolver->retcode = LIS_MAXITER;
+      LIS_DEBUG_FUNC_OUT;      
       return LIS_MAXITER;
     }
 }
