@@ -1,12 +1,12 @@
 Version 1.7.15  December 6, 2016
 
   - Fixed print bugs.
-  - Change specification of lis_print_rhistory().
-  - Fixed debug related bugs.
+  - Changed specification of lis_print_rhistory().
+  - Fixed debug related bugs in solvers.
 
 Version 1.7.14  December 3, 2016
 
-  - Fixed type related bugs for MPI.
+  - Fixed type related MPI bugs.
   - Fixed bug in src/system/lis_error.c.
   - Updated src/system/lis_input.c.
   - Updated documents.
