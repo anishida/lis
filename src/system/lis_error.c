@@ -110,6 +110,29 @@ LIS_INT lis_replace(char *buf, const char *str1, const char *str2)
     }
 }
 
+LIS_INT lis_vprintf(const char *mess, va_list vvlist)
+{
+	char str[1024];
+
+	strcpy(str,mess);
+	#ifdef _LONG__LONG
+	lis_replace(str,"%D","%lld");
+	#else
+	lis_replace(str,"%D","%d");
+	#endif
+	#ifdef _LONG__DOUBLE
+	lis_replace(str,"%E","%Le");
+	lis_replace(str,"%G","%Lg");
+	lis_replace(str,"%F","%Lf");		
+	#else
+	lis_replace(str,"%E","%e");
+	lis_replace(str,"%G","%g");
+	lis_replace(str,"%F","%f");		
+	#endif
+	vprintf(str,vvlist);
+	return LIS_SUCCESS;
+}
+
 LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)
 {
 	va_list vvlist;
@@ -129,23 +152,8 @@ LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)
 
 	if( my_rank==0 )
 	{
-		strcpy(str,mess);
-	#ifdef _LONG__LONG
-		lis_replace(str,"%D","%lld");
-	#else
-		lis_replace(str,"%D","%d");
-	#endif
-	#ifdef _LONG__DOUBLE
-		lis_replace(str,"%E","%Le");
-		lis_replace(str,"%G","%Lg");
-		lis_replace(str,"%F","%Lf");		
-	#else
-		lis_replace(str,"%E","%e");
-		lis_replace(str,"%G","%g");
-		lis_replace(str,"%F","%f");		
-	#endif
 		va_start(vvlist,mess);
-		vprintf(str,vvlist);
+		lis_vprintf(mess,vvlist);
 		va_end(vvlist);
 	}
 	#ifdef USE_MPI
@@ -156,31 +164,27 @@ LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)
 	return LIS_SUCCESS;
 }
 
-
 LIS_INT lis_error(const char *file, const char *func, const LIS_INT line, const LIS_INT code, const char *mess, ...)
 {
 	va_list vvlist;
+	LIS_INT	my_rank;
+	int int_my_rank;
 	char str[1024];
 
-	strcpy(str,mess);
-	#ifdef _LONG__LONG
-		lis_replace(str,"%D","%lld");
+	#ifdef USE_MPI
+	MPI_Comm_rank(lis_debug_comm,&int_my_rank);
+	my_rank = int_my_rank;
 	#else
-		lis_replace(str,"%D","%d");
+	my_rank = 0;
 	#endif
-	#ifdef _LONG__DOUBLE
-		lis_replace(str,"%E","%Le");
-		lis_replace(str,"%G","%Lg");
-		lis_replace(str,"%F","%Lf");
-	#else
-		lis_replace(str,"%E","%e");
-		lis_replace(str,"%G","%g");
-		lis_replace(str,"%F","%f");
-	#endif
-	va_start(vvlist, mess);
-	lis_printf(lis_debug_comm,"%s(%D) : %s : error %s :",file,line,func,LIS_ERR_MESS[code-LIS_ERR_ILL_ARG]);
-	if( mess ) vprintf(str,vvlist);
-	va_end(vvlist);
+
+	if( my_rank==0 )
+	{
+		va_start(vvlist, mess);
+		lis_printf(lis_debug_comm,"%s(%D) : %s : error %s :",file,line,func,LIS_ERR_MESS[code-LIS_ERR_ILL_ARG]);
+		if( mess ) lis_vprintf(mess,vvlist);
+		va_end(vvlist);
+	}
 	return LIS_SUCCESS;
 }
 
