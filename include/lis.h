@@ -33,6 +33,9 @@
 #ifdef HAVE_COMPLEX_H
 #include <complex.h>
 #endif
+#ifdef HAVE_QUADMATH_H
+#include <quadmath.h>
+#endif
 
 #define _max(a,b) ((a) >= (b) ? (a) : (b))
 #define _min(a,b) ((a) <= (b) ? (a) : (b))

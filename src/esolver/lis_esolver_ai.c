@@ -270,7 +270,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 		{
 		  lis_printf(comm,"Arnoldi: mode number              = %D\n",i-1);
 		  lis_printf(comm,"Arnoldi: eigenvalue               = (%E, %E)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)sqrt(-D)/2);
-		  lis_printf(comm,"Arnoldi: mode number              = %E\n",i);
+		  lis_printf(comm,"Arnoldi: mode number              = %D\n",i);
 		  lis_printf(comm,"Arnoldi: eigenvalue               = (%E, %E)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)-sqrt(-D)/2);
 		  
 #ifdef _COMPLEX		  
