@@ -15,11 +15,11 @@
 #define PACKAGE_NAME "lis"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "lis 1.7.15"
+#define PACKAGE_STRING "lis 1.7.16"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "lis"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "1.7.14"
+#define PACKAGE_VERSION "1.7.16"
 
