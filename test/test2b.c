@@ -185,7 +185,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	lis_printf(comm,"%s:   preconditioner     = %e sec.\n",solvername, ptime);
 	lis_printf(comm,"%s:     matrix creation  = %e sec.\n",solvername, p_c_time);
 	lis_printf(comm,"%s:   linear solver      = %e sec.\n",solvername, itime);
-	lis_printf(comm,"%s: relative residual    = %E\n\n",solvername,resid);
+	lis_printf(comm,"%s: relative residual    = %E\n\n",solvername,(LIS_REAL_OUT)resid);
 
 	/* write solution */
 	lis_output_vector(x,LIS_FMT_MM,argv[4]); 

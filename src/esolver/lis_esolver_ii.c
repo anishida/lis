@@ -170,9 +170,9 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
   if( output )
     {
 #ifdef _COMPLEX
-      lis_printf(comm,"local shift           : (%E, %E)\n", creal(lshift), cimag(lshift));
+      lis_printf(comm,"local shift           : (%E, %E)\n", (LIS_REAL_OUT)creal(lshift), (LIS_REAL_OUT)cimag(lshift));
 #else
-      lis_printf(comm,"local shift           : %E\n", lshift);
+      lis_printf(comm,"local shift           : %E\n", (LIS_REAL_OUT)lshift);
 #endif
     }
   lis_solver_create(&solver);
@@ -396,9 +396,9 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
   if( output )
     {
 #ifdef _COMPLEX
-      lis_printf(comm,"local shift           : (%E, %E)\n", creal(lshift), cimag(lshift));
+      lis_printf(comm,"local shift           : (%E, %E)\n", (LIS_REAL_OUT)creal(lshift), (LIS_REAL_OUT)cimag(lshift));
 #else
-      lis_printf(comm,"local shift           : %E\n", lshift);
+      lis_printf(comm,"local shift           : %E\n", (LIS_REAL_OUT)lshift);
 #endif
     }
   lis_solver_create(&solver);

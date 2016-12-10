@@ -517,7 +517,7 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	}
 
 	/* global shift */
-	if ( output ) lis_printf(comm,"global shift          : %E\n", (LIS_REAL)gshift);
+	if ( output ) lis_printf(comm,"global shift          : %E\n", (LIS_REAL_OUT)gshift);
 
 	/* create eigenvector array */
 	if( esolver->evector ) lis_free(esolver->evector);
@@ -701,6 +701,7 @@ LIS_INT lis_esolver_set_option(char *text, LIS_ESOLVER esolver)
 LIS_INT lis_esolver_set_option2(char* arg1, char *arg2, LIS_ESOLVER esolver)
 {
 	LIS_INT i;
+	double double_value;
 
 	LIS_DEBUG_FUNC_IN;
 	
@@ -742,11 +743,8 @@ LIS_INT lis_esolver_set_option2(char* arg1, char *arg2, LIS_ESOLVER esolver)
 			    }
 			  else
 			    {
-#ifdef _LONG__DOUBLE
-			      sscanf(arg2, "%Lg", &esolver->params[LIS_ESOLVER_OPTACT[i]-LIS_EOPTIONS_LEN]);
-#else
-			      sscanf(arg2, "%lg", &esolver->params[LIS_ESOLVER_OPTACT[i]-LIS_EOPTIONS_LEN]);
-#endif
+			      sscanf(arg2, "%lg", &double_value);
+			      esolver->params[LIS_ESOLVER_OPTACT[i]-LIS_EOPTIONS_LEN] = double_value;
 			    }
 			  break;
 			}

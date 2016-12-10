@@ -1045,7 +1045,7 @@ LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VEC
 	if( output && (r->precision==LIS_PRECISION_QUAD && solver->precision!=LIS_PRECISION_SWITCH) )
 	{
 	  if( output & LIS_PRINT_MEM ) solver->rhistory[0] = nrm2;
-	  if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5d  relative residual = %E\n", 0, nrm2); 
+	  if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5d  relative residual = %E\n", 0, (LIS_REAL_OUT)nrm2); 
 	}
 	if( nrm2 <= fabs(solver->params[LIS_PARAMS_RESID-LIS_OPTIONS_LEN]) )
 	{
@@ -1111,6 +1111,7 @@ LIS_INT lis_solver_set_option(char *text, LIS_SOLVER solver)
 LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 {
 	LIS_INT i;
+	double double_value;
 
 	LIS_DEBUG_FUNC_IN;
 
@@ -1180,11 +1181,8 @@ LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 				}
 				else
 				{
-#ifdef _LONG__DOUBLE
-					sscanf(arg2, "%Lg", &solver->params[LIS_SOLVER_OPTACT[i]-LIS_OPTIONS_LEN]);
-#else
-					sscanf(arg2, "%lg", &solver->params[LIS_SOLVER_OPTACT[i]-LIS_OPTIONS_LEN]);
-#endif
+					sscanf(arg2, "%lg", &double_value);
+					solver->params[LIS_SOLVER_OPTACT[i]-LIS_OPTIONS_LEN] = double_value;
 				}
 				break;
 			}

@@ -298,14 +298,43 @@ typedef struct
 } LIS_DOUBLE_DOUBLE_PTR;
 
 #if defined(_LONG__DOUBLE)
-typedef long double LIS_REAL;
 #ifdef HAVE_COMPLEX_H
 typedef long double complex LIS_COMPLEX;
 #else
 typedef long double LIS_COMPLEX[2];
 #endif
 #ifdef _COMPLEX
-typedef LIS_COMPLEX LIS_SCALAR;
+#ifdef HAVE_QUADMATH_H
+typedef __float128 LIS_REAL;
+typedef __complex128 LIS_SCALAR;
+typedef long double LIS_REAL_OUT;
+#define creal(x) crealq(x)
+#define cimag(x) cimagq(x)
+#define acos(x) cacosq(x)
+#define acosh(x) cacoshq(x)
+#define asin(x) casinq(x)
+#define asinh(x) casinhq(x)
+#define atan(x) catanq(x)
+#define atanh(x) catanhq(x)
+#define cos(x) ccosq(x)
+#define cosh(x) ccoshq(x)
+#define exp(x) cexpq(x)
+#define fabs(x) cabsq(x)
+#define log(x) clogq(x)
+#define conj(x) conjq(x)
+#define pow(x,y) cpowq(x,y)
+#define proj(x) cprojq(x)
+#define sin(x) csinq(x)
+#define sinh(x) csinhq(x)
+#define sqrt(x) csqrtq(x)
+#define tan(x) ctanq(x)
+#define tanh(x) ctanhq(x)
+#define LIS_MPI_SCALAR MPI_C_LONG_DOUBLE_COMPLEX
+#define LIS_MPI_REAL MPI_LONG_DOUBLE
+#else
+typedef long double LIS_REAL;
+typedef long double complex LIS_SCALAR;
+typedef long double LIS_REAL_OUT;
 #define creal(x) creall(x)
 #define cimag(x) cimagl(x)
 #define acos(x) cacosl(x)
@@ -329,8 +358,32 @@ typedef LIS_COMPLEX LIS_SCALAR;
 #define tanh(x) ctanhl(x)
 #define LIS_MPI_SCALAR MPI_C_LONG_DOUBLE_COMPLEX
 #define LIS_MPI_REAL MPI_LONG_DOUBLE
+#endif
+#else
+#ifdef HAVE_QUADMATH_H
+typedef __float128 LIS_REAL;  
+typedef __float128 LIS_SCALAR;
+typedef long double LIS_REAL_OUT;
+#define sin(x) sinq(x)
+#define cos(x) cosq(x)
+#define tan(x) tanq(x)
+#define asin(x) asinq(x)
+#define acos(x) acosq(x)
+#define atan(x) atanq(x)
+#define atan2(x,y) atan2q((x),(y))
+#define fmod(x,y) fmodq((x),(y))
+#define fabs(x) fabsq(x)
+#define sqrt(x) sqrtq(x)
+#define log(x) logq(x)
+#define log10(x) log10q(x)
+#define exp(x) expq(x)
+#define pow(x,y) powq((x),(y))
+#define LIS_MPI_SCALAR MPI_LONG_DOUBLE
+#define LIS_MPI_REAL MPI_LONG_DOUBLE
 #else
 typedef long double LIS_SCALAR;
+typedef long double LIS_SCALAR;
+typedef long double LIS_REAL_OUT;
 #define sin(x) sinl(x)
 #define cos(x) cosl(x)
 #define tan(x) tanl(x)
@@ -348,6 +401,7 @@ typedef long double LIS_SCALAR;
 #define LIS_MPI_SCALAR MPI_LONG_DOUBLE
 #define LIS_MPI_REAL MPI_LONG_DOUBLE
 #endif
+#endif
 #else
 typedef double LIS_REAL;
 #ifdef HAVE_COMPLEX_H
@@ -356,7 +410,8 @@ typedef double complex LIS_COMPLEX;
 typedef double LIS_COMPLEX[2];
 #endif
 #ifdef _COMPLEX
-typedef LIS_COMPLEX LIS_SCALAR;
+typedef double complex LIS_SCALAR;
+typedef double LIS_REAL_OUT;
 #define acos(x) cacos(x)
 #define acosh(x) cacosh(x)
 #define asin(x) casin(x)
@@ -379,6 +434,7 @@ typedef LIS_COMPLEX LIS_SCALAR;
 #define LIS_MPI_REAL MPI_DOUBLE
 #else
 typedef double LIS_SCALAR;
+typedef double LIS_REAL_OUT;
 #define LIS_MPI_SCALAR MPI_DOUBLE
 #define LIS_MPI_REAL MPI_DOUBLE
 #endif

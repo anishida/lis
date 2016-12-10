@@ -49,6 +49,7 @@
  * lis_sort_iiid
  * lis_sortr_ii
  * lis_bswap_int
+ * lis_bswap_double
  * lis_bswap_scalar
  * lis_bswap_size_t
  * lis_sort_jad
@@ -291,6 +292,32 @@ LIS_INT lis_bswap_int(LIS_INT n, LIS_INT *buf)
 		pp[1] = pt[2];
 		pp[2] = pt[1];
 		pp[3] = pt[0];
+		p++;
+	}
+	return LIS_SUCCESS;
+}
+
+LIS_INT lis_bswap_double(LIS_INT n, double *buf)
+{
+	LIS_INT i;
+	double t;
+	double *p;
+	char *pp, *pt;
+
+	p = buf;
+	for(i=0;i<n;i++)
+	{
+		t = *p;
+		pp = (char *)p;
+		pt = (char *)&t;
+		pp[0] = pt[7];
+		pp[1] = pt[6];
+		pp[2] = pt[5];
+		pp[3] = pt[4];
+		pp[4] = pt[3];
+		pp[5] = pt[2];
+		pp[6] = pt[1];
+		pp[7] = pt[0];
 		p++;
 	}
 	return LIS_SUCCESS;

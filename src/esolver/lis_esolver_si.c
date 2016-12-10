@@ -195,8 +195,8 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
       lis_solver_get_preconname(precon_type, preconname);
       if( output )
 	{
-	  lis_printf(comm,"linear solver         : %E\n", solvername);
-	  lis_printf(comm,"preconditioner        : %E\n", preconname);
+	  lis_printf(comm,"linear solver         : %s\n", solvername);
+	  lis_printf(comm,"preconditioner        : %s\n", preconname);
 	}
       break;
 
@@ -325,12 +325,12 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	{
 	  lis_printf(comm,"Subspace: mode number          = %D\n", j-1);
 #ifdef _COMPLEX	  
-	  lis_printf(comm,"Subspace: eigenvalue           = (%E, %E)\n", creal(esolver->evalue[j-1]), cimag(esolver->evalue[j-1]));
+	  lis_printf(comm,"Subspace: eigenvalue           = (%E, %E)\n", (LIS_REAL_OUT)creal(esolver->evalue[j-1]), (LIS_REAL_OUT)cimag(esolver->evalue[j-1]));
 #else
-	  lis_printf(comm,"Subspace: eigenvalue           = %E\n", esolver->evalue[j-1]);
+	  lis_printf(comm,"Subspace: eigenvalue           = %E\n", (LIS_REAL_OUT)esolver->evalue[j-1]);
 #endif	  
 	  lis_printf(comm,"Subspace: number of iterations = %D\n",iter);
-	  lis_printf(comm,"Subspace: relative residual    = %E\n\n",resid);
+	  lis_printf(comm,"Subspace: relative residual    = %E\n\n",(LIS_REAL_OUT)resid);
 	}
     }
   
@@ -659,12 +659,12 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	{
 	  lis_printf(comm,"Subspace: mode number          = %D\n", j-1);
 #ifdef _COMPLEX	  
-	  lis_printf(comm,"Subspace: eigenvalue           = (%E, %E)\n", creal(esolver->evalue[j-1]), cimag(esolver->evalue[j-1]));
+	  lis_printf(comm,"Subspace: eigenvalue           = (%E, %E)\n", (LIS_REAL_OUT)creal(esolver->evalue[j-1]), (LIS_REAL_OUT)cimag(esolver->evalue[j-1]));
 #else
-	  lis_printf(comm,"Subspace: eigenvalue           = %E\n", esolver->evalue[j-1]);
+	  lis_printf(comm,"Subspace: eigenvalue           = %E\n", (LIS_REAL_OUT)esolver->evalue[j-1]);
 #endif	  
 	  lis_printf(comm,"Subspace: number of iterations = %D\n",iter);
-	  lis_printf(comm,"Subspace: relative residual    = %E\n\n",resid);
+	  lis_printf(comm,"Subspace: relative residual    = %E\n\n",(LIS_REAL_OUT)resid);
 	}
     }
   

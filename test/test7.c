@@ -45,7 +45,8 @@
 LIS_INT main(LIS_INT argc, char* argv[])
 {
 	LIS_Comm comm;  
-	LIS_COMPLEX z,dot;
+	LIS_COMPLEX z;
+	LIS_SCALAR dot;
 	LIS_VECTOR v;
 	LIS_INT n,ln;
 	LIS_REAL nrm2;

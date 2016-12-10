@@ -261,9 +261,9 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
 	{
 	  lis_printf(comm,"Lanczos: mode number              = %D\n", i);
 #ifdef _COMPLEX	  
-	  lis_printf(comm,"Lanczos: eigenvalue               = (%E, %E)\n", creal(esolver->evalue[i]), cimag(esolver->evalue[i]));
+	  lis_printf(comm,"Lanczos: eigenvalue               = (%E, %E)\n", (LIS_REAL_OUT)creal(esolver->evalue[i]), (LIS_REAL_OUT)cimag(esolver->evalue[i]));
 #else
-	  lis_printf(comm,"Lanczos: eigenvalue               = %E\n", esolver->evalue[i]);
+	  lis_printf(comm,"Lanczos: eigenvalue               = %E\n", (LIS_REAL_OUT)esolver->evalue[i]);
 #endif	  
 	}
       lis_printf(comm,"\n");
@@ -310,12 +310,12 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
 	{
 	  lis_printf(comm,"Lanczos: mode number          = %D\n", i);
 #ifdef _COMPLEX
-	  lis_printf(comm,"Lanczos: eigenvalue           = (%E, %E)\n", creal(esolver->evalue[i]), cimag(esolver->evalue[i]));
+	  lis_printf(comm,"Lanczos: eigenvalue           = (%E, %E)\n", (LIS_REAL_OUT)creal(esolver->evalue[i]), (LIS_REAL_OUT)cimag(esolver->evalue[i]));
 #else	  
-	  lis_printf(comm,"Lanczos: eigenvalue           = %E\n", esolver->evalue[i]);
+	  lis_printf(comm,"Lanczos: eigenvalue           = %E\n", (LIS_REAL_OUT)esolver->evalue[i]);
 #endif	  
 	  lis_printf(comm,"Lanczos: number of iterations = %D\n",esolver2->iter[0]);
-	  lis_printf(comm,"Lanczos: relative residual    = %E\n\n",esolver2->resid[0]);
+	  lis_printf(comm,"Lanczos: relative residual    = %E\n\n",(LIS_REAL_OUT)esolver2->resid[0]);
 	}
     }
   esolver->evalue[0] = evalue0; 
@@ -587,9 +587,9 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
 	{
 	  lis_printf(comm,"Generalized Lanczos: mode number              = %D\n", i);
 #ifdef _COMPLEX	  
-	  lis_printf(comm,"Generalized Lanczos: eigenvalue               = (%E, %E)\n", creal(esolver->evalue[i]), cimag(esolver->evalue[i]));
+	  lis_printf(comm,"Generalized Lanczos: eigenvalue               = (%E, %E)\n", (LIS_REAL_OUT)creal(esolver->evalue[i]), (LIS_REAL_OUT)cimag(esolver->evalue[i]));
 #else
-	  lis_printf(comm,"Generalized Lanczos: eigenvalue               = %E\n", esolver->evalue[i]);
+	  lis_printf(comm,"Generalized Lanczos: eigenvalue               = %E\n", (LIS_REAL_OUT)esolver->evalue[i]);
 #endif	  
 	}
       printf("\n");
@@ -636,12 +636,12 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
 	{
 	  lis_printf(comm,"Generalized Lanczos: mode number          = %D\n", i);
 #ifdef _COMPLEX
-	  lis_printf(comm,"Generalized Lanczos: eigenvalue           = (%E, %E)\n", creal(esolver->evalue[i]), cimag(esolver->evalue[i]));
+	  lis_printf(comm,"Generalized Lanczos: eigenvalue           = (%E, %E)\n", (LIS_REAL_OUT)creal(esolver->evalue[i]), (LIS_REAL_OUT)cimag(esolver->evalue[i]));
 #else	  
-	  lis_printf(comm,"Generalized Lanczos: eigenvalue           = %E\n", esolver->evalue[i]);
+	  lis_printf(comm,"Generalized Lanczos: eigenvalue           = %E\n", (LIS_REAL_OUT)esolver->evalue[i]);
 #endif	  
 	  lis_printf(comm,"Generalized Lanczos: number of iterations = %D\n",esolver2->iter[0]);
-	  lis_printf(comm,"Generalized Lanczos: relative residual    = %E\n\n",esolver2->resid[0]);
+	  lis_printf(comm,"Generalized Lanczos: relative residual    = %E\n\n",(LIS_REAL_OUT)esolver2->resid[0]);
 	}
     }
   esolver->evalue[0] = evalue0; 
