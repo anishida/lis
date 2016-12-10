@@ -310,7 +310,7 @@ LIS_INT lis_idr1(LIS_SOLVER solver)
 		if( output )
 		{
 			if( output & LIS_PRINT_MEM ) solver->rhistory[1] = nrm2;
-			if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5d  relative residual = %E\n", 1, nrm2);
+			if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5d  relative residual = %E\n", 1, (LIS_REAL_OUT)nrm2);
 		}
 
 		if( tol >= nrm2 )
@@ -415,9 +415,9 @@ LIS_INT lis_idr1(LIS_SOLVER solver)
 		{
 			if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
 #ifdef _LONG__LONG
-			if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5lld  relative residual = %E\n", iter, nrm2);
+			if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5lld  relative residual = %E\n", iter, (LIS_REAL_OUT)nrm2);
 #else
-			if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5d  relative residual = %E\n", iter, nrm2);
+			if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5d  relative residual = %E\n", iter, (LIS_REAL_OUT)nrm2);
 #endif
 		}
 
@@ -488,9 +488,9 @@ LIS_INT lis_idr1(LIS_SOLVER solver)
 		{
 			if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
 #ifdef _LONG__LONG
-			if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5lld  relative residual = %E\n", iter, nrm2);
+			if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5lld  relative residual = %E\n", iter, (LIS_REAL_OUT)nrm2);
 #else
-			if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5d  relative residual = %E\n", iter, nrm2);
+			if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5d  relative residual = %E\n", iter, (LIS_REAL_OUT)nrm2);
 #endif
 		}
 
@@ -511,7 +511,7 @@ LIS_INT lis_idr1(LIS_SOLVER solver)
 
 		tim = lis_wtime() - tim;
 		/*
-		lis_printf(comm,"update m,M: %E\n",tim);
+		lis_printf(comm,"update m,M: %E\n",(LIS_REAL_OUT)tim);
 		*/
 	}
 	solver->retcode   = LIS_MAXITER;
@@ -611,9 +611,9 @@ LIS_INT lis_idrs(LIS_SOLVER solver)
 		{
 			if( output & LIS_PRINT_MEM ) solver->rhistory[k+1] = nrm2;
 #ifdef _LONG__LONG
-			if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5lld  relative residual = %E\n", k+1, nrm2);
+			if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5lld  relative residual = %E\n", k+1, (LIS_REAL_OUT)nrm2);
 #else
-			if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5d  relative residual = %E\n", k+1, nrm2);
+			if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5d  relative residual = %E\n", k+1, (LIS_REAL_OUT)nrm2);
 #endif
 		}
 
@@ -742,9 +742,9 @@ LIS_INT lis_idrs(LIS_SOLVER solver)
 		{
 			if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
 #ifdef _LONG__LONG
-			if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5lld  relative residual = %E\n", iter, nrm2);
+			if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5lld  relative residual = %E\n", iter, (LIS_REAL_OUT)nrm2);
 #else
-			if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5d  relative residual = %E\n", iter, nrm2);
+			if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5d  relative residual = %E\n", iter, (LIS_REAL_OUT)nrm2);
 #endif
 		}
 
@@ -771,7 +771,7 @@ LIS_INT lis_idrs(LIS_SOLVER solver)
 		if( oldest==s ) oldest = 0;
 		tim = lis_wtime() - tim;
 		/*
-		lis_printf(comm,"update m,M: %E\n",tim);
+		lis_printf(comm,"update m,M: %E\n",(LIS_REAL_OUT)tim);
 		*/
 	}
 	lis_free2(4,m,c,M,MM);

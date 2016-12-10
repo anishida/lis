@@ -254,9 +254,9 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 	    {
 	      lis_printf(comm,"Arnoldi: mode number              = %D\n",i-1);
 #ifdef _COMPLEX
-	      lis_printf(comm,"Arnoldi: eigenvalue               = (%E, %E)\n",creal(h[i-1+(i-1)*ss]),cimag(h[i-1+(i-1)*ss]));
+	      lis_printf(comm,"Arnoldi: eigenvalue               = (%E, %E)\n",(LIS_REAL_OUT)creal(h[i-1+(i-1)*ss]),(LIS_REAL_OUT)cimag(h[i-1+(i-1)*ss]));
 #else	      
-	      lis_printf(comm,"Arnoldi: eigenvalue               = %E\n",(LIS_REAL)(h[i-1+(i-1)*ss]));
+	      lis_printf(comm,"Arnoldi: eigenvalue               = %E\n",(LIS_REAL_OUT)(h[i-1+(i-1)*ss]));
 #endif	      
 	      esolver->evalue[i-1] = h[i-1+(i-1)*ss];
 	    }
@@ -269,9 +269,9 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 	      if (D<0)
 		{
 		  lis_printf(comm,"Arnoldi: mode number              = %D\n",i-1);
-		  lis_printf(comm,"Arnoldi: eigenvalue               = (%E, %E)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)sqrt(-D)/2);
-		  lis_printf(comm,"Arnoldi: mode number              = %E\n",i);
-		  lis_printf(comm,"Arnoldi: eigenvalue               = (%E, %E)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)-sqrt(-D)/2);
+		  lis_printf(comm,"Arnoldi: eigenvalue               = (%E, %E)\n", (LIS_REAL_OUT)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL_OUT)sqrt(-D)/2);
+		  lis_printf(comm,"Arnoldi: mode number              = %D\n",i);
+		  lis_printf(comm,"Arnoldi: eigenvalue               = (%E, %E)\n", (LIS_REAL_OUT)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL_OUT)-sqrt(-D)/2);
 		  
 #ifdef _COMPLEX		  
 		  esolver->evalue[i-1] = (h[i-1+(i-1)*ss]+h[i+i*ss])/2 + sqrt(-D)/2 * _Complex_I;
@@ -287,9 +287,9 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 		{
 		  lis_printf(comm,"Arnoldi: mode number              = %D\n",i-1);
 #ifdef _COMPLEX
-		  lis_printf(comm,"Arnoldi: eigenvalue               = (%E, %E)\n",creal(h[i-1+(i-1)*ss]),cimag(h[i-1+(i-1)*ss]));
+		  lis_printf(comm,"Arnoldi: eigenvalue               = (%E, %E)\n",(LIS_REAL_OUT)creal(h[i-1+(i-1)*ss]),(LIS_REAL_OUT)cimag(h[i-1+(i-1)*ss]));
 #else		  
-		  lis_printf(comm,"Arnoldi: eigenvalue               = %E\n",(LIS_REAL)(h[i-1+(i-1)*ss]));
+		  lis_printf(comm,"Arnoldi: eigenvalue               = %E\n",(LIS_REAL_OUT)(h[i-1+(i-1)*ss]));
 #endif		  
 		  esolver->evalue[i-1] = h[i-1+(i-1)*ss];
 		}
@@ -342,12 +342,12 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 	{
 	  lis_printf(comm,"Arnoldi: mode number          = %D\n", i);
 #ifdef _COMPLEX	  
-	  lis_printf(comm,"Arnoldi: eigenvalue           = (%E, %E)\n", creal(esolver->evalue[i]),cimag(esolver->evalue[i]));
+	  lis_printf(comm,"Arnoldi: eigenvalue           = (%E, %E)\n", (LIS_REAL_OUT)creal(esolver->evalue[i]),(LIS_REAL_OUT)cimag(esolver->evalue[i]));
 #else
-	  lis_printf(comm,"Arnoldi: eigenvalue           = %E\n", (LIS_REAL)esolver->evalue[i]);
+	  lis_printf(comm,"Arnoldi: eigenvalue           = %E\n", (LIS_REAL_OUT)esolver->evalue[i]);
 #endif	  
 	  lis_printf(comm,"Arnoldi: number of iterations = %D\n",esolver2->iter[0]);
-	  lis_printf(comm,"Arnoldi: relative residual    = %E\n\n",esolver2->resid[0]);
+	  lis_printf(comm,"Arnoldi: relative residual    = %E\n\n",(LIS_REAL_OUT)esolver2->resid[0]);
 	}
     }
 
@@ -595,7 +595,7 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
 	    {
 	      lis_printf(comm,"Generalized Arnoldi: mode number              = %D\n",i-1);
 #ifdef _COMPLEX
-	      lis_printf(comm,"Generalized Arnoldi: eigenvalue               = (%E, %E)\n",creal(h[i-1+(i-1)*ss]),cimag(h[i-1+(i-1)*ss]));
+	      lis_printf(comm,"Generalized Arnoldi: eigenvalue               = (%E, %E)\n",(LIS_REAL_OUT)creal(h[i-1+(i-1)*ss]),(LIS_REAL_OUT)cimag(h[i-1+(i-1)*ss]));
 #else	      
 	      lis_printf(comm,"Generalized Arnoldi: eigenvalue               = %e\n",(LIS_REAL)(h[i-1+(i-1)*ss]));
 #endif	      
@@ -610,9 +610,9 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
 	      if (D<0)
 		{
 		  lis_printf(comm,"Generalized Arnoldi: mode number              = %D\n",i-1);
-		  lis_printf(comm,"Generalized Arnoldi: eigenvalue               = (%E, %E)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)sqrt(-D)/2);
+		  lis_printf(comm,"Generalized Arnoldi: eigenvalue               = (%E, %E)\n", (LIS_REAL_OUT)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL_OUT)sqrt(-D)/2);
 		  lis_printf(comm,"Generalized Arnoldi: mode number              = %D\n",i);
-		  lis_printf(comm,"Generalized Arnoldi: eigenvalue               = (%E, %E)\n", (LIS_REAL)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL)-sqrt(-D)/2);
+		  lis_printf(comm,"Generalized Arnoldi: eigenvalue               = (%E, %E)\n", (LIS_REAL_OUT)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (LIS_REAL_OUT)-sqrt(-D)/2);
 		  
 #ifdef _COMPLEX		  
 		  esolver->evalue[i-1] = (h[i-1+(i-1)*ss]+h[i+i*ss])/2 + sqrt(-D)/2 * _Complex_I;
@@ -628,9 +628,9 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
 		{
 		  lis_printf(comm,"Generalized Arnoldi: mode number              = %D\n",i-1);
 #ifdef _COMPLEX
-		  lis_printf(comm,"Generalized Arnoldi: eigenvalue               = (%E, %E)\n",creal(h[i-1+(i-1)*ss]),cimag(h[i-1+(i-1)*ss]));
+		  lis_printf(comm,"Generalized Arnoldi: eigenvalue               = (%E, %E)\n",(LIS_REAL_OUT)creal(h[i-1+(i-1)*ss]),(LIS_REAL_OUT)cimag(h[i-1+(i-1)*ss]));
 #else		  
-		  lis_printf(comm,"Generalized Arnoldi: eigenvalue               = %E\n",(LIS_REAL)(h[i-1+(i-1)*ss]));
+		  lis_printf(comm,"Generalized Arnoldi: eigenvalue               = %E\n",(LIS_REAL_OUT)(h[i-1+(i-1)*ss]));
 #endif		  
 		  esolver->evalue[i-1] = h[i-1+(i-1)*ss];
 		}
@@ -684,12 +684,12 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
 
 	  lis_printf(comm,"Generalized Arnoldi: mode number          = %D\n", i);
 #ifdef _COMPLEX	  
-	  lis_printf(comm,"Generalized Arnoldi: eigenvalue           = (%E, %E)\n", creal(esolver->evalue[i]),cimag(esolver->evalue[i]));
+	  lis_printf(comm,"Generalized Arnoldi: eigenvalue           = (%E, %E)\n", (LIS_REAL_OUT)creal(esolver->evalue[i]),(LIS_REAL_OUT)cimag(esolver->evalue[i]));
 #else
-	  lis_printf(comm,"Generalized Arnoldi: eigenvalue           = %E\n", (LIS_REAL)esolver->evalue[i]);
+	  lis_printf(comm,"Generalized Arnoldi: eigenvalue           = %E\n", (LIS_REAL_OUT)esolver->evalue[i]);
 #endif	  
 	  lis_printf(comm,"Generalized Arnoldi: number of iterations = %D\n",esolver2->iter[0]);
-	  lis_printf(comm,"Generalized Arnoldi: relative residual    = %E\n\n",esolver2->resid[0]);
+	  lis_printf(comm,"Generalized Arnoldi: relative residual    = %E\n\n",(LIS_REAL_OUT)esolver2->resid[0]);
 	}
     }
 

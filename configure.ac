@@ -4,7 +4,7 @@
 
 # General Configurations
 
-AC_INIT(lis, 1.7.15, devel@ssisc.org)
+AC_INIT(lis, 1.7.16, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -1055,6 +1055,18 @@ else
 fi
 
 
+########## Enable Quadmath Operations ##########
+AC_CHECK_HEADERS([quadmath.h])
+if test "$enable_longdouble" = "yes"; then
+  if test -z "$HAVE_QUADMATH_H"; then
+    CFLAGS="$CFLAGS -lquadmath"
+    FFLAGS="$FFLAGS -lquadmath" 
+    FCFLAGS="$FCFLAGS -lquadmath"
+    AC_MSG_WARN([long double in C is not compatible with __float128])
+  fi
+fi
+
+
 # Configurations for Environment-Dependent Data Sizes
 
 ########## Check Size of int ##########
@@ -1097,6 +1109,15 @@ if test "$TARGET" = ""; then
   AC_CHECK_SIZEOF(long double)
 else
   AC_DEFINE([SIZEOF_LONG_DOUBLE], [$ac_cv_sizeof_long_double], [Test the size of a `long double', as computed by sizeof.])
+fi
+
+########## Check Size of __float128 ##########
+if test -z "$HAVE_QUADMATH_H"; then
+  if test "$TARGET" = ""; then
+    AC_CHECK_SIZEOF(__float128)
+  else
+    AC_DEFINE([SIZEOF_LONG_DOUBLE], [$ac_cv_sizeof___float128], [Test the size of a `__float128', as computed by sizeof.])
+  fi
 fi
 
 ########## Check Size of size_t ##########

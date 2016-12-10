@@ -259,7 +259,7 @@ LIS_INT lis_input_vector_mm(LIS_VECTOR v, FILE *file)
 	LIS_INT	err;
 	LIS_INT	n,is,ie;
 	LIS_INT	idx;
-	LIS_SCALAR val;
+	double val;
 
 
 	/* check banner */
@@ -331,17 +331,9 @@ LIS_INT lis_input_vector_mm(LIS_VECTOR v, FILE *file)
 			return LIS_ERR_FILE_IO;
 		}
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-		if( sscanf(buf, "%lld %Lg", &idx, &val) != 2 )
-#else
 		if( sscanf(buf, "%lld %lg", &idx, &val) != 2 )
-#endif
-#else
-#ifdef _LONG__DOUBLE
-		if( sscanf(buf, "%d %Lg", &idx, &val) != 2 )
 #else
 		if( sscanf(buf, "%d %lg", &idx, &val) != 2 )
-#endif
 #endif
 		{
 			LIS_SETERR_FIO;
@@ -364,18 +356,14 @@ LIS_INT lis_input_vector_plain(LIS_VECTOR v, FILE *file)
 	LIS_INT i;
 	LIS_INT	err;
 	LIS_INT	n,is,ie;
-	LIS_SCALAR val;
+	double val;
 
 
 	/* check size */
 	n = 0;
 	do
 	{
-#ifdef _LONG__DOUBLE
-		err = fscanf(file, "%Lg", &val);
-#else
 		err = fscanf(file, "%lg", &val);
-#endif		
 		if( err==1 ) n++;
 	}while( err==1 );
 	rewind(file);
@@ -397,11 +385,7 @@ LIS_INT lis_input_vector_plain(LIS_VECTOR v, FILE *file)
 		}
 		if( i>=is && i<ie )
 		{
-#ifdef _LONG__DOUBLE
-			if( sscanf(buf, "%Lg", &val) != 1 )
-#else
 			if( sscanf(buf, "%lg", &val) != 1 )
-#endif
 			{
 				LIS_SETERR_FIO;
 				return LIS_ERR_FILE_IO;
@@ -491,6 +475,7 @@ LIS_INT lis_input_vector_lis_ascii(LIS_VECTOR v, FILE *file)
 	LIS_INT	ibuf[10];
 	char cbuf[BUFSIZE];
 	char c;
+	double val;
 	LIS_Comm comm;
 
 	comm = v->comm;
@@ -568,15 +553,13 @@ LIS_INT lis_fscan_scalar(LIS_INT n, FILE *file, LIS_SCALAR val[])
 {
 	LIS_INT err;
 	LIS_INT i;
+	double double_value;
 
 	i=0;
 	while( i<n )
 	{
-#if defined(_LONG__DOUBLE)
-		err = fscanf(file, "%Lg", &val[i++]);
-#else
-		err = fscanf(file, "%lg", &val[i++]);
-#endif
+		err = fscanf(file, "%lg", &double_value);
+		val[i++] = double_value;
 		if( err )
 		  {
 		    return err;

@@ -113,8 +113,8 @@ LIS_INT lis_input_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, L
 	LIS_INT	mode;
 	LIS_INT	gn,n,is,ie;
 	LIS_INT	idx;
-	LIS_SCALAR val;
-	LIS_REAL re,im;		
+	double val;
+	double re,im;		
 	LIS_MM_VECFMT vecfmt;
 
 	LIS_DEBUG_FUNC_IN;
@@ -152,7 +152,7 @@ LIS_INT lis_input_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, L
 				if( mode )
 				{
 					lis_bswap_int(1,&idx);
-					lis_bswap_scalar(1,&val);
+					lis_bswap_double(1,&val);
 				}
 			}
 			else
@@ -164,31 +164,15 @@ LIS_INT lis_input_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, L
 				}
 #ifdef _COMPLEX				
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-				if( sscanf(buf, "%lld %Lg", &idx, &re) != 2 )
-#else
 				if( sscanf(buf, "%lld %lg", &idx, &re) != 2 )
-#endif
 #else
-#ifdef _LONG__DOUBLE
-				if( sscanf(buf, "%d %Lg", &idx, &re) != 2 )
-#else
-				if( sscanf(buf, "%d %lg", &idx, &re) != 2 )
-#endif
+				  if( sscanf(buf, "%d %lg", &idx, &re) != 2 )
 #endif
 #else
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-				if( sscanf(buf, "%lld %Lg", &idx, &val) != 2 )
-#else
 				if( sscanf(buf, "%lld %lg", &idx, &val) != 2 )
-#endif
-#else
-#ifdef _LONG__DOUBLE
-				if( sscanf(buf, "%d %Lg", &idx, &val) != 2 )
 #else
 				if( sscanf(buf, "%d %lg", &idx, &val) != 2 )
-#endif
 #endif
 #endif				  
 				{
@@ -224,7 +208,7 @@ LIS_INT lis_input_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, L
 				if( mode )
 				{
 					lis_bswap_int(1,&idx);
-					lis_bswap_scalar(1,&val);
+					lis_bswap_double(1,&val);
 				}
 			}
 			else
@@ -236,33 +220,17 @@ LIS_INT lis_input_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, L
 				}
 #ifdef _COMPLEX				
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-				if( sscanf(buf, "%lld %Lg", &idx, &re) != 2 )
-#else
 				if( sscanf(buf, "%lld %lg", &idx, &re) != 2 )
-#endif
-#else
-#ifdef _LONG__DOUBLE
-				if( sscanf(buf, "%d %Lg", &idx, &re) != 2 )
 #else
 				if( sscanf(buf, "%d %lg", &idx, &re) != 2 )
 #endif
-#endif
 #else
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-				if( sscanf(buf, "%lld %Lg", &idx, &val) != 2 )
-#else
 				if( sscanf(buf, "%lld %lg", &idx, &val) != 2 )
-#endif
-#else
-#ifdef _LONG__DOUBLE
-				if( sscanf(buf, "%d %Lg", &idx, &val) != 2 )
 #else
 				if( sscanf(buf, "%d %lg", &idx, &val) != 2 )
 #endif
 #endif
-#endif				  
 				{
 					LIS_SETERR_FIO;
 					return LIS_ERR_FILE_IO;
@@ -422,8 +390,8 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 	LIS_INT	*ptr, *index;
 	LIS_INT	*work;
 	LIS_INT	isb,isx,isbin;
-	LIS_SCALAR val;
-	LIS_REAL re,im;	
+	double val;
+	double re,im;	
 	LIS_SCALAR *value;
 	LIS_MM_MATFMT matfmt;
 
@@ -524,31 +492,15 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 			}
 #ifdef _COMPLEX			
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-			if( mmtype==MM_REAL && sscanf(buf, "%lld %lld %Lg", &ridx, &cidx, &re) != 3 )
-#else
 			if( mmtype==MM_REAL && sscanf(buf, "%lld %lld %lg", &ridx, &cidx, &re) != 3 )
-#endif
-#else
-#ifdef _LONG__DOUBLE
-			if( mmtype==MM_REAL && sscanf(buf, "%d %d %Lg", &ridx, &cidx, &re) != 3 )
 #else
 			if( mmtype==MM_REAL && sscanf(buf, "%d %d %lg", &ridx, &cidx, &re) != 3 )
 #endif
-#endif
 #else
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-			if( mmtype==MM_REAL && sscanf(buf, "%lld %lld %Lg", &ridx, &cidx, &val) != 3 )
-#else
 			if( mmtype==MM_REAL && sscanf(buf, "%lld %lld %lg", &ridx, &cidx, &val) != 3 )
-#endif
-#else
-#ifdef _LONG__DOUBLE
-			if( mmtype==MM_REAL && sscanf(buf, "%d %d %Lg", &ridx, &cidx, &val) != 3 )
 #else
 			if( mmtype==MM_REAL && sscanf(buf, "%d %d %lg", &ridx, &cidx, &val) != 3 )
-#endif
 #endif
 #endif			  
 			{
@@ -557,17 +509,9 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 				return LIS_ERR_FILE_IO;
 			}
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-			if( mmtype==MM_COMPLEX && sscanf(buf, "%lld %lld %Lg %Lg", &ridx, &cidx, &re, &im) != 4 )
-#else
 			if( mmtype==MM_COMPLEX && sscanf(buf, "%lld %lld %lg %lg", &ridx, &cidx, &re, &im) != 4 )
-#endif
-#else
-#ifdef _LONG__DOUBLE
-			if( mmtype==MM_COMPLEX && sscanf(buf, "%d %d %Lg %Lg", &ridx, &cidx, &re, &im) != 4 )
 #else
 			if( mmtype==MM_COMPLEX && sscanf(buf, "%d %d %lg %lg", &ridx, &cidx, &re, &im) != 4 )
-#endif
 #endif
 			{
 				LIS_SETERR_FIO;
@@ -671,7 +615,7 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 			{
 				lis_bswap_int(1,&ridx);
 				lis_bswap_int(1,&cidx);
-				lis_bswap_scalar(1,&val);
+				lis_bswap_double(1,&val);
 			}
 		}
 		else
@@ -684,31 +628,15 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 			}
 #ifdef _COMPLEX			
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-			if( mmtype==MM_REAL && sscanf(buf, "%lld %lld %Lg", &ridx, &cidx, &re) != 3 )
-#else
 			if( mmtype==MM_REAL && sscanf(buf, "%lld %lld %lg", &ridx, &cidx, &re) != 3 )
-#endif
-#else
-#ifdef _LONG__DOUBLE
-			if( mmtype==MM_REAL && sscanf(buf, "%d %d %Lg", &ridx, &cidx, &re) != 3 )
 #else
 			if( mmtype==MM_REAL && sscanf(buf, "%d %d %lg", &ridx, &cidx, &re) != 3 )
 #endif
-#endif
 #else
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-			if( mmtype==MM_REAL && sscanf(buf, "%lld %lld %Lg", &ridx, &cidx, &val) != 3 )
-#else
 			if( mmtype==MM_REAL && sscanf(buf, "%lld %lld %lg", &ridx, &cidx, &val) != 3 )
-#endif
-#else
-#ifdef _LONG__DOUBLE
-			if( mmtype==MM_REAL && sscanf(buf, "%d %d %Lg", &ridx, &cidx, &val) != 3 )
 #else
 			if( mmtype==MM_REAL && sscanf(buf, "%d %d %lg", &ridx, &cidx, &val) != 3 )
-#endif
 #endif 
 #endif			  
 			{
@@ -717,17 +645,9 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 				return LIS_ERR_FILE_IO;
 			}
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-			if( mmtype==MM_COMPLEX && sscanf(buf, "%lld %lld %Lg %Lg", &ridx, &cidx, &re, &im) != 4 )
-#else
 			if( mmtype==MM_COMPLEX && sscanf(buf, "%lld %lld %lg %lg", &ridx, &cidx, &re, &im) != 4 )
-#endif
-#else
-#ifdef _LONG__DOUBLE
-			if( mmtype==MM_COMPLEX && sscanf(buf, "%d %d %Lg %Lg", &ridx, &cidx, &re, &im) != 4 )
 #else
 			if( mmtype==MM_COMPLEX && sscanf(buf, "%d %d %lg %lg", &ridx, &cidx, &re, &im) != 4 )
-#endif
 #endif
 			{
 				LIS_SETERR_FIO;
