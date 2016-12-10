@@ -92,7 +92,8 @@ extern "C"
 	extern void lis_sort_jad(LIS_INT is, LIS_INT ie, LIS_INT maxnzr, LIS_INT *i1, LIS_INT *i2);
 	extern void lis_sort_id_block(LIS_INT is, LIS_INT ie, LIS_INT *i1, LIS_SCALAR *d1, LIS_INT bs);
 	extern LIS_INT lis_bswap_int(LIS_INT n, LIS_INT *buf);
-	extern LIS_INT lis_bswap_scalar(LIS_INT n, LIS_SCALAR *buf);	
+	extern LIS_INT lis_bswap_double(LIS_INT n, double *buf);
+	extern LIS_INT lis_bswap_scalar(LIS_INT n, LIS_SCALAR *buf);	  
 	extern LIS_INT lis_bswap_size_t(LIS_INT n, size_t *buf);
 	extern LIS_INT lis_ranges_create(LIS_Comm comm, LIS_INT *local_n, LIS_INT *global_n, LIS_INT **ranges, LIS_INT *is, LIS_INT *ie, LIS_INT *nprocs, LIS_INT *my_rank);
 	extern LIS_INT lis_hashtable_create(LIS_HASHTABLE *hashtable);

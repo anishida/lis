@@ -204,9 +204,9 @@ LIS_INT lis_print_rhistory(LIS_Comm comm, LIS_INT iter, LIS_REAL resid)
 	int int_my_rank;
 
 #ifdef _LONG__LONG	
-	lis_printf(comm,"iteration: %5lld  relative residual = %E\n", iter, resid);
+	lis_printf(comm,"iteration: %5lld  relative residual = %E\n", iter, (LIS_REAL_OUT)resid);
 #else
-	lis_printf(comm,"iteration: %5d  relative residual = %E\n", iter, resid);
+	lis_printf(comm,"iteration: %5d  relative residual = %E\n", iter, (LIS_REAL_OUT)resid);
 #endif
 
 	return LIS_SUCCESS;

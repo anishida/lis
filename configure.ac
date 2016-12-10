@@ -1061,7 +1061,8 @@ if test "$enable_longdouble" = "yes"; then
   if test -z "$HAVE_QUADMATH_H"; then
     CFLAGS="$CFLAGS -lquadmath"
     FFLAGS="$FFLAGS -lquadmath" 
-    FCFLAGS="$FCFLAGS -lquadmath" 
+    FCFLAGS="$FCFLAGS -lquadmath"
+    AC_MSG_WARN([long double in C is not compatible with __float128])
   fi
 fi
 

@@ -106,9 +106,9 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	for (i=0;i<nn;i++)
 	  {
 #ifdef _COMPLEX
-	    lis_printf(comm,"A(%D,%D) = (%E, %E)\n", i, i, creal(a[i*nn+i]), cimag(a[i*nn+i]));
+	    lis_printf(comm,"A(%D,%D) = (%E, %E)\n", i, i, (LIS_REAL_OUT)creal(a[i*nn+i]), (LIS_REAL_OUT)cimag(a[i*nn+i]));
 #else
-	    lis_printf(comm,"A(%D,%D) = %E\n", i, i, a[i*nn+i]);
+	    lis_printf(comm,"A(%D,%D) = %E\n", i, i, (LIS_REAL_OUT)a[i*nn+i]);
 #endif	    
 	  }
 	lis_printf(comm,"\n");	
@@ -117,7 +117,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	lis_printf(comm,"QR    : number of iterations = %D\n", qriter);
 	lis_printf(comm,"QR    : elapsed time         = %e sec.\n", time);
 	lis_printf(comm,"QR    :   eigensolver        = %e sec.\n", time);
-	lis_printf(comm,"QR    : 2-norm of A(2,1)     = %E\n\n", qrerr);
+	lis_printf(comm,"QR    : 2-norm of A(2,1)     = %E\n\n", (LIS_REAL_OUT)qrerr);
 
 	free(a);
 	free(q);

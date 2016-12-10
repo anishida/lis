@@ -115,9 +115,9 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	for (i=0;i<nn;i++)
 	  {
 #ifdef _COMPLEX
-	    lis_printf(comm,"x(%D) = (%E, %E)\n", i, creal(x[i]), cimag(x[i]));
+	    lis_printf(comm,"x(%D) = (%E, %E)\n", i, (LIS_REAL_OUT)creal(x[i]), (LIS_REAL_OUT)cimag(x[i]));
 #else
-	    lis_printf(comm,"x(%D) = %E\n", i, x[i]);	    
+	    lis_printf(comm,"x(%D) = %E\n", i, (LIS_REAL_OUT)x[i]);	    
 #endif	    
 	  }
 	lis_printf(comm,"\n");
@@ -125,7 +125,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 
 	lis_printf(comm,"Direct: elapsed time         = %e sec.\n", time);
 	lis_printf(comm,"Direct:   linear solver      = %e sec.\n", time);
-	lis_printf(comm,"Direct: relative residual    = %E\n\n", resid_r/resid_b);
+	lis_printf(comm,"Direct: relative residual    = %E\n\n", (LIS_REAL_OUT)resid_r/resid_b);
 
 	free(a);
 	free(b);
