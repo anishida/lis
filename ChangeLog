@@ -1,3 +1,7 @@
+Version 1.7.16  December 11, 2016
+
+  - Added support for GCC libquadmath.
+
 Version 1.7.15  December 6, 2016
 
   - Fixed MPI bug in lis_error().
