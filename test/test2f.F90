@@ -197,10 +197,18 @@
       call lis_vector_duplicate(A,x,ierr)
       call CHKERR(ierr)
 
-#ifdef COMPLEX      
+#ifdef COMPLEX
+#ifdef LONG__DOUBLE      
+      call lis_vector_set_all((1.0q0,0.0q0),u,ierr)
+#else
       call lis_vector_set_all((1.0d0,0.0d0),u,ierr)
+#endif      
+#else
+#ifdef LONG__DOUBLE      
+      call lis_vector_set_all(1.0q0,u,ierr)
 #else
       call lis_vector_set_all(1.0d0,u,ierr)
+#endif      
 #endif      
       call lis_matvec(A,u,b,ierr)
 

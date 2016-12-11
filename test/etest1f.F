@@ -94,9 +94,17 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
       call lis_vector_duplicate(A,x,ierr)
 #ifdef COMPLEX
+#ifdef LONG__DOUBLE      
+      call lis_vector_set_all((1.0q0,0.0q0),x,ierr)
+#else
       call lis_vector_set_all((1.0d0,0.0d0),x,ierr)
+#endif      
+#else
+#ifdef LONG__DOUBLE      
+      call lis_vector_set_all(1.0q0,x,ierr)
 #else
       call lis_vector_set_all(1.0d0,x,ierr)
+#endif      
 #endif      
 
       call lis_esolver_create(esolver,ierr)

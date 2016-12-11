@@ -68,7 +68,17 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       call lis_matrix_set_size(A,ln,n,ierr)
       call lis_matrix_get_size(A,n,gn,ierr)
       call lis_matrix_get_range(A,is,ie,ierr)
-#ifdef COMPLEX      
+#ifdef COMPLEX
+#ifdef LONG__DOUBLE      
+      do i=is,ie-1
+        if( i>1  ) call lis_matrix_set_value(LIS_INS_VALUE,i,i-1,
+     .                                        (-1.0q0,0.0q0),A,ierr)
+        if( i<gn ) call lis_matrix_set_value(LIS_INS_VALUE,i,i+1,
+     .                                        (-1.0q0,0.0q0),A,ierr)
+        call lis_matrix_set_value(LIS_INS_VALUE,i,i,(2.0q0,0.0q0),
+     .                                        A,ierr)   
+      enddo
+#else
       do i=is,ie-1
         if( i>1  ) call lis_matrix_set_value(LIS_INS_VALUE,i,i-1,
      .                                        (-1.0d0,0.0d0),A,ierr)
@@ -76,6 +86,16 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      .                                        (-1.0d0,0.0d0),A,ierr)
         call lis_matrix_set_value(LIS_INS_VALUE,i,i,(2.0d0,0.0d0),
      .                                        A,ierr)   
+      enddo
+#endif      
+#else
+#ifdef LONG__DOUBLE      
+      do i=is,ie-1
+        if( i>1  ) call lis_matrix_set_value(LIS_INS_VALUE,i,i-1,-1.0q0,
+     .                                        A,ierr)
+        if( i<gn ) call lis_matrix_set_value(LIS_INS_VALUE,i,i+1,-1.0q0,
+     .                                        A,ierr)
+        call lis_matrix_set_value(LIS_INS_VALUE,i,i,2.0q0,A,ierr)   
       enddo
 #else
       do i=is,ie-1
@@ -86,16 +106,25 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         call lis_matrix_set_value(LIS_INS_VALUE,i,i,2.0d0,A,ierr)   
       enddo
 #endif      
+#endif      
       call lis_matrix_set_type(A,matrix_type,ierr)
       call lis_matrix_assemble(A,ierr)
       call lis_vector_duplicate(A,u,ierr)
       call lis_vector_duplicate(A,b,ierr)
       call lis_vector_duplicate(A,x,ierr)
 #ifdef COMPLEX
+#ifdef LONG__DOUBLE      
+      call lis_vector_set_all((1.0q0,0.0q0),u,ierr)
+#else
       call lis_vector_set_all((1.0d0,0.0d0),u,ierr)
+#endif      
+#else
+#ifdef LONG__DOUBLE      
+      call lis_vector_set_all(1.0q0,u,ierr)
 #else
       call lis_vector_set_all(1.0d0,u,ierr)
-#endif
+#endif      
+#endif      
       call lis_matvec(A,u,b,ierr)
       
       call lis_solver_create(solver,ierr)

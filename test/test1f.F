@@ -116,16 +116,32 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           stop
         elseif( rhs.eq.1 ) then
 #ifdef COMPLEX
+#ifdef LONG__DOUBLE      
+           call lis_vector_set_all((1.0q0,0.0q0),b,ierr)
+#else
            call lis_vector_set_all((1.0d0,0.0d0),b,ierr)
+#endif      
+#else
+#ifdef LONG__DOUBLE      
+           call lis_vector_set_all(1.0q0,b,ierr)
 #else
            call lis_vector_set_all(1.0d0,b,ierr)
-#endif           
+#endif      
+#endif      
         else
-#ifdef COMPLEX          
-          call lis_vector_set_all((1.0d0,0.0d0),u,ierr)
+#ifdef COMPLEX
+#ifdef LONG__DOUBLE      
+           call lis_vector_set_all((1.0q0,0.0q0),u,ierr)
 #else
-          call lis_vector_set_all(1.0d0,u,ierr)
-#endif          
+           call lis_vector_set_all((1.0d0,0.0d0),u,ierr)
+#endif      
+#else
+#ifdef LONG__DOUBLE      
+           call lis_vector_set_all(1.0q0,u,ierr)
+#else
+           call lis_vector_set_all(1.0d0,u,ierr)
+#endif      
+#endif      
           call lis_matvec(A,u,b,ierr)
         endif
       endif
