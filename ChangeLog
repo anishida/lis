@@ -1,6 +1,7 @@
 Version 1.7.16  December 11, 2016
 
   - Added support for GCC libquadmath.
+  - Fixed quad precision bugs in Fortran programs.
 
 Version 1.7.15  December 6, 2016
 
