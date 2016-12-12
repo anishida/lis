@@ -38,11 +38,7 @@
 MODULE queue_mod
   CONTAINS
   SUBROUTINE score_up(node, P_queue, node_index, n)
-#ifdef LONG__LONG
-    include 'precision_longlong.inc'
-#else
-    include 'precision.inc'
-#endif
+#include "precision.inc"
     INTEGER(kind=kint), intent(in) :: node,n
     INTEGER(kind=kint), DIMENSION(2,n),intent(inout) :: P_queue
     INTEGER(kind=kint), DIMENSION(:),intent(inout) :: node_index
@@ -76,11 +72,7 @@ MODULE queue_mod
 
   SUBROUTINE dequeue(node, P_queue, node_index,n)
     IMPLICIT NONE
-#ifdef LONG__LONG
-    include 'precision_longlong.inc'
-#else
-    include 'precision.inc'
-#endif
+#include "precision.inc"
 
     INTEGER(kind=kint),intent(in) :: node,n
     INTEGER(kind=kint),DIMENSION(2,n),intent(inout) :: P_queue
@@ -118,11 +110,7 @@ MODULE queue_mod
 
   SUBROUTINE dequeue_scoreup_Layer23(i, N, NP, queue_size, P_queue, node_index, & 
        &  aggregate_flags, node_record, NI, PNI, IAL, IAU)
-#ifdef LONG__LONG
-    include 'precision_longlong.inc'
-#else
-    include 'precision.inc'
-#endif
+#include "precision.inc"
     INTEGER(kind=kint), intent(in) :: i,N,NP,queue_size
     INTEGER(kind=kint), DIMENSION(2,N),   intent(inout) :: P_queue
     INTEGER(kind=kint), DIMENSION(:),     intent(inout) :: node_index

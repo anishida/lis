@@ -1233,11 +1233,7 @@ CONTAINS
       USE isort
       IMPLICIT NONE
       INCLUDE  'mpif.h'
-#ifdef LONG__LONG
-      include 'precision_longlong.inc'
-#else
-      include 'precision.inc'
-#endif
+#include "precision.inc"          
 
       INTEGER(kind=kint ), INTENT(in) :: SIZE,NEIBPETOT,NPROCS
       INTEGER(kind=kint ), INTENT(in) :: NEIBPE(:)
@@ -1979,11 +1975,7 @@ CONTAINS
   SUBROUTINE  DEBUG_BARRIER_PRINT(string, comm, my_rank)
     IMPLICIT NONE
     INCLUDE 'mpif.h'
-#ifdef LONG__LONG
-    include 'precision_longlong.inc'
-#else
-    include 'precision.inc'
-#endif
+#include "precision.inc"    
 
     CHARACTER(len=*), intent(in) :: string
     INTEGER(kind=kint), intent(in) :: comm, my_rank
@@ -2287,7 +2279,7 @@ CONTAINS
           DO row = 1, coarser_level_size
              DO colin = 1, TEMP_COLSIZE
                 col = Temp_CN(colin, row)
-                IF(col > row .AND. EPS < dabs(Temp_V(colin, row))) THEN
+                IF(col > row .AND. EPS < abs(Temp_V(colin, row))) THEN
                    count = count + 1
                    newINU(row) = newINU(row) + 1
                    IF(col < local_aggre_size) newINL(col + 1) = newINL(col + 1) + 1
@@ -2332,7 +2324,7 @@ CONTAINS
                    IF(row == col) THEN 
                       newD(row) = Temp_V(colin, row)
 
-                   ELSE IF(row < col .AND. EPS < dabs(Temp_V(colin,row))) THEN
+                   ELSE IF(row < col .AND. EPS < abs(Temp_V(colin,row))) THEN
                       !C upper part
                       n_upper = n_upper + 1
                       newAU(n_upper) = Temp_V(colin, row)
@@ -2358,9 +2350,9 @@ CONTAINS
              DO colin = 1, TEMP_COLSIZE
                 col = Temp_CN(colin, row)
                 IF(col > 0) then
-                   IF(col > row .AND. EPS < dabs(Temp_V(colin, row))) THEN
+                   IF(col > row .AND. EPS < abs(Temp_V(colin, row))) THEN
                       newINU(row) = newINU(row) + 1
-                   ELSE IF(col < row .AND. EPS < dabs(Temp_V(colin, row))) THEN
+                   ELSE IF(col < row .AND. EPS < abs(Temp_V(colin, row))) THEN
                       newINL(row) = newINL(row) + 1
                    END IF
                 end IF
@@ -2405,7 +2397,7 @@ CONTAINS
                 IF(col > 0) THEN
                    IF(row == col) THEN 
                       newD(row) = Temp_V(colin, row)
-                   ELSE IF(row < col .AND. EPS < dabs(Temp_V(colin, row))) THEN
+                   ELSE IF(row < col .AND. EPS < abs(Temp_V(colin, row))) THEN
                       !C upper part
                       n_upper = n_upper + 1
                       newAU(n_upper) = Temp_V(colin, row)
@@ -2414,7 +2406,7 @@ CONTAINS
                       if(col > coarser_level_size) then
                          comm_recv_node(col - coarser_level_size) = 1
                       end if
-                   ELSE IF(row > col .AND. EPS < dabs(Temp_V(colin, row))) THEN
+                   ELSE IF(row > col .AND. EPS < abs(Temp_V(colin, row))) THEN
                       !C lower part
                       n_lower = n_lower + 1
                       newAL(n_lower) = Temp_V(colin, row)
@@ -3378,7 +3370,7 @@ CONTAINS
        DO j=1,TEMP_COLSIZE
           col=Temp_CN(j,i)
 !!$          if(col>i)then
-          IF(col>i  .AND. EPS_COARSEST<dabs(Temp_V(j,i)))THEN
+          IF(col>i  .AND. EPS_COARSEST<abs(Temp_V(j,i)))THEN
 !!$          if(col>i  .and. -EPS_COARSEST>Temp_V(j,i))then
              !C(k,i)
              !C upper part
@@ -3401,7 +3393,7 @@ CONTAINS
     DO i=1,N
        DO j=1,TEMP_COLSIZE
           col=Temp_CN(j,i)
-          IF(col>i.AND. EPS_COARSEST<dabs(Temp_V(j,i)))THEN
+          IF(col>i.AND. EPS_COARSEST<abs(Temp_V(j,i)))THEN
 !!$          if(col>i.and. -EPS_COARSEST>Temp_V(j,i))then
              k=aptrs(1,i)+aptrs(2,i)
              aptrs(2,i)=aptrs(2,i)+1
@@ -3452,11 +3444,7 @@ CONTAINS
   
   SUBROUTINE left_looking_chorescky(lower_mat,N)
     IMPLICIT NONE
-#ifdef LONG__LONG
-    include 'precision_longlong.inc'
-#else
-    include 'precision.inc'
-#endif
+#include "precision.inc"        
     
     REAL(kind=kreal), INTENT(inout)   :: lower_mat(:)
     INTEGER(kind=kint), INTENT(in)    :: N
@@ -4548,7 +4536,7 @@ CONTAINS
 
           inod= IAL(i)+ZERO_ORIGIN
           t= AL(i)
-          IF(t*t > dabs(D(j)*D(inod)*theta*theta) .AND. D(j)*D(inod)*t<0) THEN
+          IF(t*t > abs(D(j)*D(inod)*theta*theta) .AND. D(j)*D(inod)*t<0) THEN
              nni=nni+1
              NI(nni)=i
           ELSE
@@ -4562,7 +4550,7 @@ CONTAINS
        DO i = isU, ieU
           inod = IAU(i) + ZERO_ORIGIN
           t = AU(i)
-          IF(t*t > dabs(D(j)*D(inod)*theta*theta) .AND. D(j)*D(inod)*t<0) THEN
+          IF(t*t > abs(D(j)*D(inod)*theta*theta) .AND. D(j)*D(inod)*t<0) THEN
              nni = nni + 1
              NI(nni) = i
           ELSE
@@ -4708,8 +4696,8 @@ CONTAINS
          tilde_D(r) = tilde_D(r) + tl
       ELSE
          tc = cord_A(k)
-         IF(tl * tl > dabs(D(r) * D(inod) * theta * theta) .AND. D(r) * D(inod) * tl < 0 .OR. &
-              & tc * tc > dabs(D(r) * D(inod) * theta * theta) .AND. D(r) * D(inod) * tc < 0) THEN
+         IF(tl * tl > abs(D(r) * D(inod) * theta * theta) .AND. D(r) * D(inod) * tl < 0 .OR. &
+              & tc * tc > abs(D(r) * D(inod) * theta * theta) .AND. D(r) * D(inod) * tc < 0) THEN
             nni = nni + 1
             NI(nni) = i
          ELSE

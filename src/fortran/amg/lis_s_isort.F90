@@ -33,11 +33,7 @@ module isort
 contains
   subroutine  qsorti(ord,N,A)
     implicit none
-#ifdef LONG__LONG
-    include 'precision_longlong.inc'
-#else
-    include 'precision.inc'
-#endif
+#include "precision.inc"
     integer(kind=kint) :: N
     integer(kind=kint),DIMENSION(N) ::ORD
     integer(kind=kint),DIMENSION(N) ::A
@@ -51,11 +47,7 @@ contains
 
       recursive subroutine qsort_rec(ord,N,A,l,h)
         implicit none
-#ifdef LONG__LONG
-    include 'precision_longlong.inc'
-#else
-    include 'precision.inc'
-#endif
+#include "precision.inc"
         integer(kind=kint) :: N,l,h
         integer(kind=kint),DIMENSION(N) ::ORD
         integer(kind=kint),DIMENSION(N) ::A

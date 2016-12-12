@@ -49,11 +49,7 @@ module solver_SR2
     
     implicit none
     include  'mpif.h'
-#ifdef LONG__LONG
-    include 'precision_longlong.inc'
-#else
-    include 'precision.inc'
-#endif
+#include "precision.inc"    
 
     ! ......................................................................
 
@@ -148,11 +144,7 @@ module solver_SR2
        &                  WS, WR, X, SOLVER_COMM, my_rank)
     implicit none
     include  'mpif.h'
-#ifdef LONG__LONG
-    include 'precision_longlong.inc'
-#else
-    include 'precision.inc'
-#endif
+#include "precision.inc"    
 
     ! ......................................................................
 
