@@ -105,11 +105,7 @@ CONTAINS
 
   subroutine clear_matrix_ssi_amg(LEVEL_NUM)
     IMPLICIT NONE
-#ifdef LONG__LONG
-    include 'precision_longlong.inc'
-#else
-    include 'precision.inc'
-#endif
+#include "precision.inc"
     integer(kind=kint) :: LEVEL_NUM
     
     call clear_matrix(LEVEL_NUM)
@@ -120,11 +116,7 @@ CONTAINS
   SUBROUTINE v_cycle_ssi_amg(B, X, TEMP, LEVEL_NUM, SOLVER_COMM, WS, WR, NP, WSIZE)
     IMPLICIT NONE
     include 'mpif.h'
-#ifdef LONG__LONG
-    include 'precision_longlong.inc'
-#else
-    include 'precision.inc'
-#endif
+#include "precision.inc"    
     INTEGER(kind=kint), intent(in) :: WSIZE, NP
     REAL   (kind=kreal) :: B(1:NP), X(1:NP), TEMP(1:NP), WS(1:WSIZE), WR(1:WSIZE)
     INTEGER(kind=kint), intent(in) :: LEVEL_NUM, SOLVER_COMM
@@ -265,7 +257,7 @@ CONTAINS
           END DO
           CALL MPI_REDUCE(R_norm,GR_norm,1,MPI_DOUBLE_PRECISION,MPI_SUM,0,SOLVER_COMM,ierr)
           if(my_rank==0) then
-             GR_norm = dsqrt(GR_norm)
+             GR_norm = sqrt(GR_norm)
              write(*,*) nth_lev, 'pre ',log10(GR_norm)
           end if
        end if
@@ -304,7 +296,7 @@ CONTAINS
           END DO
           CALL MPI_REDUCE(R_norm,GR_norm,1,MPI_DOUBLE_PRECISION,MPI_SUM,0,SOLVER_COMM,ierr)
           if(my_rank==0) then
-             GR_norm = dsqrt(GR_norm)
+             GR_norm = sqrt(GR_norm)
              write(*,*) nth_lev,'post',log10(GR_norm)
           end if
        END IF
@@ -459,7 +451,7 @@ CONTAINS
        
        CALL MPI_REDUCE(R_norm,GR_norm,1,MPI_DOUBLE_PRECISION,MPI_SUM,0,SOLVER_COMM,ierr)
        if(my_rank==0) then
-          GR_norm = dsqrt(GR_norm)
+          GR_norm = sqrt(GR_norm)
           write(*,*) nth_lev,'DIRECT',log10(GR_norm)
        end if
     end if
@@ -552,7 +544,7 @@ CONTAINS
 
           CALL MPI_REDUCE(R_norm,GR_norm,1,MPI_DOUBLE_PRECISION,MPI_SUM,0,SOLVER_COMM,ierr)
           if(my_rank==0) then
-             GR_norm = dsqrt(GR_norm)
+             GR_norm = sqrt(GR_norm)
              write(*,*) nth_lev, 'pre ',log10(GR_norm)
           end if
        end if
@@ -607,11 +599,7 @@ CONTAINS
 
   SUBROUTINE ll_slv(lower_mat, b, N)
     IMPLICIT NONE
-#ifdef LONG__LONG
-    include 'precision_longlong.inc'
-#else
-    include 'precision.inc'
-#endif
+#include "precision.inc"    
     REAL(kind=kreal),   intent(in) :: lower_mat(:)
     REAL(kind=kreal),   intent(out):: b(:)
     INTEGER(kind=kint), intent(in) :: N
@@ -840,11 +828,7 @@ CONTAINS
   SUBROUTINE matrix_arrange (N,NP,D,AL,INL,IAL,AU,INU,IAU)
 
     IMPLICIT NONE
-#ifdef LONG__LONG
-    include 'precision_longlong.inc'
-#else
-    include 'precision.inc'
-#endif
+#include "precision.inc"    
 
     INTEGER(kind=kint ), intent(in)    :: N,NP
     REAL   (kind=kreal), intent(inout),DIMENSION(:) :: D
@@ -1196,7 +1180,7 @@ CONTAINS
       call MPI_allREDUCE (DNRM20, DNRM2, 1, MPI_DOUBLE_PRECISION,       &
      &                    MPI_SUM, SOLVER_COMM, ierr)
 
-      RESID= dsqrt(DNRM2/BNRM2)
+      RESID= sqrt(DNRM2/BNRM2)
 
 
 #ifdef PRINT_REZ

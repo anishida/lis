@@ -44,12 +44,8 @@ MODULE hash_mod
   contains
     SUBROUTINE hash_zero(hash_size, hash_array, val, position, id)
     implicit none
-    
-#ifdef LONG__LONG
-    include 'precision_longlong.inc'
-#else
-    include 'precision.inc'
-#endif
+
+#include "precision.inc"              
     INTEGER(kind=kint), intent(in)  :: hash_size, val
     INTEGER(kind=kint), intent(in)  :: hash_array(1:hash_size)
     CHARACTER(len=*), intent(in) :: id
@@ -86,11 +82,7 @@ MODULE hash_mod
 
   SUBROUTINE hash(hash_size, hash_array, val, position, id)
     implicit none
-#ifdef LONG__LONG
-    include 'precision_longlong.inc'
-#else
-    include 'precision.inc'
-#endif
+#include "precision.inc"    
     
     INTEGER(kind=kint), intent(in)  :: hash_size, val, hash_array(:)
     CHARACTER(len=*), intent(in) :: id
