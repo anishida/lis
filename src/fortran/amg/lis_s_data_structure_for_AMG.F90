@@ -29,11 +29,7 @@
 
 MODULE data_structure_for_AMG
   IMPLICIT NONE
-#ifdef LONG__LONG
-  include 'precision_longlong.inc'
-#else
-  include 'precision.inc'
-#endif
+#include "precision.inc"
   
   INTEGER, parameter :: SWITCH_SIZE    = 1700
   INTEGER, parameter :: MAX_LEVEL_SIZE = 10

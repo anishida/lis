@@ -349,11 +349,7 @@ CONTAINS
   SUBROUTINE matrix_arrange (N,NP,D,AL,INL,IAL,AU,INU,IAU)
 
     IMPLICIT NONE
-#ifdef LONG__LONG
-    include 'precision_longlong.inc'
-#else
-    include 'precision.inc'
-#endif
+#include "precision.inc"
 
     INTEGER(kind=kint ), intent(in)    :: N,NP
     REAL   (kind=kreal), intent(inout),DIMENSION(:) :: D
@@ -628,7 +624,7 @@ CONTAINS
 
 
        DNRM2=DNRM20
-       RESID= dsqrt(DNRM2/BNRM2)
+       RESID= sqrt(DNRM2/BNRM2)
 
 
 !!$#ifdef PRINT_REZ

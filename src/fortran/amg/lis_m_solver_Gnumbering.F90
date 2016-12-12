@@ -50,11 +50,7 @@ CONTAINS
     
     IMPLICIT NONE
     INCLUDE  'mpif.h'
-#ifdef LONG__LONG
-    include 'precision_longlong.inc'
-#else
-    include 'precision.inc'
-#endif
+#include "precision.inc"    
 
     INTEGER(kind=kint), INTENT(in) ::  N, dim
     INTEGER(kind=kint), INTENT(in) ::  S
@@ -294,7 +290,7 @@ CONTAINS
                 DO l=1,Temp_P_row_size(k)
                    IF(LG_vector(Temp_P(l,k) % column) == col) THEN
                       v1=Temp_P(l,k)%value;v2=recv_buf_v(haba*(j-1)+m)
-                      IF(dabs(v1-v2)>EPS) THEN
+                      IF(abs(v1-v2)>EPS) THEN
                          WRITE(*,*) my_rank,":",k,Temp_P(l,k) % column,v1,v2
                       END IF
                       EXIT

@@ -812,7 +812,7 @@ CONTAINS
 !!$       DO row = 1, coarser_level_size
 !!$          DO colin = 1, TEMP_COLSIZE
 !!$             col = Temp_CN(colin, row)
-!!$             IF(col > 0 .AND. EPS > dabs(Temp_V(colin,row))) THEN
+!!$             IF(col > 0 .AND. EPS > abs(Temp_V(colin,row))) THEN
 !!$                TEMP_CN(colin, row) = 0
 !!$                Temp_N(row) = Temp_N(row) - 1 
 !!$                Temp_V(colin, row) = 0
@@ -945,7 +945,7 @@ CONTAINS
        DO row = 1, coarser_level_size
           DO colin = 1, TEMP_COLSIZE
              col = Temp_CN(colin, row)
-             IF(col > row .AND. EPS < dabs(Temp_V(colin, row))) THEN
+             IF(col > row .AND. EPS < abs(Temp_V(colin, row))) THEN
                 count = count + 1
                 newINU(row) = newINU(row) + 1
                 IF(col < local_aggre_size) newINL(col + 1) = newINL(col + 1) + 1
@@ -985,7 +985,7 @@ CONTAINS
              IF(col > 0) THEN
                 IF(row == col) THEN 
                    newD(row) = Temp_V(colin, row)
-                ELSE IF(row < col .AND. EPS < dabs(Temp_V(colin, row))) THEN
+                ELSE IF(row < col .AND. EPS < abs(Temp_V(colin, row))) THEN
                    !C upper part
                    n_upper = n_upper + 1
                    newAU(n_upper) = Temp_V(colin, row)
@@ -1306,7 +1306,7 @@ CONTAINS
           inod= IAL(i)+ZERO_ORIGIN
           t= AL(i)
 
-          IF(t*t > dabs(D(j)*D(inod)*theta*theta) .AND. D(j)*D(inod)*t<0) THEN
+          IF(t*t > abs(D(j)*D(inod)*theta*theta) .AND. D(j)*D(inod)*t<0) THEN
              nni=nni+1
              NI(nni)=i
           ELSE
@@ -1325,7 +1325,7 @@ CONTAINS
        DO i = isU, ieU
           inod= IAU(i)+ZERO_ORIGIN
           t=AU(i)
-          IF(t*t > dabs(D(j)*D(inod)*theta*theta) .AND. D(j)*D(inod)*t<0) THEN
+          IF(t*t > abs(D(j)*D(inod)*theta*theta) .AND. D(j)*D(inod)*t<0) THEN
              nni=nni+1
              NI(nni)=i
           ELSE
@@ -1418,8 +1418,8 @@ CONTAINS
           IF(k > ieU) STOP "error in neighbor()"
           tu = AU(k)
           
-          IF(tl * tl > dabs(D(j) * D(inod) * theta * theta) .AND. D(j) * D(inod) * tl < 0 .OR. &
-               & tu * tu > dabs(D(j) * D(inod) * theta * theta) .AND. D(j) * D(inod) * tu < 0) THEN
+          IF(tl * tl > abs(D(j) * D(inod) * theta * theta) .AND. D(j) * D(inod) * tl < 0 .OR. &
+               & tu * tu > abs(D(j) * D(inod) * theta * theta) .AND. D(j) * D(inod) * tu < 0) THEN
              check_U(k) = 1
              nni = nni + 1
              NI(nni) = i

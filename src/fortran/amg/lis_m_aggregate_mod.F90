@@ -1571,11 +1571,7 @@ CONTAINS
   SUBROUTINE assign_aggregate_table(aggregate_number_in_table, aggregate_table_array, &
        & aggregate_table_size, global_nd, local_nd, neib, NPROCS, size_of_aggregates)
     implicit NONE
-#ifdef LONG__LONG
-    include 'precision_longlong.inc'
-#else
-    include 'precision.inc'
-#endif
+#include "precision.inc"
     INTEGER(kind=kint), intent(in)    :: global_nd, NPROCS, aggregate_table_size, neib
     INTEGER(kind=kint), intent(inout) :: local_nd
 !!$    INTEGER(kind=kint), intent(inout) :: aggregate_number_in_table(NPROCS), size_of_aggregates
