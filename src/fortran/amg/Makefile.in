@@ -247,7 +247,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-EXTRA_DIST = precision.inc precision_longlong.inc
+EXTRA_DIST = precision.inc
 noinst_LTLIBRARIES = libsaamg.la
 @ENABLE_MPI_FALSE@libsaamg_la_SOURCES = lis_s_data_structure_for_AMG.F90 \
 @ENABLE_MPI_FALSE@  lis_s_isort.F90 \

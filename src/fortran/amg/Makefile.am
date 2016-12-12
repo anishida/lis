@@ -1,4 +1,4 @@
-EXTRA_DIST = precision.inc precision_longlong.inc
+EXTRA_DIST = precision.inc
 noinst_LTLIBRARIES = libsaamg.la
 
 if ENABLE_MPI
