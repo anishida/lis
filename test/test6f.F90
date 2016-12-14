@@ -140,9 +140,10 @@
          nnz = nnz + 1
       end do
 #endif      
-      
-      write(*,*) 'matrix size =', nn, 'x', nn, '(', nnz, 'nonzero entries)'
-      write(*,*)
+      if( my_rank.eq.0 ) then
+         write(*,*) 'matrix size =', nn, 'x', nn, '(', nnz, 'nonzero entries)'
+         write(*,*)
+      end if
 
 #ifdef COMPLEX      
       call lis_array_set_all(nn,(1.0d0,0.0d0),u,ierr)
@@ -164,10 +165,12 @@
 #endif      
       call lis_array_nrm2(nn,u,resid_r,ierr)
       call lis_array_nrm2(nn,b,resid_b,ierr)
-      
-      write(*,*) 'Direct: elapsed time         = ',time
-      write(*,*) 'Direct:   linear solver      = ',time
-      write(*,*) 'Direct: relative residual    = ',resid_r/resid_b
+
+      if( my_rank.eq.0 ) then
+         write(*,*) 'Direct: elapsed time         = ',time
+         write(*,*) 'Direct:   linear solver      = ',time
+         write(*,*) 'Direct: relative residual    = ',resid_r/resid_b
+      end if
 
       deallocate(a)
       deallocate(b)
