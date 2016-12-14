@@ -41,7 +41,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       LIS_INTEGER nsol,iter_double,iter_quad
       real*8 time,itime,ptime,p_c_time,p_i_time
       LIS_REAL resid
-      character*30 nchar,esolvername
+      character*20 nchar,esolvername
       integer*4 iargc
       
       call lis_initialize(ierr)
