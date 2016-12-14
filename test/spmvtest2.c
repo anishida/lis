@@ -112,7 +112,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
     }
 
   lis_printf(comm,"\n");
-  lis_printf(comm,"number of processes = %D\n",nprocs);
+  lis_printf(comm,"number of processes = %d\n",nprocs);
 
 #ifdef _OPENMP
   nthreads = omp_get_num_procs();
