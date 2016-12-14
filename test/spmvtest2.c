@@ -53,8 +53,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
   LIS_MATRIX A,A0;
   LIS_VECTOR b,x;
   LIS_SCALAR *value;
-  LIS_INT nprocs,my_rank;
-  int int_nprocs,int_my_rank;
+  int nprocs,my_rank;
   LIS_INT nthreads,maxthreads;
   LIS_INT gn,nnz;
   LIS_INT i,ii,j,jj,ctr,np;
@@ -73,10 +72,8 @@ LIS_INT main(LIS_INT argc, char* argv[])
   comm = LIS_COMM_WORLD;
     
 #ifdef USE_MPI
-  MPI_Comm_size(comm,&int_nprocs);
-  MPI_Comm_rank(comm,&int_my_rank);
-  nprocs = int_nprocs;
-  my_rank = int_my_rank;
+  MPI_Comm_size(comm,&nprocs);
+  MPI_Comm_rank(comm,&my_rank);
 #else
   nprocs  = 1;
   my_rank = 0;

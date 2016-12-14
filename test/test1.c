@@ -47,8 +47,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	LIS_MATRIX A0,A;
 	LIS_VECTOR x,b,u;
 	LIS_SOLVER solver;
-	LIS_INT	nprocs,my_rank;
-	int int_nprocs,int_my_rank;
+	int nprocs,my_rank;
 	LIS_INT nsol,rhs,len;
 	LIS_INT	err,iter,iter_double,iter_quad;
 	double time,itime,ptime,p_c_time,p_i_time;
@@ -62,10 +61,8 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	comm = LIS_COMM_WORLD;
 
 	#ifdef USE_MPI
-		MPI_Comm_size(comm,&int_nprocs);
-		MPI_Comm_rank(comm,&int_my_rank);
-		nprocs = int_nprocs;
-		my_rank = int_my_rank;
+		MPI_Comm_size(comm,&nprocs);
+		MPI_Comm_rank(comm,&my_rank);
 	#else
 		nprocs  = 1;
 		my_rank = 0;

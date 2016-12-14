@@ -31,7 +31,7 @@
       LIS_VECTOR :: b,x,u
       LIS_SOLVER :: solver
       LIS_INTEGER :: ia,ierr
-      LIS_INTEGER :: nprocs,my_rank
+      integer*4 :: nprocs,my_rank
       LIS_INTEGER :: matrix_type,comm
       LIS_INTEGER :: omp_get_num_procs,omp_get_max_threads
       LIS_INTEGER :: m,n,nn,nnz,innz

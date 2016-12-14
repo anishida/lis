@@ -36,7 +36,6 @@
 #endif
 
 #ifdef LONG__DOUBLE
-#define dabs(x) qabs(x)
 #ifdef COMPLEX
 #define LIS_SCALAR complex*32
 #else

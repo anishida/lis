@@ -45,8 +45,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
     LIS_Comm comm;
     LIS_INT err,nnz,is,ie;
     LIS_INT l,m,n,nn,i,j,k,ii,jj,kk,ctr;
-    LIS_INT nprocs,mtype,my_rank;
-    int int_nprocs,int_my_rank;
+    int nprocs,mtype,my_rank;
     LIS_INT nesol;
     LIS_MATRIX A,A0,B;
     LIS_VECTOR x,y,z,w;
@@ -67,10 +66,8 @@ LIS_INT main(LIS_INT argc, char* argv[])
     comm = LIS_COMM_WORLD;
 
 #ifdef USE_MPI
-    MPI_Comm_size(comm,&int_nprocs);
-    MPI_Comm_rank(comm,&int_my_rank);
-    nprocs = int_nprocs;
-    my_rank = int_my_rank;
+    MPI_Comm_size(comm,&nprocs);
+    MPI_Comm_rank(comm,&my_rank);
 #else
     nprocs  = 1;
     my_rank = 0;

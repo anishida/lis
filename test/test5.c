@@ -56,8 +56,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	LIS_SOLVER solver;
 	LIS_INT	k,n,gn,ii,jj;
 	LIS_INT	is,ie;
-	LIS_INT	nprocs,my_rank;
-	int int_nprocs,int_my_rank;
+	int nprocs,my_rank;
 	LIS_INT	nsol;
 	LIS_INT	err,iter,iter_double,iter_quad;
 	double time,itime,ptime,p_c_time,p_i_time;
@@ -74,10 +73,8 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	comm = LIS_COMM_WORLD;
 
 	#ifdef USE_MPI
-		MPI_Comm_size(comm,&int_nprocs);
-		MPI_Comm_rank(comm,&int_my_rank);
-		nprocs = int_nprocs;
-		my_rank = int_my_rank;
+		MPI_Comm_size(comm,&nprocs);
+		MPI_Comm_rank(comm,&my_rank);
 	#else
 		nprocs  = 1;
 		my_rank = 0;
@@ -105,7 +102,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	lis_printf(comm,"number of threads = %d\n",omp_get_max_threads());
 #endif
 		
-	lis_printf(comm,"n = %D, gamma = %f\n\n",gn,gamma);
+	lis_printf(comm,"n = %D, gamma = %F\n\n",gn,gamma);
 		
 	/* create matrix and vectors */
 	err = lis_matrix_create(comm,&A); CHKERR(err);

@@ -31,7 +31,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       
 #include "lisf.h"
 
-      LIS_INTEGER my_rank,nprocs
+      integer*4 my_rank,nprocs
       LIS_INTEGER matrix_type,comm
       LIS_INTEGER omp_get_num_procs,omp_get_max_threads
       LIS_INTEGER i,n,gn,ln,is,ie,iter,ierr
