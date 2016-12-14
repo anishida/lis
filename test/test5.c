@@ -102,7 +102,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	lis_printf(comm,"number of threads = %d\n",omp_get_max_threads());
 #endif
 		
-	lis_printf(comm,"n = %D, gamma = %f\n\n",gn,gamma);
+	lis_printf(comm,"n = %D, gamma = %F\n\n",gn,gamma);
 		
 	/* create matrix and vectors */
 	err = lis_matrix_create(comm,&A); CHKERR(err);
