@@ -36,7 +36,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       LIS_VECTOR x
       LIS_REAL evalue0
       LIS_ESOLVER esolver
-      LIS_INTEGER my_rank,nprocs,comm
+      integer*4 my_rank,nprocs,comm
       LIS_INTEGER matrix_type
       LIS_INTEGER nsol,iter_double,iter_quad
       real*8 time,itime,ptime,p_c_time,p_i_time
