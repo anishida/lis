@@ -1,3 +1,7 @@
+Version 1.7.17  December 14, 2016
+
+  - Fixed type related MPI bugs in Fortran programs.
+
 Version 1.7.16  December 11, 2016
 
   - Added support for GCC libquadmath.
