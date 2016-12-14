@@ -29,7 +29,6 @@
 
       LIS_Comm comm
       LIS_SCALAR,allocatable :: a(:),x(:),b(:),u(:),w(:)
-      LIS_INTEGER my_rank,nprocs      
       LIS_INTEGER :: m,n,nn
       LIS_INTEGER :: i,j,ii,jj,nnz
       LIS_INTEGER :: ia,ierr
@@ -42,20 +41,10 @@
 
       comm = LIS_COMM_WORLD
 
-#ifdef USE_MPI
-      call MPI_Comm_size(comm,nprocs,ierr)
-      call MPI_Comm_rank(comm,my_rank,ierr)
-#else
-      nprocs  = 1
-      my_rank = 0
-#endif
-
       ia = iargc()
       if( ia.lt.2 ) then
-         if( my_rank.eq.0 ) then         
-            write(*,*) 'Usage: test6f m n'
-            call lis_finalize(ierr)
-         endif
+         write(*,*) 'Usage: test6f m n'
+         call lis_finalize(ierr)
          stop
       end if
 
@@ -140,10 +129,8 @@
          nnz = nnz + 1
       end do
 #endif      
-      if( my_rank.eq.0 ) then
-         write(*,*) 'matrix size =', nn, 'x', nn, '(', nnz, 'nonzero entries)'
-         write(*,*)
-      end if
+      write(*,*) 'matrix size =', nn, 'x', nn, '(', nnz, 'nonzero entries)'
+      write(*,*)
 
 #ifdef COMPLEX      
       call lis_array_set_all(nn,(1.0d0,0.0d0),u,ierr)
@@ -166,11 +153,9 @@
       call lis_array_nrm2(nn,u,resid_r,ierr)
       call lis_array_nrm2(nn,b,resid_b,ierr)
 
-      if( my_rank.eq.0 ) then
-         write(*,*) 'Direct: elapsed time         = ',time
-         write(*,*) 'Direct:   linear solver      = ',time
-         write(*,*) 'Direct: relative residual    = ',resid_r/resid_b
-      end if
+      write(*,*) 'Direct: elapsed time         = ',time
+      write(*,*) 'Direct:   linear solver      = ',time
+      write(*,*) 'Direct: relative residual    = ',resid_r/resid_b
 
       deallocate(a)
       deallocate(b)
