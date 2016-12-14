@@ -44,7 +44,8 @@ LIS_INT main(LIS_INT argc, char* argv[])
 {
     LIS_Comm comm;
     LIS_INT err,i,j,m,n,nnz,is,ie,nn,ii,jj,ctr;
-    LIS nprocs,mtype,my_rank;
+    int nprocs,my_rank;
+    LIS_INT mtype;
     LIS_INT nesol;
     LIS_MATRIX A,A0;
     LIS_VECTOR x;
