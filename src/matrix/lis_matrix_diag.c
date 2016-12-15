@@ -92,8 +92,7 @@ LIS_INT lis_matrix_diag_check(LIS_MATRIX_DIAG D, LIS_INT level)
 #define __FUNC__ "lis_matrix_diag_create"
 LIS_INT lis_matrix_diag_create(LIS_INT local_n, LIS_INT global_n, LIS_Comm comm, LIS_MATRIX_DIAG *D)
 {
-	LIS_INT nprocs,my_rank;
-	int int_nprocs,int_my_rank;
+	int nprocs,my_rank;
 	LIS_INT is,ie;
 	LIS_INT *ranges;
 	#ifdef USE_MPI
@@ -129,10 +128,8 @@ LIS_INT lis_matrix_diag_create(LIS_INT local_n, LIS_INT global_n, LIS_Comm comm,
 	lis_matrix_diag_init(D);
 
 	#ifdef USE_MPI
-		MPI_Comm_size(comm,&int_nprocs);
-		MPI_Comm_rank(comm,&int_my_rank);
-		nprocs = int_nprocs;
-		my_rank = int_my_rank;
+		MPI_Comm_size(comm,&nprocs);
+		MPI_Comm_rank(comm,&my_rank);
 		ranges = (LIS_INT *)lis_malloc( (nprocs+1)*sizeof(LIS_INT),"lis_matrix_diag_create::ranges" );
 		if( ranges==NULL )
 		{

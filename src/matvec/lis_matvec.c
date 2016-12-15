@@ -354,8 +354,7 @@ LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 #define __FUNC__ "lis_matvec_optimize"
 LIS_INT lis_matvec_optimize(LIS_MATRIX A, LIS_INT *matrix_type_maxperf)
 {
-  LIS_INT	   nprocs,my_rank;
-  int    	   int_nprocs,int_my_rank;
+  int    	   nprocs,my_rank;
   LIS_INT	   err,iter,i,matrix_type,ss,se;
   double	   time,time2,convtime;
   LIS_REAL         val;
@@ -367,10 +366,8 @@ LIS_INT lis_matvec_optimize(LIS_MATRIX A, LIS_INT *matrix_type_maxperf)
 	LIS_DEBUG_FUNC_IN;
 
 #ifdef USE_MPI
-	MPI_Comm_size(MPI_COMM_WORLD,&int_nprocs);
-	MPI_Comm_rank(MPI_COMM_WORLD,&int_my_rank);
-	nprocs = int_nprocs;
-	my_rank = int_my_rank;
+	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+	MPI_Comm_rank(MPI_COMM_WORLD,&my_rank);
 #else
 	nprocs  = 1;
 	my_rank = 0;
