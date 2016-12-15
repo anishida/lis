@@ -325,12 +325,12 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	{
 	  lis_printf(comm,"Subspace: mode number          = %D\n", j-1);
 #ifdef _COMPLEX	  
-	  lis_printf(comm,"Subspace: eigenvalue           = (%E, %E)\n", (LIS_REAL_OUT)creal(esolver->evalue[j-1]), (LIS_REAL_OUT)cimag(esolver->evalue[j-1]));
+	  lis_printf(comm,"Subspace: eigenvalue           = (%e, %e)\n", (double)creal(esolver->evalue[j-1]), (double)cimag(esolver->evalue[j-1]));
 #else
-	  lis_printf(comm,"Subspace: eigenvalue           = %E\n", (LIS_REAL_OUT)esolver->evalue[j-1]);
+	  lis_printf(comm,"Subspace: eigenvalue           = %e\n", (double)esolver->evalue[j-1]);
 #endif	  
 	  lis_printf(comm,"Subspace: number of iterations = %D\n",iter);
-	  lis_printf(comm,"Subspace: relative residual    = %E\n\n",(LIS_REAL_OUT)resid);
+	  lis_printf(comm,"Subspace: relative residual    = %e\n\n",(double)resid);
 	}
     }
   
@@ -659,12 +659,12 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	{
 	  lis_printf(comm,"Subspace: mode number          = %D\n", j-1);
 #ifdef _COMPLEX	  
-	  lis_printf(comm,"Subspace: eigenvalue           = (%E, %E)\n", (LIS_REAL_OUT)creal(esolver->evalue[j-1]), (LIS_REAL_OUT)cimag(esolver->evalue[j-1]));
+	  lis_printf(comm,"Subspace: eigenvalue           = (%e, %e)\n", (double)creal(esolver->evalue[j-1]), (double)cimag(esolver->evalue[j-1]));
 #else
-	  lis_printf(comm,"Subspace: eigenvalue           = %E\n", (LIS_REAL_OUT)esolver->evalue[j-1]);
+	  lis_printf(comm,"Subspace: eigenvalue           = %e\n", (double)esolver->evalue[j-1]);
 #endif	  
 	  lis_printf(comm,"Subspace: number of iterations = %D\n",iter);
-	  lis_printf(comm,"Subspace: relative residual    = %E\n\n",(LIS_REAL_OUT)resid);
+	  lis_printf(comm,"Subspace: relative residual    = %e\n\n",(double)resid);
 	}
     }
   

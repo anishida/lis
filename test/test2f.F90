@@ -39,6 +39,7 @@
       LIS_INTEGER :: is,ie
       LIS_INTEGER,allocatable :: ptr(:),index(:)
       LIS_SCALAR,allocatable :: value(:)
+      LIS_SCALAR :: one=1.0d0
       LIS_INTEGER :: nsol,iter,iter_double,iter_quad
       real*8 :: time,itime,ptime,p_c_time,p_i_time
       LIS_REAL :: resid
@@ -197,19 +198,7 @@
       call lis_vector_duplicate(A,x,ierr)
       call CHKERR(ierr)
 
-#ifdef COMPLEX
-#ifdef LONG__DOUBLE      
-      call lis_vector_set_all((1.0q0,0.0q0),u,ierr)
-#else
-      call lis_vector_set_all((1.0d0,0.0d0),u,ierr)
-#endif      
-#else
-#ifdef LONG__DOUBLE      
-      call lis_vector_set_all(1.0q0,u,ierr)
-#else
-      call lis_vector_set_all(1.0d0,u,ierr)
-#endif      
-#endif      
+      call lis_vector_set_all(one,u,ierr)      
       call lis_matvec(A,u,b,ierr)
 
       call lis_solver_create(solver,ierr)

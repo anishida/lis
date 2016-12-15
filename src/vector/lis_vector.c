@@ -870,31 +870,15 @@ LIS_INT lis_vector_print(LIS_VECTOR x)
 				if( x->origin ) ii++;
 #ifdef _COMPLEX
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-				printf("%6lld  (Le, %Le)\n",ii,(LIS_REAL_OUT)creal(x->value[i]),(LIS_REAL_OUT)cimag(x->value[i]));
+				printf("%6lld  (%e, %e)\n",ii,(double)creal(x->value[i]),(double)cimag(x->value[i]));
 #else
-				printf("%6lld  (%e, %e)\n",ii,(LIS_REAL_OUT)creal(x->value[i]),(LIS_REAL_OUT)cimag(x->value[i]));
-#endif
-#else
-#ifdef _LONG__DOUBLE
-				printf("%6d  (%Le, %Le)\n",ii,(LIS_REAL_OUT)creal(x->value[i]),(LIS_REAL_OUT)cimag(x->value[i]));
-#else
-				printf("%6d  (%e, %e)\n",ii,(LIS_REAL_OUT)creal(x->value[i]),(LIS_REAL_OUT)cimag(x->value[i]));
-#endif
+				printf("%6d  (%e, %e)\n",ii,(double)creal(x->value[i]),(double)cimag(x->value[i]));
 #endif
 #else
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-				printf("%6lld  %Le\n",ii,(LIS_REAL_OUT)x->value[i]);
+				printf("%6lld  %e\n",ii,(double)x->value[i]);
 #else
-				printf("%6lld  %e\n",ii,(LIS_REAL_OUT)x->value[i]);
-#endif
-#else
-#ifdef _LONG__DOUBLE
-				printf("%6d  %Le\n",ii,(LIS_REAL_OUT)x->value[i]);
-#else
-				printf("%6d  %e\n",ii,(LIS_REAL_OUT)x->value[i]);
-#endif
+				printf("%6d  %e\n",ii,(double)x->value[i]);
 #endif
 #endif				
 			}
@@ -918,31 +902,15 @@ LIS_INT lis_vector_print(LIS_VECTOR x)
 		{
 #ifdef _COMPLEX
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-			printf("%6lld  (%Le, %Le)\n",ii,(LIS_REAL_OUT)creal(x->value[i]),(LIS_REAL_OUT)cimag(x->value[i]));
+			printf("%6lld  (%e, %e)\n",ii,(double)creal(x->value[i]),(double)cimag(x->value[i]));
 #else
-			printf("%6lld  (%e, %e)\n",ii,(LIS_REAL_OUT)creal(x->value[i]),(LIS_REAL_OUT)cimag(x->value[i]));
-#endif
-#else
-#ifdef _LONG__DOUBLE
-			printf("%6d  (%Le, %Le)\n",ii,(LIS_REAL_OUT)creal(x->value[i]),(LIS_REAL_OUT)cimag(x->value[i]));
-#else
-			printf("%6d  (%e, %e)\n",ii,(LIS_REAL_OUT)creal(x->value[i]),(LIS_REAL_OUT)cimag(x->value[i]));
-#endif
+			printf("%6d  (%e, %e)\n",ii,(double)creal(x->value[i]),(double)cimag(x->value[i]));
 #endif
 #else		  
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-			printf("%6lld  %Le\n",ii,(LIS_REAL_OUT)x->value[i]);
+			printf("%6lld  %e\n",ii,(double)x->value[i]);
 #else
-			printf("%6lld  %e\n",ii,(LIS_REAL_OUT)x->value[i]);
-#endif
-#else
-#ifdef _LONG__DOUBLE
-			printf("%6d  %Le\n",ii,(LIS_REAL_OUT)x->value[i]);
-#else
-			printf("%6d  %e\n",ii,(LIS_REAL_OUT)x->value[i]);
-#endif
+			printf("%6d  %e\n",ii,(double)x->value[i]);
 #endif
 #endif			
 		}
@@ -950,31 +918,15 @@ LIS_INT lis_vector_print(LIS_VECTOR x)
 		{
 #ifdef _COMPLEX		  
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-			printf("%6lld  %Le,%Le\n",ii,creal(x->value[i]),x->value_lo[i]);
-#else
 			printf("%6lld  %e,%e\n",ii,creal(x->value[i]),x->value_lo[i]);
-#endif
-#else
-#ifdef _LONG__DOUBLE
-			printf("%6d  %Le,%Le\n",ii,creal(x->value[i]),x->value_lo[i]);
 #else
 			printf("%6d  %e,%e\n",ii,creal(x->value[i]),x->value_lo[i]);
 #endif
-#endif
 #else
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-			printf("%6lld  %Le,%Le\n",ii,x->value[i],x->value_lo[i]);
-#else
 			printf("%6lld  %e,%e\n",ii,x->value[i],x->value_lo[i]);
-#endif
-#else
-#ifdef _LONG__DOUBLE
-			printf("%6d  %Le,%Le\n",ii,x->value[i],x->value_lo[i]);
 #else
 			printf("%6d  %e,%e\n",ii,x->value[i],x->value_lo[i]);
-#endif
 #endif
 #endif			
 		}

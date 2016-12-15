@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"1.7.17"
+#define LIS_VERSION	"1.7.18"
 /**************************************/
 #include <stdio.h>
 #ifdef HAVE_COMPLEX_H
@@ -305,9 +305,8 @@ typedef long double LIS_COMPLEX[2];
 #endif
 #ifdef _COMPLEX
 #ifdef HAVE_QUADMATH_H
-typedef __float128 LIS_REAL;
 typedef __complex128 LIS_SCALAR;
-typedef long double LIS_REAL_OUT;
+typedef __float128 LIS_REAL;
 #define creal(x) crealq(x)
 #define cimag(x) cimagq(x)
 #define acos(x) cacosq(x)
@@ -332,9 +331,8 @@ typedef long double LIS_REAL_OUT;
 #define LIS_MPI_SCALAR MPI_C_LONG_DOUBLE_COMPLEX
 #define LIS_MPI_REAL MPI_LONG_DOUBLE
 #else
-typedef long double LIS_REAL;
 typedef long double complex LIS_SCALAR;
-typedef long double LIS_REAL_OUT;
+typedef long double LIS_REAL;
 #define creal(x) creall(x)
 #define cimag(x) cimagl(x)
 #define acos(x) cacosl(x)
@@ -361,9 +359,8 @@ typedef long double LIS_REAL_OUT;
 #endif
 #else
 #ifdef HAVE_QUADMATH_H
-typedef __float128 LIS_REAL;  
 typedef __float128 LIS_SCALAR;
-typedef long double LIS_REAL_OUT;
+typedef __float128 LIS_REAL;  
 #define sin(x) sinq(x)
 #define cos(x) cosq(x)
 #define tan(x) tanq(x)
@@ -382,8 +379,7 @@ typedef long double LIS_REAL_OUT;
 #define LIS_MPI_REAL MPI_LONG_DOUBLE
 #else
 typedef long double LIS_SCALAR;
-typedef long double LIS_SCALAR;
-typedef long double LIS_REAL_OUT;
+typedef long double LIS_REAL;
 #define sin(x) sinl(x)
 #define cos(x) cosl(x)
 #define tan(x) tanl(x)
@@ -403,7 +399,6 @@ typedef long double LIS_REAL_OUT;
 #endif
 #endif
 #else
-typedef double LIS_REAL;
 #ifdef HAVE_COMPLEX_H
 typedef double complex LIS_COMPLEX;
 #else
@@ -411,7 +406,7 @@ typedef double LIS_COMPLEX[2];
 #endif
 #ifdef _COMPLEX
 typedef double complex LIS_SCALAR;
-typedef double LIS_REAL_OUT;
+typedef double LIS_REAL;
 #define acos(x) cacos(x)
 #define acosh(x) cacosh(x)
 #define asin(x) casin(x)
@@ -434,7 +429,7 @@ typedef double LIS_REAL_OUT;
 #define LIS_MPI_REAL MPI_DOUBLE
 #else
 typedef double LIS_SCALAR;
-typedef double LIS_REAL_OUT;
+typedef double LIS_REAL;
 #define LIS_MPI_SCALAR MPI_DOUBLE
 #define LIS_MPI_REAL MPI_DOUBLE
 #endif

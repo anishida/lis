@@ -162,16 +162,16 @@ LIS_INT main(LIS_INT argc, char* argv[])
 
     lis_printf(comm,"%s: mode number          = %d\n", esolvername, 0);
 #ifdef _COMPLEX      
-    lis_printf(comm,"%s: eigenvalue           = (%E, %E)\n", esolvername, (LIS_REAL_OUT)creal(evalue0), (LIS_REAL_OUT)cimag(evalue0));
+    lis_printf(comm,"%s: eigenvalue           = (%e, %e)\n", esolvername, (double)creal(evalue0), (double)cimag(evalue0));
 #else
-    lis_printf(comm,"%s: eigenvalue           = %E\n", esolvername, (LIS_REAL_OUT)evalue0);
+    lis_printf(comm,"%s: eigenvalue           = %e\n", esolvername, (double)evalue0);
 #endif
     lis_printf(comm,"%s: number of iterations = %D\n",esolvername, iter);
     lis_printf(comm,"%s: elapsed time         = %e sec.\n", esolvername, time);
     lis_printf(comm,"%s:   preconditioner     = %e sec.\n", esolvername, ptime);
     lis_printf(comm,"%s:     matrix creation  = %e sec.\n", esolvername, p_c_time);
     lis_printf(comm,"%s:   linear solver      = %e sec.\n", esolvername, itime);
-    lis_printf(comm,"%s: relative residual    = %E\n\n",esolvername, (LIS_REAL_OUT)residual);
+    lis_printf(comm,"%s: relative residual    = %e\n\n",esolvername, (double)residual);
 
     /* write eigenvector */
     lis_output_vector(x,LIS_FMT_MM,argv[5]);

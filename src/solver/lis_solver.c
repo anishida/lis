@@ -1045,7 +1045,7 @@ LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VEC
 	if( output && (r->precision==LIS_PRECISION_QUAD && solver->precision!=LIS_PRECISION_SWITCH) )
 	{
 	  if( output & LIS_PRINT_MEM ) solver->rhistory[0] = nrm2;
-	  if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5d  relative residual = %E\n", 0, (LIS_REAL_OUT)nrm2); 
+	  if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5d  relative residual = %e\n", 0, (double)nrm2); 
 	}
 	if( nrm2 <= fabs(solver->params[LIS_PARAMS_RESID-LIS_OPTIONS_LEN]) )
 	{
