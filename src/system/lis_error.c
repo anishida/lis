@@ -127,16 +127,14 @@ LIS_INT lis_vprintf(const char *mess, va_list vvlist)
 LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)
 {
 	va_list vvlist;
-	LIS_INT	my_rank;
-	int int_my_rank;
+	int my_rank;
 	char str[1024];
 
 	#ifdef USE_MPI
         #ifdef _DEBUG
 	MPI_Barrier(comm);
 	#endif
-	MPI_Comm_rank(comm,&int_my_rank);
-	my_rank = int_my_rank;
+	MPI_Comm_rank(comm,&my_rank);
 	#else
 	my_rank = 0;
 	#endif
@@ -158,13 +156,11 @@ LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)
 LIS_INT lis_error(const char *file, const char *func, const LIS_INT line, const LIS_INT code, const char *mess, ...)
 {
 	va_list vvlist;
-	LIS_INT	my_rank;
-	int int_my_rank;
+	int my_rank;
 	char str[1024];
 
 	#ifdef USE_MPI
-	MPI_Comm_rank(lis_debug_comm,&int_my_rank);
-	my_rank = int_my_rank;
+	MPI_Comm_rank(lis_debug_comm,&my_rank);
 	#else
 	my_rank = 0;
 	#endif
@@ -191,8 +187,6 @@ void CHKERR(LIS_INT ierr)
 
 LIS_INT lis_print_rhistory(LIS_Comm comm, LIS_INT iter, LIS_REAL resid)
 {
-	LIS_INT	my_rank;
-	int int_my_rank;
 
 #ifdef _LONG__LONG	
 	lis_printf(comm,"iteration: %5lld  relative residual = %e\n", iter, (double)resid);

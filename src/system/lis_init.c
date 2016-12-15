@@ -389,16 +389,13 @@ LIS_INT lis_ranges_create(LIS_Comm comm, LIS_INT *local_n, LIS_INT *global_n, LI
 		LIS_INT	i;
 	#endif
 	LIS_INT	*tranges;
-	int int_nprocs,int_my_rank;
+	int nprocs,my_rank;
 
 	LIS_DEBUG_FUNC_IN;
 
 	#ifdef USE_MPI
-		MPI_Comm_size(comm,&int_nprocs);
-		MPI_Comm_rank(comm,&int_my_rank);
-
-		*nprocs=int_nprocs;
-		*my_rank=int_my_rank;
+		MPI_Comm_size(comm,&nprocs);
+		MPI_Comm_rank(comm,&my_rank);
 
 		tranges = (LIS_INT *)lis_malloc( (*nprocs+1)*sizeof(LIS_INT),"lis_ranges_create::tranges" );
 		if( tranges==NULL )

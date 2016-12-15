@@ -469,8 +469,7 @@ LIS_INT lis_input_vector_lis(LIS_VECTOR v, char *filename, FILE *file)
 #define __FUNC__ "lis_input_vector_lis_ascii"
 LIS_INT lis_input_vector_lis_ascii(LIS_VECTOR v, FILE *file)
 {
-	LIS_INT	n,nprocs,my_rank,pe;
-	int int_nprocs,int_my_rank;
+	int nprocs,my_rank;
 	LIS_INT	err;
 	LIS_INT	ibuf[10];
 	char cbuf[BUFSIZE];
@@ -480,10 +479,8 @@ LIS_INT lis_input_vector_lis_ascii(LIS_VECTOR v, FILE *file)
 
 	comm = v->comm;
 #ifdef USE_MPI
-	MPI_Comm_size(comm,&int_nprocs);
-	MPI_Comm_rank(comm,&int_my_rank);
-	nprocs = int_nprocs;
-	my_rank = int_my_rank;
+	MPI_Comm_size(comm,&nprocs);
+	MPI_Comm_rank(comm,&my_rank);
 #else
 	nprocs  = 1;
 	my_rank = 0;
