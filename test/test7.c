@@ -65,9 +65,9 @@ LIS_INT main(LIS_INT argc, char* argv[])
 #endif
 	
 #ifdef HAVE_COMPLEX_H
-	lis_printf(comm,"complex number z = (%F, %F)\n", creal(z), cimag(z));
+	lis_printf(comm,"complex number z = (%f, %)\n", (double)creal(z), (double)cimag(z));
 #else	
-	lis_printf(comm,"complex number z = (%F, %F)\n", z[0], z[1]);
+	lis_printf(comm,"complex number z = (%f, %f)\n", (double)z[0], (double)z[1]);
 #endif
 
 #ifdef _COMPLEX	
@@ -83,9 +83,9 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	lis_vector_print(v);	
 	lis_vector_dot(v,v,&dot);
 	lis_vector_nrm2(v,&nrm2);
-	lis_printf(comm,"inner product (v,v) = (%F, %F)\n", creal(dot), cimag(dot));
-	lis_printf(comm,"2-norm of v = %F\n", nrm2);
-	lis_printf(comm,"abs(z) = %F\n", fabs(z));	
+	lis_printf(comm,"inner product (v,v) = (%f, %f)\n", (double)creal(dot), (double)cimag(dot));
+	lis_printf(comm,"2-norm of v = %f\n", (double)nrm2);
+	lis_printf(comm,"abs(z) = %f\n", (double)fabs(z));	
 	lis_vector_destroy(v);
 #endif
 

@@ -65,7 +65,7 @@ LIS_INT lis_sor_check_params(LIS_SOLVER solver)
 	w = solver->params[LIS_PARAMS_W-LIS_OPTIONS_LEN];
 	if( fabs(w)<=0 || fabs(w)>=2 )
 	{
-		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_PARAMS_W is %F (set 0 < w < 2)\n",w);
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_PARAMS_W is %f (set 0 < w < 2)\n",(double)w);
 		return LIS_ERR_ILL_ARG;
 	}
 

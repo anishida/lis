@@ -102,7 +102,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	lis_printf(comm,"number of threads = %d\n",omp_get_max_threads());
 #endif
 		
-	lis_printf(comm,"n = %D, gamma = %F\n\n",gn,gamma);
+	lis_printf(comm,"n = %D, gamma = %f\n\n",gn,(double)gamma);
 		
 	/* create matrix and vectors */
 	err = lis_matrix_create(comm,&A); CHKERR(err);
@@ -146,7 +146,7 @@ LIS_INT main(LIS_INT argc, char* argv[])
 	lis_printf(comm,"%s:   preconditioner     = %e sec.\n",solvername, ptime);
 	lis_printf(comm,"%s:     matrix creation  = %e sec.\n",solvername, p_c_time);
 	lis_printf(comm,"%s:   linear solver      = %e sec.\n",solvername, itime);
-	lis_printf(comm,"%s: relative residual    = %E\n\n",solvername,(LIS_REAL_OUT)resid);
+	lis_printf(comm,"%s: relative residual    = %e\n\n",solvername,(double)resid);
 	
 	lis_solver_destroy(solver);
 	lis_matrix_destroy(A);

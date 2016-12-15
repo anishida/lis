@@ -112,31 +112,15 @@ LIS_INT lis_output_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT form
 						    {
 #ifdef _COMPLEX
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-				  		        fprintf(file, "%lld %28.20Le %28.20Le\n", is+i+1, (LIS_REAL_OUT)creal(b->value[i]), (LIS_REAL_OUT)cimag(b->value[i]));
+							fprintf(file, "%lld %28.20e %28.20e\n", is+i+1, (double)creal(b->value[i]), (double)cimag(b->value[i]));
 #else
-							fprintf(file, "%lld %28.20e %28.20e\n", is+i+1, (LIS_REAL_OUT)creal(b->value[i]), (LIS_REAL_OUT)cimag(b->value[i]));
-#endif
-#else
-#ifdef _LONG__DOUBLE
-							fprintf(file, "%d %28.20Le %28.20Le\n", is+i+1, (LIS_REAL_OUT)creal(b->value[i]), (LIS_REAL_OUT)cimag(b->value[i]));
-#else
-							fprintf(file, "%d %28.20e %28.20e\n", is+i+1, (LIS_REAL_OUT)creal(b->value[i]), (LIS_REAL_OUT)cimag(b->value[i]));
-#endif
+							fprintf(file, "%d %28.20e %28.20e\n", is+i+1, (double)creal(b->value[i]), (double)cimag(b->value[i]));
 #endif
 #else
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-							fprintf(file, "%lld %28.20Le\n", is+i+1,(LIS_REAL_OUT)b->value[i]);
+							fprintf(file, "%lld %28.20e\n", is+i+1,(double)b->value[i]);
 #else
-							fprintf(file, "%lld %28.20e\n", is+i+1,(LIS_REAL_OUT)b->value[i]);
-#endif
-#else
-#ifdef _LONG__DOUBLE
-							fprintf(file, "%d %28.20Le\n", is+i+1,(LIS_REAL_OUT)b->value[i]);
-#else
-							fprintf(file, "%d %28.20e\n", is+i+1,(LIS_REAL_OUT)b->value[i]);
-#endif
+							fprintf(file, "%d %28.20e\n", is+i+1,(double)b->value[i]);
 #endif
 #endif							
 						    }
@@ -200,31 +184,15 @@ LIS_INT lis_output_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT form
 						    {
 #ifdef _COMPLEX
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-							fprintf(file, "%lld %28.20Le %28.20Le\n", is+i+1, (LIS_REAL_OUT)creal(x->value[i]), (LIS_REAL_OUT)cimag(x->value[i]));
+							fprintf(file, "%lld %28.20e %28.20e\n", is+i+1, (double)creal(x->value[i]), (double)cimag(x->value[i]));
 #else
-							fprintf(file, "%lld %28.20e %28.20e\n", is+i+1, (LIS_REAL_OUT)creal(x->value[i]), (LIS_REAL_OUT)cimag(x->value[i]));
-#endif
-#else
-#ifdef _LONG__DOUBLE
-							fprintf(file, "%d %28.20Le %28.20Le\n", is+i+1, (LIS_REAL_OUT)creal(x->value[i]), (LIS_REAL_OUT)cimag(x->value[i]));
-#else
-							fprintf(file, "%d %28.20e %28.20e\n", is+i+1, (LIS_REAL_OUT)creal(x->value[i]), (LIS_REAL_OUT)cimag(x->value[i]));
-#endif
+							fprintf(file, "%d %28.20e %28.20e\n", is+i+1, (double)creal(x->value[i]), (double)cimag(x->value[i]));
 #endif
 #else
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-							fprintf(file, "%lld %28.20Le\n", is+i+1,(LIS_REAL_OUT)x->value[i]);
+							fprintf(file, "%lld %28.20e\n", is+i+1,(double)x->value[i]);
 #else
-							fprintf(file, "%lld %28.20e\n", is+i+1,(LIS_REAL_OUT)x->value[i]);
-#endif
-#else
-#ifdef _LONG__DOUBLE
-							fprintf(file, "%d %28.20Le\n", is+i+1,(LIS_REAL_OUT)x->value[i]);
-#else
-							fprintf(file, "%d %28.20e\n", is+i+1,(LIS_REAL_OUT)x->value[i]);
-#endif
+							fprintf(file, "%d %28.20e\n", is+i+1,(double)x->value[i]);
 #endif
 #endif							
 						    }
@@ -282,31 +250,15 @@ LIS_INT lis_output_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT form
 			    {
 #ifdef _COMPLEX
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-				fprintf(file, "%lld %28.20Le %28.20Le\n", i+1, (LIS_REAL_OUT)creal(b->value[i]), (LIS_REAL_OUT)cimag(b->value[i]));
+				fprintf(file, "%lld %28.20e %28.20e\n", i+1, (double)creal(b->value[i]), (double)cimag(b->value[i]));
 #else
-				fprintf(file, "%lld %28.20e %28.20e\n", i+1, (LIS_REAL_OUT)creal(b->value[i]), (LIS_REAL_OUT)cimag(b->value[i]));
-#endif
-#else
-#ifdef _LONG__DOUBLE
-				fprintf(file, "%d %28.20Le %28.20Le\n", i+1, (LIS_REAL_OUT)creal(b->value[i]), (LIS_REAL_OUT)cimag(b->value[i]));
-#else
-				fprintf(file, "%d %28.20e %28.20e\n", i+1, (LIS_REAL_OUT)creal(b->value[i]), (LIS_REAL_OUT)cimag(b->value[i]));
-#endif
+				fprintf(file, "%d %28.20e %28.20e\n", i+1, (double)creal(b->value[i]), (double)cimag(b->value[i]));
 #endif
 #else			      
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-				fprintf(file, "%lld %28.20Le\n", i+1,(LIS_REAL_OUT)b->value[i]);
+				fprintf(file, "%lld %28.20e\n", i+1,(double)b->value[i]);
 #else
-				fprintf(file, "%lld %28.20e\n", i+1,(LIS_REAL_OUT)b->value[i]);
-#endif
-#else
-#ifdef _LONG__DOUBLE
-				fprintf(file, "%d %28.20Le\n", i+1,(LIS_REAL_OUT)b->value[i]);
-#else
-				fprintf(file, "%d %28.20e\n", i+1,(LIS_REAL_OUT)b->value[i]);
-#endif
+				fprintf(file, "%d %28.20e\n", i+1,(double)b->value[i]);
 #endif
 #endif				
 			    }
@@ -340,31 +292,15 @@ LIS_INT lis_output_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT form
 			    {
 #ifdef _COMPLEX
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-				fprintf(file, "%lld %28.20Le %28.20Le\n", i+1, (LIS_REAL_OUT)creal(x->value[i]), (LIS_REAL_OUT)cimag(x->value[i]));
+				fprintf(file, "%lld %28.20e %28.20e\n", i+1, (double)creal(x->value[i]), (double)cimag(x->value[i]));
 #else
-				fprintf(file, "%lld %28.20e %28.20e\n", i+1, (LIS_REAL_OUT)creal(x->value[i]), (LIS_REAL_OUT)cimag(x->value[i]));
-#endif
-#else
-#ifdef _LONG__DOUBLE
-				fprintf(file, "%d %28.20Le %28.20Le\n", i+1, (LIS_REAL_OUT)creal(b->value[i]), (LIS_REAL_OUT)cimag(b->value[i]));
-#else	
-				fprintf(file, "%d %28.20e %28.20e\n", i+1, (LIS_REAL_OUT)creal(b->value[i]), (LIS_REAL_OUT)cimag(b->value[i]));
-#endif
+				fprintf(file, "%d %28.20e %28.20e\n", i+1, (double)creal(b->value[i]), (double)cimag(b->value[i]));
 #endif
 #else			      
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-				fprintf(file, "%lld %28.20Le\n", i+1,(LIS_REAL_OUT)x->value[i]);
+				fprintf(file, "%lld %28.20e\n", i+1,(double)x->value[i]);
 #else
-				fprintf(file, "%lld %28.20e\n", i+1,(LIS_REAL_OUT)x->value[i]);
-#endif
-#else
-#ifdef _LONG__DOUBLE
-				fprintf(file, "%d %28.20Le\n", i+1,(LIS_REAL_OUT)b->value[i]);
-#else	
-				fprintf(file, "%d %28.20e\n", i+1,(LIS_REAL_OUT)b->value[i]);
-#endif
+				fprintf(file, "%d %28.20e\n", i+1,(double)b->value[i]);
 #endif
 #endif				
 			    }
@@ -583,31 +519,15 @@ LIS_INT lis_output_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT form
 							}
 #ifdef _COMPLEX
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-							fprintf(file, "%lld %lld %28.20Le %28.20Le\n", is+i+1, jj, (LIS_REAL_OUT)creal(A->value[j]), (LIS_REAL_OUT)cimag(A->value[j]));
+							fprintf(file, "%lld %lld %28.20e %28.20e\n", is+i+1, jj, (double)creal(A->value[j]), (double)cimag(A->value[j]));
 #else
-							fprintf(file, "%lld %lld %28.20e %28.20e\n", is+i+1, jj, (LIS_REAL_OUT)creal(A->value[j]), (LIS_REAL_OUT)cimag(A->value[j]));
-#endif
-#else
-#ifdef _LONG__DOUBLE
-							fprintf(file, "%d %d %28.20Le %28.20Le\n", is+i+1, jj, (LIS_REAL_OUT)creal(A->value[j]), (LIS_REAL_OUT)cimag(A->value[j]));
-#else
-							fprintf(file, "%d %d %28.20e %28.20e\n", is+i+1, jj, (LIS_REAL_OUT)creal(A->value[j]), (LIS_REAL_OUT)cimag(A->value[j]));
-#endif
+							fprintf(file, "%d %d %28.20e %28.20e\n", is+i+1, jj, (double)creal(A->value[j]), (double)cimag(A->value[j]));
 #endif
 #else							
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-							fprintf(file, "%lld %lld %28.20Le\n", is+i+1,jj,(LIS_REAL_OUT)A->value[j]);
+							fprintf(file, "%lld %lld %28.20e\n", is+i+1,jj,(double)A->value[j]);
 #else
-							fprintf(file, "%lld %lld %28.20e\n", is+i+1,jj,(LIS_REAL_OUT)A->value[j]);
-#endif
-#else
-#ifdef _LONG__DOUBLE
-							fprintf(file, "%d %d %28.20Le\n", is+i+1,jj,(LIS_REAL_OUT)A->value[j]);
-#else
-							fprintf(file, "%d %d %28.20e\n", is+i+1,jj,(LIS_REAL_OUT)A->value[j]);
-#endif
+							fprintf(file, "%d %d %28.20e\n", is+i+1,jj,(double)A->value[j]);
 #endif
 #endif							
 						}
@@ -653,31 +573,15 @@ LIS_INT lis_output_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT form
 							}
 #ifdef _COMPLEX
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-							fprintf(file, "%lld %lld %28.20Le  %28.20Le\n", jj, is+i+1, (LIS_REAL_OUT)creal(A->value[j]), (LIS_REAL_OUT)cimag(A->value[j]));
+							fprintf(file, "%lld %lld %28.20e %28.20e\n", jj, is+i+1, (double)creal(A->value[j]), (double)cimag(A->value[j]));
 #else
-							fprintf(file, "%lld %lld %28.20e %28.20e\n", jj, is+i+1, (LIS_REAL_OUT)creal(A->value[j]), (LIS_REAL_OUT)cimag(A->value[j]));
-#endif
-#else
-#ifdef _LONG__DOUBLE
-							fprintf(file, "%d %d %28.20Le %28.20Le\n", jj, is+i+1, (LIS_REAL_OUT)creal(A->value[j]), (LIS_REAL_OUT)cimag(A->value[j]));
-#else
-							fprintf(file, "%d %d %28.20e %28.20e\n", jj, is+i+1, (LIS_REAL_OUT)creal(A->value[j]), (LIS_REAL_OUT)cimag(A->value[j]));
-#endif
+							fprintf(file, "%d %d %28.20e %28.20e\n", jj, is+i+1, (double)creal(A->value[j]), (double)cimag(A->value[j]));
 #endif
 #else							
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-							fprintf(file, "%lld %lld %28.20Le\n", jj,is+i+1,(LIS_REAL_OUT)A->value[j]);
+							fprintf(file, "%lld %lld %28.20e\n", jj,is+i+1,(double)A->value[j]);
 #else
-							fprintf(file, "%lld %lld %28.20e\n", jj,is+i+1,(LIS_REAL_OUT)A->value[j]);
-#endif
-#else
-#ifdef _LONG__DOUBLE
-							fprintf(file, "%d %d %28.20Le\n", jj,is+i+1,(LIS_REAL_OUT)A->value[j]);
-#else
-							fprintf(file, "%d %d %28.20e\n", jj,is+i+1,(LIS_REAL_OUT)A->value[j]);
-#endif
+							fprintf(file, "%d %d %28.20e\n", jj,is+i+1,(double)A->value[j]);
 #endif
 #endif							
 						}
@@ -743,31 +647,15 @@ LIS_INT lis_output_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT form
 					jj = A->index[j]+1;
 #ifdef _COMPLEX
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-					fprintf(file, "%lld %lld %28.20Le %28.20Le\n", i+1, jj, (LIS_REAL_OUT)creal(A->value[j]), (LIS_REAL_OUT)cimag(A->value[j]));
+					fprintf(file, "%lld %lld %28.20e %28.20e\n", i+1, jj, (double)creal(A->value[j]), (double)cimag(A->value[j]));
 #else
-					fprintf(file, "%lld %lld %28.20e %28.20e\n", i+1, jj, (LIS_REAL_OUT)creal(A->value[j]), (LIS_REAL_OUT)cimag(A->value[j]));
-#endif
-#else
-#ifdef _LONG__DOUBLE
-					fprintf(file, "%d %d %28.20Le %28.20Le\n", i+1, jj, (LIS_REAL_OUT)creal(A->value[j]), (LIS_REAL_OUT)cimag(A->value[j]));
-#else
-					fprintf(file, "%d %d %28.20e %28.20e\n", i+1, jj, (LIS_REAL_OUT)creal(A->value[j]), (LIS_REAL_OUT)cimag(A->value[j]));
-#endif
+					fprintf(file, "%d %d %28.20e %28.20e\n", i+1, jj, (double)creal(A->value[j]), (double)cimag(A->value[j]));
 #endif
 #else					
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-					fprintf(file, "%lld %lld %28.20Le\n", i+1,jj,(LIS_REAL_OUT)A->value[j]);
+					fprintf(file, "%lld %lld %28.20e\n", i+1,jj,(double)A->value[j]);
 #else
-					fprintf(file, "%lld %lld %28.20e\n", i+1,jj,(LIS_REAL_OUT)A->value[j]);
-#endif
-#else
-#ifdef _LONG__DOUBLE
-					fprintf(file, "%d %d %28.20Le\n", i+1,jj,(LIS_REAL_OUT)A->value[j]);
-#else
-					fprintf(file, "%d %d %28.20e\n", i+1,jj,(LIS_REAL_OUT)A->value[j]);
-#endif
+					fprintf(file, "%d %d %28.20e\n", i+1,jj,(double)A->value[j]);
 #endif
 #endif					
 				}
@@ -799,31 +687,15 @@ LIS_INT lis_output_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT form
 					jj = A->index[j]+1;
 #ifdef _COMPLEX
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-					fprintf(file, "%lld %lld %28.20Le %28.20Le\n", jj, i+1, (LIS_REAL_OUT)creal(A->value[j]), (LIS_REAL_OUT)cimag(A->value[j]));
+					fprintf(file, "%lld %lld %28.20e %28.20e\n", jj, i+1, (double)creal(A->value[j]), (double)cimag(A->value[j]));
 #else
-					fprintf(file, "%lld %lld %28.20e %28.20e\n", jj, i+1, (LIS_REAL_OUT)creal(A->value[j]), (LIS_REAL_OUT)cimag(A->value[j]));
-#endif
-#else
-#ifdef _LONG__DOUBLE
-					fprintf(file, "%d %d %28.20Le %28.20Le\n", jj, i+1, (LIS_REAL_OUT)creal(A->value[j]), (LIS_REAL_OUT)cimag(A->value[j]));
-#else
-					fprintf(file, "%d %d %28.20e %28.20e\n", jj, i+1, (LIS_REAL_OUT)creal(A->value[j]), (LIS_REAL_OUT)cimag(A->value[j]));
-#endif
+					fprintf(file, "%d %d %28.20e %28.20e\n", jj, i+1, (double)creal(A->value[j]), (double)cimag(A->value[j]));
 #endif
 #else
 #ifdef _LONG__LONG
-#ifdef _LONG__DOUBLE
-					fprintf(file, "%lld %lld %28.20Le\n", jj,i+1,(LIS_REAL_OUT)A->value[j]);
+					fprintf(file, "%lld %lld %28.20e\n", jj,i+1,(double)A->value[j]);
 #else
-					fprintf(file, "%lld %lld %28.20e\n", jj,i+1,(LIS_REAL_OUT)A->value[j]);
-#endif
-#else
-#ifdef _LONG__DOUBLE
-					fprintf(file, "%d %d %28.20Le\n", jj,i+1,(LIS_REAL_OUT)A->value[j]);
-#else
-					fprintf(file, "%d %d %28.20e\n", jj,i+1,(LIS_REAL_OUT)A->value[j]);
-#endif
+					fprintf(file, "%d %d %28.20e\n", jj,i+1,(double)A->value[j]);
 #endif
 #endif					
 				}

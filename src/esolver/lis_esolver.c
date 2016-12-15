@@ -517,7 +517,7 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	}
 
 	/* global shift */
-	if ( output ) lis_printf(comm,"global shift          : %E\n", (LIS_REAL_OUT)gshift);
+	if ( output ) lis_printf(comm,"global shift          : %e\n", (double)gshift);
 
 	/* create eigenvector array */
 	if( esolver->evector ) lis_free(esolver->evector);

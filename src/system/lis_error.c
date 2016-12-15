@@ -120,15 +120,6 @@ LIS_INT lis_vprintf(const char *mess, va_list vvlist)
 	#else
 	lis_replace(str,"%D","%d");
 	#endif
-	#ifdef _LONG__DOUBLE
-	lis_replace(str,"%E","%Le");
-	lis_replace(str,"%G","%Lg");
-	lis_replace(str,"%F","%Lf");		
-	#else
-	lis_replace(str,"%E","%e");
-	lis_replace(str,"%G","%g");
-	lis_replace(str,"%F","%f");		
-	#endif
 	vprintf(str,vvlist);
 	return LIS_SUCCESS;
 }
@@ -204,9 +195,9 @@ LIS_INT lis_print_rhistory(LIS_Comm comm, LIS_INT iter, LIS_REAL resid)
 	int int_my_rank;
 
 #ifdef _LONG__LONG	
-	lis_printf(comm,"iteration: %5lld  relative residual = %E\n", iter, (LIS_REAL_OUT)resid);
+	lis_printf(comm,"iteration: %5lld  relative residual = %e\n", iter, (double)resid);
 #else
-	lis_printf(comm,"iteration: %5d  relative residual = %E\n", iter, (LIS_REAL_OUT)resid);
+	lis_printf(comm,"iteration: %5d  relative residual = %E\n", iter, (double)resid);
 #endif
 
 	return LIS_SUCCESS;

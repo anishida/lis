@@ -142,7 +142,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
            call lis_vector_set_all(1.0d0,u,ierr)
 #endif      
 #endif      
-          call lis_matvec(A,u,b,ierr)
+           call lis_matvec(A,u,b,ierr)
         endif
       endif
       if( rhs.eq.-1 ) then
