@@ -1,3 +1,7 @@
+Version 1.7.18  December 15, 2016
+
+  - Fixed types for print statements.
+
 Version 1.7.17  December 14, 2016
 
   - Fixed type related MPI bugs in Fortran programs.
