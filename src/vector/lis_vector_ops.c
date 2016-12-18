@@ -97,11 +97,7 @@ LIS_INT lis_vector_dot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_SCALAR *value)
 			for(i=0; i<n; i++)
 			{
 #ifdef _COMPLEX
-#ifdef _LONG__DOUBLE			  
-				tmp += x[i]*conjl(y[i]);
-#else
 				tmp += x[i]*conj(y[i]);
-#endif				
 #else
 				tmp += x[i]*y[i];
 #endif				
@@ -121,11 +117,7 @@ LIS_INT lis_vector_dot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_SCALAR *value)
 		for(i=0; i<n; i++)
 		{
 #ifdef _COMPLEX
-#ifdef _LONG__DOUBLE		  
-			dot += x[i]*conjl(y[i]);
-#else
 			dot += x[i]*conj(y[i]);
-#endif
 #else
 			dot += x[i]*y[i];
 #endif			
@@ -257,11 +249,7 @@ LIS_INT lis_vector_nrm2(LIS_VECTOR vx, LIS_REAL *value)
 			for(i=0; i<n; i++)
 			{
 #ifdef _COMPLEX
-#ifdef _LONG__DOUBLE			  
-				tmp += x[i]*conjl(x[i]);
-#else
 				tmp += x[i]*conj(x[i]);
-#endif
 #else
 				tmp += x[i]*x[i];
 #endif				
@@ -281,11 +269,7 @@ LIS_INT lis_vector_nrm2(LIS_VECTOR vx, LIS_REAL *value)
 		for(i=0; i<n; i++)
 		{
 #ifdef _COMPLEX
-#ifdef _LONG__DOUBLE		  
-			dot += x[i]*conjl(x[i]);
-#else
 			dot += x[i]*conj(x[i]);
-#endif
 #else
 			dot += x[i]*x[i];			
 #endif

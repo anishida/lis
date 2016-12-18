@@ -476,11 +476,7 @@ LIS_INT lis_vector_conjugate(LIS_VECTOR vx)
 	for(i=0; i<n; i++)
 	{
 #ifdef _COMPLEX	  
-#ifdef _LONG__DOUBLE
-		x[i] = conjl(x[i]);
-#else
 		x[i] = conj(x[i]);
-#endif
 #endif
 	}
 	LIS_DEBUG_FUNC_OUT;

@@ -280,11 +280,7 @@ LIS_INT lis_array_conjugate(LIS_INT n, LIS_SCALAR *x)
   for(i=0;i<n;i++)
     {
 #ifdef _COMPLEX
-#ifdef _DOUBLE__COMPLEX      
-      x[i] = conjl(x[i]);
-#else
       x[i] = conj(x[i]);
-#endif
 #endif      
     }
 
@@ -321,11 +317,7 @@ LIS_INT lis_array_dot(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *value
   for(i=0;i<n;i++)
     {
 #ifdef _COMPLEX
-#ifdef _LONG__DOUBLE
-      *value = *value + x[i] * conjl(y[i]);
-#else      
       *value = *value + x[i] * conj(y[i]);
-#endif
 #else      
       *value = *value + x[i] * y[i];
 #endif      
@@ -386,11 +378,7 @@ LIS_INT lis_array_nrm2(LIS_INT n, LIS_SCALAR *x, LIS_REAL *value)
 	for(i=0;i<n;i++)
 	{
 #ifdef _COMPLEX
-#ifdef _LONG__DOUBLE	  
-		t += x[i]*conjl(x[i]);
-#else
 		t += x[i]*conj(x[i]);
-#endif
 #else		
 		t += x[i]*x[i];
 #endif		
