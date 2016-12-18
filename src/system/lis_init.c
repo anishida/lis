@@ -117,7 +117,7 @@ LIS_INT lis_initialize(LIS_INT* argc, char** argv[])
 
 	#ifdef USE_MPI
 		MPI_Initialized(&lis_mpi_initialized);
-		if (!lis_mpi_initialized) MPI_Init(argc, argv);
+		if (!lis_mpi_initialized) MPI_Init((int)argc, argv);
 
 		#ifdef USE_QUAD_PRECISION
 			MPI_Type_contiguous( LIS_MPI_MSCALAR_LEN, MPI_DOUBLE, &LIS_MPI_MSCALAR );
