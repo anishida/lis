@@ -1,3 +1,8 @@
+Version 1.7.19  December 19, 2016
+
+  - Fixed long long int related bugs.
+  - Fixed long double related bugs.
+
 Version 1.7.18  December 15, 2016
 
   - Fixed types for print statements.
