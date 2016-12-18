@@ -39,7 +39,7 @@
 
 #undef __FUNC__
 #define __FUNC__ "main"
-LIS_INT main(LIS_INT argc, char* argv[])
+LIS_INT main(int argc, char* argv[])
 {
   LIS_Comm comm;
   LIS_INT err;

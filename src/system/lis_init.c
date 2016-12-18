@@ -106,7 +106,7 @@ void lis_version(void)
 
 #undef __FUNC__
 #define __FUNC__ "lis_initialize"
-LIS_INT lis_initialize(LIS_INT* argc, char** argv[])
+LIS_INT lis_initialize(int* argc, char** argv[])
 {
 	LIS_ARGS p;
 	LIS_INT	i,nprocs;

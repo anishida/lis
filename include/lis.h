@@ -1008,7 +1008,7 @@ extern "C"
 /* Utilities                */
 /****************************/
 
-	extern LIS_INT lis_initialize(LIS_INT *argc, char** argv[]);
+	extern LIS_INT lis_initialize(int *argc, char** argv[]);
 	extern LIS_INT lis_finalize(void);
 	extern double lis_wtime(void);
 	extern void CHKERR(LIS_INT err);
