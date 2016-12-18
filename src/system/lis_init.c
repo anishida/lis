@@ -389,7 +389,7 @@ LIS_INT lis_ranges_create(LIS_Comm comm, LIS_INT *local_n, LIS_INT *global_n, LI
 		LIS_INT	i;
 	#endif
 	LIS_INT	*tranges;
-	int int_nprocs,int_my_rank;
+	int *int_nprocs,*int_my_rank;
 
 	LIS_DEBUG_FUNC_IN;
 
