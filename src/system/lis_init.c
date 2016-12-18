@@ -61,7 +61,7 @@
  ************************************************/
 
 LIS_ARGS cmd_args = NULL;
-LIS_INT	lis_mpi_initialized = LIS_FALSE;
+int lis_mpi_initialized = LIS_FALSE;
 LIS_SCALAR *lis_vec_tmp = NULL;
 
 #ifdef USE_QUAD_PRECISION
