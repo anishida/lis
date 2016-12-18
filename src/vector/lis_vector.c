@@ -918,15 +918,15 @@ LIS_INT lis_vector_print(LIS_VECTOR x)
 		{
 #ifdef _COMPLEX		  
 #ifdef _LONG__LONG
-			printf("%6lld  %e,%e\n",ii,creal(x->value[i]),x->value_lo[i]);
+			printf("%6lld  %e,%e\n",ii,(double)creal(x->value[i]),(double)x->value_lo[i]);
 #else
-			printf("%6d  %e,%e\n",ii,creal(x->value[i]),x->value_lo[i]);
+			printf("%6d  %e,%e\n",ii,(double)creal(x->value[i]),(double)x->value_lo[i]);
 #endif
 #else
 #ifdef _LONG__LONG
-			printf("%6lld  %e,%e\n",ii,x->value[i],x->value_lo[i]);
+			printf("%6lld  %e,%e\n",ii,(double)x->value[i],(double)x->value_lo[i]);
 #else
-			printf("%6d  %e,%e\n",ii,x->value[i],x->value_lo[i]);
+			printf("%6d  %e,%e\n",ii,(double)x->value[i],(double)x->value_lo[i]);
 #endif
 #endif			
 		}
