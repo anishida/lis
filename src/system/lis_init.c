@@ -61,7 +61,7 @@
  ************************************************/
 
 LIS_ARGS cmd_args = NULL;
-LIS_INT	lis_mpi_initialized = LIS_FALSE;
+int lis_mpi_initialized = LIS_FALSE;
 LIS_SCALAR *lis_vec_tmp = NULL;
 
 #ifdef USE_QUAD_PRECISION
@@ -120,8 +120,8 @@ LIS_INT lis_initialize(LIS_INT* argc, char** argv[])
 		if (!lis_mpi_initialized) MPI_Init(argc, argv);
 
 		#ifdef USE_QUAD_PRECISION
-			MPI_Type_contiguous( LIS_MPI_MSCALAR_LEN, MPI_DOUBLE, &LIS_MPI_MSCALAR );
-			MPI_Type_commit( &LIS_MPI_MSCALAR );
+			MPI_Type_contiguous(LIS_MPI_MSCALAR_LEN, MPI_DOUBLE, &LIS_MPI_MSCALAR );
+			MPI_Type_commit(&LIS_MPI_MSCALAR );
 			MPI_Op_create((MPI_User_function *)lis_mpi_msum, LIS_TRUE, &LIS_MPI_MSUM);
 		#endif
 	#endif
@@ -389,12 +389,15 @@ LIS_INT lis_ranges_create(LIS_Comm comm, LIS_INT *local_n, LIS_INT *global_n, LI
 		LIS_INT	i;
 	#endif
 	LIS_INT	*tranges;
+	int int_nprocs,int_my_rank;
 
 	LIS_DEBUG_FUNC_IN;
 
 	#ifdef USE_MPI
-		MPI_Comm_size(comm,&nprocs);
-		MPI_Comm_rank(comm,&my_rank);
+		MPI_Comm_size(comm,&int_nprocs);
+		MPI_Comm_rank(comm,&int_my_rank);
+		*nprocs = int_nprocs;
+		*my_rank = int_my_rank;
 
 		tranges = (LIS_INT *)lis_malloc( (*nprocs+1)*sizeof(LIS_INT),"lis_ranges_create::tranges" );
 		if( tranges==NULL )

@@ -951,6 +951,7 @@ LIS_INT lis_vector_scatter(LIS_SCALAR value[], LIS_VECTOR v)
 	is      = v->is;
 
 	sendcounts = (LIS_INT *)lis_malloc( (nprocs+1)*sizeof(LIS_INT),"lis_vector_scatter::sendcounts" );
+
 	for(i=0; i<nprocs; i++)
 	{
 	  sendcounts[i] = v->ranges[i+1] - v->ranges[i];

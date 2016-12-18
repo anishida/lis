@@ -240,6 +240,7 @@ LIS_INT lis_matrix_create(LIS_Comm comm, LIS_MATRIX *Amat)
 LIS_INT lis_matrix_set_size(LIS_MATRIX Amat, LIS_INT local_n, LIS_INT global_n)
 {
 	LIS_INT nprocs,my_rank;
+	int int_nprocs,int_my_rank;
 	LIS_INT is,ie;
 	LIS_INT err;
 	LIS_INT *ranges;
@@ -268,7 +269,8 @@ LIS_INT lis_matrix_set_size(LIS_MATRIX Amat, LIS_INT local_n, LIS_INT global_n)
     }
     #endif
 	#ifdef USE_MPI
-	MPI_Comm_size(Amat->comm,&nprocs);
+	MPI_Comm_size(Amat->comm,&int_nprocs);
+	nprocs = int_nprocs;
     /* change the logic to something a little more direct, i.e., that will not */
     /* throw an error if local_n=0 . . . */
 	if( global_n>0 && global_n<nprocs )
