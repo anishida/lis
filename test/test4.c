@@ -34,7 +34,7 @@
 
 #include <stdio.h>
 #include "lis.h"
-LIS_INT main(LIS_INT argc, char* argv[])
+LIS_INT main(int argc, char* argv[])
 {
     LIS_Comm comm;  
     LIS_MATRIX A;
