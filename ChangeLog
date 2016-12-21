@@ -1,9 +1,10 @@
 Version 1.7.20  December 19, 2016
 
-  - Fixed type of argc in lis_initialize() for MPI processing.
+  - Fixed type of argc in lis_initialize() to avoid conflict with MPI_Init().
 
 Version 1.7.19  December 19, 2016
 
+  - Fixed critical bug in lis_init.c.
   - Fixed long long int related bugs.
   - Fixed long double related bugs.
 
