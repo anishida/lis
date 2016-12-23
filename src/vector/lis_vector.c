@@ -672,7 +672,7 @@ LIS_INT lis_vector_set_values(LIS_INT flag, LIS_INT count, LIS_INT index[], LIS_
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_vector_set_values"
+#define __FUNC__ "lis_vector_set_values2"
 LIS_INT lis_vector_set_values2(LIS_INT flag, LIS_INT start, LIS_INT count, LIS_SCALAR value[], LIS_VECTOR v)
 {
 	LIS_INT np,i,is,ie;
