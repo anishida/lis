@@ -395,7 +395,7 @@ Version 1.5.58  November 31, 2015
 
 Version 1.5.57  July 7, 2015
 
-  - Fixed bug in lis.h (thanks to Norihiro Watanabe).
+  - Added support for lis_matrix_unset() in C (thanks to Norihiro Watanabe).
 
 Version 1.5.56  June 25, 2015
 
