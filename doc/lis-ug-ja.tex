@@ -3945,7 +3945,7 @@ $global\_n$をグローバルな次数, $local\_n$をローカルな次数と呼ぶ.
 \noindent
 {\bf 入力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt LIS\_Comm] MPIコミュニケータ
+\item[\tt comm] MPIコミュニケータ
 \end{namelist}
 {\bf 出力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
@@ -4295,7 +4295,7 @@ $global\_n$をグローバルな行数, $local\_n$をローカルな行数と呼ぶ.
 \noindent
 {\bf 入力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt LIS\_Comm] MPIコミュニケータ
+\item[\tt comm] MPIコミュニケータ
 \end{namelist}
 {\bf 出力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
@@ -7773,6 +7773,29 @@ MPIの初期化, コマンドライン引数の取得等の初期化処理を行う.
 \indent
 正常に終了していない場合は，\verb|lis_finalize|を実行した後，プログラムを強制終了する. 
 
+\newpage
+\subsubsection{lis\_printf}
+\begin{screen}
+\verb|C       LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)|
+\end{screen}
+{\bf 機能}\\    
+\indent
+プロセス0上で書式付きの文字列を出力する.
+\\ \\
+\noindent
+{\bf 入力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt comm] MPI コミュニケータ
+\end{namelist}
+{\bf 出力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt mess] 文字列
+\end{namelist}
+{\bf 注釈}\\
+\indent
+文字列において，'\%D'はLIS\_INTがlong long intの場合には'\%lld'に，intの場合には'\%d'に置き換えられる.
+
+逐次, マルチスレッド環境では, {\tt comm}の値は無視される. 
 
 \newpage
 \addcontentsline{toc}{section}{参考文献}

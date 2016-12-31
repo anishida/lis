@@ -4067,7 +4067,7 @@ Create vector $v$.
 \noindent
 {\bf Input}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt LIS\_Comm] The MPI communicator
+\item[\tt comm] The MPI communicator
 \end{namelist}
 {\bf Output}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
@@ -4404,7 +4404,7 @@ Create matrix $A$.
 \noindent
 {\bf Input}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt LIS\_Comm] The MPI communicator
+\item[\tt comm] The MPI communicator
 \end{namelist}
 {\bf Output}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
@@ -6928,7 +6928,7 @@ Get the eigensolver name from the eigensolver number.
 \end{namelist}
 {\bf Output}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt name] The eigensolver name
+\item[\tt ename] The eigensolver name
 \item[\tt ierr] The return code
 \end{namelist}
 
@@ -7917,6 +7917,30 @@ Check the value of the return code.
 \indent
 If the value of the return code is not 0, it calls \verb|lis_finalize| 
 and terminates the program. 
+
+\newpage
+\subsubsection{lis\_printf}
+\begin{screen}
+\verb|C       LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)|
+\end{screen}
+{\bf Description}\\
+\indent
+Print message on processing element 0.
+\\ \\
+\noindent
+{\bf Input}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt comm] The MPI communicator
+\end{namelist}
+{\bf Output}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt mess] The message
+\end{namelist}
+{\bf Note}\\
+\indent
+The string '\%D' is replaced with '\%lld' if LIS\_INT is long long int, and is replaced with '\%d' if it is int.
+
+For the serial and multithreaded environments, the value of {\tt comm} is ignored. 
 
 \newpage
 \addcontentsline{toc}{section}{References}
