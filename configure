@@ -7696,8 +7696,8 @@ if test "$enable_longdouble" = "yes"; then
     CFLAGS="$CFLAGS -lquadmath"
     FFLAGS="$FFLAGS -lquadmath"
     FCFLAGS="$FCFLAGS -lquadmath"
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: long double in C is not compatible with __float128" >&5
-$as_echo "$as_me: WARNING: long double in C is not compatible with __float128" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: GCC libquadmath is used if long double is enabled" >&5
+$as_echo "$as_me: WARNING: GCC libquadmath is used if long double is enabled" >&2;}
   fi
 fi
 

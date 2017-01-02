@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.7.20
+Version 1.7.21
 \end{flushleft}
 
 \vspace*{2cm}
@@ -237,6 +237,7 @@ Cover: Ogata Korin. Irises. c1705. Nezu Museum.
 \section*{Changes from Version 1.6}
 \begin{enumerate}
 \item Addition: Support for generalized eigenvalue problems.
+\item Addition: Support for GCC libquadmath.
 \item Change: Sign of shift for eigensolvers in accordance with custom.
 \item Change: Sign of shift in {\tt lis\_matrix\_shift\_diagonal()}, 
 {\tt lis\_vector\_shift()}, and {\tt lis\_array\_shift()}, respectively.
@@ -1137,12 +1138,6 @@ The current version has the following limitations:
 \item The CG, CR, and Jacobi-Davidson methods for the eigenvalue problems do not support the double-double precision operations.
 \item The Jacobi, Gauss-Seidel and SOR methods in the hybrid preconditioner do not support the double-double precision operations.
 \item The I+S and SA-AMG preconditioners do not support the double-double precision operations.
-\end{itemize}
-
-\item Long double (quadruple) precision operations
-\begin{itemize}
-\item The Fortran interface does not support the long double precision operations.
-\item The SA-AMG preconditioner does not support the long double precision operations.
 \end{itemize}
 
 \item Preconditioners
@@ -4072,7 +4067,7 @@ Create vector $v$.
 \noindent
 {\bf Input}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt LIS\_Comm] The MPI communicator
+\item[\tt comm] The MPI communicator
 \end{namelist}
 {\bf Output}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
@@ -4409,7 +4404,7 @@ Create matrix $A$.
 \noindent
 {\bf Input}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt LIS\_Comm] The MPI communicator
+\item[\tt comm] The MPI communicator
 \end{namelist}
 {\bf Output}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
@@ -5094,7 +5089,7 @@ Array indexing must be zero-origin in the Fortran version.
 \end{screen}
 {\bf Description}\\
 \indent
-Unassociate the arrays from matrix $A$.
+Unassociate the arrays from matrix $A$ without deallocating memory.
 \\ \\
 \noindent
 {\bf Input}
@@ -6933,7 +6928,7 @@ Get the eigensolver name from the eigensolver number.
 \end{namelist}
 {\bf Output}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt name] The eigensolver name
+\item[\tt ename] The eigensolver name
 \item[\tt ierr] The return code
 \end{namelist}
 
@@ -7922,6 +7917,30 @@ Check the value of the return code.
 \indent
 If the value of the return code is not 0, it calls \verb|lis_finalize| 
 and terminates the program. 
+
+\newpage
+\subsubsection{lis\_printf}
+\begin{screen}
+\verb|C       LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)|
+\end{screen}
+{\bf Description}\\
+\indent
+Print message on processing element 0.
+\\ \\
+\noindent
+{\bf Input}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt comm] The MPI communicator
+\end{namelist}
+{\bf Output}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt mess] The message
+\end{namelist}
+{\bf Note}\\
+\indent
+The string '\%D' is replaced with '\%lld' if LIS\_INT is long long int, and is replaced with '\%d' if it is int.
+
+For the serial and multithreaded environments, the value of {\tt comm} is ignored. 
 
 \newpage
 \addcontentsline{toc}{section}{References}

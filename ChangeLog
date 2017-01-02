@@ -1,3 +1,8 @@
+Version 1.7.21  January 2, 2017
+
+  - Fixed descriptions.
+  - Updated documents.
+
 Version 1.7.20  December 19, 2016
 
   - Fixed type of argc in lis_initialize() to avoid conflict with MPI_Init().
@@ -395,7 +400,7 @@ Version 1.5.58  November 31, 2015
 
 Version 1.5.57  July 7, 2015
 
-  - Fixed bug in lis.h (thanks to Norihiro Watanabe).
+  - Added support for lis_matrix_unset() in C (thanks to Norihiro Watanabe).
 
 Version 1.5.56  June 25, 2015
 

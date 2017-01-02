@@ -4,7 +4,7 @@
 
 # General Configurations
 
-AC_INIT(lis, 1.7.20, devel@ssisc.org)
+AC_INIT(lis, 1.7.21, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -1062,7 +1062,7 @@ if test "$enable_longdouble" = "yes"; then
     CFLAGS="$CFLAGS -lquadmath"
     FFLAGS="$FFLAGS -lquadmath" 
     FCFLAGS="$FCFLAGS -lquadmath"
-    AC_MSG_WARN([long double in C is not compatible with __float128])
+    AC_MSG_WARN([GCC libquadmath is used if long double is enabled])
   fi
 fi
 

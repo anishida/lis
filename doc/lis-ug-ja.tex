@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis ユーザガイド}\\
-バージョン 1.7.20
+バージョン 1.7.21
 \end{flushleft}
 
 \vspace*{2cm}
@@ -219,6 +219,7 @@ All rights reserved.
 \section*{バージョン 1.6 からの変更点}
 \begin{enumerate}
 \item 一般化固有値問題に対応.
+\item GCC libquadmathに対応.  
 \item 固有値解法のシフト量の符号を慣例に合わせて変更.
 \item {\tt lis\_matrix\_shift\_diagonal()}, {\tt lis\_vector\_shift()}, {\tt lis\_array\_shift()}のシフト量の符号をそれぞれ変更. 
 \end{enumerate}
@@ -1018,13 +1019,6 @@ $(1,\dots,1)^T$との積を実行可能な行列格納形式について
 \item 固有値解法のうち, CG, CR, Jacobi-Davidson法では使用できない.
 \item Hybrid前処理での内部反復解法のうち, Jacobi, Gauss-Seidel, SOR法では使用できない.
 \item I+S, SA-AMG前処理では使用できない.
-\end{itemize}
-
-\item long double型4倍精度演算
-\begin{itemize}
-
-\item Fortranインタフェースでは使用できない.
-\item SA-AMG前処理では使用できない.
 \end{itemize}
 
 \item 前処理
@@ -3951,7 +3945,7 @@ $global\_n$をグローバルな次数, $local\_n$をローカルな次数と呼ぶ.
 \noindent
 {\bf 入力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt LIS\_Comm] MPIコミュニケータ
+\item[\tt comm] MPIコミュニケータ
 \end{namelist}
 {\bf 出力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
@@ -4301,7 +4295,7 @@ $global\_n$をグローバルな行数, $local\_n$をローカルな行数と呼ぶ.
 \noindent
 {\bf 入力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt LIS\_Comm] MPIコミュニケータ
+\item[\tt comm] MPIコミュニケータ
 \end{namelist}
 {\bf 出力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
@@ -4977,7 +4971,7 @@ DNS形式の配列を行列$A$に関連付ける.
 \end{screen}
 {\bf 機能}\\
 \indent
-配列の行列$A$への関連付けを解除する. 
+行列のメモリ領域を確保したまま, 配列の行列$A$への関連付けを解除する. 
 \\ \\
 \noindent
 {\bf 入力}
@@ -7779,6 +7773,29 @@ MPIの初期化, コマンドライン引数の取得等の初期化処理を行う.
 \indent
 正常に終了していない場合は，\verb|lis_finalize|を実行した後，プログラムを強制終了する. 
 
+\newpage
+\subsubsection{lis\_printf}
+\begin{screen}
+\verb|C       LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...)|
+\end{screen}
+{\bf 機能}\\    
+\indent
+プロセス0上で書式付きの文字列を出力する.
+\\ \\
+\noindent
+{\bf 入力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt comm] MPI コミュニケータ
+\end{namelist}
+{\bf 出力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt mess] 文字列
+\end{namelist}
+{\bf 注釈}\\
+\indent
+文字列において，'\%D'はLIS\_INTがlong long intの場合には'\%lld'に，intの場合には'\%d'に置き換えられる.
+
+逐次, マルチスレッド環境では, {\tt comm}の値は無視される. 
 
 \newpage
 \addcontentsline{toc}{section}{参考文献}
