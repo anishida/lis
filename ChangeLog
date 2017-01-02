@@ -1,3 +1,8 @@
+Version 1.7.21  January 2, 2017
+
+  - Fixed descriptions.
+  - Updated documents.
+
 Version 1.7.20  December 19, 2016
 
   - Fixed type of argc in lis_initialize() to avoid conflict with MPI_Init().
