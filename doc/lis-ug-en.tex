@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.7.21
+Version 1.7.22
 \end{flushleft}
 
 \vspace*{2cm}
@@ -4474,7 +4474,7 @@ To copy the values of the elements as well, the function
 \end{screen}
 {\bf Description}\\
 \indent
-Allocate the memory for matrix $A$.
+Preallocate the memory for matrix $A$.
 \\ \\
 \noindent
 {\bf Input}
@@ -4490,6 +4490,8 @@ Allocate the memory for matrix $A$.
 {\bf Note}\\
 \indent
 Either \verb|nnz_row| or \verb|nnz| must be provided.
+
+This function preallocates memory for good matrix assembly in \verb|lis_matrix_set_value|.
 
 \newpage
 \subsubsection{lis\_matrix\_set\_value}
