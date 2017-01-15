@@ -4532,10 +4532,11 @@ The function \verb|lis_matrix_set_value| stores the assigned value in a temporar
 Therefore, after \verb|lis_matrix_set_value| is called, 
 the function \verb|lis_matrix_assemble| must be called.
 
+To improve performance of this function, the introduction of the function \verb|lis_matrix_malloc| should be considered.
+
 For large matrices, the introduction of the function \verb|lis_matrix_set_type|
 should be considered. See {\tt lis-(\$VERSION)/test/test2.c} and
 {\tt lis-(\$VERSION)/test/test2f.F90} for details.
-
 
 \subsubsection{lis\_matrix\_assemble}
 \begin{screen}
