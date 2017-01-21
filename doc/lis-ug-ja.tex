@@ -737,6 +737,23 @@ A =
 設定される. 
 {\tt test4f.F}は{\tt test4.c}のFortran版である. 
 
+\subsubsection{test4b}
+線型方程式$Ax=b$を指定された解法で$100$ステップ分解き, 各関数の実行時間を
+測定する. 行列$A$は次数$1200$の3重対角行列
+\[
+A = 
+\left(
+\begin{array}{ccccc}
+2 & -1 &   &  &   \\
+-1 & 2 & -1 &  &   \\
+  & \ddots  & \ddots  & \ddots  &   \\
+  &   & -1 & 2 & -1 \\
+  &   &   & -1 & 2 \\
+\end{array}
+\right)
+\]
+である. 
+
 \subsubsection{test5}
 ディレクトリ{\tt lis-(\$VERSION)/test}において\\
  \verb+      > test5 n gamma [options]+\\

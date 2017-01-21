@@ -61,8 +61,8 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	spmvtest3$(EXEEXT) spmvtest3b$(EXEEXT) spmvtest4$(EXEEXT) \
 	spmvtest5$(EXEEXT) test1$(EXEEXT) test2$(EXEEXT) \
 	test2b$(EXEEXT) test3$(EXEEXT) test3b$(EXEEXT) test4$(EXEEXT) \
-	test5$(EXEEXT) test6$(EXEEXT) test7$(EXEEXT) $(am__EXEEXT_1) \
-	$(am__EXEEXT_2) $(am__EXEEXT_3)
+	test4b$(EXEEXT) test5$(EXEEXT) test6$(EXEEXT) test7$(EXEEXT) \
+	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
 @ENABLE_FORTRAN_TRUE@am__append_1 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_2 = test2f test6f 
 @ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__append_3 = test8f
@@ -225,6 +225,10 @@ am_test4_OBJECTS = test4.$(OBJEXT)
 test4_OBJECTS = $(am_test4_OBJECTS)
 test4_LDADD = $(LDADD)
 test4_DEPENDENCIES =
+am_test4b_OBJECTS = test4b.$(OBJEXT)
+test4b_OBJECTS = $(am_test4b_OBJECTS)
+test4b_LDADD = $(LDADD)
+test4b_DEPENDENCIES =
 am__test4f_SOURCES_DIST = test4f.F
 @ENABLE_FORTRAN_TRUE@am_test4f_OBJECTS = test4f.$(OBJEXT)
 test4f_OBJECTS = $(am_test4f_OBJECTS)
@@ -312,9 +316,9 @@ SOURCES = $(esolve_SOURCES) $(etest1_SOURCES) $(etest1f_SOURCES) \
 	$(spmvtest5_SOURCES) $(test1_SOURCES) $(test1f_SOURCES) \
 	$(test2_SOURCES) $(test2b_SOURCES) $(test2f_SOURCES) \
 	$(test3_SOURCES) $(test3b_SOURCES) $(test4_SOURCES) \
-	$(test4f_SOURCES) $(test5_SOURCES) $(test6_SOURCES) \
-	$(test6f_SOURCES) $(test7_SOURCES) $(test7f_SOURCES) \
-	$(test8f_SOURCES)
+	$(test4b_SOURCES) $(test4f_SOURCES) $(test5_SOURCES) \
+	$(test6_SOURCES) $(test6f_SOURCES) $(test7_SOURCES) \
+	$(test7f_SOURCES) $(test8f_SOURCES)
 DIST_SOURCES = $(esolve_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
 	$(etest3_SOURCES) $(etest4_SOURCES) \
@@ -328,9 +332,10 @@ DIST_SOURCES = $(esolve_SOURCES) $(etest1_SOURCES) \
 	$(spmvtest5_SOURCES) $(test1_SOURCES) \
 	$(am__test1f_SOURCES_DIST) $(test2_SOURCES) $(test2b_SOURCES) \
 	$(am__test2f_SOURCES_DIST) $(test3_SOURCES) $(test3b_SOURCES) \
-	$(test4_SOURCES) $(am__test4f_SOURCES_DIST) $(test5_SOURCES) \
-	$(test6_SOURCES) $(am__test6f_SOURCES_DIST) $(test7_SOURCES) \
-	$(am__test7f_SOURCES_DIST) $(am__test8f_SOURCES_DIST)
+	$(test4_SOURCES) $(test4b_SOURCES) $(am__test4f_SOURCES_DIST) \
+	$(test5_SOURCES) $(test6_SOURCES) $(am__test6f_SOURCES_DIST) \
+	$(test7_SOURCES) $(am__test7f_SOURCES_DIST) \
+	$(am__test8f_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -516,6 +521,7 @@ test2b_SOURCES = test2b.c
 test3_SOURCES = test3.c
 test3b_SOURCES = test3b.c
 test4_SOURCES = test4.c
+test4b_SOURCES = test4b.c
 test5_SOURCES = test5.c
 test6_SOURCES = test6.c
 test7_SOURCES = test7.c
@@ -791,6 +797,9 @@ test3b$(EXEEXT): $(test3b_OBJECTS) $(test3b_DEPENDENCIES) $(EXTRA_test3b_DEPENDE
 test4$(EXEEXT): $(test4_OBJECTS) $(test4_DEPENDENCIES) $(EXTRA_test4_DEPENDENCIES) 
 	@rm -f test4$(EXEEXT)
 	$(LINK) $(test4_OBJECTS) $(test4_LDADD) $(LIBS)
+test4b$(EXEEXT): $(test4b_OBJECTS) $(test4b_DEPENDENCIES) $(EXTRA_test4b_DEPENDENCIES) 
+	@rm -f test4b$(EXEEXT)
+	$(LINK) $(test4b_OBJECTS) $(test4b_LDADD) $(LIBS)
 test4f$(EXEEXT): $(test4f_OBJECTS) $(test4f_DEPENDENCIES) $(EXTRA_test4f_DEPENDENCIES) 
 	@rm -f test4f$(EXEEXT)
 	$(F77LINK) $(test4f_OBJECTS) $(test4f_LDADD) $(LIBS)
@@ -876,6 +885,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test3.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test3b.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test4.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test4b.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test5.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test6.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test7.Po@am__quote@
