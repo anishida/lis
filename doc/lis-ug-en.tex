@@ -803,19 +803,11 @@ the values of the elements of the solution $x$ are $1$.
 
 \subsubsection{test4b}
 This program solves the linear equation $Ax = b$ with a specified 
-solver and a preconditioner, where $A$ is a tridiagonal matrix
-\[
-\left(
-\begin{array}{ccccc}
-2 & -1 &   &  &   \\
--1 & 2 & -1 &  &   \\
-  & \ddots  & \ddots  & \ddots  &   \\
-  &   & -1 & 2 & -1 \\
-  &   &   & -1 & 2 \\
-\end{array}
-\right)
-\]
-of size $1200$, for $100$ steps, and measures running times of the functions.
+solver and a preconditioner for $100$ steps, where the coefficient 
+matrix $A$ of size $10,000$ is a discretized two dimensional 
+Laplacian using the five
+point central difference scheme, 
+and measures the running times of functions.
 
 \subsubsection{test5}
 
