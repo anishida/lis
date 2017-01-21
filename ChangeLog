@@ -1,3 +1,8 @@
+Version 1.7.23  January 22, 2017
+
+  - Added support for test/test4b.c (thanks to Ganesh Natarajan).
+  - Updated test/spmvtest1.c.
+
 Version 1.7.22  January 13, 2017
 
   - Updated documents (thanks to Ganesh Natarajan).

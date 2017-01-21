@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis ユーザガイド}\\
-バージョン 1.7.22
+バージョン 1.7.23
 \end{flushleft}
 
 \vspace*{2cm}
@@ -736,6 +736,23 @@ A =
 である. 右辺ベクトル$b$は解ベクトル$x$の値がすべて$1$となるよう
 設定される. 
 {\tt test4f.F}は{\tt test4.c}のFortran版である. 
+
+\subsubsection{test4b}
+線型方程式$Ax=b$を指定された解法で$100$ステップ分解き, 各関数の実行時間を
+測定する. 行列$A$は次数$1200$の3重対角行列
+\[
+A = 
+\left(
+\begin{array}{ccccc}
+2 & -1 &   &  &   \\
+-1 & 2 & -1 &  &   \\
+  & \ddots  & \ddots  & \ddots  &   \\
+  &   & -1 & 2 & -1 \\
+  &   &   & -1 & 2 \\
+\end{array}
+\right)
+\]
+である. 
 
 \subsubsection{test5}
 ディレクトリ{\tt lis-(\$VERSION)/test}において\\
@@ -4416,6 +4433,10 @@ $nnz\_row$ または $nnz$ のどちらか一方を指定する.
 関数\verb|lis_matrix_set_value|は代入された値を一時的な内部形式で
 格納するため, \verb|lis_matrix_set_value|を用いた後には
 関数\verb|lis_matrix_assemble|を呼び出さなければならない.
+
+To improve performance of this function, the introduction of the function \verb|lis_matrix_malloc| should be considered.
+
+本関数の性能を向上させるためには, 関数\verb|lis_matrix_malloc|の導入を検討すべきである.
 
 大規模な行列に対しては, 関数\verb|lis_matrix_set_type|の導入を検討
 すべきである．詳細については\\

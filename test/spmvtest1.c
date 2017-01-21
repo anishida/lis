@@ -52,12 +52,14 @@ LIS_INT main(int argc, char* argv[])
   LIS_Comm comm;
   LIS_MATRIX A,A0;
   LIS_VECTOR b,x;
+  LIS_SCALAR *value;  
   int nprocs,my_rank;
   LIS_INT nthreads, maxthreads;
   LIS_INT gn,nnz;
-  LIS_INT i,n,np;
+  LIS_INT i,j,n,ctr,np;
   LIS_INT is,ie;
   LIS_INT err,iter,matrix_type,storage,ss,se;
+  LIS_INT *ptr,*index;  
   double time,time2,nnzs,nnzap,nnzt;
   LIS_REAL val;
   double commtime,comptime,flops;
@@ -123,14 +125,27 @@ LIS_INT main(int argc, char* argv[])
   /* create matrix and vectors */
   lis_matrix_create(comm,&A0);
   lis_matrix_set_size(A0,0,n);
+
+  ptr   = (LIS_INT *)malloc((A0->n+1)*sizeof(LIS_INT));
+  if( ptr==NULL ) CHKERR(1);
+  index = (LIS_INT *)malloc(3*A0->n*sizeof(LIS_INT));
+  if( index==NULL ) CHKERR(1);
+  value = (LIS_SCALAR *)malloc(3*A0->n*sizeof(LIS_SCALAR));
+  if( value==NULL ) CHKERR(1);
+
   lis_matrix_get_size(A0,&n,&gn);
   lis_matrix_get_range(A0,&is,&ie);
+  ctr = 0;
   for(i=is;i<ie;i++)
     {
-      if( i>0   )  lis_matrix_set_value(LIS_INS_VALUE,i,i-1,-1.0,A0);
-      if( i<gn-1 ) lis_matrix_set_value(LIS_INS_VALUE,i,i+1,-1.0,A0);
-      lis_matrix_set_value(LIS_INS_VALUE,i,i,2.0,A0);
+      if( i>0   ) { j = i - 1; index[ctr] = j; value[ctr++] = -1.0;}
+      if( i<gn-1 ) { j = i + 1; index[ctr] = j; value[ctr++] = -1.0;}
+      index[ctr] = i; value[ctr++] = 2.0;
+      ptr[i-is+1] = ctr;
     }
+  ptr[0] = 0;
+  err = lis_matrix_set_csr(ptr[ie-is],ptr,index,value,A0);
+  CHKERR(err);
   err = lis_matrix_assemble(A0);
   CHKERR(err);
 
