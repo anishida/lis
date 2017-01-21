@@ -801,6 +801,22 @@ The right-hand side vector $b$ is set such that
 the values of the elements of the solution $x$ are $1$. 
 {\tt test4f.F} is the Fortran version of {\tt test4.c}.
 
+\subsubsection{test4b}
+This program solves the linear equation $Ax = b$ with a specified 
+solver and a preconditioner, where $A$ is a tridiagonal matrix
+\[
+\left(
+\begin{array}{ccccc}
+2 & -1 &   &  &   \\
+-1 & 2 & -1 &  &   \\
+  & \ddots  & \ddots  & \ddots  &   \\
+  &   & -1 & 2 & -1 \\
+  &   &   & -1 & 2 \\
+\end{array}
+\right)
+\]
+of size $1200$, for $100$ steps, and measures running times of the functions.
+
 \subsubsection{test5}
 
 \verb+Usage: test5 n gamma [options]+\\
