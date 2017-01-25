@@ -41,13 +41,10 @@ LIS_INT main(int argc, char* argv[])
     LIS_VECTOR b,x,u;
     LIS_SOLVER solver;
     int nprocs,my_rank;
-    LIS_INT err,i,j,ii,jj,m,n,nn,gn,is,ie,iter;
-    LIS_INT step,*nnz;
+    LIS_INT err,l,m,n,nn,i,j,k,ii,jj,gn,is,ie,step,s,iter;
+    LIS_INT *nnz;
     double time,timea,timeb,timec,timed,timee,time0,time1;    
 
-    m = 100;
-    n = 100;
-    nn = m*n;
     lis_initialize(&argc, &argv);
     comm = LIS_COMM_WORLD;
 
@@ -58,6 +55,23 @@ LIS_INT main(int argc, char* argv[])
     my_rank = 0;
 #endif
 
+    if( argc < 5 )
+      {
+	lis_printf(comm,"Usage: %s l m n step [options]\n", argv[0]);
+	CHKERR(1);	  	    
+      }
+
+    l  = atoi(argv[1]);
+    m  = atoi(argv[2]);
+    n  = atoi(argv[3]);
+    step = atoi(argv[4]);
+
+    if( l<=0 || m<=0 || n<=0 )
+      {
+	lis_printf(comm,"l=%D <=0, m=%D <=0 or n=%D <=0\n",l,m,n);
+	CHKERR(1);
+      } 
+
     lis_printf(comm,"\n");
     lis_printf(comm,"number of processes = %d\n",nprocs);
 
@@ -67,11 +81,12 @@ LIS_INT main(int argc, char* argv[])
 #endif
 		
     /* create matrix and vectors */
+    nn = l*m*n;    
     time0 = lis_wtime();    
     lis_matrix_create(comm,&A); 
     err = lis_matrix_set_size(A,0,nn); CHKERR(err);
     time1 = lis_wtime();
-    err = lis_matrix_malloc(A,5*nn,nnz); CHKERR(err);    
+    err = lis_matrix_malloc(A,7*nn,nnz); CHKERR(err);    
     timea = lis_wtime() - time1;
     lis_vector_duplicate(A,&u);
     lis_vector_duplicate(A,&b);
@@ -85,22 +100,25 @@ LIS_INT main(int argc, char* argv[])
     timeb = 0;
     timec = 0;
     timed = 0;
-    for(step=0;step<100;step++)
+    for(s=0;s<step;s++)
       {
 	lis_printf(comm,"\n");
-	lis_printf(comm,"step = %D\n",step);	
+	lis_printf(comm,"step = %D\n",s);
 	lis_printf(comm,"\n");
 
-	time1 = lis_wtime();
+	time1 = lis_wtime();	
 	for(ii=is;ii<ie;ii++)
 	{
-		i = ii/m;
-		j = ii - i*m;
-		if( i>0 )   lis_matrix_set_value(LIS_INS_VALUE,ii,ii-m,-1.0,A);
-		if( i<n-1 ) lis_matrix_set_value(LIS_INS_VALUE,ii,ii+m,-1.0,A);
-		if( j>0 )   lis_matrix_set_value(LIS_INS_VALUE,ii,ii-1,-1.0,A);
-		if( j<m-1 ) lis_matrix_set_value(LIS_INS_VALUE,ii,ii+1,-1.0,A);
-		lis_matrix_set_value(LIS_INS_VALUE,ii,ii,4.0,A);	
+	  i = ii/(m*n);
+	  j = (ii - i*m*n)/n;
+	  k = ii - i*m*n - j*n;
+	  if( i>0 )   lis_matrix_set_value(LIS_INS_VALUE,ii,ii-m*n,-1.0,A);
+	  if( i<l-1 ) lis_matrix_set_value(LIS_INS_VALUE,ii,ii+m*n,-1.0,A);
+	  if( j>0 ) lis_matrix_set_value(LIS_INS_VALUE,ii,ii-n,-1.0,A); 
+	  if( j<m-1 ) lis_matrix_set_value(LIS_INS_VALUE,ii,ii+n,-1.0,A);
+	  if( k>0 ) lis_matrix_set_value(LIS_INS_VALUE,ii,ii-1,-1.0,A);
+	  if( k<n-1 ) lis_matrix_set_value(LIS_INS_VALUE,ii,ii+1,-1.0,A);
+	  lis_matrix_set_value(LIS_INS_VALUE,ii,ii,6.0,A);
 	}
 	timeb += lis_wtime() - time1;
 	lis_matrix_set_type(A,LIS_MATRIX_CSR);
