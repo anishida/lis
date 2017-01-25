@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.7.23
+Version 1.7.24
 \end{flushleft}
 
 \vspace*{2cm}
@@ -802,12 +802,22 @@ the values of the elements of the solution $x$ are $1$.
 {\tt test4f.F} is the Fortran version of {\tt test4.c}.
 
 \subsubsection{test4b}
-This program solves the linear equation $Ax = b$ with a specified 
-solver and a preconditioner for $100$ steps, where the coefficient 
-matrix $A$ of size $10,000$ is a discretized two dimensional 
-Laplacian using the five
-point central difference scheme, 
-and measures the running times of functions.
+
+\verb+Usage: test4b l m n step [options]+\\
+
+This program solves the linear equation $Ax = b$ for {\tt step} steps,
+where the coefficient 
+matrix $A$ of size $lmn$ is a discretized three dimensional 
+Laplacian using the seven
+point central difference scheme, with the coefficient matrix 
+in the CSR format and the solver specified by {\tt options}.
+The right-hand side vector $b$ is set such that the values of the elements of the solution $x$ are $1$. 
+The values {\tt l}, {\tt m} and {\tt n} represent the numbers of grid
+points in each dimension. 
+This program sets matrix values using the function
+{\tt lis\_matrix\_set\_value}, 
+and measures the running time of the function.
+See also {\tt test3}. 
 
 \subsubsection{test5}
 

@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis ユーザガイド}\\
-バージョン 1.7.23
+バージョン 1.7.24
 \end{flushleft}
 
 \vspace*{2cm}
@@ -738,11 +738,17 @@ A =
 {\tt test4f.F}は{\tt test4.c}のFortran版である. 
 
 \subsubsection{test4b}
-2次元Laplace作用素を5点中心差分により離散化して得られる
-次数$10,000$の行列$A$を係数とする
-線型方程式$Ax=b$を指定された解法で$100$ステップ分解き, 各関数の実行時間を
-測定する. 
-
+ディレクトリ{\tt lis-(\$VERSION)/test}において\\
+ \verb+      > test4b l m n step [options]+\\
+と入力すると, 3次元Laplace作用素を7点中心差分により離散化して得られる
+次数$lmn$の行列$A$を係数とする
+線型方程式$Ax=b$を, {\tt options}で指定された解法で{\tt step}ステップ分解く.
+右辺ベクトル$b$は解ベクトル$x$の値がすべて$1$となるよう
+設定される. {\tt l}, {\tt m}, {\tt n}は各次元の格子点数である. 
+行列の値は関数{\tt lis\_matrix\_set\_value}で与えられ,
+関数の実行時間が測定される.
+{\tt test3}も参照のこと.
+　
 \subsubsection{test5}
 ディレクトリ{\tt lis-(\$VERSION)/test}において\\
  \verb+      > test5 n gamma [options]+\\
