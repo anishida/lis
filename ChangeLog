@@ -1,3 +1,7 @@
+Version 1.7.24  January 25, 2017
+
+  - Updated test/test4b.c.
+
 Version 1.7.23  January 22, 2017
 
   - Added support for test/test4b.c (thanks to Ganesh Natarajan).
