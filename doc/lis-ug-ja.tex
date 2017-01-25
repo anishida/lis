@@ -4373,7 +4373,7 @@ $global\_n$をグローバルな行数, $local\_n$をローカルな行数と呼ぶ.
 \end{screen}
 {\bf 機能}\\
 \indent
-行列のメモリ領域をあらかじめ確保する. 
+行列のメモリ領域を確保する. 
 \\ \\
 \noindent
 {\bf 入力}
@@ -4389,8 +4389,7 @@ $global\_n$をグローバルな行数, $local\_n$をローカルな行数と呼ぶ.
 {\bf 注釈}\\
 \indent
 $nnz\_row$ または $nnz$ のどちらか一方を指定する. 
-この関数は, \verb|lis_matrix_set_value|で効率よく要素に値を代入できるように, あらかじめ
-メモリ領域を確保する.
+この関数は, \verb|lis_matrix_set_value|のためにメモリ領域を確保する.
 
 \subsubsection{lis\_matrix\_set\_value}
 \begin{screen}

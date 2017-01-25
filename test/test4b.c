@@ -86,7 +86,9 @@ LIS_INT main(int argc, char* argv[])
     lis_matrix_create(comm,&A); 
     err = lis_matrix_set_size(A,0,nn); CHKERR(err);
     time1 = lis_wtime();
+    /*
     err = lis_matrix_malloc(A,7*nn,nnz); CHKERR(err);    
+    */
     timea = lis_wtime() - time1;
     lis_vector_duplicate(A,&u);
     lis_vector_duplicate(A,&b);
