@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.7.24
+Version 1.7.25
 \end{flushleft}
 
 \vspace*{2cm}
@@ -1980,7 +1980,8 @@ Option &                          \\ \hline
                        & \verb=                    =  ($D^{-1/2}$ represents the diagonal matrix \\
                        & \verb=                    =  with $1/\sqrt{a_{ii}}$ as the diagonal) \\ 
 \verb=-initx_zeros [1]= & The behavior of the initial vector $x_{0}$  \\
-                       & \verb=-initx_zeros {false|0}     =  Given values \\
+                       & \verb=-initx_zeros {false|0}     =  Values are given by the argument \verb=x= \\
+                       & \verb=                           =  of the function \verb=lis_solve()= \\
                        & \verb=-initx_zeros {true|1}      =  All values are set to $0$ \\
 \verb=-conv_cond [0]= & The convergence condition  \\
                        & \verb=-conv_cond {nrm2_r|0}     =  $||b-Ax||_2 \le tol * ||b-Ax_0||_2$ \\
@@ -2176,7 +2177,8 @@ Option &                          \\ \hline
                        & and Generalized Arnoldi\\
 \verb=-shift [0.0]= & The amount of the shift $\sigma$ \\
 \verb=-initx_ones [1]= & The behavior of the initial vector $x_{0}$  \\
-                       & \verb=-initx_ones {false|0}     =  Given values \\
+                       & \verb=-initx_ones {false|0}     =  Values are given by the argument \verb=x= \\
+                       & \verb=                           =  of the function \verb=lis_esolve()= \\
                        & \verb=-initx_ones {true|1}      =  All values are set to $1$ \\
 \verb=-omp_num_threads [t]= & The number of threads        \\ 
                             & (\verb=t= represents the maximum number of
@@ -6036,7 +6038,8 @@ Option &                          \\ \hline
                        & \verb=                    =  ($D^{-1/2}$ represents the diagonal matrix \\
                        & \verb=                    =  with $1/\sqrt{a_{ii}}$ as the diagonal) \\ 
 \verb=-initx_zeros [1]= & The behavior of the initial vector $x_{0}$  \\
-                       & \verb=-initx_zeros {false|0}     =  Given values \\
+                       & \verb=-initx_zeros {false|0}     =  Values are given by the argument \verb=x= \\
+                       & \verb=                           =  of the function \verb=lis_solve()= \\
                        & \verb=-initx_zeros {true|1}      =  All values are set to $0$ \\
 \verb=-conv_cond [0]= & The convergence condition  \\
                        & \verb=-conv_cond {nrm2_r|0}     =  $||b-Ax||_2 \le tol * ||b-Ax_0||_2$ \\
@@ -6557,7 +6560,8 @@ Option &                          \\ \hline
                        & and Generalized Arnoldi\\
 \verb=-shift [0.0]= & The amount of the shift $\sigma$ \\
 \verb=-initx_ones [1]= & The behavior of the initial vector $x_{0}$  \\
-                       & \verb=-initx_ones {false|0}     =  Given values \\  
+                       & \verb=-initx_ones {false|0}     =  Values are given by the argument \verb=x= \\
+                       & \verb=                           =  of the function \verb=lis_esolve()= \\
                        & \verb=-initx_ones {true|1}      =  All values are set to $1$ \\
 \verb=-omp_num_threads [t]= & The number of threads        \\ 
                             & (\verb=t= represents the maximum number of
