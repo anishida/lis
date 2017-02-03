@@ -306,7 +306,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   esolver2->options[LIS_EOPTIONS_SUBSPACE] = 1;
   esolver2->options[LIS_EOPTIONS_MAXITER] = emaxiter;
   esolver2->options[LIS_EOPTIONS_OUTPUT] = esolver->options[LIS_EOPTIONS_OUTPUT];
-  esolver2->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN] = tol; 
+  esolver2->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN] = tol;
 
   /* compute refined (real) eigenpairs */
 
