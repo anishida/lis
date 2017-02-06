@@ -6104,6 +6104,11 @@ Solve the linear equation $Ax = b$ with the specified solver.
 \item[\tt solver] The number of iterations, the execution time, etc.
 \item[\tt ierr] The return code
 \end{namelist}
+{\bf Note}\\
+\indent
+If the option {\tt -initx\_zeros \{false|0\}} is specified, the initial
+vector is given by the argument {\tt x}.
+Otherwise, all values of the initial vector are set to $0$. 
 
 \newpage
 \subsubsection{lis\_solve\_kernel}
@@ -6597,7 +6602,6 @@ Set the options for the eigensolver on the command line.
 \item[\tt ierr] The return code
 \end{namelist}
 
-\newpage
 \subsubsection{lis\_esolve}
 \begin{screen}
 \verb|C       LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x,|\\ 
@@ -6623,7 +6627,13 @@ Solve the standard eigenvalue problem $Ax = \lambda x$ with the specified eigens
 \item[\tt esolver] The number of iterations, the execution time, etc.
 \item[\tt ierr] The return code
 \end{namelist}
+{\bf Note}\\
+\indent
+If the option {\tt -initx\_ones \{false|0\}} is specified, the initial
+vector is given by the argument {\tt x}.
+Otherwise, all values of the initial vector are set to $1$. 
 
+\newpage
 \subsubsection{lis\_gesolve}
 \begin{screen}
 \verb|C       LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B,|\\ 
@@ -6650,6 +6660,11 @@ Solve the generalized eigenvalue problem $Ax = \lambda Bx$ with the specified ei
 \item[\tt esolver] The number of iterations, the execution time, etc.
 \item[\tt ierr] The return code
 \end{namelist}
+{\bf Note}\\
+\indent
+If the option {\tt -initx\_ones \{false|0\}} is specified, the initial
+vector is given by the argument {\tt x}.
+Otherwise, all values of the initial vector are set to $1$. 
 
 \newpage
 \subsubsection{lis\_esolver\_get\_status}
