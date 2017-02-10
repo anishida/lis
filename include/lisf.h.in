@@ -424,6 +424,9 @@
 #define lis_solver_get_residualnorm lis_solver_get_residualnorm_f
 #define LIS_SOLVER_GET_RESIDUALNORM lis_solver_get_residualnorm_f
 
+#define lis_solver_get_rhistory lis_solver_get_rhistory_f
+#define LIS_SOLVER_GET_RHISTORY lis_solver_get_rhistory_f      
+
 #define lis_solver_get_solver lis_solver_get_solver_f
 #define LIS_SOLVER_GET_SOLVER lis_solver_get_solver_f
 
@@ -500,6 +503,9 @@
 
 #define lis_esolver_get_residualnorm lis_esolver_get_residualnorm_f
 #define LIS_ESOLVER_GET_RESIDUALNORM lis_esolver_get_residualnorm_f
+
+#define lis_esolver_get_rhistory lis_esolver_get_rhistory_f
+#define LIS_ESOLVER_GET_RHISTORY lis_esolver_get_rhistory_f      
 
 #define lis_esolver_get_evalues lis_esolver_get_evalues_f
 #define LIS_ESOLVER_GET_EVALUES lis_esolver_get_evalues_f

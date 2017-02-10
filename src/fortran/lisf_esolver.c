@@ -209,6 +209,19 @@ void lis_esolver_get_residualnorm_f(LIS_ESOLVER_F *esolver, LIS_REAL *residual, 
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_esolver_get_rhistory_f"
+void lis_esolver_get_rhistory_f(LIS_SOLVER_F *esolver, LIS_VECTOR_F v, LIS_INT *ierr)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	*ierr = lis_esolver_get_rhistory((LIS_ESOLVER)LIS_V2P(esolver),(LIS_VECTOR)LIS_V2P(v));
+	if( *ierr )	return;
+	
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_esolver_get_evalues_f"
 void lis_esolver_get_evalues_f(LIS_ESOLVER_F *esolver, LIS_VECTOR v, LIS_INT *ierr)
 {
