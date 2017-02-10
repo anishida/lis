@@ -222,6 +222,19 @@ void lis_solver_get_solver_f(LIS_SOLVER_F *solver, LIS_INT *nsol, LIS_INT *ierr)
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_solver_get_rhistory_f"
+void lis_solver_get_rhistory_f(LIS_SOLVER_F *solver, LIS_VECTOR_F v, LIS_INT *ierr)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	*ierr = lis_solver_get_rhistory((LIS_SOLVER)LIS_V2P(solver),(LIS_VECTOR)LIS_V2P(v));
+	if( *ierr )	return;
+	
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_solver_get_solvername_f"
 void lis_solver_get_solvername_f(LIS_INT *solver, char *name, LIS_INT *ierr, LIS_INT len)
 {
