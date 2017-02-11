@@ -1,6 +1,7 @@
 Version 1.7.26  February 10, 2017
 
   - Added support for lis_*solver_get_rhistory() in Fortran (thanks to Thomas Goelles).
+  - Updated documents (thanks to Thomas Goelles).
 
 Version 1.7.25  February 3, 2017
 
