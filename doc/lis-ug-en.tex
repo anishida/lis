@@ -6110,8 +6110,8 @@ If the option {\tt -initx\_zeros \{false|0\}} is specified, the initial
 vector is given by the argument {\tt x}.
 Otherwise, all values of the initial vector are set to $0$.
 
-This function returns 0 if the status of the solver is {\tt LIS\_BREAKDOWN}
-or {\tt LIS\_MAXITER}.
+This function returns 0 if the status of the solver ({\tt solver->retcode})
+is {\tt LIS\_BREAKDOWN} or {\tt LIS\_MAXITER}.
 
 \newpage
 \subsubsection{lis\_solve\_kernel}
@@ -6146,8 +6146,8 @@ See {\tt lis-(\$VERSION)/src/esolver/lis\_esolver\_ii.c},
 which computes the smallest eigenvalue by calling 
 \verb|lis_solve_kernel| multiple times, for example. 
 
-This function returns 0 if the status of the solver is {\tt LIS\_BREAKDOWN}
-or {\tt LIS\_MAXITER}.
+This function returns 0 if the status of the solver ({\tt solver->retcode})
+is {\tt LIS\_BREAKDOWN} or {\tt LIS\_MAXITER}.
 
 \newpage
 \subsubsection{lis\_solver\_get\_status}
@@ -6639,7 +6639,8 @@ If the option {\tt -initx\_ones \{false|0\}} is specified, the initial
 vector is given by the argument {\tt x}.
 Otherwise, all values of the initial vector are set to $1$. 
 
-This function returns 0 if the status of the solver is {\tt LIS\_MAXITER}.
+This function returns 0 if the status of the solver ({\tt esolver->retcode})
+is {\tt LIS\_MAXITER}.
 
 \newpage
 \subsubsection{lis\_gesolve}
@@ -6674,7 +6675,8 @@ If the option {\tt -initx\_ones \{false|0\}} is specified, the initial
 vector is given by the argument {\tt x}.
 Otherwise, all values of the initial vector are set to $1$. 
 
-This function returns 0 if the status of the solver is {\tt LIS\_MAXITER}.
+This function returns 0 if the status of the solver ({\tt esolver->retcode})
+is {\tt LIS\_MAXITER}.
 
 \newpage
 \subsubsection{lis\_esolver\_get\_status}
