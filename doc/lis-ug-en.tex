@@ -6111,7 +6111,8 @@ vector is given by the argument {\tt x}.
 Otherwise, all values of the initial vector are set to $0$.
 
 This function returns 0 if the status of the solver ({\tt solver->retcode})
-is {\tt LIS\_BREAKDOWN} or {\tt LIS\_MAXITER}.
+is {\tt LIS\_BREAKDOWN} or {\tt LIS\_MAXITER}. See also the function
+{\tt lis\_solver\_get\_status()}. 
 
 \newpage
 \subsubsection{lis\_solve\_kernel}
@@ -6147,7 +6148,8 @@ which computes the smallest eigenvalue by calling
 \verb|lis_solve_kernel| multiple times, for example. 
 
 This function returns 0 if the status of the solver ({\tt solver->retcode})
-is {\tt LIS\_BREAKDOWN} or {\tt LIS\_MAXITER}.
+is {\tt LIS\_BREAKDOWN} or {\tt LIS\_MAXITER}. See also the function
+{\tt lis\_solver\_get\_status()}. 
 
 \newpage
 \subsubsection{lis\_solver\_get\_status}
@@ -6170,6 +6172,9 @@ Get the status from the solver.
 \item[\tt status] The status
 \item[\tt ierr] The return code
 \end{namelist}
+{\bf Note}\\
+\indent
+This function returns the status of the solver ({\tt solver->retcode}).
 
 \subsubsection{lis\_solver\_get\_iter}
 \begin{screen}
@@ -6639,8 +6644,9 @@ If the option {\tt -initx\_ones \{false|0\}} is specified, the initial
 vector is given by the argument {\tt x}.
 Otherwise, all values of the initial vector are set to $1$. 
 
-This function returns 0 if the status of the solver ({\tt esolver->retcode})
-is {\tt LIS\_MAXITER}.
+This function returns 0 if the status of the eigensolver ({\tt esolver->retcode})
+is {\tt LIS\_MAXITER}. See also the function
+{\tt lis\_esolver\_get\_status()}. 
 
 \newpage
 \subsubsection{lis\_gesolve}
@@ -6675,8 +6681,9 @@ If the option {\tt -initx\_ones \{false|0\}} is specified, the initial
 vector is given by the argument {\tt x}.
 Otherwise, all values of the initial vector are set to $1$. 
 
-This function returns 0 if the status of the solver ({\tt esolver->retcode})
-is {\tt LIS\_MAXITER}.
+This function returns 0 if the status of the eigensolver ({\tt esolver->retcode})
+is {\tt LIS\_MAXITER}. See also the function
+{\tt lis\_esolver\_get\_status()}. 
 
 \newpage
 \subsubsection{lis\_esolver\_get\_status}
@@ -6699,6 +6706,9 @@ Get the status for the specified eigenpair from the eigensolver.
 \item[\tt status] The status
 \item[\tt ierr] The return code
 \end{namelist}
+{\bf Note}\\
+\indent
+This function returns the status of the eigensolver ({\tt esolver->retcode}).
 
 \subsubsection{lis\_esolver\_get\_iter}
 \begin{screen}
