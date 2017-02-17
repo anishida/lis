@@ -1,3 +1,8 @@
+Version 1.7.27  February 17, 2017
+
+  - Fixed matrix file format for lis_esolver_get_evectors() (thanks to Takahiro Okada).
+  - Updated documents.
+
 Version 1.7.26  February 10, 2017
 
   - Added support for lis_*solver_get_rhistory() in Fortran (thanks to Thomas Goelles).
