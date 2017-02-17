@@ -5976,7 +5976,8 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 $B$=$NB>$N>l9g$K$O!$=i4|%Y%/%H%k$N$9$Y$F$NMWAG$NCM$O(B$0$$B$K@_Dj$5$l$k(B.
 
 $B$3$N4X?t$O(B, $B%=%k%P$N>uBV(B ({\tt solver->retcode}) $B$,(B
-{\tt LIS\_BREAKDOWN}$B$^$?$O(B{\tt LIS\_MAXITER}$B$N>l9g$K$O(B0$B$rJV$9(B. 
+{\tt LIS\_BREAKDOWN}$B$^$?$O(B{\tt LIS\_MAXITER}$B$N>l9g$K$O(B0$B$rJV$9(B.
+$B4X?t(B{\tt lis\_solver\_get\_status()}$B$b;2>H$N$3$H(B. 
 
 \newpage
 \subsubsection{lis\_solve\_kernel}
@@ -6013,6 +6014,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 
 $B$3$N4X?t$O(B, $B%=%k%P$N>uBV(B ({\tt solver->retcode}) $B$,(B
 {\tt LIS\_BREAKDOWN}$B$^$?$O(B{\tt LIS\_MAXITER}$B$N>l9g$K$O(B0$B$rJV$9(B. 
+$B4X?t(B{\tt lis\_solver\_get\_status()}$B$b;2>H$N$3$H(B.
 
 \newpage
 \subsubsection{lis\_solver\_get\_status}
@@ -6035,6 +6037,9 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt status] $B>uBV(B
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
+{\bf $BCm<a(B}\\
+\indent
+$B$3$N4X?t$O(B, $B%=%k%P$N>uBV(B ({\tt solver->retcode}) $B$rJV$9(B.
 
 \subsubsection{lis\_solver\_get\_iter}
 \begin{screen}
@@ -6482,7 +6487,8 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 $B$=$NB>$N>l9g$K$O!$=i4|%Y%/%H%k$N$9$Y$F$NMWAG$NCM$O(B$0$$B$K@_Dj$5$l$k(B. 
 
 $B$3$N4X?t$O(B, $B%=%k%P$N>uBV(B ({\tt esolver->retcode}) $B$,(B
-{\tt LIS\_MAXITER}$B$N>l9g$K$O(B0$B$rJV$9(B. 
+{\tt LIS\_MAXITER}$B$N>l9g$K$O(B0$B$rJV$9(B. $B4X?t(B\\
+{\tt lis\_esolver\_get\_status()}$B$b;2>H$N$3$H(B. 
 
 \newpage
 \subsubsection{lis\_gesolve}
@@ -6518,7 +6524,8 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 $B$=$NB>$N>l9g$K$O!$=i4|%Y%/%H%k$N$9$Y$F$NMWAG$NCM$O(B$0$$B$K@_Dj$5$l$k(B. 
 
 $B$3$N4X?t$O(B, $B%=%k%P$N>uBV(B ({\tt esolver->retcode}) $B$,(B
-{\tt LIS\_MAXITER}$B$N>l9g$K$O(B0$B$rJV$9(B. 
+{\tt LIS\_MAXITER}$B$N>l9g$K$O(B0$B$rJV$9(B. $B4X?t(B\\
+{\tt lis\_esolver\_get\_status()}$B$b;2>H$N$3$H(B.
 
 \newpage
 \subsubsection{lis\_esolver\_get\_status}
@@ -6541,6 +6548,9 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \item[\tt status] $B>uBV(B
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
+{\bf $BCm<a(B}\\
+\indent
+$B$3$N4X?t$O(B, $B%=%k%P$N>uBV(B ({\tt esolver->retcode}) $B$rJV$9(B.
 
 \subsubsection{lis\_esolver\_get\_iter}
 \begin{screen}
