@@ -1133,7 +1133,7 @@ LIS_INT lis_esolver_get_evectors(LIS_ESOLVER esolver, LIS_MATRIX M)
 		lis_matrix_set_value(LIS_INS_VALUE,ii,jj,esolver->evector[j]->value[i],M);
 	      }
 	  }
-	lis_matrix_set_type(M,LIS_MATRIX_CSR);
+	lis_matrix_set_type(M,LIS_MATRIX_COO);
 	lis_matrix_assemble(M);
 
 	LIS_DEBUG_FUNC_OUT;
