@@ -297,6 +297,41 @@ if test "$TARGET" != ""; then
                     ax_vector_machine="yes"
                     OMPFLAG="-Popenmp"
 	  ;;
+# Intel Compiler for MIC
+          intel_mic) CC="icc"
+                    F77="ifort"
+                    FC="ifort"
+                    CFLAGS="-mmic"
+                    FFLAGS="-mmic"
+                    FCFLAGS="-mmic"
+                    FCLDFLAGS="-mmic"
+                    LDFLAGS="-mmic"		    
+                    ax_cv_c_compiler_vendor="intel"
+                    ax_cv_f77_compiler_vendor="intel"
+          ;;
+# Intel Cross Compiler for MIC
+          intel_mic_cross) CC="icc"
+                    F77="ifort"
+                    FC="ifort"
+                    CFLAGS="-mmic"
+                    FFLAGS="-mmic"
+                    FCFLAGS="-mmic"
+                    FCLDFLAGS="-mmic"
+                    LDFLAGS="-mmic"		    
+                    cross_compiling="yes"
+		    host="x86_64-pc-linux-gnu"
+		    host_alias="x86_64-linux-gnu"
+		    host_cpu="x86_64"   
+		    host_os="linux-gnu"
+		    host_vendor="pc"
+		    target="k1om-mpss-linux-gnu"
+		    target_alias="k1om-mpss-linux"
+		    target_cpu="k1om"
+		    target_os="linux-gnu"
+		    target_vendor="mpss"
+                    ax_cv_c_compiler_vendor="intel"
+                    ax_cv_f77_compiler_vendor="intel"
+          ;;
 	  *)  echo 'TARGET' $TARGET 'cannot be specified.'
               exit 1
           ;;
