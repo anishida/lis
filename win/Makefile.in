@@ -210,7 +210,7 @@ objs_saamg: ..\src\fortran\amg\lis_s_data_type_AMGCG.obj \
 	    ..\src\fortran\amg\lis_s_finit.obj
 !endif
 
-exes_test: test1.exe test2.exe test2b.exe test3.exe test3b.exe test4.exe test4b.exe test5.exe test6.exe
+exes_test: test1.exe test2.exe test2b.exe test3.exe test3b.exe test3c.exe test4.exe test4b.exe test5.exe test6.exe
 exes_etest: etest1.exe getest1.exe etest2.exe etest3.exe etest4.exe etest5.exe getest5.exe etest6.exe etest7.exe
 exes_spmvtest: spmvtest1.exe spmvtest2.exe spmvtest2b.exe spmvtest3.exe spmvtest3b.exe spmvtest4.exe spmvtest5.exe
 
@@ -222,6 +222,7 @@ test2.exe: ..\test\$*.obj
 test2b.exe: ..\test\$*.obj
 test3.exe: ..\test\$*.obj
 test3b.exe: ..\test\$*.obj
+test3c.exe: ..\test\$*.obj
 test4.exe: ..\test\$*.obj
 test4b.exe: ..\test\$*.obj
 test5.exe: ..\test\$*.obj
