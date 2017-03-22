@@ -1,3 +1,8 @@
+Version 1.7.29  March 22, 2017
+
+  - Added support for test3c.c (thanks to Fabian Wein).
+  - Updated documents.
+
 Version 1.7.28  March 12, 2017
 
   - Added support for Intel MIC (thanks to Javier Bahamonde Amor).
