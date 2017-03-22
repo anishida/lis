@@ -782,6 +782,24 @@ The right-hand side vector $b$ is set such that the values of the elements of th
 The values {\tt l}, {\tt m} and {\tt n} represent the numbers of grid
 points in each dimension. 
 
+\subsubsection{test3c}
+
+\verb+Usage: test3c l m n step [options]+\\
+
+This program solves the linear equation $Ax = b$ for {\tt step} steps,
+where the coefficient 
+matrix $A$ of size $lmn$ is a discretized three dimensional 
+Laplacian using the seven
+point central difference scheme, with the coefficient matrix 
+in the CSR format and the solver specified by {\tt options}.
+The right-hand side vector $b$ is set such that the values of the elements of the solution $x$ are $1$. 
+The values {\tt l}, {\tt m} and {\tt n} represent the numbers of grid
+points in each dimension. 
+This program sets matrix values using the function
+{\tt lis\_matrix\_set\_csr}, 
+and measures the running time of the functions.
+See also {\tt test4b}. 
+
 \subsubsection{test4}
 This program solves the linear equation $Ax = b$ with a specified 
 solver and a preconditioner, where $A$ is a tridiagonal matrix
@@ -816,8 +834,8 @@ The values {\tt l}, {\tt m} and {\tt n} represent the numbers of grid
 points in each dimension. 
 This program sets matrix values using the function
 {\tt lis\_matrix\_set\_value}, 
-and measures the running time of the function.
-See also {\tt test3}. 
+and measures the running time of the functions.
+See also {\tt test3c}. 
 
 \subsubsection{test5}
 
