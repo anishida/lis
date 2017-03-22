@@ -134,7 +134,7 @@ LIS_INT main(int argc, char* argv[])
 
 	lis_printf(comm,"number of iterations = %D\n",iter);
 	lis_printf(comm,"\n");
-	
+
 	lis_matrix_unset(A);
 
       }
