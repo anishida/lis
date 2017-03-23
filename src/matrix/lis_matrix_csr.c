@@ -85,7 +85,10 @@ LIS_INT lis_matrix_set_csr(LIS_INT nnz, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR
 	err = lis_matrix_check(A,LIS_MATRIX_CHECK_SET);
 	if( err ) return err;
 #else
-	if(lis_matrix_is_assembled(A))  return LIS_SUCCESS;
+	if(lis_matrix_is_assembled(A)) {
+	  LIS_DEBUG_FUNC_OUT;
+	  return LIS_SUCCESS;
+	}
 	else {
 	  err = lis_matrix_check(A,LIS_MATRIX_CHECK_SET);
 	  if( err ) return err;
