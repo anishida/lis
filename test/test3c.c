@@ -48,7 +48,6 @@ LIS_INT main(int argc, char* argv[])
 	LIS_INT	err,l,m,n,nn,nnz,i,j,k,ii,jj,ctr;
 	LIS_INT	is,ie,step,s,iter;
 	int nprocs,my_rank;
-	double time,timea,timeb,timec,timed,timee,time0,time1;
 	LIS_INT *ptr,*index;
 	LIS_SCALAR *value;
 
@@ -92,7 +91,6 @@ LIS_INT main(int argc, char* argv[])
 		
 	/* create matrix and vectors */
 	nn = l*m*n;
-	time0 = lis_wtime();
 	err = lis_matrix_create(comm,&A);
 	err = lis_matrix_set_size(A,0,nn);
 	CHKERR(err);
@@ -108,27 +106,21 @@ LIS_INT main(int argc, char* argv[])
 	lis_solver_set_option("-print mem",solver);
 	lis_solver_set_optionC(solver);
 
-	time1 = lis_wtime();
 	ptr = (LIS_INT *)malloc((A->n+1)*sizeof(LIS_INT));
 	if( ptr==NULL ) CHKERR(1);
 	index = (LIS_INT *)malloc(7*A->n*sizeof(LIS_INT));
 	if( index==NULL ) CHKERR(1);
 	value = (LIS_SCALAR *)malloc(7*A->n*sizeof(LIS_SCALAR));
 	if( value==NULL ) CHKERR(1);
-	timea = lis_wtime() - time1;
 
 	lis_matrix_get_range(A,&is,&ie);
 
-	timeb = 0;
-	timec = 0;
-	timed = 0;
 	for(s=0;s<step;s++)
 	  {
 	    lis_printf(comm,"\n");
 	    lis_printf(comm,"step = %D\n",s);
 	    lis_printf(comm,"\n");
 
-	    time1 = lis_wtime();
 	    ctr = 0;
 	    for(ii=is;ii<ie;ii++)
 	      {
@@ -145,17 +137,12 @@ LIS_INT main(int argc, char* argv[])
 		ptr[ii-is+1] = ctr;
 	      }
 	    ptr[0] = 0;
-	    timeb += lis_wtime() - time1;
 
-	    if (s==0)
-	      {
-		err = lis_matrix_set_csr(ptr[ie-is],ptr,index,value,A);
-		time1 - lis_wtime();
-		CHKERR(err);
-		err = lis_matrix_assemble(A);
-		CHKERR(err);
-		timec += lis_wtime() - time1;
-	      }
+	    err = lis_matrix_set_csr(ptr[ie-is],ptr,index,value,A);
+	    CHKERR(err);
+
+	    err = lis_matrix_assemble(A);
+	    CHKERR(err);
 
 	    nnz = A->nnz;
 #ifdef USE_MPI
@@ -167,9 +154,7 @@ LIS_INT main(int argc, char* argv[])
 	    err = lis_vector_set_all(1.0,u);
 	    lis_matvec(A,u,b);
 
-	    time1 = lis_wtime();
 	    err = lis_solve(A,b,x,solver);
-	    timed += lis_wtime() - time1;
 	    CHKERR(err);
 
 	    lis_solver_get_iter(solver,&iter);
@@ -179,22 +164,12 @@ LIS_INT main(int argc, char* argv[])
 
 	  }
 
-	time1 = lis_wtime();
 	lis_matrix_destroy(A);
-	timee = lis_wtime() - time1;
 	lis_vector_destroy(b);
 	lis_vector_destroy(x);
 	lis_vector_destroy(u);
 	lis_solver_destroy(solver);
 
-	lis_printf(comm,"\n");
-	lis_printf(comm,"elapsed time           = %e sec.\n", time);
-	lis_printf(comm,"  lis_matrix_malloc    = %e sec.\n", timea);    
-	lis_printf(comm,"  set matrix values    = %e sec.\n", timeb);
-	lis_printf(comm,"  lis_matrix_assemble  = %e sec.\n", timec);
-	lis_printf(comm,"  lis_solve            = %e sec.\n", timed);
-	lis_printf(comm,"  lis_matrix_destroy   = %e sec.\n", timee);
-    
 	lis_finalize();
 	return 0;
 }
