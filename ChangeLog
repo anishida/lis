@@ -1,7 +1,7 @@
 Version 1.7.29  March 22, 2017
 
   - Added support for test/test3c.c, which is an update of test/test4b.c
-    for solving mutiple-step linear equations (thanks to Fabian Wein).
+    for solving multiple-step linear equations (thanks to Fabian Wein).
   - Updated documents.
 
 Version 1.7.28  March 12, 2017
