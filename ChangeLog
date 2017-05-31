@@ -1,3 +1,9 @@
+Version 1.7.30  May 31, 2017
+
+  - Added exception handlings for wrong parameter settings (thanks to
+    Ralf Greve).
+  - Updated documents.
+
 Version 1.7.29  March 22, 2017
 
   - Added support for test/test3c.c, which is an update of test/test4b.c
