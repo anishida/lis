@@ -162,6 +162,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       call CHKERR(ierr)
       call lis_solver_set_option('-print mem',solver,ierr)
       call lis_solver_set_optionC(solver,ierr)
+      call CHKERR(ierr)      
 
       call lis_solve(A,b,x,solver,ierr)
 

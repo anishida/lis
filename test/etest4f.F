@@ -138,6 +138,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       call lis_esolver_create(esolver,ierr)
       call lis_esolver_set_option('-eprint mem',esolver,ierr)
       call lis_esolver_set_optionC(esolver,ierr)
+      call CHKERR(ierr)      
       call lis_esolve(A,x,evalue0,esolver,ierr)
       call CHKERR(ierr)
       call lis_esolver_get_iterex(esolver,iter,iter_double,iter_quad,
