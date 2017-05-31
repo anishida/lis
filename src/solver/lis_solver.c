@@ -1208,7 +1208,7 @@ LIS_INT lis_solver_set_option_solver(char *argv, LIS_SOLVER solver)
 		sscanf(argv, "%d", &solver->options[LIS_OPTIONS_SOLVER]);
 #endif
 	}
-	else
+	else 
 	{
 		for(i=0;i<LIS_SOLVER_LEN;i++)
 		{
@@ -1216,6 +1216,11 @@ LIS_INT lis_solver_set_option_solver(char *argv, LIS_SOLVER solver)
 			{
 				solver->options[LIS_OPTIONS_SOLVER] = i+1;
 				break;
+			}
+			else if( i==LIS_SOLVER_LEN-1 )
+			{
+				LIS_SETERR(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_SOLVER is not correct\n");
+				return LIS_ERR_ILL_ARG;
 			}
 		}
 	}
@@ -1248,6 +1253,11 @@ LIS_INT lis_solver_set_option_psolver(char *argv, LIS_SOLVER solver)
 				solver->options[LIS_OPTIONS_PSOLVER] = i+1;
 				break;
 			}
+			else if( i==LIS_SOLVER_LEN-1 )
+			{
+				LIS_SETERR(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_PSOLVER is not correct\n");
+				return LIS_ERR_ILL_ARG;
+			}
 		}
 	}
 	LIS_DEBUG_FUNC_OUT;
@@ -1279,6 +1289,11 @@ LIS_INT lis_solver_set_option_precon(char *argv, LIS_SOLVER solver)
 				solver->options[LIS_OPTIONS_PRECON] = i;
 				LIS_DEBUG_FUNC_OUT;
 				return LIS_SUCCESS;
+			}
+			else if( i==LIS_PRECON_TYPE_LEN-1 )
+			{
+				LIS_SETERR(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_PRECON is not correct\n");
+				return LIS_ERR_ILL_ARG;
 			}
 		}
 		for(i=0;i<precon_register_type-LIS_PRECON_TYPE_USERDEF;i++)
@@ -1321,6 +1336,11 @@ LIS_INT lis_solver_set_option_pprecon(char *argv, LIS_SOLVER solver)
 				LIS_DEBUG_FUNC_OUT;
 				return LIS_SUCCESS;
 			}
+			else if( i==LIS_PRECON_TYPE_LEN-1 )
+			{
+				LIS_SETERR(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_PPRECON is not correct\n");
+				return LIS_ERR_ILL_ARG;
+			}
 		}
 		for(i=0;i<precon_register_type-LIS_PRECON_TYPE_USERDEF;i++)
 		{
@@ -1361,6 +1381,11 @@ LIS_INT lis_solver_set_option_print(char *argv, LIS_SOLVER solver)
 				solver->options[LIS_OPTIONS_OUTPUT] = i;
 				break;
 			}
+			else if( i==LIS_PRINT_LEN-1 )
+			{
+				LIS_SETERR(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_OUTPUT is not correct\n");
+				return LIS_ERR_ILL_ARG;
+			}
 		}
 	}
 	LIS_DEBUG_FUNC_OUT;
@@ -1391,6 +1416,11 @@ LIS_INT lis_solver_set_option_scale(char *argv, LIS_SOLVER solver)
 			{
 				solver->options[LIS_OPTIONS_SCALE] = i;
 				break;
+			}
+			else if( i==LIS_SCALE_LEN-1 )
+			{
+				LIS_SETERR(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_SCALE is not correct\n");
+				return LIS_ERR_ILL_ARG;
 			}
 		}
 	}
@@ -1423,6 +1453,11 @@ LIS_INT lis_solver_set_option_truefalse(char *argv, LIS_INT opt, LIS_SOLVER solv
 				solver->options[opt] = i;
 				break;
 			}
+			else if( i==LIS_TRUEFALSE_LEN-1 )
+			{
+				LIS_SETERR(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_TRUEFALSE is not correct\n");
+				return LIS_ERR_ILL_ARG;
+			}
 		}
 	}
 	LIS_DEBUG_FUNC_OUT;
@@ -1453,6 +1488,11 @@ LIS_INT lis_solver_set_option_precision(char *argv, LIS_INT opt, LIS_SOLVER solv
 			{
 				solver->options[opt] = i;
 				break;
+			}
+			else if( i==LIS_PRECISION_LEN-1 )
+			{
+				LIS_SETERR(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_PRECISION is not correct\n");
+				return LIS_ERR_ILL_ARG;
 			}
 		}
 	}
@@ -1485,6 +1525,11 @@ LIS_INT lis_solver_set_option_storage(char *argv, LIS_SOLVER solver)
 				solver->options[LIS_OPTIONS_STORAGE] = i+1;
 				break;
 			}
+			else if( i==LIS_STORAGE_LEN-1 )
+			{
+				LIS_SETERR(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_STORAGE is not correct\n");
+				return LIS_ERR_ILL_ARG;
+			}
 		}
 	}
 	LIS_DEBUG_FUNC_OUT;
@@ -1515,6 +1560,11 @@ LIS_INT lis_solver_set_option_conv_cond(char *argv, LIS_SOLVER solver)
 			{
 				solver->options[LIS_OPTIONS_CONV_COND] = i;
 				break;
+			}
+			else if( i==LIS_CONV_COND_LEN-1 )
+			{
+				LIS_SETERR(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_CONV_COND is not correct\n");
+				return LIS_ERR_ILL_ARG;
 			}
 		}
 	}

@@ -779,6 +779,11 @@ LIS_INT lis_esolver_set_option_esolver(char *argv, LIS_ESOLVER esolver)
 				esolver->options[LIS_EOPTIONS_ESOLVER] = i+1;
 				break;
 			}
+			else if( i==LIS_ESOLVER_LEN-1 )
+			{
+				LIS_SETERR(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_ESOLVER is not correct\n");
+				return LIS_ERR_ILL_ARG;
+			}
 		}
 	}
 	LIS_DEBUG_FUNC_OUT;
@@ -809,6 +814,11 @@ LIS_INT lis_esolver_set_option_iesolver(char *argv, LIS_ESOLVER esolver)
 			{
 				esolver->options[LIS_EOPTIONS_INNER_ESOLVER] = i+1;
 				break;
+			}
+			else if( i==LIS_ESOLVER_LEN-1 )
+			{
+				LIS_SETERR(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_INNER_ESOLVER is not correct\n");
+				return LIS_ERR_ILL_ARG;
 			}
 		}
 	}
@@ -841,6 +851,11 @@ LIS_INT lis_esolver_set_option_igesolver(char *argv, LIS_ESOLVER esolver)
 				esolver->options[LIS_EOPTIONS_INNER_GENERALIZED_ESOLVER] = i+1;
 				break;
 			}
+			else if( i==LIS_ESOLVER_LEN-1 )
+			{
+				LIS_SETERR(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_INNER_GENERALIZED_ESOLVER is not correct\n");
+				return LIS_ERR_ILL_ARG;
+			}
 		}
 	}
 	LIS_DEBUG_FUNC_OUT;
@@ -871,6 +886,11 @@ LIS_INT lis_esolver_set_option_print(char *argv, LIS_ESOLVER esolver)
 			{
 				esolver->options[LIS_EOPTIONS_OUTPUT] = i;
 				break;
+			}
+			else if( i==LIS_EPRINT_LEN-1 )
+			{
+				LIS_SETERR(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_OUTPUT is not correct\n");
+				return LIS_ERR_ILL_ARG;
 			}
 		}
 	}
@@ -903,6 +923,11 @@ LIS_INT lis_esolver_set_option_truefalse(char *argv, LIS_INT opt, LIS_ESOLVER es
                                 esolver->options[opt] = i;
                                 break;
                         }
+			else if( i==LIS_TRUEFALSE_LEN-1 )
+			{
+				LIS_SETERR(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_TRUEFALSE is not correct\n");
+				return LIS_ERR_ILL_ARG;
+			}
                 }
         }
         LIS_DEBUG_FUNC_OUT;
@@ -934,6 +959,11 @@ LIS_INT lis_esolver_set_option_eprecision(char *argv, LIS_INT opt, LIS_ESOLVER e
 				esolver->options[opt] = i;
 				break;
 			}
+			else if( i==LIS_PRECISION_LEN-1 )
+			{
+				LIS_SETERR(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_PRECISION is not correct\n");
+				return LIS_ERR_ILL_ARG;
+			}
 		}
 	}
 	LIS_DEBUG_FUNC_OUT;
@@ -964,6 +994,11 @@ LIS_INT lis_esolver_set_option_storage(char *argv, LIS_ESOLVER esolver)
 			{
 				esolver->options[LIS_EOPTIONS_STORAGE] = i+1;
 				break;
+			}
+			else if( i==LIS_ESTORAGE_LEN-1 )
+			{
+				LIS_SETERR(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_STORAGE is not correct\n");
+				return LIS_ERR_ILL_ARG;
 			}
 		}
 	}
