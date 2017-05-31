@@ -152,7 +152,8 @@ LIS_INT main(int argc, char* argv[])
     CHKERR(err);
 
     lis_esolver_set_option("-e si -ss 1 -eprint mem",esolver);
-    lis_esolver_set_optionC(esolver);
+    err = lis_esolver_set_optionC(esolver);
+    CHKERR(err);    
     err = lis_esolve(A, x, &evalue0, esolver);
     CHKERR(err);    
     lis_esolver_get_esolver(esolver,&nesol);

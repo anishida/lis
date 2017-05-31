@@ -167,7 +167,8 @@ LIS_INT main(int argc, char* argv[])
 #else	
 	lis_solver_set_option("-print mem -i cg -p ssor -adds true",solver);
 #endif	
-	lis_solver_set_optionC(solver);
+	err = lis_solver_set_optionC(solver);
+	CHKERR(err);	
 
 	err = lis_solve(A,b,x,solver);
 	CHKERR(err);

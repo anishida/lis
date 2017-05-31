@@ -75,7 +75,8 @@ LIS_INT main(int argc, char* argv[])
     lis_matvec(A,u,b);
     lis_solver_create(&solver);
     lis_solver_set_option("-print mem",solver);
-    lis_solver_set_optionC(solver);
+    err = lis_solver_set_optionC(solver);
+    CHKERR(err);    
     lis_solve(A,b,x,solver);
     lis_solver_get_iter(solver,&iter);
     lis_printf(comm,"number of iterations = %D\n",iter);

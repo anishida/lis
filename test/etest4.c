@@ -101,7 +101,8 @@ LIS_INT main(int argc, char* argv[])
 
     lis_esolver_create(&esolver);
     lis_esolver_set_option("-eprint mem",esolver);
-    lis_esolver_set_optionC(esolver);
+    err = lis_esolver_set_optionC(esolver);
+    CHKERR(err);    
     err = lis_esolve(A, x, &evalue0, esolver);
     CHKERR(err);
     lis_esolver_get_esolver(esolver,&nesol);
