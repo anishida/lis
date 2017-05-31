@@ -104,7 +104,8 @@ LIS_INT main(int argc, char* argv[])
 
 	err = lis_solver_create(&solver);
 	lis_solver_set_option("-print mem",solver);
-	lis_solver_set_optionC(solver);
+	err = lis_solver_set_optionC(solver);
+	CHKERR(err);
 
 	ptr = (LIS_INT *)malloc((A->n+1)*sizeof(LIS_INT));
 	if( ptr==NULL ) CHKERR(1);
