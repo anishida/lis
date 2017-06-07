@@ -239,7 +239,6 @@
       call lis_solver_output_rhistory(solver, resname, ierr)
 
       call lis_solver_destroy(solver,ierr)
-      call lis_matrix_unset(A,ierr)
       call lis_matrix_destroy(A,ierr)
       call lis_vector_destroy(u,ierr)
       call lis_vector_destroy(x,ierr)
