@@ -1,3 +1,7 @@
+Version 1.7.31  June 7, 2017
+
+  - Fixed exception handling bug (thanks to Ralf Greve).
+
 Version 1.7.30  May 31, 2017
 
   - Added exception handlings for wrong parameter settings (thanks to Ralf Greve).
