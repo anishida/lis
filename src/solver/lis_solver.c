@@ -1132,6 +1132,8 @@ LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 
 	LIS_DEBUG_FUNC_IN;
 
+	err = 0;
+
 	for(i=0;i<LIS_SOLVER_OPTION_LEN;i++)
 	{
 		if( strcmp(arg1, LIS_SOLVER_OPTNAME[i])==0 )
