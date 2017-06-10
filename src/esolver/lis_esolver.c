@@ -722,6 +722,8 @@ LIS_INT lis_esolver_set_option2(char* arg1, char *arg2, LIS_ESOLVER esolver)
 	double double_value;
 
 	LIS_DEBUG_FUNC_IN;
+
+	err = 0;
 	
 	for(i=0;i<LIS_ESOLVER_OPTION_LEN;i++)
 	{
