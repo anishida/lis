@@ -198,7 +198,8 @@ LIS_INT lis_ejd(LIS_ESOLVER esolver)
 
   lis_solver_create(&solver);
   lis_solver_set_option("-i cg -p none",solver);
-  lis_solver_set_optionC(solver);
+  err = lis_solver_set_optionC(solver);
+  CHKERR(err);
   lis_solver_get_solver(solver, &nsol);
   lis_solver_get_precon(solver, &precon_type);
   lis_solver_get_solvername(nsol, solvername);

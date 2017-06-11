@@ -171,7 +171,8 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
 #endif  
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
-  lis_solver_set_optionC(solver);
+  err = lis_solver_set_optionC(solver);
+  CHKERR(err);
   lis_solver_get_solver(solver, &nsol);
   lis_solver_get_precon(solver, &precon_type);
   lis_solver_get_solvername(nsol, solvername);
@@ -401,7 +402,8 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
 #endif  
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
-  lis_solver_set_optionC(solver);
+  err = lis_solver_set_optionC(solver);
+  CHKERR(err);
   lis_solver_get_solver(solver, &nsol);
   lis_solver_get_precon(solver, &precon_type);
   lis_solver_get_solvername(nsol, solvername);
