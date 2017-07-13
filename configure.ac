@@ -941,7 +941,7 @@ fi
 if test "$enable_fma" = "yes"; then
   AC_DEFINE([HAS_FMA], [1], [Define to 1 to enable quad precision operations using FMA.])
   case $ax_cv_c_compiler_vendor in
-    intel) MPFLAG="$MPFLAG -IPF-fma" ;;
+    intel) MPFLAG="$MPFLAG -fma" ;;
   esac
 else
   enable_fma="no"
