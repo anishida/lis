@@ -1,3 +1,7 @@
+Version 1.7.34  July 17, 2017
+
+  - Fixed MPI bugs in lis_vector_gather and lis_vector_scatter (thanks to Danyang Su).
+
 Version 1.7.33  June 11, 2017
 
   - Added exception handling for inner linear solvers.
