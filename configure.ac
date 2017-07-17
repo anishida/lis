@@ -4,7 +4,7 @@
 
 # General Configurations
 
-AC_INIT(lis, 1.7.33, devel@ssisc.org)
+AC_INIT(lis, 1.7.34, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -941,7 +941,7 @@ fi
 if test "$enable_fma" = "yes"; then
   AC_DEFINE([HAS_FMA], [1], [Define to 1 to enable quad precision operations using FMA.])
   case $ax_cv_c_compiler_vendor in
-    intel) MPFLAG="$MPFLAG -IPF-fma" ;;
+    intel) MPFLAG="$MPFLAG -fma" ;;
   esac
 else
   enable_fma="no"

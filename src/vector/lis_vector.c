@@ -941,12 +941,13 @@ LIS_INT lis_vector_print(LIS_VECTOR x)
 LIS_INT lis_vector_scatter(LIS_SCALAR value[], LIS_VECTOR v)
 {
 #ifdef USE_MPI
-	LIS_INT err,i,is,n,nprocs,*sendcounts;
+	LIS_INT err,i,is,n,nprocs,my_rank,*sendcounts;
 
 	err = lis_vector_check(v,LIS_VECTOR_CHECK_NULL);
 	if( err ) return err;
 
 	nprocs  = v->nprocs;
+	my_rank = v->my_rank;
 	n       = v->n;
 	is      = v->is;
 
@@ -956,7 +957,16 @@ LIS_INT lis_vector_scatter(LIS_SCALAR value[], LIS_VECTOR v)
 	{
 	  sendcounts[i] = v->ranges[i+1] - v->ranges[i];
 	}
-	MPI_Scatterv(&value[0],sendcounts,v->ranges,LIS_MPI_SCALAR,&value[is],n,LIS_MPI_SCALAR,0,v->comm);
+
+	if(my_rank == 0) 
+	{
+	  MPI_Scatterv(&value[0],sendcounts,v->ranges,LIS_MPI_SCALAR,MPI_IN_PLACE,n,LIS_MPI_SCALAR,0,v->comm);
+	}
+	else
+	{
+	  MPI_Scatterv(&value[0],sendcounts,v->ranges,LIS_MPI_SCALAR,&value[is],n,LIS_MPI_SCALAR,0,v->comm);
+	}
+
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
 	#endif
@@ -1021,7 +1031,7 @@ LIS_INT lis_vector_gather(LIS_VECTOR v, LIS_SCALAR value[])
 	{
 	  recvcounts[i] = v->ranges[i+1] - v->ranges[i];
 	}
-	MPI_Allgatherv(&value[is],n,LIS_MPI_SCALAR,&value[0],recvcounts,v->ranges,LIS_MPI_SCALAR,v->comm);
+	MPI_Allgatherv(MPI_IN_PLACE,n,LIS_MPI_SCALAR,&value[0],recvcounts,v->ranges,LIS_MPI_SCALAR,v->comm);
 
 	return LIS_SUCCESS;
 #else
