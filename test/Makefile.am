@@ -7,7 +7,7 @@ EXTRA_DIST = defs test.sh testmat.mtx testmat2.mtx
 
 testdir = ${prefix}/share/examples/lis
 
-test_DATA = testmat.mtx testmat2.mtx
+test_DATA = testmat.mtx testmat2.mtx testvec.mtx
 
 test_SCRIPTS = defs test.sh
 
