@@ -139,14 +139,11 @@ LIS_INT main(int argc, char* argv[])
 	      }
 	    ptr[0] = 0;
 
-	    if ( s==0 )
-	      {
-		err = lis_matrix_set_csr(ptr[ie-is],ptr,index,value,A);
-		CHKERR(err);
+	    err = lis_matrix_set_csr(ptr[ie-is],ptr,index,value,A);
+	    CHKERR(err);
 
-		err = lis_matrix_assemble(A);
-		CHKERR(err);
-	      }
+	    err = lis_matrix_assemble(A);
+	    CHKERR(err);
 
 	    nnz = A->nnz;
 #ifdef USE_MPI
