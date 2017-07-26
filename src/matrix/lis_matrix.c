@@ -623,7 +623,6 @@ LIS_INT lis_matrix_assemble(LIS_MATRIX A)
 		#ifdef USE_MPI
 			err = lis_matrix_g2l(A);
 			if( err ) return err;
-			lis_commtable_destroy(A->commtable);
 			err = lis_commtable_create(A);
 			if( err ) return err;
 			A->is_comm = LIS_TRUE;
@@ -679,6 +678,7 @@ LIS_INT lis_matrix_assemble(LIS_MATRIX A)
 			}
 			if( !A->is_comm )
 			{
+				lis_commtable_destroy(A->commtable);
 				err = lis_commtable_create(A);
 				if( err ) return err;
 			}
