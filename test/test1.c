@@ -142,6 +142,7 @@ LIS_INT main(int argc, char* argv[])
 	{
 		lis_input_vector(b,argv[2]);
 	}
+
 	if( lis_vector_is_null(x) )
 	{
 		lis_vector_destroy(x);
