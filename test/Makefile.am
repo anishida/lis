@@ -3,11 +3,11 @@ AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)/include
 AM_FFLAGS = -I$(top_builddir) -I$(top_srcdir)/include
 AM_LDFLAGS = $(AMDEFS)
 
-EXTRA_DIST = defs test.sh testmat.mtx testmat2.mtx testvec.mtx
+EXTRA_DIST = defs test.sh testmat.mtx testmat2.mtx testmat0.mtx testvec0.mtx
 
 testdir = ${prefix}/share/examples/lis
 
-test_DATA = testmat.mtx testmat2.mtx testvec.mtx
+test_DATA = testmat.mtx testmat2.mtx testmat0.mtx testvec0.mtx
 
 test_SCRIPTS = defs test.sh
 
