@@ -140,6 +140,8 @@ LIS_INT main(int argc, char* argv[])
 	}
 	if( rhs==-1 )
 	{
+		lis_vector_destroy(b);
+		err = lis_vector_create(comm,&b); CHKERR(err);		
 		lis_input_vector(b,argv[2]);
 	}
 
