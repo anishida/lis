@@ -1,6 +1,7 @@
 Version 1.7.36  July 27, 2017
 
   - Fixed MPI memory leak bug in lis_matrix_assemble() (thanks to Danyang Su).
+  - Fixed lis_input_vector() related bug in test1.c (thanks to Danyang Su).
 
 Version 1.7.35  July 26, 2017
 
