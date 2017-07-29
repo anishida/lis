@@ -676,9 +676,8 @@ LIS_INT lis_matrix_assemble(LIS_MATRIX A)
 				err = lis_matrix_g2l(A);
 				if( err ) return err;
 			}
-			if( !A->is_comm )
+			if( !A->commtable )
 			{
-				lis_commtable_destroy(A->commtable);
 				err = lis_commtable_create(A);
 				if( err ) return err;
 			}
