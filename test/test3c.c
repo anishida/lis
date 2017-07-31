@@ -148,12 +148,12 @@ LIS_INT main(int argc, char* argv[])
 		    i = ii/(m*n);
 		    j = (ii - i*m*n)/n;
 		    k = ii - i*m*n - j*n;
-		    if( i>0 )   { jj = ii - m*n; value[ctr++] = -1.0;}
-		    if( i<l-1 ) { jj = ii + m*n; value[ctr++] = -1.0;}
-		    if( j>0 )   { jj = ii - n; value[ctr++] = -1.0;}
-		    if( j<m-1 ) { jj = ii + n; value[ctr++] = -1.0;}
-		    if( k>0 )   { jj = ii - 1; value[ctr++] = -1.0;}
-		    if( k<n-1 ) { jj = ii + 1; value[ctr++] = -1.0;}
+		    if( i>0 )   { value[ctr++] = -1.0;}
+		    if( i<l-1 ) { value[ctr++] = -1.0;}
+		    if( j>0 )   { value[ctr++] = -1.0;}
+		    if( j<m-1 ) { value[ctr++] = -1.0;}
+		    if( k>0 )   { value[ctr++] = -1.0;}
+		    if( k<n-1 ) { value[ctr++] = -1.0;}
 		    value[ctr++] = 6.0;
 		  }
 	      }		
