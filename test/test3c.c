@@ -123,21 +123,40 @@ LIS_INT main(int argc, char* argv[])
 	    lis_printf(comm,"\n");
 
 	    ctr = 0;
-	    for(ii=is;ii<ie;ii++)
+	    if ( s==0 )
 	      {
-		i = ii/(m*n);
-		j = (ii - i*m*n)/n;
-		k = ii - i*m*n - j*n;
-		if( i>0 )   { jj = ii - m*n; index[ctr] = jj; value[ctr++] = -1.0;}
-		if( i<l-1 ) { jj = ii + m*n; index[ctr] = jj; value[ctr++] = -1.0;}
-		if( j>0 )   { jj = ii - n; index[ctr] = jj; value[ctr++] = -1.0;}
-		if( j<m-1 ) { jj = ii + n; index[ctr] = jj; value[ctr++] = -1.0;}
-		if( k>0 )   { jj = ii - 1; index[ctr] = jj; value[ctr++] = -1.0;}
-		if( k<n-1 ) { jj = ii + 1; index[ctr] = jj; value[ctr++] = -1.0;}
-		index[ctr] = ii; value[ctr++] = 6.0;
-		ptr[ii-is+1] = ctr;
+		for(ii=is;ii<ie;ii++)
+		  {
+		    i = ii/(m*n);
+		    j = (ii - i*m*n)/n;
+		    k = ii - i*m*n - j*n;
+		    if( i>0 )   { jj = ii - m*n; index[ctr] = jj; value[ctr++] = -1.0;}
+		    if( i<l-1 ) { jj = ii + m*n; index[ctr] = jj; value[ctr++] = -1.0;}
+		    if( j>0 )   { jj = ii - n; index[ctr] = jj; value[ctr++] = -1.0;}
+		    if( j<m-1 ) { jj = ii + n; index[ctr] = jj; value[ctr++] = -1.0;}
+		    if( k>0 )   { jj = ii - 1; index[ctr] = jj; value[ctr++] = -1.0;}
+		    if( k<n-1 ) { jj = ii + 1; index[ctr] = jj; value[ctr++] = -1.0;}
+		    index[ctr] = ii; value[ctr++] = 6.0;
+		    ptr[ii-is+1] = ctr;
+		  }
+		ptr[0] = 0;
 	      }
-	    ptr[0] = 0;
+	    else
+	      {
+		for(ii=is;ii<ie;ii++)
+		  {
+		    i = ii/(m*n);
+		    j = (ii - i*m*n)/n;
+		    k = ii - i*m*n - j*n;
+		    if( i>0 )   { value[ctr++] = -1.0;}
+		    if( i<l-1 ) { value[ctr++] = -1.0;}
+		    if( j>0 )   { value[ctr++] = -1.0;}
+		    if( j<m-1 ) { value[ctr++] = -1.0;}
+		    if( k>0 )   { value[ctr++] = -1.0;}
+		    if( k<n-1 ) { value[ctr++] = -1.0;}
+		    value[ctr++] = 6.0;
+		  }
+	      }		
 
 	    err = lis_matrix_set_csr(ptr[ie-is],ptr,index,value,A);
 	    CHKERR(err);
