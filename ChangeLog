@@ -1,7 +1,7 @@
 Version 1.7.37  July 31, 2017
 
   - Fixed MPI bug in test/test3c.c.
-  - Fix bug in lis_solver_sor.c.
+  - Fixed bug in lis_solver_sor.c.
 
 Version 1.7.36  July 27, 2017
 
