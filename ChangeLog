@@ -1,6 +1,6 @@
-Version 1.8.0  Auguts 1, 2017
+Version 1.8.0  August 1, 2017
 
-  - Added official support for test/test3c.c to solve multiple-step linear equations.
+  - Added official support for test/test3c.c for solving multiple-step linear equations.
 
 Version 1.7.37  July 31, 2017
 
