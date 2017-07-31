@@ -1,3 +1,7 @@
+Version 1.8.0  Auguts 1, 2017
+
+  - Added official support for test/test3c.c to solve multiple-step linear equations.
+
 Version 1.7.37  July 31, 2017
 
   - Fixed MPI bug in test/test3c.c.
