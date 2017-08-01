@@ -797,7 +797,8 @@ matrix $A$ of size $lmn$ is a discretized three dimensional
 Laplacian using the seven
 point central difference scheme, with the coefficient matrix 
 in the CSR format and the solver specified by {\tt options}.
-The right-hand side vector $b$ is set such that the values of the elements of the solution $x$ are $1$. 
+The right-hand side vector $b$ is set such that the values of the elements of the solution $x$ are $1$. The elements of the matrix and the right-hand side vector are
+updated at every step.
 The values {\tt l}, {\tt m} and {\tt n} represent the numbers of grid
 points in each dimension. 
 
