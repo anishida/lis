@@ -80,7 +80,7 @@ LIS_INT lis_precon_create_hybrid(LIS_SOLVER solver, LIS_PRECON precon)
 	}
 
 	psolver->params[LIS_PARAMS_RESID-LIS_OPTIONS_LEN] = solver->params[LIS_PARAMS_PRESID-LIS_OPTIONS_LEN];
-	psolver->params[LIS_PARAMS_SSOR_W-LIS_OPTIONS_LEN]     = solver->params[LIS_PARAMS_PW-LIS_OPTIONS_LEN];
+	psolver->params[LIS_PARAMS_SSOR_OMEGA-LIS_OPTIONS_LEN] = solver->params[LIS_PARAMS_POMEGA-LIS_OPTIONS_LEN];
 	psolver->options[LIS_OPTIONS_MAXITER]             = solver->options[LIS_OPTIONS_PMAXITER];
 	psolver->options[LIS_OPTIONS_ELL]                 = solver->options[LIS_OPTIONS_PELL];
 	psolver->options[LIS_OPTIONS_RESTART]             = solver->options[LIS_OPTIONS_PRESTART];
