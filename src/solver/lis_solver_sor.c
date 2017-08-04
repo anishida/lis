@@ -62,10 +62,10 @@ LIS_INT lis_sor_check_params(LIS_SOLVER solver)
 
 	LIS_DEBUG_FUNC_IN;
 
-	w = solver->params[LIS_PARAMS_SSOR_W-LIS_OPTIONS_LEN];
+	w = solver->params[LIS_PARAMS_W-LIS_OPTIONS_LEN];
 	if( fabs(w)<=0 || fabs(w)>=2 )
 	{
-		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_PARAMS_SSOR_W is %f (set 0 < w < 2)\n",(double)w);
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_PARAMS_W is %f (set 0 < w < 2)\n",(double)w);
 		return LIS_ERR_ILL_ARG;
 	}
 
@@ -143,7 +143,7 @@ LIS_INT lis_sor(LIS_SOLVER solver)
 	maxiter = solver->options[LIS_OPTIONS_MAXITER];
 	output  = solver->options[LIS_OPTIONS_OUTPUT];
 	tol     = solver->params[LIS_PARAMS_RESID-LIS_OPTIONS_LEN];
-	w       = 1.0 / solver->params[LIS_PARAMS_SSOR_W-LIS_OPTIONS_LEN];
+	w       = 1.0 / solver->params[LIS_PARAMS_W-LIS_OPTIONS_LEN];
 	ptime   = 0.0;
 
 	r       = solver->work[0];

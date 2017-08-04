@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"1.8.0"
+#define LIS_VERSION	"1.8.1"
 /**************************************/
 #include <stdio.h>
 #ifdef HAVE_COMPLEX_H
@@ -98,8 +98,9 @@
 #define LIS_EOPTIONS_PRECISION 10
 #define LIS_EOPTIONS_SWITCH_MAXITER 11
 
-#define LIS_PARAMS_LEN 14
+#define LIS_PARAMS_LEN 15
 #define LIS_PARAMS_RESID LIS_OPTIONS_LEN+0
+#define LIS_PARAMS_W LIS_OPTIONS_LEN+1
 #define LIS_PARAMS_RELAX LIS_OPTIONS_LEN+2
 #define LIS_PARAMS_DROP LIS_OPTIONS_LEN+3
 #define LIS_PARAMS_ALPHA LIS_OPTIONS_LEN+4

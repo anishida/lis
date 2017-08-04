@@ -151,7 +151,7 @@ LIS_INT LIS_USE_AT_TYPE[] = {
 	0,
 	LIS_MATRIX_CSC,LIS_MATRIX_CSR
 	};
-#define LIS_SOLVER_OPTION_LEN		45
+#define LIS_SOLVER_OPTION_LEN		46
 #define LIS_PRINT_LEN			4
 #define LIS_SCALE_LEN			3
 #define LIS_TRUEFALSE_LEN		2
@@ -164,7 +164,7 @@ char *LIS_SOLVER_OPTNAME[] = {
 	"-ilu_fill",          "-ilu_relax",     "-is_alpha",       "-is_level",      "-is_m",
 	"-hybrid_maxiter",    "-hybrid_ell",    "-hybrid_restart", "-hybrid_tol",    "-hybrid_w",
 	"-hybrid_i",          "-sainv_drop",    "-ric2s_tau",      "-ric2s_sigma",   "-ric2s_gamma",
-	"-restart",           "-ell",           "-i",              "-p",
+	"-restart",           "-ell",           "-omega",          "-i",             "-p",
 	"-f",                 "-h",             "-ver",            "-hybrid_p",      "-initx_zeros",
 	"-adds",              "-adds_iter",     "-f",              "-use_at",        "-switch_tol",
 	"-switch_maxiter",    "-saamg_unsym",   "-iluc_drop",      "-iluc_gamma",    "-iluc_rate",
@@ -176,7 +176,7 @@ LIS_INT LIS_SOLVER_OPTACT[] = {
 	LIS_OPTIONS_FILL             , LIS_PARAMS_RELAX          , LIS_PARAMS_ALPHA          , LIS_OPTIONS_ISLEVEL      , LIS_OPTIONS_M     ,
 	LIS_OPTIONS_PMAXITER         , LIS_OPTIONS_PELL          , LIS_OPTIONS_PRESTART      , LIS_PARAMS_PRESID        , LIS_PARAMS_PW     ,
 	LIS_OPTIONS_PSOLVER          , LIS_PARAMS_DROP           , LIS_PARAMS_TAU            , LIS_PARAMS_SIGMA         , LIS_PARAMS_GAMMA  ,
-	LIS_OPTIONS_RESTART          , LIS_OPTIONS_ELL           , LIS_OPTIONS_SOLVER       , LIS_OPTIONS_PRECON,
+	LIS_OPTIONS_RESTART          , LIS_OPTIONS_ELL           , LIS_PARAMS_W              , LIS_OPTIONS_SOLVER       , LIS_OPTIONS_PRECON,
 	LIS_OPTIONS_FILE             , LIS_OPTIONS_HELP          , LIS_OPTIONS_VER           , LIS_OPTIONS_PPRECON      , LIS_OPTIONS_INITGUESS_ZEROS,
 	LIS_OPTIONS_ADDS             , LIS_OPTIONS_ADDS_ITER     , LIS_OPTIONS_PRECISION     , LIS_OPTIONS_USE_AT       , LIS_PARAMS_SWITCH_RESID,
 	LIS_OPTIONS_SWITCH_MAXITER   , LIS_OPTIONS_SAAMG_UNSYM   , LIS_PARAMS_DROP           , LIS_PARAMS_GAMMA         , LIS_PARAMS_RATE, 
@@ -256,6 +256,7 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 
 	solver->params[LIS_PARAMS_RESID        -LIS_OPTIONS_LEN] = 1.0e-12;
 	solver->params[LIS_PARAMS_RESID_WEIGHT -LIS_OPTIONS_LEN] = 1.0;
+	solver->params[LIS_PARAMS_W            -LIS_OPTIONS_LEN] = 1.9;
 	solver->params[LIS_PARAMS_SSOR_W       -LIS_OPTIONS_LEN] = 1.0;
 	solver->params[LIS_PARAMS_RELAX        -LIS_OPTIONS_LEN] = 1.0;
 	solver->params[LIS_PARAMS_DROP         -LIS_OPTIONS_LEN] = 0.05;
