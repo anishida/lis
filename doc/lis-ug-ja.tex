@@ -227,6 +227,8 @@ All rights reserved.
 \section*{$B%P!<%8%g%s(B 1.7 $B$+$i$NJQ99E@(B}
 \begin{enumerate}
 \item $B%^%k%A%9%F%C%W@~7?J}Dx<02rK!$KBP1~(B.
+\item $B%*%W%7%g%s(B{\tt -ssor\_w}$B5Z$S(B{\tt -hybrid\_w}$B$NL>>N$r(B{\tt -ssor\_omega}
+$B5Z$S(B{\tt -hybrid\_omega}$B$K$=$l$>$lJQ99(B.  
 \end{enumerate}
 
 \newpage
@@ -1809,11 +1811,11 @@ Matrix Market$B7A<0$K$h$k30It%U%!%$%k(B{\tt matvec.mtx}$B$N5-=RNc$r0J2<$K<($9
 $B$J$7(B     & \verb=-p {none|0}=    &   \\
 Jacobi   & \verb=-p {jacobi|1}=  &     \\
 ILU(k)   & \verb=-p {ilu|2}=     & \verb=-ilu_fill [0]=    & $B%U%#%k%$%s%l%Y%k(B$k$ \\
-SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_w [1.0]=    & $B4KOB78?t(B$\omega$ ($0<\omega<2$) \\
+SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_omega [1.0]=    & $B4KOB78?t(B$\omega$ ($0<\omega<2$) \\
 Hybrid   & \verb=-p {hybrid|4}=  & \verb=-hybrid_i [sor]=  & $B@~7?J}Dx<02rK!(B \\
          &                       & \verb=-hybrid_maxiter [25]= & $B:GBgH?I|2s?t(B \\
          &                       & \verb=-hybrid_tol [1.0e-3]= & $B<}B+H=Dj4p=`(B \\
-         &                       & \verb=-hybrid_w [1.5]=      & SOR$B$N4KOB78?t(B$\omega$ ($0<\omega<2$) \\
+         &                       & \verb=-hybrid_omega [1.5]=  & SOR$B$N4KOB78?t(B$\omega$ ($0<\omega<2$) \\
          &                       & \verb=-hybrid_ell [2]=      & BiCGSTAB(l)$B$N<!?t(B$l$\\
          &                       & \verb=-hybrid_restart [40]= & GMRES(m), Orthomin(m)$B$N(B \\
          &                       &                             & $B%j%9%?!<%HCM(B$m$ \\
@@ -1987,11 +1989,11 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 $B$J$7(B     & \verb=-p {none|0}=    &   \\
 Jacobi   & \verb=-p {jacobi|1}=  &     \\
 ILU(k)   & \verb=-p {ilu|2}=     & \verb=-ilu_fill [0]=    & $B%U%#%k%$%s%l%Y%k(B$k$ \\
-SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_w [1.0]=    & $B4KOB78?t(B$\omega$ ($0<\omega<2$) \\
+SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_omega [1.0]=    & $B4KOB78?t(B$\omega$ ($0<\omega<2$) \\
 Hybrid   & \verb=-p {hybrid|4}=  & \verb=-hybrid_i [sor]=  & $B@~7?J}Dx<02rK!(B \\
          &                       & \verb=-hybrid_maxiter [25]= & $B:GBgH?I|2s?t(B \\
          &                       & \verb=-hybrid_tol [1.0e-3]= & $B<}B+H=Dj4p=`(B \\
-         &                       & \verb=-hybrid_w [1.5]=      & SOR$B$N4KOB78?t(B$\omega$ ($0<\omega<2$) \\
+         &                       & \verb=-hybrid_omega [1.5]=  & SOR$B$N4KOB78?t(B$\omega$ ($0<\omega<2$) \\
          &                       & \verb=-hybrid_ell [2]=      & BiCGSTAB(l)$B$N<!?t(B$l$\\
          &                       & \verb=-hybrid_restart [40]= & GMRES(m), Orthomin(m)$B$N(B \\
          &                       &                             & $B%j%9%?!<%HCM(B$m$ \\
@@ -5862,11 +5864,11 @@ COO    &  $B!{(B  &  $B!{(B  &  $B!{(B  & CSR  & CSR & CSR & CSR & CSC & C
 $B$J$7(B     & \verb=-p {none|0}=    &   \\
 Jacobi   & \verb=-p {jacobi|1}=  &     \\
 ILU(k)   & \verb=-p {ilu|2}=     & \verb=-ilu_fill [0]=    & $B%U%#%k%$%s%l%Y%k(B$k$ \\
-SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_w [1.0]=    & $B4KOB78?t(B$\omega$ ($0<\omega<2$) \\
+SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_omega [1.0]=    & $B4KOB78?t(B$\omega$ ($0<\omega<2$) \\
 Hybrid   & \verb=-p {hybrid|4}=  & \verb=-hybrid_i [sor]=  & $B@~7?J}Dx<02rK!(B \\
          &                       & \verb=-hybrid_maxiter [25]= & $B:GBgH?I|2s?t(B \\
          &                       & \verb=-hybrid_tol [1.0e-3]= & $B<}B+H=Dj4p=`(B \\
-         &                       & \verb=-hybrid_w [1.5]=      & SOR$B$N4KOB78?t(B$\omega$ ($0<\omega<2$) \\
+         &                       & \verb=-hybrid_omega [1.5]=  & SOR$B$N4KOB78?t(B$\omega$ ($0<\omega<2$) \\
          &                       & \verb=-hybrid_ell [2]=      & BiCGSTAB(l)$B$N<!?t(B$l$\\
          &                       & \verb=-hybrid_restart [40]= & GMRES(m), Orthomin(m)$B$N(B \\
          &                       &                             & $B%j%9%?!<%HCM(B$m$ \\
@@ -6379,11 +6381,11 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 $B$J$7(B     & \verb=-p {none|0}=    &   \\
 Jacobi   & \verb=-p {jacobi|1}=  &     \\
 ILU(k)   & \verb=-p {ilu|2}=     & \verb=-ilu_fill [0]=    & $B%U%#%k%$%s%l%Y%k(B$k$ \\
-SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_w [1.0]=    & $B4KOB78?t(B$\omega$ ($0<\omega<2$) \\
+SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_omega [1.0]=    & $B4KOB78?t(B$\omega$ ($0<\omega<2$) \\
 Hybrid   & \verb=-p {hybrid|4}=  & \verb=-hybrid_i [sor]=  & $B@~7?J}Dx<02rK!(B \\
          &                       & \verb=-hybrid_maxiter [25]= & $B:GBgH?I|2s?t(B \\
          &                       & \verb=-hybrid_tol [1.0e-3]= & $B<}B+H=Dj4p=`(B \\
-         &                       & \verb=-hybrid_w [1.5]=      & SOR$B$N4KOB78?t(B$\omega$ ($0<\omega<2$) \\
+         &                       & \verb=-hybrid_omega [1.5]=  & SOR$B$N4KOB78?t(B$\omega$ ($0<\omega<2$) \\
          &                       & \verb=-hybrid_ell [2]=      & BiCGSTAB(l)$B$N<!?t(B$l$\\
          &                       & \verb=-hybrid_restart [40]= & GMRES(m), Orthomin(m)$B$N(B \\
          &                       &                             & $B%j%9%?!<%HCM(B$m$ \\

@@ -64,7 +64,7 @@ LIS_INT lis_precon_create_ssor(LIS_SOLVER solver, LIS_PRECON precon)
 	LIS_DEBUG_FUNC_IN;
 
 	A   = solver->A;
-	w   = solver->params[LIS_PARAMS_SSOR_W-LIS_OPTIONS_LEN];
+	w   = solver->params[LIS_PARAMS_SSOR_OMEGA-LIS_OPTIONS_LEN];
 
 	err = lis_matrix_convert_self(solver);
 	if( err ) return err;

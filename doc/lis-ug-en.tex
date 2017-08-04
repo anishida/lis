@@ -246,6 +246,8 @@ Cover: Ogata Korin. Irises. c1705. Nezu Museum.
 \section*{Changes from Version 1.7}
 \begin{enumerate}
 \item Addition: Support for multiple-step linear equations.
+\item Names of the flags {\tt -ssor\_w} and {\tt -hybrid\_w} to {\tt -ssor\_omega}
+and {\tt -hybrid\_omega}, respectively.
 \end{enumerate}
   
 \newpage
@@ -1922,13 +1924,13 @@ Preconditioner   & Option           & Auxiliary Options \\ \hline
 None     & \verb=-p {none|0}=    &   \\
 Jacobi   & \verb=-p {jacobi|1}=  &     \\
 ILU(k)   & \verb=-p {ilu|2}=     & \verb=-ilu_fill [0]=    & The fill level $k$ \\
-SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_w [1.0]=    & The relaxation coefficient \\
+SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_omega [1.0]= & The relaxation coefficient \\
          &                       &                         & $\omega$ ($0<\omega<2$) \\
 Hybrid   & \verb=-p {hybrid|4}=  & \verb=-hybrid_i [sor]=  & The linear solver\\
          &                       & \verb=-hybrid_maxiter [25]= & The
  maximum number of iterations \\
          &                       & \verb=-hybrid_tol [1.0e-3]= & The convergence tolerance \\
-         &                       & \verb=-hybrid_w [1.5]=      & The
+         &                       & \verb=-hybrid_omega [1.5]=  & The
  relaxation coefficient $\omega$ \\
          &                       &                             & of the SOR ($0<\omega<2$) \\
          &                       & \verb=-hybrid_ell [2]=      & The
@@ -2133,12 +2135,12 @@ Preconditioner   & Option           & Auxiliary Options \\ \hline
 None     & \verb=-p {none|0}=    &   \\
 Jacobi   & \verb=-p {jacobi|1}=  &     \\
 ILU(k)   & \verb=-p {ilu|2}=     & \verb=-ilu_fill [0]=        & The fill level $k$ \\
-SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_w [1.0]=        & The relaxation coefficient \\
+SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_omega [1.0]=    & The relaxation coefficient \\
          &                       &                             & $\omega$ ($0<\omega<2$) \\
 Hybrid   & \verb=-p {hybrid|4}=  & \verb=-hybrid_i [sor]=      & The linear solver\\
          &                       & \verb=-hybrid_maxiter [25]= & The maximum number of iterations \\
          &                       & \verb=-hybrid_tol [1.0e-3]= & The convergence tolerance \\
-         &                       & \verb=-hybrid_w [1.5]=      & The relaxation coefficient $\omega$ \\
+         &                       & \verb=-hybrid_omega [1.5]=  & The relaxation coefficient $\omega$ \\
          &                       &                             & of the SOR ($0<\omega<2$) \\
          &                       & \verb=-hybrid_ell [2]=      & The degree $l$ of the BiCGSTAB(l) \\
          &                       & \verb=-hybrid_restart [40]= & The restart values of the GMRES \\
@@ -5988,12 +5990,12 @@ Preconditioner   & Option           & Auxiliary Options \\ \hline
 None     & \verb=-p {none|0}=    &   \\
 Jacobi   & \verb=-p {jacobi|1}=  &     \\
 ILU(k)   & \verb=-p {ilu|2}=     & \verb=-ilu_fill [0]=        & The fill level $k$ \\
-SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_w [1.0]=        & The relaxation coefficient \\
+SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_omega [1.0]=    & The relaxation coefficient \\
          &                       &                             & $\omega$ ($0<\omega<2$) \\
 Hybrid   & \verb=-p {hybrid|4}=  & \verb=-hybrid_i [sor]=      & The linear solver\\
          &                       & \verb=-hybrid_maxiter [25]= & The maximum number of iterations \\
          &                       & \verb=-hybrid_tol [1.0e-3]= & The convergence tolerance \\
-         &                       & \verb=-hybrid_w [1.5]=      & The relaxation coefficient $\omega$ \\
+         &                       & \verb=-hybrid_omega [1.5]=  & The relaxation coefficient $\omega$ \\
          &                       &                             & of the SOR ($0<\omega<2$) \\
          &                       & \verb=-hybrid_ell [2]=      & The degree $l$ of the BiCGSTAB(l) \\
          &                       & \verb=-hybrid_restart [40]= & The restart values \\
@@ -6532,12 +6534,12 @@ Preconditioner   & Option           & Auxiliary Options \\ \hline
 None     & \verb=-p {none|0}=    &   \\
 Jacobi   & \verb=-p {jacobi|1}=  &     \\
 ILU(k)   & \verb=-p {ilu|2}=     & \verb=-ilu_fill [0]=        & The fill level $k$ \\
-SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_w [1.0]=        & The relaxation coefficient \\ 
+SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_omega [1.0]=    & The relaxation coefficient \\ 
          &                       &                             & $\omega$ ($0<\omega<2$) \\
 Hybrid   & \verb=-p {hybrid|4}=  & \verb=-hybrid_i [sor]=      & The linear solver\\
          &                       & \verb=-hybrid_maxiter [25]= & The maximum number of iterations \\
          &                       & \verb=-hybrid_tol [1.0e-3]= & The convergence tolerance \\
-         &                       & \verb=-hybrid_w [1.5]=      & The relaxation coefficient $\omega$ \\
+         &                       & \verb=-hybrid_omega [1.5]=  & The relaxation coefficient $\omega$ \\
          &                       &                             & of the SOR ($0<\omega<2$) \\
          &                       & \verb=-hybrid_ell [2]=      & The degree $l$ of the BiCGSTAB(l) \\
          &                       & \verb=-hybrid_restart [40]= & The restart values \\
