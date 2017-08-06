@@ -287,13 +287,6 @@ LIS_INT lis_input_vector_mm(LIS_VECTOR v, FILE *file)
 		LIS_SETERR(LIS_ERR_FILE_IO,"Not Coodinate format\n");
 		return LIS_ERR_FILE_IO;
 	}
-	/*
-	if( strncmp(dtype, MM_TYPE_REAL, strlen(MM_TYPE_REAL))!=0 )
-	{
-		LIS_SETERR(LIS_ERR_FILE_IO,"Not real\n");
-		return LIS_ERR_FILE_IO;
-	}
-	*/
 	if( strncmp(dtype, MM_TYPE_REAL, strlen(MM_TYPE_REAL))==0 )
 	{
 		mmtype = MM_REAL;
