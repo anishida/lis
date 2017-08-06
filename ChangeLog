@@ -1,6 +1,6 @@
 Version 1.8.2  August 6, 2017
 
-  - Added support for inputting complex vectors.
+  - Added support for inputting complex vectors in Matrix Market format.
 
 Version 1.8.1  August 4, 2017
 
