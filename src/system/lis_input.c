@@ -259,7 +259,9 @@ LIS_INT lis_input_vector_mm(LIS_VECTOR v, FILE *file)
 	LIS_INT	err;
 	LIS_INT	n,is,ie;
 	LIS_INT	idx;
+	LIS_INT mmtype;	
 	double val;
+	double re,im;	
 
 
 	/* check banner */
@@ -285,11 +287,28 @@ LIS_INT lis_input_vector_mm(LIS_VECTOR v, FILE *file)
 		LIS_SETERR(LIS_ERR_FILE_IO,"Not Coodinate format\n");
 		return LIS_ERR_FILE_IO;
 	}
-	if( strncmp(dtype, MM_TYPE_REAL, strlen(MM_TYPE_REAL))!=0 )
+	if( strncmp(dtype, MM_TYPE_REAL, strlen(MM_TYPE_REAL))==0 )
+	{
+		mmtype = MM_REAL;
+	}
+#ifdef _COMPLEX	
+	else if( strncmp(dtype, MM_TYPE_COMPLEX, strlen(MM_TYPE_COMPLEX))==0 )
+	{
+		mmtype = MM_COMPLEX;
+	}
+	else
+	{
+		LIS_SETERR(LIS_ERR_FILE_IO,"Not real or complex\n");
+		return LIS_ERR_FILE_IO;
+	}
+#else
+	else
 	{
 		LIS_SETERR(LIS_ERR_FILE_IO,"Not real\n");
 		return LIS_ERR_FILE_IO;
 	}
+#endif	
+
 	if( strncmp(dstruct, MM_TYPE_GENERAL, strlen(MM_TYPE_GENERAL))!=0 )
 	{
 		LIS_SETERR(LIS_ERR_FILE_IO,"Not general\n");
@@ -330,11 +349,29 @@ LIS_INT lis_input_vector_mm(LIS_VECTOR v, FILE *file)
 			LIS_SETERR_FIO;
 			return LIS_ERR_FILE_IO;
 		}
+#ifdef _COMPLEX		
 #ifdef _LONG__LONG
-		if( sscanf(buf, "%lld %lg", &idx, &val) != 2 )
+		if( mmtype==MM_REAL && sscanf(buf, "%lld %lg", &idx, &re) != 2 )
 #else
-		if( sscanf(buf, "%d %lg", &idx, &val) != 2 )
+		if( mmtype==MM_REAL && sscanf(buf, "%d %lg", &idx, &re) != 2 )
 #endif
+#else
+#ifdef _LONG__LONG
+		if( mmtype==MM_REAL && sscanf(buf, "%lld %lg", &idx, &val) != 2 )
+#else
+		if( mmtype==MM_REAL && sscanf(buf, "%d %lg", &idx, &val) != 2 )
+#endif
+#endif		  
+		{
+			LIS_SETERR_FIO;
+			return LIS_ERR_FILE_IO;
+		}
+#ifdef _LONG__LONG
+		if( mmtype==MM_COMPLEX && sscanf(buf, "%lld %lg %lg", &idx, &re, &im) != 3 )
+#else
+		  if( mmtype==MM_COMPLEX && sscanf(buf, "%d %lg %lg", &idx, &re, &im) != 3 )
+#endif
+		  
 		{
 			LIS_SETERR_FIO;
 			return LIS_ERR_FILE_IO;
@@ -342,7 +379,20 @@ LIS_INT lis_input_vector_mm(LIS_VECTOR v, FILE *file)
 		idx--;
 		if( idx>=is && idx<ie )
 		{
-			v->value[idx-is] = val;
+			if( mmtype==MM_REAL )
+			{
+#ifdef _COMPLEX	  
+				v->value[idx-is] = re;
+#else
+				v->value[idx-is] = val;
+#endif
+			}
+#ifdef _COMPLEX	  
+			else
+			{
+				v->value[idx-is] = re + im * _Complex_I;
+			}	  
+#endif
 		}
 	}
 	return LIS_SUCCESS;
