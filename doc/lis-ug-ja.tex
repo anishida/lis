@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis $B%f!<%6%,%$%I(B}\\
-$B%P!<%8%g%s(B 1.8.2
+$B%P!<%8%g%s(B 1.8.3
 \end{flushleft}
 
 \vspace*{2cm}
@@ -282,7 +282,6 @@ Inverse\cite{inverse} \\
 Rayleigh Quotient\cite{rayleigh} \\
 CG\cite{knyazev} \\
 CR\cite{suetomi} \\
-Jacobi-Davidson\cite{sleijpen} \\
 Subspace\cite{rutishauser} \\
 Lanczos\cite{lanczos2} \\
 Arnoldi\cite{arnoldi} \\
@@ -1031,14 +1030,15 @@ $(1,\dots,1)^T$$B$H$N@Q$r<B9T2DG=$J9TNs3JG<7A<0$K$D$$$F(B
 
 \item double-double$B7?(B4$BG\@:EY1i;;(B(\ref{sec:quadruple}$B@a$r;2>H(B)
 \begin{itemize}
-\item $B@~7?J}Dx<02rK!$N$&$A(B, Jacobi, Gauss-Seidel, SOR, IDR(s)$BK!$G$O;HMQ$G$-$J$$(B.
-\item $B8GM-CM2rK!$N$&$A(B, CG, CR, Jacobi-Davidson$BK!$G$O;HMQ$G$-$J$$(B.
+\item $B@~7?J}Dx<02rK!$N$&$A(B, Jacobi, Gauss-Seidel, SOR, IDR(s), COCG, COCR$BK!$G$O;HMQ$G$-$J$$(B.
+\item $B8GM-CM2rK!$G$O;HMQ$G$-$J$$(B.
 \item Hybrid$BA0=hM}$G$NFbItH?I|2rK!$N$&$A(B, Jacobi, Gauss-Seidel, SOR$BK!$G$O;HMQ$G$-$J$$(B.
 \item I+S, SA-AMG$BA0=hM}$G$O;HMQ$G$-$J$$(B.
 \end{itemize}
 
 \item $BA0=hM}(B
 \begin{itemize}
+\item ILU(k)$BA0=hM}$N%"%k%4%j%:%`$O(B, $B%V%m%C%/BP3QMWAG$rJBNs$KJ,2r$9$k6I=j(BILU$BA0=hM}(B\cite{nakajima}$B$K4p$E$/(B. $B=>$C$F%9%l%C%I?t$^$?$O%W%m%;%9?t$,A}2C$9$k$K$D$l$F<}B+FC@-$O(BJacobi$BA0=hM}$K6a$E$/(B.
 \item Jacobi, SSOR$B0J30$NA0=hM}$,A*Br$5$l(B, $B$+$D9TNs(BA$B$,(BCSR$B7A<0$G$J$$>l9g(B,
       $BA0=hM}:n@.;~$K(BCSR$B7A<0$N9TNs(BA$B$,:n@.$5$l$k(B.
 \item $BHsBP>N@~7?J}Dx<02rK!$H$7$F(BBiCG$BK!$,A*Br$5$l$?>l9g(B, SA-AMG$BA0=hM}$O;HMQ$G$-$J$$(B.
@@ -1581,7 +1581,7 @@ CSR$B7A<0$NG[Ns$r%i%$%V%i%j$,07$($k$h$&9TNs(B$A$$B$K4XO"IU$1$k$K$O(B, $B4X?
       \verb|         LIS_INTEGER index(), LIS_SCALAR value(), LIS_MATRIX A, LIS_INTEGER ierr)|
 \end{itemize}
 $B$rMQ$$$k(B. 
-$B$=$NB>$N3JG<7A<0$K$D$$$F$O(B\ref{sec:storages}$B@a$r;2>H$;$h(B. 
+$B$=$NB>$N3JG<7A<0$K$D$$$F$O(B\ref{sec:storages}$B@a$r;2>H$N$3$H(B. 
 \\ \\
 {\bf $BJ}K!(B3: $B30It%U%!%$%k$+$i9TNs(B, $B%Y%/%H%k%G!<%?$rFI$_9~$`>l9g(B}\\
 $B30It%U%!%$%k$+$i(B(\ref{eq:mat})$B<0$N9TNs(B$A$$B$r(BCSR$B7A<0$GFI$_9~$`>l9g(B, $B%W%m%0%i%`$O0J2<$N$h$&$K5-=R$9$k(B. 
@@ -1963,18 +1963,17 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
  Rayleigh Quotient       & \verb=-e {rqi|3}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
  CG                      & \verb=-e {cg|4}=        &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
  CR                      & \verb=-e {cr|5}=        &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
- Jacobi-Davidson         & \verb=-e {jd|6}=        &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
- Subspace                & \verb=-e {si|7}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
- Lanczos                 & \verb=-e {li|8}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
- Arnoldi                 & \verb=-e {ai|9}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
- Generalized Power      & \verb=-e {gpi|10}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\ 
- Generalized Inverse    & \verb=-e {gii|11}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
- Generalized Rayleigh Quotient    & \verb=-e {gii|12}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\  
- Generalized CG         & \verb=-e {gcg|13}=       &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
- Generalized CR         & \verb=-e {gcr|14}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
- Generalized Subspace   & \verb=-e {gsi|15}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
- Generalized Lanczos    & \verb=-e {gli|16}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\ 
- Generalized Arnoldi    & \verb=-e {gai|17}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\ 
+ Subspace                & \verb=-e {si|6}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Lanczos                 & \verb=-e {li|7}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Arnoldi                 & \verb=-e {ai|8}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Generalized Power      & \verb=-e {gpi|9}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\ 
+ Generalized Inverse    & \verb=-e {gii|10}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
+ Generalized Rayleigh Quotient    & \verb=-e {gii|11}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\  
+ Generalized CG         & \verb=-e {gcg|12}=       &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
+ Generalized CR         & \verb=-e {gcr|13}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
+ Generalized Subspace   & \verb=-e {gsi|14}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Generalized Lanczos    & \verb=-e {gli|15}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\ 
+ Generalized Arnoldi    & \verb=-e {gai|16}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\ 
 \hline         
 \end{tabular}
 \end{center}
@@ -4288,10 +4287,11 @@ $local\_n$ $B$+(B $global\_n$ $B$N$I$A$i$+0lJ}$rM?$($J$1$l$P$J$i$J$$(B.
 \end{namelist}
 {\bf $B=PNO(B}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt ierr] \begin{description}
+\item[\tt ierr] $B%j%?!<%s%3!<%I(B
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt LIS\_TRUE] $B;HMQ2DG=(B
 \item[\tt LIS\_FALSE] $B;HMQIT2D(B
-\end{description}
+\end{namelist}
 \end{namelist}
 
 \newpage
@@ -6355,18 +6355,17 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
  Rayleigh Quotient       & \verb=-e {rqi|3}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
  CG                      & \verb=-e {cg|4}=        &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
  CR                      & \verb=-e {cr|5}=        &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
- Jacobi-Davidson         & \verb=-e {jd|6}=        &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
- Subspace                & \verb=-e {si|7}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
- Lanczos                 & \verb=-e {li|8}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
- Arnoldi                 & \verb=-e {ai|9}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
- Generalized Power      & \verb=-e {gpi|10}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\ 
- Generalized Inverse    & \verb=-e {gii|11}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
- Generalized Rayleigh Quotient    & \verb=-e {gii|12}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\  
- Generalized CG         & \verb=-e {gcg|13}=       &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
- Generalized CR         & \verb=-e {gcr|14}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
- Generalized Subspace   & \verb=-e {gsi|15}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
- Generalized Lanczos    & \verb=-e {gli|16}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\ 
- Generalized Arnoldi    & \verb=-e {gai|17}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\ 
+ Subspace                & \verb=-e {si|6}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Lanczos                 & \verb=-e {li|7}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Arnoldi                 & \verb=-e {ai|8}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Generalized Power      & \verb=-e {gpi|9}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\ 
+ Generalized Inverse    & \verb=-e {gii|10}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
+ Generalized Rayleigh Quotient    & \verb=-e {gii|11}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\  
+ Generalized CG         & \verb=-e {gcg|12}=       &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
+ Generalized CR         & \verb=-e {gcr|13}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
+ Generalized Subspace   & \verb=-e {gsi|14}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Generalized Lanczos    & \verb=-e {gli|15}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\ 
+ Generalized Arnoldi    & \verb=-e {gai|16}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\ 
 \hline         
 \end{tabular}
 \end{center}
@@ -7591,7 +7590,7 @@ QR$BK!$rMQ$$$F9TNs(B$A$$B$N8GM-CM$r7W;;$9$k(B.
 \item $B3HD%(BMatrix Market$B7A<0(B ($B%Y%/%H%k%G!<%?$KBP1~(B)
 \item Harwell-Boeing$B7A<0(B
 \end{itemize}
-$B$3$l$i$N%G!<%?9=B$$K$D$$$F$OIUO?(B\ref{sec:matinp}$B$r;2>H$;$h(B. 
+$B$3$l$i$N%G!<%?9=B$$K$D$$$F$OIUO?(B\ref{sec:matinp}$B$r;2>H$N$3$H(B. 
 
 \newpage
 \subsubsection{lis\_input\_vector}
@@ -7621,7 +7620,7 @@ QR$BK!$rMQ$$$F9TNs(B$A$$B$N8GM-CM$r7W;;$9$k(B.
 \item PLAIN$B7A<0(B
 \item $B3HD%(BMatrix Market$B7A<0(B ($B%Y%/%H%k%G!<%?$KBP1~(B)
 \end{itemize}
-$B$3$l$i$N%G!<%?9=B$$K$D$$$F$OIUO?(B\ref{sec:matinp}$B$r;2>H$;$h(B. 
+$B$3$l$i$N%G!<%?9=B$$K$D$$$F$OIUO?(B\ref{sec:matinp}$B$r;2>H$N$3$H(B. 
 
 \newpage
 \subsubsection{lis\_input\_matrix}
@@ -7651,7 +7650,7 @@ QR$BK!$rMQ$$$F9TNs(B$A$$B$N8GM-CM$r7W;;$9$k(B.
 \item Matrix Market$B7A<0(B
 \item Harwell-Boeing$B7A<0(B
 \end{itemize}
-$B$3$l$i$N%G!<%?9=B$$K$D$$$F$OIUO?(B\ref{sec:matinp}$B$r;2>H$;$h(B. 
+$B$3$l$i$N%G!<%?9=B$$K$D$$$F$OIUO?(B\ref{sec:matinp}$B$r;2>H$N$3$H(B. 
 
 \newpage
 \subsubsection{lis\_output}
@@ -7669,8 +7668,8 @@ QR$BK!$rMQ$$$F9TNs(B$A$$B$N8GM-CM$r7W;;$9$k(B.
 {\bf $BF~NO(B}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt A] $B9TNs(B
-\item[\tt b] $B1&JU%Y%/%H%k(B ($B%U%!%$%k$K=q$-9~$^$J$$>l9g$O(B{\tt NULL}$B$rBeF~$9$k(B)
-\item[\tt x] $B2r%Y%/%H%k(B ($B%U%!%$%k$K=q$-9~$^$J$$>l9g$O(B{\tt NULL}$B$rBeF~$9$k(B)
+\item[\tt b] $B1&JU%Y%/%H%k(B
+\item[\tt x] $B2r%Y%/%H%k(B
 \item[\tt format] $B%U%!%$%k7A<0(B
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt LIS\_FMT\_MM] Matrix Market$B7A<0(B
@@ -7684,7 +7683,9 @@ QR$BK!$rMQ$$$F9TNs(B$A$$B$N8GM-CM$r7W;;$9$k(B.
 \end{namelist}
 {\bf $BCm<a(B}\\
 \indent
-$B%U%!%$%k7A<0$N%G!<%?9=B$$OIUO?(B\ref{sec:matinp}$B$r;2>H$;$h(B. 
+$B%U%!%$%k7A<0$N%G!<%?9=B$$K$D$$$F$OIUO?(B\ref{sec:matinp}$B$r;2>H$N$3$H(B.
+
+C$B8@8lHG$K$*$$$F(B, $B%Y%/%H%k$r%U%!%$%k$K=q$-9~$^$J$$>l9g$O(B{\tt NULL}$B$rBeF~$9$k$3$H$,$G$-$k(B.
 
 \newpage
 \subsubsection{lis\_output\_vector}
@@ -7714,7 +7715,7 @@ QR$BK!$rMQ$$$F9TNs(B$A$$B$N8GM-CM$r7W;;$9$k(B.
 \end{namelist}
 {\bf $BCm<a(B}\\
 \indent
-$B%U%!%$%k7A<0$N%G!<%?9=B$$OIUO?(B\ref{sec:matinp}$B$r;2>H$;$h(B. 
+$B%U%!%$%k7A<0$N%G!<%?9=B$$K$D$$$F$OIUO?(B\ref{sec:matinp}$B$r;2>H$N$3$H(B. 
 
 \newpage
 \subsubsection{lis\_output\_matrix}

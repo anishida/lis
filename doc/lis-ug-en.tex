@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.8.2
+Version 1.8.3
 \end{flushleft}
 
 \vspace*{2cm}
@@ -302,7 +302,6 @@ Inverse\cite{inverse} \\
 Rayleigh Quotient\cite{rayleigh} \\
 CG\cite{knyazev} \\
 CR\cite{suetomi} \\
-Jacobi-Davidson\cite{sleijpen} \\
 Subspace\cite{rutishauser} \\
 Lanczos\cite{lanczos2} \\
 Arnoldi\cite{arnoldi} \\
@@ -1155,15 +1154,16 @@ The current version has the following limitations:
 
 \item Double-double (quadruple) precision operations (see Section \ref{sec:quadruple})
 \begin{itemize}
-\item The Jacobi, Gauss-Seidel, SOR, and IDR(s) methods do not support
-      the double-double precision operations.
-\item The CG, CR, and Jacobi-Davidson methods for the eigenvalue problems do not support the double-double precision operations.
+\item The Jacobi, Gauss-Seidel, SOR, IDR(s), COCG and COCR methods
+      do not support the double-double precision operations.
+\item The eigensolvers do not support the double-double precision operations.
 \item The Jacobi, Gauss-Seidel and SOR methods in the hybrid preconditioner do not support the double-double precision operations.
 \item The I+S and SA-AMG preconditioners do not support the double-double precision operations.
 \end{itemize}
 
 \item Preconditioners
 \begin{itemize}
+\item The algorithm of the ILU(k) preconditioner is based on the localized ILU preconditioning\cite{nakajima}, which factorizes the block diagonal elements in parallel. Therefore the convergence behavior approaches to that of the Jacobi preconditioner as the number of threads or processes increases.
 \item If a preconditioner other than the Jacobi or SSOR is selected 
       and matrix $A$ is not in the CSR format, a new matrix is created 
       in the CSR format for preconditioning.
@@ -2098,29 +2098,27 @@ that \verb=-emaxiter= defaults to $1,000$.
  \verb=-i [cg]= & The linear solver \\ 
  CR                                & \verb=-e {cr|5}=        &
  \verb=-i [bicg]= & The linear solver \\ 
- Jacobi-Davidson                   & \verb=-e {jd|6}=        &
- \verb=-i [cg]= & The linear solver \\ 
- Subspace                          & \verb=-e {si|7}=        &
+ Subspace                          & \verb=-e {si|6}=        &
  \verb=-ss [1]= & The size of the subspace \\
- Lanczos                           & \verb=-e {li|8}=        &
+ Lanczos                           & \verb=-e {li|7}=        &
  \verb=-ss [1]= & The size of the subspace \\
- Arnoldi                           & \verb=-e {ai|9}=        &
+ Arnoldi                           & \verb=-e {ai|8}=        &
  \verb=-ss [1]= & The size of the subspace \\
- Generalized Power                 & \verb=-e {gpi|10}=      &
+ Generalized Power                 & \verb=-e {gpi|9}=      &
  \verb=-i [bicg]= & The linear solver \\ 
- Generalized Inverse               & \verb=-e {gii|11}=      & 
+ Generalized Inverse               & \verb=-e {gii|10}=      & 
  \verb=-i [bicg]= & The linear solver \\
- Generalized Rayleigh Quotient     & \verb=-e {grqi|12}=      & 
+ Generalized Rayleigh Quotient     & \verb=-e {grqi|11}=      & 
  \verb=-i [bicg]= & The linear solver \\ 
- Generalized CG                    & \verb=-e {gcg|13}=      & 
+ Generalized CG                    & \verb=-e {gcg|12}=      & 
  \verb=-i [cg]= & The linear solver \\
- Generalized CR                    & \verb=-e {gcr|14}=      & 
+ Generalized CR                    & \verb=-e {gcr|13}=      & 
  \verb=-i [bicg]= & The linear solver \\
- Generalized Subspace              & \verb=-e {gsi|15}=      &
+ Generalized Subspace              & \verb=-e {gsi|14}=      &
  \verb=-ss [1]= & The size of the subspace \\
- Generalized Lanczos               & \verb=-e {gli|16}=      &
+ Generalized Lanczos               & \verb=-e {gli|15}=      &
  \verb=-ss [1]= & The size of the subspace \\
- Generalized Arnoldi               & \verb=-e {gai|17}=      &
+ Generalized Arnoldi               & \verb=-e {gai|16}=      &
  \verb=-ss [1]= & The size of the subspace \\  
 \hline         
 \end{tabular}
@@ -4409,6 +4407,29 @@ where $i=0,1,..., global\_n-1$.
 {\bf Note}\\
 \indent
 
+\subsubsection{lis\_vector\_is\_null}
+\begin{screen}
+\verb|C       LIS_INT lis_vector_is_null(LIS_VECTOR v)|\\
+\verb|Fortran subroutine lis_vector_is_null(LIS_VECTOR v,LIS_INTEGER ierr)|
+\end{screen}
+{\bf Description}\\
+\indent
+Determine if vector $v$ is available. 
+\\ \\
+\noindent
+{\bf Input}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt v] The vector
+\end{namelist}
+{\bf Output}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt ierr] The return code
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt LIS\_TRUE] Available
+\item[\tt LIS\_FALSE] Not available  
+\end{namelist}
+\end{namelist}
+
 \newpage
 \subsection{Operating Matrix Elements}
 Assume that the size of matrix $A$ is $global\_n$ $\times$ $global\_n$
@@ -6497,29 +6518,27 @@ that \verb=-emaxiter= defaults to $1,000$.
  \verb=-i [cg]= & The linear solver \\ 
  CR                                & \verb=-e {cr|5}=        &
  \verb=-i [bicg]= & The linear solver \\ 
- Jacobi-Davidson                   & \verb=-e {jd|6}=        &
+ Subspace                          & \verb=-e {si|6}=        &
+ \verb=-ss [1]= & The size of the subspace \\
+ Lanczos                           & \verb=-e {li|7}=        &
+ \verb=-ss [1]= & The size of the subspace \\
+ Arnoldi                           & \verb=-e {ai|8}=        &
+ \verb=-ss [1]= & The size of the subspace \\
+ Generalized Power                 & \verb=-e {gpi|9}=      &
  \verb=-i [bicg]= & The linear solver \\ 
- Subspace                          & \verb=-e {si|7}=        &
- \verb=-ss [1]= & The size of the subspace \\
- Lanczos                           & \verb=-e {li|8}=        &
- \verb=-ss [1]= & The size of the subspace \\
- Arnoldi                           & \verb=-e {ai|9}=        &
- \verb=-ss [1]= & The size of the subspace \\
- Generalized Power                 & \verb=-e {gpi|10}=      &
- \verb=-i [bicg]= & The linear solver \\ 
- Generalized Inverse               & \verb=-e {gii|11}=      & 
+ Generalized Inverse               & \verb=-e {gii|10}=      & 
  \verb=-i [bicg]= & The linear solver \\
- Generalized Rayleigh Quotient     & \verb=-e {grqi|12}=      & 
+ Generalized Rayleigh Quotient     & \verb=-e {grqi|11}=      & 
  \verb=-i [bicg]= & The linear solver \\ 
- Generalized CG                    & \verb=-e {gcg|13}=      & 
+ Generalized CG                    & \verb=-e {gcg|12}=      & 
  \verb=-i [cg]= & The linear solver \\
- Generalized CR                    & \verb=-e {gcr|14}=      & 
+ Generalized CR                    & \verb=-e {gcr|13}=      & 
  \verb=-i [bicg]= & The linear solver \\
- Generalized Subspace              & \verb=-e {gsi|15}=      &
+ Generalized Subspace              & \verb=-e {gsi|14}=      &
  \verb=-ss [1]= & The size of the subspace \\
- Generalized Lanczos               & \verb=-e {gli|16}=      &
+ Generalized Lanczos               & \verb=-e {gli|15}=      &
  \verb=-ss [1]= & The size of the subspace \\
- Generalized Arnoldi               & \verb=-e {gai|17}=      &
+ Generalized Arnoldi               & \verb=-e {gai|16}=      &
  \verb=-ss [1]= & The size of the subspace \\  
 \hline         
 \end{tabular}
@@ -7828,8 +7847,8 @@ Write the matrix and vector data into the external file.
 {\bf Input}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt A] The matrix
-\item[\tt b] The right-hand side vector (If no vector is written to the external file, then {\tt NULL} must be input.)
-\item[\tt x] The solution (If no vector is written to the external file, then {\tt NULL} must be input.)
+\item[\tt b] The right-hand side vector 
+\item[\tt x] The solution 
 \item[\tt format] The file format
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt LIS\_FMT\_MM] The Matrix Market format
@@ -7840,6 +7859,9 @@ Write the matrix and vector data into the external file.
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt ierr] The return code
 \end{namelist}
+{\bf Note}\\
+\indent
+In the C version, {\tt NULL} can be input if the vector should not be written to the external file.
 
 \subsubsection{lis\_output\_vector}
 \begin{screen}
@@ -8181,11 +8203,6 @@ E. Suetomi and H. Sekimoto.
 \newblock Conjugate Gradient Like Methods and Their Application to
 	Eigenvalue Problems for Neutron Diffusion Equation.
 \newblock Annals of Nuclear Energy, Vol.~18, No.~4, pp.\ 205--227, 1991.
-
-\bibitem{sleijpen}
-G. L. G. Sleijpen and H. A. van der Vorst.
-\newblock A Jacobi-Davidson Iteration Method for Linear Eigenvalue Problems.
-\newblock SIAM Journal on Matrix Analysis and Applications, Vol.~17, No.~2, pp.\ 401--425, 1996.
 
 \bibitem{rutishauser}
 H. R. Rutishauser.

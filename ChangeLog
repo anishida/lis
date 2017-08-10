@@ -1,3 +1,8 @@
+Version 1.8.3  August 10, 2017
+
+  - Updated documents.
+  - Updated eigensolvers.
+
 Version 1.8.2  August 6, 2017
 
   - Added support for inputting complex vectors in Matrix Market format.
