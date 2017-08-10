@@ -282,7 +282,6 @@ Inverse\cite{inverse} \\
 Rayleigh Quotient\cite{rayleigh} \\
 CG\cite{knyazev} \\
 CR\cite{suetomi} \\
-Jacobi-Davidson\cite{sleijpen} \\
 Subspace\cite{rutishauser} \\
 Lanczos\cite{lanczos2} \\
 Arnoldi\cite{arnoldi} \\
@@ -1031,8 +1030,8 @@ $(1,\dots,1)^T$$B$H$N@Q$r<B9T2DG=$J9TNs3JG<7A<0$K$D$$$F(B
 
 \item double-double$B7?(B4$BG\@:EY1i;;(B(\ref{sec:quadruple}$B@a$r;2>H(B)
 \begin{itemize}
-\item $B@~7?J}Dx<02rK!$N$&$A(B, Jacobi, Gauss-Seidel, SOR, IDR(s)$BK!$G$O;HMQ$G$-$J$$(B.
-\item $B8GM-CM2rK!$N$&$A(B, CG, CR, Jacobi-Davidson$BK!$G$O;HMQ$G$-$J$$(B.
+\item $B@~7?J}Dx<02rK!$N$&$A(B, Jacobi, Gauss-Seidel, SOR, IDR(s), COCG, COCR$BK!$G$O;HMQ$G$-$J$$(B.
+\item $B8GM-CM2rK!$G$O;HMQ$G$-$J$$(B.
 \item Hybrid$BA0=hM}$G$NFbItH?I|2rK!$N$&$A(B, Jacobi, Gauss-Seidel, SOR$BK!$G$O;HMQ$G$-$J$$(B.
 \item I+S, SA-AMG$BA0=hM}$G$O;HMQ$G$-$J$$(B.
 \end{itemize}
@@ -1964,18 +1963,17 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
  Rayleigh Quotient       & \verb=-e {rqi|3}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
  CG                      & \verb=-e {cg|4}=        &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
  CR                      & \verb=-e {cr|5}=        &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
- Jacobi-Davidson         & \verb=-e {jd|6}=        &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
- Subspace                & \verb=-e {si|7}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
- Lanczos                 & \verb=-e {li|8}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
- Arnoldi                 & \verb=-e {ai|9}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
- Generalized Power      & \verb=-e {gpi|10}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\ 
- Generalized Inverse    & \verb=-e {gii|11}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
- Generalized Rayleigh Quotient    & \verb=-e {gii|12}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\  
- Generalized CG         & \verb=-e {gcg|13}=       &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
- Generalized CR         & \verb=-e {gcr|14}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
- Generalized Subspace   & \verb=-e {gsi|15}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
- Generalized Lanczos    & \verb=-e {gli|16}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\ 
- Generalized Arnoldi    & \verb=-e {gai|17}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\ 
+ Subspace                & \verb=-e {si|6}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Lanczos                 & \verb=-e {li|7}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Arnoldi                 & \verb=-e {ai|8}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Generalized Power      & \verb=-e {gpi|9}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\ 
+ Generalized Inverse    & \verb=-e {gii|10}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
+ Generalized Rayleigh Quotient    & \verb=-e {gii|11}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\  
+ Generalized CG         & \verb=-e {gcg|12}=       &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
+ Generalized CR         & \verb=-e {gcr|13}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
+ Generalized Subspace   & \verb=-e {gsi|14}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Generalized Lanczos    & \verb=-e {gli|15}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\ 
+ Generalized Arnoldi    & \verb=-e {gai|16}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\ 
 \hline         
 \end{tabular}
 \end{center}
@@ -6357,18 +6355,17 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
  Rayleigh Quotient       & \verb=-e {rqi|3}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
  CG                      & \verb=-e {cg|4}=        &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
  CR                      & \verb=-e {cr|5}=        &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
- Jacobi-Davidson         & \verb=-e {jd|6}=        &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
- Subspace                & \verb=-e {si|7}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
- Lanczos                 & \verb=-e {li|8}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
- Arnoldi                 & \verb=-e {ai|9}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
- Generalized Power      & \verb=-e {gpi|10}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\ 
- Generalized Inverse    & \verb=-e {gii|11}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
- Generalized Rayleigh Quotient    & \verb=-e {gii|12}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\  
- Generalized CG         & \verb=-e {gcg|13}=       &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
- Generalized CR         & \verb=-e {gcr|14}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
- Generalized Subspace   & \verb=-e {gsi|15}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
- Generalized Lanczos    & \verb=-e {gli|16}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\ 
- Generalized Arnoldi    & \verb=-e {gai|17}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\ 
+ Subspace                & \verb=-e {si|6}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Lanczos                 & \verb=-e {li|7}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Arnoldi                 & \verb=-e {ai|8}=        &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Generalized Power      & \verb=-e {gpi|9}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\ 
+ Generalized Inverse    & \verb=-e {gii|10}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
+ Generalized Rayleigh Quotient    & \verb=-e {gii|11}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\  
+ Generalized CG         & \verb=-e {gcg|12}=       &    \verb=-i [cg]= & $B@~7?J}Dx<02rK!(B \\
+ Generalized CR         & \verb=-e {gcr|13}=       &    \verb=-i [bicg]= & $B@~7?J}Dx<02rK!(B \\
+ Generalized Subspace   & \verb=-e {gsi|14}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\
+ Generalized Lanczos    & \verb=-e {gli|15}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\ 
+ Generalized Arnoldi    & \verb=-e {gai|16}=       &    \verb=-ss [1]= & $BItJ,6u4V$NBg$-$5(B \\ 
 \hline         
 \end{tabular}
 \end{center}

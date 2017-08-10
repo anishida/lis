@@ -3,7 +3,6 @@ libesolver_la_SOURCES = lis_esolver.c \
 lis_esolver_ai.c \
 lis_esolver_cg.c \
 lis_esolver_ii.c \
-lis_esolver_jd.c \
 lis_esolver_li.c \
 lis_esolver_pi.c \
 lis_esolver_rqi.c \

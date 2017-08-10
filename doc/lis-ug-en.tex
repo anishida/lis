@@ -302,7 +302,6 @@ Inverse\cite{inverse} \\
 Rayleigh Quotient\cite{rayleigh} \\
 CG\cite{knyazev} \\
 CR\cite{suetomi} \\
-Jacobi-Davidson\cite{sleijpen} \\
 Subspace\cite{rutishauser} \\
 Lanczos\cite{lanczos2} \\
 Arnoldi\cite{arnoldi} \\
@@ -1155,9 +1154,9 @@ The current version has the following limitations:
 
 \item Double-double (quadruple) precision operations (see Section \ref{sec:quadruple})
 \begin{itemize}
-\item The Jacobi, Gauss-Seidel, SOR, and IDR(s) methods do not support
-      the double-double precision operations.
-\item The CG, CR, and Jacobi-Davidson methods for the eigenvalue problems do not support the double-double precision operations.
+\item The Jacobi, Gauss-Seidel, SOR, IDR(s), COCG and COCR methods
+      do not support the double-double precision operations.
+\item The eigensolvers do not support the double-double precision operations.
 \item The Jacobi, Gauss-Seidel and SOR methods in the hybrid preconditioner do not support the double-double precision operations.
 \item The I+S and SA-AMG preconditioners do not support the double-double precision operations.
 \end{itemize}
@@ -2099,29 +2098,27 @@ that \verb=-emaxiter= defaults to $1,000$.
  \verb=-i [cg]= & The linear solver \\ 
  CR                                & \verb=-e {cr|5}=        &
  \verb=-i [bicg]= & The linear solver \\ 
- Jacobi-Davidson                   & \verb=-e {jd|6}=        &
- \verb=-i [cg]= & The linear solver \\ 
- Subspace                          & \verb=-e {si|7}=        &
+ Subspace                          & \verb=-e {si|6}=        &
  \verb=-ss [1]= & The size of the subspace \\
- Lanczos                           & \verb=-e {li|8}=        &
+ Lanczos                           & \verb=-e {li|7}=        &
  \verb=-ss [1]= & The size of the subspace \\
- Arnoldi                           & \verb=-e {ai|9}=        &
+ Arnoldi                           & \verb=-e {ai|8}=        &
  \verb=-ss [1]= & The size of the subspace \\
- Generalized Power                 & \verb=-e {gpi|10}=      &
+ Generalized Power                 & \verb=-e {gpi|9}=      &
  \verb=-i [bicg]= & The linear solver \\ 
- Generalized Inverse               & \verb=-e {gii|11}=      & 
+ Generalized Inverse               & \verb=-e {gii|10}=      & 
  \verb=-i [bicg]= & The linear solver \\
- Generalized Rayleigh Quotient     & \verb=-e {grqi|12}=      & 
+ Generalized Rayleigh Quotient     & \verb=-e {grqi|11}=      & 
  \verb=-i [bicg]= & The linear solver \\ 
- Generalized CG                    & \verb=-e {gcg|13}=      & 
+ Generalized CG                    & \verb=-e {gcg|12}=      & 
  \verb=-i [cg]= & The linear solver \\
- Generalized CR                    & \verb=-e {gcr|14}=      & 
+ Generalized CR                    & \verb=-e {gcr|13}=      & 
  \verb=-i [bicg]= & The linear solver \\
- Generalized Subspace              & \verb=-e {gsi|15}=      &
+ Generalized Subspace              & \verb=-e {gsi|14}=      &
  \verb=-ss [1]= & The size of the subspace \\
- Generalized Lanczos               & \verb=-e {gli|16}=      &
+ Generalized Lanczos               & \verb=-e {gli|15}=      &
  \verb=-ss [1]= & The size of the subspace \\
- Generalized Arnoldi               & \verb=-e {gai|17}=      &
+ Generalized Arnoldi               & \verb=-e {gai|16}=      &
  \verb=-ss [1]= & The size of the subspace \\  
 \hline         
 \end{tabular}
@@ -6521,29 +6518,27 @@ that \verb=-emaxiter= defaults to $1,000$.
  \verb=-i [cg]= & The linear solver \\ 
  CR                                & \verb=-e {cr|5}=        &
  \verb=-i [bicg]= & The linear solver \\ 
- Jacobi-Davidson                   & \verb=-e {jd|6}=        &
+ Subspace                          & \verb=-e {si|6}=        &
+ \verb=-ss [1]= & The size of the subspace \\
+ Lanczos                           & \verb=-e {li|7}=        &
+ \verb=-ss [1]= & The size of the subspace \\
+ Arnoldi                           & \verb=-e {ai|8}=        &
+ \verb=-ss [1]= & The size of the subspace \\
+ Generalized Power                 & \verb=-e {gpi|9}=      &
  \verb=-i [bicg]= & The linear solver \\ 
- Subspace                          & \verb=-e {si|7}=        &
- \verb=-ss [1]= & The size of the subspace \\
- Lanczos                           & \verb=-e {li|8}=        &
- \verb=-ss [1]= & The size of the subspace \\
- Arnoldi                           & \verb=-e {ai|9}=        &
- \verb=-ss [1]= & The size of the subspace \\
- Generalized Power                 & \verb=-e {gpi|10}=      &
- \verb=-i [bicg]= & The linear solver \\ 
- Generalized Inverse               & \verb=-e {gii|11}=      & 
+ Generalized Inverse               & \verb=-e {gii|10}=      & 
  \verb=-i [bicg]= & The linear solver \\
- Generalized Rayleigh Quotient     & \verb=-e {grqi|12}=      & 
+ Generalized Rayleigh Quotient     & \verb=-e {grqi|11}=      & 
  \verb=-i [bicg]= & The linear solver \\ 
- Generalized CG                    & \verb=-e {gcg|13}=      & 
+ Generalized CG                    & \verb=-e {gcg|12}=      & 
  \verb=-i [cg]= & The linear solver \\
- Generalized CR                    & \verb=-e {gcr|14}=      & 
+ Generalized CR                    & \verb=-e {gcr|13}=      & 
  \verb=-i [bicg]= & The linear solver \\
- Generalized Subspace              & \verb=-e {gsi|15}=      &
+ Generalized Subspace              & \verb=-e {gsi|14}=      &
  \verb=-ss [1]= & The size of the subspace \\
- Generalized Lanczos               & \verb=-e {gli|16}=      &
+ Generalized Lanczos               & \verb=-e {gli|15}=      &
  \verb=-ss [1]= & The size of the subspace \\
- Generalized Arnoldi               & \verb=-e {gai|17}=      &
+ Generalized Arnoldi               & \verb=-e {gai|16}=      &
  \verb=-ss [1]= & The size of the subspace \\  
 \hline         
 \end{tabular}
@@ -8208,11 +8203,6 @@ E. Suetomi and H. Sekimoto.
 \newblock Conjugate Gradient Like Methods and Their Application to
 	Eigenvalue Problems for Neutron Diffusion Equation.
 \newblock Annals of Nuclear Energy, Vol.~18, No.~4, pp.\ 205--227, 1991.
-
-\bibitem{sleijpen}
-G. L. G. Sleijpen and H. A. van der Vorst.
-\newblock A Jacobi-Davidson Iteration Method for Linear Eigenvalue Problems.
-\newblock SIAM Journal on Matrix Analysis and Applications, Vol.~17, No.~2, pp.\ 401--425, 1996.
 
 \bibitem{rutishauser}
 H. R. Rutishauser.
