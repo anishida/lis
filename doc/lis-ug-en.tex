@@ -1164,7 +1164,7 @@ The current version has the following limitations:
 
 \item Preconditioners
 \begin{itemize}
-\item The algorithm of the ILU(k) preconditioner is based on the localized ILU preconditioning\cite{nakajima}. Therefore, its convergence behavior approaches to that of the Jacobi preconditioner as the number of threads or processes increases.
+\item The algorithm of the ILU(k) preconditioner is based on the localized ILU preconditioning\cite{nakajima}, which factorizes the block diagonal elements in parallel. Therefore the convergence behavior approaches to that of the Jacobi preconditioner as the number of threads or processes increases.
 \item If a preconditioner other than the Jacobi or SSOR is selected 
       and matrix $A$ is not in the CSR format, a new matrix is created 
       in the CSR format for preconditioning.
