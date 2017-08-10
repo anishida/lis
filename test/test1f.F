@@ -192,7 +192,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ! write solution 
       call getarg(3,solname)
-	call lis_output_vector(x,LIS_FMT_MM,solname,ierr);
+      call lis_output_vector(x,LIS_FMT_MM,solname,ierr);
 
 ! write residual 
       call getarg(4,resname)

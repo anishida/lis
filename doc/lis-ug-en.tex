@@ -4410,6 +4410,29 @@ where $i=0,1,..., global\_n-1$.
 {\bf Note}\\
 \indent
 
+\subsubsection{lis\_vector\_is\_null}
+\begin{screen}
+\verb|C       LIS_INT lis_vector_is_null(LIS_VECTOR v)|\\
+\verb|Fortran subroutine lis_vector_is_null(LIS_VECTOR v,LIS_INTEGER ierr)|
+\end{screen}
+{\bf Description}\\
+\indent
+Determine if vector $v$ is available. 
+\\ \\
+\noindent
+{\bf Input}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt v] The vector
+\end{namelist}
+{\bf Output}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt ierr] The return code
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt LIS\_TRUE] Available
+\item[\tt LIS\_FALSE] Not available  
+\end{namelist}
+\end{namelist}
+
 \newpage
 \subsection{Operating Matrix Elements}
 Assume that the size of matrix $A$ is $global\_n$ $\times$ $global\_n$
@@ -7829,8 +7852,8 @@ Write the matrix and vector data into the external file.
 {\bf Input}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt A] The matrix
-\item[\tt b] The right-hand side vector (If no vector is written to the external file, then {\tt NULL} must be input.)
-\item[\tt x] The solution (If no vector is written to the external file, then {\tt NULL} must be input.)
+\item[\tt b] The right-hand side vector 
+\item[\tt x] The solution 
 \item[\tt format] The file format
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt LIS\_FMT\_MM] The Matrix Market format
@@ -7841,6 +7864,9 @@ Write the matrix and vector data into the external file.
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt ierr] The return code
 \end{namelist}
+{\bf Note}\\
+\indent
+In the C version, {\tt NULL} can be input if the vector should not be written to the external file.
 
 \subsubsection{lis\_output\_vector}
 \begin{screen}

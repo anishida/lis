@@ -1582,7 +1582,7 @@ CSR$B7A<0$NG[Ns$r%i%$%V%i%j$,07$($k$h$&9TNs(B$A$$B$K4XO"IU$1$k$K$O(B, $B4X?
       \verb|         LIS_INTEGER index(), LIS_SCALAR value(), LIS_MATRIX A, LIS_INTEGER ierr)|
 \end{itemize}
 $B$rMQ$$$k(B. 
-$B$=$NB>$N3JG<7A<0$K$D$$$F$O(B\ref{sec:storages}$B@a$r;2>H$;$h(B. 
+$B$=$NB>$N3JG<7A<0$K$D$$$F$O(B\ref{sec:storages}$B@a$r;2>H$N$3$H(B. 
 \\ \\
 {\bf $BJ}K!(B3: $B30It%U%!%$%k$+$i9TNs(B, $B%Y%/%H%k%G!<%?$rFI$_9~$`>l9g(B}\\
 $B30It%U%!%$%k$+$i(B(\ref{eq:mat})$B<0$N9TNs(B$A$$B$r(BCSR$B7A<0$GFI$_9~$`>l9g(B, $B%W%m%0%i%`$O0J2<$N$h$&$K5-=R$9$k(B. 
@@ -4289,10 +4289,11 @@ $local\_n$ $B$+(B $global\_n$ $B$N$I$A$i$+0lJ}$rM?$($J$1$l$P$J$i$J$$(B.
 \end{namelist}
 {\bf $B=PNO(B}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt ierr] \begin{description}
+\item[\tt ierr] $B%j%?!<%s%3!<%I(B
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt LIS\_TRUE] $B;HMQ2DG=(B
 \item[\tt LIS\_FALSE] $B;HMQIT2D(B
-\end{description}
+\end{namelist}
 \end{namelist}
 
 \newpage
@@ -7592,7 +7593,7 @@ QR$BK!$rMQ$$$F9TNs(B$A$$B$N8GM-CM$r7W;;$9$k(B.
 \item $B3HD%(BMatrix Market$B7A<0(B ($B%Y%/%H%k%G!<%?$KBP1~(B)
 \item Harwell-Boeing$B7A<0(B
 \end{itemize}
-$B$3$l$i$N%G!<%?9=B$$K$D$$$F$OIUO?(B\ref{sec:matinp}$B$r;2>H$;$h(B. 
+$B$3$l$i$N%G!<%?9=B$$K$D$$$F$OIUO?(B\ref{sec:matinp}$B$r;2>H$N$3$H(B. 
 
 \newpage
 \subsubsection{lis\_input\_vector}
@@ -7622,7 +7623,7 @@ QR$BK!$rMQ$$$F9TNs(B$A$$B$N8GM-CM$r7W;;$9$k(B.
 \item PLAIN$B7A<0(B
 \item $B3HD%(BMatrix Market$B7A<0(B ($B%Y%/%H%k%G!<%?$KBP1~(B)
 \end{itemize}
-$B$3$l$i$N%G!<%?9=B$$K$D$$$F$OIUO?(B\ref{sec:matinp}$B$r;2>H$;$h(B. 
+$B$3$l$i$N%G!<%?9=B$$K$D$$$F$OIUO?(B\ref{sec:matinp}$B$r;2>H$N$3$H(B. 
 
 \newpage
 \subsubsection{lis\_input\_matrix}
@@ -7652,7 +7653,7 @@ QR$BK!$rMQ$$$F9TNs(B$A$$B$N8GM-CM$r7W;;$9$k(B.
 \item Matrix Market$B7A<0(B
 \item Harwell-Boeing$B7A<0(B
 \end{itemize}
-$B$3$l$i$N%G!<%?9=B$$K$D$$$F$OIUO?(B\ref{sec:matinp}$B$r;2>H$;$h(B. 
+$B$3$l$i$N%G!<%?9=B$$K$D$$$F$OIUO?(B\ref{sec:matinp}$B$r;2>H$N$3$H(B. 
 
 \newpage
 \subsubsection{lis\_output}
@@ -7670,8 +7671,8 @@ QR$BK!$rMQ$$$F9TNs(B$A$$B$N8GM-CM$r7W;;$9$k(B.
 {\bf $BF~NO(B}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt A] $B9TNs(B
-\item[\tt b] $B1&JU%Y%/%H%k(B ($B%U%!%$%k$K=q$-9~$^$J$$>l9g$O(B{\tt NULL}$B$rBeF~$9$k(B)
-\item[\tt x] $B2r%Y%/%H%k(B ($B%U%!%$%k$K=q$-9~$^$J$$>l9g$O(B{\tt NULL}$B$rBeF~$9$k(B)
+\item[\tt b] $B1&JU%Y%/%H%k(B
+\item[\tt x] $B2r%Y%/%H%k(B
 \item[\tt format] $B%U%!%$%k7A<0(B
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt LIS\_FMT\_MM] Matrix Market$B7A<0(B
@@ -7685,7 +7686,9 @@ QR$BK!$rMQ$$$F9TNs(B$A$$B$N8GM-CM$r7W;;$9$k(B.
 \end{namelist}
 {\bf $BCm<a(B}\\
 \indent
-$B%U%!%$%k7A<0$N%G!<%?9=B$$OIUO?(B\ref{sec:matinp}$B$r;2>H$;$h(B. 
+$B%U%!%$%k7A<0$N%G!<%?9=B$$K$D$$$F$OIUO?(B\ref{sec:matinp}$B$r;2>H$N$3$H(B.
+
+C$B8@8lHG$K$*$$$F(B, $B%Y%/%H%k$r%U%!%$%k$K=q$-9~$^$J$$>l9g$O(B{\tt NULL}$B$rBeF~$9$k$3$H$,$G$-$k(B.
 
 \newpage
 \subsubsection{lis\_output\_vector}
@@ -7715,7 +7718,7 @@ QR$BK!$rMQ$$$F9TNs(B$A$$B$N8GM-CM$r7W;;$9$k(B.
 \end{namelist}
 {\bf $BCm<a(B}\\
 \indent
-$B%U%!%$%k7A<0$N%G!<%?9=B$$OIUO?(B\ref{sec:matinp}$B$r;2>H$;$h(B. 
+$B%U%!%$%k7A<0$N%G!<%?9=B$$K$D$$$F$OIUO?(B\ref{sec:matinp}$B$r;2>H$N$3$H(B. 
 
 \newpage
 \subsubsection{lis\_output\_matrix}
