@@ -518,7 +518,16 @@ by \verb+TARGET+.
                           & \verb+  CFLAGS="-O3 -qarch=440d -qtune=440 -qstrict"+ \\
                           & \verb+  FCFLAGS="-O3 -qarch=440d -qtune=440 -qsuffix=cpp=F90"+ \\
                           & \verb+  ac_cv_sizeof_void_p=4 cross_compiling=yes+\\
-                          & \verb+  ax_f77_mangling="lower case, no underscore, no extra underscore"+ \\ \hline
+& \verb+  ax_f77_mangling="lower case, no underscore, no extra underscore"+ \\ \hline
+\verb+intel_mic_cross+    & \verb+./configure CC=icc F77=ifort FC=ifort+ \\
+                          & \verb+  MPICC=mpiicc MPIF77=mpiifort MPIFC=mpiifort+ \\
+                          & \verb+  CFLAGS="-mmic" FFLAGS="-mmic" FCFLAGS="-mmic"+ \\
+                          & \verb+  LDFLAGS="-mmic" FCLDFLAGS="-mmic" cross_compiling=yes+ \\
+                          & \verb+  host=x86_64-pc-linux-gnu host_alias=x86_64-linux-gnu+ \\
+                          & \verb+  host_cpu=x86_64 host_os=linux-gnu host_vendor=pc+ \\
+                          & \verb+  target=k1om-mpss-linux-gnu target_alias=k1om-mpss-linux+ \\
+                          & \verb+  target_cpu=k1om target_os=linux-gnu target_vendor=mpss+ \\
+\hline
 \verb+nec_sx9_cross+      & \verb|./configure CC=sxmpic++ FC=sxmpif90 AR=sxar RANLIB=true | \\
                           & \verb+  ac_cv_sizeof_void_p=8 ax_vector_machine=yes cross_compiling=yes+ \\ 
                           & \verb+  ax_f77_mangling="lower case, no underscore, extra underscore"+ \\ \hline
