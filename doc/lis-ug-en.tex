@@ -1163,7 +1163,7 @@ The current version has the following limitations:
 
 \item Preconditioners
 \begin{itemize}
-\item The algorithm of the ILU(k) preconditioner is based on the localized ILU preconditioning\cite{nakajima}, which factorizes the block diagonal elements in parallel. Therefore the convergence behavior approaches to that of the Jacobi preconditioner as the number of threads or processes increases.
+\item The algorithm of the ILU(k) preconditioner is based on the localized ILU preconditioning\cite{nakajima}, which factorizes the block diagonal elements in parallel. Note that the convergence behavior approaches to that of the Jacobi preconditioner as the number of threads or processes increases.
 \item If a preconditioner other than the Jacobi or SSOR is selected 
       and matrix $A$ is not in the CSR format, a new matrix is created 
       in the CSR format for preconditioning.
@@ -1998,7 +1998,7 @@ Option &                          \\ \hline
 \verb=-storage_block [2]=& The block size of the BSR and BSC formats\\ 
 \verb=-f [0]=          & The precision of the linear solver\\
                        & \verb=-f {double|0}       =  Double precision \\ 
-                       & \verb=-f {quad|1}         =  Quadruple precision \\
+                       & \verb=-f {quad|1}         =  Double-double (quadruple) precision \\
 \hline         
 \end{tabular}
 \end{center}
@@ -2189,7 +2189,7 @@ Option &                          \\ \hline
 \verb=-estorage_block [2]=& The block size of the BSR and BSC formats\\ 
 \verb=-ef [0]=         & The precision of the eigensolver\\
                        & \verb=-ef {double|0}       =  Double precision \\ 
-                       & \verb=-ef {quad|1}         =  Quadruple precision \\
+                       & \verb=-ef {quad|1}         =  Double-double (quadruple) precision \\
 \hline         
 \end{tabular}
 \end{center}
@@ -6077,7 +6077,7 @@ Option &                          \\ \hline
 \verb=-storage_block [2]=& The block size of the BSR and BSC formats\\ 
 \verb=-f [0]=          & The precision of the linear solver\\
                        & \verb=-f {double|0}       =  Double precision \\ 
-                       & \verb=-f {quad|1}         =  Quadruple precision \\
+                       & \verb=-f {quad|1}         =  Double-double (quadruple) precision \\
 \hline         
 \end{tabular}
 \end{center}
@@ -6243,7 +6243,7 @@ Get the detailed information on the number of iterations from the solver.
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt iter] The number of iterations
 \item[\tt iter\_double] The number of double precision iterations
-\item[\tt iter\_quad] The number of quadruple precision iterations
+\item[\tt iter\_quad] The number of double-double (quadruple) precision iterations
 \item[\tt ierr] The return code
 \end{namelist}
 
@@ -6609,7 +6609,7 @@ Option &                          \\ \hline
 \verb=-estorage_block [2]=& The block size of the BSR and BSC formats\\ 
 \verb=-ef [0]=         & The precision of the eigensolver\\
                        & \verb=-ef {double|0}       =  Double precision \\ 
-                       & \verb=-ef {quad|1}         =  Quadruple precision \\
+                       & \verb=-ef {quad|1}         =  Double-double (quadruple) precision \\
 \hline         
 \end{tabular}
 \end{center}
@@ -6775,7 +6775,7 @@ Get the detailed information on the number of iterations for the specified eigen
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt iter] The number of iterations
 \item[\tt iter\_double] The number of double precision iterations
-\item[\tt iter\_quad] The number of quadruple precision iterations
+\item[\tt iter\_quad] The number of double-double (quadruple) precision iterations
 \item[\tt ierr] The return code
 \end{namelist}
 
