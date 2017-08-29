@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.8.3
+Version 1.8.4
 \end{flushleft}
 
 \vspace*{2cm}
@@ -518,7 +518,16 @@ by \verb+TARGET+.
                           & \verb+  CFLAGS="-O3 -qarch=440d -qtune=440 -qstrict"+ \\
                           & \verb+  FCFLAGS="-O3 -qarch=440d -qtune=440 -qsuffix=cpp=F90"+ \\
                           & \verb+  ac_cv_sizeof_void_p=4 cross_compiling=yes+\\
-                          & \verb+  ax_f77_mangling="lower case, no underscore, no extra underscore"+ \\ \hline
+& \verb+  ax_f77_mangling="lower case, no underscore, no extra underscore"+ \\ \hline
+\verb+intel_mic_cross+    & \verb+./configure CC=icc F77=ifort FC=ifort+ \\
+                          & \verb+  MPICC=mpiicc MPIF77=mpiifort MPIFC=mpiifort+ \\
+                          & \verb+  CFLAGS="-mmic" FFLAGS="-mmic" FCFLAGS="-mmic"+ \\
+                          & \verb+  LDFLAGS="-mmic" FCLDFLAGS="-mmic" cross_compiling=yes+ \\
+                          & \verb+  host=x86_64-pc-linux-gnu host_alias=x86_64-linux-gnu+ \\
+                          & \verb+  host_cpu=x86_64 host_os=linux-gnu host_vendor=pc+ \\
+                          & \verb+  target=k1om-mpss-linux-gnu target_alias=k1om-mpss-linux+ \\
+                          & \verb+  target_cpu=k1om target_os=linux-gnu target_vendor=mpss+ \\
+\hline
 \verb+nec_sx9_cross+      & \verb|./configure CC=sxmpic++ FC=sxmpif90 AR=sxar RANLIB=true | \\
                           & \verb+  ac_cv_sizeof_void_p=8 ax_vector_machine=yes cross_compiling=yes+ \\ 
                           & \verb+  ax_f77_mangling="lower case, no underscore, extra underscore"+ \\ \hline
@@ -1154,7 +1163,7 @@ The current version has the following limitations:
 
 \item Double-double (quadruple) precision operations (see Section \ref{sec:quadruple})
 \begin{itemize}
-\item The Jacobi, Gauss-Seidel, SOR, IDR(s), COCG and COCR methods
+\item The Jacobi, Gauss-Seidel, SOR, IDR(s), COCG, and COCR methods
       do not support the double-double precision operations.
 \item The eigensolvers do not support the double-double precision operations.
 \item The Jacobi, Gauss-Seidel and SOR methods in the hybrid preconditioner do not support the double-double precision operations.
@@ -1163,7 +1172,7 @@ The current version has the following limitations:
 
 \item Preconditioners
 \begin{itemize}
-\item The algorithm of the ILU(k) preconditioner is based on the localized ILU preconditioning\cite{nakajima}, which factorizes the block diagonal elements in parallel. Therefore the convergence behavior approaches to that of the Jacobi preconditioner as the number of threads or processes increases.
+\item The algorithm of the ILU(k) preconditioner is based on the localized ILU preconditioning\cite{nakajima}, which factorizes the block diagonal elements in parallel. Note that the convergence behavior approaches to that of the Jacobi preconditioner as the number of threads or processes increases.
 \item If a preconditioner other than the Jacobi or SSOR is selected 
       and matrix $A$ is not in the CSR format, a new matrix is created 
       in the CSR format for preconditioning.
@@ -1998,7 +2007,7 @@ Option &                          \\ \hline
 \verb=-storage_block [2]=& The block size of the BSR and BSC formats\\ 
 \verb=-f [0]=          & The precision of the linear solver\\
                        & \verb=-f {double|0}       =  Double precision \\ 
-                       & \verb=-f {quad|1}         =  Quadruple precision \\
+                       & \verb=-f {quad|1}         =  Double-double (quadruple) precision \\
 \hline         
 \end{tabular}
 \end{center}
@@ -2085,7 +2094,7 @@ that \verb=-emaxiter= defaults to $1,000$.
 \\
 \begin{minipage}[t]{\textwidth}
 \begin{center}
-{\bf Options for Eigensolvers} (Default: \verb=-e pi=) \\
+{\bf Options for Eigensolvers} (Default: \verb=-e cr=) \\
 \begin{tabular}{l|lll}\hline\hline
  Eigensolver      & Option              &  Auxiliary Options  & \\ \hline
 \hline
@@ -2189,7 +2198,7 @@ Option &                          \\ \hline
 \verb=-estorage_block [2]=& The block size of the BSR and BSC formats\\ 
 \verb=-ef [0]=         & The precision of the eigensolver\\
                        & \verb=-ef {double|0}       =  Double precision \\ 
-                       & \verb=-ef {quad|1}         =  Quadruple precision \\
+                       & \verb=-ef {quad|1}         =  Double-double (quadruple) precision \\
 \hline         
 \end{tabular}
 \end{center}
@@ -6077,7 +6086,7 @@ Option &                          \\ \hline
 \verb=-storage_block [2]=& The block size of the BSR and BSC formats\\ 
 \verb=-f [0]=          & The precision of the linear solver\\
                        & \verb=-f {double|0}       =  Double precision \\ 
-                       & \verb=-f {quad|1}         =  Quadruple precision \\
+                       & \verb=-f {quad|1}         =  Double-double (quadruple) precision \\
 \hline         
 \end{tabular}
 \end{center}
@@ -6243,7 +6252,7 @@ Get the detailed information on the number of iterations from the solver.
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt iter] The number of iterations
 \item[\tt iter\_double] The number of double precision iterations
-\item[\tt iter\_quad] The number of quadruple precision iterations
+\item[\tt iter\_quad] The number of double-double (quadruple) precision iterations
 \item[\tt ierr] The return code
 \end{namelist}
 
@@ -6505,7 +6514,7 @@ that \verb=-emaxiter= defaults to $1,000$.
 \\
 \begin{minipage}[t]{\textwidth}
 \begin{center}
-{\bf Options for Eigensolvers} (Default: \verb=-e pi=) \\
+{\bf Options for Eigensolvers} (Default: \verb=-e cr=) \\
 \begin{tabular}{l|lll}\hline\hline
  Eigensolver      & Option              &  Auxiliary Options  & \\ \hline
 \hline
@@ -6609,7 +6618,7 @@ Option &                          \\ \hline
 \verb=-estorage_block [2]=& The block size of the BSR and BSC formats\\ 
 \verb=-ef [0]=         & The precision of the eigensolver\\
                        & \verb=-ef {double|0}       =  Double precision \\ 
-                       & \verb=-ef {quad|1}         =  Quadruple precision \\
+                       & \verb=-ef {quad|1}         =  Double-double (quadruple) precision \\
 \hline         
 \end{tabular}
 \end{center}
@@ -6775,7 +6784,7 @@ Get the detailed information on the number of iterations for the specified eigen
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt iter] The number of iterations
 \item[\tt iter\_double] The number of double precision iterations
-\item[\tt iter\_quad] The number of quadruple precision iterations
+\item[\tt iter\_quad] The number of double-double (quadruple) precision iterations
 \item[\tt ierr] The return code
 \end{namelist}
 
@@ -8612,16 +8621,19 @@ Line 2 (5I14)
   57 - 70 Number of lines for right-hand side vectors
 Line 3 (A3,11X,4I14)
    1 -  3 Matrix type 
-            Col.1: R Real matrix
-                   C Complex matrix
-                   P Pattern only (Not supported)
-            Col.2: S Symmetric (Not supported)
-                   U Unsymmetric
-                   H Hermitian (Not supported)
-                   Z Skew symmetric (Not supported)
-                   R Rectangular (Not supported)
-            Col.3: A Assembled
-                   E Elemental matrices (Not supported)
+            Col.1: 
+              R Real matrix
+              C Complex matrix
+              P Pattern only (Not supported)
+            Col.2: 
+              S Symmetric (Not supported)
+              U Unsymmetric
+              H Hermitian (Not supported)
+              Z Skew symmetric (Not supported)
+              R Rectangular (Not supported)
+            Col.3: 
+              A Assembled
+              E Elemental matrices (Not supported)
    4 - 14 Blank space
   15 - 28 Number of rows
   29 - 42 Number of columns 

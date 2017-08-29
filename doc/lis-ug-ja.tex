@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis $B%f!<%6%,%$%I(B}\\
-$B%P!<%8%g%s(B 1.8.3
+$B%P!<%8%g%s(B 1.8.4
 \end{flushleft}
 
 \vspace*{2cm}
@@ -492,6 +492,14 @@ lis-($VERSION)
                           & \verb+  FCFLAGS="-O3 -qarch=440d -qtune=440 -qsuffix=cpp=F90"+ \\
                           & \verb+  ac_cv_sizeof_void_p=4 cross_compiling=yes+\\
                           & \verb+  ax_f77_mangling="lower case, no underscore, no extra underscore"+ \\ \hline
+\verb+intel_mic_cross+    & \verb+./configure CC=icc F77=ifort FC=ifort+ \\
+                          & \verb+  MPICC=mpiicc MPIF77=mpiifort MPIFC=mpiifort+ \\
+                          & \verb+  CFLAGS="-mmic" FFLAGS="-mmic" FCFLAGS="-mmic"+ \\
+                          & \verb+  LDFLAGS="-mmic" FCLDFLAGS="-mmic" cross_compiling=yes+ \\
+                          & \verb+  host=x86_64-pc-linux-gnu host_alias=x86_64-linux-gnu+ \\
+                          & \verb+  host_cpu=x86_64 host_os=linux-gnu host_vendor=pc+ \\
+                          & \verb+  target=k1om-mpss-linux-gnu target_alias=k1om-mpss-linux+ \\
+                          & \verb+  target_cpu=k1om target_os=linux-gnu target_vendor=mpss+ \\ \hline
 \verb+nec_sx9_cross+      & \verb|./configure CC=sxmpic++ FC=sxmpif90 AR=sxar RANLIB=true | \\
                           & \verb+  ac_cv_sizeof_void_p=8 ax_vector_machine=yes cross_compiling=yes+ \\ 
                           & \verb+  ax_f77_mangling="lower case, no underscore, extra underscore"+ \\ \hline
@@ -1038,7 +1046,7 @@ $(1,\dots,1)^T$$B$H$N@Q$r<B9T2DG=$J9TNs3JG<7A<0$K$D$$$F(B
 
 \item $BA0=hM}(B
 \begin{itemize}
-\item ILU(k)$BA0=hM}$N%"%k%4%j%:%`$O(B, $B%V%m%C%/BP3QMWAG$rJBNs$KJ,2r$9$k6I=j(BILU$BA0=hM}(B\cite{nakajima}$B$K4p$E$/(B. $B=>$C$F%9%l%C%I?t$^$?$O%W%m%;%9?t$,A}2C$9$k$K$D$l$F<}B+FC@-$O(BJacobi$BA0=hM}$K6a$E$/(B.
+\item ILU(k)$BA0=hM}$N%"%k%4%j%:%`$O(B, $B%V%m%C%/BP3QMWAG$rJBNs$KJ,2r$9$k6I=j(BILU$BA0=hM}(B\cite{nakajima}$B$K4p$E$/(B. $B%9%l%C%I?t$^$?$O%W%m%;%9?t$,A}2C$9$k$K$D$l$F<}B+FC@-$,(BJacobi$BA0=hM}$K6a$E$/E@$KCm0U$N$3$H(B.
 \item Jacobi, SSOR$B0J30$NA0=hM}$,A*Br$5$l(B, $B$+$D9TNs(BA$B$,(BCSR$B7A<0$G$J$$>l9g(B,
       $BA0=hM}:n@.;~$K(BCSR$B7A<0$N9TNs(BA$B$,:n@.$5$l$k(B.
 \item $BHsBP>N@~7?J}Dx<02rK!$H$7$F(BBiCG$BK!$,A*Br$5$l$?>l9g(B, SA-AMG$BA0=hM}$O;HMQ$G$-$J$$(B.
@@ -1867,7 +1875,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \verb=-storage_block [2]= & BSR, BSC$B7A<0$N%V%m%C%/%5%$%:(B \\ 
 \verb=-f [0]=          & $B@~7?J}Dx<02rK!$N@:EY(B \\
                        & \verb=-f {double|0}       =   $BG\@:EY(B \\
-                       & \verb=-f {quad|1}         =   4$BG\@:EY(B \\
+                       & \verb=-f {quad|1}         =   double-double$B7?(B4$BG\@:EY(B \\
 \hline         
 \end{tabular}
 \end{center}
@@ -1955,7 +1963,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \\
 \begin{minipage}[t]{\textwidth}
 \begin{center}
-{\bf $B8GM-CM2rK!$K4X$9$k%*%W%7%g%s(B} ($B4{DjCM(B: \verb=-e pi=) \\
+{\bf $B8GM-CM2rK!$K4X$9$k%*%W%7%g%s(B} ($B4{DjCM(B: \verb=-e cr=) \\
 \begin{tabular}{l|lll}\hline\hline
  $B8GM-CM2rK!(B               & $B%*%W%7%g%s(B              &  $BJd=u%*%W%7%g%s(B    & \\ \hline
  Power                   & \verb=-e {pi|1}=        &    \\ 
@@ -1981,7 +1989,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \\ \\
 \begin{minipage}[t]{\textwidth}
 \begin{center}
-{\bf $BA0=hM}$K4X$9$k%*%W%7%g%s(B} ($B4{DjCM(B: \verb=-p ilu=) \\
+{\bf $BA0=hM}$K4X$9$k%*%W%7%g%s(B} ($B4{DjCM(B: \verb=-p none=) \\
 \begin{tabular}{l|lll}\hline\hline
 $BA0=hM}(B   & $B%*%W%7%g%s(B           & $BJd=u%*%W%7%g%s(B \\ \hline
 $B$J$7(B     & \verb=-p {none|0}=    &   \\
@@ -2037,7 +2045,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \verb=-estorage_block [2]= & BSR, BSC$B7A<0$N%V%m%C%/%5%$%:(B \\ 
 \verb=-ef [0]=         & $B8GM-CM2rK!$N@:EY(B \\
                        & \verb=-ef {double|0}       =   $BG\@:EY(B \\
-                       & \verb=-ef {quad|1}         =   4$BG\@:EY(B \\
+                       & \verb=-ef {quad|1}         =   double-double$B7?(B4$BG\@:EY(B \\
 \hline         
 \end{tabular}
 \end{center}
@@ -5920,7 +5928,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \verb=-storage_block [2]= & BSR, BSC$B$N%V%m%C%/%5%$%:(B \\ 
 \verb=-f [0]=          & $B@~7?J}Dx<02rK!$N@:EY(B \\
                        & \verb=-f {double|0}       =   $BG\@:EY(B \\
-                       & \verb=-f {quad|1}         =   4$BG\@:EY(B \\
+                       & \verb=-f {quad|1}         =   double-double$B7?(B4$BG\@:EY(B \\
 \hline         
 \end{tabular}
 \end{center}
@@ -6087,7 +6095,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt iter] $BAmH?I|2s?t(B
 \item[\tt iter\_double] $BG\@:EY1i;;$NH?I|2s?t(B
-\item[\tt iter\_quad] 4$BG\@:EY1i;;$NH?I|2s?t(B
+\item[\tt iter\_quad] double-double$B7?(B4$BG\@:EY1i;;$NH?I|2s?t(B
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
@@ -6347,7 +6355,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \\
 \begin{minipage}[t]{\textwidth}
 \begin{center}
-{\bf $B8GM-CM2rK!$K4X$9$k%*%W%7%g%s(B} ($B4{DjCM(B: \verb=-e pi=) \\
+{\bf $B8GM-CM2rK!$K4X$9$k%*%W%7%g%s(B} ($B4{DjCM(B: \verb=-e cr=) \\
 \begin{tabular}{l|lll}\hline\hline
  $B8GM-CM2rK!(B               & $B%*%W%7%g%s(B              &  $BJd=u%*%W%7%g%s(B    & \\ \hline
  Power                   & \verb=-e {pi|1}=        &    \\ 
@@ -6373,7 +6381,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \\ \\
 \begin{minipage}[t]{\textwidth}
 \begin{center}
-{\bf $BA0=hM}$K4X$9$k%*%W%7%g%s(B} ($B4{DjCM(B: \verb=-p ilu=) \\
+{\bf $BA0=hM}$K4X$9$k%*%W%7%g%s(B} ($B4{DjCM(B: \verb=-p none=) \\
 \begin{tabular}{l|lll}\hline\hline
 $BA0=hM}(B   & $B%*%W%7%g%s(B           & $BJd=u%*%W%7%g%s(B \\ \hline
 $B$J$7(B     & \verb=-p {none|0}=    &   \\
@@ -6429,7 +6437,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \verb=-estorage_block [2]= & BSR, BSC$B7A<0$N%V%m%C%/%5%$%:(B \\ 
 \verb=-ef [0]=         & $B8GM-CM2rK!$N@:EY(B \\
                        & \verb=-ef {double|0}       =   $BG\@:EY(B \\
-                       & \verb=-ef {quad|1}         =   4$BG\@:EY(B \\
+                       & \verb=-ef {quad|1}         =   double-double$B7?(B4$BG\@:EY(B \\
 \hline         
 \end{tabular}
 \end{center}
@@ -6596,7 +6604,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt iter] $BAmH?I|2s?t(B
 \item[\tt iter\_double] $BG\@:EY1i;;$NH?I|2s?t(B
-\item[\tt iter\_quad] 4$BG\@:EY1i;;$NH?I|2s?t(B
+\item[\tt iter\_quad] double-double$B7?(B4$BG\@:EY1i;;$NH?I|2s?t(B
 \item[\tt ierr] $B%j%?!<%s%3!<%I(B
 \end{namelist}
 
@@ -8439,16 +8447,19 @@ Harwell-Boeing$B7A<0$G$O(B, CSC$B7A<0$G9TNs$r3JG<$9$k(B.
   57 - 70 $B1&JU$N9T?t(B
 $BBh(B3$B9T(B (A3,11X,4I14)
    1 -  3 $B9TNs$N<oN`(B
-            $BBh(B1$BNs(B: R Real matrix
-                   C Complex matrix
-                   P Pattern only ($BHsBP1~(B)
-            $BBh(B2$BNs(B: S Symmetric ($BHsBP1~(B)
-                   U Unsymmetric
-                   H Hermitian ($BHsBP1~(B)
-                   Z Skew symmetric ($BHsBP1~(B)
-                   R Rectangular ($BHsBP1~(B)
-            $BBh(B3$BNs(B: A Assembled
-                   E Elemental matrices ($BHsBP1~(B)
+            $BBh(B1$BNs(B: 
+              R Real matrix
+              C Complex matrix
+              P Pattern only ($BHsBP1~(B)
+            $BBh(B2$BNs(B: 
+              S Symmetric ($BHsBP1~(B)
+              U Unsymmetric
+              H Hermitian ($BHsBP1~(B)
+              Z Skew symmetric ($BHsBP1~(B)
+              R Rectangular ($BHsBP1~(B)
+            $BBh(B3$BNs(B: 
+              A Assembled
+              E Elemental matrices ($BHsBP1~(B)
    4 - 14 $B6uGr(B
   15 - 28 $B9T?t(B
   29 - 42 $BNs?t(B
