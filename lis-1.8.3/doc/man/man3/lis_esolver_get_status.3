@@ -1,0 +1,40 @@
+.TH lis_esolver_get_status 3 "28 Aug 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_esolver_get_status \- get the status for the specified eigenpair from the eigensolver
+
+.SH SYNOPSIS
+
+#include "lis.h"
+
+\fBLIS_INT lis_esolver_get_status\fR(\fBLIS_ESOLVER esolver\fR, \fBLIS_INT *status\fR);
+
+.SH DESCRIPTION
+
+Get the status for the specified eigenpair from the eigensolver.
+
+.SH INPUT
+
+.IP "\fBesolver\fR"
+The eigensolver
+
+.SH OUTPUT
+
+.IP "\fBstatus\fR"
+The status
+
+.SH EXIT STATUS
+
+The following exit values are returned:
+.IP "0"
+The process is normally terminated
+.IP "unspecified"
+An error occurred
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

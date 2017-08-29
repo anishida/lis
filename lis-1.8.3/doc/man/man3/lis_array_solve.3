@@ -1,0 +1,49 @@
+.TH lis_array_solve 3 "3 Dec 2014" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_array_solve \- solve the linear equation with the direct method
+
+.SH SYNOPSIS
+
+#include "lis.h"
+
+\fBLIS_INT lis_array_solve\fR(\fBLIS_INT n\fR, \fBLIS_SCALAR a[]\fR, \fBLIS_SCALAR b[]\fR, \fBLIS_SCALAR x[]\fR, \fBLIS_SCALAR w[]\fR);
+
+.SH DESCRIPTION
+
+Solve the linear equation \fIAx=b\fR with the direct method.
+
+.SH INPUT
+
+.IP "\fBn\fR"
+The size of the matrix
+
+.IP "\fBa\fR"
+The array that stores coefficient matrix \fIA\fR of size \fIn * n\fR
+
+.IP "\fBb\fR"
+The array that stores right hand side vector \fIb\fR of size \fIn\fR
+
+.IP "\fBw\fR"
+The work array \fIw\fR of size \fIn * n\fR
+
+.SH OUTPUT
+
+.IP "\fBx\fR"
+The array that stores solution \fIx\fR 
+
+.SH EXIT STATUS
+
+The following exit values are returned:
+.IP "0"
+The process is normally terminated
+.IP "unspecified"
+An error occurred
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

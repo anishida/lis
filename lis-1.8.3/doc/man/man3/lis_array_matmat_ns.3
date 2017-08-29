@@ -1,0 +1,65 @@
+.TH lis_array_matmat_ns 3 "10 Oct 2015" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_array_matmat_ns \- calculate the matrix-matrix product
+
+.SH SYNOPSIS
+
+#include "lis.h"
+
+\fBLIS_INT lis_array_matmat_ns\fR(\fBLIS_INT l\fR, \fBLIS_INT m\fR, \fBLIS_INT n\fR, \fBLIS_SCALAR a[]\fR, \fBLIS_INT lda\fR, \fBLIS_SCALAR b[]\fR, \fBLIS_INT ldb\fR, \fBLIS_SCALAR c[]\fR, \fBLIS_INT ldc\fR, \fBLIS_INT op\fR);
+
+.SH DESCRIPTION
+
+Calculate the matrix-matrix product \fIAB\fR, where matrices \fIA\fR and \fIB\fR are not square.
+
+.SH INPUT
+
+.IP "\fBl, m, n\fR"
+The sizes of the matrices
+
+.IP "\fBa\fR"
+The array that stores matrix \fIA\fR of size \fIl * m\fR
+
+.IP "\fBlda\fR"
+The size of the leading dimension of array \fIA\fR
+
+.IP "\fBb\fR"
+The array that stores matrix \fIB\fR of size \fIm * n\fR
+
+.IP "\fBldb\fR"
+The size of the leading dimension of array \fIB\fR
+
+.IP "\fBc\fR"
+The array that stores matrix \fIC\fR of size \fIl * n\fR
+
+.IP "\fBldc\fR"
+The size of the leading dimension of array \fIC\fR
+
+.IP "\fBop\fR"
+.RS
+.IP "\fBLIS_INS_VALUE\fR"
+\fIC\fR = \fIAB\fR
+.IP "\fBLIS_SUB_VALUE\fR"
+\fIC\fR = \fIC - AB\fR
+
+.SH OUTPUT
+
+.IP "\fBC\fR"
+\fIC\fR
+
+.SH EXIT STATUS
+
+The following exit values are returned:
+.IP "0"
+The process is normally terminated
+.IP "unspecified"
+An error occurred
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

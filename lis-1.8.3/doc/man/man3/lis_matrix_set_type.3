@@ -1,0 +1,75 @@
+'\" t
+.TH lis_matrix_set_type 3 "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_matrix_set_type \- assign the storage format
+
+.SH SYNOPSIS
+
+#include "lis.h"
+
+\fBLIS_INT lis_matrix_set_type\fR(\fBLIS_MATRIX A\fR, \fBLIS_INT matrix_type\fR);
+
+.SH DESCRIPTION
+
+Assign the storage format.
+
+.SH INPUT
+
+.IP "\fBA\fR"
+The matrix
+
+.IP "\fBmatrix_type\fR"
+The storage format
+
+.SH OUTPUT
+
+.SH EXIT STATUS
+
+The following exit values are returned:
+.IP "0"
+The process is normally terminated
+.IP "unspecified"
+An error occurred
+
+.SH NOTE
+
+\fBmatrix_type\fR of \fIA\fR is \fBLIS_MATRIX_CSR\fR when the matrix is created. 
+The table below shows the available storage formats for \fBmatrix_type\fR.
+
+.TS
+center, tab(;);
+ll
+ll
+ll
+ll
+ll
+ll
+ll
+ll
+ll
+ll
+ll
+ll.
+Storage format; \fBmatrix_type\fR
+Compressed Sparse Row (CSR); \fB{LIS_MATRIX_CSR|1}\fR
+Compressed Sparse Row (CSR); \fB{LIS_MATRIX_CSR|1}\fR
+Compressed Sparse Column (CSC); \fB{LIS_MATRIX_CSC|2}\fR
+Modified Compressed Sparse Row (MSR); \fB{LIS_MATRIX_MSR|3}\fR
+Diagonal (DIA); \fB{LIS_MATRIX_DIA|4}\fR
+Ellpack-Itpack Generalized Diagonal (ELL); \fB{LIS_MATRIX_ELL|5}\fR
+Jagged Diagonal (JAD); \fB{LIS_MATRIX_JAD|6}\fR
+Block Sparse Row (BSR); \fB{LIS_MATRIX_BSR|7}\fR
+Block Sparse Column (BSC); \fB{LIS_MATRIX_BSC|8}\fR
+Variable Block Row (VBR); \fB{LIS_MATRIX_VBR|9}\fR
+Coordinate (COO); \fB{LIS_MATRIX_COO|10}\fR
+Dense (DNS); \fB{LIS_MATRIX_DNS|11}\fR
+.TE
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

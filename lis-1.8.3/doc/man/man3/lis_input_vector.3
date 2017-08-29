@@ -1,0 +1,46 @@
+.TH lis_input_vector 3 "6 Sep 2012" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_input_vector \- read the vector data 
+
+.SH SYNOPSIS
+
+#include "lis.h"
+
+\fBLIS_INT lis_input_vector\fR(\fBLIS_VECTOR v\fR, \fBchar *filename\fR);
+
+.SH DESCRIPTION
+
+Read the vector data from the external file.
+
+.SH INPUT
+
+.IP "\fBfilename\fR"
+The source file
+
+.SH OUTPUT
+
+.IP "\fBv\fR"
+The vector
+
+.SH EXIT STATUS
+
+The following exit values are returned:
+.IP "0"
+The process is normally terminated
+.IP "unspecified"
+An error occurred
+
+.SH NOTE
+
+The following file formats are supported:
+.IP "The PLAIN format"
+.IP "The extended Matrix Market format (extended to allow vector data)"
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+
