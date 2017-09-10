@@ -1009,7 +1009,8 @@ This program solves the eigenvalue problem $Ax = \lambda x$, where the
 coefficient matrix $A$ of size $lmn$ is a discretized three dimensional Laplacian using the seven
 point central difference scheme, with the coefficient matrix in the storage format specified
 by \verb|matrix_type| and the solver specified by {\tt options}. 
-It outputs the eigenvalues specified by {\tt options} to 
+It outputs the specified number of eigenvalues,
+the number of which is specified by option \verb|-ss|, to 
 {\tt evalues\_filename} and the associated 
 eigenvectors and residual norms to {\tt evectors\_filename},  
 {\tt residuals\_filename}, and {\tt iters\_filename} respectively 
