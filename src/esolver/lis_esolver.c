@@ -486,7 +486,7 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	}
 	if( esolver->options[LIS_EOPTIONS_INITGUESS_ONES] )
 	{
-	  if( output ) lis_printf(comm,"initial vector x      : 1\n");
+	  if( output ) lis_printf(comm,"initial vector x      : all values set to 1\n");
 		#ifndef USE_QUAD_PRECISION
 			lis_vector_set_all(1.0,xx);
 		#else
