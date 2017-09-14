@@ -142,7 +142,7 @@ All rights reserved.
 \item Fortran$B%$%s%?%U%'!<%9(B{\tt lis\_vector\_set\_value()},
       {\tt lis\_vector\_get\_value()}$B$NG[Ns5/E@$r(B1$B$KJQ99(B.
 \item Fortran$B%$%s%?%U%'!<%9(B{\tt lis\_vector\_set\_size()}$B$NG[Ns5/E@$r(B1$B$KJQ99(B.
-\item $B1i;;@:EY$K4X$9$k%*%W%7%g%s$NL>>N$r(B{\tt -precision}$B$+$i(B{\tt -f}$B$KJQ99(B.
+\item $B1i;;@:EY$K4X$9$k%*%W%7%g%s$NL>>N$r(B {\tt -precision}$B$+$i(B {\tt -f}$B$KJQ99(B.
 \end{enumerate}
 \item $B4X?t(B{\tt lis\_solve\_kernel()}$B$N;EMM$r(B{\tt lis\_solve\_execute()}$B$G7W;;(B
       $B$5$l$?;D:9$rJV$9$h$&JQ99(B. 
@@ -227,7 +227,7 @@ All rights reserved.
 \section*{$B%P!<%8%g%s(B 1.7 $B$+$i$NJQ99E@(B}
 \begin{enumerate}
 \item $B%^%k%A%9%F%C%W@~7?J}Dx<02rK!$KBP1~(B.
-\item $B%*%W%7%g%s(B{\tt -ssor\_w}$B5Z$S(B{\tt -hybrid\_w}$B$NL>>N$r(B{\tt -ssor\_omega}$B5Z$S(B{\tt -hybrid\_omega}$B$K$=$l$>$lJQ99(B.  
+\item $B%*%W%7%g%s(B {\tt -ssor\_w}$B5Z$S(B {\tt -hybrid\_w}$B$NL>>N$r(B {\tt -ssor\_omega}$B5Z$S(B {\tt -hybrid\_omega}$B$K$=$l$>$lJQ99(B.  
 \end{enumerate}
 
 \newpage
@@ -517,7 +517,7 @@ lis-($VERSION)
 $B$3$N%3%^%s%I$G$O(B, Matrix Market$B7A<0$N%U%!%$%k(B{\tt test/testmat.mtx}
 $B$+$i9TNs(B, $B%Y%/%H%k%G!<%?$rFI$_9~$_(B, BiCG$BK!$rMQ$$$F@~7?J}Dx<0(B$Ax=b$$B$N2r$r(B
 $B5a$a$k(B. $B0J2<$K(BSGI Altix 3700$B>e$G$N<B9T7k2L$r<($9(B. 
-$B$J$*%*%W%7%g%s(B{\tt --enable-omp}$B$H(B{\tt --enable-mpi}$B$OAH$_9g$o$;$F(B
+$B$J$*%*%W%7%g%s(B {\tt --enable-omp}$B$H(B {\tt --enable-mpi}$B$OAH$_9g$o$;$F(B
 $B;HMQ$9$k$3$H$,$G$-$k(B. 
 \begin{itembox}[l]{$B4{Dj(B}
 \begin{minipage}{10cm}
@@ -541,7 +541,7 @@ BiCG: relative residual    = 6.327297e-15
 \end{verbatim}
 \end{minipage}
 \end{itembox}
-\begin{itembox}[l]{{\tt --enable-omp}}
+\begin{itembox}[l]{ {\tt --enable-omp}}
  \begin{minipage}{10cm}
  \begin{verbatim}
 max number of threads = 32
@@ -565,7 +565,7 @@ BiCG: relative residual    = 6.221213e-15
 \end{verbatim}
 \end{minipage}
 \end{itembox}
-\begin{itembox}[l]{\tt --enable-mpi}
+\begin{itembox}[l] {\tt --enable-mpi}
  \begin{minipage}{10cm}
  \begin{verbatim}
 number of processes = 2
@@ -875,7 +875,7 @@ A =
 $B$HF~NO$9$k$H(B, {\tt matrix\_filename}$B$+$i9TNs%G!<%?$rFI$_9~$_(B, 
 $BI8=`8GM-CMLdBj(B$Ax=\lambda x$$B$r(B{\tt options}$B$G(B
 $B;XDj$5$l$?2rK!$G2r$$$F(B, $B;XDj$5$l$?8GM-CM$rI8=`=PNO$K=q$-=P$9(B. 
-$B$^$?(B, $B%*%W%7%g%s(B\verb|-ss|$B$K$h$j;XDj$5$l$?8D?t$N8GM-CM$r(B
+$B$^$?(B, $B%*%W%7%g%s(B {\tt -ss}$B$K$h$j;XDj$5$l$?8D?t$N8GM-CM$r(B
 {\tt evalues\_filename}$B$K(B, $BBP1~$9$k8GM-%Y%/%H%k(B, $B;D:9%N%k%`5Z$SH?I|2s?t$r(B
 {\tt evectors\_filename}, \\
 {\tt residuals\_filename}$B5Z$S(B{\tt iters\_filename}$B$K(B
@@ -890,7 +890,7 @@ A =
 $B$HF~NO$9$k$H(B, {\tt matrix\_a\_filename}$B5Z$S(B{\tt matrix\_b\_filename}$B$+$i(B
 $B9TNs%G!<%?$rFI$_9~$_(B, $B0lHL2=8GM-CMLdBj(B$Ax=\lambda Bx$$B$r(B{\tt options}$B$G(B
 $B;XDj$5$l$?2rK!$G2r$$$F(B, $B;XDj$5$l$?8GM-CM$rI8=`=PNO$K=q$-=P$9(B. 
-$B$^$?(B, $B%*%W%7%g%s(B\verb|-ss|$B$K$h$j;XDj$5$l$?8D?t$N8GM-CM$r(B
+$B$^$?(B, $B%*%W%7%g%s(B {\tt -ss}$B$K$h$j;XDj$5$l$?8D?t$N8GM-CM$r(B
 {\tt evalues\_filename}$B$K(B, $BBP1~$9$k8GM-%Y%/%H%k(B, $B;D:9%N%k%`5Z$SH?I|2s?t$r(B
 {\tt evectors\_filename}, {\tt residuals\_filename}$B5Z$S(B{\tt iters\_filename}$B$K(B
 $B3HD%(BMatrix Market$B7A<0$G=q$-=P$9(B. 
@@ -905,7 +905,7 @@ A =
 $B<!?t(B$lmn$$B$N9TNs(B$A$$B$K4X$9$k8GM-CMLdBj(B
 $Ax=\lambda x$$B$r(B, \verb|matrix_type|$B$G;XDj$5$l$?9TNs3JG<7A<0(B, 
 {\tt options}$B$G;XDj$5$l$?2rK!$G2r$-(B, $B;XDj$5$l$?8GM-CM$r(B
-$BI8=`=PNO$K=q$-=P$9(B. $B$^$?(B, $B%*%W%7%g%s(B\verb|-ss|$B$K$h$j;XDj$5$l$?8D?t$N8GM-CM$r(B
+$BI8=`=PNO$K=q$-=P$9(B. $B$^$?(B, $B%*%W%7%g%s(B {\tt -ss}$B$K$h$j;XDj$5$l$?8D?t$N8GM-CM$r(B
 {\tt evalues\_filename}$B$K(B, $BBP1~$9$k8GM-%Y%/%H%k(B, $B;D:9%N%k%`5Z$SH?I|2s?t$r(B
 {\tt evectors\_filename}, {\tt residuals\_filename}$B5Z$S(B
 {\tt iters\_filename}$B$K3HD%(BMatrix Market$B7A<0$G=q$-=P$9(B. 
@@ -2403,7 +2403,7 @@ SA-AMG$BA0=hM}$K$O(BFortran 90$B$G5-=R$5$l$?%3!<%I$,4^$^$l$k$?$a(B, SA-AMG$
 Intel Fortran Compiler (\verb|ifort|)$B$G%3%s%Q%$%k$9$k>l9g$NNc$r0J2<$K<($9(B. 
 Fortran$B$N%f!<%6%W%m%0%i%`$K$O%3%s%Q%$%i;X<(J8$,4^$^$l$k$?$a(B, 
 $B%W%j%W%m%;%C%5$r;HMQ$9$k$h$&%3%s%Q%$%i$K;X<($7$J$1$l$P$J$i$J$$(B. 
-\verb|ifort|$B$N>l9g$O(B, $B%*%W%7%g%s(B\verb|-fpp|$B$,I,MW$G$"$k(B. 
+\verb|ifort|$B$N>l9g$O(B, $B%*%W%7%g%s(B {\tt -fpp}$B$,I,MW$G$"$k(B. 
 
 \begin{itembox}[l]{$BC`<!4D6-(B}
 \small
@@ -5823,7 +5823,7 @@ COO    &  $B!{(B  &  $B!{(B  &  $B!{(B  & CSR  & CSR & CSR & CSR & CSC & C
 \end{namelist}
 {\bf $BCm<a(B}\\
 \indent
-$B0J2<$K;XDj2DG=$J%3%^%s%I%i%$%s%*%W%7%g%s$r<($9(B. \verb=-i {cg|1}=$B$O(B\verb|-i cg|$B$^$?$O(B\verb|-i 1|
+$B0J2<$K;XDj2DG=$J%3%^%s%I%i%$%s%*%W%7%g%s$r<($9(B. \verb=-i {cg|1}=$B$O(B {\tt -i cg}$B$^$?$O(B {\tt -i 1}
 $B$r0UL#$9$k(B. \\
 \verb|-maxiter [1000]|$B$O(B, \verb|-maxiter|$B$N4{DjCM$,(B$1000$$B$G$"$k$3$H$r0UL#$9$k(B. 
 \\
@@ -5983,7 +5983,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \end{namelist}
 {\bf $BCm<a(B}\\
 \indent
-$B%*%W%7%g%s(B{\tt -initx\_zeros \{false|0\}}$B$,;XDj$5$l$?>l9g(B,
+$B%*%W%7%g%s(B {\tt -initx\_zeros \{false|0\}}$B$,;XDj$5$l$?>l9g(B,
 $B=i4|%Y%/%H%k$O0z?t(B{\tt x}$B$K$h$jM?$($i$l$k(B.
 $B$=$NB>$N>l9g$K$O!$=i4|%Y%/%H%k$N$9$Y$F$NMWAG$NCM$O(B$0$$B$K@_Dj$5$l$k(B.
 
@@ -6493,7 +6493,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \end{namelist}
 {\bf $BCm<a(B}\\
 \indent
-$B%*%W%7%g%s(B{\tt -initx\_ones \{false|0\}}$B$,;XDj$5$l$?>l9g(B,
+$B%*%W%7%g%s(B {\tt -initx\_ones \{false|0\}}$B$,;XDj$5$l$?>l9g(B,
 $B=i4|%Y%/%H%k$O0z?t(B{\tt x}$B$K$h$jM?$($i$l$k(B.
 $B$=$NB>$N>l9g$K$O!$=i4|%Y%/%H%k$N$9$Y$F$NMWAG$NCM$O(B$0$$B$K@_Dj$5$l$k(B. 
 
@@ -6530,7 +6530,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & $BH?I|2s?t(
 \end{namelist}
 {\bf $BCm<a(B}\\
 \indent
-$B%*%W%7%g%s(B{\tt -initx\_ones \{false|0\}}$B$,;XDj$5$l$?>l9g(B,
+$B%*%W%7%g%s(B {\tt -initx\_ones \{false|0\}}$B$,;XDj$5$l$?>l9g(B,
 $B=i4|%Y%/%H%k$O0z?t(B{\tt x}$B$K$h$jM?$($i$l$k(B.
 $B$=$NB>$N>l9g$K$O!$=i4|%Y%/%H%k$N$9$Y$F$NMWAG$NCM$O(B$0$$B$K@_Dj$5$l$k(B. 
 
