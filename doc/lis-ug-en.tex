@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.8.4
+Version 1.8.5
 \end{flushleft}
 
 \vspace*{2cm}
@@ -972,7 +972,8 @@ of size $n \times n$.
 This program inputs the matrix data from {\tt matrix\_filename} and
 solves the standard eigenvalue problem $Ax=\lambda x$ with
 the solver specified by {\tt options}. 
-It outputs the eigenvalues specified by {\tt options} to 
+It outputs the specified number of eigenvalues,
+the number of which is given by option \verb|-ss|, to 
 {\tt evalues\_filename} and the associated 
 eigenvectors, residual norms, and numbers of iterations  
 to \\ {\tt evectors\_filename}, {\tt residuals\_filename}, 
@@ -989,7 +990,8 @@ supported for the matrix filename.
 This program inputs the matrix data from {\tt matrix\_a\_filename} and
 {\tt matrix\_b\_filename}, and solves the generalized eigenvalue problem
 $Ax=\lambda Bx$ with the solver specified by {\tt options}. 
-It outputs the eigenvalues specified by {\tt options} to 
+It outputs the specified number of eigenvalues,
+the number of which is given by option \verb|-ss|, to 
 {\tt evalues\_filename} and the associated 
 eigenvectors, residual norms, and numbers of iterations  
 to \\ {\tt evectors\_filename}, {\tt residuals\_filename}, 
@@ -1007,7 +1009,8 @@ This program solves the eigenvalue problem $Ax = \lambda x$, where the
 coefficient matrix $A$ of size $lmn$ is a discretized three dimensional Laplacian using the seven
 point central difference scheme, with the coefficient matrix in the storage format specified
 by \verb|matrix_type| and the solver specified by {\tt options}. 
-It outputs the eigenvalues specified by {\tt options} to 
+It outputs the specified number of eigenvalues,
+the number of which is given by option \verb|-ss|, to 
 {\tt evalues\_filename} and the associated 
 eigenvectors and residual norms to {\tt evectors\_filename},  
 {\tt residuals\_filename}, and {\tt iters\_filename} respectively 

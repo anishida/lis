@@ -1,4 +1,4 @@
-.TH lis_solver_set_option 3 "16 Oct 2016" "Man Page" "Lis Library Functions"
+.TH lis_solver_set_option 3 "14 Sep 2017" "Man Page" "Lis Library Functions"
 
 .SH NAME
 
@@ -114,9 +114,9 @@ IDR(1)
 .IP "-i {\fIminres\fR|23}"
 MINRES
 .IP "-i {\fIcocg\fR|24}"
-MINRES
+COCG
 .IP "-i {\fIcocr\fR|25}"
-MINRES
+COCR
 .RE
 
 .IP "-p \fIpreconditioner"
@@ -135,7 +135,7 @@ The fill level \fIk\fR
 .IP "-p {\fIssor\fR|3}"
 SSOR
 .RS 
-.IP "-ssor_w [1.0]"
+.IP "-ssor_omega [1.0]"
 The relaxation coefficient \fIomega\fR (0<\fIomega\fR<2)
 .RE
 .IP "-p {\fIhybrid\fR|4}"
@@ -153,7 +153,7 @@ The maximum number of iterations
 The convergence criterion
 .RE
 .RS 
-.IP "-hybrid_w [1.5]"
+.IP "-hybrid_omega [1.5]"
 The relaxation coefficient \fIomega\fR of the SOR (0<\fIomega\fR<2)
 .RE
 .RS 
@@ -279,7 +279,7 @@ Double precision
 .RE
 .RS
 .IP "-f {\fIquad\fR|1}"
-Quadruple precision
+Double-double (quadruple) precision
 .RE
 
 See Lis User Guide for full description.
