@@ -555,7 +555,7 @@ by the BiCG method. The result on the SGI Altix 3700 is
  \begin{verbatim}
 matrix size = 100 x 100 (460 nonzero entries)
 
-initial vector x      : all values set to 0
+initial vector x      : all components set to 0
 precision             : double
 linear solver         : BiCG
 preconditioner        : none
@@ -579,7 +579,7 @@ max number of threads = 32
 number of threads = 2
 matrix size = 100 x 100 (460 nonzero entries)
 
-initial vector x      : all values set to 0
+initial vector x      : all components set to 0
 precision             : double
 linear solver         : BiCG
 preconditioner        : none
@@ -602,7 +602,7 @@ BiCG: relative residual    = 6.221213e-15
 number of processes = 2
 matrix size = 100 x 100 (460 nonzero entries)
 
-initial vector x      : all values set to 0
+initial vector x      : all components set to 0
 precision             : double
 linear solver         : BiCG
 preconditioner        : none
@@ -1998,7 +1998,7 @@ Option &                          \\ \hline
 \verb=-initx_zeros [1]= & The behavior of the initial vector $x_{0}$  \\
                        & \verb=-initx_zeros {false|0}     =  Values are given by the argument \verb=x= \\
                        & \verb=                           =  of the function \verb=lis_solve()= \\
-                       & \verb=-initx_zeros {true|1}      =  All values are set to $0$ \\
+                       & \verb=-initx_zeros {true|1}      =  All the components are set to $0$ \\
 \verb=-conv_cond [0]= & The convergence condition  \\
                        & \verb=-conv_cond {nrm2_r|0}     =  $||b-Ax||_2 \le tol * ||b-Ax_0||_2$ \\
                        & \verb=-conv_cond {nrm2_b|1}     =  $||b-Ax||_2 \le tol * ||b||_2$ \\
@@ -2193,7 +2193,7 @@ Option &                          \\ \hline
 \verb=-initx_ones [1]= & The behavior of the initial vector $x_{0}$  \\
                        & \verb=-initx_ones {false|0}     =  Values are given by the argument \verb=x= \\
                        & \verb=                           =  of the function \verb=lis_esolve()= \\
-                       & \verb=-initx_ones {true|1}      =  All values are set to $1$ \\
+                       & \verb=-initx_ones {true|1}      =  All the components are set to $1$ \\
 \verb=-omp_num_threads [t]= & The number of threads        \\ 
                             & (\verb=t= represents the maximum number of
  threads) \\
@@ -2608,7 +2608,7 @@ in the directory \verb|lis-($VERSION)/test| are run as follows: \\\\
 The solution will be returned:
 
 \begin{verbatim}
-initial vector x      : all values set to 0
+initial vector x      : all components set to 0
 precision             : double
 linear solver         : BiCGSTAB
 preconditioner        : none
@@ -2681,7 +2681,7 @@ the following results will be returned:
 \begin{verbatim}
 n = 200, gamma = 2.000000
 
-initial vector x      : all values set to 0
+initial vector x      : all components set to 0
 precision             : double
 linear solver         : BiCG
 preconditioner        : none
@@ -2706,7 +2706,7 @@ the following results will be returned:
 \begin{verbatim}
 n = 200, gamma = 2.000000
 
-initial vector x      : all values set to 0
+initial vector x      : all components set to 0
 precision             : quad
 linear solver         : BiCG
 preconditioner        : none
@@ -6077,7 +6077,7 @@ Option &                          \\ \hline
 \verb=-initx_zeros [1]= & The behavior of the initial vector $x_{0}$  \\
                        & \verb=-initx_zeros {false|0}     =  Values are given by the argument \verb=x= \\
                        & \verb=                           =  of the function \verb=lis_solve()= \\
-                       & \verb=-initx_zeros {true|1}      =  All values are set to $0$ \\
+                       & \verb=-initx_zeros {true|1}      =  All the components are set to $0$ \\
 \verb=-conv_cond [0]= & The convergence condition  \\
                        & \verb=-conv_cond {nrm2_r|0}     =  $||b-Ax||_2 \le tol * ||b-Ax_0||_2$ \\
                        & \verb=-conv_cond {nrm2_b|1}     =  $||b-Ax||_2 \le tol * ||b||_2$ \\
@@ -6145,7 +6145,7 @@ Solve the linear equation $Ax = b$ with the specified solver.
 \indent
 If the option {\tt -initx\_zeros \{false|0\}} is specified, the initial
 vector is given by the argument {\tt x}.
-Otherwise, all values of the initial vector are set to $0$.
+Otherwise, all the components of the initial vector are set to $0$.
 
 This function returns 0 if the status of the solver ({\tt solver->retcode})
 is {\tt LIS\_BREAKDOWN} or {\tt LIS\_MAXITER}. See also the function
@@ -6613,7 +6613,7 @@ Option &                          \\ \hline
 \verb=-initx_ones [1]= & The behavior of the initial vector $x_{0}$  \\
                        & \verb=-initx_ones {false|0}     =  Values are given by the argument \verb=x= \\
                        & \verb=                           =  of the function \verb=lis_esolve()= \\
-                       & \verb=-initx_ones {true|1}      =  All values are set to $1$ \\
+                       & \verb=-initx_ones {true|1}      =  All the components are set to $1$ \\
 \verb=-omp_num_threads [t]= & The number of threads        \\ 
                             & (\verb=t= represents the maximum number of
  threads) \\
@@ -6677,7 +6677,7 @@ Solve the standard eigenvalue problem $Ax = \lambda x$ with the specified eigens
 \indent
 If the option {\tt -initx\_ones \{false|0\}} is specified, the initial
 vector is given by the argument {\tt x}.
-Otherwise, all values of the initial vector are set to $1$. 
+Otherwise, all the components of the initial vector are set to $1$. 
 
 This function returns 0 if the status of the eigensolver ({\tt esolver->retcode})
 is {\tt LIS\_MAXITER}. See also the function
@@ -6714,7 +6714,7 @@ Solve the generalized eigenvalue problem $Ax = \lambda Bx$ with the specified ei
 \indent
 If the option {\tt -initx\_ones \{false|0\}} is specified, the initial
 vector is given by the argument {\tt x}.
-Otherwise, all values of the initial vector are set to $1$. 
+Otherwise, all the components of the initial vector are set to $1$. 
 
 This function returns 0 if the status of the eigensolver ({\tt esolver->retcode})
 is {\tt LIS\_MAXITER}. See also the function
