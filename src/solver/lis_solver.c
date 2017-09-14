@@ -536,7 +536,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	}
 	if( solver->options[LIS_OPTIONS_INITGUESS_ZEROS] )
 	{
-	  if( output ) lis_printf(comm,"initial vector x      : 0\n");
+	  if( output ) lis_printf(comm,"initial vector x      : all values set to 0\n");
 		#ifndef USE_QUAD_PRECISION
 	                lis_vector_set_all(0.0,xx);
 		#else
