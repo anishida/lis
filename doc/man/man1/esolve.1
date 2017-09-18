@@ -1,4 +1,4 @@
-.TH esolve 1 "14 Sep 2017" "Man Page" "Utility Commands"
+.TH esolve 1 "19 Sep 2017" "Man Page" "Utility Commands"
 
 .SH NAME
 
@@ -11,12 +11,14 @@ esolve \- eigensolver for standard eigenvalue problems
 .SH DESCRIPTION
 
 This program inputs the matrix data from \fImatrix_filename\fR and solves the 
-standard eigenvalue problem A*x = l*x with the solver specified by \fIoptions\fR. 
-It outputs the eigenvalues specified by \fIoptions\fR to \fIevalues_filename\fR
+standard eigenvalue problem A*x = l*x with the solver specified by \fIoptions\fR.
+It outputs the specified number of eigenvalues, the number of which is 
+given by option \fI-ss\fR, to \fIevalues_filename\fR 
 and the associated eigenvectors, residual norms, and numbers of iterations to 
 \fIevectors_filename\fR, \fIresiduals_filename\fR, and \fIiters_filename\fR 
 respectively in the extended Matrix Market format (see Appendix of Lis User 
-Guide). Both the Matrix Market format and the Harwell-Boeing format are supported for the matrix filename.
+Guide). Both the Matrix Market format and the Harwell-Boeing format are 
+supported for the matrix filename.
 
 .SH OPTIONS
 
