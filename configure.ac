@@ -776,7 +776,7 @@ if test "$TARGET" = ""; then
   fi
   if test "$enable_omp" = "yes"; then
     save_cflags="$CFLAGS"
-    openmp_flags="-openmp -qsmp=omp -xopenmp -fopenmp -KOMP -mp -omp -Popenmp none"
+    openmp_flags="-openmp -qopenmp -qsmp=omp -xopenmp -fopenmp -KOMP -mp -omp -Popenmp none"
     for ompf in $openmp_flags; do
       AC_MSG_CHECKING([for OpenMP flag $ompf])
       case $ompf in
