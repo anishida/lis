@@ -1,3 +1,7 @@
+Version 1.8.6  September 24, 2017
+
+  - Fixed bug in win\Makefile.in.
+
 Version 1.8.5  September 14, 2017
 
   - Updated documents.
