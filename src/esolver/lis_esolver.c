@@ -101,13 +101,13 @@ LIS_ESOLVER_MALLOC_WORK lis_esolver_malloc_work[] = {
 #define LIS_PRECISION_LEN		 3
 
 char *LIS_ESOLVER_OPTNAME[] = {
-  "-emaxiter", "-etol", "-e", "-ss", "-m", "-shift", "-eprint", "-initx_ones", "-ie", "-ige", "-estorage", "-estorage_block", "-ef"
+  "-emaxiter", "-etol", "-e", "-ss", "-m", "-shift", "-shiftim", "-eprint", "-initx_ones", "-ie", "-ige", "-estorage", "-estorage_block", "-ef"
 };
 
 LIS_INT LIS_ESOLVER_OPTACT[] = {
 LIS_EOPTIONS_MAXITER, LIS_EPARAMS_RESID, LIS_EOPTIONS_ESOLVER, 
-LIS_EOPTIONS_SUBSPACE, LIS_EOPTIONS_MODE, LIS_EPARAMS_SHIFT, 
-LIS_EOPTIONS_OUTPUT, LIS_EOPTIONS_INITGUESS_ONES, 
+LIS_EOPTIONS_SUBSPACE, LIS_EOPTIONS_MODE, LIS_EPARAMS_SHIFT,
+LIS_EPARAMS_SHIFTIM, LIS_EOPTIONS_OUTPUT, LIS_EOPTIONS_INITGUESS_ONES, 
 LIS_EOPTIONS_INNER_ESOLVER, LIS_EOPTIONS_INNER_GENERALIZED_ESOLVER,
 LIS_EOPTIONS_STORAGE, LIS_EOPTIONS_STORAGE_BLOCK, LIS_EOPTIONS_PRECISION
 };
@@ -176,6 +176,7 @@ LIS_INT lis_esolver_init(LIS_ESOLVER esolver)
 	esolver->options[LIS_EOPTIONS_PRECISION]              = LIS_PRECISION_DOUBLE;
 	esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN] = 1.0e-12;
 	esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN] = 0.0;
+	esolver->params[LIS_EPARAMS_SHIFTIM - LIS_EOPTIONS_LEN] = 0.0;	
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
@@ -335,7 +336,11 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
 	mode = esolver->options[LIS_EOPTIONS_MODE];
 	emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
+#ifdef _COMPLEX
+	gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN] + esolver->params[LIS_EPARAMS_SHIFTIM - LIS_EOPTIONS_LEN] * _Complex_I;
+#else
 	gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
+#endif	
 	lshift = esolver->lshift;
 	output = esolver->options[LIS_EOPTIONS_OUTPUT];
 	estorage = esolver->options[LIS_EOPTIONS_STORAGE];
@@ -518,7 +523,14 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	}
 
 	/* global shift */
-	if ( output ) lis_printf(comm,"global shift          : %e\n", (double)gshift);
+	if ( output )
+	{
+#ifdef _COMPLEX
+	  lis_printf(comm,"global shift          : (%e, %e)\n", (double)creal(gshift), (double)cimag(gshift));
+#else
+	  lis_printf(comm,"global shift          : %e\n", (double)gshift);
+#endif
+	}
 
 	/* create eigenvector array */
 	if( esolver->evector ) lis_free(esolver->evector);
