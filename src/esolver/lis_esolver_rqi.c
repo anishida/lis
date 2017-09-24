@@ -165,9 +165,9 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   q = esolver->work[1];
 
 #ifdef _COMPLEX
-  if( output ) lis_printf(comm,"local shift           : (%e, %e)\n", (double)creal(lshift), (double)cimag(lshift));
+  if( output ) lis_printf(comm,"shift (inner solver)  : (%e, %e)\n", (double)creal(lshift), (double)cimag(lshift));
 #else  
-  if( output ) lis_printf(comm,"local shift           : %e\n", (double)lshift);
+  if( output ) lis_printf(comm,"shift (inner solver)  : %e\n", (double)lshift);
 #endif  
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
@@ -396,9 +396,9 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
   q = esolver->work[2];
 
 #ifdef _COMPLEX
-  if( output ) lis_printf(comm,"local shift           : (%e, %e)\n", (double)creal(lshift), (double)cimag(lshift));
+  if( output ) lis_printf(comm,"shift (inner solver)  : (%e, %e)\n", (double)creal(lshift), (double)cimag(lshift));
 #else  
-  if( output ) lis_printf(comm,"local shift           : %e\n", (double)lshift);
+  if( output ) lis_printf(comm,"shift (inner solver)  : %e\n", (double)lshift);
 #endif  
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
