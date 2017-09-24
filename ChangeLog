@@ -1,6 +1,7 @@
 Version 1.8.6  September 24, 2017
 
   - Fixed bug in win\Makefile.in (thanks to Jian Li).
+  - Added support for inputting imaginary shift for eigensolvers.
 
 Version 1.8.5  September 14, 2017
 
