@@ -526,9 +526,9 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	if ( output )
 	{
 #ifdef _COMPLEX
-	  lis_printf(comm,"global shift          : (%e, %e)\n", (double)creal(gshift), (double)cimag(gshift));
+	  lis_printf(comm,"shift (outer solver)  : (%e, %e)\n", (double)creal(gshift), (double)cimag(gshift));
 #else
-	  lis_printf(comm,"global shift          : %e\n", (double)gshift);
+	  lis_printf(comm,"shift (outer solver)  : %e\n", (double)gshift);
 #endif
 	}
 
