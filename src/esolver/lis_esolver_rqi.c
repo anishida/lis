@@ -267,7 +267,6 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   esolver->retcode    = LIS_MAXITER;
   esolver->iter[0]    = iter;
   esolver->resid[0]   = resid;
-  esolver->evalue[0]  = rho;
   lis_vector_nrm2(v, &nrm2);
   lis_vector_scale(1.0/nrm2, v);
   lis_solver_destroy(solver); 
