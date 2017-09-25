@@ -167,7 +167,11 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN];
-  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];  
+#ifdef _COMPLEX
+  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN] + esolver->params[LIS_EPARAMS_SHIFT_IM - LIS_EOPTIONS_LEN] * _Complex_I;
+#else
+  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
+#endif	
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
   niesolver = esolver->options[LIS_EOPTIONS_INNER_ESOLVER];
 
@@ -467,7 +471,11 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN];
-  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];  
+#ifdef _COMPLEX
+  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN] + esolver->params[LIS_EPARAMS_SHIFT_IM - LIS_EOPTIONS_LEN] * _Complex_I;
+#else
+  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
+#endif	
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
   nigesolver = esolver->options[LIS_EOPTIONS_INNER_GENERALIZED_ESOLVER];
 
