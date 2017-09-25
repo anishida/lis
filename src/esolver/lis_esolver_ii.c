@@ -222,7 +222,7 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
       lis_solver_get_iter(solver, &iter2);
 
       /* theta = <v,y> */
-      lis_vector_dot(v, y, &theta); 
+      lis_vector_dot(v, y, &theta);
 
       /* resid = ||y - theta * v||_2 / |theta| */
       lis_vector_axpyz(-theta, v, y, q); 
