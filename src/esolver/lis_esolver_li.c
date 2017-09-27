@@ -262,7 +262,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   if( output ) 
     {
       lis_printf(comm,"size of subspace      : %D\n\n", ss);
-      lis_printf(comm,"approximate eigenvalues in subspace:\n\n");
+      lis_printf(comm,"Ritz values:\n\n");
       for (i=0;i<ss;i++)
 	{
 	  lis_printf(comm,"Lanczos: mode number              = %D\n", i);
@@ -273,7 +273,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
 #endif	  
 	}
       lis_printf(comm,"\n");
-      lis_printf(comm,"compute refined eigenpairs:\n\n");
+      lis_printf(comm,"refined eigenpairs:\n\n");
     }
 
   lis_esolver_create(&esolver2);
@@ -593,7 +593,7 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
   if( output ) 
     {
       lis_printf(comm,"size of subspace      : %D\n\n", ss);
-      lis_printf(comm,"approximate eigenvalues in subspace:\n\n");
+      lis_printf(comm,"Ritz values :\n\n");
       for (i=0;i<ss;i++)
 	{
 	  lis_printf(comm,"Generalized Lanczos: mode number              = %D\n", i);
@@ -604,7 +604,7 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
 #endif	  
 	}
       printf("\n");
-      printf("compute refined eigenpairs:\n\n");
+      printf("refined eigenpairs:\n\n");
     }
 
   lis_esolver_create(&esolver2);

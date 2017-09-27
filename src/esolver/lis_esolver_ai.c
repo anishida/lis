@@ -248,7 +248,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   if( output ) 
     {
       lis_printf(comm,"size of subspace      : %D\n\n", ss);
-      lis_printf(comm,"approximate eigenvalues in subspace:\n\n");
+      lis_printf(comm,"Ritz values:\n\n");
       
       i=0;
       while (i<ss) 
@@ -303,7 +303,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 	}
 
       lis_printf(comm,"\n");
-      lis_printf(comm,"compute refined eigenpairs:\n\n");
+      lis_printf(comm,"refined eigenpairs:\n\n");
   
     }
 
@@ -593,7 +593,7 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
   if( output ) 
     {
       lis_printf(comm,"size of subspace      : %D\n\n", ss);
-      lis_printf(comm,"approximate eigenvalues in subspace:\n\n");
+      lis_printf(comm,"Ritz values:\n\n");
 
 
       i=0;
@@ -649,7 +649,7 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
 	}
 
       lis_printf(comm,"\n");
-      lis_printf(comm,"compute refined eigenpairs:\n\n");
+      lis_printf(comm,"refined eigenpairs:\n\n");
   
     }
 
