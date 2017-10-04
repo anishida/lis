@@ -1,11 +1,11 @@
 Version 1.8.7  October 4, 2017
 
   - Introduced USE_COMPLEX to exclude complex.h (thanks to Fuyuki Saito).
-  - Fixed configurations in win\Makefile.in.
+  - Fixed configurations in win/Makefile.in.
 
 Version 1.8.6  September 24, 2017
 
-  - Fixed bug in win\Makefile.in (thanks to Jian Li).
+  - Fixed bug in win/Makefile.in (thanks to Jian Li).
   - Added support for inputting imaginary shift for eigensolvers.
 
 Version 1.8.5  September 14, 2017
@@ -173,7 +173,7 @@ Version 1.7.9  November 7, 2016
 
 Version 1.7.8  November 4, 2016
 
-  - Fixed installation bugs in win\Makefile.in.
+  - Fixed installation bugs in win/Makefile.in.
   - Updated documents.
 
 Version 1.7.7  November 3, 2016
