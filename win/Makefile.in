@@ -108,7 +108,7 @@ FFLAGS = $(FFLAGS) -real-size:128
 # Configuration for complex arithmetic
 
 !ifdef complex
-CFLAGS = $(CFLAGS) -D_COMPLEX
+CFLAGS = $(CFLAGS) -DUSE_COMPLEX -D_COMPLEX
 FFLAGS = $(FFLAGS) -DCOMPLEX
 !endif
 
