@@ -117,6 +117,9 @@
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
+/* Define to 1 to enable complex scalar operations. */
+#undef USE_COMPLEX
+
 /* Define to 1 to enable quad precision operations using fast quad add. */
 #undef USE_FAST_QUAD_ADD
 
