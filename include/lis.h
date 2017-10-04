@@ -30,9 +30,15 @@
 #define LIS_VERSION	"1.8.6"
 /**************************************/
 #include <stdio.h>
+#ifdef USE_COMPLEX
 #ifdef HAVE_COMPLEX_H
 #include <complex.h>
 #endif
+#else
+#ifdef HAVE_COMPLEX_H
+#undef HAVE_COMPLEX_H
+#endif
+#endif /* USE_COMPLEX */
 #ifdef HAVE_QUADMATH_H
 #include <quadmath.h>
 #endif

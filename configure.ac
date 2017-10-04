@@ -4,7 +4,7 @@
 
 # General Configurations
 
-AC_INIT(lis, 1.8.6, devel@ssisc.org)
+AC_INIT(lis, 1.8.6-7-fuyuki, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -1083,6 +1083,7 @@ fi
 ########## Enable Complex Scalar Operations ##########
 AC_CHECK_HEADERS([complex.h])
 if test "$enable_complex" = "yes"; then
+  AC_DEFINE([USE_COMPLEX], [1], [Define to 1 to enable complex scalar operations.])
   if test -z "$HAVE_COMPLEX_H"; then
     CFLAGS="$CFLAGS -D_COMPLEX"
     FFLAGS="$FFLAGS -DCOMPLEX" 
