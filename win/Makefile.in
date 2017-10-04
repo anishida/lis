@@ -49,7 +49,7 @@ CFLAGS = $(CFLAGS) -DHAS_X87_FPU -DUSE_QUAD_PRECISION -DUSE_FMA2_SSE2 -DUSE_SSE2
 !ifdef intelc
 CC = icl
 CFLAGS = $(cflags) $(USER_CFLAGS) \
-       -O3 -Qansi_alias -DHAVE_CONFIG_WIN_H -I -DHAVE_COMPLEX_H ../include -w 
+       -O3 -Qansi_alias -Qstd=c99 -DHAVE_CONFIG_WIN_H -I -DHAVE_COMPLEX_H ../include -w 
 
 !ifdef omp
 CFLAGS = $(CFLAGS) $(cdebug) $(cvarsmt) -Qopenmp -Qopenmp-lib:compat
