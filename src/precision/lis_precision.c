@@ -57,19 +57,19 @@
 void lis_quad_x87_fpu_init(LIS_UNSIGNED_INT *cw_old)
 {
 #ifdef HAS_X87_FPU
-#ifndef _WIN64
 #ifdef _WIN32
+#ifndef _WIN64
 	LIS_UNSIGNED_INT cw = _control87(0, 0);
 	_control87(0x00010000, 0x00030000);
 	*cw_old = cw;
 	cw = _control87(0, 0);
+#endif
 #else
 	LIS_INT cw,cw_new;
 	asm volatile ("fnstcw %0":"=m" (cw));
 	cw_new = (cw & ~0x0300) | 0x0200;
 	asm volatile ("fldcw %0": :"m" (cw_new));
 	*cw_old = cw;
-#endif
 #endif	
 #else
 	*cw_old = 0;
@@ -81,12 +81,12 @@ void lis_quad_x87_fpu_init(LIS_UNSIGNED_INT *cw_old)
 void lis_quad_x87_fpu_finalize(LIS_UNSIGNED_INT cw)
 {
 #ifdef HAS_X87_FPU
-#ifndef _WIN64  
 #ifdef _WIN32
+#ifndef _WIN64  
     _control87(cw, 0xFFFFFFFF);
+#endif
 #else
 	asm volatile ("fldcw %0": :"m" (cw));
-#endif
 #endif	
 #endif
 }
