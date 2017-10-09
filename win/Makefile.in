@@ -15,7 +15,7 @@ RM = del
 # Configuration for Microsoft Visual C++
 
 CC = cl
-CFLAGS = $(cflags) -DHAVE_CONFIG_WIN_H -I ../include -w 
+CFLAGS = $(cflags) -DHAVE_CONFIG_WIN_H -I../include -w 
 
 !ifdef msvcrt
 CFLAGS = $(CFLAGS) $(cvarsdll)
@@ -40,7 +40,6 @@ LDFLAGS = $(ldebug) $(conlflags) $(LDFLAGS) $(USER_LDFLAGS)
 # Configuration for Intel FPU
 
 !ifndef noifpu
-#CFLAGS = $(CFLAGS) -DUSE_QUAD_PRECISION -DUSE_FMA2_SSE2 -DUSE_SSE2 -DUSE_FAST_QUAD_ADD
 CFLAGS = $(CFLAGS) -DHAS_X87_FPU -DUSE_QUAD_PRECISION -DUSE_FMA2_SSE2 -DUSE_SSE2 -DUSE_FAST_QUAD_ADD
 !endif
 
@@ -50,12 +49,18 @@ CFLAGS = $(CFLAGS) -DHAS_X87_FPU -DUSE_QUAD_PRECISION -DUSE_FMA2_SSE2 -DUSE_SSE2
 !ifdef intelc
 CC = icl
 CFLAGS = $(cflags) $(USER_CFLAGS) \
-       -O3 -Qansi_alias -Qstd=c99 -DHAVE_CONFIG_WIN_H -DHAVE_COMPLEX_H -I ../include -w 
+       -O3 -Qansi_alias -Qstd=c99 -DHAVE_CONFIG_WIN_H -DHAVE_COMPLEX_H -I../include -w 
 
 !ifdef omp
 CFLAGS = $(CFLAGS) $(cdebug) $(cvarsmt) -Qopenmp -Qopenmp-lib:compat
 !else
 CFLAGS = $(CFLAGS) $(cdebug) $(cvars)
+!endif
+
+!ifdef impi
+CC = mpiicc
+LINKER = mpiicc
+LDFLAGS = 
 !endif
 !endif
 
@@ -66,12 +71,18 @@ CFLAGS = $(CFLAGS) $(cdebug) $(cvars)
 FC = ifort
 CFLAGS = $(CFLAGS) -DUSE_FORTRAN
 FFLAGS = $(USER_FFLAGS) \
-       -c -O3 -fpp -Qansi_alias -DZERO_ORIGIN=1 -I ../include -w 
+       -c -O3 -fpp -Qansi_alias -DZERO_ORIGIN=1 -I../include -w 
 
 !ifdef omp
 FFLAGS = $(FFLAGS) -Qopenmp -Qopenmp-lib:compat 
 !else
 FFLAGS = $(FFLAGS) -MT
+!endif
+
+!ifdef impi
+FC = mpiifort
+LINKER = mpiifort
+LDFLAGS = 
 !endif
 !endif
 
@@ -118,8 +129,8 @@ FFLAGS = $(FFLAGS) -DCOMPLEX
 
 !ifdef msmpi32
 MPIDIR = "C:\Program Files\Microsoft MPI"
-CFLAGS = $(CFLAGS) -DUSE_MPI -I $(MPIDIR)\Inc
-FFLAGS = $(FFLAGS) -DUSE_MPI -I $(MPIDIR)\Inc
+CFLAGS = $(CFLAGS) -DUSE_MPI -I$(MPIDIR)\Inc
+FFLAGS = $(FFLAGS) -DUSE_MPI -I$(MPIDIR)\Inc
 LDFLAGS = $(LDFLAGS) $(MPIDIR)\Lib\i386\msmpi.lib $(MPIDIR)\Lib\i386\msmpifec.lib
 MPIRUN = "mpiexec -n 2"
 !endif
@@ -129,8 +140,8 @@ MPIRUN = "mpiexec -n 2"
 
 !ifdef msmpi64
 MPIDIR = "C:\Program Files\Microsoft MPI"
-CFLAGS = $(CFLAGS) -DUSE_MPI -I $(MPIDIR)\Inc
-FFLAGS = $(FFLAGS) -DUSE_MPI -I $(MPIDIR)\Inc
+CFLAGS = $(CFLAGS) -DUSE_MPI -I$(MPIDIR)\Inc
+FFLAGS = $(FFLAGS) -DUSE_MPI -I$(MPIDIR)\Inc
 LDFLAGS = $(LDFLAGS) $(MPIDIR)\Lib\amd64\msmpi.lib $(MPIDIR)\Lib\amd64\msmpifec.lib
 MPIRUN = "mpiexec -n 2"
 !endif
@@ -140,8 +151,8 @@ MPIRUN = "mpiexec -n 2"
 
 !ifdef mpich32
 MPIDIR = "C:\Program Files (x86)\MPICH2"
-CFLAGS = $(CFLAGS) -DUSE_MPI -I $(MPIDIR)\include
-FFLAGS = $(FFLAGS) -DUSE_MPI -I $(MPIDIR)\include
+CFLAGS = $(CFLAGS) -DUSE_MPI -I$(MPIDIR)\include
+FFLAGS = $(FFLAGS) -DUSE_MPI -I$(MPIDIR)\include
 LDFLAGS = $(LDFLAGS) $(MPIDIR)\lib\mpi.lib $(MPIDIR)\lib\fmpich2.lib
 MPIRUN = "mpiexec -localonly 2"
 !endif
@@ -151,8 +162,8 @@ MPIRUN = "mpiexec -localonly 2"
 
 !ifdef mpich64
 MPIDIR = "C:\Program Files\MPICH2"
-CFLAGS = $(CFLAGS) -DUSE_MPI -I $(MPIDIR)\include
-FFLAGS = $(FFLAGS) -DUSE_MPI -I $(MPIDIR)\include
+CFLAGS = $(CFLAGS) -DUSE_MPI -I$(MPIDIR)\include
+FFLAGS = $(FFLAGS) -DUSE_MPI -I$(MPIDIR)\include
 LDFLAGS = $(LDFLAGS) $(MPIDIR)\lib\mpi.lib $(MPIDIR)\lib\fmpich2.lib
 MPIRUN = "mpiexec -localonly 2"
 !endif
@@ -185,7 +196,7 @@ objs_solver: ..\src\solver\*.obj
 objs_system: ..\src\system\*.obj 
 objs_vector: ..\src\vector\*.obj
 
-!if defined(msmpi32) || defined(mpich32) || defined(msmpi64) || defined(mpich64)
+!if defined(msmpi32) || defined(mpich32) || defined(msmpi64) || defined(mpich64) || defined(impi) 
 objs_saamg: ..\src\fortran\amg\lis_m_data_type_AMGCG.obj \
 	    ..\src\fortran\amg\lis_m_queue.obj \
 	    ..\src\fortran\amg\lis_m_hash.obj \

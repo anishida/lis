@@ -16,6 +16,7 @@ rem   Default Configurations
 @set msmpi64=0
 @set mpich32=0
 @set mpich64=0
+@set impi=0
 @set saamg=0
 @set longlong=0
 @set longdouble=0
@@ -38,6 +39,7 @@ rem   Build Options
 @if "%1" == "--enable-msmpi64" goto setmsmpi64
 @if "%1" == "--enable-mpich32" goto setmpich32
 @if "%1" == "--enable-mpich64" goto setmpich64
+@if "%1" == "--enable-impi" goto setimpi
 @if "%1" == "--enable-intelc" goto setintelc
 @if "%1" == "--enable-fortran" goto setfortran
 @if "%1" == "--enable-saamg" goto setsaamg
@@ -64,6 +66,7 @@ rem   Build Options
 @echo.	--enable-msmpi64	Build with 64bit Microsoft MPI library
 @echo.	--enable-mpich32	Build with 32bit MPICH library
 @echo.	--enable-mpich64	Build with 64bit MPICH library
+@echo.	--enable-impi		Build with Intel MPI library
 @echo.	--enable-intelc		Use Intel C Compiler
 @echo.	--enable-fortran	Enable Fortran interface
 @echo.	--enable-saamg		Enable SA-AMG preconditioner
@@ -119,6 +122,12 @@ rem   Build Options
 :setmpich64
 
 @set mpich64=1
+@shift
+@goto again
+
+:setimpi
+
+@set impi=1
 @shift
 @goto again
 
@@ -255,6 +264,15 @@ rem   Build Options
 @echo.	Build with 64bit MPICH library		= yes
 ) else (
 @echo.	Build with 64bit MPICH library		= no
+)
+
+@if (%impi%) == (1) (
+@echo # Build with Intel MPI library >> Makefile
+@echo impi=1 >> Makefile
+@echo. >> Makefile
+@echo.	Build with Intel MPI library		= yes
+) else (
+@echo.	Build with Intel MPI library		= no
 )
 
 @if (%intelc%) == (1) (
