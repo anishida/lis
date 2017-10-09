@@ -12,9 +12,10 @@ rem   Default Configurations
 @set omp=0
 @set intelc=0
 @set fortran=0
-@set mpi=0
-@set mpich=0
-@set mpi64=0
+@set msmpi32=0
+@set msmpi64=0
+@set mpich32=0
+@set mpich64=0
 @set saamg=0
 @set longlong=0
 @set longdouble=0
@@ -33,9 +34,10 @@ rem   Build Options
 @if "%1" == "--prefix" goto setprefix
 @if "%1" == "--msvcrt" goto setmsvcrt
 @if "%1" == "--enable-omp" goto setomp
-@if "%1" == "--enable-mpi" goto setmpi
-@if "%1" == "--enable-mpich" goto setmpich
-@if "%1" == "--enable-mpi64" goto setmpi64
+@if "%1" == "--enable-msmpi32" goto setmsmpi32
+@if "%1" == "--enable-msmpi64" goto setmsmpi64
+@if "%1" == "--enable-mpich32" goto setmpich32
+@if "%1" == "--enable-mpich64" goto setmpich64
 @if "%1" == "--enable-intelc" goto setintelc
 @if "%1" == "--enable-fortran" goto setfortran
 @if "%1" == "--enable-saamg" goto setsaamg
@@ -58,9 +60,10 @@ rem   Build Options
 @echo.	--prefix PREFIX		Install Lis in directory PREFIX
 @echo.	--msvcrt		Use msvcrt*.dll instead of static crt
 @echo.	--enable-omp		Build with OpenMP library
-@echo.	--enable-mpi		Build with Microsoft MPI library
-@echo.	--enable-mpich		Build with MPICH library
-@echo.	--enable-mpi64		Build with 64bit MPI library
+@echo.	--enable-msmpi32	Build with 32bit Microsoft MPI library
+@echo.	--enable-msmpi64	Build with 64bit Microsoft MPI library
+@echo.	--enable-mpich32	Build with 32bit MPICH library
+@echo.	--enable-mpich64	Build with 64bit MPICH library
 @echo.	--enable-intelc		Use Intel C Compiler
 @echo.	--enable-fortran	Enable Fortran interface
 @echo.	--enable-saamg		Enable SA-AMG preconditioner
@@ -95,22 +98,27 @@ rem   Build Options
 @shift
 @goto again
 
-:setmpi
+:setmsmpi32
 
-@set mpi=1
+@set msmpi32=1
 @shift
 @goto again
 
-:setmpich
+:setmsmpi64
 
-@set mpich=1
+@set msmpi64=1
 @shift
 @goto again
 
-:setmpi64
+:setmpich32
 
-@set mpi=1
-@set mpi64=1
+@set mpich32=1
+@shift
+@goto again
+
+:setmpich64
+
+@set mpich64=1
 @shift
 @goto again
 
@@ -213,31 +221,40 @@ rem   Build Options
 @echo.	Build with OpenMP library		= no
 )
 
-@if (%mpi%) == (1) (
-@echo # Build with Microsoft MPI library >> Makefile
-@echo mpi=1 >> Makefile
+@if (%msmpi32%) == (1) (
+@echo # Build with 32bit Microsoft MPI library >> Makefile
+@echo msmpi32=1 >> Makefile
 @echo. >> Makefile
-@echo.	Build with Microsoft MPI library	= yes
+@echo.	Build with 32bit Microsoft MPI library	= yes
 ) else (
-@echo.	Build with Microsoft MPI library	= no
+@echo.	Build with 32bit Microsoft MPI library	= no
 )
 
-@if (%mpich%) == (1) (
-@echo # Build with MPICH library >> Makefile
-@echo mpich=1 >> Makefile
+@if (%msmpi64%) == (1) (
+@echo # Build with 64bit Microsoft MPI library >> Makefile
+@echo msmpi64=1 >> Makefile
 @echo. >> Makefile
-@echo.	Build with MPICH library		= yes
+@echo.	Build with 64bit Microsoft MPI library	= yes
 ) else (
-@echo.	Build with MPICH library		= no
+@echo.	Build with 64bit Microsoft MPI library	= no
 )
 
-@if (%mpi64%) == (1) (
-@echo # Build with 64bit MPI library >> Makefile
-@echo mpi64=1 >> Makefile
+@if (%mpich32%) == (1) (
+@echo # Build with 32bit MPICH library >> Makefile
+@echo mpich32=1 >> Makefile
 @echo. >> Makefile
-@echo.	Build with 64bit MPI library		= yes
+@echo.	Build with 32bit MPICH library		= yes
 ) else (
-@echo.	Build with 64bit MPI library		= no
+@echo.	Build with 32bit MPICH library		= no
+)
+
+@if (%mpich64%) == (1) (
+@echo # Build with 64bit MPICH library >> Makefile
+@echo mpich64=1 >> Makefile
+@echo. >> Makefile
+@echo.	Build with 64bit MPICH library		= yes
+) else (
+@echo.	Build with 64bit MPICH library		= no
 )
 
 @if (%intelc%) == (1) (
