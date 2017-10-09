@@ -59,8 +59,9 @@ CFLAGS = $(CFLAGS) $(cdebug) $(cvars)
 
 !ifdef impi
 CC = mpiicc
+CFLAGS = $(CFLAGS) -DUSE_MPI
 LINKER = mpiicc
-LDFLAGS = 
+LDFLAGS =
 !endif
 !endif
 
@@ -81,8 +82,9 @@ FFLAGS = $(FFLAGS) -MT
 
 !ifdef impi
 FC = mpiifort
+FFLAGS = $(FFLAGS) -DUSE_MPI
 LINKER = mpiifort
-LDFLAGS = 
+LDFLAGS =
 !endif
 !endif
 
@@ -166,6 +168,13 @@ CFLAGS = $(CFLAGS) -DUSE_MPI -I$(MPIDIR)\include
 FFLAGS = $(FFLAGS) -DUSE_MPI -I$(MPIDIR)\include
 LDFLAGS = $(LDFLAGS) $(MPIDIR)\lib\mpi.lib $(MPIDIR)\lib\fmpich2.lib
 MPIRUN = "mpiexec -localonly 2"
+!endif
+
+
+# Configuration for Intel MPI
+
+!ifdef impi
+MPIRUN = "mpiexec -n 2"
 !endif
 
 
