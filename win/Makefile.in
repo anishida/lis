@@ -149,28 +149,6 @@ MPIRUN = "mpiexec -n 2"
 !endif
 
 
-# Configuration for 32bit MPICH
-
-!ifdef mpich32
-MPIDIR = "C:\Program Files (x86)\MPICH2"
-CFLAGS = $(CFLAGS) -DUSE_MPI -I$(MPIDIR)\include
-FFLAGS = $(FFLAGS) -DUSE_MPI -I$(MPIDIR)\include
-LDFLAGS = $(LDFLAGS) $(MPIDIR)\lib\mpi.lib $(MPIDIR)\lib\fmpich2.lib
-MPIRUN = "mpiexec -localonly 2"
-!endif
-
-
-# Configuration for 64bit MPICH
-
-!ifdef mpich64
-MPIDIR = "C:\Program Files\MPICH2"
-CFLAGS = $(CFLAGS) -DUSE_MPI -I$(MPIDIR)\include
-FFLAGS = $(FFLAGS) -DUSE_MPI -I$(MPIDIR)\include
-LDFLAGS = $(LDFLAGS) $(MPIDIR)\lib\mpi.lib $(MPIDIR)\lib\fmpich2.lib
-MPIRUN = "mpiexec -localonly 2"
-!endif
-
-
 # Configuration for Intel MPI
 
 !ifdef impi
@@ -205,7 +183,7 @@ objs_solver: ..\src\solver\*.obj
 objs_system: ..\src\system\*.obj 
 objs_vector: ..\src\vector\*.obj
 
-!if defined(msmpi32) || defined(mpich32) || defined(msmpi64) || defined(mpich64) || defined(impi) 
+!if defined(msmpi32) || defined(msmpi64) || defined(impi) 
 objs_saamg: ..\src\fortran\amg\lis_m_data_type_AMGCG.obj \
 	    ..\src\fortran\amg\lis_m_queue.obj \
 	    ..\src\fortran\amg\lis_m_hash.obj \
