@@ -185,7 +185,7 @@ objs_solver: ..\src\solver\*.obj
 objs_system: ..\src\system\*.obj 
 objs_vector: ..\src\vector\*.obj
 
-!if defined(mpi) || defined(mpich)
+!if defined(msmpi32) || defined(mpich32) || defined(msmpi64) || defined(mpich64)
 objs_saamg: ..\src\fortran\amg\lis_m_data_type_AMGCG.obj \
 	    ..\src\fortran\amg\lis_m_queue.obj \
 	    ..\src\fortran\amg\lis_m_hash.obj \
