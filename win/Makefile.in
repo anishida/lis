@@ -116,7 +116,7 @@ FFLAGS = $(FFLAGS) -DCOMPLEX
 
 # Configuration for 32bit Microsoft MPI
 
-!ifdef mpi 
+!ifdef msmpi32
 MPIDIR = "C:\Program Files\Microsoft MPI"
 CFLAGS = $(CFLAGS) -DUSE_MPI -I $(MPIDIR)\Inc
 FFLAGS = $(FFLAGS) -DUSE_MPI -I $(MPIDIR)\Inc
@@ -127,20 +127,18 @@ MPIRUN = "mpiexec -n 2"
 
 # Configuration for 64bit Microsoft MPI
 
-!ifdef mpi 
-!ifdef mpi64
+!ifdef msmpi64
 MPIDIR = "C:\Program Files\Microsoft MPI"
 CFLAGS = $(CFLAGS) -DUSE_MPI -I $(MPIDIR)\Inc
 FFLAGS = $(FFLAGS) -DUSE_MPI -I $(MPIDIR)\Inc
 LDFLAGS = $(LDFLAGS) $(MPIDIR)\Lib\amd64\msmpi.lib $(MPIDIR)\Lib\amd64\msmpifec.lib
 MPIRUN = "mpiexec -n 2"
 !endif
-!endif
 
 
 # Configuration for 32bit MPICH
 
-!ifdef mpich 
+!ifdef mpich32
 MPIDIR = "C:\Program Files (x86)\MPICH2"
 CFLAGS = $(CFLAGS) -DUSE_MPI -I $(MPIDIR)\include
 FFLAGS = $(FFLAGS) -DUSE_MPI -I $(MPIDIR)\include
@@ -151,14 +149,12 @@ MPIRUN = "mpiexec -localonly 2"
 
 # Configuration for 64bit MPICH
 
-!ifdef mpich
-!ifdef mpi64
+!ifdef mpich64
 MPIDIR = "C:\Program Files\MPICH2"
 CFLAGS = $(CFLAGS) -DUSE_MPI -I $(MPIDIR)\include
 FFLAGS = $(FFLAGS) -DUSE_MPI -I $(MPIDIR)\include
 LDFLAGS = $(LDFLAGS) $(MPIDIR)\lib\mpi.lib $(MPIDIR)\lib\fmpich2.lib
 MPIRUN = "mpiexec -localonly 2"
-!endif
 !endif
 
 
