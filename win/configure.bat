@@ -110,6 +110,7 @@ rem   Build Options
 :setimpi
 
 @set impi=1
+@set intelc=1
 @shift
 @goto again
 
@@ -122,7 +123,6 @@ rem   Build Options
 :setfortran
 
 @set fortran=1
-@set intel=1
 @shift
 @goto again
 
