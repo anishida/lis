@@ -145,7 +145,7 @@ MPIDIR = "C:\Program Files (x86)\Microsoft SDKs\MPI"
 CFLAGS = $(CFLAGS) -DUSE_MPI -I$(MPIDIR)\Include
 FFLAGS = $(FFLAGS) -DUSE_MPI -I$(MPIDIR)\Include -I$(MPIDIR)\Include\x64
 LDFLAGS = $(LDFLAGS) $(MPIDIR)\Lib\x64\msmpi.lib
-MPIRUN = "C:\Program_Files\Microsoft_MPI\Bin\mpiexec -n 2"
+MPIRUN = "mpiexec -n 2"
 !endif
 
 
