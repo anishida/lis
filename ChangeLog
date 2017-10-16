@@ -1,3 +1,7 @@
+Version 1.8.10  October 17, 2017
+
+  - Updated configurations in win/Makefile.in.
+
 Version 1.8.9  October 11, 2017
 
   - Updated configurations in win/Makefile.in for Microsoft MPI.
