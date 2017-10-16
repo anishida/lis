@@ -12,6 +12,7 @@ RM = del
 !include <win32.mak>
 #!include <C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\Include\win32.mak>
 
+
 # Configuration for Microsoft Visual C++
 
 CC = cl
@@ -127,7 +128,7 @@ FFLAGS = $(FFLAGS) -DCOMPLEX
 !endif
 
 
-# Configuration for 32bit Microsoft MPI
+# Configuration for Microsoft MPI
 
 !ifdef msmpi32
 MPIDIR = "C:\Program Files (x86)\Microsoft SDKs\MPI"
@@ -136,9 +137,6 @@ FFLAGS = $(FFLAGS) -DUSE_MPI -I$(MPIDIR)\Include -I$(MPIDIR)\Include\x86
 LDFLAGS = $(LDFLAGS) $(MPIDIR)\Lib\x86\msmpi.lib $(MPIDIR)\Lib\x86\msmpifec.lib
 MPIRUN = "mpiexec -n 2"
 !endif
-
-
-# Configuration for 64bit Microsoft MPI
 
 !ifdef msmpi64
 MPIDIR = "C:\Program Files (x86)\Microsoft SDKs\MPI"
@@ -159,6 +157,11 @@ MPIRUN = "mpiexec -n 2"
 !ifdef fortran
 all: libs exes_test exes_etest exes_spmvtest \
      libs_lisf_init exes_testf exes_etestf
+!ifdef saamg
+!ifdef impi
+all: libs test8f.exe
+!endif
+!endif
 !else
 all: libs exes_test exes_etest exes_spmvtest
 !endif
@@ -251,6 +254,9 @@ test4f.exe: ..\test\$*.obj
 	$(LINKER) $(LDFLAGS) $*.obj lisf_init.obj lis.lib
 
 test6f.exe: ..\test\$*.obj
+	$(LINKER) $(LDFLAGS) $*.obj lisf_init.obj lis.lib
+
+test8f.exe: ..\test\$*.obj
 	$(LINKER) $(LDFLAGS) $*.obj lisf_init.obj lis.lib
 
 etest1f.exe: ..\test\$*.obj
