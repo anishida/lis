@@ -32,7 +32,10 @@
 #define MM_BANNER "%%MatrixMarket"
 #define MM_MTX "matrix"
 #define MM_VEC "vector"
-#define MM_FMT "coordinate"
+#define MM_FMT_COO "coordinate"
+#define MM_FMT_DNS "array"
+#define MM_COO 0
+#define MM_DNS 1
 #define MM_TYPE_REAL "real"
 #define MM_TYPE_COMPLEX "complex"
 #define MM_TYPE_GENERAL	"general"
@@ -121,6 +124,8 @@ extern "C"
 /****************************/
 
 	extern LIS_INT lis_input_mm(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file);
+	extern LIS_INT lis_input_mm_banner(FILE *file, LIS_INT *mmfmt, LIS_INT *mmtype, LIS_INT *mmstruct);  
+        extern LIS_INT lis_input_mm_dns(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file);
         extern LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file);
 	extern LIS_INT lis_input_hb(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file);
        	extern LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file);
