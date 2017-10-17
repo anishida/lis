@@ -63,17 +63,23 @@ LIS_INT lis_input_mm(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 {
 	LIS_INT	err;
 	LIS_INT	matrix_type;
+	LIS_INT	mmfmt,mmtype,mmstruct;
 	LIS_MATRIX B;
 
 	LIS_DEBUG_FUNC_IN;
 
 	matrix_type = A->matrix_type;
 
-	err = lis_input_mm_csr(A,b,x,file);
+	/* check banner */
+	err = lis_input_mm_banner(file,&mmfmt,&mmtype,&mmstruct);
 	if( err ) return err;
 
-	if( matrix_type!=LIS_MATRIX_CSR )
+	if( mmfmt==MM_COO )
 	{
+	  err = lis_input_mm_csr(A,b,x,file);
+
+	  if( matrix_type!=LIS_MATRIX_CSR )
+	    {
 		err = lis_matrix_duplicate(A,&B);
 		if( err ) return err;
 		lis_matrix_set_type(B,matrix_type);
@@ -97,9 +103,42 @@ LIS_INT lis_input_mm(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 				return LIS_OUT_OF_MEMORY;
 			}
 		}
+	    }
+	  if( err ) return err;
 	}
+	else if (mmfmt==MM_DNS )
+	{
+	  err = lis_input_mm_dns(A,b,x,file);
 
-
+	  if( matrix_type!=LIS_MATRIX_DNS )
+	    {
+		err = lis_matrix_duplicate(A,&B);
+		if( err ) return err;
+		lis_matrix_set_type(B,matrix_type);
+		err = lis_matrix_convert(A,B);
+		if( err ) return err;
+		lis_matrix_storage_destroy(A);
+		lis_matrix_DLU_destroy(A);
+		lis_matrix_diag_destroy(A->WD);
+		if( A->l2g_map ) lis_free( A->l2g_map );
+		if( A->commtable ) lis_commtable_destroy( A->commtable );
+		if( A->ranges ) lis_free( A->ranges );
+		err = lis_matrix_copy_struct(B,A);
+		if( err ) return err;
+		lis_free(B);
+		if( A->matrix_type==LIS_MATRIX_JAD )
+		{
+			A->work = (LIS_SCALAR *)lis_malloc(A->n*sizeof(LIS_SCALAR),"lis_input_mm::A->work");
+			if( A->work==NULL )
+			{
+				LIS_SETERR_MEM(A->n*sizeof(LIS_SCALAR));
+				return LIS_OUT_OF_MEMORY;
+			}
+		}
+	    }
+	  if( err ) return err;
+	}
+	    
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 }
@@ -281,7 +320,7 @@ LIS_INT lis_input_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, L
 
 #undef __FUNC__
 #define __FUNC__ "lis_input_mm_banner"
-LIS_INT lis_input_mm_banner(FILE *file, LIS_INT *mmtype, LIS_INT *mmstruct)
+LIS_INT lis_input_mm_banner(FILE *file, LIS_INT *mmfmt, LIS_INT *mmtype, LIS_INT *mmstruct)
 {
 	char buf[BUFSIZE];
 	char banner[64], mtx[64], fmt[64], dtype[64], dstruct[64];
@@ -307,9 +346,17 @@ LIS_INT lis_input_mm_banner(FILE *file, LIS_INT *mmtype, LIS_INT *mmstruct)
 		LIS_SETERR(LIS_ERR_FILE_IO,"Not Matrix Market banner\n");
 		return LIS_ERR_FILE_IO;
 	}
-	if( strncmp(fmt, MM_FMT, strlen(MM_FMT))!=0 )
+	if( strncmp(fmt, MM_FMT_COO, strlen(MM_FMT_COO))==0 )
 	{
-		LIS_SETERR(LIS_ERR_FILE_IO,"Not Coodinate format\n");
+		*mmfmt = MM_COO;
+	}
+	else if( strncmp(fmt, MM_FMT_DNS, strlen(MM_FMT_DNS))==0 )
+	{
+		*mmfmt = MM_DNS;
+	}
+	else
+	{
+		LIS_SETERR(LIS_ERR_FILE_IO,"Not Matrix Market format\n");
 		return LIS_ERR_FILE_IO;
 	}
 	if( strncmp(dtype, MM_TYPE_REAL, strlen(MM_TYPE_REAL))==0 )
@@ -384,7 +431,14 @@ LIS_INT lis_input_mm_size(FILE *file, LIS_INT *nr, LIS_INT *nc, LIS_INT *nnz, LI
 #else
 	err = sscanf(buf, "%d %d %d %d %d %d", nr, nc, nnz, isb, isx, isbin);
 #endif
-	if( err==3 )
+	if( err==2 )
+	{
+		*nnz   = (*nr)*(*nc);	  
+		*isb   = 0;
+		*isx   = 0;
+		*isbin = 0;
+	}
+	else if( err==3 )
 	{
 		*isb   = 0;
 		*isx   = 0;
@@ -405,6 +459,243 @@ LIS_INT lis_input_mm_size(FILE *file, LIS_INT *nr, LIS_INT *nc, LIS_INT *nnz, LI
 	return LIS_SUCCESS;
 }
 
+#undef __FUNC__
+#define __FUNC__ "lis_input_mm_dns"
+LIS_INT lis_input_mm_dns(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
+{
+	char buf[BUFSIZE];
+	LIS_INT	nr,nc,nnz;
+	LIS_INT	i,j,my_rank;
+	LIS_INT	err;
+	LIS_INT	mmtype,mode;
+	LIS_INT	n,is,ie;
+	LIS_INT	isb,isx,isbin;
+	double val;
+	double re,im;	
+	LIS_SCALAR *value;
+	LIS_MM_MATFMT matfmt;
+
+	LIS_DEBUG_FUNC_IN;
+
+	#ifdef USE_MPI
+		my_rank = A->my_rank;
+	#else
+		my_rank = 0;
+	#endif
+	
+	/* check size */		
+	err = lis_input_mm_size(file,&nr,&nc,&nnz,&isb,&isx,&isbin);
+	if( err ) return err;
+
+	err = lis_matrix_set_size(A,0,nr);
+	if( err ) return err;
+
+#ifdef _LONG__LONG
+	if( my_rank==0 ) printf("matrix size = %lld x %lld (%lld nonzero entries)\n\n",nr,nc,nr*nc);
+#else
+	if( my_rank==0 ) printf("matrix size = %d x %d (%d nonzero entries)\n\n",nr,nc,nr*nc);
+#endif
+
+	n      = A->n;
+	value  = NULL;
+
+
+	lis_matrix_get_range(A,&is,&ie);
+
+	/* read data */
+	mode = 1;
+	mode = *(char *)&mode;
+	if( mode!=(isbin-1) )
+	{
+		mode = LIS_TRUE;			
+	}
+	else
+	{
+		mode = LIS_FALSE;
+	}
+	for( i=0; i<nr*nc; i++ )
+	{
+		if( isbin )
+		{
+			if( fread(&matfmt, sizeof(matfmt), 1, file)!=1 )
+			{
+				LIS_SETERR_FIO;
+				lis_free(value);
+				return LIS_ERR_FILE_IO;
+			}
+		}
+		else
+		{
+			if( fgets(buf, BUFSIZE, file)==NULL )
+			{
+				LIS_SETERR_FIO;
+				lis_free(value);
+				return LIS_ERR_FILE_IO;
+			}
+#ifdef _COMPLEX			
+#ifdef _LONG__LONG
+			if( mmtype==MM_REAL && sscanf(buf, "%lg", &re) != 1 )
+#else
+			if( mmtype==MM_REAL && sscanf(buf, "%lg", &re) != 1 )
+#endif
+#else
+#ifdef _LONG__LONG
+			if( mmtype==MM_REAL && sscanf(buf, "%lg", &val) != 1 )
+#else
+			if( mmtype==MM_REAL && sscanf(buf, "%lg", &val) != 1 )
+#endif
+#endif			  
+			{
+				LIS_SETERR_FIO;
+				lis_free(value);
+				return LIS_ERR_FILE_IO;
+			}
+#ifdef _LONG__LONG
+			if( mmtype==MM_COMPLEX && sscanf(buf, "%lg %lg", &re, &im) != 2 )
+#else
+			if( mmtype==MM_COMPLEX && sscanf(buf, "%lg %lg", &re, &im) != 2 )
+#endif
+			{
+				LIS_SETERR_FIO;
+				lis_free(value);
+				return LIS_ERR_FILE_IO;
+			}
+		}
+	}
+
+	value   = (LIS_SCALAR *)lis_malloc( nr*nc*sizeof(LIS_SCALAR),"lis_input_mm_dns::value" );
+	if( value==NULL )
+	{
+		LIS_SETERR_MEM(nr*nc*sizeof(LIS_SCALAR));
+		lis_free(value);
+		return LIS_OUT_OF_MEMORY;
+	}
+	#ifdef _OPENMP
+	#pragma omp parallel for private(i)
+	#endif
+	for(i=0;i<nr*nc;i++)
+	{
+		value[i] = 0.0;
+	}
+
+	rewind(file);
+	if( fgets(buf, BUFSIZE, file) == NULL )
+	{
+		LIS_SETERR_FIO;
+		lis_free(value);
+		return LIS_ERR_FILE_IO;
+	}
+	do
+	{
+		if( fgets(buf, BUFSIZE, file) == NULL )
+		{
+			LIS_SETERR_FIO;
+			lis_free(value);
+			return LIS_ERR_FILE_IO;
+		}
+	}while( buf[0]=='%' );
+
+	for( i=0; i<nr*nc; i++ )
+	{
+		if( isbin )
+		{
+			if( fread(&matfmt, sizeof(matfmt), 1, file)!=1 )
+			{
+				LIS_SETERR_FIO;
+				lis_free(value);
+				return LIS_ERR_FILE_IO;
+			}
+			val  = matfmt.value;
+			if( mode )
+			{
+				lis_bswap_double(1,&val);
+			}
+		}
+		else
+		{
+			if( fgets(buf, BUFSIZE, file) == NULL )
+			{
+				LIS_SETERR_FIO;
+				lis_free(value);
+				return LIS_ERR_FILE_IO;
+			}
+#ifdef _COMPLEX			
+#ifdef _LONG__LONG
+			if( mmtype==MM_REAL && sscanf(buf, "%lg", &re) != 1 )
+#else
+			if( mmtype==MM_REAL && sscanf(buf, "%lg", &re) != 1 )
+#endif
+#else
+#ifdef _LONG__LONG
+			if( mmtype==MM_REAL && sscanf(buf, "%lg", &val) != 1 )
+#else
+			if( mmtype==MM_REAL && sscanf(buf, "%lg", &val) != 1 )
+#endif 
+#endif			  
+			{
+				LIS_SETERR_FIO;
+				lis_free(value);
+				return LIS_ERR_FILE_IO;
+			}
+#ifdef _LONG__LONG
+			if( mmtype==MM_COMPLEX && sscanf(buf, "%lg %lg", &re, &im) != 2 )
+#else
+			if( mmtype==MM_COMPLEX && sscanf(buf, "%lg %lg", &re, &im) != 2 )
+#endif
+			{
+				LIS_SETERR_FIO;
+				lis_free(value);
+				return LIS_ERR_FILE_IO;
+			}
+			if( mmtype==MM_REAL )
+			{
+#ifdef _COMPLEX					    
+				value[i] = re;
+#else
+				value[i] = val;
+#endif					    
+			}
+#ifdef _COMPLEX					
+			else
+			{
+				value[i] = re + im * _Complex_I;
+			}
+#endif					
+		}
+	}
+
+	#ifdef USE_MPI
+		MPI_Barrier(A->comm);
+	#endif
+
+	err = lis_matrix_set_dns(value,A);
+	if( err )
+	{
+		lis_free(value);
+		return err;
+	}
+	err = lis_matrix_assemble(A);
+	if( err )
+	{
+		lis_matrix_storage_destroy(A);
+		return err;
+	}
+
+	if( b!=NULL && x!=NULL )
+	{
+		err = lis_input_mm_vec(A,b,x,file,mmtype,isb,isx,isbin);
+		if( err )
+		{
+			lis_matrix_storage_destroy(A);
+		}
+	}
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_input_mm_csr"
 LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 {
 	char buf[BUFSIZE];
@@ -430,10 +721,6 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 		my_rank = 0;
 	#endif
 	
-	/* check banner */
-	err = lis_input_mm_banner(file,&mmtype,&mmstruct);
-	if( err ) return err;
-
 	/* check size */		
 	err = lis_input_mm_size(file,&nr,&nc,&nnz,&isb,&isx,&isbin);
 	if( err ) return err;
