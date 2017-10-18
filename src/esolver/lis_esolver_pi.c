@@ -133,7 +133,7 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,output;
-  LIS_SCALAR gshift;
+  LIS_SCALAR oshift;
   LIS_REAL nrm2,resid;
 
   LIS_DEBUG_FUNC_IN;
@@ -144,9 +144,9 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
 #ifdef _COMPLEX
-  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN] + esolver->params[LIS_EPARAMS_SHIFT_IM - LIS_EOPTIONS_LEN] * _Complex_I;
+  oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN] + esolver->params[LIS_EPARAMS_SHIFT_IM - LIS_EOPTIONS_LEN] * _Complex_I;
 #else
-  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
+  oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
 #endif	
 
   A = esolver->A;
@@ -297,7 +297,7 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter2,output;
-  LIS_SCALAR gshift;
+  LIS_SCALAR oshift;
   LIS_REAL nrm2,resid;
   LIS_SOLVER solver;
   double time,itime,ptime,p_c_time,p_i_time;
@@ -315,9 +315,9 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
 #ifdef _COMPLEX
-  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN] + esolver->params[LIS_EPARAMS_SHIFT_IM - LIS_EOPTIONS_LEN] * _Complex_I;
+  oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN] + esolver->params[LIS_EPARAMS_SHIFT_IM - LIS_EOPTIONS_LEN] * _Complex_I;
 #else
-  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
+  oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
 #endif	
   
   A = esolver->A;

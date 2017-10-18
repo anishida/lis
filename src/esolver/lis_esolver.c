@@ -159,7 +159,7 @@ LIS_INT lis_esolver_init(LIS_ESOLVER esolver)
 	esolver->p_i_time   = 0;
 	esolver->p_c_time   = 0;
 
-	esolver->lshift     = 0;
+	esolver->ishift     = 0;
 	esolver->tol        = 0;
 	esolver->eprecision = LIS_PRECISION_DOUBLE;
 
@@ -291,7 +291,7 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	LIS_INT output;
 	LIS_INT ss, mode;
 	double time;
-	LIS_SCALAR gshift,lshift;
+	LIS_SCALAR oshift,ishift;
 	LIS_INT	estorage,eblock;
 	LIS_MATRIX A0;
 	LIS_INT eprecision;
@@ -337,11 +337,11 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	mode = esolver->options[LIS_EOPTIONS_MODE];
 	emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
 #ifdef _COMPLEX
-	gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN] + esolver->params[LIS_EPARAMS_SHIFT_IM - LIS_EOPTIONS_LEN] * _Complex_I;
+	oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN] + esolver->params[LIS_EPARAMS_SHIFT_IM - LIS_EOPTIONS_LEN] * _Complex_I;
 #else
-	gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
+	oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
 #endif	
-	lshift = esolver->lshift;
+	ishift = esolver->ishift;
 	output = esolver->options[LIS_EOPTIONS_OUTPUT];
 	estorage = esolver->options[LIS_EOPTIONS_STORAGE];
 	eblock = esolver->options[LIS_EOPTIONS_STORAGE_BLOCK];
@@ -526,9 +526,9 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	if ( output )
 	{
 #ifdef _COMPLEX
-	  lis_printf(comm,"shift (outer solver)  : (%e, %e)\n", (double)creal(gshift), (double)cimag(gshift));
+	  lis_printf(comm,"shift (outer solver)  : (%e, %e)\n", (double)creal(oshift), (double)cimag(oshift));
 #else
-	  lis_printf(comm,"shift (outer solver)  : %e\n", (double)gshift);
+	  lis_printf(comm,"shift (outer solver)  : %e\n", (double)oshift);
 #endif
 	}
 

@@ -130,7 +130,7 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
   LIS_MATRIX A;
   LIS_VECTOR v;
   LIS_SCALAR theta;  
-  LIS_SCALAR gshift,lshift;
+  LIS_SCALAR oshift,ishift;
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter2,output;
@@ -151,11 +151,11 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN];
 #ifdef _COMPLEX
-  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN] + esolver->params[LIS_EPARAMS_SHIFT_IM - LIS_EOPTIONS_LEN] * _Complex_I;
+  oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN] + esolver->params[LIS_EPARAMS_SHIFT_IM - LIS_EOPTIONS_LEN] * _Complex_I;
 #else
-  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
+  oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
 #endif	
-  lshift = esolver->lshift;
+  ishift = esolver->ishift;
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
 
   A = esolver->A;
@@ -167,16 +167,16 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
   y = esolver->work[0];
   q = esolver->work[1];
 
-  if ( esolver->lshift != 0.0 ) gshift = lshift;
-  if ( gshift != 0.0 ) lis_matrix_shift_diagonal(A, gshift);
+  if ( esolver->ishift != 0.0 ) oshift = ishift;
+  if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, oshift);
 
   iter=0;
   if( output )
     {
 #ifdef _COMPLEX
-      lis_printf(comm,"shift (inner solver)  : (%e, %e)\n", (double)creal(lshift), (double)cimag(lshift));      
+      lis_printf(comm,"shift (inner solver)  : (%e, %e)\n", (double)creal(ishift), (double)cimag(ishift));      
 #else
-      lis_printf(comm,"shift (inner solver)  : %e\n", (double)lshift);
+      lis_printf(comm,"shift (inner solver)  : %e\n", (double)ishift);
 #endif
     }
   lis_solver_create(&solver);
@@ -250,10 +250,10 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
 	  esolver->retcode    = LIS_SUCCESS;
 	  esolver->iter[0]    = iter;
 	  esolver->resid[0]   = resid;
-	  esolver->evalue[0]  = 1.0/theta + gshift;
+	  esolver->evalue[0]  = 1.0/theta + oshift;
 	  lis_vector_nrm2(v, &nrm2);
 	  lis_vector_scale(1.0/nrm2, v);
-	  if ( gshift != 0.0 ) lis_matrix_shift_diagonal(A, -gshift);
+	  if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);
 	  lis_precon_destroy(precon);
 	  lis_solver_destroy(solver); 
 	  LIS_DEBUG_FUNC_OUT;
@@ -266,10 +266,10 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
   esolver->retcode    = LIS_MAXITER;
   esolver->iter[0]    = iter;
   esolver->resid[0]   = resid;
-  esolver->evalue[0]  = 1.0/theta + gshift;
+  esolver->evalue[0]  = 1.0/theta + oshift;
   lis_vector_nrm2(v, &nrm2);
   lis_vector_scale(1.0/nrm2, v);
-  if ( gshift != 0.0 ) lis_matrix_shift_diagonal(A, -gshift);
+  if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);
   lis_solver_destroy(solver); 
   LIS_DEBUG_FUNC_OUT;
   return LIS_MAXITER;
@@ -359,7 +359,7 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
   LIS_MATRIX A,B;
   LIS_VECTOR v;
   LIS_SCALAR eta,theta;
-  LIS_SCALAR gshift,lshift;
+  LIS_SCALAR oshift,ishift;
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter2,output;
@@ -380,11 +380,11 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN];
 #ifdef _COMPLEX
-  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN] + esolver->params[LIS_EPARAMS_SHIFT_IM - LIS_EOPTIONS_LEN] * _Complex_I;
+  oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN] + esolver->params[LIS_EPARAMS_SHIFT_IM - LIS_EOPTIONS_LEN] * _Complex_I;
 #else
-  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
+  oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
 #endif	
-  lshift = esolver->lshift;
+  ishift = esolver->ishift;
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
 
   A = esolver->A;
@@ -398,16 +398,16 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
   y = esolver->work[1];
   q = esolver->work[2];
 
-  if ( esolver->lshift != 0.0 ) gshift = lshift;
-  if ( gshift != 0.0 ) lis_matrix_shift_general(A, B, gshift);
+  if ( esolver->ishift != 0.0 ) oshift = ishift;
+  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, oshift);
 
   iter=0;
   if( output )
     {
 #ifdef _COMPLEX
-      lis_printf(comm,"shift (inner solver)  : (%e, %e)\n", (double)creal(lshift), (double)cimag(lshift));
+      lis_printf(comm,"shift (inner solver)  : (%e, %e)\n", (double)creal(ishift), (double)cimag(ishift));
 #else
-      lis_printf(comm,"shift (inner solver)  : %e\n", (double)lshift);
+      lis_printf(comm,"shift (inner solver)  : %e\n", (double)ishift);
 #endif
     }
   lis_solver_create(&solver);
@@ -491,10 +491,10 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
 	  esolver->retcode    = LIS_SUCCESS;
 	  esolver->iter[0]    = iter;
 	  esolver->resid[0]   = resid;
-	  esolver->evalue[0]  = 1.0/theta + gshift;
+	  esolver->evalue[0]  = 1.0/theta + oshift;
 	  lis_vector_nrm2(v, &nrm2);
 	  lis_vector_scale(1.0/nrm2, v);
-	  if ( gshift != 0.0 ) lis_matrix_shift_general(A, B, -gshift);
+	  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, -oshift);
 	  lis_precon_destroy(precon);
 	  lis_solver_destroy(solver); 
 	  LIS_DEBUG_FUNC_OUT;
@@ -507,10 +507,10 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
   esolver->retcode    = LIS_MAXITER;
   esolver->iter[0]    = iter;
   esolver->resid[0]   = resid;
-  esolver->evalue[0]  = 1.0/theta + gshift;
+  esolver->evalue[0]  = 1.0/theta + oshift;
   lis_vector_nrm2(v, &nrm2);
   lis_vector_scale(1.0/nrm2, v);
-  if ( gshift != 0.0 ) lis_matrix_shift_general(A, B, -gshift);
+  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, -oshift);
   lis_solver_destroy(solver); 
   LIS_DEBUG_FUNC_OUT;
   return LIS_MAXITER;
