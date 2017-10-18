@@ -312,7 +312,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 
   if( output ) 
     {
-      lis_printf(comm,"\nwhere |H_{2,1}| = %e\n\n",hqrerr);
+      lis_printf(comm,"\nwhere |(Q^T)HQ_{2,1}| = %e\n\n",hqrerr);
       lis_printf(comm,"refined eigenpairs:\n\n");
     }
 
@@ -667,7 +667,7 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
 
   if( output ) 
     {
-      lis_printf(comm,"\nwhere |H_{2,1}| = %e\n\n",hqrerr);
+      lis_printf(comm,"\nwhere |(Q^T)HQ_{2,1}| = %e\n\n",hqrerr);
       lis_printf(comm,"refined eigenpairs:\n\n");
     }
 
