@@ -245,7 +245,7 @@ LIS_INT lis_array_abs(LIS_INT n, LIS_SCALAR *x)
 
   for(i=0;i<n;i++)
     {
-      x[i] = abs(x[i]);
+      x[i] = fabs(x[i]);
     }
 
   LIS_DEBUG_FUNC_OUT;
@@ -1169,7 +1169,7 @@ LIS_INT lis_array_qr(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *q, LIS_SCALAR *r, LIS
 		}
 	    }
 	}
-      err = sqrt(a[1] * a[1]);
+      err = fabs(a[1]);
       if (err<tol) break;
     }
 

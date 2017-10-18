@@ -272,7 +272,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
 	  lis_printf(comm,"Lanczos: eigenvalue               = %e\n", (double)esolver->evalue[i]);
 #endif	  
 	}
-      lis_printf(comm,"\n");
+      lis_printf(comm,"\nwhere |T_{2,1}| = %e\n\n",qrerr);
       lis_printf(comm,"refined eigenpairs:\n\n");
     }
 
@@ -603,8 +603,8 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
 	  lis_printf(comm,"Generalized Lanczos: eigenvalue               = %e\n", (double)esolver->evalue[i]);
 #endif	  
 	}
-      printf("\n");
-      printf("refined eigenpairs:\n\n");
+      lis_printf(comm,"\nwhere |T_{2,1}| = %e\n\n",qrerr);      
+      lis_printf(comm,"refined eigenpairs:\n\n");
     }
 
   lis_esolver_create(&esolver2);
