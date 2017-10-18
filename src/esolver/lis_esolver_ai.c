@@ -249,62 +249,71 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
     {
       lis_printf(comm,"size of subspace      : %D\n\n", ss);
       lis_printf(comm,"Ritz values:\n\n");
-      
-      i=0;
-      while (i<ss) 
-	{
-	  i = i + 1;
+    }      
+  i=0;
+  while (i<ss) 
+    {
+      i = i + 1;
 
-	  /* eigenvalues on the diagonal of H */
-	  if (fabs(h[i+(i-1)*ss])<tol)
+      /* eigenvalues on the diagonal of H */
+      if (fabs(h[i+(i-1)*ss])<tol)
+	{
+	  if( output ) 
 	    {
 	      lis_printf(comm,"Arnoldi: mode number              = %D\n",i-1);
 #ifdef _COMPLEX
 	      lis_printf(comm,"Arnoldi: eigenvalue               = (%e, %e)\n",(double)creal(h[i-1+(i-1)*ss]),(double)cimag(h[i-1+(i-1)*ss]));
 #else	      
 	      lis_printf(comm,"Arnoldi: eigenvalue               = %e\n",(double)(h[i-1+(i-1)*ss]));
-#endif	      
-	      esolver->evalue[i-1] = h[i-1+(i-1)*ss];
+#endif
 	    }
+	  esolver->evalue[i-1] = h[i-1+(i-1)*ss];
+	}
 
-	  /* eigenvalues of 2x2 matrices on the diagonal of H */
-	  else
+      /* eigenvalues of 2x2 matrices on the diagonal of H */
+      else
+	{
+	  D = (h[i-1+(i-1)*ss]+h[i+i*ss])*(h[i-1+(i-1)*ss]+h[i+i*ss])
+	    - 4*(h[i-1+(i-1)*ss]*h[i+i*ss]-h[i-1+i*ss]*h[i+(i-1)*ss]);
+	  if (D<0)
 	    {
-	      D = (h[i-1+(i-1)*ss]+h[i+i*ss])*(h[i-1+(i-1)*ss]+h[i+i*ss])
-		- 4*(h[i-1+(i-1)*ss]*h[i+i*ss]-h[i-1+i*ss]*h[i+(i-1)*ss]);
-	      if (D<0)
+	      if( output ) 
 		{
 		  lis_printf(comm,"Arnoldi: mode number              = %D\n",i-1);
 		  lis_printf(comm,"Arnoldi: eigenvalue               = (%e, %e)\n", (double)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (double)sqrt(-D)/2);
 		  lis_printf(comm,"Arnoldi: mode number              = %D\n",i);
 		  lis_printf(comm,"Arnoldi: eigenvalue               = (%e, %e)\n", (double)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (double)-sqrt(-D)/2);
-		  
+		}
 #ifdef _COMPLEX		  
-		  esolver->evalue[i-1] = (h[i-1+(i-1)*ss]+h[i+i*ss])/2 + sqrt(-D)/2 * _Complex_I;
-		  esolver->evalue[i]   = (h[i-1+(i-1)*ss]+h[i+i*ss])/2 - sqrt(-D)/2 * _Complex_I;
+	      esolver->evalue[i-1] = (h[i-1+(i-1)*ss]+h[i+i*ss])/2 + sqrt(-D)/2 * _Complex_I;
+	      esolver->evalue[i]   = (h[i-1+(i-1)*ss]+h[i+i*ss])/2 - sqrt(-D)/2 * _Complex_I;
 #else
-		  esolver->evalue[i-1] = (h[i-1+(i-1)*ss]+h[i+i*ss])/2;
-		  esolver->evalue[i]   = (h[i-1+(i-1)*ss]+h[i+i*ss])/2;     
+	      esolver->evalue[i-1] = (h[i-1+(i-1)*ss]+h[i+i*ss])/2;
+	      esolver->evalue[i]   = (h[i-1+(i-1)*ss]+h[i+i*ss])/2;     
 #endif
 		  
-		  i=i+1;
-		}
-	      else
+	      i=i+1;
+	    }
+	  else
+	    {
+	      if( output ) 
 		{
 		  lis_printf(comm,"Arnoldi: mode number              = %D\n",i-1);
 #ifdef _COMPLEX
 		  lis_printf(comm,"Arnoldi: eigenvalue               = (%e, %e)\n",(double)creal(h[i-1+(i-1)*ss]),(double)cimag(h[i-1+(i-1)*ss]));
 #else		  
 		  lis_printf(comm,"Arnoldi: eigenvalue               = %e\n",(double)(h[i-1+(i-1)*ss]));
-#endif		  
-		  esolver->evalue[i-1] = h[i-1+(i-1)*ss];
+#endif
 		}
+	      esolver->evalue[i-1] = h[i-1+(i-1)*ss];
 	    }
 	}
+    }
 
+  if( output ) 
+    {
       lis_printf(comm,"\n");
       lis_printf(comm,"refined eigenpairs:\n\n");
-  
     }
 
   lis_esolver_create(&esolver2);
@@ -594,63 +603,72 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
     {
       lis_printf(comm,"size of subspace      : %D\n\n", ss);
       lis_printf(comm,"Ritz values:\n\n");
+    }
 
+  i=0;
+  while (i<ss) 
+    {
+      i = i + 1;
 
-      i=0;
-      while (i<ss) 
+      /* eigenvalues on the diagonal of H */
+      if (fabs(h[i+(i-1)*ss])<tol)
 	{
-	  i = i + 1;
-
-	  /* eigenvalues on the diagonal of H */
-	  if (fabs(h[i+(i-1)*ss])<tol)
+	  if( output ) 
 	    {
 	      lis_printf(comm,"Generalized Arnoldi: mode number              = %D\n",i-1);
 #ifdef _COMPLEX
 	      lis_printf(comm,"Generalized Arnoldi: eigenvalue               = (%e, %e)\n",(double)creal(h[i-1+(i-1)*ss]),(double)cimag(h[i-1+(i-1)*ss]));
 #else	      
 	      lis_printf(comm,"Generalized Arnoldi: eigenvalue               = %e\n",(LIS_REAL)(h[i-1+(i-1)*ss]));
-#endif	      
-	      esolver->evalue[i-1] = h[i-1+(i-1)*ss];
+#endif
 	    }
+	  esolver->evalue[i-1] = h[i-1+(i-1)*ss];
+	}
 
-	  /* eigenvalues of 2x2 matrices on the diagonal of H */
-	  else
+      /* eigenvalues of 2x2 matrices on the diagonal of H */
+      else
+	{
+	  D = (h[i-1+(i-1)*ss]+h[i+i*ss])*(h[i-1+(i-1)*ss]+h[i+i*ss])
+	    - 4*(h[i-1+(i-1)*ss]*h[i+i*ss]-h[i-1+i*ss]*h[i+(i-1)*ss]);
+	  if (D<0)
 	    {
-	      D = (h[i-1+(i-1)*ss]+h[i+i*ss])*(h[i-1+(i-1)*ss]+h[i+i*ss])
-		- 4*(h[i-1+(i-1)*ss]*h[i+i*ss]-h[i-1+i*ss]*h[i+(i-1)*ss]);
-	      if (D<0)
+	      if( output ) 
 		{
 		  lis_printf(comm,"Generalized Arnoldi: mode number              = %D\n",i-1);
 		  lis_printf(comm,"Generalized Arnoldi: eigenvalue               = (%e, %e)\n", (double)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (double)sqrt(-D)/2);
 		  lis_printf(comm,"Generalized Arnoldi: mode number              = %D\n",i);
 		  lis_printf(comm,"Generalized Arnoldi: eigenvalue               = (%e, %e)\n", (double)((h[i-1+(i-1)*ss]+h[i+i*ss])/2), (double)-sqrt(-D)/2);
-		  
+		}
 #ifdef _COMPLEX		  
-		  esolver->evalue[i-1] = (h[i-1+(i-1)*ss]+h[i+i*ss])/2 + sqrt(-D)/2 * _Complex_I;
-		  esolver->evalue[i]   = (h[i-1+(i-1)*ss]+h[i+i*ss])/2 - sqrt(-D)/2 * _Complex_I;
+	      esolver->evalue[i-1] = (h[i-1+(i-1)*ss]+h[i+i*ss])/2 + sqrt(-D)/2 * _Complex_I;
+	      esolver->evalue[i]   = (h[i-1+(i-1)*ss]+h[i+i*ss])/2 - sqrt(-D)/2 * _Complex_I;
 #else
-		  esolver->evalue[i-1] = (h[i-1+(i-1)*ss]+h[i+i*ss])/2;
-		  esolver->evalue[i]   = (h[i-1+(i-1)*ss]+h[i+i*ss])/2;     
+	      esolver->evalue[i-1] = (h[i-1+(i-1)*ss]+h[i+i*ss])/2;
+	      esolver->evalue[i]   = (h[i-1+(i-1)*ss]+h[i+i*ss])/2;     
 #endif
 		  
-		  i=i+1;
-		}
-	      else
+	      i=i+1;
+	    }
+	  else
+	    {
+	      if( output ) 
 		{
 		  lis_printf(comm,"Generalized Arnoldi: mode number              = %D\n",i-1);
 #ifdef _COMPLEX
 		  lis_printf(comm,"Generalized Arnoldi: eigenvalue               = (%e, %e)\n",(double)creal(h[i-1+(i-1)*ss]),(double)cimag(h[i-1+(i-1)*ss]));
 #else		  
 		  lis_printf(comm,"Generalized Arnoldi: eigenvalue               = %e\n",(double)(h[i-1+(i-1)*ss]));
-#endif		  
-		  esolver->evalue[i-1] = h[i-1+(i-1)*ss];
+#endif
 		}
+	      esolver->evalue[i-1] = h[i-1+(i-1)*ss];
 	    }
 	}
+    }
 
+  if( output ) 
+    {
       lis_printf(comm,"\n");
       lis_printf(comm,"refined eigenpairs:\n\n");
-  
     }
 
   lis_esolver_create(&esolver2);
