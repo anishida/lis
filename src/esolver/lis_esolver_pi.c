@@ -341,10 +341,10 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
   lis_solver_get_precon(solver, &precon_type);
   lis_solver_get_solvername(nsol, solvername);
   lis_solver_get_preconname(precon_type, preconname);
-  if( output & A->my_rank==0 )
+  if( output )
     {
-      printf("linear solver         : %s\n", solvername);
-      printf("preconditioner        : %s\n", preconname);
+      lis_printf(comm,"linear solver         : %s\n", solvername);
+      lis_printf(comm,"preconditioner        : %s\n", preconname);
     }
 
   /* create preconditioner */
