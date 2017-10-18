@@ -1,6 +1,7 @@
 Version 1.8.11  October 18, 2017
 
   - Fixed bug in lis_esolver_ai.c.
+  - Fixed bug in lis_array.c.
   - Added support for Matrix Market array format.
 
 Version 1.8.10  October 17, 2017

@@ -117,7 +117,7 @@ LIS_INT main(int argc, char* argv[])
 	lis_printf(comm,"QR    : number of iterations = %D\n", qriter);
 	lis_printf(comm,"QR    : elapsed time         = %e sec.\n", time);
 	lis_printf(comm,"QR    :   eigensolver        = %e sec.\n", time);
-	lis_printf(comm,"QR    : 2-norm of A(2,1)     = %e\n\n", (double)qrerr);
+	lis_printf(comm,"QR    : |A(2,1)|             = %e\n\n", (double)qrerr);
 
 	free(a);
 	free(q);

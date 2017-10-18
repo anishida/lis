@@ -152,7 +152,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   LIS_MATRIX A;
   LIS_INT err;
   LIS_INT ss,ic;
-  LIS_SCALAR gshift;
+  LIS_SCALAR oshift;
   LIS_INT emaxiter,iter0,qriter;
   LIS_REAL tol,qrerr;
   LIS_INT i,j,k;
@@ -172,9 +172,9 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
 
   ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
 #ifdef _COMPLEX
-  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN] + esolver->params[LIS_EPARAMS_SHIFT_IM - LIS_EOPTIONS_LEN] * _Complex_I;
+  oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN] + esolver->params[LIS_EPARAMS_SHIFT_IM - LIS_EOPTIONS_LEN] * _Complex_I;
 #else
-  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
+  oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
 #endif	
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
@@ -272,7 +272,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
 	  lis_printf(comm,"Lanczos: eigenvalue               = %e\n", (double)esolver->evalue[i]);
 #endif	  
 	}
-      lis_printf(comm,"\n");
+      lis_printf(comm,"\nwhere |T_{2,1}| = %e\n\n",qrerr);
       lis_printf(comm,"refined eigenpairs:\n\n");
     }
 
@@ -287,7 +287,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   for (i=0;i<ss;i++)
     {
       lis_vector_duplicate(A, &esolver->evector[i]); 
-      esolver2->lshift = esolver->evalue[i];
+      esolver2->ishift = esolver->evalue[i];
       lis_esolve(A, esolver->evector[i], &evalue, esolver2);
       lis_esolver_work_destroy(esolver2); 
       esolver->evalue[i] = evalue;
@@ -446,7 +446,7 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
   LIS_INT err;
   LIS_MATRIX A,B;
   LIS_INT ss,ic;
-  LIS_SCALAR gshift;
+  LIS_SCALAR oshift;
   LIS_INT emaxiter,iter0,qriter;
   LIS_REAL tol,qrerr;
   LIS_INT i,j,k;
@@ -467,9 +467,9 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
 
   ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
 #ifdef _COMPLEX
-  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN] + esolver->params[LIS_EPARAMS_SHIFT_IM - LIS_EOPTIONS_LEN] * _Complex_I;
+  oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN] + esolver->params[LIS_EPARAMS_SHIFT_IM - LIS_EOPTIONS_LEN] * _Complex_I;
 #else
-  gshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
+  oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
 #endif	
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
@@ -603,8 +603,8 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
 	  lis_printf(comm,"Generalized Lanczos: eigenvalue               = %e\n", (double)esolver->evalue[i]);
 #endif	  
 	}
-      printf("\n");
-      printf("refined eigenpairs:\n\n");
+      lis_printf(comm,"\nwhere |T_{2,1}| = %e\n\n",qrerr);      
+      lis_printf(comm,"refined eigenpairs:\n\n");
     }
 
   lis_esolver_create(&esolver2);
@@ -618,7 +618,7 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
   for (i=0;i<ss;i++)
     {
       lis_vector_duplicate(A, &esolver->evector[i]); 
-      esolver2->lshift = esolver->evalue[i];
+      esolver2->ishift = esolver->evalue[i];
       lis_gesolve(A, B, esolver->evector[i], &evalue, esolver2);
       lis_esolver_work_destroy(esolver2); 
       esolver->evalue[i] = evalue;
