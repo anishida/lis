@@ -145,7 +145,7 @@ void lis_matvec_csc(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	}
 }
 
-void lis_matvect_csc(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
+void lis_matvech_csc(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 {
 	LIS_INT i,j,js,je,jj;
 	LIS_INT np;
@@ -158,18 +158,18 @@ void lis_matvect_csc(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		{
 			js = A->L->ptr[i];
 			je = A->L->ptr[i+1];
-			t =  A->D->value[i]*x[i];
+			t =  conj(A->D->value[i])*x[i];
 			for(j=js;j<je;j++)
 			{
 				jj  = A->L->index[j];
-				t += A->L->value[j] * x[jj];
+				t += conj(A->L->value[j]) * x[jj];
 			}
 			js = A->U->ptr[i];
 			je = A->U->ptr[i+1];
 			for(j=js;j<je;j++)
 			{
 				jj  = A->U->index[j];
-				t += A->U->value[j] * x[jj];
+				t += conj(A->U->value[j]) * x[jj];
 			}
 			y[i] = t;
 		}
@@ -187,7 +187,7 @@ void lis_matvect_csc(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			for(j=js;j<je;j++)
 			{
 				jj  = A->index[j];
-				t += A->value[j] * x[jj];
+				t += conj(A->value[j]) * x[jj];
 			}
 			y[i] = t;
 		}

@@ -50,7 +50,7 @@
 /************************************************
  * lis_precon_create
  * lis_psolve
- * lis_psolvet
+ * lis_psolveh
  ************************************************/
 
 #undef __FUNC__
@@ -117,8 +117,8 @@ LIS_INT lis_psolve_ssor(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_psolvet_ssor"
-LIS_INT lis_psolvet_ssor(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
+#define __FUNC__ "lis_psolveh_ssor"
+LIS_INT lis_psolveh_ssor(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 {
 	LIS_MATRIX A;
 
@@ -131,7 +131,7 @@ LIS_INT lis_psolvet_ssor(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 
 	A = solver->precon->A;
 
-	lis_matrix_solvet(A,B,X,LIS_MATRIX_SSOR);
+	lis_matrix_solveh(A,B,X,LIS_MATRIX_SSOR);
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;

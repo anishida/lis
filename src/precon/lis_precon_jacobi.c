@@ -53,7 +53,7 @@
 /************************************************
  * lis_precon_create
  * lis_psolve
- * lis_psolvet
+ * lis_psolveh
  ************************************************/
 
 #undef __FUNC__
@@ -151,8 +151,8 @@ LIS_INT lis_psolve_jacobi(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_psolvet_jacobi"
-LIS_INT lis_psolvet_jacobi(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
+#define __FUNC__ "lis_psolveh_jacobi"
+LIS_INT lis_psolveh_jacobi(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 {
 	LIS_INT i,n;
 	LIS_SCALAR *b,*x,*d;
@@ -187,7 +187,7 @@ LIS_INT lis_psolvet_jacobi(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 			#endif
 			for(i=0; i<n; i++)
 			{
-				x[i] = b[i] * d[i];
+				x[i] = b[i] * conj(d[i]);
 			}
 	#ifdef USE_QUAD_PRECISION
 		}
@@ -203,11 +203,11 @@ LIS_INT lis_psolvet_jacobi(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 			for(i=0; i<n; i++)
 			{
 				#ifndef USE_SSE2
-					LIS_QUAD_MULD(x[i],xl[i],B->value[i],B->value_lo[i],d[i]);
+			  		LIS_QUAD_MULD(x[i],xl[i],B->value[i],B->value_lo[i],conj(d[i]));
 				#else
-					LIS_QUAD_MULD_SSE2(x[i],xl[i],B->value[i],B->value_lo[i],d[i]);
+					LIS_QUAD_MULD_SSE2(x[i],xl[i],B->value[i],B->value_lo[i],conj(d[i]));
 				#endif
-				/* x[i] = b[i] * d[i]; */
+				/* x[i] = b[i] * conj(d[i]); */
 			}
 		}
 	#endif
@@ -272,8 +272,8 @@ LIS_INT lis_psolve_bjacobi(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_psolvet_bjacobi"
-LIS_INT lis_psolvet_bjacobi(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
+#define __FUNC__ "lis_psolveh_bjacobi"
+LIS_INT lis_psolveh_bjacobi(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 {
 	LIS_PRECON precon;
 
@@ -286,7 +286,7 @@ LIS_INT lis_psolvet_bjacobi(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 
 	precon = solver->precon;
 
-	lis_matrix_diag_matvect(precon->WD,B,X);
+	lis_matrix_diag_matvech(precon->WD,B,X);
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;

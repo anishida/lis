@@ -52,7 +52,7 @@
  * lis_precon_create
  * lis_precon_destroy
  * lis_psolve
- * lis_psolvet
+ * lis_psolveh
  ************************************************/
 
 LIS_PRECON_CREATE_XXX lis_precon_create_xxx[] = {
@@ -85,11 +85,11 @@ LIS_PSOLVE_XXX lis_psolve_xxx[] = {
 	lis_psolve_ilut_csr, lis_psolve_bjacobi, lis_psolve_adds
 };
 
-LIS_PSOLVET_XXX lis_psolvet_xxx[] = {
-	lis_psolvet_none,     lis_psolvet_jacobi, lis_psolvet_iluk_csr,
-	lis_psolvet_ssor,     lis_psolvet_hybrid, lis_psolvet_none,
-	lis_psolvet_sainv,    lis_psolvet_saamg,  lis_psolvet_iluc,
-	lis_psolvet_ilut_csr, lis_psolvet_bjacobi, lis_psolvet_adds
+LIS_PSOLVEH_XXX lis_psolveh_xxx[] = {
+	lis_psolveh_none,     lis_psolveh_jacobi, lis_psolveh_iluk_csr,
+	lis_psolveh_ssor,     lis_psolveh_hybrid, lis_psolveh_none,
+	lis_psolveh_sainv,    lis_psolveh_saamg,  lis_psolveh_iluc,
+	lis_psolveh_ilut_csr, lis_psolveh_bjacobi, lis_psolveh_adds
 };
 
 LIS_PRECON_REGISTER *precon_register_top = NULL;
@@ -384,8 +384,8 @@ LIS_INT lis_psolve_none(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_psolvet_none"
-LIS_INT lis_psolvet_none(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
+#define __FUNC__ "lis_psolveh_none"
+LIS_INT lis_psolveh_none(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
 {
 	LIS_DEBUG_FUNC_IN;
 
@@ -408,7 +408,7 @@ LIS_INT lis_psolvet_none(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
 
 #undef __FUNC__
 #define __FUNC__ "lis_precon_register"
-LIS_INT lis_precon_register(char *name, LIS_PRECON_CREATE_XXX pcreate, LIS_PSOLVE_XXX psolve, LIS_PSOLVET_XXX psolvet)
+LIS_INT lis_precon_register(char *name, LIS_PRECON_CREATE_XXX pcreate, LIS_PSOLVE_XXX psolve, LIS_PSOLVEH_XXX psolveh)
 {
 
 	LIS_DEBUG_FUNC_IN;
@@ -425,7 +425,7 @@ LIS_INT lis_precon_register(char *name, LIS_PRECON_CREATE_XXX pcreate, LIS_PSOLV
 
 	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].pcreate = pcreate;
 	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].psolve  = psolve;
-	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].psolvet = psolvet;
+	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].psolveh = psolveh;
 	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].precon_type = precon_register_type;
 	strncpy(precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].name,name,LIS_PRECONNAME_MAX);
 	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].name[LIS_PRECONNAME_MAX] = '\0';

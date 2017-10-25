@@ -1255,7 +1255,7 @@ LIS_INT lis_gpbicg_switch(LIS_SOLVER solver)
  ********************************************************************
  r(0)    = b - Ax(0)
  rtld(0) = r(0) or random
- rtld(0) = A^T * rtld(0)
+ rtld(0) = A^H * rtld(0)
  p(0)    = M^-1 * r(0)
  rho(0)  = <rtld,p(0)>
  t(-1)   = (0,...,0)^T
@@ -1397,7 +1397,7 @@ LIS_INT lis_gpbicr(LIS_SOLVER solver)
 
 	lis_solver_set_shadowresidual(solver,r,p);
 
-	lis_matvect(A,p,rtld);
+	lis_matvech(A,p,rtld);
 	time = lis_wtime();
 	lis_psolve(solver, r, p);
 	ptime += lis_wtime()-time;
@@ -1622,7 +1622,7 @@ LIS_INT lis_gpbicr_quad(LIS_SOLVER solver)
 
 	lis_solver_set_shadowresidual(solver,r,p);
 
-	lis_matvect(A,p,rtld);
+	lis_matvech(A,p,rtld);
 	time = lis_wtime();
 	lis_psolve(solver, r, p);
 	ptime += lis_wtime()-time;

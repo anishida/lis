@@ -273,8 +273,8 @@ LIS_INT lis_matrix_ilu_realloc(LIS_INT row, LIS_INT nnz, LIS_MATRIX_ILU A)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_matvect_ilu"
-LIS_INT lis_matvect_ilu(LIS_MATRIX A, LIS_MATRIX_ILU LU, LIS_VECTOR X, LIS_VECTOR Y)
+#define __FUNC__ "lis_matvech_ilu"
+LIS_INT lis_matvech_ilu(LIS_MATRIX A, LIS_MATRIX_ILU LU, LIS_VECTOR X, LIS_VECTOR Y)
 {
 	LIS_INT i,j,jj,n;
 	LIS_SCALAR t,*x;
@@ -305,7 +305,7 @@ LIS_INT lis_matvect_ilu(LIS_MATRIX A, LIS_MATRIX_ILU LU, LIS_VECTOR X, LIS_VECTO
 			for(j=0;j<LU->nnz[i];j++)
 			{
 				jj = LU->index[i][j];
-				t += LU->value[i][j] * X->value[jj];
+				t += conj(LU->value[i][j]) * X->value[jj];
 			}
 			Y->value[i] = t;
 		}
@@ -329,9 +329,9 @@ LIS_INT lis_matvect_ilu(LIS_MATRIX A, LIS_MATRIX_ILU LU, LIS_VECTOR X, LIS_VECTO
 				{
 					jj = LU->index[i][j];
 					#ifndef USE_SSE2
-						LIS_QUAD_FMAD(Y->value[i],Y->value_lo[i],Y->value[i],Y->value_lo[i],X->value[jj],X->value_lo[jj],LU->value[i][j]);
+						LIS_QUAD_FMAD(Y->value[i],Y->value_lo[i],Y->value[i],Y->value_lo[i],X->value[jj],X->value_lo[jj],conj(LU->value[i][j]));
 					#else
-						LIS_QUAD_FMAD_SSE2(Y->value[i],Y->value_lo[i],Y->value[i],Y->value_lo[i],X->value[jj],X->value_lo[jj],LU->value[i][j]);
+						LIS_QUAD_FMAD_SSE2(Y->value[i],Y->value_lo[i],Y->value[i],Y->value_lo[i],X->value[jj],X->value_lo[jj],conj(LU->value[i][j]));
 					#endif
 				}
 			}
@@ -351,7 +351,7 @@ LIS_INT lis_matvect_ilu(LIS_MATRIX A, LIS_MATRIX_ILU LU, LIS_VECTOR X, LIS_VECTO
 					j0 = LU->index[i][j];
 					j1 = LU->index[i][j+1];
 					#ifdef USE_SSE2
-						LIS_QUAD_FMAD2_SSE2_LDSD(tt.hi[0],tt.lo[0],tt.hi[0],tt.lo[0],X->value[j0],X->value_lo[j0],X->value[j1],X->value_lo[j1],LU->value[i][j]);
+						LIS_QUAD_FMAD2_SSE2_LDSD(tt.hi[0],tt.lo[0],tt.hi[0],tt.lo[0],X->value[j0],X->value_lo[j0],X->value[j1],X->value_lo[j1],conj(LU->value[i][j]));
 					#endif
 				}
 				#ifdef USE_SSE2
@@ -361,7 +361,7 @@ LIS_INT lis_matvect_ilu(LIS_MATRIX A, LIS_MATRIX_ILU LU, LIS_VECTOR X, LIS_VECTO
 				{
 					j0 = LU->index[i][j];
 					#ifdef USE_SSE2
-						LIS_QUAD_FMAD_SSE2(Y->value[i],Y->value_lo[i],Y->value[i],Y->value_lo[i],X->value[j0],X->value_lo[j0],LU->value[i][j]);
+						LIS_QUAD_FMAD_SSE2(Y->value[i],Y->value_lo[i],Y->value[i],Y->value_lo[i],X->value[j0],X->value_lo[j0],conj(LU->value[i][j]));
 					#endif
 				}
 			}
@@ -406,7 +406,7 @@ LIS_INT lis_matvec_ilu(LIS_MATRIX A, LIS_MATRIX_ILU LU, LIS_VECTOR X, LIS_VECTOR
 		#endif
 		#ifdef _OPENMP
 			nprocs = omp_get_max_threads();
-			w = (LIS_SCALAR *)lis_malloc( nprocs*np*sizeof(LIS_SCALAR),"lis_matvect_csr::w" );
+			w = (LIS_SCALAR *)lis_malloc( nprocs*np*sizeof(LIS_SCALAR),"lis_matvech_csr::w" );
 			#pragma omp parallel private(i,j,k,jj,t)
 			{
 				k = omp_get_thread_num();
@@ -460,7 +460,7 @@ LIS_INT lis_matvec_ilu(LIS_MATRIX A, LIS_MATRIX_ILU LU, LIS_VECTOR X, LIS_VECTOR
 		#ifdef _OPENMP
 			#ifndef USE_FMA2_SSE2
 				nprocs = omp_get_max_threads();
-				ww  = (LIS_SCALAR *)lis_malloc( 2*nprocs*np*sizeof(LIS_SCALAR),"lis_matvect_csr_mp::ww" );
+				ww  = (LIS_SCALAR *)lis_malloc( 2*nprocs*np*sizeof(LIS_SCALAR),"lis_matvech_csr_mp::ww" );
 				wwl = &ww[nprocs*np];
 				#ifndef USE_SSE2
 					#pragma omp parallel private(i,j,jj,k,p1,p2,tq,bhi,blo,chi,clo,sh,sl,th,tl,eh,el)
@@ -482,7 +482,7 @@ LIS_INT lis_matvec_ilu(LIS_MATRIX A, LIS_MATRIX_ILU LU, LIS_VECTOR X, LIS_VECTOR
 						{
 							jj  = k*np + LU->index[i][j];
 							#ifndef USE_SSE2
-								LIS_QUAD_FMAD(ww[jj],wwl[jj],ww[jj],wwl[jj],X->value[i],X->value_lo[i],LU->value[i][j]);
+							LIS_QUAD_FMAD(ww[jj],wwl[jj],ww[jj],wwl[jj],X->value[i],X->value_lo[i],LU->value[i][j]);
 							#else
 								LIS_QUAD_FMAD_SSE2(ww[jj],wwl[jj],ww[jj],wwl[jj],X->value[i],X->value_lo[i],LU->value[i][j]);
 							#endif
@@ -505,7 +505,7 @@ LIS_INT lis_matvec_ilu(LIS_MATRIX A, LIS_MATRIX_ILU LU, LIS_VECTOR X, LIS_VECTOR
 				lis_free(ww);
 			#else
 				nprocs = omp_get_max_threads();
-				ww  = (LIS_SCALAR *)lis_malloc( 2*nprocs*np*sizeof(LIS_SCALAR), "lis_matvect_csr_mp2::ww" );
+				ww  = (LIS_SCALAR *)lis_malloc( 2*nprocs*np*sizeof(LIS_SCALAR), "lis_matvech_csr_mp2::ww" );
 				wwl = &ww[nprocs*np];
 				#pragma omp parallel private(i,j,j0,j1,k,bh,ch,sh,wh,th,bl,cl,sl,wl,tl,p1,p2,t0,t1,t2,eh)
 				{

@@ -57,7 +57,7 @@
  * lis_precon_psd_create
  * lis_precon_psd_update
  * lis_psolve
- * lis_psolvet
+ * lis_psolveh
  ************************************************/
 
 LIS_INT lis_symbolic_fact_csr(LIS_SOLVER solver, LIS_PRECON precon);
@@ -96,7 +96,7 @@ LIS_INT lis_precon_create_iluk(LIS_SOLVER solver, LIS_PRECON precon)
 		err = lis_numerical_fact_csr(solver,precon);
 		if( err ) return err;
 		lis_psolve_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolve_iluk_csr;
-		lis_psolvet_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolvet_iluk_csr;
+		lis_psolveh_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolveh_iluk_csr;
 		precon->is_copy = LIS_TRUE;
 		break;
 	case LIS_MATRIX_BSR:
@@ -105,7 +105,7 @@ LIS_INT lis_precon_create_iluk(LIS_SOLVER solver, LIS_PRECON precon)
 		err = lis_numerical_fact_bsr(solver,precon);
 		if( err ) return err;
 		lis_psolve_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolve_iluk_bsr;
-		lis_psolvet_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolvet_iluk_bsr;
+		lis_psolveh_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolveh_iluk_bsr;
 		break;
 	case LIS_MATRIX_VBR:
 		err = lis_symbolic_fact_vbr(solver,precon);
@@ -113,7 +113,7 @@ LIS_INT lis_precon_create_iluk(LIS_SOLVER solver, LIS_PRECON precon)
 		err = lis_numerical_fact_vbr(solver,precon);
 		if( err ) return err;
 		lis_psolve_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolve_iluk_vbr;
-/*		lis_psolvet_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolvet_iluk_vbr;*/
+/*		lis_psolveh_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolveh_iluk_vbr;*/
 		break;
 	default:
 		A = solver->A;
@@ -128,7 +128,7 @@ LIS_INT lis_precon_create_iluk(LIS_SOLVER solver, LIS_PRECON precon)
 		err = lis_numerical_fact_csr(solver,precon);
 		if( err ) return err;
 		lis_psolve_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolve_iluk_csr;
-		lis_psolvet_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolvet_iluk_csr;
+		lis_psolveh_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolveh_iluk_csr;
 		lis_matrix_destroy(B);
 		solver->A = A;
 		precon->is_copy = LIS_TRUE;
@@ -166,7 +166,7 @@ LIS_INT lis_precon_psd_create_iluk(LIS_SOLVER solver, LIS_PRECON precon)
 		err = lis_symbolic_fact_csr(solver,precon);
 		if( err ) return err;
         lis_psolve_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolve_iluk_csr;
-        lis_psolvet_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolvet_iluk_csr;
+        lis_psolveh_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolveh_iluk_csr;
         precon->is_copy = LIS_TRUE;
 		break;
 	case LIS_MATRIX_BSR:
@@ -175,7 +175,7 @@ LIS_INT lis_precon_psd_create_iluk(LIS_SOLVER solver, LIS_PRECON precon)
 /*        err = lis_numerical_fact_bsr(solver,precon);*/
 /*        if( err ) return err;*/
 /*        lis_psolve_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolve_iluk_bsr;*/
-/*        lis_psolvet_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolvet_iluk_bsr;*/
+/*        lis_psolveh_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolveh_iluk_bsr;*/
 /*        break;*/
         err = LIS_ERR_NOT_IMPLEMENTED;
 		return err;
@@ -185,7 +185,7 @@ LIS_INT lis_precon_psd_create_iluk(LIS_SOLVER solver, LIS_PRECON precon)
 /*        err = lis_numerical_fact_vbr(solver,precon);*/
 /*        if( err ) return err;*/
 /*        lis_psolve_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolve_iluk_vbr;*/
-/*		lis_psolvet_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolvet_iluk_vbr;*/
+/*		lis_psolveh_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolveh_iluk_vbr;*/
 /*        break;*/
         err = LIS_ERR_NOT_IMPLEMENTED;
 		return err;
@@ -200,7 +200,7 @@ LIS_INT lis_precon_psd_create_iluk(LIS_SOLVER solver, LIS_PRECON precon)
 		err = lis_symbolic_fact_csr(solver,precon);
 		if( err ) return err;
 		lis_psolve_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolve_iluk_csr;
-		lis_psolvet_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolvet_iluk_csr;
+		lis_psolveh_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolveh_iluk_csr;
 		lis_matrix_destroy(B);
 		solver->A = A;
 		precon->is_copy = LIS_TRUE;
@@ -234,7 +234,7 @@ LIS_INT lis_precon_psd_update_iluk(LIS_SOLVER solver, LIS_PRECON precon)
 /*        err = lis_numerical_fact_bsr(solver,precon);*/
 /*        if( err ) return err;*/
 /*        lis_psolve_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolve_iluk_bsr;*/
-/*        lis_psolvet_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolvet_iluk_bsr;*/
+/*        lis_psolveh_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolveh_iluk_bsr;*/
 /*        break;*/
         err = LIS_ERR_NOT_IMPLEMENTED;
 		return err;
@@ -244,7 +244,7 @@ LIS_INT lis_precon_psd_update_iluk(LIS_SOLVER solver, LIS_PRECON precon)
 /*        err = lis_numerical_fact_vbr(solver,precon);*/
 /*        if( err ) return err;*/
 /*        lis_psolve_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolve_iluk_vbr;*/
-/*		lis_psolvet_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolvet_iluk_vbr;*/
+/*		lis_psolveh_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolveh_iluk_vbr;*/
 /*        break;*/
         err = LIS_ERR_NOT_IMPLEMENTED;
 		return err;
@@ -1082,8 +1082,8 @@ LIS_INT lis_psolve_iluk_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_psolvet_iluk_csr"
-LIS_INT lis_psolvet_iluk_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
+#define __FUNC__ "lis_psolveh_iluk_csr"
+LIS_INT lis_psolveh_iluk_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 {
 #ifdef _OPENMP
 	LIS_INT i,j,jj,n;
@@ -1126,7 +1126,7 @@ LIS_INT lis_psolvet_iluk_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 					for(j=0;j<U->nnz[i];j++)
 					{
 						jj     = U->index[i][j];
-						x[jj] -= U->value[i][j] * x[i];
+						x[jj] -= conj(U->value[i][j]) * x[i];
 					}
 				}
 				for(i=ie-1;i>=is;i--)
@@ -1134,7 +1134,7 @@ LIS_INT lis_psolvet_iluk_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 					for(j=0;j<L->nnz[i];j++)
 					{
 						jj     = L->index[i][j];
-						x[jj] -= L->value[i][j] * x[i];
+						x[jj] -= conj(L->value[i][j]) * x[i];
 					}
 				}
 			}
@@ -1156,18 +1156,18 @@ LIS_INT lis_psolvet_iluk_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 				for(i=is;i<ie;i++)
 				{
 					#ifndef USE_SSE2
-						LIS_QUAD_MULD(x[i],xl[i],x[i],xl[i],D->value[i]);
+			 			LIS_QUAD_MULD(x[i],xl[i],x[i],xl[i],conj(D->value[i]));
 					#else
-						LIS_QUAD_MULD_SSE2(x[i],xl[i],x[i],xl[i],D->value[i]);
+						LIS_QUAD_MULD_SSE2(x[i],xl[i],x[i],xl[i],conj(D->value[i]));
 					#endif
-/*					x[i] = D->value[i]*x[i];*/
+/*					x[i] = conj(D->value[i])*x[i];*/
 					for(j=0;j<U->nnz[i];j++)
 					{
 						jj     = U->index[i][j];
 						#ifndef USE_SSE2
-							LIS_QUAD_FMAD(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-U->value[i][j]);
+							LIS_QUAD_FMAD(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-conj(U->value[i][j]));
 						#else
-							LIS_QUAD_FMAD_SSE2(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-U->value[i][j]);
+							LIS_QUAD_FMAD_SSE2(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-conj(U->value[i][j]));
 						#endif
 /*						x[jj] -= U->value[i][j] * x[i];*/
 					}
@@ -1223,11 +1223,11 @@ LIS_INT lis_psolvet_iluk_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 			lis_vector_copy(B,X);
 			for(i=0; i<n; i++)
 			{
-				x[i] = D->value[i]*x[i];
+				x[i] = conj(D->value[i])*x[i];
 				for(j=0;j<U->nnz[i];j++)
 				{
 					jj     = U->index[i][j];
-					x[jj] -= U->value[i][j] * x[i];
+					x[jj] -= conj(U->value[i][j]) * x[i];
 				}
 			}
 			for(i=n-1; i>=0; i--)
@@ -1235,7 +1235,7 @@ LIS_INT lis_psolvet_iluk_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 				for(j=0;j<L->nnz[i];j++)
 				{
 					jj     = L->index[i][j];
-					x[jj] -= L->value[i][j] * x[i];
+					x[jj] -= conj(L->value[i][j]) * x[i];
 				}
 			}
 	#ifdef USE_QUAD_PRECISION
@@ -1246,20 +1246,20 @@ LIS_INT lis_psolvet_iluk_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 			for(i=0; i<n; i++)
 			{
 				#ifndef USE_SSE2
-					LIS_QUAD_MULD(x[i],xl[i],x[i],xl[i],D->value[i]);
+					LIS_QUAD_MULD(x[i],xl[i],x[i],xl[i],conj(D->value[i]));
 				#else
-					LIS_QUAD_MULD_SSE2(x[i],xl[i],x[i],xl[i],D->value[i]);
+					LIS_QUAD_MULD_SSE2(x[i],xl[i],x[i],xl[i],conj(D->value[i]));
 				#endif
-/*				x[i] = D->value[i]*x[i];*/
+/*				x[i] = conj(D->value[i]*x[i]);*/
 				for(j=0;j<U->nnz[i];j++)
 				{
 					jj     = U->index[i][j];
 					#ifndef USE_SSE2
-						LIS_QUAD_FMAD(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-U->value[i][j]);
+						LIS_QUAD_FMAD(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-conj(U->value[i][j]));
 					#else
-						LIS_QUAD_FMAD_SSE2(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-U->value[i][j]);
+						LIS_QUAD_FMAD_SSE2(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-conj(U->value[i][j]));
 					#endif
-/*					x[jj] -= U->value[i][j] * x[i];*/
+/*					x[jj] -= conj(U->value[i][j]) * x[i];*/
 				}
 			}
 			for(i=n-1; i>=0; i--)
@@ -1268,11 +1268,11 @@ LIS_INT lis_psolvet_iluk_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 				{
 					jj     = L->index[i][j];
 					#ifndef USE_SSE2
-						LIS_QUAD_FMAD(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-L->value[i][j]);
+						LIS_QUAD_FMAD(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-conj(L->value[i][j]));
 					#else
-						LIS_QUAD_FMAD_SSE2(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-L->value[i][j]);
+						LIS_QUAD_FMAD_SSE2(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-conj(L->value[i][j]));
 					#endif
-/*					x[jj] -= L->value[i][j] * x[i];*/
+/*					x[jj] -= conj(L->value[i][j]) * x[i];*/
 				}
 			}
 		}
@@ -2092,8 +2092,8 @@ LIS_INT lis_psolve_iluk_bsr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_psolvet_iluk_bsr"
-LIS_INT lis_psolvet_iluk_bsr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
+#define __FUNC__ "lis_psolveh_iluk_bsr"
+LIS_INT lis_psolveh_iluk_bsr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 {
 #ifdef _OPENMP
 	LIS_INT i,j,jj,nr,bnr,bs;
@@ -2191,12 +2191,12 @@ LIS_INT lis_psolvet_iluk_bsr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 	lis_vector_copy(B,X);
 	for(i=0; i<nr; i++)
 	{
-		lis_array_matvect(bnr,&D->value[bs*i],&x[bnr*i],w,LIS_INS_VALUE);
+		lis_array_matvech(bnr,&D->value[bs*i],&x[bnr*i],w,LIS_INS_VALUE);
 		memcpy(&x[bnr*i],w,bnr*sizeof(LIS_SCALAR));
 		for(j=0;j<U->nnz[i];j++)
 		{
 			jj = U->index[i][j];
-			lis_array_matvect(bnr,&U->value[i][bs*j],&x[bnr*i],&x[bnr*jj],LIS_SUB_VALUE);
+			lis_array_matvech(bnr,&U->value[i][bs*j],&x[bnr*i],&x[bnr*jj],LIS_SUB_VALUE);
 		}
 	}
 	for(i=nr-1; i>=0; i--)
@@ -2204,7 +2204,7 @@ LIS_INT lis_psolvet_iluk_bsr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 		for(j=0;j<L->nnz[i];j++)
 		{
 			jj     = L->index[i][j];
-			lis_array_matvect(bnr,&L->value[i][bs*j],&x[bnr*i],&x[bnr*jj],LIS_SUB_VALUE);
+			lis_array_matvech(bnr,&L->value[i][bs*j],&x[bnr*i],&x[bnr*jj],LIS_SUB_VALUE);
 		}
 /*		luinv(bnr,&D->value[bs*i],&x[bnr*i],w);
 		memcpy(&x[bnr*i],w,bnr*sizeof(LIS_SCALAR));*/

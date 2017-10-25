@@ -70,7 +70,7 @@
  * lis_array_nrmi_f
  * lis_array_sum_f
  * lis_array_matvec_f
- * lis_array_matvect_f
+ * lis_array_matvech_f
  * lis_array_matvec_ns_f
  * lis_array_matmat_f
  * lis_array_matmat_ns_f
@@ -344,12 +344,12 @@ void lis_array_matvec_f(LIS_INT *n, LIS_SCALAR *a, LIS_SCALAR *x, LIS_SCALAR *y,
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_array_matvect_f"
-void lis_array_matvect_f(LIS_INT *n, LIS_SCALAR *a, LIS_SCALAR *x, LIS_SCALAR *y, LIS_INT *op, LIS_INT *ierr)
+#define __FUNC__ "lis_array_matvech_f"
+void lis_array_matvech_f(LIS_INT *n, LIS_SCALAR *a, LIS_SCALAR *x, LIS_SCALAR *y, LIS_INT *op, LIS_INT *ierr)
 {
 	LIS_DEBUG_FUNC_IN;
 
-	*ierr = lis_array_matvect(*n,a,x,y,*op);
+	*ierr = lis_array_matvech(*n,a,x,y,*op);
 	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;

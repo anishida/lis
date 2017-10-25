@@ -895,8 +895,8 @@ LIS_INT lis_matrix_diag_matvec(LIS_MATRIX_DIAG D, LIS_VECTOR X, LIS_VECTOR Y)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_matrix_diag_matvect"
-LIS_INT lis_matrix_diag_matvect(LIS_MATRIX_DIAG D, LIS_VECTOR X, LIS_VECTOR Y)
+#define __FUNC__ "lis_matrix_diag_matvech"
+LIS_INT lis_matrix_diag_matvech(LIS_MATRIX_DIAG D, LIS_VECTOR X, LIS_VECTOR Y)
 {
 	LIS_INT i,nr,bn,bs;
 	LIS_SCALAR *d,*x,*y;
@@ -917,7 +917,7 @@ LIS_INT lis_matrix_diag_matvect(LIS_MATRIX_DIAG D, LIS_VECTOR X, LIS_VECTOR Y)
 		for(i=0; i<nr; i++)
 		{
 			bn = D->bns[i];
-			lis_array_matvect(bn,D->v_value[i],&x[i*bn],&y[i*bn],LIS_INS_VALUE);
+			lis_array_matvech(bn,D->v_value[i],&x[i*bn],&y[i*bn],LIS_INS_VALUE);
 		}
 	}
 	else
@@ -928,7 +928,7 @@ LIS_INT lis_matrix_diag_matvect(LIS_MATRIX_DIAG D, LIS_VECTOR X, LIS_VECTOR Y)
 			#pragma omp parallel for private(i)
 			for(i=0; i<nr; i++)
 			{
-				y[i] = x[i] * d[i];
+				y[i] = x[i] * conj(d[i]);
 			}
 		}
 		else if( bn==2 )
@@ -936,8 +936,8 @@ LIS_INT lis_matrix_diag_matvect(LIS_MATRIX_DIAG D, LIS_VECTOR X, LIS_VECTOR Y)
 			#pragma omp parallel for private(i)
 			for(i=0; i<nr; i++)
 			{
-				y[2*i]   = d[4*i]   * x[2*i] + d[4*i+1] * x[2*i+1];
-				y[2*i+1] = d[4*i+2] * x[2*i] + d[4*i+3] * x[2*i+1];
+				y[2*i]   = conj(d[4*i])   * x[2*i] + conj(d[4*i+1]) * x[2*i+1];
+				y[2*i+1] = conj(d[4*i+2]) * x[2*i] + conj(d[4*i+3]) * x[2*i+1];
 			}
 		}
 		else if( bn==3 )
@@ -945,9 +945,9 @@ LIS_INT lis_matrix_diag_matvect(LIS_MATRIX_DIAG D, LIS_VECTOR X, LIS_VECTOR Y)
 			#pragma omp parallel for private(i)
 			for(i=0; i<nr; i++)
 			{
-				y[3*i]   = d[9*i]   * x[3*i] + d[9*i+1] * x[3*i+1] + d[9*i+2] * x[3*i+2];
-				y[3*i+1] = d[9*i+3] * x[3*i] + d[9*i+4] * x[3*i+1] + d[9*i+5] * x[3*i+2];
-				y[3*i+2] = d[9*i+6] * x[3*i] + d[9*i+7] * x[3*i+1] + d[9*i+8] * x[3*i+2];
+				y[3*i]   = conj(d[9*i])   * x[3*i] + conj(d[9*i+1]) * x[3*i+1] + conj(d[9*i+2]) * x[3*i+2];
+				y[3*i+1] = conj(d[9*i+3]) * x[3*i] + conj(d[9*i+4]) * x[3*i+1] + conj(d[9*i+5]) * x[3*i+2];
+				y[3*i+2] = conj(d[9*i+6]) * x[3*i] + conj(d[9*i+7]) * x[3*i+1] + conj(d[9*i+8]) * x[3*i+2];
 			}
 		}
 		else if( bn==4 )
@@ -955,10 +955,10 @@ LIS_INT lis_matrix_diag_matvect(LIS_MATRIX_DIAG D, LIS_VECTOR X, LIS_VECTOR Y)
 			#pragma omp parallel for private(i)
 			for(i=0; i<nr; i++)
 			{
-				y[4*i]   = d[16*i   ] * x[4*i] + d[16*i+ 1] * x[4*i+1] + d[16*i+ 2] * x[4*i+2] + d[16*i+ 3] * x[4*i+3];
-				y[4*i+1] = d[16*i+ 4] * x[4*i] + d[16*i+ 5] * x[4*i+1] + d[16*i+ 6] * x[4*i+2] + d[16*i+ 7] * x[4*i+3];
-				y[4*i+2] = d[16*i+ 8] * x[4*i] + d[16*i+ 9] * x[4*i+1] + d[16*i+10] * x[4*i+2] + d[16*i+11] * x[4*i+3];
-				y[4*i+3] = d[16*i+12] * x[4*i] + d[16*i+13] * x[4*i+1] + d[16*i+14] * x[4*i+2] + d[16*i+15] * x[4*i+3];
+				y[4*i]   = conj(d[16*i]     * x[4*i] + conj(d[16*i+ 1]) * x[4*i+1] + conj(d[16*i+ 2]) * x[4*i+2] + conj(d[16*i+ 3]) * x[4*i+3];
+				y[4*i+1] = conj(d[16*i+ 4]) * x[4*i] + conj(d[16*i+ 5]) * x[4*i+1] + conj(d[16*i+ 6]) * x[4*i+2] + conj(d[16*i+ 7]) * x[4*i+3];
+				y[4*i+2] = conj(d[16*i+ 8]) * x[4*i] + conj(d[16*i+ 9]) * x[4*i+1] + conj(d[16*i+10]) * x[4*i+2] + conj(d[16*i+11]) * x[4*i+3];
+				y[4*i+3] = conj(d[16*i+12]) * x[4*i] + conj(d[16*i+13]) * x[4*i+1] + conj(d[16*i+14]) * x[4*i+2] + conj(d[16*i+15]) * x[4*i+3];
 			}
 		}
 		else
@@ -969,7 +969,7 @@ LIS_INT lis_matrix_diag_matvect(LIS_MATRIX_DIAG D, LIS_VECTOR X, LIS_VECTOR Y)
 			#endif
 			for(i=0; i<nr; i++)
 			{
-				lis_array_matvect(bn,&d[i*bs],&x[i*bn],&y[i*bn],LIS_INS_VALUE);
+				lis_array_matvech(bn,&d[i*bs],&x[i*bn],&y[i*bn],LIS_INS_VALUE);
 			}
 		}
 	}

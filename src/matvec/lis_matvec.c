@@ -48,7 +48,7 @@
 #include "lislib.h"
 
 LIS_MATVEC_FUNC LIS_MATVEC  = lis_matvec;
-LIS_MATVEC_FUNC LIS_MATVECT = lis_matvect;
+LIS_MATVEC_FUNC LIS_MATVECH = lis_matvech;
 
 #undef __FUNC__
 #define __FUNC__ "lis_matvec"
@@ -187,8 +187,8 @@ LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_matvect"
-LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
+#define __FUNC__ "lis_matvech"
+LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 {
 	LIS_SCALAR *x,*y;
 
@@ -205,7 +205,7 @@ LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE0;
 			#endif
-			lis_matvect_csr(A, x, y);
+			lis_matvech_csr(A, x, y);
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE;
 			#endif
@@ -214,7 +214,7 @@ LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE0;
 			#endif
-			lis_matvect_bsr(A, x, y);
+			lis_matvech_bsr(A, x, y);
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE;
 			#endif
@@ -223,7 +223,7 @@ LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE0;
 			#endif
-			lis_matvect_csc(A, x, y);
+			lis_matvech_csc(A, x, y);
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE;
 			#endif
@@ -232,7 +232,7 @@ LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE0;
 			#endif
-			lis_matvect_bsc(A, x, y);
+			lis_matvech_bsc(A, x, y);
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE;
 			#endif
@@ -241,7 +241,7 @@ LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE0;
 			#endif
-			lis_matvect_msr(A, x, y);
+			lis_matvech_msr(A, x, y);
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE;
 			#endif
@@ -250,7 +250,7 @@ LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE0;
 			#endif
-			lis_matvect_ell(A, x, y);
+			lis_matvech_ell(A, x, y);
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE;
 			#endif
@@ -259,7 +259,7 @@ LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE0;
 			#endif
-			lis_matvect_jad(A, x, y);
+			lis_matvech_jad(A, x, y);
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE;
 			#endif
@@ -268,7 +268,7 @@ LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE0;
 			#endif
-			lis_matvect_dia(A, x, y);
+			lis_matvech_dia(A, x, y);
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE;
 			#endif
@@ -277,7 +277,7 @@ LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE0;
 			#endif
-			lis_matvect_vbr(A, x, y);
+			lis_matvech_vbr(A, x, y);
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE;
 			#endif
@@ -286,7 +286,7 @@ LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE0;
 			#endif
-			lis_matvect_dns(A, x, y);
+			lis_matvech_dns(A, x, y);
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE;
 			#endif
@@ -295,7 +295,7 @@ LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE0;
 			#endif
-			lis_matvect_coo(A, x, y);
+			lis_matvech_coo(A, x, y);
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE;
 			#endif
@@ -316,9 +316,9 @@ LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 				LIS_MATVEC_REDUCE0;
 			#endif
 			#ifndef USE_FMA2_SSE2
-				lis_matvect_csr_mp(A, X, Y);
+				lis_matvech_csr_mp(A, X, Y);
 			#else
-				lis_matvect_csr_mp2(A, X, Y);
+				lis_matvech_csr_mp2(A, X, Y);
 			#endif
 			#ifdef USE_MPI
 				lis_reduce_mp(A->commtable,Y);
@@ -329,9 +329,9 @@ LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 				LIS_MATVEC_REDUCE0;
 			#endif
 			#ifndef USE_FMA2_SSE2
-				lis_matvect_csc_mp(A, X, Y);
+				lis_matvech_csc_mp(A, X, Y);
 			#else
-				lis_matvect_csc_mp2(A, X, Y);
+				lis_matvech_csc_mp2(A, X, Y);
 			#endif
 			#ifdef USE_MPI
 				lis_reduce_mp(A->commtable,Y);
@@ -347,7 +347,6 @@ LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 }
-
 
 
 #undef __FUNC__

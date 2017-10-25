@@ -50,7 +50,7 @@
 /************************************************
  * lis_precon_create
  * lis_psolve
- * lis_psolvet
+ * lis_psolveh
  ************************************************/
 
 #undef __FUNC__
@@ -69,7 +69,7 @@ LIS_INT lis_precon_create_is(LIS_SOLVER solver, LIS_PRECON precon)
 	if( k!=0 && (nsol<LIS_SOLVER_JACOBI || nsol>LIS_SOLVER_SOR) )
 	{
 		lis_psolve_xxx[LIS_PRECON_TYPE_IS]  = lis_psolve_is;
-		lis_psolvet_xxx[LIS_PRECON_TYPE_IS] = lis_psolvet_is;
+		lis_psolveh_xxx[LIS_PRECON_TYPE_IS] = lis_psolveh_is;
 
 		if( solver->A->matrix_type!=LIS_MATRIX_CSR )
 		{
@@ -100,7 +100,7 @@ LIS_INT lis_precon_create_is(LIS_SOLVER solver, LIS_PRECON precon)
 	else
 	{
 		lis_psolve_xxx[LIS_PRECON_TYPE_IS]  = lis_psolve_none;
-		lis_psolvet_xxx[LIS_PRECON_TYPE_IS] = lis_psolvet_none;
+		lis_psolveh_xxx[LIS_PRECON_TYPE_IS] = lis_psolveh_none;
 	}
 
 	switch( solver->A->matrix_type )
@@ -463,8 +463,8 @@ LIS_INT lis_psolve_is(LIS_SOLVER solver, LIS_VECTOR X, LIS_VECTOR Y)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_psolvet_is"
-LIS_INT lis_psolvet_is(LIS_SOLVER solver, LIS_VECTOR X, LIS_VECTOR Y)
+#define __FUNC__ "lis_psolveh_is"
+LIS_INT lis_psolveh_is(LIS_SOLVER solver, LIS_VECTOR X, LIS_VECTOR Y)
 {
 	LIS_MATRIX A;
 	LIS_INT i,j,jj,n,m,np;
@@ -493,7 +493,7 @@ LIS_INT lis_psolvet_is(LIS_SOLVER solver, LIS_VECTOR X, LIS_VECTOR Y)
 
 	#ifdef _OPENMP
 		nprocs = omp_get_max_threads();
-		tmp = (LIS_SCALAR *)lis_malloc( nprocs*np*sizeof(LIS_SCALAR),"lis_psolvet_is::tmp" );
+		tmp = (LIS_SCALAR *)lis_malloc( nprocs*np*sizeof(LIS_SCALAR),"lis_psolveh_is::tmp" );
 		#pragma omp parallel private(i,j,t,jj,k)
 		{
 			k = omp_get_thread_num();
@@ -509,7 +509,7 @@ LIS_INT lis_psolvet_is(LIS_SOLVER solver, LIS_VECTOR X, LIS_VECTOR Y)
 				for(j=A->U->ptr[i];j<_min(A->U->ptr[i]+m,A->U->ptr[i+1]);j++)
 				{
 					jj  = k*np+A->U->index[j];
-					tmp[jj] += w*A->U->value[j] * t;
+					tmp[jj] += w*conj(A->U->value[j]) * t;
 				}
 			}
 			#pragma omp for 
@@ -535,7 +535,7 @@ LIS_INT lis_psolvet_is(LIS_SOLVER solver, LIS_VECTOR X, LIS_VECTOR Y)
 			for(j=A->U->ptr[i];j<_min(A->U->ptr[i]+m,A->U->ptr[i+1]);j++)
 			{
 				jj  = A->U->index[j];
-				y[jj] -= w*A->U->value[j] * t;
+				y[jj] -= w*conj(A->U->value[j]) * t;
 			}
 		}
 	#endif

@@ -954,7 +954,7 @@ LIS_INT lis_bicgsafe_switch(LIS_SOLVER solver)
  ********************************************
  r(0)    = b - Ax(0)
  rtld(0) = r(0) or random
- artld(0)= A^T * rtld(0)
+ artld(0)= A^H * rtld(0)
  mr(0)   = M^-1 * r(0)
  amr(0)  = A * mr(0)
  p(0)    = mr(0)
@@ -1096,7 +1096,7 @@ LIS_INT lis_bicrsafe(LIS_SOLVER solver)
 
 	lis_solver_set_shadowresidual(solver,r,rtld);
 
-	lis_matvect(A,rtld,artld);
+	lis_matvech(A,rtld,artld);
 	time = lis_wtime();
 	lis_psolve(solver, r, mr);
 	ptime += lis_wtime()-time;
@@ -1293,7 +1293,7 @@ LIS_INT lis_bicrsafe_quad(LIS_SOLVER solver)
 
 	lis_solver_set_shadowresidual(solver,r,rtld);
 
-	lis_matvect(A,rtld,artld);
+	lis_matvech(A,rtld,artld);
 	time = lis_wtime();
 	lis_psolve(solver, r, mr);
 	ptime += lis_wtime()-time;

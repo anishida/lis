@@ -68,7 +68,7 @@
  * lis_array_nrmi		v <- ||x||_infinity
  * lis_array_sum		v <- sum x_i
  * lis_array_matvec		c <- A * b
- * lis_array_matvect		c <- A^T * b
+ * lis_array_matvech		c <- A^H * b
  * lis_array_matvec_ns		c <- A * b where A is not square
  * lis_array_matmat		C <- A * B
  * lis_array_matmat_ns		C <- A * B where A and B are not square
@@ -536,8 +536,8 @@ LIS_INT lis_array_matvec(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *x, LIS_SCALAR *y,
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_array_matvect"
-LIS_INT lis_array_matvect(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *x, LIS_SCALAR *y, LIS_INT op)
+#define __FUNC__ "lis_array_matvech"
+LIS_INT lis_array_matvech(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *x, LIS_SCALAR *y, LIS_INT op)
 {
 	LIS_INT			i,j;
 	LIS_SCALAR	t;
@@ -551,16 +551,16 @@ LIS_INT lis_array_matvect(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *x, LIS_SCALAR *y
 		switch(n)
 		{
 		case 1:
-			y[0] = a[0]*x[0];
+			y[0] = conj(a[0])*x[0];
 			break;
 		case 2:
-			y[0] = a[0]*x[0] + a[1]*x[1];
-			y[1] = a[2]*x[0] + a[3]*x[1];
+			y[0] = conj(a[0])*x[0] + conj(a[1])*x[1];
+			y[1] = conj(a[2])*x[0] + conj(a[3])*x[1];
 			break;
 		case 3:
-			y[0] = a[0]*x[0] + a[1]*x[1] + a[2]*x[2];
-			y[1] = a[3]*x[0] + a[4]*x[1] + a[5]*x[2];
-			y[2] = a[6]*x[0] + a[7]*x[1] + a[8]*x[2];
+			y[0] = conj(a[0])*x[0] + conj(a[1])*x[1] + conj(a[2])*x[2];
+			y[1] = conj(a[3])*x[0] + conj(a[4])*x[1] + conj(a[5])*x[2];
+			y[2] = conj(a[6])*x[0] + conj(a[7])*x[1] + conj(a[8])*x[2];
 			break;
 		default:
 			for(i=0;i<n;i++)
@@ -568,7 +568,7 @@ LIS_INT lis_array_matvect(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *x, LIS_SCALAR *y
 				t = 0.0;
 				for(j=0;j<n;j++)
 				{
-					t += a[i*n+j] * x[j];
+					t += conj(a[i*n+j]) * x[j];
 				}
 				y[i] = t;
 			}
@@ -580,16 +580,16 @@ LIS_INT lis_array_matvect(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *x, LIS_SCALAR *y
 		switch(n)
 		{
 		case 1:
-			y[0] -= a[0]*x[0];
+			y[0] -= conj(a[0])*x[0];
 			break;
 		case 2:
-			y[0] -= a[0]*x[0] + a[1]*x[1];
-			y[1] -= a[2]*x[0] + a[3]*x[1];
+			y[0] -= conj(a[0])*x[0] + conj(a[1])*x[1];
+			y[1] -= conj(a[2])*x[0] + conj(a[3])*x[1];
 			break;
 		case 3:
-			y[0] -= a[0]*x[0] + a[1]*x[1] + a[2]*x[2];
-			y[1] -= a[3]*x[0] + a[4]*x[1] + a[5]*x[2];
-			y[2] -= a[6]*x[0] + a[7]*x[1] + a[8]*x[2];
+			y[0] -= conj(a[0])*x[0] + conj(a[1])*x[1] + conj(a[2])*x[2];
+			y[1] -= conj(a[3])*x[0] + conj(a[4])*x[1] + conj(a[5])*x[2];
+			y[2] -= conj(a[6])*x[0] + conj(a[7])*x[1] + conj(a[8])*x[2];
 			break;
 		default:
 			for(i=0;i<n;i++)
@@ -597,7 +597,7 @@ LIS_INT lis_array_matvect(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *x, LIS_SCALAR *y
 				t = 0.0;
 				for(j=0;j<n;j++)
 				{
-					t += a[i*n+j] * x[j];
+					t += conj(a[i*n+j]) * x[j];
 				}
 				y[i] -= t;
 			}
@@ -609,16 +609,16 @@ LIS_INT lis_array_matvect(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *x, LIS_SCALAR *y
 		switch(n)
 		{
 		case 1:
-			y[0] += a[0]*x[0];
+			y[0] += conj(a[0])*x[0];
 			break;
 		case 2:
-			y[0] += a[0]*x[0] + a[1]*x[1];
-			y[1] += a[2]*x[0] + a[3]*x[1];
+			y[0] += conj(a[0])*x[0] + conj(a[1])*x[1];
+			y[1] += conj(a[2])*x[0] + conj(a[3])*x[1];
 			break;
 		case 3:
-			y[0] += a[0]*x[0] + a[1]*x[1] + a[2]*x[2];
-			y[1] += a[3]*x[0] + a[4]*x[1] + a[5]*x[2];
-			y[2] += a[6]*x[0] + a[7]*x[1] + a[8]*x[2];
+			y[0] += conj(a[0])*x[0] + conj(a[1])*x[1] + conj(a[2])*x[2];
+			y[1] += conj(a[3])*x[0] + conj(a[4])*x[1] + conj(a[5])*x[2];
+			y[2] += conj(a[6])*x[0] + conj(a[7])*x[1] + conj(a[8])*x[2];
 			break;
 		default:
 			for(i=0;i<n;i++)
@@ -626,7 +626,7 @@ LIS_INT lis_array_matvect(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *x, LIS_SCALAR *y
 				t = 0.0;
 				for(j=0;j<n;j++)
 				{
-					t += a[i*n+j] * x[j];
+					t += conj(a[i*n+j]) * x[j];
 				}
 				y[i] += t;
 			}

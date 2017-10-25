@@ -1712,8 +1712,8 @@ LIS_INT lis_matrix_solve_bsc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT f
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_matrix_solvet_bsc"
-LIS_INT lis_matrix_solvet_bsc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag)
+#define __FUNC__ "lis_matrix_solveh_bsc"
+LIS_INT lis_matrix_solveh_bsc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag)
 {
 	LIS_INT i,j,k,ii,jj,nr,bnr,bnc,bs;
 	LIS_SCALAR t0,t1,t2;
@@ -1740,45 +1740,45 @@ LIS_INT lis_matrix_solvet_bsc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 				for(j=A->U->bptr[i];j<A->U->bptr[i+1];j++)
 				{
 					jj     = A->U->bindex[j];
-					x[jj] -= A->U->value[j] * x[i];
+					x[jj] -= conj(A->U->value[j]) * x[i];
 				}
 			}
 			break;
 		case 2:
 			for(i=0;i<nr;i++)
 			{
-				t0 = A->WD->value[4*i+0] * x[i*2] + A->WD->value[4*i+1] * x[i*2+1];
-				t1 = A->WD->value[4*i+2] * x[i*2] + A->WD->value[4*i+3] * x[i*2+1];
+				t0 = conj(A->WD->value[4*i+0]) * x[i*2] + conj(A->WD->value[4*i+1]) * x[i*2+1];
+				t1 = conj(A->WD->value[4*i+2]) * x[i*2] + conj(A->WD->value[4*i+3]) * x[i*2+1];
 				x[i*2+0] = t0;
 				x[i*2+1] = t1;
 				for(j=A->U->bptr[i];j<A->U->bptr[i+1];j++)
 				{
 					jj  = A->U->bindex[j];
-					x[jj*2+0] -= A->U->value[j*4+0] * t0 + A->U->value[j*4+1] * t1;
-					x[jj*2+1] -= A->U->value[j*4+2] * t0 + A->U->value[j*4+3] * t1;
+					x[jj*2+0] -= conj(A->U->value[j*4+0]) * t0 + A->U->value[j*4+1] * t1;
+					x[jj*2+1] -= conj(A->U->value[j*4+2]) * t0 + A->U->value[j*4+3] * t1;
 				}
 			}
 			break;
 		case 3:
 			for(i=0;i<nr;i++)
 			{
-				t0 = A->WD->value[9*i+0] * x[i*3] + A->WD->value[9*i+1] * x[i*3+1] + A->WD->value[9*i+2] * x[i*3+2];
-				t1 = A->WD->value[9*i+3] * x[i*3] + A->WD->value[9*i+4] * x[i*3+1] + A->WD->value[9*i+5] * x[i*3+2];
-				t2 = A->WD->value[9*i+6] * x[i*3] + A->WD->value[9*i+7] * x[i*3+1] + A->WD->value[9*i+8] * x[i*3+2];
+				t0 = conj(A->WD->value[9*i+0]) * x[i*3] + conj(A->WD->value[9*i+1]) * x[i*3+1] + conj(A->WD->value[9*i+2]) * x[i*3+2];
+				t1 = conj(A->WD->value[9*i+3]) * x[i*3] + conj(A->WD->value[9*i+4]) * x[i*3+1] + conj(A->WD->value[9*i+5]) * x[i*3+2];
+				t2 = conj(A->WD->value[9*i+6]) * x[i*3] + conj(A->WD->value[9*i+7]) * x[i*3+1] + conj(A->WD->value[9*i+8]) * x[i*3+2];
 				x[i*3]   = t0;
 				x[i*3+1] = t1;
 				x[i*3+2] = t2;
 				for(j=A->U->bptr[i];j<A->U->bptr[i+1];j++)
 				{
 					jj  = A->U->bindex[j];
-					x[jj*3+0] -= A->U->value[j*9+0] * t0 + A->U->value[j*9+1] * t1 + A->U->value[j*9+2] * t2;
-					x[jj*3+1] -= A->U->value[j*9+3] * t0 + A->U->value[j*9+4] * t1 + A->U->value[j*9+5] * t2;
-					x[jj*3+2] -= A->U->value[j*9+6] * t0 + A->U->value[j*9+7] * t1 + A->U->value[j*9+8] * t2;
+					x[jj*3+0] -= conj(A->U->value[j*9+0]) * t0 + A->U->value[j*9+1] * t1 + A->U->value[j*9+2] * t2;
+					x[jj*3+1] -= conj(A->U->value[j*9+3]) * t0 + A->U->value[j*9+4] * t1 + A->U->value[j*9+5] * t2;
+					x[jj*3+2] -= conj(A->U->value[j*9+6]) * t0 + A->U->value[j*9+7] * t1 + A->U->value[j*9+8] * t2;
 				}
 			}
 			break;
 		default:
-			w = (LIS_SCALAR *)lis_malloc(bnc*sizeof(LIS_SCALAR),"lis_matrix_solvet_bsc::w");
+			w = (LIS_SCALAR *)lis_malloc(bnc*sizeof(LIS_SCALAR),"lis_matrix_solveh_bsc::w");
 			for(i=0;i<nr;i++)
 			{
 				for(jj=0;jj<bnc;jj++)
@@ -1786,7 +1786,7 @@ LIS_INT lis_matrix_solvet_bsc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 					t0 = 0.0;
 					for(ii=0;ii<bnr;ii++)
 					{
-						t0 += A->WD->value[i*bs + jj*bnr+ii] * x[i*bnr + ii];
+						t0 += conj(A->WD->value[i*bs + jj*bnr+ii]) * x[i*bnr + ii];
 					}
 					w[jj] = t0;
 				}
@@ -1799,7 +1799,7 @@ LIS_INT lis_matrix_solvet_bsc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 						t0 = 0.0;
 						for(ii=0;ii<bnr;ii++)
 						{
-							t0 += A->U->value[j*bs + jj*bnr+ii] * w[ii];
+							t0 += conj(A->U->value[j*bs + jj*bnr+ii]) * w[ii];
 						}
 						x[k + jj] -= t0;
 					}
@@ -1819,45 +1819,45 @@ LIS_INT lis_matrix_solvet_bsc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 				for(j=A->L->bptr[i];j<A->L->bptr[i+1];j++)
 				{
 					jj     = A->L->bindex[j];
-					x[jj] -= A->L->value[j] * x[i];
+					x[jj] -= conj(A->L->value[j]) * x[i];
 				}
 			}
 			break;
 		case 2:
 			for(i=nr-1;i>=0;i--)
 			{
-				t0 = A->WD->value[4*i+0] * x[i*2] + A->WD->value[4*i+1] * x[i*2+1];
-				t1 = A->WD->value[4*i+2] * x[i*2] + A->WD->value[4*i+3] * x[i*2+1];
+				t0 = conj(A->WD->value[4*i+0]) * x[i*2] + conj(A->WD->value[4*i+1]) * x[i*2+1];
+				t1 = conj(A->WD->value[4*i+2]) * x[i*2] + conj(A->WD->value[4*i+3]) * x[i*2+1];
 				x[i*2+0] = t0;
 				x[i*2+1] = t1;
 				for(j=A->L->bptr[i];j<A->L->bptr[i+1];j++)
 				{
 					jj  = A->L->bindex[j];
-					x[jj*2+0] -= A->L->value[j*4+0] * t0 + A->L->value[j*4+1] * t1;
-					x[jj*2+1] -= A->L->value[j*4+2] * t0 + A->L->value[j*4+3] * t1;
+					x[jj*2+0] -= conj(A->L->value[j*4+0]) * t0 + conj(A->L->value[j*4+1]) * t1;
+					x[jj*2+1] -= conj(A->L->value[j*4+2]) * t0 + conj(A->L->value[j*4+3]) * t1;
 				}
 			}
 			break;
 		case 3:
 			for(i=nr-1;i>=0;i--)
 			{
-				t0 = A->WD->value[9*i+0] * x[i*3] + A->WD->value[9*i+1] * x[i*3+1] + A->WD->value[9*i+2] * x[i*3+2];
-				t1 = A->WD->value[9*i+3] * x[i*3] + A->WD->value[9*i+4] * x[i*3+1] + A->WD->value[9*i+5] * x[i*3+2];
-				t2 = A->WD->value[9*i+6] * x[i*3] + A->WD->value[9*i+7] * x[i*3+1] + A->WD->value[9*i+8] * x[i*3+2];
+				t0 = conj(A->WD->value[9*i+0]) * x[i*3] + conj(A->WD->value[9*i+1]) * x[i*3+1] + conj(A->WD->value[9*i+2]) * x[i*3+2];
+				t1 = conj(A->WD->value[9*i+3]) * x[i*3] + conj(A->WD->value[9*i+4]) * x[i*3+1] + conj(A->WD->value[9*i+5]) * x[i*3+2];
+				t2 = conj(A->WD->value[9*i+6]) * x[i*3] + conj(A->WD->value[9*i+7]) * x[i*3+1] + conj(A->WD->value[9*i+8]) * x[i*3+2];
 				x[i*3]   = t0;
 				x[i*3+1] = t1;
 				x[i*3+2] = t2;
 				for(j=A->L->bptr[i];j<A->L->bptr[i+1];j++)
 				{
 					jj  = A->L->bindex[j];
-					x[jj*3+0] -= A->L->value[j*9+0] * t0 + A->L->value[j*9+1] * t1 + A->L->value[j*9+2] * t2;
-					x[jj*3+1] -= A->L->value[j*9+3] * t0 + A->L->value[j*9+4] * t1 + A->L->value[j*9+5] * t2;
-					x[jj*3+2] -= A->L->value[j*9+6] * t0 + A->L->value[j*9+7] * t1 + A->L->value[j*9+8] * t2;
+					x[jj*3+0] -= conj(A->L->value[j*9+0]) * t0 + conj(A->L->value[j*9+1]) * t1 + conj(A->L->value[j*9+2]) * t2;
+					x[jj*3+1] -= conj(A->L->value[j*9+3]) * t0 + conj(A->L->value[j*9+4]) * t1 + conj(A->L->value[j*9+5]) * t2;
+					x[jj*3+2] -= conj(A->L->value[j*9+6]) * t0 + conj(A->L->value[j*9+7]) * t1 + conj(A->L->value[j*9+8]) * t2;
 				}
 			}
 			break;
 		default:
-			w = (LIS_SCALAR *)lis_malloc(bnr*sizeof(LIS_SCALAR),"lis_matrix_solvet_bsc::w");
+			w = (LIS_SCALAR *)lis_malloc(bnr*sizeof(LIS_SCALAR),"lis_matrix_solveh_bsc::w");
 			for(i=nr-1;i>=0;i--)
 			{
 				for(jj=0;jj<bnc;jj++)
@@ -1865,7 +1865,7 @@ LIS_INT lis_matrix_solvet_bsc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 					t0 = 0.0;
 					for(ii=0;ii<bnr;ii++)
 					{
-						t0 += A->WD->value[i*bs + jj*bnr+ii] * x[i*bnr + ii];
+						t0 += conj(A->WD->value[i*bs + jj*bnr+ii]) * x[i*bnr + ii];
 					}
 					w[jj] = t0;
 				}
@@ -1878,7 +1878,7 @@ LIS_INT lis_matrix_solvet_bsc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 						t0 = 0.0;
 						for(ii=0;ii<bnr;ii++)
 						{
-							t0 += A->L->value[j*bs + jj*bnr+ii] * w[ii];
+							t0 += conj(A->L->value[j*bs + jj*bnr+ii]) * w[ii];
 						}
 						x[k + jj] -= t0;
 					}
@@ -1898,7 +1898,7 @@ LIS_INT lis_matrix_solvet_bsc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 				for(j=A->U->bptr[i];j<A->U->bptr[i+1];j++)
 				{
 					jj     = A->U->bindex[j];
-					x[jj] -= A->U->value[j] * t0;
+					x[jj] -= conj(A->U->value[j]) * t0;
 				}
 			}
 			for(i=nr-1;i>=0;i--)
@@ -1908,69 +1908,69 @@ LIS_INT lis_matrix_solvet_bsc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 				for(j=A->L->bptr[i];j<A->L->bptr[i+1];j++)
 				{
 					jj     = A->L->bindex[j];
-					x[jj] -= A->L->value[j] * t0;
+					x[jj] -= conj(A->L->value[j]) * t0;
 				}
 			}
 			break;
 		case 2:
 			for(i=0;i<nr;i++)
 			{
-				t0 = A->WD->value[4*i+0] * x[i*2] + A->WD->value[4*i+1] * x[i*2+1];
-				t1 = A->WD->value[4*i+2] * x[i*2] + A->WD->value[4*i+3] * x[i*2+1];
+				t0 = conj(A->WD->value[4*i+0]) * x[i*2] + conj(A->WD->value[4*i+1]) * x[i*2+1];
+				t1 = conj(A->WD->value[4*i+2]) * x[i*2] + conj(A->WD->value[4*i+3]) * x[i*2+1];
 				for(j=A->U->bptr[i];j<A->U->bptr[i+1];j++)
 				{
 					jj  = A->U->bindex[j];
-					x[jj*2+0] -= A->U->value[j*4+0] * t0 + A->U->value[j*4+1] * t1;
-					x[jj*2+1] -= A->U->value[j*4+2] * t0 + A->U->value[j*4+3] * t1;
+					x[jj*2+0] -= conj(A->U->value[j*4+0]) * t0 + A->U->value[j*4+1] * t1;
+					x[jj*2+1] -= conj(A->U->value[j*4+2]) * t0 + A->U->value[j*4+3] * t1;
 				}
 			}
 			for(i=nr-1;i>=0;i--)
 			{
-				t0 = A->WD->value[4*i+0] * x[i*2] + A->WD->value[4*i+1] * x[i*2+1];
-				t1 = A->WD->value[4*i+2] * x[i*2] + A->WD->value[4*i+3] * x[i*2+1];
+				t0 = conj(A->WD->value[4*i+0]) * x[i*2] + conj(A->WD->value[4*i+1]) * x[i*2+1];
+				t1 = conj(A->WD->value[4*i+2]) * x[i*2] + conj(A->WD->value[4*i+3]) * x[i*2+1];
 				x[i*2+0] = t0;
 				x[i*2+1] = t1;
 				for(j=A->L->bptr[i];j<A->L->bptr[i+1];j++)
 				{
 					jj  = A->L->bindex[j];
-					x[jj*2+0] -= A->L->value[j*4+0] * t0 + A->L->value[j*4+1] * t1;
-					x[jj*2+1] -= A->L->value[j*4+2] * t0 + A->L->value[j*4+3] * t1;
+					x[jj*2+0] -= conj(A->L->value[j*4+0]) * t0 + A->L->value[j*4+1] * t1;
+					x[jj*2+1] -= conj(A->L->value[j*4+2]) * t0 + A->L->value[j*4+3] * t1;
 				}
 			}
 			break;
 		case 3:
 			for(i=0;i<nr;i++)
 			{
-				t0 = A->WD->value[9*i+0] * x[i*3] + A->WD->value[9*i+1] * x[i*3+1] + A->WD->value[9*i+2] * x[i*3+2];
-				t1 = A->WD->value[9*i+3] * x[i*3] + A->WD->value[9*i+4] * x[i*3+1] + A->WD->value[9*i+5] * x[i*3+2];
-				t2 = A->WD->value[9*i+6] * x[i*3] + A->WD->value[9*i+7] * x[i*3+1] + A->WD->value[9*i+8] * x[i*3+2];
+				t0 = conj(A->WD->value[9*i+0]) * x[i*3] + conj(A->WD->value[9*i+1]) * x[i*3+1] + conj(A->WD->value[9*i+2]) * x[i*3+2];
+				t1 = conj(A->WD->value[9*i+3]) * x[i*3] + conj(A->WD->value[9*i+4]) * x[i*3+1] + conj(A->WD->value[9*i+5]) * x[i*3+2];
+				t2 = conj(A->WD->value[9*i+6]) * x[i*3] + conj(A->WD->value[9*i+7]) * x[i*3+1] + conj(A->WD->value[9*i+8]) * x[i*3+2];
 				for(j=A->U->bptr[i];j<A->U->bptr[i+1];j++)
 				{
 					jj  = A->U->bindex[j];
-					x[jj*3+0] -= A->U->value[j*9+0] * t0 + A->U->value[j*9+1] * t1 + A->U->value[j*9+2] * t2;
-					x[jj*3+1] -= A->U->value[j*9+3] * t0 + A->U->value[j*9+4] * t1 + A->U->value[j*9+5] * t2;
-					x[jj*3+2] -= A->U->value[j*9+6] * t0 + A->U->value[j*9+7] * t1 + A->U->value[j*9+8] * t2;
+					x[jj*3+0] -= conj(A->U->value[j*9+0]) * t0 + conj(A->U->value[j*9+1]) * t1 + conj(A->U->value[j*9+2]) * t2;
+					x[jj*3+1] -= conj(A->U->value[j*9+3]) * t0 + conj(A->U->value[j*9+4]) * t1 + conj(A->U->value[j*9+5]) * t2;
+					x[jj*3+2] -= conj(A->U->value[j*9+6]) * t0 + conj(A->U->value[j*9+7]) * t1 + conj(A->U->value[j*9+8]) * t2;
 				}
 			}
 			for(i=nr-1;i>=0;i--)
 			{
-				t0 = A->WD->value[9*i+0] * x[i*3] + A->WD->value[9*i+1] * x[i*3+1] + A->WD->value[9*i+2] * x[i*3+2];
-				t1 = A->WD->value[9*i+3] * x[i*3] + A->WD->value[9*i+4] * x[i*3+1] + A->WD->value[9*i+5] * x[i*3+2];
-				t2 = A->WD->value[9*i+6] * x[i*3] + A->WD->value[9*i+7] * x[i*3+1] + A->WD->value[9*i+8] * x[i*3+2];
+				t0 = conj(A->WD->value[9*i+0]) * x[i*3] + conj(A->WD->value[9*i+1]) * x[i*3+1] + conj(A->WD->value[9*i+2]) * x[i*3+2];
+				t1 = conj(A->WD->value[9*i+3]) * x[i*3] + conj(A->WD->value[9*i+4]) * x[i*3+1] + conj(A->WD->value[9*i+5]) * x[i*3+2];
+				t2 = conj(A->WD->value[9*i+6]) * x[i*3] + conj(A->WD->value[9*i+7]) * x[i*3+1] + conj(A->WD->value[9*i+8]) * x[i*3+2];
 				x[i*3]   = t0;
 				x[i*3+1] = t1;
 				x[i*3+2] = t2;
 				for(j=A->L->bptr[i];j<A->L->bptr[i+1];j++)
 				{
 					jj  = A->L->bindex[j];
-					x[jj*3+0] -= A->L->value[j*9+0] * t0 + A->L->value[j*9+1] * t1 + A->L->value[j*9+2] * t2;
-					x[jj*3+1] -= A->L->value[j*9+3] * t0 + A->L->value[j*9+4] * t1 + A->L->value[j*9+5] * t2;
-					x[jj*3+2] -= A->L->value[j*9+6] * t0 + A->L->value[j*9+7] * t1 + A->L->value[j*9+8] * t2;
+					x[jj*3+0] -= conj(A->L->value[j*9+0]) * t0 + conj(A->L->value[j*9+1]) * t1 + conj(A->L->value[j*9+2]) * t2;
+					x[jj*3+1] -= conj(A->L->value[j*9+3]) * t0 + conj(A->L->value[j*9+4]) * t1 + conj(A->L->value[j*9+5]) * t2;
+					x[jj*3+2] -= conj(A->L->value[j*9+6]) * t0 + conj(A->L->value[j*9+7]) * t1 + conj(A->L->value[j*9+8]) * t2;
 				}
 			}
 			break;
 		default:
-			w = (LIS_SCALAR *)lis_malloc(bnc*sizeof(LIS_SCALAR),"lis_matrix_solvet_bsc::w");
+			w = (LIS_SCALAR *)lis_malloc(bnc*sizeof(LIS_SCALAR),"lis_matrix_solveh_bsc::w");
 			for(i=0;i<nr;i++)
 			{
 				for(jj=0;jj<bnc;jj++)
@@ -1978,7 +1978,7 @@ LIS_INT lis_matrix_solvet_bsc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 					t0 = 0.0;
 					for(ii=0;ii<bnr;ii++)
 					{
-						t0 += A->WD->value[i*bs + jj*bnr+ii] * x[i*bnr + ii];
+						t0 += conj(A->WD->value[i*bs + jj*bnr+ii]) * x[i*bnr + ii];
 					}
 					w[jj] = t0;
 				}
@@ -1990,7 +1990,7 @@ LIS_INT lis_matrix_solvet_bsc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 						t0 = 0.0;
 						for(ii=0;ii<bnr;ii++)
 						{
-							t0 += A->U->value[j*bs + jj*bnr+ii] * w[ii];
+							t0 += conj(A->U->value[j*bs + jj*bnr+ii]) * w[ii];
 						}
 						x[k + jj] -= t0;
 					}
@@ -2003,7 +2003,7 @@ LIS_INT lis_matrix_solvet_bsc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 					t0 = 0.0;
 					for(ii=0;ii<bnr;ii++)
 					{
-						t0 += A->WD->value[i*bs + jj*bnr+ii] * x[i*bnr + ii];
+						t0 += conj(A->WD->value[i*bs + jj*bnr+ii]) * x[i*bnr + ii];
 					}
 					w[jj] = t0;
 				}
@@ -2016,7 +2016,7 @@ LIS_INT lis_matrix_solvet_bsc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 						t0 = 0.0;
 						for(ii=0;ii<bnr;ii++)
 						{
-							t0 += A->L->value[j*bs + jj*bnr+ii] * w[ii];
+							t0 += conj(A->L->value[j*bs + jj*bnr+ii]) * w[ii];
 						}
 						x[k + jj] -= t0;
 					}

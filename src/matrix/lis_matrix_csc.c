@@ -70,7 +70,7 @@
  * lis_matrix_normf            | o   | o   |
  * lis_matrix_sort             | o   | o   |
  * lis_matrix_solve            | xxx | o   |
- * lis_matrix_solvet           | xxx | o   |
+ * lis_matrix_solveh           | xxx | o   |
  ************************************************/
 
 #undef __FUNC__
@@ -836,8 +836,8 @@ LIS_INT lis_matrix_solve_csc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT f
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_matrix_solvet_csc"
-LIS_INT lis_matrix_solvet_csc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag)
+#define __FUNC__ "lis_matrix_solveh_csc"
+LIS_INT lis_matrix_solveh_csc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag)
 {
 	LIS_INT i,j,np;
 	LIS_SCALAR t;
@@ -857,9 +857,9 @@ LIS_INT lis_matrix_solvet_csc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 			t = b[i];
 			for(j=A->U->ptr[i];j<A->U->ptr[i+1];j++)
 			{
-				t -= A->U->value[j] * x[A->U->index[j]];
+				t -= conj(A->U->value[j]) * x[A->U->index[j]];
 			}
-			x[i]   = t * A->WD->value[i];
+			x[i]   = t * conj(A->WD->value[i]);
 		}
 		break;
 	case LIS_MATRIX_UPPER:
@@ -868,9 +868,9 @@ LIS_INT lis_matrix_solvet_csc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 			t = b[i];
 			for(j=A->L->ptr[i];j<A->L->ptr[i+1];j++)
 			{
-				t -= A->L->value[j] * x[A->L->index[j]];
+				t -= conj(A->L->value[j]) * x[A->L->index[j]];
 			}
-			x[i]   = t * A->WD->value[i];
+			x[i]   = t * conj(A->WD->value[i]);
 		}
 		break;
 	case LIS_MATRIX_SSOR:
@@ -879,18 +879,18 @@ LIS_INT lis_matrix_solvet_csc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 			t = b[i];
 			for(j=A->U->ptr[i];j<A->U->ptr[i+1];j++)
 			{
-				t -= A->U->value[j] * x[A->U->index[j]];
+				t -= conj(A->U->value[j]) * x[A->U->index[j]];
 			}
-			x[i]   = t * A->WD->value[i];
+			x[i]   = t * conj(A->WD->value[i]);
 		}
 		for(i=np-1;i>=0;i--)
 		{
 			t = 0.0;
 			for(j=A->L->ptr[i];j<A->L->ptr[i+1];j++)
 			{
-				t += A->L->value[j] * x[A->L->index[j]];
+				t += conj(A->L->value[j]) * x[A->L->index[j]];
 			}
-			x[i]  -= t * A->WD->value[i];
+			x[i]  -= t * conj(A->WD->value[i]);
 		}
 		break;
 	}

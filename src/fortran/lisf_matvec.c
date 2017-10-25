@@ -51,7 +51,7 @@
 
 /************************************************
  * lis_matvec_f
- * lis_matvect_f
+ * lis_matvech_f
  ************************************************/
 
 #ifdef USE_FORTRAN
@@ -70,12 +70,12 @@ void lis_matvec_f(LIS_MATRIX_F *A, LIS_VECTOR_F *x, LIS_VECTOR_F *y, LIS_INT *ie
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_matvect_f"
-void lis_matvect_f(LIS_MATRIX_F *A, LIS_VECTOR_F *x, LIS_VECTOR_F *y, LIS_INT *ierr)
+#define __FUNC__ "lis_matvech_f"
+void lis_matvech_f(LIS_MATRIX_F *A, LIS_VECTOR_F *x, LIS_VECTOR_F *y, LIS_INT *ierr)
 {
 	LIS_DEBUG_FUNC_IN;
 
-	*ierr = lis_matvect((LIS_MATRIX)LIS_V2P(A),(LIS_VECTOR)LIS_V2P(x),(LIS_VECTOR)LIS_V2P(y));
+	*ierr = lis_matvech((LIS_MATRIX)LIS_V2P(A),(LIS_VECTOR)LIS_V2P(x),(LIS_VECTOR)LIS_V2P(y));
 	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;

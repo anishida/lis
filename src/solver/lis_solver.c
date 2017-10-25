@@ -1836,6 +1836,7 @@ LIS_INT lis_solver_set_shadowresidual(LIS_SOLVER solver, LIS_VECTOR r0, LIS_VECT
 		#endif
 		{
 			lis_vector_copy(r0,rs0);
+			lis_vector_conjugate(rs0);
 		}
 		#ifdef USE_QUAD_PRECISION
 		else

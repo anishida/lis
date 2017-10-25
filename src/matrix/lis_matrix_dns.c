@@ -73,7 +73,7 @@
  * lis_matrix_normf            | o   | o   |
  * lis_matrix_sort             | o   | o   |
  * lis_matrix_solve            | xxx | o   |
- * lis_matrix_solvet           | xxx | o   |
+ * lis_matrix_solveh           | xxx | o   |
  ************************************************/
 
 #undef __FUNC__
@@ -679,8 +679,8 @@ LIS_INT lis_matrix_solve_dns(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT f
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_matrix_solvet_dns"
-LIS_INT lis_matrix_solvet_dns(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag)
+#define __FUNC__ "lis_matrix_solveh_dns"
+LIS_INT lis_matrix_solveh_dns(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag)
 {
 	LIS_INT i,j,n,np;
 	LIS_SCALAR t;
@@ -698,39 +698,39 @@ LIS_INT lis_matrix_solvet_dns(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 	case LIS_MATRIX_LOWER:
 		for(i=0;i<n;i++)
 		{
-			x[i]   = x[i] * A->WD->value[i];
+			x[i]   = x[i] * conj(A->WD->value[i]);
 			for(j=i+1;j<np;j++)
 			{
-				x[j] -= A->value[j*n + i] * x[i];
+				x[j] -= conj(A->value[j*n + i]) * x[i];
 			}
 		}
 		break;
 	case LIS_MATRIX_UPPER:
 		for(i=n-1;i>=0;i--)
 		{
-			x[i]   = x[i] * A->WD->value[i];
+			x[i]   = x[i] * conj(A->WD->value[i]);
 			for(j=0;j<i;j++)
 			{
-				x[j] -= A->value[j*n + i] * x[i];
+				x[j] -= conj(A->value[j*n + i]) * x[i];
 			}
 		}
 		break;
 	case LIS_MATRIX_SSOR:
 		for(i=0;i<n;i++)
 		{
-			t   = x[i] * A->WD->value[i];
+			t   = x[i] * conj(A->WD->value[i]);
 			for(j=i+1;j<np;j++)
 			{
-				x[j] -= A->value[j*n + i] * t;
+				x[j] -= conj(A->value[j*n + i]) * t;
 			}
 		}
 		for(i=n-1;i>=0;i--)
 		{
-			t    = x[i] * A->WD->value[i];
+			t    = x[i] * conj(A->WD->value[i]);
 			x[i] = t;
 			for(j=0;j<i;j++)
 			{
-				x[j] -= A->value[j*n + i] * t;
+				x[j] -= conj(A->value[j*n + i]) * t;
 			}
 		}
 		break;

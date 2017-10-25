@@ -720,7 +720,7 @@ LIS_INT lis_cgs_switch(LIS_SOLVER solver)
  **********************************************
  r(0)    = b - Ax(0)
  rtld(0) = r(0) or random
- rtld(0) = A^T * rtld(0)
+ rtld(0) = A^H * rtld(0)
  rho(0)  = 1
  p(0)    = (0,...,0)^T
  q(0)    = (0,...,0)^T
@@ -846,7 +846,7 @@ LIS_INT lis_crs(LIS_SOLVER solver)
 
 	lis_solver_set_shadowresidual(solver,r,p);
 
-	lis_matvect(A,p,rtld);
+	lis_matvech(A,p,rtld);
 	rho_old = 1.0;
 	lis_vector_set_all(0,q);
 	lis_vector_set_all(0,p);
@@ -989,7 +989,7 @@ LIS_INT lis_crs_quad(LIS_SOLVER solver)
 
 	lis_solver_set_shadowresidual(solver,r,p);
 
-	lis_matvect(A,p,rtld);
+	lis_matvech(A,p,rtld);
 	lis_vector_set_allex_nm(0.0,q);
 	lis_vector_set_allex_nm(0.0,p);
 	rho_old.hi[0] = 1.0;

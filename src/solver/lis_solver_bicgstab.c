@@ -866,7 +866,7 @@ LIS_INT lis_bicgstab_switch(LIS_SOLVER solver)
  ***************************************************
  r(0)    = b - Ax(0)
  rtld(0) = r(0) or random
- rtld(0) = A^T * rtld(0)
+ rtld(0) = A^H * rtld(0)
  z(0)    = M^-1 * r(0)
  p(0)    = z(0)
  rho(0)  = <rtld(0),z(0)>
@@ -990,7 +990,7 @@ LIS_INT lis_bicrstab(LIS_SOLVER solver)
 
 	lis_solver_set_shadowresidual(solver,r,p);
 
-	lis_matvect(A,p,rtld);
+	lis_matvech(A,p,rtld);
 	time = lis_wtime();
 	lis_psolve(solver, r, z);
 	ptime += lis_wtime()-time;
@@ -1149,7 +1149,7 @@ LIS_INT lis_bicrstab_quad(LIS_SOLVER solver)
 
 	lis_solver_set_shadowresidual(solver,r,p);
 
-	lis_matvect(A,p,rtld);
+	lis_matvech(A,p,rtld);
 	time = lis_wtime();
 	lis_psolve(solver, r, z);
 	ptime += lis_wtime()-time;

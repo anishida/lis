@@ -51,7 +51,7 @@
 /************************************************
  * lis_precon_create
  * lis_psolve
- * lis_psolvet
+ * lis_psolveh
  ************************************************/
 
 #undef __FUNC__
@@ -760,7 +760,7 @@ LIS_INT lis_psolve_sainv(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 		if( B->precision==LIS_PRECISION_DEFAULT )
 		{
 	#endif
-			lis_matvect_ilu(A,W,B,X);
+			lis_matvech_ilu(A,W,B,X);
 			#ifdef _OPENMP
 			#pragma omp parallel for private(i)
 			#endif
@@ -773,7 +773,7 @@ LIS_INT lis_psolve_sainv(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 		}
 		else
 		{
-			lis_matvect_ilu(A,W,B,X);
+			lis_matvech_ilu(A,W,B,X);
 			#ifdef _OPENMP
 			#ifndef USE_SSE2
 				#pragma omp parallel for private(i,p1,p2,tq,bhi,blo,chi,clo,sh,sl,th,tl,eh,el)
@@ -799,8 +799,8 @@ LIS_INT lis_psolve_sainv(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_psolvet_sainv"
-LIS_INT lis_psolvet_sainv(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
+#define __FUNC__ "lis_psolveh_sainv"
+LIS_INT lis_psolveh_sainv(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 {
 	LIS_INT i,n;
 	LIS_MATRIX A;
@@ -828,20 +828,20 @@ LIS_INT lis_psolvet_sainv(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 		if( B->precision==LIS_PRECISION_DEFAULT )
 		{
 	#endif
-			lis_matvect_ilu(A,Z,B,X);
+			lis_matvech_ilu(A,Z,B,X);
 			#ifdef _OPENMP
 			#pragma omp parallel for private(i)
 			#endif
 			for(i=0;i<n;i++)
 			{
-				t->value[i] = X->value[i]*d->value[i];
+				t->value[i] = X->value[i]*conj(d->value[i]);
 			}
 			lis_matvec_ilu(A,W,t,X);
 	#ifdef USE_QUAD_PRECISION
 		}
 		else
 		{
-			lis_matvect_ilu(A,Z,B,X);
+			lis_matvech_ilu(A,Z,B,X);
 			#ifdef _OPENMP
 			#ifndef USE_SSE2
 				#pragma omp parallel for private(i,p1,p2,tq,bhi,blo,chi,clo,sh,sl,th,tl,eh,el)
@@ -852,11 +852,11 @@ LIS_INT lis_psolvet_sainv(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 			for(i=0;i<n;i++)
 			{
 				#ifndef USE_SSE2
-					LIS_QUAD_MULD(t->value[i],t->value_lo[i],X->value[i],X->value_lo[i],d->value[i]);
+			  		LIS_QUAD_MULD(t->value[i],t->value_lo[i],X->value[i],X->value_lo[i],conj(d->value[i]));
 				#else
-					LIS_QUAD_MULD_SSE2(t->value[i],t->value_lo[i],X->value[i],X->value_lo[i],d->value[i]);
+					LIS_QUAD_MULD_SSE2(t->value[i],t->value_lo[i],X->value[i],X->value_lo[i],conj(d->value[i]));
 				#endif
-				/* t->value[i] = X->value[i]*d->value[i]; */
+				/* t->value[i] = X->value[i]*conj(d->value[i]); */
 			}
 			lis_matvec_ilu(A,W,t,X);
 		}
