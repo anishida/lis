@@ -50,7 +50,7 @@
 /************************************************
  * lis_precon_create
  * lis_psolve
- * lis_psolvet
+ * lis_psolveh
  ************************************************/
 
 #undef __FUNC__
@@ -216,8 +216,8 @@ LIS_INT lis_psolve_adds(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_psolvet_adds"
-LIS_INT lis_psolvet_adds(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
+#define __FUNC__ "lis_psolveh_adds"
+LIS_INT lis_psolveh_adds(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 {
 	LIS_INT i,k,n,np,iter,ptype;
 	LIS_SCALAR *b,*x,*w,*r;
@@ -250,7 +250,7 @@ LIS_INT lis_psolvet_adds(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 				r[i] = 0.0;
 			}
 
-			lis_psolvet_xxx[ptype](solver,R,W);
+			lis_psolveh_xxx[ptype](solver,R,W);
 			#ifdef _OPENMP
 			#pragma omp parallel for private(i)
 			#endif
@@ -261,7 +261,7 @@ LIS_INT lis_psolvet_adds(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 		
 			if(k!=iter)
 			{
-				lis_matvect(precon->A,X,R);
+				lis_matvech(precon->A,X,R);
 				#ifdef _OPENMP
 				#pragma omp parallel for private(i)
 				#endif
@@ -283,7 +283,7 @@ LIS_INT lis_psolvet_adds(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 				r[i] = 0.0;
 			}
 
-			lis_psolvet_xxx[ptype](solver,R,W);
+			lis_psolveh_xxx[ptype](solver,R,W);
 			for(i=0;i<n;i++)
 			{
 				x[i] += w[i];
@@ -292,7 +292,7 @@ LIS_INT lis_psolvet_adds(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 			if(k==iter) break;
 
 			X->precision = LIS_PRECISION_DEFAULT;
-			lis_matvect(precon->A,X,R);
+			lis_matvech(precon->A,X,R);
 			X->precision = LIS_PRECISION_QUAD;
 			for(i=0;i<n;i++)
 			{

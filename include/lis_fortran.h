@@ -86,7 +86,7 @@ extern LIS_Comm_f lis_comm_world_f;
 #define lis_array_nrmi_f F77_FUNC_(lis_array_nrmi_f, LIS_ARRAY_NRMI_F) 
 #define lis_array_sum_f F77_FUNC_(lis_array_sum_f, LIS_ARRAY_SUM_F) 
 #define lis_array_matvec_f F77_FUNC_(lis_array_matvec_f, LIS_ARRAY_MATVEC_F) 
-#define lis_array_matvect_f F77_FUNC_(lis_array_matvect_f, LIS_ARRAY_MATVECT_F) 
+#define lis_array_matvech_f F77_FUNC_(lis_array_matvech_f, LIS_ARRAY_MATVECH_F)   
 #define lis_array_matvec2_f F77_FUNC_(lis_array_matvec2_f, LIS_ARRAY_matvec2_F) 
 #define lis_array_matinv_f F77_FUNC_(lis_array_matinv_f, LIS_ARRAY_MATINV_F) 
 #define lis_array_LUdecomp_f F77_FUNC_(lis_array_LUdecomp_f, LIS_ARRAY_LUDECOMP_F) 
@@ -183,7 +183,7 @@ extern LIS_Comm_f lis_comm_world_f;
 /**************/
 
 #define lis_matvec_f F77_FUNC_(lis_matvec_f, LIS_MATVEC_F) 
-#define lis_matvect_f F77_FUNC_(lis_matvect_f, LIS_MATVECT_F) 
+#define lis_matvech_f F77_FUNC_(lis_matvech_f, LIS_MATVECH_F)   
 
 /**************/
 /* PRECON     */

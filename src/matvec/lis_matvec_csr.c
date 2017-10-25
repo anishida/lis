@@ -110,7 +110,7 @@ void lis_matvec_csr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	}
 }
 
-void lis_matvect_csr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
+void lis_matvech_csr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 {
 	LIS_INT i,j,js,je,jj;
 	LIS_INT n,np;
@@ -126,7 +126,7 @@ void lis_matvect_csr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	{
 		#ifdef _OPENMP
 			nprocs = omp_get_max_threads();
-			w = (LIS_SCALAR *)lis_malloc( nprocs*np*sizeof(LIS_SCALAR),"lis_matvect_csr::w" );
+			w = (LIS_SCALAR *)lis_malloc( nprocs*np*sizeof(LIS_SCALAR),"lis_matvech_csr::w" );
 			#pragma omp parallel private(i,j,js,je,t,jj,k)
 			{
 				k = omp_get_thread_num();
@@ -144,14 +144,14 @@ void lis_matvect_csr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 					for(j=js;j<je;j++)
 					{
 						jj  = k*np+A->L->index[j];
-						w[jj] += A->L->value[j] * t;
+						w[jj] += conj(A->L->value[j]) * t;
 					}
 					js = A->U->ptr[i];
 					je = A->U->ptr[i+1];
 					for(j=js;j<je;j++)
 					{
 						jj  = k*np+A->U->index[j];
-						w[jj] += A->U->value[j] * t;
+						w[jj] += conj(A->U->value[j]) * t;
 					}
 				}
 				#pragma omp for 
@@ -162,14 +162,14 @@ void lis_matvect_csr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 					{
 						t += w[j*np+i];
 					}
-					y[i] = A->D->value[i] * x[i] + t;
+					y[i] = conj(A->D->value[i]) * x[i] + t;
 				}
 			}
 			lis_free(w);
 		#else
 			for(i=0; i<np; i++)
 			{
-				y[i] = A->D->value[i] * x[i];
+				y[i] = conj(A->D->value[i]) * x[i];
 			}
 			for(i=0; i<n; i++)
 			{
@@ -179,7 +179,7 @@ void lis_matvect_csr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				for(j=js;j<je;j++)
 				{
 					jj  = A->L->index[j];
-					y[jj] += A->L->value[j] * t;
+					y[jj] += conj(A->L->value[j]) * t;
 				}
 			}
 			for(i=0; i<n; i++)
@@ -190,7 +190,7 @@ void lis_matvect_csr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				for(j=js;j<je;j++)
 				{
 					jj  = A->U->index[j];
-					y[jj] += A->U->value[j] * t;
+					y[jj] += conj(A->U->value[j]) * t;
 				}
 			}
 		#endif
@@ -199,7 +199,7 @@ void lis_matvect_csr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	{
 		#ifdef _OPENMP
 			nprocs = omp_get_max_threads();
-			w = (LIS_SCALAR *)lis_malloc( nprocs*np*sizeof(LIS_SCALAR),"lis_matvect_csr::w" );
+			w = (LIS_SCALAR *)lis_malloc( nprocs*np*sizeof(LIS_SCALAR),"lis_matvech_csr::w" );
 			#pragma omp parallel private(i,j,js,je,t,jj,k)
 			{
 				k = omp_get_thread_num();
@@ -217,7 +217,7 @@ void lis_matvect_csr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 					for(j=js;j<je;j++)
 					{
 						jj  = k*np+A->index[j];
-						w[jj] += A->value[j] * t;
+						w[jj] += conj(A->value[j]) * t;
 					}
 				}
 				#pragma omp for 
@@ -245,7 +245,7 @@ void lis_matvect_csr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				for(j=js;j<je;j++)
 				{
 					jj  = A->index[j];
-					y[jj] += A->value[j] * t;
+					y[jj] += conj(A->value[j]) * t;
 				}
 			}
 		#endif

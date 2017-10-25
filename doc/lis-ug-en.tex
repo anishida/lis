@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.8.11
+Version 1.8.12
 \end{flushleft}
 
 \vspace*{2cm}
@@ -105,7 +105,7 @@ All rights reserved.
  DAMAGE.
 
 \vfill
-Cover: Ogata Korin. Irises. c1705. Nezu Museum.
+Cover: Ogata Korin. Irises. c1705. Owned by Nezu Museum.
 }
 \end{flushleft}
 \thispagestyle{empty}
@@ -1171,6 +1171,7 @@ The current version has the following limitations:
 \item The eigensolvers do not support the double-double precision operations.
 \item The Jacobi, Gauss-Seidel and SOR methods in the hybrid preconditioner do not support the double-double precision operations.
 \item The I+S and SA-AMG preconditioners do not support the double-double precision operations.
+\item The double-double precision operations does not support complex arithmetic.  
 \end{itemize}
 
 \item Preconditioners
@@ -1180,7 +1181,8 @@ The current version has the following limitations:
       and matrix $A$ is not in the CSR format, a new matrix is created 
       in the CSR format for preconditioning.
 \item The SA-AMG preconditioner does not support the BiCG method for unsymmetric matrices. 
-\item The SA-AMG preconditioner does not support multithreading. 
+\item The SA-AMG preconditioner does not support multithreading.
+\item The SA-AMG preconditioner does not support complex arithmetic.   
 \item The assembly of the matrices in the SAINV preconditioner is not parallelized.
 \item The user defined preconditioner cannot be used.
 

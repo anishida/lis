@@ -70,7 +70,7 @@
  * lis_matrix_normf            | o   | o   |
  * lis_matrix_sort             | o   | o   |
  * lis_matrix_solve            | xxx | o   |
- * lis_matrix_solvet           | xxx | o   |
+ * lis_matrix_solveh           | xxx | o   |
  ************************************************/
 
 #undef __FUNC__
@@ -1744,8 +1744,8 @@ LIS_INT lis_matrix_solve_csr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT f
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_matrix_solvet_csr"
-LIS_INT lis_matrix_solvet_csr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag)
+#define __FUNC__ "lis_matrix_solveh_csr"
+LIS_INT lis_matrix_solveh_csr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag)
 {
 	LIS_INT i,j,jj,n;
 	LIS_SCALAR t;
@@ -1784,20 +1784,20 @@ LIS_INT lis_matrix_solvet_csr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 	case LIS_MATRIX_LOWER:
 		for(i=0;i<n;i++)
 		{
-			x[i]   = x[i] * A->WD->value[i];
+			x[i]   = x[i] * conj(A->WD->value[i]);
 			for(j=A->U->ptr[i];j<A->U->ptr[i+1];j++)
 			{
-				x[A->U->index[j]] -= A->U->value[j] * x[i];
+				x[A->U->index[j]] -= conj(A->U->value[j]) * x[i];
 			}
 		}
 		break;
 	case LIS_MATRIX_UPPER:
 		for(i=n-1;i>=0;i--)
 		{
-			x[i]   = x[i] * A->WD->value[i];
+			x[i]   = x[i] * conj(A->WD->value[i]);
 			for(j=A->L->ptr[i];j<A->L->ptr[i+1];j++)
 			{
-				x[A->L->index[j]] -= A->L->value[j] * x[i];
+				x[A->L->index[j]] -= conj(A->L->value[j]) * x[i];
 			}
 		}
 		break;
@@ -1814,12 +1814,12 @@ LIS_INT lis_matrix_solvet_csr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 					LIS_GET_ISIE(my_rank,nprocs,n,is,ie);
 					for(i=is;i<ie;i++)
 					{
-						t   = x[i] * A->WD->value[i];
+						t   = x[i] * conj(A->WD->value[i]);
 						for(j=A->U->ptr[i];j<A->U->ptr[i+1];j++)
 						{
 							jj = A->U->index[j];
 							if( jj<is || jj>=ie ) continue;
-							x[jj] -= A->U->value[j] * t;
+							x[jj] -= conj(A->U->value[j]) * t;
 						}
 					}
 					for(i=ie-1;i>=is;i--)
@@ -1830,26 +1830,26 @@ LIS_INT lis_matrix_solvet_csr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 						{
 							jj = A->L->index[j];
 							if( jj<is ) continue;
-							x[jj] -= A->L->value[j] * t;
+							x[jj] -= conj(A->L->value[j]) * t;
 						}
 					}
 				}
 			#else
 				for(i=0;i<n;i++)
 				{
-					t   = x[i] * A->WD->value[i];
+					t   = x[i] * conj(A->WD->value[i]);
 					for(j=A->U->ptr[i];j<A->U->ptr[i+1];j++)
 					{
-						x[A->U->index[j]] -= A->U->value[j] * t;
+						x[A->U->index[j]] -= conj(A->U->value[j]) * t;
 					}
 				}
 				for(i=n-1;i>=0;i--)
 				{
-					t    = x[i] * A->WD->value[i];
+					t    = x[i] * conj(A->WD->value[i]);
 					x[i] = t;
 					for(j=A->L->ptr[i];j<A->L->ptr[i+1];j++)
 					{
-						x[A->L->index[j]] -= A->L->value[j] * t;
+						x[A->L->index[j]] -= conj(A->L->value[j]) * t;
 					}
 				}
 			#endif
@@ -1870,9 +1870,9 @@ LIS_INT lis_matrix_solvet_csr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 					for(i=is;i<ie;i++)
 					{
 						#ifndef USE_SSE2
-							LIS_QUAD_MULD(w1.hi,w1.lo,x[i],xl[i],A->WD->value[i]);
+							LIS_QUAD_MULD(w1.hi,w1.lo,x[i],xl[i],conj(A->WD->value[i]));
 						#else
-							LIS_QUAD_MULD_SSE2(w1.hi,w1.lo,x[i],xl[i],A->WD->value[i]);
+							LIS_QUAD_MULD_SSE2(w1.hi,w1.lo,x[i],xl[i],conj(A->WD->value[i]));
 						#endif
 						/* t   = x[i] * A->WD->value[i]; */
 						for(j=A->U->ptr[i];j<A->U->ptr[i+1];j++)
@@ -1880,9 +1880,9 @@ LIS_INT lis_matrix_solvet_csr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 							jj = A->U->index[j];
 							if( jj<is || jj>=ie ) continue;
 							#ifndef USE_SSE2
-								LIS_QUAD_FMAD(x[jj],xl[jj],x[jj],xl[jj],w1.hi,w1.lo,-A->U->value[j]);
+								LIS_QUAD_FMAD(x[jj],xl[jj],x[jj],xl[jj],w1.hi,w1.lo,-conj(A->U->value[j]));
 							#else
-								LIS_QUAD_FMAD_SSE2(x[jj],xl[jj],x[jj],xl[jj],w1.hi,w1.lo,-A->U->value[j]);
+								LIS_QUAD_FMAD_SSE2(x[jj],xl[jj],x[jj],xl[jj],w1.hi,w1.lo,-conj(A->U->value[j]));
 							#endif
 							/* x[A->U->index[j]] -= A->U->value[j] * t; */
 						}
@@ -1890,24 +1890,24 @@ LIS_INT lis_matrix_solvet_csr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 					for(i=ie-1;i>=is;i--)
 					{
 						#ifndef USE_SSE2
-							LIS_QUAD_MULD(w1.hi,w1.lo,x[i],xl[i],A->WD->value[i]);
+							LIS_QUAD_MULD(w1.hi,w1.lo,x[i],xl[i],conj(A->WD->value[i]));
 						#else
-							LIS_QUAD_MULD_SSE2(w1.hi,w1.lo,x[i],xl[i],A->WD->value[i]);
+							LIS_QUAD_MULD_SSE2(w1.hi,w1.lo,x[i],xl[i],conj(A->WD->value[i]));
 						#endif
 						x[i]  = w1.hi;
 						xl[i] = w1.lo;
-						/* t    = x[i] * A->WD->value[i]; */
+						/* t    = x[i] * conj(A->WD->value[i]); */
 						/* x[i] = t; */
 						for(j=A->L->ptr[i];j<A->L->ptr[i+1];j++)
 						{
 							jj = A->L->index[j];
 							if( jj<is || jj>=ie ) continue;
 							#ifndef USE_SSE2
-								LIS_QUAD_FMAD(x[jj],xl[jj],x[jj],xl[jj],w1.hi,w1.lo,-A->L->value[j]);
+								LIS_QUAD_FMAD(x[jj],xl[jj],x[jj],xl[jj],w1.hi,w1.lo,-conj(A->L->value[j]));
 							#else
-								LIS_QUAD_FMAD_SSE2(x[jj],xl[jj],x[jj],xl[jj],w1.hi,w1.lo,-A->L->value[j]);
+								LIS_QUAD_FMAD_SSE2(x[jj],xl[jj],x[jj],xl[jj],w1.hi,w1.lo,-conj(A->L->value[j]));
 							#endif
-							/* x[A->L->index[j]] -= A->L->value[j] * t; */
+							/* x[A->L->index[j]] -= conj(A->L->value[j]) * t; */
 						}
 					}
 				}
@@ -1915,42 +1915,42 @@ LIS_INT lis_matrix_solvet_csr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT 
 				for(i=0;i<n;i++)
 				{
 					#ifndef USE_SSE2
-						LIS_QUAD_MULD(w1.hi,w1.lo,x[i],xl[i],A->WD->value[i]);
+						LIS_QUAD_MULD(w1.hi,w1.lo,x[i],xl[i],conj(A->WD->value[i]));
 					#else
-						LIS_QUAD_MULD_SSE2(w1.hi,w1.lo,x[i],xl[i],A->WD->value[i]);
+						LIS_QUAD_MULD_SSE2(w1.hi,w1.lo,x[i],xl[i],conj(A->WD->value[i]));
 					#endif
 					/* t   = x[i] * A->WD->value[i]; */
 					for(j=A->U->ptr[i];j<A->U->ptr[i+1];j++)
 					{
 						jj = A->U->index[j];
 						#ifndef USE_SSE2
-							LIS_QUAD_FMAD(x[jj],xl[jj],x[jj],xl[jj],w1.hi,w1.lo,-A->U->value[j]);
+							LIS_QUAD_FMAD(x[jj],xl[jj],x[jj],xl[jj],w1.hi,w1.lo,-conj(A->U->value[j]));
 						#else
-							LIS_QUAD_FMAD_SSE2(x[jj],xl[jj],x[jj],xl[jj],w1.hi,w1.lo,-A->U->value[j]);
+							LIS_QUAD_FMAD_SSE2(x[jj],xl[jj],x[jj],xl[jj],w1.hi,w1.lo,-conj(A->U->value[j]));
 						#endif
-						/* x[A->U->index[j]] -= A->U->value[j] * t; */
+						/* x[A->U->index[j]] -= conj(A->U->value[j]) * t; */
 					}
 				}
 				for(i=n-1;i>=0;i--)
 				{
 					#ifndef USE_SSE2
-						LIS_QUAD_MULD(w1.hi,w1.lo,x[i],xl[i],A->WD->value[i]);
+						LIS_QUAD_MULD(w1.hi,w1.lo,x[i],xl[i],conj(A->WD->value[i]));
 					#else
-						LIS_QUAD_MULD_SSE2(w1.hi,w1.lo,x[i],xl[i],A->WD->value[i]);
+						LIS_QUAD_MULD_SSE2(w1.hi,w1.lo,x[i],xl[i],conj(A->WD->value[i]));
 					#endif
 					x[i]  = w1.hi;
 					xl[i] = w1.lo;
-					/* t    = x[i] * A->WD->value[i]; */
+					/* t    = x[i] * conj(A->WD->value[i]); */
 					/* x[i] = t; */
 					for(j=A->L->ptr[i];j<A->L->ptr[i+1];j++)
 					{
 						jj = A->L->index[j];
 						#ifndef USE_SSE2
-							LIS_QUAD_FMAD(x[jj],xl[jj],x[jj],xl[jj],w1.hi,w1.lo,-A->L->value[j]);
+							LIS_QUAD_FMAD(x[jj],xl[jj],x[jj],xl[jj],w1.hi,w1.lo,-conj(A->L->value[j]));
 						#else
-							LIS_QUAD_FMAD_SSE2(x[jj],xl[jj],x[jj],xl[jj],w1.hi,w1.lo,-A->L->value[j]);
+							LIS_QUAD_FMAD_SSE2(x[jj],xl[jj],x[jj],xl[jj],w1.hi,w1.lo,-conj(A->L->value[j]));
 						#endif
-						/* x[A->L->index[j]] -= A->L->value[j] * t; */
+						/* x[A->L->index[j]] -= conj(A->L->value[j]) * t; */
 					}
 				}
 			#endif

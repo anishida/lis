@@ -84,7 +84,7 @@ void lis_matvec_dns(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	}
 }
 
-void lis_matvect_dns(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
+void lis_matvech_dns(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 {
 	LIS_INT i,j;
 	LIS_INT np,n;
@@ -98,7 +98,7 @@ void lis_matvect_dns(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	np = A->np;
 	#ifdef _OPENMP
 		nprocs = omp_get_max_threads();
-		w = (LIS_SCALAR *)lis_malloc( nprocs*np*sizeof(LIS_SCALAR),"lis_matvect_dns::w" );
+		w = (LIS_SCALAR *)lis_malloc( nprocs*np*sizeof(LIS_SCALAR),"lis_matvech_dns::w" );
 		#pragma omp parallel private(i,j,t,is,ie,my_rank)
 		{
 			my_rank = omp_get_thread_num();
@@ -109,7 +109,7 @@ void lis_matvect_dns(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				t = 0.0;
 				for(i=is;i<ie;i++)
 				{
-					t += A->value[j*n+i] * x[i];
+					t += conj(A->value[j*n+i]) * x[i];
 				}
 				w[my_rank*np + j] = t;
 			}
@@ -132,7 +132,7 @@ void lis_matvect_dns(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			t = 0.0;
 			for(i=0;i<n;i++)
 			{
-				t += A->value[j*n+i] * x[i];
+				t += conj(A->value[j*n+i]) * x[i];
 			}
 			y[j] = t;
 		}

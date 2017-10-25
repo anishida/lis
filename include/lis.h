@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"1.8.11"
+#define LIS_VERSION	"1.8.12"
 /**************************************/
 #include <stdio.h>
 #ifdef USE_COMPLEX
@@ -38,7 +38,7 @@
 #ifdef HAVE_COMPLEX_H
 #undef HAVE_COMPLEX_H
 #endif
-#endif /* USE_COMPLEX */
+#endif
 #ifdef HAVE_QUADMATH_H
 #include <quadmath.h>
 #endif
@@ -379,6 +379,7 @@ typedef __float128 LIS_REAL;
 #define sqrt(x) sqrtq(x)
 #define log(x) logq(x)
 #define log10(x) log10q(x)
+#define conj(x) x
 #define exp(x) expq(x)
 #define pow(x,y) powq((x),(y))
 #define LIS_MPI_SCALAR MPI_LONG_DOUBLE
@@ -398,6 +399,7 @@ typedef long double LIS_REAL;
 #define sqrt(x) sqrtl(x)
 #define log(x) logl(x)
 #define log10(x) log10l(x)
+#define conj(x) x
 #define exp(x) expl(x)
 #define pow(x,y) powl((x),(y))
 #define LIS_MPI_SCALAR MPI_LONG_DOUBLE
@@ -436,6 +438,7 @@ typedef double LIS_REAL;
 #else
 typedef double LIS_SCALAR;
 typedef double LIS_REAL;
+#define conj(x) x
 #define LIS_MPI_SCALAR MPI_DOUBLE
 #define LIS_MPI_REAL MPI_DOUBLE
 #endif
@@ -789,7 +792,7 @@ typedef LIS_INT (*LIS_PRECON_PSD_CREATE_XXX)(LIS_SOLVER solver, LIS_PRECON preco
 /*NEH support for extended "solve_kernel" workflow*/
 typedef LIS_INT (*LIS_PRECON_PSD_UPDATE_XXX)(LIS_SOLVER solver, LIS_PRECON precon);
 typedef LIS_INT (*LIS_PSOLVE_XXX)(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
-typedef LIS_INT (*LIS_PSOLVET_XXX)(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
+typedef LIS_INT (*LIS_PSOLVEH_XXX)(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
 
 typedef struct LIS_PRECON_REGISTER_STRUCT
 {
@@ -797,7 +800,7 @@ typedef struct LIS_PRECON_REGISTER_STRUCT
 	char name[LIS_PRECONNAME_MAX+1];
 	LIS_PRECON_CREATE_XXX pcreate;
 	LIS_PSOLVE_XXX psolve;
-	LIS_PSOLVET_XXX psolvet;
+	LIS_PSOLVEH_XXX psolveh;
 } LIS_PRECON_REGISTER;
 
 
@@ -907,7 +910,7 @@ extern "C"
 /****************************/
 
 	extern LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y);
-	extern LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y);
+	extern LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y);  
 
 /****************************/
 /* Array Operations         */
@@ -933,7 +936,7 @@ extern "C"
 	extern LIS_INT lis_array_nrmi(LIS_INT n, LIS_SCALAR *x, LIS_REAL *value);
 	extern LIS_INT lis_array_sum(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *value);
 	extern LIS_INT lis_array_matvec(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *x, LIS_SCALAR *y, LIS_INT op);
-	extern LIS_INT lis_array_matvect(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *x, LIS_SCALAR *y, LIS_INT op);
+	extern LIS_INT lis_array_matvech(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *x, LIS_SCALAR *y, LIS_INT op);
 	extern LIS_INT lis_array_matvec_ns(LIS_INT m, LIS_INT n, LIS_SCALAR *a, LIS_INT lda, LIS_SCALAR *x, LIS_SCALAR *y, LIS_INT op);
 	extern LIS_INT lis_array_matmat(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *b, LIS_SCALAR *c, LIS_INT op);
 	extern LIS_INT lis_array_matmat_ns(LIS_INT m, LIS_INT n, LIS_INT k, LIS_SCALAR *a, LIS_INT lda, LIS_SCALAR *b, LIS_INT ldb, LIS_SCALAR *c, LIS_INT ldc, LIS_INT op);
@@ -967,7 +970,7 @@ extern "C"
 	extern LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver, LIS_PRECON precon);
 	extern LIS_PRECON_REGISTER *precon_register_top;
 	extern LIS_INT precon_register_type;
-	extern LIS_INT lis_precon_register(char *name, LIS_PRECON_CREATE_XXX pcreate, LIS_PSOLVE_XXX psolve, LIS_PSOLVET_XXX psolvet);
+	extern LIS_INT lis_precon_register(char *name, LIS_PRECON_CREATE_XXX pcreate, LIS_PSOLVE_XXX psolve, LIS_PSOLVEH_XXX psolveh);
 	extern LIS_INT lis_precon_register_free(void);
 	extern LIS_INT lis_solver_get_solvername(LIS_INT solver, char *solvername);
 	extern LIS_INT lis_solver_get_preconname(LIS_INT precon_type, char *preconname);

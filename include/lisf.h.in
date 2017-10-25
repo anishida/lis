@@ -528,8 +528,8 @@
 #define lis_matvec lis_matvec_f
 #define LIS_MATVEC lis_matvec_f
 
-#define lis_matvect lis_matvect_f
-#define LIS_MATVECT lis_matvect_f
+#define lis_matvech lis_matvech_f
+#define LIS_MATVECH lis_matvech_f
 
 #define lis_array_swap lis_array_swap_f
 #define LIS_ARRAY_SWAP lis_array_swap_f
@@ -591,8 +591,8 @@
 #define lis_array_matvec lis_array_matvec_f
 #define LIS_ARRAY_MATVEC lis_array_matvec_f
 
-#define lis_array_matvect lis_array_matvect_f
-#define LIS_ARRAY_MATVECT lis_array_matvect_f
+#define lis_array_matvech lis_array_matvech_f
+#define LIS_ARRAY_MATVECH lis_array_matvech_f
 
 #define lis_array_matvec_ns lis_array_matvec_ns_f
 #define LIS_ARRAY_MATVEC_NS lis_array_matvec_ns_f

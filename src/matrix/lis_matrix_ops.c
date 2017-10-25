@@ -63,7 +63,7 @@
  * lis_matrix_split
  * lis_matrix_merge
  * lis_matrix_solve
- * lis_matrix_solvet
+ * lis_matrix_solveh
  ************************************************/
 
 #undef __FUNC__
@@ -1164,8 +1164,8 @@ LIS_INT lis_matrix_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT flag)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_matrix_solvet"
-LIS_INT lis_matrix_solvet(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT flag)
+#define __FUNC__ "lis_matrix_solveh"
+LIS_INT lis_matrix_solveh(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT flag)
 {
 	LIS_DEBUG_FUNC_IN;
 
@@ -1174,34 +1174,34 @@ LIS_INT lis_matrix_solvet(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT flag
 	switch( A->matrix_type )
 	{
 	case LIS_MATRIX_CSR:
-		lis_matrix_solvet_csr(A,b,x,flag);
+		lis_matrix_solveh_csr(A,b,x,flag);
 		break;
 	case LIS_MATRIX_BSR:
-		lis_matrix_solvet_bsr(A,b,x,flag);
+		lis_matrix_solveh_bsr(A,b,x,flag);
 		break;
 	case LIS_MATRIX_CSC:
-		lis_matrix_solvet_csc(A,b,x,flag);
+		lis_matrix_solveh_csc(A,b,x,flag);
 		break;
 	case LIS_MATRIX_MSR:
-		lis_matrix_solvet_msr(A,b,x,flag);
+		lis_matrix_solveh_msr(A,b,x,flag);
 		break;
 	case LIS_MATRIX_ELL:
-		lis_matrix_solvet_ell(A,b,x,flag);
+		lis_matrix_solveh_ell(A,b,x,flag);
 		break;
 	case LIS_MATRIX_JAD:
-		lis_matrix_solvet_jad(A,b,x,flag);
+		lis_matrix_solveh_jad(A,b,x,flag);
 		break;
 	case LIS_MATRIX_DIA:
-		lis_matrix_solvet_dia(A,b,x,flag);
+		lis_matrix_solveh_dia(A,b,x,flag);
 		break;
 	case LIS_MATRIX_DNS:
-		lis_matrix_solvet_dns(A,b,x,flag);
+		lis_matrix_solveh_dns(A,b,x,flag);
 		break;
 	case LIS_MATRIX_BSC:
-		lis_matrix_solvet_bsc(A,b,x,flag);
+		lis_matrix_solveh_bsc(A,b,x,flag);
 		break;
 	case LIS_MATRIX_VBR:
-		lis_matrix_solvet_vbr(A,b,x,flag);
+		lis_matrix_solveh_vbr(A,b,x,flag);
 		break;
 	default:
 		LIS_SETERR_IMP;

@@ -80,7 +80,7 @@ extern "C"
 	extern LIS_INT lis_matrix_split_update(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_merge(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT flag);
-	extern LIS_INT lis_matrix_solvet(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT flag);
+	extern LIS_INT lis_matrix_solveh(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT flag);
 	extern LIS_INT lis_matrix_copyDLU(LIS_MATRIX Ain, LIS_MATRIX_DIAG *D, LIS_MATRIX *L, LIS_MATRIX *U);
 	extern LIS_INT lis_matrix_axpy(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B);
 	extern LIS_INT lis_matrix_xpay(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B);
@@ -121,7 +121,7 @@ extern "C"
 	extern LIS_INT lis_matrix_diag_prLIS_INT(LIS_MATRIX_DIAG D);
 	extern LIS_INT lis_matrix_diag_mallocM(LIS_MATRIX A, LIS_SCALAR **diag);
 	extern LIS_INT lis_matrix_diag_matvec(LIS_MATRIX_DIAG D, LIS_VECTOR X, LIS_VECTOR Y);
-	extern LIS_INT lis_matrix_diag_matvect(LIS_MATRIX_DIAG D, LIS_VECTOR X, LIS_VECTOR Y);
+	extern LIS_INT lis_matrix_diag_matvech(LIS_MATRIX_DIAG D, LIS_VECTOR X, LIS_VECTOR Y);
 
 /*******************/
 /* CSR             */
@@ -142,7 +142,7 @@ extern "C"
 	extern LIS_INT lis_matrix_split_update_csr(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_merge_csr(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_solve_csr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
-	extern LIS_INT lis_matrix_solvet_csr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
+	extern LIS_INT lis_matrix_solveh_csr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
 	extern LIS_INT lis_matrix_split2_csr(LIS_MATRIX A);
 
 /*******************/
@@ -161,7 +161,7 @@ extern "C"
 	extern LIS_INT lis_matrix_split_csc(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_merge_csc(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_solve_csc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
-	extern LIS_INT lis_matrix_solvet_csc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
+	extern LIS_INT lis_matrix_solveh_csc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
 	extern LIS_INT lis_matrix_convert_csr2csc(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_convert_csc2csr(LIS_MATRIX Ain, LIS_MATRIX Aout);
 
@@ -181,7 +181,7 @@ extern "C"
 	extern LIS_INT lis_matrix_split_bsr(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_merge_bsr(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_solve_bsr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
-	extern LIS_INT lis_matrix_solvet_bsr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
+	extern LIS_INT lis_matrix_solveh_bsr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
 	extern LIS_INT lis_matrix_sort_bsr(LIS_MATRIX A);
 
 /*******************/
@@ -197,7 +197,7 @@ extern "C"
 	extern LIS_INT lis_matrix_scale_msr(LIS_MATRIX A, LIS_SCALAR d[]);
 	extern LIS_INT lis_matrix_scale_symm_msr(LIS_MATRIX A, LIS_SCALAR d[]);
 	extern LIS_INT lis_matrix_solve_msr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
-	extern LIS_INT lis_matrix_solvet_msr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
+	extern LIS_INT lis_matrix_solveh_msr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
 	extern LIS_INT lis_matrix_convert_csr2msr(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_convert_msr2csr(LIS_MATRIX Ain, LIS_MATRIX Aout);
 
@@ -214,7 +214,7 @@ extern "C"
 	extern LIS_INT lis_matrix_scale_ell(LIS_MATRIX A, LIS_SCALAR d[]);
 	extern LIS_INT lis_matrix_scale_symm_ell(LIS_MATRIX A, LIS_SCALAR d[]);
 	extern LIS_INT lis_matrix_solve_ell(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
-	extern LIS_INT lis_matrix_solvet_ell(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
+	extern LIS_INT lis_matrix_solveh_ell(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
 	extern LIS_INT lis_matrix_convert_csr2ell(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_convert_ell2csr(LIS_MATRIX Ain, LIS_MATRIX Aout);
 
@@ -231,7 +231,7 @@ extern "C"
 	extern LIS_INT lis_matrix_scale_jad(LIS_MATRIX A, LIS_SCALAR d[]);
 	extern LIS_INT lis_matrix_scale_symm_jad(LIS_MATRIX A, LIS_SCALAR d[]);
 	extern LIS_INT lis_matrix_solve_jad(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
-	extern LIS_INT lis_matrix_solvet_jad(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
+	extern LIS_INT lis_matrix_solveh_jad(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
 	extern LIS_INT lis_matrix_convert_csr2jad(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_convert_jad2csr(LIS_MATRIX Ain, LIS_MATRIX Aout);
 
@@ -248,7 +248,7 @@ extern "C"
 	extern LIS_INT lis_matrix_scale_dia(LIS_MATRIX A, LIS_SCALAR d[]);
 	extern LIS_INT lis_matrix_scale_symm_dia(LIS_MATRIX A, LIS_SCALAR d[]);
 	extern LIS_INT lis_matrix_solve_dia(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
-	extern LIS_INT lis_matrix_solvet_dia(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
+	extern LIS_INT lis_matrix_solveh_dia(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
 	extern LIS_INT lis_matrix_convert_csr2dia(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_convert_dia2csr(LIS_MATRIX Ain, LIS_MATRIX Aout);
 
@@ -267,7 +267,7 @@ extern "C"
 	extern LIS_INT lis_matrix_split_bsc(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_merge_bsc(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_solve_bsc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
-	extern LIS_INT lis_matrix_solvet_bsc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
+	extern LIS_INT lis_matrix_solveh_bsc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
 
 /*******************/
 /* VBR             */
@@ -283,7 +283,7 @@ extern "C"
 	extern LIS_INT lis_matrix_split_vbr(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_merge_vbr(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_solve_vbr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
-	extern LIS_INT lis_matrix_solvet_vbr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
+	extern LIS_INT lis_matrix_solveh_vbr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
 
 /*******************/
 /* DNS             */
@@ -298,7 +298,7 @@ extern "C"
 	extern LIS_INT lis_matrix_scale_dns(LIS_MATRIX A, LIS_SCALAR d[]);
 	extern LIS_INT lis_matrix_scale_symm_dns(LIS_MATRIX A, LIS_SCALAR d[]);
 	extern LIS_INT lis_matrix_solve_dns(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
-	extern LIS_INT lis_matrix_solvet_dns(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
+	extern LIS_INT lis_matrix_solveh_dns(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
 	extern LIS_INT lis_matrix_convert_csr2dns(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_convert_dns2csr(LIS_MATRIX Ain, LIS_MATRIX Aout);
 
@@ -340,7 +340,7 @@ extern "C"
 	extern LIS_INT lis_matrix_ilu_premalloc(LIS_INT nnzrow, LIS_MATRIX_ILU A);
 	extern LIS_INT lis_matrix_ilu_realloc(LIS_INT row, LIS_INT nnz, LIS_MATRIX_ILU A);
 	extern LIS_INT lis_matvec_ilu(LIS_MATRIX A, LIS_MATRIX_ILU LU, LIS_VECTOR X, LIS_VECTOR Y);
-	extern LIS_INT lis_matvect_ilu(LIS_MATRIX A, LIS_MATRIX_ILU LU, LIS_VECTOR X, LIS_VECTOR Y);
+	extern LIS_INT lis_matvech_ilu(LIS_MATRIX A, LIS_MATRIX_ILU LU, LIS_VECTOR X, LIS_VECTOR Y);
 
 
 #ifdef __cplusplus

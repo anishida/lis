@@ -125,7 +125,7 @@ void lis_matvec_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	}
 }
 
-void lis_matvect_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
+void lis_matvech_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 {
 	LIS_INT i,j,jj;
 	LIS_INT n,np,maxnzr;
@@ -144,7 +144,7 @@ void lis_matvect_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		#endif
 		for(i=0; i<n; i++)
 		{
-			y[i] = A->D->value[i]*x[i];
+			y[i] = conj(A->D->value[i])*x[i];
 		}
 		for(j=0;j<A->L->maxnzr;j++)
 		{
@@ -154,7 +154,7 @@ void lis_matvect_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			#endif
 			for(i=0;i<n;i++)
 			{
-				y[A->L->index[jj + i]] += A->L->value[jj + i] * x[i];
+				y[A->L->index[jj + i]] += conj(A->L->value[jj + i]) * x[i];
 			}
 		}
 		for(j=0;j<A->U->maxnzr;j++)
@@ -165,7 +165,7 @@ void lis_matvect_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			#endif
 			for(i=0;i<n;i++)
 			{
-				y[A->U->index[jj + i]] += A->U->value[jj + i] * x[i];
+				y[A->U->index[jj + i]] += conj(A->U->value[jj + i]) * x[i];
 			}
 		}
 	}
@@ -174,7 +174,7 @@ void lis_matvect_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		#ifdef _OPENMP
 			maxnzr = A->maxnzr;
 			nprocs = omp_get_max_threads();
-			w = (LIS_SCALAR *)lis_malloc( nprocs*np*sizeof(LIS_SCALAR),"lis_matvect_ell::w" );
+			w = (LIS_SCALAR *)lis_malloc( nprocs*np*sizeof(LIS_SCALAR),"lis_matvech_ell::w" );
 			#pragma omp parallel private(i,j,t,jj,k,is,ie)
 			{
 				k = omp_get_thread_num();
@@ -192,7 +192,7 @@ void lis_matvect_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 					#endif
 					for(i=is;i<ie;i++)
 					{
-						w[k*np + A->index[jj + i]] += A->value[jj + i] * x[i];
+						w[k*np + A->index[jj + i]] += conj(A->value[jj + i]) * x[i];
 					}
 				}
 				#pragma omp barrier
@@ -228,7 +228,7 @@ void lis_matvect_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				#endif
 				for(i=0;i<n;i++)
 				{
-					y[A->index[jj + i]] += A->value[jj + i] * x[i];
+					y[A->index[jj + i]] += conj(A->value[jj + i]) * x[i];
 				}
 			}
 		#endif

@@ -87,7 +87,7 @@ void lis_matvec_coo(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	}
 }
 
-void lis_matvect_coo(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
+void lis_matvech_coo(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 {
 	LIS_INT i,j,k;
 	LIS_INT n,nnz;
@@ -98,19 +98,19 @@ void lis_matvect_coo(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	{
 		for(i=0;i<n;i++)
 		{
-			y[i] = A->D->value[i] * x[i];
+			y[i] = conj(A->D->value[i]) * x[i];
 		}
 		for(k=0;k<A->L->nnz;k++)
 		{
 			i = A->L->row[k];
 			j = A->L->col[k];
-			y[j] += A->L->value[k] * x[i];
+			y[j] += conj(A->L->value[k]) * x[i];
 		}
 		for(k=0;k<A->U->nnz;k++)
 		{
 			i = A->U->row[k];
 			j = A->U->col[k];
-			y[j] += A->U->value[k] * x[i];
+			y[j] += conj(A->U->value[k]) * x[i];
 		}
 	}
 	else

@@ -58,7 +58,7 @@
 /************************************************
  * lis_precon_create
  * lis_psolve
- * lis_psolvet
+ * lis_psolveh
  ************************************************/
 
 #define EBABLE_BSR	0
@@ -76,7 +76,7 @@ LIS_INT lis_precon_create_ilut(LIS_SOLVER solver, LIS_PRECON precon)
 	case LIS_MATRIX_CSR:
 		err = lis_precon_create_ilut_csr(solver,precon);
 		lis_psolve_xxx[LIS_PRECON_TYPE_ILUT]  = lis_psolve_ilut_csr;
-		lis_psolvet_xxx[LIS_PRECON_TYPE_ILUT]  = lis_psolvet_ilut_csr;
+		lis_psolveh_xxx[LIS_PRECON_TYPE_ILUT]  = lis_psolveh_ilut_csr;
 		break;
 	default:
 		A = solver->A;
@@ -88,7 +88,7 @@ LIS_INT lis_precon_create_ilut(LIS_SOLVER solver, LIS_PRECON precon)
 		solver->A = B;
 		err = lis_precon_create_ilut_csr(solver,precon);
 		lis_psolve_xxx[LIS_PRECON_TYPE_ILUT]  = lis_psolve_ilut_csr;
-		lis_psolvet_xxx[LIS_PRECON_TYPE_ILUT]  = lis_psolvet_ilut_csr;
+		lis_psolveh_xxx[LIS_PRECON_TYPE_ILUT]  = lis_psolveh_ilut_csr;
 		lis_matrix_destroy(B);
 		solver->A = A;
 		break;
@@ -828,8 +828,8 @@ LIS_INT lis_psolve_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_psolvet_ilut_csr"
-LIS_INT lis_psolvet_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
+#define __FUNC__ "lis_psolveh_ilut_csr"
+LIS_INT lis_psolveh_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 {
 #ifdef _OPENMP
 	LIS_INT i,j,jj,n;
@@ -868,11 +868,11 @@ LIS_INT lis_psolvet_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 
 				for(i=is;i<ie;i++)
 				{
-					x[i] = D->value[i]*x[i];
+					x[i] = conj(D->value[i]*x[i]);
 					for(j=0;j<U->nnz[i];j++)
 					{
 						jj     = U->index[i][j];
-						x[jj] -= U->value[i][j] * x[i];
+						x[jj] -= conj(U->value[i][j]) * x[i];
 					}
 				}
 				for(i=ie-1;i>=is;i--)
@@ -880,7 +880,7 @@ LIS_INT lis_psolvet_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 					for(j=0;j<L->nnz[i];j++)
 					{
 						jj     = L->index[i][j];
-						x[jj] -= L->value[i][j] * x[i];
+						x[jj] -= conj(L->value[i][j]) * x[i];
 					}
 				}
 			}
@@ -902,20 +902,20 @@ LIS_INT lis_psolvet_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 				for(i=is;i<ie;i++)
 				{
 					#ifndef USE_SSE2
-						LIS_QUAD_MULD(x[i],xl[i],x[i],xl[i],D->value[i]);
+						LIS_QUAD_MULD(x[i],xl[i],x[i],xl[i],conj(D->value[i]));
 					#else
-						LIS_QUAD_MULD_SSE2(x[i],xl[i],x[i],xl[i],D->value[i]);
+						LIS_QUAD_MULD_SSE2(x[i],xl[i],x[i],xl[i],conj(D->value[i]));
 					#endif
-/*					x[i] = D->value[i]*x[i];*/
+/*					x[i] = conj(D->value[i])*x[i];*/
 					for(j=0;j<U->nnz[i];j++)
 					{
 						jj     = U->index[i][j];
 						#ifndef USE_SSE2
-							LIS_QUAD_FMAD(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-U->value[i][j]);
+							LIS_QUAD_FMAD(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-conj(U->value[i][j]));
 						#else
-							LIS_QUAD_FMAD_SSE2(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-U->value[i][j]);
+							LIS_QUAD_FMAD_SSE2(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-conj(U->value[i][j]));
 						#endif
-/*						x[jj] -= U->value[i][j] * x[i];*/
+/*						x[jj] -= conj(U->value[i][j]) * x[i];*/
 					}
 				}
 				for(i=ie-1;i>=is;i--)
@@ -924,11 +924,11 @@ LIS_INT lis_psolvet_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 					{
 						jj     = L->index[i][j];
 						#ifndef USE_SSE2
-							LIS_QUAD_FMAD(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-L->value[i][j]);
+							LIS_QUAD_FMAD(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-conj(L->value[i][j]));
 						#else
-							LIS_QUAD_FMAD_SSE2(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-L->value[i][j]);
+							LIS_QUAD_FMAD_SSE2(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-conj(L->value[i][j]));
 						#endif
-/*						x[jj] -= L->value[i][j] * x[i];*/
+/*						x[jj] -= conj(L->value[i][j]) * x[i];*/
 					}
 				}
 			}
@@ -973,7 +973,7 @@ LIS_INT lis_psolvet_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 				for(j=0;j<U->nnz[i];j++)
 				{
 					jj     = U->index[i][j];
-					x[jj] -= U->value[i][j] * x[i];
+					x[jj] -= conj(U->value[i][j]) * x[i];
 				}
 			}
 			for(i=n-1; i>=0; i--)
@@ -981,7 +981,7 @@ LIS_INT lis_psolvet_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 				for(j=0;j<L->nnz[i];j++)
 				{
 					jj     = L->index[i][j];
-					x[jj] -= L->value[i][j] * x[i];
+					x[jj] -= conj(L->value[i][j]) * x[i];
 				}
 			}
 	#ifdef USE_QUAD_PRECISION
@@ -992,20 +992,20 @@ LIS_INT lis_psolvet_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 			for(i=0; i<n; i++)
 			{
 				#ifndef USE_SSE2
-					LIS_QUAD_MULD(x[i],xl[i],x[i],xl[i],D->value[i]);
+			  		LIS_QUAD_MULD(x[i],xl[i],x[i],xl[i],conj(D->value[i]));
 				#else
-					LIS_QUAD_MULD_SSE2(x[i],xl[i],x[i],xl[i],D->value[i]);
+					LIS_QUAD_MULD_SSE2(x[i],xl[i],x[i],xl[i],conj(D->value[i]));
 				#endif
 /*				x[i] = D->value[i]*x[i];*/
 				for(j=0;j<U->nnz[i];j++)
 				{
 					jj     = U->index[i][j];
 					#ifndef USE_SSE2
-						LIS_QUAD_FMAD(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-U->value[i][j]);
+						LIS_QUAD_FMAD(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-conj(U->value[i][j]));
 					#else
-						LIS_QUAD_FMAD_SSE2(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-U->value[i][j]);
+						LIS_QUAD_FMAD_SSE2(x[jj],xl[jj],x[jj],xl[jj],x[i],xl[i],-conj(U->value[i][j]));
 					#endif
-/*					x[jj] -= U->value[i][j] * x[i];*/
+/*					x[jj] -= conj(U->value[i][j]) * x[i];*/
 				}
 			}
 			for(i=n-1; i>=0; i--)

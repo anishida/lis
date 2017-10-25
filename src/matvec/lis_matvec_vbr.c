@@ -143,10 +143,9 @@ void lis_matvec_vbr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	}
 }
 
-
 #undef __FUNC__
-#define __FUNC__ "lis_matvect_vbr"
-void lis_matvect_vbr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
+#define __FUNC__ "lis_matvech_vbr"
+void lis_matvech_vbr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 {
 	LIS_INT i,j,k;
 	LIS_INT bi,bj,bc,bn;
@@ -166,7 +165,7 @@ void lis_matvect_vbr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	{
 		#ifdef _OPENMP
 			nprocs = omp_get_max_threads();
-			w = (LIS_SCALAR *)lis_malloc( nprocs*np*sizeof(LIS_SCALAR),"lis_matvect_vbr::w" );
+			w = (LIS_SCALAR *)lis_malloc( nprocs*np*sizeof(LIS_SCALAR),"lis_matvech_vbr::w" );
 			#pragma omp parallel private(bi,bc,bj,i,j,k,bn,my_rank,t)
 			{
 				my_rank = omp_get_thread_num();
@@ -186,7 +185,7 @@ void lis_matvect_vbr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 						t = 0.0;
 						for(j=0;j<bn;j++)
 						{
-							t += A->D->v_value[bi][j*bn+i] * x[k+j];
+							t += conj(A->D->v_value[bi][j*bn+i]) * x[k+j];
 						}
 						w[my_rank*np + k+i] += t;
 					}
@@ -198,7 +197,7 @@ void lis_matvect_vbr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 						{
 							for(i=A->L->row[bi];i<A->L->row[bi+1];i++)
 							{
-								w[my_rank*np + j] += A->L->value[k] * x[i];
+								w[my_rank*np + j] += conj(A->L->value[k]) * x[i];
 								k++;
 							}
 						}
@@ -211,7 +210,7 @@ void lis_matvect_vbr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 						{
 							for(i=A->U->row[bi];i<A->U->row[bi+1];i++)
 							{
-								w[my_rank*np + j] += A->U->value[k] * x[i];
+								w[my_rank*np + j] += conj(A->U->value[k]) * x[i];
 								k++;
 							}
 						}
@@ -247,7 +246,7 @@ void lis_matvect_vbr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 					{
 						for(i=A->L->row[bi];i<A->L->row[bi+1];i++)
 						{
-							y[j] += A->L->value[k] * x[i];
+							y[j] += conj(A->L->value[k]) * x[i];
 							k++;
 						}
 					}
@@ -260,7 +259,7 @@ void lis_matvect_vbr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 					{
 						for(i=A->U->row[bi];i<A->U->row[bi+1];i++)
 						{
-							y[j] += A->U->value[k] * x[i];
+							y[j] += conj(A->U->value[k]) * x[i];
 							k++;
 						}
 					}
@@ -272,7 +271,7 @@ void lis_matvect_vbr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	{
 		#ifdef _OPENMP
 			nprocs = omp_get_max_threads();
-			w = (LIS_SCALAR *)lis_malloc( nprocs*np*sizeof(LIS_SCALAR),"lis_matvect_vbr::w" );
+			w = (LIS_SCALAR *)lis_malloc( nprocs*np*sizeof(LIS_SCALAR),"lis_matvech_vbr::w" );
 			#pragma omp parallel private(bi,bc,bj,i,j,k,my_rank)
 			{
 				my_rank = omp_get_thread_num();
@@ -293,7 +292,7 @@ void lis_matvect_vbr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 						{
 							for(i=A->row[bi];i<A->row[bi+1];i++)
 							{
-								w[my_rank*np + j] += A->value[k] * x[i];
+								w[my_rank*np + j] += conj(A->value[k]) * x[i];
 								k++;
 							}
 						}
@@ -327,7 +326,7 @@ void lis_matvect_vbr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 					{
 						for(i=A->row[bi];i<A->row[bi+1];i++)
 						{
-							y[j] += A->value[k] * x[i];
+							y[j] += conj(A->value[k]) * x[i];
 							k++;
 						}
 					}

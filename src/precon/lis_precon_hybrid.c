@@ -50,7 +50,7 @@
 /************************************************
  * lis_precon_create
  * lis_psolve
- * lis_psolvet
+ * lis_psolveh
  ************************************************/
 
 extern LIS_SOLVER_MALLOC_WORK lis_solver_malloc_work[];
@@ -233,8 +233,8 @@ LIS_INT lis_psolve_hybrid(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_psolvet_hybrid"
-LIS_INT lis_psolvet_hybrid(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
+#define __FUNC__ "lis_psolveh_hybrid"
+LIS_INT lis_psolveh_hybrid(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 {
 	LIS_VECTOR xx;
 	LIS_SOLVER solver2;
@@ -253,8 +253,8 @@ LIS_INT lis_psolvet_hybrid(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 	xx          = precon->solver->x;
 	nsolver     = solver2->options[LIS_OPTIONS_SOLVER];
 	solver2->b  = B;
-	LIS_MATVEC  = lis_matvect;
-	LIS_MATVECT = lis_matvec;
+	LIS_MATVEC  = lis_matvech;
+	LIS_MATVECH = lis_matvec;
 
 	if( solver2->options[LIS_OPTIONS_INITGUESS_ZEROS] )
 	{
@@ -302,7 +302,7 @@ LIS_INT lis_psolvet_hybrid(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 	}
 	#endif
 	LIS_MATVEC  = lis_matvec;
-	LIS_MATVECT = lis_matvect;
+	LIS_MATVECH = lis_matvech;
 
 
 	LIS_DEBUG_FUNC_OUT;

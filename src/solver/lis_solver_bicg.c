@@ -58,13 +58,13 @@
  *****************************************
  for k=1,2,...
    z(k-1)    = M^-1 * r(k-1)
-   ztld(k-1) = M^-T * rtld(k-1)
+   ztld(k-1) = M^-H * rtld(k-1)
    rho(k-1)  = <z(k-1),rtld(k-1)>
    beta      = rho(k-1) / rho(k-2)
    p(k)      = z(k-1) + beta*p(k-1)
    ptld(k)   = ztld(k-1) + beta*ptld(k-1)
    q(k)      = A * p(k)
-   qtld(k)   = A^T * ptld(k)
+   qtld(k)   = A^H * ptld(k)
    tmpdot1   = <ptld(k),q(k)>
    alpha     = rho(k-1) / tmpdot1
    x(k)      = x(k-1) + alpha*p(k)
@@ -179,7 +179,7 @@ LIS_INT lis_bicg(LIS_SOLVER solver)
 	tol     = solver->tol;
 
 	lis_solver_set_shadowresidual(solver,r,rtld);
-
+	
 	lis_vector_set_all(0, p);
 	lis_vector_set_all(0, ptld);
 
@@ -189,7 +189,7 @@ LIS_INT lis_bicg(LIS_SOLVER solver)
 		/* ztld = M^-T * rtld */
 		time = lis_wtime();
 		lis_psolve(solver, r, z);
-		lis_psolvet(solver, rtld, ztld);
+		lis_psolveh(solver, rtld, ztld);
 		ptime += lis_wtime()-time;
 
 		/* rho = <z,rtld> */
@@ -210,15 +210,15 @@ LIS_INT lis_bicg(LIS_SOLVER solver)
 		beta = rho / rho_old;
 
 		/* p    = z    + beta*p    */
-		/* ptld = ztld + beta*ptld */
+		/* ptld = ztld + conj(beta)*ptld */
 		
 		/* q    = A   * p    */
-		/* qtld = A^T * ptld */
+		/* qtld = A^H * ptld */
 		lis_vector_xpay(z,beta,p);
 		lis_matvec(A,p,q);
 
-		lis_vector_xpay(ztld,beta,ptld);
-		lis_matvect(At,ptld,qtld);
+		lis_vector_xpay(ztld,conj(beta),ptld);
+		lis_matvech(At,ptld,qtld);
 
 		
 		/* tmpdot1 = <ptld,q> */
@@ -263,8 +263,8 @@ LIS_INT lis_bicg(LIS_SOLVER solver)
 			return LIS_SUCCESS;
 		}
 		
-		/* rtld = rtld - alpha*qtld */
-		lis_vector_axpy(-alpha,qtld,rtld);
+		/* rtld = rtld - conj(alpha)*qtld */
+		lis_vector_axpy(-conj(alpha),qtld,rtld);
 
 		rho_old = rho;
 	}
@@ -338,7 +338,7 @@ LIS_INT lis_bicg_quad(LIS_SOLVER solver)
 		/* ztld = M^-T * rtld */
 		time = lis_wtime();
 		lis_psolve(solver, r, z);
-		lis_psolvet(solver, rtld, ztld);
+		lis_psolveh(solver, rtld, ztld);
 		ptime += lis_wtime()-time;
 
 		/* rho = <z,rtld> */
@@ -363,12 +363,12 @@ LIS_INT lis_bicg_quad(LIS_SOLVER solver)
 		/* ptld = ztld + beta*ptld */
 		
 		/* q    = A   * p    */
-		/* qtld = A^T * ptld */
+		/* qtld = A^H * ptld */
 		lis_vector_xpayex_mmm(z,beta,p);
 		lis_matvec(A,p,q);
 
 		lis_vector_xpayex_mmm(ztld,beta,ptld);
-		lis_matvect(At,ptld,qtld);
+		lis_matvech(At,ptld,qtld);
 
 		
 		/* tmpdot1 = <ptld,q> */
@@ -499,7 +499,7 @@ LIS_INT lis_bicg_switch(LIS_SOLVER solver)
 		/* ztld = M^-T * rtld */
 		time = lis_wtime();
 		lis_psolve(solver, r, z);
-		lis_psolvet(solver, rtld, ztld);
+		lis_psolveh(solver, rtld, ztld);
 		ptime += lis_wtime()-time;
 
 		/* rho = <z,rtld> */
@@ -523,12 +523,12 @@ LIS_INT lis_bicg_switch(LIS_SOLVER solver)
 		/* ptld = ztld + beta*ptld */
 		
 		/* q    = A   * p    */
-		/* qtld = A^T * ptld */
+		/* qtld = A^H * ptld */
 		lis_vector_xpay(z,beta.hi[0],p);
 		lis_matvec(A,p,q);
 
 		lis_vector_xpay(ztld,beta.hi[0],ptld);
-		lis_matvect(At,ptld,qtld);
+		lis_matvech(At,ptld,qtld);
 
 		
 		/* tmpdot1 = <ptld,q> */
@@ -600,7 +600,7 @@ LIS_INT lis_bicg_switch(LIS_SOLVER solver)
 		/* ztld = M^-T * rtld */
 		time = lis_wtime();
 		lis_psolve(solver, r, z);
-		lis_psolvet(solver, rtld, ztld);
+		lis_psolveh(solver, rtld, ztld);
 /*		memset(z->value_lo,0,n*sizeof(LIS_SCALAR));
 		memset(ztld->value_lo,0,n*sizeof(LIS_SCALAR));*/
 		ptime += lis_wtime()-time;
@@ -626,12 +626,12 @@ LIS_INT lis_bicg_switch(LIS_SOLVER solver)
 		/* ptld = ztld + beta*ptld */
 		
 		/* q    = A   * p    */
-		/* qtld = A^T * ptld */
+		/* qtld = A^H * ptld */
 		lis_vector_xpayex_mmm(z,beta,p);
 		lis_matvec(A,p,q);
 
 		lis_vector_xpayex_mmm(ztld,beta,ptld);
-		lis_matvect(At,ptld,qtld);
+		lis_matvech(At,ptld,qtld);
 
 		
 		/* tmpdot1 = <ptld,q> */
@@ -705,7 +705,7 @@ LIS_INT lis_bicg_switch(LIS_SOLVER solver)
  rho(0)  = <ap(0),ztld(0)>
  *****************************************
  for k=1,2,...
-   aptld(k-1) = A^T * ptld(k-1)
+   aptld(k-1) = A^H * ptld(k-1)
    map(k-1)   = M^-1 * ap(k-1)
    tmpdot1   = <map(k-1),aptld(k-1)>
    alpha     = rho(k-1) / tmpdot1
@@ -831,7 +831,7 @@ LIS_INT lis_bicr(LIS_SOLVER solver)
 	lis_solver_set_shadowresidual(solver,r,rtld);
 
 	lis_psolve(solver, r, z);
-	lis_psolvet(solver, rtld, ztld);
+	lis_psolveh(solver, rtld, ztld);
 	lis_vector_copy(z,p);
 	lis_vector_copy(ztld,ptld);
 	lis_matvec(A,z,ap);
@@ -839,9 +839,9 @@ LIS_INT lis_bicr(LIS_SOLVER solver)
 
 	for( iter=1; iter<=maxiter; iter++ )
 	{
-		/* aptld = A^T * ptld */
+		/* aptld = A^H * ptld */
 		/* map   = M^-1 * ap  */
-		lis_matvect(A,ptld,aptld);
+		lis_matvech(A,ptld,aptld);
 		time = lis_wtime();
 		lis_psolve(solver, ap, map);
 		ptime += lis_wtime()-time;
@@ -891,7 +891,7 @@ LIS_INT lis_bicr(LIS_SOLVER solver)
 		lis_vector_axpy(-alpha,aptld,rtld);
 		lis_vector_axpy(-alpha,map,z);
 		time = lis_wtime();
-		lis_psolvet(solver, rtld, ztld);
+		lis_psolveh(solver, rtld, ztld);
 		ptime += lis_wtime()-time;
 		lis_matvec(A,z,az);
 		lis_vector_dot(az,ztld,&rho);
@@ -978,7 +978,7 @@ LIS_INT lis_bicr_quad(LIS_SOLVER solver)
 	lis_solver_set_shadowresidual(solver,r,rtld);
 
 	lis_psolve(solver, r, z);
-	lis_psolvet(solver, rtld, ztld);
+	lis_psolveh(solver, rtld, ztld);
 	lis_vector_copyex_mm(z,p);
 	lis_vector_copyex_mm(ztld,ptld);
 	lis_matvec(A,z,ap);
@@ -986,9 +986,9 @@ LIS_INT lis_bicr_quad(LIS_SOLVER solver)
 
 	for( iter=1; iter<=maxiter; iter++ )
 	{
-		/* aptld = A^T * ptld */
+		/* aptld = A^H * ptld */
 		/* map   = M^-1 * ap  */
-		lis_matvect(A,ptld,aptld);
+		lis_matvech(A,ptld,aptld);
 		time = lis_wtime();
 		lis_psolve(solver, ap, map);
 		ptime += lis_wtime()-time;
@@ -1039,7 +1039,7 @@ LIS_INT lis_bicr_quad(LIS_SOLVER solver)
 		lis_vector_axpyex_mmm(alpha,aptld,rtld);
 		lis_vector_axpyex_mmm(alpha,map,z);
 		time = lis_wtime();
-		lis_psolvet(solver, rtld, ztld);
+		lis_psolveh(solver, rtld, ztld);
 		ptime += lis_wtime()-time;
 		lis_matvec(A,z,az);
 		lis_vector_dotex_mmm(az,ztld,&rho);

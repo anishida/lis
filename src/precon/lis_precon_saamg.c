@@ -50,7 +50,7 @@
 /************************************************
  * lis_precon_create
  * lis_psolve
- * lis_psolvet
+ * lis_psolveh
  ************************************************/
 
 #if defined(USE_SAAMG)
@@ -357,8 +357,8 @@ LIS_INT lis_psolve_saamg(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_psolvet_saamg"
-LIS_INT lis_psolvet_saamg(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
+#define __FUNC__ "lis_psolveh_saamg"
+LIS_INT lis_psolveh_saamg(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
 {
 #if defined(USE_SAAMG)
 	LIS_INT	n;

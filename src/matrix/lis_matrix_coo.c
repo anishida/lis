@@ -70,7 +70,7 @@
  * lis_matrix_normf            | o   | o   |
  * lis_matrix_sort             | o   | o   |
  * lis_matrix_solve            | xxx | o   |
- * lis_matrix_solvet           | xxx | o   |
+ * lis_matrix_solveh           | xxx | o   |
  ************************************************/
 
 #undef __FUNC__
