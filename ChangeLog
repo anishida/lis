@@ -1,3 +1,7 @@
+Version 1.8.12  October 25, 2017
+
+  - Updated linear solvers for complex arithmetic.
+
 Version 1.8.11  October 18, 2017
 
   - Fixed bug in lis_esolver_ai.c.
