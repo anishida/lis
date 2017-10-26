@@ -329,9 +329,9 @@ LIS_INT lis_matvech_ilu(LIS_MATRIX A, LIS_MATRIX_ILU LU, LIS_VECTOR X, LIS_VECTO
 				{
 					jj = LU->index[i][j];
 					#ifndef USE_SSE2
-						LIS_QUAD_FMAD(Y->value[i],Y->value_lo[i],Y->value[i],Y->value_lo[i],X->value[jj],X->value_lo[jj],conj(LU->value[i][j]));
+						LIS_QUAD_FMAD(Y->value[i],Y->value_lo[i],Y->value[i],Y->value_lo[i],X->value[jj],X->value_lo[jj],LU->value[i][j]);
 					#else
-						LIS_QUAD_FMAD_SSE2(Y->value[i],Y->value_lo[i],Y->value[i],Y->value_lo[i],X->value[jj],X->value_lo[jj],conj(LU->value[i][j]));
+						LIS_QUAD_FMAD_SSE2(Y->value[i],Y->value_lo[i],Y->value[i],Y->value_lo[i],X->value[jj],X->value_lo[jj],LU->value[i][j]);
 					#endif
 				}
 			}
@@ -351,7 +351,7 @@ LIS_INT lis_matvech_ilu(LIS_MATRIX A, LIS_MATRIX_ILU LU, LIS_VECTOR X, LIS_VECTO
 					j0 = LU->index[i][j];
 					j1 = LU->index[i][j+1];
 					#ifdef USE_SSE2
-						LIS_QUAD_FMAD2_SSE2_LDSD(tt.hi[0],tt.lo[0],tt.hi[0],tt.lo[0],X->value[j0],X->value_lo[j0],X->value[j1],X->value_lo[j1],conj(LU->value[i][j]));
+						LIS_QUAD_FMAD2_SSE2_LDSD(tt.hi[0],tt.lo[0],tt.hi[0],tt.lo[0],X->value[j0],X->value_lo[j0],X->value[j1],X->value_lo[j1],LU->value[i][j]);
 					#endif
 				}
 				#ifdef USE_SSE2
@@ -361,7 +361,7 @@ LIS_INT lis_matvech_ilu(LIS_MATRIX A, LIS_MATRIX_ILU LU, LIS_VECTOR X, LIS_VECTO
 				{
 					j0 = LU->index[i][j];
 					#ifdef USE_SSE2
-						LIS_QUAD_FMAD_SSE2(Y->value[i],Y->value_lo[i],Y->value[i],Y->value_lo[i],X->value[j0],X->value_lo[j0],conj(LU->value[i][j]));
+						LIS_QUAD_FMAD_SSE2(Y->value[i],Y->value_lo[i],Y->value[i],Y->value_lo[i],X->value[j0],X->value_lo[j0],LU->value[i][j]);
 					#endif
 				}
 			}
