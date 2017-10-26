@@ -1575,7 +1575,7 @@ LIS_INT lis_matrix_solve_vbr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT f
 #define __FUNC__ "lis_matrix_solveh_vbr"
 LIS_INT lis_matrix_solveh_vbr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag)
 {
-	LIS_INT i,j,jj,nr,bnr,dim,sz,alv,auv;
+	LIS_INT i,j,jj,nr,bnr,dim,sz;
 	LIS_SCALAR *x,w[1024];
 
 	LIS_DEBUG_FUNC_IN;
