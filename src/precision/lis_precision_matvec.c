@@ -298,9 +298,9 @@ void lis_matvech_csr_mp(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 					{
 						jj  = k*np+A->L->index[j];
 						#ifndef USE_SSE2
-							LIS_QUAD_FMAD(ww[jj],wwl[jj],ww[jj],wwl[jj],x[i],xl[i],conj(A->L->value[j]));
+							LIS_QUAD_FMAD(ww[jj],wwl[jj],ww[jj],wwl[jj],x[i],xl[i],A->L->value[j]);
 						#else
-							LIS_QUAD_FMAD_SSE2(ww[jj],wwl[jj],ww[jj],wwl[jj],x[i],xl[i],conj(A->L->value[j]));
+							LIS_QUAD_FMAD_SSE2(ww[jj],wwl[jj],ww[jj],wwl[jj],x[i],xl[i],A->L->value[j]);
 						#endif
 					}
 					js = A->U->ptr[i];
@@ -309,9 +309,9 @@ void lis_matvech_csr_mp(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 					{
 						jj  = k*np+A->U->index[j];
 						#ifndef USE_SSE2
-							LIS_QUAD_FMAD(ww[jj],wwl[jj],ww[jj],wwl[jj],x[i],xl[i],conj(A->U->value[j]));
+						LIS_QUAD_FMAD(ww[jj],wwl[jj],ww[jj],wwl[jj],x[i],xl[i],A->U->value[j]);
 						#else
-							LIS_QUAD_FMAD_SSE2(ww[jj],wwl[jj],ww[jj],wwl[jj],x[i],xl[i],conj(A->U->value[j]));
+							LIS_QUAD_FMAD_SSE2(ww[jj],wwl[jj],ww[jj],wwl[jj],x[i],xl[i],A->U->value[j]);
 						#endif
 					}
 				}
@@ -319,9 +319,9 @@ void lis_matvech_csr_mp(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 				for(i=0;i<np;i++)
 				{
 					#ifndef USE_SSE2
-					LIS_QUAD_MULD(y[i],yl[i],x[i],xl[i],conj(A->D->value[i]));
+					LIS_QUAD_MULD(y[i],yl[i],x[i],xl[i],A->D->value[i]);
 					#else
-						LIS_QUAD_MULD_SSE2(y[i],yl[i],x[i],xl[i],conj(A->D->value[i]));
+						LIS_QUAD_MULD_SSE2(y[i],yl[i],x[i],xl[i],A->D->value[i]);
 					#endif
 					for(j=0;j<nprocs;j++)
 					{
@@ -338,9 +338,9 @@ void lis_matvech_csr_mp(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			for(i=0; i<np; i++)
 			{
 				#ifndef USE_SSE2
-				LIS_QUAD_MULD(y[i],yl[i],x[i],xl[i],conj(A->D->value[i]));
+				LIS_QUAD_MULD(y[i],yl[i],x[i],xl[i],A->D->value[i]);
 				#else
-				LIS_QUAD_MULD_SSE2(y[i],yl[i],x[i],xl[i],conj(A->D->value[i]));
+				LIS_QUAD_MULD_SSE2(y[i],yl[i],x[i],xl[i],A->D->value[i]);
 				#endif
 			}
 			for(i=0; i<n; i++)
@@ -351,9 +351,9 @@ void lis_matvech_csr_mp(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 				{
 					jj  = A->L->index[j];
 					#ifndef USE_SSE2
-						LIS_QUAD_FMAD(y[jj],yl[jj],y[jj],yl[jj],x[i],xl[i],conj(A->L->value[j]));
+						LIS_QUAD_FMAD(y[jj],yl[jj],y[jj],yl[jj],x[i],xl[i],A->L->value[j]);
 					#else
-						LIS_QUAD_FMAD_SSE2(y[jj],yl[jj],y[jj],yl[jj],x[i],xl[i],conj(A->L->value[j]));
+						LIS_QUAD_FMAD_SSE2(y[jj],yl[jj],y[jj],yl[jj],x[i],xl[i],A->L->value[j]);
 					#endif
 				}
 				js = A->U->ptr[i];
@@ -362,9 +362,9 @@ void lis_matvech_csr_mp(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 				{
 					jj  = A->U->index[j];
 					#ifndef USE_SSE2
-						LIS_QUAD_FMAD(y[jj],yl[jj],y[jj],yl[jj],x[i],xl[i],conj(A->U->value[j]));
+						LIS_QUAD_FMAD(y[jj],yl[jj],y[jj],yl[jj],x[i],xl[i],A->U->value[j]);
 					#else
-						LIS_QUAD_FMAD_SSE2(y[jj],yl[jj],y[jj],yl[jj],x[i],xl[i],conj(A->U->value[j]));
+						LIS_QUAD_FMAD_SSE2(y[jj],yl[jj],y[jj],yl[jj],x[i],xl[i],A->U->value[j]);
 					#endif
 				}
 			}
@@ -398,9 +398,9 @@ void lis_matvech_csr_mp(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 					{
 						jj  = k*np+A->index[j];
 						#ifndef USE_SSE2
-							LIS_QUAD_FMAD(ww[jj],wwl[jj],ww[jj],wwl[jj],x[i],xl[i],conj(A->value[j]));
+							LIS_QUAD_FMAD(ww[jj],wwl[jj],ww[jj],wwl[jj],x[i],xl[i],A->value[j]);
 						#else
-							LIS_QUAD_FMAD_SSE2(ww[jj],wwl[jj],ww[jj],wwl[jj],x[i],xl[i],conj(A->value[j]));
+							LIS_QUAD_FMAD_SSE2(ww[jj],wwl[jj],ww[jj],wwl[jj],x[i],xl[i],A->value[j]);
 						#endif
 					}
 				}
@@ -435,9 +435,9 @@ void lis_matvech_csr_mp(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 				{
 					jj  = A->index[j];
 					#ifndef USE_SSE2
-						LIS_QUAD_FMAD(y[jj],yl[jj],y[jj],yl[jj],tt0.hi[0],tt0.lo[0],conj(A->value[j]));
+						LIS_QUAD_FMAD(y[jj],yl[jj],y[jj],yl[jj],tt0.hi[0],tt0.lo[0],A->value[j]);
 					#else
-						LIS_QUAD_FMAD_SSE2(y[jj],yl[jj],y[jj],yl[jj],tt0.hi[0],tt0.lo[0],conj(A->value[j]));
+						LIS_QUAD_FMAD_SSE2(y[jj],yl[jj],y[jj],yl[jj],tt0.hi[0],tt0.lo[0],A->value[j]);
 					#endif
 				}
 			}
@@ -482,9 +482,9 @@ void lis_matvech_csr_mp2(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 				for(i=0; i<np; i++)
 				{
 					#ifndef USE_SSE2
-					LIS_QUAD_MULD(ww[i],wwl[i],x[i],xl[i],conj(A->D->value[i]));
+					LIS_QUAD_MULD(ww[i],wwl[i],x[i],xl[i],A->D->value[i]);
 					#else
-					LIS_QUAD_MULD_SSE2(ww[i],wwl[i],x[i],xl[i],conj(A->D->value[i]));
+					LIS_QUAD_MULD_SSE2(ww[i],wwl[i],x[i],xl[i],A->D->value[i]);
 					#endif
 				}
 				#pragma omp for 
@@ -497,14 +497,14 @@ void lis_matvech_csr_mp2(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 						j0  = k*np + A->L->index[j];
 						j1  = k*np + A->L->index[j+1];
 						#ifdef USE_SSE2
-							LIS_QUAD_FMAD2_SSE2_STSD(ww[j0],wwl[j0],ww[j1],wwl[j1],ww[j0],wwl[j0],ww[j1],wwl[j1],x[i],xl[i],x[i],xl[i],conj(A->L->value[j]));
+							LIS_QUAD_FMAD2_SSE2_STSD(ww[j0],wwl[j0],ww[j1],wwl[j1],ww[j0],wwl[j0],ww[j1],wwl[j1],x[i],xl[i],x[i],xl[i],A->L->value[j]);
 						#endif
 					}
 					for(;j<je;j++)
 					{
 						j0  = A->L->index[j];
 						#ifdef USE_SSE2
-							LIS_QUAD_FMAD_SSE2(ww[j0],wwl[j0],ww[j0],wwl[j0],x[i],xl[i],conj(A->L->value[j]));
+							LIS_QUAD_FMAD_SSE2(ww[j0],wwl[j0],ww[j0],wwl[j0],x[i],xl[i],A->L->value[j]);
 						#endif
 					}
 					js = A->U->ptr[i];
@@ -514,14 +514,14 @@ void lis_matvech_csr_mp2(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 						j0  = k*np + A->U->index[j];
 						j1  = k*np + A->U->index[j+1];
 						#ifdef USE_SSE2
-							LIS_QUAD_FMAD2_SSE2_STSD(ww[j0],wwl[j0],ww[j1],wwl[j1],ww[j0],wwl[j0],ww[j1],wwl[j1],x[i],xl[i],x[i],xl[i],conj(A->U->value[j]));
+							LIS_QUAD_FMAD2_SSE2_STSD(ww[j0],wwl[j0],ww[j1],wwl[j1],ww[j0],wwl[j0],ww[j1],wwl[j1],x[i],xl[i],x[i],xl[i],A->U->value[j]);
 						#endif
 					}
 					for(;j<je;j++)
 					{
 						j0  = A->U->index[j];
 						#ifdef USE_SSE2
-							LIS_QUAD_FMAD_SSE2(ww[j0],wwl[j0],ww[j0],wwl[j0],x[i],xl[i],conj(A->U->value[j]));
+							LIS_QUAD_FMAD_SSE2(ww[j0],wwl[j0],ww[j0],wwl[j0],x[i],xl[i],A->U->value[j]);
 						#endif
 					}
 				}
@@ -542,9 +542,9 @@ void lis_matvech_csr_mp2(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			for(i=0; i<np; i++)
 			{
 				#ifndef USE_SSE2
-			  	LIS_QUAD_MULD(y[i],yl[i],x[i],xl[i],conj(A->D->value[i]));
+			  	LIS_QUAD_MULD(y[i],yl[i],x[i],xl[i],A->D->value[i]);
 				#else
-				LIS_QUAD_MULD_SSE2(y[i],yl[i],x[i],xl[i],conj(A->D->value[i]));
+				LIS_QUAD_MULD_SSE2(y[i],yl[i],x[i],xl[i],A->D->value[i]);
 				#endif
 			}
 			for(i=0; i<n; i++)
@@ -556,14 +556,14 @@ void lis_matvech_csr_mp2(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 					j0  = A->L->index[j];
 					j1  = A->L->index[j+1];
 					#ifdef USE_SSE2
-						LIS_QUAD_FMAD2_SSE2_STSD(y[j0],yl[j0],y[j1],yl[j1],y[j0],yl[j0],y[j1],yl[j1],x[i],xl[i],x[i],xl[i],conj(A->L->value[j]));
+						LIS_QUAD_FMAD2_SSE2_STSD(y[j0],yl[j0],y[j1],yl[j1],y[j0],yl[j0],y[j1],yl[j1],x[i],xl[i],x[i],xl[i],A->L->value[j]);
 					#endif
 				}
 				for(;j<je;j++)
 				{
 					j0  = A->L->index[j];
 					#ifdef USE_SSE2
-						LIS_QUAD_FMAD_SSE2(y[j0],yl[j0],y[j0],yl[j0],tt0.hi[0],tt0.lo[0],conj(A->L->value[j]));
+						LIS_QUAD_FMAD_SSE2(y[j0],yl[j0],y[j0],yl[j0],tt0.hi[0],tt0.lo[0],A->L->value[j]);
 					#endif
 				}
 				js = A->U->ptr[i];
@@ -573,14 +573,14 @@ void lis_matvech_csr_mp2(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 					j0  = A->U->index[j];
 					j1  = A->U->index[j+1];
 					#ifdef USE_SSE2
-						LIS_QUAD_FMAD2_SSE2_STSD(y[j0],yl[j0],y[j1],yl[j1],y[j0],yl[j0],y[j1],yl[j1],x[i],xl[i],x[i],xl[i],conj(A->U->value[j]));
+						LIS_QUAD_FMAD2_SSE2_STSD(y[j0],yl[j0],y[j1],yl[j1],y[j0],yl[j0],y[j1],yl[j1],x[i],xl[i],x[i],xl[i],A->U->value[j]);
 					#endif
 				}
 				for(;j<je;j++)
 				{
 					j0  = A->U->index[j];
 					#ifdef USE_SSE2
-						LIS_QUAD_FMAD_SSE2(y[j0],yl[j0],y[j0],yl[j0],tt0.hi[0],tt0.lo[0],conj(A->U->value[j]));
+						LIS_QUAD_FMAD_SSE2(y[j0],yl[j0],y[j0],yl[j0],tt0.hi[0],tt0.lo[0],A->U->value[j]);
 					#endif
 				}
 			}
@@ -615,14 +615,14 @@ void lis_matvech_csr_mp2(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 						j0  = k*np + A->index[j];
 						j1  = k*np + A->index[j+1];
 						#ifdef USE_SSE2
-							LIS_QUAD_FMAD2_SSE2_STSD(ww[j0],wwl[j0],ww[j1],wwl[j1],ww[j0],wwl[j0],ww[j1],wwl[j1],x[i],xl[i],x[i],xl[i],conj(A->value[j]));
+							LIS_QUAD_FMAD2_SSE2_STSD(ww[j0],wwl[j0],ww[j1],wwl[j1],ww[j0],wwl[j0],ww[j1],wwl[j1],x[i],xl[i],x[i],xl[i],A->value[j]);
 						#endif
 					}
 					for(;j<je;j++)
 					{
 						j0  = A->index[j];
 						#ifdef USE_SSE2
-							LIS_QUAD_FMAD_SSE2(ww[j0],wwl[j0],ww[j0],wwl[j0],x[i],xl[i],conj(A->value[j]));
+							LIS_QUAD_FMAD_SSE2(ww[j0],wwl[j0],ww[j0],wwl[j0],x[i],xl[i],A->value[j]);
 						#endif
 					}
 				}
@@ -654,14 +654,14 @@ void lis_matvech_csr_mp2(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 					j0  = A->index[j];
 					j1  = A->index[j+1];
 					#ifdef USE_SSE2
-						LIS_QUAD_FMAD2_SSE2_STSD(y[j0],yl[j0],y[j1],yl[j1],y[j0],yl[j0],y[j1],yl[j1],x[i],xl[i],x[i],xl[i],conj(A->value[j]));
+						LIS_QUAD_FMAD2_SSE2_STSD(y[j0],yl[j0],y[j1],yl[j1],y[j0],yl[j0],y[j1],yl[j1],x[i],xl[i],x[i],xl[i],A->value[j]);
 					#endif
 				}
 				for(;j<je;j++)
 				{
 					j0  = A->index[j];
 					#ifdef USE_SSE2
-						LIS_QUAD_FMAD_SSE2(y[j0],yl[j0],y[j0],yl[j0],x[i],xl[i],conj(A->value[j]));
+						LIS_QUAD_FMAD_SSE2(y[j0],yl[j0],y[j0],yl[j0],x[i],xl[i],A->value[j]);
 					#endif
 				}
 			}
@@ -1097,9 +1097,9 @@ void lis_matvech_csc_mp(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 		for(i=0;i<np;i++)
 		{
 			#ifndef USE_SSE2
-		  		LIS_QUAD_MULD(y[i],yl[i],x[i],xl[i],conj(A->D->value[i]));
+		  		LIS_QUAD_MULD(y[i],yl[i],x[i],xl[i],A->D->value[i]);
 			#else
-				LIS_QUAD_MULD_SSE2(y[i],yl[i],x[i],xl[i],conj(A->D->value[i]));
+				LIS_QUAD_MULD_SSE2(y[i],yl[i],x[i],xl[i],A->D->value[i]);
 			#endif
 			is = A->L->ptr[i];
 			ie = A->L->ptr[i+1];
@@ -1107,9 +1107,9 @@ void lis_matvech_csc_mp(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			{
 				j0 = A->L->index[j+0];
 				#ifndef USE_SSE2
-					LIS_QUAD_FMAD(y[i],yl[i],y[i],yl[i],x[j0],xl[j0],conj(A->L->value[j]));
+					LIS_QUAD_FMAD(y[i],yl[i],y[i],yl[i],x[j0],xl[j0],A->L->value[j]);
 				#else
-					LIS_QUAD_FMAD_SSE2(y[i],yl[i],y[i],yl[i],x[j0],xl[j0],conj(A->L->value[j]));
+					LIS_QUAD_FMAD_SSE2(y[i],yl[i],y[i],yl[i],x[j0],xl[j0],A->L->value[j]);
 				#endif
 			}
 			is = A->U->ptr[i];
@@ -1118,9 +1118,9 @@ void lis_matvech_csc_mp(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			{
 				j0 = A->U->index[j+0];
 				#ifndef USE_SSE2
-					LIS_QUAD_FMAD(y[i],yl[i],y[i],yl[i],x[j0],xl[j0],conj(A->U->value[j]));
+					LIS_QUAD_FMAD(y[i],yl[i],y[i],yl[i],x[j0],xl[j0],A->U->value[j]);
 				#else
-					LIS_QUAD_FMAD_SSE2(y[i],yl[i],y[i],yl[i],x[j0],xl[j0],conj(A->U->value[j]));
+					LIS_QUAD_FMAD_SSE2(y[i],yl[i],y[i],yl[i],x[j0],xl[j0],A->U->value[j]);
 				#endif
 			}
 		}
@@ -1183,9 +1183,9 @@ void lis_matvech_csc_mp2(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 		for(i=0;i<np;i++)
 		{
 			#ifndef USE_SSE2
-				LIS_QUAD_MULD(y[i],yl[i],x[i],xl[i],conj(A->D->value[i]));
+				LIS_QUAD_MULD(y[i],yl[i],x[i],xl[i],A->D->value[i]);
 			#else
-				LIS_QUAD_MULD_SSE2(y[i],yl[i],x[i],xl[i],conj(A->D->value[i]));
+				LIS_QUAD_MULD_SSE2(y[i],yl[i],x[i],xl[i],A->D->value[i]);
 			#endif
 
 			tt.hi[0] = tt.hi[1] = tt.lo[0] = tt.lo[1] = 0.0;
@@ -1196,14 +1196,14 @@ void lis_matvech_csc_mp2(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 				j0 = A->L->index[j+0];
 				j1 = A->L->index[j+1];
 				#ifdef USE_SSE2
-					LIS_QUAD_FMAD2_SSE2_LDSD(tt.hi[0],tt.lo[0],tt.hi[0],tt.lo[0],x[j0],xl[j0],x[j1],xl[j1],conj(A->L->value[j]));
+					LIS_QUAD_FMAD2_SSE2_LDSD(tt.hi[0],tt.lo[0],tt.hi[0],tt.lo[0],x[j0],xl[j0],x[j1],xl[j1],A->L->value[j]);
 				#endif
 			}
 			for(;j<ie;j++)
 			{
 				j0 = A->L->index[j+0];
 				#ifdef USE_SSE2
-					LIS_QUAD_FMAD_SSE2(y[i],yl[i],y[i],yl[i],x[j0],xl[j0],conj(A->L->value[j]));
+					LIS_QUAD_FMAD_SSE2(y[i],yl[i],y[i],yl[i],x[j0],xl[j0],A->L->value[j]);
 				#endif
 			}
 			is = A->U->ptr[i];
@@ -1213,14 +1213,14 @@ void lis_matvech_csc_mp2(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 				j0 = A->U->index[j+0];
 				j1 = A->U->index[j+1];
 				#ifdef USE_SSE2
-					LIS_QUAD_FMAD2_SSE2_LDSD(tt.hi[0],tt.lo[0],tt.hi[0],tt.lo[0],x[j0],xl[j0],x[j1],xl[j1],conj(A->U->value[j]));
+					LIS_QUAD_FMAD2_SSE2_LDSD(tt.hi[0],tt.lo[0],tt.hi[0],tt.lo[0],x[j0],xl[j0],x[j1],xl[j1],A->U->value[j]);
 				#endif
 			}
 			for(;j<ie;j++)
 			{
 				j0 = A->U->index[j+0];
 				#ifdef USE_SSE2
-					LIS_QUAD_FMAD_SSE2(y[i],yl[i],y[i],yl[i],x[j0],xl[j0],conj(A->U->value[j]));
+					LIS_QUAD_FMAD_SSE2(y[i],yl[i],y[i],yl[i],x[j0],xl[j0],A->U->value[j]);
 				#endif
 			}
 			#ifdef USE_SSE2
