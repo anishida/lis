@@ -8551,17 +8551,17 @@ I2 J2 A(I2,J2)                                   | Row and column number values
  . . .                                           | The index is one-origin
 IL JL A(IL,JL)                                 <-+
 I1 B(I1)                                       <-+
-I2 B(I2)                                         | Exists only when B=1
+I2 B(I2)                                         | Right-hand side vector (exists only when B=1)
  . . .                                           | Row number value
 IM B(IM)                                       <-+
 I1 X(I1)                                       <-+
-I2 X(I2)                                         | Exists only when X=1
+I2 X(I2)                                         | Solution (exists only when X=1)
  . . .                                           | Row number value
 IM X(IM)                                       <-+
 \end{verbatim}
 }
 
-The extended Matrix Market format for matrix $A$ and vector $b$ in Equation (\ref{eq:matavecv}) is as follows: 
+The extended Matrix Market format for matrix $A$ and right-hand side vector $b$ in Equation (\ref{eq:matavecv}) is as follows: 
 \begin{equation}
 A = 
 \left(
