@@ -1,3 +1,7 @@
+Version 1.8.13  October 30, 2017
+
+  - Fixed bugs in lis_input_mm.c.
+
 Version 1.8.12  October 25, 2017
 
   - Updated linear solvers for complex arithmetic.
