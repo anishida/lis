@@ -4,7 +4,6 @@ Version 1.8.12  October 25, 2017
 
 Version 1.8.11  October 18, 2017
 
-  - Fixed bug in lis_input_mm.c.
   - Fixed bug in lis_esolver_ai.c.
   - Fixed bug in lis_array.c.
   - Fixed description in etest7.c.

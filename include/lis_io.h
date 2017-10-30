@@ -125,8 +125,8 @@ extern "C"
 
 	extern LIS_INT lis_input_mm(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file);
 	extern LIS_INT lis_input_mm_banner(FILE *file, LIS_INT *mmfmt, LIS_INT *mmtype, LIS_INT *mmstruct);  
-        extern LIS_INT lis_input_mm_dns(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file);
-        extern LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file);
+	extern LIS_INT lis_input_mm_dns(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, LIS_INT mmtype);
+	extern LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, LIS_INT mmtype, LIS_INT mmstruct);
 	extern LIS_INT lis_input_hb(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file);
        	extern LIS_INT lis_input_hb_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file);
 
