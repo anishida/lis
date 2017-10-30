@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 1.8.12
+Version 1.8.13
 \end{flushleft}
 
 \vspace*{2cm}
@@ -8551,11 +8551,11 @@ I2 J2 A(I2,J2)                                   | Row and column number values
  . . .                                           | The index is one-origin
 IL JL A(IL,JL)                                 <-+
 I1 B(I1)                                       <-+
-I2 B(I2)                                         | Exists only when B=1
+I2 B(I2)                                         | Right-hand side vector (exists only when B=1)
  . . .                                           | Row number value
 IM B(IM)                                       <-+
 I1 X(I1)                                       <-+
-I2 X(I2)                                         | Exists only when X=1
+I2 X(I2)                                         | Solution (exists only when X=1)
  . . .                                           | Row number value
 IM X(IM)                                       <-+
 \end{verbatim}
@@ -8571,7 +8571,7 @@ A =
   & 1 & 2 & 1 \\
   &   & 1 & 2 
 \end{array}
-\right)
+\right), 
 ~~~~~~~~~~~~
 b = 
 \left(

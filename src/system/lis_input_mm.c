@@ -76,7 +76,7 @@ LIS_INT lis_input_mm(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 
 	if( mmfmt==MM_COO )
 	{
-	  err = lis_input_mm_csr(A,b,x,file);
+	  err = lis_input_mm_csr(A,b,x,file,mmtype,mmstruct);
 
 	  if( matrix_type!=LIS_MATRIX_CSR )
 	    {
@@ -108,7 +108,7 @@ LIS_INT lis_input_mm(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 	}
 	else if (mmfmt==MM_DNS )
 	{
-	  err = lis_input_mm_dns(A,b,x,file);
+	  err = lis_input_mm_dns(A,b,x,file,mmtype);
 
 	  if( matrix_type!=LIS_MATRIX_DNS )
 	    {
@@ -461,13 +461,13 @@ LIS_INT lis_input_mm_size(FILE *file, LIS_INT *nr, LIS_INT *nc, LIS_INT *nnz, LI
 
 #undef __FUNC__
 #define __FUNC__ "lis_input_mm_dns"
-LIS_INT lis_input_mm_dns(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
+LIS_INT lis_input_mm_dns(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, LIS_INT mmtype)
 {
 	char buf[BUFSIZE];
 	LIS_INT	nr,nc,nnz;
 	LIS_INT	i,j,my_rank;
 	LIS_INT	err;
-	LIS_INT	mmtype,mode;
+	LIS_INT	mode;
 	LIS_INT	n,is,ie;
 	LIS_INT	isb,isx,isbin;
 	double val;
@@ -696,13 +696,13 @@ LIS_INT lis_input_mm_dns(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 
 #undef __FUNC__
 #define __FUNC__ "lis_input_mm_csr"
-LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
+LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, LIS_INT mmtype, LIS_INT mmstruct)
 {
 	char buf[BUFSIZE];
 	LIS_INT	nr,nc,nnz;
 	LIS_INT	i,j,my_rank;
 	LIS_INT	err;
-	LIS_INT	mmtype,mmstruct,mode;
+	LIS_INT	mode;
 	LIS_INT	n,is,ie;
 	LIS_INT	ridx,cidx;
 	LIS_INT	*ptr, *index;
@@ -720,7 +720,7 @@ LIS_INT lis_input_mm_csr(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file)
 	#else
 		my_rank = 0;
 	#endif
-	
+
 	/* check size */		
 	err = lis_input_mm_size(file,&nr,&nc,&nnz,&isb,&isx,&isbin);
 	if( err ) return err;
