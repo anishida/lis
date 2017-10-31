@@ -1,3 +1,7 @@
+Version 1.8.14  October 31, 2017
+
+  - Fixed bugs on complex arithmetic.
+
 Version 1.8.13  October 30, 2017
 
   - Fixed bugs in lis_input_mm.c.
