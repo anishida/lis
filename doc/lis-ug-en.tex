@@ -275,7 +275,7 @@ The supported matrix storage formats are listed in Table \ref{tab:storage}.
 \hbox to\hsize{\hfil
 \begin{tabular}{l|l}\hline\hline
 CG\cite{hestenes,lanczos1} & CR\cite{hestenes} \\ 
-BiCG\cite{fletcher}     & BiCR\cite{sogabe09} \\
+BiCG\cite{fletcher,joly,pocock} & BiCR\cite{sogabe09} \\
 CGS\cite{sonneveld}     & CRS\cite{abe02} \\
 BiCGSTAB\cite{bicgstab} & BiCRSTAB\cite{abe02} \\
 GPBiCG\cite{zhang}      & GPBiCR\cite{abe02} \\
@@ -1185,7 +1185,11 @@ The current version has the following limitations:
 \item The SA-AMG preconditioner does not support complex arithmetic.   
 \item The assembly of the matrices in the SAINV preconditioner is not parallelized.
 \item The user defined preconditioner cannot be used.
+\end{itemize}
 
+\item Eigensolvers
+\begin{itemize}
+\item To compute complex eigenvalues, complex arithmetic must be enabled.
 \end{itemize}
 
 \end{itemize}
@@ -8067,6 +8071,16 @@ C. Lanczos.
 R. Fletcher.
 \newblock Conjugate Gradient Methods for Indefinite Systems.
 \newblock Lecture Notes in Mathematics 506, pp.\ 73--89, Springer, 1976.
+
+\bibitem{joly}
+P. Joly and G. Meurant.
+\newblock Complex Conjugate Gradient Methods.
+\newblock Numerical Algorithms, Vol.~4, pp.\ 379--406, 1993.
+
+\bibitem{pocock}
+M. D. Pocock and S. P. Walker.
+\newblock The Complex Bi-Conjugate Gradient Solver Applied to Large Electromagnetic Scattering Problems, Computational Costs, and Cost Scalings.
+\newblock IEEE Transactions on Antennas and Propagation, Vol.~45, No.~1, pp.\ 140--146, 1997.
 
 \bibitem{sogabe09}
 T. Sogabe, M. Sugihara, and S. Zhang.

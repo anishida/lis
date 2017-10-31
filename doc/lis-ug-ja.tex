@@ -255,7 +255,7 @@ Ax = \lambda Bx
 \hbox to\hsize{\hfil
 \begin{tabular}{l|l}\hline\hline
 CG\cite{hestenes,lanczos1} & CR\cite{hestenes} \\ 
-BiCG\cite{fletcher}     & BiCR\cite{sogabe09} \\
+BiCG\cite{fletcher,joly,pocock} & BiCR\cite{sogabe09} \\
 CGS\cite{sonneveld}     & CRS\cite{abe02} \\
 BiCGSTAB\cite{bicgstab} & BiCRSTAB\cite{abe02} \\
 GPBiCG\cite{zhang}      & GPBiCR\cite{abe02} \\
@@ -1055,6 +1055,11 @@ $(1,\dots,1)^T$との積を実行可能な行列格納形式について
 \item SA-AMG前処理は複素演算には対応していない.   
 \item SAINV前処理の前処理行列作成部分は逐次実行される.
 \item ユーザ定義前処理は使用できない.
+\end{itemize}
+
+\item 固有値解法
+\begin{itemize}
+\item 複素固有値を計算する場合には，複素演算を有効にする必要がある. 
 \end{itemize}
 
 \end{itemize}
@@ -7889,6 +7894,16 @@ C. Lanczos.
 R. Fletcher.
 \newblock Conjugate Gradient Methods for Indefinite Systems.
 \newblock Lecture Notes in Mathematics 506, pp.\ 73--89, Springer, 1976.
+
+\bibitem{joly}
+P. Joly and G. Meurant.
+\newblock Complex Conjugate Gradient Methods.
+\newblock Numerical Algorithms, Vol.~4, pp.\ 379--406, 1993.
+
+\bibitem{pocock}
+M. D. Pocock and S. P. Walker.
+\newblock The Complex Bi-Conjugate Gradient Solver Applied to Large Electromagnetic Scattering Problems, Computational Costs, and Cost Scalings.
+\newblock IEEE Transactions on Antennas and Propagation, Vol.~45, No.~1, pp.\ 140--146, 1997.
 
 \bibitem{sogabe09}
 T. Sogabe, M. Sugihara, and S. Zhang.
