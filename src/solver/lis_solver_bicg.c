@@ -282,7 +282,7 @@ LIS_INT lis_bicg(LIS_SOLVER solver)
 LIS_INT lis_bicg_quad(LIS_SOLVER solver)
 {
 	LIS_Comm comm;  
-	LIS_MATRIX A,At;
+	LIS_MATRIX A,Ah;
 	LIS_VECTOR x;
 	LIS_VECTOR r,rtld, z,ztld,p, ptld, q, qtld;
 	LIS_QUAD_PTR alpha, beta, rho, rho_old, tmpdot1;
@@ -295,7 +295,7 @@ LIS_INT lis_bicg_quad(LIS_SOLVER solver)
 	comm = LIS_COMM_WORLD;
 
 	A       = solver->A;
-	At      = solver->A;
+	Ah      = solver->A;
 	x       = solver->x;
 	maxiter = solver->options[LIS_OPTIONS_MAXITER];
 	output  = solver->options[LIS_OPTIONS_OUTPUT];
@@ -368,7 +368,7 @@ LIS_INT lis_bicg_quad(LIS_SOLVER solver)
 		lis_matvec(A,p,q);
 
 		lis_vector_xpayex_mmm(ztld,beta,ptld);
-		lis_matvech(At,ptld,qtld);
+		lis_matvech(Ah,ptld,qtld);
 
 		
 		/* tmpdot1 = <ptld,q> */
@@ -433,7 +433,7 @@ LIS_INT lis_bicg_quad(LIS_SOLVER solver)
 LIS_INT lis_bicg_switch(LIS_SOLVER solver)
 {
 	LIS_Comm comm;  
-	LIS_MATRIX A,At;
+	LIS_MATRIX A,Ah;
 	LIS_VECTOR x;
 	LIS_VECTOR r,rtld, z,ztld,p, ptld, q, qtld;
 	LIS_QUAD_PTR alpha, beta, rho, rho_old, tmpdot1;
@@ -447,7 +447,7 @@ LIS_INT lis_bicg_switch(LIS_SOLVER solver)
 	comm = LIS_COMM_WORLD;
 	
 	A       = solver->A;
-	At      = solver->A;
+	Ah      = solver->A;
 	x        = solver->x;
 	maxiter  = solver->options[LIS_OPTIONS_MAXITER];
 	maxiter2 = solver->options[LIS_OPTIONS_SWITCH_MAXITER];
@@ -528,7 +528,7 @@ LIS_INT lis_bicg_switch(LIS_SOLVER solver)
 		lis_matvec(A,p,q);
 
 		lis_vector_xpay(ztld,beta.hi[0],ptld);
-		lis_matvech(At,ptld,qtld);
+		lis_matvech(Ah,ptld,qtld);
 
 		
 		/* tmpdot1 = <ptld,q> */
@@ -631,7 +631,7 @@ LIS_INT lis_bicg_switch(LIS_SOLVER solver)
 		lis_matvec(A,p,q);
 
 		lis_vector_xpayex_mmm(ztld,beta,ptld);
-		lis_matvech(At,ptld,qtld);
+		lis_matvech(Ah,ptld,qtld);
 
 		
 		/* tmpdot1 = <ptld,q> */
@@ -742,7 +742,7 @@ LIS_INT lis_bicr_malloc_work(LIS_SOLVER solver)
 	LIS_DEBUG_FUNC_IN;
 
 	/*
-	err = lis_matrix_convert(solver->A,&solver->At,LIS_MATRIX_CCS);
+	err = lis_matrix_convert(solver->A,&solver->Ah,LIS_MATRIX_CCS);
 	if( err ) return err;
 	*/
 

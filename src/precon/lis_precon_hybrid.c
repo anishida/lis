@@ -90,7 +90,7 @@ LIS_INT lis_precon_create_hybrid(LIS_SOLVER solver, LIS_PRECON precon)
 	psolver->options[LIS_OPTIONS_INITGUESS_ZEROS]     = solver->options[LIS_OPTIONS_INITGUESS_ZEROS];
 	psolver->options[LIS_OPTIONS_PRECISION]           = solver->options[LIS_OPTIONS_PRECISION];
 	psolver->A                                        = solver->A;
-	psolver->At                                       = solver->At;
+	psolver->Ah                                       = solver->Ah;
 	psolver->precision                                = solver->precision;
 
 	nsolver     = psolver->options[LIS_OPTIONS_SOLVER];
