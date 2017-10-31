@@ -97,7 +97,7 @@ LIS_INT lis_vector_dot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_SCALAR *value)
 			for(i=0; i<n; i++)
 			{
 #ifdef _COMPLEX
-				tmp += x[i]*conj(y[i]);
+				tmp += conj(x[i])*y[i];
 #else
 				tmp += x[i]*y[i];
 #endif				
@@ -117,7 +117,7 @@ LIS_INT lis_vector_dot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_SCALAR *value)
 		for(i=0; i<n; i++)
 		{
 #ifdef _COMPLEX
-			dot += x[i]*conj(y[i]);
+			dot += conj(x[i])*y[i];
 #else
 			dot += x[i]*y[i];
 #endif			
