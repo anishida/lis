@@ -133,7 +133,7 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,output;
-  LIS_SCALAR oshift;
+  LIS_SCALAR oshift,ishift;
   LIS_REAL nrm2,resid;
 
   LIS_DEBUG_FUNC_IN;
@@ -156,7 +156,10 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
       lis_vector_set_all(1.0,v);
     }
   y = esolver->work[0];
-  q = esolver->work[1];  
+  q = esolver->work[1];
+
+  if ( esolver->ishift != 0.0 ) oshift = ishift;  
+  if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, oshift);  
 
   iter=0;
   while (iter<emaxiter)
@@ -196,6 +199,7 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
 	  esolver->evalue[0]  = theta;
 	  lis_vector_nrm2(v, &nrm2);
 	  lis_vector_scale(1.0/nrm2, v);
+	  if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);	  
 	  LIS_DEBUG_FUNC_OUT;
 	  return LIS_SUCCESS;
 	}
@@ -207,6 +211,7 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
   esolver->evalue[0] = theta;
   lis_vector_nrm2(v, &nrm2);
   lis_vector_scale(1.0/nrm2, v);
+  if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);  
   LIS_DEBUG_FUNC_OUT;
   return LIS_MAXITER;
 }
@@ -297,7 +302,7 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter2,output;
-  LIS_SCALAR oshift;
+  LIS_SCALAR oshift,ishift;
   LIS_REAL nrm2,resid;
   LIS_SOLVER solver;
   double time,itime,ptime,p_c_time,p_i_time;
@@ -329,7 +334,10 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
     }
   w = esolver->work[0];  
   y = esolver->work[1];
-  q = esolver->work[2];  
+  q = esolver->work[2];
+
+  if ( esolver->ishift != 0.0 ) oshift = ishift;
+  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, oshift);
 
   iter=0;
   
@@ -416,6 +424,7 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
 	  esolver->evalue[0]  = theta;
 	  lis_vector_nrm2(v, &nrm2);
 	  lis_vector_scale(1.0/nrm2, v);
+	  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, -oshift);	  
 	  lis_precon_destroy(precon);
 	  lis_solver_destroy(solver); 
 	  LIS_DEBUG_FUNC_OUT;
@@ -431,6 +440,7 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
   esolver->evalue[0] = theta;
   lis_vector_nrm2(v, &nrm2);
   lis_vector_scale(1.0/nrm2, v);
+  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, -oshift);  
   lis_solver_destroy(solver); 
   LIS_DEBUG_FUNC_OUT;
   return LIS_MAXITER;

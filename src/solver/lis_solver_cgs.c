@@ -51,7 +51,7 @@
  * Preconditioned Conjugate Gradient Squared  *
  **********************************************
  r(0)    = b - Ax(0)
- rtld(0) = r(0) or random
+ rtld(0) = conj(r(0)) or random
  rho(-1) = 1
  p(0)    = (0,...,0)^T
  q(0)    = (0,...,0)^T
@@ -719,7 +719,7 @@ LIS_INT lis_cgs_switch(LIS_SOLVER solver)
  * Preconditioned Conjugate Residual Squared  *
  **********************************************
  r(0)    = b - Ax(0)
- rtld(0) = r(0) or random
+ rtld(0) = conj(r(0)) or random
  rtld(0) = A^H * rtld(0)
  rho(0)  = 1
  p(0)    = (0,...,0)^T

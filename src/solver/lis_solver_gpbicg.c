@@ -51,7 +51,7 @@
  * Preconditioned Generalized Product type of BiConjugate Gradient  *
  ********************************************************************
  r(0)    = b - Ax(0)
- rtld(0) = r(0) or random
+ rtld(0) = conj(r(0)) or random
  p(0)    = M^-1 * r(0)
  rho(0)  = <rtld,r(0)>
  t(-1)   = (0,...,0)^T
@@ -60,7 +60,7 @@
  for k=1,2,...
    ap(k-1) = A * p(k-1)
    map(k-1)= M^-1 * ap(k-1)
-   tmpdot0 = <ap(k-1),rtld(0)>
+   tmpdot0 = <rtld(0),ap(k-1)>
    alpha   = rho(k-1) / tmpdot0
    y(k-1)  = t(k-2) - r(k-1) - alpha*w(k-2) + alpha*ap(k-1)
    t(k-1)  = r(k-1) - alpha*ap(k-1)
@@ -205,7 +205,7 @@ LIS_INT lis_gpbicg(LIS_SOLVER solver)
 	{
 		/*   ap(k-1) = A * p(k-1)         */
 		/*   map(k-1)= M^-1 * ap(k-1)     */
-		/*   tmpdot0 = <map(k-1),rtld(0)> */
+		/*   tmpdot0 = <rtld(0),map(k-1)> */
 		lis_matvec(A,p,ap);
 		time = lis_wtime();
 		lis_psolve(solver, ap, map);
