@@ -1,6 +1,6 @@
 Version 2.0.0  November 1, 2017
 
-  - Added official support for linear solvers generalized for complex problems.
+  - Added official support for linear solvers generalized for complex systems.
   - Added official support for unsymmetric eigenvalue problems.
 
 Version 1.8.15  November 1, 2017
