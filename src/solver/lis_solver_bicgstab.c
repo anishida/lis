@@ -51,7 +51,7 @@
  * Preconditioned BiConjugate Gradient STABilized  *
  ***************************************************
  r(0)    = b - Ax(0)
- rtld(0) = r(0) or random
+ rtld(0) = conj(r(0)) or random
  rho(-1) = 1
  p(0)    = (0,...,0)^T
  s(0)    = (0,...,0)^T
@@ -865,7 +865,7 @@ LIS_INT lis_bicgstab_switch(LIS_SOLVER solver)
  * Preconditioned BiConjugate Residual STABilized  *
  ***************************************************
  r(0)    = b - Ax(0)
- rtld(0) = r(0) or random
+ rtld(0) = conj(r(0)) or random
  rtld(0) = A^H * rtld(0)
  z(0)    = M^-1 * r(0)
  p(0)    = z(0)

@@ -59,7 +59,7 @@
  for k=1,2,...
    z(k-1)    = M^-1 * r(k-1)
    ztld(k-1) = M^-H * rtld(k-1)
-   rho(k-1)  = <z(k-1),rtld(k-1)>
+   rho(k-1)  = <rtld(k-1),z(k-1)>
    beta      = rho(k-1) / rho(k-2)
    p(k)      = z(k-1) + beta*p(k-1)
    ptld(k)   = ztld(k-1) + conj(beta)*ptld(k-1)
@@ -702,7 +702,7 @@ LIS_INT lis_bicg_switch(LIS_SOLVER solver)
  p(0)    = z(0)
  ptld(0) = ztld(0)
  ap(0)   = A * z(0)
- rho(0)  = <ap(0),ztld(0)>
+ rho(0)  = <ztld(0),ap(0)>
  *****************************************
  for k=1,2,...
    aptld(k-1) = A^H * ptld(k-1)
@@ -835,7 +835,7 @@ LIS_INT lis_bicr(LIS_SOLVER solver)
 	lis_vector_copy(z,p);
 	lis_vector_copy(ztld,ptld);
 	lis_matvec(A,z,ap);
-	lis_vector_dot(ap,ztld,&rho_old);
+	lis_vector_dot(ztld,ap,&rho_old);
 
 	for( iter=1; iter<=maxiter; iter++ )
 	{
