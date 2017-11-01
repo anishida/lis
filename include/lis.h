@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"1.8.14"
+#define LIS_VERSION	"1.8.15"
 /**************************************/
 #include <stdio.h>
 #ifdef USE_COMPLEX
@@ -699,7 +699,7 @@ struct LIS_PRECON_STRUCT
 {
 	LIS_INT precon_type;
 	LIS_MATRIX A; /* SSOR */
-	LIS_MATRIX At;
+	LIS_MATRIX Ah;
 	LIS_MATRIX_ILU L; /* ilu(k),ilut,iluc,sainv */
 	LIS_MATRIX_ILU U; /* ilu(k),ilut,iluc,sainv */
 	LIS_MATRIX_DIAG WD; /* bilu(k),bilut,biluc,bjacobi */
@@ -723,7 +723,7 @@ typedef struct LIS_PRECON_STRUCT *LIS_PRECON;
 
 struct LIS_SOLVER_STRUCT
 {
-	LIS_MATRIX A,At;
+	LIS_MATRIX A,Ah;
 	LIS_VECTOR b,x,xx,d;
 	LIS_MATRIX_DIAG WD;
 	LIS_PRECON precon;

@@ -209,7 +209,7 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	LIS_DEBUG_FUNC_IN;
 
 	solver->A        = NULL;
-	solver->At       = NULL;
+	solver->Ah       = NULL;
 	solver->b        = NULL;
 	solver->x        = NULL;
 	solver->d        = NULL;
@@ -327,7 +327,7 @@ LIS_INT lis_solver_destroy(LIS_SOLVER solver)
 	{
 		lis_solver_work_destroy(solver);
 		lis_vector_destroy(solver->d);
-		if( solver->At ) lis_matrix_destroy(solver->At);
+		if( solver->Ah ) lis_matrix_destroy(solver->Ah);
 		if( solver->rhistory ) lis_free(solver->rhistory);
 		lis_free(solver);
 	}
@@ -443,7 +443,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	LIS_VECTOR t;
 	LIS_VECTOR bb;
 	LIS_MATRIX AA,B;
-	LIS_MATRIX At;
+	LIS_MATRIX Ah;
 	char buf[64];
 
 	LIS_VECTOR r,z;
@@ -582,7 +582,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 
 	n       = A->n;
 	t       = NULL;
-	At      = NULL;
+	Ah      = NULL;
 
 
 	p_c_time = lis_wtime();
@@ -811,11 +811,11 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	}
 	if( nsolver==LIS_SOLVER_BICG && is_use_at )
 	{
-	  if( output ) lis_printf(comm,"Use At\n"); 
-	  lis_matrix_duplicate(AA,&At);
-	  lis_matrix_set_type(At,LIS_USE_AT_TYPE[AA->matrix_type]);
-	  lis_matrix_convert(AA,At);
-	  solver->At = At;
+	  if( output ) lis_printf(comm,"Use Ah\n"); 
+	  lis_matrix_duplicate(AA,&Ah);
+	  lis_matrix_set_type(Ah,LIS_USE_AT_TYPE[AA->matrix_type]);
+	  lis_matrix_convert(AA,Ah);
+	  solver->Ah = Ah;
 	}
 
 	solver->x        = xx;

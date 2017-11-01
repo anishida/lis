@@ -74,7 +74,7 @@ LIS_INT lis_idrs_malloc_work(LIS_SOLVER solver)
 	LIS_DEBUG_FUNC_IN;
 
 	/*
-	err = lis_matrix_convert(solver->A,&solver->At,LIS_MATRIX_CCS);
+	err = lis_matrix_convert(solver->A,&solver->Ah,LIS_MATRIX_CCS);
 	if( err ) return err;
 	*/
 
@@ -139,7 +139,7 @@ LIS_INT lis_idr1_malloc_work(LIS_SOLVER solver)
 	LIS_DEBUG_FUNC_IN;
 
 	/*
-	err = lis_matrix_convert(solver->A,&solver->At,LIS_MATRIX_CCS);
+	err = lis_matrix_convert(solver->A,&solver->Ah,LIS_MATRIX_CCS);
 	if( err ) return err;
 	*/
 
