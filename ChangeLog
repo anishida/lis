@@ -1,3 +1,8 @@
+Version 2.0.0  November 1, 2017
+
+  - Added official support for linear solvers generalized for complex problems.
+  - Added official support for unsymmetric eigenvalue problems.
+
 Version 1.8.15  November 1, 2017
 
   - Fixed complex related bugs in BiCR.
@@ -12,7 +17,7 @@ Version 1.8.13  October 30, 2017
 
 Version 1.8.12  October 25, 2017
 
-  - Updated linear solvers for complex arithmetic.
+  - Generalized linear solvers and preconditioners for complex arithmetic.
 
 Version 1.8.11  October 18, 2017
 
@@ -1959,7 +1964,7 @@ Version 1.2.10  July 4, 2009
 Version 1.2.9  July 1, 2009
 
   - Added official support for flag -saamg_theta to set drop criteria for AMG.
-  - Fixed default parameter of theta for nonsymmetric AMG, which caused error
+  - Fixed default parameter of theta for unsymmetric AMG, which caused error
     with Version 1.2.6 or higher (thanks to Kouji Takatani).
   - Added support for test programs to measure SpMV performance.
   - Fixed MPILIBS related bug in configure.in.
@@ -1993,7 +1998,7 @@ Version 1.2.5  December 14, 2008
 
 Version 1.2.4  December 5, 2008
 
-  - Added experimental support for conjugate residual for nonsymmetric eigenproblems.
+  - Added experimental support for conjugate residual for unsymmetric eigenproblems.
   - Fixed minor bugs.
 
 Version 1.2.3  December 4, 2008
@@ -2063,7 +2068,7 @@ Version 1.1.0 beta1  November 7, 2006
 
   - Added support for quadruple precision operations for linear solvers.
   - Added support for Fortran user interface.
-  - Added support for nonsymmetric SAAMG preconditioner (symmetric structure
+  - Added support for unsymmetric SAAMG preconditioner (symmetric structure
     only).
   - Added support for Crout ILU preconditioner.
   - Added support for additive Schwarz preconditioner.
