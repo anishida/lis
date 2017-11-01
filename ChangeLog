@@ -1,3 +1,7 @@
+Version 1.8.15  November 1, 2017
+
+  - Fixed complex related bugs in BiCR.
+
 Version 1.8.14  October 31, 2017
 
   - Fixed bugs on complex arithmetic.
