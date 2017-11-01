@@ -707,18 +707,18 @@ LIS_INT lis_bicg_switch(LIS_SOLVER solver)
  for k=1,2,...
    aptld(k-1) = A^H * ptld(k-1)
    map(k-1)   = M^-1 * ap(k-1)
-   tmpdot1   = <map(k-1),aptld(k-1)>
+   tmpdot1   = <aptld(k-1),map(k-1)>
    alpha     = rho(k-1) / tmpdot1
    x(k)      = x(k-1) + alpha*ap(k-1)
    r(k)      = r(k-1) - alpha*ap(k-1)
-   rtld(k)   = rtld(k-1) - alpha*aptld(k-1)
+   rtld(k)   = rtld(k-1) - conj(alpha)*aptld(k-1)
    z(k)      = z(k-1) - alpha * map(k-1)
    ztld(k)   = M^-T * rtld(k-1)
    az(k)     = A * z(k)
-   rho(k)    = <az(k),ztld(k)>
+   rho(k)    = <ztld(k),az(k)>
    beta      = rho(k) / rho(k-1)
    p(k)      = z(k) + beta*p(k-1)
-   ptld(k)   = ztld(k) + beta*ptld(k-1)
+   ptld(k)   = ztld(k) + conj(beta)*ptld(k-1)
    ap(k)     = az(k) + beta*ap(k-1)
  *****************************************/
 #undef NWORK
@@ -846,8 +846,8 @@ LIS_INT lis_bicr(LIS_SOLVER solver)
 		lis_psolve(solver, ap, map);
 		ptime += lis_wtime()-time;
 
-		/* tmpdot1 = <map,aptld> */
-		lis_vector_dot(map,aptld,&tmpdot1);
+		/* tmpdot1 = <aptld,map> */
+		lis_vector_dot(aptld,map,&tmpdot1);
 		/* test breakdown */
 		if( tmpdot1==0.0 )
 		{
@@ -883,18 +883,18 @@ LIS_INT lis_bicr(LIS_SOLVER solver)
 			return LIS_SUCCESS;
 		}
 		
-		/* rtld = rtld - alpha*aptld */
-		/* z    = z - alpha*map      */
-		/* ztld = M^-T * rtld        */
-		/* az   = A * z              */
-		/* rho = <az,ztld>           */
-		lis_vector_axpy(-alpha,aptld,rtld);
+		/* rtld = rtld - conj(alpha)*aptld */
+		/* z    = z - alpha*map            */
+		/* ztld = M^-T * rtld              */
+		/* az   = A * z                    */
+		/* rho = <ztld,az>                 */
+		lis_vector_axpy(-conj(alpha),aptld,rtld);
 		lis_vector_axpy(-alpha,map,z);
 		time = lis_wtime();
 		lis_psolveh(solver, rtld, ztld);
 		ptime += lis_wtime()-time;
 		lis_matvec(A,z,az);
-		lis_vector_dot(az,ztld,&rho);
+		lis_vector_dot(ztld,az,&rho);
 
 		/* test breakdown */
 		if( rho==0.0 )
@@ -906,13 +906,13 @@ LIS_INT lis_bicr(LIS_SOLVER solver)
 			return LIS_BREAKDOWN;
 		}
 
-		/* beta = rho / rho_old    */
-		/* p    = z    + beta*p    */
-		/* ptld = ztld + beta*ptld */
-		/* ap   = az   + beta*ap   */
+		/* beta = rho / rho_old          */
+		/* p    = z    + beta*p          */
+		/* ptld = ztld + conj(beta)*ptld */
+		/* ap   = az   + beta*ap         */
 		beta = rho / rho_old;
 		lis_vector_xpay(z,beta,p);
-		lis_vector_xpay(ztld,beta,ptld);
+		lis_vector_xpay(ztld,conj(beta),ptld);
 		lis_vector_xpay(az,beta,ap);
 
 		rho_old = rho;
