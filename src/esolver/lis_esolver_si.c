@@ -183,6 +183,8 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   lis_vector_nrm2(r, &nrm2);
   lis_vector_scale(1.0/nrm2,r);
 
+  if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, oshift);  
+
   lis_esolver_get_esolvername(niesolver, esolvername);
   if( output ) lis_printf(comm,"inner eigensolver     : %s\n", esolvername);
 
@@ -313,12 +315,12 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
       switch ( niesolver )
 	{
 	case LIS_ESOLVER_PI:
-	  esolver->evalue[j-1] = theta;
+	  esolver->evalue[j-1] = theta + oshift;
 	  esolver->resid[j-1] = resid;
 	  esolver->iter[j-1] = iter;
 	  break;
 	case LIS_ESOLVER_II:
-	  esolver->evalue[j-1] = 1/theta;
+	  esolver->evalue[j-1] = 1/theta + oshift;
 	  esolver->resid[j-1] = resid;
 	  esolver->iter[j-1] = iter;
 	  break;
@@ -339,6 +341,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	}
     }
   
+  if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);  
   lis_vector_copy(esolver->evector[0], esolver->x);
 
   switch ( niesolver )
@@ -487,6 +490,8 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   lis_vector_set_all(1.0,y);
   lis_vector_nrm2(y,&nrm2);
   lis_vector_scale(1.0/nrm2,y);
+
+  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, oshift);  
 
   lis_esolver_get_esolvername(nigesolver, esolvername);
   if( output ) lis_printf(comm,"inner eigensolver     : %s\n", esolvername);
@@ -652,12 +657,12 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
       switch ( nigesolver )
 	{
 	case LIS_ESOLVER_GPI:
-	  esolver->evalue[j-1] = theta;
+	  esolver->evalue[j-1] = theta + oshift;
 	  esolver->resid[j-1] = resid;
 	  esolver->iter[j-1] = iter;
 	  break;
 	case LIS_ESOLVER_GII:
-	  esolver->evalue[j-1] = 1.0/theta;
+	  esolver->evalue[j-1] = 1.0/theta + oshift;
 	  esolver->resid[j-1] = resid;
 	  esolver->iter[j-1] = iter;
 	  break;
@@ -678,6 +683,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	}
     }
   
+  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, -oshift);  
   lis_vector_copy(esolver->evector[0], esolver->x);
 
   lis_precon_destroy(precon);
