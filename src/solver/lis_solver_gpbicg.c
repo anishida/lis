@@ -1254,7 +1254,7 @@ LIS_INT lis_gpbicg_switch(LIS_SOLVER solver)
  * Preconditioned Generalized Product type of BiConjugate Residual  *
  ********************************************************************
  r(0)    = b - Ax(0)
- rtld(0) = r(0) or random
+ rtld(0) = conj(r(0)) or random
  rtld(0) = A^H * rtld(0)
  p(0)    = M^-1 * r(0)
  rho(0)  = <rtld,p(0)>

@@ -51,7 +51,7 @@
  * Preconditioned BiConjugate Gradient Safe *
  ********************************************
  r(0)    = b - Ax(0)
- rtld(0) = r(0) or random
+ rtld(0) = conj(r(0)) or random
  mr(0)   = M^-1 * r(0)
  amr(0)  = A * mr(0)
  p(0)    = mr(0)
@@ -953,7 +953,7 @@ LIS_INT lis_bicgsafe_switch(LIS_SOLVER solver)
  * Preconditioned BiConjugate Residual Safe *
  ********************************************
  r(0)    = b - Ax(0)
- rtld(0) = r(0) or random
+ rtld(0) = conj(r(0)) or random
  artld(0)= A^H * rtld(0)
  mr(0)   = M^-1 * r(0)
  amr(0)  = A * mr(0)
