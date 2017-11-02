@@ -696,7 +696,7 @@ LIS_INT lis_bicg_switch(LIS_SOLVER solver)
  * Preconditioned BiConjugate Residual   *
  *****************************************
  r(0)    = b - Ax(0)
- rtld(0) = r(0) or random
+ rtld(0) = conj(r(0)) or random
  z(0)    = M^-1 * r(0)
  ztld(0) = M^-1 * rtld(0)
  p(0)    = z(0)
