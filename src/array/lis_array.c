@@ -61,8 +61,8 @@
  * lis_array_reciprocal		x_i <- 1 / x_i
  * lis_array_conjugate		x_i <- conj(x_i)
  * lis_array_shift		x_i <- x_i - alpha
- * lis_array_dot		v <- y^H * x
- * lis_array_nhdot		v <- y^T * x
+ * lis_array_dot		v <- x^H * y
+ * lis_array_nhdot		v <- x^T * y
  * lis_array_nrm1		v <- ||x||_1
  * lis_array_nrm2		v <- ||x||_2
  * lis_array_nrmi		v <- ||x||_infinity
@@ -317,7 +317,7 @@ LIS_INT lis_array_dot(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *value
   for(i=0;i<n;i++)
     {
 #ifdef _COMPLEX
-      *value = *value + x[i] * conj(y[i]);
+      *value = *value + conj(x[i]) * y[i];
 #else      
       *value = *value + x[i] * y[i];
 #endif      

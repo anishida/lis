@@ -5319,7 +5319,7 @@ DNS形式の配列を行列$A$に関連付ける.
 \end{screen}
 {\bf 機能}\\
 \indent
-エルミート内積$y^{H}x$を計算する.  
+エルミート内積$x^{H}y$を計算する.  
 \\ \\
 \noindent
 {\bf 入力}
@@ -5340,7 +5340,7 @@ DNS形式の配列を行列$A$に関連付ける.
 \end{screen}
 {\bf 機能}\\
 \indent
-非エルミート内積$y^{T}x$を計算する.  
+非エルミート内積$x^{T}y$を計算する.  
 \\ \\
 \noindent
 {\bf 入力}
@@ -5702,15 +5702,15 @@ COO    &  ○  &  ○  &  ○  & CSR  & CSR & CSR & CSR & CSC & CSR &     & CSR 
 \item[\tt ierr] リターンコード
 \end{namelist}
 
-\subsubsection{lis\_matvect}
+\subsubsection{lis\_matvech}
 \begin{screen}
-\verb|C       LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y)|\\
-\verb|Fortran subroutine lis_matvect(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y,|\\
+\verb|C       LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y)|\\
+\verb|Fortran subroutine lis_matvech(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y,|\\
 \verb|         LIS_INTEGER ierr)|
 \end{screen}
 {\bf 機能}\\
 \indent
-行列ベクトル積$y = A^{T}x$を計算する. 
+行列ベクトル積$y = A^{H}x$を計算する. 
 \\ \\
 \noindent
 {\bf 入力}
@@ -5720,7 +5720,7 @@ COO    &  ○  &  ○  &  ○  & CSR  & CSR & CSR & CSR & CSC & CSR &     & CSR 
 \end{namelist}
 {\bf 出力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt y] $A^{T}x$
+\item[\tt y] $A^{H}x$
 \item[\tt ierr] リターンコード
 \end{namelist}
 
@@ -7169,7 +7169,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \end{screen}
 {\bf 機能}\\
 \indent
-エルミート内積$y^{H}x$を計算する.  
+エルミート内積$x^{H}y$を計算する.  
 \\ \\
 \noindent
 {\bf 入力}
@@ -7193,7 +7193,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \end{screen}
 {\bf 機能}\\
 \indent
-非エルミート内積$y^{T}x$を計算する.  
+非エルミート内積$x^{T}y$を計算する.  
 \\ \\
 \noindent
 {\bf 入力}
@@ -7328,16 +7328,16 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \end{namelist}
 
 \newpage
-\subsubsection{lis\_array\_matvect}
+\subsubsection{lis\_array\_matvech}
 \begin{screen}
-\verb|C       LIS_INT lis_array_matvect(LIS_INT n, LIS_SCALAR a[], LIS_SCALAR x[],|\\
+\verb|C       LIS_INT lis_array_matvech(LIS_INT n, LIS_SCALAR a[], LIS_SCALAR x[],|\\
 \verb|         LIS_SCALAR y[], LIS_INT op)|\\
-\verb|Fortran subroutine lis_array_matvect(LIS_INTEGER n, LIS_SCALAR a(), LIS_SCALAR x(),|\\
+\verb|Fortran subroutine lis_array_matvech(LIS_INTEGER n, LIS_SCALAR a(), LIS_SCALAR x(),|\\
 \verb|         LIS_SCALAR y(), LIS_INTEGER op, LIS_INTEGER ierr)|
 \end{screen}
 {\bf 機能}\\
 \indent
-行列ベクトル積$A^{T}x$を計算する. 
+行列ベクトル積$A^{H}x$を計算する. 
 \\ \\
 \noindent
 {\bf 入力}
@@ -7347,8 +7347,8 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \item[\tt x] 次数$n$のベクトル$x$を格納する配列
 \item[\tt y] 次数$n$のベクトル$y$を格納する配列
 \item[\tt op] \begin{description}
-\item[\tt LIS\_INS\_VALUE] 挿入    : $y = A^Tx$
-\item[\tt LIS\_SUB\_VALUE] 減算代入: $y = y - A^Tx$
+\item[\tt LIS\_INS\_VALUE] 挿入    : $y = A^Hx$
+\item[\tt LIS\_SUB\_VALUE] 減算代入: $y = y - H^Tx$
 \end{description}
 \end{namelist}
 {\bf 出力}

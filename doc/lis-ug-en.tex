@@ -5469,7 +5469,7 @@ Get the shifted values of the elements of vector $x$.
 \end{screen}
 {\bf Description}\\
 \indent
-Calculate the Hermitian inner product $y^{H}x$.
+Calculate the Hermitian inner product $x^{H}y$.
 \\ \\
 \noindent
 {\bf Input}
@@ -5490,7 +5490,7 @@ Calculate the Hermitian inner product $y^{H}x$.
 \end{screen}
 {\bf Description}\\
 \indent
-Calculate the non-Hermitian inner product $y^{T}x$.
+Calculate the non-Hermitian inner product $x^{T}y$.
 \\ \\
 \noindent
 {\bf Input}
@@ -5851,15 +5851,15 @@ Calculate the matrix-vector product $y=Ax$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-\subsubsection{lis\_matvect}
+\subsubsection{lis\_matvech}
 \begin{screen}
-\verb|C       LIS_INT lis_matvect(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y)|\\
-\verb|Fortran subroutine lis_matvect(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y,|\\
+\verb|C       LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y)|\\
+\verb|Fortran subroutine lis_matvech(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y,|\\
 \verb|         LIS_INTEGER ierr)|
 \end{screen}
 {\bf Description}\\
 \indent
-Calculate the matrix-vector product $y=A^{T}x$.
+Calculate the matrix-vector product $y=A^{H}x$.
 \\ \\
 \noindent
 {\bf Input}
@@ -5869,7 +5869,7 @@ Calculate the matrix-vector product $y=A^{T}x$.
 \end{namelist}
 {\bf Output}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt y] $A^{T}x$
+\item[\tt y] $A^{H}x$
 \item[\tt ierr] The return code
 \end{namelist}
 
@@ -7359,7 +7359,7 @@ Get the shifted values of the elements of vector $x$.
 \end{screen}
 {\bf Description}\\
 \indent
-Calculate the Hermitian inner product $y^{H}x$ of vectors $x, y$.
+Calculate the Hermitian inner product $x^{H}y$ of vectors $x, y$.
 \\ \\
 \noindent
 {\bf Input}
@@ -7383,7 +7383,7 @@ Calculate the Hermitian inner product $y^{H}x$ of vectors $x, y$.
 \end{screen}
 {\bf Description}\\
 \indent
-Calculate the non-Hermitian inner product $y^{T}x$ of vectors $x, y$.
+Calculate the non-Hermitian inner product $x^{T}y$ of vectors $x, y$.
 \\ \\
 \noindent
 {\bf Input}
@@ -7517,16 +7517,16 @@ Calculate the matrix-vector product $Ax$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-\subsubsection{lis\_array\_matvect}
+\subsubsection{lis\_array\_matvech}
 \begin{screen}
-\verb|C       LIS_INT lis_array_matvect(LIS_INT n, LIS_SCALAR a[], LIS_SCALAR x[],|\\
+\verb|C       LIS_INT lis_array_matvech(LIS_INT n, LIS_SCALAR a[], LIS_SCALAR x[],|\\
 \verb|         LIS_SCALAR y[], LIS_INT op)|\\
-\verb|Fortran subroutine lis_array_matvect(LIS_INTEGER n, LIS_SCALAR a(), LIS_SCALAR x(),|\\
+\verb|Fortran subroutine lis_array_matvech(LIS_INTEGER n, LIS_SCALAR a(), LIS_SCALAR x(),|\\
 \verb|         LIS_SCALAR y(), LIS_INTEGER op, LIS_INTEGER ierr)|
 \end{screen}
 {\bf Description}\\
 \indent
-Calculate the matrix-vector product $A^{T}x$.
+Calculate the matrix-vector product $A^{H}x$.
 \\ \\
 \noindent
 {\bf Input}
@@ -7536,8 +7536,8 @@ Calculate the matrix-vector product $A^{T}x$.
 \item[\tt x] The array that stores vector $x$ of size $n$
 \item[\tt y] The array that stores vector $y$ of size $n$
 \item[\tt op] \begin{description}
-\item[\tt LIS\_INS\_VALUE]: $y = A^Tx$
-\item[\tt LIS\_SUB\_VALUE]: $y = y - A^Tx$
+\item[\tt LIS\_INS\_VALUE]: $y = A^Hx$
+\item[\tt LIS\_SUB\_VALUE]: $y = y - A^Hx$
 \end{description}
 \end{namelist}
 {\bf Output}
