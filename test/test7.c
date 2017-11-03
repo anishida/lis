@@ -65,7 +65,7 @@ LIS_INT main(int argc, char* argv[])
 #endif
 	
 #ifdef HAVE_COMPLEX_H
-	lis_printf(comm,"complex number z = (%f, %)\n", (double)creal(z), (double)cimag(z));
+	lis_printf(comm,"complex number z = (%f, %f)\n", (double)creal(z), (double)cimag(z));
 #else	
 	lis_printf(comm,"complex number z = (%f, %f)\n", (double)z[0], (double)z[1]);
 #endif
