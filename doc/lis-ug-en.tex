@@ -254,7 +254,16 @@ and {\tt -hybrid\_omega}, respectively.
 \begin{enumerate}
 \item Addition: Support for linear solvers generalized for complex arithmetic.
 \item Addition: Support for unsymmetric eigenvalue problems.
-\item Change: Definition of Hermition inner product $(x,y)=y^{H}x$ to $(x,y)=x^{H}y$.
+\item Change: Definition of the Hermition inner product $(x,y)=y^{H}x$ to $(x,y)=x^{H}y$.
+\item Change: Names and definitions of the functions 
+      {\tt lis\_matvect*()},
+      {\tt lis\_array\_matvect*()}, \\
+      {\tt lis\_matrix\_solvet*()}, and 
+      {\tt lis\_psolvet*()} for $A^T$, to 
+      {\tt lis\_matvech*()}, 
+      {\tt lis\_array\_matvech*()}, \\
+      {\tt lis\_matrix\_solveh*()}, and 
+      {\tt lis\_psolveh*()} for $A^H$, respectively. 
 \end{enumerate}
 
 \newpage
