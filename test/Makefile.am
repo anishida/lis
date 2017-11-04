@@ -11,7 +11,7 @@ test_DATA = testmat.mtx testmat2.mtx testmat0.mtx testvec0.mtx
 
 test_SCRIPTS = defs test.sh
 
-test_PROGRAMS = etest1 etest2 etest3 etest4 etest5 etest6 etest7 getest1 getest5 spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b spmvtest4 spmvtest5 test1 test2 test2b test3 test3b test3c test4 test5 test6 test7
+test_PROGRAMS = etest1 etest2 etest3 etest4 etest5 etest5b etest6 etest7 getest1 getest5 getest5b spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b spmvtest4 spmvtest5 test1 test2 test2b test3 test3b test3c test4 test5 test6 test7
 if ENABLE_FORTRAN
   test_PROGRAMS += etest1f etest4f test1f test4f test7f
 endif
@@ -29,10 +29,12 @@ etest2_SOURCES = etest2.c
 etest3_SOURCES = etest3.c
 etest4_SOURCES = etest4.c
 etest5_SOURCES = etest5.c
+etest5b_SOURCES = etest5b.c
 etest6_SOURCES = etest6.c
 etest7_SOURCES = etest7.c
 getest1_SOURCES = getest1.c
 getest5_SOURCES = getest5.c
+getest5b_SOURCES = getest5b.c
 spmvtest1_SOURCES = spmvtest1.c
 spmvtest2_SOURCES = spmvtest2.c
 spmvtest2b_SOURCES = spmvtest2b.c
@@ -67,7 +69,9 @@ bin_PROGRAMS = esolve gesolve hpcg_kernel hpcg_spmvtest lsolve spmvtest1 spmvtes
 
 lsolve_SOURCES = test1.c
 esolve_SOURCES = etest5.c
+esolver_SOURCES = etest5b.c
 gesolve_SOURCES = getest5.c
+gesolver_SOURCES = getest5b.c
 hpcg_kernel_SOURCES = test3b.c
 hpcg_spmvtest_SOURCES = spmvtest3b.c
 

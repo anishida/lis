@@ -165,6 +165,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   LIS_ESOLVER esolver2;
   char esolvername[128],solvername[128],preconname[128];
   LIS_INT nsol,precon_type;
+  LIS_INT rval;
 
   LIS_DEBUG_FUNC_IN;
 
@@ -180,6 +181,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
   niesolver = esolver->options[LIS_EOPTIONS_INNER_ESOLVER];
+  rval = esolver->options[LIS_EOPTIONS_RVAL];  
 
   t = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_eli::t");
   tq = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_eli::tq");
@@ -272,10 +274,16 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
 	  lis_printf(comm,"Lanczos: eigenvalue               = %e\n", (double)esolver->evalue[i]);
 #endif	  
 	}
-      /*
-      lis_printf(comm,"\nwhere |(Q^T)TQ_{2,1}| = %e\n\n",qrerr);
-      */
-      lis_printf(comm,"\nrefined eigenpairs:\n\n");
+      lis_printf(comm,"\n");
+    }
+  if( rval )
+    {
+      return LIS_SUCCESS;
+    }
+  
+  if( output ) 
+    {
+      lis_printf(comm,"refined eigenpairs:\n\n");
     }
 
   lis_esolver_create(&esolver2);
@@ -462,6 +470,7 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
   LIS_ESOLVER esolver2;
   char esolvername[128],solvername[128],preconname[128];
   LIS_INT nsol,precon_type;
+  LIS_INT rval;  
 
   LIS_DEBUG_FUNC_IN;
 
@@ -477,6 +486,7 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
   nigesolver = esolver->options[LIS_EOPTIONS_INNER_GENERALIZED_ESOLVER];
+  rval = esolver->options[LIS_EOPTIONS_RVAL];    
 
   t = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_egli::t");
   tq = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_egli::tq");
@@ -605,10 +615,13 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
 	  lis_printf(comm,"Generalized Lanczos: eigenvalue               = %e\n", (double)esolver->evalue[i]);
 #endif	  
 	}
-      /*
-      lis_printf(comm,"\nwhere |(Q^T)TQ_{2,1}| = %e\n\n",qrerr);
-      */
-      lis_printf(comm,"\nrefined eigenpairs:\n\n");
+      lis_printf(comm,"\n");
+    }
+  if( rval ) return LIS_SUCCESS;
+      
+  if( output ) 
+    {
+      lis_printf(comm,"refined eigenpairs:\n\n");
     }
 
   lis_esolver_create(&esolver2);
