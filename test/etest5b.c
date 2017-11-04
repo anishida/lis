@@ -70,7 +70,7 @@ LIS_INT main(int argc, char* argv[])
     
   if( argc < 3 )
     {
-      lis_printf(comm,"Usage: %s matrix_filename evalues_filename evectors_filename residuals_filename iters_filename [options]\n", argv[0]);
+      lis_printf(comm,"Usage: %s matrix_filename evalues_filename [options]\n", argv[0]);
       CHKERR(1);			
     }
 
@@ -94,8 +94,6 @@ LIS_INT main(int argc, char* argv[])
   CHKERR(err);
   lis_esolver_get_esolver(esolver,&nesol);
   lis_esolver_get_esolvername(nesol,esolvername);
-
-  lis_printf(comm,"%s: elapsed time         = %e sec.\n", esolvername, time);
 
   lis_vector_create(LIS_COMM_WORLD,&y);
   lis_esolver_get_evalues(esolver,y);
