@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis ユーザガイド}\\
-バージョン 2.0.0
+バージョン 2.0.1
 \end{flushleft}
 
 \vspace*{2cm}
@@ -613,7 +613,7 @@ BiCG: relative residual    = 6.221213e-15
 \begin{verbatim}
 ($INSTALLDIR)
  +bin
- |   +lsolve esolve gesolve hpcg_kernel hpcg_spmvtest spmvtest*
+ |   +lsolve esolve esolver gesolve gesolver hpcg_kernel hpcg_spmvtest spmvtest*
  +include
  |   +lis_config.h lis.h lisf.h
  +lib
@@ -628,9 +628,9 @@ BiCG: relative residual    = 6.221213e-15
 ディレクトリ{\tt lis-(\$VERSION)}において次のコマンドを入力し, ディレク
 トリ{\tt examples/lis}に生成された実行ファイルを用いて検証を行う. \\
  \verb+      > make installcheck+ \\
-{\tt examples/lis}下の{\tt test1}, {\tt etest5}, {\tt getest5}, 
+{\tt examples/lis}下の{\tt test1}, {\tt etest5}, {\tt etest5b}, {\tt getest5}, {\tt getest5b}, 
 {{\tt test3b}, {{\tt spmvtest3b}は, 
-{\tt lsolve}, {\tt esolve}, {\tt gesolve},\\ 
+{\tt lsolve}, {\tt esolve}, {\tt esolver}, {\tt gesolve}, {\tt gesolver}, 
 {\tt hpcg\_kernel}, {\tt hpcg\_spmvtest}の別名で{\tt (\$INSTALLDIR)/bin}に複製される.
 {\tt examples/lis/spmvtest*}も, それぞれ{\tt (\$INSTALLDIR)/bin}に
 複製される.
@@ -890,12 +890,23 @@ A =
 \verb+ iters_filename [options] +\\
 と入力すると, {\tt matrix\_filename}から行列データを読み込み, 
 標準固有値問題$Ax=\lambda x$を{\tt options}で
-指定された解法で解いて, 指定された固有値を標準出力に書き出す. 
+指定された解法で解く. 
 また, オプション {\tt -ss}により指定された個数の固有値を
 {\tt evalues\_filename}に, 対応する固有ベクトル, 残差ノルム及び反復回数を
-{\tt evectors\_filename}, \\
+{\tt evectors\_filename}, 
 {\tt residuals\_filename}及び{\tt iters\_filename}に
 拡張Matrix Market形式で書き出す.
+入力可能な行列データ形式はMatrix Market形式, もしくはHarwell-Boeing形式の
+いずれかである. 
+
+\subsubsection{etest5b}
+ディレクトリ{\tt lis-(\$VERSION)/test}において\\
+ \verb+      > etest5b matrix_filename evalues_filename [options] +\\
+と入力すると, {\tt matrix\_filename}から行列データを読み込み, 
+標準固有値問題$Ax=\lambda x$を{\tt options}で
+指定された解法で解く. 
+また, オプション {\tt -ss}により指定された個数のRitz値を
+{\tt evalues\_filename}に拡張Matrix Market形式で書き出す.
 入力可能な行列データ形式はMatrix Market形式, もしくはHarwell-Boeing形式の
 いずれかである. 
 
@@ -905,11 +916,22 @@ A =
 \verb+ residuals_filename iters_filename [options] +\\
 と入力すると, {\tt matrix\_a\_filename}及び{\tt matrix\_b\_filename}から
 行列データを読み込み, 一般化固有値問題$Ax=\lambda Bx$を{\tt options}で
-指定された解法で解いて, 指定された固有値を標準出力に書き出す. 
+指定された解法で解く.
 また, オプション {\tt -ss}により指定された個数の固有値を
 {\tt evalues\_filename}に, 対応する固有ベクトル, 残差ノルム及び反復回数を
 {\tt evectors\_filename}, {\tt residuals\_filename}及び{\tt iters\_filename}に
 拡張Matrix Market形式で書き出す. 
+入力可能な行列データ形式はMatrix Market形式, もしくはHarwell-Boeing形式の
+いずれかである. 
+
+\subsubsection{getest5b}
+ディレクトリ{\tt lis-(\$VERSION)/test}において\\
+ \verb+      > getest5b matrix_a_filename matrix_b_filename evalues_filename [options] +\\
+と入力すると, {\tt matrix\_a\_filename}及び{\tt matrix\_b\_filename}から
+行列データを読み込み, 一般化固有値問題$Ax=\lambda Bx$を{\tt options}で
+指定された解法で解く.
+また, オプション {\tt -ss}により指定された個数のRitz値を
+{\tt evalues\_filename}に拡張Matrix Market形式で書き出す. 
 入力可能な行列データ形式はMatrix Market形式, もしくはHarwell-Boeing形式の
 いずれかである. 
 
@@ -920,8 +942,8 @@ A =
 と入力すると, 3次元Laplace作用素を7点中心差分により離散化して得られる
 次数$lmn$の行列$A$に関する固有値問題
 $Ax=\lambda x$を, \verb|matrix_type|で指定された行列格納形式, 
-{\tt options}で指定された解法で解き, 指定された固有値を
-標準出力に書き出す. また, オプション {\tt -ss}により指定された個数の固有値を
+{\tt options}で指定された解法で解く.
+また, オプション {\tt -ss}により指定された個数の固有値を
 {\tt evalues\_filename}に, 対応する固有ベクトル, 残差ノルム及び反復回数を
 {\tt evectors\_filename}, {\tt residuals\_filename}及び
 {\tt iters\_filename}に拡張Matrix Market形式で書き出す. 
@@ -2070,6 +2092,9 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \verb=-ef [0]=         & 固有値解法の精度 \\
                        & \verb=-ef {double|0}       =   倍精度 \\
                        & \verb=-ef {quad|1}         =   double-double型4倍精度 \\
+\verb=-rval [0]=       & Ritz値 \\
+                       & \verb=-rval {false|0}     =  Ritz値をもとに固有値を計算 \\
+                       & \verb=-rval {true|1}      =  Ritz値のみを計算 \\
 \hline         
 \end{tabular}
 \end{center}
@@ -6459,6 +6484,9 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \verb=-ef [0]=         & 固有値解法の精度 \\
                        & \verb=-ef {double|0}       =   倍精度 \\
                        & \verb=-ef {quad|1}         =   double-double型4倍精度 \\
+\verb=-rval [0]=       & Ritz値 \\
+                       & \verb=-rval {false|0}     =  Ritz値をもとに固有値を計算 \\
+                       & \verb=-rval {true|1}      =  Ritz値のみを計算 \\
 \hline         
 \end{tabular}
 \end{center}

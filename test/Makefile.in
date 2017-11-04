@@ -55,14 +55,15 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
-	etest4$(EXEEXT) etest5$(EXEEXT) etest6$(EXEEXT) \
-	etest7$(EXEEXT) getest1$(EXEEXT) getest5$(EXEEXT) \
-	spmvtest1$(EXEEXT) spmvtest2$(EXEEXT) spmvtest2b$(EXEEXT) \
-	spmvtest3$(EXEEXT) spmvtest3b$(EXEEXT) spmvtest4$(EXEEXT) \
-	spmvtest5$(EXEEXT) test1$(EXEEXT) test2$(EXEEXT) \
-	test2b$(EXEEXT) test3$(EXEEXT) test3b$(EXEEXT) test3c$(EXEEXT) \
-	test4$(EXEEXT) test5$(EXEEXT) test6$(EXEEXT) test7$(EXEEXT) \
-	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
+	etest4$(EXEEXT) etest5$(EXEEXT) etest5b$(EXEEXT) \
+	etest6$(EXEEXT) etest7$(EXEEXT) getest1$(EXEEXT) \
+	getest5$(EXEEXT) getest5b$(EXEEXT) spmvtest1$(EXEEXT) \
+	spmvtest2$(EXEEXT) spmvtest2b$(EXEEXT) spmvtest3$(EXEEXT) \
+	spmvtest3b$(EXEEXT) spmvtest4$(EXEEXT) spmvtest5$(EXEEXT) \
+	test1$(EXEEXT) test2$(EXEEXT) test2b$(EXEEXT) test3$(EXEEXT) \
+	test3b$(EXEEXT) test3c$(EXEEXT) test4$(EXEEXT) test5$(EXEEXT) \
+	test6$(EXEEXT) test7$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
+	$(am__EXEEXT_3)
 @ENABLE_FORTRAN_TRUE@am__append_1 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_2 = test2f test6f 
 @ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__append_3 = test8f
@@ -131,6 +132,10 @@ am_etest5_OBJECTS = etest5.$(OBJEXT)
 etest5_OBJECTS = $(am_etest5_OBJECTS)
 etest5_LDADD = $(LDADD)
 etest5_DEPENDENCIES =
+am_etest5b_OBJECTS = etest5b.$(OBJEXT)
+etest5b_OBJECTS = $(am_etest5b_OBJECTS)
+etest5b_LDADD = $(LDADD)
+etest5b_DEPENDENCIES =
 am_etest6_OBJECTS = etest6.$(OBJEXT)
 etest6_OBJECTS = $(am_etest6_OBJECTS)
 etest6_LDADD = $(LDADD)
@@ -151,6 +156,10 @@ am_getest5_OBJECTS = getest5.$(OBJEXT)
 getest5_OBJECTS = $(am_getest5_OBJECTS)
 getest5_LDADD = $(LDADD)
 getest5_DEPENDENCIES =
+am_getest5b_OBJECTS = getest5b.$(OBJEXT)
+getest5b_OBJECTS = $(am_getest5b_OBJECTS)
+getest5b_LDADD = $(LDADD)
+getest5b_DEPENDENCIES =
 am_hpcg_kernel_OBJECTS = test3b.$(OBJEXT)
 hpcg_kernel_OBJECTS = $(am_hpcg_kernel_OBJECTS)
 hpcg_kernel_LDADD = $(LDADD)
@@ -306,11 +315,11 @@ FCLINK = $(LIBTOOL) --tag=FC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 CCLD = $(CC)
 SOURCES = $(esolve_SOURCES) $(etest1_SOURCES) $(etest1f_SOURCES) \
 	$(etest2_SOURCES) $(etest3_SOURCES) $(etest4_SOURCES) \
-	$(etest4f_SOURCES) $(etest5_SOURCES) $(etest6_SOURCES) \
-	$(etest7_SOURCES) $(gesolve_SOURCES) $(getest1_SOURCES) \
-	$(getest5_SOURCES) $(hpcg_kernel_SOURCES) \
-	$(hpcg_spmvtest_SOURCES) $(lsolve_SOURCES) \
-	$(spmvtest1_SOURCES) $(spmvtest2_SOURCES) \
+	$(etest4f_SOURCES) $(etest5_SOURCES) $(etest5b_SOURCES) \
+	$(etest6_SOURCES) $(etest7_SOURCES) $(gesolve_SOURCES) \
+	$(getest1_SOURCES) $(getest5_SOURCES) $(getest5b_SOURCES) \
+	$(hpcg_kernel_SOURCES) $(hpcg_spmvtest_SOURCES) \
+	$(lsolve_SOURCES) $(spmvtest1_SOURCES) $(spmvtest2_SOURCES) \
 	$(spmvtest2b_SOURCES) $(spmvtest3_SOURCES) \
 	$(spmvtest3b_SOURCES) $(spmvtest4_SOURCES) \
 	$(spmvtest5_SOURCES) $(test1_SOURCES) $(test1f_SOURCES) \
@@ -323,8 +332,9 @@ DIST_SOURCES = $(esolve_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
 	$(etest3_SOURCES) $(etest4_SOURCES) \
 	$(am__etest4f_SOURCES_DIST) $(etest5_SOURCES) \
-	$(etest6_SOURCES) $(etest7_SOURCES) $(gesolve_SOURCES) \
-	$(getest1_SOURCES) $(getest5_SOURCES) $(hpcg_kernel_SOURCES) \
+	$(etest5b_SOURCES) $(etest6_SOURCES) $(etest7_SOURCES) \
+	$(gesolve_SOURCES) $(getest1_SOURCES) $(getest5_SOURCES) \
+	$(getest5b_SOURCES) $(hpcg_kernel_SOURCES) \
 	$(hpcg_spmvtest_SOURCES) $(lsolve_SOURCES) \
 	$(spmvtest1_SOURCES) $(spmvtest2_SOURCES) \
 	$(spmvtest2b_SOURCES) $(spmvtest3_SOURCES) \
@@ -504,10 +514,12 @@ etest2_SOURCES = etest2.c
 etest3_SOURCES = etest3.c
 etest4_SOURCES = etest4.c
 etest5_SOURCES = etest5.c
+etest5b_SOURCES = etest5b.c
 etest6_SOURCES = etest6.c
 etest7_SOURCES = etest7.c
 getest1_SOURCES = getest1.c
 getest5_SOURCES = getest5.c
+getest5b_SOURCES = getest5b.c
 spmvtest1_SOURCES = spmvtest1.c
 spmvtest2_SOURCES = spmvtest2.c
 spmvtest2b_SOURCES = spmvtest2b.c
@@ -535,7 +547,9 @@ test7_SOURCES = test7.c
 @ENABLE_F90_TRUE@test8f_SOURCES = test8f.F90
 lsolve_SOURCES = test1.c
 esolve_SOURCES = etest5.c
+esolver_SOURCES = etest5b.c
 gesolve_SOURCES = getest5.c
+gesolver_SOURCES = getest5b.c
 hpcg_kernel_SOURCES = test3b.c
 hpcg_spmvtest_SOURCES = spmvtest3b.c
 PPF77COMPILE = $(F77) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
@@ -728,6 +742,9 @@ etest4f$(EXEEXT): $(etest4f_OBJECTS) $(etest4f_DEPENDENCIES) $(EXTRA_etest4f_DEP
 etest5$(EXEEXT): $(etest5_OBJECTS) $(etest5_DEPENDENCIES) $(EXTRA_etest5_DEPENDENCIES) 
 	@rm -f etest5$(EXEEXT)
 	$(LINK) $(etest5_OBJECTS) $(etest5_LDADD) $(LIBS)
+etest5b$(EXEEXT): $(etest5b_OBJECTS) $(etest5b_DEPENDENCIES) $(EXTRA_etest5b_DEPENDENCIES) 
+	@rm -f etest5b$(EXEEXT)
+	$(LINK) $(etest5b_OBJECTS) $(etest5b_LDADD) $(LIBS)
 etest6$(EXEEXT): $(etest6_OBJECTS) $(etest6_DEPENDENCIES) $(EXTRA_etest6_DEPENDENCIES) 
 	@rm -f etest6$(EXEEXT)
 	$(LINK) $(etest6_OBJECTS) $(etest6_LDADD) $(LIBS)
@@ -743,6 +760,9 @@ getest1$(EXEEXT): $(getest1_OBJECTS) $(getest1_DEPENDENCIES) $(EXTRA_getest1_DEP
 getest5$(EXEEXT): $(getest5_OBJECTS) $(getest5_DEPENDENCIES) $(EXTRA_getest5_DEPENDENCIES) 
 	@rm -f getest5$(EXEEXT)
 	$(LINK) $(getest5_OBJECTS) $(getest5_LDADD) $(LIBS)
+getest5b$(EXEEXT): $(getest5b_OBJECTS) $(getest5b_DEPENDENCIES) $(EXTRA_getest5b_DEPENDENCIES) 
+	@rm -f getest5b$(EXEEXT)
+	$(LINK) $(getest5b_OBJECTS) $(getest5b_LDADD) $(LIBS)
 hpcg_kernel$(EXEEXT): $(hpcg_kernel_OBJECTS) $(hpcg_kernel_DEPENDENCIES) $(EXTRA_hpcg_kernel_DEPENDENCIES) 
 	@rm -f hpcg_kernel$(EXEEXT)
 	$(LINK) $(hpcg_kernel_OBJECTS) $(hpcg_kernel_LDADD) $(LIBS)
@@ -868,10 +888,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/etest3.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/etest4.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/etest5.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/etest5b.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/etest6.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/etest7.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getest1.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getest5.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getest5b.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spmvtest1.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spmvtest2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spmvtest2b.Po@am__quote@

@@ -1,0 +1,104 @@
+.TH gesolver 1 "4 Nov 2017" "Man Page" "Utility Commands"
+
+.SH NAME
+
+gesolve \- eigensolver for generalized eigenvalue problems (Ritz values only)
+
+.SH SYNOPSIS
+
+\fBgesolve\fR \fImatrix_a_filename matrix_b_filename evalues_filename \fR [\fIoptions\fR]
+
+.SH DESCRIPTION
+
+This program inputs the matrix data from \fImatrix_a_filename\fR \fImatrix_b_filename\fR, and solves the 
+generalized eigenvalue problem A*x = l*B*x with the solver specified by \fIoptions\fR.
+It outputs the specified number of Ritz values, the number of which is 
+given by option \fI-ss\fR, to \fIevalues_filename\fR 
+in the extended Matrix Market format (see Appendix of Lis User Guide). Both the
+Matrix Market format and the Harwell-Boeing format are supported for the matrix filenames.
+
+.SH OPTIONS
+
+The following options are supported:
+.IP "-e \fIeigensolver\fR"
+The following options are supported for \fIeigensolver\fR:
+.RS 
+.IP "-e {\fIgli\fR|15}"
+Generalized Lanczos
+.RS
+.IP "-ss [1]"
+The size of the subspace
+.RE
+.IP "-e {\fIgai\fR|16}"
+Generalized Arnoldi
+.RS
+.IP "-ss [1]"
+The size of the subspace
+.RE
+.RE
+
+Other Options for eigensolver:
+.IP "-eprint [0]"
+The output of the residual history
+.RS 
+.IP "-eprint {\fInone\fR|0}"
+None
+.RE
+.RS 
+.IP "-eprint {\fImem\fR|1}"
+Save the residual history
+.RE
+.RS 
+.IP "-eprint {\fIout\fR|2}"
+Output it to the standard output
+.RE
+.RS 
+.IP "-eprint {\fIall\fR|3}"
+Save the residual history and output it to the standard output
+.RE
+.IP "-omp_num_threads [\fIt\fR]"
+The number of the threads (\fIt\fR represents the maximum number of the threads)
+.IP "-estorage [0]"
+The matrix storage format
+.IP "-estorage_block [2]"
+The block size of the BSR and BSC formats
+.IP "-ef [0]"
+The precision of the eigensolver
+.RS 
+.IP "-ef {\fIdouble\fR|0}"
+Double precision
+.RE
+.RS
+.IP "-ef {\fIquad\fR|1}"
+Double-double (quadruple) precision
+.RE
+
+See Lis User Guide for full description.
+
+.SH EXIT STATUS
+
+The following exit values are returned:
+.IP "0"
+The process is normally terminated
+.IP "unspecified"
+An error occurred
+
+.SH SEE ALSO
+
+.BR lis (3),
+.BR lsolve (1),
+.BR gesolve (1),
+.BR hpcg_kernel (1),
+.BR hpcg_spmvtest (1),
+.BR spmvtest1 (1),
+.BR spmvtest2 (1),
+.BR spmvtest2b (1),
+.BR spmvtest3 (1),
+.BR spmvtest3b (1),
+.BR spmvtest4 (1),
+.BR spmvtest5 (1)
+.PP
+http://www.ssisc.org/lis/
+.br
+http://math.nist.gov/MatrixMarket/
+

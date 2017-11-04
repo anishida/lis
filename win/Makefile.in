@@ -306,7 +306,9 @@ install:
 	if not exist $(PREFIX)\doc mkdir $(PREFIX)\doc
 	$(CP) test1.exe $(PREFIX)\bin\lsolve.exe
 	$(CP) etest5.exe $(PREFIX)\bin\esolve.exe
+	$(CP) etest5b.exe $(PREFIX)\bin\esolver.exe
 	$(CP) getest5.exe $(PREFIX)\bin\gesolve.exe
+	$(CP) getest5b.exe $(PREFIX)\bin\gesolver.exe
 	$(CP) test3b.exe $(PREFIX)\bin\hpcg_kernel.exe
 	$(CP) spmvtest3b.exe $(PREFIX)\bin\hpcg_spmvtest.exe
 	$(CP) spmvtest1.exe $(PREFIX)\bin
@@ -326,7 +328,9 @@ install:
 uninstall: 
 	$(RM) $(PREFIX)\bin\lsolve.exe
 	$(RM) $(PREFIX)\bin\esolve.exe
+	$(RM) $(PREFIX)\bin\esolver.exe
 	$(RM) $(PREFIX)\bin\gesolve.exe
+	$(RM) $(PREFIX)\bin\gesolver.exe
 	$(RM) $(PREFIX)\bin\hpcg_kernel.exe
 	$(RM) $(PREFIX)\bin\hpcg_spmvtest.exe
 	$(RM) $(PREFIX)\bin\spmvtest1.exe

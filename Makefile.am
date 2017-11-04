@@ -9,7 +9,9 @@ EXTRA_DIST = doc/Makefile \
              doc/lis-ug-ja.pdf \
              doc/man/man1/lsolve.1 \
              doc/man/man1/esolve.1 \
+             doc/man/man1/esolver.1 \
              doc/man/man1/gesolve.1 \
+             doc/man/man1/gesolver.1 \
              doc/man/man1/hpcg_kernel.1 \
              doc/man/man1/hpcg_spmvtest.1 \
              doc/man/man1/spmvtest1.1 \

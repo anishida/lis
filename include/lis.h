@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"2.0.0"
+#define LIS_VERSION	"2.0.1"
 /**************************************/
 #include <stdio.h>
 #ifdef USE_COMPLEX
@@ -90,7 +90,7 @@
 #define LIS_OPTIONS_INIT_SHADOW_RESID 25
 #define LIS_OPTIONS_IDRS_RESTART 26
 
-#define LIS_EOPTIONS_LEN 12
+#define LIS_EOPTIONS_LEN 13
 #define LIS_EOPTIONS_ESOLVER 0
 #define LIS_EOPTIONS_MAXITER 1
 #define LIS_EOPTIONS_SUBSPACE 2
@@ -103,6 +103,7 @@
 #define LIS_EOPTIONS_STORAGE_BLOCK 9
 #define LIS_EOPTIONS_PRECISION 10
 #define LIS_EOPTIONS_SWITCH_MAXITER 11
+#define LIS_EOPTIONS_RVAL 12
 
 #define LIS_PARAMS_LEN 15
 #define LIS_PARAMS_RESID LIS_OPTIONS_LEN+0

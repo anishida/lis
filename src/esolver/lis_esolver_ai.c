@@ -166,6 +166,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   LIS_ESOLVER esolver2;
   char esolvername[128],solvername[128],preconname[128];
   LIS_INT nsol,precon_type;
+  LIS_INT rval;
 
   LIS_DEBUG_FUNC_IN;
 
@@ -181,6 +182,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
   niesolver = esolver->options[LIS_EOPTIONS_INNER_ESOLVER];
+  rval = esolver->options[LIS_EOPTIONS_RVAL];  
 
   h = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_eai::h");
   hq = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_eai::hq");
@@ -309,13 +311,13 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 	    }
 	}
     }
+  lis_printf(comm,"\n");
 
+  if( rval ) return LIS_SUCCESS;
+      
   if( output ) 
     {
-      /*
-      lis_printf(comm,"\nwhere |(Q^T)HQ_{2,1}| = %e\n\n",hqrerr);
-      */
-      lis_printf(comm,"\nrefined eigenpairs:\n\n");
+      lis_printf(comm,"refined eigenpairs:\n\n");
     }
 
   lis_esolver_create(&esolver2);
@@ -499,6 +501,7 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
   LIS_ESOLVER esolver2;
   char esolvername[128],solvername[128],preconname[128];
   LIS_INT nsol,precon_type;
+  LIS_INT rval;
 
   LIS_DEBUG_FUNC_IN;
 
@@ -514,7 +517,8 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
   nigesolver = esolver->options[LIS_EOPTIONS_INNER_GENERALIZED_ESOLVER];
-
+  rval = esolver->options[LIS_EOPTIONS_RVAL];
+  
   h = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_egai::h");
   hq = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_egai::hq");
   hr = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_egai::hr");
@@ -666,13 +670,13 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
 	    }
 	}
     }
+  lis_printf(comm,"\n");      
 
+  if( rval ) return LIS_SUCCESS;
+      
   if( output ) 
     {
-      /*
-      lis_printf(comm,"\nwhere |(Q^T)HQ_{2,1}| = %e\n\n",hqrerr);
-      */
-      lis_printf(comm,"\nrefined eigenpairs:\n\n");
+      lis_printf(comm,"refined eigenpairs:\n\n");
     }
 
   lis_esolver_create(&esolver2);

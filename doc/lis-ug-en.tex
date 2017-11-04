@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 2.0.0
+Version 2.0.1
 \end{flushleft}
 
 \vspace*{2cm}
@@ -644,7 +644,7 @@ which copies the files to the destination directory as follows:
 \begin{verbatim}
 ($INSTALLDIR)
  +bin
- |   +lsolve esolve gesolve hpcg_kernel hpcg_spmvtest spmvtest*
+ |   +lsolve esolve esolver gesolve gesolver hpcg_kernel hpcg_spmvtest spmvtest*
  +include
  |   +lis_config.h lis.h lisf.h
  +lib
@@ -662,11 +662,11 @@ To ensure that the library has been installed successfully, enter\\
 in {\tt lis-(\$VERSION)}.
 This runs a test script using the executable files installed 
 in {\tt examples/lis}. 
-{\tt test1}, {\tt etest5}, {\tt getest5}, {\tt test3b}, and {\tt spmvtest3b} 
+{\tt test1}, {\tt etest5}, {\tt etest5b}, {\tt getest5}, {\tt getest5b}, {\tt test3b}, and {\tt spmvtest3b} 
 in {\tt examples/lis} 
-are copied in {\tt (\$INSTALLDIR)/bin} as {\tt lsolve}, {\tt esolve}, 
-{\tt gesolve}, {\tt hpcg\_kernel}, and {\tt hpcg\_spmvtest}, respectively.
-{\tt examples/lis/spmvtest*} are also copied in \\
+are copied in \\
+{\tt (\$INSTALLDIR)/bin} as {\tt lsolve}, {\tt esolve}, {\tt esolver}, 
+{\tt gesolve}, {\tt gesolver}, {\tt hpcg\_kernel}, and {\tt hpcg\_spmvtest}, respectively. {\tt examples/lis/spmvtest*} are also copied in 
 {\tt (\$INSTALLDIR)/bin}.
 
 To remove the copied files in {\tt (\$INSTALLDIR)}, enter 
@@ -998,6 +998,20 @@ Matrix Market format.
 Both the Matrix Market format and the Harwell-Boeing format are
 supported for the matrix filename. 
 
+\subsubsection{etest5b}
+
+\verb+Usage: etest5b matrix_filename evalues_filename  [options] +\\
+
+This program inputs the matrix data from {\tt matrix\_filename} and
+solves the standard eigenvalue problem $Ax=\lambda x$ with
+the solver specified by {\tt options}. 
+It outputs the specified number of Ritz values,
+the number of which is given by option \verb|-ss|, to 
+{\tt evalues\_filename} in the extended 
+Matrix Market format.
+Both the Matrix Market format and the Harwell-Boeing format are
+supported for the matrix filename. 
+
 \subsubsection{getest5}
 
 \verb+Usage: getest5 matrix_a_filename matrix_b_filename evalues_filename evectors_filename +\\
@@ -1012,6 +1026,20 @@ the number of which is given by option \verb|-ss|, to
 eigenvectors, residual norms, and numbers of iterations  
 to \\ {\tt evectors\_filename}, {\tt residuals\_filename}, 
 and {\tt iters\_filename} respectively in the extended 
+Matrix Market format.  
+Both the Matrix Market format and the Harwell-Boeing format are
+supported for the matrix filenames. 
+
+\subsubsection{getest5b}
+
+\verb+Usage: getest5b matrix_a_filename matrix_b_filename evalues_filename [options] +\\
+
+This program inputs the matrix data from {\tt matrix\_a\_filename} and
+{\tt matrix\_b\_filename}, and solves the generalized eigenvalue problem
+$Ax=\lambda Bx$ with the solver specified by {\tt options}. 
+It outputs the specified number of eigenvalues,
+the number of which is given by option \verb|-ss|, to 
+{\tt evalues\_filename} in the extended 
 Matrix Market format.  
 Both the Matrix Market format and the Harwell-Boeing format are
 supported for the matrix filenames. 
@@ -2018,7 +2046,7 @@ Option &                          \\ \hline
                        & \verb=                    =  ($D^{-1/2}$ represents the diagonal matrix \\
                        & \verb=                    =  with $1/\sqrt{a_{ii}}$ as the diagonal) \\ 
 \verb=-initx_zeros [1]= & The behavior of the initial vector $x_{0}$  \\
-                       & \verb=-initx_zeros {false|0}     =  Components are given by the argument \verb=x= \\
+                       & \verb=-initx_zeros {false|0}     =  The components are given by the argument \verb=x= \\
                        & \verb=                           =  of the function \verb=lis_solve()= \\
                        & \verb=-initx_zeros {true|1}      =  All the components are set to $0$ \\
 \verb=-conv_cond [0]= & The convergence condition  \\
@@ -2214,8 +2242,8 @@ Option &                          \\ \hline
 \verb=-shift [0.0]= & The amount of the real part of the shift $\sigma$ \\
 \verb=-shift_im [0.0]= & The amount of the imaginary part of the shift $\sigma$ \\
 \verb=-initx_ones [1]= & The behavior of the initial vector $x_{0}$  \\
-                       & \verb=-initx_ones {false|0}     =  Components are given by the argument \verb=x= \\
-                       & \verb=                           =  of the function \verb=lis_esolve()= \\
+                       & \verb=-initx_ones {false|0}     =  The components are given by the argument \verb=x= \\
+                       & \verb=                          =  of the function \verb=lis_esolve()= \\
                        & \verb=-initx_ones {true|1}      =  All the components are set to $1$ \\
 \verb=-omp_num_threads [t]= & The number of threads        \\ 
                             & (\verb=t= represents the maximum number of
@@ -2225,6 +2253,9 @@ Option &                          \\ \hline
 \verb=-ef [0]=         & The precision of the eigensolver\\
                        & \verb=-ef {double|0}       =  Double precision \\ 
                        & \verb=-ef {quad|1}         =  Double-double (quadruple) precision \\
+\verb=-rval [0]=       & The Ritz values \\
+                       & \verb=-rval {false|0}     =  The eigenvalues are computed based on the Ritz values \\
+                       & \verb=-rval {true|1}      =  Only the Ritz values are returned \\
 \hline         
 \end{tabular}
 \end{center}
@@ -6096,7 +6127,7 @@ Option &                          \\ \hline
                        & \verb=                    =  ($D^{-1/2}$ represents the diagonal matrix \\
                        & \verb=                    =  with $1/\sqrt{a_{ii}}$ as the diagonal) \\ 
 \verb=-initx_zeros [1]= & The behavior of the initial vector $x_{0}$  \\
-                       & \verb=-initx_zeros {false|0}     =  Components are given by the argument \verb=x= \\
+                       & \verb=-initx_zeros {false|0}     =  The components are given by the argument \verb=x= \\
                        & \verb=                           =  of the function \verb=lis_solve()= \\
                        & \verb=-initx_zeros {true|1}      =  All the components are set to $0$ \\
 \verb=-conv_cond [0]= & The convergence condition  \\
@@ -6633,8 +6664,8 @@ Option &                          \\ \hline
 \verb=-shift [0.0]= & The amount of the real part of the shift $\sigma$ \\
 \verb=-shift_im [0.0]= & The amount of the imaginary part of the shift $\sigma$ \\
 \verb=-initx_ones [1]= & The behavior of the initial vector $x_{0}$  \\
-                       & \verb=-initx_ones {false|0}     =  Components are given by the argument \verb=x= \\
-                       & \verb=                           =  of the function \verb=lis_esolve()= \\
+                       & \verb=-initx_ones {false|0}     =  The components are given by the argument \verb=x= \\
+                       & \verb=                          =  of the function \verb=lis_esolve()= \\
                        & \verb=-initx_ones {true|1}      =  All the components are set to $1$ \\
 \verb=-omp_num_threads [t]= & The number of threads        \\ 
                             & (\verb=t= represents the maximum number of
@@ -6644,6 +6675,9 @@ Option &                          \\ \hline
 \verb=-ef [0]=         & The precision of the eigensolver\\
                        & \verb=-ef {double|0}       =  Double precision \\ 
                        & \verb=-ef {quad|1}         =  Double-double (quadruple) precision \\
+\verb=-rval [0]=       & The Ritz values \\
+                       & \verb=-rval {false|0}     =  The eigenvalues are computed based on the Ritz values \\
+                       & \verb=-rval {true|1}      =  Only the Ritz values are returned \\
 \hline         
 \end{tabular}
 \end{center}
