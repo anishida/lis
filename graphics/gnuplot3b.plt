@@ -3,9 +3,9 @@
 set terminal postscript eps enhanced color
 set output "Ritz_value_distribution.eps"
 
-set title "Distribution of Ritz Values on Complex Plane"
-set xlabel "x"
-set ylabel "y"
+set title "Distribution of Ritz Values"
+set xlabel "Real part"
+set ylabel "Imaginary part"
 set style line 1
 unset key
 
