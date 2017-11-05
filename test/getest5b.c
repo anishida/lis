@@ -90,7 +90,7 @@ LIS_INT main(int argc, char* argv[])
   lis_input_matrix(B,argv[2]);
   lis_vector_duplicate(A,&x);
   lis_esolver_create(&esolver);
-  lis_esolver_set_option("-e gli -ss 1 -eprint mem -rval 1",esolver);
+  lis_esolver_set_option("-e gli -ss 1 -eprint mem -rval true",esolver);
   err = lis_esolver_set_optionC(esolver);
   CHKERR(err);  
   err = lis_gesolve(A,B,x,&evalue0,esolver);
