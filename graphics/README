@@ -47,7 +47,7 @@ and run the script as follows:
 > gnuplot3.bat
 
 If complex arithmetic is enabled, you can generate
-'complex_eigenvalue_distribution.eps' by running ./gnuplot3b.sh
+'Ritz_value_distribution.eps' by running ./gnuplot3b.sh
 or ./gnuplot3b.bat.
 
 
