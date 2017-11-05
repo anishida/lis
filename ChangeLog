@@ -2,6 +2,7 @@ Version 2.0.1  November 5, 2017
 
   - Added support for option -rval.
   - Added support for graphics/gnuplot3b*.
+  - Fixed shift related bugs.
 
 Version 2.0.0  November 1, 2017
 

@@ -192,7 +192,6 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   lis_vector_dot(v, y, &rho);
   
   iter=0;
-
   while (iter<emaxiter)
     {
       iter = iter+1;
@@ -421,7 +420,6 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
   rho = rho / dotww;
   
   iter=0;
-
   while (iter<emaxiter)
     {
       iter = iter+1;
