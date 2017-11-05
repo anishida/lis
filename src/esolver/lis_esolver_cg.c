@@ -164,17 +164,17 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
 #endif	
   ishift = esolver->ishift;
 
+  if ( esolver->ishift != 0.0 ) oshift = ishift;
+  if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, oshift);
+
   if( output )
     {
 #ifdef _COMPLEX
-      lis_printf(comm,"shift (inner solver)  : (%e, %e)\n", (double)creal(ishift), (double)cimag(ishift));
+      lis_printf(comm,"shift                 : (%e, %e)\n", (double)creal(oshift), (double)cimag(oshift));
 #else  
-      lis_printf(comm,"shift (inner solver)  : %e\n", ishift);
+      lis_printf(comm,"shift                 : %e\n", oshift);
 #endif
     }
-
-  if ( esolver->ishift != 0.0 ) oshift = ishift;
-  if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, oshift);
 
   A3 = (LIS_SCALAR *)lis_malloc(3*3*sizeof(LIS_SCALAR), "lis_ecg::A3");
   B3 = (LIS_SCALAR *)lis_malloc(3*3*sizeof(LIS_SCALAR), "lis_ecg::B3");
@@ -482,17 +482,17 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
 #endif	
   ishift = esolver->ishift;
 
+  if ( esolver->ishift != 0.0 ) oshift = ishift;
+  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, oshift);
+
   if( output )
     {
 #ifdef _COMPLEX
-      lis_printf(comm,"shift (inner solver)  : (%e, %e)\n", (double)creal(ishift), (double)cimag(ishift));
+      lis_printf(comm,"shift                 : (%e, %e)\n", (double)creal(oshift), (double)cimag(oshift));
 #else  
-      lis_printf(comm,"shift (inner solver)  : %e\n", (double)ishift);
+      lis_printf(comm,"shift                 : %e\n", (double)oshift);
 #endif
     }
-
-  if ( esolver->ishift != 0.0 ) oshift = ishift;
-  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, oshift);
 
   A3 = (LIS_SCALAR *)lis_malloc(3*3*sizeof(LIS_SCALAR), "lis_egcg::A3");
   B3 = (LIS_SCALAR *)lis_malloc(3*3*sizeof(LIS_SCALAR), "lis_egcg::B3");
@@ -821,12 +821,15 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
 #endif	
   ishift = esolver->ishift;
 
+  if ( esolver->ishift != 0.0 ) oshift = ishift;
+  if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, oshift);
+
   if( output )
     {
 #ifdef _COMPLEX
-      lis_printf(comm,"shift (inner solver)  : (%e, %e)\n", (double)creal(ishift), (double)cimag(ishift));
+      lis_printf(comm,"shift                 : (%e, %e)\n", (double)creal(oshift), (double)cimag(oshift));
 #else  
-      lis_printf(comm,"shift (inner solver)  : %e\n", (double)ishift);
+      lis_printf(comm,"shift                 : %e\n", (double)oshift);
 #endif
     }
 
@@ -952,7 +955,7 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
 
   esolver->iter[0]    = iter;
   esolver->resid[0]   = resid;
-  esolver->evalue[0]  = lambda;
+  esolver->evalue[0]  = lambda + oshift;
   lis_vector_nrm2(x, &nrm2);
   lis_vector_scale(1.0/nrm2, x);
 
@@ -961,6 +964,8 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
   esolver->itime = solver->itime;
   esolver->p_c_time = solver->p_c_time;
   esolver->p_i_time = solver->p_i_time;
+
+  if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);  
 
   if (resid<tol) 
     {
@@ -1101,12 +1106,15 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
 #endif	
   ishift = esolver->ishift;
 
+  if ( esolver->ishift != 0.0 ) oshift = ishift;
+  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, oshift);
+
   if( output )
     {
 #ifdef _COMPLEX
-      lis_printf(comm,"shift (inner solver)  : (%e, %e)\n", (double)creal(ishift), (double)cimag(ishift));
+      lis_printf(comm,"shift                 : (%e, %e)\n", (double)creal(ishift), (double)cimag(ishift));
 #else  
-      lis_printf(comm,"shift (inner solver)  : %e\n", (double)ishift);
+      lis_printf(comm,"shift                 : %e\n", (double)ishift);
 #endif
     }
 
@@ -1242,7 +1250,7 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
 
   esolver->iter[0]    = iter;
   esolver->resid[0]   = resid;
-  esolver->evalue[0]  = lambda;
+  esolver->evalue[0]  = lambda + oshift;
   lis_vector_nrm2(x, &nrm2);
   lis_vector_scale(1.0/nrm2, x);
 
@@ -1251,6 +1259,8 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   esolver->itime = solver->itime;
   esolver->p_c_time = solver->p_c_time;
   esolver->p_i_time = solver->p_i_time;
+
+  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, -oshift);
 
   if (resid<tol) 
     {

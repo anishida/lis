@@ -154,7 +154,6 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   LIS_MATRIX A;
   LIS_INT err;
   LIS_INT ss,ic;
-  LIS_SCALAR oshift;
   LIS_INT emaxiter,iter0,hqriter;
   LIS_REAL tol,hqrerr,D;
   LIS_INT i,j;
@@ -173,11 +172,6 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   comm = LIS_COMM_WORLD;
   
   ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
-#ifdef _COMPLEX
-  oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN] + esolver->params[LIS_EPARAMS_SHIFT_IM - LIS_EOPTIONS_LEN] * _Complex_I;
-#else
-  oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
-#endif	
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
@@ -488,7 +482,6 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
   LIS_INT err;
   LIS_MATRIX A,B;
   LIS_INT ss,ic;
-  LIS_SCALAR oshift;
   LIS_INT emaxiter,iter0,hqriter,iter2;
   LIS_REAL tol,hqrerr,D;
   LIS_INT i,j;
@@ -508,11 +501,6 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
   comm = LIS_COMM_WORLD;
   
   ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
-#ifdef _COMPLEX
-  oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN] + esolver->params[LIS_EPARAMS_SHIFT_IM - LIS_EOPTIONS_LEN] * _Complex_I;
-#else
-  oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
-#endif	
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
