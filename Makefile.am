@@ -339,6 +339,9 @@ EXTRA_DIST = doc/Makefile \
              graphics/gnuplot3.sh \
              graphics/gnuplot3.bat \
              graphics/gnuplot3.plt \
+             graphics/gnuplot3b.sh \
+             graphics/gnuplot3b.bat \
+             graphics/gnuplot3b.plt \
              graphics/gnuplot4.sh \
              graphics/gnuplot4.bat \
              graphics/gnuplot4.plt \
@@ -349,7 +352,9 @@ EXTRA_DIST = doc/Makefile \
 
 man_MANS =   doc/man/man1/lsolve.1 \
              doc/man/man1/esolve.1 \
+             doc/man/man1/esolver.1 \
              doc/man/man1/gesolve.1 \
+             doc/man/man1/gesolver.1 \
              doc/man/man1/hpcg_kernel.1 \
              doc/man/man1/hpcg_spmvtest.1 \
              doc/man/man1/spmvtest1.1 \
