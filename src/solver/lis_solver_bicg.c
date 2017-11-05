@@ -186,7 +186,7 @@ LIS_INT lis_bicg(LIS_SOLVER solver)
 	for( iter=1; iter<=maxiter; iter++ )
 	{
 		/* z    = M^-1 * r */
-		/* ztld = M^-T * rtld */
+		/* ztld = M^-H * rtld */
 		time = lis_wtime();
 		lis_psolve(solver, r, z);
 		lis_psolveh(solver, rtld, ztld);
@@ -335,7 +335,7 @@ LIS_INT lis_bicg_quad(LIS_SOLVER solver)
 	for( iter=1; iter<=maxiter; iter++ )
 	{
 		/* z    = M^-1 * r */
-		/* ztld = M^-T * rtld */
+		/* ztld = M^-H * rtld */
 		time = lis_wtime();
 		lis_psolve(solver, r, z);
 		lis_psolveh(solver, rtld, ztld);
@@ -496,7 +496,7 @@ LIS_INT lis_bicg_switch(LIS_SOLVER solver)
 	for( iter=1; iter<=maxiter2; iter++ )
 	{
 		/* z    = M^-1 * r */
-		/* ztld = M^-T * rtld */
+		/* ztld = M^-H * rtld */
 		time = lis_wtime();
 		lis_psolve(solver, r, z);
 		lis_psolveh(solver, rtld, ztld);
@@ -597,7 +597,7 @@ LIS_INT lis_bicg_switch(LIS_SOLVER solver)
 	for( iter2=iter+1; iter2<=maxiter; iter2++ )
 	{
 		/* z    = M^-1 * r */
-		/* ztld = M^-T * rtld */
+		/* ztld = M^-H * rtld */
 		time = lis_wtime();
 		lis_psolve(solver, r, z);
 		lis_psolveh(solver, rtld, ztld);
@@ -713,7 +713,7 @@ LIS_INT lis_bicg_switch(LIS_SOLVER solver)
    r(k)      = r(k-1) - alpha*ap(k-1)
    rtld(k)   = rtld(k-1) - conj(alpha)*aptld(k-1)
    z(k)      = z(k-1) - alpha * map(k-1)
-   ztld(k)   = M^-T * rtld(k-1)
+   ztld(k)   = M^-H * rtld(k-1)
    az(k)     = A * z(k)
    rho(k)    = <ztld(k),az(k)>
    beta      = rho(k) / rho(k-1)
@@ -885,7 +885,7 @@ LIS_INT lis_bicr(LIS_SOLVER solver)
 		
 		/* rtld = rtld - conj(alpha)*aptld */
 		/* z    = z - alpha*map            */
-		/* ztld = M^-T * rtld              */
+		/* ztld = M^-H * rtld              */
 		/* az   = A * z                    */
 		/* rho = <ztld,az>                 */
 		lis_vector_axpy(-conj(alpha),aptld,rtld);
@@ -1033,7 +1033,7 @@ LIS_INT lis_bicr_quad(LIS_SOLVER solver)
 		
 		/* rtld = rtld - alpha*aptld */
 		/* z    = z - alpha*map      */
-		/* ztld = M^-T * rtld        */
+		/* ztld = M^-H * rtld        */
 		/* az   = A * z              */
 		/* rho = <az,ztld>           */
 		lis_vector_axpyex_mmm(alpha,aptld,rtld);

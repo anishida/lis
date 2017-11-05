@@ -209,7 +209,7 @@ objs_saamg: ..\src\fortran\amg\lis_s_data_structure_for_AMG.obj \
 !endif
 
 exes_test: test1.exe test2.exe test2b.exe test3.exe test3b.exe test3c.exe test4.exe test5.exe test6.exe
-exes_etest: etest1.exe getest1.exe etest2.exe etest3.exe etest4.exe etest5.exe getest5.exe etest6.exe etest7.exe
+exes_etest: etest1.exe getest1.exe etest2.exe etest3.exe etest4.exe etest5.exe etest5b.exe getest5.exe getest5b.exe etest6.exe etest7.exe
 exes_spmvtest: spmvtest1.exe spmvtest2.exe spmvtest2b.exe spmvtest3.exe spmvtest3b.exe spmvtest4.exe spmvtest5.exe
 
 exes_testf: test1f.exe test2f.exe test4f.exe test6f.exe
@@ -230,7 +230,9 @@ etest2.exe: ..\test\$*.obj
 etest3.exe: ..\test\$*.obj
 etest4.exe: ..\test\$*.obj
 etest5.exe: ..\test\$*.obj
+etest5b.exe: ..\test\$*.obj
 getest5.exe: ..\test\$*.obj
+getest5b.exe: ..\test\$*.obj
 etest6.exe: ..\test\$*.obj
 etest7.exe: ..\test\$*.obj
 spmvtest1.exe: ..\test\$*.obj
