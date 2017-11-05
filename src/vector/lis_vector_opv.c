@@ -54,7 +54,7 @@
  * lis_vector_abs		x_i <- |x_i|
  * lis_vector_reciprocal	x_i <- 1 / x_i
  * lis_vector_conjugate		x_i <- conj(x_i)
- * lis_vector_shift		x_i <- x_i - alpha
+ * lis_vector_shift		x_i <- x_i - sigma
  * lis_vector_cgs		classical Gram-Schmidt
  ********************************************************/
 
@@ -489,7 +489,7 @@ LIS_INT lis_vector_conjugate(LIS_VECTOR vx)
 /************************/
 #undef __FUNC__
 #define __FUNC__ "lis_vector_shift"
-LIS_INT lis_vector_shift(LIS_SCALAR alpha, LIS_VECTOR vx)
+LIS_INT lis_vector_shift(LIS_SCALAR sigma, LIS_VECTOR vx)
 {
 	LIS_INT i,n;
 	LIS_SCALAR *x;
@@ -506,7 +506,7 @@ LIS_INT lis_vector_shift(LIS_SCALAR alpha, LIS_VECTOR vx)
 	#endif
 	for(i=0; i<n; i++)
 	{
-		x[i] = x[i] - alpha;
+		x[i] = x[i] - sigma;
 	}
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;

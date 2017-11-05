@@ -2239,7 +2239,7 @@ Option &                          \\ \hline
 \verb=-ie [ii]= & The inner eigensolver used in Subspace, Lanczos, and Arnoldi\\
 \verb=-ige [gii]= & The inner eigensolver used in Generalized Subspace, Generalized Lanczos, \\
                        & and Generalized Arnoldi\\
-\verb=-shift [0.0]= & The amount of the real part of the shift $\sigma$ \\
+\verb=-shift [0.0]= & The amount of the real part of the shift $\sigma$ to compute $A-\sigma B$ \\
 \verb=-shift_im [0.0]= & The amount of the imaginary part of the shift $\sigma$ \\
 \verb=-initx_ones [1]= & The behavior of the initial vector $x_{0}$  \\
                        & \verb=-initx_ones {false|0}     =  The components are given by the argument \verb=x= \\
@@ -5481,23 +5481,23 @@ Get the conjugate complex values of the elements of vector $x$.
 \newpage
 \subsubsection{lis\_vector\_shift}
 \begin{screen}
-\verb|C       LIS_INT lis_vector_shift(LIS_SCALAR alpha, LIS_VECTOR x)|\\
-\verb|Fortran subroutine lis_vector_shift(LIS_SCALAR alpha, LIS_VECTOR x,|\\
+\verb|C       LIS_INT lis_vector_shift(LIS_SCALAR sigma, LIS_VECTOR x)|\\
+\verb|Fortran subroutine lis_vector_shift(LIS_SCALAR sigma, LIS_VECTOR x,|\\
 \verb|         LIS_INTEGER ierr)|
 \end{screen}
 {\bf Description}\\
 \indent
-Get the shifted values of the elements of vector $x$.
+Shift the vector $x$.
 \\ \\
 \noindent
 {\bf Input}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt alpha] The amount of the shift
+\item[\tt sigma] The amount of the shift
 \item[\tt x] The vector
 \end{namelist}
 {\bf Output}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt x] The vector that stores the shifted values
+\item[\tt x] The vector that stores the shifted elements $x_i-\sigma$
 \item[\tt ierr] The return code
 \end{namelist}
 
@@ -5849,23 +5849,23 @@ Store the diagonal elements of matrix $A$ to vector $d$.
 
 \subsubsection{lis\_matrix\_shift\_diagonal}
 \begin{screen}
-\verb|C       LIS_INT lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR alpha)|\\
-\verb|Fortran subroutine lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR alpha,|\\
+\verb|C       LIS_INT lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR sigma)|\\
+\verb|Fortran subroutine lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR sigma,|\\
 \verb|         LIS_INTEGER ierr) |
 \end{screen}
 {\bf Description}\\
 \indent
-Shift the diagonal of matrix $A$.
+Shift the diagonal elements of matrix $A$.
 \\ \\
 \noindent
 {\bf Input}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt alpha] The amount of the shift
+\item[\tt sigma] The amount of the shift
 \item[\tt A] The matrix
 \end{namelist}
 {\bf Output}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt A] The shifted matrix
+\item[\tt A] The shifted matrix $A-\sigma E$
 \item[\tt ierr] The return code
 \end{namelist}
 
@@ -6661,7 +6661,7 @@ Option &                          \\ \hline
 \verb=-ie [ii]= & The inner eigensolver used in Subspace, Lanczos, and Arnoldi\\
 \verb=-ige [gii]= & The inner eigensolver used in Generalized Subspace, Generalized Lanczos, \\
                        & and Generalized Arnoldi\\
-\verb=-shift [0.0]= & The amount of the real part of the shift $\sigma$ \\
+\verb=-shift [0.0]= & The amount of the real part of the shift $\sigma$ to compute $A-\sigma B$ \\
 \verb=-shift_im [0.0]= & The amount of the imaginary part of the shift $\sigma$ \\
 \verb=-initx_ones [1]= & The behavior of the initial vector $x_{0}$  \\
                        & \verb=-initx_ones {false|0}     =  The components are given by the argument \verb=x= \\
@@ -7373,24 +7373,24 @@ Get the conjugate values of the elements of vector $x$.
 \newpage
 \subsubsection{lis\_array\_shift}
 \begin{screen}
-\verb|C       LIS_INT lis_array_shift(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR x[])|\\
-\verb|Fortran subroutine lis_array_shift(LIS_INTEGER n, LIS_SCALAR alpha, LIS_SCALAR x(),|\\
+\verb|C       LIS_INT lis_array_shift(LIS_INT n, LIS_SCALAR sigma, LIS_SCALAR x[])|\\
+\verb|Fortran subroutine lis_array_shift(LIS_INTEGER n, LIS_SCALAR sigma, LIS_SCALAR x(),|\\
 \verb|         LIS_INTEGER ierr)|
 \end{screen}
 {\bf Description}\\
 \indent
-Get the shifted values of the elements of vector $x$.
+Shift the vector $x$.
 \\ \\
 \noindent
 {\bf Input}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt n] The size of the vector
-\item[\tt alpha] The amount of the shift
+\item[\tt sigma] The amount of the shift
 \item[\tt x] The array that stores vector $x$
 \end{namelist}
 {\bf Output}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt x] The array that stores the shifted values
+\item[\tt x] The array that stores the shifted elements $x_i-\sigma$ 
 \item[\tt ierr] The return code
 \end{namelist}
 

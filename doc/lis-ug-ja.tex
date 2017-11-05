@@ -2079,8 +2079,8 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \verb=-ie [ii]= & Subspace, Lanczos, Arnoldiの内部で使用する固有値解法の指定  \\
 \verb=-ige [gii]= & Generalized Subspace, Generalized Lanczos, Generalized Arnoldiの内部で\\
                        & 使用する固有値解法の指定  \\
-\verb=-shift [0.0]= & 固有値のシフト量$\sigma$の実部 \\
-\verb=-shift_im [0.0]= & 固有値のシフト量$\sigma$の虚部 \\
+\verb=-shift [0.0]= & $A-\sigma B$を計算するためのシフト量$\sigma$の実部 \\
+\verb=-shift_im [0.0]= & シフト量$\sigma$の虚部 \\
 \verb=-initx_ones [1]= & 初期ベクトル$x_{0}$  \\
                        & \verb=-initx_ones {false|0}     =  関数\verb=lis_esolve()=の引数\verb=x=により \\
                        & \verb=                          =  与えられる要素の値を使用 \\
@@ -5325,23 +5325,23 @@ DNS形式の配列を行列$A$に関連付ける.
 \newpage
 \subsubsection{lis\_vector\_shift}
 \begin{screen}
-\verb|C       LIS_INT lis_vector_shift(LIS_SCALAR alpha, LIS_VECTOR x)|\\
-\verb|Fortran subroutine lis_vector_shift(LIS_SCALAR alpha, LIS_VECTOR x,|\\
+\verb|C       LIS_INT lis_vector_shift(LIS_SCALAR sigma, LIS_VECTOR x)|\\
+\verb|Fortran subroutine lis_vector_shift(LIS_SCALAR sigma, LIS_VECTOR x,|\\
 \verb|         LIS_INTEGER ierr)|
 \end{screen}
 {\bf 機能}\\
 \indent
-ベクトル$x$の要素をシフトさせる.
+ベクトル$x$をシフトする.
 \\ \\
 \noindent
 {\bf 入力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt alpha] シフト量
+\item[\tt sigma] シフト量
 \item[\tt x] ベクトル
 \end{namelist}
 {\bf 出力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt x] 各要素のシフト後の値を格納したベクトル
+\item[\tt x] 各要素のシフト後の値$x_i-\sigma$を格納したベクトル
 \item[\tt ierr] リターンコード
 \end{namelist}
 
@@ -5693,24 +5693,24 @@ COO    &  ○  &  ○  &  ○  & CSR  & CSR & CSR & CSR & CSC & CSR &     & CSR 
 
 \subsubsection{lis\_matrix\_shift\_diagonal}
 \begin{screen}
-\verb|C       LIS_INT lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR alpha)|\\
-\verb|Fortran subroutine lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR alpha,|\\
+\verb|C       LIS_INT lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR sigma)|\\
+\verb|Fortran subroutine lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR sigma,|\\
 \verb|         LIS_INTEGER ierr) |
 \end{screen}
 {\bf 機能}\\
 \indent
-行列$A$の対角部分をシフトさせる. 
+行列$A$をシフトする. 
 \\ \\
 \noindent
 {\bf 入力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt alpha] シフト量
+\item[\tt sigma] シフト量
 \item[\tt A] 行列
 \end{namelist}
 {\bf 出力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 
-\item[\tt A] シフト後の行列
+\item[\tt A] シフト後の行列$A-\sigma E$
 \item[\tt ierr] リターンコード
 \end{namelist}
 
@@ -6471,8 +6471,8 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \verb=-ie [ii]= & Subspace, Lanczos, Arnoldiの内部で使用する固有値解法の指定  \\
 \verb=-ige [gii]= & Generalized Subspace, Generalized Lanczos, Generalized Arnoldiの内部で\\
                        & 使用する固有値解法の指定  \\
-\verb=-shift [0.0]= & 固有値のシフト量$\sigma$の実部 \\
-\verb=-shift_im [0.0]= & 固有値のシフト量$\sigma$の虚部 \\
+\verb=-shift [0.0]= & $A-\sigma B$を計算するためのシフト量$\sigma$の実部 \\
+\verb=-shift_im [0.0]= & シフト量$\sigma$の虚部 \\
 \verb=-initx_ones [1]= & 初期ベクトル$x_{0}$  \\
                        & \verb=-initx_ones {false|0}     =  関数\verb=lis_esolve()=の引数\verb=x=により \\
                        & \verb=                          =  与えられる要素の値を使用 \\
@@ -7177,24 +7177,24 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \newpage
 \subsubsection{lis\_array\_shift}
 \begin{screen}
-\verb|C       LIS_INT lis_array_shift(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR x[])|\\
-\verb|Fortran subroutine lis_array_shift(LIS_INTEGER n, LIS_SCALAR alpha, LIS_SCALAR x(),|\\
+\verb|C       LIS_INT lis_array_shift(LIS_INT n, LIS_SCALAR sigma, LIS_SCALAR x[])|\\
+\verb|Fortran subroutine lis_array_shift(LIS_INTEGER n, LIS_SCALAR sigma, LIS_SCALAR x(),|\\
 \verb|         LIS_INTEGER ierr)|
 \end{screen}
 {\bf 機能}\\
 \indent
-ベクトル$x$の要素をシフトさせる.
+ベクトル$x$をシフトする.
 \\ \\
 \noindent
 {\bf 入力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt n] ベクトルの次数
-\item[\tt alpha] シフト量
+\item[\tt sigma] シフト量
 \item[\tt x] ベクトル$x$を格納する配列
 \end{namelist}
 {\bf 出力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt x] 各要素のシフト後の値が格納された配列
+\item[\tt x] 各要素のシフト後の値$x_i-\sigma$が格納された配列
 \item[\tt ierr] リターンコード
 \end{namelist}
 

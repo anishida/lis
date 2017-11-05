@@ -88,19 +88,19 @@ extern "C"
 	extern LIS_INT lis_matrix_axpy_dns(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B);
 	extern LIS_INT lis_matrix_xpay_dns(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B);
 	extern LIS_INT lis_matrix_axpyz_dns(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B, LIS_MATRIX C);  
-        extern LIS_INT lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR alpha);
-        extern LIS_INT lis_matrix_shift_diagonal_csr(LIS_MATRIX A, LIS_SCALAR alpha);
-	extern LIS_INT lis_matrix_shift_diagonal_csc(LIS_MATRIX A, LIS_SCALAR alpha);
-	extern LIS_INT lis_matrix_shift_diagonal_msr(LIS_MATRIX A, LIS_SCALAR alpha);
-	extern LIS_INT lis_matrix_shift_diagonal_dia(LIS_MATRIX A, LIS_SCALAR alpha);
-	extern LIS_INT lis_matrix_shift_diagonal_ell(LIS_MATRIX A, LIS_SCALAR alpha);
-	extern LIS_INT lis_matrix_shift_diagonal_jad(LIS_MATRIX A, LIS_SCALAR alpha);
-	extern LIS_INT lis_matrix_shift_diagonal_bsr(LIS_MATRIX A, LIS_SCALAR alpha);
-	extern LIS_INT lis_matrix_shift_diagonal_bsc(LIS_MATRIX A, LIS_SCALAR alpha);
-	extern LIS_INT lis_matrix_shift_diagonal_dns(LIS_MATRIX A, LIS_SCALAR alpha);
-	extern LIS_INT lis_matrix_shift_diagonal_coo(LIS_MATRIX A, LIS_SCALAR alpha);
-	extern LIS_INT lis_matrix_shift_diagonal_vbr(LIS_MATRIX A, LIS_SCALAR alpha);
-	extern LIS_INT lis_matrix_shift_general(LIS_MATRIX A, LIS_MATRIX B, LIS_SCALAR alpha);  
+        extern LIS_INT lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR sigma);
+        extern LIS_INT lis_matrix_shift_diagonal_csr(LIS_MATRIX A, LIS_SCALAR sigma);
+	extern LIS_INT lis_matrix_shift_diagonal_csc(LIS_MATRIX A, LIS_SCALAR sigma);
+	extern LIS_INT lis_matrix_shift_diagonal_msr(LIS_MATRIX A, LIS_SCALAR sigma);
+	extern LIS_INT lis_matrix_shift_diagonal_dia(LIS_MATRIX A, LIS_SCALAR sigma);
+	extern LIS_INT lis_matrix_shift_diagonal_ell(LIS_MATRIX A, LIS_SCALAR sigma);
+	extern LIS_INT lis_matrix_shift_diagonal_jad(LIS_MATRIX A, LIS_SCALAR sigma);
+	extern LIS_INT lis_matrix_shift_diagonal_bsr(LIS_MATRIX A, LIS_SCALAR sigma);
+	extern LIS_INT lis_matrix_shift_diagonal_bsc(LIS_MATRIX A, LIS_SCALAR sigma);
+	extern LIS_INT lis_matrix_shift_diagonal_dns(LIS_MATRIX A, LIS_SCALAR sigma);
+	extern LIS_INT lis_matrix_shift_diagonal_coo(LIS_MATRIX A, LIS_SCALAR sigma);
+	extern LIS_INT lis_matrix_shift_diagonal_vbr(LIS_MATRIX A, LIS_SCALAR sigma);
+	extern LIS_INT lis_matrix_shift_general(LIS_MATRIX A, LIS_MATRIX B, LIS_SCALAR sigma);  
 
 /*******************/
 /* Diagonal Matrix */

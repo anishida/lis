@@ -934,7 +934,7 @@ LIS_INT lis_matrix_get_diagonal_vbr(LIS_MATRIX A, LIS_SCALAR d[])
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_shift_diagonal_vbr"
-LIS_INT lis_matrix_shift_diagonal_vbr(LIS_MATRIX A, LIS_SCALAR alpha)
+LIS_INT lis_matrix_shift_diagonal_vbr(LIS_MATRIX A, LIS_SCALAR sigma)
 {
 	LIS_INT i,j,k,bi,bj,bjj,nr;
 	LIS_INT bnr,bnc;
@@ -956,7 +956,7 @@ LIS_INT lis_matrix_shift_diagonal_vbr(LIS_MATRIX A, LIS_SCALAR alpha)
 			bnr = A->D->bns[i];
 			for(j=0;j<bnr;j++)
 			{
-				A->D->v_value[i][j*bnr+j] -= alpha;
+				A->D->v_value[i][j*bnr+j] -= sigma;
 			}
 
 		}
@@ -979,7 +979,7 @@ LIS_INT lis_matrix_shift_diagonal_vbr(LIS_MATRIX A, LIS_SCALAR alpha)
 				{
 					for(j=i%bnc;j<bnc&&k<bnr&&i<n;j++)
 					{
-						A->value[A->ptr[bj] + j*bnr + k] -= alpha;
+						A->value[A->ptr[bj] + j*bnr + k] -= sigma;
 						i++;
 						k++;
 					}

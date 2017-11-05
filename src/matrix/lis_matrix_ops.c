@@ -778,7 +778,7 @@ LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR D)
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_shift_diagonal"
-LIS_INT lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR alpha)
+LIS_INT lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR sigma)
 {
 
 	LIS_DEBUG_FUNC_IN;
@@ -786,37 +786,37 @@ LIS_INT lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR alpha)
 	switch( A->matrix_type )
 	{
 	case LIS_MATRIX_CSR:
-		lis_matrix_shift_diagonal_csr(A, alpha);
+		lis_matrix_shift_diagonal_csr(A, sigma);
 		break;
 	case LIS_MATRIX_CSC:
-		lis_matrix_shift_diagonal_csc(A, alpha);
+		lis_matrix_shift_diagonal_csc(A, sigma);
 		break;
 	case LIS_MATRIX_MSR:
-		lis_matrix_shift_diagonal_msr(A, alpha);
+		lis_matrix_shift_diagonal_msr(A, sigma);
 		break;
 	case LIS_MATRIX_DIA:
-		lis_matrix_shift_diagonal_dia(A, alpha);
+		lis_matrix_shift_diagonal_dia(A, sigma);
 		break;
 	case LIS_MATRIX_ELL:
-		lis_matrix_shift_diagonal_ell(A, alpha);
+		lis_matrix_shift_diagonal_ell(A, sigma);
 		break;
 	case LIS_MATRIX_JAD:
-		lis_matrix_shift_diagonal_jad(A, alpha);
+		lis_matrix_shift_diagonal_jad(A, sigma);
 		break;
 	case LIS_MATRIX_BSR:
-		lis_matrix_shift_diagonal_bsr(A, alpha);
+		lis_matrix_shift_diagonal_bsr(A, sigma);
 		break;
 	case LIS_MATRIX_BSC:
-		lis_matrix_shift_diagonal_bsc(A, alpha);
+		lis_matrix_shift_diagonal_bsc(A, sigma);
 		break;
 	case LIS_MATRIX_DNS:
-		lis_matrix_shift_diagonal_dns(A, alpha);
+		lis_matrix_shift_diagonal_dns(A, sigma);
 		break;
 	case LIS_MATRIX_COO:
-		lis_matrix_shift_diagonal_coo(A, alpha);
+		lis_matrix_shift_diagonal_coo(A, sigma);
 		break;
 	case LIS_MATRIX_VBR:
-		lis_matrix_shift_diagonal_vbr(A, alpha);
+		lis_matrix_shift_diagonal_vbr(A, sigma);
 		break;
 
 	default:
@@ -830,7 +830,7 @@ LIS_INT lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR alpha)
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_shift_general"
-LIS_INT lis_matrix_shift_general(LIS_MATRIX A, LIS_MATRIX B, LIS_SCALAR alpha)
+LIS_INT lis_matrix_shift_general(LIS_MATRIX A, LIS_MATRIX B, LIS_SCALAR sigma)
 {
 	LIS_INT err;
 	LIS_MATRIX Atmp,Btmp;
@@ -846,7 +846,7 @@ LIS_INT lis_matrix_shift_general(LIS_MATRIX A, LIS_MATRIX B, LIS_SCALAR alpha)
 	lis_matrix_set_type(Btmp,LIS_MATRIX_DNS);
 	err = lis_matrix_convert(B,Btmp);
 	if( err ) return err;
-	lis_matrix_axpy_dns(-alpha,Btmp,Atmp);
+	lis_matrix_axpy_dns(-sigma,Btmp,Atmp);
 	lis_matrix_convert(Atmp,A);
 	lis_matrix_destroy(Atmp);	
 	lis_matrix_destroy(Btmp);

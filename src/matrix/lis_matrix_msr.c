@@ -358,7 +358,7 @@ LIS_INT lis_matrix_get_diagonal_msr(LIS_MATRIX A, LIS_SCALAR d[])
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_shift_diagonal_msr"
-LIS_INT lis_matrix_shift_diagonal_msr(LIS_MATRIX A, LIS_SCALAR alpha)
+LIS_INT lis_matrix_shift_diagonal_msr(LIS_MATRIX A, LIS_SCALAR sigma)
 {
 	LIS_INT i;
 	LIS_INT n;
@@ -373,7 +373,7 @@ LIS_INT lis_matrix_shift_diagonal_msr(LIS_MATRIX A, LIS_SCALAR alpha)
 		#endif
 		for(i=0; i<n; i++)
 		{
-			A->D->value[i] -= alpha;
+			A->D->value[i] -= sigma;
 		}
 	}
 	else
@@ -383,7 +383,7 @@ LIS_INT lis_matrix_shift_diagonal_msr(LIS_MATRIX A, LIS_SCALAR alpha)
 		#endif
 		for(i=0; i<n; i++)
 		{
-			A->value[i] -= alpha;
+			A->value[i] -= sigma;
 		}
 	}
 	LIS_DEBUG_FUNC_OUT;

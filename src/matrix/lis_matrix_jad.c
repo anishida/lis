@@ -487,7 +487,7 @@ LIS_INT lis_matrix_get_diagonal_jad(LIS_MATRIX A, LIS_SCALAR d[])
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_shift_diagonal_jad"
-LIS_INT lis_matrix_shift_diagonal_jad(LIS_MATRIX A, LIS_SCALAR alpha)
+LIS_INT lis_matrix_shift_diagonal_jad(LIS_MATRIX A, LIS_SCALAR sigma)
 {
 	LIS_INT i,j,k,l;
 	LIS_INT n,maxnzr;
@@ -508,7 +508,7 @@ LIS_INT lis_matrix_shift_diagonal_jad(LIS_MATRIX A, LIS_SCALAR alpha)
 		#endif
 		for(i=0; i<n; i++)
 		{
-			A->D->value[i] -= alpha;
+			A->D->value[i] -= sigma;
 		}
 	}
 	else
@@ -529,7 +529,7 @@ LIS_INT lis_matrix_shift_diagonal_jad(LIS_MATRIX A, LIS_SCALAR alpha)
 					{
 						if( A->row[l]==A->index[i] )
 						{
-							A->value[i] -= alpha;
+							A->value[i] -= sigma;
 							k--;
 							if( k==0 ) goto get_diag_end;
 						}
@@ -547,7 +547,7 @@ LIS_INT lis_matrix_shift_diagonal_jad(LIS_MATRIX A, LIS_SCALAR alpha)
 				{
 					if( A->row[l]==A->index[i] )
 					{
-						A->value[i] -= alpha;
+						A->value[i] -= sigma;
 						k--;
 						if( k==0 ) return LIS_SUCCESS;
 					}
