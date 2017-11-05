@@ -21,7 +21,7 @@
 @%bindir%\etest5b.exe %srcdir%\testmat2.mtx rvalues.mtx -e ai -ss 20
 
 
-@rem Draw eigenvalue distribution.
+@rem Draw Ritz value distribution.
 
 @set filename=rvalues.mtx
 @for /f "tokens=1-5" %%a in ('findstr /v %% "%filename%"') do @(
