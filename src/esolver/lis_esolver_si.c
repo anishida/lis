@@ -218,15 +218,14 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 
     }
 
-  giter=0;
-  j=0;
-
   if( output ) 
     {
       lis_printf(comm,"size of subspace      : %D\n\n", ss);
       lis_printf(comm,"compute eigenpairs in subspace:\n\n");
     }
 
+  giter=0;
+  j=0;
   while (j<ss)
     {
       lis_vector_duplicate(A,&esolver->evector[j]); 
@@ -246,9 +245,8 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	    }
 	}
 
-      iter = 0;
       ptime = 0;
-
+      iter = 0;
       while (iter<emaxiter)
 	{
 	  iter = iter+1;
@@ -528,15 +526,14 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
       lis_printf(comm,"preconditioner        : %s\n", preconname);
     }
 
-  giter=0;
-  j=0;
-
   if( output ) 
     {
       lis_printf(comm,"size of subspace      : %D\n\n", ss);
       lis_printf(comm,"compute eigenpairs in subspace:\n\n");
     }
 
+  giter=0;
+  j=0;
   while (j<ss)
     {
       lis_vector_duplicate(A,&esolver->evector[j]); 
@@ -571,9 +568,8 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	  }
 	}
 
-      iter = 0;
       ptime = 0;
-
+      iter = 0;
       while (iter<emaxiter)
 	{
 	  iter = iter+1;

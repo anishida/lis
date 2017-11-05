@@ -234,7 +234,6 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
   solver->precon = precon;
 
   iter=0;
-
   while (iter<emaxiter)
     {
       iter=iter+1;
@@ -558,7 +557,6 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
   solver->precon = precon;
 
   iter=0;
-
   while (iter<emaxiter)
     {
       iter=iter+1;
@@ -887,7 +885,6 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
   lis_matvec(A,p,Ap);
 
   iter=0;
-
   while (iter<emaxiter)
     {
       iter = iter + 1;
@@ -1177,7 +1174,6 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   lis_matvec(B,p,Bp);
 
   iter=0;
-
   while (iter<emaxiter)
     {
       iter = iter + 1;
