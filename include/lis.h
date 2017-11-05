@@ -843,7 +843,7 @@ extern "C"
 	extern LIS_INT lis_vector_abs(LIS_VECTOR vx);
 	extern LIS_INT lis_vector_reciprocal(LIS_VECTOR vx);
 	extern LIS_INT lis_vector_conjugate(LIS_VECTOR vx);
-	extern LIS_INT lis_vector_shift(LIS_SCALAR alpha, LIS_VECTOR vx);
+	extern LIS_INT lis_vector_shift(LIS_SCALAR sigma, LIS_VECTOR vx);
 	extern LIS_INT lis_vector_dot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_SCALAR *value);
 	extern LIS_INT lis_vector_nhdot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_SCALAR *value);  
 	extern LIS_INT lis_vector_nrm1(LIS_VECTOR vx, LIS_REAL *value);
@@ -929,7 +929,7 @@ extern "C"
         extern LIS_INT lis_array_abs(LIS_INT n, LIS_SCALAR *x);
         extern LIS_INT lis_array_reciprocal(LIS_INT n, LIS_SCALAR *x);
         extern LIS_INT lis_array_conjugate(LIS_INT n, LIS_SCALAR *x);  
-        extern LIS_INT lis_array_shift(LIS_INT n, LIS_SCALAR t, LIS_SCALAR *x);
+        extern LIS_INT lis_array_shift(LIS_INT n, LIS_SCALAR sigma, LIS_SCALAR *x);
         extern LIS_INT lis_array_dot(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *value);
         extern LIS_INT lis_array_nhdot(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *value);  
 	extern LIS_INT lis_array_nrm1(LIS_INT n, LIS_SCALAR *x, LIS_REAL *value);

@@ -797,7 +797,7 @@ LIS_INT lis_matrix_get_diagonal_bsc(LIS_MATRIX A, LIS_SCALAR d[])
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_shift_diagonal_bsc"
-LIS_INT lis_matrix_shift_diagonal_bsc(LIS_MATRIX A, LIS_SCALAR alpha)
+LIS_INT lis_matrix_shift_diagonal_bsc(LIS_MATRIX A, LIS_SCALAR sigma)
 {
 	LIS_INT i,j,k,bi,bj,bjj,nr;
 	LIS_INT bnr,bnc,bs;
@@ -819,7 +819,7 @@ LIS_INT lis_matrix_shift_diagonal_bsc(LIS_MATRIX A, LIS_SCALAR alpha)
 		{
 			for(j=0;j<bnr;j++)
 			{
-				A->D->value[i*bs+j*bnr+j] -= alpha;
+				A->D->value[i*bs+j*bnr+j] -= sigma;
 			}
 		}
 	}
@@ -839,7 +839,7 @@ LIS_INT lis_matrix_shift_diagonal_bsc(LIS_MATRIX A, LIS_SCALAR alpha)
 				{
 					for(j=i%bnc;j<bnc&&k<bnr&&i<n;j++)
 					{
-						A->value[bj*bs + j*bnr + k] -= alpha;
+						A->value[bj*bs + j*bnr + k] -= sigma;
 						i++;
 						k++;
 					}

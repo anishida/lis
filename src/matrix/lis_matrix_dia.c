@@ -368,7 +368,7 @@ LIS_INT lis_matrix_get_diagonal_dia(LIS_MATRIX A, LIS_SCALAR d[])
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_shift_diagonal_dia"
-LIS_INT lis_matrix_shift_diagonal_dia(LIS_MATRIX A, LIS_SCALAR alpha)
+LIS_INT lis_matrix_shift_diagonal_dia(LIS_MATRIX A, LIS_SCALAR sigma)
 {
 	LIS_INT i,j,k;
 	LIS_INT n,nnd;
@@ -387,7 +387,7 @@ LIS_INT lis_matrix_shift_diagonal_dia(LIS_MATRIX A, LIS_SCALAR alpha)
 		#endif
 		for(i=0; i<n; i++)
 		{
-			A->D->value[i] -= alpha;
+			A->D->value[i] -= sigma;
 		}
 	}
 	else
@@ -407,7 +407,7 @@ LIS_INT lis_matrix_shift_diagonal_dia(LIS_MATRIX A, LIS_SCALAR alpha)
 				*/
 				for (k=is;k<ie;k++)
 				  {
-				    A->value[is*nnd+j*k] -= alpha;
+				    A->value[is*nnd+j*k] -= sigma;
 				  }
 			}
 		#else
@@ -417,7 +417,7 @@ LIS_INT lis_matrix_shift_diagonal_dia(LIS_MATRIX A, LIS_SCALAR alpha)
 			}
 			for(i=0;i<n;i++)
 			{
-				A->value[j*n+i] -= alpha;
+				A->value[j*n+i] -= sigma;
 			}
 		#endif
 	}

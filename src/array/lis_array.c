@@ -60,7 +60,7 @@
  * lis_array_abs		x_i <- |x_i|
  * lis_array_reciprocal		x_i <- 1 / x_i
  * lis_array_conjugate		x_i <- conj(x_i)
- * lis_array_shift		x_i <- x_i - alpha
+ * lis_array_shift		x_i <- x_i - sigma
  * lis_array_dot		v <- x^H * y
  * lis_array_nhdot		v <- x^T * y
  * lis_array_nrm1		v <- ||x||_1
@@ -290,7 +290,7 @@ LIS_INT lis_array_conjugate(LIS_INT n, LIS_SCALAR *x)
 
 #undef __FUNC__
 #define __FUNC__ "lis_array_shift"
-LIS_INT lis_array_shift(LIS_INT n, LIS_SCALAR t, LIS_SCALAR *x)
+LIS_INT lis_array_shift(LIS_INT n, LIS_SCALAR sigma, LIS_SCALAR *x)
 {
   LIS_INT i;
 
@@ -298,7 +298,7 @@ LIS_INT lis_array_shift(LIS_INT n, LIS_SCALAR t, LIS_SCALAR *x)
 
   for(i=0;i<n;i++)
     {
-      x[i] = x[i] - t;
+      x[i] = x[i] - sigma;
     }
 
   LIS_DEBUG_FUNC_OUT;
