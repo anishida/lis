@@ -528,16 +528,6 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 		#endif
 	}
 
-	/* global shift */
-	if ( output )
-	{
-#ifdef _COMPLEX
-	  lis_printf(comm,"shift (outer solver)  : (%e, %e)\n", (double)creal(oshift), (double)cimag(oshift));
-#else
-	  lis_printf(comm,"shift (outer solver)  : %e\n", (double)oshift);
-#endif
-	}
-
 	/* create eigenvector array */
 	if( esolver->evector ) lis_free(esolver->evector);
 	evector = (LIS_VECTOR *)lis_malloc((ss+2)*sizeof(LIS_VECTOR),"lis_esolve::evector");

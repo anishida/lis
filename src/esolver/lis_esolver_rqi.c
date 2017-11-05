@@ -133,7 +133,6 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   LIS_VECTOR v;
   LIS_SCALAR theta,dotvy;
   LIS_SCALAR rho;
-  LIS_SCALAR ishift;
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter2,output;
@@ -151,8 +150,7 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   comm = LIS_COMM_WORLD;
 
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
-  tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
-  ishift = esolver->ishift;
+  tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN];
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
 
   A = esolver->A;
@@ -164,11 +162,6 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   y = esolver->work[0];
   q = esolver->work[1];
 
-#ifdef _COMPLEX
-  if( output ) lis_printf(comm,"shift (inner solver)  : (%e, %e)\n", (double)creal(ishift), (double)cimag(ishift));
-#else  
-  if( output ) lis_printf(comm,"shift (inner solver)  : %e\n", (double)ishift);
-#endif  
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
   err = lis_solver_set_optionC(solver);
@@ -267,6 +260,7 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   esolver->retcode    = LIS_MAXITER;
   esolver->iter[0]    = iter;
   esolver->resid[0]   = resid;
+  esolver->evalue[0]  = rho;
   lis_vector_nrm2(v, &nrm2);
   lis_vector_scale(1.0/nrm2, v);
   lis_solver_destroy(solver); 
@@ -361,7 +355,6 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
   LIS_VECTOR v;
   LIS_SCALAR theta,eta,dotvy,dotww;
   LIS_SCALAR rho;
-  LIS_SCALAR ishift;
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter2,output;
@@ -379,8 +372,7 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
   comm = LIS_COMM_WORLD;
 
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
-  tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN]; 
-  ishift = esolver->ishift;
+  tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN];
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
 
   A = esolver->A;
@@ -394,11 +386,6 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
   y = esolver->work[1];
   q = esolver->work[2];
 
-#ifdef _COMPLEX
-  if( output ) lis_printf(comm,"shift (inner solver)  : (%e, %e)\n", (double)creal(ishift), (double)cimag(ishift));
-#else  
-  if( output ) lis_printf(comm,"shift (inner solver)  : %e\n", (double)ishift);
-#endif  
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
   err = lis_solver_set_optionC(solver);

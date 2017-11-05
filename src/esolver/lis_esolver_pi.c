@@ -161,6 +161,15 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
   if ( esolver->ishift != 0.0 ) oshift = ishift;  
   if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, oshift);  
 
+  if( output )
+    {
+#ifdef _COMPLEX
+      lis_printf(comm,"shift                 : (%e, %e)\n", (double)creal(oshift), (double)cimag(oshift));
+#else
+      lis_printf(comm,"shift                 : %e\n", (double)oshift);
+#endif
+    }
+
   iter=0;
   while (iter<emaxiter)
     {
@@ -196,7 +205,7 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
 	  esolver->retcode    = LIS_SUCCESS;
 	  esolver->iter[0]    = iter;
 	  esolver->resid[0]   = resid;
-	  esolver->evalue[0]  = theta;
+	  esolver->evalue[0]  = theta + oshift;
 	  lis_vector_nrm2(v, &nrm2);
 	  lis_vector_scale(1.0/nrm2, v);
 	  if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);	  
@@ -208,7 +217,7 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
   esolver->retcode   = LIS_MAXITER;
   esolver->iter[0]   = iter;
   esolver->resid[0]  = resid;
-  esolver->evalue[0] = theta;
+  esolver->evalue[0] = theta + oshift;
   lis_vector_nrm2(v, &nrm2);
   lis_vector_scale(1.0/nrm2, v);
   if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);  
@@ -339,7 +348,14 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
   if ( esolver->ishift != 0.0 ) oshift = ishift;
   if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, oshift);
 
-  iter=0;
+  if( output )
+    {
+#ifdef _COMPLEX
+      lis_printf(comm,"shift                 : (%e, %e)\n", (double)creal(oshift), (double)cimag(oshift));
+#else
+      lis_printf(comm,"shift                 : %e\n", (double)oshift);
+#endif
+    }
   
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
@@ -365,6 +381,7 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
       return err;
     }
 
+  iter=0;
   while (iter<emaxiter)
     {
       iter = iter+1;
@@ -421,7 +438,7 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
 	  esolver->retcode    = LIS_SUCCESS;
 	  esolver->iter[0]    = iter;
 	  esolver->resid[0]   = resid;
-	  esolver->evalue[0]  = theta;
+	  esolver->evalue[0]  = theta + oshift;
 	  lis_vector_nrm2(v, &nrm2);
 	  lis_vector_scale(1.0/nrm2, v);
 	  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, -oshift);	  
@@ -437,7 +454,7 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
   esolver->retcode   = LIS_MAXITER;
   esolver->iter[0]   = iter;
   esolver->resid[0]  = resid;
-  esolver->evalue[0] = theta;
+  esolver->evalue[0] = theta + oshift;
   lis_vector_nrm2(v, &nrm2);
   lis_vector_scale(1.0/nrm2, v);
   if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, -oshift);  

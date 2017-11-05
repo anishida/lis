@@ -185,6 +185,15 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 
   if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, oshift);  
 
+  if( output )
+    {
+#ifdef _COMPLEX
+      lis_printf(comm,"shift                 : (%e, %e)\n", (double)creal(oshift), (double)cimag(oshift));      
+#else
+      lis_printf(comm,"shift                 : %e\n", (double)oshift);
+#endif
+    }
+  
   lis_esolver_get_esolvername(niesolver, esolvername);
   if( output ) lis_printf(comm,"inner eigensolver     : %s\n", esolvername);
 
@@ -491,8 +500,17 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   lis_vector_nrm2(y,&nrm2);
   lis_vector_scale(1.0/nrm2,y);
 
-  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, oshift);  
+  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, oshift);
 
+  if( output )
+    {
+#ifdef _COMPLEX
+      lis_printf(comm,"shift                 : (%e, %e)\n", (double)creal(oshift), (double)cimag(oshift));      
+#else
+      lis_printf(comm,"shift                 : %e\n", (double)oshift);
+#endif
+    }
+  
   lis_esolver_get_esolvername(nigesolver, esolvername);
   if( output ) lis_printf(comm,"inner eigensolver     : %s\n", esolvername);
 

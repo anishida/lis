@@ -170,15 +170,15 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
   if ( esolver->ishift != 0.0 ) oshift = ishift;
   if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, oshift);
 
-  iter=0;
   if( output )
     {
 #ifdef _COMPLEX
-      lis_printf(comm,"shift (inner solver)  : (%e, %e)\n", (double)creal(ishift), (double)cimag(ishift));      
+      lis_printf(comm,"shift                 : (%e, %e)\n", (double)creal(oshift), (double)cimag(oshift));      
 #else
-      lis_printf(comm,"shift (inner solver)  : %e\n", (double)ishift);
+      lis_printf(comm,"shift                 : %e\n", (double)oshift);
 #endif
     }
+  
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
   err = lis_solver_set_optionC(solver);
@@ -203,6 +203,7 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
       return err;
     }
 
+  iter=0;
   while (iter<emaxiter)
     {
       iter = iter+1;
@@ -401,15 +402,15 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
   if ( esolver->ishift != 0.0 ) oshift = ishift;
   if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, oshift);
 
-  iter=0;
   if( output )
     {
 #ifdef _COMPLEX
-      lis_printf(comm,"shift (inner solver)  : (%e, %e)\n", (double)creal(ishift), (double)cimag(ishift));
+      lis_printf(comm,"shift                 : (%e, %e)\n", (double)creal(oshift), (double)cimag(oshift));
 #else
-      lis_printf(comm,"shift (inner solver)  : %e\n", (double)ishift);
+      lis_printf(comm,"shift                 : %e\n", (double)oshift);
 #endif
     }
+  
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
   err = lis_solver_set_optionC(solver);
@@ -434,6 +435,7 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
       return err;
     }
 
+  iter=0;
   while (iter<emaxiter)
     {
       iter = iter+1;
