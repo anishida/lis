@@ -1109,9 +1109,9 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   if( output )
     {
 #ifdef _COMPLEX
-      lis_printf(comm,"shift                 : (%e, %e)\n", (double)creal(ishift), (double)cimag(ishift));
+      lis_printf(comm,"shift                 : (%e, %e)\n", (double)creal(oshift), (double)cimag(oshift));
 #else  
-      lis_printf(comm,"shift                 : %e\n", (double)ishift);
+      lis_printf(comm,"shift                 : %e\n", (double)oshift);
 #endif
     }
 
