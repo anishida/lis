@@ -1,3 +1,7 @@
+Version 2.0.2  November 6, 2017
+
+  - Changed name of function lis_matrix_shift_general() to lis_matrix_shift_matrix().
+
 Version 2.0.1  November 5, 2017
 
   - Added support for option -rval.
