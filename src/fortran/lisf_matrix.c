@@ -697,7 +697,7 @@ void lis_matrix_get_diagonal_f(LIS_MATRIX_F *A, LIS_VECTOR_F *d, LIS_INT *ierr)
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_shift_diagonal_f"
-void lis_matrix_shift_diagonal_f(LIS_MATRIX_F *A, LIS_SCALAR_F *alpha, LIS_INT *ierr)
+void lis_matrix_shift_diagonal_f(LIS_MATRIX_F *A, LIS_SCALAR_F *sigma, LIS_INT *ierr)
 {
 	LIS_MATRIX AA;
 	LIS_SCALAR ss;
@@ -705,7 +705,7 @@ void lis_matrix_shift_diagonal_f(LIS_MATRIX_F *A, LIS_SCALAR_F *alpha, LIS_INT *
 	LIS_DEBUG_FUNC_IN;
 
 	AA    = (LIS_MATRIX)LIS_V2P(A);
-	ss    = (LIS_SCALAR)LIS_V2P(alpha);
+	ss    = (LIS_SCALAR)LIS_V2P(sigma);
 	*ierr = lis_matrix_shift_diagonal(AA,ss);
 	if( *ierr )	return;	
 
@@ -714,8 +714,8 @@ void lis_matrix_shift_diagonal_f(LIS_MATRIX_F *A, LIS_SCALAR_F *alpha, LIS_INT *
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_matrix_shift_general_f"
-void lis_matrix_shift_general_f(LIS_MATRIX_F *A, LIS_MATRIX_F *B, LIS_SCALAR_F *alpha, LIS_INT *ierr)
+#define __FUNC__ "lis_matrix_shift_matrix_f"
+void lis_matrix_shift_matrix_f(LIS_MATRIX_F *A, LIS_MATRIX_F *B, LIS_SCALAR_F *sigma, LIS_INT *ierr)
 {
 	LIS_MATRIX AA;
 	LIS_MATRIX BB;	
@@ -725,8 +725,8 @@ void lis_matrix_shift_general_f(LIS_MATRIX_F *A, LIS_MATRIX_F *B, LIS_SCALAR_F *
 
 	AA    = (LIS_MATRIX)LIS_V2P(A);
 	BB    = (LIS_MATRIX)LIS_V2P(B);	
-	ss    = (LIS_SCALAR)LIS_V2P(alpha);
-	*ierr = lis_matrix_shift_general(AA,BB,ss);
+	ss    = (LIS_SCALAR)LIS_V2P(sigma);
+	*ierr = lis_matrix_shift_matrix(AA,BB,ss);
 	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;

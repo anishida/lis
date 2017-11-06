@@ -59,7 +59,7 @@
  * lis_matrix_scale
  * lis_matrix_get_diagonal
  * lis_matrix_shift_diagonal
- * lis_matrix_shift_general
+ * lis_matrix_shift_matrix
  * lis_matrix_split
  * lis_matrix_merge
  * lis_matrix_solve
@@ -829,8 +829,8 @@ LIS_INT lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR sigma)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_matrix_shift_general"
-LIS_INT lis_matrix_shift_general(LIS_MATRIX A, LIS_MATRIX B, LIS_SCALAR sigma)
+#define __FUNC__ "lis_matrix_shift_matrix"
+LIS_INT lis_matrix_shift_matrix(LIS_MATRIX A, LIS_MATRIX B, LIS_SCALAR sigma)
 {
 	LIS_INT err;
 	LIS_MATRIX Atmp,Btmp;
