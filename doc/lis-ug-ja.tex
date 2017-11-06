@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis ユーザガイド}\\
-バージョン 2.0.1
+バージョン 2.0.2
 \end{flushleft}
 
 \vspace*{2cm}
@@ -243,7 +243,8 @@ All rights reserved.
       {\tt lis\_lis\_matvech*()}, 
       {\tt lis\_lis\_array\_matvech*()}, \\  
       {\tt lis\_matrix\_solveh*()}, 
-      {\tt lis\_psolveh*()}にそれぞれ変更. 
+      {\tt lis\_psolveh*()}にそれぞれ変更.
+\item 関数{\tt lis\_matrix\_shift\_general()}の名称を{\tt lis\_matrix\_shift\_matrix()}に変更. 
 \end{enumerate}
 
 \newpage
@@ -5669,7 +5670,6 @@ COO    &  ○  &  ○  &  ○  & CSR  & CSR & CSR & CSR & CSC & CSR &     & CSR 
 \item[\tt ierr] リターンコード
 \end{namelist}
 
-\newpage
 \subsubsection{lis\_matrix\_get\_diagonal}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR d)|\\
@@ -5691,6 +5691,7 @@ COO    &  ○  &  ○  &  ○  & CSR  & CSR & CSR & CSR & CSC & CSR &     & CSR 
 \item[\tt ierr] リターンコード
 \end{namelist}
 
+\newpage
 \subsubsection{lis\_matrix\_shift\_diagonal}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR sigma)|\\
@@ -5711,6 +5712,30 @@ COO    &  ○  &  ○  &  ○  & CSR  & CSR & CSR & CSR & CSC & CSR &     & CSR 
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 
 \item[\tt A] シフト後の行列$A-\sigma E$
+\item[\tt ierr] リターンコード
+\end{namelist}
+
+\subsubsection{lis\_matrix\_shift\_matrix}
+\begin{screen}
+\verb|C       LIS_INT lis_matrix_shift_matrix(LIS_MATRIX A, LIS_MATRIX B,|\\
+\verb|         LIS_SCALAR sigma)|\\
+\verb|Fortran subroutine lis_matrix_shift_matrix(LIS_MATRIX A, LIS_MATRIX B,|\\\verb|         LIS_SCALAR sigma, LIS_INTEGER ierr) |
+\end{screen}
+{\bf 機能}\\
+\indent
+行列$A$をシフトする. 
+\\ \\
+\noindent
+{\bf 入力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt sigma] シフト量
+\item[\tt A] 行列
+\item[\tt B] 行列  
+\end{namelist}
+{\bf 出力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+
+\item[\tt A] シフト後の行列$A-\sigma B$
 \item[\tt ierr] リターンコード
 \end{namelist}
 

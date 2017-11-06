@@ -482,7 +482,7 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
   ishift = esolver->ishift;
 
   if ( esolver->ishift != 0.0 ) oshift = ishift;
-  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, oshift);
+  if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, oshift);
 
   if( output )
     {
@@ -669,7 +669,7 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
   esolver->p_c_time = solver->p_c_time;
   esolver->p_i_time = solver->p_i_time;
 
-  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, -oshift);
+  if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, -oshift);
 
   lis_free(A3);
   lis_free(B3);
@@ -1104,7 +1104,7 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   ishift = esolver->ishift;
 
   if ( esolver->ishift != 0.0 ) oshift = ishift;
-  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, oshift);
+  if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, oshift);
 
   if( output )
     {
@@ -1256,7 +1256,7 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   esolver->p_c_time = solver->p_c_time;
   esolver->p_i_time = solver->p_i_time;
 
-  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, -oshift);
+  if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, -oshift);
 
   if (resid<tol) 
     {

@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 2.0.1
+Version 2.0.2
 \end{flushleft}
 
 \vspace*{2cm}
@@ -263,7 +263,9 @@ and {\tt -hybrid\_omega}, respectively.
       {\tt lis\_matvech*()}, 
       {\tt lis\_array\_matvech*()}, \\
       {\tt lis\_matrix\_solveh*()}, and 
-      {\tt lis\_psolveh*()} for $A^H$, respectively. 
+      {\tt lis\_psolveh*()} for $A^H$, respectively.
+\item Change: Name of the function {\tt lis\_matrix\_shift\_general()} to
+{\tt lis\_matrix\_shift\_matrix()}. 
 \end{enumerate}
 
 \newpage
@@ -5825,7 +5827,6 @@ Scale matrix $A$ and vector $b$.
 \item[\tt ierr] The return code
 \end{namelist}
 
-\newpage
 \subsubsection{lis\_matrix\_get\_diagonal}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR d)|\\
@@ -5847,6 +5848,7 @@ Store the diagonal elements of matrix $A$ to vector $d$.
 \item[\tt ierr] The return code
 \end{namelist}
 
+\newpage
 \subsubsection{lis\_matrix\_shift\_diagonal}
 \begin{screen}
 \verb|C       LIS_INT lis_matrix_shift_diagonal(LIS_MATRIX A, LIS_SCALAR sigma)|\\
@@ -5866,6 +5868,29 @@ Shift the diagonal elements of matrix $A$.
 {\bf Output}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt A] The shifted matrix $A-\sigma E$
+\item[\tt ierr] The return code
+\end{namelist}
+
+\subsubsection{lis\_matrix\_shift\_matrix}
+\begin{screen}
+\verb|C       LIS_INT lis_matrix_shift_matrix(LIS_MATRIX A, LIS_MATRIX B,|\\
+\verb|         LIS_SCALAR sigma)|\\
+\verb|Fortran subroutine lis_matrix_shift_matrix(LIS_MATRIX A, LIS_MATRIX B,|\\\verb|         LIS_SCALAR sigma, LIS_INTEGER ierr) |
+\end{screen}
+{\bf Description}\\
+\indent
+Shift the matrix elements of matrix $A$.
+\\ \\
+\noindent
+{\bf Input}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt sigma] The amount of the shift
+\item[\tt A] The matrix
+\item[\tt B] The matrix  
+\end{namelist}
+{\bf Output}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt A] The shifted matrix $A-\sigma B$
 \item[\tt ierr] The return code
 \end{namelist}
 

@@ -174,7 +174,7 @@ extern LIS_Comm_f lis_comm_world_f;
 #define lis_matrix_psd_reset_scale_f F77_FUNC_(lis_matrix_psd_reset_scale_f, LIS_MATRIX_PSD_RESET_SCALE_F)
 #define lis_matrix_get_diagonal_f F77_FUNC_(lis_matrix_get_diagonal_f, LIS_MATRIX_GET_DIAGONAL_F)
 #define lis_matrix_shift_diagonal_f F77_FUNC_(lis_matrix_shift_diagonal_f, LIS_MATRIX_SHIFT_DIAGONAL_F)
-#define lis_matrix_shift_general_f F77_FUNC_(lis_matrix_shift_general_f, LIS_MATRIX_SHIFT_GENERAL_F)
+#define lis_matrix_shift_matrix_f F77_FUNC_(lis_matrix_shift_matrix_f, LIS_MATRIX_SHIFT_GENERAL_F)
 #define lis_matrix_set_blocksize_f F77_FUNC_(lis_matrix_set_blocksize_f, LIS_MATRIX_SET_BLOCKSIZE_F)
 #define lis_matrix_unset_f F77_FUNC_(lis_matrix_unset_f, LIS_MATRIX_UNSET_F)
 

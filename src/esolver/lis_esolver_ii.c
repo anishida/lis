@@ -400,7 +400,7 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
   q = esolver->work[2];
 
   if ( esolver->ishift != 0.0 ) oshift = ishift;
-  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, oshift);
+  if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, oshift);
 
   if( output )
     {
@@ -496,7 +496,7 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
 	  esolver->evalue[0]  = 1.0/theta + oshift;
 	  lis_vector_nrm2(v, &nrm2);
 	  lis_vector_scale(1.0/nrm2, v);
-	  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, -oshift);
+	  if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, -oshift);
 	  lis_precon_destroy(precon);
 	  lis_solver_destroy(solver); 
 	  LIS_DEBUG_FUNC_OUT;
@@ -512,7 +512,7 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
   esolver->evalue[0]  = 1.0/theta + oshift;
   lis_vector_nrm2(v, &nrm2);
   lis_vector_scale(1.0/nrm2, v);
-  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, -oshift);
+  if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, -oshift);
   lis_solver_destroy(solver); 
   LIS_DEBUG_FUNC_OUT;
   return LIS_MAXITER;

@@ -425,7 +425,7 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
       iter = iter+1;
 
       /* y = (A - rho * B)^-1 * w */
-      lis_matrix_shift_general(A, B, rho);
+      lis_matrix_shift_matrix(A, B, rho);
       err = lis_solve_kernel(A, w, y, solver, precon);
       if( err )
 	{
@@ -433,7 +433,7 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
 	  solver->retcode = err;
 	  return err;
 	}
-      lis_matrix_shift_general(A, B, -rho);
+      lis_matrix_shift_matrix(A, B, -rho);
       lis_solver_get_iter(solver,&iter2);
 
       /* theta = <w, y> */      

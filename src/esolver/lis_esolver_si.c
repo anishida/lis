@@ -498,7 +498,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   lis_vector_nrm2(y,&nrm2);
   lis_vector_scale(1.0/nrm2,y);
 
-  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, oshift);
+  if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, oshift);
 
   if( output )
     {
@@ -697,7 +697,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	}
     }
   
-  if ( oshift != 0.0 ) lis_matrix_shift_general(A, B, -oshift);  
+  if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, -oshift);  
   lis_vector_copy(esolver->evector[0], esolver->x);
 
   lis_precon_destroy(precon);
