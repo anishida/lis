@@ -67,10 +67,11 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 @ENABLE_FORTRAN_TRUE@am__append_1 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_2 = test2f test6f 
 @ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__append_3 = test8f
-bin_PROGRAMS = esolve$(EXEEXT) gesolve$(EXEEXT) hpcg_kernel$(EXEEXT) \
-	hpcg_spmvtest$(EXEEXT) lsolve$(EXEEXT) spmvtest1$(EXEEXT) \
-	spmvtest2$(EXEEXT) spmvtest2b$(EXEEXT) spmvtest3$(EXEEXT) \
-	spmvtest3b$(EXEEXT) spmvtest4$(EXEEXT) spmvtest5$(EXEEXT)
+bin_PROGRAMS = esolve$(EXEEXT) esolver$(EXEEXT) gesolve$(EXEEXT) \
+	gesolver$(EXEEXT) hpcg_kernel$(EXEEXT) hpcg_spmvtest$(EXEEXT) \
+	lsolve$(EXEEXT) spmvtest1$(EXEEXT) spmvtest2$(EXEEXT) \
+	spmvtest2b$(EXEEXT) spmvtest3$(EXEEXT) spmvtest3b$(EXEEXT) \
+	spmvtest4$(EXEEXT) spmvtest5$(EXEEXT)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -102,6 +103,10 @@ am_esolve_OBJECTS = etest5.$(OBJEXT)
 esolve_OBJECTS = $(am_esolve_OBJECTS)
 esolve_LDADD = $(LDADD)
 esolve_DEPENDENCIES =
+am_esolver_OBJECTS = etest5b.$(OBJEXT)
+esolver_OBJECTS = $(am_esolver_OBJECTS)
+esolver_LDADD = $(LDADD)
+esolver_DEPENDENCIES =
 am_etest1_OBJECTS = etest1.$(OBJEXT)
 etest1_OBJECTS = $(am_etest1_OBJECTS)
 etest1_LDADD = $(LDADD)
@@ -148,6 +153,10 @@ am_gesolve_OBJECTS = getest5.$(OBJEXT)
 gesolve_OBJECTS = $(am_gesolve_OBJECTS)
 gesolve_LDADD = $(LDADD)
 gesolve_DEPENDENCIES =
+am_gesolver_OBJECTS = getest5b.$(OBJEXT)
+gesolver_OBJECTS = $(am_gesolver_OBJECTS)
+gesolver_LDADD = $(LDADD)
+gesolver_DEPENDENCIES =
 am_getest1_OBJECTS = getest1.$(OBJEXT)
 getest1_OBJECTS = $(am_getest1_OBJECTS)
 getest1_LDADD = $(LDADD)
@@ -313,13 +322,14 @@ FCLINK = $(LIBTOOL) --tag=FC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(FCLD) $(AM_FCFLAGS) $(FCFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 CCLD = $(CC)
-SOURCES = $(esolve_SOURCES) $(etest1_SOURCES) $(etest1f_SOURCES) \
-	$(etest2_SOURCES) $(etest3_SOURCES) $(etest4_SOURCES) \
-	$(etest4f_SOURCES) $(etest5_SOURCES) $(etest5b_SOURCES) \
-	$(etest6_SOURCES) $(etest7_SOURCES) $(gesolve_SOURCES) \
-	$(getest1_SOURCES) $(getest5_SOURCES) $(getest5b_SOURCES) \
-	$(hpcg_kernel_SOURCES) $(hpcg_spmvtest_SOURCES) \
-	$(lsolve_SOURCES) $(spmvtest1_SOURCES) $(spmvtest2_SOURCES) \
+SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
+	$(etest1f_SOURCES) $(etest2_SOURCES) $(etest3_SOURCES) \
+	$(etest4_SOURCES) $(etest4f_SOURCES) $(etest5_SOURCES) \
+	$(etest5b_SOURCES) $(etest6_SOURCES) $(etest7_SOURCES) \
+	$(gesolve_SOURCES) $(gesolver_SOURCES) $(getest1_SOURCES) \
+	$(getest5_SOURCES) $(getest5b_SOURCES) $(hpcg_kernel_SOURCES) \
+	$(hpcg_spmvtest_SOURCES) $(lsolve_SOURCES) \
+	$(spmvtest1_SOURCES) $(spmvtest2_SOURCES) \
 	$(spmvtest2b_SOURCES) $(spmvtest3_SOURCES) \
 	$(spmvtest3b_SOURCES) $(spmvtest4_SOURCES) \
 	$(spmvtest5_SOURCES) $(test1_SOURCES) $(test1f_SOURCES) \
@@ -328,13 +338,13 @@ SOURCES = $(esolve_SOURCES) $(etest1_SOURCES) $(etest1f_SOURCES) \
 	$(test4_SOURCES) $(test4f_SOURCES) $(test5_SOURCES) \
 	$(test6_SOURCES) $(test6f_SOURCES) $(test7_SOURCES) \
 	$(test7f_SOURCES) $(test8f_SOURCES)
-DIST_SOURCES = $(esolve_SOURCES) $(etest1_SOURCES) \
+DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
 	$(etest3_SOURCES) $(etest4_SOURCES) \
 	$(am__etest4f_SOURCES_DIST) $(etest5_SOURCES) \
 	$(etest5b_SOURCES) $(etest6_SOURCES) $(etest7_SOURCES) \
-	$(gesolve_SOURCES) $(getest1_SOURCES) $(getest5_SOURCES) \
-	$(getest5b_SOURCES) $(hpcg_kernel_SOURCES) \
+	$(gesolve_SOURCES) $(gesolver_SOURCES) $(getest1_SOURCES) \
+	$(getest5_SOURCES) $(getest5b_SOURCES) $(hpcg_kernel_SOURCES) \
 	$(hpcg_spmvtest_SOURCES) $(lsolve_SOURCES) \
 	$(spmvtest1_SOURCES) $(spmvtest2_SOURCES) \
 	$(spmvtest2b_SOURCES) $(spmvtest3_SOURCES) \
@@ -721,6 +731,9 @@ clean-testPROGRAMS:
 esolve$(EXEEXT): $(esolve_OBJECTS) $(esolve_DEPENDENCIES) $(EXTRA_esolve_DEPENDENCIES) 
 	@rm -f esolve$(EXEEXT)
 	$(LINK) $(esolve_OBJECTS) $(esolve_LDADD) $(LIBS)
+esolver$(EXEEXT): $(esolver_OBJECTS) $(esolver_DEPENDENCIES) $(EXTRA_esolver_DEPENDENCIES) 
+	@rm -f esolver$(EXEEXT)
+	$(LINK) $(esolver_OBJECTS) $(esolver_LDADD) $(LIBS)
 etest1$(EXEEXT): $(etest1_OBJECTS) $(etest1_DEPENDENCIES) $(EXTRA_etest1_DEPENDENCIES) 
 	@rm -f etest1$(EXEEXT)
 	$(LINK) $(etest1_OBJECTS) $(etest1_LDADD) $(LIBS)
@@ -754,6 +767,9 @@ etest7$(EXEEXT): $(etest7_OBJECTS) $(etest7_DEPENDENCIES) $(EXTRA_etest7_DEPENDE
 gesolve$(EXEEXT): $(gesolve_OBJECTS) $(gesolve_DEPENDENCIES) $(EXTRA_gesolve_DEPENDENCIES) 
 	@rm -f gesolve$(EXEEXT)
 	$(LINK) $(gesolve_OBJECTS) $(gesolve_LDADD) $(LIBS)
+gesolver$(EXEEXT): $(gesolver_OBJECTS) $(gesolver_DEPENDENCIES) $(EXTRA_gesolver_DEPENDENCIES) 
+	@rm -f gesolver$(EXEEXT)
+	$(LINK) $(gesolver_OBJECTS) $(gesolver_LDADD) $(LIBS)
 getest1$(EXEEXT): $(getest1_OBJECTS) $(getest1_DEPENDENCIES) $(EXTRA_getest1_DEPENDENCIES) 
 	@rm -f getest1$(EXEEXT)
 	$(LINK) $(getest1_OBJECTS) $(getest1_LDADD) $(LIBS)
