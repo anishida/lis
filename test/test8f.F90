@@ -1,12 +1,17 @@
+! (This is a demo program for the alternative workflow PSD, or
+! Preconditioner and Solver Decoupled, contributed by Neil Hodge.
+! To execute this program, it must be built with an MPI library,
+! and the Fortran 90 interface and the SA-AMG preconditioner must 
+! be enabled.)
+    
 PROGRAM lis_driver
 
     IMPLICIT NONE
 
-! (demo program for alternative workflow PSD, or Preconditioner and Solver
-! Decoupled, thanks to Neil Hodge)
 ! per the Intel fortran user forums, including a *.h file
 ! via the preprocessor mechanism works properly, versus using
 ! the fortran include mechanism
+
 #include "lisf.h"
 
     INTERFACE
