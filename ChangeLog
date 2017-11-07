@@ -12,7 +12,7 @@ Version 2.0.1  November 5, 2017
 Version 2.0.0  November 1, 2017
 
   - Added official support for linear solvers generalized for complex systems.
-  - Added official support for unsymmetric eigenvalue problems.
+  - Added official support for nonsymmetric eigenvalue problems.
 
 Version 1.8.15  November 1, 2017
 
@@ -1140,7 +1140,7 @@ Version 1.4.8  March 19, 2013
 
 Version 1.4.7  March 18, 2013
 
-  - Added unsymmetric test matrix.
+  - Added nonsymmetric test matrix.
 
 Version 1.4.6  March 15, 2013
 
@@ -2009,7 +2009,7 @@ Version 1.2.5  December 14, 2008
 
 Version 1.2.4  December 5, 2008
 
-  - Added experimental support for conjugate residual for unsymmetric eigenproblems.
+  - Added experimental support for conjugate residual for nonsymmetric eigenproblems.
   - Fixed minor bugs.
 
 Version 1.2.3  December 4, 2008
