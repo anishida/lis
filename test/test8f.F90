@@ -104,6 +104,14 @@ PROGRAM lis_driver
     CALL MPI_Comm_rank(MPI_COMM_WORLD,rank,ierr)
 !    CALL ErrorCheck("MPI_Comm_rank",ierr)
 
+    IF ( MPIsize.LT.4 ) THEN
+       IF ( rank.EQ.0 ) THEN
+          WRITE(UNIT=*,FMT='(a)') "number of processes must be 4 or more"
+          CALL lis_finalize(ierr)
+       ENDIF
+       STOP
+    ENDIF
+
     ! do it!
     CALL lis_initialize(ierr)
 !    CALL ErrorCheck("lis_initialize",ierr)
