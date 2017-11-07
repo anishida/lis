@@ -311,7 +311,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
       
   if( output ) 
     {
-      lis_printf(comm,"refined eigenpairs:\n\n");
+      lis_printf(comm,"computing refined eigenpairs using inner eigensolver:\n\n");
     }
 
   lis_esolver_create(&esolver2);
@@ -664,7 +664,7 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
       
   if( output ) 
     {
-      lis_printf(comm,"refined eigenpairs:\n\n");
+      lis_printf(comm,"computing refined eigenpairs using inner eigensolver:\n\n");
     }
 
   lis_esolver_create(&esolver2);
