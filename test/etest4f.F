@@ -38,6 +38,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       LIS_ESOLVER esolver
       integer*4 my_rank,nprocs,comm
       LIS_INTEGER matrix_type
+      LIS_INTEGER omp_get_num_procs,omp_get_max_threads      
       LIS_INTEGER nsol,iter_double,iter_quad
       real*8 time,itime,ptime,p_c_time,p_i_time
       LIS_REAL resid
