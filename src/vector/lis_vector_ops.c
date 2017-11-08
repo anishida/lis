@@ -240,7 +240,7 @@ LIS_INT lis_vector_nrm2(LIS_VECTOR vx, LIS_REAL *value)
 			#pragma omp for
 			for(i=0; i<n; i++)
 			{
-				tmp += x[i]*conj(x[i]);
+				tmp += conj(x[i])*x[i];
 			}
 			lis_vec_tmp[my_rank*LIS_VEC_TMP_PADD] = tmp;
 		}
@@ -256,7 +256,7 @@ LIS_INT lis_vector_nrm2(LIS_VECTOR vx, LIS_REAL *value)
 		#endif
 		for(i=0; i<n; i++)
 		{
-			dot += x[i]*conj(x[i]);
+			dot += conj(x[i])*x[i];
 		}
 	#endif
 	#ifdef USE_MPI

@@ -125,7 +125,7 @@ LIS_INT main(int argc, char* argv[])
 
 	lis_printf(comm,"Direct: elapsed time         = %e sec.\n", time);
 	lis_printf(comm,"Direct:   linear solver      = %e sec.\n", time);
-	lis_printf(comm,"Direct: relative residual    = %e\n\n", (double)resid_r/resid_b);
+	lis_printf(comm,"Direct: relative residual    = %e\n\n", (double)(resid_r/resid_b));
 
 	free(a);
 	free(b);

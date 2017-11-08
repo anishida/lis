@@ -153,7 +153,9 @@
 #else      
       call lis_array_set_all(nn*nn,1.0d0,u,ierr)
 #endif      
-#endif      
+#endif
+
+      call lis_array_matvec(nn,a,u,b,LIS_INS_VALUE,ierr)
 
 ! solve linear system
 
