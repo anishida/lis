@@ -316,11 +316,7 @@ LIS_INT lis_array_dot(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *value
   *value = 0;
   for(i=0;i<n;i++)
     {
-#ifdef _COMPLEX
       *value = *value + conj(x[i]) * y[i];
-#else      
-      *value = *value + x[i] * y[i];
-#endif      
     }
 
   LIS_DEBUG_FUNC_OUT;
@@ -377,11 +373,7 @@ LIS_INT lis_array_nrm2(LIS_INT n, LIS_SCALAR *x, LIS_REAL *value)
 	t = 0.0;
 	for(i=0;i<n;i++)
 	{
-#ifdef _COMPLEX
-		t += x[i]*conj(x[i]);
-#else		
-		t += x[i]*x[i];
-#endif		
+		t += conj(x[i]) * x[i];
 	}
 	*value = sqrt(t);
 

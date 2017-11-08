@@ -166,8 +166,8 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      .       ': eigenvalue           = ','(',real(evalue0),', ',
      .       imag(evalue0),')'
 #else
-        write(*,'(a,a,e13.7e2)') esolvername,': eigenvalue           = ',
-     .       evalue0
+        write(*,'(a,a,e13.7e2)') esolvername,': eigenvalue           = '
+     .       ,evalue0
 #endif        
         write(*,'(a,a,i0)') esolvername,': number of iterations = ',iter
         write(*,'(a,a,e13.7e2,a)') esolvername,
