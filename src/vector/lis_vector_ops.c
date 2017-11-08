@@ -96,11 +96,7 @@ LIS_INT lis_vector_dot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_SCALAR *value)
 			#pragma omp for
 			for(i=0; i<n; i++)
 			{
-#ifdef _COMPLEX
 				tmp += conj(x[i])*y[i];
-#else
-				tmp += x[i]*y[i];
-#endif				
 			}
 			lis_vec_tmp[my_rank*LIS_VEC_TMP_PADD] = tmp;
 		}
@@ -116,11 +112,7 @@ LIS_INT lis_vector_dot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_SCALAR *value)
 		#endif
 		for(i=0; i<n; i++)
 		{
-#ifdef _COMPLEX
 			dot += conj(x[i])*y[i];
-#else
-			dot += x[i]*y[i];
-#endif			
 		}
 	#endif
 	#ifdef USE_MPI
@@ -248,11 +240,7 @@ LIS_INT lis_vector_nrm2(LIS_VECTOR vx, LIS_REAL *value)
 			#pragma omp for
 			for(i=0; i<n; i++)
 			{
-#ifdef _COMPLEX
 				tmp += x[i]*conj(x[i]);
-#else
-				tmp += x[i]*x[i];
-#endif				
 			}
 			lis_vec_tmp[my_rank*LIS_VEC_TMP_PADD] = tmp;
 		}
@@ -268,11 +256,7 @@ LIS_INT lis_vector_nrm2(LIS_VECTOR vx, LIS_REAL *value)
 		#endif
 		for(i=0; i<n; i++)
 		{
-#ifdef _COMPLEX
 			dot += x[i]*conj(x[i]);
-#else
-			dot += x[i]*x[i];			
-#endif
 		}
 	#endif
 	#ifdef USE_MPI
