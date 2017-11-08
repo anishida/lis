@@ -170,7 +170,11 @@ LIS_INT main(int argc, char* argv[])
 	lis_solver_get_solver(solver,&nsol);
 	lis_solver_get_solvername(nsol,solvername);
 
-	lis_printf(comm,"%s: number of iterations = %D (double = %D, quad = %D)\n",solvername,iter, iter_double, iter_quad);
+	lis_printf(comm,"%s: number of iterations = %D\n",solvername,iter);
+#ifndef _LONG__DOUBLE
+	lis_printf(comm,"%s:   double             = %D\n",solvername,iter_double);
+	lis_printf(comm,"%s:   quad               = %D\n",solvername,iter_quad);		
+#endif
 	lis_printf(comm,"%s: elapsed time         = %e sec.\n",solvername,time);
 	lis_printf(comm,"%s:   preconditioner     = %e sec.\n",solvername, ptime);
 	lis_printf(comm,"%s:     matrix creation  = %e sec.\n",solvername, p_c_time);

@@ -33,7 +33,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
       LIS_MATRIX A
       LIS_VECTOR x
-      LIS_REAL evalue0
+      LIS_SCALAR evalue0
       LIS_ESOLVER esolver
       LIS_INTEGER ierr
       integer*4 my_rank,nprocs
@@ -65,7 +65,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
       if( i.lt.3 ) then
         if( my_rank.eq.0 ) then
-          write(*,*) 'etest1f matrix_filename ',
+          write(*,'(a)') 'etest1f matrix_filename ',
      .              'evector_filename rhistory_filename [options]'
           call lis_finalize(ierr)
         endif
@@ -73,14 +73,13 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       endif
 
       if (my_rank .eq. 0) then
-         write(*,*) ''
-         write(*,*) 'number of processes = ',nprocs
+         write(*,'(a)') ''
+         write(*,'(a,i0)') 'number of processes = ',nprocs
       endif
 
-
 #ifdef _OPENMP
-      write(*,*) 'max number of threads = ',omp_get_num_procs()
-      write(*,*) 'number of threads = ', omp_get_max_threads()
+      write(*,'(a,i0)') 'max number of threads = ',omp_get_num_procs()
+      write(*,'(a,i0)') 'number of threads = ', omp_get_max_threads()
 #endif
 
 ! read matrix from file 
@@ -124,16 +123,28 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       call lis_esolver_get_esolver(esolver,nsol,ierr)
       call lis_esolver_get_esolvername(nsol,esolvername,ierr)
 	
-      If( my_rank.eq.0 ) then
-        write(*,*) esolvername,': mode number          = ',0
-        write(*,*) esolvername,': eigenvalue           = ',evalue0
-        write(*,*) esolvername,': number of iterations = ',iter
-        write(*,*) esolvername,': elapsed time         = ',time
-        write(*,*) esolvername,':   preconditioner     = ',ptime
-        write(*,*) esolvername,':     matrix creation  = ',p_c_time
-        write(*,*) esolvername,': linear solver        = ',itime
-        write(*,*) esolvername,': residual             = ',resid
-        write(*,*) 
+      if( my_rank.eq.0 ) then
+        write(*,'(a,a,i0)') esolvername,': mode number          = ',0
+#ifdef COMPLEX         
+        write(*,'(a,a,a,e13.7e2,a,e13.7e2,a)') esolvername,
+     .       ': eigenvalue           = ','(',real(evalue0),', ',
+     .       imag(evalue0),')'
+#else
+        write(*,'(a,a,e13.7e2)') esolvername,': eigenvalue           = ',
+     .       evalue0
+#endif        
+        write(*,'(a,a,i0)') esolvername,': number of iterations = ',iter
+        write(*,'(a,a,e13.7e2,a)') esolvername,
+     .       ': elapsed time         = ',time,' sec.'
+        write(*,'(a,a,e13.7e2,a)') esolvername,
+     .       ':   preconditioner     = ',ptime,' sec.'
+        write(*,'(a,a,e13.7e2,a)') esolvername,
+     .       ':     matrix creation  = ',p_c_time,' sec.'
+        write(*,'(a,a,e13.7e2,a)') esolvername,
+     .       ':   linear solver      = ',itime,' sec.'
+        write(*,'(a,a,e13.7e2)') esolvername,': relative residual    = '
+     .       ,resid
+        write(*,'(a)') ''
       endif
 
 ! write eigenvector
