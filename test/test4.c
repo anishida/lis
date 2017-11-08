@@ -51,7 +51,16 @@ LIS_INT main(int argc, char* argv[])
     MPI_Comm_size(comm,&nprocs);
     MPI_Comm_rank(comm,&my_rank);
 #else
+    nprocs  = 1;
     my_rank = 0;
+#endif
+
+    lis_printf(comm,"\n");
+    lis_printf(comm,"number of processes = %d\n",nprocs);
+
+#ifdef _OPENMP
+    lis_printf(comm,"max number of threads = %d\n",omp_get_num_procs());
+    lis_printf(comm,"number of threads = %d\n",omp_get_max_threads());
 #endif
 
     lis_matrix_create(comm,&A); 

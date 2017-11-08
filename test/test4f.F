@@ -56,11 +56,12 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       matrix_type = LIS_MATRIX_CSR
 
       if (my_rank .eq. 0) then
-         write(*,*) ''
-         write(*,*) 'number of processes = ',nprocs
+         write(*,'(a)') ''
+         write(*,'(a,i0)') 'number of processes = ',nprocs
 #ifdef _OPENMP
-         write(*,*) 'max number of threads = ',omp_get_num_procs()
-         write(*,*) 'number of threads = ', omp_get_max_threads()
+         write(*,'(a,i0)') 'max number of threads = ',
+     .        omp_get_num_procs()
+         write(*,'(a,i0)') 'number of threads = ', omp_get_max_threads()
 #endif
       endif
 
@@ -133,7 +134,8 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       call CHKERR(ierr)      
       call lis_solve(A,b,x,solver,ierr)
       call lis_solver_get_iter(solver,iter,ierr)
-!      write(*,*) 'number of iterations = ', iter
+      write(*,'(a,i0)') 'number of iterations = ', iter
+      write(*,'(a)') ''
       call lis_vector_print(x,ierr)
       call lis_matrix_destroy(A,ierr)
       call lis_vector_destroy(b,ierr)

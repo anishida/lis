@@ -44,22 +44,24 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       comm = LIS_COMM_WORLD      
 
       z = (1.0, 2.0);
-      write(*,*) 'complex number z = ', z
+      write(*,'(a,a,f0.6,a,f0.6,a)') 'complex number z = ',
+     .     '(',real(z),', ',imag(z),')'
 
 #ifdef COMPLEX      
       call lis_vector_create(comm,v,ierr)
       call lis_vector_set_size(v,ln,n,ierr)
       call lis_vector_set_all(z,v,ierr)
-      write(*,*) 'complex vector v = '
+      write(*,'(a)') 'complex vector v = '
       call lis_vector_print(v,ierr)
       call lis_vector_conjugate(v,ierr)
-      write(*,*) 'conj(v) = '      
+      write(*,'(a)') 'conj(v) = '      
       call lis_vector_print(v,ierr)      
       call lis_vector_dot(v,v,dot,ierr)      
       call lis_vector_nrm2(v,nrm2,ierr)
-      write(*,*) 'inner product (v,v) = ', dot
-      write(*,*) '2-norm of v = ', nrm2
-      write(*,*) 'abs(z) = ', abs(z)      
+      write(*,'(a,a,f0.6,a,f0.6,a)') 'inner product (v,v) = ',
+     .     '(',real(dot),', ',imag(dot),')'
+      write(*,'(a,f0.6)') '2-norm of v = ', nrm2
+      write(*,'(a,f0.6)') 'abs(z) = ', abs(z)      
       call lis_vector_destroy(v,ierr)
 #endif      
 

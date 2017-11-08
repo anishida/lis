@@ -64,18 +64,18 @@
       ia = iargc()
       if( ia.lt.5 ) then
          if( my_rank.eq.0 ) then
-          write(*,*) 'Usage: test2f m n matrix_type solution_filename residual_filename [options]'
+          write(*,'(a)') 'Usage: test2f m n matrix_type solution_filename residual_filename [options]'
           call lis_finalize(ierr)
         endif
         stop
       endif
 
       if ( my_rank .eq. 0 ) then
-         write(*,*) ''
-         write(*,*) 'number of processes = ',nprocs
+         write(*,'(a)') ''
+         write(*,'(a,i0)') 'number of processes = ',nprocs
 #ifdef _OPENMP
-         write(*,*) 'max number of threads = ',omp_get_num_procs()
-         write(*,*) 'number of threads = ', omp_get_max_threads()
+         write(*,'(a,i0)') 'max number of threads = ',omp_get_num_procs()
+         write(*,'(a,i0)') 'number of threads = ', omp_get_max_threads()
 #endif
       endif
 
@@ -179,8 +179,8 @@
 #endif
 
       if ( my_rank .EQ. 0 ) then
-         write(*,*) 'matrix size =', nn, 'x', nn, '(', nnz, 'nonzero entries)'
-         write(*,*)
+         write(*,'(a,i0,a,i0,a,i0,a)') 'matrix size = ', nn, ' x ', nn, ' (', nnz, ' nonzero entries)'
+         write(*,'(a)')
       endif
 
       call lis_matrix_duplicate(A,A0,ierr)
@@ -218,16 +218,17 @@
       call lis_solver_get_solvername(nsol,solvername,ierr)
 
       if( my_rank.eq.0 ) then
-        write(*,*) solvername,': number of iterations = ',iter
+        write(*,'(a,a,i0)') solvername,': number of iterations = ', iter
 #ifndef LONG__DOUBLE
-        write(*,*) solvername,':   double             = ',iter_double
-        write(*,*) solvername,':   quad               = ',iter_quad
+        write(*,'(a,a,i0)') solvername,':   double             = ', iter_double
+        write(*,'(a,a,i0)') solvername,':   quad               = ', iter_quad
 #endif
-        write(*,*) solvername,': elapsed time         = ',time
-        write(*,*) solvername,':   preconditioner     = ',ptime
-        write(*,*) solvername,':     matrix creation  = ',p_c_time
-        write(*,*) solvername,':   linear solver      = ',itime
-        write(*,*) solvername,': residual             = ',resid
+        write(*,'(a,a,e13.7e2,a)') solvername,': elapsed time         = ', time, ' sec.'
+        write(*,'(a,a,e13.7e2,a)') solvername,':   preconditioner     = ', ptime, ' sec.'
+        write(*,'(a,a,e13.7e2,a)') solvername,':     matrix creation  = ', p_c_time, ' sec.'
+        write(*,'(a,a,e13.7e2,a)') solvername,':   linear solver      = ', itime, ' sec.'
+        write(*,'(a,a,e13.7e2)') solvername,': relative residual    = ', resid
+        write(*,'(a)') ''        
       endif
 
 ! write solution 
