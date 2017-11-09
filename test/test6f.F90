@@ -177,9 +177,9 @@
       call lis_array_nrm2(nn,u,resid_r,ierr)
       call lis_array_nrm2(nn,b,resid_b,ierr)
 
-      write(*,'(a,e13.7e2,a)') 'Direct: elapsed time         = ',time, ' sec.'
-      write(*,'(a,e13.7e2,a)') 'Direct:   linear solver      = ',time, ' sec.'
-      write(*,'(a,e13.7e2)') 'Direct: relative residual    = ',resid_r/resid_b
+      write(*,'(a,e14.7e2,a)') 'Direct: elapsed time         = ',time, ' sec.'
+      write(*,'(a,e14.7e2,a)') 'Direct:   linear solver      = ',time, ' sec.'
+      write(*,'(a,e14.7e2)') 'Direct: relative residual    = ',resid_r/resid_b
       write(*,'(a)') ''
       
       deallocate(a)

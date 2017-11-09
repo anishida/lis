@@ -223,11 +223,11 @@
         write(*,'(a,a,i0)') solvername,':   double             = ', iter_double
         write(*,'(a,a,i0)') solvername,':   quad               = ', iter_quad
 #endif
-        write(*,'(a,a,e13.7e2,a)') solvername,': elapsed time         = ', time, ' sec.'
-        write(*,'(a,a,e13.7e2,a)') solvername,':   preconditioner     = ', ptime, ' sec.'
-        write(*,'(a,a,e13.7e2,a)') solvername,':     matrix creation  = ', p_c_time, ' sec.'
-        write(*,'(a,a,e13.7e2,a)') solvername,':   linear solver      = ', itime, ' sec.'
-        write(*,'(a,a,e13.7e2)') solvername,': relative residual    = ', resid
+        write(*,'(a,a,e14.7e2,a)') solvername,': elapsed time         = ', time, ' sec.'
+        write(*,'(a,a,e14.7e2,a)') solvername,':   preconditioner     = ', ptime, ' sec.'
+        write(*,'(a,a,e14.7e2,a)') solvername,':     matrix creation  = ', p_c_time, ' sec.'
+        write(*,'(a,a,e14.7e2,a)') solvername,':   linear solver      = ', itime, ' sec.'
+        write(*,'(a,a,e14.7e2)') solvername,': relative residual    = ', resid
         write(*,'(a)') ''        
       endif
 
