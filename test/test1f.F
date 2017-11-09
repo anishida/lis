@@ -45,7 +45,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       character*256 fname,solname,resname,argc
       character*20 solvername
       integer*4 iargc
-      
+
       call lis_initialize(ierr)
 
       comm = LIS_COMM_WORLD

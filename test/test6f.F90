@@ -65,16 +65,16 @@
 
 ! define two-dimensional Laplacian
 
-#ifdef COMPLEX      
-#ifdef LONG__DOUBLE
+#ifdef COMPLEX
+#ifdef LONG__DOUBLE      
       call lis_array_set_all(nn*nn,(0.0q0,0.0q0),a,ierr)
-#else      
+#else
       call lis_array_set_all(nn*nn,(0.0d0,0.0d0),a,ierr)
 #endif      
 #else
-#ifdef LONG__DOUBLE
+#ifdef LONG__DOUBLE            
       call lis_array_set_all(nn*nn,0.0q0,a,ierr)
-#else      
+#else
       call lis_array_set_all(nn*nn,0.0d0,a,ierr)
 #endif      
 #endif      
@@ -136,25 +136,23 @@
          a(ii + nn * jj) = 4.0d0
          nnz = nnz + 1
       end do
-#endif
-
+#endif      
       write(*,'(a,i0,a,i0,a,i0,a)') 'matrix size = ', nn, ' x ', nn, ' (', nnz, ' nonzero entries)'
       write(*,'(a)')
 
-#ifdef COMPLEX      
+#ifdef COMPLEX
 #ifdef LONG__DOUBLE
-      call lis_array_set_all(nn*nn,(1.0q0,0.0q0),u,ierr)
-#else      
-      call lis_array_set_all(nn*nn,(1.0d0,0.0d0),u,ierr)
+      call lis_array_set_all(nn,(1.0q0,0.0q0),u,ierr)
+#else
+      call lis_array_set_all(nn,(1.0d0,0.0d0),u,ierr)
 #endif      
 #else
-#ifdef LONG__DOUBLE
-      call lis_array_set_all(nn*nn,1.0q0,u,ierr)
-#else      
-      call lis_array_set_all(nn*nn,1.0d0,u,ierr)
+#ifdef LONG__DOUBLE      
+      call lis_array_set_all(nn,1.0q0,u,ierr)
+#else
+      call lis_array_set_all(nn,1.0d0,u,ierr)
 #endif      
-#endif
-
+#endif      
       call lis_array_matvec(nn,a,u,b,LIS_INS_VALUE,ierr)
 
 ! solve linear system
@@ -163,10 +161,18 @@
       call lis_array_solve(nn,a,b,x,w,ierr)
       time = lis_wtime() - time0
 
-#ifdef COMPLEX      
-      call lis_array_xpay(nn,x,(-1.0d0,0.0d0),u,ierr)      
+#ifdef COMPLEX
+#ifdef LONG__DOUBLE
+      call lis_array_xpay(nn,x,(-1.0q0,0.0q0),u,ierr)
+#else      
+      call lis_array_xpay(nn,x,(-1.0d0,0.0d0),u,ierr)
+#endif      
 #else
-      call lis_array_xpay(nn,x,-1.0d0,u,ierr)      
+#ifdef LONG__DOUBLE      
+      call lis_array_xpay(nn,x,-1.0q0,u,ierr)
+#else
+      call lis_array_xpay(nn,x,-1.0d0,u,ierr)
+#endif
 #endif      
       call lis_array_nrm2(nn,u,resid_r,ierr)
       call lis_array_nrm2(nn,b,resid_b,ierr)
@@ -174,7 +180,8 @@
       write(*,'(a,e13.7e2,a)') 'Direct: elapsed time         = ',time, ' sec.'
       write(*,'(a,e13.7e2,a)') 'Direct:   linear solver      = ',time, ' sec.'
       write(*,'(a,e13.7e2)') 'Direct: relative residual    = ',resid_r/resid_b
-
+      write(*,'(a)') ''
+      
       deallocate(a)
       deallocate(b)
       deallocate(x)
