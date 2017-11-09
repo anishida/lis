@@ -163,23 +163,23 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       if( my_rank.eq.0 ) then
         write(*,'(a,a,i0)') esolvername,': mode number          = ',0
 #ifdef COMPLEX         
-        write(*,'(a,a,a,e13.7e2,a,e13.7e2,a)') esolvername,
+        write(*,'(a,a,a,e14.7e2,a,e14.7e2,a)') esolvername,
      .       ': eigenvalue           = ','(',real(evalue0),', ',
      .       imag(evalue0),')'
 #else
-        write(*,'(a,a,e13.7e2)') esolvername,': eigenvalue           = '
+        write(*,'(a,a,e14.7e2)') esolvername,': eigenvalue           = '
      .       ,evalue0
 #endif        
         write(*,'(a,a,i0)') esolvername,': number of iterations = ',iter
-        write(*,'(a,a,e13.7e2,a)') esolvername,
+        write(*,'(a,a,e14.7e2,a)') esolvername,
      .       ': elapsed time         = ',time,' sec.'
-        write(*,'(a,a,e13.7e2,a)') esolvername,
+        write(*,'(a,a,e14.7e2,a)') esolvername,
      .       ':   preconditioner     = ',ptime,' sec.'
-        write(*,'(a,a,e13.7e2,a)') esolvername,
+        write(*,'(a,a,e14.7e2,a)') esolvername,
      .       ':     matrix creation  = ',p_c_time,' sec.'
-        write(*,'(a,a,e13.7e2,a)') esolvername,
+        write(*,'(a,a,e14.7e2,a)') esolvername,
      .       ':   linear solver      = ',itime,' sec.'
-        write(*,'(a,a,e13.7e2)') esolvername,': relative residual    = '
+        write(*,'(a,a,e14.7e2)') esolvername,': relative residual    = '
      .       ,resid
         write(*,'(a)') ''
       endif
