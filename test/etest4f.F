@@ -31,7 +31,7 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       
 #include "lisf.h"
  
-      LIS_INTEGER i,n,gn,ln,is,ie,iter,ierr
+      LIS_INTEGER i,n,gn,ln,nnz,is,ie,iter,ierr
       LIS_MATRIX A
       LIS_VECTOR x
       LIS_SCALAR evalue0
@@ -130,7 +130,14 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif      
       call lis_matrix_set_type(A,matrix_type,ierr)
       call lis_matrix_assemble(A,ierr)
+      call lis_matrix_get_nnz(A,nnz,ierr)      
       
+      if ( my_rank .EQ. 0 ) then
+         write(*,'(a,i0,a,i0,a,i0,a)') 'matrix size = ', n, ' x ', n,
+     .        ' (', nnz, ' nonzero entries)'
+         write(*,'(a)')
+      endif
+
       call lis_vector_duplicate(A,x,ierr)
 #ifdef COMPLEX
 #ifdef LONG__DOUBLE      

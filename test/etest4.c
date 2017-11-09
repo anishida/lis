@@ -42,7 +42,7 @@
 LIS_INT main(int argc, char* argv[])
 {
     LIS_Comm comm;
-    LIS_INT err,i,n,gn,is,ie;
+    LIS_INT err,i,n,gn,is,ie,nnz;
     int nprocs,my_rank;
     LIS_INT nesol;
     LIS_MATRIX A;
@@ -97,6 +97,9 @@ LIS_INT main(int argc, char* argv[])
     }
     lis_matrix_set_type(A,LIS_MATRIX_CSR);
     lis_matrix_assemble(A);
+    nnz = A->nnz;
+    
+    lis_printf(comm,"matrix size = %D x %D (%D nonzero entries)\n\n",n,n,nnz);
     lis_vector_duplicate(A,&x);
 
     lis_esolver_create(&esolver);
