@@ -182,11 +182,7 @@
       write(*,'(a,e14.7e2)') 'Direct: relative residual    = ',resid_r/resid_b
       write(*,'(a)') ''
       
-      deallocate(a)
-      deallocate(b)
-      deallocate(x)
-      deallocate(u)
-      deallocate(w)
+      deallocate(a,b,x,u,w)
       
       call lis_finalize(ierr)
 

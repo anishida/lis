@@ -1,3 +1,7 @@
+Version 2.0.3  November 11, 2017
+
+  - Updated lis_matrix_destroy() to avoid double free error in Fortran (thanks to Glockner Ste'phane)
+
 Version 2.0.2  November 6, 2017
 
   - Changed name of function lis_matrix_shift_general() to lis_matrix_shift_matrix().

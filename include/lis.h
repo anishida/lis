@@ -27,7 +27,7 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 /**************************************/
-#define LIS_VERSION	"2.0.2"
+#define LIS_VERSION	"2.0.3"
 /**************************************/
 #include <stdio.h>
 #ifdef USE_COMPLEX
@@ -663,6 +663,7 @@ struct LIS_MATRIX_STRUCT
 	LIS_INT is_splited;
 	LIS_INT is_save;
 	LIS_INT is_comm;
+	LIS_INT is_fallocated;
 	LIS_INT use_wd;
 	LIS_INT conv_bnr;
 	LIS_INT conv_bnc;

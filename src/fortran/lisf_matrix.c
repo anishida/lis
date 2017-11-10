@@ -389,11 +389,16 @@ void lis_matrix_malloc_vbr_f(LIS_INT *n, LIS_INT *nnz, LIS_INT *nr, LIS_INT *nc,
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_set_csr_f"
-void lis_matrix_set_csr_f(LIS_INT *nnz, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX_F *A, LIS_INT *ierr)
+void lis_matrix_set_csr_f(LIS_INT *nnz, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX_F *Amat, LIS_INT *ierr)
 {
+	LIS_MATRIX A;
+	
 	LIS_DEBUG_FUNC_IN;
 
-	*ierr = lis_matrix_set_csr(*nnz,ptr,index,value,((LIS_MATRIX)LIS_V2P(A)));
+	A = (LIS_MATRIX)LIS_V2P(Amat);
+	A->is_fallocated = 1;
+	
+	*ierr = lis_matrix_set_csr(*nnz,ptr,index,value,A);
 	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
@@ -402,11 +407,16 @@ void lis_matrix_set_csr_f(LIS_INT *nnz, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_set_csc_f"
-void lis_matrix_set_csc_f(LIS_INT *nnz, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX_F *A, LIS_INT *ierr)
+void lis_matrix_set_csc_f(LIS_INT *nnz, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX_F *Amat,LIS_INT *ierr)
 {
+	LIS_MATRIX A;
+	
 	LIS_DEBUG_FUNC_IN;
 
-	*ierr = lis_matrix_set_csc(*nnz,ptr,index,value,((LIS_MATRIX)LIS_V2P(A)));
+	A = (LIS_MATRIX)LIS_V2P(Amat);
+	A->is_fallocated = 1;
+	
+	*ierr = lis_matrix_set_csc(*nnz,ptr,index,value,A);
 	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
@@ -415,11 +425,16 @@ void lis_matrix_set_csc_f(LIS_INT *nnz, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_set_msr_f"
-void lis_matrix_set_msr_f(LIS_INT *nnz, LIS_INT *ndz, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX_F *A, LIS_INT *ierr)
+void lis_matrix_set_msr_f(LIS_INT *nnz, LIS_INT *ndz, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX_F *Amat,LIS_INT *ierr)
 {
+	LIS_MATRIX A;
+	
 	LIS_DEBUG_FUNC_IN;
 
-	*ierr = lis_matrix_set_msr(*nnz,*ndz,index,value,((LIS_MATRIX)LIS_V2P(A)));
+	A = (LIS_MATRIX)LIS_V2P(Amat);
+	A->is_fallocated = 1;	
+
+	*ierr = lis_matrix_set_msr(*nnz,*ndz,index,value,A);
 	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
@@ -428,11 +443,16 @@ void lis_matrix_set_msr_f(LIS_INT *nnz, LIS_INT *ndz, LIS_INT *index, LIS_SCALAR
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_set_dia_f"
-void lis_matrix_set_dia_f(LIS_INT *nnd, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX_F *A, LIS_INT *ierr)
+void lis_matrix_set_dia_f(LIS_INT *nnd, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX_F *Amat,LIS_INT *ierr)
 {
+	LIS_MATRIX A;
+	
 	LIS_DEBUG_FUNC_IN;
 
-	*ierr = lis_matrix_set_dia(*nnd,index,value,((LIS_MATRIX)LIS_V2P(A)));
+	A = (LIS_MATRIX)LIS_V2P(Amat);
+	A->is_fallocated = 1;
+	
+	*ierr = lis_matrix_set_dia(*nnd,index,value,A);
 	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
@@ -441,11 +461,16 @@ void lis_matrix_set_dia_f(LIS_INT *nnd, LIS_INT *index, LIS_SCALAR *value, LIS_M
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_set_ell_f"
-void lis_matrix_set_ell_f(LIS_INT *maxnzr, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX_F *A, LIS_INT *ierr)
+void lis_matrix_set_ell_f(LIS_INT *maxnzr, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX_F *Amat,LIS_INT *ierr)
 {
+	LIS_MATRIX A;
+	
 	LIS_DEBUG_FUNC_IN;
 
-	*ierr = lis_matrix_set_ell(*maxnzr,index,value,((LIS_MATRIX)LIS_V2P(A)));
+	A = (LIS_MATRIX)LIS_V2P(Amat);
+	A->is_fallocated = 1;
+	
+	*ierr = lis_matrix_set_ell(*maxnzr,index,value,A);
 	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
@@ -454,11 +479,16 @@ void lis_matrix_set_ell_f(LIS_INT *maxnzr, LIS_INT *index, LIS_SCALAR *value, LI
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_set_jad_f"
-void lis_matrix_set_jad_f(LIS_INT *nnz, LIS_INT *maxnzr, LIS_INT *perm, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX_F *A, LIS_INT *ierr)
+void lis_matrix_set_jad_f(LIS_INT *nnz, LIS_INT *maxnzr, LIS_INT *perm, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX_F *Amat,LIS_INT *ierr)
 {
+	LIS_MATRIX A;
+	
 	LIS_DEBUG_FUNC_IN;
 
-	*ierr = lis_matrix_set_jad(*nnz,*maxnzr,perm,ptr,index,value,((LIS_MATRIX)LIS_V2P(A)));
+	A = (LIS_MATRIX)LIS_V2P(Amat);
+	A->is_fallocated = 1;
+	
+	*ierr = lis_matrix_set_jad(*nnz,*maxnzr,perm,ptr,index,value,A);
 	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
@@ -467,11 +497,16 @@ void lis_matrix_set_jad_f(LIS_INT *nnz, LIS_INT *maxnzr, LIS_INT *perm, LIS_INT 
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_set_bsr_f"
-void lis_matrix_set_bsr_f(LIS_INT *bnr, LIS_INT *bnc, LIS_INT *bnnz, LIS_INT *bptr, LIS_INT *bindex, LIS_SCALAR *value, LIS_MATRIX_F *A, LIS_INT *ierr)
+void lis_matrix_set_bsr_f(LIS_INT *bnr, LIS_INT *bnc, LIS_INT *bnnz, LIS_INT *bptr, LIS_INT *bindex, LIS_SCALAR *value, LIS_MATRIX_F *Amat,LIS_INT *ierr)
 {
+	LIS_MATRIX A;
+	
 	LIS_DEBUG_FUNC_IN;
 
-	*ierr = lis_matrix_set_bsr(*bnr,*bnc,*bnnz,bptr,bindex,value,((LIS_MATRIX)LIS_V2P(A)));
+	A = (LIS_MATRIX)LIS_V2P(Amat);
+	A->is_fallocated = 1;
+	
+	*ierr = lis_matrix_set_bsr(*bnr,*bnc,*bnnz,bptr,bindex,value,A);
 	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
@@ -480,11 +515,16 @@ void lis_matrix_set_bsr_f(LIS_INT *bnr, LIS_INT *bnc, LIS_INT *bnnz, LIS_INT *bp
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_set_bsc_f"
-void lis_matrix_set_bsc_f(LIS_INT *bnr, LIS_INT *bnc, LIS_INT *bnnz, LIS_INT *bptr, LIS_INT *bindex, LIS_SCALAR *value, LIS_MATRIX_F *A, LIS_INT *ierr)
+void lis_matrix_set_bsc_f(LIS_INT *bnr, LIS_INT *bnc, LIS_INT *bnnz, LIS_INT *bptr, LIS_INT *bindex, LIS_SCALAR *value, LIS_MATRIX_F *Amat,LIS_INT *ierr)
 {
+	LIS_MATRIX A;
+	
 	LIS_DEBUG_FUNC_IN;
 
-	*ierr = lis_matrix_set_bsc(*bnr,*bnc,*bnnz,bptr,bindex,value,((LIS_MATRIX)LIS_V2P(A)));
+	A = (LIS_MATRIX)LIS_V2P(Amat);
+	A->is_fallocated = 1;
+	
+	*ierr = lis_matrix_set_bsc(*bnr,*bnc,*bnnz,bptr,bindex,value,A);
 	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
@@ -493,11 +533,16 @@ void lis_matrix_set_bsc_f(LIS_INT *bnr, LIS_INT *bnc, LIS_INT *bnnz, LIS_INT *bp
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_set_coo_f"
-void lis_matrix_set_coo_f(LIS_INT *nnz, LIS_INT *row, LIS_INT *col, LIS_SCALAR *value, LIS_MATRIX_F *A, LIS_INT *ierr)
+void lis_matrix_set_coo_f(LIS_INT *nnz, LIS_INT *row, LIS_INT *col, LIS_SCALAR *value, LIS_MATRIX_F *Amat,LIS_INT *ierr)
 {
+	LIS_MATRIX A;
+	
 	LIS_DEBUG_FUNC_IN;
 
-	*ierr = lis_matrix_set_coo(*nnz,row,col,value,((LIS_MATRIX)LIS_V2P(A)));
+	A = (LIS_MATRIX)LIS_V2P(Amat);
+	A->is_fallocated = 1;
+	
+	*ierr = lis_matrix_set_coo(*nnz,row,col,value,A);
 	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
@@ -506,11 +551,16 @@ void lis_matrix_set_coo_f(LIS_INT *nnz, LIS_INT *row, LIS_INT *col, LIS_SCALAR *
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_set_dns_f"
-void lis_matrix_set_dns_f(LIS_SCALAR *value, LIS_MATRIX_F *A, LIS_INT *ierr)
+void lis_matrix_set_dns_f(LIS_SCALAR *value, LIS_MATRIX_F *Amat,LIS_INT *ierr)
 {
+	LIS_MATRIX A;
+	
 	LIS_DEBUG_FUNC_IN;
 
-	*ierr = lis_matrix_set_dns(value,((LIS_MATRIX)LIS_V2P(A)));
+	A = (LIS_MATRIX)LIS_V2P(Amat);
+	A->is_fallocated = 1;
+	
+	*ierr = lis_matrix_set_dns(value,A);
 	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
@@ -519,11 +569,16 @@ void lis_matrix_set_dns_f(LIS_SCALAR *value, LIS_MATRIX_F *A, LIS_INT *ierr)
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_set_vbr_f"
-void lis_matrix_set_vbr_f(LIS_INT *nnz, LIS_INT *nr, LIS_INT *nc, LIS_INT *bnnz, LIS_INT *row, LIS_INT *col, LIS_INT *ptr, LIS_INT *bptr, LIS_INT *bindex, LIS_SCALAR *value, LIS_MATRIX_F *A, LIS_INT *ierr)
+void lis_matrix_set_vbr_f(LIS_INT *nnz, LIS_INT *nr, LIS_INT *nc, LIS_INT *bnnz, LIS_INT *row, LIS_INT *col, LIS_INT *ptr, LIS_INT *bptr, LIS_INT *bindex, LIS_SCALAR *value, LIS_MATRIX_F *Amat,LIS_INT *ierr)
 {
+	LIS_MATRIX A;
+	
 	LIS_DEBUG_FUNC_IN;
 
-	*ierr = lis_matrix_set_vbr(*nnz,*nr,*nc,*bnnz,row,col,ptr,bptr,bindex,value,((LIS_MATRIX)LIS_V2P(A)));
+	A = (LIS_MATRIX)LIS_V2P(Amat);
+	A->is_fallocated = 1;
+	
+	*ierr = lis_matrix_set_vbr(*nnz,*nr,*nc,*bnnz,row,col,ptr,bptr,bindex,value,A);
 	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
