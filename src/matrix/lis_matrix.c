@@ -440,7 +440,7 @@ LIS_INT lis_matrix_destroy(LIS_MATRIX Amat)
 
 	if( lis_is_malloc(Amat) )
 	{
-		lis_matrix_storage_destroy(Amat);
+		if( !Amat->is_fallocated ) lis_matrix_storage_destroy(Amat);
 		lis_matrix_DLU_destroy(Amat);
 		lis_matrix_diag_destroy(Amat->WD);
 		if( Amat->l2g_map ) lis_free( Amat->l2g_map );

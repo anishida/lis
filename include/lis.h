@@ -663,6 +663,7 @@ struct LIS_MATRIX_STRUCT
 	LIS_INT is_splited;
 	LIS_INT is_save;
 	LIS_INT is_comm;
+	LIS_INT is_fallocated;
 	LIS_INT use_wd;
 	LIS_INT conv_bnr;
 	LIS_INT conv_bnc;

@@ -188,7 +188,7 @@
       call lis_matrix_set_type(A0,matrix_type,ierr)
       call lis_matrix_convert(A,A0,ierr)
       call CHKERR(ierr)
-      !      call lis_matrix_destroy(A,ierr)
+      call lis_matrix_destroy(A,ierr)
       A = A0
       
       call lis_vector_duplicate(A,u,ierr)
@@ -240,12 +240,11 @@
       call lis_solver_output_rhistory(solver, resname, ierr)
 
       call lis_solver_destroy(solver,ierr)
-!      call lis_matrix_destroy(A,ierr)
+      call lis_matrix_destroy(A,ierr)
       call lis_vector_destroy(u,ierr)
       call lis_vector_destroy(x,ierr)
       call lis_vector_destroy(b,ierr)
 
-!      deallocate(ptr,index,value)
       call lis_finalize(ierr)
 
       stop
