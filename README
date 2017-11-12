@@ -18,8 +18,7 @@ Lis provides facilities for:
 
 * Basic linear algebra operations for dense and sparse matrices
 
-* Parallel iterative methods for linear equations and standard
-eigenvalue problems
+* Parallel iterative methods for linear equations and eigenvalue problems
 
 * Parallel preconditioners for iterative methods
 
