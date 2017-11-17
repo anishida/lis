@@ -196,7 +196,7 @@ LIS_INT lis_cgs(LIS_SOLVER solver)
 		}
 
 		/* beta = (rho / rho_old) */
-		beta = (rho / rho_old);
+		beta = rho / rho_old;
 
 		/* u = r + beta*q */
 		lis_vector_axpyz(beta,q,r,u);

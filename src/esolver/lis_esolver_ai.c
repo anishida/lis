@@ -307,7 +307,14 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
     }
   lis_printf(comm,"\n");
 
-  if( rval ) return LIS_SUCCESS;
+  if( rval )
+    {
+      lis_free(h); 
+      lis_free(hq);
+      lis_free(hr);
+      lis_solver_destroy(solver);
+      return LIS_SUCCESS;
+    }
       
   if( output ) 
     {

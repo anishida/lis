@@ -272,6 +272,10 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
     }
   if( rval )
     {
+      lis_free(t); 
+      lis_free(tq);
+      lis_free(tr);
+      lis_solver_destroy(solver);
       return LIS_SUCCESS;
     }
   

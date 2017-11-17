@@ -1,3 +1,7 @@
+Version 2.0.4  November 18, 2017
+
+  - Fixed memory leak bugs related to option -rval.
+
 Version 2.0.3  November 11, 2017
 
   - Updated lis_matrix_destroy() to avoid conflict with deallocate() in
@@ -16,8 +20,8 @@ Version 2.0.1  November 5, 2017
 
 Version 2.0.0  November 1, 2017
 
-  - Added official support for linear solvers generalized for complex systems.
-  - Added official support for nonsymmetric eigenvalue problems.
+  - Added official support for linear solvers generalized for complex matrices.
+  - Added official support for nonsymmetric eigenproblems.
 
 Version 1.8.15  November 1, 2017
 
@@ -33,7 +37,7 @@ Version 1.8.13  October 30, 2017
 
 Version 1.8.12  October 25, 2017
 
-  - Generalized linear solvers and preconditioners for complex arithmetic.
+  - Generalized linear solvers and preconditioners for complex matrices.
 
 Version 1.8.11  October 18, 2017
 
