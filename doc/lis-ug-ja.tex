@@ -814,6 +814,14 @@ A = \left(
 と入力すると, 複素演算の使用例を示す.
 {\tt test7f.F}は{\tt test7.c}のFortran版である.
 
+\subsubsection{test8f}
+
+ディレクトリ{\tt lis-(\$VERSION)/test}において\\
+ \verb+      > mpiexec -n m test8f+\\
+ と入力すると, Newton-Raphson法を用いて非線形偏微分方程式を解く.
+Newton-Raphson法において, 前処理行列はソルバと切り離して更新される（\ref{subsec:psd}節を参照のこと）.
+プロセス数{\tt m}は4以上でなければならない. 
+
 \subsubsection{etest1}
 ディレクトリ{\tt lis-(\$VERSION)/test}において\\
  \verb+      > etest1 matrix_filename evector_filename rhistory_filename [options]+\\
@@ -2248,8 +2256,9 @@ A =
 
 \newpage
 \subsection{前処理とソルバの分離}
-前節では, 前処理はlis\_solveが呼び出されるたびに更新されていた. 
-本節では, 前処理とソルバを分離し, 前処理をソルバと切り離して更新する
+\label{subsec:psd}
+前節では, 前処理行列はlis\_solveが呼び出されるたびに更新されていた. 
+本節では, 前処理とソルバを分離し, 前処理行列をソルバと切り離して更新する
 方法について述べる．この方法は, 非線形偏微分方程式を含むある種の問題に対して
 極めて有効である. 実際, Newton-Raphson法では反復法が用いられ, 各反復での
 線型方程式の解をもとに解ベクトルが逐次的に求められる. この機能を実現する

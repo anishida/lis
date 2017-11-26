@@ -893,6 +893,15 @@ in each dimension.
 This program show examples of complex arithmetic.
 {\tt test7f.F} is the Fortran version of {\tt test7.c}.
 
+\subsubsection{test8f}
+
+\verb+Usage: mpiexec -n m test8f+\\
+
+This program solves a nonlinear partial differential equation
+using the Newton-Raphson method, where the preconditioner is
+updated separately from the solver (see Subsection \ref{subsec:psd}).
+The process number {\tt m} must be 4 or more.
+
 \subsubsection{etest1}
 
 \verb+Usage: etest1 matrix_filename evector_filename rhistory_filename [options]+\\
@@ -2404,6 +2413,7 @@ The programs are located in the directory \verb|lis-($VERSION)/test|.
 
 \newpage
 \subsection{An Alternate Workflow: PSD}
+\label{subsec:psd}
 The previous section represents one of two workflows in Lis.  The present
 workflow represents a decoupling of the preconditioner and the solver
 (Preconditioner and Solver Decoupled, or PSD), in the sense that the
