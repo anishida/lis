@@ -1,3 +1,7 @@
+Version 2.0.5  December 7, 2017
+
+  - Updated documents.
+
 Version 2.0.4  November 18, 2017
 
   - Fixed memory leak bugs related to option -rval.
