@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 2.0.4
+Version 2.0.5
 \end{flushleft}
 
 \vspace*{2cm}
@@ -892,6 +892,14 @@ in each dimension.
 
 This program show examples of complex arithmetic.
 {\tt test7f.F} is the Fortran version of {\tt test7.c}.
+
+\subsubsection{test8f}
+
+\verb+Usage: mpiexec -n m test8f+\\
+
+This program solves a nonlinear partial differential equation
+using the Newton-Raphson method, where the preconditioner is
+updated separately from the solver (see Subsection \ref{subsec:psd}).
 
 \subsubsection{etest1}
 
@@ -2256,7 +2264,7 @@ Option &                          \\ \hline
                        & \verb=-ef {double|0}       =  Double precision \\ 
                        & \verb=-ef {quad|1}         =  Double-double (quadruple) precision \\
 \verb=-rval [0]=       & The Ritz values \\
-                       & \verb=-rval {false|0}     =  The eigenvalues are computed based on the Ritz values \\
+                       & \verb=-rval {false|0}     =  The eigenpairs are computed based on the Ritz values \\
                        & \verb=-rval {true|1}      =  Only the Ritz values are computed \\
 \hline         
 \end{tabular}
@@ -2404,6 +2412,7 @@ The programs are located in the directory \verb|lis-($VERSION)/test|.
 
 \newpage
 \subsection{An Alternate Workflow: PSD}
+\label{subsec:psd}
 The previous section represents one of two workflows in Lis.  The present
 workflow represents a decoupling of the preconditioner and the solver
 (Preconditioner and Solver Decoupled, or PSD), in the sense that the
@@ -6701,7 +6710,7 @@ Option &                          \\ \hline
                        & \verb=-ef {double|0}       =  Double precision \\ 
                        & \verb=-ef {quad|1}         =  Double-double (quadruple) precision \\
 \verb=-rval [0]=       & The Ritz values \\
-                       & \verb=-rval {false|0}     =  The eigenvalues are computed based on the Ritz values \\
+                       & \verb=-rval {false|0}     =  The eigenpairs are computed based on the Ritz values \\
                        & \verb=-rval {true|1}      =  Only the Ritz values are computed \\
 \hline         
 \end{tabular}

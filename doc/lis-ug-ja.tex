@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis ユーザガイド}\\
-バージョン 2.0.4
+バージョン 2.0.5
 \end{flushleft}
 
 \vspace*{2cm}
@@ -813,6 +813,13 @@ A = \left(
  \verb+      > test7+\\
 と入力すると, 複素演算の使用例を示す.
 {\tt test7f.F}は{\tt test7.c}のFortran版である.
+
+\subsubsection{test8f}
+
+ディレクトリ{\tt lis-(\$VERSION)/test}において\\
+ \verb+      > mpiexec -n m test8f+\\
+ と入力すると, Newton-Raphson法を用いて非線形偏微分方程式を解く.
+Newton-Raphson法において, 前処理行列はソルバと切り離して更新される（\ref{subsec:psd}節を参照のこと）.
 
 \subsubsection{etest1}
 ディレクトリ{\tt lis-(\$VERSION)/test}において\\
@@ -2094,7 +2101,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
                        & \verb=-ef {double|0}       =   倍精度 \\
                        & \verb=-ef {quad|1}         =   double-double型4倍精度 \\
 \verb=-rval [0]=       & Ritz値 \\
-                       & \verb=-rval {false|0}     =  Ritz値をもとに固有値を計算 \\
+                       & \verb=-rval {false|0}     =  Ritz値をもとに固有対を計算 \\
                        & \verb=-rval {true|1}      =  Ritz値のみを計算 \\
 \hline         
 \end{tabular}
@@ -2248,8 +2255,9 @@ A =
 
 \newpage
 \subsection{前処理とソルバの分離}
-前節では, 前処理はlis\_solveが呼び出されるたびに更新されていた. 
-本節では, 前処理とソルバを分離し, 前処理をソルバと切り離して更新する
+\label{subsec:psd}
+前節では, 前処理行列はlis\_solveが呼び出されるたびに更新されていた. 
+本節では, 前処理とソルバを分離し, 前処理行列をソルバと切り離して更新する
 方法について述べる．この方法は, 非線形偏微分方程式を含むある種の問題に対して
 極めて有効である. 実際, Newton-Raphson法では反復法が用いられ, 各反復での
 線型方程式の解をもとに解ベクトルが逐次的に求められる. この機能を実現する
@@ -6510,7 +6518,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
                        & \verb=-ef {double|0}       =   倍精度 \\
                        & \verb=-ef {quad|1}         =   double-double型4倍精度 \\
 \verb=-rval [0]=       & Ritz値 \\
-                       & \verb=-rval {false|0}     =  Ritz値をもとに固有値を計算 \\
+                       & \verb=-rval {false|0}     =  Ritz値をもとに固有対を計算 \\
                        & \verb=-rval {true|1}      =  Ritz値のみを計算 \\
 \hline         
 \end{tabular}
