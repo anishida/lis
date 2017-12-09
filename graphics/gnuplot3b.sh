@@ -17,7 +17,7 @@ type gnuplot >/dev/null 2>&1 || { echo >&2 "You need gnuplot to run the script. 
 # Run test programs.
 
 srcdir=../test
-$srcdir/etest5b $srcdir/testmat2.mtx rvalues.mtx -e ai -ss 20
+$srcdir/etest5b $srcdir/testmat3.mtx rvalues.mtx -e ai -ss 20
 
 
 # Draw Ritz value distribution.

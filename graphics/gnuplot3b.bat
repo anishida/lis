@@ -18,7 +18,7 @@
 
 @set bindir=..\win
 @set srcdir=..\test
-@%bindir%\etest5b.exe %srcdir%\testmat2.mtx rvalues.mtx -e ai -ss 20
+@%bindir%\etest5b.exe %srcdir%\testmat3.mtx rvalues.mtx -e ai -ss 20
 
 
 @rem Draw Ritz value distribution.
