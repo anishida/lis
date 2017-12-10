@@ -154,6 +154,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   LIS_INT ss,ic;
   LIS_INT emaxiter,iter0,qriter;
   LIS_REAL tol,qrerr;
+  double time,time0;    
   LIS_INT i,j,k;
   LIS_INT output, niesolver;
   LIS_REAL nrm2,resid0;
@@ -248,7 +249,9 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
 
   /* compute eigenvalues of a symmetric tridiagonal matrix 
      T(j) = ST'(j)S^* */
+  time0 = lis_wtime();
   lis_array_qr(ss,t,tq,tr,&qriter,&qrerr);
+  time = lis_wtime() - time0;
 
   for (i=0;i<ss;i++)
     {
@@ -261,14 +264,14 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
       lis_printf(comm,"Ritz values:\n\n");
       for (i=0;i<ss;i++)
 	{
-	  lis_printf(comm,"Lanczos: mode number              = %D\n", i);
+	  lis_printf(comm,"Lanczos: mode number          = %D\n", i);
 #ifdef _COMPLEX	  
-	  lis_printf(comm,"Lanczos: eigenvalue               = (%e, %e)\n", (double)creal(esolver->evalue[i]), (double)cimag(esolver->evalue[i]));
+	  lis_printf(comm,"Lanczos: Ritz value           = (%e, %e)\n", (double)creal(esolver->evalue[i]), (double)cimag(esolver->evalue[i]));
 #else
-	  lis_printf(comm,"Lanczos: eigenvalue               = %e\n", (double)esolver->evalue[i]);
+	  lis_printf(comm,"Lanczos: Ritz value           = %e\n", (double)esolver->evalue[i]);
 #endif	  
 	}
-      lis_printf(comm,"\n");
+      lis_printf(comm,"Lanczos: elapsed time         = %e sec.\n\n", time);
     }
   if( rval )
     {
@@ -314,10 +317,11 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
 		  esolver->rhistory[ic] = esolver2->rhistory[ic]; 
 		}
 	    }
-	  esolver->ptime = esolver2->ptime;
-	  esolver->itime = esolver2->itime;
-	  esolver->p_c_time = esolver2->p_c_time;
-	  esolver->p_i_time = esolver2->p_i_time;
+	  esolver->time = esolver2->time;	  
+	  esolver->ptime += esolver2->ptime;
+	  esolver->itime += esolver2->itime;
+	  esolver->p_c_time += esolver2->p_c_time;
+	  esolver->p_i_time += esolver2->p_i_time;
 	}
 
       if (output) 
@@ -327,7 +331,8 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
 	  lis_printf(comm,"Lanczos: eigenvalue           = (%e, %e)\n", (double)creal(esolver->evalue[i]), (double)cimag(esolver->evalue[i]));
 #else	  
 	  lis_printf(comm,"Lanczos: eigenvalue           = %e\n", (double)esolver->evalue[i]);
-#endif	  
+#endif
+	  lis_printf(comm,"Lanczos: elapsed time         = %e sec.\n", esolver2->time);	  	  
 	  lis_printf(comm,"Lanczos: number of iterations = %D\n",esolver2->iter[0]);
 	  lis_printf(comm,"Lanczos: relative residual    = %e\n\n",(double)esolver2->resid[0]);
 	}
@@ -456,6 +461,7 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
   LIS_INT ss,ic;
   LIS_INT emaxiter,iter0,qriter;
   LIS_REAL tol,qrerr;
+  double time,time0;    
   LIS_INT i,j,k;
   LIS_INT output, nigesolver;
   LIS_REAL resid0;
@@ -587,7 +593,9 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
 
   /* compute eigenvalues of a symmetric tridiagonal matrix 
      T(j) = ST'(j)S^* */
+  time0 = lis_wtime();
   lis_array_qr(ss,t,tq,tr,&qriter,&qrerr);
+  time = lis_wtime() - time0;
 
   for (i=0;i<ss;i++)
     {
@@ -600,14 +608,14 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
       lis_printf(comm,"Ritz values :\n\n");
       for (i=0;i<ss;i++)
 	{
-	  lis_printf(comm,"Generalized Lanczos: mode number              = %D\n", i);
+	  lis_printf(comm,"Generalized Lanczos: mode number          = %D\n", i);
 #ifdef _COMPLEX	  
-	  lis_printf(comm,"Generalized Lanczos: eigenvalue               = (%e, %e)\n", (double)creal(esolver->evalue[i]), (double)cimag(esolver->evalue[i]));
+	  lis_printf(comm,"Generalized Lanczos: Ritz value           = (%e, %e)\n", (double)creal(esolver->evalue[i]), (double)cimag(esolver->evalue[i]));
 #else
-	  lis_printf(comm,"Generalized Lanczos: eigenvalue               = %e\n", (double)esolver->evalue[i]);
+	  lis_printf(comm,"Generalized Lanczos: Ritz value           = %e\n", (double)esolver->evalue[i]);
 #endif	  
 	}
-      lis_printf(comm,"\n");
+      lis_printf(comm,"Lanczos: elapsed time         = %e sec.\n\n", time);  
     }
   if( rval ) return LIS_SUCCESS;
       
@@ -646,10 +654,11 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
 		  esolver->rhistory[ic] = esolver2->rhistory[ic]; 
 		}
 	    }
-	  esolver->ptime = esolver2->ptime;
-	  esolver->itime = esolver2->itime;
-	  esolver->p_c_time = esolver2->p_c_time;
-	  esolver->p_i_time = esolver2->p_i_time;
+	  esolver->time = esolver2->time;	  
+	  esolver->ptime += esolver2->ptime;
+	  esolver->itime += esolver2->itime;
+	  esolver->p_c_time += esolver2->p_c_time;
+	  esolver->p_i_time += esolver2->p_i_time;
 	}
 
       if (output) 
@@ -659,7 +668,8 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
 	  lis_printf(comm,"Generalized Lanczos: eigenvalue           = (%e, %e)\n", (double)creal(esolver->evalue[i]), (double)cimag(esolver->evalue[i]));
 #else	  
 	  lis_printf(comm,"Generalized Lanczos: eigenvalue           = %e\n", (double)esolver->evalue[i]);
-#endif	  
+#endif
+	  lis_printf(comm,"Generalized Lanczos: elapsed time         = %e sec.\n", esolver2->time);	  	  
 	  lis_printf(comm,"Generalized Lanczos: number of iterations = %D\n",esolver2->iter[0]);
 	  lis_printf(comm,"Generalized Lanczos: relative residual    = %e\n\n",(double)esolver2->resid[0]);
 	}

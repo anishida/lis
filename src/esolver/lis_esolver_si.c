@@ -153,6 +153,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   LIS_SOLVER solver;
   LIS_PRECON precon;
   double time,itime,ptime,p_c_time,p_i_time;
+  double etime0,etime;
   LIS_INT err;
   LIS_INT nsol, precon_type;
   char solvername[128], preconname[128], esolvername[128];
@@ -228,6 +229,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   j=0;
   while (j<ss)
     {
+      etime0 = lis_wtime();
       lis_vector_duplicate(A,&esolver->evector[j]); 
       j = j+1;
       lis_vector_copy(r, v[j]);
@@ -333,7 +335,8 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	  break;
 	}
 
-      lis_vector_copy(v[j], esolver->evector[j-1]);  
+      lis_vector_copy(v[j], esolver->evector[j-1]);
+      etime = lis_wtime() - etime0;
 
       if (output & ss>1)
 	{
@@ -342,7 +345,8 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	  lis_printf(comm,"Subspace: eigenvalue           = (%e, %e)\n", (double)creal(esolver->evalue[j-1]), (double)cimag(esolver->evalue[j-1]));
 #else
 	  lis_printf(comm,"Subspace: eigenvalue           = %e\n", (double)esolver->evalue[j-1]);
-#endif	  
+#endif
+	  lis_printf(comm,"Subspace: elapsed time         = %e sec.\n", etime);	  
 	  lis_printf(comm,"Subspace: number of iterations = %D\n",iter);
 	  lis_printf(comm,"Subspace: relative residual    = %e\n\n",(double)resid);
 	}
@@ -466,6 +470,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   LIS_SOLVER solver;
   LIS_PRECON precon;
   double time,itime,ptime,p_c_time,p_i_time;
+  double etime0,etime;  
   LIS_INT err;
   LIS_INT nsol, precon_type;
   char solvername[128], preconname[128], esolvername[128];
@@ -536,6 +541,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   j=0;
   while (j<ss)
     {
+      etime0 = lis_wtime();
       lis_vector_duplicate(A,&esolver->evector[j]); 
       j = j+1;
       lis_vector_copy(y, v[j]);
@@ -682,18 +688,20 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	  break;
 	}
 
-      lis_vector_copy(v[j], esolver->evector[j-1]);  
+      lis_vector_copy(v[j], esolver->evector[j-1]);
+      etime = lis_wtime() - etime0;
 
       if (output & ss>1)
 	{
-	  lis_printf(comm,"Subspace: mode number          = %D\n", j-1);
+	  lis_printf(comm,"Generalized Subspace: mode number          = %D\n", j-1);
 #ifdef _COMPLEX	  
-	  lis_printf(comm,"Subspace: eigenvalue           = (%e, %e)\n", (double)creal(esolver->evalue[j-1]), (double)cimag(esolver->evalue[j-1]));
+	  lis_printf(comm,"Generalized Subspace: eigenvalue           = (%e, %e)\n", (double)creal(esolver->evalue[j-1]), (double)cimag(esolver->evalue[j-1]));
 #else
-	  lis_printf(comm,"Subspace: eigenvalue           = %e\n", (double)esolver->evalue[j-1]);
-#endif	  
-	  lis_printf(comm,"Subspace: number of iterations = %D\n",iter);
-	  lis_printf(comm,"Subspace: relative residual    = %e\n\n",(double)resid);
+	  lis_printf(comm,"Generalized Subspace: eigenvalue           = %e\n", (double)esolver->evalue[j-1]);
+#endif
+	  lis_printf(comm,"Generalized Subspace: elapsed time         = %e sec.\n", etime);	  	  
+	  lis_printf(comm,"Generalized Subspace: number of iterations = %D\n",iter);
+	  lis_printf(comm,"Generalized Subspace: relative residual    = %e\n\n",(double)resid);
 	}
     }
   
