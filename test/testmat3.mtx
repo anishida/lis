@@ -1,5 +1,11 @@
 %%MatrixMarket matrix coordinate complex general
 %  complex Toeplitz matrix
+%  ( 4  0  1 .7         )
+%  (2i  4  0  1 .7      )
+%  (   2i  4  0  1 ...  )
+%  (      2i  4  0 ...  )
+%  (         2i  4 ...  )
+%  (                    )                       
 %  Reference:
 %  L. Reichel and L. N. Trefethen, Eigenvalues and
 %  pseudo-eigenvalues of Toeplitz matrices, Linear
