@@ -2,6 +2,7 @@ Version 2.0.6  December 10, 2017
 
   - Added complex test matrix testmat3.mtx.
   - Updated print messages for Subspace, Lanczos, and Arnoldi iterations.
+  - Fix bug in lisf.h.in.
 
 Version 2.0.5  December 7, 2017
 
