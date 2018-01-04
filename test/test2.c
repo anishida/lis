@@ -143,6 +143,15 @@ LIS_INT main(int argc, char* argv[])
 	lis_matrix_destroy(A);
 	A = A0;
 
+	/*
+	err = lis_vector_create(comm,&b);
+	err = lis_vector_create(comm,&x);
+        err = lis_vector_create(comm,&u);
+	err = lis_vector_set_size(x,0,nn);
+	err = lis_vector_set_size(b,0,nn);
+	err = lis_vector_set_size(u,0,nn);
+	*/
+
 	err = lis_vector_duplicate(A,&u);
 	CHKERR(err);
 	err = lis_vector_duplicate(A,&b);
