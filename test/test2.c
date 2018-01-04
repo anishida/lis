@@ -144,12 +144,13 @@ LIS_INT main(int argc, char* argv[])
 	A = A0;
 
 	/*
-	err = lis_vector_create(comm,&b);
-	err = lis_vector_create(comm,&x);
-        err = lis_vector_create(comm,&u);
-	err = lis_vector_set_size(x,0,nn);
-	err = lis_vector_set_size(b,0,nn);
-	err = lis_vector_set_size(u,0,nn);
+        lis_vector_create(comm,&u);
+	lis_vector_create(comm,&b);
+	lis_vector_create(comm,&x);
+
+	lis_vector_set_size(u,0,nn);
+	lis_vector_set_size(b,0,nn);
+	lis_vector_set_size(x,0,nn);
 	*/
 
 	err = lis_vector_duplicate(A,&u);
