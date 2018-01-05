@@ -192,12 +192,7 @@
       A = A0
       
 !      call lis_vector_create(comm,u,ierr)      
-!      call lis_vector_create(comm,b,ierr)
-!      call lis_vector_create(comm,x,ierr)
-!
 !      call lis_vector_set_size(u,0,nn,ierr)        
-!      call lis_vector_set_size(b,0,nn,ierr)
-!      call lis_vector_set_size(x,0,nn,ierr)
 
       call lis_vector_duplicate(A,u,ierr)
       call CHKERR(ierr)
