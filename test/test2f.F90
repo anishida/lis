@@ -191,6 +191,9 @@
       call lis_matrix_destroy(A,ierr)
       A = A0
       
+!      call lis_vector_create(comm,u,ierr)      
+!      call lis_vector_set_size(u,0,nn,ierr)        
+
       call lis_vector_duplicate(A,u,ierr)
       call CHKERR(ierr)
       call lis_vector_duplicate(A,b,ierr)

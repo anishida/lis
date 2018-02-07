@@ -162,15 +162,21 @@ LIS_INT main(int argc, char* argv[])
 	  if ( nprocs>1 && matrix_type==9 ) continue;
 	  lis_matrix_duplicate(A0,&A);
 	  lis_matrix_set_type(A,matrix_type);
-	  err = lis_matrix_convert(A0,A);
-	  if( err ) CHKERR(err);
 
+	  //the matrix_type check, should be done before converting the A matrix
+	  //or block formats will fail
 	  if( A->matrix_type==LIS_MATRIX_BSR || A->matrix_type==LIS_MATRIX_BSC )
 	    {
+		// following line should be added to correctly establish the block size
+		  lis_matrix_set_blocksize(A,block,block,NULL,NULL); 
 	      A->bnr = block;
 	      A->bnc = block;
 	    }
 
+	  err = lis_matrix_convert(A0,A);
+	  if( err ) CHKERR(err);
+
+	  
 	  comptime = 0.0;
 	  commtime = 0.0;
 
