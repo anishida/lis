@@ -1,4 +1,4 @@
-Version 2.0.7  February 8, 2017
+Version 2.0.7  February 8, 2018
 
   - Fixed matrix block size related bugs in spmvtest4 and spmvtest5
     (thanks to Javier Bahamonde Amor).
