@@ -1,5 +1,5 @@
 %%MatrixMarket matrix coordinate complex general
-%  complex Toeplitz matrix
+%  complex nonsymmetric Toeplitz matrix
 %  ( 4  0  1 .7         )
 %  (2i  4  0  1 .7      )
 %  (   2i  4  0  1 ...  )
