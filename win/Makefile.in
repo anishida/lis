@@ -73,7 +73,7 @@ LDFLAGS =
 FC = ifort
 CFLAGS = $(CFLAGS) -DUSE_FORTRAN
 FFLAGS = $(USER_FFLAGS) \
-       -c -O3 -fpp -Qansi_alias -DZERO_ORIGIN=1 -I../include -w 
+       -c -O3 -fpp -Qansi_alias -DZERO_ORIGIN=1 -I../include -I../src/fortran/amg -w 
 
 !ifdef omp
 FFLAGS = $(FFLAGS) -Qopenmp -Qopenmp-lib:compat 
