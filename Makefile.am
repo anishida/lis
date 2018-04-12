@@ -339,12 +339,15 @@ EXTRA_DIST = doc/Makefile \
              graphics/gnuplot3.sh \
              graphics/gnuplot3.bat \
              graphics/gnuplot3.plt \
-             graphics/gnuplot3b.sh \
-             graphics/gnuplot3b.bat \
-             graphics/gnuplot3b.plt \
              graphics/gnuplot4.sh \
              graphics/gnuplot4.bat \
              graphics/gnuplot4.plt \
+             graphics/gnuplot4b.sh \
+             graphics/gnuplot4b.bat \
+             graphics/gnuplot4b.plt \
+             graphics/gnuplot5.sh \
+             graphics/gnuplot5.bat \
+             graphics/gnuplot5.plt \
              reconfigure.sh \
              win/Makefile.in \
              win/README \

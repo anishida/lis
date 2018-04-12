@@ -447,8 +447,8 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
       /* w = B * v */
       lis_matvec(B, v, w);
 
-      /* v = v / <v,w>^1/2, w = w / <v,w>^1/2 */
-      lis_vector_dot(v, w, &eta);
+      /* v = v / <w,v>^1/2, w = w / <w,v>^1/2 */
+      lis_vector_dot(w, v, &eta);
       eta = sqrt(eta);
       lis_vector_scale(1.0/eta, v);
       lis_vector_scale(1.0/eta, w);

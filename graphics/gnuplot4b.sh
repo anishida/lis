@@ -1,11 +1,11 @@
 #!/bin/sh
 
-# Sample shell script to draw Ritz value distribution on complex plane
+# Sample shell script to draw distribution of Ritz values on complex plane
 # using gnuplot
 # Make executable files enabling complex arithmetic and 
 # run the following command:
 #
-# > ./gunplot3b.sh
+# > ./gunplot4b.sh
 #
 
 
@@ -20,7 +20,7 @@ srcdir=../test
 $srcdir/etest5b $srcdir/testmat3.mtx rvalues.mtx -e ai -ss 20
 
 
-# Draw Ritz value distribution.
+# Draw distribution of Ritz values.
 
 filename=rvalues.mtx
 while read M N L B X; do
@@ -31,6 +31,6 @@ while read M N L B X; do
     fi
 done < $filename
 
-gnuplot -e "filename='$filename'; size='$size'" gnuplot3b.plt
+gnuplot -e "filename='$filename'; size='$size'" gnuplot4b.plt
 
 rm rvalues.mtx

@@ -1,11 +1,11 @@
 :start
 
-@rem Sample batch script to draw Ritz value distribution on complex plane
+@rem Sample batch script to draw distribution of Ritz values on complex plane
 @rem using gnuplot
 @rem Make executable files enabling complex arithmetic and
 @rem run the following command:
 @rem
-@rem > gnuplot3b.bat
+@rem > gnuplot4b.bat
 @rem
 
 
@@ -21,7 +21,7 @@
 @%bindir%\etest5b.exe %srcdir%\testmat3.mtx rvalues.mtx -e ai -ss 20
 
 
-@rem Draw Ritz value distribution.
+@rem Draw distribution of Ritz values.
 
 @set filename=rvalues.mtx
 @for /f "tokens=1-5" %%a in ('findstr /v %% "%filename%"') do @(
@@ -30,7 +30,7 @@
     )
 :break
 
-@gnuplot.exe -e "filename='%filename%'; size=%size%" gnuplot3b.plt
+@gnuplot.exe -e "filename='%filename%'; size=%size%" gnuplot4b.plt
 
 @del rvalues.mtx
 
