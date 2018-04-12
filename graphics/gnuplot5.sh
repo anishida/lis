@@ -3,7 +3,7 @@
 # Sample shell script to draw eigenvectors using gnuplot
 # Make executable files and run the following command:
 #
-# > ./gunplot4.sh
+# > ./gunplot5.sh
 #
 
 
