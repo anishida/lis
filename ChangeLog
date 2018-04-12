@@ -1,3 +1,7 @@
+Version 2.0.10  April 12, 2018
+
+  - Updated graphics.
+
 Version 2.0.9  March 21, 2018
 
   - Fixed configuration of win/Makefile.in for SAAMG (thanks to Jian Li).
