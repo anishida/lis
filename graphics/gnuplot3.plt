@@ -1,9 +1,9 @@
-# Sample script to draw eigenvalue distribution
+# Sample script to draw distribution of real eigenvalues
 
 set terminal postscript eps enhanced color
-set output "eigenvalue_distribution.eps"
+set output "distribution_of_real_eigenvalues.eps"
 
-set title "Distribution of Eigenvalues"
+set title "Distribution of Real Eigenvalues"
 set xlabel "Number of Eigenvalues"
 set ylabel "Eigenvalue"
 set style line 1
@@ -16,6 +16,6 @@ set datafile commentschars "%"
 set xrange [0:size] 
 
 
-# Draw eigenvalue distribution.
+# Draw distribution of real eigenvalues.
 
 plot filename every ::1::size with points pointtype 7 pointsize 1

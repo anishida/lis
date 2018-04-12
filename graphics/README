@@ -34,10 +34,10 @@ and run as follows:
 > gnuplot2.bat ..\test\testmat.mtx
 
 
-- Eigenvalue Distribution
+- Distribution of Real Eigenvalues
 
-To generate example file 'eigenvalue_distribution.eps' on UNIX systems, 
-run the following sample script:
+To generate example file 'distribution_of_real_eigenvalues.eps'
+on UNIX systems, run the following sample script:
 
 > ./gnuplot3.sh
 
@@ -46,15 +46,11 @@ and run the script as follows:
 
 > gnuplot3.bat
 
-If complex arithmetic is enabled, you can generate
-'Ritz_value_distribution.eps' by running ./gnuplot3b.sh
-or ./gnuplot3b.bat.
 
+- Distribution of Complex Eigenvalues
 
-- Eigenvectors
-
-To generate example file 'eigenvectors.eps' on UNIX systems, 
-run the following sample script:
+To generate example file 'distribution_of_complex_eigenvalues.eps'
+on UNIX systems, run the following sample script:
 
 > ./gnuplot4.sh
 
@@ -63,5 +59,21 @@ and run the script as follows:
 
 > gnuplot4.bat
 
-gnuplot4.sh and gnuplot4.bat are for gnuplot 4.4 or later. 
+You can generate 'distribution_of_Ritz_values.eps' by running ./gnuplot4b.sh
+or ./gnuplot4b.bat.
+
+
+- Eigenvectors
+
+To generate example file 'eigenvectors.eps' on UNIX systems, 
+run the following sample script:
+
+> ./gnuplot5.sh
+
+On Windows systems, edit the path to gnuplot.exe in gnuplot5.bat
+and run the script as follows:
+
+> gnuplot5.bat
+
+gnuplot5.sh and gnuplot5.bat are for gnuplot 4.4 or later. 
 

@@ -1,7 +1,9 @@
 #!/bin/sh
 
-# Sample shell script to draw eigenvectors using gnuplot
-# Make executable files and run the following command:
+# Sample shell script to draw eigenvalue distribution on complex plane
+# using gnuplot
+# Make executable files enabling complex arithmetic and 
+# run the following command:
 #
 # > ./gunplot4.sh
 #
@@ -14,14 +16,13 @@ type gnuplot >/dev/null 2>&1 || { echo >&2 "You need gnuplot to run the script. 
 
 # Run test programs.
 
-subspace=3
 srcdir=../test
-$srcdir/etest5 $srcdir/testmat.mtx /dev/null evectors.mtx /dev/null /dev/null -e si -ie ii -ss $subspace
+$srcdir/etest5 $srcdir/testmat3.mtx evalues.mtx /dev/null /dev/null /dev/null -e ai -ss 20
 
 
-# Draw eigenvectors.
+# Draw eigenvalue distribution.
 
-filename=evectors.mtx
+filename=evalues.mtx
 while read M N L B X; do
     echo $M | grep -v '^%.*' > /dev/null
     if [ $? -eq 0 ]; then
@@ -30,6 +31,6 @@ while read M N L B X; do
     fi
 done < $filename
 
-gnuplot -e "filename='$filename'; size='$size'; subspace='$subspace'" gnuplot4.plt
+gnuplot -e "filename='$filename'; size='$size'" gnuplot4.plt
 
-rm evectors.mtx
+rm evalues.mtx

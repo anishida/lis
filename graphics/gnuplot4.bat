@@ -1,7 +1,9 @@
 :start
 
-@rem Sample batch script to draw eigenvectors using gnuplot
-@rem Make executable files and run the following command:
+@rem Sample batch script to draw eigenvalue distribution on complex plane
+@rem using gnuplot
+@rem Make executable files enabling complex arithmetic and
+@rem run the following command:
 @rem
 @rem > gnuplot4.bat
 @rem
@@ -14,22 +16,21 @@
 
 @rem Run test programs.
 
-@set subspace=3
 @set bindir=..\win
 @set srcdir=..\test
-@%bindir%\etest5.exe %srcdir%\testmat.mtx nul evectors.mtx nul nul -e si -ie ii -ss %subspace%
+@%bindir%\etest5.exe %srcdir%\testmat3.mtx evalues.mtx nul nul nul -e ai -ss 20
 
 
-@rem Draw eigenvectors.
+@rem Draw eigenvalue distribution.
 
-@set filename=evectors.mtx
+@set filename=evalues.mtx
 @for /f "tokens=1-5" %%a in ('findstr /v %% "%filename%"') do @(
     set size=%%a
     goto :break
     )
 :break
 
-@gnuplot.exe -e "filename='%filename%'; size=%size%; subspace=%subspace%" gnuplot4.plt
+@gnuplot.exe -e "filename='%filename%'; size=%size%" gnuplot4.plt
 
-@del evectors.mtx
+@del evalues.mtx
 

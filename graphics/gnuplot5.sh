@@ -1,9 +1,9 @@
 #!/bin/sh
 
-# Sample shell script to draw distribution of real eigenvalues using gnuplot
+# Sample shell script to draw eigenvectors using gnuplot
 # Make executable files and run the following command:
 #
-# > ./gunplot3.sh
+# > ./gunplot4.sh
 #
 
 
@@ -14,13 +14,14 @@ type gnuplot >/dev/null 2>&1 || { echo >&2 "You need gnuplot to run the script. 
 
 # Run test programs.
 
+subspace=3
 srcdir=../test
-$srcdir/etest5 $srcdir/testmat.mtx evalues.mtx /dev/null /dev/null /dev/null -e si -ie ii -ss 100
+$srcdir/etest5 $srcdir/testmat.mtx /dev/null evectors.mtx /dev/null /dev/null -e si -ie ii -ss $subspace
 
 
-# Draw distribution of real eigenvalues.
+# Draw eigenvectors.
 
-filename=evalues.mtx
+filename=evectors.mtx
 while read M N L B X; do
     echo $M | grep -v '^%.*' > /dev/null
     if [ $? -eq 0 ]; then
@@ -29,6 +30,6 @@ while read M N L B X; do
     fi
 done < $filename
 
-gnuplot -e "filename='$filename'; size='$size'" gnuplot3.plt
+gnuplot -e "filename='$filename'; size='$size'; subspace='$subspace'" gnuplot5.plt
 
-rm evalues.mtx
+rm evectors.mtx

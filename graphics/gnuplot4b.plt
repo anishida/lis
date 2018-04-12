@@ -1,7 +1,7 @@
-# Sample script to draw Ritz value distribution on complex plane
+# Sample script to draw distribution of Ritz values on complex plane
 
 set terminal postscript eps enhanced color
-set output "Ritz_value_distribution.eps"
+set output "distribution_of_Ritz_values.eps"
 
 set title "Distribution of Ritz Values"
 set xlabel "Real part"
@@ -15,6 +15,6 @@ unset key
 set datafile commentschars "%"
 
 
-# Draw Ritz value distribution.
+# Draw distribution of Ritz values.
 
 plot filename using 2:3 with points pointtype 7 pointsize 1

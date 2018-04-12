@@ -1,11 +1,11 @@
-# Sample script to draw eigenvectors
+# Sample script to draw eigenvalue distribution on complex plane
 
 set terminal postscript eps enhanced color
-set output "eigenvectors.eps"
+set output "distribution_of_complex_eigenvalues.eps"
 
-set title "Eigenvectors"
-set xlabel "Vector Component"
-set ylabel "Component Value"
+set title "Distribution of Complex Eigenvalues"
+set xlabel "Real part"
+set ylabel "Imaginary part"
 set style line 1
 unset key
 
@@ -13,9 +13,8 @@ unset key
 # Read data in Matrix Market format. 
 
 set datafile commentschars "%"
-set xrange [0:size] 
 
 
-# Draw eigenvectors.
+# Draw eigenvalue distribution.
 
-plot for [i=1:subspace] filename every subspace::i::size*subspace using 1:3 with lines
+plot filename using 2:3 with points pointtype 7 pointsize 1
