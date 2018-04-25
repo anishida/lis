@@ -26,8 +26,14 @@
 
 #ifndef __LIS_H__
 #define __LIS_H__
+
+#ifdef __cplusplus
+#undef HAVE_COMPLEX_H
+extern "C" {
+#endif
+
 /**************************************/
-#define LIS_VERSION	"2.0.10"
+#define LIS_VERSION	"2.0.11"
 /**************************************/
 #include <stdio.h>
 #ifdef USE_COMPLEX
@@ -338,7 +344,7 @@ typedef __float128 LIS_REAL;
 #define LIS_MPI_SCALAR MPI_C_LONG_DOUBLE_COMPLEX
 #define LIS_MPI_REAL MPI_LONG_DOUBLE
 #else
-typedef long double complex LIS_SCALAR;
+typedef LIS_COMPLEX LIS_SCALAR;
 typedef long double LIS_REAL;
 #define creal(x) creall(x)
 #define cimag(x) cimagl(x)
@@ -414,7 +420,7 @@ typedef double complex LIS_COMPLEX;
 typedef double LIS_COMPLEX[2];
 #endif
 #ifdef _COMPLEX
-typedef double complex LIS_SCALAR;
+typedef LIS_COMPLEX LIS_SCALAR;
 typedef double LIS_REAL;
 #define acos(x) cacos(x)
 #define acosh(x) cacosh(x)
@@ -1071,4 +1077,9 @@ extern "C"
 		(is) = (id)*(ie)<((n)+1)?(id)*(ie):(n)+1; \
 		(ie) = (is)+(ie)-1<(n)?(is)+(ie)-1:(n);
 #endif
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

@@ -1,6 +1,10 @@
+Version 2.0.11  April 26, 2018
+
+  - Fixed lis.h for compatibility with C++ (thanks to Michael Asam).
+
 Version 2.0.10  April 12, 2018
 
-  - Updated graphics.
+  - Updated graphics for complex eigenvalues.
 
 Version 2.0.9  March 21, 2018
 
