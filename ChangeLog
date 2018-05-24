@@ -1,3 +1,7 @@
+Version 2.0.12  May 24, 2018
+
+  - Added test matrix testmat4.mtx in Matrix Market array format.
+
 Version 2.0.11  April 26, 2018
 
   - Fixed lis.h for compatibility with C++ (thanks to Michael Asam).
