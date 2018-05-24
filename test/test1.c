@@ -106,6 +106,7 @@ LIS_INT main(int argc, char* argv[])
 	err = lis_input(A,b,x,argv[1]);
 	/*
 	lis_output_matrix(A,LIS_FMT_MM,"matrix.out");
+	lis_output_vector(b,LIS_FMT_MM,"vector.out");
 	*/
 	CHKERR(err);
 
