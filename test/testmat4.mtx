@@ -1,6 +1,6 @@
 %%MatrixMarket matrix array real general
-% real general matrix with random elements between 0 and 1
-% in Matrix Market array format (column-oriented order)
+%  real general matrix with random elements between 0 and 1
+%  in Matrix Market array format (column-oriented order)
 50 50
 6.900010321708401e-01
 5.054183972559023e-01
