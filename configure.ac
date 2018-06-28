@@ -4,7 +4,7 @@
 
 # General Configurations
 
-AC_INIT(lis, 2.0.12, devel@ssisc.org)
+AC_INIT(lis, 2.0.13, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -311,6 +311,7 @@ if test "$TARGET" != ""; then
                     LDFLAGS="-mmic"		    
                     ax_cv_c_compiler_vendor="intel"
                     ax_cv_f77_compiler_vendor="intel"
+	            OMPFLAG="-openmp"
           ;;
 # Intel Cross Compiler for MIC
           intel_mic_cross) CC="icc"
@@ -337,6 +338,7 @@ if test "$TARGET" != ""; then
 		    target_vendor="mpss"
                     ax_cv_c_compiler_vendor="intel"
                     ax_cv_f77_compiler_vendor="intel"
+		    OMPFLAG="-openmp"
           ;;
 	  *)  echo 'TARGET' $TARGET 'cannot be specified.'
               exit 1
