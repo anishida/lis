@@ -1,3 +1,7 @@
+Version 2.0.13  June 28, 2018
+
+  - Added OMPFLAGs to configurations for Intel MIC (thanks to Javier Bahamonde Amor).
+
 Version 2.0.12  May 24, 2018
 
   - Added test matrix testmat4.mtx in Matrix Market array format.
