@@ -311,6 +311,7 @@ if test "$TARGET" != ""; then
                     LDFLAGS="-mmic"		    
                     ax_cv_c_compiler_vendor="intel"
                     ax_cv_f77_compiler_vendor="intel"
+	            OMPFLAG="-openmp"
           ;;
 # Intel Cross Compiler for MIC
           intel_mic_cross) CC="icc"
@@ -337,6 +338,7 @@ if test "$TARGET" != ""; then
 		    target_vendor="mpss"
                     ax_cv_c_compiler_vendor="intel"
                     ax_cv_f77_compiler_vendor="intel"
+		    OMPFLAG="-openmp"
           ;;
 	  *)  echo 'TARGET' $TARGET 'cannot be specified.'
               exit 1
