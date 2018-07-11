@@ -1,11 +1,20 @@
+# test binaries
+# ignore files without extensions
+# except for test/defs
+test/*
+!test/defs
+!test/*.*
+
 # for all subdirectories
 *.la
 *.lo
 *.o
+*.mod
 *.orig
 *~
 \#*#
 Makefile
+.libs
 
 # autotools stuff
 autom4te.cache/
