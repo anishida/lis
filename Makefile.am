@@ -1,6 +1,9 @@
 SUBDIRS = include src test
 
-EXTRA_DIST = doc/Makefile \
+EXTRA_DIST = AUTHORS \
+             ChangeLog \
+             COPYING \
+             doc/Makefile \
              doc/double-double.eps \
              doc/irises_korin.eps \
              doc/lis-ug-en.tex \
