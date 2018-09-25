@@ -1,6 +1,10 @@
+Version 2.0.16  September 26, 2018
+
+  - Disabled option '-f quad' when quad precision is not enabled (thanks to Konstantin).
+
 Version 2.0.15  September 20, 2018
 
-  - Updated COPYING (thanks to Konstantin).
+  - Updated copyright notice (thanks to Konstantin).
 
 Version 2.0.14  July 11, 2018
 

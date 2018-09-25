@@ -503,6 +503,12 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 		{
 			solver->options[LIS_OPTIONS_SWITCH_MAXITER] = maxiter;
 		}
+	#else		
+		if( precision==LIS_PRECISION_QUAD )
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,"Quad precision is not enabled\n");
+			return LIS_ERR_ILL_ARG;
+		}
 	#endif
 
 	err = lis_solver_check_params[nsolver](solver);
