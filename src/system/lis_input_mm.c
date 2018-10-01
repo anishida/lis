@@ -198,8 +198,8 @@ LIS_INT lis_input_mm_vec(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, FILE *file, L
 			{
 				if( fgets(buf, BUFSIZE, file) == NULL )
 				{
-					LIS_SETERR_FIO;
-					return LIS_ERR_FILE_IO;
+					/* reading of vector is done */
+					break;
 				}
 #ifdef _COMPLEX				
 #ifdef _LONG__LONG
