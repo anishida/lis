@@ -28,6 +28,7 @@ fi
 echo ' '
 echo 'checking linear solvers...'
 $MPIRUN $srcdir/test1 $srcdir/testmat.mtx 0 /dev/null /dev/null
+$MPIRUN $srcdir/test1 $srcdir/testmat1.mtx 0 /dev/null /dev/null
 
 echo 'checking eigensolvers...'
 $MPIRUN $srcdir/etest1 $srcdir/testmat.mtx /dev/null /dev/null
