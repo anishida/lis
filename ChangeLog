@@ -1,3 +1,7 @@
+Version 2.0.17  October 26, 2018
+
+  - Updated documents (thanks to Yasuyo Hatano).
+
 Version 2.0.16  September 26, 2018
 
   - Disabled option '-f quad' when quad precision is not enabled (thanks to Konstantin).
