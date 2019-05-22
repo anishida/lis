@@ -4842,6 +4842,17 @@ m4_if([$1], [CXX], [
     esac
   fi
 ])
+
+if test "$ax_cv_c_compiler_vendor" = "fujitsu"; then
+   case $host_cpu in
+      sparc64*)
+        _LT_TAGVAR(lt_prog_compiler_pic, $1)='-KPIC'
+        ;;
+      *)
+        ;;
+   esac
+fi
+
 case $host_os in
   # For platforms that do not support PIC, -DPIC is meaningless:
   *djgpp*)

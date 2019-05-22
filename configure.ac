@@ -4,7 +4,7 @@
 
 # General Configurations
 
-AC_INIT(lis, 2.0.18, devel@ssisc.org)
+AC_INIT(lis, 2.0.19, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -144,6 +144,42 @@ if test "$TARGET" != ""; then
                     cross_compiling="yes"
 		    enable_sse2="no"
 		    target="s64fx"
+                    ax_f77_mangling="lower case, underscore, no extra underscore"
+                    ax_cv_c_compiler_vendor="fujitsu"
+                    ax_cv_f77_compiler_vendor="fujitsu"
+                    MPIRUN="mpiexec"
+                    MPINP="-n"
+                    OMPFLAG="-Kopenmp"
+          ;;
+# Fujitsu Compiler for K 
+          K_shared) CC="fcc"
+                    F77="frt"
+                    FC="frt"
+                    MPICC="mpifcc"
+                    MPIF77="mpifrt"
+                    MPIFC="mpifrt"
+                    CFLAGS="-Kfast,ocl,preex,noeval -w"
+                    FFLAGS="-Kfast,ocl,preex,noeval -Cpp -fs -KPIC"
+                    FCFLAGS="-Kfast,ocl,preex,noeval -Cpp -fs -KPIC"
+                    FCLDFLAGS=""
+                    ac_cv_sizeof_void_p=8
+                    ax_f77_mangling="lower case, underscore, no extra underscore"
+                    ax_cv_c_compiler_vendor="fujitsu"
+                    ax_cv_f77_compiler_vendor="fujitsu"
+                    OMPFLAG="-Kopenmp"
+          ;;
+# Fujitsu Compiler for K 
+          K_mpi_shared) CC="fcc"
+                    F77="mpifrt"
+                    FC="mpifrt"
+                    MPICC="mpifcc"
+                    MPIF77="mpifrt"
+                    MPIFC="mpifrt"
+                    CFLAGS="-Kfast,ocl,preex,noeval -w"
+                    FFLAGS="-Kfast,ocl,preex,noeval -Cpp -fs -KPIC"
+                    FCFLAGS="-Kfast,ocl,preex,noeval -Cpp -fs -KPIC"
+                    FCLDFLAGS=""
+                    ac_cv_sizeof_void_p=8
                     ax_f77_mangling="lower case, underscore, no extra underscore"
                     ax_cv_c_compiler_vendor="fujitsu"
                     ax_cv_f77_compiler_vendor="fujitsu"
