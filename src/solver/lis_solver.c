@@ -104,6 +104,19 @@ LIS_SOLVER_EXECUTE lis_solver_execute[] = {
 	lis_cocr
 };
 
+LIS_SOLVER_EXECUTE lis_solver_execute_conv_cond[] = {
+	NULL,
+	lis_cg       , lis_bicg      , lis_cgs, 
+	lis_bicgstab , lis_bicgstabl , lis_gpbicg, 
+	NULL         , lis_orthomin  , NULL,
+	NULL         , NULL          , NULL,
+	lis_bicgsafe , lis_cr        , lis_bicr,
+	lis_crs      , lis_bicrstab  , lis_gpbicr,
+	lis_bicrsafe , NULL          , lis_idrs, 
+	lis_idr1     , NULL          , lis_cocg,
+	lis_cocr
+};
+
 #ifdef USE_QUAD_PRECISION
 	LIS_SOLVER_EXECUTE lis_solver_execute_quad[] = {
 		NULL,
@@ -479,6 +492,11 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	if( maxiter<0 )
 	{
 		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_MAXITER(=%D) is less than 0\n",maxiter);
+		return LIS_ERR_ILL_ARG;
+	}
+	if( conv_cond>0 && lis_solver_execute_conv_cond[nsolver]==NULL )
+	{
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Option conv_cond is not implemented for solver %s\n",lis_solvername[nsolver]);
 		return LIS_ERR_ILL_ARG;
 	}
 	#ifdef USE_MPI
