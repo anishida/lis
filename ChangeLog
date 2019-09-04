@@ -1,3 +1,7 @@
+Version 2.0.20  September 4, 2019
+
+  - Disabled option conv_cond if it is not implemented (thanks to Kazuhiro Tada).
+
 Version 2.0.19  May 22, 2019
 
   - Applied Lis patch for K computer (thanks to Shun Ito).
