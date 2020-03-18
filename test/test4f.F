@@ -134,7 +134,9 @@ C   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       call CHKERR(ierr)      
       call lis_solve(A,b,x,solver,ierr)
       call lis_solver_get_iter(solver,iter,ierr)
-      write(*,'(a,i0)') 'number of iterations = ', iter
+      if (my_rank .eq. 0) then
+         write(*,'(a,i0)') 'number of iterations = ', iter
+      endif         
       write(*,'(a)') ''
       call lis_vector_print(x,ierr)
       call lis_matrix_destroy(A,ierr)
