@@ -4,7 +4,7 @@ Version 2.0.21  March 18, 2020
 
 Version 2.0.20  September 4, 2019
 
-  - Disabled unimplemented option conv_cond for some solvers (thanks to Kazuhiro Tada).
+  - Disabled unimplemented conv_cond options for some solvers (thanks to Kazuhiro Tada).
 
 Version 2.0.19  May 22, 2019
 
