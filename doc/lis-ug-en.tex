@@ -4443,13 +4443,12 @@ must be specified.
 \end{screen}
 {\bf Description}\\
 \indent
-Assign scalar $value[i]$ to the $i$-th row of vector $v$, 
-where $i=0,1,..., global\_n-1$.
+Scatter the values of global array $value$ to partial vector $v$.
 \\ \\
 \noindent
 {\bf Input}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt value] The array that stores the scalar values to be assigned
+\item[\tt value] The array that stores the scalar values to be scattered
 \end{namelist}
 {\bf Output}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
@@ -4468,8 +4467,7 @@ where $i=0,1,..., global\_n-1$.
 \end{screen}
 {\bf Description}\\
 \indent
-Get scalar $value[i]$ of the $i$-th row of vector $v$, 
-where $i=0,1,..., global\_n-1$.
+Gather the values of global array $value$ from partial vector $v$.
 \\ \\
 \noindent
 {\bf Input}
@@ -4478,7 +4476,7 @@ where $i=0,1,..., global\_n-1$.
 \end{namelist}
 {\bf Output}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt value] The array that stores the scalar values
+\item[\tt value] The array that gathers the scalar values
 \item[\tt ierr] The return code
 \end{namelist}
 {\bf Note}\\
