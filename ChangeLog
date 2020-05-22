@@ -1,3 +1,7 @@
+Version 2.0.22  May 22, 2020
+
+  - Updated documents.
+
 Version 2.0.21  March 18, 2020
 
   - Fixed MPI related bug in test4f.F.
