@@ -4458,6 +4458,7 @@ where $i=0,1,..., global\_n-1$.
 \end{namelist}
 {\bf Note}\\
 \indent
+For the multiprocessing environment, this function is implemented by \verb|MPI_Scatterv|.
 
 \newpage
 \subsubsection{lis\_vector\_gather}
@@ -4483,6 +4484,7 @@ where $i=0,1,..., global\_n-1$.
 \end{namelist}
 {\bf Note}\\
 \indent
+For the multiprocessing environment, this function is implemented by \verb|MPI_Allgatherv|.
 
 \subsubsection{lis\_vector\_is\_null}
 \begin{screen}
