@@ -2,7 +2,7 @@
 
 .SH NAME
 
-lis_vector_gather \- gather the values of the vector
+lis_vector_gather \- get the values of the vector
 
 .SH SYNOPSIS
 
@@ -12,7 +12,7 @@ lis_vector_gather \- gather the values of the vector
 
 .SH DESCRIPTION
 
-Gather the values of global array \fIvalue\fR from partial vector \fIv\fR.
+Get scalar \fIvalue\fR[\fIi\fR] of the \fIi\fR-th row of the vector \fIv\fR, where \fIi\fR=0,1,...,\fIglobal_n\fR-1.
 
 .SH INPUT
 
@@ -22,7 +22,7 @@ The source vector
 .SH OUTPUT
 
 .IP "\fBvalue\fR"
-The array that gathers the scalar values
+The array to store the scalar values
 
 .SH EXIT STATUS
 
