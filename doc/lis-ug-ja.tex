@@ -4312,6 +4312,7 @@ $local\_n$ か $global\_n$ のどちらか一方を与えなければならな�
 \item[\tt ierr] リターンコード
 \end{namelist}
 \indent
+マルチプロセス環境では, 本関数は\verb|MPI_Scatterv|により実装される．
 
 \subsubsection{lis\_vector\_gather}
 \begin{screen}
@@ -4334,6 +4335,7 @@ $local\_n$ か $global\_n$ のどちらか一方を与えなければならな�
 \item[\tt ierr] リターンコード
 \end{namelist}
 \indent
+マルチプロセス環境では, 本関数は\verb|MPI_Allgatherv|により実装される．
 
 \newpage
 \subsubsection{lis\_vector\_is\_null}
