@@ -1,10 +1,15 @@
+Version 2.0.22  May 22, 2020
+
+  - Updated documents.
+
 Version 2.0.21  March 18, 2020
 
   - Fixed MPI related bug in test4f.F.
 
 Version 2.0.20  September 4, 2019
 
-  - Disabled option conv_cond if it is not implemented (thanks to Kazuhiro Tada).
+  - Disabled unimplemented conv_cond options for some linear solvers
+    (thanks to Kazuhiro Tada).
 
 Version 2.0.19  May 22, 2019
 
