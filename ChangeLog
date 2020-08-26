@@ -1,3 +1,7 @@
+Version 2.0.23  August 26, 2020
+
+  - Fixed bug in lis_input_vector_mm().
+
 Version 2.0.22  May 22, 2020
 
   - Updated documents.
