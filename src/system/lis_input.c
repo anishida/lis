@@ -282,7 +282,7 @@ LIS_INT lis_input_vector_mm(LIS_VECTOR v, FILE *file)
 		LIS_SETERR(LIS_ERR_FILE_IO,"Not Matrix Market banner\n");
 		return LIS_ERR_FILE_IO;
 	}
-	if( strncmp(fmt, MM_FMT_COO, strlen(MM_FMT_COO))!=0 || strncmp(fmt, MM_FMT_DNS, strlen(MM_FMT_DNS))!=0 )
+	if( strncmp(fmt, MM_FMT_COO, strlen(MM_FMT_COO))!=0 && strncmp(fmt, MM_FMT_DNS, strlen(MM_FMT_DNS))!=0 )
 	{
 		LIS_SETERR(LIS_ERR_FILE_IO,"Not Matrix Market format\n");
 		return LIS_ERR_FILE_IO;
