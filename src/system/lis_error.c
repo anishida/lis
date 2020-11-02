@@ -108,6 +108,7 @@ LIS_INT lis_replace(char *buf, const char *str1, const char *str2)
       strcat(buf,str2);
       strcat(buf,tmp);
     }
+  return LIS_SUCCESS;
 }
 
 LIS_INT lis_vprintf(const char *mess, va_list vvlist)
