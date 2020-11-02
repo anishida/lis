@@ -1,3 +1,7 @@
+Version 2.0.24  November 3, 2020
+
+  - Fixed bugs in lis_error.c and lis_esolver_si.c.
+
 Version 2.0.23  August 26, 2020
 
   - Fixed bug in lis_input_vector_mm().
