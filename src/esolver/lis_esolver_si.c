@@ -338,7 +338,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
       lis_vector_copy(v[j], esolver->evector[j-1]);
       etime = lis_wtime() - etime0;
 
-      if (output & ss>1)
+      if (output & (ss>1))
 	{
 	  lis_printf(comm,"Subspace: mode number          = %D\n", j-1);
 #ifdef _COMPLEX	  
@@ -691,7 +691,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
       lis_vector_copy(v[j], esolver->evector[j-1]);
       etime = lis_wtime() - etime0;
 
-      if (output & ss>1)
+      if (output & (ss>1))
 	{
 	  lis_printf(comm,"Generalized Subspace: mode number          = %D\n", j-1);
 #ifdef _COMPLEX	  
