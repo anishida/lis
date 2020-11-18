@@ -1,3 +1,7 @@
+Version 2.0.25  November 18, 2020
+
+  - Updated configure.ac for Apple Clang (thanks to Fabian188).
+
 Version 2.0.24  November 3, 2020
 
   - Fixed bugs in lis_error.c and lis_esolver_si.c.
