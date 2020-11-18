@@ -4,7 +4,7 @@
 
 # General Configurations
 
-AC_INIT(lis, 2.0.24, devel@ssisc.org)
+AC_INIT(lis, 2.0.25, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -384,14 +384,24 @@ fi
 
 # GNU Compiler for Apple Mac OS X
 if test "$build_vendor" = "apple"; then
-   if test "$enable_fortran" = "yes" || test "$enable_f90" = "yes" || test "$enable_saamg" = "yes"; then
-      if test "$enable_32bit" = "yes"; then
-          CC="gcc -m32"
-          FC="gfortran -m32"
-      else
-          CC="gcc -m64"
-          FC="gfortran -m64"
-      fi
+   if test -z "$CC"; then   
+      CC="gcc"
+   fi
+   if test -z "$FC"; then   
+      FC="gfortran"
+   fi
+   if test "$enable_32bit" = "yes"; then
+      CFLAGS="$CFLAGS -m32"
+      FCFLAGS="$FCFLAGS -m32"
+   else
+      CFLAGS="$CFLAGS -m64"
+      FCFLAGS="$FCFLAGS -m64"
+   fi
+   if test "$enable_omp" = "yes"; then   
+      if $CC --version 2>&1 | grep clang > /dev/null ; then
+      	 OMPFLAG="-Xclang -fopenmp"
+       	 LDFLAGS="$LDFLAGS -lomp"
+      fi	 
    fi
 fi
 
@@ -868,19 +878,17 @@ else
 fi
 
 if test "$build_vendor" = "apple"; then
-   if test "$enable_fortran" = "yes" || test "$enable_saamg" = "yes"; then
-      if test "$enable_32bit" = "yes"; then
-	  if test "$enable_mpi" = "yes"; then
-	      CC="mpicc -m32"
-	      FC="mpif90 -m32"
-	      ax_f77_mangling="lower case, underscore, no extra underscore"
-	  fi
-      else
-	  if test "$enable_mpi" = "yes"; then
-	      CC="mpicc -m64"
-	      FC="mpif90 -m64"
-	      ax_f77_mangling="lower case, underscore, no extra underscore"
-	  fi
+   if test "$enable_32bit" = "yes"; then
+      if test "$enable_mpi" = "yes"; then
+      	  CC="mpicc -m32"
+	  FC="mpif90 -m32"
+	  ax_f77_mangling="lower case, underscore, no extra underscore"
+      fi
+   else
+      if test "$enable_mpi" = "yes"; then
+      	  CC="mpicc -m64"
+	  FC="mpif90 -m64"
+	  ax_f77_mangling="lower case, underscore, no extra underscore"
       fi
    fi
 fi
