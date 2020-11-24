@@ -1248,6 +1248,7 @@ AC_DISABLE_SHARED
 AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 
+AM_CONDITIONAL(ENABLE_TEST, test x$enable_test = xyes)
 AM_CONDITIONAL(ENABLE_FORTRAN, test x$enable_fortran = xyes)
 AM_CONDITIONAL(ENABLE_F90, test x$enable_f90 = xyes)
 if test "$enable_f90" = "yes" ; then
