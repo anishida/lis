@@ -9,6 +9,7 @@ rem   Default Configurations
 @echo. 
 @set prefix=
 @set msvcrt=0
+@set notest=0
 @set omp=0
 @set intelc=0
 @set fortran=0
@@ -32,6 +33,7 @@ rem   Build Options
 @if "%1" == "--help" goto usage
 @if "%1" == "--prefix" goto setprefix
 @if "%1" == "--msvcrt" goto setmsvcrt
+@if "%1" == "--disable-test" goto setnotest
 @if "%1" == "--enable-omp" goto setomp
 @if "%1" == "--enable-msmpi32" goto setmsmpi32
 @if "%1" == "--enable-msmpi64" goto setmsmpi64
@@ -57,6 +59,7 @@ rem   Build Options
 @echo.	
 @echo.	--prefix PREFIX		Install Lis in directory PREFIX
 @echo.	--msvcrt		Use msvcrt*.dll instead of static crt
+@echo.	--disable-test		Disable building test programs
 @echo.	--enable-omp		Build with OpenMP library
 @echo.	--enable-msmpi32	Build with 32bit Microsoft MPI library
 @echo.	--enable-msmpi64	Build with 64bit Microsoft MPI library
@@ -86,6 +89,12 @@ rem   Build Options
 
 @shift
 @set msvcrt=1
+@shift
+@goto again
+
+:setnotest
+
+@set notest=1
 @shift
 @goto again
 
@@ -201,6 +210,15 @@ rem   Build Options
 @echo.	Use msvcrt*.dll instead of static crt	= yes
 ) else (
 @echo.	Use msvcrt*.dll instead of static crt	= no
+)
+
+@if (%notest%) == (1) (
+@echo # Disable building test programs >> Makefile
+@echo notest=1 >> Makefile
+@echo. >> Makefile
+@echo.	Build test programs			= no
+) else (
+@echo.	Build test programs			= yes
 )
 
 @if (%omp%) == (1) (
