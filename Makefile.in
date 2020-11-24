@@ -311,7 +311,8 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-@ENABLE_TEST_TRUE@MAYBE_TEST = test
+@DISABLE_TEST_FALSE@MAYBE_TEST = test
+@DISABLE_TEST_TRUE@MAYBE_TEST = 
 SUBDIRS = include src $(MAYBE_TEST)
 EXTRA_DIST = doc/Makefile \
              doc/double-double.eps \

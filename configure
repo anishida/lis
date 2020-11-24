@@ -662,8 +662,8 @@ ENABLE_F90_FALSE
 ENABLE_F90_TRUE
 ENABLE_FORTRAN_FALSE
 ENABLE_FORTRAN_TRUE
-ENABLE_TEST_FALSE
-ENABLE_TEST_TRUE
+DISABLE_TEST_FALSE
+DISABLE_TEST_TRUE
 LT_SYS_LIBRARY_PATH
 OTOOL64
 OTOOL
@@ -800,6 +800,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_maintainer_mode
+enable_test
 enable_fortran
 enable_f90
 enable_saamg
@@ -1467,6 +1468,7 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-maintainer-mode  enable make rules and dependencies not useful
 			  (and sometimes confusing) to the casual installer
+  --enable-test           enable test programs [[default=yes]]
   --enable-fortran        enable FORTRAN 77 compatible interfaces
                           [[default=no]]
   --enable-f90            enable Fortran 90 compatible interface
@@ -3438,6 +3440,11 @@ fi
 
 # Build Options
 
+# Check whether --enable-test was given.
+if test "${enable_test+set}" = set; then :
+  enableval=$enable_test;
+fi
+
 # Check whether --enable-fortran was given.
 if test "${enable_fortran+set}" = set; then :
   enableval=$enable_fortran;
@@ -4971,7 +4978,7 @@ _ACEOF
 	# flags.
 	ac_save_CFLAGS=$CFLAGS
 	CFLAGS="$CFLAGS $ac_verb"
-	(eval echo $as_me:4974: \"$ac_link\") >&5
+	(eval echo $as_me:4981: \"$ac_link\") >&5
 	ac_c_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 	echo "$ac_c_v_output" >&5
 	CFLAGS=$ac_save_CFLAGS
@@ -5044,7 +5051,7 @@ _ACEOF
 	# flags.
 	ac_save_CFLAGS=$CFLAGS
 	CFLAGS="$CFLAGS $ac_cv_prog_c_v"
-	(eval echo $as_me:5047: \"$ac_link\") >&5
+	(eval echo $as_me:5054: \"$ac_link\") >&5
 	ac_c_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 	echo "$ac_c_v_output" >&5
 	CFLAGS=$ac_save_CFLAGS
@@ -21846,12 +21853,12 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
- if test x$enable_test = xyes; then
-  ENABLE_TEST_TRUE=
-  ENABLE_TEST_FALSE='#'
+ if test x$enable_test = xno; then
+  DISABLE_TEST_TRUE=
+  DISABLE_TEST_FALSE='#'
 else
-  ENABLE_TEST_TRUE='#'
-  ENABLE_TEST_FALSE=
+  DISABLE_TEST_TRUE='#'
+  DISABLE_TEST_FALSE=
 fi
 
  if test x$enable_fortran = xyes; then
@@ -22317,8 +22324,8 @@ if test -z "${am__fastdepCC_TRUE}" && test -z "${am__fastdepCC_FALSE}"; then
   as_fn_error $? "conditional \"am__fastdepCC\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${ENABLE_TEST_TRUE}" && test -z "${ENABLE_TEST_FALSE}"; then
-  as_fn_error $? "conditional \"ENABLE_TEST\" was never defined.
+if test -z "${DISABLE_TEST_TRUE}" && test -z "${DISABLE_TEST_FALSE}"; then
+  as_fn_error $? "conditional \"DISABLE_TEST\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_FORTRAN_TRUE}" && test -z "${ENABLE_FORTRAN_FALSE}"; then

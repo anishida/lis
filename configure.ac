@@ -25,6 +25,7 @@ AC_ARG_VAR(TARGET,[system architecture])
 
 # Build Options
 
+AC_ARG_ENABLE(test, AC_HELP_STRING(--enable-test, [enable test programs [[default=yes]]]))
 AC_ARG_ENABLE(fortran, AC_HELP_STRING(--enable-fortran, [enable FORTRAN 77 compatible interfaces [[default=no]]]))
 AC_ARG_ENABLE(f90, AC_HELP_STRING(--enable-f90, [enable Fortran 90 compatible interface [[default=no]]]))
 AC_ARG_ENABLE(saamg, AC_HELP_STRING(--enable-saamg, [enable SA-AMG preconditioner [[default=no]]]))
@@ -1248,7 +1249,7 @@ AC_DISABLE_SHARED
 AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 
-AM_CONDITIONAL(ENABLE_TEST, test x$enable_test = xyes)
+AM_CONDITIONAL(DISABLE_TEST, test x$enable_test = xno)
 AM_CONDITIONAL(ENABLE_FORTRAN, test x$enable_fortran = xyes)
 AM_CONDITIONAL(ENABLE_F90, test x$enable_f90 = xyes)
 if test "$enable_f90" = "yes" ; then

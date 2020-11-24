@@ -1,4 +1,6 @@
-if ENABLE_TEST
+if DISABLE_TEST
+  MAYBE_TEST = 
+else
   MAYBE_TEST = test
 endif
 SUBDIRS = include src $(MAYBE_TEST)
