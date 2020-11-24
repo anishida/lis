@@ -154,16 +154,25 @@ MPIRUN = "mpiexec -n 2"
 !endif
 
 
+!ifdef notest
+!ifdef fortran
+all: libs libs_lisf_init
+!else
+all: libs
+!endif
+!else
 !ifdef fortran
 all: libs exes_test exes_etest exes_spmvtest \
      libs_lisf_init exes_testf exes_etestf
 !ifdef saamg
 !ifdef impi
-all: libs test8f.exe
+all: libs exes_test exes_etest exes_spmvtest \
+     libs_lisf_init exes_testf exes_etestf test8f.exe
 !endif
 !endif
 !else
 all: libs exes_test exes_etest exes_spmvtest
+!endif
 !endif
 
 !ifdef saamg
@@ -302,10 +311,17 @@ check:
 
 install:
 	if not exist $(PREFIX) mkdir $(PREFIX)
-	if not exist $(PREFIX)\bin mkdir $(PREFIX)\bin
 	if not exist $(PREFIX)\include mkdir $(PREFIX)\include
 	if not exist $(PREFIX)\lib mkdir $(PREFIX)\lib
 	if not exist $(PREFIX)\doc mkdir $(PREFIX)\doc
+	$(CP) lis.lib $(PREFIX)\lib
+	$(CP) ..\include\lis_config.h $(PREFIX)\include
+	$(CP) ..\include\lis.h $(PREFIX)\include
+	$(CP) ..\include\lisf.h $(PREFIX)\include
+	$(CP) ..\doc\lis-ug-en.pdf $(PREFIX)\doc
+	$(CP) ..\doc\lis-ug-ja.pdf $(PREFIX)\doc
+!ifndef notest
+	if not exist $(PREFIX)\bin mkdir $(PREFIX)\bin
 	$(CP) test1.exe $(PREFIX)\bin\lsolve.exe
 	$(CP) etest5.exe $(PREFIX)\bin\esolve.exe
 	$(CP) etest5b.exe $(PREFIX)\bin\esolver.exe
@@ -320,14 +336,17 @@ install:
 	$(CP) spmvtest3b.exe $(PREFIX)\bin
 	$(CP) spmvtest4.exe $(PREFIX)\bin
 	$(CP) spmvtest5.exe $(PREFIX)\bin
-	$(CP) lis.lib $(PREFIX)\lib
-	$(CP) ..\include\lis_config.h $(PREFIX)\include
-	$(CP) ..\include\lis.h $(PREFIX)\include
-	$(CP) ..\include\lisf.h $(PREFIX)\include
-	$(CP) ..\doc\lis-ug-en.pdf $(PREFIX)\doc
-	$(CP) ..\doc\lis-ug-ja.pdf $(PREFIX)\doc
+!endif
 
-uninstall: 
+uninstall:
+	$(RM) $(PREFIX)\lib\lis.lib
+	$(RM) $(PREFIX)\include\lis_config.h
+	$(RM) $(PREFIX)\include\lis.h
+	$(RM) $(PREFIX)\include\lisf.h
+	$(RM) $(PREFIX)\doc\lis-ug-en.pdf
+	$(RM) $(PREFIX)\doc\lis-ug-ja.pdf
+	rmdir $(PREFIX)\lib $(PREFIX)\include $(PREFIX)\doc
+!ifndef notest
 	$(RM) $(PREFIX)\bin\lsolve.exe
 	$(RM) $(PREFIX)\bin\esolve.exe
 	$(RM) $(PREFIX)\bin\esolver.exe
@@ -342,13 +361,8 @@ uninstall:
 	$(RM) $(PREFIX)\bin\spmvtest3b.exe
 	$(RM) $(PREFIX)\bin\spmvtest4.exe
 	$(RM) $(PREFIX)\bin\spmvtest5.exe
-	$(RM) $(PREFIX)\lib\lis.lib
-	$(RM) $(PREFIX)\include\lis_config.h
-	$(RM) $(PREFIX)\include\lis.h
-	$(RM) $(PREFIX)\include\lisf.h
-	$(RM) $(PREFIX)\doc\lis-ug-en.pdf
-	$(RM) $(PREFIX)\doc\lis-ug-ja.pdf
-	rmdir $(PREFIX)\bin $(PREFIX)\lib $(PREFIX)\include $(PREFIX)\doc
+	rmdir $(PREFIX)\bin
+!endif
 	rmdir $(PREFIX)
 
 clean:

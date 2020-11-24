@@ -123,7 +123,7 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir dist dist-all distcheck
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = $(SUBDIRS)
+DIST_SUBDIRS = include src test
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -311,7 +311,9 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = include src test
+@DISABLE_TEST_FALSE@MAYBE_TEST = test
+@DISABLE_TEST_TRUE@MAYBE_TEST = 
+SUBDIRS = include src $(MAYBE_TEST)
 EXTRA_DIST = doc/Makefile \
              doc/double-double.eps \
              doc/irises_korin.eps \

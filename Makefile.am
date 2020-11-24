@@ -1,4 +1,9 @@
-SUBDIRS = include src test
+if DISABLE_TEST
+  MAYBE_TEST = 
+else
+  MAYBE_TEST = test
+endif
+SUBDIRS = include src $(MAYBE_TEST)
 
 EXTRA_DIST = doc/Makefile \
              doc/double-double.eps \

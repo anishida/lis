@@ -9,6 +9,7 @@ rem   Default Configurations
 @echo. 
 @set prefix=
 @set msvcrt=0
+@set notest=0
 @set omp=0
 @set intelc=0
 @set fortran=0
@@ -44,6 +45,7 @@ rem   Build Options
 @if "%1" == "--enable-complex" goto setcomplex
 @if "%1" == "--enable-debug" goto setdebug
 @if "%1" == "--disable-ifpu" goto setnoifpu
+@if "%1" == "--disable-test" goto setnotest
 @if "%1" == "--cflags" goto setusercflags
 @if "%1" == "--fflags" goto setuserfflags
 @if "%1" == "--ldflags" goto setuserldflags
@@ -69,6 +71,7 @@ rem   Build Options
 @echo.	--enable-complex	Complex scalar support (for Intel Compilers)
 @echo.	--enable-debug		Enable debugging
 @echo.	--disable-ifpu		Disable Intel FPU support
+@echo.	--disable-test		Disable building test programs
 @echo.	--cflags FLAG		Pass FLAG to C compiler
 @echo.	--fflags FLAG		Pass FLAG to Fortran compiler
 @echo.	--ldflags FLAG		Pass FLAG to linker
@@ -86,6 +89,12 @@ rem   Build Options
 
 @shift
 @set msvcrt=1
+@shift
+@goto again
+
+:setnotest
+
+@set notest=1
 @shift
 @goto again
 
@@ -201,6 +210,15 @@ rem   Build Options
 @echo.	Use msvcrt*.dll instead of static crt	= yes
 ) else (
 @echo.	Use msvcrt*.dll instead of static crt	= no
+)
+
+@if (%notest%) == (1) (
+@echo # Disable building test programs >> Makefile
+@echo notest=1 >> Makefile
+@echo. >> Makefile
+@echo.	Build test programs			= no
+) else (
+@echo.	Build test programs			= yes
 )
 
 @if (%omp%) == (1) (
