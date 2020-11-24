@@ -4,7 +4,7 @@
 
 # General Configurations
 
-AC_INIT(lis, 2.0.25, devel@ssisc.org)
+AC_INIT(lis, 2.0.26, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -25,7 +25,6 @@ AC_ARG_VAR(TARGET,[system architecture])
 
 # Build Options
 
-AC_ARG_ENABLE(test, AC_HELP_STRING(--enable-test, [enable test programs [[default=yes]]]))
 AC_ARG_ENABLE(fortran, AC_HELP_STRING(--enable-fortran, [enable FORTRAN 77 compatible interfaces [[default=no]]]))
 AC_ARG_ENABLE(f90, AC_HELP_STRING(--enable-f90, [enable Fortran 90 compatible interface [[default=no]]]))
 AC_ARG_ENABLE(saamg, AC_HELP_STRING(--enable-saamg, [enable SA-AMG preconditioner [[default=no]]]))
@@ -41,6 +40,7 @@ AC_ARG_ENABLE(32bit, AC_HELP_STRING(--enable-32bit, [build 32bit binary on Mac O
 AC_ARG_ENABLE(longlong, AC_HELP_STRING(--enable-longlong, [enable long long int support [[default=no]]]))
 AC_ARG_ENABLE(longdouble, AC_HELP_STRING(--enable-longdouble, [enable long double support [[default=no]]]))
 AC_ARG_ENABLE(complex, AC_HELP_STRING(--enable-complex, [enable complex scalar support [[default=no]]]))
+AC_ARG_ENABLE(test, AC_HELP_STRING(--enable-test, [enable test programs [[default=yes]]]))
 
 AC_MSG_CHECKING([for a library suffix to use])
 AC_ARG_WITH(library-suffix,
@@ -1249,7 +1249,6 @@ AC_DISABLE_SHARED
 AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 
-AM_CONDITIONAL(DISABLE_TEST, test x$enable_test = xno)
 AM_CONDITIONAL(ENABLE_FORTRAN, test x$enable_fortran = xyes)
 AM_CONDITIONAL(ENABLE_F90, test x$enable_f90 = xyes)
 if test "$enable_f90" = "yes" ; then
@@ -1260,6 +1259,7 @@ AM_CONDITIONAL(ENABLE_MPI, test x"$enable_mpi" = xyes)
 AM_CONDITIONAL(ENABLE_OMP, test x"$enable_omp" = xyes)
 AM_CONDITIONAL(ENABLE_QUAD, test x$enable_quad = xyes)
 AM_CONDITIONAL(ENABLE_SSE2, test x$enable_sse2 = xyes)
+AM_CONDITIONAL(DISABLE_TEST, test x$enable_test = xno)
 AC_SUBST(enable_mpi)
 AC_SUBST(enable_omp)
 AC_SUBST(enable_saamg)
