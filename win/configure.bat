@@ -33,7 +33,6 @@ rem   Build Options
 @if "%1" == "--help" goto usage
 @if "%1" == "--prefix" goto setprefix
 @if "%1" == "--msvcrt" goto setmsvcrt
-@if "%1" == "--disable-test" goto setnotest
 @if "%1" == "--enable-omp" goto setomp
 @if "%1" == "--enable-msmpi32" goto setmsmpi32
 @if "%1" == "--enable-msmpi64" goto setmsmpi64
@@ -46,6 +45,7 @@ rem   Build Options
 @if "%1" == "--enable-complex" goto setcomplex
 @if "%1" == "--enable-debug" goto setdebug
 @if "%1" == "--disable-ifpu" goto setnoifpu
+@if "%1" == "--disable-test" goto setnotest
 @if "%1" == "--cflags" goto setusercflags
 @if "%1" == "--fflags" goto setuserfflags
 @if "%1" == "--ldflags" goto setuserldflags
@@ -59,7 +59,6 @@ rem   Build Options
 @echo.	
 @echo.	--prefix PREFIX		Install Lis in directory PREFIX
 @echo.	--msvcrt		Use msvcrt*.dll instead of static crt
-@echo.	--disable-test		Disable building test programs
 @echo.	--enable-omp		Build with OpenMP library
 @echo.	--enable-msmpi32	Build with 32bit Microsoft MPI library
 @echo.	--enable-msmpi64	Build with 64bit Microsoft MPI library
@@ -72,6 +71,7 @@ rem   Build Options
 @echo.	--enable-complex	Complex scalar support (for Intel Compilers)
 @echo.	--enable-debug		Enable debugging
 @echo.	--disable-ifpu		Disable Intel FPU support
+@echo.	--disable-test		Disable building test programs
 @echo.	--cflags FLAG		Pass FLAG to C compiler
 @echo.	--fflags FLAG		Pass FLAG to Fortran compiler
 @echo.	--ldflags FLAG		Pass FLAG to linker
