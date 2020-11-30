@@ -3674,8 +3674,27 @@ if test "$TARGET" != ""; then
                     MPINP="-n"
                     OMPFLAG="-Kopenmp"
           ;;
-# Fujitsu Technical Computing Suite (for PRIMEHPC FX1000/FX700, not tested)
-          fujitsu_arm) CC="fcc"
+# Fujitsu Technical Computing Suite (for PRIMEHPC FX1000)
+          fujitsu_fx1000) CC="fcc"
+                    F77="frt"
+                    FC="frt"
+                    MPICC="mpifcc"
+                    MPIF77="mpifrt"
+                    MPIFC="mpifrt"
+                    CFLAGS="-Kfast,ocl,preex -w"
+                    FFLAGS="-Kfast,ocl,preex -Cpp -fs"
+                    FCFLAGS="-Kfast,ocl,preex -Cpp -fs"
+                    FCLDFLAGS=""
+                    ac_cv_sizeof_void_p=4
+                    ax_f77_mangling="lower case, underscore, no extra underscore"
+                    ax_cv_c_compiler_vendor="fujitsu"
+                    ax_cv_f77_compiler_vendor="fujitsu"
+                    MPIRUN="mpiexec"
+                    MPINP="-n"
+                    OMPFLAG="-Kopenmp -Nfjomplib"
+          ;;
+# Fujitsu Technical Computing Suite (for PRIMEHPC FX700)
+          fujitsu_fx700) CC="fcc"
                     F77="frt"
                     FC="frt"
                     MPICC="mpifcc"
@@ -4978,7 +4997,7 @@ _ACEOF
 	# flags.
 	ac_save_CFLAGS=$CFLAGS
 	CFLAGS="$CFLAGS $ac_verb"
-	(eval echo $as_me:4981: \"$ac_link\") >&5
+	(eval echo $as_me:5000: \"$ac_link\") >&5
 	ac_c_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 	echo "$ac_c_v_output" >&5
 	CFLAGS=$ac_save_CFLAGS
@@ -5051,7 +5070,7 @@ _ACEOF
 	# flags.
 	ac_save_CFLAGS=$CFLAGS
 	CFLAGS="$CFLAGS $ac_cv_prog_c_v"
-	(eval echo $as_me:5054: \"$ac_link\") >&5
+	(eval echo $as_me:5073: \"$ac_link\") >&5
 	ac_c_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 	echo "$ac_c_v_output" >&5
 	CFLAGS=$ac_save_CFLAGS
