@@ -3691,6 +3691,7 @@ if test "$TARGET" != ""; then
                     ax_cv_f77_compiler_vendor="fujitsu"
                     MPIRUN="mpiexec"
                     MPINP="-n"
+#                    OMPFLAG="-Kopenmp -Nlibomp"
                     OMPFLAG="-Kopenmp -Nfjomplib"
           ;;
 # Fujitsu Technical Computing Suite (for PRIMEHPC FX700)
@@ -4997,7 +4998,7 @@ _ACEOF
 	# flags.
 	ac_save_CFLAGS=$CFLAGS
 	CFLAGS="$CFLAGS $ac_verb"
-	(eval echo $as_me:5000: \"$ac_link\") >&5
+	(eval echo $as_me:5001: \"$ac_link\") >&5
 	ac_c_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 	echo "$ac_c_v_output" >&5
 	CFLAGS=$ac_save_CFLAGS
@@ -5070,7 +5071,7 @@ _ACEOF
 	# flags.
 	ac_save_CFLAGS=$CFLAGS
 	CFLAGS="$CFLAGS $ac_cv_prog_c_v"
-	(eval echo $as_me:5073: \"$ac_link\") >&5
+	(eval echo $as_me:5074: \"$ac_link\") >&5
 	ac_c_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 	echo "$ac_c_v_output" >&5
 	CFLAGS=$ac_save_CFLAGS

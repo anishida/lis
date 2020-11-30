@@ -205,6 +205,7 @@ if test "$TARGET" != ""; then
                     ax_cv_f77_compiler_vendor="fujitsu"
                     MPIRUN="mpiexec"
                     MPINP="-n"
+#                    OMPFLAG="-Kopenmp -Nlibomp"		    
                     OMPFLAG="-Kopenmp -Nfjomplib"
           ;;
 # Fujitsu Technical Computing Suite (for PRIMEHPC FX700)
