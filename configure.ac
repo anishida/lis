@@ -188,8 +188,8 @@ if test "$TARGET" != ""; then
                     MPINP="-n"
                     OMPFLAG="-Kopenmp"
           ;;
-# Fujitsu Technical Computing Suite (for PRIMEHPC FX1000)
-          fujitsu_fx1000) CC="fcc"
+# Fujitsu Technical Computing Suite (for PRIMEHPC FX1000/FX700)
+          fujitsu_arm) CC="fcc"
                     F77="frt"
                     FC="frt"
                     MPICC="mpifcc"
@@ -205,27 +205,7 @@ if test "$TARGET" != ""; then
                     ax_cv_f77_compiler_vendor="fujitsu"
                     MPIRUN="mpiexec"
                     MPINP="-n"
-#                    OMPFLAG="-Kopenmp -Nlibomp"		    
-                    OMPFLAG="-Kopenmp -Nfjomplib"
-          ;;
-# Fujitsu Technical Computing Suite (for PRIMEHPC FX700)
-          fujitsu_fx700) CC="fcc"
-                    F77="frt"
-                    FC="frt"
-                    MPICC="mpifcc"
-                    MPIF77="mpifrt"
-                    MPIFC="mpifrt"
-                    CFLAGS="-Kfast,ocl,preex -w"
-                    FFLAGS="-Kfast,ocl,preex -Cpp -fs"
-                    FCFLAGS="-Kfast,ocl,preex -Cpp -fs"
-                    FCLDFLAGS=""
-                    ac_cv_sizeof_void_p=4
-                    ax_f77_mangling="lower case, underscore, no extra underscore"
-                    ax_cv_c_compiler_vendor="fujitsu"
-                    ax_cv_f77_compiler_vendor="fujitsu"
-                    MPIRUN="mpiexec"
-                    MPINP="-n"
-                    OMPFLAG="-Kopenmp -Nlibomp"
+                    OMPFLAG="-Kopenmp -Nlibomp"		    
           ;;
 # Hitachi Optimizing Compiler for SR16000
           hitachi_sr16k) CC="cc"
