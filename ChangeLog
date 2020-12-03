@@ -1,3 +1,7 @@
+Version 2.0.27  December 3, 2020
+
+  - Added note on win32.mak to win/README (thanks to Z. G. Liu).
+
 Version 2.0.26  November 25, 2020
 
   - Added option --disable-test to configure.ac (thanks to Fabian188).

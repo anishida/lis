@@ -7,7 +7,7 @@ MV = move
 RM = del
 
 
-# See win32.mak for details. If it is not available in your computing environment, download Windows SDK 7.1 from Microsoft's home page and install it. Then set path to the directory where win32.mak locates by adding it to your environment variables.
+# See win32.mak for details. 
 
 !include <win32.mak>
 #!include <C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\Include\win32.mak>
