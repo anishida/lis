@@ -4,7 +4,7 @@
 
 # General Configurations
 
-AC_INIT(lis, 2.0.26, devel@ssisc.org)
+AC_INIT(lis, 2.0.27, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -188,7 +188,7 @@ if test "$TARGET" != ""; then
                     MPINP="-n"
                     OMPFLAG="-Kopenmp"
           ;;
-# Fujitsu Technical Computing Suite (for PRIMEHPC FX1000/FX700, not tested)
+# Fujitsu Technical Computing Suite (for PRIMEHPC FX1000/FX700)
           fujitsu_arm) CC="fcc"
                     F77="frt"
                     FC="frt"
@@ -199,13 +199,13 @@ if test "$TARGET" != ""; then
                     FFLAGS="-Kfast,ocl,preex -Cpp -fs"
                     FCFLAGS="-Kfast,ocl,preex -Cpp -fs"
                     FCLDFLAGS=""
-                    ac_cv_sizeof_void_p=4
+                    ac_cv_sizeof_void_p=8
                     ax_f77_mangling="lower case, underscore, no extra underscore"
                     ax_cv_c_compiler_vendor="fujitsu"
                     ax_cv_f77_compiler_vendor="fujitsu"
                     MPIRUN="mpiexec"
                     MPINP="-n"
-                    OMPFLAG="-Kopenmp -Nlibomp"
+                    OMPFLAG="-Kopenmp -Nlibomp"		    
           ;;
 # Hitachi Optimizing Compiler for SR16000
           hitachi_sr16k) CC="cc"
