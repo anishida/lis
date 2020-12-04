@@ -432,7 +432,7 @@ enable_dependency_tracking="no"
 
 ########## Check C Compilers ##########
 cflags_save="$CFLAGS"
-AC_PROG_CC([icc ecc xlc_r xlc fcc pgcc pathcc cc gcc])
+AC_PROG_CC([icc ecc xlc_r xlc fcc pgcc pathcc cc gcc clang])
 CFLAGS="$cflags_save"
 if test "$TARGET" = ""; then
   if test "$CC" = "fcc"; then
