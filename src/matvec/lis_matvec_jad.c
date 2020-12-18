@@ -79,6 +79,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 			#ifdef USE_VEC_COMP
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			#endif
 			for(i=is; i<ie; i++)
 			{
@@ -92,6 +93,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				je = A->L->ptr[my_rank*(A->L->maxnzr+1) + j+1];
 				#ifdef USE_VEC_COMP
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				#endif
 				for(i=js;i<je;i++)
 				{
@@ -101,6 +103,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			}
 			#ifdef USE_VEC_COMP
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			#endif
 			for(i=is; i<ie; i++)
 			{
@@ -108,6 +111,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			}
 			#ifdef USE_VEC_COMP
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			#endif
 			for(i=is; i<ie; i++)
 			{
@@ -120,6 +124,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				je = A->U->ptr[my_rank*(A->U->maxnzr+1) + j+1];
 				#ifdef USE_VEC_COMP
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				#endif
 				for(i=js;i<je;i++)
 				{
@@ -129,6 +134,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			}
 			#ifdef USE_VEC_COMP
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			#endif
 			for(i=is; i<ie; i++)
 			{
@@ -159,6 +165,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 			#ifdef USE_VEC_COMP
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			#endif
 			for(i=is; i<ie; i++)
 			{
@@ -171,6 +178,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				je = A->ptr[my_rank*(maxnzr+1) + j+1];
 				#ifdef USE_VEC_COMP
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				#endif
 				for(i=js;i<je;i++)
 				{
@@ -180,6 +188,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			}
 			#ifdef USE_VEC_COMP
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			#endif
 			for(i=is; i<ie; i++)
 			{
@@ -239,6 +248,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			LIS_GET_ISIE(my_rank,nprocs,n,is,ie);
 
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			for(i=is; i<ie; i++)
 			{
 				y[i] = A->D->value[i]*x[i];
@@ -250,6 +260,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				js = A->L->ptr[my_rank*(A->L->maxnzr+1) + j];
 				je = A->L->ptr[my_rank*(A->L->maxnzr+1) + j+1];
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				for(i=js;i<je;i++)
 				{
 					w[k] += A->L->value[i] * x[A->L->index[i]];
@@ -257,11 +268,13 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				}
 			}
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			for(i=is; i<ie; i++)
 			{
 				y[A->L->row[i]]  += w[i];
 			}
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			for(i=is; i<ie; i++)
 			{
 				w[i] = 0.0;
@@ -272,6 +285,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				js = A->U->ptr[my_rank*(A->U->maxnzr+1) + j];
 				je = A->U->ptr[my_rank*(A->U->maxnzr+1) + j+1];
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				for(i=js;i<je;i++)
 				{
 					w[k] += A->U->value[i] * x[A->U->index[i]];
@@ -279,6 +293,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				}
 			}
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			for(i=is; i<ie; i++)
 			{
 				y[A->U->row[i]] += w[i];
@@ -305,6 +320,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			LIS_GET_ISIE(my_rank,nprocs,n,is,ie);
 
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			for(i=is; i<ie; i++)
 			{
 				w[i] = 0.0;
@@ -315,6 +331,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				js = A->ptr[my_rank*(maxnzr+1) + j];
 				je = A->ptr[my_rank*(maxnzr+1) + j+1];
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				for(i=js;i<je;i++)
 				{
 					w[k] += A->value[i] * x[A->index[i]];
@@ -322,6 +339,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				}
 			}
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			for(i=is; i<ie; i++)
 			{
 				y[A->row[i]] = w[i];
@@ -363,6 +381,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			LIS_GET_ISIE(my_rank,nprocs,n,is,ie);
 
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			for(i=is; i<ie; i++)
 			{
 				y[i] = A->D->value[i]*x[i];
@@ -374,6 +393,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				js = A->L->ptr[my_rank*(A->L->maxnzr+1) + j];
 				je = A->L->ptr[my_rank*(A->L->maxnzr+1) + j+1];
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				for(i=js;i<je;i++)
 				{
 					w[k] += A->L->value[i] * x[A->L->index[i]];
@@ -381,11 +401,13 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				}
 			}
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			for(i=is; i<ie; i++)
 			{
 				y[A->L->row[i]]  += w[i];
 			}
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			for(i=is; i<ie; i++)
 			{
 				w[i] = 0.0;
@@ -396,6 +418,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				js = A->U->ptr[my_rank*(A->U->maxnzr+1) + j];
 				je = A->U->ptr[my_rank*(A->U->maxnzr+1) + j+1];
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				for(i=js;i<je;i++)
 				{
 					w[k] += A->U->value[i] * x[A->U->index[i]];
@@ -403,6 +426,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				}
 			}
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			for(i=is; i<ie; i++)
 			{
 				y[A->U->row[i]] += w[i];
@@ -428,6 +452,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			LIS_GET_ISIE(my_rank,nprocs,n,is,ie);
 
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			for(i=is; i<ie; i++)
 			{
 				w[i] = 0.0;
@@ -438,6 +463,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				js = A->U->ptr[my_rank*(maxnzr2+1) + j];
 				je = A->U->ptr[my_rank*(maxnzr2+1) + j+1];
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				for(i=js;i<je;i++)
 				{
 					w[k] += A->U->value[i] * x[A->U->index[i]];
@@ -445,6 +471,7 @@ void lis_matvec_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				}
 			}
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			for(i=is; i<ie; i++)
 			{
 				y[A->U->row[i]] += w[i];
@@ -473,6 +500,7 @@ void lis_matvech_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	{
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0; i<n; i++)
 		{
@@ -485,6 +513,7 @@ void lis_matvech_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			je = A->L->ptr[i+1];
 			#ifdef USE_VEC_COMP
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			#endif
 			for(j=js;j<je;j++)
 			{
@@ -500,6 +529,7 @@ void lis_matvech_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			je = A->U->ptr[i+1];
 			#ifdef USE_VEC_COMP
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			#endif
 			for(j=js;j<je;j++)
 			{
@@ -527,6 +557,7 @@ void lis_matvech_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 					je = A->ptr[my_rank*(maxnzr+1) + j+1];
 					#ifdef USE_VEC_COMP
 					#pragma cdir nodep
+					#pragma _NEC ivdep
 					#endif
 					for(i=js;i<je;i++)
 					{
@@ -538,6 +569,7 @@ void lis_matvech_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				#pragma omp for 
 				#ifdef USE_VEC_COMP
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				#endif
 				for(i=0;i<np;i++)
 				{
@@ -553,6 +585,7 @@ void lis_matvech_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		#else
 			#ifdef USE_VEC_COMP
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			#endif
 			for(i=0; i<np; i++)
 			{
@@ -565,6 +598,7 @@ void lis_matvech_jad(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				je = A->ptr[i+1];
 				#ifdef USE_VEC_COMP
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				#endif
 				for(j=js;j<je;j++)
 				{
@@ -591,6 +625,7 @@ void lis_matvec_jad_u4_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	yy     = A->work;
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	for(i=0; i<np; i++)
 	{
@@ -606,6 +641,7 @@ void lis_matvec_jad_u4_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie3-0;i+=1)
 		{
@@ -617,6 +653,7 @@ void lis_matvec_jad_u4_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		ie2 = A->ptr[j+1-1] - A->ptr[j-1];
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie2-0;i+=1)
 		{
@@ -627,6 +664,7 @@ void lis_matvec_jad_u4_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		ie1 = A->ptr[j+1-2] - A->ptr[j-2];
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie1-0;i+=1)
 		{
@@ -636,6 +674,7 @@ void lis_matvec_jad_u4_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		ie0 = A->ptr[j+1-3] - A->ptr[j-3];
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -651,6 +690,7 @@ void lis_matvec_jad_u4_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie2-0;i+=1)
 		{
@@ -661,6 +701,7 @@ void lis_matvec_jad_u4_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		ie1 = A->ptr[j+1-1] - A->ptr[j-1];
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie1-0;i+=1)
 		{
@@ -670,6 +711,7 @@ void lis_matvec_jad_u4_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		ie0 = A->ptr[j+1-2] - A->ptr[j-2];
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -684,6 +726,7 @@ void lis_matvec_jad_u4_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie1-0;i+=1)
 		{
@@ -693,6 +736,7 @@ void lis_matvec_jad_u4_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		ie0 = A->ptr[j+1-1] - A->ptr[j-1];
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -706,6 +750,7 @@ void lis_matvec_jad_u4_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie0-0;i+=1)
 		{
@@ -714,6 +759,7 @@ void lis_matvec_jad_u4_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	}
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	for(i=0;i<n;i++)
 	{
@@ -742,6 +788,7 @@ void lis_matvec_jad_u5_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	yy     = A->work;
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	for(i=0; i<np; i++)
 	{
@@ -773,6 +820,7 @@ void lis_matvec_jad_u5_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie4-0;i+=1)
 		{
@@ -785,6 +833,7 @@ void lis_matvec_jad_u5_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie3-0;i+=1)
 		{
@@ -796,6 +845,7 @@ void lis_matvec_jad_u5_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie2-0;i+=1)
 		{
@@ -806,6 +856,7 @@ void lis_matvec_jad_u5_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie1-0;i+=1)
 		{
@@ -815,6 +866,7 @@ void lis_matvec_jad_u5_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -844,6 +896,7 @@ void lis_matvec_jad_u5_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie3-0;i+=1)
 		{
@@ -855,6 +908,7 @@ void lis_matvec_jad_u5_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie2-0;i+=1)
 		{
@@ -865,6 +919,7 @@ void lis_matvec_jad_u5_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie1-0;i+=1)
 		{
@@ -874,6 +929,7 @@ void lis_matvec_jad_u5_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -899,6 +955,7 @@ void lis_matvec_jad_u5_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie2-0;i+=1)
 		{
@@ -909,6 +966,7 @@ void lis_matvec_jad_u5_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie1-0;i+=1)
 		{
@@ -918,6 +976,7 @@ void lis_matvec_jad_u5_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -939,6 +998,7 @@ void lis_matvec_jad_u5_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie1-0;i+=1)
 		{
@@ -948,6 +1008,7 @@ void lis_matvec_jad_u5_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -965,6 +1026,7 @@ void lis_matvec_jad_u5_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie0-0;i+=1)
 		{
@@ -975,6 +1037,7 @@ void lis_matvec_jad_u5_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	yy = A->work;
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	for(i=0;i<n;i++)
 	{
@@ -1004,6 +1067,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	yy     = A->work;
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	for(i=0; i<np; i++)
 	{
@@ -1039,6 +1103,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie5-0;i+=1)
 		{
@@ -1052,6 +1117,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie4-0;i+=1)
 		{
@@ -1064,6 +1130,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie3-0;i+=1)
 		{
@@ -1075,6 +1142,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie2-0;i+=1)
 		{
@@ -1085,6 +1153,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie1-0;i+=1)
 		{
@@ -1094,6 +1163,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -1127,6 +1197,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie4-0;i+=1)
 		{
@@ -1139,6 +1210,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie3-0;i+=1)
 		{
@@ -1150,6 +1222,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie2-0;i+=1)
 		{
@@ -1160,6 +1233,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie1-0;i+=1)
 		{
@@ -1169,6 +1243,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -1198,6 +1273,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie3-0;i+=1)
 		{
@@ -1209,6 +1285,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie2-0;i+=1)
 		{
@@ -1219,6 +1296,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie1-0;i+=1)
 		{
@@ -1228,6 +1306,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -1253,6 +1332,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie2-0;i+=1)
 		{
@@ -1263,6 +1343,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie1-0;i+=1)
 		{
@@ -1272,6 +1353,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -1293,6 +1375,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie1-0;i+=1)
 		{
@@ -1302,6 +1385,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -1319,6 +1403,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie0-0;i+=1)
 		{
@@ -1329,6 +1414,7 @@ void lis_matvec_jad_u6_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	yy = A->work;
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	for(i=0;i<n;i++)
 	{
@@ -1359,6 +1445,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	yy     = A->work;
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	for(i=0; i<np; i++)
 	{
@@ -1398,6 +1485,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie6-0;i+=1)
 		{
@@ -1412,6 +1500,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie5-0;i+=1)
 		{
@@ -1425,6 +1514,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie4-0;i+=1)
 		{
@@ -1437,6 +1527,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie3-0;i+=1)
 		{
@@ -1448,6 +1539,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie2-0;i+=1)
 		{
@@ -1458,6 +1550,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie1-0;i+=1)
 		{
@@ -1467,6 +1560,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -1504,6 +1598,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie5-0;i+=1)
 		{
@@ -1517,6 +1612,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie4-0;i+=1)
 		{
@@ -1529,6 +1625,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie3-0;i+=1)
 		{
@@ -1540,6 +1637,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie2-0;i+=1)
 		{
@@ -1550,6 +1648,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie1-0;i+=1)
 		{
@@ -1559,6 +1658,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -1592,6 +1692,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie4-0;i+=1)
 		{
@@ -1604,6 +1705,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie3-0;i+=1)
 		{
@@ -1615,6 +1717,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie2-0;i+=1)
 		{
@@ -1625,6 +1728,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie1-0;i+=1)
 		{
@@ -1634,6 +1738,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -1663,6 +1768,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie3-0;i+=1)
 		{
@@ -1674,6 +1780,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie2-0;i+=1)
 		{
@@ -1684,6 +1791,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie1-0;i+=1)
 		{
@@ -1693,6 +1801,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -1718,6 +1827,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie2-0;i+=1)
 		{
@@ -1728,6 +1838,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie1-0;i+=1)
 		{
@@ -1737,6 +1848,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -1758,6 +1870,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie1-0;i+=1)
 		{
@@ -1767,6 +1880,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -1784,6 +1898,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie0-0;i+=1)
 		{
@@ -1794,6 +1909,7 @@ void lis_matvec_jad_u7_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	yy = A->work;
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	for(i=0;i<n;i++)
 	{
@@ -1825,6 +1941,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	yy     = A->work;
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	for(i=0; i<np; i++)
 	{
@@ -1868,6 +1985,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie7-0;i+=1)
 		{
@@ -1883,6 +2001,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie6-0;i+=1)
 		{
@@ -1897,6 +2016,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie5-0;i+=1)
 		{
@@ -1910,6 +2030,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie4-0;i+=1)
 		{
@@ -1922,6 +2043,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie3-0;i+=1)
 		{
@@ -1933,6 +2055,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie2-0;i+=1)
 		{
@@ -1943,6 +2066,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie1-0;i+=1)
 		{
@@ -1952,6 +2076,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -1993,6 +2118,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie6-0;i+=1)
 		{
@@ -2007,6 +2133,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie5-0;i+=1)
 		{
@@ -2020,6 +2147,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie4-0;i+=1)
 		{
@@ -2032,6 +2160,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie3-0;i+=1)
 		{
@@ -2043,6 +2172,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie2-0;i+=1)
 		{
@@ -2053,6 +2183,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie1-0;i+=1)
 		{
@@ -2062,6 +2193,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -2099,6 +2231,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie5-0;i+=1)
 		{
@@ -2112,6 +2245,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie4-0;i+=1)
 		{
@@ -2124,6 +2258,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie3-0;i+=1)
 		{
@@ -2135,6 +2270,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie2-0;i+=1)
 		{
@@ -2145,6 +2281,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie1-0;i+=1)
 		{
@@ -2154,6 +2291,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -2187,6 +2325,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie4-0;i+=1)
 		{
@@ -2199,6 +2338,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie3-0;i+=1)
 		{
@@ -2210,6 +2350,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie2-0;i+=1)
 		{
@@ -2220,6 +2361,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie1-0;i+=1)
 		{
@@ -2229,6 +2371,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -2258,6 +2401,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie3-0;i+=1)
 		{
@@ -2269,6 +2413,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie2-0;i+=1)
 		{
@@ -2279,6 +2424,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie1-0;i+=1)
 		{
@@ -2288,6 +2434,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -2313,6 +2460,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie2-0;i+=1)
 		{
@@ -2323,6 +2471,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie1-0;i+=1)
 		{
@@ -2332,6 +2481,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -2353,6 +2503,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie1-0;i+=1)
 		{
@@ -2362,6 +2513,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(;i<ie0-0;i+=1)
 		{
@@ -2379,6 +2531,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0;i<ie0-0;i+=1)
 		{
@@ -2389,6 +2542,7 @@ void lis_matvec_jad_u8_1(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	yy = A->work;
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	for(i=0;i<n;i++)
 	{

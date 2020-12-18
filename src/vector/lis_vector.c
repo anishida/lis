@@ -221,6 +221,7 @@ LIS_INT lis_vector_set_size(LIS_VECTOR vec, LIS_INT local_n, LIS_INT global_n)
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		#ifdef _OPENMP
 		#pragma omp parallel for private(i)
@@ -461,6 +462,7 @@ LIS_INT lis_vector_duplicateex(LIS_INT precision, void *A, LIS_VECTOR *vout)
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		#ifdef _OPENMP
 		#pragma omp parallel for private(i)
@@ -969,6 +971,7 @@ LIS_INT lis_vector_scatter(LIS_SCALAR value[], LIS_VECTOR v)
 
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)
@@ -989,6 +992,7 @@ LIS_INT lis_vector_scatter(LIS_SCALAR value[], LIS_VECTOR v)
 
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)
@@ -1018,6 +1022,7 @@ LIS_INT lis_vector_gather(LIS_VECTOR v, LIS_SCALAR value[])
 
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)
@@ -1044,6 +1049,7 @@ LIS_INT lis_vector_gather(LIS_VECTOR v, LIS_SCALAR value[])
 
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)

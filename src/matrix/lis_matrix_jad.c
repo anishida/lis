@@ -1652,6 +1652,7 @@ LIS_INT lis_matrix_convert_csr2jad(LIS_MATRIX Ain, LIS_MATRIX Aout)
 		maxnzrpe[my_rank] = 0;
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=is;i<ie;i++)
 		{
@@ -1738,6 +1739,7 @@ LIS_INT lis_matrix_convert_csr2jad(LIS_MATRIX Ain, LIS_MATRIX Aout)
 				js = ptr[my_rank*(maxnzr+1) + j];
 				je = ptr[my_rank*(maxnzr+1) + j+1];
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				for(i=js;i<je;i++)
 				{
 					l          = Ain->ptr[perm[is+(i-js)]] + j;
@@ -1992,6 +1994,7 @@ LIS_INT lis_matrix_convert_csr2jad(LIS_MATRIX Ain, LIS_MATRIX Aout)
 				js = ptr[my_rank*(maxnzr+1) + j];
 				je = ptr[my_rank*(maxnzr+1) + j+1];
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				for(i=js;i<je;i++)
 				{
 					l  = Ain->L->ptr[perm[i-js]] + j;
@@ -2004,6 +2007,7 @@ LIS_INT lis_matrix_convert_csr2jad(LIS_MATRIX Ain, LIS_MATRIX Aout)
 				js = ptr2[my_rank*(maxnzr2+1) + j];
 				je = ptr2[my_rank*(maxnzr2+1) + j+1];
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				for(i=js;i<je;i++)
 				{
 					l  = Ain->U->ptr[perm2[i-js]] + j;
@@ -2199,6 +2203,7 @@ LIS_INT lis_vector_sort_jad_order(LIS_MATRIX A, LIS_VECTOR v)
 	}
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)
@@ -2234,6 +2239,7 @@ LIS_INT lis_vector_sort_ascending_order(LIS_MATRIX A, LIS_VECTOR v)
 	}
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)

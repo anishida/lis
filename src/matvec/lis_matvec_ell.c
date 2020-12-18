@@ -57,6 +57,7 @@ void lis_matvec_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	{
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0; i<n; i++)
 		{
@@ -67,6 +68,7 @@ void lis_matvec_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			jj = j*n;
 			#ifdef USE_VEC_COMP
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			#endif
 			for(i=0;i<n;i++)
 			{
@@ -78,6 +80,7 @@ void lis_matvec_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			jj = j*n;
 			#ifdef USE_VEC_COMP
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			#endif
 			for(i=0;i<n;i++)
 			{
@@ -105,6 +108,7 @@ void lis_matvec_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			LIS_GET_ISIE(my_rank,nprocs,n,is,ie);
 			#ifdef USE_VEC_COMP
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			#endif
 			for(i=is;i<ie;i++)
 			{
@@ -115,6 +119,7 @@ void lis_matvec_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				jj = j*n;
 				#ifdef USE_VEC_COMP
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				#endif
 				for(i=is;i<ie;i++)
 				{
@@ -141,6 +146,7 @@ void lis_matvech_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	{
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(i=0; i<n; i++)
 		{
@@ -151,6 +157,7 @@ void lis_matvech_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			jj = j*n;
 			#ifdef USE_VEC_COMP
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			#endif
 			for(i=0;i<n;i++)
 			{
@@ -162,6 +169,7 @@ void lis_matvech_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			jj = j*n;
 			#ifdef USE_VEC_COMP
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			#endif
 			for(i=0;i<n;i++)
 			{
@@ -189,6 +197,7 @@ void lis_matvech_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 					jj = j*n;
 					#ifdef USE_VEC_COMP
 					#pragma cdir nodep
+					#pragma _NEC ivdep
 					#endif
 					for(i=is;i<ie;i++)
 					{
@@ -199,6 +208,7 @@ void lis_matvech_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				#pragma omp for 
 				#ifdef USE_VEC_COMP
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				#endif
 				for(i=0;i<np;i++)
 				{
@@ -215,6 +225,7 @@ void lis_matvech_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			maxnzr = A->maxnzr;
 			#ifdef USE_VEC_COMP
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			#endif
 			for(i=0; i<n; i++)
 			{
@@ -225,6 +236,7 @@ void lis_matvech_ell(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				jj = j*n;
 				#ifdef USE_VEC_COMP
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				#endif
 				for(i=0;i<n;i++)
 				{
