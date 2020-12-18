@@ -263,6 +263,25 @@ if test "$TARGET" != ""; then
                     ax_cv_c_compiler_vendor="ibm"
                     ax_f77_mangling="lower case, no underscore, no extra underscore"
 	  ;;
+# NEC Compiler for SX-Aurora
+          nec_sxaurora)  CC="ncc"
+                    F77="nfort"
+                    FC="nfort"
+                    MPICC="mpincc"
+                    MPIF77="mpinfort"
+                    MPIFC="mpinfort"
+                    AR="ar"
+                    RANLIB="true"
+                    CFLAGS=""
+                    FFLAGS=""
+                    FCFLAGS=""
+                    FCLDFLAGS=""
+                    LDFLAGS=""
+                    ac_cv_sizeof_void_p=8
+                    ax_f77_mangling="lower case, no underscore, extra underscore"
+                    ax_vector_machine="yes"
+                    OMPFLAG="-fopenmp"
+          ;;
 # NEC Compiler for SX-9
           nec_sx9)  CC="sxmpic++"
                     F77="sxmpif90"
