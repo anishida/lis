@@ -1,14 +1,19 @@
+Version 2.0.28  December 24, 2020
+
+  - Updated note on win32.mak in win/README.
+  - Added experimental support for Fujitsu A64FX and NEC SX-Aurora TSUBASA.
+
 Version 2.0.27  December 3, 2020
 
-  - Added note on win32.mak to win/README (thanks to Z. G. Liu).
+  - Added note on win32.mak to win/README (thanks to Zhengang Liu).
 
 Version 2.0.26  November 25, 2020
 
-  - Added option --disable-test to configure.ac (thanks to Fabian188).
+  - Added option --disable-test to configure.ac (thanks to Fabian Wein).
 
 Version 2.0.25  November 18, 2020
 
-  - Updated configure.ac for Apple Clang (thanks to Fabian188).
+  - Updated configure.ac for Apple Clang (thanks to Fabian Wein).
 
 Version 2.0.24  November 3, 2020
 

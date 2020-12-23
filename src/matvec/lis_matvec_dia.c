@@ -72,6 +72,7 @@ void lis_matvec_dia(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 			#ifdef USE_VEC_COMP
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			#endif
 			for(i=is;i<ie;i++)
 			{ 
@@ -90,6 +91,7 @@ void lis_matvec_dia(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				ii = js-is;
 				#ifdef USE_VEC_COMP
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				#endif
 				for(i=js;i<je;i++)
 				{ 
@@ -110,6 +112,7 @@ void lis_matvec_dia(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				ii = js-is;
 				#ifdef USE_VEC_COMP
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				#endif
 				for(i=js;i<je;i++)
 				{ 
@@ -140,6 +143,7 @@ void lis_matvec_dia(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 			#ifdef USE_VEC_COMP
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			#endif
 			for(i=is; i<ie; i++)
 			{
@@ -158,6 +162,7 @@ void lis_matvec_dia(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				ii = js-is;
 				#ifdef USE_VEC_COMP
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				#endif
 				for(i=js;i<je;i++)
 				{ 
@@ -196,6 +201,7 @@ void lis_matvech_dia(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 			#ifdef USE_VEC_COMP
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			#endif
 			for(i=is; i<ie; i++)
 			{
@@ -214,6 +220,7 @@ void lis_matvech_dia(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				ii = js-is;
 				#ifdef USE_VEC_COMP
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				#endif
 				for(i=js;i<je;i++)
 				{ 
@@ -223,6 +230,7 @@ void lis_matvech_dia(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			}
 			#ifdef USE_VEC_COMP
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			#endif
 			for(i=is;i<ie;i++)
 			{ 
@@ -241,6 +249,7 @@ void lis_matvech_dia(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				ii = js-is;
 				#ifdef USE_VEC_COMP
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				#endif
 				for(i=js;i<je;i++)
 				{ 
@@ -283,6 +292,7 @@ void lis_matvech_dia(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 					ii = js-is;
 					#ifdef USE_VEC_COMP
 					#pragma cdir nodep
+					#pragma _NEC ivdep
 					#endif
 					for(i=js;i<je;i++)
 					{ 
@@ -294,6 +304,7 @@ void lis_matvech_dia(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				#pragma omp for 
 				#ifdef USE_VEC_COMP
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				#endif
 				for(i=0;i<np;i++)
 				{
@@ -309,6 +320,7 @@ void lis_matvech_dia(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		#else
 			#ifdef USE_VEC_COMP
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			#endif
 			for(i=0;i<np;i++)
 			{
@@ -327,6 +339,7 @@ void lis_matvech_dia(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				ii = js;
 				#ifdef USE_VEC_COMP
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				#endif
 				for(i=js;i<je;i++)
 				{ 

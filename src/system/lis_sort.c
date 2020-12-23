@@ -385,6 +385,7 @@ void lis_sort_jad(LIS_INT is, LIS_INT ie, LIS_INT maxnzr, LIS_INT *i1, LIS_INT *
 
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	for(i=0;i<maxnzr+2;i++)
 	{
@@ -401,6 +402,7 @@ void lis_sort_jad(LIS_INT is, LIS_INT ie, LIS_INT maxnzr, LIS_INT *i1, LIS_INT *
 	}
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	for(i=0;i<maxnzr+2;i++)
 	{
@@ -416,6 +418,7 @@ void lis_sort_jad(LIS_INT is, LIS_INT ie, LIS_INT maxnzr, LIS_INT *i1, LIS_INT *
 	{
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
+		#pragma _NEC ivdep
 		#endif
 		for(j=iw2[i];j<iw2[i+1];j++)
 		{

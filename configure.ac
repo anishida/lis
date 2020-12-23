@@ -4,7 +4,7 @@
 
 # General Configurations
 
-AC_INIT(lis, 2.0.27, devel@ssisc.org)
+AC_INIT(lis, 2.0.28, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -263,45 +263,6 @@ if test "$TARGET" != ""; then
                     ax_cv_c_compiler_vendor="ibm"
                     ax_f77_mangling="lower case, no underscore, no extra underscore"
 	  ;;
-# NEC Compiler for SX-9
-          nec_sx9)  CC="sxmpic++"
-                    F77="sxmpif90"
-                    FC="sxmpif90"
-                    MPICC="$CC"
-                    MPIF77="$F77"
-                    MPIFC="$FC"
-                    AR="ar"
-                    RANLIB="true"
-                    CFLAGS=""
-                    FFLAGS=""
-                    FCFLAGS=""
-                    FCLDFLAGS=""
-                    LDFLAGS=""
-                    ac_cv_sizeof_void_p=8
-                    ax_f77_mangling="lower case, no underscore, extra underscore"
-                    ax_vector_machine="yes"
-                    OMPFLAG="-Popenmp"
-          ;;
-# NEC Cross Compiler for SX-9
-          nec_sx9_cross) CC="sxmpic++"
-                    F77="sxmpif90"
-                    FC="sxmpif90"
-                    MPICC="$CC"
-                    MPIF77="$F77"
-                    MPIFC="$FC"
-                    AR="sxar"
-                    RANLIB="true"
-                    CFLAGS=""
-                    FFLAGS=""
-                    FCFLAGS=""
-                    FCLDFLAGS=""
-                    LDFLAGS=""
-                    ac_cv_sizeof_void_p=8
-                    cross_compiling="yes"
-                    ax_f77_mangling="lower case, no underscore, extra underscore"
-                    ax_vector_machine="yes"
-                    OMPFLAG="-Popenmp"
-          ;;
 # NEC Compiler for SX-6i
 	  nec_sx6i) CC="c++"
 	            F77="f90"
@@ -353,6 +314,64 @@ if test "$TARGET" != ""; then
                     ax_vector_machine="yes"
                     OMPFLAG="-Popenmp"
 	  ;;
+# NEC Compiler for SX-9
+          nec_sx9)  CC="sxmpic++"
+                    F77="sxmpif90"
+                    FC="sxmpif90"
+                    MPICC="$CC"
+                    MPIF77="$F77"
+                    MPIFC="$FC"
+                    AR="ar"
+                    RANLIB="true"
+                    CFLAGS=""
+                    FFLAGS=""
+                    FCFLAGS=""
+                    FCLDFLAGS=""
+                    LDFLAGS=""
+                    ac_cv_sizeof_void_p=8
+                    ax_f77_mangling="lower case, no underscore, extra underscore"
+                    ax_vector_machine="yes"
+                    OMPFLAG="-Popenmp"
+          ;;
+# NEC Cross Compiler for SX-9
+          nec_sx9_cross) CC="sxmpic++"
+                    F77="sxmpif90"
+                    FC="sxmpif90"
+                    MPICC="$CC"
+                    MPIF77="$F77"
+                    MPIFC="$FC"
+                    AR="sxar"
+                    RANLIB="true"
+                    CFLAGS=""
+                    FFLAGS=""
+                    FCFLAGS=""
+                    FCLDFLAGS=""
+                    LDFLAGS=""
+                    ac_cv_sizeof_void_p=8
+                    cross_compiling="yes"
+                    ax_f77_mangling="lower case, no underscore, extra underscore"
+                    ax_vector_machine="yes"
+                    OMPFLAG="-Popenmp"
+          ;;
+# NEC Compiler for SX-Aurora
+          nec_sxaurora)  CC="ncc"
+                    F77="nfort"
+                    FC="nfort"
+                    MPICC="mpincc"
+                    MPIF77="mpinfort"
+                    MPIFC="mpinfort"
+                    AR="ar"
+                    RANLIB="true"
+                    CFLAGS=""
+                    FFLAGS=""
+                    FCFLAGS=""
+                    FCLDFLAGS=""
+                    LDFLAGS=""
+                    ac_cv_sizeof_void_p=8
+                    ax_f77_mangling="lower case, no underscore, extra underscore"
+                    ax_vector_machine="yes"
+                    OMPFLAG="-fopenmp"
+          ;;
 # Intel Compiler for MIC
           intel_mic) CC="icc"
                     F77="ifort"
@@ -432,7 +451,7 @@ enable_dependency_tracking="no"
 
 ########## Check C Compilers ##########
 cflags_save="$CFLAGS"
-AC_PROG_CC([icc ecc xlc_r xlc fcc pgcc pathcc cc gcc])
+AC_PROG_CC([icc ecc xlc_r xlc fcc pgcc pathcc cc gcc clang])
 CFLAGS="$cflags_save"
 if test "$TARGET" = ""; then
   if test "$CC" = "fcc"; then

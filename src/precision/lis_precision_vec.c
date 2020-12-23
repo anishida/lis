@@ -97,6 +97,7 @@ LIS_INT lis_vector_axpyex_mmm(LIS_QUAD_PTR alpha, LIS_VECTOR vx, LIS_VECTOR vy)
 	aa.lo = &vx->work[6];
 	#ifndef USE_FMA2_SSE2
 	    #pragma cdir nodep
+	    #pragma _NEC ivdep
 		#pragma omp parallel for private(i,p1,p2,tq,bhi,blo,chi,clo,sh,sl,th,tl,eh,el)
 		for(i=0; i<n; i++)
 		{
@@ -159,6 +160,7 @@ LIS_INT lis_vector_axpyzex_mmmm(LIS_QUAD_PTR alpha, LIS_VECTOR vx, LIS_VECTOR vy
 	aa.lo = &vx->work[6];
 	#ifndef USE_FMA2_SSE2
 	    #pragma cdir nodep
+	    #pragma _NEC ivdep	
 		#pragma omp parallel for private(i,p1,p2,tq,bhi,blo,chi,clo,sh,sl,th,tl,eh,el)
 		for(i=0; i<n; i++)
 		{
@@ -218,6 +220,7 @@ LIS_INT lis_vector_xpayex_mmm(LIS_VECTOR vx, LIS_QUAD_PTR alpha, LIS_VECTOR vy)
 	aa.lo = &vx->work[6];
 	#ifndef USE_FMA2_SSE2
 	    #pragma cdir nodep
+	    #pragma _NEC ivdep	
 		#pragma omp parallel for private(i,p1,p2,tq,bhi,blo,chi,clo,sh,sl,th,tl,eh,el)
 		for(i=0; i<n; i++)
 		{
@@ -311,6 +314,7 @@ LIS_INT lis_vector_dotex_mmm(LIS_VECTOR vx, LIS_VECTOR vy, LIS_QUAD_PTR *val)
 			#ifndef USE_FMA2_SSE2
 				gt[my_rank*LIS_VEC_TMP_PADD] = gt[my_rank*LIS_VEC_TMP_PADD+1] = 0.0;
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				for(i=is;i<ie;i++)
 				{
 					LIS_QUAD_FMA(gt[my_rank*LIS_VEC_TMP_PADD],gt[my_rank*LIS_VEC_TMP_PADD+1],gt[my_rank*LIS_VEC_TMP_PADD],gt[my_rank*LIS_VEC_TMP_PADD+1],y[i],yl[i],x[i],xl[i]);
@@ -320,6 +324,7 @@ LIS_INT lis_vector_dotex_mmm(LIS_VECTOR vx, LIS_VECTOR vy, LIS_QUAD_PTR *val)
 				gt[my_rank*LIS_VEC_TMP_PADD+2] = gt[my_rank*LIS_VEC_TMP_PADD+3] = 0.0;
 				#ifdef USE_VEC_COMP
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				#endif
 				for(i=is;i<ie-1;i+=2)
 				{
@@ -345,6 +350,7 @@ LIS_INT lis_vector_dotex_mmm(LIS_VECTOR vx, LIS_VECTOR vy, LIS_QUAD_PTR *val)
 		#ifndef USE_FMA2_SSE2
 			dotm.hi[0] = dotm.lo[0] = 0.0;
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			for(i=0;i<n;i++)
 			{
 				LIS_QUAD_FMA(dotm.hi[0],dotm.lo[0],dotm.hi[0],dotm.lo[0],y[i],yl[i],x[i],xl[i]);
@@ -420,6 +426,7 @@ LIS_INT lis_vector_nrm2ex_mm(LIS_VECTOR vx, LIS_QUAD_PTR *val)
 			#ifndef USE_FMA2_SSE2
 				gt[my_rank*LIS_VEC_TMP_PADD] = gt[my_rank*LIS_VEC_TMP_PADD+1] = 0.0;
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				for(i=is;i<ie;i++)
 				{
 					LIS_QUAD_FSA(gt[my_rank*LIS_VEC_TMP_PADD],gt[my_rank*LIS_VEC_TMP_PADD+1],gt[my_rank*LIS_VEC_TMP_PADD],gt[my_rank*LIS_VEC_TMP_PADD+1],x[i],xl[i]);
@@ -429,6 +436,7 @@ LIS_INT lis_vector_nrm2ex_mm(LIS_VECTOR vx, LIS_QUAD_PTR *val)
 				gt[my_rank*LIS_VEC_TMP_PADD+2] = gt[my_rank*LIS_VEC_TMP_PADD+3] = 0.0;
 				#ifdef USE_VEC_COMP
 				#pragma cdir nodep
+				#pragma _NEC ivdep
 				#endif
 				for(i=is;i<ie-1;i+=2)
 				{
@@ -454,6 +462,7 @@ LIS_INT lis_vector_nrm2ex_mm(LIS_VECTOR vx, LIS_QUAD_PTR *val)
 		#ifndef USE_FMA2_SSE2
 			dotm.hi[0] = dotm.lo[0] = 0.0;
 			#pragma cdir nodep
+			#pragma _NEC ivdep
 			for(i=0;i<n;i++)
 			{
 				LIS_QUAD_FSA(dotm.hi[0],dotm.lo[0],dotm.hi[0],dotm.lo[0],x[i],xl[i]);
@@ -507,6 +516,7 @@ LIS_INT lis_vector_copyex_mm(LIS_VECTOR vx, LIS_VECTOR vy)
 	yl  = vy->value_lo;
 	#ifdef USE_VEC_COMP
     #pragma cdir nodep
+    #pragma _NEC ivdep	
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)
@@ -535,6 +545,7 @@ LIS_INT lis_vector_copyex_nm(LIS_VECTOR vx, LIS_VECTOR vy)
 	yl  = vy->value_lo;
 	#ifdef USE_VEC_COMP
     #pragma cdir nodep
+    #pragma _NEC ivdep
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)
@@ -562,6 +573,7 @@ LIS_INT lis_vector_copyex_mn(LIS_VECTOR vx, LIS_VECTOR vy)
 	y   = vy->value;
 	#ifdef USE_VEC_COMP
     #pragma cdir nodep
+    #pragma _NEC ivdep	
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)
@@ -591,6 +603,7 @@ LIS_INT lis_vector_scaleex_nm(LIS_SCALAR alpha, LIS_VECTOR vx)
 	aa = vx->work;
 	#ifndef USE_FMA2_SSE2
 	    #pragma cdir nodep
+	    #pragma _NEC ivdep	
 		#ifndef USE_SSE2
 			#pragma omp parallel for private(i,p1,p2,tq,bhi,blo,chi,clo,sh,eh,sl,el,th,tl)
 		#else
@@ -653,6 +666,7 @@ LIS_INT lis_vector_scaleex_mm(LIS_QUAD_PTR alpha, LIS_VECTOR vx)
 	aa.lo = &vx->work[2];
 	#ifndef USE_FMA2_SSE2
 	    #pragma cdir nodep
+	    #pragma _NEC ivdep		    	
 		#pragma omp parallel for private(i,p1,p2,tq,bhi,blo,chi,clo,sh,eh,sl,el,th,tl)
 		for(i=0; i<n; i++)
 		{
@@ -704,6 +718,7 @@ LIS_INT lis_vector_set_allex_nm(LIS_SCALAR alpha, LIS_VECTOR vx)
 	xl  = vx->value_lo;
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)
@@ -736,6 +751,7 @@ LIS_INT lis_vector_reciprocalex_m(LIS_VECTOR vx)
 	one_lo = 0.0;
 	#ifdef USE_VEC_COMP
     #pragma cdir nodep
+    #pragma _NEC ivdep		
 	#endif
 	#ifdef _OPENMP
 	#ifndef USE_SSE2

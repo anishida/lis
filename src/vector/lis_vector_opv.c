@@ -83,7 +83,8 @@ LIS_INT lis_vector_swap(LIS_VECTOR vx, LIS_VECTOR vy)
 	x = vx->value;
 	y = vy->value;
 	#ifdef USE_VEC_COMP
-    #pragma cdir nodep
+	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)
@@ -124,7 +125,8 @@ LIS_INT lis_vector_copy(LIS_VECTOR vx, LIS_VECTOR vy)
 	x = vx->value;
 	y = vy->value;
 	#ifdef USE_VEC_COMP
-    #pragma cdir nodep
+	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)
@@ -164,6 +166,7 @@ LIS_INT lis_vector_axpy(LIS_SCALAR alpha, LIS_VECTOR vx, LIS_VECTOR vy)
 	y    = vy->value;
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)
@@ -206,6 +209,7 @@ LIS_INT lis_vector_xpay(LIS_VECTOR vx, LIS_SCALAR alpha, LIS_VECTOR vy)
 	#endif
 	#ifdef USE_VEC_COMP
 	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	for(i=0; i<n; i++)
 	{
@@ -241,7 +245,8 @@ LIS_INT lis_vector_axpyz(LIS_SCALAR alpha, LIS_VECTOR vx, LIS_VECTOR vy, LIS_VEC
 	y    = vy->value;
 	z    = vz->value;
 	#ifdef USE_VEC_COMP
-    #pragma cdir nodep
+	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)
@@ -271,7 +276,8 @@ LIS_INT lis_vector_scale(LIS_SCALAR alpha, LIS_VECTOR vx)
 
 	x = vx->value;
 	#ifdef USE_VEC_COMP
-    #pragma cdir nodep
+	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)
@@ -311,7 +317,8 @@ LIS_INT lis_vector_pmul(LIS_VECTOR vx,LIS_VECTOR vy,LIS_VECTOR vz)
 	y    = vy->value;
 	z    = vz->value;
 	#ifdef USE_VEC_COMP
-    #pragma cdir nodep
+	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)
@@ -350,7 +357,8 @@ LIS_INT lis_vector_pdiv(LIS_VECTOR vx,LIS_VECTOR vy,LIS_VECTOR vz)
 	y    = vy->value;
 	z    = vz->value;
 	#ifdef USE_VEC_COMP
-    #pragma cdir nodep
+	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)
@@ -380,7 +388,8 @@ LIS_INT lis_vector_set_all(LIS_SCALAR alpha, LIS_VECTOR vx)
 
 	x  = vx->value;
 	#ifdef USE_VEC_COMP
-    #pragma cdir nodep
+	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)
@@ -410,7 +419,8 @@ LIS_INT lis_vector_abs(LIS_VECTOR vx)
 	x = vx->value;
 	n = vx->n;
 	#ifdef USE_VEC_COMP
-    #pragma cdir nodep
+	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)
@@ -439,7 +449,8 @@ LIS_INT lis_vector_reciprocal(LIS_VECTOR vx)
 	x = vx->value;
 	n = vx->n;
 	#ifdef USE_VEC_COMP
-    #pragma cdir nodep
+	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)
@@ -468,7 +479,8 @@ LIS_INT lis_vector_conjugate(LIS_VECTOR vx)
 	x = vx->value;
 	n = vx->n;
 	#ifdef USE_VEC_COMP
-    #pragma cdir nodep
+	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)
@@ -499,7 +511,8 @@ LIS_INT lis_vector_shift(LIS_SCALAR sigma, LIS_VECTOR vx)
 	x = vx->value;
 	n = vx->n;
 	#ifdef USE_VEC_COMP
-    #pragma cdir nodep
+	#pragma cdir nodep
+	#pragma _NEC ivdep
 	#endif
 	#ifdef _OPENMP
 	#pragma omp parallel for private(i)
