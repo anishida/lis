@@ -10,11 +10,11 @@ To build the library, run the following command:
 
 > nmake 
 
-If win32.mak is not available in your computing environment, 
+If win32.mak is not found in your computing environment, 
 download Windows SDK 7.1 from Microsoft's home page and install it.
 Then set path to the directory where win32.mak locates
 (C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\Include,
-for example) by adding it to your environment variables.
+for example) by adding it to your environment variable 'Include'.
 
 To ensure that the library has been built successfully, enter
 
