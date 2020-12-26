@@ -914,28 +914,25 @@ if test "$enable_mpi" = "yes"; then
          FFLAGS="$FFLAGS -DUSE_MPI"
          ;;
   esac
+  if test "$build_vendor" = "apple"; then
+    if test -z "$MPICC"; then   
+      CC="mpicc"
+    fi
+    if test -z "$MPIFC"; then   
+      FC="mpif90"
+    fi
+    if test "$enable_32bit" = "yes"; then
+      CFLAGS="$CFLAGS -m32"
+      FCFLAGS="$FCFLAGS -m32"
+    else
+      CFLAGS="$CFLAGS -m64"
+      FCFLAGS="$FCFLAGS -m64"
+    fi
+    ax_f77_mangling="lower case, underscore, no extra underscore"      
+  fi
 else
   enable_mpi="no"
 fi
-
-if test "$build_vendor" = "apple"; then
-   if test "$enable_mpi" = "yes"; then
-      if test -z "$CC"; then   
-         CC="mpicc"
-      fi
-      if test -z "$FC"; then   
-         FC="mpif90"
-      fi
-      if test "$enable_32bit" = "yes"; then
-         CFLAGS="$CFLAGS -m32"
-         FCFLAGS="$FCFLAGS -m32"
-      else
-         CFLAGS="$CFLAGS -m64"
-         FCFLAGS="$FCFLAGS -m64"
-      fi
-      ax_f77_mangling="lower case, underscore, no extra underscore"      
-   fi
-fi 
 
 if test "$enable_omp" = "yes"; then
   if test "$OMPFLAG" != ""; then
