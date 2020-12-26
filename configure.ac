@@ -917,20 +917,23 @@ else
 fi
 
 if test "$build_vendor" = "apple"; then
-   if test "$enable_32bit" = "yes"; then
-      if test "$enable_mpi" = "yes"; then
-      	  CC="mpicc -m32"
-	  FC="mpif90 -m32"
-	  ax_f77_mangling="lower case, underscore, no extra underscore"
+   if test "$enable_mpi" = "yes"; then
+      if test -z "$CC"; then   
+         CC="mpicc"
       fi
-   else
-      if test "$enable_mpi" = "yes"; then
-      	  CC="mpicc -m64"
-	  FC="mpif90 -m64"
-	  ax_f77_mangling="lower case, underscore, no extra underscore"
+      if test -z "$FC"; then   
+         FC="mpif90"
       fi
+      if test "$enable_32bit" = "yes"; then
+         CFLAGS="$CFLAGS -m32"
+         FCFLAGS="$FCFLAGS -m32"
+      else
+         CFLAGS="$CFLAGS -m64"
+         FCFLAGS="$FCFLAGS -m64"
+      fi
+      ax_f77_mangling="lower case, underscore, no extra underscore"      
    fi
-fi
+fi 
 
 if test "$enable_omp" = "yes"; then
   if test "$OMPFLAG" != ""; then
