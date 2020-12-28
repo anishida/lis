@@ -1,3 +1,7 @@
+Version 2.0.29  December 28, 2020
+
+  - Fixed MPI related bug in configure.ac (thanks to Carlo de Falco).
+
 Version 2.0.28  December 24, 2020
 
   - Updated note on win32.mak in win/README.
@@ -710,12 +714,12 @@ Version 1.5.50  February 9, 2015
 
 Version 1.5.49  February 6, 2015
 
-  - Updated documents (thanks to Carlo De Falco).
+  - Updated documents (thanks to Carlo de Falco).
 
 Version 1.5.48  February 6, 2015
 
   - Fixed exception handling bug in lis_matrix_set_size() (thanks to
-    Carlo De Falco).
+    Carlo de Falco).
 
 Version 1.5.47  January 10, 2015
 
