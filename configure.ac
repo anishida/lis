@@ -4,7 +4,7 @@
 
 # General Configurations
 
-AC_INIT(lis, 2.0.28, devel@ssisc.org)
+AC_INIT(lis, 2.0.29, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -423,7 +423,7 @@ fi
 
 # GNU Compiler for Apple Mac OS X
 if test "$build_vendor" = "apple"; then
-   if test -z "$CC"; then   
+   if test -z "$CC"; then
       CC="gcc"
    fi
    if test -z "$FC"; then   
@@ -914,22 +914,6 @@ if test "$enable_mpi" = "yes"; then
   esac
 else
   enable_mpi="no"
-fi
-
-if test "$build_vendor" = "apple"; then
-   if test "$enable_32bit" = "yes"; then
-      if test "$enable_mpi" = "yes"; then
-      	  CC="mpicc -m32"
-	  FC="mpif90 -m32"
-	  ax_f77_mangling="lower case, underscore, no extra underscore"
-      fi
-   else
-      if test "$enable_mpi" = "yes"; then
-      	  CC="mpicc -m64"
-	  FC="mpif90 -m64"
-	  ax_f77_mangling="lower case, underscore, no extra underscore"
-      fi
-   fi
 fi
 
 if test "$enable_omp" = "yes"; then
