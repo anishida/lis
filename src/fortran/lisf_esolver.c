@@ -235,12 +235,38 @@ void lis_esolver_get_evalues_f(LIS_ESOLVER_F *esolver, LIS_VECTOR v, LIS_INT *ie
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_esolver_get_specific_evalue_f"
+void lis_esolver_get_specific_evalue_f(LIS_ESOLVER_F *esolver, LIS_INT *mode, LIS_SCALAR *evalue, LIS_INT *ierr)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	*ierr = lis_esolver_get_specific_evalue((LIS_ESOLVER)LIS_V2P(esolver),*mode,evalue);
+	if( *ierr )	return;
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_esolver_get_evectors_f"
 void lis_esolver_get_evectors_f(LIS_ESOLVER_F *esolver, LIS_MATRIX_F A, LIS_INT *ierr)
 {
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_esolver_get_evectors((LIS_ESOLVER)LIS_V2P(esolver),(LIS_MATRIX)LIS_V2P(A));
+	if( *ierr )	return;
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_get_specific_evector_f"
+void lis_esolver_get_specific_evector_f(LIS_ESOLVER_F *esolver, LIS_INT *mode, LIS_VECTOR x, LIS_INT *ierr)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	*ierr = lis_esolver_get_specific_evector((LIS_ESOLVER)LIS_V2P(esolver),*mode,(LIS_VECTOR)LIS_V2P(x));
 	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
@@ -261,12 +287,38 @@ void lis_esolver_get_residualnorms_f(LIS_ESOLVER_F *esolver, LIS_VECTOR v, LIS_I
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_esolver_get_specific_residualnorm_f"
+void lis_esolver_get_specific_residualnorm_f(LIS_ESOLVER_F *esolver, LIS_INT *mode, LIS_REAL *residual, LIS_INT *ierr)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	*ierr = lis_esolver_get_specific_residualnorm((LIS_ESOLVER)LIS_V2P(esolver),*mode,residual);
+	if( *ierr )	return;
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_esolver_get_iters_f"
 void lis_esolver_get_iters_f(LIS_ESOLVER_F *esolver, LIS_VECTOR v, LIS_INT *ierr)
 {
 	LIS_DEBUG_FUNC_IN;
 
 	*ierr = lis_esolver_get_iters((LIS_ESOLVER)LIS_V2P(esolver),(LIS_VECTOR)LIS_V2P(v));
+	if( *ierr )	return;
+
+	LIS_DEBUG_FUNC_OUT;
+	return;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_get_specific_iter_f"
+void lis_esolver_get_specific_iter_f(LIS_ESOLVER_F *esolver, LIS_INT *mode, LIS_INT *iter, LIS_INT *ierr)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	*ierr = lis_esolver_get_specific_iter((LIS_ESOLVER)LIS_V2P(esolver),*mode,iter);
 	if( *ierr )	return;
 
 	LIS_DEBUG_FUNC_OUT;
