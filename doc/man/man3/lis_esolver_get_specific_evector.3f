@@ -1,0 +1,33 @@
+.TH lis_esolver_get_specific_evector 3f "24 Jan 2021" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_esolver_get_specific_evector \- get the specified eigenvector from the eigensolver
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_esolver_get_specific_evector\fR(\fBLIS_ESOLVER esolver\fR, \fBLIS_INT mode\fR, \fBLIS_VECTOR x\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the specified eigenvector from the eigensolver.
+
+.SH INPUT
+
+.IP "\fBesolver\fR"
+The eigensolver
+
+.IP "\fBmode\fR"
+The mode number of the eigenvector
+
+.SH OUTPUT
+
+.IP "\fBx\fR"
+The eigenvector
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+
