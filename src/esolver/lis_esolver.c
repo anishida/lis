@@ -1179,6 +1179,24 @@ LIS_INT lis_esolver_get_evalues(LIS_ESOLVER esolver, LIS_VECTOR v)
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_esolver_get_specific_evalue"
+LIS_INT lis_esolver_get_specific_evalue(LIS_ESOLVER esolver, LIS_INT mode, LIS_SCALAR *evalue)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	if ( esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_SI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_LI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_AI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GSI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GLI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GAI)
+	{
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_ESOLVER is %D (Set Subspace, Lanczos, Arnoldi, Generalized Subspace, Generalized Lanczos, or Generalized Arnoldi)\n", esolver->options[LIS_EOPTIONS_ESOLVER]);
+		return LIS_ERR_ILL_ARG;
+	}
+
+	*evalue = esolver->evalue[mode];
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_esolver_get_evectors"
 LIS_INT lis_esolver_get_evectors(LIS_ESOLVER esolver, LIS_MATRIX M)
 {
@@ -1221,6 +1239,24 @@ LIS_INT lis_esolver_get_evectors(LIS_ESOLVER esolver, LIS_MATRIX M)
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_esolver_get_specific_evector"
+LIS_INT lis_esolver_get_specific_evector(LIS_ESOLVER esolver, LIS_INT mode, LIS_VECTOR x)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	if ( esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_SI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_LI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_AI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GSI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GLI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GAI)
+	{
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_ESOLVER is %D (Set Subspace, Lanczos, Arnoldi, Generalized Subspace, Generalized Lanczos, or Generalized Arnoldi)\n", esolver->options[LIS_EOPTIONS_ESOLVER]);
+		return LIS_ERR_ILL_ARG;
+	}
+
+	lis_vector_copy(esolver->evector[mode],x);
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_esolver_get_residualnorms"
 LIS_INT lis_esolver_get_residualnorms(LIS_ESOLVER esolver, LIS_VECTOR v)
 {
@@ -1245,6 +1281,24 @@ LIS_INT lis_esolver_get_residualnorms(LIS_ESOLVER esolver, LIS_VECTOR v)
 	  if( v->origin ) ii++;
 	  lis_vector_set_value(LIS_INS_VALUE,ii+is,esolver->resid[i+is],v);
 	}
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_get_specific_residualnorm"
+LIS_INT lis_esolver_get_specific_residualnorm(LIS_ESOLVER esolver, LIS_INT mode, LIS_REAL *residual)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	if ( esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_SI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_LI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_AI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GSI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GLI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GAI)
+	{
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_ESOLVER is %D (Set Subspace, Lanczos, Arnoldi, Generalized Subspace, Generalized Lanczos, or Genralized Arnoldi)\n", esolver->options[LIS_EOPTIONS_ESOLVER]);
+		return LIS_ERR_ILL_ARG;
+	}
+
+	*residual  = esolver->resid[mode];
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
@@ -1277,6 +1331,24 @@ LIS_INT lis_esolver_get_iters(LIS_ESOLVER esolver, LIS_VECTOR v)
 	}
 
 	v->intvalue = 1;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_get_specific_iter"
+LIS_INT lis_esolver_get_specific_iter(LIS_ESOLVER esolver, LIS_INT mode, LIS_INT *iter)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	if ( esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_SI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_LI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_AI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GSI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GLI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GAI)
+	{
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_ESOLVER is %D (Set Subspace, Lanczos, Arnoldi, Generalized Subspace, Generalized Lanczos, or Genralized Arnoldi)\n", esolver->options[LIS_EOPTIONS_ESOLVER]);
+		return LIS_ERR_ILL_ARG;
+	}
+
+	*iter = esolver->iter[mode];
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;

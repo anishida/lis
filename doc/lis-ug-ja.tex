@@ -2117,18 +2117,18 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 標準固有値問題$Ax=\lambda x$を解くには, 関数
 \begin{itemize}
 \item \verb|C       LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x,|\\
-      \verb|         LIS_REAL evalue, LIS_ESOLVER esolver)|
+      \verb|         LIS_SCALAR evalue, LIS_ESOLVER esolver)|
 \item \verb|Fortran subroutine lis_esolve(LIS_MATRIX A, LIS_VECTOR x,|\\
-      \verb|         LIS_ESOLVER esolver, LIS_INTEGER ierr)|
+      \verb|         LIS_SCALAR evalue, LIS_ESOLVER esolver, LIS_INTEGER ierr)|
 \end{itemize}
 を用いる. 
 
 一般化固有値問題$Ax=\lambda Bx$を解くには, 関数
 \begin{itemize}
 \item \verb|C       LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B,|\\
-      \verb|         LIS_VECTOR x, LIS_REAL evalue, LIS_ESOLVER esolver)|
+      \verb|         LIS_VECTOR x, LIS_SCALAR evalue, LIS_ESOLVER esolver)|
 \item \verb|Fortran subroutine lis_gesolve(LIS_MATRIX A, LIS_MATRIX B,|\\
-      \verb|         LIS_VECTOR x, LIS_ESOLVER esolver, LIS_INTEGER ierr)|
+      \verb|         LIS_VECTOR x, LIS_SCALAR evalue, LIS_ESOLVER esolver, LIS_INTEGER ierr)|
 \end{itemize}
 を用いる. 
 
@@ -6039,6 +6039,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \item[\tt ierr] リターンコード
 \end{namelist}
 
+\newpage
 \subsubsection{lis\_solve}
 \begin{screen}
 \verb|C       LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x,|\\
@@ -6556,9 +6557,9 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \subsubsection{lis\_esolve}
 \begin{screen}
 \verb|C       LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x,|\\
-\verb|         LIS_REAL evalue, LIS_ESOLVER esolver)|\\
+\verb|         LIS_SCALAR evalue, LIS_ESOLVER esolver)|\\
 \verb|Fortran subroutine lis_esolve(LIS_MATRIX A, LIS_VECTOR x,|\\
-\verb|         LIS_ESOLVER esolver, LIS_INTEGER ierr)|
+\verb|         LIS_SCALAR evalue, LIS_ESOLVER esolver, LIS_INTEGER ierr)|
 \end{screen}
 {\bf 機能}\\
 \indent
@@ -6573,13 +6574,15 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \end{namelist}
 {\bf 出力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt evalue] モード0の固有値
-\item[\tt x] 固有値に対応する固有ベクトル
+\item[\tt evalue] 既定の固有値
+\item[\tt x] 対応する固有ベクトル
 \item[\tt esolver] 反復回数, 経過時間等の情報
 \item[\tt ierr] リターンコード
 \end{namelist}
 {\bf 注釈}\\
 \indent
+既定の固有値はモード0の固有値である. 以下の節では, 既定の固有対とはモード0の固有値及び対応する固有ベクトルを指す.
+
 オプション {\tt -initx\_ones \{false|0\}}が指定された場合,
 初期ベクトルは引数{\tt x}により与えられる.
 その他の場合には，初期ベクトルのすべての要素の値は$0$に設定される. 
@@ -6592,9 +6595,9 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \subsubsection{lis\_gesolve}
 \begin{screen}
 \verb|C       LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B,|\\
-\verb|         LIS_VECTOR x, LIS_REAL evalue, LIS_ESOLVER esolver)|\\
+\verb|         LIS_VECTOR x, LIS_SCALAR evalue, LIS_ESOLVER esolver)|\\
 \verb|Fortran subroutine lis_gesolve(LIS_MATRIX A, LIS_MATRIX B,|\\
-\verb|         LIS_VECTOR x, LIS_ESOLVER esolver, LIS_INTEGER ierr)|
+\verb|         LIS_VECTOR x, LIS_SCALAR evalue, LIS_ESOLVER esolver, LIS_INTEGER ierr)|
 \end{screen}
 {\bf 機能}\\
 \indent
@@ -6610,8 +6613,8 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \end{namelist}
 {\bf 出力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt evalue] モード0の固有値
-\item[\tt x] 固有値に対応する固有ベクトル
+\item[\tt evalue] 既定の固有値
+\item[\tt x] 既定の固有ベクトル
 \item[\tt esolver] 反復回数, 経過時間等の情報
 \item[\tt ierr] リターンコード
 \end{namelist}
@@ -6634,7 +6637,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \end{screen}
 {\bf 機能}\\
 \indent
-指定された固有対の状態をソルバから取得する. 
+状態をソルバから取得する. 
 \\ \\
 \noindent
 {\bf 入力}
@@ -6658,7 +6661,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \end{screen}
 {\bf 機能}\\
 \indent
-指定された固有対の反復回数をソルバから取得する. 
+既定の固有対の反復回数をソルバから取得する. 
 \\ \\
 \noindent
 {\bf 入力}
@@ -6680,7 +6683,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \end{screen}
 {\bf 機能}\\
 \indent
-指定された固有対の反復回数に関する詳細情報をソルバから取得する. 
+既定の固有対の反復回数に関する詳細情報をソルバから取得する. 
 \\ \\
 \noindent
 {\bf 入力}
@@ -6703,7 +6706,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \end{screen}
 {\bf 機能}\\
 \indent
-指定された固有対の経過時間をソルバから取得する. 
+既定の固有対の経過時間をソルバから取得する. 
 \\ \\
 \noindent
 {\bf 入力}
@@ -6726,7 +6729,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \end{screen}
 {\bf 機能}\\
 \indent
-指定された固有対の経過時間に関する詳細情報をソルバから取得する. 
+既定の固有対の経過時間に関する詳細情報をソルバから取得する. 
 \\ \\
 \noindent
 {\bf 入力}
@@ -6752,7 +6755,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \end{screen}
 {\bf 機能}\\
 \indent
-指定された固有対の相対残差ノルム$||\lambda x-(B^{-1})Ax||_2/||\lambda x||_2$をソルバから取得する. 
+既定の固有対の相対残差ノルム$||\lambda x-(B^{-1})Ax||_2/||\lambda x||_2$をソルバから取得する. 
 \\ \\
 \noindent
 {\bf 入力}
@@ -6773,7 +6776,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \end{screen}
 {\bf 機能}\\
 \indent
-指定された固有対の残差履歴をソルバから取得する. 
+既定の固有対の残差履歴をソルバから取得する. 
 \\ \\
 \noindent
 {\bf 入力}
@@ -6867,7 +6870,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \subsubsection{lis\_esolver\_get\_iters}
 \begin{screen}
 \verb|C       LIS_INT lis_esolver_get_iters(LIS_ESOLVER esolver, LIS_VECTOR v)|\\
-\verb|Fortran subroutine lis_esolver_get_iter(LIS_ESOLVER esolver,|\\
+\verb|Fortran subroutine lis_esolver_get_iters(LIS_ESOLVER esolver,|\\
 \verb|         LIS_VECTOR v, LIS_INTEGER ierr)|
 \end{screen}
 {\bf 機能}\\
@@ -6878,6 +6881,100 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 {\bf 入力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
 \item[\tt esolver] ソルバ
+\end{namelist}
+{\bf 出力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt v] 反復回数が納められたベクトル
+\item[\tt ierr] リターンコード
+\end{namelist}
+
+\subsubsection{lis\_esolver\_get\_specific\_evalue}
+\begin{screen}
+\verb|C       LIS_INT lis_esolver_get_specific_evalue(LIS_ESOLVER esolver, LIS_INT mode,|\\
+\verb|         LIS_SCALAR evalue)|\\
+\verb|Fortran subroutine lis_esolver_get_specific_evalue(LIS_ESOLVER esolver,|\\
+\verb|         LIS_INT mode, LIS_SCALAR evalue, LIS_INTEGER ierr)|
+\end{screen}
+{\bf 機能}\\
+\indent
+指定された固有値をソルバから取得する. 
+\\ \\
+\noindent
+{\bf 入力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt esolver] ソルバ
+\item[\tt mode] 固有値のモード番号
+\end{namelist}
+{\bf 出力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt evalue]  固有値
+\item[\tt ierr] リターンコード
+\end{namelist}
+
+\newpage
+\subsubsection{lis\_esolver\_get\_specific\_evector}
+\begin{screen}
+\verb|C       LIS_INT lis_esolver_get_specific_evector(LIS_ESOLVER esolver, LIS_INT mode,|\\
+\verb|         LIS_VECTOR x)|\\
+\verb|Fortran subroutine lis_esolver_get_specific_evector(LIS_ESOLVER esolver,|\\
+\verb|         LIS_INT mode, LIS_VECTOR x, LIS_INTEGER ierr)|
+\end{screen}
+{\bf 機能}\\
+\indent
+指定された固有ベクトルをソルバから取得する. 
+\\ \\
+\noindent
+{\bf 入力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt esolver] ソルバ
+\item[\tt mode] 固有ベクトルのモード番号
+\end{namelist}
+{\bf 出力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt x]  固有ベクトル
+\item[\tt ierr] リターンコード
+\end{namelist}
+
+\subsubsection{lis\_esolver\_get\_specific\_residualnorm}
+\begin{screen}
+\verb|C       LIS_INT lis_esolver_get_specific_residualnorm(LIS_ESOLVER esolver,|\\
+\verb|         LIS_INT mode, LIS_REAL *residual)|\\
+\verb|Fortran subroutine lis_esolver_get_specific_residualnorm(LIS_ESOLVER esolver,|\\
+\verb|         LIS_INT mode, LIS_REAL residual, LIS_INTEGER ierr)|
+\end{screen}
+{\bf 機能}\\
+\indent
+指定された固有対の相対残差ノルム$||\lambda x-(B^{-1})Ax||_2/||\lambda x||_2$をソルバから取得する.
+\\ \\
+\noindent
+{\bf 入力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt esolver] ソルバ
+\item[\tt mode] 固有対のモード番号
+\end{namelist}
+{\bf 出力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt residual]  相対残差ノルム
+\item[\tt ierr] リターンコード
+\end{namelist}
+
+\newpage
+\subsubsection{lis\_esolver\_get\_specific\_iter}
+\begin{screen}
+\verb|C       LIS_INT lis_esolver_get_specific_iter(LIS_ESOLVER esolver, LIS_INT mode,|\\
+\verb|         LIS_INT *iter)|\\
+\verb|Fortran subroutine lis_esolver_get_specific_iter(LIS_ESOLVER esolver,|\\
+\verb|         LIS_INT mode, LIS_INT iter, LIS_INTEGER ierr)|
+\end{screen}
+{\bf 機能}\\
+\indent
+指定された固有対の反復回数をソルバから取得する. 
+\\ \\
+\noindent
+{\bf 入力}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt esolver] ソルバ
+\item[\tt mode] 固有対のモード番号
 \end{namelist}
 {\bf 出力}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}

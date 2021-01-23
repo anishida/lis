@@ -2281,16 +2281,16 @@ Option &                          \\ \hline
 To solve the standard eigenvalue problem $Ax = \lambda x$, the following functions are used:
 \begin{itemize}
 \item \verb|C       LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x,|\\ 
-      \verb|         LIS_REAL evalue, LIS_ESOLVER esolver)|
+      \verb|         LIS_SCALAR evalue, LIS_ESOLVER esolver)|
 \item \verb|Fortran subroutine lis_esolve(LIS_MATRIX A, LIS_VECTOR x,|\\
-      \verb|         LIS_REAL evalue, LIS_ESOLVER esolver, LIS_INTEGER ierr)|
+      \verb|         LIS_SCALAR evalue, LIS_ESOLVER esolver, LIS_INTEGER ierr)|
 \end{itemize}
 To solve the generalized eigenvalue problem $Ax = \lambda Bx$, the following functions are used instead:
 \begin{itemize}
 \item \verb|C       LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B,|\\ 
-      \verb|         LIS_VECTOR x, LIS_REAL evalue, LIS_ESOLVER esolver)|
+      \verb|         LIS_VECTOR x, LIS_SCALAR evalue, LIS_ESOLVER esolver)|
 \item \verb|Fortran subroutine lis_gesolve(LIS_MATRIX A, LIS_MATRIX B,|\\
-      \verb|         LIS_VECTOR x, LIS_REAL evalue, LIS_ESOLVER esolver, LIS_INTEGER ierr)|
+      \verb|         LIS_VECTOR x, LIS_SCALAR evalue, LIS_ESOLVER esolver, LIS_INTEGER ierr)|
 \end{itemize}
 
 \subsection{Writing Programs}
@@ -6747,9 +6747,9 @@ Set the options for the eigensolver on the command line.
 \subsubsection{lis\_esolve}
 \begin{screen}
 \verb|C       LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x,|\\ 
-\verb|         LIS_REAL evalue, LIS_ESOLVER esolver)|\\
+\verb|         LIS_SCALAR evalue, LIS_ESOLVER esolver)|\\
 \verb|Fortran subroutine lis_esolve(LIS_MATRIX A, LIS_VECTOR x,|\\
-\verb|         LIS_REAL evalue, LIS_ESOLVER esolver, LIS_INTEGER ierr)|
+\verb|         LIS_SCALAR evalue, LIS_ESOLVER esolver, LIS_INTEGER ierr)|
 \end{screen}
 {\bf Description}\\
 \indent
@@ -6764,13 +6764,15 @@ Solve the standard eigenvalue problem $Ax = \lambda x$ with the specified eigens
 \end{namelist}
 {\bf Output}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt evalue] The eigenvalue of mode 0
+\item[\tt evalue] The default eigenvalue
 \item[\tt x] The associated eigenvector
 \item[\tt esolver] The number of iterations, the execution time, etc.
 \item[\tt ierr] The return code
 \end{namelist}
 {\bf Note}\\
 \indent
+The default eigenvalue is the eigenvalue of mode 0. In the following sections, the default eigenpair means the eigenvalue of mode 0 and the associated eigenvector.
+
 If the option {\tt -initx\_ones \{false|0\}} is specified, the initial
 vector is given by the argument {\tt x}.
 Otherwise, all the components of the initial vector are set to $1$. 
@@ -6783,9 +6785,9 @@ is {\tt LIS\_MAXITER}. See also the function
 \subsubsection{lis\_gesolve}
 \begin{screen}
 \verb|C       LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B,|\\ 
-\verb|         LIS_VECTOR x, LIS_REAL evalue, LIS_ESOLVER esolver)|\\
+\verb|         LIS_VECTOR x, LIS_SCALAR evalue, LIS_ESOLVER esolver)|\\
 \verb|Fortran subroutine lis_gesolve(LIS_MATRIX A, LIS_MATRIX B,|\\
-\verb|         LIS_VECTOR x, LIS_REAL evalue, LIS_ESOLVER esolver, LIS_INTEGER ierr)|
+\verb|         LIS_VECTOR x, LIS_SCALAR evalue, LIS_ESOLVER esolver, LIS_INTEGER ierr)|
 \end{screen}
 {\bf Description}\\
 \indent
@@ -6801,7 +6803,7 @@ Solve the generalized eigenvalue problem $Ax = \lambda Bx$ with the specified ei
 \end{namelist}
 {\bf Output}
 \begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
-\item[\tt evalue] The eigenvalue of mode 0
+\item[\tt evalue] The default eigenvalue
 \item[\tt x] The associated eigenvector
 \item[\tt esolver] The number of iterations, the execution time, etc.
 \item[\tt ierr] The return code
@@ -6825,7 +6827,7 @@ is {\tt LIS\_MAXITER}. See also the function
 \end{screen}
 {\bf Description}\\
 \indent
-Get the status for the specified eigenpair from the eigensolver.
+Get the status from the eigensolver.
 \\ \\
 \noindent
 {\bf Input}
@@ -6849,7 +6851,7 @@ This function returns the status of the eigensolver ({\tt esolver->retcode}).
 \end{screen}
 {\bf Description}\\
 \indent
-Get the number of iterations for the specified eigenpair from the eigensolver.
+Get the number of iterations for the default eigenpair from the eigensolver.
 \\ \\
 \noindent
 {\bf Input}
@@ -6872,7 +6874,7 @@ Get the number of iterations for the specified eigenpair from the eigensolver.
 \end{screen}
 {\bf Description}\\
 \indent
-Get the detailed information on the number of iterations for the specified eigenpair from the eigensolver.
+Get the detailed information on the number of iterations for the default eigenpair from the eigensolver.
 \\ \\
 \noindent
 {\bf Input}
@@ -6895,7 +6897,7 @@ Get the detailed information on the number of iterations for the specified eigen
 \end{screen}
 {\bf Description}\\
 \indent
-Get the execution time for the specified eigenpair from the eigensolver.
+Get the execution time for the default eigenpair from the eigensolver.
 \\ \\
 \noindent
 {\bf Input}
@@ -6919,7 +6921,7 @@ Get the execution time for the specified eigenpair from the eigensolver.
 \end{screen}
 {\bf Description}\\
 \indent
-Get the detailed information on the execution time for the specified eigenpair from the eigensolver.
+Get the detailed information on the execution time for the default eigenpair from the eigensolver.
 \\ \\
 \noindent
 {\bf Input}
@@ -6945,7 +6947,7 @@ Get the detailed information on the execution time for the specified eigenpair f
 \end{screen}
 {\bf Description}\\
 \indent
-Get the relative residual norm $||\lambda x-(B^{-1})Ax||_2/||\lambda x||_2$ for the specified eigenpair from the eigensolver.
+Get the relative residual norm $||\lambda x-(B^{-1})Ax||_2/||\lambda x||_2$ for the default eigenpair from the eigensolver.
 \\ \\
 \noindent
 {\bf Input}
@@ -6967,7 +6969,7 @@ Get the relative residual norm $||\lambda x-(B^{-1})Ax||_2/||\lambda x||_2$ for 
 \end{screen}
 {\bf Description}\\
 \indent
-Get the residual history for the specified eigenpair from the eigensolver.
+Get the residual history for the default eigenpair from the eigensolver.
 \\ \\
 \noindent
 {\bf Input}
@@ -7082,6 +7084,100 @@ Get the numbers of iterations of all the eigenpairs from the eigensolver.
 {\bf Note}\\
 \indent
 Vector $v$ must be created in advance with the function \verb|lis_vector_create|. 
+
+\subsubsection{lis\_esolver\_get\_specific\_evalue}
+\begin{screen}
+\verb|C       LIS_INT lis_esolver_get_specific_evalue(LIS_ESOLVER esolver,|\\
+\verb|         LIS_INT mode, LIS_SCALAR *evalue)|\\
+\verb|Fortran subroutine lis_esolver_get_specific_evalue(LIS_ESOLVER esolver,|\\
+\verb|         LIS_INT mode, LIS_SCALAR evalue, LIS_INTEGER ierr)|
+\end{screen}
+{\bf Description}\\
+\indent
+Get the specified eigenvalue from the eigensolver.
+\\ \\
+\noindent
+{\bf Input}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt esolver] The eigensolver
+\item[\tt mode] The mode number of the eigenvalue
+\end{namelist}
+{\bf Output}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt evalue]  The eigenvalue
+\item[\tt ierr] The return code
+\end{namelist}
+
+\newpage
+\subsubsection{lis\_esolver\_get\_specific\_evector}
+\begin{screen}
+\verb|C       LIS_INT lis_esolver_get_specific_evector(LIS_ESOLVER esolver, LIS_INT mode,|\\
+\verb|         LIS_VECTOR x)|\\
+\verb|Fortran subroutine lis_esolver_get_specific_evector(LIS_ESOLVER esolver,|\\
+\verb|         LIS_INT mode, LIS_VECTOR x, LIS_INTEGER ierr)|
+\end{screen}
+{\bf Description}\\
+\indent
+Get the specified eigenvector from the eigensolver.
+\\ \\
+\noindent
+{\bf Input}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt esolver] The eigensolver
+\item[\tt mode] The mode number of the eigenvector
+\end{namelist}
+{\bf Output}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt x]  The eigenvector
+\item[\tt ierr] The return code
+\end{namelist}
+
+\subsubsection{lis\_esolver\_get\_specific\_residualnorm}
+\begin{screen}
+\verb|C       LIS_INT lis_esolver_get_specific_residualnorm(LIS_ESOLVER esolver,|\\
+\verb|         LIS_INT mode, LIS_REAL *residual)|\\
+\verb|Fortran subroutine lis_esolver_get_specific_residualnorm(LIS_ESOLVER esolver,|\\
+\verb|         LIS_INT mode, LIS_REAL residual, LIS_INTEGER ierr)|
+\end{screen}
+{\bf Description}\\
+\indent
+Get the relative residual norm $||\lambda x-(B^{-1})Ax||_2/||\lambda x||_2$ of the specified eigenpair from the eigensolver.
+\\ \\
+\noindent
+{\bf Input}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt esolver] The eigensolver
+\item[\tt mode] The mode number of the eigenpair
+\end{namelist}
+{\bf Output}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt residual]  The residual norm
+\item[\tt ierr] The return code
+\end{namelist}
+
+\newpage
+\subsubsection{lis\_esolver\_get\_specific\_iter}
+\begin{screen}
+\verb|C       LIS_INT lis_esolver_get_specific_iter(LIS_ESOLVER esolver, LIS_INT mode,|\\
+\verb|         LIS_INT *iter)|\\
+\verb|Fortran subroutine lis_esolver_get_specific_iter(LIS_ESOLVER esolver, |\\
+\verb|         LIS_INT mode, LIS_INT iter, LIS_INTEGER ierr)|
+\end{screen}
+{\bf Description}\\
+\indent
+Get the numbers of iterations of the specified eigenpair from the eigensolver.
+\\ \\
+\noindent
+{\bf Input}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt esolver] The eigensolver
+\item[\tt mode] The mode number of the eigenpair
+\end{namelist}
+{\bf Output}
+\begin{namelist}{XXXXXXXXXXXXXXXXXXXX}
+\item[\tt iter]  The numbers of iterations
+\item[\tt ierr] The return code
+\end{namelist}
 
 \subsubsection{lis\_esolver\_get\_esolver}
 \begin{screen}

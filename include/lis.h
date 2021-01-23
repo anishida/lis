@@ -1002,9 +1002,13 @@ extern "C"
 	extern LIS_INT lis_esolver_get_status(LIS_ESOLVER esolver, LIS_INT *status);
         extern LIS_INT lis_esolver_get_rhistory(LIS_ESOLVER esolver, LIS_VECTOR v);
         extern LIS_INT lis_esolver_get_evalues(LIS_ESOLVER esolver, LIS_VECTOR v);
+        extern LIS_INT lis_esolver_get_specific_evalue(LIS_ESOLVER esolver, LIS_INT mode, LIS_SCALAR *evalue);  
         extern LIS_INT lis_esolver_get_evectors(LIS_ESOLVER esolver, LIS_MATRIX M);
+        extern LIS_INT lis_esolver_get_specific_evector(LIS_ESOLVER esolver, LIS_INT mode, LIS_VECTOR x);  
         extern LIS_INT lis_esolver_get_residualnorms(LIS_ESOLVER esolver, LIS_VECTOR v);
+        extern LIS_INT lis_esolver_get_specific_residualnorm(LIS_ESOLVER esolver, LIS_INT mode, LIS_REAL *residual);  
         extern LIS_INT lis_esolver_get_iters(LIS_ESOLVER esolver, LIS_VECTOR v);
+        extern LIS_INT lis_esolver_get_specific_iter(LIS_ESOLVER esolver, LIS_INT mode, LIS_INT *iter);  
 	extern LIS_INT lis_esolver_get_esolver(LIS_ESOLVER esolver, LIS_INT *nesol);
 	extern LIS_INT lis_esolver_get_esolvername(LIS_INT esolver, char *esolvername);
 
