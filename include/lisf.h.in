@@ -519,6 +519,18 @@
 #define lis_esolver_get_iters    lis_esolver_get_iters_f
 #define LIS_ESOLVER_GET_ITERS    lis_esolver_get_iters_f
 
+#define lis_esolver_get_specific_evalue lis_esolver_get_specific_evalue_f
+#define LIS_ESOLVER_GET_SPECIFIC_EVALUE lis_esolver_get_specific_evalue_f
+
+#define lis_esolver_get_specific_evector lis_esolver_get_specific_evector_f
+#define LIS_ESOLVER_GET_SPECIFIC_EVECTOR lis_esolver_get_specific_evector_f
+
+#define lis_esolver_get_specific_residualnorm lis_esolver_get_specific_residualnorm_f
+#define LIS_ESOLVER_GET_SPECIFIC_RESIDUALNORM lis_esolver_get_specific_residualnorm_f
+
+#define lis_esolver_get_specific_iter    lis_esolver_get_specific_iter_f
+#define LIS_ESOLVER_GET_SPECIFIC_ITER    lis_esolver_get_specific_iter_f
+
 #define lis_esolver_get_esolver lis_esolver_get_esolver_f
 #define LIS_ESOLVER_GET_ESOLVER lis_esolver_get_esolver_f
 
