@@ -1,3 +1,7 @@
+Version 2.0.30  January 23, 2021
+
+  - Added support for lis_esolver_get_specific_*() (thanks to Peter Vermeulen).
+
 Version 2.0.29  December 28, 2020
 
   - Fixed MPI related bug in configure.ac for macOS (thanks to Carlo de Falco).
