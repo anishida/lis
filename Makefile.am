@@ -70,6 +70,10 @@ EXTRA_DIST = doc/Makefile \
              doc/man/man3/lis_esolver_get_residualnorm.3 \
              doc/man/man3/lis_esolver_get_residualnorms.3 \
              doc/man/man3/lis_esolver_get_rhistory.3 \
+             doc/man/man3/lis_esolver_get_specific_evalue.3 \
+             doc/man/man3/lis_esolver_get_specific_evector.3 \
+             doc/man/man3/lis_esolver_get_specific_iter.3 \
+             doc/man/man3/lis_esolver_get_specific_residualnorm.3 \
              doc/man/man3/lis_esolver_get_status.3 \
              doc/man/man3/lis_esolver_get_time.3 \
              doc/man/man3/lis_esolver_get_timeex.3 \
@@ -210,6 +214,10 @@ EXTRA_DIST = doc/Makefile \
              doc/man/man3/lis_esolver_get_residualnorm.3f \
              doc/man/man3/lis_esolver_get_residualnorms.3f \
              doc/man/man3/lis_esolver_get_rhistory.3f \
+             doc/man/man3/lis_esolver_get_specific_evalue.3f \
+             doc/man/man3/lis_esolver_get_specific_evector.3f \
+             doc/man/man3/lis_esolver_get_specific_iter.3f \
+             doc/man/man3/lis_esolver_get_specific_residualnorm.3f \
              doc/man/man3/lis_esolver_get_status.3f \
              doc/man/man3/lis_esolver_get_time.3f \
              doc/man/man3/lis_esolver_get_timeex.3f \
