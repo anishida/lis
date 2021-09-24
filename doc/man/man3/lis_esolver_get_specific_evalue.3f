@@ -1,0 +1,33 @@
+.TH lis_esolver_specific_get_evalue 3f "24 Jan 2021" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_esolver_specific_get_evalue \- get the specified eigenvalue from the eigensolver
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_esolver_get_specific_evalue\fR(\fBLIS_ESOLVER esolver\fR, \fBLIS_INT mode\fR, \fBLIS_SCALAR evalue\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the specified eigenvalue from the eigensolver.
+
+.SH INPUT
+
+.IP "\fBesolver\fR"
+The eigensolver
+
+.IP "\fBmode\fR"
+The mode number of the eigenvalue
+
+.SH OUTPUT
+
+.IP "\fBv\fR"
+The eigenvalue
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+

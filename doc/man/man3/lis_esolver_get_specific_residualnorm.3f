@@ -1,0 +1,33 @@
+.TH lis_esolver_get_specific_residualnorm 3f "24 Jan 2021" "Man Page" "Lis Library Functions"
+
+.SH NAME
+
+lis_esolver_get_specific_residualnorm \- get the relative residual norm for the specific eigenpair from the eigensolver
+
+.SH SYNOPSIS
+
+\fBsubroutine lis_esolver_get_specific_residualnorm\fR(\fBLIS_ESOLVER esolver\fR, \fBLIS_INT mode\fR, \fBLIS_REAL residual\fR, \fBLIS_INTEGER ierr\fR);
+
+.SH DESCRIPTION
+
+Get the relative residual norm \fI||lx - Ax||_2/||lx||_2\fR for the specific eigenpair from the eigensolver.
+
+.SH INPUT
+
+.IP "\fBesolver\fR"
+The eigensolver
+
+.IP "\fBmode\fR"
+The mode number of the eigenpair
+
+.SH OUTPUT
+
+.IP "\fBresidual\fR"
+The residual norm
+
+.SH SEE ALSO
+
+.BR lis (3)
+.PP
+http://www.ssisc.org/lis/
+
