@@ -1,6 +1,10 @@
+Version 2.0.32  October 1, 2021
+
+  - Fixed type of lis_wtime() in user guides (thanks to Ning Li).
+
 Version 2.0.31  September 24, 2021
 
-  - Updated include/lisf.h.in experimentally (thanks to Ning Li).
+  - Updated include/lisf.h.in experimentally to remove dependency on lisf_init.F (thanks to Ning Li).
 
 Version 2.0.30  January 23, 2021
 
