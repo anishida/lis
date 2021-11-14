@@ -206,6 +206,7 @@ objs_saamg: ..\src\fortran\amg\lis_m_data_structure_for_AMG.obj \
 	    ..\src\fortran\amg\lis_m_isort.obj \
 	    ..\src\fortran\amg\lis_m_data_creation_AMGCG.obj \
 	    ..\src\fortran\amg\lis_m_solver_AMGCG.obj \
+	    ..\src\fortran\amg\lis_m_finit.obj 
 !else
 objs_saamg: ..\src\fortran\amg\lis_s_data_structure_for_AMG.obj \
 	    ..\src\fortran\amg\lis_s_queue_mod.obj \
@@ -213,6 +214,7 @@ objs_saamg: ..\src\fortran\amg\lis_s_data_structure_for_AMG.obj \
 	    ..\src\fortran\amg\lis_s_isort.obj \
 	    ..\src\fortran\amg\lis_s_data_creation_AMGCG.obj \
 	    ..\src\fortran\amg\lis_s_solver_AMGCG.obj \
+	    ..\src\fortran\amg\lis_s_finit.obj
 !endif
 
 exes_test: test1.exe test2.exe test2b.exe test3.exe test3b.exe test3c.exe test4.exe test5.exe test6.exe
