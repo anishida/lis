@@ -67,7 +67,7 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libfortran_la_LIBADD =
-am_libfortran_la_OBJECTS = lisf_array.lo lisf_esolver.lo lisf_init.lo \
+am_libfortran_la_OBJECTS = lisf_array.lo lisf_esolver.lo \
 	lisf_matrix.lo lisf_matvec.lo lisf_precon.lo lisf_solver.lo \
 	lisf_system.lo lisf_vector.lo
 libfortran_la_OBJECTS = $(am_libfortran_la_OBJECTS)
@@ -75,10 +75,6 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/include
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
-F77LD = $(F77)
-F77LINK = $(LIBTOOL) --tag=F77 $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
-	--mode=link $(F77LD) $(AM_FFLAGS) $(FFLAGS) $(AM_LDFLAGS) \
-	$(LDFLAGS) -o $@
 CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -243,7 +239,6 @@ top_srcdir = @top_srcdir@
 noinst_LTLIBRARIES = libfortran.la
 libfortran_la_SOURCES = lisf_array.c \
 lisf_esolver.c \
-lisf_init.F \
 lisf_matrix.c \
 lisf_matvec.c \
 lisf_precon.c \
@@ -270,7 +265,7 @@ LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) \
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .F .c .f .lo .o .obj
+.SUFFIXES: .c .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -311,7 +306,7 @@ clean-noinstLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 libfortran.la: $(libfortran_la_OBJECTS) $(libfortran_la_DEPENDENCIES) $(EXTRA_libfortran_la_DEPENDENCIES) 
-	$(F77LINK)  $(libfortran_la_OBJECTS) $(libfortran_la_LIBADD) $(LIBS)
+	$(LINK)  $(libfortran_la_OBJECTS) $(libfortran_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -327,17 +322,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lisf_solver.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lisf_system.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lisf_vector.Plo@am__quote@
-
-.F.o:
-	$(PPF77COMPILE) -c -o $@ $<
-
-.F.obj:
-	$(PPF77COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-
-.F.lo:
-	$(LTPPF77COMPILE) -c -o $@ $<
-.F.f:
-	$(F77COMPILE) -F $<
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
