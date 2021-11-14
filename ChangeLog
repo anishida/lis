@@ -1,3 +1,7 @@
+Version 2.0.33 November 14, 2021
+
+  - Removed src/fortran/lisf_init.F to simplify library configuration.
+
 Version 2.0.32  October 1, 2021
 
   - Fixed type of lis_wtime() in user guides (thanks to Ning Li).

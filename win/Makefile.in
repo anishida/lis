@@ -156,18 +156,18 @@ MPIRUN = "mpiexec -n 2"
 
 !ifdef notest
 !ifdef fortran
-all: libs libs_lisf_init
+all: libs
 !else
 all: libs
 !endif
 !else
 !ifdef fortran
 all: libs exes_test exes_etest exes_spmvtest \
-     libs_lisf_init exes_testf exes_etestf
+     exes_testf exes_etestf
 !ifdef saamg
 !ifdef impi
 all: libs exes_test exes_etest exes_spmvtest \
-     libs_lisf_init exes_testf exes_etestf test8f.exe
+     exes_testf exes_etestf test8f.exe
 !endif
 !endif
 !else
@@ -206,7 +206,6 @@ objs_saamg: ..\src\fortran\amg\lis_m_data_structure_for_AMG.obj \
 	    ..\src\fortran\amg\lis_m_isort.obj \
 	    ..\src\fortran\amg\lis_m_data_creation_AMGCG.obj \
 	    ..\src\fortran\amg\lis_m_solver_AMGCG.obj \
-	    ..\src\fortran\amg\lis_m_finit.obj 
 !else
 objs_saamg: ..\src\fortran\amg\lis_s_data_structure_for_AMG.obj \
 	    ..\src\fortran\amg\lis_s_queue_mod.obj \
@@ -214,7 +213,6 @@ objs_saamg: ..\src\fortran\amg\lis_s_data_structure_for_AMG.obj \
 	    ..\src\fortran\amg\lis_s_isort.obj \
 	    ..\src\fortran\amg\lis_s_data_creation_AMGCG.obj \
 	    ..\src\fortran\amg\lis_s_solver_AMGCG.obj \
-	    ..\src\fortran\amg\lis_s_finit.obj
 !endif
 
 exes_test: test1.exe test2.exe test2b.exe test3.exe test3b.exe test3c.exe test4.exe test5.exe test6.exe
@@ -252,29 +250,26 @@ spmvtest3b.exe: ..\test\$*.obj
 spmvtest4.exe: ..\test\$*.obj
 spmvtest5.exe: ..\test\$*.obj
 
-libs_lisf_init:
-	$(FC) $(FFLAGS) -out:lisf_init.obj ..\src\fortran\lisf_init.f lis.lib
-
 test1f.exe: ..\test\$*.obj
-	$(LINKER) $(LDFLAGS) $*.obj lisf_init.obj lis.lib
+	$(LINKER) $(LDFLAGS) $*.obj lis.lib
 
 test2f.exe: ..\test\$*.obj
-	$(LINKER) $(LDFLAGS) $*.obj lisf_init.obj lis.lib
+	$(LINKER) $(LDFLAGS) $*.obj lis.lib
 
 test4f.exe: ..\test\$*.obj
-	$(LINKER) $(LDFLAGS) $*.obj lisf_init.obj lis.lib
+	$(LINKER) $(LDFLAGS) $*.obj lis.lib
 
 test6f.exe: ..\test\$*.obj
-	$(LINKER) $(LDFLAGS) $*.obj lisf_init.obj lis.lib
+	$(LINKER) $(LDFLAGS) $*.obj lis.lib
 
 test8f.exe: ..\test\$*.obj
-	$(LINKER) $(LDFLAGS) $*.obj lisf_init.obj lis.lib
+	$(LINKER) $(LDFLAGS) $*.obj lis.lib
 
 etest1f.exe: ..\test\$*.obj
-	$(LINKER) $(LDFLAGS) $*.obj lisf_init.obj lis.lib
+	$(LINKER) $(LDFLAGS) $*.obj lis.lib
 
 etest4f.exe: ..\test\$*.obj
-	$(LINKER) $(LDFLAGS) $*.obj lisf_init.obj lis.lib 
+	$(LINKER) $(LDFLAGS) $*.obj lis.lib 
 
 .c.obj:
 	$(CC) $(CFLAGS) $*.c
