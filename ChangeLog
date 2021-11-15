@@ -1,6 +1,6 @@
 Version 2.0.33 November 14, 2021
 
-  - Removed src/fortran/lisf_init.F to simplify library configuration.
+  - Fixed include/lisf.h.in and updated win/Makefile.in to avoid Fortran error.
 
 Version 2.0.32  October 1, 2021
 
