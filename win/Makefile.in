@@ -156,18 +156,18 @@ MPIRUN = "mpiexec -n 2"
 
 !ifdef notest
 !ifdef fortran
-all: libs
+all: libs libs_lisf_init
 !else
 all: libs
 !endif
 !else
 !ifdef fortran
 all: libs exes_test exes_etest exes_spmvtest \
-     exes_testf exes_etestf
+     libs_lisf_init exes_testf exes_etestf
 !ifdef saamg
 !ifdef impi
 all: libs exes_test exes_etest exes_spmvtest \
-     exes_testf exes_etestf test8f.exe
+     libs_lisf_init exes_testf exes_etestf test8f.exe
 !endif
 !endif
 !else
@@ -251,6 +251,10 @@ spmvtest3.exe: ..\test\$*.obj
 spmvtest3b.exe: ..\test\$*.obj
 spmvtest4.exe: ..\test\$*.obj
 spmvtest5.exe: ..\test\$*.obj
+
+libs_lisf_init:
+	$(FC) $(FFLAGS) -out:lisf_init.obj ..\src\fortran\lisf_init.f lis.lib
+	$(AR) lis.lib lisf_init.obj
 
 test1f.exe: ..\test\$*.obj
 	$(LINKER) $(LDFLAGS) $*.obj lis.lib
