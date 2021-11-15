@@ -1,6 +1,7 @@
 noinst_LTLIBRARIES = libfortran.la
 libfortran_la_SOURCES = lisf_array.c \
 lisf_esolver.c \
+lisf_init.F \
 lisf_matrix.c \
 lisf_matvec.c \
 lisf_precon.c \

@@ -630,8 +630,8 @@
 #define lis_array_qr lis_array_qr_f
 #define LIS_ARRAY_QR lis_array_qr_f
 
-#define lis_initialize lis_finitialize_f
-#define LIS_INITIALIZE lis_finitialize_f
+#define lis_initialize lis_init_f
+#define LIS_INITIALIZE lis_init_f
 
 #define lis_initializef lis_initializef_f
 #define LIS_INITIALIZEF lis_initializef_f
