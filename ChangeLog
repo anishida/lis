@@ -1,6 +1,7 @@
 Version 2.0.33 November 14, 2021
 
-  - Fixed include/lisf.h.in and updated win/Makefile.in to avoid Fortran error.
+  - Fixed include/lisf.h.in to avoid Fortran error.
+  - Updated win/Makefile.in to include lisf_init.obj in lis.lib.
 
 Version 2.0.32  October 1, 2021
 
