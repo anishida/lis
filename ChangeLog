@@ -1,3 +1,7 @@
+Version 2.0.34 April 26, 2022
+
+  - Fixed win/Makefile.in to avoid link error with Intel Fortran Compiler (thanks to Yigang Gong).
+
 Version 2.0.33 November 14, 2021
 
   - Fixed include/lisf.h.in to avoid Fortran error.
