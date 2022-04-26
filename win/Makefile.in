@@ -254,28 +254,27 @@ spmvtest5.exe: ..\test\$*.obj
 
 libs_lisf_init:
 	$(FC) $(FFLAGS) -out:lisf_init.obj ..\src\fortran\lisf_init.f lis.lib
-	$(AR) lis.lib lisf_init.obj
 
 test1f.exe: ..\test\$*.obj
-	$(LINKER) $(LDFLAGS) $*.obj lis.lib
+	$(LINKER) $(LDFLAGS) $*.obj lisf_init.obj lis.lib
 
 test2f.exe: ..\test\$*.obj
-	$(LINKER) $(LDFLAGS) $*.obj lis.lib
+	$(LINKER) $(LDFLAGS) $*.obj lisf_init.obj lis.lib
 
 test4f.exe: ..\test\$*.obj
-	$(LINKER) $(LDFLAGS) $*.obj lis.lib
+	$(LINKER) $(LDFLAGS) $*.obj lisf_init.obj lis.lib
 
 test6f.exe: ..\test\$*.obj
-	$(LINKER) $(LDFLAGS) $*.obj lis.lib
+	$(LINKER) $(LDFLAGS) $*.obj lisf_init.obj lis.lib
 
 test8f.exe: ..\test\$*.obj
-	$(LINKER) $(LDFLAGS) $*.obj lis.lib
+	$(LINKER) $(LDFLAGS) $*.obj lisf_init.obj lis.lib
 
 etest1f.exe: ..\test\$*.obj
-	$(LINKER) $(LDFLAGS) $*.obj lis.lib
+	$(LINKER) $(LDFLAGS) $*.obj lisf_init.obj lis.lib
 
 etest4f.exe: ..\test\$*.obj
-	$(LINKER) $(LDFLAGS) $*.obj lis.lib 
+	$(LINKER) $(LDFLAGS) $*.obj lisf_init.obj lis.lib 
 
 .c.obj:
 	$(CC) $(CFLAGS) $*.c
