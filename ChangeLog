@@ -1,3 +1,8 @@
+Version 2.0.35 February 21, 2023
+
+  - Fixed win/Makefile.in to include lisf_init.obj in lis.lib
+    without link error for Intel Fortran Compiler (thanks to ChatGPT).
+
 Version 2.0.34 April 26, 2022
 
   - Fixed win/Makefile.in to avoid link error with Intel Fortran Compiler (thanks to Yigang Gong).
