@@ -254,7 +254,7 @@ spmvtest5.exe: ..\test\$*.obj
 
 libs_lisf_init:
 	$(FC) $(FFLAGS) -out:lisf_init.obj ..\src\fortran\lisf_init.f lis.lib
-	$(AR) -r lis.lib lisf_init.obj
+	$(AR) lis.lib lisf_init.obj lis.lib
 
 test1f.exe: ..\test\$*.obj
 	$(LINKER) $(LDFLAGS) $*.obj lis.lib
