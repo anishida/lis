@@ -1,3 +1,7 @@
+Version 2.1.0 March 5, 2023
+
+  - Updated documents.
+
 Version 2.0.35 February 21, 2023
 
   - Fixed win/Makefile.in to include lisf_init.obj in lis.lib
