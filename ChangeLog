@@ -1,7 +1,7 @@
 Version 2.1.1 April 12, 2023
 
   - Corrected errors on lis_array_ge() in documents (thanks to Ning Li).
-  - Corrected error on lis_array_ge_f() in include/lis_fortran.h (thanks to Ning Li)
+  - Corrected error on lis_array_ge_f() in include/lis_fortran.h (thanks to Ning Li).
 
 Version 2.1.0 March 5, 2023
 
