@@ -95,6 +95,7 @@ extern LIS_Comm_f lis_comm_world_f;
 #define lis_array_invvect_f F77_FUNC_(lis_array_invvect_f, LIS_ARRAY_INVVECT_F) 
 #define lis_array_matmat_f F77_FUNC_(lis_array_matmat_f, LIS_ARRAY_MATMAT_F) 
 #define lis_array_matmat2_f F77_FUNC_(lis_array_matmat2_f, LIS_ARRAY_MATMAT2_F) 
+#define lis_array_ge_f F77_FUNC_(lis_array_ge_f, LIS_ARRAY_GE_F)
 #define lis_array_solve_f F77_FUNC_(lis_array_solve_f, LIS_ARRAY_SOLVE_F) 
 #define lis_array_cgs_f F77_FUNC_(lis_array_cgs_f, LIS_ARRAY_CGS_F) 
 #define lis_array_mgs_f F77_FUNC_(lis_array_mgs_f, LIS_ARRAY_MGS_F) 
