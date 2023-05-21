@@ -363,6 +363,7 @@ EXTRA_DIST = doc/Makefile \
              graphics/gnuplot5.plt \
              reconfigure.sh \
              win/Makefile.in \
+             win/Makefile.in.no_win32mak \
              win/README \
              win/configure.bat
 
