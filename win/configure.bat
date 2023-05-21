@@ -12,6 +12,7 @@ rem   Default Configurations
 @set notest=0
 @set omp=0
 @set intelc=0
+@set icllvm=0
 @set fortran=0
 @set msmpi32=0
 @set msmpi64=0
@@ -38,6 +39,7 @@ rem   Build Options
 @if "%1" == "--enable-msmpi64" goto setmsmpi64
 @if "%1" == "--enable-impi" goto setimpi
 @if "%1" == "--enable-intelc" goto setintelc
+@if "%1" == "--enable-icllvm" goto seticllvm
 @if "%1" == "--enable-fortran" goto setfortran
 @if "%1" == "--enable-saamg" goto setsaamg
 @if "%1" == "--enable-longlong" goto setlonglong
@@ -64,6 +66,7 @@ rem   Build Options
 @echo.	--enable-msmpi64	Build with 64bit Microsoft MPI library
 @echo.	--enable-impi		Build with Intel MPI library
 @echo.	--enable-intelc		Use Intel C Compiler
+@echo.	--enable-icllvm	Use Intel LLVM C Compiler
 @echo.	--enable-fortran	Enable Fortran interface
 @echo.	--enable-saamg		Enable SA-AMG preconditioner
 @echo.	--enable-longlong	Enable 64bit integer support
@@ -125,6 +128,13 @@ rem   Build Options
 
 :setintelc
 
+@set intelc=1
+@shift
+@goto again
+
+:seticllvm
+
+@set icllvm=1
 @set intelc=1
 @shift
 @goto again
@@ -264,6 +274,15 @@ rem   Build Options
 @echo.	Use Intel C Compiler			= yes
 ) else (
 @echo.	Use Intel C Compiler			= no
+)
+
+@if (%icllvm%) == (1) (
+@echo # Use Intel LLVM C Compiler >> Makefile
+@echo icllvm=1 >> Makefile
+@echo. >> Makefile
+@echo.	Use Intel LLVM C Compiler		= yes
+) else (
+@echo.	Use Intel LLVM C Compiler		= no
 )
 
 @if (%fortran%) == (1) (

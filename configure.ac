@@ -451,7 +451,7 @@ enable_dependency_tracking="no"
 
 ########## Check C Compilers ##########
 cflags_save="$CFLAGS"
-AC_PROG_CC([icc ecc xlc_r xlc fcc pgcc pathcc cc gcc clang])
+AC_PROG_CC([icc icx ecc xlc_r xlc fcc pgcc pathcc cc gcc clang])
 CFLAGS="$cflags_save"
 if test "$TARGET" = ""; then
   if test "$CC" = "fcc"; then
@@ -490,7 +490,7 @@ if test "$TARGET" = ""; then
 	fi
 
 ########## Check C Flags ########## 
-	for ventest in intel:__ICC,__ECC,__INTEL_COMPILER ibm:__xlc__,__xlC__,__IBMC__,__IBMCPP__ gnu:__GNUC__ sun:__SUNPRO_C,__SUNPRO_CC hp:__HP_cc,__HP_aCC dec:__DECC,__DECCXX,__DECC_VER,__DECCXX_VER borland:__BORLANDC__,__TURBOC__ comeau:__COMO__ cray:_CRAYC kai:__KCC lcc:__LCC__ metrowerks:__MWERKS__ sgi:__sgi,sgi microsoft:_MSC_VER watcom:__WATCOMC__ portland:__PGI pathscale:__PATHCC__,__PATHSCALE__; do
+	for ventest in intel:__ICC,__ICX,__ECC,__INTEL_COMPILER ibm:__xlc__,__xlC__,__IBMC__,__IBMCPP__ gnu:__GNUC__ sun:__SUNPRO_C,__SUNPRO_CC hp:__HP_cc,__HP_aCC dec:__DECC,__DECCXX,__DECC_VER,__DECCXX_VER borland:__BORLANDC__,__TURBOC__ comeau:__COMO__ cray:_CRAYC kai:__KCC lcc:__LCC__ metrowerks:__MWERKS__ sgi:__sgi,sgi microsoft:_MSC_VER watcom:__WATCOMC__ portland:__PGI pathscale:__PATHCC__,__PATHSCALE__; do
 	    vencpp="defined("`echo $ventest | cut -d: -f2 | sed 's/,/) || defined(/g'`")"
 	    AC_COMPILE_IFELSE([AC_LANG_PROGRAM(,[
 	#if !($vencpp)
@@ -863,7 +863,7 @@ if test "$TARGET" = ""; then
   fi
   if test "$enable_omp" = "yes"; then
     save_cflags="$CFLAGS"
-    openmp_flags="-openmp -qopenmp -qsmp=omp -xopenmp -fopenmp -KOMP -mp -omp -Popenmp none"
+    openmp_flags="-openmp -qopenmp -qsmp=omp -xopenmp -fiopenmp -fopenmp -KOMP -mp -omp -Popenmp none"
     for ompf in $openmp_flags; do
       AC_MSG_CHECKING([for OpenMP flag $ompf])
       case $ompf in
