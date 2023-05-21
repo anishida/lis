@@ -48,18 +48,30 @@ CFLAGS = $(CFLAGS) -DHAS_X87_FPU -DUSE_QUAD_PRECISION -DUSE_FMA2_SSE2 -DUSE_SSE2
 # Configuration for Intel C Compiler 
 
 !ifdef intelc
+!ifdef icllvm
+CC = icx
+!else
 CC = icl
+!endif
 CFLAGS = $(cflags) $(USER_CFLAGS) \
        -O3 -Qansi_alias -Qstd=c99 -DHAVE_CONFIG_WIN_H -DHAVE_COMPLEX_H -I../include -w 
 
 !ifdef omp
-CFLAGS = $(CFLAGS) $(cdebug) $(cvarsmt) -Qopenmp -Qopenmp-lib:compat
+!ifdef icllvm
+CFLAGS = $(CFLAGS) $(cdebug) $(cvarsmt) -Qiopenmp -Qopenmp-lib:compat
 !else
+CFLAGS = $(CFLAGS) $(cdebug) $(cvarsmt) -Qopenmp -Qopenmp-lib:compat
+!endif
+!else
 CFLAGS = $(CFLAGS) $(cdebug) $(cvars)
 !endif
 
 !ifdef impi
+!ifdef icllvm
+CC = mpiicc -cc=icx
+!else
 CC = mpiicc
+!endif
 CFLAGS = $(CFLAGS) -DUSE_MPI
 LINKER = mpiicc
 LDFLAGS =
