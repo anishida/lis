@@ -66,7 +66,7 @@ rem   Build Options
 @echo.	--enable-msmpi64	Build with 64bit Microsoft MPI library
 @echo.	--enable-impi		Build with Intel MPI library
 @echo.	--enable-intelc		Use Intel C Compiler
-@echo.	--enable-icllvm	Use Intel LLVM C Compiler
+@echo.	--enable-icllvm		Use Intel LLVM C Compiler
 @echo.	--enable-fortran	Enable Fortran interface
 @echo.	--enable-saamg		Enable SA-AMG preconditioner
 @echo.	--enable-longlong	Enable 64bit integer support
