@@ -1,3 +1,7 @@
+Version 2.1.2 May 21, 2023
+
+  - Updated configurations for Intel LLVM C Compiler.
+
 Version 2.1.1 April 12, 2023
 
   - Corrected errors on lis_array_ge() in documents (thanks to Ning Li).
