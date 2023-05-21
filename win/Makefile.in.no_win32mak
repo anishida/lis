@@ -93,7 +93,7 @@ CFLAGS = $(CFLAGS) $(cdebug) $(cvarsmt) -Qiopenmp -Qopenmp-lib:compat
 !else
 CFLAGS = $(CFLAGS) $(cdebug) $(cvarsmt) -Qopenmp -Qopenmp-lib:compat
 !endif
-!else
+!else
 CFLAGS = $(CFLAGS) $(cdebug) $(cvars)
 !endif
 
