@@ -7,17 +7,17 @@ MV = move
 RM = del
 
 
-# Sample configuration for environments without win32.mak (experimental). 
+# Sample configuration for environments without win32.mak (experimental)
 
 # declarations common to all compiler options
 ccommon = -c -DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -nologo -GS
 
-# For AMD64
+# for AMD64
 cflags = $(ccommon) -D_AMD64_=1 -DWIN64 -D_WIN64  -DWIN32 -D_WIN32
 cflags = $(cflags) -W4
 scall  =
 
-# For WINNT (Windows 7)
+# for WINNT (Windows 7)
 _WIN32_IE = 0x0800
 NMAKE_WINVER = 0x0601
 cflags = $(cflags) -D_WINNT -D_WIN32_WINNT=$(NMAKE_WINVER) -DNTDDI_VERSION=$(NMAKE_WINVER)0000
@@ -25,20 +25,9 @@ cflags = $(cflags) -D_WINNT -D_WIN32_WINNT=$(NMAKE_WINVER) -DNTDDI_VERSION=$(NMA
 # regardless of the TARGET OS, define compile time WINVER to match APPVER macro
 cflags = $(cflags) -D_WIN32_IE=$(_WIN32_IE) -DWINVER=$(NMAKE_WINVER)
 
-# Set debugging options
-
-!IFDEF NODEBUG
-cdebug = -Ox -DNDEBUG 
-!ELSE IFDEF PROFILE
-cdebug = -Gh -Ox -DNDEBUG
-!ELSE IFDEF TUNE
-cdebug = -Gh -Ox -DNDEBUG
-!ELSE
-cdebug = -Zi -Od -DDEBUG
-!ENDIF
-
-# for Windows applications (Windows 7)
+# for Windows applications (Windows 7, AMD64)
 EXEVER = 6.1
+DLLENTRY = 
 conlflags = $(lflags) -subsystem:console,$(EXEVER)
 guilflags = $(lflags) -subsystem:windows,$(EXEVER)
 dlllflags = $(lflags) -entry:_DllMainCRTStartup$(DLLENTRY) -dll
