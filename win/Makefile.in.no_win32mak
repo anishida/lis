@@ -25,6 +25,9 @@ cflags = $(cflags) -D_WINNT -D_WIN32_WINNT=$(NMAKE_WINVER) -DNTDDI_VERSION=$(NMA
 # regardless of the TARGET OS, define compile time WINVER to match APPVER macro
 cflags = $(cflags) -D_WIN32_IE=$(_WIN32_IE) -DWINVER=$(NMAKE_WINVER)
 
+# declarations common to all linker options
+lflags = $(lflags) -incremental:no -nologo
+
 # for Windows applications (Windows 7, AMD64)
 EXEVER = 6.1
 DLLENTRY = 

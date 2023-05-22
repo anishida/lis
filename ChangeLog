@@ -1,7 +1,7 @@
 Version 2.1.2 May 21, 2023
 
   - Updated configurations for Intel LLVM C Compiler.
-  - Added a sample configuration for Windows environments without win32.mak (thanks to K. Yamada).
+  - Added sample configuration for Windows environments without win32.mak (thanks to K. Yamada).
 
 Version 2.1.1 April 12, 2023
 
