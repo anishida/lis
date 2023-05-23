@@ -351,7 +351,7 @@ install:
 	if not exist $(PREFIX)\lib mkdir $(PREFIX)\lib
 	if not exist $(PREFIX)\doc mkdir $(PREFIX)\doc
 	$(CP) lis.lib $(PREFIX)\lib
-	$(CP) ..\include\lis_config.h $(PREFIX)\include
+	$(CP) ..\include\lis_config_win.h $(PREFIX)\include
 	$(CP) ..\include\lis.h $(PREFIX)\include
 	$(CP) ..\include\lisf.h $(PREFIX)\include
 	$(CP) ..\doc\lis-ug-en.pdf $(PREFIX)\doc
