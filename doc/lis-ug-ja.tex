@@ -2173,8 +2173,8 @@ A =
 10:     lis_initialize(&argc,&argv); 
 11:     lis_matrix_create(LIS_COMM_WORLD,&A); 
 12:     lis_matrix_set_size(A,0,n); 
-13:     lis_matrix_get_size(A,&n,&gn) 
-14:     lis_matrix_get_range(A,&is,&ie) 
+13:     lis_matrix_get_size(A,&n,&gn);
+14:     lis_matrix_get_range(A,&is,&ie);
 15:     for(i=is;i<ie;i++) 
 16:     { 
 17:         if( i>0 ) lis_matrix_set_value(LIS_INS_VALUE,i,i-1,-1.0,A); 
