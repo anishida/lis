@@ -22,7 +22,8 @@ To ensure that the library has been built successfully, enter
 
 > nmake check
 
-The following command copies the library files to lis-($VERSION)\lib 
-and the executable files to lis-($VERSION)\bin, respectively:
+The following command copies the library files to lis-($VERSION)\lib,
+the header files to lis-($VERSION)\include, and the executable files
+to lis-($VERSION)\bin, respectively:
 
 > nmake install
