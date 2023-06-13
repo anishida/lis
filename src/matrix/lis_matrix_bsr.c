@@ -1078,6 +1078,7 @@ LIS_INT lis_matrix_normf_bsr(LIS_MATRIX A, LIS_SCALAR *nrm)
 
 	bnr  = A->bnr;
 	bnc  = A->bnc;
+	nr  = A->nr;	
 	bs   = bnr*bnc;
 	sum  = (LIS_SCALAR)0;
 

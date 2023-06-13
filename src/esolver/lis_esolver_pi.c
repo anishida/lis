@@ -158,7 +158,7 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
   y = esolver->work[0];
   q = esolver->work[1];
 
-  if ( esolver->ishift != 0.0 ) oshift = ishift;  
+  if ( esolver->ishift != 0.0 ) oshift = esolver->ishift;  
   if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, oshift);  
 
   if( output )
@@ -345,7 +345,7 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
   y = esolver->work[1];
   q = esolver->work[2];
 
-  if ( esolver->ishift != 0.0 ) oshift = ishift;
+  if ( esolver->ishift != 0.0 ) oshift = esolver->ishift;
   if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, oshift);
 
   if( output )

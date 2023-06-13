@@ -362,12 +362,12 @@ LIS_INT lis_vector_nrmi(LIS_VECTOR vx, LIS_REAL *value)
 	#ifdef USE_MPI
 		comm   = vx->comm;
 	#endif
+		tmp     = 0.0;		
 	#ifdef _OPENMP
 		nprocs = omp_get_max_threads();
 		#pragma omp parallel private(i,tmp,my_rank)
 		{
 			my_rank = omp_get_thread_num();
-			tmp     = 0.0;
 			#ifdef USE_VEC_COMP
 		    #pragma cdir nodep
 			#endif
