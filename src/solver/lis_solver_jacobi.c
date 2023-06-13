@@ -122,6 +122,8 @@ LIS_INT lis_jacobi(LIS_SOLVER solver)
 
 	LIS_DEBUG_FUNC_IN;
 
+	comm = LIS_COMM_WORLD;  
+
 	A       = solver->A;
 	b       = solver->b;
 	x       = solver->x;
