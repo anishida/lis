@@ -41,7 +41,7 @@
 #include <stdarg.h>
 #include <time.h>
 
-#ifdef WIN32
+#if defined(WIN32) || defined(_WIN32)
 	#include <windows.h>
 #else
 	#include <sys/time.h>

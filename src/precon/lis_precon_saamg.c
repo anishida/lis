@@ -314,8 +314,8 @@ LIS_INT lis_precon_psd_update_saamg(LIS_SOLVER solver, LIS_PRECON precon)
 	#endif
 
 	LIS_DEBUG_FUNC_OUT;
-    return LIS_SUCCESS;
 #endif
+    return LIS_SUCCESS;
 }
 
 #undef __FUNC__
