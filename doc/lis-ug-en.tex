@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 2.1.3
+Version 2.1.4
 \end{flushleft}
 
 \vspace*{2cm}
@@ -575,7 +575,7 @@ from the file
 {\tt test/testmat.mtx} and solve the linear equation $Ax = b$ 
 by the BiCG method. The result on the SGI Altix 3700 is
  shown below. Options {\tt --enable-omp} and {\tt --enable-mpi} can be combined.
-\begin{itemsquarebox}[l]{Default}
+\begin{itembox}[l]{Default}
  \begin{minipage}{10cm}
  \begin{verbatim}
 matrix size = 100 x 100 (460 nonzero entries)
@@ -596,8 +596,8 @@ BiCG:   linear solver      = 3.901005e-03 sec.
 BiCG: relative residual    = 6.327297e-15
  \end{verbatim}
  \end{minipage}
-\end{itemsquarebox}
-\begin{itemsquarebox}[l]{{\tt --enable-omp}}
+\end{itembox}
+\begin{itembox}[l]{{\tt --enable-omp}}
  \begin{minipage}{10cm}
  \begin{verbatim}
 max number of threads = 32
@@ -620,8 +620,8 @@ BiCG:   linear solver      = 6.662130e-03 sec.
 BiCG: relative residual    = 6.221213e-15
  \end{verbatim}
  \end{minipage}
-\end{itemsquarebox}
-\begin{itemsquarebox}[l]{\tt --enable-mpi}
+\end{itembox}
+\begin{itembox}[l]{\tt --enable-mpi}
  \begin{minipage}{10cm}
  \begin{verbatim}
 number of processes = 2
@@ -643,7 +643,7 @@ BiCG:   linear solver      = 2.755322e-03 sec.
 BiCG: relative residual    = 6.221213e-15
  \end{verbatim}
  \end{minipage}
-\end{itemsquarebox}
+\end{itembox}
 
 \subsubsection{Installing}
 In the directory {\tt lis-(\$VERSION)}, enter\\
@@ -1282,7 +1282,7 @@ are located in \verb|($INSTALLDIR)/include|.
 \subsection{Initializing and Finalizing}
 The functions for initializing and finalizing the execution environment 
 must be called at the top and bottom of the program, respectively, as follows:
-\begin{itemsquarebox}[l]{C}
+\begin{itembox}[l]{C}
 \small
 \begin{verbatim}
  1: #include "lis.h"
@@ -1293,8 +1293,8 @@ must be called at the top and bottom of the program, respectively, as follows:
  6:     lis_finalize();
  7: }
 \end{verbatim}
-\end{itemsquarebox}
-\begin{itemsquarebox}[l]{Fortran}
+\end{itembox}
+\begin{itembox}[l]{Fortran}
 \small
 \begin{verbatim}
  1: #include "lisf.h"
@@ -1302,7 +1302,7 @@ must be called at the top and bottom of the program, respectively, as follows:
  3:     ...
  4:      call lis_finalize(ierr)
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 \\ \\
 \noindent
 {\bf Initializing}
@@ -1366,7 +1366,7 @@ for the multiprocessing environment.
  
 Programs to create vector $v$ are as follows, 
 where the number of processing elements for the multiprocessing environment is assumed to be two:
-\begin{itemsquarebox}[l]{C (for serial and multithreaded environments)}
+\begin{itembox}[l]{C (for serial and multithreaded environments)}
 \small
 \begin{verbatim}
  1: LIS_INT i,n;
@@ -1380,8 +1380,8 @@ where the number of processing elements for the multiprocessing environment is a
  9:     lis_vector_set_value(LIS_INS_VALUE,i,(double)i,v);
 10: }
 \end{verbatim}
-\end{itemsquarebox}
-\begin{itemsquarebox}[l]{C (for multiprocessing environment)}
+\end{itembox}
+\begin{itembox}[l]{C (for multiprocessing environment)}
 \small
 \begin{verbatim}
  1: LIS_INT i,n,is,ie;                       /* or LIS_INT  i,ln,is,ie; */
@@ -1395,8 +1395,8 @@ where the number of processing elements for the multiprocessing environment is a
  9:     lis_vector_set_value(LIS_INS_VALUE,i,(double)i,v);
 10: }
 \end{verbatim}
-\end{itemsquarebox}
-\begin{itemsquarebox}[l]{Fortran (for serial and multithreaded environments)}
+\end{itembox}
+\begin{itembox}[l]{Fortran (for serial and multithreaded environments)}
 \small
 \begin{verbatim}
  1: LIS_INTEGER i,n
@@ -1409,8 +1409,8 @@ where the number of processing elements for the multiprocessing environment is a
  9:     call lis_vector_set_value(LIS_INS_VALUE,i,DBLE(i),v,ierr)
 10: enddo
 \end{verbatim}
-\end{itemsquarebox}
-\begin{itemsquarebox}[l]{Fortran (for multiprocessing environment)}
+\end{itembox}
+\begin{itembox}[l]{Fortran (for multiprocessing environment)}
 \small
 \begin{verbatim}
  1: LIS_INTEGER i,n,is,ie                 
@@ -1423,7 +1423,7 @@ where the number of processing elements for the multiprocessing environment is a
  8:     call lis_vector_set_value(LIS_INS_VALUE,i,DBLE(i),v,ierr);
  9: enddo
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 \\ \\
 \noindent
 {\bf Creating Vectors}
@@ -1548,7 +1548,7 @@ for the multiprocessing environment.
 
 Programs to create matrix $A$ in the CSR format are as follows, 
 where the number of processing elements for the multiprocessing environment is assumed to be two:
-\begin{itemsquarebox}[l]{C (for serial and multithreaded environments)}
+\begin{itembox}[l]{C (for serial and multithreaded environments)}
 \small
 \begin{verbatim}
  1: LIS_INT i,n;
@@ -1564,8 +1564,8 @@ where the number of processing elements for the multiprocessing environment is a
 11: lis_matrix_set_type(A,LIS_MATRIX_CSR);
 12: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
-\begin{itemsquarebox}[l]{C (for multiprocessing environment)}
+\end{itembox}
+\begin{itembox}[l]{C (for multiprocessing environment)}
 \small
 \begin{verbatim}
  1: LIS_INT i,n,gn,is,ie;                 
@@ -1583,8 +1583,8 @@ where the number of processing elements for the multiprocessing environment is a
 13: lis_matrix_set_type(A,LIS_MATRIX_CSR);
 14: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
-\begin{itemsquarebox}[l]{Fortran (for serial and multithreaded environments)}
+\end{itembox}
+\begin{itembox}[l]{Fortran (for serial and multithreaded environments)}
 \small
 \begin{verbatim}
  1: LIS_INTEGER i,n
@@ -1600,8 +1600,8 @@ where the number of processing elements for the multiprocessing environment is a
 11: call lis_matrix_set_type(A,LIS_MATRIX_CSR,ierr)
 12: call lis_matrix_assemble(A,ierr)
 \end{verbatim}
-\end{itemsquarebox}
-\begin{itemsquarebox}[l]{Fortran (for multiprocessing environment)}
+\end{itembox}
+\begin{itembox}[l]{Fortran (for multiprocessing environment)}
 \small
 \begin{verbatim}
  1: LIS_INTEGER i,n,gn,is,ie                 
@@ -1619,7 +1619,7 @@ where the number of processing elements for the multiprocessing environment is a
 13: call lis_matrix_set_type(A,LIS_MATRIX_CSR,ierr)
 14: call lis_matrix_assemble(A,ierr)
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 \\ \\
 \noindent
 {\bf Creating Matrices}
@@ -1744,7 +1744,7 @@ for the multiprocessing environment.
 
 Programs to create matrix $A$ in the CSR format are as follows,
 where the number of processing elements for the multiprocessing environment is assumed to be two: 
-\begin{itemsquarebox}[l]{C (for serial and multithreaded environments)}
+\begin{itembox}[l]{C (for serial and multithreaded environments)}
 \small
 \begin{verbatim}
  1: LIS_INT i,k,n,nnz;
@@ -1769,8 +1769,8 @@ where the number of processing elements for the multiprocessing environment is a
 
 
 \end{verbatim}
-\end{itemsquarebox}
-\begin{itemsquarebox}[l]{C (for multiprocessing environment)}
+\end{itembox}
+\begin{itembox}[l]{C (for multiprocessing environment)}
 \small
 \begin{verbatim}
  1: LIS_INT i,k,n,nnz,is,ie;
@@ -1793,7 +1793,7 @@ where the number of processing elements for the multiprocessing environment is a
 18: lis_matrix_set_csr(nnz,ptr,index,value,A);
 19: lis_matrix_assemble(A); 
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 \\ \\
 \noindent
 {\bf Associating Arrays}
@@ -1813,7 +1813,7 @@ To associate the arrays in the CSR format with matrix $A$, the following functio
 Programs to read matrix $A$ in Equation (\ref{eq:mat}) in the CSR format and 
 vector $b$ in Equation (\ref{eq:vecv}) from an external file are as follows: 
 \\
-\begin{itemsquarebox}[l]{C (for serial, multithreaded and multiprocessing environments)}
+\begin{itembox}[l]{C (for serial, multithreaded and multiprocessing environments)}
 \small
 \begin{verbatim}
  1: LIS_MATRIX A;
@@ -1824,8 +1824,8 @@ vector $b$ in Equation (\ref{eq:vecv}) from an external file are as follows:
  6: lis_matrix_set_type(A,LIS_MATRIX_CSR); 
  7: lis_input(A,b,x,"matvec.mtx"); 
 \end{verbatim}
-\end{itemsquarebox}
-\begin{itemsquarebox}[l]{Fortran (for serial, multithreaded and multiprocessing environments)}
+\end{itembox}
+\begin{itembox}[l]{Fortran (for serial, multithreaded and multiprocessing environments)}
 \small
 \begin{verbatim}
  1: LIS_MATRIX A
@@ -1836,7 +1836,7 @@ vector $b$ in Equation (\ref{eq:vecv}) from an external file are as follows:
  6: call lis_matrix_set_type(A,LIS_MATRIX_CSR,ierr) 
  7: call lis_input(A,b,x,'matvec.mtx',ierr) 
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 \\ \\
 The content of the destination file {\tt matvec.mtx} is:
 {\small
@@ -1896,7 +1896,7 @@ The following file formats are supported:
 \subsection{Solving Linear Equations}\label{subsec:solve}
 A program to solve the linear equation $Ax = b$ with a specified 
 solver is as follows: 
-\begin{itemsquarebox}[l]{C (for serial, multithreaded and multiprocessing environments)}
+\begin{itembox}[l]{C (for serial, multithreaded and multiprocessing environments)}
 \small
 \begin{verbatim}
  1: LIS_MATRIX A; 
@@ -1910,8 +1910,8 @@ solver is as follows:
  9: lis_solver_set_option("-tol 1.0e-12",solver); 
 10: lis_solve(A,b,x,solver); 
 \end{verbatim}
-\end{itemsquarebox}
-\begin{itemsquarebox}[l]{Fortran (for serial, multithreaded and multiprocessing environments)}
+\end{itembox}
+\begin{itembox}[l]{Fortran (for serial, multithreaded and multiprocessing environments)}
 \small
 \begin{verbatim}
  1: LIS_MATRIX A 
@@ -1925,7 +1925,7 @@ solver is as follows:
  9: call lis_solver_set_option('-tol 1.0e-12',solver,ierr) 
 10: call lis_solve(A,b,x,solver,ierr) 
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 \\ \\
 \noindent
 {\bf Creating Solvers}
@@ -2098,7 +2098,7 @@ To solve the linear equation $Ax = b$, the following functions are used:
 \subsection{Solving Eigenvalue Problems}\label{subsec:solve}
 A program to solve the standard eigenvalue problem $Ax = \lambda x$ with a specified 
 solver is as follows: 
-\begin{itemsquarebox}[l]{C (for serial, multithreaded and multiprocessing environments)}
+\begin{itembox}[l]{C (for serial, multithreaded and multiprocessing environments)}
 \small
 \begin{verbatim}
  1: LIS_MATRIX A; 
@@ -2113,8 +2113,8 @@ solver is as follows:
 10: lis_esolver_set_option("-etol 1.0e-12 -tol 1.0e-12",esolver); 
 11: lis_esolve(A,x,evalue,esolver); 
 \end{verbatim}
-\end{itemsquarebox}
-\begin{itemsquarebox}[l]{Fortran (for serial, multithreaded and multiprocessing environments)}
+\end{itembox}
+\begin{itembox}[l]{Fortran (for serial, multithreaded and multiprocessing environments)}
 \small
 \begin{verbatim}
  1: LIS_MATRIX A 
@@ -2129,7 +2129,7 @@ solver is as follows:
 10: call lis_esolver_set_option('-etol 1.0e-12 -tol 1.0e-12',esolver,ierr) 
 11: call lis_esolve(A,x,evalue,esolver,ierr) 
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 \\ \\
 \noindent
 {\bf Creating Eigensolvers}
@@ -2316,7 +2316,7 @@ of size $12$.
 The the right-hand side vector $b$ is set such that the values of the elements of the solution $x$ are $1$. 
 The programs are located in the directory \verb|lis-($VERSION)/test|. 
 
-\begin{itemsquarebox}[l]{Test program: test4.c}
+\begin{itembox}[l]{Test program: test4.c}
 {\small
 \begin{verbatim}
  1: #include <stdio.h> 
@@ -2365,8 +2365,8 @@ The programs are located in the directory \verb|lis-($VERSION)/test|.
 }
 \end{verbatim}
 }
-\end{itemsquarebox}
-\begin{itemsquarebox}[l]{Test program: test4f.F}
+\end{itembox}
+\begin{itembox}[l]{Test program: test4f.F}
 {\small
 \begin{verbatim}
  1:      implicit none
@@ -2416,7 +2416,7 @@ The programs are located in the directory \verb|lis-($VERSION)/test|.
 45:      end
 \end{verbatim}
 }
-\end{itemsquarebox}
+\end{itembox}
 
 \newpage
 \subsection{An Alternate Workflow: PSD}
@@ -2465,7 +2465,7 @@ An actual implementation can be seen in test problem test8f.F90.
 
 \vspace{1pc}
 
-\begin{itemsquarebox}[l]{Pseudo-code example of workflow}
+\begin{itembox}[l]{Pseudo-code example of workflow}
 {\small
 \begin{verbatim}
   1:      PROGRAM psd_driver
@@ -2524,8 +2524,8 @@ An actual implementation can be seen in test problem test8f.F90.
  54:
 \end{verbatim}
 }
-\end{itemsquarebox}
-\begin{itemsquarebox}[l]{Pseudo-code example of workflow (contd.)}
+\end{itembox}
+\begin{itembox}[l]{Pseudo-code example of workflow (contd.)}
 {\small
 \begin{verbatim}
  55:     DO
@@ -2579,7 +2579,7 @@ An actual implementation can be seen in test problem test8f.F90.
 103:      END PROGRAM psd_driver
 \end{verbatim}
 }
-\end{itemsquarebox}
+\end{itembox}
 
 \newpage
 \subsection{Compiling and Linking}
@@ -2594,7 +2594,7 @@ multiprocessing environment.
 The preprocessor macros {\tt \_LONG\_\_LONG} for C and {\tt LONG\_\_LONG} 
 for Fortran must be defined when using the 64bit integer.
 
-\begin{itemsquarebox}[l]{For the serial environment}
+\begin{itembox}[l]{For the serial environment}
 \small
 {\bf Compiling}\\
 \verb+      > icc -c -I($INSTALLDIR)/include test4.c+\\
@@ -2602,8 +2602,8 @@ for Fortran must be defined when using the 64bit integer.
 \verb+      > icc -o test4 test4.o -L($INSTALLDIR)/lib -llis+\\
 {\bf Linking (with SA-AMG)}\\
 \verb+      > ifort -nofor_main -o test4 test4.o -L($INSTALLDIR)/lib -llis+
-\end{itemsquarebox}
-\begin{itemsquarebox}[l]{For multithreaded environment}
+\end{itembox}
+\begin{itembox}[l]{For multithreaded environment}
 \small
 {\bf Compiling}\\
 \verb+      > icc -c -openmp -I($INSTALLDIR)/include test4.c+\\
@@ -2611,8 +2611,8 @@ for Fortran must be defined when using the 64bit integer.
 \verb+      > icc -openmp -o test4 test4.o -L($INSTALLDIR)/lib -llis+\\
 {\bf Linking (with SA-AMG)}\\
 \verb+      > ifort -nofor_main -openmp -o test4 test4.o -L($INSTALLDIR)/lib -llis+
-\end{itemsquarebox}
-\begin{itemsquarebox}[l]{For multiprocessing environment}
+\end{itembox}
+\begin{itembox}[l]{For multiprocessing environment}
 \small
 {\bf Compiling}\\
 \verb+      > icc -c -DUSE_MPI -I($INSTALLDIR)/include test4.c+\\
@@ -2620,8 +2620,8 @@ for Fortran must be defined when using the 64bit integer.
 \verb+      > icc -o test4 test4.o -L($INSTALLDIR)/lib -llis -lmpi+\\
 {\bf Linking (with SA-AMG)}\\
 \verb+      > ifort -nofor_main -o test4 test4.o -L($INSTALLDIR)/lib -llis -lmpi+
-\end{itemsquarebox}
-\begin{itemsquarebox}[l]{For multithreaded and multiprocessing environments}
+\end{itembox}
+\begin{itembox}[l]{For multithreaded and multiprocessing environments}
 \small
 {\bf Compiling}\\
 \verb+      > icc -c -openmp -DUSE_MPI -I($INSTALLDIR)/include test4.c+\\
@@ -2629,7 +2629,7 @@ for Fortran must be defined when using the 64bit integer.
 \verb+      > icc -openmp -o test4 test4.o -L($INSTALLDIR)/lib -llis -lmpi+\\
 {\bf Linking (with SA-AMG)}\\
 \verb+      > ifort -nofor_main -openmp -o test4 test4.o -L($INSTALLDIR)/lib -llis -lmpi+
-\end{itemsquarebox}
+\end{itembox}
 
 Provided below is an example \verb|test4f.F| located 
 in the directory \verb|lis-($VERSION)/test|, compiled on the SGI Altix 3700 
@@ -2638,34 +2638,34 @@ Since compiler directives are used in the program,
 an appropriate compiler option should be specified to use the preprocessor.
 \verb|-fpp| is the option for for the Intel compiler. 
 
-\begin{itemsquarebox}[l]{For serial environment}
+\begin{itembox}[l]{For serial environment}
 \small
 {\bf Compiling}\\
 \verb+      > ifort -c -fpp -I($INSTALLDIR)/include test4f.F+\\
 {\bf Linking}\\
 \verb+      > ifort -o test4f test4f.o -L($INSTALLDIR)/lib -llis+\\
-\end{itemsquarebox}
-\begin{itemsquarebox}[l]{For multithreaded environment}
+\end{itembox}
+\begin{itembox}[l]{For multithreaded environment}
 \small
 {\bf Compiling}\\
 \verb+      > ifort -c -fpp -openmp -I($INSTALLDIR)/include test4f.F+\\
 {\bf Linking}\\
 \verb+      > ifort -openmp -o test4f test4f.o -L($INSTALLDIR)/lib -llis+\\
-\end{itemsquarebox}
-\begin{itemsquarebox}[l]{For multiprocessing environment}
+\end{itembox}
+\begin{itembox}[l]{For multiprocessing environment}
 \small
 {\bf Compiling}\\
 \verb+      > ifort -c -fpp -DUSE_MPI -I($INSTALLDIR)/include test4f.F+\\
 {\bf Linking}\\
 \verb+      > ifort -o test4f test4f.o -L($INSTALLDIR)/lib -llis -lmpi+\\
-\end{itemsquarebox}
-\begin{itemsquarebox}[l]{For multithreaded and multiprocessing environments}
+\end{itembox}
+\begin{itembox}[l]{For multithreaded and multiprocessing environments}
 \small
 {\bf Compiling}\\
 \verb+      > ifort -c -fpp -openmp -DUSE_MPI -I($INSTALLDIR)/include test4f.F+\\
 {\bf Linking}\\
 \verb+      > ifort -openmp -o test4f test4f.o -L($INSTALLDIR)/lib -llis -lmpi+\\
-\end{itemsquarebox}
+\end{itembox}
 
 \subsection{Running}
 The test programs \verb|test4| and \verb|test4f| 
@@ -2839,7 +2839,7 @@ $
 \end{minipage}
 \caption{Data structure of CSR format (for serial and multithreaded environments).}\label{fig:storage01}}
 \end{figure}
-\begin{itemsquarebox}[l]{For serial and multithreaded environments}
+\begin{itembox}[l]{For serial and multithreaded environments}
 \small
 \begin{verbatim}
  1: LIS_INT n,nnz;
@@ -2862,7 +2862,7 @@ $
 18: lis_matrix_set_csr(nnz,ptr,index,value,A);
 19: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \newpage
 \subsubsection{Creating Matrices (for Multiprocessing Environment)}
@@ -2875,7 +2875,7 @@ on two processing elements is as follows:
 \includegraphics{storage01_mpi.eps} 
 \caption{Data structure of CSR format (for multiprocessing environment).}\label{fig:storage01_mpi}}
 \end{figure}
-\begin{itemsquarebox}[l]{For multiprocessing environment}
+\begin{itembox}[l]{For multiprocessing environment}
 \small
 \begin{verbatim}
  1: LIS_INT i,k,n,nnz,my_rank;
@@ -2901,7 +2901,7 @@ on two processing elements is as follows:
 21: lis_matrix_set_csr(nnz,ptr,index,value,A);
 22: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \subsubsection{Associating Arrays}
 To associate the arrays in the CSR format with matrix $A$, the following functions are used:
@@ -2951,7 +2951,7 @@ $
 \end{minipage}
 \caption{Data structure of CSC format (for serial and multithreaded environments).}\label{fig:storage02}}
 \end{figure}
-\begin{itemsquarebox}[l]{For serial and multithreaded environments}
+\begin{itembox}[l]{For serial and multithreaded environments}
 \small
 \begin{verbatim}
  1: LIS_INT n,nnz;
@@ -2974,7 +2974,7 @@ $
 18: lis_matrix_set_csc(nnz,ptr,index,value,A);
 19: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \newpage
 \subsubsection{Creating Matrices (for Multiprocessing Environment)}
@@ -2986,7 +2986,7 @@ matrix in the CSC format on two processing elements is as follows:
 \includegraphics{storage02_mpi.eps} 
 \caption{Data structure of CSC format (for multiprocessing environment).}\label{fig:storage02_mpi}}
 \end{figure}
-\begin{itemsquarebox}[l]{For multiprocessing environment}
+\begin{itembox}[l]{For multiprocessing environment}
 \small
 \begin{verbatim}
  1: LIS_INT i,k,n,nnz,my_rank;
@@ -3012,7 +3012,7 @@ matrix in the CSC format on two processing elements is as follows:
 21: lis_matrix_set_csc(nnz,ptr,index,value,A);
 22: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \subsubsection{Associating Arrays}
 To associate the arrays in the CSC format with matrix $A$, the following functions are used:
@@ -3065,7 +3065,7 @@ $
 \end{minipage}
 \caption{Data structure of MSR format (for serial and multithreaded environments).}\label{fig:storage03}}
 \end{figure}
-\begin{itemsquarebox}[l]{For serial and multithreaded environments}
+\begin{itembox}[l]{For serial and multithreaded environments}
 \small
 \begin{verbatim}
  1: LIS_INT n,nnz,ndz;
@@ -3086,7 +3086,7 @@ $
 16: lis_matrix_set_msr(nnz,ndz,index,value,A);
 17: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \newpage
 \subsubsection{Creating Matrices (for Multiprocessing Environment)}
@@ -3098,7 +3098,7 @@ elements. A program to create the matrix in the MSR format on two processing ele
 \includegraphics{storage03_mpi.eps} 
 \caption{Data structure of MSR format (for multiprocessing environment).}\label{fig:storage03_mpi}}
 \end{figure}
-\begin{itemsquarebox}[l]{For multiprocessing environment}
+\begin{itembox}[l]{For multiprocessing environment}
 \small
 \begin{verbatim}
  1: LIS_INT i,k,n,nnz,ndz,my_rank;
@@ -3123,7 +3123,7 @@ elements. A program to create the matrix in the MSR format on two processing ele
 20: lis_matrix_set_msr(nnz,ndz,index,value,A);
 21: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \subsubsection{Associating Arrays}
 To associate the arrays in the MSR format with matrix $A$, the following functions are used:
@@ -3183,7 +3183,7 @@ $
 \end{minipage}
 \caption{Data structure of DIA format (for serial environment).}\label{fig:storage04}}
 \end{figure}
-\begin{itemsquarebox}[l]{For serial environment}
+\begin{itembox}[l]{For serial environment}
 \small
 \begin{verbatim}
  1: LIS_INT n,nnd;
@@ -3204,7 +3204,7 @@ $
 16: lis_matrix_set_dia(nnd,index,value,A);
 17: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \newpage
 \subsubsection{Creating Matrices (for Multithreaded Environment)}
@@ -3214,7 +3214,7 @@ Figure \ref{fig:storage04_omp} shows how matrix $A$ in Figure \ref{fig:storage04
 \includegraphics{storage04_omp.eps} 
 \caption{Data structure of DIA format (for multithreaded environment).}\label{fig:storage04_omp}}
 \end{figure}
-\begin{itemsquarebox}[l]{For multithreaded environment}
+\begin{itembox}[l]{For multithreaded environment}
 \small
 \begin{verbatim}
  1: LIS_INT n,maxnnd,nprocs;
@@ -3234,7 +3234,7 @@ Figure \ref{fig:storage04_omp} shows how matrix $A$ in Figure \ref{fig:storage04
 15: lis_matrix_set_dia(maxnnd,index,value,A);
 16: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \newpage
 \subsubsection{Creating Matrices (for Multiprocessing Environment)}
@@ -3244,7 +3244,7 @@ Figure \ref{fig:storage04_mpi} shows how matrix $A$ in Figure \ref{fig:storage04
 \includegraphics{storage04_mpi.eps} 
 \caption{Data structure of DIA format (for multiprocessing environment).}\label{fig:storage04_mpi}}
 \end{figure}
-\begin{itemsquarebox}[l]{For multiprocessing environment}
+\begin{itembox}[l]{For multiprocessing environment}
 \small
 \begin{verbatim}
  1: LIS_INT i,n,nnd,my_rank;
@@ -3268,7 +3268,7 @@ Figure \ref{fig:storage04_mpi} shows how matrix $A$ in Figure \ref{fig:storage04
 19: lis_matrix_set_dia(nnd,index,value,A);
 20: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \subsubsection{Associating Arrays}
 To associate the arrays in the DIA format with matrix $A$, the following functions are used:
@@ -3319,7 +3319,7 @@ $
 \end{minipage}
 \caption{Data structure of ELL format (for serial and multithreaded environments).}\label{fig:storage05}}
 \end{figure}
-\begin{itemsquarebox}[l]{For serial and multithreaded environments}
+\begin{itembox}[l]{For serial and multithreaded environments}
 \small
 \begin{verbatim}
  1: LIS_INT n,maxnzr;
@@ -3340,7 +3340,7 @@ $
 16: lis_matrix_set_ell(maxnzr,index,value,A);
 17: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \newpage
 \subsubsection{Creating Matrices (for Multiprocessing Environment)}
@@ -3350,7 +3350,7 @@ Figure \ref{fig:storage05_mpi} shows how matrix $A$ in Figure \ref{fig:storage05
 \includegraphics{storage05_mpi.eps} 
 \caption{Data structure of ELL format (for multiprocessing environment).}\label{fig:storage05_mpi}}
 \end{figure}
-\begin{itemsquarebox}[l]{For multiprocessing environment}
+\begin{itembox}[l]{For multiprocessing environment}
 \small
 \begin{verbatim}
  1: LIS_INT i,n,maxnzr,my_rank;
@@ -3375,7 +3375,7 @@ Figure \ref{fig:storage05_mpi} shows how matrix $A$ in Figure \ref{fig:storage05
 20: lis_matrix_set_ell(maxnzr,index,value,A);
 21: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \subsubsection{Associating Arrays}
 To associate an array required by the ELL format with matrix $A$, the following functions are used:
@@ -3453,7 +3453,7 @@ $
 \end{minipage}
 \caption{Data structure of JAD format (for serial environment).}\label{fig:storage06}}
 \end{figure}
-\begin{itemsquarebox}[l]{For serial environment}
+\begin{itembox}[l]{For serial environment}
 \small
 \begin{verbatim}
  1: LIS_INT n,nnz,maxnzr;
@@ -3478,7 +3478,7 @@ $
 20: lis_matrix_set_jad(nnz,maxnzr,perm,ptr,index,value,A);
 21: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \newpage
 \subsubsection{Creating Matrices (for Multithreaded Environment)}
@@ -3488,7 +3488,7 @@ Figure \ref{fig:storage06_omp} shows how matrix $A$ in Figure \ref{fig:storage06
 \includegraphics{storage06_omp.eps} 
 \caption{Data structure of JAD format (for multithreaded environment).}\label{fig:storage06_omp}}
 \end{figure}
-\begin{itemsquarebox}[l]{For multithreaded environment}
+\begin{itembox}[l]{For multithreaded environment}
 \small
 \begin{verbatim}
  1: LIS_INT n,nnz,maxmaxnzr,nprocs;
@@ -3514,7 +3514,7 @@ Figure \ref{fig:storage06_omp} shows how matrix $A$ in Figure \ref{fig:storage06
 21: lis_matrix_set_jad(nnz,maxmaxnzr,perm,ptr,index,value,A);
 22: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \newpage
 \subsubsection{Creating Matrices (for Multiprocessing Environment)}
@@ -3524,7 +3524,7 @@ Figure \ref{fig:storage06_mpi} shows how matrix $A$ in Figure \ref{fig:storage06
 \includegraphics{storage06_mpi.eps} 
 \caption{Data structure of JAD format (for multiprocessing environment).}\label{fig:storage06_mpi}}
 \end{figure}
-\begin{itemsquarebox}[l]{For multiprocessing environment}
+\begin{itembox}[l]{For multiprocessing environment}
 \small
 \begin{verbatim}
  1: LIS_INT i,n,nnz,maxnzr,my_rank;
@@ -3553,7 +3553,7 @@ Figure \ref{fig:storage06_mpi} shows how matrix $A$ in Figure \ref{fig:storage06
 24: lis_matrix_set_jad(nnz,maxnzr,perm,ptr,index,value,A);
 25: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \subsubsection{Associating Arrays}
 To associate an array required by the JAD format with matrix $A$, the following functions are used:
@@ -3605,7 +3605,7 @@ $
 \end{minipage}
 \caption{Data structure of BSR format (for serial and multithreaded environments).}\label{fig:storage07}}
 \end{figure}
-\begin{itemsquarebox}[l]{For serial and multithreaded environments}
+\begin{itembox}[l]{For serial and multithreaded environments}
 \small
 \begin{verbatim}
  1: LIS_INT n,bnr,bnc,nr,nc,bnnz;
@@ -3628,7 +3628,7 @@ $
 18: lis_matrix_set_bsr(bnr,bnc,bnnz,bptr,bindex,value,A);
 19: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \newpage
 \subsubsection{Creating Matrices (for Multiprocessing Environment)}
@@ -3638,7 +3638,7 @@ Figure \ref{fig:storage07_mpi} shows how matrix $A$ in Figure \ref{fig:storage07
 \includegraphics{storage07_mpi.eps} 
 \caption{Data structure of BSR format (for multiprocessing environment).}\label{fig:storage07_mpi}}
 \end{figure}
-\begin{itemsquarebox}[l]{For multiprocessing environment}
+\begin{itembox}[l]{For multiprocessing environment}
 \small
 \begin{verbatim}
  1: LIS_INT n,bnr,bnc,nr,nc,bnnz,my_rank;
@@ -3665,7 +3665,7 @@ Figure \ref{fig:storage07_mpi} shows how matrix $A$ in Figure \ref{fig:storage07
 22: lis_matrix_set_bsr(bnr,bnc,bnnz,bptr,bindex,value,A);
 23: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \subsubsection{Associating Arrays}
 To associate the arrays in the BSR format with matrix $A$, the following functions are used:
@@ -3719,7 +3719,7 @@ $
 \end{minipage}
 \caption{Data structure of BSC format (for serial and multithreaded environments).}\label{fig:storage08}}
 \end{figure}
-\begin{itemsquarebox}[l]{For serial and multithreaded environments}
+\begin{itembox}[l]{For serial and multithreaded environments}
 \small
 \begin{verbatim}
  1: LIS_INT n,bnr,bnc,nr,nc,bnnz;
@@ -3742,7 +3742,7 @@ $
 18: lis_matrix_set_bsc(bnr,bnc,bnnz,bptr,bindex,value,A);
 19: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \newpage
 \subsubsection{Creating Matrices (for Multiprocessing Environment)}
@@ -3754,7 +3754,7 @@ elements. A program to create the matrix in the BSC format on two processing ele
 \includegraphics{storage08_mpi.eps} 
 \caption{Data structure of BSC format (for multiprocessing environment).}\label{fig:storage08_mpi}}
 \end{figure}
-\begin{itemsquarebox}[l]{For multiprocessing environment}
+\begin{itembox}[l]{For multiprocessing environment}
 \small
 \begin{verbatim}
  1: LIS_INT n,bnr,bnc,nr,nc,bnnz,my_rank;
@@ -3781,7 +3781,7 @@ elements. A program to create the matrix in the BSC format on two processing ele
 22: lis_matrix_set_bsc(bnr,bnc,bnnz,bptr,bindex,value,A);
 23: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \subsubsection{Associating Arrays}
 To associate the arrays in the BSC format with matrix $A$, the following functions are used:
@@ -3844,7 +3844,7 @@ $
 \end{minipage}
 \caption{Data structure of VBR format (for serial and multithreaded environments).}\label{fig:storage09}}
 \end{figure}
-\begin{itemsquarebox}[l]{For serial and multithreaded environments}
+\begin{itembox}[l]{For serial and multithreaded environments}
 \small
 \begin{verbatim}
  1: LIS_INT n,nnz,nr,nc,bnnz;
@@ -3875,7 +3875,7 @@ $
 26: lis_matrix_set_vbr(nnz,nr,nc,bnnz,row,col,ptr,bptr,bindex,value,A);
 27: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \newpage
 \subsubsection{Creating Matrices (for Multiprocessing Environment)}
@@ -3885,7 +3885,7 @@ Figure \ref{fig:storage09_mpi} shows how matrix $A$ in Figure \ref{fig:storage09
 \includegraphics{storage09_mpi.eps} 
 \caption{Data structure of VBR format (for multiprocessing environment).}\label{fig:storage09_mpi}}
 \end{figure}
-\begin{itemsquarebox}[l]{For multiprocessing environment}
+\begin{itembox}[l]{For multiprocessing environment}
 \small
 \begin{verbatim}
  1: LIS_INT n,nnz,nr,nc,bnnz,my_rank;
@@ -3921,7 +3921,7 @@ Figure \ref{fig:storage09_mpi} shows how matrix $A$ in Figure \ref{fig:storage09
 31: lis_matrix_set_vbr(nnz,nr,nc,bnnz,row,col,ptr,bptr,bindex,value,A);
 32: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \subsubsection{Associating Arrays}
 To associate the arrays in the VBR format with matrix $A$, the following functions are used:
@@ -3969,7 +3969,7 @@ $
 \end{minipage}
 \caption{Data structure of COO format (for serial and multithreaded environments).}\label{fig:storage10}}
 \end{figure}
-\begin{itemsquarebox}[l]{For serial and multithreaded environments}
+\begin{itembox}[l]{For serial and multithreaded environments}
 \small
 \begin{verbatim}
  1: LIS_INT n,nnz;
@@ -3993,7 +3993,7 @@ $
 19: lis_matrix_set_coo(nnz,row,col,value,A);
 20: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \newpage
 \subsubsection{Creating Matrices (for Multiprocessing Environment)}
@@ -4005,7 +4005,7 @@ elements. A program to create the matrix in the COO format on two processing ele
 \includegraphics{storage10_mpi.eps} 
 \caption{Data structure of COO format (for multiprocessing environment).}\label{fig:storage10_mpi}}
 \end{figure}
-\begin{itemsquarebox}[l]{For multiprocessing environment}
+\begin{itembox}[l]{For multiprocessing environment}
 \small
 \begin{verbatim}
  1: LIS_INT n,nnz,my_rank;
@@ -4031,7 +4031,7 @@ elements. A program to create the matrix in the COO format on two processing ele
 21: lis_matrix_set_coo(nnz,row,col,value,A);
 22: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \subsubsection{Associating Arrays}
 To associate the arrays in the COO format with matrix $A$, the following functions are used:
@@ -4074,7 +4074,7 @@ $
 \end{minipage}
 \caption{Data structure of DNS format (for serial and multithreaded environments).}\label{fig:storage11}}
 \end{figure}
-\begin{itemsquarebox}[l]{For serial and multithreaded environments}
+\begin{itembox}[l]{For serial and multithreaded environments}
 \small
 \begin{verbatim}
  1: LIS_INT n;
@@ -4093,7 +4093,7 @@ $
 14: lis_matrix_set_dns(value,A);
 15: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \newpage
 \subsubsection{Creating Matrices (for Multiprocessing Environment)}
@@ -4106,7 +4106,7 @@ two processing elements is as follows:
 \includegraphics{storage11_mpi.eps} 
 \caption{Data structure of DNS format (for multiprocessing environment).}\label{fig:storage11_mpi}}
 \end{figure}
-\begin{itemsquarebox}[l]{For multiprocessing environment}
+\begin{itembox}[l]{For multiprocessing environment}
 \small
 \begin{verbatim}
  1: LIS_INT n,my_rank;
@@ -4127,7 +4127,7 @@ two processing elements is as follows:
 16: lis_matrix_set_dns(value,A);
 17: lis_matrix_assemble(A);
 \end{verbatim}
-\end{itemsquarebox}
+\end{itembox}
 
 \subsubsection{Associating Arrays}
 To associate the arrays in the DNS format with matrix $A$, the following functions are used:

@@ -1,3 +1,7 @@
+Version 2.1.4 May 8, 2024
+
+  - Changed COPYING to symbolic link to LICENSE (thanks to Ralf Greeve).
+
 Version 2.1.3 June 14, 2023
 
   - Fixed some bugs in source code (thanks to Thedore Chang).
