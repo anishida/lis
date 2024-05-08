@@ -4,7 +4,7 @@
 
 # General Configurations
 
-AC_INIT(lis, 2.1.3, devel@ssisc.org)
+AC_INIT(lis, 2.1.4, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -665,7 +665,7 @@ if test "$enable_fortran" = "yes" || test "$enable_f90" = "yes" || test "$enable
   fi
   AC_LANG_PUSH(Fortran 77)
   fflags_save="$FFLAGS"
-  AC_PROG_F77([ifort ifc efc xlf95_r xlf90_r xlf_r xlf95 xlf90 xlf ftn frt pgf95 pgf90 pathf95 pathf90 epcf90 f95 fort lf95 gfortran f90 g77])
+  AC_PROG_F77([ifort ifx ifc efc xlf95_r xlf90_r xlf_r xlf95 xlf90 xlf ftn frt pgf95 pgf90 pathf95 pathf90 epcf90 f95 fort lf95 gfortran f90 g77])
   FFLAGS="$fflags_save"
   if test "$TARGET" = ""; then
     if test "$enable_mpi" = "yes"; then
@@ -683,7 +683,7 @@ fi
 if test "$enable_f90" = "yes" || test "$enable_saamg" = "yes"; then
   AC_LANG_PUSH(Fortran)
   fcflags_save="$FCFLAGS"
-  AC_PROG_FC([ifort ifc efc xlf95_r xlf90_r xlf_r xlf95 xlf90 xlf ftn frt pgf95 pgf90 pathf95 pathf90 epcf90 f95 fort lf95 gfortran f90])
+  AC_PROG_FC([ifort ifx ifc efc xlf95_r xlf90_r xlf_r xlf95 xlf90 xlf ftn frt pgf95 pgf90 pathf95 pathf90 epcf90 f95 fort lf95 gfortran f90])
   FCFLAGS="$fcflags_save"
   if test "$TARGET" = ""; then
     if test "$enable_mpi" = "yes"; then
@@ -715,7 +715,7 @@ if test "$TARGET" = ""; then
          FCFLAGS="-O3 -fomit-frame-pointer $FCFLAGS" ;;
     intel) FFLAGS="-fpp $FFLAGS"
          FCFLAGS="-fpp $FCFLAGS"
-         LDFLAGS="-Vaxlib"
+#         LDFLAGS="-Vaxlib"
          FCLDFLAGS="-nofor_main" ;;
     portland) FFLAGS="-O3 -fastsse -Mpreprocess $FFLAGS" 
          FCFLAGS="-O3 -fastsse -Mpreprocess $FCFLAGS" 
