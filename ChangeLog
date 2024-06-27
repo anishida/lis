@@ -1,3 +1,7 @@
+Version 2.1.5 June 27, 2024
+
+  - Removed extra @shift in win\configure.bat (thanks to Carlos Mendes).
+
 Version 2.1.4 May 8, 2024
 
   - Changed COPYING to symbolic link to LICENSE (thanks to Ralf Greeve).
