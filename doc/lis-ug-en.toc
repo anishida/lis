@@ -1,0 +1,265 @@
+\contentsline {section}{\numberline {1}Introduction}{5}{}%
+\contentsline {section}{\numberline {2}Installation}{6}{}%
+\contentsline {subsection}{\numberline {2.1}System Requirements}{6}{}%
+\contentsline {subsection}{\numberline {2.2}Installing on UNIX and Compatible Systems}{6}{}%
+\contentsline {subsubsection}{\numberline {2.2.1}Extracting Archive}{6}{}%
+\contentsline {subsubsection}{\numberline {2.2.2}Configuring Source Tree}{6}{}%
+\contentsline {subsubsection}{\numberline {2.2.3}Compiling}{7}{}%
+\contentsline {subsubsection}{\numberline {2.2.4}Installing}{10}{}%
+\contentsline {subsection}{\numberline {2.3}Installing on Windows Systems}{11}{}%
+\contentsline {subsection}{\numberline {2.4}Testing}{11}{}%
+\contentsline {subsubsection}{\numberline {2.4.1}test1}{11}{}%
+\contentsline {subsubsection}{\numberline {2.4.2}test2}{11}{}%
+\contentsline {subsubsection}{\numberline {2.4.3}test2b}{12}{}%
+\contentsline {subsubsection}{\numberline {2.4.4}test3}{12}{}%
+\contentsline {subsubsection}{\numberline {2.4.5}test3b}{12}{}%
+\contentsline {subsubsection}{\numberline {2.4.6}test3c}{12}{}%
+\contentsline {subsubsection}{\numberline {2.4.7}test4}{13}{}%
+\contentsline {subsubsection}{\numberline {2.4.8}test5}{13}{}%
+\contentsline {subsubsection}{\numberline {2.4.9}test6}{13}{}%
+\contentsline {subsubsection}{\numberline {2.4.10}test7}{13}{}%
+\contentsline {subsubsection}{\numberline {2.4.11}test8f}{13}{}%
+\contentsline {subsubsection}{\numberline {2.4.12}etest1}{14}{}%
+\contentsline {subsubsection}{\numberline {2.4.13}getest1}{14}{}%
+\contentsline {subsubsection}{\numberline {2.4.14}etest2}{14}{}%
+\contentsline {subsubsection}{\numberline {2.4.15}etest3}{14}{}%
+\contentsline {subsubsection}{\numberline {2.4.16}etest4}{14}{}%
+\contentsline {subsubsection}{\numberline {2.4.17}etest5}{15}{}%
+\contentsline {subsubsection}{\numberline {2.4.18}etest5b}{15}{}%
+\contentsline {subsubsection}{\numberline {2.4.19}getest5}{15}{}%
+\contentsline {subsubsection}{\numberline {2.4.20}getest5b}{15}{}%
+\contentsline {subsubsection}{\numberline {2.4.21}etest6}{16}{}%
+\contentsline {subsubsection}{\numberline {2.4.22}etest7}{16}{}%
+\contentsline {subsubsection}{\numberline {2.4.23}spmvtest1}{16}{}%
+\contentsline {subsubsection}{\numberline {2.4.24}spmvtest2}{16}{}%
+\contentsline {subsubsection}{\numberline {2.4.25}spmvtest2b}{17}{}%
+\contentsline {subsubsection}{\numberline {2.4.26}spmvtest3}{17}{}%
+\contentsline {subsubsection}{\numberline {2.4.27}spmvtest3b}{17}{}%
+\contentsline {subsubsection}{\numberline {2.4.28}spmvtest4}{17}{}%
+\contentsline {subsubsection}{\numberline {2.4.29}spmvtest5}{17}{}%
+\contentsline {subsection}{\numberline {2.5}Limitations}{18}{}%
+\contentsline {section}{\numberline {3}Basic Operations}{19}{}%
+\contentsline {subsection}{\numberline {3.1}Initializing and Finalizing}{19}{}%
+\contentsline {subsection}{\numberline {3.2}Operating Vectors}{20}{}%
+\contentsline {subsection}{\numberline {3.3}Operating Matrices}{22}{}%
+\contentsline {subsection}{\numberline {3.4}Solving Linear Equations}{28}{}%
+\contentsline {subsection}{\numberline {3.5}Solving Eigenvalue Problems}{31}{}%
+\contentsline {subsection}{\numberline {3.6}Writing Programs}{35}{}%
+\contentsline {subsection}{\numberline {3.7}An Alternate Workflow: PSD}{38}{}%
+\contentsline {subsection}{\numberline {3.8}Compiling and Linking}{41}{}%
+\contentsline {subsection}{\numberline {3.9}Running}{42}{}%
+\contentsline {subsection}{\numberline {3.10}Zero DOFs on a Process}{43}{}%
+\contentsline {section}{\numberline {4}Quadruple Precision Operations}{44}{}%
+\contentsline {subsection}{\numberline {4.1}Using Quadruple Precision Operations}{44}{}%
+\contentsline {section}{\numberline {5}Matrix Storage Formats}{46}{}%
+\contentsline {subsection}{\numberline {5.1}Compressed Sparse Row (CSR)}{46}{}%
+\contentsline {subsubsection}{\numberline {5.1.1}Creating Matrices (for Serial and Multithreaded Environments)}{46}{}%
+\contentsline {subsubsection}{\numberline {5.1.2}Creating Matrices (for Multiprocessing Environment)}{47}{}%
+\contentsline {subsubsection}{\numberline {5.1.3}Associating Arrays}{47}{}%
+\contentsline {subsection}{\numberline {5.2}Compressed Sparse Column (CSC)}{48}{}%
+\contentsline {subsubsection}{\numberline {5.2.1}Creating Matrices (for Serial and Multithreaded Environments)}{48}{}%
+\contentsline {subsubsection}{\numberline {5.2.2}Creating Matrices (for Multiprocessing Environment)}{49}{}%
+\contentsline {subsubsection}{\numberline {5.2.3}Associating Arrays}{49}{}%
+\contentsline {subsection}{\numberline {5.3}Modified Compressed Sparse Row (MSR)}{50}{}%
+\contentsline {subsubsection}{\numberline {5.3.1}Creating Matrices (for Serial and Multithreaded Environments)}{50}{}%
+\contentsline {subsubsection}{\numberline {5.3.2}Creating Matrices (for Multiprocessing Environment)}{51}{}%
+\contentsline {subsubsection}{\numberline {5.3.3}Associating Arrays}{51}{}%
+\contentsline {subsection}{\numberline {5.4}Diagonal (DIA)}{52}{}%
+\contentsline {subsubsection}{\numberline {5.4.1}Creating Matrices (for Serial Environment)}{52}{}%
+\contentsline {subsubsection}{\numberline {5.4.2}Creating Matrices (for Multithreaded Environment)}{53}{}%
+\contentsline {subsubsection}{\numberline {5.4.3}Creating Matrices (for Multiprocessing Environment)}{54}{}%
+\contentsline {subsubsection}{\numberline {5.4.4}Associating Arrays}{54}{}%
+\contentsline {subsection}{\numberline {5.5}Ellpack-Itpack Generalized Diagonal (ELL)}{55}{}%
+\contentsline {subsubsection}{\numberline {5.5.1}Creating Matrices (for Serial and Multithreaded Environments)}{55}{}%
+\contentsline {subsubsection}{\numberline {5.5.2}Creating Matrices (for Multiprocessing Environment)}{56}{}%
+\contentsline {subsubsection}{\numberline {5.5.3}Associating Arrays}{56}{}%
+\contentsline {subsection}{\numberline {5.6}Jagged Diagonal (JAD)}{57}{}%
+\contentsline {subsubsection}{\numberline {5.6.1}Creating Matrices (for Serial Environment)}{58}{}%
+\contentsline {subsubsection}{\numberline {5.6.2}Creating Matrices (for Multithreaded Environment)}{59}{}%
+\contentsline {subsubsection}{\numberline {5.6.3}Creating Matrices (for Multiprocessing Environment)}{60}{}%
+\contentsline {subsubsection}{\numberline {5.6.4}Associating Arrays}{60}{}%
+\contentsline {subsection}{\numberline {5.7}Block Sparse Row (BSR)}{61}{}%
+\contentsline {subsubsection}{\numberline {5.7.1}Creating Matrices (for Serial and Multithreaded Environments)}{61}{}%
+\contentsline {subsubsection}{\numberline {5.7.2}Creating Matrices (for Multiprocessing Environment)}{62}{}%
+\contentsline {subsubsection}{\numberline {5.7.3}Associating Arrays}{62}{}%
+\contentsline {subsection}{\numberline {5.8}Block Sparse Column (BSC)}{63}{}%
+\contentsline {subsubsection}{\numberline {5.8.1}Creating Matrices (for Serial and Multithreaded Environments)}{63}{}%
+\contentsline {subsubsection}{\numberline {5.8.2}Creating Matrices (for Multiprocessing Environment)}{64}{}%
+\contentsline {subsubsection}{\numberline {5.8.3}Associating Arrays}{64}{}%
+\contentsline {subsection}{\numberline {5.9}Variable Block Row (VBR)}{65}{}%
+\contentsline {subsubsection}{\numberline {5.9.1}Creating Matrices (for Serial and Multithreaded Environments)}{66}{}%
+\contentsline {subsubsection}{\numberline {5.9.2}Creating Matrices (for Multiprocessing Environment)}{67}{}%
+\contentsline {subsubsection}{\numberline {5.9.3}Associating Arrays}{68}{}%
+\contentsline {subsection}{\numberline {5.10}Coordinate (COO)}{69}{}%
+\contentsline {subsubsection}{\numberline {5.10.1}Creating Matrices (for Serial and Multithreaded Environments)}{69}{}%
+\contentsline {subsubsection}{\numberline {5.10.2}Creating Matrices (for Multiprocessing Environment)}{70}{}%
+\contentsline {subsubsection}{\numberline {5.10.3}Associating Arrays}{70}{}%
+\contentsline {subsection}{\numberline {5.11}Dense (DNS)}{71}{}%
+\contentsline {subsubsection}{\numberline {5.11.1}Creating Matrices (for Serial and Multithreaded Environments)}{71}{}%
+\contentsline {subsubsection}{\numberline {5.11.2}Creating Matrices (for Multiprocessing Environment)}{72}{}%
+\contentsline {subsubsection}{\numberline {5.11.3}Associating Arrays}{72}{}%
+\contentsline {section}{\numberline {6}Functions}{73}{}%
+\contentsline {subsection}{\numberline {6.1}Operating Vector Elements}{74}{}%
+\contentsline {subsubsection}{\numberline {6.1.1}lis\_vector\_create}{74}{}%
+\contentsline {subsubsection}{\numberline {6.1.2}lis\_vector\_destroy}{74}{}%
+\contentsline {subsubsection}{\numberline {6.1.3}lis\_vector\_duplicate}{75}{}%
+\contentsline {subsubsection}{\numberline {6.1.4}lis\_vector\_set\_size}{75}{}%
+\contentsline {subsubsection}{\numberline {6.1.5}lis\_vector\_get\_size}{76}{}%
+\contentsline {subsubsection}{\numberline {6.1.6}lis\_vector\_get\_range}{76}{}%
+\contentsline {subsubsection}{\numberline {6.1.7}lis\_vector\_set\_value}{77}{}%
+\contentsline {subsubsection}{\numberline {6.1.8}lis\_vector\_get\_value}{77}{}%
+\contentsline {subsubsection}{\numberline {6.1.9}lis\_vector\_set\_values}{78}{}%
+\contentsline {subsubsection}{\numberline {6.1.10}lis\_vector\_get\_values}{79}{}%
+\contentsline {subsubsection}{\numberline {6.1.11}lis\_vector\_scatter}{79}{}%
+\contentsline {subsubsection}{\numberline {6.1.12}lis\_vector\_gather}{80}{}%
+\contentsline {subsubsection}{\numberline {6.1.13}lis\_vector\_is\_null}{80}{}%
+\contentsline {subsection}{\numberline {6.2}Operating Matrix Elements}{81}{}%
+\contentsline {subsubsection}{\numberline {6.2.1}lis\_matrix\_create}{81}{}%
+\contentsline {subsubsection}{\numberline {6.2.2}lis\_matrix\_destroy}{81}{}%
+\contentsline {subsubsection}{\numberline {6.2.3}lis\_matrix\_duplicate}{82}{}%
+\contentsline {subsubsection}{\numberline {6.2.4}lis\_matrix\_malloc}{82}{}%
+\contentsline {subsubsection}{\numberline {6.2.5}lis\_matrix\_set\_value}{83}{}%
+\contentsline {subsubsection}{\numberline {6.2.6}lis\_matrix\_assemble}{83}{}%
+\contentsline {subsubsection}{\numberline {6.2.7}lis\_matrix\_set\_size}{84}{}%
+\contentsline {subsubsection}{\numberline {6.2.8}lis\_matrix\_get\_size}{84}{}%
+\contentsline {subsubsection}{\numberline {6.2.9}lis\_matrix\_get\_range}{85}{}%
+\contentsline {subsubsection}{\numberline {6.2.10}lis\_matrix\_get\_nnz}{85}{}%
+\contentsline {subsubsection}{\numberline {6.2.11}lis\_matrix\_set\_type}{86}{}%
+\contentsline {subsubsection}{\numberline {6.2.12}lis\_matrix\_get\_type}{86}{}%
+\contentsline {subsubsection}{\numberline {6.2.13}lis\_matrix\_set\_csr}{87}{}%
+\contentsline {subsubsection}{\numberline {6.2.14}lis\_matrix\_set\_csc}{87}{}%
+\contentsline {subsubsection}{\numberline {6.2.15}lis\_matrix\_set\_msr}{88}{}%
+\contentsline {subsubsection}{\numberline {6.2.16}lis\_matrix\_set\_dia}{88}{}%
+\contentsline {subsubsection}{\numberline {6.2.17}lis\_matrix\_set\_ell}{89}{}%
+\contentsline {subsubsection}{\numberline {6.2.18}lis\_matrix\_set\_jad}{89}{}%
+\contentsline {subsubsection}{\numberline {6.2.19}lis\_matrix\_set\_bsr}{90}{}%
+\contentsline {subsubsection}{\numberline {6.2.20}lis\_matrix\_set\_bsc}{90}{}%
+\contentsline {subsubsection}{\numberline {6.2.21}lis\_matrix\_set\_vbr}{91}{}%
+\contentsline {subsubsection}{\numberline {6.2.22}lis\_matrix\_set\_coo}{92}{}%
+\contentsline {subsubsection}{\numberline {6.2.23}lis\_matrix\_set\_dns}{93}{}%
+\contentsline {subsubsection}{\numberline {6.2.24}lis\_matrix\_unset}{93}{}%
+\contentsline {subsection}{\numberline {6.3}Computing with Vectors and Matrices}{94}{}%
+\contentsline {subsubsection}{\numberline {6.3.1}lis\_vector\_swap}{94}{}%
+\contentsline {subsubsection}{\numberline {6.3.2}lis\_vector\_copy}{94}{}%
+\contentsline {subsubsection}{\numberline {6.3.3}lis\_vector\_axpy}{95}{}%
+\contentsline {subsubsection}{\numberline {6.3.4}lis\_vector\_xpay}{95}{}%
+\contentsline {subsubsection}{\numberline {6.3.5}lis\_vector\_axpyz}{96}{}%
+\contentsline {subsubsection}{\numberline {6.3.6}lis\_vector\_scale}{96}{}%
+\contentsline {subsubsection}{\numberline {6.3.7}lis\_vector\_pmul}{97}{}%
+\contentsline {subsubsection}{\numberline {6.3.8}lis\_vector\_pdiv}{97}{}%
+\contentsline {subsubsection}{\numberline {6.3.9}lis\_vector\_set\_all}{98}{}%
+\contentsline {subsubsection}{\numberline {6.3.10}lis\_vector\_abs}{98}{}%
+\contentsline {subsubsection}{\numberline {6.3.11}lis\_vector\_reciprocal}{99}{}%
+\contentsline {subsubsection}{\numberline {6.3.12}lis\_vector\_conjugate}{99}{}%
+\contentsline {subsubsection}{\numberline {6.3.13}lis\_vector\_shift}{100}{}%
+\contentsline {subsubsection}{\numberline {6.3.14}lis\_vector\_dot}{101}{}%
+\contentsline {subsubsection}{\numberline {6.3.15}lis\_vector\_nhdot}{101}{}%
+\contentsline {subsubsection}{\numberline {6.3.16}lis\_vector\_nrm1}{102}{}%
+\contentsline {subsubsection}{\numberline {6.3.17}lis\_vector\_nrm2}{102}{}%
+\contentsline {subsubsection}{\numberline {6.3.18}lis\_vector\_nrmi}{103}{}%
+\contentsline {subsubsection}{\numberline {6.3.19}lis\_vector\_sum}{103}{}%
+\contentsline {subsubsection}{\numberline {6.3.20}lis\_matrix\_set\_blocksize}{104}{}%
+\contentsline {subsubsection}{\numberline {6.3.21}lis\_matrix\_convert}{105}{}%
+\contentsline {subsubsection}{\numberline {6.3.22}lis\_matrix\_copy}{106}{}%
+\contentsline {subsubsection}{\numberline {6.3.23}lis\_matrix\_axpy}{106}{}%
+\contentsline {subsubsection}{\numberline {6.3.24}lis\_matrix\_xpay}{107}{}%
+\contentsline {subsubsection}{\numberline {6.3.25}lis\_matrix\_axpyz}{107}{}%
+\contentsline {subsubsection}{\numberline {6.3.26}lis\_matrix\_scale}{108}{}%
+\contentsline {subsubsection}{\numberline {6.3.27}lis\_matrix\_get\_diagonal}{108}{}%
+\contentsline {subsubsection}{\numberline {6.3.28}lis\_matrix\_shift\_diagonal}{109}{}%
+\contentsline {subsubsection}{\numberline {6.3.29}lis\_matrix\_shift\_matrix}{109}{}%
+\contentsline {subsubsection}{\numberline {6.3.30}lis\_matvec}{110}{}%
+\contentsline {subsubsection}{\numberline {6.3.31}lis\_matvech}{110}{}%
+\contentsline {subsection}{\numberline {6.4}Solving Linear Equations}{111}{}%
+\contentsline {subsubsection}{\numberline {6.4.1}lis\_solver\_create}{111}{}%
+\contentsline {subsubsection}{\numberline {6.4.2}lis\_solver\_destroy}{111}{}%
+\contentsline {subsubsection}{\numberline {6.4.3}lis\_precon\_create}{112}{}%
+\contentsline {subsubsection}{\numberline {6.4.4}lis\_precon\_destroy}{112}{}%
+\contentsline {subsubsection}{\numberline {6.4.5}lis\_solver\_set\_option}{113}{}%
+\contentsline {subsubsection}{\numberline {6.4.6}lis\_solver\_set\_optionC}{116}{}%
+\contentsline {subsubsection}{\numberline {6.4.7}lis\_solve}{116}{}%
+\contentsline {subsubsection}{\numberline {6.4.8}lis\_solve\_kernel}{117}{}%
+\contentsline {subsubsection}{\numberline {6.4.9}lis\_solver\_get\_status}{118}{}%
+\contentsline {subsubsection}{\numberline {6.4.10}lis\_solver\_get\_iter}{118}{}%
+\contentsline {subsubsection}{\numberline {6.4.11}lis\_solver\_get\_iterex}{119}{}%
+\contentsline {subsubsection}{\numberline {6.4.12}lis\_solver\_get\_time}{119}{}%
+\contentsline {subsubsection}{\numberline {6.4.13}lis\_solver\_get\_timeex}{120}{}%
+\contentsline {subsubsection}{\numberline {6.4.14}lis\_solver\_get\_residualnorm}{120}{}%
+\contentsline {subsubsection}{\numberline {6.4.15}lis\_solver\_get\_rhistory}{121}{}%
+\contentsline {subsubsection}{\numberline {6.4.16}lis\_solver\_get\_solver}{122}{}%
+\contentsline {subsubsection}{\numberline {6.4.17}lis\_solver\_get\_precon}{122}{}%
+\contentsline {subsubsection}{\numberline {6.4.18}lis\_solver\_get\_solvername}{123}{}%
+\contentsline {subsubsection}{\numberline {6.4.19}lis\_solver\_get\_preconname}{123}{}%
+\contentsline {subsection}{\numberline {6.5}Solving Eigenvalue Problems}{124}{}%
+\contentsline {subsubsection}{\numberline {6.5.1}lis\_esolver\_create}{124}{}%
+\contentsline {subsubsection}{\numberline {6.5.2}lis\_esolver\_destroy}{124}{}%
+\contentsline {subsubsection}{\numberline {6.5.3}lis\_esolver\_set\_option}{125}{}%
+\contentsline {subsubsection}{\numberline {6.5.4}lis\_esolver\_set\_optionC}{128}{}%
+\contentsline {subsubsection}{\numberline {6.5.5}lis\_esolve}{128}{}%
+\contentsline {subsubsection}{\numberline {6.5.6}lis\_gesolve}{129}{}%
+\contentsline {subsubsection}{\numberline {6.5.7}lis\_esolver\_get\_status}{130}{}%
+\contentsline {subsubsection}{\numberline {6.5.8}lis\_esolver\_get\_iter}{130}{}%
+\contentsline {subsubsection}{\numberline {6.5.9}lis\_esolver\_get\_iterex}{131}{}%
+\contentsline {subsubsection}{\numberline {6.5.10}lis\_esolver\_get\_time}{131}{}%
+\contentsline {subsubsection}{\numberline {6.5.11}lis\_esolver\_get\_timeex}{132}{}%
+\contentsline {subsubsection}{\numberline {6.5.12}lis\_esolver\_get\_residualnorm}{132}{}%
+\contentsline {subsubsection}{\numberline {6.5.13}lis\_esolver\_get\_rhistory}{133}{}%
+\contentsline {subsubsection}{\numberline {6.5.14}lis\_esolver\_get\_evalues}{133}{}%
+\contentsline {subsubsection}{\numberline {6.5.15}lis\_esolver\_get\_evectors}{134}{}%
+\contentsline {subsubsection}{\numberline {6.5.16}lis\_esolver\_get\_residualnorms}{134}{}%
+\contentsline {subsubsection}{\numberline {6.5.17}lis\_esolver\_get\_iters}{135}{}%
+\contentsline {subsubsection}{\numberline {6.5.18}lis\_esolver\_get\_specific\_evalue}{135}{}%
+\contentsline {subsubsection}{\numberline {6.5.19}lis\_esolver\_get\_specific\_evector}{136}{}%
+\contentsline {subsubsection}{\numberline {6.5.20}lis\_esolver\_get\_specific\_residualnorm}{136}{}%
+\contentsline {subsubsection}{\numberline {6.5.21}lis\_esolver\_get\_specific\_iter}{137}{}%
+\contentsline {subsubsection}{\numberline {6.5.22}lis\_esolver\_get\_esolver}{137}{}%
+\contentsline {subsubsection}{\numberline {6.5.23}lis\_esolver\_get\_esolvername}{137}{}%
+\contentsline {subsection}{\numberline {6.6}Computing with Arrays}{138}{}%
+\contentsline {subsubsection}{\numberline {6.6.1}lis\_array\_swap}{138}{}%
+\contentsline {subsubsection}{\numberline {6.6.2}lis\_array\_copy}{138}{}%
+\contentsline {subsubsection}{\numberline {6.6.3}lis\_array\_axpy}{139}{}%
+\contentsline {subsubsection}{\numberline {6.6.4}lis\_array\_xpay}{139}{}%
+\contentsline {subsubsection}{\numberline {6.6.5}lis\_array\_axpyz}{140}{}%
+\contentsline {subsubsection}{\numberline {6.6.6}lis\_array\_scale}{140}{}%
+\contentsline {subsubsection}{\numberline {6.6.7}lis\_array\_pmul}{141}{}%
+\contentsline {subsubsection}{\numberline {6.6.8}lis\_array\_pdiv}{141}{}%
+\contentsline {subsubsection}{\numberline {6.6.9}lis\_array\_set\_all}{142}{}%
+\contentsline {subsubsection}{\numberline {6.6.10}lis\_array\_abs}{142}{}%
+\contentsline {subsubsection}{\numberline {6.6.11}lis\_array\_reciprocal}{143}{}%
+\contentsline {subsubsection}{\numberline {6.6.12}lis\_array\_conjugate}{143}{}%
+\contentsline {subsubsection}{\numberline {6.6.13}lis\_array\_shift}{144}{}%
+\contentsline {subsubsection}{\numberline {6.6.14}lis\_array\_dot}{144}{}%
+\contentsline {subsubsection}{\numberline {6.6.15}lis\_array\_nhdot}{145}{}%
+\contentsline {subsubsection}{\numberline {6.6.16}lis\_array\_nrm1}{145}{}%
+\contentsline {subsubsection}{\numberline {6.6.17}lis\_array\_nrm2}{146}{}%
+\contentsline {subsubsection}{\numberline {6.6.18}lis\_array\_nrmi}{146}{}%
+\contentsline {subsubsection}{\numberline {6.6.19}lis\_array\_sum}{147}{}%
+\contentsline {subsubsection}{\numberline {6.6.20}lis\_array\_matvec}{148}{}%
+\contentsline {subsubsection}{\numberline {6.6.21}lis\_array\_matvech}{148}{}%
+\contentsline {subsubsection}{\numberline {6.6.22}lis\_array\_matvec\_ns}{149}{}%
+\contentsline {subsubsection}{\numberline {6.6.23}lis\_array\_matmat}{150}{}%
+\contentsline {subsubsection}{\numberline {6.6.24}lis\_array\_matmat\_ns}{151}{}%
+\contentsline {subsubsection}{\numberline {6.6.25}lis\_array\_ge}{152}{}%
+\contentsline {subsubsection}{\numberline {6.6.26}lis\_array\_solve}{152}{}%
+\contentsline {subsubsection}{\numberline {6.6.27}lis\_array\_cgs}{153}{}%
+\contentsline {subsubsection}{\numberline {6.6.28}lis\_array\_mgs}{153}{}%
+\contentsline {subsubsection}{\numberline {6.6.29}lis\_array\_qr}{154}{}%
+\contentsline {subsection}{\numberline {6.7}Operating External Files}{155}{}%
+\contentsline {subsubsection}{\numberline {6.7.1}lis\_input}{155}{}%
+\contentsline {subsubsection}{\numberline {6.7.2}lis\_input\_vector}{155}{}%
+\contentsline {subsubsection}{\numberline {6.7.3}lis\_input\_matrix}{156}{}%
+\contentsline {subsubsection}{\numberline {6.7.4}lis\_output}{156}{}%
+\contentsline {subsubsection}{\numberline {6.7.5}lis\_output\_vector}{157}{}%
+\contentsline {subsubsection}{\numberline {6.7.6}lis\_output\_matrix}{157}{}%
+\contentsline {subsection}{\numberline {6.8}Other Functions}{158}{}%
+\contentsline {subsubsection}{\numberline {6.8.1}lis\_initialize}{158}{}%
+\contentsline {subsubsection}{\numberline {6.8.2}lis\_finalize}{158}{}%
+\contentsline {subsubsection}{\numberline {6.8.3}lis\_wtime}{159}{}%
+\contentsline {subsubsection}{\numberline {6.8.4}CHKERR}{159}{}%
+\contentsline {subsubsection}{\numberline {6.8.5}lis\_printf}{160}{}%
+\contentsline {section}{References}{161}{}%
+\contentsline {section}{\numberline {A}File Formats}{166}{}%
+\contentsline {subsection}{\numberline {A.1}Extended Matrix Market Format}{166}{}%
+\contentsline {subsection}{\numberline {A.2}Harwell-Boeing Format}{167}{}%
+\contentsline {subsection}{\numberline {A.3}Extended Matrix Market Format for Vectors}{168}{}%
+\contentsline {subsection}{\numberline {A.4}PLAIN Format for Vectors}{168}{}%

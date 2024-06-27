@@ -1,0 +1,797 @@
+This is e-pTeX, Version 3.141592653-p4.1.0-230214-2.6 (utf8.euc) (TeX Live 2023/Cygwin) (preloaded format=platex 2024.1.17)  28 JUN 2024 02:24
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**lis-ug-en.tex
+(./lis-ug-en.tex
+pLaTeX2e <2023-02-14>+1 (based on LaTeX2e <2022-11-01> patch level 1)
+L3 programming layer <2023-02-22>
+(/usr/share/texmf-dist/tex/latex/base/article.cls
+Document Class: article 2022/07/02 v1.4n Standard LaTeX document class
+(/usr/share/texmf-dist/tex/latex/base/size10.clo
+File: size10.clo 2022/07/02 v1.4n Standard LaTeX file (size option)
+)
+\c@part=\count184
+\c@section=\count185
+\c@subsection=\count186
+\c@subsubsection=\count187
+\c@paragraph=\count188
+\c@subparagraph=\count189
+\c@figure=\count190
+\c@table=\count191
+\abovecaptionskip=\skip48
+\belowcaptionskip=\skip49
+\bibindent=\dimen156
+)
+(/usr/share/texmf-dist/tex/latex/graphics/graphicx.sty
+Package: graphicx 2021/09/16 v1.2d Enhanced LaTeX Graphics (DPC,SPQR)
+
+(/usr/share/texmf-dist/tex/latex/graphics/keyval.sty
+Package: keyval 2022/05/29 v1.15 key=value parser (DPC)
+\KV@toks@=\toks17
+)
+(/usr/share/texmf-dist/tex/latex/graphics/graphics.sty
+Package: graphics 2022/03/10 v1.4e Standard LaTeX Graphics (DPC,SPQR)
+
+(/usr/share/texmf-dist/tex/latex/graphics/trig.sty
+Package: trig 2021/08/11 v1.11 sin cos tan (DPC)
+)
+(/usr/share/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
+File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
+)
+Package graphics Info: Driver file: dvipdfmx.def on input line 107.
+
+(/usr/share/texmf-dist/tex/latex/graphics-def/dvipdfmx.def
+File: dvipdfmx.def 2022/09/22 v5.0m Graphics/color driver for dvipdfmx
+))
+\Gin@req@height=\dimen157
+\Gin@req@width=\dimen158
+)
+(/usr/share/texmf-dist/tex/latex/ascmac.sty
+\scb@x=\box68
+\scscb@x=\box69
+\@bw=\dimen159
+\@nbox=\box70
+\@nbody=\box71
+\@scw=\dimen160
+\@itemh=\dimen161
+\@iboxstr=\toks18
+\@iboxpos=\toks19
+\@bwsp=\box72
+\@@bwsp=\box73
+\@bcal=\count192
+\shaderule=\dimen162
+) (/home/nishida/tex/inputs/epic.sty
+Enhancements to Picture Environment. Version 1.2 - Released June 1, 1986
+\@@multicnt=\count193
+\d@lta=\count194
+\@delta=\dimen163
+\@@delta=\dimen164
+\@gridcnt=\count195
+\@joinkind=\count196
+\@dotgap=\dimen165
+\@ddotgap=\dimen166
+\@x@diff=\count197
+\@y@diff=\count198
+\x@diff=\dimen167
+\y@diff=\dimen168
+\@dotbox=\box74
+\num@segments=\count199
+\num@segmentsi=\count266
+\@datafile=\read2
+) (/home/nishida/tex/inputs/eepic.sty
+Extension to Epic and LaTeX. Version 1.1e - Released Dec 21, 1999
+\@gphlinewidth=\count267
+\@eepictcnt=\count268
+\@tempdimc=\dimen169
+\maxovaldiam=\dimen170
+\@filltype=\box75
+) (/home/nishida/tex/inputs/itembbox.sty
+Package: itembbox 2004/08/10 v 0.19
+\iboxpos@=\toks20
+\sc@itemb@x=\box76
+\sc@itemb@x@=\box77
+\@itemw=\dimen171
+\shaderule=\dimen172
+\dblboxrule=\dimen173
+\dblboxrulein=\dimen174
+\dblboxsep=\dimen175
+)
+(/usr/share/texmf-dist/tex/latex/l3backend/l3backend-dvips.def
+File: l3backend-dvips.def 2023-01-16 L3 backend support: dvips
+\l__pdf_internal_box=\box78
+\g__pdf_backend_object_int=\count269
+\l__pdf_backend_content_box=\box79
+\l__pdf_backend_model_box=\box80
+\g__pdf_backend_annotation_int=\count270
+\g__pdf_backend_link_int=\count271
+\g__pdf_backend_link_sf_int=\count272
+)
+(./lis-ug-en.aux
+
+LaTeX Warning: Label `subsec:solve' multiply defined.
+
+
+LaTeX Warning: Label `sec:setoptions' multiply defined.
+
+)
+\openout1 = `lis-ug-en.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 42.
+LaTeX Font Info:    ... okay on input line 42.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 42.
+LaTeX Font Info:    ... okay on input line 42.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 42.
+LaTeX Font Info:    ... okay on input line 42.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 42.
+LaTeX Font Info:    ... okay on input line 42.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 42.
+LaTeX Font Info:    ... okay on input line 42.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 42.
+LaTeX Font Info:    ... okay on input line 42.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 42.
+LaTeX Font Info:    ... okay on input line 42.
+LaTeX Font Info:    Checking defaults for JY1/mc/m/n on input line 42.
+LaTeX Font Info:    ... okay on input line 42.
+LaTeX Font Info:    Checking defaults for JT1/mc/m/n on input line 42.
+LaTeX Font Info:    ... okay on input line 42.
+File: irises_korin.eps Graphic file (type eps)
+<irises_korin.eps>
+ [1
+
+] [2]
+LaTeX Font Info:    Font shape `JT1/mc/bx/n' in size <14.4> not available
+(Font)              Font shape `JT1/gt/m/n' tried instead on input line 114.
+LaTeX Font Info:    Font shape `JY1/mc/bx/n' in size <14.4> not available
+(Font)              Font shape `JY1/gt/m/n' tried instead on input line 114.
+ (./lis-ug-en.toc
+LaTeX Font Info:    Font shape `JT1/mc/bx/n' in size <10> not available
+(Font)              Font shape `JT1/gt/m/n' tried instead on input line 1.
+LaTeX Font Info:    Font shape `JY1/mc/bx/n' in size <10> not available
+(Font)              Font shape `JY1/gt/m/n' tried instead on input line 1.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 3.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 3.
+ [1] [2] [3] [4] [5])
+\tf@toc=\write3
+\openout3 = `lis-ug-en.toc'.
+
+ [1] [2]
+Overfull \hbox (1.85057pt too wide) in paragraph at lines 211--214
+[]\OT1/cmr/m/n/10 Change: Names of the func-tions \OT1/cmtt/m/n/10 lis[]array[]
+dot2() \OT1/cmr/m/n/10 and \OT1/cmtt/m/n/10 lis[]array[]invGauss() \OT1/cmr/m/n
+/10 to \OT1/cmtt/m/n/10 lis[]array[]dot()
+ []
+
+[3]
+Overfull \hbox (19.35226pt too wide) in paragraph at lines 241--243
+[]\OT1/cmr/m/n/10 Change: Sign of shift in \OT1/cmtt/m/n/10 lis[]matrix[]shift[
+]diagonal()\OT1/cmr/m/n/10 , \OT1/cmtt/m/n/10 lis[]vector[]shift()\OT1/cmr/m/n/
+10 , and \OT1/cmtt/m/n/10 lis[]array[]shift()\OT1/cmr/m/n/10 ,
+ []
+
+[4]
+Overfull \hbox (57.25943pt too wide) detected at line 377
+ [][][]  
+ []
+
+[5]
+LaTeX Font Info:    Font shape `JT1/mc/bx/n' in size <12> not available
+(Font)              Font shape `JT1/gt/m/n' tried instead on input line 385.
+LaTeX Font Info:    Font shape `JY1/mc/bx/n' in size <12> not available
+(Font)              Font shape `JY1/gt/m/n' tried instead on input line 385.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <9> on input line 402.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <6> on input line 402.
+LaTeX Font Info:    Trying to load font information for TS1+cmtt on input line 
+452.
+ (/usr/share/texmf-dist/tex/latex/base/ts1cmtt.fd
+File: ts1cmtt.fd 2022/07/10 v2.5l Standard LaTeX font definitions
+)
+Overfull \hbox (20.25201pt too wide) in paragraph at lines 527--560
+ [][][] 
+ []
+
+[6]
+Overfull \hbox (6.5058pt too wide) in paragraph at lines 564--578
+\OT1/cmr/m/n/10 which reads the data of the co-ef-fi-cient ma-trix and the righ
+t-hand side vec-tor from the file \OT1/cmtt/m/n/10 test/testmat.mtx
+ []
+
+
+Overfull \hbox (30.4697pt too wide) in paragraph at lines 597--597
+[]\OT1/cmtt/m/n/10 convergence condition : ||b-Ax||_2 <= 1.0e-12 * ||b-Ax_0||_2
+[] 
+ []
+
+
+Overfull \hbox (4.21992pt too wide) in paragraph at lines 597--597
+[]\OT1/cmtt/m/n/10 BiCG: number of iterations = 15 (double = 15, quad = 0)[] 
+ []
+
+
+Overfull \hbox (30.4697pt too wide) in paragraph at lines 621--621
+[]\OT1/cmtt/m/n/10 convergence condition : ||b-Ax||_2 <= 1.0e-12 * ||b-Ax_0||_2
+[] 
+ []
+
+
+Overfull \hbox (4.21992pt too wide) in paragraph at lines 621--621
+[]\OT1/cmtt/m/n/10 BiCG: number of iterations = 15 (double = 15, quad = 0)[] 
+ []
+
+
+Overfull \hbox (30.4697pt too wide) in paragraph at lines 644--644
+[]\OT1/cmtt/m/n/10 convergence condition : ||b-Ax||_2 <= 1.0e-12 * ||b-Ax_0||_2
+[] 
+ []
+
+
+Overfull \hbox (4.21992pt too wide) in paragraph at lines 644--644
+[]\OT1/cmtt/m/n/10 BiCG: number of iterations = 15 (double = 15, quad = 0)[] 
+ []
+
+[7] [8] [9]
+Overfull \hbox (1.39467pt too wide) in paragraph at lines 665--680
+[]\OT1/cmtt/m/n/10 (\TS1/cmtt/m/n/10 $\OT1/cmtt/m/n/10 INSTALLDIR)/bin \OT1/cmr
+/m/n/10 as \OT1/cmtt/m/n/10 lsolve\OT1/cmr/m/n/10 , \OT1/cmtt/m/n/10 esolve\OT1
+/cmr/m/n/10 , \OT1/cmtt/m/n/10 esolver\OT1/cmr/m/n/10 , \OT1/cmtt/m/n/10 gesolv
+e\OT1/cmr/m/n/10 , \OT1/cmtt/m/n/10 gesolver\OT1/cmr/m/n/10 , \OT1/cmtt/m/n/10 
+hpcg[]kernel\OT1/cmr/m/n/10 , and \OT1/cmtt/m/n/10 hpcg[]spmvtest\OT1/cmr/m/n/1
+0 ,
+ []
+
+LaTeX Font Info:    Trying to load font information for OMS+cmtt on input line 
+696.
+LaTeX Font Info:    No file OMScmtt.fd. on input line 696.
+
+LaTeX Font Warning: Font shape `OMS/cmtt/m/n' undefined
+(Font)              using `OMS/cmsy/m/n' instead
+(Font)              for symbol `textbackslash' on input line 696.
+
+
+Overfull \hbox (17.03029pt too wide) in paragraph at lines 694--724
+[][]\OT1/cmr/m/n/10 The fol-low-ing com-mand copies the li-brary to \OT1/cmtt/m
+/n/10 (\TS1/cmtt/m/n/10 $\OT1/cmtt/m/n/10 INSTALLDIR)\OMS/cmtt/m/n/10 n\OT1/cmt
+t/m/n/10 lib\OT1/cmr/m/n/10 , the ex-e-cutable files to \OT1/cmtt/m/n/10 (\TS1/
+cmtt/m/n/10 $\OT1/cmtt/m/n/10 INSTALLDIR)\OMS/cmtt/m/n/10 n\OT1/cmtt/m/n/10 bin
+\OT1/cmr/m/n/10 ,
+ []
+
+[10] [11] [12] [13] [14] [15]
+Overfull \hbox (0.98009pt too wide) in paragraph at lines 1069--1081
+\OT1/cmr/m/n/10 puts the spec-i-fied num-ber of eigen-val-ues, the num-ber of w
+hich is given by op-tion []\OT1/cmtt/m/n/10 -ss[]\OT1/cmr/m/n/10 , to \OT1/cmtt
+/m/n/10 evalues[]filename
+ []
+
+[16] [17] [18] [19] [20]
+Overfull \hbox (5.50215pt too wide) in paragraph at lines 1434--1435
+[][]\OT1/cmtt/m/n/10 Fortran subroutine lis_vector_create(LIS_Comm comm, LIS_VE
+CTOR v, LIS_INTEGER ierr) 
+ []
+
+
+Overfull \hbox (10.7521pt too wide) in paragraph at lines 1444--1445
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_vector_set_size(LIS_VECTOR v, LIS_INT 
+local_n, LIS_INT global_n) 
+ []
+
+[21] [22] [23]
+Overfull \hbox (5.50215pt too wide) in paragraph at lines 1630--1631
+[][]\OT1/cmtt/m/n/10 Fortran subroutine lis_matrix_create(LIS_Comm comm, LIS_MA
+TRIX A, LIS_INTEGER ierr) 
+ []
+
+
+Overfull \hbox (10.7521pt too wide) in paragraph at lines 1640--1641
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_matrix_set_size(LIS_MATRIX A, LIS_INT 
+local_n, LIS_INT global_n) 
+ []
+
+[24] [25] [26]
+Overfull \hbox (5.50215pt too wide) in paragraph at lines 1884--1885
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_input(LIS_MATRIX A, LIS_VECTOR b, LIS_
+VECTOR x, char *filename) 
+ []
+
+[27] [28]
+Overfull \hbox (7.3103pt too wide) in paragraph at lines 2002--2041
+ [][][][] 
+ []
+
+
+Overfull \hbox (18.36519pt too wide) in paragraph at lines 2047--2084
+ [][][][] 
+ []
+
+[29] [30] [31]
+Overfull \hbox (7.3103pt too wide) in paragraph at lines 2211--2241
+ [][][][] 
+ []
+
+
+Overfull \hbox (19.39337pt too wide) in paragraph at lines 2247--2279
+ [][][][] 
+ []
+
+[32] [33] [34] [35] [36] [37]
+LaTeX Font Info:    Kanji font shape `JY1/mc/m/it' undefined
+(Font)              No change on input line 2427.
+LaTeX Font Info:    Kanji font shape `JY1/mc/m/it' undefined
+(Font)              No change on input line 2429.
+LaTeX Font Info:    Kanji font shape `JY1/mc/m/it' undefined
+(Font)              No change on input line 2432.
+LaTeX Font Info:    Kanji font shape `JY1/mc/m/it' undefined
+(Font)              No change on input line 2441.
+LaTeX Font Info:    Kanji font shape `JY1/mc/m/it' undefined
+(Font)              No change on input line 2443.
+
+Overfull \hbox (4.17581pt too wide) in paragraph at lines 2580--2580
+[] \OT1/cmtt/m/n/9 61:                         CALL lis_matrix_psd_set_value(LI
+S_INS_VALUE,i,j,LHS(i,j),A,ierr)[] 
+ []
+
+[38] [39] [40]
+LaTeX Font Info:    Font shape `JT1/mc/bx/n' in size <9> not available
+(Font)              Font shape `JT1/gt/m/n' tried instead on input line 2599.
+LaTeX Font Info:    Font shape `JY1/mc/bx/n' in size <9> not available
+(Font)              Font shape `JY1/gt/m/n' tried instead on input line 2599.
+ [41] [42] [43] [44] [45]
+File: storage01.eps Graphic file (type eps)
+<storage01.eps>
+ [46]
+File: storage01_mpi.eps Graphic file (type eps)
+<storage01_mpi.eps>
+ [47]
+File: storage02.eps Graphic file (type eps)
+<storage02.eps>
+ [48]
+File: storage02_mpi.eps Graphic file (type eps)
+<storage02_mpi.eps>
+ [49]
+File: storage03.eps Graphic file (type eps)
+<storage03.eps>
+ [50]
+File: storage03_mpi.eps Graphic file (type eps)
+<storage03_mpi.eps>
+ [51]
+File: storage04.eps Graphic file (type eps)
+<storage04.eps>
+ [52]
+File: storage04_omp.eps Graphic file (type eps)
+<storage04_omp.eps>
+
+Overfull \hbox (4.17581pt too wide) in paragraph at lines 3236--3236
+[]\OT1/cmtt/m/n/9 11: index[0] = -1; index[1] =  0; index[2] =  0; index[3] = -
+3; index[4] = -1; index[5] =  0;[] 
+ []
+
+
+Overfull \hbox (4.17581pt too wide) in paragraph at lines 3236--3236
+[]\OT1/cmtt/m/n/9 12: value[0] =  0; value[1] = 21; value[2] = 11; value[3] = 2
+2; value[4] =  0; value[5] =  0;[] 
+ []
+
+
+Overfull \hbox (4.17581pt too wide) in paragraph at lines 3236--3236
+[]\OT1/cmtt/m/n/9 13: value[6] =  0; value[7] = 41; value[8] = 32; value[9] = 4
+3; value[10]= 33; value[11]= 44;[] 
+ []
+
+[53]
+File: storage04_mpi.eps Graphic file (type eps)
+<storage04_mpi.eps>
+ [54]
+File: storage05.eps Graphic file (type eps)
+<storage05.eps>
+
+Overfull \hbox (4.17581pt too wide) in paragraph at lines 3342--3342
+[]\OT1/cmtt/m/n/9 11: index[0] =  0; index[1] =  0; index[2] =  1; index[3] =  
+0; index[4] =  0; index[5] =  1;[] 
+ []
+
+
+Overfull \hbox (4.17581pt too wide) in paragraph at lines 3342--3342
+[]\OT1/cmtt/m/n/9 12: index[6] =  2; index[7] =  2; index[8] =  0; index[9] =  
+1; index[10]=  2; index[11]=  3;[] 
+ []
+
+
+Overfull \hbox (4.17581pt too wide) in paragraph at lines 3342--3342
+[]\OT1/cmtt/m/n/9 13: value[0] = 11; value[1] = 21; value[2] = 32; value[3] = 4
+1; value[4] =  0; value[5] = 22;[] 
+ []
+
+
+Overfull \hbox (4.17581pt too wide) in paragraph at lines 3342--3342
+[]\OT1/cmtt/m/n/9 14: value[6] = 33; value[7] = 43; value[8] =  0; value[9] =  
+0; value[10]=  0; value[11]= 44;[] 
+ []
+
+[55]
+File: storage05_mpi.eps Graphic file (type eps)
+<storage05_mpi.eps>
+ [56] [57]
+File: storage06.eps Graphic file (type eps)
+<storage06.eps>
+ [58]
+File: storage06_omp.eps Graphic file (type eps)
+<storage06_omp.eps>
+ [59]
+File: storage06_mpi.eps Graphic file (type eps)
+<storage06_mpi.eps>
+ [60]
+File: storage07.eps Graphic file (type eps)
+<storage07.eps>
+ [61]
+File: storage07_mpi.eps Graphic file (type eps)
+<storage07_mpi.eps>
+
+Overfull \hbox (4.17581pt too wide) in paragraph at lines 3667--3667
+[] \OT1/cmtt/m/n/9 6: if( my_rank==0 ) {n = 2; bnr = 2; bnc = 2; bnnz = 1; nr =
+ (n-1)/bnr+1; nc = (n-1)/bnc+1;}[] 
+ []
+
+
+Overfull \hbox (4.17581pt too wide) in paragraph at lines 3667--3667
+[] \OT1/cmtt/m/n/9 7: else             {n = 2; bnr = 2; bnc = 2; bnnz = 2; nr =
+ (n-1)/bnr+1; nc = (n-1)/bnc+1;}[] 
+ []
+
+[62]
+File: storage08.eps Graphic file (type eps)
+<storage08.eps>
+ [63]
+File: storage08_mpi.eps Graphic file (type eps)
+<storage08_mpi.eps>
+
+Overfull \hbox (4.17581pt too wide) in paragraph at lines 3783--3783
+[] \OT1/cmtt/m/n/9 6: if( my_rank==0 ) {n = 2; bnr = 2; bnc = 2; bnnz = 2; nr =
+ (n-1)/bnr+1; nc = (n-1)/bnc+1;}[] 
+ []
+
+
+Overfull \hbox (4.17581pt too wide) in paragraph at lines 3783--3783
+[] \OT1/cmtt/m/n/9 7: else             {n = 2; bnr = 2; bnc = 2; bnnz = 1; nr =
+ (n-1)/bnr+1; nc = (n-1)/bnc+1;}[] 
+ []
+
+[64] [65]
+File: storage09.eps Graphic file (type eps)
+<storage09.eps>
+
+Overfull \hbox (18.94203pt too wide) in paragraph at lines 3842--3843
+[]  
+ []
+
+[66]
+File: storage09_mpi.eps Graphic file (type eps)
+<storage09_mpi.eps>
+ [67] [68]
+File: storage10.eps Graphic file (type eps)
+<storage10.eps>
+ [69]
+File: storage10_mpi.eps Graphic file (type eps)
+<storage10_mpi.eps>
+ [70]
+File: storage11.eps Graphic file (type eps)
+<storage11.eps>
+ [71]
+File: storage11_mpi.eps Graphic file (type eps)
+<storage11_mpi.eps>
+ [72] [73]
+Overfull \hbox (0.50212pt too wide) in paragraph at lines 4165--4167
+[]\OT1/cmtt/m/n/10 Fortran subroutine lis_vector_create(LIS_Comm comm, LIS_VECT
+OR v, LIS_INTEGER ierr) 
+ []
+
+[74]
+Underfull \hbox (badness 10000) in paragraph at lines 4210--4213
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_vector_duplicate(void *vin, LIS_VECTOR
+ *vout)
+ []
+
+[75]
+Underfull \hbox (badness 10000) in paragraph at lines 4298--4301
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_vector_get_range(LIS_VECTOR v, LIS_INT
+ *is, LIS_INT *ie)
+ []
+
+[76]
+Underfull \hbox (badness 10000) in paragraph at lines 4324--4328
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_vector_set_value(LIS_INT flag, LIS_INT
+ i, LIS_SCALAR value,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 4356--4359
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_vector_get_value(LIS_VECTOR v, LIS_INT
+ i, LIS_SCALAR *value)
+ []
+
+[77] [78] [79] [80]
+Underfull \hbox (badness 10000) in paragraph at lines 4529--4531
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_matrix_create(LIS_Comm comm, LIS_MATRI
+X *A)
+ []
+
+
+Overfull \hbox (0.50212pt too wide) in paragraph at lines 4529--4531
+\OT1/cmtt/m/n/10 Fortran subroutine lis_matrix_create(LIS_Comm comm, LIS_MATRIX
+ A, LIS_INTEGER ierr) 
+ []
+
+[81]
+Underfull \hbox (badness 10000) in paragraph at lines 4576--4579
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_matrix_duplicate(LIS_MATRIX Ain, LIS_M
+ATRIX *Aout)
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 4603--4606
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_matrix_malloc(LIS_MATRIX A, LIS_INT nn
+z_row, LIS_INT nnz[])
+ []
+
+[82] [83]
+Underfull \hbox (badness 10000) in paragraph at lines 4733--4737
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_matrix_get_size(LIS_MATRIX A, LIS_INT 
+*local_n,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 4760--4763
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_matrix_get_range(LIS_MATRIX A, LIS_INT
+ *is, LIS_INT *ie)
+ []
+
+[84]
+Underfull \hbox (badness 10000) in paragraph at lines 4786--4789
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_matrix_get_nnz(LIS_MATRIX A, LIS_INT *
+nnz)
+ []
+
+[85]
+Underfull \hbox (badness 10000) in paragraph at lines 4812--4815
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_matrix_set_type(LIS_MATRIX A, LIS_INT 
+matrix_type)
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 4858--4861
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_matrix_get_type(LIS_MATRIX A, LIS_INT 
+*matrix_type)
+ []
+
+[86] [87] [88] [89] [90] [91] [92] [93] [94]
+Underfull \hbox (badness 10000) in paragraph at lines 5287--5290
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_vector_axpy(LIS_SCALAR alpha, LIS_VECT
+OR x, LIS_VECTOR y)
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 5309--5312
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_vector_xpay(LIS_VECTOR x, LIS_SCALAR a
+lpha, LIS_VECTOR y)
+ []
+
+[95]
+Underfull \hbox (badness 10000) in paragraph at lines 5355--5358
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_vector_scale(LIS_SCALAR alpha, LIS_VEC
+TOR x)
+ []
+
+[96]
+Underfull \hbox (badness 10000) in paragraph at lines 5378--5381
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_vector_pmul(LIS_VECTOR x, LIS_VECTOR y
+, LIS_VECTOR z)
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 5399--5402
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_vector_pdiv(LIS_VECTOR x, LIS_VECTOR y
+, LIS_VECTOR z)
+ []
+
+[97]
+Underfull \hbox (badness 10000) in paragraph at lines 5421--5424
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_vector_set_all(LIS_SCALAR value, LIS_V
+ECTOR x)
+ []
+
+[98] [99] [100]
+Underfull \hbox (badness 10000) in paragraph at lines 5528--5531
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_vector_dot(LIS_VECTOR x, LIS_VECTOR y,
+ LIS_SCALAR *value)
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 5549--5552
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_vector_nhdot(LIS_VECTOR x, LIS_VECTOR 
+y, LIS_SCALAR *value)
+ []
+
+[101]
+Overfull \hbox (5.75208pt too wide) in paragraph at lines 5571--5573
+[]\OT1/cmtt/m/n/10 Fortran subroutine lis_vector_nrm1(LIS_VECTOR x, LIS_SCALAR 
+value, LIS_INTEGER ierr) 
+ []
+
+[102]
+Overfull \hbox (5.75208pt too wide) in paragraph at lines 5612--5614
+[]\OT1/cmtt/m/n/10 Fortran subroutine lis_vector_nrmi(LIS_VECTOR x, LIS_SCALAR 
+value, LIS_INTEGER ierr) 
+ []
+
+
+Overfull \hbox (0.50212pt too wide) in paragraph at lines 5632--5634
+[]\OT1/cmtt/m/n/10 Fortran subroutine lis_vector_sum(LIS_VECTOR x, LIS_SCALAR v
+alue, LIS_INTEGER ierr) 
+ []
+
+[103] [104]
+LaTeX Font Info:    Trying to load font information for OMS+cmr on input line 5
+713.
+ (/usr/share/texmf-dist/tex/latex/base/omscmr.fd
+File: omscmr.fd 2022/07/10 v2.5l Standard LaTeX font definitions
+)
+LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 5713.
+
+ [105]
+Underfull \hbox (badness 10000) in paragraph at lines 5721--5724
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_matrix_copy(LIS_MATRIX Ain, LIS_MATRIX
+ Aout)
+ []
+
+[106] [107]
+Overfull \hbox (5.20486pt too wide) in paragraph at lines 5836--5839
+[]\OT1/cmr/m/n/10 : Di-ag-o-nal scal-ing $\OML/cmm/m/it/10 D[]AD[]x \OT1/cmr/m/
+n/10 = \OML/cmm/m/it/10 D[]b$\OT1/cmr/m/n/10 ,
+ []
+
+[108] [109] [110] [111] [112]
+Underfull \hbox (badness 10000) in paragraph at lines 6051--6054
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_solver_set_option(char *text, LIS_SOLV
+ER solver)
+ []
+
+
+Overfull \hbox (7.3103pt too wide) in paragraph at lines 6117--6147
+ [][][][] 
+ []
+
+[113] [114]
+Overfull \hbox (18.36519pt too wide) in paragraph at lines 6154--6191
+ [][][][] 
+ []
+
+
+Overfull \hbox (15.0pt too wide) in paragraph at lines 6151--6193
+[][] 
+ []
+
+[115]
+Overfull \hbox (3.39671pt too wide) in paragraph at lines 6246--6249
+[]\OT1/cmr/m/n/10 This func-tion re-turns 0 if the sta-tus of the solver (\OT1/
+cmtt/m/n/10 solver->retcode\OT1/cmr/m/n/10 ) is \OT1/cmtt/m/n/10 LIS[]BREAKDOWN
+ \OT1/cmr/m/n/10 or \OT1/cmtt/m/n/10 LIS[]MAXITER\OT1/cmr/m/n/10 .
+ []
+
+[116]
+Overfull \hbox (3.39671pt too wide) in paragraph at lines 6283--6286
+[]\OT1/cmr/m/n/10 This func-tion re-turns 0 if the sta-tus of the solver (\OT1/
+cmtt/m/n/10 solver->retcode\OT1/cmr/m/n/10 ) is \OT1/cmtt/m/n/10 LIS[]BREAKDOWN
+ \OT1/cmr/m/n/10 or \OT1/cmtt/m/n/10 LIS[]MAXITER\OT1/cmr/m/n/10 .
+ []
+
+[117] [118] [119] [120] [121]
+Overfull \hbox (5.75208pt too wide) in paragraph at lines 6479--6482
+[]\OT1/cmtt/m/n/10 Fortran subroutine lis_solver_get_precon(LIS_SOLVER solver, 
+LIS_INTEGER precon_type, 
+ []
+
+[122] [123] [124]
+Underfull \hbox (badness 10000) in paragraph at lines 6589--6592
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_esolver_set_option(char *text, LIS_ESO
+LVER esolver)
+ []
+
+
+Overfull \hbox (7.3103pt too wide) in paragraph at lines 6659--6689
+ [][][][] 
+ []
+
+
+Overfull \hbox (19.39337pt too wide) in paragraph at lines 6695--6727
+ [][][][] 
+ []
+
+[125] [126] [127] [128] [129] [130] [131] [132] [133] [134] [135]
+Overfull \hbox (0.50212pt too wide) in paragraph at lines 7118--7122
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_esolver_get_specific_evector(LIS_ESOLV
+ER esolver, LIS_INT mode, 
+ []
+
+[136] [137] [138] [139]
+Overfull \hbox (0.50212pt too wide) in paragraph at lines 7331--7335
+[]\OT1/cmtt/m/n/10 Fortran subroutine lis_array_axpyz(LIS_INTEGER n, LIS_SCALAR
+ alpha, LIS_SCALAR x(), 
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 7355--7358
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_array_scale(LIS_INT n, LIS_SCALAR alph
+a, LIS_SCALAR x[])
+ []
+
+
+Overfull \hbox (0.50212pt too wide) in paragraph at lines 7355--7358
+\OT1/cmtt/m/n/10 Fortran subroutine lis_array_scale(LIS_INTEGER n, LIS_SCALAR a
+lpha, LIS_SCALAR x(), 
+ []
+
+[140] [141]
+Underfull \hbox (badness 10000) in paragraph at lines 7426--7429
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_array_set_all(LIS_INT n, LIS_SCALAR va
+lue, LIS_SCALAR x[])
+ []
+
+[142] [143]
+Overfull \hbox (0.50212pt too wide) in paragraph at lines 7516--7519
+[]\OT1/cmtt/m/n/10 Fortran subroutine lis_array_shift(LIS_INTEGER n, LIS_SCALAR
+ sigma, LIS_SCALAR x(), 
+ []
+
+[144] [145] [146] [147]
+Overfull \hbox (0.50212pt too wide) in paragraph at lines 7706--7710
+[]\OT1/cmtt/m/n/10 Fortran subroutine lis_array_matvech(LIS_INTEGER n, LIS_SCAL
+AR a(), LIS_SCALAR x(), 
+ []
+
+[148]
+Overfull \hbox (0.50212pt too wide) in paragraph at lines 7736--7741
+[]\OT1/cmtt/m/n/10 Fortran subroutine lis_array_matvec_ns(LIS_INTEGER m, LIS_IN
+TEGER n, LIS_SCALAR a() 
+ []
+
+[149] [150]
+Overfull \hbox (0.50212pt too wide) in paragraph at lines 7798--7804
+[]\OT1/cmtt/m/n/10 Fortran subroutine lis_array_matmat_ns(LIS_INTEGER l, LIS_IN
+TEGER m, LIS_INTEGER n, 
+ []
+
+[151] [152] [153] [154]
+Overfull \hbox (0.50212pt too wide) in paragraph at lines 7958--7961
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_input(LIS_MATRIX A, LIS_VECTOR b, LIS_
+VECTOR x, char *filename)
+ []
+
+[155]
+Underfull \hbox (badness 10000) in paragraph at lines 8076--8079
+[][]\OT1/cmtt/m/n/10 C       LIS_INT lis_output_vector(LIS_VECTOR v, LIS_INT fo
+rmat, char *filename)
+ []
+
+[156] [157] [158] [159] [160] [161] [162] [163] [164] [165] [166] [167]
+[168] (./lis-ug-en.aux)
+
+LaTeX Font Warning: Some font shapes were not available, defaults substituted.
+
+
+LaTeX Warning: There were multiply-defined labels.
+
+ ) 
+Here is how much of TeX's memory you used:
+ 1600 strings out of 478184
+ 25510 string characters out of 5843370
+ 1873209 words of memory out of 5000000
+ 21917 multiletter control sequences out of 15000+600000
+ 523311 words of font info for 75 fonts, out of 8000000 for 9000
+ 14 hyphenation exceptions out of 8191
+ 55i,13n,62p,344b,449s stack positions out of 10000i,1000n,20000p,200000b,200000s
+
+Output written on lis-ug-en.dvi (175 pages, 520552 bytes).

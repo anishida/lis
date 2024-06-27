@@ -1,0 +1,498 @@
+\relax 
+\citation{nishida}
+\citation{hestenes}
+\citation{lanczos1}
+\citation{hestenes}
+\citation{fletcher}
+\citation{joly}
+\citation{pocock}
+\citation{sogabe09}
+\citation{sonneveld}
+\citation{abe02}
+\citation{bicgstab}
+\citation{abe02}
+\citation{zhang}
+\citation{abe02}
+\citation{fujino01}
+\citation{fujino02}
+\citation{bicgstabl}
+\citation{tfqmr}
+\citation{jacobi}
+\citation{orthomin}
+\citation{gauss}
+\citation{seidel}
+\citation{gmres}
+\citation{young}
+\citation{frankel}
+\citation{fgmres}
+\citation{idrs}
+\citation{minres}
+\citation{cocg}
+\citation{cocr}
+\citation{power}
+\citation{inverse}
+\citation{rayleigh}
+\citation{knyazev}
+\citation{suetomi}
+\citation{rutishauser}
+\citation{lanczos2}
+\citation{arnoldi}
+\citation{axelsson}
+\citation{axelsson}
+\citation{gustafsson}
+\citation{nakajima}
+\citation{ilut}
+\citation{ITSOL}
+\citation{ITSOL}
+\citation{iluc}
+\citation{kohno01}
+\citation{fujii01}
+\citation{abe01}
+\citation{bridson01}
+\citation{chan}
+\citation{dryja}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{5}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Linear Solvers}}{5}{}\protected@file@percent }
+\newlabel{tab:solvers}{{1}{5}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Eigensolvers}}{5}{}\protected@file@percent }
+\newlabel{tab:esolvers}{{2}{5}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Preconditioners}}{5}{}\protected@file@percent }
+\newlabel{tab:precon}{{3}{5}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Matrix Storage Formats}}{5}{}\protected@file@percent }
+\newlabel{tab:storage}{{4}{5}}
+\citation{OpenMP}
+\citation{MPI}
+\citation{kota1}
+\citation{kota2}
+\citation{duff92}
+\citation{matrixmarket}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Installation}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}System Requirements}{6}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Major Tested Platforms}}{6}{}\protected@file@percent }
+\newlabel{platforms}{{5}{6}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Installing on UNIX and Compatible Systems}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.1}Extracting Archive}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.2}Configuring Source Tree}{6}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Files contained in {\tt  lis-(\$VERSION).zip}}}{7}{}\protected@file@percent }
+\newlabel{listargz}{{1}{7}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.3}Compiling}{7}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Major Configuration Options (see {\tt  ./configure --help} for the complete list)}}{8}{}\protected@file@percent }
+\newlabel{configoption}{{6}{8}}
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Examples of Targets (see {\tt  lis-(\$VERSION)/configure.ac} for details)}}{9}{}\protected@file@percent }
+\newlabel{targetoption}{{7}{9}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.4}Installing}{10}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Installing on Windows Systems}{11}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Testing}{11}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.1}test1}{11}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.2}test2}{11}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.3}test2b}{12}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.4}test3}{12}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.5}test3b}{12}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.6}test3c}{12}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.7}test4}{13}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.8}test5}{13}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.9}test6}{13}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.10}test7}{13}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.11}test8f}{13}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.12}etest1}{14}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.13}getest1}{14}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.14}etest2}{14}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.15}etest3}{14}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.16}etest4}{14}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.17}etest5}{15}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.18}etest5b}{15}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.19}getest5}{15}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.20}getest5b}{15}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.21}etest6}{16}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.22}etest7}{16}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.23}spmvtest1}{16}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.24}spmvtest2}{16}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.25}spmvtest2b}{17}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.26}spmvtest3}{17}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.27}spmvtest3b}{17}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.28}spmvtest4}{17}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.29}spmvtest5}{17}{}\protected@file@percent }
+\citation{nakajima}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}Limitations}{18}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Basic Operations}{19}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Initializing and Finalizing}{19}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Operating Vectors}{20}{}\protected@file@percent }
+\newlabel{eq:vecv}{{3.1}{20}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Operating Matrices}{22}{}\protected@file@percent }
+\newlabel{eq:mat}{{3.2}{22}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Solving Linear Equations}{28}{}\protected@file@percent }
+\newlabel{subsec:solve}{{3.4}{28}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Solving Eigenvalue Problems}{31}{}\protected@file@percent }
+\newlabel{subsec:solve}{{3.5}{31}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6}Writing Programs}{35}{}\protected@file@percent }
+\newlabel{sec:testprog3}{{3.6}{35}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}An Alternate Workflow: PSD}{38}{}\protected@file@percent }
+\newlabel{subsec:psd}{{3.7}{38}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.8}Compiling and Linking}{41}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.9}Running}{42}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.10}Zero DOFs on a Process}{43}{}\protected@file@percent }
+\citation{dd}
+\citation{qd}
+\citation{quadlis}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Quadruple Precision Operations}{44}{}\protected@file@percent }
+\newlabel{sec:quadruple}{{4}{44}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Using Quadruple Precision Operations}{44}{}\protected@file@percent }
+\newlabel{sec:testprog5}{{4.1}{44}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Matrix Storage Formats}{46}{}\protected@file@percent }
+\newlabel{sec:storages}{{5}{46}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Compressed Sparse Row (CSR)}{46}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.1.1}Creating Matrices (for Serial and Multithreaded Environments)}{46}{}\protected@file@percent }
+\newlabel{eq:mata}{{5.1.1}{46}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Data structure of CSR format (for serial and multithreaded environments).}}{46}{}\protected@file@percent }
+\newlabel{fig:storage01}{{2}{46}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.1.2}Creating Matrices (for Multiprocessing Environment)}{47}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Data structure of CSR format (for multiprocessing environment).}}{47}{}\protected@file@percent }
+\newlabel{fig:storage01_mpi}{{3}{47}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.1.3}Associating Arrays}{47}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Compressed Sparse Column (CSC)}{48}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.2.1}Creating Matrices (for Serial and Multithreaded Environments)}{48}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Data structure of CSC format (for serial and multithreaded environments).}}{48}{}\protected@file@percent }
+\newlabel{fig:storage02}{{4}{48}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.2.2}Creating Matrices (for Multiprocessing Environment)}{49}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Data structure of CSC format (for multiprocessing environment).}}{49}{}\protected@file@percent }
+\newlabel{fig:storage02_mpi}{{5}{49}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.2.3}Associating Arrays}{49}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Modified Compressed Sparse Row (MSR)}{50}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.1}Creating Matrices (for Serial and Multithreaded Environments)}{50}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Data structure of MSR format (for serial and multithreaded environments).}}{50}{}\protected@file@percent }
+\newlabel{fig:storage03}{{6}{50}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.2}Creating Matrices (for Multiprocessing Environment)}{51}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Data structure of MSR format (for multiprocessing environment).}}{51}{}\protected@file@percent }
+\newlabel{fig:storage03_mpi}{{7}{51}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.3}Associating Arrays}{51}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Diagonal (DIA)}{52}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.4.1}Creating Matrices (for Serial Environment)}{52}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Data structure of DIA format (for serial environment).}}{52}{}\protected@file@percent }
+\newlabel{fig:storage04}{{8}{52}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.4.2}Creating Matrices (for Multithreaded Environment)}{53}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Data structure of DIA format (for multithreaded environment).}}{53}{}\protected@file@percent }
+\newlabel{fig:storage04_omp}{{9}{53}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.4.3}Creating Matrices (for Multiprocessing Environment)}{54}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Data structure of DIA format (for multiprocessing environment).}}{54}{}\protected@file@percent }
+\newlabel{fig:storage04_mpi}{{10}{54}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.4.4}Associating Arrays}{54}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}Ellpack-Itpack Generalized Diagonal (ELL)}{55}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.5.1}Creating Matrices (for Serial and Multithreaded Environments)}{55}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces Data structure of ELL format (for serial and multithreaded environments).}}{55}{}\protected@file@percent }
+\newlabel{fig:storage05}{{11}{55}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.5.2}Creating Matrices (for Multiprocessing Environment)}{56}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces Data structure of ELL format (for multiprocessing environment).}}{56}{}\protected@file@percent }
+\newlabel{fig:storage05_mpi}{{12}{56}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.5.3}Associating Arrays}{56}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.6}Jagged Diagonal (JAD)}{57}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.6.1}Creating Matrices (for Serial Environment)}{58}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {13}{\ignorespaces Data structure of JAD format (for serial environment).}}{58}{}\protected@file@percent }
+\newlabel{fig:storage06}{{13}{58}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.6.2}Creating Matrices (for Multithreaded Environment)}{59}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {14}{\ignorespaces Data structure of JAD format (for multithreaded environment).}}{59}{}\protected@file@percent }
+\newlabel{fig:storage06_omp}{{14}{59}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.6.3}Creating Matrices (for Multiprocessing Environment)}{60}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {15}{\ignorespaces Data structure of JAD format (for multiprocessing environment).}}{60}{}\protected@file@percent }
+\newlabel{fig:storage06_mpi}{{15}{60}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.6.4}Associating Arrays}{60}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.7}Block Sparse Row (BSR)}{61}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.7.1}Creating Matrices (for Serial and Multithreaded Environments)}{61}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces Data structure of BSR format (for serial and multithreaded environments).}}{61}{}\protected@file@percent }
+\newlabel{fig:storage07}{{16}{61}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.7.2}Creating Matrices (for Multiprocessing Environment)}{62}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces Data structure of BSR format (for multiprocessing environment).}}{62}{}\protected@file@percent }
+\newlabel{fig:storage07_mpi}{{17}{62}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.7.3}Associating Arrays}{62}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.8}Block Sparse Column (BSC)}{63}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.8.1}Creating Matrices (for Serial and Multithreaded Environments)}{63}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {18}{\ignorespaces Data structure of BSC format (for serial and multithreaded environments).}}{63}{}\protected@file@percent }
+\newlabel{fig:storage08}{{18}{63}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.8.2}Creating Matrices (for Multiprocessing Environment)}{64}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {19}{\ignorespaces Data structure of BSC format (for multiprocessing environment).}}{64}{}\protected@file@percent }
+\newlabel{fig:storage08_mpi}{{19}{64}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.8.3}Associating Arrays}{64}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.9}Variable Block Row (VBR)}{65}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.9.1}Creating Matrices (for Serial and Multithreaded Environments)}{66}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {20}{\ignorespaces Data structure of VBR format (for serial and multithreaded environments).}}{66}{}\protected@file@percent }
+\newlabel{fig:storage09}{{20}{66}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.9.2}Creating Matrices (for Multiprocessing Environment)}{67}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {21}{\ignorespaces Data structure of VBR format (for multiprocessing environment).}}{67}{}\protected@file@percent }
+\newlabel{fig:storage09_mpi}{{21}{67}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.9.3}Associating Arrays}{68}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.10}Coordinate (COO)}{69}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.10.1}Creating Matrices (for Serial and Multithreaded Environments)}{69}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {22}{\ignorespaces Data structure of COO format (for serial and multithreaded environments).}}{69}{}\protected@file@percent }
+\newlabel{fig:storage10}{{22}{69}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.10.2}Creating Matrices (for Multiprocessing Environment)}{70}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {23}{\ignorespaces Data structure of COO format (for multiprocessing environment).}}{70}{}\protected@file@percent }
+\newlabel{fig:storage10_mpi}{{23}{70}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.10.3}Associating Arrays}{70}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.11}Dense (DNS)}{71}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.11.1}Creating Matrices (for Serial and Multithreaded Environments)}{71}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {24}{\ignorespaces Data structure of DNS format (for serial and multithreaded environments).}}{71}{}\protected@file@percent }
+\newlabel{fig:storage11}{{24}{71}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.11.2}Creating Matrices (for Multiprocessing Environment)}{72}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {25}{\ignorespaces Data structure of DNS format (for multiprocessing environment).}}{72}{}\protected@file@percent }
+\newlabel{fig:storage11_mpi}{{25}{72}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.11.3}Associating Arrays}{72}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}Functions}{73}{}\protected@file@percent }
+\newlabel{sec:func}{{6}{73}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Operating Vector Elements}{74}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.1}lis\_vector\_create}{74}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.2}lis\_vector\_destroy}{74}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.3}lis\_vector\_duplicate}{75}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.4}lis\_vector\_set\_size}{75}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.5}lis\_vector\_get\_size}{76}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.6}lis\_vector\_get\_range}{76}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.7}lis\_vector\_set\_value}{77}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.8}lis\_vector\_get\_value}{77}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.9}lis\_vector\_set\_values}{78}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.10}lis\_vector\_get\_values}{79}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.11}lis\_vector\_scatter}{79}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.12}lis\_vector\_gather}{80}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.13}lis\_vector\_is\_null}{80}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Operating Matrix Elements}{81}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.1}lis\_matrix\_create}{81}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.2}lis\_matrix\_destroy}{81}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.3}lis\_matrix\_duplicate}{82}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.4}lis\_matrix\_malloc}{82}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.5}lis\_matrix\_set\_value}{83}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.6}lis\_matrix\_assemble}{83}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.7}lis\_matrix\_set\_size}{84}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.8}lis\_matrix\_get\_size}{84}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.9}lis\_matrix\_get\_range}{85}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.10}lis\_matrix\_get\_nnz}{85}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.11}lis\_matrix\_set\_type}{86}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.12}lis\_matrix\_get\_type}{86}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.13}lis\_matrix\_set\_csr}{87}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.14}lis\_matrix\_set\_csc}{87}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.15}lis\_matrix\_set\_msr}{88}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.16}lis\_matrix\_set\_dia}{88}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.17}lis\_matrix\_set\_ell}{89}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.18}lis\_matrix\_set\_jad}{89}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.19}lis\_matrix\_set\_bsr}{90}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.20}lis\_matrix\_set\_bsc}{90}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.21}lis\_matrix\_set\_vbr}{91}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.22}lis\_matrix\_set\_coo}{92}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.23}lis\_matrix\_set\_dns}{93}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.24}lis\_matrix\_unset}{93}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}Computing with Vectors and Matrices}{94}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.1}lis\_vector\_swap}{94}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.2}lis\_vector\_copy}{94}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.3}lis\_vector\_axpy}{95}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.4}lis\_vector\_xpay}{95}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.5}lis\_vector\_axpyz}{96}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.6}lis\_vector\_scale}{96}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.7}lis\_vector\_pmul}{97}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.8}lis\_vector\_pdiv}{97}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.9}lis\_vector\_set\_all}{98}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.10}lis\_vector\_abs}{98}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.11}lis\_vector\_reciprocal}{99}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.12}lis\_vector\_conjugate}{99}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.13}lis\_vector\_shift}{100}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.14}lis\_vector\_dot}{101}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.15}lis\_vector\_nhdot}{101}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.16}lis\_vector\_nrm1}{102}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.17}lis\_vector\_nrm2}{102}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.18}lis\_vector\_nrmi}{103}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.19}lis\_vector\_sum}{103}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.20}lis\_matrix\_set\_blocksize}{104}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.21}lis\_matrix\_convert}{105}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.22}lis\_matrix\_copy}{106}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.23}lis\_matrix\_axpy}{106}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.24}lis\_matrix\_xpay}{107}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.25}lis\_matrix\_axpyz}{107}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.26}lis\_matrix\_scale}{108}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.27}lis\_matrix\_get\_diagonal}{108}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.28}lis\_matrix\_shift\_diagonal}{109}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.29}lis\_matrix\_shift\_matrix}{109}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.30}lis\_matvec}{110}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.31}lis\_matvech}{110}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.4}Solving Linear Equations}{111}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.1}lis\_solver\_create}{111}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.2}lis\_solver\_destroy}{111}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.3}lis\_precon\_create}{112}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.4}lis\_precon\_destroy}{112}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.5}lis\_solver\_set\_option}{113}{}\protected@file@percent }
+\newlabel{sec:setoptions}{{6.4.5}{113}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.6}lis\_solver\_set\_optionC}{116}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.7}lis\_solve}{116}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.8}lis\_solve\_kernel}{117}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.9}lis\_solver\_get\_status}{118}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.10}lis\_solver\_get\_iter}{118}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.11}lis\_solver\_get\_iterex}{119}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.12}lis\_solver\_get\_time}{119}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.13}lis\_solver\_get\_timeex}{120}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.14}lis\_solver\_get\_residualnorm}{120}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.15}lis\_solver\_get\_rhistory}{121}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.16}lis\_solver\_get\_solver}{122}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.17}lis\_solver\_get\_precon}{122}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.18}lis\_solver\_get\_solvername}{123}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.19}lis\_solver\_get\_preconname}{123}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.5}Solving Eigenvalue Problems}{124}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.1}lis\_esolver\_create}{124}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.2}lis\_esolver\_destroy}{124}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.3}lis\_esolver\_set\_option}{125}{}\protected@file@percent }
+\newlabel{sec:setoptions}{{6.5.3}{125}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.4}lis\_esolver\_set\_optionC}{128}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.5}lis\_esolve}{128}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.6}lis\_gesolve}{129}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.7}lis\_esolver\_get\_status}{130}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.8}lis\_esolver\_get\_iter}{130}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.9}lis\_esolver\_get\_iterex}{131}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.10}lis\_esolver\_get\_time}{131}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.11}lis\_esolver\_get\_timeex}{132}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.12}lis\_esolver\_get\_residualnorm}{132}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.13}lis\_esolver\_get\_rhistory}{133}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.14}lis\_esolver\_get\_evalues}{133}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.15}lis\_esolver\_get\_evectors}{134}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.16}lis\_esolver\_get\_residualnorms}{134}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.17}lis\_esolver\_get\_iters}{135}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.18}lis\_esolver\_get\_specific\_evalue}{135}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.19}lis\_esolver\_get\_specific\_evector}{136}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.20}lis\_esolver\_get\_specific\_residualnorm}{136}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.21}lis\_esolver\_get\_specific\_iter}{137}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.22}lis\_esolver\_get\_esolver}{137}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.23}lis\_esolver\_get\_esolvername}{137}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.6}Computing with Arrays}{138}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.1}lis\_array\_swap}{138}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.2}lis\_array\_copy}{138}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.3}lis\_array\_axpy}{139}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.4}lis\_array\_xpay}{139}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.5}lis\_array\_axpyz}{140}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.6}lis\_array\_scale}{140}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.7}lis\_array\_pmul}{141}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.8}lis\_array\_pdiv}{141}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.9}lis\_array\_set\_all}{142}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.10}lis\_array\_abs}{142}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.11}lis\_array\_reciprocal}{143}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.12}lis\_array\_conjugate}{143}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.13}lis\_array\_shift}{144}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.14}lis\_array\_dot}{144}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.15}lis\_array\_nhdot}{145}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.16}lis\_array\_nrm1}{145}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.17}lis\_array\_nrm2}{146}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.18}lis\_array\_nrmi}{146}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.19}lis\_array\_sum}{147}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.20}lis\_array\_matvec}{148}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.21}lis\_array\_matvech}{148}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.22}lis\_array\_matvec\_ns}{149}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.23}lis\_array\_matmat}{150}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.24}lis\_array\_matmat\_ns}{151}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.25}lis\_array\_ge}{152}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.26}lis\_array\_solve}{152}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.27}lis\_array\_cgs}{153}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.28}lis\_array\_mgs}{153}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.29}lis\_array\_qr}{154}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.7}Operating External Files}{155}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.7.1}lis\_input}{155}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.7.2}lis\_input\_vector}{155}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.7.3}lis\_input\_matrix}{156}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.7.4}lis\_output}{156}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.7.5}lis\_output\_vector}{157}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.7.6}lis\_output\_matrix}{157}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.8}Other Functions}{158}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.8.1}lis\_initialize}{158}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.8.2}lis\_finalize}{158}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.8.3}lis\_wtime}{159}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.8.4}CHKERR}{159}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.8.5}lis\_printf}{160}{}\protected@file@percent }
+\bibcite{nishida}{1}
+\bibcite{hestenes}{2}
+\bibcite{lanczos1}{3}
+\bibcite{fletcher}{4}
+\bibcite{joly}{5}
+\bibcite{pocock}{6}
+\bibcite{sogabe09}{7}
+\bibcite{sonneveld}{8}
+\bibcite{abe02}{9}
+\bibcite{bicgstab}{10}
+\bibcite{zhang}{11}
+\bibcite{fujino01}{12}
+\bibcite{fujino02}{13}
+\bibcite{bicgstabl}{14}
+\bibcite{tfqmr}{15}
+\bibcite{jacobi}{16}
+\bibcite{orthomin}{17}
+\bibcite{gauss}{18}
+\@writefile{toc}{\contentsline {section}{References}{161}{}\protected@file@percent }
+\bibcite{seidel}{19}
+\bibcite{gmres}{20}
+\bibcite{young}{21}
+\bibcite{frankel}{22}
+\bibcite{fgmres}{23}
+\bibcite{idrs}{24}
+\bibcite{minres}{25}
+\bibcite{cocg}{26}
+\bibcite{cocr}{27}
+\bibcite{power}{28}
+\bibcite{inverse}{29}
+\bibcite{rayleigh}{30}
+\bibcite{knyazev}{31}
+\bibcite{suetomi}{32}
+\bibcite{rutishauser}{33}
+\bibcite{lanczos2}{34}
+\bibcite{arnoldi}{35}
+\bibcite{axelsson}{36}
+\bibcite{gustafsson}{37}
+\bibcite{nakajima}{38}
+\bibcite{ilut}{39}
+\bibcite{ITSOL}{40}
+\bibcite{iluc}{41}
+\bibcite{kohno01}{42}
+\bibcite{fujii01}{43}
+\bibcite{abe01}{44}
+\bibcite{bridson01}{45}
+\bibcite{chan}{46}
+\bibcite{dryja}{47}
+\bibcite{kota1}{48}
+\bibcite{kota2}{49}
+\bibcite{dd}{50}
+\bibcite{qd}{51}
+\bibcite{dekker}{52}
+\bibcite{Knuth}{53}
+\bibcite{Bailey:High-Precision}{54}
+\bibcite{intel}{55}
+\bibcite{quadlis}{56}
+\bibcite{Courant89}{57}
+\bibcite{Lanczos70}{58}
+\bibcite{Wilkinson88}{59}
+\bibcite{young71}{60}
+\bibcite{golub96}{61}
+\bibcite{dongarra91}{62}
+\bibcite{Saad92}{63}
+\bibcite{Bar00}{64}
+\bibcite{Saad03}{65}
+\bibcite{greenbaum}{66}
+\bibcite{bai00}{67}
+\bibcite{wilkinson71}{68}
+\bibcite{eispack}{69}
+\bibcite{eispack2}{70}
+\bibcite{linpack}{71}
+\bibcite{rice85}{72}
+\bibcite{lapack}{73}
+\bibcite{dongarra92}{74}
+\bibcite{duff92}{75}
+\bibcite{Saad90}{76}
+\bibcite{pvm}{77}
+\bibcite{bramley95splib}{78}
+\bibcite{matrixmarket}{79}
+\bibcite{scalapack}{80}
+\bibcite{ARPACK}{81}
+\bibcite{Aztec}{82}
+\bibcite{MPI}{83}
+\bibcite{GeoFEM}{84}
+\bibcite{PETSc}{85}
+\bibcite{SLEPc}{86}
+\bibcite{Trilinos}{87}
+\bibcite{Hypre}{88}
+\bibcite{OpenMP}{89}
+\bibcite{HPCG}{90}
+\@writefile{toc}{\contentsline {section}{\numberline {A}File Formats}{166}{}\protected@file@percent }
+\newlabel{sec:matinp}{{A}{166}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.1}Extended Matrix Market Format}{166}{}\protected@file@percent }
+\newlabel{eq:matavecv}{{A.1}{166}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.2}Harwell-Boeing Format}{167}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.3}Extended Matrix Market Format for Vectors}{168}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.4}PLAIN Format for Vectors}{168}{}\protected@file@percent }
+\gdef \@abspage@last{175}

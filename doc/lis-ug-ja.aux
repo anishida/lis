@@ -1,0 +1,505 @@
+\relax 
+\citation{nishida1}
+\citation{hestenes}
+\citation{lanczos1}
+\citation{hestenes}
+\citation{fletcher}
+\citation{joly}
+\citation{pocock}
+\citation{sogabe09}
+\citation{sonneveld}
+\citation{abe02}
+\citation{bicgstab}
+\citation{abe02}
+\citation{zhang}
+\citation{abe02}
+\citation{fujino01}
+\citation{fujino02}
+\citation{bicgstabl}
+\citation{tfqmr}
+\citation{jacobi}
+\citation{orthomin}
+\citation{gauss}
+\citation{seidel}
+\citation{gmres}
+\citation{young}
+\citation{frankel}
+\citation{fgmres}
+\citation{idrs}
+\citation{minres}
+\citation{cocg}
+\citation{cocr}
+\citation{power}
+\citation{inverse}
+\citation{rayleigh}
+\citation{knyazev}
+\citation{suetomi}
+\citation{rutishauser}
+\citation{lanczos2}
+\citation{arnoldi}
+\citation{axelsson}
+\citation{axelsson}
+\citation{gustafsson}
+\citation{nakajima}
+\citation{ilut}
+\citation{ITSOL}
+\citation{ITSOL}
+\citation{iluc}
+\citation{kohno01}
+\citation{fujii01}
+\citation{abe01}
+\citation{bridson01}
+\citation{chan}
+\citation{dryja}
+\@writefile{toc}{\contentsline {section}{\numberline {1}はじめに}{5}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces 線型方程式解法}}{5}{}\protected@file@percent }
+\newlabel{tab:solvers}{{1}{5}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces 固有値解法}}{5}{}\protected@file@percent }
+\newlabel{tab:esolvers}{{2}{5}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces 前処理}}{5}{}\protected@file@percent }
+\newlabel{tab:precon}{{3}{5}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces 行列格納形式}}{5}{}\protected@file@percent }
+\newlabel{tab:storage}{{4}{5}}
+\citation{OpenMP}
+\citation{MPI}
+\citation{kota1}
+\citation{kota2}
+\citation{duff92}
+\citation{matrixmarket}
+\@writefile{toc}{\contentsline {section}{\numberline {2}導入}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}システム要件}{6}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces 主な動作確認環境}}{6}{}\protected@file@percent }
+\newlabel{platforms}{{5}{6}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}UNIX及び互換システムへの導入}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.1}アーカイブの展開}{6}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces {\tt  lis-(\$VERSION).zip}のファイル構成}}{7}{}\protected@file@percent }
+\newlabel{listargz}{{1}{7}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.2}ソースツリーの設定}{7}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.3}実行ファイルの生成}{7}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces 主な設定オプション (一覧は {\tt  ./configure --help}を参照) }}{8}{}\protected@file@percent }
+\newlabel{configoption}{{6}{8}}
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces TARGETの例 (詳細は{\tt  lis-(\$VERSION)/configure.ac}を参照) }}{9}{}\protected@file@percent }
+\newlabel{targetoption}{{7}{9}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.4}導入}{11}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Windowsシステムへの導入}{12}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}検証}{12}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.1}test1}{12}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.2}test2}{13}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.3}test2b}{13}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.4}test3}{13}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.5}test3b}{14}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.6}test3c}{14}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.7}test4}{14}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.8}test5}{14}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.9}test6}{15}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.10}test7}{15}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.11}test8f}{15}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.12}etest1}{15}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.13}getest1}{15}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.14}etest2}{16}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.15}etest3}{16}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.16}etest4}{16}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.17}etest5}{16}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.18}etest5b}{17}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.19}getest5}{17}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.20}getest5b}{17}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.21}etest6}{17}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.22}etest7}{18}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.23}spmvtest1}{18}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.24}spmvtest2}{18}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.25}spmvtest2b}{18}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.26}spmvtest3}{19}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.27}spmvtest3b}{19}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.28}spmvtest4}{19}{}\protected@file@percent }
+\citation{nakajima}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.29}spmvtest5}{20}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}制限事項}{20}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}基本操作}{22}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}初期化・終了処理}{22}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}ベクトルの操作}{23}{}\protected@file@percent }
+\newlabel{eq:vecv}{{3.1}{23}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}行列の操作}{26}{}\protected@file@percent }
+\newlabel{eq:mat}{{3.2}{26}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}線型方程式の求解}{32}{}\protected@file@percent }
+\newlabel{subsec:solve}{{3.4}{32}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}固有値問題の求解}{37}{}\protected@file@percent }
+\newlabel{subsec:esolve}{{3.5}{37}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6}プログラムの作成}{41}{}\protected@file@percent }
+\newlabel{sec:testprog3}{{3.6}{41}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}前処理とソルバの分離}{44}{}\protected@file@percent }
+\newlabel{subsec:psd}{{3.7}{44}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.8}実行ファイルの生成}{47}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.9}実行}{48}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.10}プロセス上での自由度について}{49}{}\protected@file@percent }
+\citation{dd}
+\citation{qd}
+\citation{dekker}
+\citation{Knuth}
+\citation{Bailey:High-Precision}
+\citation{intel}
+\citation{quadlis}
+\@writefile{toc}{\contentsline {section}{\numberline {4}4倍精度演算}{50}{}\protected@file@percent }
+\newlabel{sec:quadruple}{{4}{50}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces double-double型のビット数}}{50}{}\protected@file@percent }
+\newlabel{fig:residual}{{2}{50}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}4倍精度演算の使用}{50}{}\protected@file@percent }
+\newlabel{sec:testprog4}{{4.1}{50}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}行列格納形式}{52}{}\protected@file@percent }
+\newlabel{sec:storages}{{5}{52}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Compressed Sparse Row (CSR)}{52}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.1.1}行列の作成 (逐次・マルチスレッド環境)}{52}{}\protected@file@percent }
+\newlabel{eq:mata}{{5.1.1}{52}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces CSR形式のデータ構造 (逐次・マルチスレッド環境)}}{52}{}\protected@file@percent }
+\newlabel{fig:storage01}{{3}{52}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.1.2}行列の作成 (マルチプロセス環境)}{53}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces CSR形式のデータ構造 (マルチプロセス環境)}}{53}{}\protected@file@percent }
+\newlabel{fig:storage01_mpi}{{4}{53}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.1.3}関連する関数}{53}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Compressed Sparse Column (CSC)}{54}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.2.1}行列の作成 (逐次・マルチスレッド環境)}{54}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces CSC形式のデータ構造 (逐次・マルチスレッド環境)}}{54}{}\protected@file@percent }
+\newlabel{fig:storage02}{{5}{54}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.2.2}行列の作成 (マルチプロセス環境)}{55}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces CSC形式のデータ構造 (マルチプロセス環境)}}{55}{}\protected@file@percent }
+\newlabel{fig:storage02_mpi}{{6}{55}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.2.3}関連する関数}{55}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Modified Compressed Sparse Row (MSR)}{56}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.1}行列の作成 (逐次・マルチスレッド環境)}{56}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces MSR形式のデータ構造 (逐次・マルチスレッド環境)}}{56}{}\protected@file@percent }
+\newlabel{fig:storage03}{{7}{56}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.2}行列の作成 (マルチプロセス環境)}{57}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces MSR形式のデータ構造 (マルチプロセス環境)}}{57}{}\protected@file@percent }
+\newlabel{fig:storage03_mpi}{{8}{57}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.3}関連する関数}{57}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Diagonal (DIA)}{58}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.4.1}行列の作成 (逐次環境)}{58}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces DIA形式のデータ構造 (逐次環境)}}{58}{}\protected@file@percent }
+\newlabel{fig:storage04}{{9}{58}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.4.2}行列の作成 (マルチスレッド環境)}{59}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces DIA形式のデータ構造 (マルチスレッド環境)}}{59}{}\protected@file@percent }
+\newlabel{fig:storage04_omp}{{10}{59}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.4.3}行列の作成 (マルチプロセス環境)}{60}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces DIA形式のデータ構造 (マルチプロセス環境)}}{60}{}\protected@file@percent }
+\newlabel{fig:storage04_mpi}{{11}{60}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.4.4}関連する関数}{60}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}Ellpack-Itpack Generalized Diagonal (ELL)}{61}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.5.1}行列の作成 (逐次・マルチスレッド環境)}{61}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces ELL形式のデータ構造 (逐次・マルチスレッド環境)}}{61}{}\protected@file@percent }
+\newlabel{fig:storage05}{{12}{61}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.5.2}行列の作成 (マルチプロセス環境)}{62}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {13}{\ignorespaces ELL形式のデータ構造 (マルチプロセス環境)}}{62}{}\protected@file@percent }
+\newlabel{fig:storage05_mpi}{{13}{62}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.5.3}関連する関数}{62}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.6}Jagged Diagonal (JAD)}{63}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.6.1}行列の作成 (逐次環境)}{64}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {14}{\ignorespaces JAD形式のデータ構造 (逐次環境)}}{64}{}\protected@file@percent }
+\newlabel{fig:storage06}{{14}{64}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.6.2}行列の作成 (マルチスレッド環境)}{65}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {15}{\ignorespaces JAD形式のデータ構造 (マルチスレッド環境)}}{65}{}\protected@file@percent }
+\newlabel{fig:storage06_omp}{{15}{65}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.6.3}行列の作成 (マルチプロセス環境)}{66}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces JAD形式のデータ構造 (マルチプロセス環境)}}{66}{}\protected@file@percent }
+\newlabel{fig:storage06_mpi}{{16}{66}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.6.4}関連する関数}{66}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.7}Block Sparse Row (BSR)}{68}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.7.1}行列の作成 (逐次・マルチスレッド環境)}{68}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces BSR形式のデータ構造 (逐次・マルチスレッド環境)}}{68}{}\protected@file@percent }
+\newlabel{fig:storage07}{{17}{68}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.7.2}行列の作成 (マルチプロセス環境)}{69}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {18}{\ignorespaces BSR形式のデータ構造 (マルチプロセス環境)}}{69}{}\protected@file@percent }
+\newlabel{fig:storage07_mpi}{{18}{69}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.7.3}関連する関数}{69}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.8}Block Sparse Column (BSC)}{70}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.8.1}行列の作成 (逐次・マルチスレッド環境)}{70}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {19}{\ignorespaces BSC形式のデータ構造 (逐次・マルチスレッド環境)}}{70}{}\protected@file@percent }
+\newlabel{fig:storage08}{{19}{70}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.8.2}行列の作成 (マルチプロセス環境)}{71}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {20}{\ignorespaces BSC形式のデータ構造 (マルチプロセス環境)}}{71}{}\protected@file@percent }
+\newlabel{fig:storage08_mpi}{{20}{71}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.8.3}関連する関数}{71}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.9}Variable Block Row (VBR)}{72}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.9.1}行列の作成 (逐次・マルチスレッド環境)}{73}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {21}{\ignorespaces VBR形式のデータ構造 (逐次・マルチスレッド環境)}}{73}{}\protected@file@percent }
+\newlabel{fig:storage09}{{21}{73}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.9.2}行列の作成 (マルチプロセス環境)}{74}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {22}{\ignorespaces VBR形式のデータ構造 (逐次・マルチスレッド環境)}}{74}{}\protected@file@percent }
+\newlabel{fig:storage09_mpi}{{22}{74}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.9.3}関連する関数}{75}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.10}Coordinate (COO)}{76}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.10.1}行列の作成 (逐次・マルチスレッド環境)}{76}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {23}{\ignorespaces COO形式のデータ構造 (逐次・マルチスレッド環境)}}{76}{}\protected@file@percent }
+\newlabel{fig:storage10}{{23}{76}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.10.2}行列の作成 (マルチプロセス環境)}{77}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {24}{\ignorespaces COO形式のデータ構造 (マルチプロセス環境)}}{77}{}\protected@file@percent }
+\newlabel{fig:storage10_mpi}{{24}{77}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.10.3}関連する関数}{77}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.11}Dense (DNS)}{78}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.11.1}行列の作成 (逐次・マルチスレッド環境)}{78}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {25}{\ignorespaces DNS形式のデータ構造 (逐次・マルチスレッド環境)}}{78}{}\protected@file@percent }
+\newlabel{fig:storage11}{{25}{78}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.11.2}行列の作成 (マルチプロセス環境)}{79}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {26}{\ignorespaces DNS形式のデータ構造 (マルチプロセス環境)}}{79}{}\protected@file@percent }
+\newlabel{fig:storage11_mpi}{{26}{79}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.11.3}関連する関数}{79}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}関数}{80}{}\protected@file@percent }
+\newlabel{sec:func}{{6}{80}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}ベクトルの操作}{81}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.1}lis\_vector\_create}{81}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.2}lis\_vector\_destroy}{81}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.3}lis\_vector\_duplicate}{82}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.4}lis\_vector\_set\_size}{83}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.5}lis\_vector\_get\_size}{84}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.6}lis\_vector\_get\_range}{84}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.7}lis\_vector\_set\_value}{85}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.8}lis\_vector\_get\_value}{86}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.9}lis\_vector\_set\_values}{87}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.10}lis\_vector\_get\_values}{88}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.11}lis\_vector\_scatter}{89}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.12}lis\_vector\_gather}{89}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.13}lis\_vector\_is\_null}{90}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}行列の操作}{91}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.1}lis\_matrix\_create}{91}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.2}lis\_matrix\_destroy}{91}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.3}lis\_matrix\_duplicate}{92}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.4}lis\_matrix\_malloc}{92}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.5}lis\_matrix\_set\_value}{93}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.6}lis\_matrix\_assemble}{94}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.7}lis\_matrix\_set\_size}{94}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.8}lis\_matrix\_get\_size}{95}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.9}lis\_matrix\_get\_range}{95}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.10}lis\_matrix\_get\_nnz}{96}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.11}lis\_matrix\_set\_type}{97}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.12}lis\_matrix\_get\_type}{98}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.13}lis\_matrix\_set\_csr}{99}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.14}lis\_matrix\_set\_csc}{99}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.15}lis\_matrix\_set\_msr}{100}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.16}lis\_matrix\_set\_dia}{101}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.17}lis\_matrix\_set\_ell}{101}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.18}lis\_matrix\_set\_jad}{102}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.19}lis\_matrix\_set\_bsr}{103}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.20}lis\_matrix\_set\_bsc}{104}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.21}lis\_matrix\_set\_vbr}{105}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.22}lis\_matrix\_set\_coo}{106}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.23}lis\_matrix\_set\_dns}{106}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.24}lis\_matrix\_unset}{107}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}ベクトルと行列を用いた計算}{108}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.1}lis\_vector\_swap}{108}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.2}lis\_vector\_copy}{108}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.3}lis\_vector\_axpy}{109}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.4}lis\_vector\_xpay}{109}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.5}lis\_vector\_axpyz}{110}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.6}lis\_vector\_scale}{110}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.7}lis\_vector\_pmul}{111}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.8}lis\_vector\_pdiv}{111}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.9}lis\_vector\_set\_all}{112}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.10}lis\_vector\_abs}{112}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.11}lis\_vector\_reciprocal}{113}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.12}lis\_vector\_conjugate}{113}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.13}lis\_vector\_shift}{114}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.14}lis\_vector\_dot}{115}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.15}lis\_vector\_nhdot}{115}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.16}lis\_vector\_nrm1}{116}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.17}lis\_vector\_nrm2}{116}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.18}lis\_vector\_nrmi}{117}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.19}lis\_vector\_sum}{117}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.20}lis\_matrix\_set\_blocksize}{118}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.21}lis\_matrix\_convert}{119}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.22}lis\_matrix\_copy}{120}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.23}lis\_matrix\_axpy}{120}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.24}lis\_matrix\_xpay}{121}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.25}lis\_matrix\_axpyz}{121}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.26}lis\_matrix\_scale}{122}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.27}lis\_matrix\_get\_diagonal}{122}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.28}lis\_matrix\_shift\_diagonal}{123}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.29}lis\_matrix\_shift\_matrix}{123}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.30}lis\_matvec}{124}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.31}lis\_matvech}{124}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.4}線型方程式の求解}{125}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.1}lis\_solver\_create}{125}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.2}lis\_solver\_destroy}{125}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.3}lis\_precon\_create}{126}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.4}lis\_precon\_destroy}{126}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.5}lis\_solver\_set\_option}{127}{}\protected@file@percent }
+\newlabel{sec:setoptions}{{6.4.5}{127}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.6}lis\_solver\_set\_optionC}{131}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.7}lis\_solve}{132}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.8}lis\_solve\_kernel}{133}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.9}lis\_solver\_get\_status}{134}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.10}lis\_solver\_get\_iter}{134}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.11}lis\_solver\_get\_iterex}{135}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.12}lis\_solver\_get\_time}{135}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.13}lis\_solver\_get\_timeex}{136}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.14}lis\_solver\_get\_residualnorm}{136}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.15}lis\_solver\_get\_rhistory}{137}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.16}lis\_solver\_get\_solver}{138}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.17}lis\_solver\_get\_precon}{138}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.18}lis\_solver\_get\_solvername}{139}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.4.19}lis\_solver\_get\_preconname}{139}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.5}固有値問題の求解}{140}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.1}lis\_esolver\_create}{140}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.2}lis\_esolver\_destroy}{140}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.3}lis\_esolver\_set\_option}{141}{}\protected@file@percent }
+\newlabel{sec:setoptions}{{6.5.3}{141}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.4}lis\_esolver\_set\_optionC}{144}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.5}lis\_esolve}{145}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.6}lis\_gesolve}{146}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.7}lis\_esolver\_get\_status}{147}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.8}lis\_esolver\_get\_iter}{147}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.9}lis\_esolver\_get\_iterex}{148}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.10}lis\_esolver\_get\_time}{148}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.11}lis\_esolver\_get\_timeex}{149}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.12}lis\_esolver\_get\_residualnorm}{149}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.13}lis\_esolver\_get\_rhistory}{150}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.14}lis\_esolver\_get\_evalues}{150}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.15}lis\_esolver\_get\_evectors}{151}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.16}lis\_esolver\_get\_residualnorms}{151}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.17}lis\_esolver\_get\_iters}{152}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.18}lis\_esolver\_get\_specific\_evalue}{152}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.19}lis\_esolver\_get\_specific\_evector}{153}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.20}lis\_esolver\_get\_specific\_residualnorm}{153}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.21}lis\_esolver\_get\_specific\_iter}{154}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.22}lis\_esolver\_get\_esolver}{154}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.5.23}lis\_esolver\_get\_esolvername}{155}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.6}配列を用いた計算}{156}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.1}lis\_array\_swap}{156}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.2}lis\_array\_copy}{156}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.3}lis\_array\_axpy}{157}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.4}lis\_array\_xpay}{157}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.5}lis\_array\_axpyz}{158}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.6}lis\_array\_scale}{158}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.7}lis\_array\_pmul}{159}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.8}lis\_array\_pdiv}{159}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.9}lis\_array\_set\_all}{160}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.10}lis\_array\_abs}{160}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.11}lis\_array\_reciprocal}{161}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.12}lis\_array\_conjugate}{161}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.13}lis\_array\_shift}{162}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.14}lis\_array\_dot}{162}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.15}lis\_array\_nhdot}{163}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.16}lis\_array\_nrm1}{163}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.17}lis\_array\_nrm2}{164}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.18}lis\_array\_nrmi}{164}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.19}lis\_array\_sum}{165}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.20}lis\_array\_matvec}{166}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.21}lis\_array\_matvech}{167}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.22}lis\_array\_matvec\_ns}{168}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.23}lis\_array\_matmat}{169}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.24}lis\_array\_matmat\_ns}{170}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.25}lis\_array\_ge}{171}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.26}lis\_array\_solve}{171}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.27}lis\_array\_cgs}{172}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.28}lis\_array\_mgs}{172}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.6.29}lis\_array\_qr}{173}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.7}ファイルの操作}{174}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.7.1}lis\_input}{174}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.7.2}lis\_input\_vector}{175}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.7.3}lis\_input\_matrix}{176}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.7.4}lis\_output}{177}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.7.5}lis\_output\_vector}{178}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.7.6}lis\_output\_matrix}{179}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.8}その他}{180}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.8.1}lis\_initialize}{180}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.8.2}lis\_finalize}{180}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.8.3}lis\_wtime}{181}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.8.4}CHKERR}{181}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.8.5}lis\_printf}{182}{}\protected@file@percent }
+\bibcite{nishida1}{1}
+\bibcite{hestenes}{2}
+\bibcite{lanczos1}{3}
+\bibcite{fletcher}{4}
+\bibcite{joly}{5}
+\bibcite{pocock}{6}
+\bibcite{sogabe09}{7}
+\bibcite{sonneveld}{8}
+\bibcite{abe02}{9}
+\bibcite{bicgstab}{10}
+\bibcite{zhang}{11}
+\bibcite{fujino01}{12}
+\bibcite{fujino02}{13}
+\bibcite{bicgstabl}{14}
+\bibcite{tfqmr}{15}
+\@writefile{toc}{\contentsline {section}{参考文献}{183}{}\protected@file@percent }
+\bibcite{jacobi}{16}
+\bibcite{orthomin}{17}
+\bibcite{gauss}{18}
+\bibcite{seidel}{19}
+\bibcite{gmres}{20}
+\bibcite{young}{21}
+\bibcite{frankel}{22}
+\bibcite{fgmres}{23}
+\bibcite{idrs}{24}
+\bibcite{minres}{25}
+\bibcite{cocg}{26}
+\bibcite{cocr}{27}
+\bibcite{power}{28}
+\bibcite{inverse}{29}
+\bibcite{rayleigh}{30}
+\bibcite{knyazev}{31}
+\bibcite{suetomi}{32}
+\bibcite{sleijpen}{33}
+\bibcite{rutishauser}{34}
+\bibcite{lanczos2}{35}
+\bibcite{arnoldi}{36}
+\bibcite{axelsson}{37}
+\bibcite{gustafsson}{38}
+\bibcite{nakajima}{39}
+\bibcite{ilut}{40}
+\bibcite{ITSOL}{41}
+\bibcite{iluc}{42}
+\bibcite{kohno01}{43}
+\bibcite{fujii01}{44}
+\bibcite{abe01}{45}
+\bibcite{bridson01}{46}
+\bibcite{chan}{47}
+\bibcite{dryja}{48}
+\bibcite{kota1}{49}
+\bibcite{kota2}{50}
+\bibcite{dd}{51}
+\bibcite{qd}{52}
+\bibcite{dekker}{53}
+\bibcite{Knuth}{54}
+\bibcite{Bailey:High-Precision}{55}
+\bibcite{intel}{56}
+\bibcite{quadlis}{57}
+\bibcite{Courant89}{58}
+\bibcite{Lanczos70}{59}
+\bibcite{Wilkinson88}{60}
+\bibcite{young71}{61}
+\bibcite{golub96}{62}
+\bibcite{dongarra91}{63}
+\bibcite{Saad92}{64}
+\bibcite{Bar00}{65}
+\bibcite{Saad03}{66}
+\bibcite{greenbaum}{67}
+\bibcite{bai00}{68}
+\bibcite{wilkinson71}{69}
+\bibcite{eispack}{70}
+\bibcite{eispack2}{71}
+\bibcite{linpack}{72}
+\bibcite{rice85}{73}
+\bibcite{lapack}{74}
+\bibcite{dongarra92}{75}
+\bibcite{duff92}{76}
+\bibcite{Saad90}{77}
+\bibcite{pvm}{78}
+\bibcite{bramley95splib}{79}
+\bibcite{matrixmarket}{80}
+\bibcite{scalapack}{81}
+\bibcite{ARPACK}{82}
+\bibcite{Aztec}{83}
+\bibcite{MPI}{84}
+\bibcite{GeoFEM}{85}
+\bibcite{PETSc}{86}
+\bibcite{SLEPc}{87}
+\bibcite{Trilinos}{88}
+\bibcite{Hypre}{89}
+\bibcite{OpenMP}{90}
+\bibcite{HPCG}{91}
+\@writefile{toc}{\contentsline {section}{\numberline {A}ファイル形式}{189}{}\protected@file@percent }
+\newlabel{sec:matinp}{{A}{189}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.1}拡張Matrix Market形式}{189}{}\protected@file@percent }
+\newlabel{eq:matavecv}{{A.1}{189}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.2}Harwell-Boeing形式}{190}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.3}ベクトル用拡張Matrix Market形式}{191}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.4}ベクトル用PLAIN形式}{191}{}\protected@file@percent }
+\gdef \@abspage@last{199}

@@ -4,7 +4,7 @@
 
 # General Configurations
 
-AC_INIT(lis, 2.1.4, devel@ssisc.org)
+AC_INIT(lis, 2.1.5, devel@ssisc.org)
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
