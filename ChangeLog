@@ -1,3 +1,7 @@
+Version 2.1.6 July 3, 2024
+
+  - Fixed a bug in lis_precon_saamg.c (thanks to Carlos Mendes).
+
 Version 2.1.5 June 27, 2024
 
   - Removed extra @shift in win\configure.bat (thanks to Carlos Mendes).
