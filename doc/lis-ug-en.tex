@@ -276,7 +276,7 @@ and {\tt -hybrid\_omega}, respectively.
 \newpage
 \section{Introduction}
 Lis (Library of Iterative Solvers for linear systems, pronounced [lis]) 
-is a parallel software library for solving discretized linear equations
+is a parallel software library to solve discretized linear equations
 \[
  Ax = b
 \]
@@ -284,11 +284,11 @@ and eigenvalue problems
 \[
  Ax = \lambda Bx
 \]
-that arise in the numerical solution of
+that arise from the numerical solution of
 partial differential equations using iterative methods\cite{nishida}.
-The solvers available in Lis are listed in Table \ref{tab:solvers} and
-\ref{tab:esolvers}, and the preconditioners are listed in Table \ref{tab:precon}.
-The supported matrix storage formats are listed in Table \ref{tab:storage}.
+The available solvers in Lis are listed in Table \ref{tab:solvers} and
+\ref{tab:esolvers}, the preconditioners in Table \ref{tab:precon}, and
+the supported matrix storage formats in Table \ref{tab:storage}.
 
 \begin{table}[htb]
 \begin{minipage}[t]{0.50\textwidth}
@@ -383,14 +383,14 @@ Dense &	(DNS) \\
 This section describes the instructions for installing and testing Lis. 
 
 \subsection{System Requirements}
-The installation of Lis requires a C compiler. The Fortran interface
-requires a Fortran compiler, and the
+Installing Lis requires a C compiler. If you wish to use the Fortran interface,
+a Fortran compiler is needed, and the
 algebraic multigrid preconditioner requires a Fortran 90 compiler.
 For parallel computing environments, an OpenMP\cite{OpenMP} or 
-MPI-1\cite{MPI} library is required\cite{kota1,kota2}.
-Both the Harwell-Boeing\cite{duff92} and 
-Matrix Market\cite{matrixmarket} formats are supported to import and
-export user data. 
+MPI-1\cite{MPI} library is necessary\cite{kota1,kota2}.
+Lis supports both the Harwell-Boeing\cite{duff92} and 
+Matrix Market\cite{matrixmarket} formats for importing and
+exporting user data. 
 Lis has been tested in the environments listed in Table \ref{platforms}
 (see also Table \ref{targetoption}). 
 
@@ -446,10 +446,10 @@ gfortran 4.4, 5.4, 6.4, 8.2, 10.1, 11.3    & macOS \\
 
 \subsection{Installing on UNIX and Compatible Systems}
 \subsubsection{Extracting Archive}
-Enter the following command to extract the archive, 
+To extract the archive, use the following command,  
 where \verb|($VERSION)| represents the version:\\
  \verb&      > unzip lis-($VERSION).zip &\\
-This creates a directory {\tt lis-(\$VERSION)} together 
+This will create a directory named {\tt lis-(\$VERSION)} along 
 with its subfolders as shown in Figure \ref{listargz}.
 
 \begin{figure}[htbp]
@@ -477,7 +477,7 @@ lis-($VERSION)
 \end{figure}
 
 \subsubsection{Configuring Source Tree}
- In the directory {\tt lis-(\$VERSION)}, run the following command to configure the source tree:
+ Navigate to the directory {\tt lis-(\$VERSION)} and run the following command to configure the source tree:
  \begin{itemize}
 \item default: \verb&      > ./configure&
 \item specify the installation destination: \verb&      > ./configure --prefix=<install-dir>&
@@ -564,16 +564,16 @@ by \verb+TARGET+.
 In the directory {\tt lis-(\$VERSION)}, run the following command to generate
 the executable files: \\
  \verb+      > make +\\
-To ensure that the library has been built successfully, enter 
+To verify that the library has been built successfully, enter 
 \\
  \verb+      > make check+\\
-in {\tt lis-(\$VERSION)}. 
-This runs a test script using the executable files created 
-in {\tt lis-(\$VERSION)/test}, which reads 
-the data of the coefficient matrix and the right-hand side vector 
-from the file 
-{\tt test/testmat.mtx} and solve the linear equation $Ax = b$ 
-by the BiCG method. The result on the SGI Altix 3700 is
+in the directory {\tt lis-(\$VERSION)}. 
+This command runs a test script using the executable files created 
+in {\tt lis-(\$VERSION)/test}. The script reads 
+data from the coefficient matrix and the right-hand side vector 
+in the file 
+{\tt test/testmat.mtx} and solves the linear equation $Ax = b$ 
+using the BiCG method. The result on the SGI Altix 3700 is
  shown below. Options {\tt --enable-omp} and {\tt --enable-mpi} can be combined.
 \begin{itembox}[l]{Default}
  \begin{minipage}{10cm}
@@ -2706,7 +2706,8 @@ linear solver status  : normal end
 \subsection{Zero DOFs on a Process}
 For the case of multiple MPI processes, it is possible to specify
 $global\_n = 0$ and $local\_n \ge 0$. This will allow one or more
-MPI processes to have zero DOFs. However, it is still the case that,
+MPI processes to have zero degrees of freedom (DOFs).
+However, it is still the case that,
 for $global\_n = 0$, the summation of $local\_n$ over all processes
 should be greater than zero. 
 
@@ -2717,7 +2718,8 @@ should be greater than zero.
 Double precision operations sometimes require a large number of iterations 
 because of the rounding error. Besides long double precision operations,
 Lis supports "double-double" precision operations, 
-or quadruple precision operations by combining 
+which are effectively quadruple precision operations
+achieved by combining 
 two double precision floating point numbers\cite{dd,qd}.
 To use the double-double precision with the same interface 
 as the double precision operations, 
@@ -2747,9 +2749,9 @@ of the solution $x$ are $1$. The value $n$ is the size of matrix $A$.
 \\ \\
 \noindent
 {\bf Double precision}\\
-By entering
+To run the test, enter\\
 \verb+      > ./test5 200 2.0 -f double+\\
-the following results will be returned:
+and the following results will be returned:
 
 \begin{verbatim}
 n = 200, gamma = 2.000000
@@ -2772,9 +2774,9 @@ BiCG: relative residual    = 8.917591e+01
 
 \noindent
 {\bf Quadruple precision}\\
-By entering
+To run the test, enter\\
 \verb+      > ./test5 200 2.0 -f quad+\\
-the following results will be returned:
+and the following results will be returned:
 
 \begin{verbatim}
 n = 200, gamma = 2.000000
