@@ -4,14 +4,14 @@
 
 # General Configurations
 
-AC_INIT(lis, 2.1.5, devel@ssisc.org)
+AC_INIT([lis],[2.1.6],[devel@ssisc.org])
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
 
-AC_CANONICAL_SYSTEM
+AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE
-AM_CONFIG_HEADER(include/lis_config.h)
+AC_CONFIG_HEADERS([include/lis_config.h])
 
 AM_MAINTAINER_MODE
 
@@ -25,22 +25,22 @@ AC_ARG_VAR(TARGET,[system architecture])
 
 # Build Options
 
-AC_ARG_ENABLE(fortran, AC_HELP_STRING(--enable-fortran, [enable FORTRAN 77 compatible interfaces [[default=no]]]))
-AC_ARG_ENABLE(f90, AC_HELP_STRING(--enable-f90, [enable Fortran 90 compatible interface [[default=no]]]))
-AC_ARG_ENABLE(saamg, AC_HELP_STRING(--enable-saamg, [enable SA-AMG preconditioner [[default=no]]]))
-AC_ARG_ENABLE(mpi, AC_HELP_STRING(--enable-mpi, [build with MPI library [[default=no]]]))
-AC_ARG_ENABLE(omp, AC_HELP_STRING(--enable-omp, [build with OpenMP library [[default=no]]]))
-AC_ARG_ENABLE(quad, AC_HELP_STRING(--enable-quad, [enable quadruple precision operations [[default=no]]]))
-AC_ARG_ENABLE(sse2, AC_HELP_STRING(--enable-sse2, [use Intel Streaming SIMD Extensions [[default=yes]]]),[],enable_sse2=yes)
-AC_ARG_ENABLE(fma, AC_HELP_STRING(--enable-fma, [use fused multiply add [[default=no]]]))
-AC_ARG_ENABLE(debug, AC_HELP_STRING(--enable-debug, [enable debugging [[default=no]]]))
-AC_ARG_ENABLE(gprof, AC_HELP_STRING(--enable-gprof, [enable profiling [[default=no]]]))
-AC_ARG_ENABLE(64bit, AC_HELP_STRING(--enable-64bit, [build 64bit binary on AIX and Solaris x86 [[default=no]]]))
-AC_ARG_ENABLE(32bit, AC_HELP_STRING(--enable-32bit, [build 32bit binary on Mac OS X [[default=no]]]))
-AC_ARG_ENABLE(longlong, AC_HELP_STRING(--enable-longlong, [enable long long int support [[default=no]]]))
-AC_ARG_ENABLE(longdouble, AC_HELP_STRING(--enable-longdouble, [enable long double support [[default=no]]]))
-AC_ARG_ENABLE(complex, AC_HELP_STRING(--enable-complex, [enable complex scalar support [[default=no]]]))
-AC_ARG_ENABLE(test, AC_HELP_STRING(--enable-test, [enable test programs [[default=yes]]]))
+AC_ARG_ENABLE(fortran, AS_HELP_STRING([--enable-fortran],[enable FORTRAN 77 compatible interfaces [[default=no]]]))
+AC_ARG_ENABLE(f90, AS_HELP_STRING([--enable-f90],[enable Fortran 90 compatible interface [[default=no]]]))
+AC_ARG_ENABLE(saamg, AS_HELP_STRING([--enable-saamg],[enable SA-AMG preconditioner [[default=no]]]))
+AC_ARG_ENABLE(mpi, AS_HELP_STRING([--enable-mpi],[build with MPI library [[default=no]]]))
+AC_ARG_ENABLE(omp, AS_HELP_STRING([--enable-omp],[build with OpenMP library [[default=no]]]))
+AC_ARG_ENABLE(quad, AS_HELP_STRING([--enable-quad],[enable quadruple precision operations [[default=no]]]))
+AC_ARG_ENABLE(sse2, AS_HELP_STRING([--enable-sse2],[use Intel Streaming SIMD Extensions [[default=yes]]]),[],enable_sse2=yes)
+AC_ARG_ENABLE(fma, AS_HELP_STRING([--enable-fma],[use fused multiply add [[default=no]]]))
+AC_ARG_ENABLE(debug, AS_HELP_STRING([--enable-debug],[enable debugging [[default=no]]]))
+AC_ARG_ENABLE(gprof, AS_HELP_STRING([--enable-gprof],[enable profiling [[default=no]]]))
+AC_ARG_ENABLE(64bit, AS_HELP_STRING([--enable-64bit],[build 64bit binary on AIX and Solaris x86 [[default=no]]]))
+AC_ARG_ENABLE(32bit, AS_HELP_STRING([--enable-32bit],[build 32bit binary on Mac OS X [[default=no]]]))
+AC_ARG_ENABLE(longlong, AS_HELP_STRING([--enable-longlong],[enable long long int support [[default=no]]]))
+AC_ARG_ENABLE(longdouble, AS_HELP_STRING([--enable-longdouble],[enable long double support [[default=no]]]))
+AC_ARG_ENABLE(complex, AS_HELP_STRING([--enable-complex],[enable complex scalar support [[default=no]]]))
+AC_ARG_ENABLE(test, AS_HELP_STRING([--enable-test],[enable test programs [[default=yes]]]))
 
 AC_MSG_CHECKING([for a library suffix to use])
 AC_ARG_WITH(library-suffix,
@@ -480,7 +480,7 @@ if test "$TARGET" = ""; then
 		fi
 		if test x != x"$MPILIBS"; then
 			AC_MSG_CHECKING([for mpi.h])
-			AC_TRY_COMPILE([#include <mpi.h>],[],[AC_MSG_RESULT(yes)], [MPILIBS="" 
+			AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <mpi.h>]], [[]])],[AC_MSG_RESULT(yes)],[MPILIBS="" 
 			AC_MSG_RESULT(no)])
 	        else
 	        	enable_mpi="not found"
@@ -870,10 +870,10 @@ if test "$TARGET" = ""; then
         none) CFLAGS=$save_cflags ;;
            *) CFLAGS="$save_cflags $ompf" ;;
       esac
-      AC_TRY_LINK([#include <omp.h>], [
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <omp.h>]], [[
         #pragma omp parallel
         omp_set_num_threads(1)
-      ], [OMPFLAG=$ompf;    AC_MSG_RESULT(yes); break])
+      ]])],[OMPFLAG=$ompf;    AC_MSG_RESULT(yes); break],[])
       AC_MSG_RESULT(no)
     done
     CFLAGS=$save_cflags
@@ -941,15 +941,15 @@ if test "$enable_quad" = "yes"; then
 #  enable_sse2="yes"
 if test "$enable_sse2" = "yes"; then
   AC_MSG_CHECKING([for SSE2])
-  AC_TRY_COMPILE([#include <emmintrin.h>],[
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <emmintrin.h>]], [[
     __m128d xs;
     double hi;
     xs  = _mm_set_pd(1.0,1.0);
     _mm_store_sd(&hi,xs);
-  ],[AC_MSG_RESULT(yes)
+  ]])],[AC_MSG_RESULT(yes)
   AC_DEFINE([USE_SSE2], [1], [Define to 1 to enable quad precision operations using SSE2.])
   AC_DEFINE([USE_FMA2_SSE2], [1], [Define to 1 to enable quad precision operations using FMA and SSE2.])
-  ], [enable_sse2="no"; AC_MSG_RESULT(no)])
+  ],[enable_sse2="no"; AC_MSG_RESULT(no)])
 fi
   if test "$TARGET" = ""; then
     if test "$enable_sse2" != "yes"; then
@@ -1249,7 +1249,7 @@ fi
 # Configurations for Autotools
 
 AC_DISABLE_SHARED
-AC_PROG_LIBTOOL
+LT_INIT
 AC_PROG_INSTALL
 
 AM_CONDITIONAL(ENABLE_FORTRAN, test x$enable_fortran = xyes)
@@ -1280,7 +1280,15 @@ AC_SUBST(FCLDFLAGS)
 
 # Configurations for Some Header Files
 
-AC_HEADER_STDC
+m4_warn([obsolete],
+[The preprocessor macro 'STDC_HEADERS' is obsolete.
+  Except in unusual embedded environments, you can safely include all
+  C89 headers unconditionally.])dnl
+# Autoupdate added the next two lines to ensure that your configure
+# script's behavior did not change.  They are probably safe to remove.
+AC_CHECK_INCLUDES_DEFAULT
+AC_PROG_EGREP
+
 AC_CHECK_HEADERS([malloc.h stdlib.h string.h sys/time.h])
 
 
@@ -1316,7 +1324,7 @@ AC_CONFIG_FILES([Makefile
                  ])
 
 DEFS="$DEFSADD $DEFS"
-AC_OUTPUT()
+AC_OUTPUT
 
 echo
 echo "  Build with OpenMP library                  = $enable_omp"
