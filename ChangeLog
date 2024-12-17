@@ -1,3 +1,7 @@
+Version 2.1.7 December 17, 2024
+
+  - Updated documents (thanks to ChatGPT-4o).
+
 Version 2.1.6 July 3, 2024
 
   - Fixed a bug in lis_precon_saamg.c (thanks to Carlos Mendes).
