@@ -145,7 +145,7 @@ LIS_INT lis_initialize(int* argc, char** argv[])
 		nprocs = omp_get_max_threads();
 	#endif
 
-	lis_arg2args(*argc,*argv,&cmd_args);
+	lis_arg2args(argc,argv,&cmd_args);
 	p = cmd_args->next;
 	while( p!=cmd_args )
 	{
@@ -316,7 +316,7 @@ LIS_INT lis_text2args(char *text, LIS_ARGS *args)
 
 #undef __FUNC__
 #define __FUNC__ "lis_arg2args"
-LIS_INT lis_arg2args(LIS_INT argc, char *argv[], LIS_ARGS *args)
+LIS_INT lis_arg2args(LIS_INT* argc, char **argv[], LIS_ARGS *args)
 {
 	char *p;
 	LIS_INT i,k1,k2;
@@ -330,39 +330,41 @@ LIS_INT lis_arg2args(LIS_INT argc, char *argv[], LIS_ARGS *args)
 	arg_top->arg1 = NULL;
 	arg_top->arg2 = NULL;
 
-	i = 1;
-	while( i<argc )
-	{
-		if( argv[i][0]=='-' && (i+1)<argc )
+	if( argc&&argv ){
+		i = 1;
+		while( i<*argc )
 		{
-			k1              = (LIS_INT)strlen(argv[i]);
-			k2              = (LIS_INT)strlen(argv[i+1]);
-			arg             = (LIS_ARGS)lis_malloc(sizeof(struct LIS_ARGS_STRUCT),"lis_arg2args::arg");
-			arg->arg1       = (char *)lis_malloc((k1+1)*sizeof(char),"lis_arg2args::arg->arg1");
-			arg->arg2       = (char *)lis_malloc((k2+1)*sizeof(char),"lis_arg2args::arg->arg2");
-			arg->next       = arg_top;
-			arg->prev       = arg_top->prev;
-			arg->prev->next = arg;
-			arg->next->prev = arg;
-			strcpy(arg->arg1,argv[i]);
-			strcpy(arg->arg2,argv[i+1]);
-			p = arg->arg1;
-			while( *p!='\0' )
+			if( *argv[i][0]=='-' && (i+1)<*argc )
 			{
-				*p = (char)tolower(*p);
-				p++;
+				k1              = (LIS_INT)strlen(*argv[i]);
+				k2              = (LIS_INT)strlen(*argv[i+1]);
+				arg             = (LIS_ARGS)lis_malloc(sizeof(struct LIS_ARGS_STRUCT),"lis_arg2args::arg");
+				arg->arg1       = (char *)lis_malloc((k1+1)*sizeof(char),"lis_arg2args::arg->arg1");
+				arg->arg2       = (char *)lis_malloc((k2+1)*sizeof(char),"lis_arg2args::arg->arg2");
+				arg->next       = arg_top;
+				arg->prev       = arg_top->prev;
+				arg->prev->next = arg;
+				arg->next->prev = arg;
+				strcpy(arg->arg1,*argv[i]);
+				strcpy(arg->arg2,*argv[i+1]);
+				p = arg->arg1;
+				while( *p!='\0' )
+				{
+					*p = (char)tolower(*p);
+					p++;
+				}
+				p = arg->arg2;
+				while( *p!='\0' )
+				{
+					*p = (char)tolower(*p);
+					p++;
+				}
+				i += 2;
 			}
-			p = arg->arg2;
-			while( *p!='\0' )
+			else
 			{
-				*p = (char)tolower(*p);
-				p++;
+				i++;
 			}
-			i += 2;
-		}
-		else
-		{
-			i++;
 		}
 	}
 
