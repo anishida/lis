@@ -33,7 +33,7 @@ extern "C" {
 #endif
 
 /**************************************/
-#define LIS_VERSION	"2.1.7"
+#define LIS_VERSION	"2.1.8"
 /**************************************/
 #include <stdio.h>
 #ifdef USE_COMPLEX
@@ -1029,6 +1029,7 @@ extern "C"
 /* Utilities                */
 /****************************/
 
+	extern void lis_do_not_handle_mpi();
 	extern LIS_INT lis_initialize(int *argc, char** argv[]);
 	extern LIS_INT lis_finalize(void);
 	extern double lis_wtime(void);

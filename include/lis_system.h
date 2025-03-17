@@ -66,6 +66,7 @@ extern "C"
 	extern LIS_ARGS cmd_args;
 	extern LIS_SCALAR *lis_vec_tmp;
 	extern int lis_mpi_initialized;
+	extern int lis_mpi_management;
 #ifdef USE_MPI
 	extern MPI_Op LIS_MPI_MSUM;
 	extern MPI_Datatype LIS_MPI_MSCALAR;

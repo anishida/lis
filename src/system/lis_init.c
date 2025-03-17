@@ -62,6 +62,7 @@
 
 LIS_ARGS cmd_args = NULL;
 int lis_mpi_initialized = LIS_FALSE;
+int lis_mpi_management = LIS_TRUE;
 LIS_SCALAR *lis_vec_tmp = NULL;
 
 #ifdef USE_QUAD_PRECISION
@@ -94,6 +95,17 @@ LIS_INT LIS_INIT_OPTACT[] = {
  ************************************************/
 
 #undef __FUNC__
+#define __FUNC__ "lis_do_not_handle_mpi"
+void lis_do_not_handle_mpi(void)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	lis_mpi_management = LIS_FALSE;
+
+	LIS_DEBUG_FUNC_OUT;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_version"
 void lis_version(void)
 {
@@ -116,8 +128,11 @@ LIS_INT lis_initialize(int* argc, char** argv[])
 /*	lis_memory_init();*/
 
 	#ifdef USE_MPI
-		MPI_Initialized(&lis_mpi_initialized);
-		if (!lis_mpi_initialized) MPI_Init(argc, argv);
+		if (lis_mpi_management)
+		{
+			MPI_Initialized(&lis_mpi_initialized);
+			if (!lis_mpi_initialized) MPI_Init(argc, argv);
+		}
 
 		#ifdef USE_QUAD_PRECISION
 			MPI_Type_contiguous(LIS_MPI_MSCALAR_LEN, MPI_DOUBLE, &LIS_MPI_MSCALAR );
@@ -217,7 +232,11 @@ LIS_INT lis_finalize(void)
 	lis_free_all();
 	
 	#ifdef USE_MPI
+	if (lis_mpi_management)
+	{
+		MPI_Finalized(&lis_mpi_initialized); // reuse lis_mpi_initialized
 		if (!lis_mpi_initialized) MPI_Finalize();
+	}
 	#endif
 
 	LIS_DEBUG_FUNC_OUT;
