@@ -140,7 +140,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   LIS_MATRIX A;
   LIS_VECTOR x, Ax;
   LIS_SCALAR xAx, xx;
-  LIS_SCALAR oshift;
+  LIS_SCALAR oshift, ishift;
   LIS_INT ss;
   LIS_INT emaxiter;
   LIS_REAL tol;
@@ -173,6 +173,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 #else
   oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
 #endif	
+  ishift = esolver->ishift;
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
   niesolver = esolver->options[LIS_EOPTIONS_INNER_ESOLVER];
 
@@ -184,6 +185,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   lis_vector_nrm2(r, &nrm2);
   lis_vector_scale(1.0/nrm2,r);
 
+  if ( esolver->ishift != 0.0 ) oshift = ishift;
   if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, oshift);  
 
   if( output )
@@ -457,7 +459,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   LIS_MATRIX A, B;
   LIS_VECTOR x, Ax;
   LIS_SCALAR xAx, xx;
-  LIS_SCALAR oshift;
+  LIS_SCALAR oshift, ishift;
   LIS_INT ss;
   LIS_INT emaxiter;
   LIS_REAL tol;
@@ -491,6 +493,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 #else
   oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
 #endif	
+  ishift = esolver->ishift;
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
   nigesolver = esolver->options[LIS_EOPTIONS_INNER_GENERALIZED_ESOLVER];
 
@@ -503,6 +506,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   lis_vector_nrm2(y,&nrm2);
   lis_vector_scale(1.0/nrm2,y);
 
+  if ( esolver->ishift != 0.0 ) oshift = ishift;
   if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, oshift);
 
   if( output )
