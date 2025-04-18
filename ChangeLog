@@ -1,3 +1,7 @@
+Version 2.1.10 April 18, 2025
+
+  - Added support for inner shift parameter in eigenvalue solver (thanks to Theodore Chang).
+
 Version 2.1.9 April 18, 2025
 
   - Updated eigenvalue condition in lis_eai function (thanks to Theodore Chang).
