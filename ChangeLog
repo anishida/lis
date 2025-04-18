@@ -1,3 +1,9 @@
+Version 2.1.9 April 18, 2025
+
+  - Updated eigenvalue condition in lis_eai function (thanks to Theodore Chang).
+  - Refactored eigenpair computation to create and destroy the inner eigensolver
+    within the loop for each refined eigenpair (thanks to Theodore Chang).
+
 Version 2.1.8 March 17, 2025
 
   - Added MPI management functionality (thanks to Theodore Chang).
