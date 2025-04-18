@@ -255,7 +255,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
       i = i + 1;
 
       /* eigenvalues on the diagonal of H */
-      if (fabs(h[i+(i-1)*ss])<tol)
+      if (ss==i||fabs(h[i+(i-1)*ss])<tol)
 	{
 	  if( output ) 
 	    {
