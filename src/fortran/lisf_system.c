@@ -212,7 +212,7 @@ void lis_arg2args_f(LIS_INT *ierr)
 {
 	LIS_DEBUG_FUNC_IN;
 
-	*ierr = lis_arg2args(f_argc_tmp,f_argv_tmp,&cmd_args);
+	*ierr = lis_arg2args(&f_argc_tmp,&f_argv_tmp,&cmd_args);
 	if( *ierr )	return;	
 
 	LIS_DEBUG_FUNC_OUT;
