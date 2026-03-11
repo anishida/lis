@@ -341,7 +341,7 @@ LIS_INT lis_precon_destroy(LIS_PRECON precon)
 		lis_commtable_destroy(precon->commtable);
 		if( precon->precon_type==LIS_PRECON_TYPE_SAAMG )
 		{
-		 (*(void (*)())f_clear_matrix_ptr)(&precon->level_num);
+		 ((void (*)(void *))f_clear_matrix_ptr)(&precon->level_num);
 		}
 #endif
 		if( precon->work    )
