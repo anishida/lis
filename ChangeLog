@@ -1,3 +1,7 @@
+Version 2.1.11 March 11, 2026
+
+  - Fixed definition of f_clear_matrix_ptr (thanks to Rosset).
+
 Version 2.1.10 April 18, 2025
 
   - Added support for inner shift parameter in eigenvalue solver (thanks to Theodore Chang).
