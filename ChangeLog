@@ -1,3 +1,7 @@
+Version 2.1.12 September 25, 2026
+
+  - Fixed bugs in lis_matrix_g2l_csr(), where g2l_map was checked instead of l2g_map.
+
 Version 2.1.11 March 11, 2026
 
   - Fixed definition of f_clear_matrix_ptr (thanks to Rosset).
