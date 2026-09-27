@@ -237,6 +237,13 @@ LIS_INT lis_matrix_convert(LIS_MATRIX Ain, LIS_MATRIX Aout)
 			if( err ) return err;
 			err = lis_matrix_convert_coo2csr(Ain,Atmp);
 			break;
+#ifdef USE_CCX
+		case LIS_MATRIX_CCX:
+			err = lis_matrix_duplicate(Ain,&Atmp);
+			if( err ) return err;
+			err = lis_matrix_convert_ccx2csr(Ain,Atmp);
+			break;
+#endif
 		default:
 			LIS_SETERR_IMP;
 			err = LIS_ERR_NOT_IMPLEMENTED;
@@ -767,6 +774,11 @@ LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR D)
 	case LIS_MATRIX_VBR:
 		lis_matrix_get_diagonal_vbr(A, d);
 		break;
+#ifdef USE_CCX
+	case LIS_MATRIX_CCX:
+		lis_matrix_get_diagonal_ccx(A, d);
+		break;
+#endif
 	default:
 		LIS_SETERR_IMP;
 		return LIS_ERR_NOT_IMPLEMENTED;

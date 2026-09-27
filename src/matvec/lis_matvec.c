@@ -142,6 +142,11 @@ LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			#endif
 			lis_matvec_coo(A, x, y);
 			break;
+#ifdef USE_CCX
+		case LIS_MATRIX_CCX:
+			lis_matvec_ccx(A, x, y);
+			break;
+#endif
 		default:
 			LIS_SETERR_IMP;
 			return LIS_ERR_NOT_IMPLEMENTED;
@@ -300,6 +305,11 @@ LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 				LIS_MATVEC_REDUCE;
 			#endif
 			break;
+#ifdef USE_CCX
+		case LIS_MATRIX_CCX:
+			lis_matvech_ccx(A, x, y);
+			break;
+#endif
 		default:
 			LIS_SETERR_IMP;
 			return LIS_ERR_NOT_IMPLEMENTED;

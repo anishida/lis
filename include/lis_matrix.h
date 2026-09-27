@@ -40,6 +40,9 @@
 #define LIS_MATRIX_VBR_STR "vbr"
 #define LIS_MATRIX_DNS_STR "dns"
 #define LIS_MATRIX_COO_STR "coo"
+#ifdef USE_CCX
+#define LIS_MATRIX_CCX_STR "ccx"
+#endif
 #define LIS_MATRIX_TJD_STR "tjd"
 
 #define LIS_MATRIX_CHECK_ALL 0
@@ -164,6 +167,20 @@ extern "C"
 	extern LIS_INT lis_matrix_solveh_csc(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);
 	extern LIS_INT lis_matrix_convert_csr2csc(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_convert_csc2csr(LIS_MATRIX Ain, LIS_MATRIX Aout);
+
+/*******************/
+	#ifdef USE_CCX
+	/* CalculiX        */
+	/*******************/
+		extern LIS_INT lis_matrix_set_ccx(LIS_INT nnz_offdiag,
+			LIS_SCALAR *ad, LIS_SCALAR *au,
+			LIS_INT *jq, LIS_INT *irow,
+			LIS_INT nasym, LIS_INT index_base,
+			LIS_MATRIX A);
+		extern LIS_INT lis_matrix_get_diagonal_ccx(LIS_MATRIX A, LIS_SCALAR d[]);
+		extern LIS_INT lis_matrix_convert_ccx2csr(LIS_MATRIX Ain, LIS_MATRIX Aout);
+	#endif
+/*******************/
 
 /*******************/
 /* BSR             */

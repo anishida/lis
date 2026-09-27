@@ -411,6 +411,26 @@ LIS_INT lis_matrix_storage_destroy(LIS_MATRIX Amat)
 				lis_free2(3,Amat->w_row,Amat->w_index,Amat->w_value);
 			}
 		}
+
+#ifdef USE_CCX
+		/* CCX numerical/structural arrays belong to CalculiX.  Only the
+		   auxiliary row-gather map is owned by LIS. */
+		if( Amat->ccx_tptr )   lis_free(Amat->ccx_tptr);
+		if( Amat->ccx_tcol )   lis_free(Amat->ccx_tcol);
+		if( Amat->ccx_tindex ) lis_free(Amat->ccx_tindex);
+
+		Amat->ccx_tptr   = NULL;
+		Amat->ccx_tcol   = NULL;
+		Amat->ccx_tindex = NULL;
+		Amat->ccx_jq     = NULL;
+		Amat->ccx_irow   = NULL;
+		Amat->ccx_ad     = NULL;
+		Amat->ccx_au     = NULL;
+		Amat->ccx_nnz_offdiag = 0;
+		Amat->ccx_nasym = 0;
+		Amat->ccx_index_base = 0;
+#endif
+
 		Amat->row       = NULL;
 		Amat->col       = NULL;
 		Amat->ptr       = NULL;
@@ -669,7 +689,13 @@ LIS_INT lis_matrix_assemble(LIS_MATRIX A)
 		}
 	}
 	#ifdef USE_MPI
+#ifdef USE_CCX
+		/* The CCX backend is intentionally shared-memory only.  set_ccx()
+		   rejects nprocs != 1, so no global-to-local conversion is needed. */
+		if( A->matrix_type!=LIS_MATRIX_CCX && !A->is_pmat )
+#else
 		if( !A->is_pmat )
+#endif
 		{
 			if( A->l2g_map==NULL )
 			{

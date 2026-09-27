@@ -5,6 +5,7 @@ lis_matrix_bsr.c \
 lis_matrix_csc.c \
 lis_matrix_coo.c \
 lis_matrix_csr.c \
+lis_matrix_ccx.c \
 lis_matrix_dia.c \
 lis_matrix_diag.c \
 lis_matrix_dns.c \

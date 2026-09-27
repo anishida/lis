@@ -815,13 +815,20 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 		if( output ) lis_printf(comm,"convergence condition : ||b-Ax||_1 <= %6.1e*||b||_1 + %6.1e = %6.1e\n", (double)tol_w,(double)tol,(double)nrm2);
 		break;
 	}
+#ifdef USE_CCX
+	if( AA->matrix_type==LIS_MATRIX_CCX )
+	  {
+	    if( output ) lis_printf(comm,"matrix storage format : CCX\n");
+	  }
+	else
+#endif
 	if( AA->matrix_type==LIS_MATRIX_BSR || AA->matrix_type==LIS_MATRIX_BSC )
 	  {
-	    if( output ) lis_printf(comm,"matrix storage format : %s(%D x %D)\n", lis_storagename[AA->matrix_type-1],block,block); 
+	    if( output ) lis_printf(comm,"matrix storage format : %s(%D x %D)\n", lis_storagename[AA->matrix_type-1],block,block);
 	  }
 	else
 	  {
-	    if( output ) lis_printf(comm,"matrix storage format : %s\n", lis_storagename[AA->matrix_type-1]); 
+	    if( output ) lis_printf(comm,"matrix storage format : %s\n", lis_storagename[AA->matrix_type-1]);
 	  }
 
 	/* create work vector */

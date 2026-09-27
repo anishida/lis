@@ -5,6 +5,7 @@ lis_matvec_bsr.c \
 lis_matvec_csc.c \
 lis_matvec_coo.c \
 lis_matvec_csr.c \
+lis_matvec_ccx.c \
 lis_matvec_dia.c \
 lis_matvec_dns.c \
 lis_matvec_ell.c \

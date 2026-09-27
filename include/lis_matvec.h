@@ -107,6 +107,15 @@ extern "C"
 	extern void lis_matvech_csc_mp2(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y);  
 
 /*******************/
+	#ifdef USE_CCX
+	/* CalculiX        */
+/*******************/
+		extern void lis_matvec_ccx(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
+		extern void lis_matvech_ccx(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[]);
+	#endif
+/*******************/
+
+/*******************/
 /* MSR             */
 /*******************/
 

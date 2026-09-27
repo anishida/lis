@@ -275,6 +275,9 @@ extern "C" {
 #define LIS_MATRIX_LBSR 19
 #define LIS_MATRIX_CDIA 20
 #define LIS_MATRIX_MSC 21
+#ifdef USE_CCX
+#define LIS_MATRIX_CCX 22
+#endif
 #define LIS_MATRIX_DECIDING_SIZE -(LIS_MATRIX_RCO+1)
 #define LIS_MATRIX_NULL -(LIS_MATRIX_RCO+2)
 
@@ -685,6 +688,21 @@ struct LIS_MATRIX_STRUCT
 	LIS_SCALAR ***v_value;
 
 	LIS_INT *l2g_map;
+	#ifdef USE_CCX
+	/* CalculiX native sparse matrix storage. ad/au/jq/irow are borrowed. */
+	LIS_INT ccx_nnz_offdiag;
+	LIS_INT ccx_nasym;
+	LIS_INT ccx_index_base;
+	LIS_INT *ccx_jq;
+	LIS_INT *ccx_irow;
+	LIS_SCALAR *ccx_ad;
+	LIS_SCALAR *ccx_au;
+
+	/* LIS-owned row gather map for race-free OpenMP SpMV. */
+	LIS_INT *ccx_tptr;
+	LIS_INT *ccx_tcol;
+	LIS_INT *ccx_tindex;
+#endif
 	LIS_COMMTABLE commtable;
 };
 typedef struct LIS_MATRIX_STRUCT *LIS_MATRIX;
@@ -891,6 +909,13 @@ extern "C"
 	extern LIS_INT lis_matrix_set_value_csr(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_psd_set_value_csr(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);  
 	extern LIS_INT lis_matrix_set_csr(LIS_INT nnz, LIS_INT *row, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);
+	#ifdef USE_CCX
+		extern LIS_INT lis_matrix_set_ccx(LIS_INT nnz_offdiag,
+			LIS_SCALAR *ad, LIS_SCALAR *au,
+			LIS_INT *jq, LIS_INT *irow,
+			LIS_INT nasym, LIS_INT index_base,
+			LIS_MATRIX A);
+	#endif
 	extern LIS_INT lis_matrix_malloc_csc(LIS_INT n, LIS_INT nnz, LIS_INT **ptr, LIS_INT **index, LIS_SCALAR **value);
 	extern LIS_INT lis_matrix_set_csc(LIS_INT nnz, LIS_INT *row, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_malloc_bsr(LIS_INT n, LIS_INT bnr, LIS_INT bnc, LIS_INT bnnz, LIS_INT **bptr, LIS_INT **bindex, LIS_SCALAR **value);
