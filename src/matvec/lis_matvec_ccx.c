@@ -14,6 +14,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 #include "lislib.h"
 
 #ifdef USE_CCX
@@ -35,6 +38,50 @@ void lis_matvec_ccx(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	irow = A->ccx_irow;
 	ad = A->ccx_ad;
 	au = A->ccx_au;
+
+	/*
+	 * Single-threaded fast path.
+	 *
+	 * With one OpenMP thread the two gather passes below are unnecessary.
+	 * Walk native CalculiX CCS storage once: the lower contribution is a
+	 * scatter to y[i], while the matching upper contribution is accumulated
+	 * locally into y[j]. No atomics are required because this path is
+	 * strictly single-threaded.
+	 */
+#ifdef _OPENMP
+	if (omp_get_max_threads() == 1)
+#endif
+	{
+		LIS_SCALAR xj, aij, aji;
+
+		for (i=0; i<n; i++)
+			y[i] = ad[i] * x[i];
+
+		for (j=0; j<n; j++)
+		{
+			sum = y[j];
+			xj = x[j];
+
+			for (k=jq[j]-base; k<jq[j+1]-base; k++)
+			{
+				i = irow[k]-base;
+				aij = au[k];
+
+				/* Stored lower triangle: A(i,j) * x(j). */
+				y[i] += aij * xj;
+
+				/* Matching upper triangle: A(j,i) * x(i). */
+				if (A->ccx_nasym)
+					aji = au[nnz+k];
+				else
+					aji = aij;
+
+				sum += aji * x[i];
+			}
+			y[j] = sum;
+		}
+		return;
+	}
 
 	/* Diagonal plus the stored (lower) triangle, gathered by row. */
 #ifdef _OPENMP
@@ -88,6 +135,45 @@ void lis_matvech_ccx(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	irow = A->ccx_irow;
 	ad = A->ccx_ad;
 	au = A->ccx_au;
+
+	/*
+	 * Serial conjugate-transpose fast path. For real CalculiX builds conj()
+	 * is a no-op, but keeping the general form preserves LIS semantics.
+	 */
+#ifdef _OPENMP
+	if (omp_get_max_threads() == 1)
+#endif
+	{
+		LIS_SCALAR xj, aij, aji;
+
+		for (i=0; i<n; i++)
+			y[i] = conj(ad[i]) * x[i];
+
+		for (j=0; j<n; j++)
+		{
+			sum = y[j];
+			xj = x[j];
+
+			for (k=jq[j]-base; k<jq[j+1]-base; k++)
+			{
+				i = irow[k]-base;
+				aij = au[k];
+
+				if (A->ccx_nasym)
+					aji = au[nnz+k];
+				else
+					aji = aij;
+
+				/* A^H(i,j) = conj(A(j,i)). */
+				y[i] += conj(aji) * xj;
+
+				/* A^H(j,i) = conj(A(i,j)). */
+				sum += conj(aij) * x[i];
+			}
+			y[j] = sum;
+		}
+		return;
+	}
 
 #ifdef _OPENMP
 #pragma omp parallel for private(i,p,k,j,sum) schedule(static)
