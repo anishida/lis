@@ -1324,6 +1324,18 @@ AC_CONFIG_FILES([Makefile
                  ])
 
 DEFS="$DEFSADD $DEFS"
+
+dnl Optional native CalculiX sparse matrix backend.
+dnl Disabled by default so normal LIS builds remain unchanged.
+AC_ARG_ENABLE([ccx],
+  [AS_HELP_STRING([--enable-ccx],
+    [enable native CalculiX sparse matrix backend @<:@default=no@:>@])],
+  [enable_ccx=$enableval],
+  [enable_ccx=no])
+if test "x$enable_ccx" = "xyes"; then
+  CFLAGS="$CFLAGS -DUSE_CCX"
+fi
+
 AC_OUTPUT
 
 echo
