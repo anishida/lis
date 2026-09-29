@@ -362,6 +362,113 @@ LIS_INT lis_solver_set_matrix(LIS_MATRIX A, LIS_SOLVER solver)
 	return LIS_SUCCESS;
 }
 
+static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver)
+{
+	LIS_INT nsolver, precon_type;
+
+	if( A->matrix_type!=LIS_MATRIX_USER ) return LIS_SUCCESS;
+
+#ifdef USE_MPI
+	if( A->nprocs!=1 )
+	{
+		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+		           "LIS_MATRIX_USER is serial/OpenMP only in this proof of concept\n");
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+#endif
+	if( A->user_matvec==NULL )
+	{
+		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,"LIS_MATRIX_USER has no matvec callback\n");
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+	if( solver->options[LIS_OPTIONS_PRECISION]!=LIS_PRECISION_DEFAULT )
+	{
+		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+		           "LIS_MATRIX_USER currently supports default precision only\n");
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+	if( solver->options[LIS_OPTIONS_SCALE]!=LIS_SCALE_NONE )
+	{
+		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+		           "LIS internal matrix scaling requires explicit storage\n");
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+	if( solver->options[LIS_OPTIONS_STORAGE]!=0 )
+	{
+		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+		           "storage conversion is unavailable for LIS_MATRIX_USER\n");
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+	if( solver->options[LIS_OPTIONS_ADDS] )
+	{
+		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+		           "Additive Schwarz is outside the LIS_MATRIX_USER proof-of-concept scope\n");
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+	if( solver->options[LIS_OPTIONS_USE_AT] )
+	{
+		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+		           "-use_at cannot materialize a shell matrix; provide matvech instead\n");
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
+	nsolver = solver->options[LIS_OPTIONS_SOLVER];
+	if( nsolver==LIS_SOLVER_JACOBI ||
+	    nsolver==LIS_SOLVER_GS ||
+	    nsolver==LIS_SOLVER_SOR )
+	{
+		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+		           "Jacobi/GS/SOR solvers require explicit matrix storage\n");
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
+	if( (nsolver==LIS_SOLVER_BICG ||
+	     nsolver==LIS_SOLVER_BICR ||
+	     nsolver==LIS_SOLVER_CRS ||
+	     nsolver==LIS_SOLVER_BICRSTAB ||
+	     nsolver==LIS_SOLVER_GPBICR ||
+	     nsolver==LIS_SOLVER_BICRSAFE) && A->user_matvech==NULL )
+	{
+		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+		           "selected solver requires the user transpose/Hermitian matvec callback\n");
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
+	precon_type = solver->options[LIS_OPTIONS_PRECON];
+	if( precon_type!=LIS_PRECON_TYPE_NONE &&
+	    precon_type<LIS_PRECON_TYPE_USERDEF )
+	{
+		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+		           "built-in preconditioners require explicit storage; use none or a registered user preconditioner\n");
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+	if( precon_type>=LIS_PRECON_TYPE_USERDEF )
+	{
+		LIS_PRECON_REGISTER *reg;
+		if( precon_register_top==NULL || precon_type>=precon_register_type )
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,"invalid registered preconditioner type\n");
+			return LIS_ERR_ILL_ARG;
+		}
+		reg = &precon_register_top[precon_type-LIS_PRECON_TYPE_USERDEF];
+		if( reg->pcreate==NULL || reg->psolve==NULL )
+		{
+			LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+			           "registered preconditioner requires pcreate and psolve callbacks\n");
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
+		if( (nsolver==LIS_SOLVER_BICG || nsolver==LIS_SOLVER_BICR) &&
+		    reg->psolveh==NULL )
+		{
+			LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+			           "selected solver requires the registered psolveh callback\n");
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
+	}
+
+	return LIS_SUCCESS;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_solve"
 LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
@@ -371,15 +478,17 @@ LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
 
 	LIS_DEBUG_FUNC_IN;
 
-	solver->A = A;
-
-	/* create preconditioner */
-
-	if( solver->options[LIS_OPTIONS_PRECON] < 0 || solver->options[LIS_OPTIONS_PRECON] > LIS_PRECONNAME_MAX )
+	solver->A = A;	/* create preconditioner */
+	if( solver->options[LIS_OPTIONS_PRECON] < 0 ||
+	    (solver->options[LIS_OPTIONS_PRECON] > LIS_PRECONNAME_MAX &&
+	     solver->options[LIS_OPTIONS_PRECON] < LIS_PRECON_TYPE_USERDEF) ||
+	    solver->options[LIS_OPTIONS_PRECON] >= precon_register_type )
 	{
-		LIS_SETERR2(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_PRECON is %D (Set between 0 to %D)\n",solver->options[LIS_OPTIONS_PRECON], LIS_PRECONNAME_MAX);
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Invalid LIS_OPTIONS_PRECON value %D\n",solver->options[LIS_OPTIONS_PRECON]);
 		return LIS_ERR_ILL_ARG;
 	}
+	err = lis_solver_check_user_matrix(A,solver);
+	if( err ) return err;
 
 	err = lis_precon_create(solver, &precon);
 	if( err )
@@ -484,11 +593,15 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 		LIS_SETERR2(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_SOLVER is %D (Set between 1 to %D)\n",nsolver, LIS_SOLVERS_LEN);
 		return LIS_ERR_ILL_ARG;
 	}
-	if( precon_type < 0 || precon_type > precon_register_type )
+	if( precon_type < 0 ||
+	    (precon_type > LIS_PRECONNAME_MAX && precon_type < LIS_PRECON_TYPE_USERDEF) ||
+	    precon_type >= precon_register_type )
 	{
-		LIS_SETERR2(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_PRECON is %D (Set between 0 to %D)\n",precon_type, precon_register_type-1);
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"Invalid LIS_OPTIONS_PRECON value %D\n",precon_type);
 		return LIS_ERR_ILL_ARG;
 	}
+	err = lis_solver_check_user_matrix(A,solver);
+	if( err ) return err;
 	if( maxiter<0 )
 	{
 		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_MAXITER(=%D) is less than 0\n",maxiter);
@@ -746,14 +859,17 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	/* convert matrix */
 	solver->A  = AA;
 	solver->b  = bb;
-	err = lis_matrix_convert_self(solver);
-	if( err )
+	if( AA->matrix_type!=LIS_MATRIX_USER )
 	{
-		lis_vector_destroy(xx);
-		lis_solver_work_destroy(solver);
-		lis_free(rhistory);
-		solver->retcode = err;
-		return err;
+		err = lis_matrix_convert_self(solver);
+		if( err )
+		{
+			lis_vector_destroy(xx);
+			lis_solver_work_destroy(solver);
+			lis_free(rhistory);
+			solver->retcode = err;
+			return err;
+		}
 	}
 	block = solver->A->bnr;
 
@@ -785,9 +901,14 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 			  if( output ) sprintf(buf,"%s(%d)",lis_preconname[precon_type],i); 
 #endif
 			}
-			break;
-		default:
-		  if( output ) sprintf(buf,"%s",lis_preconname[precon_type]); 
+			break;		default:
+		  if( output )
+		  {
+			if( precon_type>=LIS_PRECON_TYPE_USERDEF )
+			  sprintf(buf,"%s",precon_register_top[precon_type-LIS_PRECON_TYPE_USERDEF].name);
+			else
+			  sprintf(buf,"%s",lis_preconname[precon_type]);
+		  }
 			break;
 		}
 		if( solver->options[LIS_OPTIONS_ADDS] && precon_type )
@@ -818,10 +939,13 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	if( AA->matrix_type==LIS_MATRIX_BSR || AA->matrix_type==LIS_MATRIX_BSC )
 	  {
 	    if( output ) lis_printf(comm,"matrix storage format : %s(%D x %D)\n", lis_storagename[AA->matrix_type-1],block,block); 
+	  }	else if( AA->matrix_type==LIS_MATRIX_USER )
+	  {
+	    if( output ) lis_printf(comm,"matrix storage format : user/shell\n");
 	  }
 	else
 	  {
-	    if( output ) lis_printf(comm,"matrix storage format : %s\n", lis_storagename[AA->matrix_type-1]); 
+	    if( output ) lis_printf(comm,"matrix storage format : %s\n", lis_storagename[AA->matrix_type-1]);
 	  }
 
 	/* create work vector */
@@ -1323,7 +1447,6 @@ LIS_INT lis_solver_set_option_precon(char *argv, LIS_SOLVER solver)
 	LIS_INT i;
 
 	LIS_DEBUG_FUNC_IN;
-
 	if( argv[0]>='0' && argv[0]<='9' )
 	{
 #ifdef _LONG__LONG
@@ -1331,38 +1454,33 @@ LIS_INT lis_solver_set_option_precon(char *argv, LIS_SOLVER solver)
 #else
 		sscanf(argv, "%d", &solver->options[LIS_OPTIONS_PRECON]);
 #endif
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
 	}
-	else
-	{
-		for(i=0;i<LIS_PRECON_TYPE_LEN;i++)
-		{
-			if( strcmp(argv,lis_precon_atoi[i])==0 )
-			{
-				solver->options[LIS_OPTIONS_PRECON] = i;
-				LIS_DEBUG_FUNC_OUT;
-				return LIS_SUCCESS;
-			}
-			else if( i==LIS_PRECON_TYPE_LEN-1 )
-			{
-				LIS_SETERR(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_PRECON is not correct\n");
-				LIS_DEBUG_FUNC_OUT;
-				return LIS_ERR_ILL_ARG;
-			}
-		}
-		for(i=0;i<precon_register_type-LIS_PRECON_TYPE_USERDEF;i++)
-		{
-			if( strcmp(argv,precon_register_top[i].name)==0 )
-			{
-				solver->options[LIS_OPTIONS_PRECON] = i+LIS_PRECON_TYPE_USERDEF;
-				LIS_DEBUG_FUNC_OUT;
-				return LIS_SUCCESS;
-			}
-		}
-	}
-	LIS_DEBUG_FUNC_OUT;
-	return LIS_SUCCESS;
-}
 
+	for(i=0;i<LIS_PRECON_TYPE_LEN;i++)
+	{
+		if( strcmp(argv,lis_precon_atoi[i])==0 )
+		{
+			solver->options[LIS_OPTIONS_PRECON] = i;
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_SUCCESS;
+		}
+	}
+	for(i=0;i<precon_register_type-LIS_PRECON_TYPE_USERDEF;i++)
+	{
+		if( strcmp(argv,precon_register_top[i].name)==0 )
+		{
+			solver->options[LIS_OPTIONS_PRECON] = i+LIS_PRECON_TYPE_USERDEF;
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_SUCCESS;
+		}
+	}
+
+	LIS_SETERR(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_PRECON is not correct\n");
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_ERR_ILL_ARG;
+}
 #undef __FUNC__
 #define __FUNC__ "lis_solver_set_option_pprecon"
 LIS_INT lis_solver_set_option_pprecon(char *argv, LIS_SOLVER solver)
@@ -1776,17 +1894,22 @@ LIS_INT lis_solver_get_preconname(LIS_INT precon_type, char *preconname)
 {
 	LIS_DEBUG_FUNC_IN;
 
-	if( precon_type < 0 || precon_type > LIS_PRECON_TYPE_LEN-1 )
+	if( precon_type>=0 && precon_type<LIS_PRECON_TYPE_LEN )
 	{
-		preconname = NULL;
-		return LIS_FAILS;
+		strcpy(preconname,lis_preconname[precon_type]);
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
 	}
-	strcpy(preconname,lis_preconname[precon_type]);
+	if( precon_type>=LIS_PRECON_TYPE_USERDEF &&
+	    precon_type<precon_register_type && precon_register_top!=NULL )
+	{
+		strcpy(preconname,precon_register_top[precon_type-LIS_PRECON_TYPE_USERDEF].name);
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
 
-	LIS_DEBUG_FUNC_OUT;
-	return LIS_SUCCESS;
+	return LIS_FAILS;
 }
-
 #undef __FUNC__
 #define __FUNC__ "lis_solver_get_residual_nrm2_r"
 LIS_INT lis_solver_get_residual_nrm2_r(LIS_VECTOR r, LIS_SOLVER solver, LIS_REAL *res)

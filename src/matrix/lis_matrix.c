@@ -875,6 +875,69 @@ LIS_INT lis_matrix_set_values(LIS_INT flag, LIS_INT n, LIS_SCALAR value[], LIS_M
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_matrix_set_user"
+LIS_INT lis_matrix_set_user(LIS_MATRIX A, void *user_data,
+                            LIS_MATRIX_USER_MATVEC matvec,
+                            LIS_MATRIX_USER_MATVEC matvech)
+{
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	err = lis_matrix_check(A,LIS_MATRIX_CHECK_SET);
+	if( err ) return err;
+	if( matvec==NULL )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"LIS_MATRIX_USER requires a matvec callback\n");
+		return LIS_ERR_ILL_ARG;
+	}
+#ifdef USE_MPI
+	if( A->nprocs!=1 )
+	{
+		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+		           "LIS_MATRIX_USER is serial/OpenMP only in this proof of concept\n");
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+#endif
+
+	A->matrix_type  = LIS_MATRIX_USER;
+	A->status       = LIS_MATRIX_USER;
+	A->user_data    = user_data;
+	A->user_matvec  = matvec;
+	A->user_matvech = matvech;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_get_user_data"
+LIS_INT lis_matrix_get_user_data(LIS_MATRIX A, void **user_data)
+{
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	err = lis_matrix_check(A,LIS_MATRIX_CHECK_ALL);
+	if( err ) return err;
+	if( user_data==NULL )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"user_data output pointer is NULL\n");
+		return LIS_ERR_ILL_ARG;
+	}
+	if( A->matrix_type!=LIS_MATRIX_USER )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"matrix is not LIS_MATRIX_USER\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	*user_data = A->user_data;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_matrix_set_type"
 LIS_INT lis_matrix_set_type(LIS_MATRIX A, LIS_INT matrix_type)
 {
