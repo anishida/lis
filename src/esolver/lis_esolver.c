@@ -354,10 +354,37 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	esolver->eprecision = eprecision;
 	rval = esolver->options[LIS_EOPTIONS_RVAL];
 
+	/*
+	 * LIS_MATRIX_USER is an operator, not materialized LIS storage.
+	 * Explicit storage conversion and matrix shifts are separate features.
+	 */
+	if( A->matrix_type==LIS_MATRIX_USER && estorage>0 )
+	{
+		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+		           "storage conversion is unavailable for LIS_MATRIX_USER\n");
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+	if( (A->matrix_type==LIS_MATRIX_USER ||
+	     (B!=NULL && B->matrix_type==LIS_MATRIX_USER)) &&
+	    (oshift!=0.0 || ishift!=0.0) )
+	{
+		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+		           "matrix shifts are unavailable for LIS_MATRIX_USER\n");
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
 	if( nesolver < 1 || nesolver > LIS_ESOLVER_LEN )
 	{
 		LIS_SETERR2(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_ESOLVER is %D (Set between 1 to %D)\n",nesolver, LIS_ESOLVER_LEN);
 		return LIS_ERR_ILL_ARG;
+	}
+	if( B!=NULL &&
+	    (A->matrix_type==LIS_MATRIX_USER || B->matrix_type==LIS_MATRIX_USER) &&
+	    nesolver==LIS_ESOLVER_GRQI )
+	{
+		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+		           "generalized Rayleigh quotient iteration requires matrix shifts for LIS_MATRIX_USER\n");
+		return LIS_ERR_NOT_IMPLEMENTED;
 	}
 
 	/*
@@ -595,7 +622,14 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	  }
 	else
 	  {
-	    if ( output ) lis_printf(comm,"matrix storage format : %s\n", lis_estoragename[A->matrix_type-1]); 
+	    if( A->matrix_type==LIS_MATRIX_USER )
+	      {
+	        if ( output ) lis_printf(comm,"matrix storage format : user/shell\n");
+	      }
+	    else
+	      {
+	        if ( output ) lis_printf(comm,"matrix storage format : %s\n", lis_estoragename[A->matrix_type-1]);
+	      }
 	  }
 	
 	time = lis_wtime();

@@ -369,7 +369,7 @@ LIS_INT lis_input_vector_mm(LIS_VECTOR v, FILE *file)
 #ifdef _LONG__LONG
 		if( mmtype==MM_COMPLEX && sscanf(buf, "%lld %lg %lg", &idx, &re, &im) != 3 )
 #else
-		  if( mmtype==MM_COMPLEX && sscanf(buf, "%d %lg %lg", &idx, &re, &im) != 3 )
+	        if( mmtype==MM_COMPLEX && sscanf(buf, "%d %lg %lg", &idx, &re, &im) != 3 )
 #endif
 		  
 		{
