@@ -361,8 +361,8 @@ LIS_INT lis_precon_destroy(LIS_PRECON precon)
 
 
 #undef __FUNC__
-#define __FUNC__ "lis_psolve"
-LIS_INT lis_psolve(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
+#define __FUNC__ "lis_psolve_dispatch"
+LIS_INT lis_psolve_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
 {
 	LIS_INT precon_type;
 	LIS_PSOLVE_XXX psolve;
@@ -402,8 +402,8 @@ LIS_INT lis_psolve(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_psolveh"
-LIS_INT lis_psolveh(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
+#define __FUNC__ "lis_psolveh_dispatch"
+LIS_INT lis_psolveh_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
 {
 	LIS_INT precon_type;
 	LIS_PSOLVEH_XXX psolveh;
@@ -490,17 +490,31 @@ LIS_INT lis_psolveh_none(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
 
 #undef __FUNC__
 #define __FUNC__ "lis_precon_register"
-LIS_INT lis_precon_register(char *name, LIS_PRECON_CREATE_XXX pcreate, LIS_PSOLVE_XXX psolve, LIS_PSOLVEH_XXX psolveh)
-{	LIS_DEBUG_FUNC_IN;
+LIS_INT lis_precon_register(char *name, LIS_PRECON_CREATE_XXX pcreate,
+                            LIS_PSOLVE_XXX psolve, LIS_PSOLVEH_XXX psolveh)
+{
+	LIS_DEBUG_FUNC_IN;
+
 	if( name==NULL || pcreate==NULL || psolve==NULL )
 	{
-		LIS_SETERR(LIS_ERR_ILL_ARG,"registered preconditioner requires name, pcreate and psolve\n");
+		LIS_SETERR(LIS_ERR_ILL_ARG,
+		           "registered preconditioner requires name, pcreate and psolve\n");
 		return LIS_ERR_ILL_ARG;
 	}
+
 	if( precon_register_top==NULL )
 	{
-		precon_register_top = (LIS_PRECON_REGISTER *)lis_malloc(LIS_PRECON_REGISTER_MAX*sizeof(struct LIS_PRECON_REGISTER_STRUCT),"lis_precon_register::precon_register_top");
+		precon_register_top = (LIS_PRECON_REGISTER *)lis_malloc(
+			LIS_PRECON_REGISTER_MAX*sizeof(struct LIS_PRECON_REGISTER_STRUCT),
+			"lis_precon_register::precon_register_top");
+		if( precon_register_top==NULL )
+		{
+			LIS_SETERR_MEM(
+				LIS_PRECON_REGISTER_MAX*sizeof(struct LIS_PRECON_REGISTER_STRUCT));
+			return LIS_OUT_OF_MEMORY;
+		}
 	}
+
 	if( precon_register_type-LIS_PRECON_TYPE_USERDEF==LIS_PRECON_REGISTER_MAX )
 	{
 		LIS_SETERR(LIS_FAILS,"lis_precon_resister is max\n");
@@ -508,17 +522,19 @@ LIS_INT lis_precon_register(char *name, LIS_PRECON_CREATE_XXX pcreate, LIS_PSOLV
 	}
 
 	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].pcreate = pcreate;
-	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].psolve  = psolve;
+	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].psolve = psolve;
 	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].psolveh = psolveh;
-	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].precon_type = precon_register_type;
-	strncpy(precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].name,name,LIS_PRECONNAME_MAX);
-	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].name[LIS_PRECONNAME_MAX] = '\0';
+	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].precon_type =
+		precon_register_type;
+	strncpy(precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].name,
+	        name,LIS_PRECONNAME_MAX);
+	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF]
+		.name[LIS_PRECONNAME_MAX] = '\0';
 	precon_register_type++;
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 }
-
 #undef __FUNC__
 #define __FUNC__ "lis_precon_register_free"
 LIS_INT lis_precon_register_free(void)

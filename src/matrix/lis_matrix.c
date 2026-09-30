@@ -891,15 +891,6 @@ LIS_INT lis_matrix_set_user(LIS_MATRIX A, void *user_data,
 		LIS_SETERR(LIS_ERR_ILL_ARG,"LIS_MATRIX_USER requires a matvec callback\n");
 		return LIS_ERR_ILL_ARG;
 	}
-#ifdef USE_MPI
-	if( A->nprocs!=1 )
-	{
-		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-		           "LIS_MATRIX_USER is serial/OpenMP only in this proof of concept\n");
-		return LIS_ERR_NOT_IMPLEMENTED;
-	}
-#endif
-
 	A->matrix_type  = LIS_MATRIX_USER;
 	A->status       = LIS_MATRIX_USER;
 	A->user_data    = user_data;

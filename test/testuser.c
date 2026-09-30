@@ -67,6 +67,7 @@ int main(int argc, char *argv[])
 	LIS_SOLVER solver;
 	USER_TRIDIAG shell;
 	LIS_INT i, err;
+	LIS_INT local_n, global_n;
 	LIS_REAL nrm2;
 	const LIS_INT n = 100;
 
@@ -89,6 +90,9 @@ int main(int argc, char *argv[])
 
 	lis_matrix_create(LIS_COMM_WORLD,&A);
 	lis_matrix_set_size(A,0,n);
+	lis_matrix_get_size(A,&local_n,&global_n);
+	(void)global_n;
+	shell.n = local_n;
 	err = lis_matrix_set_user(A,&shell,shell_matvec,shell_matvech);
 	if( err )
 	{
@@ -101,7 +105,7 @@ int main(int argc, char *argv[])
 	lis_vector_duplicate(A,&b);
 	lis_vector_duplicate(A,&x);
 	lis_vector_duplicate(A,&exact);
-	for(i=0;i<n;i++) exact->value[i] = 1.0;
+	for(i=0;i<exact->n;i++) exact->value[i] = 1.0;
 
 	err = lis_matvec(A,exact,b);
 	if( err )

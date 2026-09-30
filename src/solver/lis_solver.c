@@ -368,14 +368,6 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver)
 
 	if( A->matrix_type!=LIS_MATRIX_USER ) return LIS_SUCCESS;
 
-#ifdef USE_MPI
-	if( A->nprocs!=1 )
-	{
-		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-		           "LIS_MATRIX_USER is serial/OpenMP only in this proof of concept\n");
-		return LIS_ERR_NOT_IMPLEMENTED;
-	}
-#endif
 	if( A->user_matvec==NULL )
 	{
 		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,"LIS_MATRIX_USER has no matvec callback\n");
