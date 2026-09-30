@@ -57,7 +57,8 @@ target_triplet = @target@
 test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	etest4$(EXEEXT) etest5$(EXEEXT) etest5b$(EXEEXT) \
 	etest6$(EXEEXT) etest7$(EXEEXT) getest1$(EXEEXT) \
-	getest5$(EXEEXT) getest5b$(EXEEXT) spmvtest1$(EXEEXT) \
+	getest5$(EXEEXT) getest5b$(EXEEXT) getestuser$(EXEEXT) \
+	spmvtest1$(EXEEXT) \
 	spmvtest2$(EXEEXT) spmvtest2b$(EXEEXT) spmvtest3$(EXEEXT) \
 	spmvtest3b$(EXEEXT) spmvtest4$(EXEEXT) spmvtest5$(EXEEXT) \
 	test1$(EXEEXT) test2$(EXEEXT) test2b$(EXEEXT) test3$(EXEEXT) \
@@ -169,6 +170,10 @@ am_getest5b_OBJECTS = getest5b.$(OBJEXT)
 getest5b_OBJECTS = $(am_getest5b_OBJECTS)
 getest5b_LDADD = $(LDADD)
 getest5b_DEPENDENCIES =
+am_getestuser_OBJECTS = getestuser.$(OBJEXT)
+getestuser_OBJECTS = $(am_getestuser_OBJECTS)
+getestuser_LDADD = $(LDADD)
+getestuser_DEPENDENCIES =
 am_hpcg_kernel_OBJECTS = test3b.$(OBJEXT)
 hpcg_kernel_OBJECTS = $(am_hpcg_kernel_OBJECTS)
 hpcg_kernel_LDADD = $(LDADD)
@@ -331,7 +336,8 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(etest4_SOURCES) $(etest4f_SOURCES) $(etest5_SOURCES) \
 	$(etest5b_SOURCES) $(etest6_SOURCES) $(etest7_SOURCES) \
 	$(gesolve_SOURCES) $(gesolver_SOURCES) $(getest1_SOURCES) \
-	$(getest5_SOURCES) $(getest5b_SOURCES) $(hpcg_kernel_SOURCES) \
+	$(getest5_SOURCES) $(getest5b_SOURCES) $(getestuser_SOURCES) \
+	$(hpcg_kernel_SOURCES) \
 	$(hpcg_spmvtest_SOURCES) $(lsolve_SOURCES) \
 	$(spmvtest1_SOURCES) $(spmvtest2_SOURCES) \
 	$(spmvtest2b_SOURCES) $(spmvtest3_SOURCES) \
@@ -348,7 +354,8 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__etest4f_SOURCES_DIST) $(etest5_SOURCES) \
 	$(etest5b_SOURCES) $(etest6_SOURCES) $(etest7_SOURCES) \
 	$(gesolve_SOURCES) $(gesolver_SOURCES) $(getest1_SOURCES) \
-	$(getest5_SOURCES) $(getest5b_SOURCES) $(hpcg_kernel_SOURCES) \
+	$(getest5_SOURCES) $(getest5b_SOURCES) $(getestuser_SOURCES) \
+	$(hpcg_kernel_SOURCES) \
 	$(hpcg_spmvtest_SOURCES) $(lsolve_SOURCES) \
 	$(spmvtest1_SOURCES) $(spmvtest2_SOURCES) \
 	$(spmvtest2b_SOURCES) $(spmvtest3_SOURCES) \
@@ -537,6 +544,7 @@ etest7_SOURCES = etest7.c
 getest1_SOURCES = getest1.c
 getest5_SOURCES = getest5.c
 getest5b_SOURCES = getest5b.c
+getestuser_SOURCES = getestuser.c
 spmvtest1_SOURCES = spmvtest1.c
 spmvtest2_SOURCES = spmvtest2.c
 spmvtest2b_SOURCES = spmvtest2b.c
@@ -787,6 +795,9 @@ getest5$(EXEEXT): $(getest5_OBJECTS) $(getest5_DEPENDENCIES) $(EXTRA_getest5_DEP
 getest5b$(EXEEXT): $(getest5b_OBJECTS) $(getest5b_DEPENDENCIES) $(EXTRA_getest5b_DEPENDENCIES) 
 	@rm -f getest5b$(EXEEXT)
 	$(LINK) $(getest5b_OBJECTS) $(getest5b_LDADD) $(LIBS)
+getestuser$(EXEEXT): $(getestuser_OBJECTS) $(getestuser_DEPENDENCIES) $(EXTRA_getestuser_DEPENDENCIES)
+	@rm -f getestuser$(EXEEXT)
+	$(LINK) $(getestuser_OBJECTS) $(getestuser_LDADD) $(LIBS)
 hpcg_kernel$(EXEEXT): $(hpcg_kernel_OBJECTS) $(hpcg_kernel_DEPENDENCIES) $(EXTRA_hpcg_kernel_DEPENDENCIES) 
 	@rm -f hpcg_kernel$(EXEEXT)
 	$(LINK) $(hpcg_kernel_OBJECTS) $(hpcg_kernel_LDADD) $(LIBS)
@@ -921,6 +932,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getest1.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getest5.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getest5b.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getestuser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spmvtest1.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spmvtest2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spmvtest2b.Po@am__quote@

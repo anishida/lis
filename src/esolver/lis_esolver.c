@@ -378,6 +378,14 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 		LIS_SETERR2(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_ESOLVER is %D (Set between 1 to %D)\n",nesolver, LIS_ESOLVER_LEN);
 		return LIS_ERR_ILL_ARG;
 	}
+	if( B!=NULL &&
+	    (A->matrix_type==LIS_MATRIX_USER || B->matrix_type==LIS_MATRIX_USER) &&
+	    nesolver==LIS_ESOLVER_GRQI )
+	{
+		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+		           "generalized Rayleigh quotient iteration requires matrix shifts for LIS_MATRIX_USER\n");
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
 
 	/*
 	if( niesolver < 1 || niesolver > 6 ) 
