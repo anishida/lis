@@ -29,12 +29,12 @@
 #define __LIS_PRECON_H__
 
 
-#define lis_psolve(solver,b,x) lis_psolve_xxx[solver->precon->precon_type](solver,b,x)
-#define lis_psolveh(solver,b,x) lis_psolveh_xxx[solver->precon->precon_type](solver,b,x)
 
 
 
 
+#define lis_psolve(solver,b,x) lis_psolve_dispatch((solver),(b),(x))
+#define lis_psolveh(solver,b,x) lis_psolveh_dispatch((solver),(b),(x))
 #ifdef __cplusplus
 extern "C"
 {
@@ -48,6 +48,8 @@ extern "C"
 	extern LIS_PRECON_CREATE_XXX lis_precon_create_xxx[];
 	extern LIS_PSOLVE_XXX lis_psolve_xxx[];
 	extern LIS_PSOLVEH_XXX lis_psolveh_xxx[];
+	extern LIS_INT lis_psolve_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
+	extern LIS_INT lis_psolveh_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
 
 /*******************/
 /* NONE            */

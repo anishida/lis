@@ -1,6 +1,6 @@
 Version 2.1.12 September 25, 2026
 
-  - Fixed bugs in lis_matrix_g2l_csr(), where g2l_map was checked instead of l2g_map.
+  - Fixed bugs in lis_matrix_g2l_csr(), where g2l_map was checked instead of l2g_map (thanks to Carlos Mendes).
 
 Version 2.1.11 March 11, 2026
 
