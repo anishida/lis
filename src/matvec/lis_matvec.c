@@ -54,6 +54,7 @@ LIS_MATVEC_FUNC LIS_MATVECH = lis_matvech;
 #define __FUNC__ "lis_matvec"
 LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 {
+	LIS_INT err;
 	LIS_SCALAR *x,*y;
 
 	LIS_DEBUG_FUNC_IN;
@@ -142,6 +143,15 @@ LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			#endif
 			lis_matvec_coo(A, x, y);
 			break;
+		case LIS_MATRIX_USER:
+			if( A->user_matvec==NULL )
+			{
+				LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,"user matvec callback is not set\n");
+				return LIS_ERR_NOT_IMPLEMENTED;
+			}
+			err = A->user_matvec(A->user_data,x,y);
+			if( err ) return err;
+			break;
 		default:
 			LIS_SETERR_IMP;
 			return LIS_ERR_NOT_IMPLEMENTED;
@@ -190,6 +200,7 @@ LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 #define __FUNC__ "lis_matvech"
 LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 {
+	LIS_INT err;
 	LIS_SCALAR *x,*y;
 
 	LIS_DEBUG_FUNC_IN;
@@ -299,6 +310,16 @@ LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE;
 			#endif
+			break;
+		case LIS_MATRIX_USER:
+			if( A->user_matvech==NULL )
+			{
+				LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+				           "user transpose/Hermitian matvec callback is not set\n");
+				return LIS_ERR_NOT_IMPLEMENTED;
+			}
+			err = A->user_matvech(A->user_data,x,y);
+			if( err ) return err;
 			break;
 		default:
 			LIS_SETERR_IMP;

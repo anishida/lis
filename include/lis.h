@@ -33,7 +33,7 @@ extern "C" {
 #endif
 
 /**************************************/
-#define LIS_VERSION	"2.1.12"
+#define LIS_VERSION	"2.1.13"
 /**************************************/
 #include <stdio.h>
 #ifdef USE_COMPLEX
@@ -275,6 +275,7 @@ extern "C" {
 #define LIS_MATRIX_LBSR 19
 #define LIS_MATRIX_CDIA 20
 #define LIS_MATRIX_MSC 21
+#define LIS_MATRIX_USER 22
 #define LIS_MATRIX_DECIDING_SIZE -(LIS_MATRIX_RCO+1)
 #define LIS_MATRIX_NULL -(LIS_MATRIX_RCO+2)
 
@@ -564,6 +565,11 @@ struct LIS_VECTOR_S_STRUCT
 };
 typedef struct LIS_VECTOR_S_STRUCT *LIS_VECTOR_S;
 
+/* Generic application-owned shell/user matrix callback. */
+typedef LIS_INT (*LIS_MATRIX_USER_MATVEC)(void *user_data,
+                                          const LIS_SCALAR *x,
+                                          LIS_SCALAR *y);
+
 #define LIS_MATRIX_OPTION_LEN 10
 
 struct LIS_MATRIX_CORE_STRUCT
@@ -686,6 +692,11 @@ struct LIS_MATRIX_STRUCT
 
 	LIS_INT *l2g_map;
 	LIS_COMMTABLE commtable;
+
+	/* Application-owned shell matrix state. LIS never frees user_data. */
+	void *user_data;
+	LIS_MATRIX_USER_MATVEC user_matvec;
+	LIS_MATRIX_USER_MATVEC user_matvech;
 };
 typedef struct LIS_MATRIX_STRUCT *LIS_MATRIX;
 
@@ -871,6 +882,10 @@ extern "C"
 	extern LIS_INT lis_matrix_get_size(LIS_MATRIX A, LIS_INT *local_n, LIS_INT *global_n);
 	extern LIS_INT lis_matrix_get_range(LIS_MATRIX A, LIS_INT *is, LIS_INT *ie);
 	extern LIS_INT lis_matrix_get_nnz(LIS_MATRIX A, LIS_INT *nnz);
+	extern LIS_INT lis_matrix_set_user(LIS_MATRIX A, void *user_data,
+	                                   LIS_MATRIX_USER_MATVEC matvec,
+	                                   LIS_MATRIX_USER_MATVEC matvech);
+	extern LIS_INT lis_matrix_get_user_data(LIS_MATRIX A, void **user_data);
 	extern LIS_INT lis_matrix_set_type(LIS_MATRIX A, LIS_INT matrix_type);
 	extern LIS_INT lis_matrix_get_type(LIS_MATRIX A, LIS_INT *matrix_type);
 	extern LIS_INT lis_matrix_set_value(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);
