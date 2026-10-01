@@ -366,9 +366,10 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver)
 {
 	LIS_INT nsolver, precon_type;
 
-	if( A->matrix_type!=LIS_MATRIX_USER ) return LIS_SUCCESS;
+	if( A->matrix_type!=LIS_MATRIX_USER &&
+	    A->matrix_type!=LIS_MATRIX_OPERATOR ) return LIS_SUCCESS;
 
-	if( A->user_matvec==NULL )
+	if( A->matrix_type==LIS_MATRIX_USER && A->user_matvec==NULL )
 	{
 		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,"LIS_MATRIX_USER has no matvec callback\n");
 		return LIS_ERR_NOT_IMPLEMENTED;
@@ -376,25 +377,25 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver)
 	if( solver->options[LIS_OPTIONS_PRECISION]!=LIS_PRECISION_DEFAULT )
 	{
 		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-		           "LIS_MATRIX_USER currently supports default precision only\n");
+		           "matrix-free matrices currently support default precision only\n");
 		return LIS_ERR_NOT_IMPLEMENTED;
 	}
 	if( solver->options[LIS_OPTIONS_SCALE]!=LIS_SCALE_NONE )
 	{
 		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-		           "LIS internal matrix scaling requires explicit storage\n");
+		           "internal matrix scaling requires explicit storage\n");
 		return LIS_ERR_NOT_IMPLEMENTED;
 	}
 	if( solver->options[LIS_OPTIONS_STORAGE]!=0 )
 	{
 		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-		           "storage conversion is unavailable for LIS_MATRIX_USER\n");
+		           "storage conversion is unavailable for matrix-free matrices\n");
 		return LIS_ERR_NOT_IMPLEMENTED;
 	}
 	if( solver->options[LIS_OPTIONS_ADDS] )
 	{
 		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-		           "Additive Schwarz is outside the LIS_MATRIX_USER proof-of-concept scope\n");
+		           "Additive Schwarz requires explicit storage for matrix-free matrices\n");
 		return LIS_ERR_NOT_IMPLEMENTED;
 	}
 	if( solver->options[LIS_OPTIONS_USE_AT] )
@@ -419,7 +420,7 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver)
 	     nsolver==LIS_SOLVER_CRS ||
 	     nsolver==LIS_SOLVER_BICRSTAB ||
 	     nsolver==LIS_SOLVER_GPBICR ||
-	     nsolver==LIS_SOLVER_BICRSAFE) && A->user_matvech==NULL )
+	     nsolver==LIS_SOLVER_BICRSAFE) && A->matrix_type==LIS_MATRIX_USER && A->user_matvech==NULL )
 	{
 		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
 		           "selected solver requires the user transpose/Hermitian matvec callback\n");
@@ -851,7 +852,8 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	/* convert matrix */
 	solver->A  = AA;
 	solver->b  = bb;
-	if( AA->matrix_type!=LIS_MATRIX_USER )
+	if( AA->matrix_type!=LIS_MATRIX_USER &&
+	    AA->matrix_type!=LIS_MATRIX_OPERATOR )
 	{
 		err = lis_matrix_convert_self(solver);
 		if( err )
@@ -934,6 +936,10 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	  }	else if( AA->matrix_type==LIS_MATRIX_USER )
 	  {
 	    if( output ) lis_printf(comm,"matrix storage format : user/shell\n");
+	  }
+	  else if( AA->matrix_type==LIS_MATRIX_OPERATOR )
+	  {
+	    if( output ) lis_printf(comm,"matrix storage format : operator/shell\n");
 	  }
 	else
 	  {
