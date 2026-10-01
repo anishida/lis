@@ -2584,15 +2584,22 @@ An actual implementation can be seen in test problem test8f.F90.
 \newpage
 \subsection{User-Defined Shell Matrix and Matrix Operator}
 Starting from Version 2.1.13, Lis introduces \texttt{LIS\_MATRIX\_USER} and \texttt{LIS\_MATRIX\_OPERATOR} for matrix-free computations.
-
 \subsubsection{User-Defined Shell Matrix (\texttt{LIS\_MATRIX\_USER})}
-Allows applications to retain custom matrix formats and register callback functions for matrix-vector products ($A \times x$ and optional $A^H \times x$). MPI communication must be handled entirely within the user callback. Explicit conversion is unsupported and returns \texttt{LIS\_ERR\_NOT\_IMPLEMENTED}.
-
+This interface allows applications to retain custom matrix formats and register callback functions for matrix-vector products. To extract the diagonal elements of a user-defined matrix, the following function is provided to register an optional diagonal callback function:
+\noindent
+\texttt{LIS\_INT lis\_matrix\_set\_user\_diagonal(LIS\_MATRIX A, LIS\_INT (*callback)(LIS\_MATRIX A, LIS\_VECTOR d))}
+\begin{itemize}
+\item \texttt{A}: The target matrix defined as \texttt{LIS\_MATRIX\_USER}.
+\item \texttt{callback}: The user-defined function pointer that computes and stores the diagonal into vector \texttt{d}.
+\end{itemize}
 \subsubsection{Linear-Combination Matrix Operator (\texttt{LIS\_MATRIX\_OPERATOR})}
-Represents $C = \alpha A + \beta B$ without altering $A$ and $B$. Supports real, complex scalar, and long double precision across OpenMP and hybrid MPI. Hermitian multiplication automatically conjugates scalar coefficients ($C^H = \bar{\alpha} A^H + \bar{\beta} B^H$). Quadruple precision is unsupported.
+This operator represents the linear combination of two matrices $C = \alpha A + \beta B$ without altering the original matrices. For operator matrices, the diagonal is automatically evaluated recursively as follows:
+\[
+\mathrm{diag}(\alpha A + \beta B) = \alpha \cdot \mathrm{diag}(A) + \beta \cdot \mathrm{diag}(B)
+\]
+\subsection{Shifted Generalized Eigenvalue Solvers with Matrix Operators}
+For shifted generalized eigenvalue problems $(A - \sigma B)x = \lambda Bx$, Generalized Power Iteration (GPI), Generalized Inverse Iteration (GII), and Generalized Conjugate Residual (GCR) solvers now utilize \texttt{LIS\_MATRIX\_OPERATOR} to dynamically create a temporary operator for $A - \sigma B$. This ensures the original matrices remain pristine and enables full support for user-defined custom matrices (\texttt{LIS\_MATRIX\_USER}). Shifted \texttt{LIS\_MATRIX\_USER} remains unsupported for other methods like Lanczos.
 
-\subsubsection{Shifted Generalized Eigenvalue Solvers with Matrix Operators}
-For shifted generalized eigenvalue problems $(A - \sigma B)x = \lambda Bx$, Generalized Power Iteration (GPI) and Generalized Inverse Iteration (GII) utilize \texttt{LIS\_MATRIX\_OPERATOR} to dynamically create a temporary operator for $A - \sigma B$. This ensures original matrices remain pristine and enables full support for user-defined custom matrices (\texttt{LIS\_MATRIX\_USER}). Shifted \texttt{LIS\_MATRIX\_USER} remains unsupported for other methods like Lanczos.
 
 \newpage
 \subsection{Compiling and Linking}
