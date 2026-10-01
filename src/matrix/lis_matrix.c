@@ -440,6 +440,13 @@ LIS_INT lis_matrix_destroy(LIS_MATRIX Amat)
 
 	if( lis_is_malloc(Amat) )
 	{
+		if( Amat->operator_work )
+		{
+			lis_vector_destroy(Amat->operator_work);
+			Amat->operator_work = NULL;
+		}
+		Amat->operator_A = NULL;
+		Amat->operator_B = NULL;
 		if( !Amat->is_fallocated ) lis_matrix_storage_destroy(Amat);
 		lis_matrix_DLU_destroy(Amat);
 		lis_matrix_diag_destroy(Amat->WD);
@@ -872,6 +879,113 @@ LIS_INT lis_matrix_set_values(LIS_INT flag, LIS_INT n, LIS_SCALAR value[], LIS_M
 
   LIS_DEBUG_FUNC_OUT;
   return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_create_operator"
+LIS_INT lis_matrix_create_operator(LIS_SCALAR alpha, LIS_MATRIX A,
+                                   LIS_SCALAR beta, LIS_MATRIX B,
+                                   LIS_MATRIX *C)
+{
+	LIS_INT err, i;
+	LIS_MATRIX T;
+
+#ifdef USE_MPI
+	int mpi_err, comm_result;
+#endif
+
+	LIS_DEBUG_FUNC_IN;
+
+	if( C==NULL )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"operator output pointer is NULL\n");
+		return LIS_ERR_ILL_ARG;
+	}
+	*C = NULL;
+
+	err = lis_matrix_check(A,LIS_MATRIX_CHECK_ALL);
+	if( err ) return err;
+	err = lis_matrix_check(B,LIS_MATRIX_CHECK_ALL);
+	if( err ) return err;
+
+	if( A->gn!=B->gn || A->n!=B->n ||
+	    A->is!=B->is || A->ie!=B->ie ||
+	    A->nprocs!=B->nprocs )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,
+		           "operator matrices A and B use incompatible distributions\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	if( (A->ranges==NULL)!=(B->ranges==NULL) )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,
+		           "operator matrices A and B use incompatible ranges\n");
+		return LIS_ERR_ILL_ARG;
+	}
+	if( A->ranges!=NULL )
+	{
+		for(i=0;i<=A->nprocs;i++)
+		{
+			if( A->ranges[i]!=B->ranges[i] )
+			{
+				LIS_SETERR(LIS_ERR_ILL_ARG,
+				           "operator matrices A and B use different row partitions\n");
+				return LIS_ERR_ILL_ARG;
+			}
+		}
+	}
+
+#ifdef USE_MPI
+	mpi_err = MPI_Comm_compare(A->comm,B->comm,&comm_result);
+	if( mpi_err!=MPI_SUCCESS ||
+	    (comm_result!=MPI_IDENT && comm_result!=MPI_CONGRUENT) )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,
+		           "operator matrices A and B use incompatible communicators\n");
+		return LIS_ERR_ILL_ARG;
+	}
+#endif
+
+	T = NULL;
+	err = lis_matrix_create(A->comm,&T);
+	if( err ) return err;
+
+	err = lis_matrix_set_size(T,A->n,A->gn);
+	if( err )
+	{
+		lis_matrix_destroy(T);
+		return err;
+	}
+
+	/*
+	 * X is shared by the two nested matvecs. In MPI builds each operand may
+	 * require a different halo size, so the operator vector layout must be
+	 * large enough for both communication tables.
+	 */
+	T->np  = _max(A->np,B->np);
+	T->pad = _max(A->pad,B->pad);
+
+	T->origin         = A->origin;
+	T->matrix_type    = LIS_MATRIX_OPERATOR;
+	T->status         = LIS_MATRIX_OPERATOR;
+	T->operator_A     = A;
+	T->operator_B     = B;
+	T->operator_alpha = alpha;
+	T->operator_beta  = beta;
+
+	err = lis_vector_duplicate(T,&T->operator_work);
+	if( err )
+	{
+		lis_matrix_destroy(T);
+		return err;
+	}
+
+	*C = T;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
 }
 
 #undef __FUNC__

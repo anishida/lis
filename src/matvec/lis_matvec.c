@@ -59,6 +59,38 @@ LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 
 	LIS_DEBUG_FUNC_IN;
 
+	if( A->matrix_type==LIS_MATRIX_OPERATOR )
+	{
+		if( X->precision!=LIS_PRECISION_DEFAULT ||
+		    Y->precision!=LIS_PRECISION_DEFAULT )
+		{
+			LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+			           "LIS_MATRIX_OPERATOR does not support quad precision yet\n");
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
+		if( A->operator_A==NULL || A->operator_B==NULL ||
+		    A->operator_work==NULL )
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,
+			           "LIS_MATRIX_OPERATOR is not initialized\n");
+			return LIS_ERR_ILL_ARG;
+		}
+
+		err = lis_matvec(A->operator_A,X,A->operator_work);
+		if( err ) return err;
+		err = lis_matvec(A->operator_B,X,Y);
+		if( err ) return err;
+		err = lis_vector_scale(A->operator_alpha,A->operator_work);
+		if( err ) return err;
+		err = lis_vector_scale(A->operator_beta,Y);
+		if( err ) return err;
+		err = lis_vector_axpy((LIS_SCALAR)1.0,A->operator_work,Y);
+		if( err ) return err;
+
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
+
 	if( X->precision==LIS_PRECISION_DEFAULT )
 	{
 		x = X->value;
@@ -204,6 +236,39 @@ LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 	LIS_SCALAR *x,*y;
 
 	LIS_DEBUG_FUNC_IN;
+
+	if( A->matrix_type==LIS_MATRIX_OPERATOR )
+	{
+		if( X->precision!=LIS_PRECISION_DEFAULT ||
+		    Y->precision!=LIS_PRECISION_DEFAULT )
+		{
+			LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+			           "LIS_MATRIX_OPERATOR does not support quad precision yet\n");
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
+		if( A->operator_A==NULL || A->operator_B==NULL ||
+		    A->operator_work==NULL )
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,
+			           "LIS_MATRIX_OPERATOR is not initialized\n");
+			return LIS_ERR_ILL_ARG;
+		}
+
+		err = lis_matvech(A->operator_A,X,A->operator_work);
+		if( err ) return err;
+		err = lis_matvech(A->operator_B,X,Y);
+		if( err ) return err;
+		err = lis_vector_scale(conj(A->operator_alpha),A->operator_work);
+		if( err ) return err;
+		err = lis_vector_scale(conj(A->operator_beta),Y);
+		if( err ) return err;
+		err = lis_vector_axpy((LIS_SCALAR)1.0,A->operator_work,Y);
+		if( err ) return err;
+
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
+
 
 	x = X->value;
 	y = Y->value;

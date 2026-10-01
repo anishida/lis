@@ -276,6 +276,7 @@ extern "C" {
 #define LIS_MATRIX_CDIA 20
 #define LIS_MATRIX_MSC 21
 #define LIS_MATRIX_USER 22
+#define LIS_MATRIX_OPERATOR 23
 #define LIS_MATRIX_DECIDING_SIZE -(LIS_MATRIX_RCO+1)
 #define LIS_MATRIX_NULL -(LIS_MATRIX_RCO+2)
 
@@ -697,6 +698,13 @@ struct LIS_MATRIX_STRUCT
 	void *user_data;
 	LIS_MATRIX_USER_MATVEC user_matvec;
 	LIS_MATRIX_USER_MATVEC user_matvech;
+
+	/* Non-owning linear-combination operator: alpha*A + beta*B. */
+	struct LIS_MATRIX_STRUCT *operator_A;
+	struct LIS_MATRIX_STRUCT *operator_B;
+	LIS_SCALAR operator_alpha;
+	LIS_SCALAR operator_beta;
+	LIS_VECTOR operator_work;
 };
 typedef struct LIS_MATRIX_STRUCT *LIS_MATRIX;
 
@@ -886,6 +894,9 @@ extern "C"
 	                                   LIS_MATRIX_USER_MATVEC matvec,
 	                                   LIS_MATRIX_USER_MATVEC matvech);
 	extern LIS_INT lis_matrix_get_user_data(LIS_MATRIX A, void **user_data);
+	extern LIS_INT lis_matrix_create_operator(LIS_SCALAR alpha, LIS_MATRIX A,
+	                                          LIS_SCALAR beta, LIS_MATRIX B,
+	                                          LIS_MATRIX *C);
 	extern LIS_INT lis_matrix_set_type(LIS_MATRIX A, LIS_INT matrix_type);
 	extern LIS_INT lis_matrix_get_type(LIS_MATRIX A, LIS_INT *matrix_type);
 	extern LIS_INT lis_matrix_set_value(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);
