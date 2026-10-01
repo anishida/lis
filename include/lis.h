@@ -1022,6 +1022,7 @@ extern "C"
 	extern LIS_INT lis_precon_get_user_data(LIS_PRECON precon, void **user_data);
 	extern LIS_INT lis_precon_register(char *name, LIS_PRECON_CREATE_XXX pcreate, LIS_PSOLVE_XXX psolve, LIS_PSOLVEH_XXX psolveh);
 	extern LIS_INT lis_precon_register_ex(char *name, LIS_PRECON_CREATE_XXX pcreate, LIS_PSOLVE_XXX psolve, LIS_PSOLVEH_XXX psolveh, LIS_PRECON_DESTROY_XXX pdestroy);
+	extern LIS_INT lis_precon_register_psd(char *name, LIS_PRECON_PSD_CREATE_XXX psd_create, LIS_PRECON_PSD_UPDATE_XXX psd_update);
 	extern LIS_INT lis_precon_register_free(void);
 	extern LIS_INT lis_solver_get_solvername(LIS_INT solver, char *solvername);
 	extern LIS_INT lis_solver_get_preconname(LIS_INT precon_type, char *preconname);

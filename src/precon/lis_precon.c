@@ -93,6 +93,12 @@ LIS_PSOLVEH_XXX lis_psolveh_xxx[] = {
 };
 
 LIS_PRECON_REGISTER *precon_register_top = NULL;
+
+static LIS_PRECON_PSD_CREATE_XXX
+        precon_register_psd_create[LIS_PRECON_REGISTER_MAX] = {NULL};
+
+static LIS_PRECON_PSD_UPDATE_XXX
+        precon_register_psd_update[LIS_PRECON_REGISTER_MAX] = {NULL};
 LIS_INT	precon_register_type = LIS_PRECON_TYPE_USERDEF;
 
 #if defined(USE_SAAMG)
@@ -224,11 +230,32 @@ LIS_INT lis_precon_psd_create(LIS_SOLVER solver, LIS_PRECON *precon)
 	lis_precon_init(*precon);
 	(*precon)->precon_type = precon_type;
 
-	if( precon_type>=LIS_PRECON_TYPE_USERDEF )
-	{
-/*        err = precon_register_top[precon_type-LIS_PRECON_TYPE_USERDEF].pcreate(solver,*precon);*/
-        err = LIS_ERR_NOT_IMPLEMENTED;
-	}
+        if( precon_type>=LIS_PRECON_TYPE_USERDEF )
+        {
+                if( precon_register_top==NULL ||
+                    precon_type>=precon_register_type )
+                {
+                        err = LIS_ERR_ILL_ARG;
+                }
+                else
+                {
+                        (*precon)->user_destroy =
+                                precon_register_top[
+                                    precon_type-LIS_PRECON_TYPE_USERDEF].pdestroy;
+
+                        if( precon_register_psd_create[
+                                precon_type-LIS_PRECON_TYPE_USERDEF] )
+                        {
+                                err = precon_register_psd_create[
+                                        precon_type-LIS_PRECON_TYPE_USERDEF](
+                                                solver,*precon);
+                        }
+                        else
+                        {
+                                err = LIS_ERR_NOT_IMPLEMENTED;
+                        }
+                }
+        }
 	else if( precon_type && solver->options[LIS_OPTIONS_ADDS] )
 	{
 /*        err = lis_precon_create_adds(solver,*precon);*/
@@ -288,11 +315,25 @@ LIS_INT lis_precon_psd_update(LIS_SOLVER solver, LIS_PRECON precon)
 
     precon_type = precon->precon_type;
 
-	if( precon_type>=LIS_PRECON_TYPE_USERDEF )
-	{
-/*        err = precon_register_top[precon_type-LIS_PRECON_TYPE_USERDEF].pcreate(solver,*precon);*/
-        err = LIS_ERR_NOT_IMPLEMENTED;
-	}
+        if( precon_type>=LIS_PRECON_TYPE_USERDEF )
+        {
+                if( precon_register_top==NULL ||
+                    precon_type>=precon_register_type )
+                {
+                        err = LIS_ERR_ILL_ARG;
+                }
+                else if( precon_register_psd_update[
+                             precon_type-LIS_PRECON_TYPE_USERDEF] )
+                {
+                        err = precon_register_psd_update[
+                                precon_type-LIS_PRECON_TYPE_USERDEF](
+                                        solver,precon);
+                }
+                else
+                {
+                        err = LIS_ERR_NOT_IMPLEMENTED;
+                }
+        }
 	else if( precon_type && solver->options[LIS_OPTIONS_ADDS] )
 	{
 /*        err = lis_precon_create_adds(solver,*precon);*/
@@ -573,6 +614,10 @@ LIS_INT lis_precon_register(char *name, LIS_PRECON_CREATE_XXX pcreate,
 	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].psolve = psolve;
 	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].psolveh = psolveh;
 	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].pdestroy = NULL;
+        precon_register_psd_create[
+                precon_register_type-LIS_PRECON_TYPE_USERDEF] = NULL;
+        precon_register_psd_update[
+                precon_register_type-LIS_PRECON_TYPE_USERDEF] = NULL;
 	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].precon_type =
 		precon_register_type;
 	strncpy(precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].name,
@@ -602,6 +647,51 @@ LIS_INT lis_precon_register_ex(char *name, LIS_PRECON_CREATE_XXX pcreate,
 
     LIS_DEBUG_FUNC_OUT;
     return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_precon_register_psd"
+LIS_INT lis_precon_register_psd(char *name,
+                                LIS_PRECON_PSD_CREATE_XXX psd_create,
+                                LIS_PRECON_PSD_UPDATE_XXX psd_update)
+{
+        LIS_INT i;
+        LIS_INT nregister;
+
+        LIS_DEBUG_FUNC_IN;
+
+        if( name==NULL || psd_create==NULL || psd_update==NULL )
+        {
+                LIS_SETERR(LIS_ERR_ILL_ARG,
+                           "PSD registration requires name, psd_create and psd_update\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( precon_register_top==NULL )
+        {
+                LIS_SETERR(LIS_ERR_ILL_ARG,
+                           "registered preconditioner not found\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        nregister = precon_register_type-LIS_PRECON_TYPE_USERDEF;
+
+        for(i=0;i<nregister;i++)
+        {
+                if( strncmp(precon_register_top[i].name,
+                            name,LIS_PRECONNAME_MAX)==0 )
+                {
+                        precon_register_psd_create[i] = psd_create;
+                        precon_register_psd_update[i] = psd_update;
+
+                        LIS_DEBUG_FUNC_OUT;
+                        return LIS_SUCCESS;
+                }
+        }
+
+        LIS_SETERR(LIS_ERR_ILL_ARG,
+                   "registered preconditioner not found\n");
+        return LIS_ERR_ILL_ARG;
 }
 
 #undef __FUNC__
