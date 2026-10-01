@@ -748,6 +748,11 @@ struct LIS_PRECON_STRUCT
 	LIS_INT nprocs; /* saamg */
 	LIS_INT is_copy;
 	LIS_COMMTABLE commtable; /* saamg */
+
+	/* Application-owned state for registered user preconditioners. */
+	void *user_data;
+	/* USERDEF cleanup callback copied from the registry at create time. */
+	LIS_INT (*user_destroy)(struct LIS_PRECON_STRUCT *precon);
 };
 typedef struct LIS_PRECON_STRUCT *LIS_PRECON;
 
@@ -818,6 +823,7 @@ struct LIS_CONV_OPTIONS_STRUCT
 typedef struct LIS_CONV_OPTIONS_STRUCT LIS_CONV_OPTIONS;
 
 typedef LIS_INT (*LIS_PRECON_CREATE_XXX)(LIS_SOLVER solver, LIS_PRECON precon);
+typedef LIS_INT (*LIS_PRECON_DESTROY_XXX)(LIS_PRECON precon);
 /*NEH support for extended "solve_kernel" workflow*/
 typedef LIS_INT (*LIS_PRECON_PSD_CREATE_XXX)(LIS_SOLVER solver, LIS_PRECON precon);
 /*NEH support for extended "solve_kernel" workflow*/
@@ -832,6 +838,7 @@ typedef struct LIS_PRECON_REGISTER_STRUCT
 	LIS_PRECON_CREATE_XXX pcreate;
 	LIS_PSOLVE_XXX psolve;
 	LIS_PSOLVEH_XXX psolveh;
+	LIS_PRECON_DESTROY_XXX pdestroy;
 } LIS_PRECON_REGISTER;
 
 
@@ -1011,7 +1018,10 @@ extern "C"
 	extern LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver, LIS_PRECON precon);
 	extern LIS_PRECON_REGISTER *precon_register_top;
 	extern LIS_INT precon_register_type;
+	extern LIS_INT lis_precon_set_user_data(LIS_PRECON precon, void *user_data);
+	extern LIS_INT lis_precon_get_user_data(LIS_PRECON precon, void **user_data);
 	extern LIS_INT lis_precon_register(char *name, LIS_PRECON_CREATE_XXX pcreate, LIS_PSOLVE_XXX psolve, LIS_PSOLVEH_XXX psolveh);
+	extern LIS_INT lis_precon_register_ex(char *name, LIS_PRECON_CREATE_XXX pcreate, LIS_PSOLVE_XXX psolve, LIS_PSOLVEH_XXX psolveh, LIS_PRECON_DESTROY_XXX pdestroy);
 	extern LIS_INT lis_precon_register_free(void);
 	extern LIS_INT lis_solver_get_solvername(LIS_INT solver, char *solvername);
 	extern LIS_INT lis_solver_get_preconname(LIS_INT precon_type, char *preconname);
