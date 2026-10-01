@@ -368,7 +368,8 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	     (B!=NULL && B->matrix_type==LIS_MATRIX_USER)) &&
 	    (oshift!=0.0 || ishift!=0.0) &&
 	    !(B!=NULL &&
-	      (nesolver==LIS_ESOLVER_GPI || nesolver==LIS_ESOLVER_GII)) )
+	      (nesolver==LIS_ESOLVER_GPI || nesolver==LIS_ESOLVER_GII ||
+              nesolver==LIS_ESOLVER_GCR)) )
 	{
 		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
 		           "matrix shifts are unavailable for LIS_MATRIX_USER\n");

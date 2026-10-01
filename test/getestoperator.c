@@ -192,6 +192,12 @@ int main(int argc, char *argv[])
 	                 (LIS_SCALAR)4.0,"shifted GII");
 	fail |= inputs_unchanged(A,B,x,y);
 
+        /* Preserve the established shifted GCR result. */
+        fail |= run_case(A,B,x,
+                         "-e gcr -shift 1.0 -etol 1.0e-10 -emaxiter 1000",
+                         (LIS_SCALAR)5.0,"shifted GCR");
+        fail |= inputs_unchanged(A,B,x,y);
+
 #ifdef USE_MPI
 	{
 		int local_fail = fail, global_fail = 0;
@@ -201,7 +207,7 @@ int main(int argc, char *argv[])
 #endif
 
 	if( A->my_rank==0 )
-		printf("shifted USER GPI/GII %s\n",fail ? "FAILED" : "PASSED");
+		printf("shifted USER GPI/GII/GCR %s\n",fail ? "FAILED" : "PASSED");
 
 	lis_vector_destroy(y);
 	lis_vector_destroy(x);
