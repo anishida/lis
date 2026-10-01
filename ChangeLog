@@ -3,7 +3,8 @@ Version 2.1.13 September 30, 2026
   - Added generic user-defined shell matrix interface (thanks to Rafal Brzegowy).
   - Handled unsupported user matrix eigensolver paths (thanks to Rafal Brzegowy).
   - Added generic linear-combination matrix operator (thanks to Rafal Brzegowy).
-
+  - Use matrix operator for shifted generalized eigensolvers (thanks to Rafal Brzegowy).
+	
 Version 2.1.12 September 25, 2026
 
   - Fixed bugs in lis_matrix_g2l_csr(), where g2l_map was checked instead of l2g_map (thanks to Carlos Mendes).
