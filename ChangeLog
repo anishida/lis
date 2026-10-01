@@ -8,7 +8,7 @@ Version 2.1.12 September 25, 2026
 
 Version 2.1.11 March 11, 2026
 
-  - Fixed definition of f_clear_matrix_ptr (thanks to Rosset).
+  - Fixed definition of f_clear_matrix_ptr (thanks to Rosset@github).
 
 Version 2.1.10 April 18, 2025
 
@@ -142,11 +142,11 @@ Version 2.0.17  October 26, 2018
 
 Version 2.0.16  September 26, 2018
 
-  - Disabled option '-f quad' when quad precision is not enabled (thanks to Konstantin).
+  - Disabled option '-f quad' when quad precision is not enabled (thanks to Konstantin@github).
 
 Version 2.0.15  September 20, 2018
 
-  - Updated copyright notice (thanks to Konstantin).
+  - Updated copyright notice (thanks to Konstantin@github).
 
 Version 2.0.14  July 11, 2018
 
