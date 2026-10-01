@@ -2412,6 +2412,19 @@ A =
 \end{itembox}
 
 \newpage
+\subsection{ユーザ定義シェル行列と行列演算子}
+バージョン 2.1.13 より、Lis はマトリックスフリー計算をサポートするため、新たに \texttt{LIS\_MATRIX\_USER} および \texttt{LIS\_MATRIX\_OPERATOR} を導入した。
+
+\subsubsection{ユーザ定義シェル行列 (\texttt{LIS\_MATRIX\_USER})}
+アプリケーション独自の行列データ構造を保持したまま、行列ベクトル積（$A \times x$ およびオプションで $A^H \times x$）のコールバック関数を登録することが可能である。MPI 環境における並列通信は、すべてユーザ側でコールバック関数内に実装する必要がある。なお、明示的なストレージ形式の変換はサポートされておらず、実行した場合は \texttt{LIS\_ERR\_NOT\_IMPLEMENTED} が返される。
+
+\subsubsection{線形結合行列演算子 (\texttt{LIS\_MATRIX\_OPERATOR})}
+元の行列 $A$ および $B$ の値を変更することなく、線形結合 $C = \alpha A + \beta B$ を仮想的に表す演算子である。実数、複素数、および \texttt{long double} 精度をサポートしており、OpenMP および MPI ハイブリッド並列環境に対応している。エルミート積の計算では、スカラ係数は自動的に複素共役となる（$C^H = \bar{\alpha} A^H + \bar{\beta} B^H$）。なお、4倍精度はサポートされていない。
+
+\subsection{行列演算子を用いたシフト付き一般化固有値ソルバ}
+シフト付き一般化固有値問題 $(A - \sigma B)x = \lambda Bx$ に対して、一般化べき乗法（GPI）および一般化逆べき乗法（GII）は、\texttt{LIS\_MATRIX\_OPERATOR} を利用して $A - \sigma B$ に対する一時的な演算子を動的に生成する。これは元の行列が元の状態のまま残ることを保証し、ユーザ定義のカスタム行列（\texttt{LIS\_MATRIX\_USER}）に対する完全なサポートを可能にする。シフト付き \texttt{LIS\_MATRIX\_USER} は、Lanczos 法のような他の手法に対しては依然として非対応のままである。
+
+\newpage
 \subsection{実行ファイルの生成}
 \verb|test4.c|から実行ファイルを生成する方法について述べる. 
 ディレクトリ\verb|lis-($VERSION)/test|にある検証プログラム
