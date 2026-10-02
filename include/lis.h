@@ -571,6 +571,9 @@ typedef LIS_INT (*LIS_MATRIX_USER_MATVEC)(void *user_data,
                                           const LIS_SCALAR *x,
                                           LIS_SCALAR *y);
 
+typedef LIS_INT (*LIS_MATRIX_USER_GET_DIAGONAL)(void *user_data,
+                                                LIS_SCALAR *d);
+
 #define LIS_MATRIX_OPTION_LEN 10
 
 struct LIS_MATRIX_CORE_STRUCT
@@ -698,6 +701,7 @@ struct LIS_MATRIX_STRUCT
 	void *user_data;
 	LIS_MATRIX_USER_MATVEC user_matvec;
 	LIS_MATRIX_USER_MATVEC user_matvech;
+	LIS_MATRIX_USER_GET_DIAGONAL user_get_diagonal;
 
 	/* Non-owning linear-combination operator: alpha*A + beta*B. */
 	struct LIS_MATRIX_STRUCT *operator_A;
@@ -893,6 +897,9 @@ extern "C"
 	extern LIS_INT lis_matrix_set_user(LIS_MATRIX A, void *user_data,
 	                                   LIS_MATRIX_USER_MATVEC matvec,
 	                                   LIS_MATRIX_USER_MATVEC matvech);
+	extern LIS_INT lis_matrix_set_user_diagonal(
+	                                   LIS_MATRIX A,
+	                                   LIS_MATRIX_USER_GET_DIAGONAL get_diagonal);
 	extern LIS_INT lis_matrix_get_user_data(LIS_MATRIX A, void **user_data);
 	extern LIS_INT lis_matrix_create_operator(LIS_SCALAR alpha, LIS_MATRIX A,
 	                                          LIS_SCALAR beta, LIS_MATRIX B,

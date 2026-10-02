@@ -727,6 +727,7 @@ LIS_INT lis_matrix_psd_reset_scale(LIS_MATRIX A)
 #define __FUNC__ "lis_matrix_get_diagonal"
 LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR D)
 {
+	LIS_INT err;
 	LIS_SCALAR *d;
 
 	LIS_DEBUG_FUNC_IN;
@@ -767,6 +768,44 @@ LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR D)
 	case LIS_MATRIX_VBR:
 		lis_matrix_get_diagonal_vbr(A, d);
 		break;
+	case LIS_MATRIX_USER:
+	        if( A->user_get_diagonal==NULL )
+	        {
+	                LIS_SETERR_IMP;
+	                return LIS_ERR_NOT_IMPLEMENTED;
+	        }
+	        err = A->user_get_diagonal(A->user_data,d);
+	        if( err ) return err;
+	        break;
+
+	case LIS_MATRIX_OPERATOR:
+	        if( A->operator_A==NULL || A->operator_B==NULL ||
+	            A->operator_work==NULL )
+	        {
+	                LIS_SETERR(LIS_ERR_ILL_ARG,
+	                           "matrix operator is not initialized\n");
+	                return LIS_ERR_ILL_ARG;
+	        }
+
+	        err = lis_matrix_get_diagonal(
+	                A->operator_A,A->operator_work);
+	        if( err ) return err;
+
+	        err = lis_matrix_get_diagonal(A->operator_B,D);
+	        if( err ) return err;
+
+	        err = lis_vector_scale(
+	                A->operator_alpha,A->operator_work);
+	        if( err ) return err;
+
+	        err = lis_vector_scale(A->operator_beta,D);
+	        if( err ) return err;
+
+	        err = lis_vector_axpy(
+	                (LIS_SCALAR)1.0,A->operator_work,D);
+	        if( err ) return err;
+	        break;
+
 	default:
 		LIS_SETERR_IMP;
 		return LIS_ERR_NOT_IMPLEMENTED;
