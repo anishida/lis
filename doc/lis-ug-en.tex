@@ -2597,7 +2597,7 @@ This operator represents the linear combination of two matrices $C = \alpha A + 
 \[
 \mathrm{diag}(\alpha A + \beta B) = \alpha \cdot \mathrm{diag}(A) + \beta \cdot \mathrm{diag}(B)
 \]
-\subsection{Shifted Generalized Eigenvalue Solvers with Matrix Operators}
+\subsubsection{Shifted Generalized Eigenvalue Solvers with Matrix Operators}
 For shifted generalized eigenvalue problems $(A - \sigma B)x = \lambda Bx$, Generalized Power Iteration (GPI), Generalized Inverse Iteration (GII), and Generalized Conjugate Residual (GCR) solvers now utilize \texttt{LIS\_MATRIX\_OPERATOR} to dynamically create a temporary operator for $A - \sigma B$. This ensures the original matrices remain pristine and enables full support for user-defined custom matrices (\texttt{LIS\_MATRIX\_USER}). Shifted \texttt{LIS\_MATRIX\_USER} remains unsupported for other methods like Lanczos.
 
 
