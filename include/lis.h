@@ -33,7 +33,7 @@ extern "C" {
 #endif
 
 /**************************************/
-#define LIS_VERSION	"2.1.11"
+#define LIS_VERSION	"2.1.13"
 /**************************************/
 #include <stdio.h>
 #ifdef USE_COMPLEX
@@ -276,6 +276,8 @@ extern "C" {
 #define LIS_MATRIX_LBSR 19
 #define LIS_MATRIX_CDIA 20
 #define LIS_MATRIX_MSC 21
+#define LIS_MATRIX_USER 22
+#define LIS_MATRIX_OPERATOR 23
 #define LIS_MATRIX_DECIDING_SIZE -(LIS_MATRIX_RCO+1)
 #define LIS_MATRIX_NULL -(LIS_MATRIX_RCO+2)
 
@@ -565,6 +567,14 @@ struct LIS_VECTOR_S_STRUCT
 };
 typedef struct LIS_VECTOR_S_STRUCT *LIS_VECTOR_S;
 
+/* Generic application-owned shell/user matrix callback. */
+typedef LIS_INT (*LIS_MATRIX_USER_MATVEC)(void *user_data,
+                                          const LIS_SCALAR *x,
+                                          LIS_SCALAR *y);
+
+typedef LIS_INT (*LIS_MATRIX_USER_GET_DIAGONAL)(void *user_data,
+                                                LIS_SCALAR *d);
+
 #define LIS_MATRIX_OPTION_LEN 10
 
 struct LIS_MATRIX_CORE_STRUCT
@@ -687,6 +697,19 @@ struct LIS_MATRIX_STRUCT
 
 	LIS_INT *l2g_map;
 	LIS_COMMTABLE commtable;
+
+	/* Application-owned shell matrix state. LIS never frees user_data. */
+	void *user_data;
+	LIS_MATRIX_USER_MATVEC user_matvec;
+	LIS_MATRIX_USER_MATVEC user_matvech;
+	LIS_MATRIX_USER_GET_DIAGONAL user_get_diagonal;
+
+	/* Non-owning linear-combination operator: alpha*A + beta*B. */
+	struct LIS_MATRIX_STRUCT *operator_A;
+	struct LIS_MATRIX_STRUCT *operator_B;
+	LIS_SCALAR operator_alpha;
+	LIS_SCALAR operator_beta;
+	LIS_VECTOR operator_work;
 };
 typedef struct LIS_MATRIX_STRUCT *LIS_MATRIX;
 
@@ -726,6 +749,11 @@ struct LIS_PRECON_STRUCT
 	LIS_INT nprocs; /* saamg */
 	LIS_INT is_copy;
 	LIS_COMMTABLE commtable; /* saamg */
+
+	/* Application-owned state for registered user preconditioners. */
+	void *user_data;
+	/* USERDEF cleanup callback copied from the registry at create time. */
+	LIS_INT (*user_destroy)(struct LIS_PRECON_STRUCT *precon);
 };
 typedef struct LIS_PRECON_STRUCT *LIS_PRECON;
 
@@ -796,6 +824,7 @@ struct LIS_CONV_OPTIONS_STRUCT
 typedef struct LIS_CONV_OPTIONS_STRUCT LIS_CONV_OPTIONS;
 
 typedef LIS_INT (*LIS_PRECON_CREATE_XXX)(LIS_SOLVER solver, LIS_PRECON precon);
+typedef LIS_INT (*LIS_PRECON_DESTROY_XXX)(LIS_PRECON precon);
 /*NEH support for extended "solve_kernel" workflow*/
 typedef LIS_INT (*LIS_PRECON_PSD_CREATE_XXX)(LIS_SOLVER solver, LIS_PRECON precon);
 /*NEH support for extended "solve_kernel" workflow*/
@@ -810,6 +839,7 @@ typedef struct LIS_PRECON_REGISTER_STRUCT
 	LIS_PRECON_CREATE_XXX pcreate;
 	LIS_PSOLVE_XXX psolve;
 	LIS_PSOLVEH_XXX psolveh;
+	LIS_PRECON_DESTROY_XXX pdestroy;
 } LIS_PRECON_REGISTER;
 
 
@@ -872,6 +902,16 @@ extern "C"
 	extern LIS_INT lis_matrix_get_size(LIS_MATRIX A, LIS_INT *local_n, LIS_INT *global_n);
 	extern LIS_INT lis_matrix_get_range(LIS_MATRIX A, LIS_INT *is, LIS_INT *ie);
 	extern LIS_INT lis_matrix_get_nnz(LIS_MATRIX A, LIS_INT *nnz);
+	extern LIS_INT lis_matrix_set_user(LIS_MATRIX A, void *user_data,
+	                                   LIS_MATRIX_USER_MATVEC matvec,
+	                                   LIS_MATRIX_USER_MATVEC matvech);
+	extern LIS_INT lis_matrix_set_user_diagonal(
+	                                   LIS_MATRIX A,
+	                                   LIS_MATRIX_USER_GET_DIAGONAL get_diagonal);
+	extern LIS_INT lis_matrix_get_user_data(LIS_MATRIX A, void **user_data);
+	extern LIS_INT lis_matrix_create_operator(LIS_SCALAR alpha, LIS_MATRIX A,
+	                                          LIS_SCALAR beta, LIS_MATRIX B,
+	                                          LIS_MATRIX *C);
 	extern LIS_INT lis_matrix_set_type(LIS_MATRIX A, LIS_INT matrix_type);
 	extern LIS_INT lis_matrix_get_type(LIS_MATRIX A, LIS_INT *matrix_type);
 	extern LIS_INT lis_matrix_set_value(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);
@@ -979,7 +1019,10 @@ extern "C"
 	extern LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver, LIS_PRECON precon);
 	extern LIS_PRECON_REGISTER *precon_register_top;
 	extern LIS_INT precon_register_type;
+	extern LIS_INT lis_precon_set_user_data(LIS_PRECON precon, void *user_data);
+	extern LIS_INT lis_precon_get_user_data(LIS_PRECON precon, void **user_data);
 	extern LIS_INT lis_precon_register(char *name, LIS_PRECON_CREATE_XXX pcreate, LIS_PSOLVE_XXX psolve, LIS_PSOLVEH_XXX psolveh);
+	extern LIS_INT lis_precon_register_ex(char *name, LIS_PRECON_CREATE_XXX pcreate, LIS_PSOLVE_XXX psolve, LIS_PSOLVEH_XXX psolveh, LIS_PRECON_DESTROY_XXX pdestroy);
 	extern LIS_INT lis_precon_register_free(void);
 	extern LIS_INT lis_solver_get_solvername(LIS_INT solver, char *solvername);
 	extern LIS_INT lis_solver_get_preconname(LIS_INT precon_type, char *preconname);

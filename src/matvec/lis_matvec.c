@@ -54,9 +54,42 @@ LIS_MATVEC_FUNC LIS_MATVECH = lis_matvech;
 #define __FUNC__ "lis_matvec"
 LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 {
+	LIS_INT err;
 	LIS_SCALAR *x,*y;
 
 	LIS_DEBUG_FUNC_IN;
+
+	if( A->matrix_type==LIS_MATRIX_OPERATOR )
+	{
+		if( X->precision!=LIS_PRECISION_DEFAULT ||
+		    Y->precision!=LIS_PRECISION_DEFAULT )
+		{
+			LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+			           "LIS_MATRIX_OPERATOR does not support quad precision yet\n");
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
+		if( A->operator_A==NULL || A->operator_B==NULL ||
+		    A->operator_work==NULL )
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,
+			           "LIS_MATRIX_OPERATOR is not initialized\n");
+			return LIS_ERR_ILL_ARG;
+		}
+
+		err = lis_matvec(A->operator_A,X,A->operator_work);
+		if( err ) return err;
+		err = lis_matvec(A->operator_B,X,Y);
+		if( err ) return err;
+		err = lis_vector_scale(A->operator_alpha,A->operator_work);
+		if( err ) return err;
+		err = lis_vector_scale(A->operator_beta,Y);
+		if( err ) return err;
+		err = lis_vector_axpy((LIS_SCALAR)1.0,A->operator_work,Y);
+		if( err ) return err;
+
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
 
 	if( X->precision==LIS_PRECISION_DEFAULT )
 	{
@@ -142,6 +175,15 @@ LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			#endif
 			lis_matvec_coo(A, x, y);
 			break;
+		case LIS_MATRIX_USER:
+			if( A->user_matvec==NULL )
+			{
+				LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,"user matvec callback is not set\n");
+				return LIS_ERR_NOT_IMPLEMENTED;
+			}
+			err = A->user_matvec(A->user_data,x,y);
+			if( err ) return err;
+			break;
 		default:
 			LIS_SETERR_IMP;
 			return LIS_ERR_NOT_IMPLEMENTED;
@@ -190,9 +232,43 @@ LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 #define __FUNC__ "lis_matvech"
 LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 {
+	LIS_INT err;
 	LIS_SCALAR *x,*y;
 
 	LIS_DEBUG_FUNC_IN;
+
+	if( A->matrix_type==LIS_MATRIX_OPERATOR )
+	{
+		if( X->precision!=LIS_PRECISION_DEFAULT ||
+		    Y->precision!=LIS_PRECISION_DEFAULT )
+		{
+			LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+			           "LIS_MATRIX_OPERATOR does not support quad precision yet\n");
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
+		if( A->operator_A==NULL || A->operator_B==NULL ||
+		    A->operator_work==NULL )
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,
+			           "LIS_MATRIX_OPERATOR is not initialized\n");
+			return LIS_ERR_ILL_ARG;
+		}
+
+		err = lis_matvech(A->operator_A,X,A->operator_work);
+		if( err ) return err;
+		err = lis_matvech(A->operator_B,X,Y);
+		if( err ) return err;
+		err = lis_vector_scale(conj(A->operator_alpha),A->operator_work);
+		if( err ) return err;
+		err = lis_vector_scale(conj(A->operator_beta),Y);
+		if( err ) return err;
+		err = lis_vector_axpy((LIS_SCALAR)1.0,A->operator_work,Y);
+		if( err ) return err;
+
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
+
 
 	x = X->value;
 	y = Y->value;
@@ -299,6 +375,16 @@ LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			#ifdef USE_MPI
 				LIS_MATVEC_REDUCE;
 			#endif
+			break;
+		case LIS_MATRIX_USER:
+			if( A->user_matvech==NULL )
+			{
+				LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+				           "user transpose/Hermitian matvec callback is not set\n");
+				return LIS_ERR_NOT_IMPLEMENTED;
+			}
+			err = A->user_matvech(A->user_data,x,y);
+			if( err ) return err;
 			break;
 		default:
 			LIS_SETERR_IMP;

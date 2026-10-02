@@ -1064,7 +1064,7 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
 {
   LIS_Comm comm;  
   LIS_INT err;
-  LIS_MATRIX A,B;
+  LIS_MATRIX A,B,Aop;
   LIS_VECTOR x;
   LIS_SCALAR lambda;
   LIS_INT emaxiter;
@@ -1088,6 +1088,7 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   A = esolver->A;
   B = esolver->B;  
   x = esolver->x;
+  Aop = NULL;
   if (esolver->options[LIS_EOPTIONS_INITGUESS_ONES] ) 
     {
       lis_vector_set_all(1.0,x);
@@ -1104,7 +1105,13 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   ishift = esolver->ishift;
 
   if ( esolver->ishift != 0.0 ) oshift = ishift;
-  if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, oshift);
+  if ( oshift != 0.0 )
+    {
+      err = lis_matrix_create_operator(1.0, esolver->A,
+                                       -oshift, B, &Aop);
+      if( err ) return err;
+      A = Aop;
+    }
 
   if( output )
     {
@@ -1135,7 +1142,11 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
   err = lis_solver_set_optionC(solver);
-  CHKERR(err);
+  if( err )
+    {
+      if( Aop ) lis_matrix_destroy(Aop);
+      CHKERR(err);
+    }
   lis_solver_get_solver(solver, &nsol);
   lis_solver_get_precon(solver, &precon_type);
   lis_solver_get_solvername(nsol, solvername);
@@ -1156,6 +1167,7 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
     {
       lis_solver_work_destroy(solver);
       solver->retcode = err;
+      if( Aop ) lis_matrix_destroy(Aop);
       return err;
     }
   solver->precon = precon;
@@ -1256,7 +1268,7 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   esolver->p_c_time = solver->p_c_time;
   esolver->p_i_time = solver->p_i_time;
 
-  if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, -oshift);
+  if( Aop ) lis_matrix_destroy(Aop);
 
   if (resid<tol) 
     {

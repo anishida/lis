@@ -305,7 +305,7 @@ LIS_INT lis_egpi_malloc_work(LIS_ESOLVER esolver)
 LIS_INT lis_egpi(LIS_ESOLVER esolver)
 {
   LIS_Comm comm;
-  LIS_MATRIX A,B;
+  LIS_MATRIX A,B,Aop;
   LIS_VECTOR w,v,y,q;
   LIS_SCALAR eta,theta;
   LIS_INT emaxiter;
@@ -334,8 +334,9 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
   oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN];
 #endif	
   
+  Aop = NULL;
   A = esolver->A;
-  B = esolver->B;  
+  B = esolver->B;
   v = esolver->x;
   if (esolver->options[LIS_EOPTIONS_INITGUESS_ONES] ) 
     {
@@ -346,7 +347,6 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
   q = esolver->work[2];
 
   if ( esolver->ishift != 0.0 ) oshift = esolver->ishift;
-  if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, oshift);
 
   if( output )
     {
@@ -365,6 +365,17 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
   lis_solver_get_precon(solver, &precon_type);
   lis_solver_get_solvername(nsol, solvername);
   lis_solver_get_preconname(precon_type, preconname);
+
+  if( oshift != 0.0 )
+    {
+      err = lis_matrix_create_operator(1.0, esolver->A, -oshift, B, &Aop);
+      if( err )
+        {
+          lis_solver_destroy(solver);
+          return err;
+        }
+      A = Aop;
+    }
   if( output )
     {
       lis_printf(comm,"linear solver         : %s\n", solvername);
@@ -378,6 +389,8 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
     {
       lis_solver_work_destroy(solver);
       solver->retcode = err;
+      lis_solver_destroy(solver);
+      if( Aop ) lis_matrix_destroy(Aop);
       return err;
     }
 
@@ -402,11 +415,14 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
       /* y = B^-1 * w */
       err = lis_solve_kernel(B, w, y, solver, precon);
       if( err )
-	{
-	  lis_solver_work_destroy(solver);	  
-	  solver->retcode = err;
-	  return err;
-	}
+        {
+          lis_solver_work_destroy(solver);
+          solver->retcode = err;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if( Aop ) lis_matrix_destroy(Aop);
+          return err;
+        }
       lis_solver_get_iter(solver, &iter2);
 
       /* theta = <w,y> */
@@ -441,9 +457,9 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
 	  esolver->evalue[0]  = theta + oshift;
 	  lis_vector_nrm2(v, &nrm2);
 	  lis_vector_scale(1.0/nrm2, v);
-	  if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, -oshift);	  
 	  lis_precon_destroy(precon);
-	  lis_solver_destroy(solver); 
+	  lis_solver_destroy(solver);
+	  if( Aop ) lis_matrix_destroy(Aop);
 	  LIS_DEBUG_FUNC_OUT;
 	  return LIS_SUCCESS;
 	}
@@ -457,8 +473,8 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
   esolver->evalue[0] = theta + oshift;
   lis_vector_nrm2(v, &nrm2);
   lis_vector_scale(1.0/nrm2, v);
-  if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, -oshift);  
-  lis_solver_destroy(solver); 
+  lis_solver_destroy(solver);
+  if( Aop ) lis_matrix_destroy(Aop);
   LIS_DEBUG_FUNC_OUT;
   return LIS_MAXITER;
 }

@@ -77,7 +77,9 @@ LIS_INT lis_precon_create_jacobi(LIS_SOLVER solver, LIS_PRECON precon)
 		return err;
 	}
 
-	lis_matrix_get_diagonal(solver->A, precon->D);
+	err = lis_matrix_get_diagonal(solver->A, precon->D);
+	if( err ) return err;
+
 	lis_vector_reciprocal(precon->D);
 
 	LIS_DEBUG_FUNC_OUT;

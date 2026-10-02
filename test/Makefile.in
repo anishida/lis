@@ -57,13 +57,14 @@ target_triplet = @target@
 test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	etest4$(EXEEXT) etest5$(EXEEXT) etest5b$(EXEEXT) \
 	etest6$(EXEEXT) etest7$(EXEEXT) getest1$(EXEEXT) \
-	getest5$(EXEEXT) getest5b$(EXEEXT) spmvtest1$(EXEEXT) \
+	getest5$(EXEEXT) getest5b$(EXEEXT) getestuser$(EXEEXT) \
+	spmvtest1$(EXEEXT) \
 	spmvtest2$(EXEEXT) spmvtest2b$(EXEEXT) spmvtest3$(EXEEXT) \
 	spmvtest3b$(EXEEXT) spmvtest4$(EXEEXT) spmvtest5$(EXEEXT) \
 	test1$(EXEEXT) test2$(EXEEXT) test2b$(EXEEXT) test3$(EXEEXT) \
 	test3b$(EXEEXT) test3c$(EXEEXT) test4$(EXEEXT) test5$(EXEEXT) \
-	test6$(EXEEXT) test7$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
-	$(am__EXEEXT_3)
+	test6$(EXEEXT) test7$(EXEEXT) testuser$(EXEEXT) \
+	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
 @ENABLE_FORTRAN_TRUE@am__append_1 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_2 = test2f test6f 
 @ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__append_3 = test8f
@@ -169,6 +170,10 @@ am_getest5b_OBJECTS = getest5b.$(OBJEXT)
 getest5b_OBJECTS = $(am_getest5b_OBJECTS)
 getest5b_LDADD = $(LDADD)
 getest5b_DEPENDENCIES =
+am_getestuser_OBJECTS = getestuser.$(OBJEXT)
+getestuser_OBJECTS = $(am_getestuser_OBJECTS)
+getestuser_LDADD = $(LDADD)
+getestuser_DEPENDENCIES =
 am_hpcg_kernel_OBJECTS = test3b.$(OBJEXT)
 hpcg_kernel_OBJECTS = $(am_hpcg_kernel_OBJECTS)
 hpcg_kernel_LDADD = $(LDADD)
@@ -279,6 +284,10 @@ am__test8f_SOURCES_DIST = test8f.F90
 test8f_OBJECTS = $(am_test8f_OBJECTS)
 test8f_LDADD = $(LDADD)
 test8f_DEPENDENCIES =
+am_testuser_OBJECTS = testuser.$(OBJEXT)
+testuser_OBJECTS = $(am_testuser_OBJECTS)
+testuser_LDADD = $(LDADD)
+testuser_DEPENDENCIES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -327,7 +336,8 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(etest4_SOURCES) $(etest4f_SOURCES) $(etest5_SOURCES) \
 	$(etest5b_SOURCES) $(etest6_SOURCES) $(etest7_SOURCES) \
 	$(gesolve_SOURCES) $(gesolver_SOURCES) $(getest1_SOURCES) \
-	$(getest5_SOURCES) $(getest5b_SOURCES) $(hpcg_kernel_SOURCES) \
+	$(getest5_SOURCES) $(getest5b_SOURCES) $(getestuser_SOURCES) \
+	$(hpcg_kernel_SOURCES) \
 	$(hpcg_spmvtest_SOURCES) $(lsolve_SOURCES) \
 	$(spmvtest1_SOURCES) $(spmvtest2_SOURCES) \
 	$(spmvtest2b_SOURCES) $(spmvtest3_SOURCES) \
@@ -337,14 +347,15 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(test3_SOURCES) $(test3b_SOURCES) $(test3c_SOURCES) \
 	$(test4_SOURCES) $(test4f_SOURCES) $(test5_SOURCES) \
 	$(test6_SOURCES) $(test6f_SOURCES) $(test7_SOURCES) \
-	$(test7f_SOURCES) $(test8f_SOURCES)
+	$(test7f_SOURCES) $(test8f_SOURCES) $(testuser_SOURCES)
 DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
 	$(etest3_SOURCES) $(etest4_SOURCES) \
 	$(am__etest4f_SOURCES_DIST) $(etest5_SOURCES) \
 	$(etest5b_SOURCES) $(etest6_SOURCES) $(etest7_SOURCES) \
 	$(gesolve_SOURCES) $(gesolver_SOURCES) $(getest1_SOURCES) \
-	$(getest5_SOURCES) $(getest5b_SOURCES) $(hpcg_kernel_SOURCES) \
+	$(getest5_SOURCES) $(getest5b_SOURCES) $(getestuser_SOURCES) \
+	$(hpcg_kernel_SOURCES) \
 	$(hpcg_spmvtest_SOURCES) $(lsolve_SOURCES) \
 	$(spmvtest1_SOURCES) $(spmvtest2_SOURCES) \
 	$(spmvtest2b_SOURCES) $(spmvtest3_SOURCES) \
@@ -355,7 +366,7 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(test3c_SOURCES) $(test4_SOURCES) $(am__test4f_SOURCES_DIST) \
 	$(test5_SOURCES) $(test6_SOURCES) $(am__test6f_SOURCES_DIST) \
 	$(test7_SOURCES) $(am__test7f_SOURCES_DIST) \
-	$(am__test8f_SOURCES_DIST)
+	$(am__test8f_SOURCES_DIST) $(testuser_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -533,6 +544,7 @@ etest7_SOURCES = etest7.c
 getest1_SOURCES = getest1.c
 getest5_SOURCES = getest5.c
 getest5b_SOURCES = getest5b.c
+getestuser_SOURCES = getestuser.c
 spmvtest1_SOURCES = spmvtest1.c
 spmvtest2_SOURCES = spmvtest2.c
 spmvtest2b_SOURCES = spmvtest2b.c
@@ -550,6 +562,7 @@ test4_SOURCES = test4.c
 test5_SOURCES = test5.c
 test6_SOURCES = test6.c
 test7_SOURCES = test7.c
+testuser_SOURCES = testuser.c
 @ENABLE_FORTRAN_TRUE@etest1f_SOURCES = etest1f.F
 @ENABLE_FORTRAN_TRUE@etest4f_SOURCES = etest4f.F
 @ENABLE_FORTRAN_TRUE@test1f_SOURCES = test1f.F
@@ -782,6 +795,9 @@ getest5$(EXEEXT): $(getest5_OBJECTS) $(getest5_DEPENDENCIES) $(EXTRA_getest5_DEP
 getest5b$(EXEEXT): $(getest5b_OBJECTS) $(getest5b_DEPENDENCIES) $(EXTRA_getest5b_DEPENDENCIES) 
 	@rm -f getest5b$(EXEEXT)
 	$(LINK) $(getest5b_OBJECTS) $(getest5b_LDADD) $(LIBS)
+getestuser$(EXEEXT): $(getestuser_OBJECTS) $(getestuser_DEPENDENCIES) $(EXTRA_getestuser_DEPENDENCIES)
+	@rm -f getestuser$(EXEEXT)
+	$(LINK) $(getestuser_OBJECTS) $(getestuser_LDADD) $(LIBS)
 hpcg_kernel$(EXEEXT): $(hpcg_kernel_OBJECTS) $(hpcg_kernel_DEPENDENCIES) $(EXTRA_hpcg_kernel_DEPENDENCIES) 
 	@rm -f hpcg_kernel$(EXEEXT)
 	$(LINK) $(hpcg_kernel_OBJECTS) $(hpcg_kernel_LDADD) $(LIBS)
@@ -860,6 +876,9 @@ test7f$(EXEEXT): $(test7f_OBJECTS) $(test7f_DEPENDENCIES) $(EXTRA_test7f_DEPENDE
 test8f$(EXEEXT): $(test8f_OBJECTS) $(test8f_DEPENDENCIES) $(EXTRA_test8f_DEPENDENCIES) 
 	@rm -f test8f$(EXEEXT)
 	$(FCLINK) $(test8f_OBJECTS) $(test8f_LDADD) $(LIBS)
+testuser$(EXEEXT): $(testuser_OBJECTS) $(testuser_DEPENDENCIES) $(EXTRA_testuser_DEPENDENCIES) 
+	@rm -f testuser$(EXEEXT)
+	$(LINK) $(testuser_OBJECTS) $(testuser_LDADD) $(LIBS)
 install-testSCRIPTS: $(test_SCRIPTS)
 	@$(NORMAL_INSTALL)
 	@list='$(test_SCRIPTS)'; test -n "$(testdir)" || list=; \
@@ -913,6 +932,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getest1.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getest5.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getest5b.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getestuser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spmvtest1.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spmvtest2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spmvtest2b.Po@am__quote@
@@ -930,6 +950,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test5.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test6.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test7.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuser.Po@am__quote@
 
 .F.o:
 	$(PPF77COMPILE) -c -o $@ $<
