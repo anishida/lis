@@ -11,7 +11,7 @@ test_DATA = testmat.mtx testmat2.mtx testmat3.mtx testmat4.mtx testmat0.mtx test
 
 test_SCRIPTS = defs test.sh
 
-test_PROGRAMS = etest1 etest2 etest3 etest4 etest5 etest5b etest6 etest7 getest1 getest5 getest5b spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b spmvtest4 spmvtest5 test1 test2 test2b test3 test3b test3c test4 test5 test6 test7 testuser getestuser testoperator getestoperator testdiagonal testpreconlifecycle testjacobiuser testpreconpsd
+test_PROGRAMS = etest1 etest2 etest3 etest4 etest5 etest5b etest6 etest7 getest1 getest5 getest5b spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b spmvtest4 spmvtest5 test1 test2 test2b test3 test3b test3c test4 test5 test6 test7 testuser getestuser testoperator getestoperator testdiagonal testpreconlifecycle testjacobiuser testpreconpsd testpreconreuse
 if ENABLE_FORTRAN
   test_PROGRAMS += etest1f etest4f test1f test4f test7f
 endif
@@ -60,6 +60,7 @@ testdiagonal_SOURCES = testdiagonal.c
 testpreconlifecycle_SOURCES = testpreconlifecycle.c
 testjacobiuser_SOURCES = testjacobiuser.c
 testpreconpsd_SOURCES = testpreconpsd.c
+testpreconreuse_SOURCES = testpreconreuse.c
 
 if ENABLE_FORTRAN
   etest1f_SOURCES = etest1f.F
@@ -125,7 +126,7 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
-TESTS = test.sh testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT)
+TESTS = test.sh testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT)
 
 installcheck: 
 	@if test ! -f $(testdir)/test.sh; then \

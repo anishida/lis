@@ -203,6 +203,7 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
 	{
 	  lis_solver_work_destroy(solver);	  
 	  solver->retcode = err;
+	  lis_precon_destroy(precon);
 	  return err;
 	}
       lis_matrix_shift_diagonal(A, -rho);
@@ -431,6 +432,7 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
 	{
 	  lis_solver_work_destroy(solver);	  
 	  solver->retcode = err;
+	  lis_precon_destroy(precon);
 	  return err;
 	}
       lis_matrix_shift_matrix(A, B, -rho);
