@@ -5,6 +5,14 @@ Version 2.1.13 September 30, 2026
   - Added generic linear-combination matrix operator (thanks to Rafal Brzegowy).
   - Used matrix operator for shifted generalized eigensolvers (thanks to Rafal Brzegowy).
 
+  - Hardened matrix operator test coverage for composed operators and distributed-memory environments (thanks to Rafal Brzegowy).
+
+  - Added diagonal extraction support and recursive diagonal evaluation for user and operator matrices (thanks to Rafal Brzegowy).
+
+  - Added lifecycles and destroy routines for user-defined preconditioners via lis_precon_register_ex (thanks to Rafal Brzegowy).
+
+  - Propagated Jacobi diagonal errors (thanks to Rafal Brzegowy).
+
 Version 2.1.12 September 25, 2026
 
   - Fixed bugs in lis_matrix_g2l_csr(), where g2l_map was checked instead of l2g_map (thanks to Carlos Mendes).
