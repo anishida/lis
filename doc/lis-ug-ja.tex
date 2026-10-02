@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis ユーザガイド}\\
-バージョン 2.1.13
+バージョン 2.1.14
 \end{flushleft}
 
 \vspace*{2cm}
@@ -1907,7 +1907,9 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 {\bf その他のオプション}\\
 \begin{tabular}{l|ll}\hline\hline
 オプション &                          \\ \hline
-\verb=-maxiter [1000]= & 最大反復回数         \\ 
+\verb=-maxiter [1000]= & 最大反復回数         \\
+\verb=-maxiter_noimp [0]= & 残差が改善しない状態が指定した反復回数連続した場合に、計算を早期に \\
+                       & 打ち切る （デフォルト: 0、早期打ち切りを無効化） \\
 \verb=-tol [1.0e-12]=  & 収束判定基準 $tol$             \\
 \verb=-tol_w [1.0]=    & 収束判定基準 $tol_w$           \\
 \verb=-print [0]=      & 残差履歴の出力                 \\

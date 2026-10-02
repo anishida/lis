@@ -33,7 +33,7 @@ extern "C" {
 #endif
 
 /**************************************/
-#define LIS_VERSION	"2.1.13"
+#define LIS_VERSION	"2.1.14"
 /**************************************/
 #include <stdio.h>
 #ifdef USE_COMPLEX
@@ -67,7 +67,7 @@ extern "C" {
 #define LIS_BINARY_LITTLE 1
 
 
-#define LIS_OPTIONS_LEN 27
+#define LIS_OPTIONS_LEN 28
 #define LIS_OPTIONS_SOLVER 0
 #define LIS_OPTIONS_PRECON 1
 #define LIS_OPTIONS_MAXITER 2
@@ -95,6 +95,7 @@ extern "C" {
 #define LIS_OPTIONS_CONV_COND 24
 #define LIS_OPTIONS_INIT_SHADOW_RESID 25
 #define LIS_OPTIONS_IDRS_RESTART 26
+#define LIS_OPTIONS_MAXITER_NO_IMP 27
 
 #define LIS_EOPTIONS_LEN 13
 #define LIS_EOPTIONS_ESOLVER 0
@@ -1022,6 +1023,7 @@ extern "C"
 	extern LIS_INT lis_precon_get_user_data(LIS_PRECON precon, void **user_data);
 	extern LIS_INT lis_precon_register(char *name, LIS_PRECON_CREATE_XXX pcreate, LIS_PSOLVE_XXX psolve, LIS_PSOLVEH_XXX psolveh);
 	extern LIS_INT lis_precon_register_ex(char *name, LIS_PRECON_CREATE_XXX pcreate, LIS_PSOLVE_XXX psolve, LIS_PSOLVEH_XXX psolveh, LIS_PRECON_DESTROY_XXX pdestroy);
+	extern LIS_INT lis_precon_register_psd(char *name, LIS_PRECON_PSD_CREATE_XXX psd_create, LIS_PRECON_PSD_UPDATE_XXX psd_update);
 	extern LIS_INT lis_precon_register_free(void);
 	extern LIS_INT lis_solver_get_solvername(LIS_INT solver, char *solvername);
 	extern LIS_INT lis_solver_get_preconname(LIS_INT precon_type, char *preconname);
@@ -1125,6 +1127,8 @@ extern "C"
 		(is) = (id)*(ie)<((n)+1)?(id)*(ie):(n)+1; \
 		(ie) = (is)+(ie)-1<(n)?(is)+(ie)-1:(n);
 #endif
+
+#define LIS_SCALAR_MAX 1.7976931348623158e+308
 
 #ifdef __cplusplus
 }

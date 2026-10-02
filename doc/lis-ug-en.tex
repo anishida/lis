@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 2.1.13
+Version 2.1.14
 \end{flushleft}
 
 \vspace*{2cm}
@@ -2046,7 +2046,9 @@ Schwarz  &                       &                             &                
 {\bf Other Options}\\
 \begin{tabular}{l|ll}\hline\hline
 Option &                          \\ \hline
-\verb=-maxiter [1000]= & The maximum number of iterations         \\ 
+\verb=-maxiter [1000]= & The maximum number of iterations         \\
+\verb=-maxiter_noimp [0]= & The maximum number of consecutive iterations allowed without residual improvement \\
+                       & before early stopping (default: 0, which disables early stopping) \\
 \verb=-tol [1.0e-12]=  & The convergence tolerance $tol$             \\
 \verb=-tol_w [1.0]=    & The convergence tolerance $tol_w$  \\
 \verb=-print [0]=      & The output of the residual history                \\

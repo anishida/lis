@@ -118,8 +118,8 @@ LIS_INT lis_tfqmr(LIS_SOLVER solver)
 	LIS_VECTOR r, rtld, u, p, d, t, t1, q, v;
 	LIS_REAL tau,w;
 	LIS_SCALAR rho, rhoold, theta,eta,beta,alpha,ww,wold,s,c;
-	LIS_REAL bnrm2, nrm2, tol;
-	LIS_INT iter,maxiter,output;
+	LIS_REAL bnrm2, nrm2, tol, min_nrm2;
+	LIS_INT iter,maxiter,output,maxiter_noimp,noimp_count;
 	double time,ptime;
 	LIS_INT m;
 
@@ -131,6 +131,9 @@ LIS_INT lis_tfqmr(LIS_SOLVER solver)
 	x       = solver->x;
 	maxiter = solver->options[LIS_OPTIONS_MAXITER];
 	output  = solver->options[LIS_OPTIONS_OUTPUT];
+	maxiter_noimp = solver->options[LIS_OPTIONS_MAXITER_NO_IMP];
+	noimp_count   = 0;
+	min_nrm2      = LIS_SCALAR_MAX;
 	ptime   = 0.0;
 
 	r       = solver->work[0];
@@ -259,6 +262,24 @@ LIS_INT lis_tfqmr(LIS_SOLVER solver)
 				LIS_DEBUG_FUNC_OUT;
 				return LIS_SUCCESS;
 			}
+
+			if ( maxiter_noimp )
+			{
+				if ( min_nrm2 > nrm2 )
+				{
+					min_nrm2 = nrm2;
+					noimp_count = 0;
+				}
+				else if ( ++noimp_count > maxiter_noimp )
+				{
+					solver->retcode = LIS_MAXITER;
+					solver->iter = iter;
+					solver->resid = nrm2;
+					solver->ptime = ptime;
+					LIS_DEBUG_FUNC_OUT;
+					return LIS_MAXITER;
+				}
+			}
 		}
 
 		/* rho  = (r,rtld)              */
@@ -309,8 +330,8 @@ LIS_INT lis_tfqmr_quad(LIS_SOLVER solver)
 	LIS_VECTOR x;
 	LIS_VECTOR r, rtld, u, p, d, t, t1, q, v;
 	LIS_QUAD_PTR tau,rho, rhoold, theta,eta,beta,alpha,w,ww,wold,s,c,etaold,thetaold,one;
-	LIS_REAL bnrm2, nrm2, tol;
-	LIS_INT iter,maxiter,output;
+	LIS_REAL bnrm2, nrm2, tol, min_nrm2;
+	LIS_INT iter,maxiter,output,maxiter_noimp,noimp_count;
 	double time,ptime;
 
 	LIS_INT m;
@@ -324,6 +345,9 @@ LIS_INT lis_tfqmr_quad(LIS_SOLVER solver)
 	x       = solver->x;
 	maxiter = solver->options[LIS_OPTIONS_MAXITER];
 	output  = solver->options[LIS_OPTIONS_OUTPUT];
+	maxiter_noimp = solver->options[LIS_OPTIONS_MAXITER_NO_IMP];
+	noimp_count   = 0;
+	min_nrm2      = LIS_SCALAR_MAX;
 	ptime   = 0.0;
 
 	r       = solver->work[0];
@@ -480,6 +504,24 @@ LIS_INT lis_tfqmr_quad(LIS_SOLVER solver)
 				solver->ptime      = ptime;
 				LIS_DEBUG_FUNC_OUT;
 				return LIS_SUCCESS;
+			}
+
+			if ( maxiter_noimp )
+			{
+				if ( min_nrm2 > nrm2 )
+				{
+					min_nrm2 = nrm2;
+					noimp_count = 0;
+				}
+				else if ( ++noimp_count > maxiter_noimp )
+				{
+					solver->retcode = LIS_MAXITER;
+					solver->iter = iter;
+					solver->resid = nrm2;
+					solver->ptime = ptime;
+					LIS_DEBUG_FUNC_OUT;
+					return LIS_MAXITER;
+				}
 			}
 		}
 

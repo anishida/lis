@@ -164,7 +164,7 @@ LIS_INT LIS_USE_AT_TYPE[] = {
 	0,
 	LIS_MATRIX_CSC,LIS_MATRIX_CSR
 	};
-#define LIS_SOLVER_OPTION_LEN		46
+#define LIS_SOLVER_OPTION_LEN		47
 #define LIS_PRINT_LEN			4
 #define LIS_SCALE_LEN			3
 #define LIS_TRUEFALSE_LEN		2
@@ -181,7 +181,8 @@ char *LIS_SOLVER_OPTNAME[] = {
 	"-f",                 "-h",             "-ver",            "-hybrid_p",      "-initx_zeros",
 	"-adds",              "-adds_iter",     "-f",              "-use_at",        "-switch_tol",
 	"-switch_maxiter",    "-saamg_unsym",   "-iluc_drop",      "-iluc_gamma",    "-iluc_rate",
-	"-storage",           "-storage_block", "-conv_cond",      "-tol_w",         "-saamg_theta",	"-irestart"
+	"-storage",           "-storage_block", "-conv_cond",      "-tol_w",         "-saamg_theta",	"-irestart",
+	"-maxiter_noimp"
 };
 
 LIS_INT LIS_SOLVER_OPTACT[] = {
@@ -193,7 +194,8 @@ LIS_INT LIS_SOLVER_OPTACT[] = {
 	LIS_OPTIONS_FILE             , LIS_OPTIONS_HELP          , LIS_OPTIONS_VER           , LIS_OPTIONS_PPRECON      , LIS_OPTIONS_INITGUESS_ZEROS,
 	LIS_OPTIONS_ADDS             , LIS_OPTIONS_ADDS_ITER     , LIS_OPTIONS_PRECISION     , LIS_OPTIONS_USE_AT       , LIS_PARAMS_SWITCH_RESID,
 	LIS_OPTIONS_SWITCH_MAXITER   , LIS_OPTIONS_SAAMG_UNSYM   , LIS_PARAMS_DROP           , LIS_PARAMS_GAMMA         , LIS_PARAMS_RATE, 
-	LIS_OPTIONS_STORAGE          , LIS_OPTIONS_STORAGE_BLOCK , LIS_OPTIONS_CONV_COND     , LIS_PARAMS_RESID_WEIGHT  , LIS_PARAMS_SAAMG_THETA, LIS_OPTIONS_IDRS_RESTART
+	LIS_OPTIONS_STORAGE          , LIS_OPTIONS_STORAGE_BLOCK , LIS_OPTIONS_CONV_COND     , LIS_PARAMS_RESID_WEIGHT  , LIS_PARAMS_SAAMG_THETA, LIS_OPTIONS_IDRS_RESTART,
+	LIS_OPTIONS_MAXITER_NO_IMP
 };
 
 char *lis_solver_atoi[]    = {"cg", "bicg", "cgs", "bicgstab", "bicgstabl", "gpbicg", "tfqmr","orthomin", "gmres", "jacobi", "gs", "sor", "bicgsafe", "cr", "bicr", "crs", "bicrstab", "gpbicr", "bicrsafe", "fgmres", "idrs", "idr1", "minres", "cocg", "cocr"};
@@ -266,6 +268,7 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->options[LIS_OPTIONS_CONV_COND]            = 0;
 	solver->options[LIS_OPTIONS_INIT_SHADOW_RESID]    = LIS_RESID;
 	solver->options[LIS_OPTIONS_IDRS_RESTART]         = 2;
+	solver->options[LIS_OPTIONS_MAXITER_NO_IMP]       = 0;
 
 	solver->params[LIS_PARAMS_RESID        -LIS_OPTIONS_LEN] = 1.0e-12;
 	solver->params[LIS_PARAMS_RESID_WEIGHT -LIS_OPTIONS_LEN] = 1.0;
@@ -543,7 +546,7 @@ LIS_INT lis_solve_setup(LIS_MATRIX A, LIS_SOLVER solver)
 LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver, LIS_PRECON precon)
 {
 	LIS_Comm comm;  
-	LIS_INT	nsolver, precon_type, maxiter;
+	LIS_INT	nsolver, precon_type, maxiter, maxiter_noimp;
 	LIS_INT	err;
 	LIS_REAL *rhistory;
 	LIS_VECTOR xx;
@@ -577,6 +580,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	storage     = solver->options[LIS_OPTIONS_STORAGE];
 	block       = solver->options[LIS_OPTIONS_STORAGE_BLOCK];
 	conv_cond   = solver->options[LIS_OPTIONS_CONV_COND];
+	maxiter_noimp = solver->options[LIS_OPTIONS_MAXITER_NO_IMP];
 	tol         = solver->params[LIS_PARAMS_RESID-LIS_OPTIONS_LEN];
 	tol_w       = solver->params[LIS_PARAMS_RESID_WEIGHT-LIS_OPTIONS_LEN];
 	solver->precision = precision;
@@ -598,6 +602,11 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	if( maxiter<0 )
 	{
 		LIS_SETERR1(LIS_ERR_ILL_ARG,"Parameter LIS_OPTIONS_MAXITER(=%D) is less than 0\n",maxiter);
+		return LIS_ERR_ILL_ARG;
+	}
+	if (maxiter_noimp < 0)
+	{
+		LIS_SETERR1(LIS_ERR_ILL_ARG, "Parameter LIS_OPTIONS_MAXITER_NO_IMP(=%D) is less than 0\n", maxiter_noimp);
 		return LIS_ERR_ILL_ARG;
 	}
 	if( conv_cond>0 && lis_solver_execute_conv_cond[nsolver]==NULL )

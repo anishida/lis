@@ -57,14 +57,17 @@ target_triplet = @target@
 test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	etest4$(EXEEXT) etest5$(EXEEXT) etest5b$(EXEEXT) \
 	etest6$(EXEEXT) etest7$(EXEEXT) getest1$(EXEEXT) \
-	getest5$(EXEEXT) getest5b$(EXEEXT) getestuser$(EXEEXT) \
-	spmvtest1$(EXEEXT) \
+	getest5$(EXEEXT) getest5b$(EXEEXT) spmvtest1$(EXEEXT) \
 	spmvtest2$(EXEEXT) spmvtest2b$(EXEEXT) spmvtest3$(EXEEXT) \
 	spmvtest3b$(EXEEXT) spmvtest4$(EXEEXT) spmvtest5$(EXEEXT) \
 	test1$(EXEEXT) test2$(EXEEXT) test2b$(EXEEXT) test3$(EXEEXT) \
 	test3b$(EXEEXT) test3c$(EXEEXT) test4$(EXEEXT) test5$(EXEEXT) \
 	test6$(EXEEXT) test7$(EXEEXT) testuser$(EXEEXT) \
-	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
+	getestuser$(EXEEXT) testoperator$(EXEEXT) \
+	getestoperator$(EXEEXT) testdiagonal$(EXEEXT) \
+	testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) \
+	testpreconpsd$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
+	$(am__EXEEXT_3)
 @ENABLE_FORTRAN_TRUE@am__append_1 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_2 = test2f test6f 
 @ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__append_3 = test8f
@@ -170,6 +173,10 @@ am_getest5b_OBJECTS = getest5b.$(OBJEXT)
 getest5b_OBJECTS = $(am_getest5b_OBJECTS)
 getest5b_LDADD = $(LDADD)
 getest5b_DEPENDENCIES =
+am_getestoperator_OBJECTS = getestoperator.$(OBJEXT)
+getestoperator_OBJECTS = $(am_getestoperator_OBJECTS)
+getestoperator_LDADD = $(LDADD)
+getestoperator_DEPENDENCIES =
 am_getestuser_OBJECTS = getestuser.$(OBJEXT)
 getestuser_OBJECTS = $(am_getestuser_OBJECTS)
 getestuser_LDADD = $(LDADD)
@@ -284,6 +291,26 @@ am__test8f_SOURCES_DIST = test8f.F90
 test8f_OBJECTS = $(am_test8f_OBJECTS)
 test8f_LDADD = $(LDADD)
 test8f_DEPENDENCIES =
+am_testdiagonal_OBJECTS = testdiagonal.$(OBJEXT)
+testdiagonal_OBJECTS = $(am_testdiagonal_OBJECTS)
+testdiagonal_LDADD = $(LDADD)
+testdiagonal_DEPENDENCIES =
+am_testjacobiuser_OBJECTS = testjacobiuser.$(OBJEXT)
+testjacobiuser_OBJECTS = $(am_testjacobiuser_OBJECTS)
+testjacobiuser_LDADD = $(LDADD)
+testjacobiuser_DEPENDENCIES =
+am_testoperator_OBJECTS = testoperator.$(OBJEXT)
+testoperator_OBJECTS = $(am_testoperator_OBJECTS)
+testoperator_LDADD = $(LDADD)
+testoperator_DEPENDENCIES =
+am_testpreconlifecycle_OBJECTS = testpreconlifecycle.$(OBJEXT)
+testpreconlifecycle_OBJECTS = $(am_testpreconlifecycle_OBJECTS)
+testpreconlifecycle_LDADD = $(LDADD)
+testpreconlifecycle_DEPENDENCIES =
+am_testpreconpsd_OBJECTS = testpreconpsd.$(OBJEXT)
+testpreconpsd_OBJECTS = $(am_testpreconpsd_OBJECTS)
+testpreconpsd_LDADD = $(LDADD)
+testpreconpsd_DEPENDENCIES =
 am_testuser_OBJECTS = testuser.$(OBJEXT)
 testuser_OBJECTS = $(am_testuser_OBJECTS)
 testuser_LDADD = $(LDADD)
@@ -336,10 +363,10 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(etest4_SOURCES) $(etest4f_SOURCES) $(etest5_SOURCES) \
 	$(etest5b_SOURCES) $(etest6_SOURCES) $(etest7_SOURCES) \
 	$(gesolve_SOURCES) $(gesolver_SOURCES) $(getest1_SOURCES) \
-	$(getest5_SOURCES) $(getest5b_SOURCES) $(getestuser_SOURCES) \
-	$(hpcg_kernel_SOURCES) \
-	$(hpcg_spmvtest_SOURCES) $(lsolve_SOURCES) \
-	$(spmvtest1_SOURCES) $(spmvtest2_SOURCES) \
+	$(getest5_SOURCES) $(getest5b_SOURCES) \
+	$(getestoperator_SOURCES) $(getestuser_SOURCES) \
+	$(hpcg_kernel_SOURCES) $(hpcg_spmvtest_SOURCES) \
+	$(lsolve_SOURCES) $(spmvtest1_SOURCES) $(spmvtest2_SOURCES) \
 	$(spmvtest2b_SOURCES) $(spmvtest3_SOURCES) \
 	$(spmvtest3b_SOURCES) $(spmvtest4_SOURCES) \
 	$(spmvtest5_SOURCES) $(test1_SOURCES) $(test1f_SOURCES) \
@@ -347,17 +374,20 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(test3_SOURCES) $(test3b_SOURCES) $(test3c_SOURCES) \
 	$(test4_SOURCES) $(test4f_SOURCES) $(test5_SOURCES) \
 	$(test6_SOURCES) $(test6f_SOURCES) $(test7_SOURCES) \
-	$(test7f_SOURCES) $(test8f_SOURCES) $(testuser_SOURCES)
+	$(test7f_SOURCES) $(test8f_SOURCES) $(testdiagonal_SOURCES) \
+	$(testjacobiuser_SOURCES) $(testoperator_SOURCES) \
+	$(testpreconlifecycle_SOURCES) $(testpreconpsd_SOURCES) \
+	$(testuser_SOURCES)
 DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
 	$(etest3_SOURCES) $(etest4_SOURCES) \
 	$(am__etest4f_SOURCES_DIST) $(etest5_SOURCES) \
 	$(etest5b_SOURCES) $(etest6_SOURCES) $(etest7_SOURCES) \
 	$(gesolve_SOURCES) $(gesolver_SOURCES) $(getest1_SOURCES) \
-	$(getest5_SOURCES) $(getest5b_SOURCES) $(getestuser_SOURCES) \
-	$(hpcg_kernel_SOURCES) \
-	$(hpcg_spmvtest_SOURCES) $(lsolve_SOURCES) \
-	$(spmvtest1_SOURCES) $(spmvtest2_SOURCES) \
+	$(getest5_SOURCES) $(getest5b_SOURCES) \
+	$(getestoperator_SOURCES) $(getestuser_SOURCES) \
+	$(hpcg_kernel_SOURCES) $(hpcg_spmvtest_SOURCES) \
+	$(lsolve_SOURCES) $(spmvtest1_SOURCES) $(spmvtest2_SOURCES) \
 	$(spmvtest2b_SOURCES) $(spmvtest3_SOURCES) \
 	$(spmvtest3b_SOURCES) $(spmvtest4_SOURCES) \
 	$(spmvtest5_SOURCES) $(test1_SOURCES) \
@@ -366,7 +396,10 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(test3c_SOURCES) $(test4_SOURCES) $(am__test4f_SOURCES_DIST) \
 	$(test5_SOURCES) $(test6_SOURCES) $(am__test6f_SOURCES_DIST) \
 	$(test7_SOURCES) $(am__test7f_SOURCES_DIST) \
-	$(am__test8f_SOURCES_DIST) $(testuser_SOURCES)
+	$(am__test8f_SOURCES_DIST) $(testdiagonal_SOURCES) \
+	$(testjacobiuser_SOURCES) $(testoperator_SOURCES) \
+	$(testpreconlifecycle_SOURCES) $(testpreconpsd_SOURCES) \
+	$(testuser_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -544,7 +577,7 @@ etest7_SOURCES = etest7.c
 getest1_SOURCES = getest1.c
 getest5_SOURCES = getest5.c
 getest5b_SOURCES = getest5b.c
-getestuser_SOURCES = getestuser.c
+getestoperator_SOURCES = getestoperator.c
 spmvtest1_SOURCES = spmvtest1.c
 spmvtest2_SOURCES = spmvtest2.c
 spmvtest2b_SOURCES = spmvtest2b.c
@@ -563,6 +596,12 @@ test5_SOURCES = test5.c
 test6_SOURCES = test6.c
 test7_SOURCES = test7.c
 testuser_SOURCES = testuser.c
+getestuser_SOURCES = getestuser.c
+testoperator_SOURCES = testoperator.c
+testdiagonal_SOURCES = testdiagonal.c
+testpreconlifecycle_SOURCES = testpreconlifecycle.c
+testjacobiuser_SOURCES = testjacobiuser.c
+testpreconpsd_SOURCES = testpreconpsd.c
 @ENABLE_FORTRAN_TRUE@etest1f_SOURCES = etest1f.F
 @ENABLE_FORTRAN_TRUE@etest4f_SOURCES = etest4f.F
 @ENABLE_FORTRAN_TRUE@test1f_SOURCES = test1f.F
@@ -617,7 +656,7 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
-TESTS = test.sh
+TESTS = test.sh testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT)
 all: all-am
 
 .SUFFIXES:
@@ -795,7 +834,10 @@ getest5$(EXEEXT): $(getest5_OBJECTS) $(getest5_DEPENDENCIES) $(EXTRA_getest5_DEP
 getest5b$(EXEEXT): $(getest5b_OBJECTS) $(getest5b_DEPENDENCIES) $(EXTRA_getest5b_DEPENDENCIES) 
 	@rm -f getest5b$(EXEEXT)
 	$(LINK) $(getest5b_OBJECTS) $(getest5b_LDADD) $(LIBS)
-getestuser$(EXEEXT): $(getestuser_OBJECTS) $(getestuser_DEPENDENCIES) $(EXTRA_getestuser_DEPENDENCIES)
+getestoperator$(EXEEXT): $(getestoperator_OBJECTS) $(getestoperator_DEPENDENCIES) $(EXTRA_getestoperator_DEPENDENCIES) 
+	@rm -f getestoperator$(EXEEXT)
+	$(LINK) $(getestoperator_OBJECTS) $(getestoperator_LDADD) $(LIBS)
+getestuser$(EXEEXT): $(getestuser_OBJECTS) $(getestuser_DEPENDENCIES) $(EXTRA_getestuser_DEPENDENCIES) 
 	@rm -f getestuser$(EXEEXT)
 	$(LINK) $(getestuser_OBJECTS) $(getestuser_LDADD) $(LIBS)
 hpcg_kernel$(EXEEXT): $(hpcg_kernel_OBJECTS) $(hpcg_kernel_DEPENDENCIES) $(EXTRA_hpcg_kernel_DEPENDENCIES) 
@@ -876,6 +918,21 @@ test7f$(EXEEXT): $(test7f_OBJECTS) $(test7f_DEPENDENCIES) $(EXTRA_test7f_DEPENDE
 test8f$(EXEEXT): $(test8f_OBJECTS) $(test8f_DEPENDENCIES) $(EXTRA_test8f_DEPENDENCIES) 
 	@rm -f test8f$(EXEEXT)
 	$(FCLINK) $(test8f_OBJECTS) $(test8f_LDADD) $(LIBS)
+testdiagonal$(EXEEXT): $(testdiagonal_OBJECTS) $(testdiagonal_DEPENDENCIES) $(EXTRA_testdiagonal_DEPENDENCIES) 
+	@rm -f testdiagonal$(EXEEXT)
+	$(LINK) $(testdiagonal_OBJECTS) $(testdiagonal_LDADD) $(LIBS)
+testjacobiuser$(EXEEXT): $(testjacobiuser_OBJECTS) $(testjacobiuser_DEPENDENCIES) $(EXTRA_testjacobiuser_DEPENDENCIES) 
+	@rm -f testjacobiuser$(EXEEXT)
+	$(LINK) $(testjacobiuser_OBJECTS) $(testjacobiuser_LDADD) $(LIBS)
+testoperator$(EXEEXT): $(testoperator_OBJECTS) $(testoperator_DEPENDENCIES) $(EXTRA_testoperator_DEPENDENCIES) 
+	@rm -f testoperator$(EXEEXT)
+	$(LINK) $(testoperator_OBJECTS) $(testoperator_LDADD) $(LIBS)
+testpreconlifecycle$(EXEEXT): $(testpreconlifecycle_OBJECTS) $(testpreconlifecycle_DEPENDENCIES) $(EXTRA_testpreconlifecycle_DEPENDENCIES) 
+	@rm -f testpreconlifecycle$(EXEEXT)
+	$(LINK) $(testpreconlifecycle_OBJECTS) $(testpreconlifecycle_LDADD) $(LIBS)
+testpreconpsd$(EXEEXT): $(testpreconpsd_OBJECTS) $(testpreconpsd_DEPENDENCIES) $(EXTRA_testpreconpsd_DEPENDENCIES) 
+	@rm -f testpreconpsd$(EXEEXT)
+	$(LINK) $(testpreconpsd_OBJECTS) $(testpreconpsd_LDADD) $(LIBS)
 testuser$(EXEEXT): $(testuser_OBJECTS) $(testuser_DEPENDENCIES) $(EXTRA_testuser_DEPENDENCIES) 
 	@rm -f testuser$(EXEEXT)
 	$(LINK) $(testuser_OBJECTS) $(testuser_LDADD) $(LIBS)
@@ -932,6 +989,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getest1.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getest5.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getest5b.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getestoperator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getestuser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spmvtest1.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spmvtest2.Po@am__quote@
@@ -950,6 +1008,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test5.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test6.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test7.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testdiagonal.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testjacobiuser.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoperator.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testpreconlifecycle.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testpreconpsd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuser.Po@am__quote@
 
 .F.o:
