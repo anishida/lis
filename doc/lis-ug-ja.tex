@@ -2426,7 +2426,7 @@ A =
 この演算子は、元の行列を変更することなく、2つの行列の線形結合 $C = \alpha A + \beta B$ を表す。演算子行列に対して、対角成分は以下のように自動的かつ再帰的に評価される：
 \[\mathrm{diag}(\alpha A + \beta B) = \alpha \cdot \mathrm{diag}(A) + \beta \cdot \mathrm{diag}(B)\]
 
-\subsection{行列演算子を用いたシフト付き一般化固有値ソルバ}シフト付き一般化固有値問題 $(A - \sigma B)x = \lambda Bx$ に対して、一般化べき乗法（GPI）、一般化逆べき乗法（GII）、および一般化共役残差法（GCR）ソルバは、\texttt{LIS\_MATRIX\_OPERATOR} を利用して $A - \sigma B$ に対する一時的な演算子を動的に生成する。これは元の行列が元の状態のまま残ることを保証し、ユーザ定義のカスタム行列（\texttt{LIS\_MATRIX\_USER}）に対する完全なサポートを可能にする。シフト付き \texttt{LIS\_MATRIX\_USER} は、Lanczos 法のような他の手法に対しては依然として非対応のままである。 
+\subsubsection{行列演算子を用いたシフト付き一般化固有値ソルバ}シフト付き一般化固有値問題 $(A - \sigma B)x = \lambda Bx$ に対して、一般化べき乗法（GPI）、一般化逆べき乗法（GII）、および一般化共役残差法（GCR）ソルバは、\texttt{LIS\_MATRIX\_OPERATOR} を利用して $A - \sigma B$ に対する一時的な演算子を動的に生成する。これは元の行列が元の状態のまま残ることを保証し、ユーザ定義のカスタム行列（\texttt{LIS\_MATRIX\_USER}）に対する完全なサポートを可能にする。シフト付き \texttt{LIS\_MATRIX\_USER} は、Lanczos 法のような他の手法に対しては依然として非対応のままである。 
 
 \newpage
 \subsection{実行ファイルの生成}
