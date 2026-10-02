@@ -115,6 +115,47 @@ LIS_INT lis_precon_init(LIS_PRECON precon)
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_precon_set_user_data"
+LIS_INT lis_precon_set_user_data(LIS_PRECON precon, void *user_data)
+{
+    LIS_DEBUG_FUNC_IN;
+
+    if( precon==NULL )
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,"preconditioner is NULL\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    precon->user_data = user_data;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_precon_get_user_data"
+LIS_INT lis_precon_get_user_data(LIS_PRECON precon, void **user_data)
+{
+    LIS_DEBUG_FUNC_IN;
+
+    if( precon==NULL )
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,"preconditioner is NULL\n");
+        return LIS_ERR_ILL_ARG;
+    }
+    if( user_data==NULL )
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,"user_data output pointer is NULL\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *user_data = precon->user_data;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_precon_create"
 LIS_INT lis_precon_create(LIS_SOLVER solver, LIS_PRECON *precon)
 {
@@ -137,6 +178,9 @@ LIS_INT lis_precon_create(LIS_SOLVER solver, LIS_PRECON *precon)
 
 	if( precon_type>=LIS_PRECON_TYPE_USERDEF )
 	{
+		(*precon)->user_destroy =
+		    precon_register_top[
+		        precon_type-LIS_PRECON_TYPE_USERDEF].pdestroy;
 		err = precon_register_top[precon_type-LIS_PRECON_TYPE_USERDEF].pcreate(solver,*precon);
 	}
 	else if( precon_type && solver->options[LIS_OPTIONS_ADDS] )
@@ -318,12 +362,16 @@ LIS_INT lis_precon_create_none(LIS_SOLVER solver, LIS_PRECON precon)
 #define __FUNC__ "lis_precon_destroy"
 LIS_INT lis_precon_destroy(LIS_PRECON precon)
 {
-	LIS_INT i;
+	LIS_INT i, err = LIS_SUCCESS;
 
 	LIS_DEBUG_FUNC_IN;
 
 	if( precon )
 	{
+	    if( precon->user_destroy )
+	    {
+	        err = precon->user_destroy(precon);
+	    }
 		if( precon->is_copy ) lis_matrix_destroy(precon->A);
 		lis_vector_destroy(precon->Pb);
 		lis_vector_destroy(precon->D);
@@ -356,7 +404,7 @@ LIS_INT lis_precon_destroy(LIS_PRECON precon)
 	}
 
 	LIS_DEBUG_FUNC_OUT;
-	return LIS_SUCCESS;
+	return err;
 }
 
 
@@ -524,6 +572,7 @@ LIS_INT lis_precon_register(char *name, LIS_PRECON_CREATE_XXX pcreate,
 	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].pcreate = pcreate;
 	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].psolve = psolve;
 	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].psolveh = psolveh;
+	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].pdestroy = NULL;
 	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].precon_type =
 		precon_register_type;
 	strncpy(precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].name,
@@ -535,6 +584,26 @@ LIS_INT lis_precon_register(char *name, LIS_PRECON_CREATE_XXX pcreate,
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 }
+#undef __FUNC__
+#define __FUNC__ "lis_precon_register_ex"
+LIS_INT lis_precon_register_ex(char *name, LIS_PRECON_CREATE_XXX pcreate,
+                               LIS_PSOLVE_XXX psolve, LIS_PSOLVEH_XXX psolveh,
+                               LIS_PRECON_DESTROY_XXX pdestroy)
+{
+    LIS_INT err;
+
+    LIS_DEBUG_FUNC_IN;
+
+    err = lis_precon_register(name,pcreate,psolve,psolveh);
+    if( err ) return err;
+
+    precon_register_top[
+        precon_register_type-LIS_PRECON_TYPE_USERDEF-1].pdestroy = pdestroy;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_precon_register_free"
 LIS_INT lis_precon_register_free(void)
