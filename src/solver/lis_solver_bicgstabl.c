@@ -133,8 +133,8 @@ LIS_INT lis_bicgstabl(LIS_SOLVER solver)
 	LIS_REAL normx, normr;
 	LIS_SCALAR nu;
 
-	LIS_REAL bnrm2, nrm2, tol;
-	LIS_INT iter,maxiter,output,conv;
+	LIS_REAL bnrm2, nrm2, tol, min_nrm2;
+	LIS_INT iter,maxiter,output,conv,maxiter_noimp,noimp_count;
 	double time,ptime;
 
 	LIS_INT l,i,j;
@@ -150,6 +150,9 @@ LIS_INT lis_bicgstabl(LIS_SOLVER solver)
 	output  = solver->options[LIS_OPTIONS_OUTPUT];
 	l       = solver->options[LIS_OPTIONS_ELL];
 	conv    = solver->options[LIS_OPTIONS_CONV_COND];
+	maxiter_noimp = solver->options[LIS_OPTIONS_MAXITER_NO_IMP];
+	noimp_count   = 0;
+	min_nrm2      = LIS_SCALAR_MAX;
 	ptime   = 0.0;
 	z_dim   = l+1;
 
@@ -392,6 +395,24 @@ LIS_INT lis_bicgstabl(LIS_SOLVER solver)
 			LIS_DEBUG_FUNC_OUT;
 			return LIS_SUCCESS;
 		}
+
+		if ( maxiter_noimp )
+		{
+			if ( min_nrm2 > nrm2 )
+			{
+				min_nrm2 = nrm2;
+				noimp_count = 0;
+			}
+			else if ( ++noimp_count > maxiter_noimp )
+			{
+				solver->retcode = LIS_MAXITER;
+				solver->iter = iter;
+				solver->resid = nrm2;
+				solver->ptime = ptime;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_MAXITER;
+			}
+		}
 	}
 
 	solver->retcode   = LIS_MAXITER;
@@ -418,8 +439,8 @@ LIS_INT lis_bicgstabl_quad(LIS_SOLVER solver)
 	LIS_QUAD_PTR delta, one, zero, onem;
 	LIS_QUAD_PTR nu;
 
-	LIS_REAL bnrm2, nrm2, tol;
-	LIS_INT iter,maxiter,n,output,conv;
+	LIS_REAL bnrm2, nrm2, tol, min_nrm2;
+	LIS_INT iter,maxiter,n,output,conv,maxiter_noimp,noimp_count;
 	double time,ptime;
 
 	LIS_INT l,i,j;
@@ -437,6 +458,9 @@ LIS_INT lis_bicgstabl_quad(LIS_SOLVER solver)
 	output  = solver->options[LIS_OPTIONS_OUTPUT];
 	l       = solver->options[LIS_OPTIONS_ELL];
 	conv    = solver->options[LIS_OPTIONS_CONV_COND];
+	maxiter_noimp = solver->options[LIS_OPTIONS_MAXITER_NO_IMP];
+	noimp_count   = 0;
+	min_nrm2      = LIS_SCALAR_MAX;
 	ptime   = 0.0;
 	z_dim   = l+1;
 
@@ -731,6 +755,24 @@ LIS_INT lis_bicgstabl_quad(LIS_SOLVER solver)
 			lis_free(tau);
 			LIS_DEBUG_FUNC_OUT;
 			return LIS_SUCCESS;
+		}
+
+		if ( maxiter_noimp )
+		{
+			if ( min_nrm2 > nrm2 )
+			{
+				min_nrm2 = nrm2;
+				noimp_count = 0;
+			}
+			else if ( ++noimp_count > maxiter_noimp )
+			{
+				solver->retcode = LIS_MAXITER;
+				solver->iter = iter;
+				solver->resid = nrm2;
+				solver->ptime = ptime;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_MAXITER;
+			}
 		}
 	}
 
