@@ -281,6 +281,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 		{
 		  lis_solver_work_destroy(solver);	  
 		  solver->retcode = err;
+		  lis_precon_destroy(precon);
 		  return err;
 		}
 
@@ -612,6 +613,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 		{
 		  lis_solver_work_destroy(solver);	  
 		  solver->retcode = err;
+		  lis_precon_destroy(precon);
 		  return err;
 		}
 
@@ -634,6 +636,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 		{
 		  lis_solver_work_destroy(solver);	  
 		  solver->retcode = err;
+		  lis_precon_destroy(precon);
 		  return err;
 		}
 	      break;

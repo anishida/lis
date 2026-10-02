@@ -499,6 +499,7 @@ LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
 	if( err )
 	{
 		lis_solver_work_destroy(solver);	  
+		lis_precon_destroy(precon);
 		solver->retcode = err;
 		return err;
 	}
@@ -960,7 +961,6 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	if( err )
 	{
 		lis_vector_destroy(xx);
-		lis_precon_destroy(precon);
 		solver->retcode = err;
 		return err;
 	}
