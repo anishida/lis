@@ -127,8 +127,8 @@ LIS_INT lis_sor(LIS_SOLVER solver)
 	LIS_VECTOR b,x;
 	LIS_VECTOR r,t,s;
 	LIS_SCALAR w;
-	LIS_REAL bnrm2, nrm2, tol;
-	LIS_INT iter,maxiter,output;
+	LIS_REAL bnrm2, nrm2, tol, min_nrm2;
+	LIS_INT iter,maxiter,output,maxiter_noimp,noimp_count;
 	double time,ptime;
 
 	LIS_INT	err;
@@ -144,6 +144,9 @@ LIS_INT lis_sor(LIS_SOLVER solver)
 	output  = solver->options[LIS_OPTIONS_OUTPUT];
 	tol     = solver->params[LIS_PARAMS_RESID-LIS_OPTIONS_LEN];
 	w       = 1.0 / solver->params[LIS_PARAMS_OMEGA-LIS_OPTIONS_LEN];
+	maxiter_noimp = solver->options[LIS_OPTIONS_MAXITER_NO_IMP];
+	noimp_count   = 0;
+	min_nrm2      = LIS_SCALAR_MAX;
 	ptime   = 0.0;
 
 	r       = solver->work[0];
@@ -202,6 +205,24 @@ LIS_INT lis_sor(LIS_SOLVER solver)
 			solver->ptime      = ptime;
 			LIS_DEBUG_FUNC_OUT;
 			return LIS_SUCCESS;
+		}
+
+		if ( maxiter_noimp )
+		{
+			if ( min_nrm2 > nrm2 )
+			{
+				min_nrm2 = nrm2;
+				noimp_count = 0;
+			}
+			else if ( ++noimp_count > maxiter_noimp )
+			{
+				solver->retcode = LIS_MAXITER;
+				solver->iter = iter;
+				solver->resid = nrm2;
+				solver->ptime = ptime;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_MAXITER;
+			}
 		}
 	}
 
