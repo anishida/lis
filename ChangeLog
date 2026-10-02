@@ -13,6 +13,8 @@ Version 2.1.13 September 30, 2026
 
   - Propagated Jacobi diagonal errors (thanks to Rafal Brzegowy).
 
+  - Added PSD support for user preconditioners (thanks to Rafal Brzegowy).
+
 Version 2.1.12 September 25, 2026
 
   - Fixed bugs in lis_matrix_g2l_csr(), where g2l_map was checked instead of l2g_map (thanks to Carlos Mendes).
