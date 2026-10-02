@@ -141,8 +141,8 @@ LIS_INT lis_bicgstab(LIS_SOLVER solver)
 	LIS_VECTOR x;
 	LIS_VECTOR r,rtld, t,p,v, s, phat, shat;
 	LIS_SCALAR alpha, beta, omega, rho, rho_old, tmpdot1, tmpdot2;
-	LIS_REAL   bnrm2, nrm2, tol;
-	LIS_INT iter,maxiter,output,conv;
+	LIS_REAL   bnrm2, nrm2, tol, min_nrm2;
+	LIS_INT iter,maxiter,output,conv,maxiter_noimp,noimp_count;
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
@@ -154,6 +154,9 @@ LIS_INT lis_bicgstab(LIS_SOLVER solver)
 	maxiter = solver->options[LIS_OPTIONS_MAXITER];
 	output  = solver->options[LIS_OPTIONS_OUTPUT];
 	conv    = solver->options[LIS_OPTIONS_CONV_COND];
+	maxiter_noimp = solver->options[LIS_OPTIONS_MAXITER_NO_IMP];
+	noimp_count   = 0;
+	min_nrm2      = LIS_SCALAR_MAX;
 	ptime   = 0.0;
 
 	rtld    = solver->work[0];
@@ -305,6 +308,24 @@ LIS_INT lis_bicgstab(LIS_SOLVER solver)
 			return LIS_BREAKDOWN;
 		}
 		rho_old = rho;
+
+		if ( maxiter_noimp )
+		{
+			if ( min_nrm2 > nrm2 )
+			{
+				min_nrm2 = nrm2;
+				noimp_count = 0;
+			}
+			else if ( ++noimp_count > maxiter_noimp )
+			{
+				solver->retcode = LIS_MAXITER;
+				solver->iter = iter;
+				solver->resid = nrm2;
+				solver->ptime = ptime;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_MAXITER;
+			}
+		}
 	}
 
 	solver->retcode   = LIS_MAXITER;
@@ -324,8 +345,8 @@ LIS_INT lis_bicgstab_quad(LIS_SOLVER solver)
 	LIS_VECTOR x;
 	LIS_VECTOR r,rtld, t,p,v, s, phat, shat;
 	LIS_QUAD_PTR alpha, beta, omega, rho, rho_old, tmpdot1, tmpdot2;
-	LIS_REAL bnrm2, nrm2, tol;
-	LIS_INT iter,maxiter,output,conv;
+	LIS_REAL bnrm2, nrm2, tol, min_nrm2;
+	LIS_INT iter,maxiter,output,conv,maxiter_noimp,noimp_count;
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
@@ -337,6 +358,9 @@ LIS_INT lis_bicgstab_quad(LIS_SOLVER solver)
 	maxiter = solver->options[LIS_OPTIONS_MAXITER];
 	output  = solver->options[LIS_OPTIONS_OUTPUT];
 	conv    = solver->options[LIS_OPTIONS_CONV_COND];
+	maxiter_noimp = solver->options[LIS_OPTIONS_MAXITER_NO_IMP];
+	noimp_count   = 0;
+	min_nrm2      = LIS_SCALAR_MAX;
 	ptime   = 0.0;
 
 	rtld    = solver->work[0];
@@ -503,6 +527,24 @@ LIS_INT lis_bicgstab_quad(LIS_SOLVER solver)
 		}
 		rho_old.hi[0] = rho.hi[0];
 		rho_old.lo[0] = rho.lo[0];
+
+		if ( maxiter_noimp )
+		{
+			if ( min_nrm2 > nrm2 )
+			{
+				min_nrm2 = nrm2;
+				noimp_count = 0;
+			}
+			else if ( ++noimp_count > maxiter_noimp )
+			{
+				solver->retcode = LIS_MAXITER;
+				solver->iter = iter;
+				solver->resid = nrm2;
+				solver->ptime = ptime;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_MAXITER;
+			}
+		}
 	}
 
 	solver->retcode   = LIS_MAXITER;
@@ -955,8 +997,8 @@ LIS_INT lis_bicrstab(LIS_SOLVER solver)
 	LIS_VECTOR x;
 	LIS_VECTOR r,rtld, p, s, ap, ms, map, ams, z;
 	LIS_SCALAR alpha, beta, omega, rho, rho_old, tmpdot1, tmpdot2;
-	LIS_REAL bnrm2, nrm2, tol;
-	LIS_INT iter,maxiter,output,conv;
+	LIS_REAL bnrm2, nrm2, tol, min_nrm2;
+	LIS_INT iter,maxiter,output,conv,maxiter_noimp,noimp_count;
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
@@ -968,6 +1010,9 @@ LIS_INT lis_bicrstab(LIS_SOLVER solver)
 	maxiter = solver->options[LIS_OPTIONS_MAXITER];
 	output  = solver->options[LIS_OPTIONS_OUTPUT];
 	conv    = solver->options[LIS_OPTIONS_CONV_COND];
+	maxiter_noimp = solver->options[LIS_OPTIONS_MAXITER_NO_IMP];
+	noimp_count   = 0;
+	min_nrm2      = LIS_SCALAR_MAX;
 	ptime   = 0.0;
 
 	rtld    = solver->work[0];
@@ -1081,6 +1126,24 @@ LIS_INT lis_bicrstab(LIS_SOLVER solver)
 			return LIS_BREAKDOWN;
 		}
 
+		if ( maxiter_noimp )
+		{
+			if ( min_nrm2 > nrm2 )
+			{
+				min_nrm2 = nrm2;
+				noimp_count = 0;
+			}
+			else if ( ++noimp_count > maxiter_noimp )
+			{
+				solver->retcode = LIS_MAXITER;
+				solver->iter = iter;
+				solver->resid = nrm2;
+				solver->ptime = ptime;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_MAXITER;
+			}
+		}
+
 		/* beta = (rho / rho_old) * (alpha / omega) */
 		/* p    = z + beta*(p - omega*map)          */
 		beta = (rho / rho_old) * (alpha / omega);
@@ -1107,8 +1170,8 @@ LIS_INT lis_bicrstab_quad(LIS_SOLVER solver)
 	LIS_VECTOR x;
 	LIS_VECTOR r,rtld, p, s, ap, ms, map, ams, z;
 	LIS_QUAD_PTR alpha, beta, omega, rho, rho_old, tmpdot1, tmpdot2;
-	LIS_REAL bnrm2, nrm2, tol;
-	LIS_INT iter,maxiter,output,conv;
+	LIS_REAL bnrm2, nrm2, tol, min_nrm2;
+	LIS_INT iter,maxiter,output,conv,maxiter_noimp,noimp_count;
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
@@ -1120,6 +1183,9 @@ LIS_INT lis_bicrstab_quad(LIS_SOLVER solver)
 	maxiter = solver->options[LIS_OPTIONS_MAXITER];
 	output  = solver->options[LIS_OPTIONS_OUTPUT];
 	conv    = solver->options[LIS_OPTIONS_CONV_COND];
+	maxiter_noimp = solver->options[LIS_OPTIONS_MAXITER_NO_IMP];
+	noimp_count   = 0;
+	min_nrm2      = LIS_SCALAR_MAX;
 	ptime   = 0.0;
 
 	rtld    = solver->work[0];
@@ -1242,6 +1308,24 @@ LIS_INT lis_bicrstab_quad(LIS_SOLVER solver)
 			solver->resid     = nrm2;
 			LIS_DEBUG_FUNC_OUT;
 			return LIS_BREAKDOWN;
+		}
+
+		if ( maxiter_noimp )
+		{
+			if ( min_nrm2 > nrm2 )
+			{
+				min_nrm2 = nrm2;
+				noimp_count = 0;
+			}
+			else if ( ++noimp_count > maxiter_noimp )
+			{
+				solver->retcode = LIS_MAXITER;
+				solver->iter = iter;
+				solver->resid = nrm2;
+				solver->ptime = ptime;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_MAXITER;
+			}
 		}
 
 		/* beta = (rho / rho_old) * (alpha / omega) */

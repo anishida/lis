@@ -124,7 +124,7 @@ LIS_INT lis_minres(LIS_SOLVER solver)
   LIS_MATRIX A;
   LIS_VECTOR b,x;
   LIS_VECTOR v1,v2,v3,v4,w0,w1,w2;
-  LIS_REAL nrm2,tol;
+  LIS_REAL nrm2,tol,min_nrm2;
   LIS_SCALAR alpha;
   LIS_REAL beta2,beta3;
   LIS_SCALAR gamma1,gamma2,gamma3;
@@ -132,7 +132,7 @@ LIS_INT lis_minres(LIS_SOLVER solver)
   LIS_SCALAR sigma1,sigma2,sigma3;
   LIS_SCALAR rho1,rho2,rho3;
   LIS_REAL r0_euc,r_euc; 
-  LIS_INT iter,maxiter,output;
+  LIS_INT iter,maxiter,output,maxiter_noimp,noimp_count;
   double time,ptime;
 
   LIS_DEBUG_FUNC_IN;
@@ -145,6 +145,9 @@ LIS_INT lis_minres(LIS_SOLVER solver)
   tol     = solver->params[LIS_PARAMS_RESID-LIS_OPTIONS_LEN];
   maxiter = solver->options[LIS_OPTIONS_MAXITER];
   output  = solver->options[LIS_OPTIONS_OUTPUT];
+  maxiter_noimp = solver->options[LIS_OPTIONS_MAXITER_NO_IMP];
+  noimp_count   = 0;
+  min_nrm2      = LIS_SCALAR_MAX;
   ptime   = 0.0;
 
   v1       = solver->work[0];
@@ -226,6 +229,24 @@ LIS_INT lis_minres(LIS_SOLVER solver)
 	  LIS_DEBUG_FUNC_OUT;
 	  return LIS_SUCCESS;
 	}
+
+	  if ( maxiter_noimp )
+	  {
+		  if ( min_nrm2 > nrm2 )
+		  {
+			  min_nrm2 = nrm2;
+			  noimp_count = 0;
+		  }
+		  else if ( ++noimp_count > maxiter_noimp )
+		  {
+			  solver->retcode = LIS_MAXITER;
+			  solver->iter = iter;
+			  solver->resid = nrm2;
+			  solver->ptime = ptime;
+			  LIS_DEBUG_FUNC_OUT;
+			  return LIS_MAXITER;
+		  }
+	  }
 
       eta *= -sigma3;
 
