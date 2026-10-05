@@ -339,10 +339,24 @@ LIS_INT lis_matrix_convert_self(LIS_SOLVER solver)
 	{
 		err = lis_matrix_duplicate(A,&B);
 		if( err ) return err;
-		lis_matrix_set_blocksize(B,block,block,NULL,NULL);
-		lis_matrix_set_type(B,storage);
+		err = lis_matrix_set_blocksize(B,block,block,NULL,NULL);
+		if( err )
+		{
+			lis_matrix_destroy(B);
+			return err;
+		}
+		err = lis_matrix_set_type(B,storage);
+		if( err )
+		{
+			lis_matrix_destroy(B);
+			return err;
+		}
 		err = lis_matrix_convert(A,B);
-		if( err ) return err;
+		if( err )
+		{
+			lis_matrix_destroy(B);
+			return err;
+		}
 		lis_matrix_storage_destroy(A);
 		lis_matrix_DLU_destroy(A);
 		lis_matrix_diag_destroy(A->WD);

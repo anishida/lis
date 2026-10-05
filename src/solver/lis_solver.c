@@ -707,17 +707,12 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 		#endif
 	}
 
-	/* create residual history vector */
-	if( solver->rhistory ) lis_free(solver->rhistory);
-	rhistory = (LIS_REAL *)lis_malloc((maxiter+2)*sizeof(LIS_REAL),"lis_solve::rhistory");
-	if( rhistory==NULL )
+	/* discard residual history from the previous solve */
+	if( solver->rhistory )
 	{
-		LIS_SETERR_MEM((maxiter+2)*sizeof(LIS_SCALAR));
-		lis_vector_destroy(xx);
-		solver->retcode = err;
-		return err;
+		lis_free(solver->rhistory);
+		solver->rhistory = NULL;
 	}
-	rhistory[0] = 1.0;
 
 
 	n       = A->n;
@@ -778,10 +773,24 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 			{
 				err = lis_matrix_duplicate(A,&B);
 				if( err ) return err;
-				lis_matrix_set_blocksize(B,block,block,NULL,NULL);
-				lis_matrix_set_type(B,storage);
+				err = lis_matrix_set_blocksize(B,block,block,NULL,NULL);
+				if( err )
+				{
+					lis_matrix_destroy(B);
+					return err;
+				}
+				err = lis_matrix_set_type(B,storage);
+				if( err )
+				{
+					lis_matrix_destroy(B);
+					return err;
+				}
 				err = lis_matrix_convert(A,B);
-				if( err ) return err;
+				if( err )
+				{
+					lis_matrix_destroy(B);
+					return err;
+				}
 				lis_matrix_storage_destroy(A);
 				lis_matrix_DLU_destroy(A);
 				lis_matrix_diag_destroy(A->WD);
@@ -870,7 +879,6 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 		{
 			lis_vector_destroy(xx);
 			lis_solver_work_destroy(solver);
-			lis_free(rhistory);
 			solver->retcode = err;
 			return err;
 		}
@@ -972,6 +980,18 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	  lis_matrix_convert(AA,Ah);
 	  solver->Ah = Ah;
 	}
+
+	/* create residual history after solver setup succeeds */
+	rhistory = (LIS_REAL *)lis_malloc((maxiter+2)*sizeof(LIS_REAL),"lis_solve::rhistory");
+	if( rhistory==NULL )
+	{
+		LIS_SETERR_MEM((maxiter+2)*sizeof(LIS_REAL));
+		lis_solver_work_destroy(solver);
+		lis_vector_destroy(xx);
+		solver->retcode = LIS_ERR_OUT_OF_MEMORY;
+		return LIS_ERR_OUT_OF_MEMORY;
+	}
+	rhistory[0] = 1.0;
 
 	solver->x        = xx;
 	solver->xx       = x;
