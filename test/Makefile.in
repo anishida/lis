@@ -68,7 +68,8 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) \
 	testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) \
 	testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
-	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
+	testrepeatedsystems$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
+	$(am__EXEEXT_3)
 @ENABLE_FORTRAN_TRUE@am__append_1 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_2 = test2f test6f 
 @ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__append_3 = test8f
@@ -316,6 +317,10 @@ am_testpreconreuse_OBJECTS = testpreconreuse.$(OBJEXT)
 testpreconreuse_OBJECTS = $(am_testpreconreuse_OBJECTS)
 testpreconreuse_LDADD = $(LDADD)
 testpreconreuse_DEPENDENCIES =
+am_testrepeatedsystems_OBJECTS = testrepeatedsystems.$(OBJEXT)
+testrepeatedsystems_OBJECTS = $(am_testrepeatedsystems_OBJECTS)
+testrepeatedsystems_LDADD = $(LDADD)
+testrepeatedsystems_DEPENDENCIES =
 am_testrhistoryerror_OBJECTS = testrhistoryerror.$(OBJEXT)
 testrhistoryerror_OBJECTS = $(am_testrhistoryerror_OBJECTS)
 testrhistoryerror_LDADD = $(LDADD)
@@ -390,8 +395,9 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(test7f_SOURCES) $(test8f_SOURCES) $(testdiagonal_SOURCES) \
 	$(testjacobiuser_SOURCES) $(testoperator_SOURCES) \
 	$(testpreconlifecycle_SOURCES) $(testpreconpsd_SOURCES) \
-	$(testpreconreuse_SOURCES) $(testrhistoryerror_SOURCES) \
-	$(testrqirestore_SOURCES) $(testuser_SOURCES)
+	$(testpreconreuse_SOURCES) $(testrepeatedsystems_SOURCES) \
+	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
+	$(testuser_SOURCES)
 DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
 	$(etest3_SOURCES) $(etest4_SOURCES) \
@@ -413,8 +419,9 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__test8f_SOURCES_DIST) $(testdiagonal_SOURCES) \
 	$(testjacobiuser_SOURCES) $(testoperator_SOURCES) \
 	$(testpreconlifecycle_SOURCES) $(testpreconpsd_SOURCES) \
-	$(testpreconreuse_SOURCES) $(testrhistoryerror_SOURCES) \
-	$(testrqirestore_SOURCES) $(testuser_SOURCES)
+	$(testpreconreuse_SOURCES) $(testrepeatedsystems_SOURCES) \
+	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
+	$(testuser_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -620,6 +627,7 @@ testpreconpsd_SOURCES = testpreconpsd.c
 testpreconreuse_SOURCES = testpreconreuse.c
 testrqirestore_SOURCES = testrqirestore.c
 testrhistoryerror_SOURCES = testrhistoryerror.c
+testrepeatedsystems_SOURCES = testrepeatedsystems.c
 @ENABLE_FORTRAN_TRUE@etest1f_SOURCES = etest1f.F
 @ENABLE_FORTRAN_TRUE@etest4f_SOURCES = etest4f.F
 @ENABLE_FORTRAN_TRUE@test1f_SOURCES = test1f.F
@@ -674,7 +682,7 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
-TESTS = test.sh testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT)
+TESTS = test.sh testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT)
 all: all-am
 
 .SUFFIXES:
@@ -954,6 +962,9 @@ testpreconpsd$(EXEEXT): $(testpreconpsd_OBJECTS) $(testpreconpsd_DEPENDENCIES) $
 testpreconreuse$(EXEEXT): $(testpreconreuse_OBJECTS) $(testpreconreuse_DEPENDENCIES) $(EXTRA_testpreconreuse_DEPENDENCIES) 
 	@rm -f testpreconreuse$(EXEEXT)
 	$(LINK) $(testpreconreuse_OBJECTS) $(testpreconreuse_LDADD) $(LIBS)
+testrepeatedsystems$(EXEEXT): $(testrepeatedsystems_OBJECTS) $(testrepeatedsystems_DEPENDENCIES) $(EXTRA_testrepeatedsystems_DEPENDENCIES) 
+	@rm -f testrepeatedsystems$(EXEEXT)
+	$(LINK) $(testrepeatedsystems_OBJECTS) $(testrepeatedsystems_LDADD) $(LIBS)
 testrhistoryerror$(EXEEXT): $(testrhistoryerror_OBJECTS) $(testrhistoryerror_DEPENDENCIES) $(EXTRA_testrhistoryerror_DEPENDENCIES) 
 	@rm -f testrhistoryerror$(EXEEXT)
 	$(LINK) $(testrhistoryerror_OBJECTS) $(testrhistoryerror_LDADD) $(LIBS)
@@ -1041,6 +1052,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testpreconlifecycle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testpreconpsd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testpreconreuse.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrepeatedsystems.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrhistoryerror.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrqirestore.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuser.Po@am__quote@
