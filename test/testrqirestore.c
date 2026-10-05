@@ -209,8 +209,18 @@ int
 main(int argc, char **argv)
 {
     LIS_INT err;
+    int test_argc;
+    char arg0[] = "testrqirestore";
+    char arg1[] = "-maxiter_noimp";
+    char arg2[] = "-1";
+    char *test_argv[] = {arg0, arg1, arg2, NULL};
+    char **test_argvp = test_argv;
 
-    err = lis_initialize(&argc, &argv);
+    (void)argc;
+    (void)argv;
+
+    test_argc = 3;
+    err = lis_initialize(&test_argc, &test_argvp);
     if (err) return 1;
 
     err = test_rqi_restore();
