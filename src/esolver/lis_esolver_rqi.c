@@ -199,14 +199,14 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
       /* y = (A - rho * I)^-1 * v */
       lis_matrix_shift_diagonal(A, rho);
       err = lis_solve_kernel(A, v, y, solver, precon);
-      if( err )
-	{
-	  lis_solver_work_destroy(solver);	  
-	  solver->retcode = err;
-	  lis_precon_destroy(precon);
-	  return err;
-	}
       lis_matrix_shift_diagonal(A, -rho);
+      if( err )
+      {
+        solver->retcode = err;
+        lis_precon_destroy(precon);
+        lis_solver_destroy(solver);
+        return err;
+      }
       lis_solver_get_iter(solver,&iter2);
 
       /* theta = ||y||_2 */      
@@ -428,14 +428,14 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
       /* y = (A - rho * B)^-1 * w */
       lis_matrix_shift_matrix(A, B, rho);
       err = lis_solve_kernel(A, w, y, solver, precon);
-      if( err )
-	{
-	  lis_solver_work_destroy(solver);	  
-	  solver->retcode = err;
-	  lis_precon_destroy(precon);
-	  return err;
-	}
       lis_matrix_shift_matrix(A, B, -rho);
+      if( err )
+      {
+        solver->retcode = err;
+        lis_precon_destroy(precon);
+        lis_solver_destroy(solver);
+        return err;
+      }
       lis_solver_get_iter(solver,&iter2);
 
       /* theta = <w, y> */      
