@@ -735,7 +735,10 @@ LIS_INT lis_solver_set_matrix(LIS_MATRIX A, LIS_SOLVER solver)
 	return LIS_SUCCESS;
 }
 
-static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver)
+#undef __FUNC__
+#define __FUNC__ "lis_solver_check_user_matrix"
+static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
+                                            LIS_PRECON precon)
 {
 	LIS_INT nsolver, precon_type;
 
@@ -801,12 +804,30 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver)
 	}
 
 	precon_type = solver->options[LIS_OPTIONS_PRECON];
-	if( precon_type!=LIS_PRECON_TYPE_NONE &&
-	    precon_type<LIS_PRECON_TYPE_USERDEF )
+
+	/*
+	 * lis_solve() has no prebuilt preconditioner at validation time, so
+	 * built-in explicit-storage preconditioners remain unsupported there.
+	 *
+	 * lis_solve_kernel() borrows a caller-owned preconditioner. If the
+	 * caller already built it from compatible explicit storage, the
+	 * Krylov operator itself may remain USER/OPERATOR.
+	 */
+	if( precon!=NULL && precon->precon_type!=precon_type )
 	{
-		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-		           "built-in preconditioners require explicit storage; use none or a registered user preconditioner\n");
-		return LIS_ERR_NOT_IMPLEMENTED;
+	        LIS_SETERR2(LIS_ERR_ILL_ARG,
+	                    "prebuilt preconditioner type %D does not match solver option %D\n",
+	                    precon->precon_type,precon_type);
+	        return LIS_ERR_ILL_ARG;
+	}
+
+	if( precon_type!=LIS_PRECON_TYPE_NONE &&
+	    precon_type<LIS_PRECON_TYPE_USERDEF &&
+	    precon==NULL )
+	{
+	        LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+	                   "built-in preconditioners require explicit storage unless a compatible prebuilt preconditioner is supplied\n");
+	        return LIS_ERR_NOT_IMPLEMENTED;
 	}
 	if( precon_type>=LIS_PRECON_TYPE_USERDEF )
 	{
@@ -853,7 +874,7 @@ LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
 		LIS_SETERR1(LIS_ERR_ILL_ARG,"Invalid LIS_OPTIONS_PRECON value %D\n",solver->options[LIS_OPTIONS_PRECON]);
 		return LIS_ERR_ILL_ARG;
 	}
-	err = lis_solver_check_user_matrix(A,solver);
+	err = lis_solver_check_user_matrix(A,solver,NULL);
 	if( err ) return err;
 
 	err = lis_precon_create(solver, &precon);
@@ -968,7 +989,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 		LIS_SETERR1(LIS_ERR_ILL_ARG,"Invalid LIS_OPTIONS_PRECON value %D\n",precon_type);
 		return LIS_ERR_ILL_ARG;
 	}
-	err = lis_solver_check_user_matrix(A,solver);
+	err = lis_solver_check_user_matrix(A,solver,precon);
 	if( err ) return err;
 	if( maxiter<0 )
 	{
