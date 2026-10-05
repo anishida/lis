@@ -314,6 +314,338 @@ LIS_INT lis_solver_create(LIS_SOLVER *solver)
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_solver_work_vector_compatible"
+LIS_INT lis_solver_work_vector_compatible(
+	LIS_VECTOR v,
+	LIS_MATRIX A,
+	LIS_INT precision)
+{
+	LIS_INT i;
+#ifdef USE_MPI
+	LIS_INT mpi_err,comm_result;
+#endif
+
+	LIS_DEBUG_FUNC_IN;
+
+	if( v==NULL || A==NULL )
+	{
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_FALSE;
+	}
+
+	if( v->label!=LIS_LABEL_VECTOR || A->label!=LIS_LABEL_MATRIX )
+	{
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_FALSE;
+	}
+
+	if( v->precision!=precision ||
+		v->gn!=A->gn ||
+		v->n!=A->n ||
+		v->np!=A->np ||
+		v->pad!=A->pad ||
+		v->origin!=A->origin ||
+		v->my_rank!=A->my_rank ||
+		v->nprocs!=A->nprocs ||
+		v->is!=A->is ||
+		v->ie!=A->ie )
+	{
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_FALSE;
+	}
+
+#ifdef USE_MPI
+	mpi_err = MPI_Comm_compare(v->comm,A->comm,&comm_result);
+	if( mpi_err!=MPI_SUCCESS ||
+		(comm_result!=MPI_IDENT && comm_result!=MPI_CONGRUENT) )
+	{
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_FALSE;
+	}
+
+	if( v->ranges==NULL || A->ranges==NULL )
+	{
+		if( v->ranges!=A->ranges )
+		{
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_FALSE;
+		}
+	}
+	else
+	{
+		for(i=0;i<=A->nprocs;i++)
+		{
+			if( v->ranges[i]!=A->ranges[i] )
+			{
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_FALSE;
+			}
+		}
+	}
+#else
+	(void)i;
+	if( v->comm!=A->comm )
+	{
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_FALSE;
+	}
+#endif
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_TRUE;
+}
+
+static LIS_INT
+lis_solver_work_expected_length(LIS_SOLVER solver)
+{
+	LIS_INT nsolver;
+	LIS_INT restart;
+	LIS_INT l;
+	LIS_INT s;
+
+	if( solver==NULL ) return -1;
+
+	nsolver = solver->options[LIS_OPTIONS_SOLVER];
+
+	switch( nsolver )
+	{
+	case LIS_SOLVER_CG:
+		return 4;
+
+	case LIS_SOLVER_BICG:
+		return 6;
+
+	case LIS_SOLVER_CGS:
+		return 7;
+
+	case LIS_SOLVER_BICGSTAB:
+		return 7;
+
+	case LIS_SOLVER_BICGSTABL:
+		l = solver->options[LIS_OPTIONS_ELL];
+		if( l<0 ) return -1;
+		return 4 + 2*(l+1);
+
+	case LIS_SOLVER_GPBICG:
+		return 14;
+
+	case LIS_SOLVER_TFQMR:
+		return 9;
+
+	case LIS_SOLVER_ORTHOMIN:
+		restart = solver->options[LIS_OPTIONS_RESTART];
+		if( restart<0 ) return -1;
+		return 3 + 3*(restart+1);
+
+	case LIS_SOLVER_GMRES:
+		restart = solver->options[LIS_OPTIONS_RESTART];
+		if( restart<0 ) return -1;
+		return 4 + (restart+1);
+
+	case LIS_SOLVER_JACOBI:
+		return 4;
+
+	case LIS_SOLVER_GS:
+		return 3;
+
+	case LIS_SOLVER_SOR:
+		return 3;
+
+	case LIS_SOLVER_BICGSAFE:
+		return 12;
+
+	case LIS_SOLVER_CR:
+		return 6;
+
+	case LIS_SOLVER_BICR:
+		return 10;
+
+	case LIS_SOLVER_CRS:
+		return 6;
+
+	case LIS_SOLVER_BICRSTAB:
+		return 9;
+
+	case LIS_SOLVER_GPBICR:
+		return 14;
+
+	case LIS_SOLVER_BICRSAFE:
+		return 13;
+
+	case LIS_SOLVER_FGMRES:
+		restart = solver->options[LIS_OPTIONS_RESTART];
+		if( restart<0 ) return -1;
+		return 4 + (2*restart+1);
+
+	case LIS_SOLVER_IDRS:
+	case LIS_SOLVER_IDR1:
+		s = solver->options[LIS_OPTIONS_IDRS_RESTART];
+		if( s<0 ) return -1;
+		return 4 + 3*s;
+
+	case LIS_SOLVER_MINRES:
+		return 7;
+
+	case LIS_SOLVER_COCG:
+		return 4;
+
+	case LIS_SOLVER_COCR:
+		return 6;
+
+	default:
+		return -1;
+	}
+}
+
+
+static LIS_INT
+lis_solver_work_small_vector_compatible(
+	LIS_VECTOR v,
+	LIS_MATRIX A,
+	LIS_INT precision,
+	LIS_INT local_n)
+{
+	LIS_INT i;
+#ifdef USE_MPI
+	LIS_INT mpi_err,comm_result;
+#endif
+
+	if( v==NULL || A==NULL || local_n<0 )
+	{
+		return LIS_FALSE;
+	}
+
+	if( v->label!=LIS_LABEL_VECTOR ||
+		v->precision!=precision ||
+		v->n!=local_n ||
+		v->np!=local_n ||
+		v->pad!=0 ||
+		v->my_rank!=A->my_rank ||
+		v->nprocs!=A->nprocs )
+	{
+		return LIS_FALSE;
+	}
+
+#ifdef USE_MPI
+	mpi_err = MPI_Comm_compare(v->comm,A->comm,&comm_result);
+	if( mpi_err!=MPI_SUCCESS ||
+		(comm_result!=MPI_IDENT && comm_result!=MPI_CONGRUENT) )
+	{
+		return LIS_FALSE;
+	}
+
+	if( v->ranges==NULL )
+	{
+		return LIS_FALSE;
+	}
+
+	for(i=0;i<=v->nprocs;i++)
+	{
+		if( v->ranges[i]!=i*local_n )
+		{
+			return LIS_FALSE;
+		}
+	}
+
+	if( v->gn!=local_n*v->nprocs ||
+		v->is!=v->my_rank*local_n ||
+		v->ie!=(v->my_rank+1)*local_n )
+	{
+		return LIS_FALSE;
+	}
+#else
+	(void)i;
+
+	if( v->comm!=A->comm ||
+		v->gn!=local_n ||
+		v->is!=0 ||
+		v->ie!=local_n )
+	{
+		return LIS_FALSE;
+	}
+#endif
+
+	return LIS_TRUE;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_work_compatible"
+LIS_INT lis_solver_work_compatible(LIS_SOLVER solver)
+{
+	LIS_INT i;
+	LIS_INT worklen;
+	LIS_INT precision;
+	LIS_INT nsolver;
+	LIS_INT restart;
+	LIS_INT first;
+
+	LIS_DEBUG_FUNC_IN;
+
+	if( solver==NULL ||
+		solver->A==NULL ||
+		solver->work==NULL )
+	{
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_FALSE;
+	}
+
+	worklen = lis_solver_work_expected_length(solver);
+
+	if( worklen<0 || solver->worklen!=worklen )
+	{
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_FALSE;
+	}
+
+	if( solver->precision==LIS_PRECISION_DEFAULT )
+	{
+		precision = LIS_PRECISION_DEFAULT;
+	}
+	else
+	{
+		precision = LIS_PRECISION_QUAD;
+	}
+
+	nsolver = solver->options[LIS_OPTIONS_SOLVER];
+	first   = 0;
+
+	if( nsolver==LIS_SOLVER_GMRES ||
+		nsolver==LIS_SOLVER_FGMRES )
+	{
+		restart = solver->options[LIS_OPTIONS_RESTART];
+
+		if( restart<0 ||
+			!lis_solver_work_small_vector_compatible(
+				solver->work[0],
+				solver->A,
+				precision,
+				restart+1) )
+		{
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_FALSE;
+		}
+
+		first = 1;
+	}
+
+	for(i=first;i<worklen;i++)
+	{
+		if( !lis_solver_work_vector_compatible(
+				solver->work[i],
+				solver->A,
+				precision) )
+		{
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_FALSE;
+		}
+	}
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_TRUE;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_solver_work_destroy"
 LIS_INT lis_solver_work_destroy(LIS_SOLVER solver)
 {
