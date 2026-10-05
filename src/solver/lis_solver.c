@@ -645,6 +645,44 @@ LIS_INT lis_solver_work_compatible(LIS_SOLVER solver)
 	return LIS_TRUE;
 }
 
+static LIS_INT lis_solver_work_reset(LIS_SOLVER solver)
+{
+    LIS_INT i,err;
+
+    if( solver==NULL || solver->work==NULL )
+    {
+        return LIS_SUCCESS;
+    }
+
+    for(i=0;i<solver->worklen;i++)
+    {
+        if( solver->work[i]==NULL )
+        {
+            continue;
+        }
+
+#ifdef USE_QUAD_PRECISION
+        if( solver->work[i]->precision==LIS_PRECISION_DEFAULT )
+        {
+            err = lis_vector_set_all(0.0,solver->work[i]);
+        }
+        else
+        {
+            err = lis_vector_set_allex_nm(0.0,solver->work[i]);
+        }
+#else
+        err = lis_vector_set_all(0.0,solver->work[i]);
+#endif
+
+        if( err )
+        {
+            return err;
+        }
+    }
+
+    return LIS_SUCCESS;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_solver_work_destroy"
 LIS_INT lis_solver_work_destroy(LIS_SOLVER solver)
@@ -1296,13 +1334,34 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	    if( output ) lis_printf(comm,"matrix storage format : %s\n", lis_storagename[AA->matrix_type-1]);
 	  }
 
-	/* create work vector */
-	err = lis_solver_malloc_work[nsolver](solver); 
-	if( err )
+	/* create or reuse work vectors */
+	if( solver->work!=NULL )
 	{
-		lis_vector_destroy(xx);
-		solver->retcode = err;
-		return err;
+	    if( lis_solver_work_compatible(solver) )
+	    {
+	        err = lis_solver_work_reset(solver);
+	        if( err )
+	        {
+	            lis_vector_destroy(xx);
+	            solver->retcode = err;
+	            return err;
+	        }
+	    }
+	    else
+	    {
+	        lis_solver_work_destroy(solver);
+	    }
+	}
+
+	if( solver->work==NULL )
+	{
+	    err = lis_solver_malloc_work[nsolver](solver);
+	    if( err )
+	    {
+	        lis_vector_destroy(xx);
+	        solver->retcode = err;
+	        return err;
+	    }
 	}
 	if( nsolver==LIS_SOLVER_BICG && is_use_at )
 	{
@@ -1389,7 +1448,6 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	solver->p_i_time = p_i_time;
 	solver->time  = solver->ptime + itime;
 	solver->itime = itime;
-	lis_solver_work_destroy(solver);
 	lis_vector_duplicate(A,&t);
 	xx->precision = LIS_PRECISION_DEFAULT;
 	lis_matvec(A,xx,t);
