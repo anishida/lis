@@ -575,6 +575,7 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
 	{
 	  lis_solver_work_destroy(solver);	  
 	  solver->retcode = err;
+	  lis_precon_destroy(precon);
 	  return err;
 	}
       lis_solver_get_iter(solver, &iter2);

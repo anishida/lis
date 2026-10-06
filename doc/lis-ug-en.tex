@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 2.1.14
+Version 2.1.15
 \end{flushleft}
 
 \vspace*{2cm}
@@ -2602,6 +2602,8 @@ This operator represents the linear combination of two matrices $C = \alpha A + 
 \subsubsection{Shifted Generalized Eigenvalue Solvers with Matrix Operators}
 For shifted generalized eigenvalue problems $(A - \sigma B)x = \lambda Bx$, Generalized Power Iteration (GPI), Generalized Inverse Iteration (GII), and Generalized Conjugate Residual (GCR) solvers now utilize \texttt{LIS\_MATRIX\_OPERATOR} to dynamically create a temporary operator for $A - \sigma B$. This ensures the original matrices remain pristine and enables full support for user-defined custom matrices (\texttt{LIS\_MATRIX\_USER}). Shifted \texttt{LIS\_MATRIX\_USER} remains unsupported for other methods like Lanczos.
 
+\subsection{Preconditioner Reuse and Compatibility with User-Defined Matrices}
+Starting from Version 2.1.15, Lis clarifies preconditioner ownership and improves support for repeated solves with user-defined matrices (\texttt{LIS\_MATRIX\_USER}), relaxing previous restrictions when compatible prebuilt preconditioners are supplied.
 
 \newpage
 \subsection{Compiling and Linking}
@@ -6177,7 +6179,9 @@ Schwarz  &                       &                             &                
 {\bf Other Options}\\
 \begin{tabular}{l|ll}\hline\hline
 Option &                          \\ \hline
-\verb=-maxiter [1000]= & The maximum number of iterations         \\ 
+\verb=-maxiter [1000]= & The maximum number of iterations         \\
+\verb=-maxiter_noimp [0]= & The maximum number of consecutive iterations allowed without residual improvement \\
+                       & before early stopping (default: 0, which disables early stopping) \\
 \verb=-tol [1.0e-12]=  & The convergence tolerance $tol$            \\
 \verb=-tol_w [1.0]=    & The convergence tolerance $tol_w$  \\
 \verb=-print [0]=      & The output of the residual history                \\

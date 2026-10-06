@@ -115,13 +115,26 @@ LIS_INT lis_gmres_malloc_work(LIS_SOLVER solver)
 	}
 	if( solver->precision==LIS_PRECISION_DEFAULT )
 	{
-		lis_vector_create(solver->A->comm,&work[0]);
+		err = lis_vector_create(solver->A->comm,&work[0]);
 	}
 	else
 	{
-		lis_vector_createex(LIS_PRECISION_QUAD,solver->A->comm,&work[0]);
+		err = lis_vector_createex(LIS_PRECISION_QUAD,solver->A->comm,&work[0]);
 	}
-	lis_vector_set_size(work[0],restart+1,0);
+	if( err )
+	{
+		for(j=1;j<worklen;j++) lis_vector_destroy(work[j]);
+		lis_free(work);
+		return err;
+	}
+	err = lis_vector_set_size(work[0],restart+1,0);
+	if( err )
+	{
+		lis_vector_destroy(work[0]);
+		for(j=1;j<worklen;j++) lis_vector_destroy(work[j]);
+		lis_free(work);
+		return err;
+	}
 	solver->worklen = worklen;
 	solver->work    = work;
 
@@ -1145,19 +1158,32 @@ LIS_INT lis_fgmres_malloc_work(LIS_SOLVER solver)
 	}
 	if( i<worklen )
 	{
-		for(j=0;j<i;j++) lis_vector_destroy(work[j]);
+		for(j=1;j<i;j++) lis_vector_destroy(work[j]);
 		lis_free(work);
 		return err;
 	}
 	if( solver->precision==LIS_PRECISION_DEFAULT )
 	{
-		lis_vector_create(solver->A->comm,&work[0]);
+		err = lis_vector_create(solver->A->comm,&work[0]);
 	}
 	else
 	{
-		lis_vector_createex(LIS_PRECISION_QUAD,solver->A->comm,&work[0]);
+		err = lis_vector_createex(LIS_PRECISION_QUAD,solver->A->comm,&work[0]);
 	}
-	lis_vector_set_size(work[0],restart+1,0);
+	if( err )
+	{
+		for(j=1;j<worklen;j++) lis_vector_destroy(work[j]);
+		lis_free(work);
+		return err;
+	}
+	err = lis_vector_set_size(work[0],restart+1,0);
+	if( err )
+	{
+		lis_vector_destroy(work[0]);
+		for(j=1;j<worklen;j++) lis_vector_destroy(work[j]);
+		lis_free(work);
+		return err;
+	}
 	solver->worklen = worklen;
 	solver->work    = work;
 

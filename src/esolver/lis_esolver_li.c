@@ -578,6 +578,7 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
 	{
 	  lis_solver_work_destroy(solver);	  
 	  solver->retcode = err;
+	  lis_precon_destroy(precon);
 	  return err;
 	}
 

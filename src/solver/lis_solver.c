@@ -314,6 +314,376 @@ LIS_INT lis_solver_create(LIS_SOLVER *solver)
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_solver_work_vector_compatible"
+LIS_INT lis_solver_work_vector_compatible(
+	LIS_VECTOR v,
+	LIS_MATRIX A,
+	LIS_INT precision)
+{
+	LIS_INT i;
+#ifdef USE_MPI
+	LIS_INT mpi_err,comm_result;
+#endif
+
+	LIS_DEBUG_FUNC_IN;
+
+	if( v==NULL || A==NULL )
+	{
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_FALSE;
+	}
+
+	if( v->label!=LIS_LABEL_VECTOR || A->label!=LIS_LABEL_MATRIX )
+	{
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_FALSE;
+	}
+
+	if( v->precision!=precision ||
+		v->gn!=A->gn ||
+		v->n!=A->n ||
+		v->np!=A->np ||
+		v->pad!=A->pad ||
+		v->origin!=A->origin ||
+		v->my_rank!=A->my_rank ||
+		v->nprocs!=A->nprocs ||
+		v->is!=A->is ||
+		v->ie!=A->ie )
+	{
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_FALSE;
+	}
+
+#ifdef USE_MPI
+	mpi_err = MPI_Comm_compare(v->comm,A->comm,&comm_result);
+	if( mpi_err!=MPI_SUCCESS ||
+		(comm_result!=MPI_IDENT && comm_result!=MPI_CONGRUENT) )
+	{
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_FALSE;
+	}
+
+	if( v->ranges==NULL || A->ranges==NULL )
+	{
+		if( v->ranges!=A->ranges )
+		{
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_FALSE;
+		}
+	}
+	else
+	{
+		for(i=0;i<=A->nprocs;i++)
+		{
+			if( v->ranges[i]!=A->ranges[i] )
+			{
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_FALSE;
+			}
+		}
+	}
+#else
+	(void)i;
+	if( v->comm!=A->comm )
+	{
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_FALSE;
+	}
+#endif
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_TRUE;
+}
+
+static LIS_INT
+lis_solver_work_expected_length(LIS_SOLVER solver)
+{
+	LIS_INT nsolver;
+	LIS_INT restart;
+	LIS_INT l;
+	LIS_INT s;
+
+	if( solver==NULL ) return -1;
+
+	nsolver = solver->options[LIS_OPTIONS_SOLVER];
+
+	switch( nsolver )
+	{
+	case LIS_SOLVER_CG:
+		return 4;
+
+	case LIS_SOLVER_BICG:
+		return 6;
+
+	case LIS_SOLVER_CGS:
+		return 7;
+
+	case LIS_SOLVER_BICGSTAB:
+		return 7;
+
+	case LIS_SOLVER_BICGSTABL:
+		l = solver->options[LIS_OPTIONS_ELL];
+		if( l<0 ) return -1;
+		return 4 + 2*(l+1);
+
+	case LIS_SOLVER_GPBICG:
+		return 14;
+
+	case LIS_SOLVER_TFQMR:
+		return 9;
+
+	case LIS_SOLVER_ORTHOMIN:
+		restart = solver->options[LIS_OPTIONS_RESTART];
+		if( restart<0 ) return -1;
+		return 3 + 3*(restart+1);
+
+	case LIS_SOLVER_GMRES:
+		restart = solver->options[LIS_OPTIONS_RESTART];
+		if( restart<0 ) return -1;
+		return 4 + (restart+1);
+
+	case LIS_SOLVER_JACOBI:
+		return 4;
+
+	case LIS_SOLVER_GS:
+		return 3;
+
+	case LIS_SOLVER_SOR:
+		return 3;
+
+	case LIS_SOLVER_BICGSAFE:
+		return 12;
+
+	case LIS_SOLVER_CR:
+		return 6;
+
+	case LIS_SOLVER_BICR:
+		return 10;
+
+	case LIS_SOLVER_CRS:
+		return 6;
+
+	case LIS_SOLVER_BICRSTAB:
+		return 9;
+
+	case LIS_SOLVER_GPBICR:
+		return 14;
+
+	case LIS_SOLVER_BICRSAFE:
+		return 13;
+
+	case LIS_SOLVER_FGMRES:
+		restart = solver->options[LIS_OPTIONS_RESTART];
+		if( restart<0 ) return -1;
+		return 4 + (2*restart+1);
+
+	case LIS_SOLVER_IDRS:
+	case LIS_SOLVER_IDR1:
+		s = solver->options[LIS_OPTIONS_IDRS_RESTART];
+		if( s<0 ) return -1;
+		return 4 + 3*s;
+
+	case LIS_SOLVER_MINRES:
+		return 7;
+
+	case LIS_SOLVER_COCG:
+		return 4;
+
+	case LIS_SOLVER_COCR:
+		return 6;
+
+	default:
+		return -1;
+	}
+}
+
+
+static LIS_INT
+lis_solver_work_small_vector_compatible(
+	LIS_VECTOR v,
+	LIS_MATRIX A,
+	LIS_INT precision,
+	LIS_INT local_n)
+{
+	LIS_INT i;
+#ifdef USE_MPI
+	LIS_INT mpi_err,comm_result;
+#endif
+
+	if( v==NULL || A==NULL || local_n<0 )
+	{
+		return LIS_FALSE;
+	}
+
+	if( v->label!=LIS_LABEL_VECTOR ||
+		v->precision!=precision ||
+		v->n!=local_n ||
+		v->np!=local_n ||
+		v->pad!=0 ||
+		v->my_rank!=A->my_rank ||
+		v->nprocs!=A->nprocs )
+	{
+		return LIS_FALSE;
+	}
+
+#ifdef USE_MPI
+	mpi_err = MPI_Comm_compare(v->comm,A->comm,&comm_result);
+	if( mpi_err!=MPI_SUCCESS ||
+		(comm_result!=MPI_IDENT && comm_result!=MPI_CONGRUENT) )
+	{
+		return LIS_FALSE;
+	}
+
+	if( v->ranges==NULL )
+	{
+		return LIS_FALSE;
+	}
+
+	for(i=0;i<=v->nprocs;i++)
+	{
+		if( v->ranges[i]!=i*local_n )
+		{
+			return LIS_FALSE;
+		}
+	}
+
+	if( v->gn!=local_n*v->nprocs ||
+		v->is!=v->my_rank*local_n ||
+		v->ie!=(v->my_rank+1)*local_n )
+	{
+		return LIS_FALSE;
+	}
+#else
+	(void)i;
+
+	if( v->comm!=A->comm ||
+		v->gn!=local_n ||
+		v->is!=0 ||
+		v->ie!=local_n )
+	{
+		return LIS_FALSE;
+	}
+#endif
+
+	return LIS_TRUE;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_work_compatible"
+LIS_INT lis_solver_work_compatible(LIS_SOLVER solver)
+{
+	LIS_INT i;
+	LIS_INT worklen;
+	LIS_INT precision;
+	LIS_INT nsolver;
+	LIS_INT restart;
+	LIS_INT first;
+
+	LIS_DEBUG_FUNC_IN;
+
+	if( solver==NULL ||
+		solver->A==NULL ||
+		solver->work==NULL )
+	{
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_FALSE;
+	}
+
+	worklen = lis_solver_work_expected_length(solver);
+
+	if( worklen<0 || solver->worklen!=worklen )
+	{
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_FALSE;
+	}
+
+	if( solver->precision==LIS_PRECISION_DEFAULT )
+	{
+		precision = LIS_PRECISION_DEFAULT;
+	}
+	else
+	{
+		precision = LIS_PRECISION_QUAD;
+	}
+
+	nsolver = solver->options[LIS_OPTIONS_SOLVER];
+	first   = 0;
+
+	if( nsolver==LIS_SOLVER_GMRES ||
+		nsolver==LIS_SOLVER_FGMRES )
+	{
+		restart = solver->options[LIS_OPTIONS_RESTART];
+
+		if( restart<0 ||
+			!lis_solver_work_small_vector_compatible(
+				solver->work[0],
+				solver->A,
+				precision,
+				restart+1) )
+		{
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_FALSE;
+		}
+
+		first = 1;
+	}
+
+	for(i=first;i<worklen;i++)
+	{
+		if( !lis_solver_work_vector_compatible(
+				solver->work[i],
+				solver->A,
+				precision) )
+		{
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_FALSE;
+		}
+	}
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_TRUE;
+}
+
+static LIS_INT lis_solver_work_reset(LIS_SOLVER solver)
+{
+    LIS_INT i,err;
+
+    if( solver==NULL || solver->work==NULL )
+    {
+        return LIS_SUCCESS;
+    }
+
+    for(i=0;i<solver->worklen;i++)
+    {
+        if( solver->work[i]==NULL )
+        {
+            continue;
+        }
+
+#ifdef USE_QUAD_PRECISION
+        if( solver->work[i]->precision==LIS_PRECISION_DEFAULT )
+        {
+            err = lis_vector_set_all(0.0,solver->work[i]);
+        }
+        else
+        {
+            err = lis_vector_set_allex_nm(0.0,solver->work[i]);
+        }
+#else
+        err = lis_vector_set_all(0.0,solver->work[i]);
+#endif
+
+        if( err )
+        {
+            return err;
+        }
+    }
+
+    return LIS_SUCCESS;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_solver_work_destroy"
 LIS_INT lis_solver_work_destroy(LIS_SOLVER solver)
 {
@@ -365,7 +735,10 @@ LIS_INT lis_solver_set_matrix(LIS_MATRIX A, LIS_SOLVER solver)
 	return LIS_SUCCESS;
 }
 
-static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver)
+#undef __FUNC__
+#define __FUNC__ "lis_solver_check_user_matrix"
+static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
+                                            LIS_PRECON precon)
 {
 	LIS_INT nsolver, precon_type;
 
@@ -431,12 +804,30 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver)
 	}
 
 	precon_type = solver->options[LIS_OPTIONS_PRECON];
-	if( precon_type!=LIS_PRECON_TYPE_NONE &&
-	    precon_type<LIS_PRECON_TYPE_USERDEF )
+
+	/*
+	 * lis_solve() has no prebuilt preconditioner at validation time, so
+	 * built-in explicit-storage preconditioners remain unsupported there.
+	 *
+	 * lis_solve_kernel() borrows a caller-owned preconditioner. If the
+	 * caller already built it from compatible explicit storage, the
+	 * Krylov operator itself may remain USER/OPERATOR.
+	 */
+	if( precon!=NULL && precon->precon_type!=precon_type )
 	{
-		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-		           "built-in preconditioners require explicit storage; use none or a registered user preconditioner\n");
-		return LIS_ERR_NOT_IMPLEMENTED;
+	        LIS_SETERR2(LIS_ERR_ILL_ARG,
+	                    "prebuilt preconditioner type %D does not match solver option %D\n",
+	                    precon->precon_type,precon_type);
+	        return LIS_ERR_ILL_ARG;
+	}
+
+	if( precon_type!=LIS_PRECON_TYPE_NONE &&
+	    precon_type<LIS_PRECON_TYPE_USERDEF &&
+	    precon==NULL )
+	{
+	        LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+	                   "built-in preconditioners require explicit storage unless a compatible prebuilt preconditioner is supplied\n");
+	        return LIS_ERR_NOT_IMPLEMENTED;
 	}
 	if( precon_type>=LIS_PRECON_TYPE_USERDEF )
 	{
@@ -483,7 +874,7 @@ LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
 		LIS_SETERR1(LIS_ERR_ILL_ARG,"Invalid LIS_OPTIONS_PRECON value %D\n",solver->options[LIS_OPTIONS_PRECON]);
 		return LIS_ERR_ILL_ARG;
 	}
-	err = lis_solver_check_user_matrix(A,solver);
+	err = lis_solver_check_user_matrix(A,solver,NULL);
 	if( err ) return err;
 
 	err = lis_precon_create(solver, &precon);
@@ -499,6 +890,7 @@ LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
 	if( err )
 	{
 		lis_solver_work_destroy(solver);	  
+		lis_precon_destroy(precon);
 		solver->retcode = err;
 		return err;
 	}
@@ -597,7 +989,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 		LIS_SETERR1(LIS_ERR_ILL_ARG,"Invalid LIS_OPTIONS_PRECON value %D\n",precon_type);
 		return LIS_ERR_ILL_ARG;
 	}
-	err = lis_solver_check_user_matrix(A,solver);
+	err = lis_solver_check_user_matrix(A,solver,precon);
 	if( err ) return err;
 	if( maxiter<0 )
 	{
@@ -706,17 +1098,12 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 		#endif
 	}
 
-	/* create residual history vector */
-	if( solver->rhistory ) lis_free(solver->rhistory);
-	rhistory = (LIS_REAL *)lis_malloc((maxiter+2)*sizeof(LIS_REAL),"lis_solve::rhistory");
-	if( rhistory==NULL )
+	/* discard residual history from the previous solve */
+	if( solver->rhistory )
 	{
-		LIS_SETERR_MEM((maxiter+2)*sizeof(LIS_SCALAR));
-		lis_vector_destroy(xx);
-		solver->retcode = err;
-		return err;
+		lis_free(solver->rhistory);
+		solver->rhistory = NULL;
 	}
-	rhistory[0] = 1.0;
 
 
 	n       = A->n;
@@ -777,10 +1164,24 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 			{
 				err = lis_matrix_duplicate(A,&B);
 				if( err ) return err;
-				lis_matrix_set_blocksize(B,block,block,NULL,NULL);
-				lis_matrix_set_type(B,storage);
+				err = lis_matrix_set_blocksize(B,block,block,NULL,NULL);
+				if( err )
+				{
+					lis_matrix_destroy(B);
+					return err;
+				}
+				err = lis_matrix_set_type(B,storage);
+				if( err )
+				{
+					lis_matrix_destroy(B);
+					return err;
+				}
 				err = lis_matrix_convert(A,B);
-				if( err ) return err;
+				if( err )
+				{
+					lis_matrix_destroy(B);
+					return err;
+				}
 				lis_matrix_storage_destroy(A);
 				lis_matrix_DLU_destroy(A);
 				lis_matrix_diag_destroy(A->WD);
@@ -869,7 +1270,6 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 		{
 			lis_vector_destroy(xx);
 			lis_solver_work_destroy(solver);
-			lis_free(rhistory);
 			solver->retcode = err;
 			return err;
 		}
@@ -955,14 +1355,34 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	    if( output ) lis_printf(comm,"matrix storage format : %s\n", lis_storagename[AA->matrix_type-1]);
 	  }
 
-	/* create work vector */
-	err = lis_solver_malloc_work[nsolver](solver); 
-	if( err )
+	/* create or reuse work vectors */
+	if( solver->work!=NULL )
 	{
-		lis_vector_destroy(xx);
-		lis_precon_destroy(precon);
-		solver->retcode = err;
-		return err;
+	    if( lis_solver_work_compatible(solver) )
+	    {
+	        err = lis_solver_work_reset(solver);
+	        if( err )
+	        {
+	            lis_vector_destroy(xx);
+	            solver->retcode = err;
+	            return err;
+	        }
+	    }
+	    else
+	    {
+	        lis_solver_work_destroy(solver);
+	    }
+	}
+
+	if( solver->work==NULL )
+	{
+	    err = lis_solver_malloc_work[nsolver](solver);
+	    if( err )
+	    {
+	        lis_vector_destroy(xx);
+	        solver->retcode = err;
+	        return err;
+	    }
 	}
 	if( nsolver==LIS_SOLVER_BICG && is_use_at )
 	{
@@ -972,6 +1392,18 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	  lis_matrix_convert(AA,Ah);
 	  solver->Ah = Ah;
 	}
+
+	/* create residual history after solver setup succeeds */
+	rhistory = (LIS_REAL *)lis_malloc((maxiter+2)*sizeof(LIS_REAL),"lis_solve::rhistory");
+	if( rhistory==NULL )
+	{
+		LIS_SETERR_MEM((maxiter+2)*sizeof(LIS_REAL));
+		lis_solver_work_destroy(solver);
+		lis_vector_destroy(xx);
+		solver->retcode = LIS_ERR_OUT_OF_MEMORY;
+		return LIS_ERR_OUT_OF_MEMORY;
+	}
+	rhistory[0] = 1.0;
 
 	solver->x        = xx;
 	solver->xx       = x;
@@ -1037,7 +1469,6 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	solver->p_i_time = p_i_time;
 	solver->time  = solver->ptime + itime;
 	solver->itime = itime;
-	lis_solver_work_destroy(solver);
 	lis_vector_duplicate(A,&t);
 	xx->precision = LIS_PRECISION_DEFAULT;
 	lis_matvec(A,xx,t);

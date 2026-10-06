@@ -1,3 +1,15 @@
+Version 2.1.15 October 6, 2026
+
+  - Clarified preconditioner ownership around lis_solve_kernel() to ensure consistent lifecycle management (thanks to Rafal Brzegowy).
+  - Fixed missing matrix restoration on error paths within Rayleigh Quotient Iteration (RQI) (thanks to Rafal Brzegowy).
+  - Hardened repeated-solve error handling and residual history (rhistory) memory state safety (thanks to Rafal Brzegowy).
+  - Added regression test for repeated system reuse with user-defined preconditioners and warm starts (thanks to Rafal Brzegowy).
+  - Added regression test for caller-controlled preconditioner retry and rebuild policies (thanks to Rafal Brzegowy).
+  - Hardened workspace allocation error handling and cleanup for GMRES and FGMRES solvers (thanks to Rafal Brzegowy).
+  - Defined explicit solver workspace compatibility rules for layout, precision, and MPI contexts (thanks to Rafal Brzegowy).
+  - Implemented optimal reuse of compatible solver workspaces across repeated solves (thanks to Rafal Brzegowy).
+  - Allowed prebuilt preconditioners to be successfully supplied with user-defined matrices (thanks to Rafal Brzegowy).
+
 Version 2.1.14 October 2, 2026
 
   - Added new option -maxiter_noimp for early stopping (thanks to Caio Souza).
@@ -8,15 +20,10 @@ Version 2.1.13 September 30, 2026
   - Handled unsupported user matrix eigensolver paths (thanks to Rafal Brzegowy).
   - Added generic linear-combination matrix operator (thanks to Rafal Brzegowy).
   - Used matrix operator for shifted generalized eigensolvers (thanks to Rafal Brzegowy).
-
   - Hardened matrix operator test coverage for composed operators and distributed-memory environments (thanks to Rafal Brzegowy).
-
   - Added diagonal extraction support and recursive diagonal evaluation for user and operator matrices (thanks to Rafal Brzegowy).
-
   - Added lifecycles and destroy routines for user-defined preconditioners via lis_precon_register_ex (thanks to Rafal Brzegowy).
-
   - Propagated Jacobi diagonal errors (thanks to Rafal Brzegowy).
-
   - Added PSD support for user preconditioners (thanks to Rafal Brzegowy).
 
 Version 2.1.12 September 25, 2026
