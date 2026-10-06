@@ -70,8 +70,8 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
 	testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) \
 	testgmreswork$(EXEEXT) testworkcompat$(EXEEXT) \
-	testworkreuse$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
-	$(am__EXEEXT_3)
+	testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) \
+	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
 @ENABLE_FORTRAN_TRUE@am__append_1 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_2 = test2f test6f 
 @ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__append_3 = test8f
@@ -311,6 +311,10 @@ am_testoperator_OBJECTS = testoperator.$(OBJEXT)
 testoperator_OBJECTS = $(am_testoperator_OBJECTS)
 testoperator_LDADD = $(LDADD)
 testoperator_DEPENDENCIES =
+am_testprebuiltuser_OBJECTS = testprebuiltuser.$(OBJEXT)
+testprebuiltuser_OBJECTS = $(am_testprebuiltuser_OBJECTS)
+testprebuiltuser_LDADD = $(LDADD)
+testprebuiltuser_DEPENDENCIES =
 am_testpreconlifecycle_OBJECTS = testpreconlifecycle.$(OBJEXT)
 testpreconlifecycle_OBJECTS = $(am_testpreconlifecycle_OBJECTS)
 testpreconlifecycle_LDADD = $(LDADD)
@@ -412,12 +416,12 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(test6_SOURCES) $(test6f_SOURCES) $(test7_SOURCES) \
 	$(test7f_SOURCES) $(test8f_SOURCES) $(testdiagonal_SOURCES) \
 	$(testgmreswork_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testoperator_SOURCES) $(testpreconlifecycle_SOURCES) \
-	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
-	$(testpreconreuse_SOURCES) $(testrepeatedsystems_SOURCES) \
-	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
-	$(testuser_SOURCES) $(testworkcompat_SOURCES) \
-	$(testworkreuse_SOURCES)
+	$(testoperator_SOURCES) $(testprebuiltuser_SOURCES) \
+	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
+	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
+	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
+	$(testrqirestore_SOURCES) $(testuser_SOURCES) \
+	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
 DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
 	$(etest3_SOURCES) $(etest4_SOURCES) \
@@ -438,12 +442,12 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(test7_SOURCES) $(am__test7f_SOURCES_DIST) \
 	$(am__test8f_SOURCES_DIST) $(testdiagonal_SOURCES) \
 	$(testgmreswork_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testoperator_SOURCES) $(testpreconlifecycle_SOURCES) \
-	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
-	$(testpreconreuse_SOURCES) $(testrepeatedsystems_SOURCES) \
-	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
-	$(testuser_SOURCES) $(testworkcompat_SOURCES) \
-	$(testworkreuse_SOURCES)
+	$(testoperator_SOURCES) $(testprebuiltuser_SOURCES) \
+	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
+	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
+	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
+	$(testrqirestore_SOURCES) $(testuser_SOURCES) \
+	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -654,6 +658,7 @@ testpreconpolicy_SOURCES = testpreconpolicy.c
 testgmreswork_SOURCES = testgmreswork.c
 testworkcompat_SOURCES = testworkcompat.c
 testworkreuse_SOURCES = testworkreuse.c
+testprebuiltuser_SOURCES = testprebuiltuser.c
 @ENABLE_FORTRAN_TRUE@etest1f_SOURCES = etest1f.F
 @ENABLE_FORTRAN_TRUE@etest4f_SOURCES = etest4f.F
 @ENABLE_FORTRAN_TRUE@test1f_SOURCES = test1f.F
@@ -708,7 +713,7 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
-TESTS = test.sh testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) testworkcompat$(EXEEXT) testworkreuse$(EXEEXT)
+TESTS = test.sh testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) testworkcompat$(EXEEXT) testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT)
 all: all-am
 
 .SUFFIXES:
@@ -982,6 +987,9 @@ testjacobiuser$(EXEEXT): $(testjacobiuser_OBJECTS) $(testjacobiuser_DEPENDENCIES
 testoperator$(EXEEXT): $(testoperator_OBJECTS) $(testoperator_DEPENDENCIES) $(EXTRA_testoperator_DEPENDENCIES) 
 	@rm -f testoperator$(EXEEXT)
 	$(LINK) $(testoperator_OBJECTS) $(testoperator_LDADD) $(LIBS)
+testprebuiltuser$(EXEEXT): $(testprebuiltuser_OBJECTS) $(testprebuiltuser_DEPENDENCIES) $(EXTRA_testprebuiltuser_DEPENDENCIES) 
+	@rm -f testprebuiltuser$(EXEEXT)
+	$(LINK) $(testprebuiltuser_OBJECTS) $(testprebuiltuser_LDADD) $(LIBS)
 testpreconlifecycle$(EXEEXT): $(testpreconlifecycle_OBJECTS) $(testpreconlifecycle_DEPENDENCIES) $(EXTRA_testpreconlifecycle_DEPENDENCIES) 
 	@rm -f testpreconlifecycle$(EXEEXT)
 	$(LINK) $(testpreconlifecycle_OBJECTS) $(testpreconlifecycle_LDADD) $(LIBS)
@@ -1088,6 +1096,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testgmreswork.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testjacobiuser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoperator.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testprebuiltuser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testpreconlifecycle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testpreconpolicy.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testpreconpsd.Po@am__quote@
