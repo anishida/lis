@@ -69,8 +69,9 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) \
 	testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
 	testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) \
-	testgmreswork$(EXEEXT) testworkcompat$(EXEEXT) $(am__EXEEXT_1) \
-	$(am__EXEEXT_2) $(am__EXEEXT_3)
+	testgmreswork$(EXEEXT) testworkcompat$(EXEEXT) \
+	testworkreuse$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
+	$(am__EXEEXT_3)
 @ENABLE_FORTRAN_TRUE@am__append_1 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_2 = test2f test6f 
 @ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__append_3 = test8f
@@ -346,6 +347,10 @@ am_testworkcompat_OBJECTS = testworkcompat.$(OBJEXT)
 testworkcompat_OBJECTS = $(am_testworkcompat_OBJECTS)
 testworkcompat_LDADD = $(LDADD)
 testworkcompat_DEPENDENCIES =
+am_testworkreuse_OBJECTS = testworkreuse.$(OBJEXT)
+testworkreuse_OBJECTS = $(am_testworkreuse_OBJECTS)
+testworkreuse_LDADD = $(LDADD)
+testworkreuse_DEPENDENCIES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -411,7 +416,8 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
 	$(testpreconreuse_SOURCES) $(testrepeatedsystems_SOURCES) \
 	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
-	$(testuser_SOURCES) $(testworkcompat_SOURCES)
+	$(testuser_SOURCES) $(testworkcompat_SOURCES) \
+	$(testworkreuse_SOURCES)
 DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
 	$(etest3_SOURCES) $(etest4_SOURCES) \
@@ -436,7 +442,8 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
 	$(testpreconreuse_SOURCES) $(testrepeatedsystems_SOURCES) \
 	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
-	$(testuser_SOURCES) $(testworkcompat_SOURCES)
+	$(testuser_SOURCES) $(testworkcompat_SOURCES) \
+	$(testworkreuse_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -646,6 +653,7 @@ testrepeatedsystems_SOURCES = testrepeatedsystems.c
 testpreconpolicy_SOURCES = testpreconpolicy.c
 testgmreswork_SOURCES = testgmreswork.c
 testworkcompat_SOURCES = testworkcompat.c
+testworkreuse_SOURCES = testworkreuse.c
 @ENABLE_FORTRAN_TRUE@etest1f_SOURCES = etest1f.F
 @ENABLE_FORTRAN_TRUE@etest4f_SOURCES = etest4f.F
 @ENABLE_FORTRAN_TRUE@test1f_SOURCES = test1f.F
@@ -700,7 +708,7 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
-TESTS = test.sh testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) testworkcompat$(EXEEXT)
+TESTS = test.sh testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) testworkcompat$(EXEEXT) testworkreuse$(EXEEXT)
 all: all-am
 
 .SUFFIXES:
@@ -1001,6 +1009,9 @@ testuser$(EXEEXT): $(testuser_OBJECTS) $(testuser_DEPENDENCIES) $(EXTRA_testuser
 testworkcompat$(EXEEXT): $(testworkcompat_OBJECTS) $(testworkcompat_DEPENDENCIES) $(EXTRA_testworkcompat_DEPENDENCIES) 
 	@rm -f testworkcompat$(EXEEXT)
 	$(LINK) $(testworkcompat_OBJECTS) $(testworkcompat_LDADD) $(LIBS)
+testworkreuse$(EXEEXT): $(testworkreuse_OBJECTS) $(testworkreuse_DEPENDENCIES) $(EXTRA_testworkreuse_DEPENDENCIES) 
+	@rm -f testworkreuse$(EXEEXT)
+	$(LINK) $(testworkreuse_OBJECTS) $(testworkreuse_LDADD) $(LIBS)
 install-testSCRIPTS: $(test_SCRIPTS)
 	@$(NORMAL_INSTALL)
 	@list='$(test_SCRIPTS)'; test -n "$(testdir)" || list=; \
@@ -1086,6 +1097,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrqirestore.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testworkcompat.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testworkreuse.Po@am__quote@
 
 .F.o:
 	$(PPF77COMPILE) -c -o $@ $<
