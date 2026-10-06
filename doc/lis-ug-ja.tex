@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis ユーザガイド}\\
-バージョン 2.1.14
+バージョン 2.1.15
 \end{flushleft}
 
 \vspace*{2cm}
@@ -2415,7 +2415,7 @@ A =
 
 \newpage
 \subsection{ユーザ定義シェル行列と行列演算子}
-バージョン 2.1.13 より、Lis はマトリックスフリー（Matrix-free）計算をサポートするため、新たに \texttt{LIS\_MATRIX\_USER} および \texttt{LIS\_MATRIX\_OPERATOR} を導入した。
+バージョン 2.1.13 より、Lis はマトリックスフリー計算をサポートするため、新たに \texttt{LIS\_MATRIX\_USER} および \texttt{LIS\_MATRIX\_OPERATOR} を導入した。
 
 \subsubsection{ユーザ定義シェル行列 (\texttt{LIS\_MATRIX\_USER})}
 このインタフェースは、アプリケーション独自の行列データ構造を保持したまま、行列ベクトル積のコールバック関数を登録することを可能にする。ユーザ定義行列の対角成分を抽出するために、オプションの対角成分コールバック関数を登録する以下の関数が提供されている：\noindent\texttt{LIS\_INT lis\_matrix\_set\_user\_diagonal(LIS\_MATRIX A, LIS\_INT (*callback)(LIS\_MATRIX A, LIS\_VECTOR d))}
@@ -2428,7 +2428,10 @@ A =
 この演算子は、元の行列を変更することなく、2つの行列の線形結合 $C = \alpha A + \beta B$ を表す。演算子行列に対して、対角成分は以下のように自動的かつ再帰的に評価される：
 \[\mathrm{diag}(\alpha A + \beta B) = \alpha \cdot \mathrm{diag}(A) + \beta \cdot \mathrm{diag}(B)\]
 
-\subsubsection{行列演算子を用いたシフト付き一般化固有値ソルバ}シフト付き一般化固有値問題 $(A - \sigma B)x = \lambda Bx$ に対して、一般化べき乗法（GPI）、一般化逆べき乗法（GII）、および一般化共役残差法（GCR）ソルバは、\texttt{LIS\_MATRIX\_OPERATOR} を利用して $A - \sigma B$ に対する一時的な演算子を動的に生成する。これは元の行列が元の状態のまま残ることを保証し、ユーザ定義のカスタム行列（\texttt{LIS\_MATRIX\_USER}）に対する完全なサポートを可能にする。シフト付き \texttt{LIS\_MATRIX\_USER} は、Lanczos 法のような他の手法に対しては依然として非対応のままである。 
+\subsubsection{行列演算子を用いたシフト付き一般化固有値ソルバ}シフト付き一般化固有値問題 $(A - \sigma B)x = \lambda Bx$ に対して、一般化べき乗法（GPI）、一般化逆べき乗法（GII）、および一般化共役残差法（GCR）ソルバは、\texttt{LIS\_MATRIX\_OPERATOR} を利用して $A - \sigma B$ に対する一時的な演算子を動的に生成する。これは元の行列が元の状態のまま残ることを保証し、ユーザ定義のカスタム行列（\texttt{LIS\_MATRIX\_USER}）に対する完全なサポートを可能にする。シフト付き \texttt{LIS\_MATRIX\_USER} は、Lanczos 法のような他の手法に対しては依然として非対応のままである。
+
+\subsection{ユーザ定義行列における前処理の再利用と互換性}
+バージョン 2.1.15 より、Lis は前処理オブジェクトの所有権の明確化と、ユーザ定義行列（\texttt{LIS\_MATRIX\_USER}）を用いた繰り返し計算のサポートを強化した。これにより、互換性のある構築済み前処理が与えられている場合、従来の制限が緩和され正常に計算を実行できるようになった。
 
 \newpage
 \subsection{実行ファイルの生成}
@@ -6006,7 +6009,9 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 {\bf その他のオプション}\\
 \begin{tabular}{l|ll}\hline\hline
 オプション &                          \\ \hline
-\verb=-maxiter [1000]= & 最大反復回数         \\ 
+\verb=-maxiter [1000]= & 最大反復回数         \\
+\verb=-maxiter_noimp [0]= & 残差が改善しない状態が指定した反復回数連続した場合に、計算を早期に \\
+                       & 打ち切る （デフォルト: 0、早期打ち切りを無効化） \\
 \verb=-tol [1.0e-12]=  & 収束判定基準 $tol$             \\
 \verb=-tol_w [1.0]=    & 収束判定基準 $tol_w$           \\
 \verb=-print [0]=      & 残差履歴の出力                 \\
