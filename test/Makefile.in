@@ -68,8 +68,8 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) \
 	testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) \
 	testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
-	testrepeatedsystems$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
-	$(am__EXEEXT_3)
+	testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) \
+	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
 @ENABLE_FORTRAN_TRUE@am__append_1 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_2 = test2f test6f 
 @ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__append_3 = test8f
@@ -309,6 +309,10 @@ am_testpreconlifecycle_OBJECTS = testpreconlifecycle.$(OBJEXT)
 testpreconlifecycle_OBJECTS = $(am_testpreconlifecycle_OBJECTS)
 testpreconlifecycle_LDADD = $(LDADD)
 testpreconlifecycle_DEPENDENCIES =
+am_testpreconpolicy_OBJECTS = testpreconpolicy.$(OBJEXT)
+testpreconpolicy_OBJECTS = $(am_testpreconpolicy_OBJECTS)
+testpreconpolicy_LDADD = $(LDADD)
+testpreconpolicy_DEPENDENCIES =
 am_testpreconpsd_OBJECTS = testpreconpsd.$(OBJEXT)
 testpreconpsd_OBJECTS = $(am_testpreconpsd_OBJECTS)
 testpreconpsd_LDADD = $(LDADD)
@@ -394,10 +398,10 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(test6_SOURCES) $(test6f_SOURCES) $(test7_SOURCES) \
 	$(test7f_SOURCES) $(test8f_SOURCES) $(testdiagonal_SOURCES) \
 	$(testjacobiuser_SOURCES) $(testoperator_SOURCES) \
-	$(testpreconlifecycle_SOURCES) $(testpreconpsd_SOURCES) \
-	$(testpreconreuse_SOURCES) $(testrepeatedsystems_SOURCES) \
-	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
-	$(testuser_SOURCES)
+	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
+	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
+	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
+	$(testrqirestore_SOURCES) $(testuser_SOURCES)
 DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
 	$(etest3_SOURCES) $(etest4_SOURCES) \
@@ -418,10 +422,10 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(test7_SOURCES) $(am__test7f_SOURCES_DIST) \
 	$(am__test8f_SOURCES_DIST) $(testdiagonal_SOURCES) \
 	$(testjacobiuser_SOURCES) $(testoperator_SOURCES) \
-	$(testpreconlifecycle_SOURCES) $(testpreconpsd_SOURCES) \
-	$(testpreconreuse_SOURCES) $(testrepeatedsystems_SOURCES) \
-	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
-	$(testuser_SOURCES)
+	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
+	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
+	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
+	$(testrqirestore_SOURCES) $(testuser_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -628,6 +632,7 @@ testpreconreuse_SOURCES = testpreconreuse.c
 testrqirestore_SOURCES = testrqirestore.c
 testrhistoryerror_SOURCES = testrhistoryerror.c
 testrepeatedsystems_SOURCES = testrepeatedsystems.c
+testpreconpolicy_SOURCES = testpreconpolicy.c
 @ENABLE_FORTRAN_TRUE@etest1f_SOURCES = etest1f.F
 @ENABLE_FORTRAN_TRUE@etest4f_SOURCES = etest4f.F
 @ENABLE_FORTRAN_TRUE@test1f_SOURCES = test1f.F
@@ -682,7 +687,7 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
-TESTS = test.sh testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT)
+TESTS = test.sh testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT)
 all: all-am
 
 .SUFFIXES:
@@ -956,6 +961,9 @@ testoperator$(EXEEXT): $(testoperator_OBJECTS) $(testoperator_DEPENDENCIES) $(EX
 testpreconlifecycle$(EXEEXT): $(testpreconlifecycle_OBJECTS) $(testpreconlifecycle_DEPENDENCIES) $(EXTRA_testpreconlifecycle_DEPENDENCIES) 
 	@rm -f testpreconlifecycle$(EXEEXT)
 	$(LINK) $(testpreconlifecycle_OBJECTS) $(testpreconlifecycle_LDADD) $(LIBS)
+testpreconpolicy$(EXEEXT): $(testpreconpolicy_OBJECTS) $(testpreconpolicy_DEPENDENCIES) $(EXTRA_testpreconpolicy_DEPENDENCIES) 
+	@rm -f testpreconpolicy$(EXEEXT)
+	$(LINK) $(testpreconpolicy_OBJECTS) $(testpreconpolicy_LDADD) $(LIBS)
 testpreconpsd$(EXEEXT): $(testpreconpsd_OBJECTS) $(testpreconpsd_DEPENDENCIES) $(EXTRA_testpreconpsd_DEPENDENCIES) 
 	@rm -f testpreconpsd$(EXEEXT)
 	$(LINK) $(testpreconpsd_OBJECTS) $(testpreconpsd_LDADD) $(LIBS)
@@ -1050,6 +1058,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testjacobiuser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoperator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testpreconlifecycle.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testpreconpolicy.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testpreconpsd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testpreconreuse.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrepeatedsystems.Po@am__quote@
