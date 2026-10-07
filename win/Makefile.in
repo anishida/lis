@@ -290,7 +290,7 @@ etest4f.exe: ..\test\$*.obj
 	$(LINKER) $(LDFLAGS) $*.obj lis.lib 
 
 .c.obj:
-	$(CC) /c $(CFLAGS) $*.c
+	$(CC) -c $(CFLAGS) $*.c
 
 .f.obj:
 	$(FC) $(FFLAGS) $*.f 
