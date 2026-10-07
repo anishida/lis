@@ -293,10 +293,10 @@ etest4f.exe: ..\test\$*.obj
 	$(CC) -c $(CFLAGS) $*.c
 
 .f.obj:
-	$(FC) $(FFLAGS) $*.f 
+	$(FC) -c $(FFLAGS) $*.f 
 
 .f90.obj:
-	$(FC) $(FFLAGS) $*.f90
+	$(FC) -c $(FFLAGS) $*.f90
 
 .obj.exe:
 	$(LINKER) $(LDFLAGS) $*.obj lis.lib 
