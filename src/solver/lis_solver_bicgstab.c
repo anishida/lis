@@ -193,8 +193,9 @@ LIS_INT lis_bicgstab(LIS_SOLVER solver)
 		lis_vector_dot(rtld,r,&rho);
 
 		/* test breakdown */
-		if( rho==0.0 )
+		if( rho==0.0 || rho!=rho )
 		{
+			lis_solver_get_residual[conv](r,solver,&nrm2);
 			solver->retcode   = LIS_BREAKDOWN;
 			solver->iter      = iter;
 			solver->resid     = nrm2;
@@ -209,6 +210,18 @@ LIS_INT lis_bicgstab(LIS_SOLVER solver)
 		else
 		{
 			/* beta = (rho / rho_old) * (alpha / omega) */
+			/* Guard the BiCGSTAB recurrence denominators. */
+			if( rho_old==0.0 || rho_old!=rho_old || omega==0.0 || omega!=omega )
+			{
+				lis_solver_get_residual[conv](r,solver,&nrm2);
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
 			beta = (rho / rho_old) * (alpha / omega);
 	
 			/* p = r + beta*(p - omega*v) */
@@ -230,7 +243,31 @@ LIS_INT lis_bicgstab(LIS_SOLVER solver)
 		/* */
 		
 		/* alpha = rho / tmpdot1 */
+		/* Guard the BiCGSTAB alpha denominator. */
+		if( tmpdot1==0.0 || tmpdot1!=tmpdot1 )
+		{
+			lis_solver_get_residual[conv](r,solver,&nrm2);
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
+
 		alpha = rho / tmpdot1;
+
+		/* Reject an invalid BiCGSTAB alpha. */
+		if( alpha!=alpha )
+		{
+			lis_solver_get_residual[conv](r,solver,&nrm2);
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
 		
 		/* s = r - alpha*v */
 		lis_vector_axpy(-alpha,v,r);
@@ -269,7 +306,29 @@ LIS_INT lis_bicgstab(LIS_SOLVER solver)
 		/* omega   = tmpdot1 / tmpdot2 */
 		lis_vector_dot(t,s,&tmpdot1);
 		lis_vector_dot(t,t,&tmpdot2);
+		/* Guard the BiCGSTAB omega denominator. */
+		if( tmpdot1==0.0 || tmpdot1!=tmpdot1 || tmpdot2==0.0 || tmpdot2!=tmpdot2 )
+		{
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
+
 		omega   = tmpdot1 / tmpdot2;
+
+		/* Reject an invalid BiCGSTAB omega. */
+		if( omega==0.0 || omega!=omega )
+		{
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
 
 		/* x = x + alpha*phat + omega*shat */
 		lis_vector_axpy(alpha,phat,x);
@@ -299,14 +358,6 @@ LIS_INT lis_bicgstab(LIS_SOLVER solver)
 			return LIS_SUCCESS;
 		}
 		
-		if( omega==0.0 )
-		{
-			solver->retcode   = LIS_BREAKDOWN;
-			solver->iter      = iter;
-			solver->resid     = nrm2;
-			LIS_DEBUG_FUNC_OUT;
-			return LIS_BREAKDOWN;
-		}
 		rho_old = rho;
 
 		if ( maxiter_noimp )
@@ -408,8 +459,9 @@ LIS_INT lis_bicgstab_quad(LIS_SOLVER solver)
 		lis_vector_dotex_mmm(rtld,r,&rho);
 
 		/* test breakdown */
-		if( rho.hi[0]==0.0 && rho.lo[0]==0.0 )
+		if( (rho.hi[0]==0.0 && rho.lo[0]==0.0) || rho.hi[0]!=rho.hi[0] || rho.lo[0]!=rho.lo[0] )
 		{
+			lis_solver_get_residual[conv](r,solver,&nrm2);
 			solver->retcode   = LIS_BREAKDOWN;
 			solver->iter      = iter;
 			solver->resid     = nrm2;
@@ -424,6 +476,18 @@ LIS_INT lis_bicgstab_quad(LIS_SOLVER solver)
 		else
 		{
 			/* beta = (rho / rho_old) * (alpha / omega) */
+			/* Guard the quad BiCGSTAB recurrence denominators. */
+			if( (rho_old.hi[0]==0.0 && rho_old.lo[0]==0.0) || rho_old.hi[0]!=rho_old.hi[0] || rho_old.lo[0]!=rho_old.lo[0] || (omega.hi[0]==0.0 && omega.lo[0]==0.0) || omega.hi[0]!=omega.hi[0] || omega.lo[0]!=omega.lo[0] )
+			{
+				lis_solver_get_residual[conv](r,solver,&nrm2);
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
 			lis_quad_div((LIS_QUAD *)beta.hi,(LIS_QUAD *)rho.hi,(LIS_QUAD *)rho_old.hi);
 			lis_quad_div((LIS_QUAD *)tmpdot1.hi,(LIS_QUAD *)alpha.hi,(LIS_QUAD *)omega.hi);
 			lis_quad_mul((LIS_QUAD *)beta.hi,(LIS_QUAD *)beta.hi,(LIS_QUAD *)tmpdot1.hi);
@@ -448,7 +512,31 @@ LIS_INT lis_bicgstab_quad(LIS_SOLVER solver)
 		/* */
 		
 		/* alpha = rho / tmpdot1 */
+		/* Guard the quad BiCGSTAB alpha denominator. */
+		if( (tmpdot1.hi[0]==0.0 && tmpdot1.lo[0]==0.0) || tmpdot1.hi[0]!=tmpdot1.hi[0] || tmpdot1.lo[0]!=tmpdot1.lo[0] )
+		{
+			lis_solver_get_residual[conv](r,solver,&nrm2);
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
+
 		lis_quad_div((LIS_QUAD *)alpha.hi,(LIS_QUAD *)rho.hi,(LIS_QUAD *)tmpdot1.hi);
+
+		/* Reject an invalid quad BiCGSTAB alpha. */
+		if( alpha.hi[0]!=alpha.hi[0] || alpha.lo[0]!=alpha.lo[0] )
+		{
+			lis_solver_get_residual[conv](r,solver,&nrm2);
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
 		
 		/* s = r - alpha*v */
 		lis_quad_minus((LIS_QUAD *)alpha.hi);
@@ -487,7 +575,29 @@ LIS_INT lis_bicgstab_quad(LIS_SOLVER solver)
 		/* omega   = tmpdot1 / tmpdot2 */
 		lis_vector_dotex_mmm(t,s,&tmpdot1);
 		lis_vector_dotex_mmm(t,t,&tmpdot2);
+		/* Guard the quad BiCGSTAB omega denominator. */
+		if( (tmpdot1.hi[0]==0.0 && tmpdot1.lo[0]==0.0) || tmpdot1.hi[0]!=tmpdot1.hi[0] || tmpdot1.lo[0]!=tmpdot1.lo[0] || (tmpdot2.hi[0]==0.0 && tmpdot2.lo[0]==0.0) || tmpdot2.hi[0]!=tmpdot2.hi[0] || tmpdot2.lo[0]!=tmpdot2.lo[0] )
+		{
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
+
 		lis_quad_div((LIS_QUAD *)omega.hi,(LIS_QUAD *)tmpdot1.hi,(LIS_QUAD *)tmpdot2.hi);
+
+		/* Reject an invalid quad BiCGSTAB omega. */
+		if( (omega.hi[0]==0.0 && omega.lo[0]==0.0) || omega.hi[0]!=omega.hi[0] || omega.lo[0]!=omega.lo[0] )
+		{
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
 
 		/* x = x + alpha*phat + omega*shat */
 		lis_quad_minus((LIS_QUAD *)alpha.hi);
@@ -517,14 +627,6 @@ LIS_INT lis_bicgstab_quad(LIS_SOLVER solver)
 			return LIS_SUCCESS;
 		}
 		
-		if( omega.hi[0]==0.0 && omega.lo[0]==0.0 )
-		{
-			solver->retcode   = LIS_BREAKDOWN;
-			solver->iter      = iter;
-			solver->resid     = nrm2;
-			LIS_DEBUG_FUNC_OUT;
-			return LIS_BREAKDOWN;
-		}
 		rho_old.hi[0] = rho.hi[0];
 		rho_old.lo[0] = rho.lo[0];
 
@@ -631,8 +733,9 @@ LIS_INT lis_bicgstab_switch(LIS_SOLVER solver)
 			lis_vector_dot(rtld,r,&rho.hi[0]);
 
 			/* test breakdown */
-			if( rho.hi[0]==0.0 )
+			if( rho.hi[0]==0.0 || rho.hi[0]!=rho.hi[0] )
 			{
+				lis_solver_get_residual[conv](r,solver,&nrm2);
 				solver->retcode   = LIS_BREAKDOWN;
 				solver->iter      = iter;
 				solver->iter2     = iter;
@@ -648,6 +751,19 @@ LIS_INT lis_bicgstab_switch(LIS_SOLVER solver)
 			else
 			{
 				/* beta = (rho / rho_old) * (alpha / omega) */
+				/* Guard the switch BiCGSTAB recurrence denominators. */
+				if( rho_old.hi[0]==0.0 || rho_old.hi[0]!=rho_old.hi[0] || omega.hi[0]==0.0 || omega.hi[0]!=omega.hi[0] )
+				{
+					lis_solver_get_residual[conv](r,solver,&nrm2);
+					solver->retcode = LIS_BREAKDOWN;
+					solver->iter    = iter;
+					solver->iter2   = iter;
+					solver->resid   = nrm2;
+					solver->ptime   = ptime;
+					LIS_DEBUG_FUNC_OUT;
+					return LIS_BREAKDOWN;
+				}
+
 				beta.hi[0] = (rho.hi[0] / rho_old.hi[0]) * (alpha.hi[0] / omega.hi[0]);
 		
 				/* p = r + beta*(p - omega*v) */
@@ -669,7 +785,33 @@ LIS_INT lis_bicgstab_switch(LIS_SOLVER solver)
 			/* */
 			
 			/* alpha = rho / tmpdot1 */
+			/* Guard the switch BiCGSTAB alpha denominator. */
+			if( tmpdot1.hi[0]==0.0 || tmpdot1.hi[0]!=tmpdot1.hi[0] )
+			{
+				lis_solver_get_residual[conv](r,solver,&nrm2);
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->iter2   = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
 			alpha.hi[0] = rho.hi[0] / tmpdot1.hi[0];
+
+			/* Reject an invalid switch BiCGSTAB alpha. */
+			if( alpha.hi[0]!=alpha.hi[0] )
+			{
+				lis_solver_get_residual[conv](r,solver,&nrm2);
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->iter2   = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
 			
 			/* s = r - alpha*v */
 			lis_vector_axpy(-alpha.hi[0],v,r);
@@ -704,7 +846,31 @@ LIS_INT lis_bicgstab_switch(LIS_SOLVER solver)
 			/* omega   = tmpdot1 / tmpdot2 */
 			lis_vector_dot(t,s,&tmpdot1.hi[0]);
 			lis_vector_dot(t,t,&tmpdot2.hi[0]);
+			/* Guard the switch BiCGSTAB omega denominator. */
+			if( tmpdot1.hi[0]==0.0 || tmpdot1.hi[0]!=tmpdot1.hi[0] || tmpdot2.hi[0]==0.0 || tmpdot2.hi[0]!=tmpdot2.hi[0] )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->iter2   = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
 			omega.hi[0]   = tmpdot1.hi[0] / tmpdot2.hi[0];
+
+			/* Reject an invalid switch BiCGSTAB omega. */
+			if( omega.hi[0]==0.0 || omega.hi[0]!=omega.hi[0] )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->iter2   = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
 
 			/* x = x + alpha*phat + omega*shat */
 			lis_vector_axpy(alpha.hi[0],phat,x);
@@ -729,15 +895,6 @@ LIS_INT lis_bicgstab_switch(LIS_SOLVER solver)
 				break;
 			}
 			
-			if( omega.hi[0]==0.0 )
-			{
-				solver->retcode   = LIS_BREAKDOWN;
-				solver->iter      = iter;
-				solver->iter2     = iter;
-				solver->resid     = nrm2;
-				LIS_DEBUG_FUNC_OUT;
-				return LIS_BREAKDOWN;
-			}
 			rho_old.hi[0] = rho.hi[0];
 	}
 
@@ -769,8 +926,9 @@ LIS_INT lis_bicgstab_switch(LIS_SOLVER solver)
 			lis_vector_dotex_mmm(rtld,r,&rho);
 
 			/* test breakdown */
-			if( rho.hi[0]==0.0 && rho.lo[0]==0.0 )
+			if( (rho.hi[0]==0.0 && rho.lo[0]==0.0) || rho.hi[0]!=rho.hi[0] || rho.lo[0]!=rho.lo[0] )
 			{
+				lis_solver_get_residual[conv](r,solver,&nrm2);
 				solver->retcode   = LIS_BREAKDOWN;
 				solver->iter       = iter2;
 				solver->iter2      = iter;
@@ -786,6 +944,19 @@ LIS_INT lis_bicgstab_switch(LIS_SOLVER solver)
 			else
 			{
 				/* beta = (rho / rho_old) * (alpha / omega) */
+				/* Guard the switch quad BiCGSTAB recurrence denominators. */
+				if( (rho_old.hi[0]==0.0 && rho_old.lo[0]==0.0) || rho_old.hi[0]!=rho_old.hi[0] || rho_old.lo[0]!=rho_old.lo[0] || (omega.hi[0]==0.0 && omega.lo[0]==0.0) || omega.hi[0]!=omega.hi[0] || omega.lo[0]!=omega.lo[0] )
+				{
+					lis_solver_get_residual[conv](r,solver,&nrm2);
+					solver->retcode = LIS_BREAKDOWN;
+					solver->iter    = iter2;
+					solver->iter2   = iter;
+					solver->resid   = nrm2;
+					solver->ptime   = ptime;
+					LIS_DEBUG_FUNC_OUT;
+					return LIS_BREAKDOWN;
+				}
+
 				lis_quad_div((LIS_QUAD *)beta.hi,(LIS_QUAD *)rho.hi,(LIS_QUAD *)rho_old.hi);
 				lis_quad_div((LIS_QUAD *)tmpdot1.hi,(LIS_QUAD *)alpha.hi,(LIS_QUAD *)omega.hi);
 				lis_quad_mul((LIS_QUAD *)beta.hi,(LIS_QUAD *)beta.hi,(LIS_QUAD *)tmpdot1.hi);
@@ -810,7 +981,33 @@ LIS_INT lis_bicgstab_switch(LIS_SOLVER solver)
 			/* */
 			
 			/* alpha = rho / tmpdot1 */
+			/* Guard the switch quad BiCGSTAB alpha denominator. */
+			if( (tmpdot1.hi[0]==0.0 && tmpdot1.lo[0]==0.0) || tmpdot1.hi[0]!=tmpdot1.hi[0] || tmpdot1.lo[0]!=tmpdot1.lo[0] )
+			{
+				lis_solver_get_residual[conv](r,solver,&nrm2);
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter2;
+				solver->iter2   = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
 			lis_quad_div((LIS_QUAD *)alpha.hi,(LIS_QUAD *)rho.hi,(LIS_QUAD *)tmpdot1.hi);
+
+			/* Reject an invalid switch quad BiCGSTAB alpha. */
+			if( alpha.hi[0]!=alpha.hi[0] || alpha.lo[0]!=alpha.lo[0] )
+			{
+				lis_solver_get_residual[conv](r,solver,&nrm2);
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter2;
+				solver->iter2   = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
 			
 			/* s = r - alpha*v */
 			lis_quad_minus((LIS_QUAD *)alpha.hi);
@@ -850,7 +1047,31 @@ LIS_INT lis_bicgstab_switch(LIS_SOLVER solver)
 			/* omega   = tmpdot1 / tmpdot2 */
 			lis_vector_dotex_mmm(t,s,&tmpdot1);
 			lis_vector_dotex_mmm(t,t,&tmpdot2);
+			/* Guard the switch quad BiCGSTAB omega denominator. */
+			if( (tmpdot1.hi[0]==0.0 && tmpdot1.lo[0]==0.0) || tmpdot1.hi[0]!=tmpdot1.hi[0] || tmpdot1.lo[0]!=tmpdot1.lo[0] || (tmpdot2.hi[0]==0.0 && tmpdot2.lo[0]==0.0) || tmpdot2.hi[0]!=tmpdot2.hi[0] || tmpdot2.lo[0]!=tmpdot2.lo[0] )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter2;
+				solver->iter2   = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
 			lis_quad_div((LIS_QUAD *)omega.hi,(LIS_QUAD *)tmpdot1.hi,(LIS_QUAD *)tmpdot2.hi);
+
+			/* Reject an invalid switch quad BiCGSTAB omega. */
+			if( (omega.hi[0]==0.0 && omega.lo[0]==0.0) || omega.hi[0]!=omega.hi[0] || omega.lo[0]!=omega.lo[0] )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter2;
+				solver->iter2   = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
 
 			/* x = x + alpha*phat + omega*shat */
 			lis_quad_minus((LIS_QUAD *)alpha.hi);
@@ -881,15 +1102,6 @@ LIS_INT lis_bicgstab_switch(LIS_SOLVER solver)
 				return LIS_SUCCESS;
 			}
 			
-			if( omega.hi[0]==0.0 && omega.lo[0]==0.0 )
-			{
-				solver->retcode   = LIS_BREAKDOWN;
-				solver->iter       = iter2;
-				solver->iter2      = iter;
-				solver->resid     = nrm2;
-				LIS_DEBUG_FUNC_OUT;
-				return LIS_BREAKDOWN;
-			}
 			rho_old.hi[0] = rho.hi[0];
 			rho_old.lo[0] = rho.lo[0];
 	}

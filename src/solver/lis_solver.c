@@ -1483,9 +1483,21 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 			t->value[i] = t->value[i]/solver->d->value[i];
 		}
 	}
-	lis_vector_nrm2(t,&nrm2);
+	/* Validate a successful recursive solve against the true residual. */
+	lis_solver_get_residual[conv_cond](t,solver,&nrm2);
 
-	/* solver->resid = nrm2; */
+	if( !solver->setup && err==LIS_SUCCESS )
+	{
+		solver->resid = nrm2;
+
+		/* Reject non-finite or falsely converged iterates. */
+		if( nrm2!=nrm2 || fabs(nrm2)>LIS_SCALAR_MAX || nrm2>solver->tol )
+		{
+			err = LIS_BREAKDOWN;
+			solver->retcode = LIS_BREAKDOWN;
+		}
+	}
+
 	if( err )
 	  {
 	    if( output ) lis_printf(comm,"linear solver status  : %s(code=%D)\n\n",lis_returncode[err],err); 
