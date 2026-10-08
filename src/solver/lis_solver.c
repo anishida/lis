@@ -758,9 +758,30 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
 	}
 	if( solver->options[LIS_OPTIONS_SCALE]!=LIS_SCALE_NONE )
 	{
-		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-		           "internal matrix scaling requires explicit storage\n");
-		return LIS_ERR_NOT_IMPLEMENTED;
+	        if( solver->options[LIS_OPTIONS_SCALE]!=LIS_SCALE_SYMM_DIAG )
+	        {
+	                LIS_SETERR(
+	                        LIS_ERR_NOT_IMPLEMENTED,
+	                        "matrix-free matrices currently support symmetric diagonal scaling only\n");
+	                return LIS_ERR_NOT_IMPLEMENTED;
+	        }
+
+	        if( solver->options[LIS_OPTIONS_PRECON]!=LIS_PRECON_TYPE_NONE )
+	        {
+	                LIS_SETERR(
+	                        LIS_ERR_NOT_IMPLEMENTED,
+	                        "matrix-free symmetric scaling currently requires preconditioner none\n");
+	                return LIS_ERR_NOT_IMPLEMENTED;
+	        }
+
+	        if( A->matrix_type==LIS_MATRIX_USER &&
+	            A->user_get_diagonal==NULL )
+	        {
+	                LIS_SETERR(
+	                        LIS_ERR_NOT_IMPLEMENTED,
+	                        "symmetric diagonal scaling requires a matrix diagonal callback\n");
+	                return LIS_ERR_NOT_IMPLEMENTED;
+	        }
 	}
 	if( solver->options[LIS_OPTIONS_STORAGE]!=0 )
 	{
@@ -947,12 +968,12 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	LIS_INT scale;
 	LIS_INT conv_cond;
 	LIS_INT precision,is_use_at,storage,block;
-	LIS_INT i,n;
+	LIS_INT i,n,shell_scale;
 	double p_c_time, p_i_time,itime;
 	LIS_REAL nrm2,tol,tol_w;
 	LIS_VECTOR t;
-	LIS_VECTOR bb;
-	LIS_MATRIX AA,B;
+	LIS_VECTOR bb,shell_b;
+	LIS_MATRIX AA,B,shell_A;
 	LIS_MATRIX Ah;
 	char buf[64];
 
@@ -976,6 +997,14 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	tol         = solver->params[LIS_PARAMS_RESID-LIS_OPTIONS_LEN];
 	tol_w       = solver->params[LIS_PARAMS_RESID_WEIGHT-LIS_OPTIONS_LEN];
 	solver->precision = precision;
+
+	shell_scale =
+	    (A->matrix_type==LIS_MATRIX_USER ||
+	     A->matrix_type==LIS_MATRIX_OPERATOR) &&
+	    scale==LIS_SCALE_SYMM_DIAG;
+
+	shell_A = NULL;
+	shell_b = NULL;
 
 	if( nsolver < 1 || nsolver > LIS_SOLVERS_LEN )
 	{
@@ -1112,7 +1141,113 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 
 
 	p_c_time = lis_wtime();
-	if( precon_type==LIS_PRECON_TYPE_IS )
+
+	if( shell_scale )
+	{
+	        /*
+	         * solver->d may survive repeated solves, but the
+	         * scaling values are recomputed from the current A.
+	         */
+	        if( solver->d==NULL ||
+	            !lis_solver_work_vector_compatible(
+	                solver->d,A,LIS_PRECISION_DEFAULT) )
+	        {
+	                if( solver->d!=NULL )
+	                {
+	                        lis_vector_destroy(solver->d);
+	                        solver->d = NULL;
+	                }
+
+	                err = lis_vector_duplicate(A,&solver->d);
+	                if( err )
+	                {
+	                        lis_vector_destroy(xx);
+	                        solver->retcode = err;
+	                        return err;
+	                }
+	        }
+
+	        err = lis_matrix_get_diagonal(A,solver->d);
+	        if( err )
+	        {
+	                lis_vector_destroy(xx);
+	                solver->retcode = err;
+	                return err;
+	        }
+
+	        /*
+	         * Preserve the existing LIS symmetric-diagonal
+	         * definition:
+	         *
+	         *     D_i = 1 / sqrt(abs(a_ii))
+	         */
+	        #ifdef _OPENMP
+	        #pragma omp parallel for
+	        #endif
+	        for(i=0;i<n;i++)
+	        {
+	                solver->d->value[i] =
+	                    1.0 /
+	                    sqrt(fabs(solver->d->value[i]));
+	        }
+
+	        err = lis_vector_duplicate(A,&shell_b);
+	        if( err )
+	        {
+	                lis_vector_destroy(xx);
+	                solver->retcode = err;
+	                return err;
+	        }
+
+	        /*
+	         * shell_b = D*b
+	         */
+	        #ifdef _OPENMP
+	        #pragma omp parallel for
+	        #endif
+	        for(i=0;i<n;i++)
+	        {
+	                shell_b->value[i] =
+	                    solver->d->value[i] *
+	                    b->value[i];
+	        }
+
+	        /*
+	         * shell_A is a non-owning operator:
+	         *
+	         *     shell_A = D*A*D
+	         */
+	        err = lis_matrix_create_scaled_operator(
+	                A,solver->d,&shell_A);
+	        if( err )
+	        {
+	                lis_vector_destroy(shell_b);
+	                shell_b = NULL;
+
+	                lis_vector_destroy(xx);
+	                solver->retcode = err;
+	                return err;
+	        }
+	        /*
+	         * The public initial guess is the physical x.
+	         * Krylov solves for y with x = D*y, therefore
+	         *
+	         *     y0 = D^-1*x0.
+	         */
+	        if( !solver->options[LIS_OPTIONS_INITGUESS_ZEROS] )
+	        {
+	                #ifdef _OPENMP
+	                #pragma omp parallel for
+	                #endif
+	                for(i=0;i<n;i++)
+	                {
+	                        xx->value[i] =
+	                            xx->value[i] /
+	                            solver->d->value[i];
+	                }
+	        }
+	}
+	else if( precon_type==LIS_PRECON_TYPE_IS )
 	{
 		if( solver->d==NULL )
 		{
@@ -1237,7 +1372,12 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	}
 
 /*	precon_type = precon->precon_type;*/
-	if( precon_type==LIS_PRECON_TYPE_IS )
+	if( shell_scale )
+	{
+		AA = shell_A;
+		bb = shell_b;
+	}
+	else if( precon_type==LIS_PRECON_TYPE_IS )
 	{
 		if( nsolver < LIS_SOLVER_JACOBI || nsolver > LIS_SOLVER_SOR )
 		{
@@ -1270,6 +1410,19 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 		{
 			lis_vector_destroy(xx);
 			lis_solver_work_destroy(solver);
+
+			if( shell_scale )
+			{
+			        solver->A = A;
+			        solver->b = b;
+
+			        lis_matrix_destroy(shell_A);
+			        shell_A = NULL;
+
+			        lis_vector_destroy(shell_b);
+			        shell_b = NULL;
+			}
+
 			solver->retcode = err;
 			return err;
 		}
@@ -1364,6 +1517,18 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	        if( err )
 	        {
 	            lis_vector_destroy(xx);
+
+	            if( shell_scale )
+	            {
+	                    solver->A = A;
+	                    solver->b = b;
+
+	                    lis_matrix_destroy(shell_A);
+	                    shell_A = NULL;
+
+	                    lis_vector_destroy(shell_b);
+	                    shell_b = NULL;
+	            }
 	            solver->retcode = err;
 	            return err;
 	        }
@@ -1380,6 +1545,18 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	    if( err )
 	    {
 	        lis_vector_destroy(xx);
+
+	        if( shell_scale )
+	        {
+	                solver->A = A;
+	                solver->b = b;
+
+	                lis_matrix_destroy(shell_A);
+	                shell_A = NULL;
+
+	                lis_vector_destroy(shell_b);
+	                shell_b = NULL;
+	        }
 	        solver->retcode = err;
 	        return err;
 	    }
@@ -1400,6 +1577,18 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 		LIS_SETERR_MEM((maxiter+2)*sizeof(LIS_REAL));
 		lis_solver_work_destroy(solver);
 		lis_vector_destroy(xx);
+
+		if( shell_scale )
+		{
+		        solver->A = A;
+		        solver->b = b;
+
+		        lis_matrix_destroy(shell_A);
+		        shell_A = NULL;
+
+		        lis_vector_destroy(shell_b);
+		        shell_b = NULL;
+		}
 		solver->retcode = LIS_ERR_OUT_OF_MEMORY;
 		return LIS_ERR_OUT_OF_MEMORY;
 	}
@@ -1471,9 +1660,18 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	solver->itime = itime;
 	lis_vector_duplicate(A,&t);
 	xx->precision = LIS_PRECISION_DEFAULT;
-	lis_matvec(A,xx,t);
+	if( shell_scale )
+	{
+	        lis_matvec(A,x,t);
+	}
+	else
+	{
+	        lis_matvec(A,xx,t);
+	}
 	lis_vector_xpay(b,-1.0,t);
-	if( scale==LIS_SCALE_SYMM_DIAG && precon_type!=LIS_PRECON_TYPE_IS)
+	if( !shell_scale &&
+	    scale==LIS_SCALE_SYMM_DIAG &&
+	    precon_type!=LIS_PRECON_TYPE_IS )
 	{
 		#ifdef _OPENMP
 		#pragma omp parallel for
@@ -1506,6 +1704,18 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 
 
 	lis_vector_destroy(t);
+
+	if( shell_scale )
+	{
+	        solver->A = A;
+	        solver->b = b;
+
+	        lis_matrix_destroy(shell_A);
+	        shell_A = NULL;
+
+	        lis_vector_destroy(shell_b);
+	        shell_b = NULL;
+	}
 
 	/* lis_vector_destroy(d); */
 	lis_vector_destroy(xx);

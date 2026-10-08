@@ -710,6 +710,7 @@ struct LIS_MATRIX_STRUCT
 	LIS_SCALAR operator_alpha;
 	LIS_SCALAR operator_beta;
 	LIS_VECTOR operator_work;
+	LIS_VECTOR operator_scale; /* non-owning scale for D*A*D */
 };
 typedef struct LIS_MATRIX_STRUCT *LIS_MATRIX;
 

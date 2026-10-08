@@ -793,6 +793,31 @@ LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR D)
 	        break;
 
 	case LIS_MATRIX_OPERATOR:
+	        if( A->operator_scale!=NULL )
+	        {
+	                if( A->operator_A==NULL )
+	                {
+	                        LIS_SETERR(
+	                                LIS_ERR_ILL_ARG,
+	                                "scaled matrix operator is not initialized\n");
+	                        return LIS_ERR_ILL_ARG;
+	                }
+
+	                err = lis_matrix_get_diagonal(
+	                        A->operator_A,D);
+	                if( err ) return err;
+
+	                err = lis_vector_pmul(
+	                        D,A->operator_scale,D);
+	                if( err ) return err;
+
+	                err = lis_vector_pmul(
+	                        D,A->operator_scale,D);
+	                if( err ) return err;
+
+	                break;
+	        }
+
 	        if( A->operator_A==NULL || A->operator_B==NULL ||
 	            A->operator_work==NULL )
 	        {

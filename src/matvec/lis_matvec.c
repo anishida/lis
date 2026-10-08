@@ -54,7 +54,7 @@ LIS_MATVEC_FUNC LIS_MATVECH = lis_matvech;
 #define __FUNC__ "lis_matvec"
 LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 {
-	LIS_INT err;
+	LIS_INT err,i;
 	LIS_SCALAR *x,*y;
 
 	LIS_DEBUG_FUNC_IN;
@@ -68,6 +68,42 @@ LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			           "LIS_MATRIX_OPERATOR does not support quad precision yet\n");
 			return LIS_ERR_NOT_IMPLEMENTED;
 		}
+		if( A->operator_scale!=NULL )
+		{
+		        if( A->operator_A==NULL ||
+		            A->operator_work==NULL )
+		        {
+		                LIS_SETERR(
+		                        LIS_ERR_ILL_ARG,
+		                        "scaled matrix operator is not initialized\n");
+		                return LIS_ERR_ILL_ARG;
+		        }
+
+		        /* work = D*x */
+		        for(i=0;i<A->n;i++)
+		        {
+		                A->operator_work->value[i] =
+		                        A->operator_scale->value[i]
+		                        * X->value[i];
+		        }
+
+		        /* y = A*work */
+		        err = lis_matvec(
+		                A->operator_A,
+		                A->operator_work,
+		                Y);
+		        if( err ) return err;
+
+		        /* y = D*y */
+		        for(i=0;i<A->n;i++)
+		        {
+		                Y->value[i] *= A->operator_scale->value[i];
+		        }
+
+		        LIS_DEBUG_FUNC_OUT;
+		        return LIS_SUCCESS;
+		}
+
 		if( A->operator_A==NULL || A->operator_B==NULL ||
 		    A->operator_work==NULL )
 		{
@@ -232,7 +268,7 @@ LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 #define __FUNC__ "lis_matvech"
 LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 {
-	LIS_INT err;
+	LIS_INT err,i;
 	LIS_SCALAR *x,*y;
 
 	LIS_DEBUG_FUNC_IN;
@@ -246,6 +282,50 @@ LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			           "LIS_MATRIX_OPERATOR does not support quad precision yet\n");
 			return LIS_ERR_NOT_IMPLEMENTED;
 		}
+		if( A->operator_scale!=NULL )
+		{
+		        if( A->operator_A==NULL ||
+		            A->operator_work==NULL )
+		        {
+		                LIS_SETERR(
+		                        LIS_ERR_ILL_ARG,
+		                        "scaled matrix operator is not initialized\n");
+		                return LIS_ERR_ILL_ARG;
+		        }
+
+		        /* work = D*x */
+		        for(i=0;i<A->n;i++)
+		        {
+		                A->operator_work->value[i] =
+#ifdef _COMPLEX
+		                        conj(A->operator_scale->value[i])
+#else
+		                        A->operator_scale->value[i]
+#endif
+		                        * X->value[i];
+		        }
+
+		        /* y = A*work */
+		        err = lis_matvech(
+		                A->operator_A,
+		                A->operator_work,
+		                Y);
+		        if( err ) return err;
+
+		        /* y = D*y */
+		        for(i=0;i<A->n;i++)
+		        {
+#ifdef _COMPLEX
+		                Y->value[i] *= conj(A->operator_scale->value[i]);
+#else
+		                Y->value[i] *= A->operator_scale->value[i];
+#endif
+		        }
+
+		        LIS_DEBUG_FUNC_OUT;
+		        return LIS_SUCCESS;
+		}
+
 		if( A->operator_A==NULL || A->operator_B==NULL ||
 		    A->operator_work==NULL )
 		{

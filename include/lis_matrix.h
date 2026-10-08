@@ -70,6 +70,8 @@ extern "C"
 	extern LIS_INT lis_matrix_unset(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_copy_struct(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_convert_self(LIS_SOLVER solver);
+	extern LIS_INT lis_matrix_create_scaled_operator(
+	        LIS_MATRIX A, LIS_VECTOR scale, LIS_MATRIX *C);
 
 /*******************/
 /* Operations      */

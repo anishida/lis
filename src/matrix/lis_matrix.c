@@ -974,6 +974,7 @@ LIS_INT lis_matrix_create_operator(LIS_SCALAR alpha, LIS_MATRIX A,
 	T->operator_B     = B;
 	T->operator_alpha = alpha;
 	T->operator_beta  = beta;
+	T->operator_scale = NULL;
 
 	err = lis_vector_duplicate(T,&T->operator_work);
 	if( err )
@@ -987,6 +988,90 @@ LIS_INT lis_matrix_create_operator(LIS_SCALAR alpha, LIS_MATRIX A,
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 }
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_create_scaled_operator"
+LIS_INT lis_matrix_create_scaled_operator(
+        LIS_MATRIX A, LIS_VECTOR scale, LIS_MATRIX *C)
+{
+        LIS_INT err;
+        LIS_MATRIX T;
+
+        LIS_DEBUG_FUNC_IN;
+
+        if( C==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "scaled operator output pointer is NULL\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        *C = NULL;
+
+        err = lis_matrix_check(A,LIS_MATRIX_CHECK_ALL);
+        if( err ) return err;
+
+        if( scale==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "scaled operator requires a scaling vector\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( scale->n!=A->n || scale->gn!=A->gn )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "scaled operator uses an incompatible scaling vector\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        T = NULL;
+
+        err = lis_matrix_create(A->comm,&T);
+        if( err ) return err;
+
+        err = lis_matrix_set_size(T,A->n,A->gn);
+        if( err )
+        {
+                lis_matrix_destroy(T);
+                return err;
+        }
+
+        /*
+         * The scaled operator wraps A without taking ownership.
+         * Preserve A's vector layout so nested matrix-free/MPI matvecs
+         * can use the same local and halo dimensions.
+         */
+        T->np     = A->np;
+        T->pad    = A->pad;
+        T->origin = A->origin;
+
+        T->matrix_type = LIS_MATRIX_OPERATOR;
+        T->status      = LIS_MATRIX_OPERATOR;
+
+        T->operator_A     = A;
+        T->operator_B     = NULL;
+        T->operator_alpha = (LIS_SCALAR)0.0;
+        T->operator_beta  = (LIS_SCALAR)0.0;
+        T->operator_scale = scale;
+
+        err = lis_vector_duplicate(
+                T,&T->operator_work);
+        if( err )
+        {
+                lis_matrix_destroy(T);
+                return err;
+        }
+
+        *C = T;
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_set_user"
