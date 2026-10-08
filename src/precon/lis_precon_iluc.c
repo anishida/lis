@@ -125,6 +125,8 @@ LIS_INT lis_precon_create_iluc(LIS_SOLVER solver, LIS_PRECON precon)
 		break;
 	}
 
+	if( err ) return err;
+
 	LIS_DEBUG_FUNC_OUT;
     return LIS_SUCCESS;
 }
@@ -143,7 +145,7 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	LIS_INT	*iw,*iw2,*wc,*wl,*iz,*zc,*zl;
 	LIS_INT	*index,*ptr;
 	LIS_SCALAR val;
-	LIS_REAL t,tol,toldd;
+	LIS_REAL t,tol,toldd,pivot_tol;
 	LIS_SCALAR *z,*w,*tmp;
 	LIS_SCALAR *value;
 	LIS_SCALAR m;
@@ -157,6 +159,12 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	A      = solver->A;
 	n      = A->n;
 	tol    = solver->params[LIS_PARAMS_DROP-LIS_OPTIONS_LEN];
+	pivot_tol = solver->params[
+	    LIS_PARAMS_ILU_PIVOT_TOL-LIS_OPTIONS_LEN];
+
+	err = lis_precon_check_ilu_pivot_tol(
+	    A,pivot_tol);
+	if( err ) return err;
 	m      = solver->params[LIS_PARAMS_RATE-LIS_OPTIONS_LEN];
 	lfil   = (LIS_INT)((double)A->nnz/(2.0*n))*m;
 	nprocs = omp_get_max_threads();
@@ -438,6 +446,14 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		}
 
 		toldd       = fabs(D->value[k])*tol;
+		if( pivot_tol>0.0 )
+		{
+		    D->value[k] =
+		        lis_precon_regularize_ilu_pivot(
+		            D->value[k],
+		            lis_precon_csr_row_scale(A,k),
+		            pivot_tol);
+		}
 		D->value[k] = 1.0/D->value[k];
 		t           = D->value[k];
 		if( cz<cw )
@@ -565,7 +581,7 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	LIS_INT	*iw,*wc,*wl,*iz,*zc,*zl;
 	LIS_INT	*index,*ptr;
 	LIS_SCALAR gamma,val;
-	LIS_REAL t,tol,toldd;
+	LIS_REAL t,tol,toldd,pivot_tol;
 	LIS_SCALAR *z,*w,*tmp;
 	LIS_SCALAR *value;
 	LIS_SCALAR m;
@@ -579,6 +595,12 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	A      = solver->A;
 	n      = A->n;
 	tol    = solver->params[LIS_PARAMS_DROP-LIS_OPTIONS_LEN];
+	pivot_tol = solver->params[
+	    LIS_PARAMS_ILU_PIVOT_TOL-LIS_OPTIONS_LEN];
+
+	err = lis_precon_check_ilu_pivot_tol(
+	    A,pivot_tol);
+	if( err ) return err;
 	m      = solver->params[LIS_PARAMS_RATE-LIS_OPTIONS_LEN];
 	gamma  = solver->params[LIS_PARAMS_GAMMA-LIS_OPTIONS_LEN];
 	annz   = 10+A->nnz / A->n;
@@ -801,6 +823,14 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		}
 
 		toldd       = fabs(D->value[k])*tol;
+		if( pivot_tol>0.0 )
+		{
+		    D->value[k] =
+		        lis_precon_regularize_ilu_pivot(
+		            D->value[k],
+		            lis_precon_csr_row_scale(A,k),
+		            pivot_tol);
+		}
 		D->value[k] = 1.0/D->value[k];
 		t           = D->value[k];
 		if( cz<cw )
