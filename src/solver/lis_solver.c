@@ -1175,21 +1175,17 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	                return err;
 	        }
 
-	        /*
-	         * Preserve the existing LIS symmetric-diagonal
-	         * definition:
-	         *
-	         *     D_i = 1 / sqrt(abs(a_ii))
-	         */
-	        #ifdef _OPENMP
-	        #pragma omp parallel for
-	        #endif
-	        for(i=0;i<n;i++)
-	        {
-	                solver->d->value[i] =
-	                    1.0 /
-	                    sqrt(fabs(solver->d->value[i]));
-	        }
+		/*
+		 * Use the same symmetric-diagonal validation and
+		 * scaling semantics as explicitly stored matrices.
+		 */
+		err = lis_matrix_prepare_symm_diag_scaling(solver->d);
+		if( err )
+		{
+			lis_vector_destroy(xx);
+			solver->retcode = err;
+			return err;
+		}
 
 	        err = lis_vector_duplicate(A,&shell_b);
 	        if( err )
@@ -1356,7 +1352,13 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 			}
 			if( !A->is_scaled )
 			{
-				lis_matrix_scale(A,b,solver->d,scale);
+				err = lis_matrix_scale(A,b,solver->d,scale);
+				if( err )
+				{
+					lis_vector_destroy(xx);
+					solver->retcode = err;
+					return err;
+				}
 			}
 			else if( !b->is_scaled )
 			{
