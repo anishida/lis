@@ -71,6 +71,7 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) \
 	testgmreswork$(EXEEXT) testworkcompat$(EXEEXT) \
 	testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) \
+	testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) \
 	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
 @ENABLE_FORTRAN_TRUE@am__append_1 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_2 = test2f test6f 
@@ -343,6 +344,14 @@ am_testrqirestore_OBJECTS = testrqirestore.$(OBJEXT)
 testrqirestore_OBJECTS = $(am_testrqirestore_OBJECTS)
 testrqirestore_LDADD = $(LDADD)
 testrqirestore_DEPENDENCIES =
+am_testshellscale_OBJECTS = testshellscale.$(OBJEXT)
+testshellscale_OBJECTS = $(am_testshellscale_OBJECTS)
+testshellscale_LDADD = $(LDADD)
+testshellscale_DEPENDENCIES =
+am_testsymmdiagguard_OBJECTS = testsymmdiagguard.$(OBJEXT)
+testsymmdiagguard_OBJECTS = $(am_testsymmdiagguard_OBJECTS)
+testsymmdiagguard_LDADD = $(LDADD)
+testsymmdiagguard_DEPENDENCIES =
 am_testuser_OBJECTS = testuser.$(OBJEXT)
 testuser_OBJECTS = $(am_testuser_OBJECTS)
 testuser_LDADD = $(LDADD)
@@ -420,7 +429,8 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
 	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
 	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
-	$(testrqirestore_SOURCES) $(testuser_SOURCES) \
+	$(testrqirestore_SOURCES) $(testshellscale_SOURCES) \
+	$(testsymmdiagguard_SOURCES) $(testuser_SOURCES) \
 	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
 DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
@@ -446,7 +456,8 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
 	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
 	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
-	$(testrqirestore_SOURCES) $(testuser_SOURCES) \
+	$(testrqirestore_SOURCES) $(testshellscale_SOURCES) \
+	$(testsymmdiagguard_SOURCES) $(testuser_SOURCES) \
 	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -659,6 +670,8 @@ testgmreswork_SOURCES = testgmreswork.c
 testworkcompat_SOURCES = testworkcompat.c
 testworkreuse_SOURCES = testworkreuse.c
 testprebuiltuser_SOURCES = testprebuiltuser.c
+testshellscale_SOURCES = testshellscale.c
+testsymmdiagguard_SOURCES = testsymmdiagguard.c
 @ENABLE_FORTRAN_TRUE@etest1f_SOURCES = etest1f.F
 @ENABLE_FORTRAN_TRUE@etest4f_SOURCES = etest4f.F
 @ENABLE_FORTRAN_TRUE@test1f_SOURCES = test1f.F
@@ -713,7 +726,7 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
-TESTS = test.sh testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) testworkcompat$(EXEEXT) testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT)
+TESTS = test.sh testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) testworkcompat$(EXEEXT) testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT)
 all: all-am
 
 .SUFFIXES:
@@ -1011,6 +1024,12 @@ testrhistoryerror$(EXEEXT): $(testrhistoryerror_OBJECTS) $(testrhistoryerror_DEP
 testrqirestore$(EXEEXT): $(testrqirestore_OBJECTS) $(testrqirestore_DEPENDENCIES) $(EXTRA_testrqirestore_DEPENDENCIES) 
 	@rm -f testrqirestore$(EXEEXT)
 	$(LINK) $(testrqirestore_OBJECTS) $(testrqirestore_LDADD) $(LIBS)
+testshellscale$(EXEEXT): $(testshellscale_OBJECTS) $(testshellscale_DEPENDENCIES) $(EXTRA_testshellscale_DEPENDENCIES) 
+	@rm -f testshellscale$(EXEEXT)
+	$(LINK) $(testshellscale_OBJECTS) $(testshellscale_LDADD) $(LIBS)
+testsymmdiagguard$(EXEEXT): $(testsymmdiagguard_OBJECTS) $(testsymmdiagguard_DEPENDENCIES) $(EXTRA_testsymmdiagguard_DEPENDENCIES) 
+	@rm -f testsymmdiagguard$(EXEEXT)
+	$(LINK) $(testsymmdiagguard_OBJECTS) $(testsymmdiagguard_LDADD) $(LIBS)
 testuser$(EXEEXT): $(testuser_OBJECTS) $(testuser_DEPENDENCIES) $(EXTRA_testuser_DEPENDENCIES) 
 	@rm -f testuser$(EXEEXT)
 	$(LINK) $(testuser_OBJECTS) $(testuser_LDADD) $(LIBS)
@@ -1104,6 +1123,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrepeatedsystems.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrhistoryerror.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrqirestore.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testshellscale.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsymmdiagguard.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testworkcompat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testworkreuse.Po@am__quote@
