@@ -148,6 +148,10 @@ lis_solver_near_nullspace_coarse_free(
     }
 
 
+    if(coarse->work)
+        lis_vector_destroy(coarse->work);
+
+
     if(coarse->E)
         lis_free(coarse->E);
 
@@ -156,6 +160,12 @@ lis_solver_near_nullspace_coarse_free(
 
     if(coarse->pivots)
         lis_free(coarse->pivots);
+
+    if(coarse->rhs)
+        lis_free(coarse->rhs);
+
+    if(coarse->coeff)
+        lis_free(coarse->coeff);
 
 
     lis_free(coarse);
@@ -419,6 +429,170 @@ lis_solver_near_nullspace_coarse_solve(
 }
 
 
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_near_nullspace_apply"
+LIS_INT
+lis_solver_near_nullspace_apply(
+    LIS_SOLVER solver,
+    LIS_VECTOR b,
+    LIS_VECTOR x,
+    LIS_PSOLVE_XXX psolve)
+{
+    LIS_NEAR_NULLSPACE_COARSE coarse;
+
+    LIS_INT i,l,k,n,err;
+
+    LIS_SCALAR sum;
+
+
+    if(
+        solver==NULL
+        ||
+        b==NULL
+        ||
+        x==NULL
+        ||
+        psolve==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    coarse =
+        solver->near_nullspace_coarse;
+
+
+    if(
+        coarse==NULL
+        ||
+        !coarse->ready
+        ||
+        coarse->work==NULL
+        ||
+        coarse->rhs==NULL
+        ||
+        coarse->coeff==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    if(solver->A==NULL)
+        return LIS_ERR_ILL_ARG;
+
+
+    k =
+        coarse->dim;
+
+    n =
+        solver->A->n;
+
+
+#ifdef _OPENMP
+#pragma omp parallel for private(l,sum)
+#endif
+    for(i=0;i<k;i++)
+    {
+        sum = 0.0;
+
+        for(l=0;l<n;l++)
+        {
+            sum +=
+                conj(coarse->Z[i]->value[l])
+                *
+                b->value[l];
+        }
+
+        coarse->rhs[i] =
+            sum;
+    }
+
+
+#ifdef USE_MPI
+
+    MPI_Allreduce(
+        coarse->rhs,
+        coarse->coeff,
+        (int)k,
+        LIS_MPI_SCALAR,
+        MPI_SUM,
+        solver->A->comm);
+
+#else
+
+    for(i=0;i<k;i++)
+    {
+        coarse->coeff[i] =
+            coarse->rhs[i];
+    }
+
+#endif
+
+
+    err =
+        lis_solver_near_nullspace_coarse_solve(
+            solver,
+            coarse->coeff,
+            coarse->rhs);
+
+    if(err)
+        return err;
+
+
+    err =
+        lis_vector_copy(
+            b,
+            coarse->work);
+
+    if(err)
+        return err;
+
+
+    for(i=0;i<k;i++)
+    {
+        err =
+            lis_vector_axpy(
+                -coarse->rhs[i],
+                coarse->AZ[i],
+                coarse->work);
+
+        if(err)
+            return err;
+    }
+
+
+    /*
+     * Apply the already-resolved raw preconditioner.
+     * Do not call lis_psolve() here.
+     */
+    err =
+        psolve(
+            solver,
+            coarse->work,
+            x);
+
+    if(err)
+        return err;
+
+
+    for(i=0;i<k;i++)
+    {
+        err =
+            lis_vector_axpy(
+                coarse->rhs[i],
+                coarse->Z[i],
+                x);
+
+        if(err)
+            return err;
+    }
+
+
+    return LIS_SUCCESS;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_solver_near_nullspace_coarse_setup"
 LIS_INT
@@ -545,6 +719,9 @@ lis_solver_near_nullspace_coarse_setup(
     coarse->E = NULL;
     coarse->LU = NULL;
     coarse->pivots = NULL;
+    coarse->work = NULL;
+    coarse->rhs = NULL;
+    coarse->coeff = NULL;
     coarse->ready = LIS_FALSE;
 
 
@@ -555,11 +732,25 @@ lis_solver_near_nullspace_coarse_setup(
             "lis_solver_near_nullspace_coarse_setup::Z");
 
 
+    if(coarse->Z)
+    {
+        for(i=0;i<k;i++)
+            coarse->Z[i] = NULL;
+    }
+
+
     coarse->AZ =
         (LIS_VECTOR *)
         lis_malloc(
             k*sizeof(LIS_VECTOR),
             "lis_solver_near_nullspace_coarse_setup::AZ");
+
+
+    if(coarse->AZ)
+    {
+        for(i=0;i<k;i++)
+            coarse->AZ[i] = NULL;
+    }
 
 
     coarse->E =
@@ -583,6 +774,20 @@ lis_solver_near_nullspace_coarse_setup(
             "lis_solver_near_nullspace_coarse_setup::pivots");
 
 
+    coarse->rhs =
+        (LIS_SCALAR *)
+        lis_malloc(
+            k*sizeof(LIS_SCALAR),
+            "lis_solver_near_nullspace_coarse_setup::rhs");
+
+
+    coarse->coeff =
+        (LIS_SCALAR *)
+        lis_malloc(
+            k*sizeof(LIS_SCALAR),
+            "lis_solver_near_nullspace_coarse_setup::coeff");
+
+
     if(
         coarse->Z==NULL
         ||
@@ -592,13 +797,26 @@ lis_solver_near_nullspace_coarse_setup(
         ||
         coarse->LU==NULL
         ||
-        coarse->pivots==NULL)
+        coarse->pivots==NULL
+        ||
+        coarse->rhs==NULL
+        ||
+        coarse->coeff==NULL)
     {
         lis_solver_near_nullspace_coarse_free(
             coarse);
 
         return LIS_OUT_OF_MEMORY;
     }
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &coarse->work);
+
+    if(err)
+        goto fail;
 
 
     n =

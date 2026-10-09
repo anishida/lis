@@ -1375,7 +1375,7 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 	LIS_SCALAR t;
 
 	LIS_REAL bnrm2,nrm2,tol,min_nrm2;
-	LIS_INT iter,maxiter,output,maxiter_noimp,noimp_count;
+	LIS_INT err,iter,maxiter,output,maxiter_noimp,noimp_count;
 	double time,ptime;
 
 	LIS_REAL rnorm;
@@ -1443,8 +1443,18 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 
 			/* z = M^-1 * v */
 			time = lis_wtime();
-			lis_psolve(solver,v[iiv],z[iiv]);
+			err = lis_psolve(solver,v[iiv],z[iiv]);
 			ptime += lis_wtime()-time;
+
+			if( err )
+			{
+			        solver->retcode = err;
+			        solver->iter    = iter;
+			        solver->ptime   = ptime;
+			        lis_free(h);
+			        LIS_DEBUG_FUNC_OUT;
+			        return err;
+			}
 
 			/* w = A * z */
 			lis_matvec(A,z[iiv], v[i1v]);

@@ -1325,6 +1325,37 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	}
 	/* end parameter check */
 
+   /*
+    * A-dependent coarse data is rebuilt for every valid solve.
+    *
+    * Keep this feature-specific validation after the ordinary
+    * solver/preconditioner/precision parameter checks so existing
+    * error semantics remain unchanged.
+    */
+   lis_solver_near_nullspace_coarse_destroy(solver);
+
+   if( solver->near_nullspace_dim>0 )
+   {
+           if( nsolver!=LIS_SOLVER_FGMRES )
+           {
+                   LIS_SETERR(
+                           LIS_ERR_NOT_IMPLEMENTED,
+                           "near-nullspace two-level correction currently requires FGMRES\n");
+                   solver->retcode = LIS_ERR_NOT_IMPLEMENTED;
+                   return LIS_ERR_NOT_IMPLEMENTED;
+           }
+
+           if( precision!=LIS_PRECISION_DOUBLE )
+           {
+                   LIS_SETERR(
+                           LIS_ERR_NOT_IMPLEMENTED,
+                           "near-nullspace two-level correction currently requires double precision\n");
+                   solver->retcode = LIS_ERR_NOT_IMPLEMENTED;
+                   return LIS_ERR_NOT_IMPLEMENTED;
+           }
+   }
+
+
 	solver->A        = A;
 	solver->b        = b;
 
@@ -1681,6 +1712,35 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 			return err;
 		}
 	}
+	/* Build coarse state from the final effective operator. */
+	if( solver->near_nullspace_dim>0 )
+	{
+	        err =
+	                lis_solver_near_nullspace_coarse_setup(
+	                        solver,
+	                        solver->A,
+	                        scale);
+
+	        if( err )
+	        {
+	                lis_vector_destroy(xx);
+	                lis_solver_work_destroy(solver);
+
+	                if( shell_scale )
+	                {
+	                        solver->A = A;
+	                        solver->b = b;
+	                        lis_matrix_destroy(shell_A);
+	                        shell_A = NULL;
+	                        lis_vector_destroy(shell_b);
+	                        shell_b = NULL;
+	                }
+
+	                solver->retcode = err;
+	                return err;
+	        }
+	}
+
 	block = solver->A->bnr;
 
 	if( A->my_rank==0 )

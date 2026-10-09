@@ -575,41 +575,91 @@ LIS_INT lis_precon_destroy(LIS_PRECON precon)
 #define __FUNC__ "lis_psolve_dispatch"
 LIS_INT lis_psolve_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
 {
-	LIS_INT precon_type;
-	LIS_PSOLVE_XXX psolve;
+        LIS_INT precon_type;
+        LIS_PSOLVE_XXX psolve;
 
-	LIS_DEBUG_FUNC_IN;
+        LIS_DEBUG_FUNC_IN;
 
-	if( solver==NULL || solver->precon==NULL )
-	{
-		LIS_SETERR(LIS_ERR_ILL_ARG,"preconditioner is not initialized\n");
-		return LIS_ERR_ILL_ARG;
-	}
+        if( solver==NULL || solver->precon==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "preconditioner is not initialized\n");
+                return LIS_ERR_ILL_ARG;
+        }
 
-	precon_type = solver->precon->precon_type;
-	if( precon_type>=LIS_PRECON_TYPE_USERDEF )
-	{
-		if( precon_type>=precon_register_type || precon_register_top==NULL )
-		{
-			LIS_SETERR(LIS_ERR_ILL_ARG,"invalid registered preconditioner type\n");
-			return LIS_ERR_ILL_ARG;
-		}
-		psolve = precon_register_top[precon_type-LIS_PRECON_TYPE_USERDEF].psolve;
-		if( psolve==NULL )
-		{
-			LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-			           "registered preconditioner has no psolve callback\n");
-			return LIS_ERR_NOT_IMPLEMENTED;
-		}
-		return psolve(solver,b,x);
-	}
+        precon_type =
+                solver->precon->precon_type;
 
-	if( precon_type<0 || precon_type>LIS_PRECON_TYPE_ADDS )
-	{
-		LIS_SETERR(LIS_ERR_ILL_ARG,"invalid built-in preconditioner type\n");
-		return LIS_ERR_ILL_ARG;
-	}
-	return lis_psolve_xxx[precon_type](solver,b,x);
+
+        if( precon_type>=LIS_PRECON_TYPE_USERDEF )
+        {
+                if(
+                        precon_type>=precon_register_type
+                        ||
+                        precon_register_top==NULL)
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "invalid registered preconditioner type\n");
+                        return LIS_ERR_ILL_ARG;
+                }
+
+                psolve =
+                        precon_register_top[
+                                precon_type
+                                -
+                                LIS_PRECON_TYPE_USERDEF].psolve;
+
+                if( psolve==NULL )
+                {
+                        LIS_SETERR(
+                                LIS_ERR_NOT_IMPLEMENTED,
+                                "registered preconditioner has no psolve callback\n");
+                        return LIS_ERR_NOT_IMPLEMENTED;
+                }
+        }
+        else
+        {
+                if(
+                        precon_type<0
+                        ||
+                        precon_type>LIS_PRECON_TYPE_ADDS)
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "invalid built-in preconditioner type\n");
+                        return LIS_ERR_ILL_ARG;
+                }
+
+                psolve =
+                        lis_psolve_xxx[precon_type];
+        }
+
+
+        if(
+                solver->options[LIS_OPTIONS_SOLVER]
+                    ==
+                LIS_SOLVER_FGMRES
+                &&
+                solver->near_nullspace_coarse!=NULL
+                &&
+                solver->near_nullspace_coarse->ready)
+        {
+                return
+                        lis_solver_near_nullspace_apply(
+                                solver,
+                                b,
+                                x,
+                                psolve);
+        }
+
+
+        return
+                psolve(
+                        solver,
+                        b,
+                        x);
 }
 
 #undef __FUNC__

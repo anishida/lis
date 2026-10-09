@@ -297,13 +297,21 @@ extern "C"
 
 struct LIS_NEAR_NULLSPACE_COARSE_STRUCT
 {
-	LIS_INT dim;
-	LIS_VECTOR *Z;
-	LIS_VECTOR *AZ;
-	LIS_SCALAR *E;
-	LIS_SCALAR *LU;
-	LIS_INT *pivots;
-	LIS_INT ready;
+        LIS_INT dim;
+        LIS_VECTOR *Z;
+        LIS_VECTOR *AZ;
+        LIS_SCALAR *E;
+        LIS_SCALAR *LU;
+        LIS_INT *pivots;
+
+        /*
+         * Reusable two-level apply storage.
+         */
+        LIS_VECTOR work;
+        LIS_SCALAR *rhs;
+        LIS_SCALAR *coeff;
+
+        LIS_INT ready;
 };
 
 extern LIS_INT lis_solver_near_nullspace_coarse_setup(
@@ -312,6 +320,9 @@ extern LIS_INT lis_solver_near_nullspace_coarse_destroy(
 	LIS_SOLVER solver);
 extern LIS_INT lis_solver_near_nullspace_coarse_solve(
 	LIS_SOLVER solver, const LIS_SCALAR *rhs, LIS_SCALAR *x);
+extern LIS_INT lis_solver_near_nullspace_apply(
+        LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x,
+        LIS_PSOLVE_XXX psolve);
 #ifdef __cplusplus
 }
 #endif
