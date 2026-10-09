@@ -1,8 +1,8 @@
 Version 2.1.16 October 9, 2026
 
-	- Added support for symmetric diagonal scaling of shell matrices without modifying the original matrix or right-hand side (thanks to Rafal Brzegowy).
-	- Added solver-managed near-nullspace support and a two-level deflation correction for FGMRES solvers (thanks to Rafal Brzegowy).
-	- Enhanced numerical stability, error handling, and expanded the test suite with new regression tests (thanks to Rafal Brzegowy).
+  - Added support for symmetric diagonal scaling of shell matrices without modifying the original matrix or right-hand side (thanks to Rafal Brzegowy).
+  - Added solver-managed near-nullspace support and a two-level deflation correction for FGMRES solvers (thanks to Rafal Brzegowy).
+  - Enhanced numerical stability, error handling, and expanded the test suite with new regression tests (thanks to Rafal Brzegowy).
 
 Version 2.1.15 October 6, 2026
 
