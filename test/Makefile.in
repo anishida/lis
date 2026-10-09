@@ -74,7 +74,8 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) \
 	testilupivot$(EXEEXT) testparamupdate$(EXEEXT) \
 	testbreakretry$(EXEEXT) testchangingsystem$(EXEEXT) \
-	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
+	testkrylovrobust$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
+	$(am__EXEEXT_3)
 @ENABLE_FORTRAN_TRUE@am__append_1 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_2 = test2f test6f 
 @ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__append_3 = test8f
@@ -322,6 +323,10 @@ am_testjacobiuser_OBJECTS = testjacobiuser.$(OBJEXT)
 testjacobiuser_OBJECTS = $(am_testjacobiuser_OBJECTS)
 testjacobiuser_LDADD = $(LDADD)
 testjacobiuser_DEPENDENCIES =
+am_testkrylovrobust_OBJECTS = testkrylovrobust.$(OBJEXT)
+testkrylovrobust_OBJECTS = $(am_testkrylovrobust_OBJECTS)
+testkrylovrobust_LDADD = $(LDADD)
+testkrylovrobust_DEPENDENCIES =
 am_testoperator_OBJECTS = testoperator.$(OBJEXT)
 testoperator_OBJECTS = $(am_testoperator_OBJECTS)
 testoperator_LDADD = $(LDADD)
@@ -444,14 +449,15 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(test7f_SOURCES) $(test8f_SOURCES) $(testbreakretry_SOURCES) \
 	$(testchangingsystem_SOURCES) $(testdiagonal_SOURCES) \
 	$(testgmreswork_SOURCES) $(testilupivot_SOURCES) \
-	$(testjacobiuser_SOURCES) $(testoperator_SOURCES) \
-	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
-	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
-	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
-	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
-	$(testrqirestore_SOURCES) $(testshellscale_SOURCES) \
-	$(testsymmdiagguard_SOURCES) $(testuser_SOURCES) \
-	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
+	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
+	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
+	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
+	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
+	$(testpreconreuse_SOURCES) $(testrepeatedsystems_SOURCES) \
+	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
+	$(testshellscale_SOURCES) $(testsymmdiagguard_SOURCES) \
+	$(testuser_SOURCES) $(testworkcompat_SOURCES) \
+	$(testworkreuse_SOURCES)
 DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
 	$(etest3_SOURCES) $(etest4_SOURCES) \
@@ -473,14 +479,15 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__test8f_SOURCES_DIST) $(testbreakretry_SOURCES) \
 	$(testchangingsystem_SOURCES) $(testdiagonal_SOURCES) \
 	$(testgmreswork_SOURCES) $(testilupivot_SOURCES) \
-	$(testjacobiuser_SOURCES) $(testoperator_SOURCES) \
-	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
-	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
-	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
-	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
-	$(testrqirestore_SOURCES) $(testshellscale_SOURCES) \
-	$(testsymmdiagguard_SOURCES) $(testuser_SOURCES) \
-	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
+	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
+	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
+	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
+	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
+	$(testpreconreuse_SOURCES) $(testrepeatedsystems_SOURCES) \
+	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
+	$(testshellscale_SOURCES) $(testsymmdiagguard_SOURCES) \
+	$(testuser_SOURCES) $(testworkcompat_SOURCES) \
+	$(testworkreuse_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -698,6 +705,7 @@ testilupivot_SOURCES = testilupivot.c
 testparamupdate_SOURCES = testparamupdate.c
 testbreakretry_SOURCES = testbreakretry.c
 testchangingsystem_SOURCES = testchangingsystem.c
+testkrylovrobust_SOURCES = testkrylovrobust.c
 @ENABLE_FORTRAN_TRUE@etest1f_SOURCES = etest1f.F
 @ENABLE_FORTRAN_TRUE@etest4f_SOURCES = etest4f.F
 @ENABLE_FORTRAN_TRUE@test1f_SOURCES = test1f.F
@@ -752,7 +760,7 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
-TESTS = test.sh testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) testworkcompat$(EXEEXT) testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) testilupivot$(EXEEXT) testparamupdate$(EXEEXT) testbreakretry$(EXEEXT) testchangingsystem$(EXEEXT)
+TESTS = test.sh testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) testworkcompat$(EXEEXT) testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) testilupivot$(EXEEXT) testparamupdate$(EXEEXT) testbreakretry$(EXEEXT) testchangingsystem$(EXEEXT) testkrylovrobust$(EXEEXT)
 all: all-am
 
 .SUFFIXES:
@@ -1032,6 +1040,9 @@ testilupivot$(EXEEXT): $(testilupivot_OBJECTS) $(testilupivot_DEPENDENCIES) $(EX
 testjacobiuser$(EXEEXT): $(testjacobiuser_OBJECTS) $(testjacobiuser_DEPENDENCIES) $(EXTRA_testjacobiuser_DEPENDENCIES) 
 	@rm -f testjacobiuser$(EXEEXT)
 	$(LINK) $(testjacobiuser_OBJECTS) $(testjacobiuser_LDADD) $(LIBS)
+testkrylovrobust$(EXEEXT): $(testkrylovrobust_OBJECTS) $(testkrylovrobust_DEPENDENCIES) $(EXTRA_testkrylovrobust_DEPENDENCIES) 
+	@rm -f testkrylovrobust$(EXEEXT)
+	$(LINK) $(testkrylovrobust_OBJECTS) $(testkrylovrobust_LDADD) $(LIBS)
 testoperator$(EXEEXT): $(testoperator_OBJECTS) $(testoperator_DEPENDENCIES) $(EXTRA_testoperator_DEPENDENCIES) 
 	@rm -f testoperator$(EXEEXT)
 	$(LINK) $(testoperator_OBJECTS) $(testoperator_LDADD) $(LIBS)
@@ -1155,6 +1166,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testgmreswork.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testilupivot.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testjacobiuser.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testkrylovrobust.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoperator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testparamupdate.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testprebuiltuser.Po@am__quote@
