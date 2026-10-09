@@ -1878,6 +1878,7 @@ Matrix Market形式による外部ファイル{\tt matvec.mtx}の記述例を以
 なし     & \verb=-p {none|0}=    &   \\
 Jacobi   & \verb=-p {jacobi|1}=  &     \\
 ILU(k)   & \verb=-p {ilu|2}=     & \verb=-ilu_fill [0]=    & フィルインレベル$k$ \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_omega [1.0]=    & 緩和係数$\omega$ ($0<\omega<2$) \\
 Hybrid   & \verb=-p {hybrid|4}=  & \verb=-hybrid_i [sor]=  & 線型方程式解法 \\
          &                       & \verb=-hybrid_maxiter [25]= & 最大反復回数 \\
@@ -1895,7 +1896,8 @@ SA-AMG   & \verb=-p {saamg|7}=   & \verb=-saamg_unsym [false]=     & 非対称�
          &                       &                             & (対称\verb=|=非対称) \\
 Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & ドロップ基準    \\
          &                       & \verb=-iluc_rate [5.0]=     & 最大フィルイン数の倍率 \\
-ILUT     & \verb=-p {ilut|9}=    &     \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
+ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数   \\
 \hline         
 \end{tabular}
@@ -2057,6 +2059,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 なし     & \verb=-p {none|0}=    &   \\
 Jacobi   & \verb=-p {jacobi|1}=  &     \\
 ILU(k)   & \verb=-p {ilu|2}=     & \verb=-ilu_fill [0]=    & フィルインレベル$k$ \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_omega [1.0]=    & 緩和係数$\omega$ ($0<\omega<2$) \\
 Hybrid   & \verb=-p {hybrid|4}=  & \verb=-hybrid_i [sor]=  & 線型方程式解法 \\
          &                       & \verb=-hybrid_maxiter [25]= & 最大反復回数 \\
@@ -2074,7 +2077,9 @@ SA-AMG   & \verb=-p {saamg|7}=   & \verb=-saamg_unsym [false]=     & 非対称�
          &                       &                             & (対称\verb=|=非対称) \\
 crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & ドロップ基準    \\
          &                       & \verb=-iluc_rate [5.0]=     & 最大フィルイン数の倍率 \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 ILUT     & \verb=-p {ilut|9}=    &     \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数   \\
 \hline         
 \end{tabular}
@@ -5980,6 +5985,7 @@ COO    &  ○  &  ○  &  ○  & CSR  & CSR & CSR & CSR & CSC & CSR &     & CSR 
 なし     & \verb=-p {none|0}=    &   \\
 Jacobi   & \verb=-p {jacobi|1}=  &     \\
 ILU(k)   & \verb=-p {ilu|2}=     & \verb=-ilu_fill [0]=    & フィルインレベル$k$ \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_omega [1.0]=    & 緩和係数$\omega$ ($0<\omega<2$) \\
 Hybrid   & \verb=-p {hybrid|4}=  & \verb=-hybrid_i [sor]=  & 線型方程式解法 \\
          &                       & \verb=-hybrid_maxiter [25]= & 最大反復回数 \\
@@ -5997,7 +6003,8 @@ SA-AMG   & \verb=-p {saamg|7}=   & \verb=-saamg_unsym [false]=     & 非対称�
          &                       &                             & (対称\verb=|=非対称) \\
 Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & ドロップ基準    \\
          &                       & \verb=-iluc_rate [5.0]=     & 最大フィルイン数の倍率 \\
-ILUT     & \verb=-p {ilut|9}=    &     \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
+ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数   \\
 \hline         
 \end{tabular}
@@ -6499,6 +6506,7 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 なし     & \verb=-p {none|0}=    &   \\
 Jacobi   & \verb=-p {jacobi|1}=  &     \\
 ILU(k)   & \verb=-p {ilu|2}=     & \verb=-ilu_fill [0]=    & フィルインレベル$k$ \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_omega [1.0]=    & 緩和係数$\omega$ ($0<\omega<2$) \\
 Hybrid   & \verb=-p {hybrid|4}=  & \verb=-hybrid_i [sor]=  & 線型方程式解法 \\
          &                       & \verb=-hybrid_maxiter [25]= & 最大反復回数 \\
@@ -6516,7 +6524,8 @@ SA-AMG   & \verb=-p {saamg|7}=   & \verb=-saamg_unsym [false]=     & 非対称�
          &                       &                             & (対称\verb=|=非対称) \\
 Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & ドロップ基準    \\
          &                       & \verb=-iluc_rate [5.0]=     & 最大フィルイン数の倍率 \\
-ILUT     & \verb=-p {ilut|9}=    &     \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
+ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数   \\
 \hline         
 \end{tabular}
