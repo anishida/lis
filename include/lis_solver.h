@@ -290,6 +290,28 @@ extern "C"
 	extern LIS_INT lis_cocr_malloc_work(LIS_SOLVER solver);
 
   
+
+/************************************************/
+/* Near-nullspace coarse state                  */
+/************************************************/
+
+struct LIS_NEAR_NULLSPACE_COARSE_STRUCT
+{
+	LIS_INT dim;
+	LIS_VECTOR *Z;
+	LIS_VECTOR *AZ;
+	LIS_SCALAR *E;
+	LIS_SCALAR *LU;
+	LIS_INT *pivots;
+	LIS_INT ready;
+};
+
+extern LIS_INT lis_solver_near_nullspace_coarse_setup(
+	LIS_SOLVER solver, LIS_MATRIX A, LIS_INT scale);
+extern LIS_INT lis_solver_near_nullspace_coarse_destroy(
+	LIS_SOLVER solver);
+extern LIS_INT lis_solver_near_nullspace_coarse_solve(
+	LIS_SOLVER solver, const LIS_SCALAR *rhs, LIS_SCALAR *x);
 #ifdef __cplusplus
 }
 #endif

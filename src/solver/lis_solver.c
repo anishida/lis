@@ -233,6 +233,7 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->precon   = NULL;
 	solver->near_nullspace = NULL;
 	solver->near_nullspace_dim = 0;
+	solver->near_nullspace_coarse = NULL;
 
 	solver->worklen   = 0;
 	solver->iter      = 0;
@@ -795,6 +796,8 @@ LIS_INT lis_solver_clear_near_nullspace(LIS_SOLVER solver)
 
 		return LIS_ERR_ILL_ARG;
 	}
+
+	lis_solver_near_nullspace_coarse_destroy(solver);
 
 	if( solver->near_nullspace )
 	{

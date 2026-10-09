@@ -6,10 +6,10 @@
 #endif
 #endif
 
-#include "lis.h"
-
 #include <math.h>
 #include <stdio.h>
+
+#include "lis.h"
 
 #define TEST_N 8
 

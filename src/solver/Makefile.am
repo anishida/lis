@@ -1,5 +1,5 @@
 noinst_LTLIBRARIES = libsolver.la
-libsolver_la_SOURCES = lis_solver.c \
+libsolver_la_SOURCES = lis_solver.c lis_solver_nearnullspace.c \
 lis_solver_bicg.c \
 lis_solver_bicgsafe.c \
 lis_solver_bicgstab.c \

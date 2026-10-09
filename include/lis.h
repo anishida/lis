@@ -759,6 +759,9 @@ struct LIS_PRECON_STRUCT
 };
 typedef struct LIS_PRECON_STRUCT *LIS_PRECON;
 
+struct LIS_NEAR_NULLSPACE_COARSE_STRUCT;
+typedef struct LIS_NEAR_NULLSPACE_COARSE_STRUCT *LIS_NEAR_NULLSPACE_COARSE;
+
 
 struct LIS_SOLVER_STRUCT
 {
@@ -769,6 +772,7 @@ struct LIS_SOLVER_STRUCT
 	/* Solver-owned copies of user-provided near-nullspace vectors. */
 	LIS_VECTOR *near_nullspace;
 	LIS_INT near_nullspace_dim;
+	LIS_NEAR_NULLSPACE_COARSE near_nullspace_coarse;
 	LIS_VECTOR *work;
 	LIS_REAL *rhistory;
 	LIS_INT worklen;
