@@ -766,6 +766,9 @@ struct LIS_SOLVER_STRUCT
 	LIS_VECTOR b,x,xx,d;
 	LIS_MATRIX_DIAG WD;
 	LIS_PRECON precon;
+	/* Solver-owned copies of user-provided near-nullspace vectors. */
+	LIS_VECTOR *near_nullspace;
+	LIS_INT near_nullspace_dim;
 	LIS_VECTOR *work;
 	LIS_REAL *rhistory;
 	LIS_INT worklen;
@@ -1003,6 +1006,8 @@ extern "C"
 
     extern LIS_INT lis_solver_create(LIS_SOLVER *solver);
 	extern LIS_INT lis_solver_destroy(LIS_SOLVER solver);
+	extern LIS_INT lis_solver_set_near_nullspace(LIS_SOLVER solver, LIS_INT nvec, LIS_VECTOR vectors[]);
+	extern LIS_INT lis_solver_clear_near_nullspace(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_get_iter(LIS_SOLVER solver, LIS_INT *iter);
 	extern LIS_INT lis_solver_get_iterex(LIS_SOLVER solver, LIS_INT *iter, LIS_INT *iter_double, LIS_INT *iter_quad);
 	extern LIS_INT lis_solver_get_time(LIS_SOLVER solver, double *time);

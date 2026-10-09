@@ -231,6 +231,8 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->work     = NULL;
 	solver->rhistory = NULL;
 	solver->precon   = NULL;
+	solver->near_nullspace = NULL;
+	solver->near_nullspace_dim = 0;
 
 	solver->worklen   = 0;
 	solver->iter      = 0;
@@ -704,6 +706,251 @@ LIS_INT lis_solver_work_destroy(LIS_SOLVER solver)
 	return LIS_SUCCESS;
 }
 
+static LIS_INT
+lis_solver_near_nullspace_vector_compatible(
+	LIS_VECTOR a,
+	LIS_VECTOR b)
+{
+	LIS_INT i;
+#ifdef USE_MPI
+	LIS_INT mpi_err,comm_result;
+#endif
+
+	if( a==NULL || b==NULL )
+	{
+		return LIS_FALSE;
+	}
+	if( a->label!=LIS_LABEL_VECTOR ||
+		b->label!=LIS_LABEL_VECTOR )
+	{
+		return LIS_FALSE;
+	}
+	if( a->precision!=b->precision ||
+		a->gn!=b->gn ||
+		a->n!=b->n ||
+		a->np!=b->np ||
+		a->pad!=b->pad ||
+		a->origin!=b->origin ||
+		a->my_rank!=b->my_rank ||
+		a->nprocs!=b->nprocs ||
+		a->is!=b->is ||
+		a->ie!=b->ie )
+	{
+		return LIS_FALSE;
+	}
+
+#ifdef USE_MPI
+	mpi_err = MPI_Comm_compare(
+		a->comm,b->comm,&comm_result);
+
+	if( mpi_err!=MPI_SUCCESS ||
+		(comm_result!=MPI_IDENT &&
+		 comm_result!=MPI_CONGRUENT) )
+	{
+		return LIS_FALSE;
+	}
+
+	if( a->ranges==NULL || b->ranges==NULL )
+	{
+		if( a->ranges!=b->ranges )
+		{
+			return LIS_FALSE;
+		}
+	}
+	else
+	{
+		for(i=0;i<=a->nprocs;i++)
+		{
+			if( a->ranges[i]!=b->ranges[i] )
+			{
+				return LIS_FALSE;
+			}
+		}
+	}
+#else
+	(void)i;
+	if( a->comm!=b->comm )
+	{
+		return LIS_FALSE;
+	}
+#endif
+
+	return LIS_TRUE;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_clear_near_nullspace"
+LIS_INT lis_solver_clear_near_nullspace(LIS_SOLVER solver)
+{
+	LIS_INT i;
+
+	LIS_DEBUG_FUNC_IN;
+
+	if( solver==NULL )
+	{
+		LIS_SETERR(
+			LIS_ERR_ILL_ARG,
+			"solver is NULL\n");
+
+		return LIS_ERR_ILL_ARG;
+	}
+
+	if( solver->near_nullspace )
+	{
+		for(i=0;i<solver->near_nullspace_dim;i++)
+		{
+			if( solver->near_nullspace[i] )
+			{
+				lis_vector_destroy(
+					solver->near_nullspace[i]);
+			}
+		}
+
+		lis_free(solver->near_nullspace);
+	}
+
+	solver->near_nullspace = NULL;
+	solver->near_nullspace_dim = 0;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_near_nullspace"
+LIS_INT lis_solver_set_near_nullspace(
+	LIS_SOLVER solver,
+	LIS_INT nvec,
+	LIS_VECTOR vectors[])
+{
+	LIS_VECTOR *owned;
+	LIS_INT i,j,err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	if( solver==NULL || nvec<0 )
+	{
+		LIS_SETERR(
+			LIS_ERR_ILL_ARG,
+			"invalid near-nullspace arguments\n");
+
+		return LIS_ERR_ILL_ARG;
+	}
+
+	if( nvec==0 )
+	{
+		return lis_solver_clear_near_nullspace(solver);
+	}
+
+	if( vectors==NULL )
+	{
+		LIS_SETERR(
+			LIS_ERR_ILL_ARG,
+			"near-nullspace vector array is NULL\n");
+
+		return LIS_ERR_ILL_ARG;
+	}
+
+	for(i=0;i<nvec;i++)
+	{
+		if( vectors[i]==NULL ||
+			vectors[i]->label!=LIS_LABEL_VECTOR )
+		{
+			LIS_SETERR(
+				LIS_ERR_ILL_ARG,
+				"invalid near-nullspace vector\n");
+
+			return LIS_ERR_ILL_ARG;
+		}
+
+		if( i>0 &&
+			!lis_solver_near_nullspace_vector_compatible(
+				vectors[0],vectors[i]) )
+		{
+			LIS_SETERR(
+				LIS_ERR_ILL_ARG,
+				"near-nullspace vectors must have compatible layouts\n");
+
+			return LIS_ERR_ILL_ARG;
+		}
+	}
+
+	owned = (LIS_VECTOR *)lis_malloc(
+		nvec*sizeof(LIS_VECTOR),
+		"lis_solver_set_near_nullspace::owned");
+
+	if( owned==NULL )
+	{
+		LIS_SETERR_MEM(nvec*sizeof(LIS_VECTOR));
+		return LIS_OUT_OF_MEMORY;
+	}
+
+	for(i=0;i<nvec;i++)
+	{
+		owned[i] = NULL;
+	}
+
+	for(i=0;i<nvec;i++)
+	{
+		err = lis_vector_duplicate(
+			vectors[i],
+			&owned[i]);
+
+		if( err )
+		{
+			for(j=0;j<nvec;j++)
+			{
+				if( owned[j] )
+				{
+					lis_vector_destroy(owned[j]);
+				}
+			}
+
+			lis_free(owned);
+			return err;
+		}
+
+		err = lis_vector_copy(
+			vectors[i],
+			owned[i]);
+
+		if( err )
+		{
+			for(j=0;j<nvec;j++)
+			{
+				if( owned[j] )
+				{
+					lis_vector_destroy(owned[j]);
+				}
+			}
+
+			lis_free(owned);
+			return err;
+		}
+	}
+
+	err = lis_solver_clear_near_nullspace(solver);
+	if( err )
+	{
+		for(i=0;i<nvec;i++)
+		{
+			lis_vector_destroy(owned[i]);
+		}
+
+		lis_free(owned);
+		return err;
+	}
+
+	solver->near_nullspace = owned;
+	solver->near_nullspace_dim = nvec;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_solver_destroy"
 LIS_INT lis_solver_destroy(LIS_SOLVER solver)
@@ -713,6 +960,7 @@ LIS_INT lis_solver_destroy(LIS_SOLVER solver)
 	if( solver )
 	{
 		lis_solver_work_destroy(solver);
+		lis_solver_clear_near_nullspace(solver);
 		lis_vector_destroy(solver->d);
 		if( solver->Ah ) lis_matrix_destroy(solver->Ah);
 		if( solver->rhistory ) lis_free(solver->rhistory);
