@@ -164,7 +164,7 @@ LIS_INT LIS_USE_AT_TYPE[] = {
 	0,
 	LIS_MATRIX_CSC,LIS_MATRIX_CSR
 	};
-#define LIS_SOLVER_OPTION_LEN		47
+#define LIS_SOLVER_OPTION_LEN		48
 #define LIS_PRINT_LEN			4
 #define LIS_SCALE_LEN			3
 #define LIS_TRUEFALSE_LEN		2
@@ -182,7 +182,7 @@ char *LIS_SOLVER_OPTNAME[] = {
 	"-adds",              "-adds_iter",     "-f",              "-use_at",        "-switch_tol",
 	"-switch_maxiter",    "-saamg_unsym",   "-iluc_drop",      "-iluc_gamma",    "-iluc_rate",
 	"-storage",           "-storage_block", "-conv_cond",      "-tol_w",         "-saamg_theta",	"-irestart",
-	"-maxiter_noimp"
+	"-maxiter_noimp",      "-ilu_pivot_tol"
 };
 
 LIS_INT LIS_SOLVER_OPTACT[] = {
@@ -195,7 +195,7 @@ LIS_INT LIS_SOLVER_OPTACT[] = {
 	LIS_OPTIONS_ADDS             , LIS_OPTIONS_ADDS_ITER     , LIS_OPTIONS_PRECISION     , LIS_OPTIONS_USE_AT       , LIS_PARAMS_SWITCH_RESID,
 	LIS_OPTIONS_SWITCH_MAXITER   , LIS_OPTIONS_SAAMG_UNSYM   , LIS_PARAMS_DROP           , LIS_PARAMS_GAMMA         , LIS_PARAMS_RATE, 
 	LIS_OPTIONS_STORAGE          , LIS_OPTIONS_STORAGE_BLOCK , LIS_OPTIONS_CONV_COND     , LIS_PARAMS_RESID_WEIGHT  , LIS_PARAMS_SAAMG_THETA, LIS_OPTIONS_IDRS_RESTART,
-	LIS_OPTIONS_MAXITER_NO_IMP
+	LIS_OPTIONS_MAXITER_NO_IMP       , LIS_PARAMS_ILU_PIVOT_TOL
 };
 
 char *lis_solver_atoi[]    = {"cg", "bicg", "cgs", "bicgstab", "bicgstabl", "gpbicg", "tfqmr","orthomin", "gmres", "jacobi", "gs", "sor", "bicgsafe", "cr", "bicr", "crs", "bicrstab", "gpbicr", "bicrsafe", "fgmres", "idrs", "idr1", "minres", "cocg", "cocr"};
@@ -285,6 +285,7 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->params[LIS_PARAMS_SWITCH_RESID -LIS_OPTIONS_LEN] = 1.0e-12;
 	solver->params[LIS_PARAMS_RATE         -LIS_OPTIONS_LEN] = 5.0;
 	solver->params[LIS_PARAMS_SAAMG_THETA  -LIS_OPTIONS_LEN] = 0.05;
+        solver->params[LIS_PARAMS_ILU_PIVOT_TOL-LIS_OPTIONS_LEN] = 0.0;
 
 	/* reset solver->setup */
 	solver->setup = LIS_FALSE;

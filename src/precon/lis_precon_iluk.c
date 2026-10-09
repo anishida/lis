@@ -638,8 +638,9 @@ LIS_INT lis_symbolic_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 {
 #ifdef _OPENMP
-	LIS_INT	i,j,k;
-	LIS_INT	n;
+	LIS_INT i,j,k,err;
+	LIS_INT n;
+	LIS_REAL pivot_tol,row_scale;
 	LIS_INT	col,jpos,jrow;
 	LIS_INT	*jw;
 	LIS_INT	is,ie,my_rank,nprocs;
@@ -652,6 +653,12 @@ LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 
 	A      = solver->A;
 	n      = A->n;
+	pivot_tol = solver->params[
+	    LIS_PARAMS_ILU_PIVOT_TOL-LIS_OPTIONS_LEN];
+
+	err = lis_precon_check_ilu_pivot_tol(
+	    A,pivot_tol);
+	if( err ) return err;
 	nprocs = omp_get_max_threads();
 
 	L = precon->L;
@@ -666,7 +673,7 @@ LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		return LIS_OUT_OF_MEMORY;
 	}
 
-	#pragma omp parallel private(i,j,k,is,ie,my_rank,col,jpos,jrow)
+	#pragma omp parallel private(i,j,k,is,ie,my_rank,col,jpos,jrow,row_scale)
 	{
 		my_rank  = omp_get_thread_num();
 		LIS_GET_ISIE(my_rank,nprocs,n,is,ie);
@@ -753,6 +760,15 @@ LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 				col = U->index[i][j];
 				jw[col] = -1;
 			}
+			if( pivot_tol>0.0 )
+			{
+			    row_scale = lis_precon_csr_row_scale(A,i);
+			    D->value[i] =
+			        lis_precon_regularize_ilu_pivot(
+			            D->value[i],
+			            row_scale,
+			            pivot_tol);
+			}
 			D->value[i] = 1.0 / D->value[i];
 		}
 	}
@@ -761,8 +777,9 @@ LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 #else
-	LIS_INT	i,j,k;
-	LIS_INT	n;
+	LIS_INT i,j,k,err;
+	LIS_INT n;
+	LIS_REAL pivot_tol,row_scale;
 	LIS_INT	col,jpos,jrow;
 	LIS_INT	*jw;
 	LIS_MATRIX A;
@@ -774,6 +791,12 @@ LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 
 	A      = solver->A;
 	n      = A->n;
+	pivot_tol = solver->params[
+	    LIS_PARAMS_ILU_PIVOT_TOL-LIS_OPTIONS_LEN];
+
+	err = lis_precon_check_ilu_pivot_tol(
+	    A,pivot_tol);
+	if( err ) return err;
 
 	L = precon->L;
 	U = precon->U;
@@ -865,6 +888,15 @@ LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		{
 			col = U->index[i][j];
 			jw[col] = -1;
+		}
+		if( pivot_tol>0.0 )
+		{
+		    row_scale = lis_precon_csr_row_scale(A,i);
+		    D->value[i] =
+		        lis_precon_regularize_ilu_pivot(
+		            D->value[i],
+		            row_scale,
+		            pivot_tol);
 		}
 		D->value[i] = 1.0 / D->value[i];
 	}
