@@ -1843,6 +1843,764 @@ cleanup:
 }
 
 
+
+/* ============================================================ */
+/* Stage 7D scaled multi-mode end-to-end coverage               */
+/* ============================================================ */
+
+#define TEST_MULTI_K 3
+
+
+static LIS_REAL
+stage7d_scalar_abs(
+    LIS_SCALAR value)
+{
+#ifdef _COMPLEX
+    return cabs(value);
+#else
+    return fabs(value);
+#endif
+}
+
+
+static LIS_SCALAR
+stage7d_diag_value(
+    LIS_INT i)
+{
+    if(i==0)
+        return (LIS_SCALAR)1.0e-12;
+
+    if(i==1)
+        return (LIS_SCALAR)4.0e-12;
+
+    if(i==2)
+        return (LIS_SCALAR)9.0e-12;
+
+    return
+        (LIS_SCALAR)(
+            1.0
+            +
+            0.07*(LIS_REAL)i);
+}
+
+
+static LIS_INT
+stage7d_build_matrix(
+    LIS_MATRIX *Aout)
+{
+    LIS_MATRIX A = NULL;
+
+    LIS_INT i,is,ie,err;
+
+
+    err =
+        lis_matrix_create(
+            LIS_COMM_WORLD,
+            &A);
+
+    if(err)
+        return err;
+
+
+    err =
+        lis_matrix_set_size(
+            A,
+            0,
+            TEST_N);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_matrix_get_range(
+            A,
+            &is,
+            &ie);
+
+    if(err)
+        goto fail;
+
+
+    for(i=is;i<ie;i++)
+    {
+        err =
+            lis_matrix_set_value(
+                LIS_INS_VALUE,
+                i,
+                i,
+                stage7d_diag_value(i),
+                A);
+
+        if(err)
+            goto fail;
+    }
+
+
+    err =
+        lis_matrix_set_type(
+            A,
+            LIS_MATRIX_CSR);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_matrix_assemble(
+            A);
+
+    if(err)
+        goto fail;
+
+
+    *Aout =
+        A;
+
+
+    return LIS_SUCCESS;
+
+
+fail:
+
+    if(A)
+        lis_matrix_destroy(A);
+
+
+    return err;
+}
+
+
+static int
+stage7d_run_multimode_case(
+    LIS_INT scale,
+    const char *scale_name)
+{
+    LIS_MATRIX A = NULL;
+    LIS_MATRIX A_physical = NULL;
+
+    LIS_VECTOR b = NULL;
+    LIS_VECTOR b_physical = NULL;
+    LIS_VECTOR x = NULL;
+    LIS_VECTOR exact = NULL;
+    LIS_VECTOR diff = NULL;
+
+    LIS_VECTOR z0 = NULL;
+    LIS_VECTOR z1 = NULL;
+    LIS_VECTOR z2 = NULL;
+
+    LIS_VECTOR basis[TEST_MULTI_K];
+
+    LIS_SOLVER solver = NULL;
+
+    LIS_NEAR_NULLSPACE_COARSE coarse = NULL;
+
+    LIS_REAL xnorm = 0.0;
+    LIS_REAL dnorm = 0.0;
+    LIS_REAL rel_error = -1.0;
+    LIS_REAL mode_error = 0.0;
+    LIS_REAL transform_error = 0.0;
+    LIS_REAL coarse_error = 0.0;
+    LIS_REAL true_residual_value = -1.0;
+    LIS_REAL value_error;
+
+    LIS_SCALAR expected;
+
+    LIS_INT i,j;
+    LIS_INT api = -999;
+    LIS_INT status = -999;
+    LIS_INT iter = -999;
+    LIS_INT err;
+
+    int failed = 0;
+
+
+    err =
+        stage7d_build_matrix(
+            &A);
+
+    if(err)
+        return 1;
+
+
+    /*
+     * lis_solve() may scale explicit A and b in-place.
+     * Keep an independent physical operator for the
+     * post-solve residual audit.
+     */
+    err =
+        stage7d_build_matrix(
+            &A_physical);
+
+    if(err)
+    {
+        lis_matrix_destroy(
+            A);
+
+        return 1;
+    }
+
+
+    if(
+        lis_vector_duplicate(A,&b)
+        ||
+        lis_vector_duplicate(
+            A_physical,
+            &b_physical)
+        ||
+        lis_vector_duplicate(A,&x)
+        ||
+        lis_vector_duplicate(A,&exact)
+        ||
+        lis_vector_duplicate(A,&diff)
+        ||
+        lis_vector_duplicate(A,&z0)
+        ||
+        lis_vector_duplicate(A,&z1)
+        ||
+        lis_vector_duplicate(A,&z2))
+    {
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    /*
+     * Three independent physical near-null modes.
+     */
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        z0);
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        z1);
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        z2);
+
+
+    z0->value[0] =
+        (LIS_SCALAR)1.0;
+
+    z1->value[1] =
+        (LIS_SCALAR)1.0;
+
+    z2->value[2] =
+        (LIS_SCALAR)1.0;
+
+
+    basis[0] = z0;
+    basis[1] = z1;
+    basis[2] = z2;
+
+
+    /*
+     * Physical exact solution.
+     *
+     * Keep all components O(1), including the three
+     * weak modes.
+     */
+    for(i=0;i<TEST_N;i++)
+    {
+        exact->value[i] =
+            (LIS_SCALAR)(
+                0.80
+                +
+                0.015*(LIS_REAL)(i+1)
+                +
+                0.08*sin(
+                    0.23*(LIS_REAL)(i+1)));
+    }
+
+
+    err =
+        lis_matvec(
+            A,
+            exact,
+            b);
+
+    if(err)
+    {
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    /*
+     * Preserve the original physical right-hand side before
+     * lis_solve() is allowed to scale its working copy.
+     */
+    err =
+        lis_vector_copy(
+            b,
+            b_physical);
+
+    if(err)
+    {
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    /*
+     * Deliberately nonzero, non-exact physical initial guess.
+     * This forces -initx_zeros false through the scaling path.
+     */
+    for(i=0;i<TEST_N;i++)
+    {
+        x->value[i] =
+            (LIS_SCALAR)(
+                0.20
+                +
+                0.004*(LIS_REAL)(i+1)
+                +
+                0.03*cos(
+                    0.19*(LIS_REAL)(i+1)));
+    }
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if(err)
+    {
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    if(scale==LIS_SCALE_SYMM_DIAG)
+    {
+        err =
+            lis_solver_set_option(
+                "-i fgmres -p none "
+                "-scale symm_diag "
+                "-initx_zeros false "
+                "-print none "
+                "-restart 8 "
+                "-maxiter 300 "
+                "-maxiter_noimp 0 "
+                "-tol 1.0e-10",
+                solver);
+    }
+    else
+    {
+        err =
+            lis_solver_set_option(
+                "-i fgmres -p none "
+                "-scale none "
+                "-initx_zeros false "
+                "-print none "
+                "-restart 8 "
+                "-maxiter 300 "
+                "-maxiter_noimp 0 "
+                "-tol 1.0e-10",
+                solver);
+    }
+
+
+    if(err)
+    {
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_solver_set_near_nullspace(
+            solver,
+            TEST_MULTI_K,
+            basis);
+
+    if(err)
+    {
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    api =
+        lis_solve(
+            A,
+            b,
+            x,
+            solver);
+
+
+    lis_solver_get_status(
+        solver,
+        &status);
+
+    lis_solver_get_iter(
+        solver,
+        &iter);
+
+
+    if(api!=LIS_SUCCESS)
+        failed = 1;
+
+    if(status!=LIS_SUCCESS)
+        failed = 1;
+
+
+    coarse =
+        solver->near_nullspace_coarse;
+
+
+    if(
+        coarse==NULL
+        ||
+        !coarse->ready
+        ||
+        coarse->dim!=TEST_MULTI_K)
+    {
+        failed = 1;
+        goto report;
+    }
+
+
+    /*
+     * Measure the physical true residual independently of
+     * the solver-reported stopping criterion.
+     */
+    true_residual_value =
+        true_residual(
+            A_physical,
+            b_physical,
+            x,
+            diff);
+
+
+    /*
+     * Returned x must be in physical coordinates.
+     */
+    err =
+        lis_vector_copy(
+            x,
+            diff);
+
+    if(err)
+    {
+        failed = 1;
+        goto report;
+    }
+
+
+    err =
+        lis_vector_axpy(
+            (LIS_SCALAR)-1.0,
+            exact,
+            diff);
+
+    if(err)
+    {
+        failed = 1;
+        goto report;
+    }
+
+
+    lis_vector_nrm2(
+        diff,
+        &dnorm);
+
+    lis_vector_nrm2(
+        exact,
+        &xnorm);
+
+
+    rel_error =
+        xnorm!=0.0
+        ?
+        dnorm/xnorm
+        :
+        dnorm;
+
+
+    /*
+     * Check the three weak physical coordinates explicitly.
+     */
+    for(i=0;i<TEST_MULTI_K;i++)
+    {
+        value_error =
+            stage7d_scalar_abs(
+                x->value[i]
+                -
+                exact->value[i]);
+
+        if(value_error>mode_error)
+            mode_error =
+                value_error;
+    }
+
+
+    /*
+     * Coarse Z is stored in effective Krylov coordinates.
+     *
+     * NONE:
+     *     Z_eff = Z_phys
+     *
+     * SYMM_DIAG:
+     *     Z_eff = D^-1 Z_phys
+     *
+     * Therefore multiplying the effective vector by D must
+     * recover the physical basis.
+     */
+    for(i=0;i<TEST_MULTI_K;i++)
+    {
+        for(j=0;j<TEST_MULTI_K;j++)
+        {
+            LIS_SCALAR recovered;
+            LIS_SCALAR target;
+
+
+            target =
+                (i==j)
+                ?
+                (LIS_SCALAR)1.0
+                :
+                (LIS_SCALAR)0.0;
+
+
+            recovered =
+                coarse->Z[i]->value[j];
+
+
+            if(scale==LIS_SCALE_SYMM_DIAG)
+            {
+                if(solver->d==NULL)
+                {
+                    failed = 1;
+                    goto report;
+                }
+
+                recovered *=
+                    solver->d->value[j];
+            }
+
+
+            value_error =
+                stage7d_scalar_abs(
+                    recovered
+                    -
+                    target);
+
+            if(value_error>transform_error)
+            {
+                transform_error =
+                    value_error;
+            }
+        }
+    }
+
+
+    /*
+     * E = Z_phys^H A_phys Z_phys.
+     *
+     * For this diagonal matrix E must be invariant under
+     * NONE versus SYMM_DIAG coordinate transformations.
+     */
+    for(i=0;i<TEST_MULTI_K;i++)
+    {
+        for(j=0;j<TEST_MULTI_K;j++)
+        {
+            expected =
+                (i==j)
+                ?
+                stage7d_diag_value(i)
+                :
+                (LIS_SCALAR)0.0;
+
+
+            value_error =
+                stage7d_scalar_abs(
+                    coarse->E[
+                        i*TEST_MULTI_K+j]
+                    -
+                    expected);
+
+
+            if(value_error>coarse_error)
+            {
+                coarse_error =
+                    value_error;
+            }
+        }
+    }
+
+
+    /*
+     * Backward accuracy and coarse-space invariants are required
+     * for both coordinate systems.
+     *
+     * The unscaled physical matrix is intentionally extremely
+     * ill-conditioned.  A small physical residual therefore does
+     * not imply a comparably small forward error in the weak
+     * coordinates.
+     *
+     * Symmetric diagonal scaling equilibrates those coordinates,
+     * so for SYMM_DIAG we additionally require high physical
+     * forward accuracy.
+     */
+    if(
+        !isfinite((double)true_residual_value)
+        ||
+        !isfinite((double)rel_error)
+        ||
+        !isfinite((double)mode_error)
+        ||
+        !isfinite((double)transform_error)
+        ||
+        !isfinite((double)coarse_error)
+        ||
+        true_residual_value>1.0e-8
+        ||
+        transform_error>1.0e-10
+        ||
+        coarse_error>1.0e-18)
+    {
+        failed = 1;
+    }
+
+
+    if(
+        scale==LIS_SCALE_SYMM_DIAG
+        &&
+        (
+            rel_error>1.0e-8
+            ||
+            mode_error>1.0e-8
+        ))
+    {
+        failed = 1;
+    }
+
+
+report:
+
+    printf(
+        "SCALED_MULTIMODE "
+        "scale=%s "
+        "api=%d status=%d iter=%d "
+        "true=% .12e "
+        "rel=% .12e "
+        "mode=% .12e "
+        "transform=% .12e "
+        "Eerror=% .12e "
+        "ready=%d dim=%d\n",
+        scale_name,
+        (int)api,
+        (int)status,
+        (int)iter,
+        (double)true_residual_value,
+        (double)rel_error,
+        (double)mode_error,
+        (double)transform_error,
+        (double)coarse_error,
+        coarse
+            ?
+            (int)coarse->ready
+            :
+            0,
+        coarse
+            ?
+            (int)coarse->dim
+            :
+            -1);
+
+
+cleanup:
+
+    /*
+     * lis_solve() destroys the internally created preconditioner.
+     */
+    if(solver)
+        solver->precon = NULL;
+
+
+    if(solver)
+        lis_solver_destroy(
+            solver);
+
+
+    if(z2)
+        lis_vector_destroy(
+            z2);
+
+    if(z1)
+        lis_vector_destroy(
+            z1);
+
+    if(z0)
+        lis_vector_destroy(
+            z0);
+
+    if(diff)
+        lis_vector_destroy(
+            diff);
+
+    if(exact)
+        lis_vector_destroy(
+            exact);
+
+    if(x)
+        lis_vector_destroy(
+            x);
+
+    if(b_physical)
+        lis_vector_destroy(
+            b_physical);
+
+    if(b)
+        lis_vector_destroy(
+            b);
+
+    if(A_physical)
+        lis_matrix_destroy(
+            A_physical);
+
+    if(A)
+        lis_matrix_destroy(
+            A);
+
+
+    return failed;
+}
+
+
+static int
+check_scaled_multimode(void)
+{
+    int failed = 0;
+
+
+    failed |=
+        stage7d_run_multimode_case(
+            LIS_SCALE_NONE,
+            "none");
+
+
+    failed |=
+        stage7d_run_multimode_case(
+            LIS_SCALE_SYMM_DIAG,
+            "symm_diag");
+
+
+    printf(
+        "LIS_SCALED_MULTIMODE_STAGE7D %s\n",
+        failed
+            ?
+            "FAILED"
+            :
+            "PASSED");
+
+
+    return failed;
+}
+
+
 int
 main(
     int argc,
@@ -1876,6 +2634,9 @@ main(
 
     failed |=
         check_user_wrapper();
+
+    failed |=
+        check_scaled_multimode();
 
     if(failed)
     {
