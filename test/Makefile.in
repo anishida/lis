@@ -71,6 +71,11 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) \
 	testgmreswork$(EXEEXT) testworkcompat$(EXEEXT) \
 	testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) \
+	testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) \
+	testilupivot$(EXEEXT) testparamupdate$(EXEEXT) \
+	testbreakretry$(EXEEXT) testchangingsystem$(EXEEXT) \
+	testkrylovrobust$(EXEEXT) testnearnullspace$(EXEEXT) \
+	testcoarsesetup$(EXEEXT) testcoarseapply$(EXEEXT) \
 	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
 @ENABLE_FORTRAN_TRUE@am__append_1 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_2 = test2f test6f 
@@ -295,6 +300,22 @@ am__test8f_SOURCES_DIST = test8f.F90
 test8f_OBJECTS = $(am_test8f_OBJECTS)
 test8f_LDADD = $(LDADD)
 test8f_DEPENDENCIES =
+am_testbreakretry_OBJECTS = testbreakretry.$(OBJEXT)
+testbreakretry_OBJECTS = $(am_testbreakretry_OBJECTS)
+testbreakretry_LDADD = $(LDADD)
+testbreakretry_DEPENDENCIES =
+am_testchangingsystem_OBJECTS = testchangingsystem.$(OBJEXT)
+testchangingsystem_OBJECTS = $(am_testchangingsystem_OBJECTS)
+testchangingsystem_LDADD = $(LDADD)
+testchangingsystem_DEPENDENCIES =
+am_testcoarseapply_OBJECTS = testcoarseapply.$(OBJEXT)
+testcoarseapply_OBJECTS = $(am_testcoarseapply_OBJECTS)
+testcoarseapply_LDADD = $(LDADD)
+testcoarseapply_DEPENDENCIES =
+am_testcoarsesetup_OBJECTS = testcoarsesetup.$(OBJEXT)
+testcoarsesetup_OBJECTS = $(am_testcoarsesetup_OBJECTS)
+testcoarsesetup_LDADD = $(LDADD)
+testcoarsesetup_DEPENDENCIES =
 am_testdiagonal_OBJECTS = testdiagonal.$(OBJEXT)
 testdiagonal_OBJECTS = $(am_testdiagonal_OBJECTS)
 testdiagonal_LDADD = $(LDADD)
@@ -303,14 +324,30 @@ am_testgmreswork_OBJECTS = testgmreswork.$(OBJEXT)
 testgmreswork_OBJECTS = $(am_testgmreswork_OBJECTS)
 testgmreswork_LDADD = $(LDADD)
 testgmreswork_DEPENDENCIES =
+am_testilupivot_OBJECTS = testilupivot.$(OBJEXT)
+testilupivot_OBJECTS = $(am_testilupivot_OBJECTS)
+testilupivot_LDADD = $(LDADD)
+testilupivot_DEPENDENCIES =
 am_testjacobiuser_OBJECTS = testjacobiuser.$(OBJEXT)
 testjacobiuser_OBJECTS = $(am_testjacobiuser_OBJECTS)
 testjacobiuser_LDADD = $(LDADD)
 testjacobiuser_DEPENDENCIES =
+am_testkrylovrobust_OBJECTS = testkrylovrobust.$(OBJEXT)
+testkrylovrobust_OBJECTS = $(am_testkrylovrobust_OBJECTS)
+testkrylovrobust_LDADD = $(LDADD)
+testkrylovrobust_DEPENDENCIES =
+am_testnearnullspace_OBJECTS = testnearnullspace.$(OBJEXT)
+testnearnullspace_OBJECTS = $(am_testnearnullspace_OBJECTS)
+testnearnullspace_LDADD = $(LDADD)
+testnearnullspace_DEPENDENCIES =
 am_testoperator_OBJECTS = testoperator.$(OBJEXT)
 testoperator_OBJECTS = $(am_testoperator_OBJECTS)
 testoperator_LDADD = $(LDADD)
 testoperator_DEPENDENCIES =
+am_testparamupdate_OBJECTS = testparamupdate.$(OBJEXT)
+testparamupdate_OBJECTS = $(am_testparamupdate_OBJECTS)
+testparamupdate_LDADD = $(LDADD)
+testparamupdate_DEPENDENCIES =
 am_testprebuiltuser_OBJECTS = testprebuiltuser.$(OBJEXT)
 testprebuiltuser_OBJECTS = $(am_testprebuiltuser_OBJECTS)
 testprebuiltuser_LDADD = $(LDADD)
@@ -343,6 +380,14 @@ am_testrqirestore_OBJECTS = testrqirestore.$(OBJEXT)
 testrqirestore_OBJECTS = $(am_testrqirestore_OBJECTS)
 testrqirestore_LDADD = $(LDADD)
 testrqirestore_DEPENDENCIES =
+am_testshellscale_OBJECTS = testshellscale.$(OBJEXT)
+testshellscale_OBJECTS = $(am_testshellscale_OBJECTS)
+testshellscale_LDADD = $(LDADD)
+testshellscale_DEPENDENCIES =
+am_testsymmdiagguard_OBJECTS = testsymmdiagguard.$(OBJEXT)
+testsymmdiagguard_OBJECTS = $(am_testsymmdiagguard_OBJECTS)
+testsymmdiagguard_LDADD = $(LDADD)
+testsymmdiagguard_DEPENDENCIES =
 am_testuser_OBJECTS = testuser.$(OBJEXT)
 testuser_OBJECTS = $(am_testuser_OBJECTS)
 testuser_LDADD = $(LDADD)
@@ -414,13 +459,18 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(test3_SOURCES) $(test3b_SOURCES) $(test3c_SOURCES) \
 	$(test4_SOURCES) $(test4f_SOURCES) $(test5_SOURCES) \
 	$(test6_SOURCES) $(test6f_SOURCES) $(test7_SOURCES) \
-	$(test7f_SOURCES) $(test8f_SOURCES) $(testdiagonal_SOURCES) \
-	$(testgmreswork_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testoperator_SOURCES) $(testprebuiltuser_SOURCES) \
+	$(test7f_SOURCES) $(test8f_SOURCES) $(testbreakretry_SOURCES) \
+	$(testchangingsystem_SOURCES) $(testcoarseapply_SOURCES) \
+	$(testcoarsesetup_SOURCES) $(testdiagonal_SOURCES) \
+	$(testgmreswork_SOURCES) $(testilupivot_SOURCES) \
+	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
+	$(testnearnullspace_SOURCES) $(testoperator_SOURCES) \
+	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
 	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
 	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
 	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
-	$(testrqirestore_SOURCES) $(testuser_SOURCES) \
+	$(testrqirestore_SOURCES) $(testshellscale_SOURCES) \
+	$(testsymmdiagguard_SOURCES) $(testuser_SOURCES) \
 	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
 DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
@@ -440,13 +490,18 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(test3c_SOURCES) $(test4_SOURCES) $(am__test4f_SOURCES_DIST) \
 	$(test5_SOURCES) $(test6_SOURCES) $(am__test6f_SOURCES_DIST) \
 	$(test7_SOURCES) $(am__test7f_SOURCES_DIST) \
-	$(am__test8f_SOURCES_DIST) $(testdiagonal_SOURCES) \
-	$(testgmreswork_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testoperator_SOURCES) $(testprebuiltuser_SOURCES) \
+	$(am__test8f_SOURCES_DIST) $(testbreakretry_SOURCES) \
+	$(testchangingsystem_SOURCES) $(testcoarseapply_SOURCES) \
+	$(testcoarsesetup_SOURCES) $(testdiagonal_SOURCES) \
+	$(testgmreswork_SOURCES) $(testilupivot_SOURCES) \
+	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
+	$(testnearnullspace_SOURCES) $(testoperator_SOURCES) \
+	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
 	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
 	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
 	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
-	$(testrqirestore_SOURCES) $(testuser_SOURCES) \
+	$(testrqirestore_SOURCES) $(testshellscale_SOURCES) \
+	$(testsymmdiagguard_SOURCES) $(testuser_SOURCES) \
 	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -659,6 +714,16 @@ testgmreswork_SOURCES = testgmreswork.c
 testworkcompat_SOURCES = testworkcompat.c
 testworkreuse_SOURCES = testworkreuse.c
 testprebuiltuser_SOURCES = testprebuiltuser.c
+testshellscale_SOURCES = testshellscale.c
+testsymmdiagguard_SOURCES = testsymmdiagguard.c
+testnearnullspace_SOURCES = testnearnullspace.c
+testcoarsesetup_SOURCES = testcoarsesetup.c
+testcoarseapply_SOURCES = testcoarseapply.c
+testilupivot_SOURCES = testilupivot.c
+testparamupdate_SOURCES = testparamupdate.c
+testbreakretry_SOURCES = testbreakretry.c
+testchangingsystem_SOURCES = testchangingsystem.c
+testkrylovrobust_SOURCES = testkrylovrobust.c
 @ENABLE_FORTRAN_TRUE@etest1f_SOURCES = etest1f.F
 @ENABLE_FORTRAN_TRUE@etest4f_SOURCES = etest4f.F
 @ENABLE_FORTRAN_TRUE@test1f_SOURCES = test1f.F
@@ -713,7 +778,7 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
-TESTS = test.sh testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) testworkcompat$(EXEEXT) testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT)
+TESTS = test.sh testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) testworkcompat$(EXEEXT) testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) testilupivot$(EXEEXT) testparamupdate$(EXEEXT) testbreakretry$(EXEEXT) testchangingsystem$(EXEEXT) testkrylovrobust$(EXEEXT) testnearnullspace$(EXEEXT) testcoarsesetup$(EXEEXT) testcoarseapply$(EXEEXT)
 all: all-am
 
 .SUFFIXES:
@@ -975,18 +1040,42 @@ test7f$(EXEEXT): $(test7f_OBJECTS) $(test7f_DEPENDENCIES) $(EXTRA_test7f_DEPENDE
 test8f$(EXEEXT): $(test8f_OBJECTS) $(test8f_DEPENDENCIES) $(EXTRA_test8f_DEPENDENCIES) 
 	@rm -f test8f$(EXEEXT)
 	$(FCLINK) $(test8f_OBJECTS) $(test8f_LDADD) $(LIBS)
+testbreakretry$(EXEEXT): $(testbreakretry_OBJECTS) $(testbreakretry_DEPENDENCIES) $(EXTRA_testbreakretry_DEPENDENCIES) 
+	@rm -f testbreakretry$(EXEEXT)
+	$(LINK) $(testbreakretry_OBJECTS) $(testbreakretry_LDADD) $(LIBS)
+testchangingsystem$(EXEEXT): $(testchangingsystem_OBJECTS) $(testchangingsystem_DEPENDENCIES) $(EXTRA_testchangingsystem_DEPENDENCIES) 
+	@rm -f testchangingsystem$(EXEEXT)
+	$(LINK) $(testchangingsystem_OBJECTS) $(testchangingsystem_LDADD) $(LIBS)
+testcoarseapply$(EXEEXT): $(testcoarseapply_OBJECTS) $(testcoarseapply_DEPENDENCIES) $(EXTRA_testcoarseapply_DEPENDENCIES) 
+	@rm -f testcoarseapply$(EXEEXT)
+	$(LINK) $(testcoarseapply_OBJECTS) $(testcoarseapply_LDADD) $(LIBS)
+testcoarsesetup$(EXEEXT): $(testcoarsesetup_OBJECTS) $(testcoarsesetup_DEPENDENCIES) $(EXTRA_testcoarsesetup_DEPENDENCIES) 
+	@rm -f testcoarsesetup$(EXEEXT)
+	$(LINK) $(testcoarsesetup_OBJECTS) $(testcoarsesetup_LDADD) $(LIBS)
 testdiagonal$(EXEEXT): $(testdiagonal_OBJECTS) $(testdiagonal_DEPENDENCIES) $(EXTRA_testdiagonal_DEPENDENCIES) 
 	@rm -f testdiagonal$(EXEEXT)
 	$(LINK) $(testdiagonal_OBJECTS) $(testdiagonal_LDADD) $(LIBS)
 testgmreswork$(EXEEXT): $(testgmreswork_OBJECTS) $(testgmreswork_DEPENDENCIES) $(EXTRA_testgmreswork_DEPENDENCIES) 
 	@rm -f testgmreswork$(EXEEXT)
 	$(LINK) $(testgmreswork_OBJECTS) $(testgmreswork_LDADD) $(LIBS)
+testilupivot$(EXEEXT): $(testilupivot_OBJECTS) $(testilupivot_DEPENDENCIES) $(EXTRA_testilupivot_DEPENDENCIES) 
+	@rm -f testilupivot$(EXEEXT)
+	$(LINK) $(testilupivot_OBJECTS) $(testilupivot_LDADD) $(LIBS)
 testjacobiuser$(EXEEXT): $(testjacobiuser_OBJECTS) $(testjacobiuser_DEPENDENCIES) $(EXTRA_testjacobiuser_DEPENDENCIES) 
 	@rm -f testjacobiuser$(EXEEXT)
 	$(LINK) $(testjacobiuser_OBJECTS) $(testjacobiuser_LDADD) $(LIBS)
+testkrylovrobust$(EXEEXT): $(testkrylovrobust_OBJECTS) $(testkrylovrobust_DEPENDENCIES) $(EXTRA_testkrylovrobust_DEPENDENCIES) 
+	@rm -f testkrylovrobust$(EXEEXT)
+	$(LINK) $(testkrylovrobust_OBJECTS) $(testkrylovrobust_LDADD) $(LIBS)
+testnearnullspace$(EXEEXT): $(testnearnullspace_OBJECTS) $(testnearnullspace_DEPENDENCIES) $(EXTRA_testnearnullspace_DEPENDENCIES) 
+	@rm -f testnearnullspace$(EXEEXT)
+	$(LINK) $(testnearnullspace_OBJECTS) $(testnearnullspace_LDADD) $(LIBS)
 testoperator$(EXEEXT): $(testoperator_OBJECTS) $(testoperator_DEPENDENCIES) $(EXTRA_testoperator_DEPENDENCIES) 
 	@rm -f testoperator$(EXEEXT)
 	$(LINK) $(testoperator_OBJECTS) $(testoperator_LDADD) $(LIBS)
+testparamupdate$(EXEEXT): $(testparamupdate_OBJECTS) $(testparamupdate_DEPENDENCIES) $(EXTRA_testparamupdate_DEPENDENCIES) 
+	@rm -f testparamupdate$(EXEEXT)
+	$(LINK) $(testparamupdate_OBJECTS) $(testparamupdate_LDADD) $(LIBS)
 testprebuiltuser$(EXEEXT): $(testprebuiltuser_OBJECTS) $(testprebuiltuser_DEPENDENCIES) $(EXTRA_testprebuiltuser_DEPENDENCIES) 
 	@rm -f testprebuiltuser$(EXEEXT)
 	$(LINK) $(testprebuiltuser_OBJECTS) $(testprebuiltuser_LDADD) $(LIBS)
@@ -1011,6 +1100,12 @@ testrhistoryerror$(EXEEXT): $(testrhistoryerror_OBJECTS) $(testrhistoryerror_DEP
 testrqirestore$(EXEEXT): $(testrqirestore_OBJECTS) $(testrqirestore_DEPENDENCIES) $(EXTRA_testrqirestore_DEPENDENCIES) 
 	@rm -f testrqirestore$(EXEEXT)
 	$(LINK) $(testrqirestore_OBJECTS) $(testrqirestore_LDADD) $(LIBS)
+testshellscale$(EXEEXT): $(testshellscale_OBJECTS) $(testshellscale_DEPENDENCIES) $(EXTRA_testshellscale_DEPENDENCIES) 
+	@rm -f testshellscale$(EXEEXT)
+	$(LINK) $(testshellscale_OBJECTS) $(testshellscale_LDADD) $(LIBS)
+testsymmdiagguard$(EXEEXT): $(testsymmdiagguard_OBJECTS) $(testsymmdiagguard_DEPENDENCIES) $(EXTRA_testsymmdiagguard_DEPENDENCIES) 
+	@rm -f testsymmdiagguard$(EXEEXT)
+	$(LINK) $(testsymmdiagguard_OBJECTS) $(testsymmdiagguard_LDADD) $(LIBS)
 testuser$(EXEEXT): $(testuser_OBJECTS) $(testuser_DEPENDENCIES) $(EXTRA_testuser_DEPENDENCIES) 
 	@rm -f testuser$(EXEEXT)
 	$(LINK) $(testuser_OBJECTS) $(testuser_LDADD) $(LIBS)
@@ -1092,10 +1187,18 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test5.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test6.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test7.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testbreakretry.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testchangingsystem.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testcoarseapply.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testcoarsesetup.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testdiagonal.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testgmreswork.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testilupivot.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testjacobiuser.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testkrylovrobust.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testnearnullspace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoperator.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testparamupdate.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testprebuiltuser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testpreconlifecycle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testpreconpolicy.Po@am__quote@
@@ -1104,6 +1207,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrepeatedsystems.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrhistoryerror.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrqirestore.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testshellscale.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsymmdiagguard.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testworkcompat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testworkreuse.Po@am__quote@

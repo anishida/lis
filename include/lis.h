@@ -33,7 +33,7 @@ extern "C" {
 #endif
 
 /**************************************/
-#define LIS_VERSION	"2.1.15"
+#define LIS_VERSION	"2.1.16"
 /**************************************/
 #include <stdio.h>
 #ifdef USE_COMPLEX
@@ -112,7 +112,7 @@ extern "C" {
 #define LIS_EOPTIONS_SWITCH_MAXITER 11
 #define LIS_EOPTIONS_RVAL 12
 
-#define LIS_PARAMS_LEN 15
+#define LIS_PARAMS_LEN 16
 #define LIS_PARAMS_RESID LIS_OPTIONS_LEN+0
 #define LIS_PARAMS_OMEGA LIS_OPTIONS_LEN+1
 #define LIS_PARAMS_RELAX LIS_OPTIONS_LEN+2
@@ -128,6 +128,7 @@ extern "C" {
 #define LIS_PARAMS_RATE LIS_OPTIONS_LEN+12
 #define LIS_PARAMS_RESID_WEIGHT LIS_OPTIONS_LEN+13
 #define LIS_PARAMS_SAAMG_THETA LIS_OPTIONS_LEN+14
+#define LIS_PARAMS_ILU_PIVOT_TOL LIS_OPTIONS_LEN+15
 
 #define LIS_EPARAMS_LEN 3
 #define LIS_EPARAMS_RESID LIS_EOPTIONS_LEN+0
@@ -710,6 +711,7 @@ struct LIS_MATRIX_STRUCT
 	LIS_SCALAR operator_alpha;
 	LIS_SCALAR operator_beta;
 	LIS_VECTOR operator_work;
+	LIS_VECTOR operator_scale; /* non-owning scale for D*A*D */
 };
 typedef struct LIS_MATRIX_STRUCT *LIS_MATRIX;
 
@@ -757,6 +759,9 @@ struct LIS_PRECON_STRUCT
 };
 typedef struct LIS_PRECON_STRUCT *LIS_PRECON;
 
+struct LIS_NEAR_NULLSPACE_COARSE_STRUCT;
+typedef struct LIS_NEAR_NULLSPACE_COARSE_STRUCT *LIS_NEAR_NULLSPACE_COARSE;
+
 
 struct LIS_SOLVER_STRUCT
 {
@@ -764,6 +769,10 @@ struct LIS_SOLVER_STRUCT
 	LIS_VECTOR b,x,xx,d;
 	LIS_MATRIX_DIAG WD;
 	LIS_PRECON precon;
+	/* Solver-owned copies of user-provided near-nullspace vectors. */
+	LIS_VECTOR *near_nullspace;
+	LIS_INT near_nullspace_dim;
+	LIS_NEAR_NULLSPACE_COARSE near_nullspace_coarse;
 	LIS_VECTOR *work;
 	LIS_REAL *rhistory;
 	LIS_INT worklen;
@@ -1001,6 +1010,8 @@ extern "C"
 
     extern LIS_INT lis_solver_create(LIS_SOLVER *solver);
 	extern LIS_INT lis_solver_destroy(LIS_SOLVER solver);
+	extern LIS_INT lis_solver_set_near_nullspace(LIS_SOLVER solver, LIS_INT nvec, LIS_VECTOR vectors[]);
+	extern LIS_INT lis_solver_clear_near_nullspace(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_get_iter(LIS_SOLVER solver, LIS_INT *iter);
 	extern LIS_INT lis_solver_get_iterex(LIS_SOLVER solver, LIS_INT *iter, LIS_INT *iter_double, LIS_INT *iter_quad);
 	extern LIS_INT lis_solver_get_time(LIS_SOLVER solver, double *time);

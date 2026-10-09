@@ -164,7 +164,7 @@ LIS_INT LIS_USE_AT_TYPE[] = {
 	0,
 	LIS_MATRIX_CSC,LIS_MATRIX_CSR
 	};
-#define LIS_SOLVER_OPTION_LEN		47
+#define LIS_SOLVER_OPTION_LEN		48
 #define LIS_PRINT_LEN			4
 #define LIS_SCALE_LEN			3
 #define LIS_TRUEFALSE_LEN		2
@@ -182,7 +182,7 @@ char *LIS_SOLVER_OPTNAME[] = {
 	"-adds",              "-adds_iter",     "-f",              "-use_at",        "-switch_tol",
 	"-switch_maxiter",    "-saamg_unsym",   "-iluc_drop",      "-iluc_gamma",    "-iluc_rate",
 	"-storage",           "-storage_block", "-conv_cond",      "-tol_w",         "-saamg_theta",	"-irestart",
-	"-maxiter_noimp"
+	"-maxiter_noimp",      "-ilu_pivot_tol"
 };
 
 LIS_INT LIS_SOLVER_OPTACT[] = {
@@ -195,7 +195,7 @@ LIS_INT LIS_SOLVER_OPTACT[] = {
 	LIS_OPTIONS_ADDS             , LIS_OPTIONS_ADDS_ITER     , LIS_OPTIONS_PRECISION     , LIS_OPTIONS_USE_AT       , LIS_PARAMS_SWITCH_RESID,
 	LIS_OPTIONS_SWITCH_MAXITER   , LIS_OPTIONS_SAAMG_UNSYM   , LIS_PARAMS_DROP           , LIS_PARAMS_GAMMA         , LIS_PARAMS_RATE, 
 	LIS_OPTIONS_STORAGE          , LIS_OPTIONS_STORAGE_BLOCK , LIS_OPTIONS_CONV_COND     , LIS_PARAMS_RESID_WEIGHT  , LIS_PARAMS_SAAMG_THETA, LIS_OPTIONS_IDRS_RESTART,
-	LIS_OPTIONS_MAXITER_NO_IMP
+	LIS_OPTIONS_MAXITER_NO_IMP       , LIS_PARAMS_ILU_PIVOT_TOL
 };
 
 char *lis_solver_atoi[]    = {"cg", "bicg", "cgs", "bicgstab", "bicgstabl", "gpbicg", "tfqmr","orthomin", "gmres", "jacobi", "gs", "sor", "bicgsafe", "cr", "bicr", "crs", "bicrstab", "gpbicr", "bicrsafe", "fgmres", "idrs", "idr1", "minres", "cocg", "cocr"};
@@ -231,6 +231,9 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->work     = NULL;
 	solver->rhistory = NULL;
 	solver->precon   = NULL;
+	solver->near_nullspace = NULL;
+	solver->near_nullspace_dim = 0;
+	solver->near_nullspace_coarse = NULL;
 
 	solver->worklen   = 0;
 	solver->iter      = 0;
@@ -285,6 +288,7 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->params[LIS_PARAMS_SWITCH_RESID -LIS_OPTIONS_LEN] = 1.0e-12;
 	solver->params[LIS_PARAMS_RATE         -LIS_OPTIONS_LEN] = 5.0;
 	solver->params[LIS_PARAMS_SAAMG_THETA  -LIS_OPTIONS_LEN] = 0.05;
+        solver->params[LIS_PARAMS_ILU_PIVOT_TOL-LIS_OPTIONS_LEN] = 0.0;
 
 	/* reset solver->setup */
 	solver->setup = LIS_FALSE;
@@ -703,6 +707,253 @@ LIS_INT lis_solver_work_destroy(LIS_SOLVER solver)
 	return LIS_SUCCESS;
 }
 
+static LIS_INT
+lis_solver_near_nullspace_vector_compatible(
+	LIS_VECTOR a,
+	LIS_VECTOR b)
+{
+	LIS_INT i;
+#ifdef USE_MPI
+	LIS_INT mpi_err,comm_result;
+#endif
+
+	if( a==NULL || b==NULL )
+	{
+		return LIS_FALSE;
+	}
+	if( a->label!=LIS_LABEL_VECTOR ||
+		b->label!=LIS_LABEL_VECTOR )
+	{
+		return LIS_FALSE;
+	}
+	if( a->precision!=b->precision ||
+		a->gn!=b->gn ||
+		a->n!=b->n ||
+		a->np!=b->np ||
+		a->pad!=b->pad ||
+		a->origin!=b->origin ||
+		a->my_rank!=b->my_rank ||
+		a->nprocs!=b->nprocs ||
+		a->is!=b->is ||
+		a->ie!=b->ie )
+	{
+		return LIS_FALSE;
+	}
+
+#ifdef USE_MPI
+	mpi_err = MPI_Comm_compare(
+		a->comm,b->comm,&comm_result);
+
+	if( mpi_err!=MPI_SUCCESS ||
+		(comm_result!=MPI_IDENT &&
+		 comm_result!=MPI_CONGRUENT) )
+	{
+		return LIS_FALSE;
+	}
+
+	if( a->ranges==NULL || b->ranges==NULL )
+	{
+		if( a->ranges!=b->ranges )
+		{
+			return LIS_FALSE;
+		}
+	}
+	else
+	{
+		for(i=0;i<=a->nprocs;i++)
+		{
+			if( a->ranges[i]!=b->ranges[i] )
+			{
+				return LIS_FALSE;
+			}
+		}
+	}
+#else
+	(void)i;
+	if( a->comm!=b->comm )
+	{
+		return LIS_FALSE;
+	}
+#endif
+
+	return LIS_TRUE;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_clear_near_nullspace"
+LIS_INT lis_solver_clear_near_nullspace(LIS_SOLVER solver)
+{
+	LIS_INT i;
+
+	LIS_DEBUG_FUNC_IN;
+
+	if( solver==NULL )
+	{
+		LIS_SETERR(
+			LIS_ERR_ILL_ARG,
+			"solver is NULL\n");
+
+		return LIS_ERR_ILL_ARG;
+	}
+
+	lis_solver_near_nullspace_coarse_destroy(solver);
+
+	if( solver->near_nullspace )
+	{
+		for(i=0;i<solver->near_nullspace_dim;i++)
+		{
+			if( solver->near_nullspace[i] )
+			{
+				lis_vector_destroy(
+					solver->near_nullspace[i]);
+			}
+		}
+
+		lis_free(solver->near_nullspace);
+	}
+
+	solver->near_nullspace = NULL;
+	solver->near_nullspace_dim = 0;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_near_nullspace"
+LIS_INT lis_solver_set_near_nullspace(
+	LIS_SOLVER solver,
+	LIS_INT nvec,
+	LIS_VECTOR vectors[])
+{
+	LIS_VECTOR *owned;
+	LIS_INT i,j,err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	if( solver==NULL || nvec<0 )
+	{
+		LIS_SETERR(
+			LIS_ERR_ILL_ARG,
+			"invalid near-nullspace arguments\n");
+
+		return LIS_ERR_ILL_ARG;
+	}
+
+	if( nvec==0 )
+	{
+		return lis_solver_clear_near_nullspace(solver);
+	}
+
+	if( vectors==NULL )
+	{
+		LIS_SETERR(
+			LIS_ERR_ILL_ARG,
+			"near-nullspace vector array is NULL\n");
+
+		return LIS_ERR_ILL_ARG;
+	}
+
+	for(i=0;i<nvec;i++)
+	{
+		if( vectors[i]==NULL ||
+			vectors[i]->label!=LIS_LABEL_VECTOR )
+		{
+			LIS_SETERR(
+				LIS_ERR_ILL_ARG,
+				"invalid near-nullspace vector\n");
+
+			return LIS_ERR_ILL_ARG;
+		}
+
+		if( i>0 &&
+			!lis_solver_near_nullspace_vector_compatible(
+				vectors[0],vectors[i]) )
+		{
+			LIS_SETERR(
+				LIS_ERR_ILL_ARG,
+				"near-nullspace vectors must have compatible layouts\n");
+
+			return LIS_ERR_ILL_ARG;
+		}
+	}
+
+	owned = (LIS_VECTOR *)lis_malloc(
+		nvec*sizeof(LIS_VECTOR),
+		"lis_solver_set_near_nullspace::owned");
+
+	if( owned==NULL )
+	{
+		LIS_SETERR_MEM(nvec*sizeof(LIS_VECTOR));
+		return LIS_OUT_OF_MEMORY;
+	}
+
+	for(i=0;i<nvec;i++)
+	{
+		owned[i] = NULL;
+	}
+
+	for(i=0;i<nvec;i++)
+	{
+		err = lis_vector_duplicate(
+			vectors[i],
+			&owned[i]);
+
+		if( err )
+		{
+			for(j=0;j<nvec;j++)
+			{
+				if( owned[j] )
+				{
+					lis_vector_destroy(owned[j]);
+				}
+			}
+
+			lis_free(owned);
+			return err;
+		}
+
+		err = lis_vector_copy(
+			vectors[i],
+			owned[i]);
+
+		if( err )
+		{
+			for(j=0;j<nvec;j++)
+			{
+				if( owned[j] )
+				{
+					lis_vector_destroy(owned[j]);
+				}
+			}
+
+			lis_free(owned);
+			return err;
+		}
+	}
+
+	err = lis_solver_clear_near_nullspace(solver);
+	if( err )
+	{
+		for(i=0;i<nvec;i++)
+		{
+			lis_vector_destroy(owned[i]);
+		}
+
+		lis_free(owned);
+		return err;
+	}
+
+	solver->near_nullspace = owned;
+	solver->near_nullspace_dim = nvec;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_solver_destroy"
 LIS_INT lis_solver_destroy(LIS_SOLVER solver)
@@ -712,6 +963,7 @@ LIS_INT lis_solver_destroy(LIS_SOLVER solver)
 	if( solver )
 	{
 		lis_solver_work_destroy(solver);
+		lis_solver_clear_near_nullspace(solver);
 		lis_vector_destroy(solver->d);
 		if( solver->Ah ) lis_matrix_destroy(solver->Ah);
 		if( solver->rhistory ) lis_free(solver->rhistory);
@@ -758,9 +1010,30 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
 	}
 	if( solver->options[LIS_OPTIONS_SCALE]!=LIS_SCALE_NONE )
 	{
-		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-		           "internal matrix scaling requires explicit storage\n");
-		return LIS_ERR_NOT_IMPLEMENTED;
+	        if( solver->options[LIS_OPTIONS_SCALE]!=LIS_SCALE_SYMM_DIAG )
+	        {
+	                LIS_SETERR(
+	                        LIS_ERR_NOT_IMPLEMENTED,
+	                        "matrix-free matrices currently support symmetric diagonal scaling only\n");
+	                return LIS_ERR_NOT_IMPLEMENTED;
+	        }
+
+	        if( solver->options[LIS_OPTIONS_PRECON]!=LIS_PRECON_TYPE_NONE )
+	        {
+	                LIS_SETERR(
+	                        LIS_ERR_NOT_IMPLEMENTED,
+	                        "matrix-free symmetric scaling currently requires preconditioner none\n");
+	                return LIS_ERR_NOT_IMPLEMENTED;
+	        }
+
+	        if( A->matrix_type==LIS_MATRIX_USER &&
+	            A->user_get_diagonal==NULL )
+	        {
+	                LIS_SETERR(
+	                        LIS_ERR_NOT_IMPLEMENTED,
+	                        "symmetric diagonal scaling requires a matrix diagonal callback\n");
+	                return LIS_ERR_NOT_IMPLEMENTED;
+	        }
 	}
 	if( solver->options[LIS_OPTIONS_STORAGE]!=0 )
 	{
@@ -947,12 +1220,12 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	LIS_INT scale;
 	LIS_INT conv_cond;
 	LIS_INT precision,is_use_at,storage,block;
-	LIS_INT i,n;
+	LIS_INT i,n,shell_scale;
 	double p_c_time, p_i_time,itime;
 	LIS_REAL nrm2,tol,tol_w;
 	LIS_VECTOR t;
-	LIS_VECTOR bb;
-	LIS_MATRIX AA,B;
+	LIS_VECTOR bb,shell_b;
+	LIS_MATRIX AA,B,shell_A;
 	LIS_MATRIX Ah;
 	char buf[64];
 
@@ -976,6 +1249,14 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	tol         = solver->params[LIS_PARAMS_RESID-LIS_OPTIONS_LEN];
 	tol_w       = solver->params[LIS_PARAMS_RESID_WEIGHT-LIS_OPTIONS_LEN];
 	solver->precision = precision;
+
+	shell_scale =
+	    (A->matrix_type==LIS_MATRIX_USER ||
+	     A->matrix_type==LIS_MATRIX_OPERATOR) &&
+	    scale==LIS_SCALE_SYMM_DIAG;
+
+	shell_A = NULL;
+	shell_b = NULL;
 
 	if( nsolver < 1 || nsolver > LIS_SOLVERS_LEN )
 	{
@@ -1043,6 +1324,37 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 		return err;
 	}
 	/* end parameter check */
+
+   /*
+    * A-dependent coarse data is rebuilt for every valid solve.
+    *
+    * Keep this feature-specific validation after the ordinary
+    * solver/preconditioner/precision parameter checks so existing
+    * error semantics remain unchanged.
+    */
+   lis_solver_near_nullspace_coarse_destroy(solver);
+
+   if( solver->near_nullspace_dim>0 )
+   {
+           if( nsolver!=LIS_SOLVER_FGMRES )
+           {
+                   LIS_SETERR(
+                           LIS_ERR_NOT_IMPLEMENTED,
+                           "near-nullspace two-level correction currently requires FGMRES\n");
+                   solver->retcode = LIS_ERR_NOT_IMPLEMENTED;
+                   return LIS_ERR_NOT_IMPLEMENTED;
+           }
+
+           if( precision!=LIS_PRECISION_DOUBLE )
+           {
+                   LIS_SETERR(
+                           LIS_ERR_NOT_IMPLEMENTED,
+                           "near-nullspace two-level correction currently requires double precision\n");
+                   solver->retcode = LIS_ERR_NOT_IMPLEMENTED;
+                   return LIS_ERR_NOT_IMPLEMENTED;
+           }
+   }
+
 
 	solver->A        = A;
 	solver->b        = b;
@@ -1112,7 +1424,109 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 
 
 	p_c_time = lis_wtime();
-	if( precon_type==LIS_PRECON_TYPE_IS )
+
+	if( shell_scale )
+	{
+	        /*
+	         * solver->d may survive repeated solves, but the
+	         * scaling values are recomputed from the current A.
+	         */
+	        if( solver->d==NULL ||
+	            !lis_solver_work_vector_compatible(
+	                solver->d,A,LIS_PRECISION_DEFAULT) )
+	        {
+	                if( solver->d!=NULL )
+	                {
+	                        lis_vector_destroy(solver->d);
+	                        solver->d = NULL;
+	                }
+
+	                err = lis_vector_duplicate(A,&solver->d);
+	                if( err )
+	                {
+	                        lis_vector_destroy(xx);
+	                        solver->retcode = err;
+	                        return err;
+	                }
+	        }
+
+	        err = lis_matrix_get_diagonal(A,solver->d);
+	        if( err )
+	        {
+	                lis_vector_destroy(xx);
+	                solver->retcode = err;
+	                return err;
+	        }
+
+		/*
+		 * Use the same symmetric-diagonal validation and
+		 * scaling semantics as explicitly stored matrices.
+		 */
+		err = lis_matrix_prepare_symm_diag_scaling(solver->d);
+		if( err )
+		{
+			lis_vector_destroy(xx);
+			solver->retcode = err;
+			return err;
+		}
+
+	        err = lis_vector_duplicate(A,&shell_b);
+	        if( err )
+	        {
+	                lis_vector_destroy(xx);
+	                solver->retcode = err;
+	                return err;
+	        }
+
+	        /*
+	         * shell_b = D*b
+	         */
+	        #ifdef _OPENMP
+	        #pragma omp parallel for
+	        #endif
+	        for(i=0;i<n;i++)
+	        {
+	                shell_b->value[i] =
+	                    solver->d->value[i] *
+	                    b->value[i];
+	        }
+
+	        /*
+	         * shell_A is a non-owning operator:
+	         *
+	         *     shell_A = D*A*D
+	         */
+	        err = lis_matrix_create_scaled_operator(
+	                A,solver->d,&shell_A);
+	        if( err )
+	        {
+	                lis_vector_destroy(shell_b);
+	                shell_b = NULL;
+
+	                lis_vector_destroy(xx);
+	                solver->retcode = err;
+	                return err;
+	        }
+	        /*
+	         * The public initial guess is the physical x.
+	         * Krylov solves for y with x = D*y, therefore
+	         *
+	         *     y0 = D^-1*x0.
+	         */
+	        if( !solver->options[LIS_OPTIONS_INITGUESS_ZEROS] )
+	        {
+	                #ifdef _OPENMP
+	                #pragma omp parallel for
+	                #endif
+	                for(i=0;i<n;i++)
+	                {
+	                        xx->value[i] =
+	                            xx->value[i] /
+	                            solver->d->value[i];
+	                }
+	        }
+	}
+	else if( precon_type==LIS_PRECON_TYPE_IS )
 	{
 		if( solver->d==NULL )
 		{
@@ -1221,7 +1635,13 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 			}
 			if( !A->is_scaled )
 			{
-				lis_matrix_scale(A,b,solver->d,scale);
+				err = lis_matrix_scale(A,b,solver->d,scale);
+				if( err )
+				{
+					lis_vector_destroy(xx);
+					solver->retcode = err;
+					return err;
+				}
 			}
 			else if( !b->is_scaled )
 			{
@@ -1237,7 +1657,12 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	}
 
 /*	precon_type = precon->precon_type;*/
-	if( precon_type==LIS_PRECON_TYPE_IS )
+	if( shell_scale )
+	{
+		AA = shell_A;
+		bb = shell_b;
+	}
+	else if( precon_type==LIS_PRECON_TYPE_IS )
 	{
 		if( nsolver < LIS_SOLVER_JACOBI || nsolver > LIS_SOLVER_SOR )
 		{
@@ -1270,10 +1695,52 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 		{
 			lis_vector_destroy(xx);
 			lis_solver_work_destroy(solver);
+
+			if( shell_scale )
+			{
+			        solver->A = A;
+			        solver->b = b;
+
+			        lis_matrix_destroy(shell_A);
+			        shell_A = NULL;
+
+			        lis_vector_destroy(shell_b);
+			        shell_b = NULL;
+			}
+
 			solver->retcode = err;
 			return err;
 		}
 	}
+	/* Build coarse state from the final effective operator. */
+	if( solver->near_nullspace_dim>0 )
+	{
+	        err =
+	                lis_solver_near_nullspace_coarse_setup(
+	                        solver,
+	                        solver->A,
+	                        scale);
+
+	        if( err )
+	        {
+	                lis_vector_destroy(xx);
+	                lis_solver_work_destroy(solver);
+
+	                if( shell_scale )
+	                {
+	                        solver->A = A;
+	                        solver->b = b;
+	                        lis_matrix_destroy(shell_A);
+	                        shell_A = NULL;
+	                        lis_vector_destroy(shell_b);
+	                        shell_b = NULL;
+	                }
+
+	                solver->retcode = err;
+	                return err;
+	        }
+	}
+
 	block = solver->A->bnr;
 
 	if( A->my_rank==0 )
@@ -1364,6 +1831,18 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	        if( err )
 	        {
 	            lis_vector_destroy(xx);
+
+	            if( shell_scale )
+	            {
+	                    solver->A = A;
+	                    solver->b = b;
+
+	                    lis_matrix_destroy(shell_A);
+	                    shell_A = NULL;
+
+	                    lis_vector_destroy(shell_b);
+	                    shell_b = NULL;
+	            }
 	            solver->retcode = err;
 	            return err;
 	        }
@@ -1380,6 +1859,18 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	    if( err )
 	    {
 	        lis_vector_destroy(xx);
+
+	        if( shell_scale )
+	        {
+	                solver->A = A;
+	                solver->b = b;
+
+	                lis_matrix_destroy(shell_A);
+	                shell_A = NULL;
+
+	                lis_vector_destroy(shell_b);
+	                shell_b = NULL;
+	        }
 	        solver->retcode = err;
 	        return err;
 	    }
@@ -1400,6 +1891,18 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 		LIS_SETERR_MEM((maxiter+2)*sizeof(LIS_REAL));
 		lis_solver_work_destroy(solver);
 		lis_vector_destroy(xx);
+
+		if( shell_scale )
+		{
+		        solver->A = A;
+		        solver->b = b;
+
+		        lis_matrix_destroy(shell_A);
+		        shell_A = NULL;
+
+		        lis_vector_destroy(shell_b);
+		        shell_b = NULL;
+		}
 		solver->retcode = LIS_ERR_OUT_OF_MEMORY;
 		return LIS_ERR_OUT_OF_MEMORY;
 	}
@@ -1471,9 +1974,18 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	solver->itime = itime;
 	lis_vector_duplicate(A,&t);
 	xx->precision = LIS_PRECISION_DEFAULT;
-	lis_matvec(A,xx,t);
+	if( shell_scale )
+	{
+	        lis_matvec(A,x,t);
+	}
+	else
+	{
+	        lis_matvec(A,xx,t);
+	}
 	lis_vector_xpay(b,-1.0,t);
-	if( scale==LIS_SCALE_SYMM_DIAG && precon_type!=LIS_PRECON_TYPE_IS)
+	if( !shell_scale &&
+	    scale==LIS_SCALE_SYMM_DIAG &&
+	    precon_type!=LIS_PRECON_TYPE_IS )
 	{
 		#ifdef _OPENMP
 		#pragma omp parallel for
@@ -1483,9 +1995,21 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 			t->value[i] = t->value[i]/solver->d->value[i];
 		}
 	}
-	lis_vector_nrm2(t,&nrm2);
+	/* Validate a successful recursive solve against the true residual. */
+	lis_solver_get_residual[conv_cond](t,solver,&nrm2);
 
-	/* solver->resid = nrm2; */
+	if( !solver->setup && err==LIS_SUCCESS )
+	{
+		solver->resid = nrm2;
+
+		/* Reject non-finite or falsely converged iterates. */
+		if( nrm2!=nrm2 || fabs(nrm2)>LIS_SCALAR_MAX || nrm2>solver->tol )
+		{
+			err = LIS_BREAKDOWN;
+			solver->retcode = LIS_BREAKDOWN;
+		}
+	}
+
 	if( err )
 	  {
 	    if( output ) lis_printf(comm,"linear solver status  : %s(code=%D)\n\n",lis_returncode[err],err); 
@@ -1506,6 +2030,18 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 
 
 	lis_vector_destroy(t);
+
+	if( shell_scale )
+	{
+	        solver->A = A;
+	        solver->b = b;
+
+	        lis_matrix_destroy(shell_A);
+	        shell_A = NULL;
+
+	        lis_vector_destroy(shell_b);
+	        shell_b = NULL;
+	}
 
 	/* lis_vector_destroy(d); */
 	lis_vector_destroy(xx);

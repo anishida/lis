@@ -162,6 +162,33 @@ LIS_INT lis_minres(LIS_SOLVER solver)
   lis_matvec(A,x,v2); 
   lis_vector_xpay(b,-1.0,v2);
 
+  /* Keep the shared convergence metadata consistent with the true residual. */
+  lis_vector_nrm2(v2,&nrm2);
+  solver->tol = tol;
+
+  if( nrm2!=nrm2 || nrm2>LIS_SCALAR_MAX )
+  {
+    solver->retcode = LIS_BREAKDOWN;
+    solver->iter    = 0;
+    solver->resid   = nrm2;
+    solver->ptime   = ptime;
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_BREAKDOWN;
+  }
+
+  if( nrm2==0.0 )
+  {
+    solver->bnrm    = 1.0;
+    solver->retcode = LIS_SUCCESS;
+    solver->iter    = 0;
+    solver->resid   = 0.0;
+    solver->ptime   = ptime;
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+  }
+
+  solver->bnrm = 1.0 / nrm2;
+
   time = lis_wtime();
   lis_psolve(solver,v2,v3);
   ptime += lis_wtime()-time;
@@ -169,6 +196,16 @@ LIS_INT lis_minres(LIS_SOLVER solver)
 
   /* Compute elements of Hermitian tridiagonal matrix */
   lis_vector_nrm2(v2,&r_euc); 
+  /* Guard a zero or non-finite initial Lanczos norm. */
+  if( r_euc==0.0 || r_euc!=r_euc || r_euc>LIS_SCALAR_MAX )
+  {
+    solver->retcode = LIS_BREAKDOWN;
+    solver->iter    = 0;
+    solver->resid   = 1.0;
+    solver->ptime   = ptime;
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_BREAKDOWN;
+  }
   eta = beta2 = r0_euc = r_euc; 
   gamma2 = gamma1 = 1.0; 
   sigma2 = sigma1 = 0.0;
@@ -183,6 +220,16 @@ LIS_INT lis_minres(LIS_SOLVER solver)
     {
 
       /* Lanczos algorithm */
+      /* Guard the Lanczos normalization. */
+      if( beta2==0.0 || beta2!=beta2 || beta2>LIS_SCALAR_MAX )
+      {
+        solver->retcode = LIS_BREAKDOWN;
+        solver->iter    = iter;
+        solver->resid   = nrm2;
+        solver->ptime   = ptime;
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_BREAKDOWN;
+      }
       lis_vector_scale(1.0 / beta2,v2); 
 
       lis_matvec(A,v2,v3); 
@@ -201,6 +248,18 @@ LIS_INT lis_minres(LIS_SOLVER solver)
       rho1 = sqrt(delta * delta + beta3 * beta3); 
       rho2 = sigma2 * alpha + gamma1 * gamma2 * beta2; 
       rho3 = sigma1 * beta2;
+
+      /* Guard the MINRES rotation normalization. */
+      if( rho1==0.0 || rho1!=rho1 )
+      {
+        solver->retcode = LIS_BREAKDOWN;
+        solver->iter    = iter;
+        solver->resid   = nrm2;
+        solver->ptime   = ptime;
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_BREAKDOWN;
+      }
+
       gamma3 = delta / rho1; 
       sigma3 = beta3 / rho1;
 
@@ -263,13 +322,6 @@ LIS_INT lis_minres(LIS_SOLVER solver)
 
     }
 
-  lis_vector_destroy(v1);
-  lis_vector_destroy(v2); 
-  lis_vector_destroy(v3);
-  lis_vector_destroy(v4);
-  lis_vector_destroy(w0); 
-  lis_vector_destroy(w1); 
-  lis_vector_destroy(w2);
 
   solver->retcode   = LIS_MAXITER;
   solver->iter      = iter;

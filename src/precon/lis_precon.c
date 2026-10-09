@@ -45,6 +45,7 @@
 #ifdef USE_MPI
 	#include <mpi.h>
 #endif
+#include <math.h>
 #include "lislib.h"
 
 /************************************************
@@ -106,6 +107,127 @@ LIS_INT	precon_register_type = LIS_PRECON_TYPE_USERDEF;
 	extern char *f_v_cycle_ptr;
 	extern char *f_clear_matrix_ptr;
 #endif
+
+LIS_REAL lis_precon_csr_row_scale(
+    LIS_MATRIX A,
+    LIS_INT row)
+{
+    LIS_INT j;
+    LIS_REAL scale,t;
+
+    scale = 0.0;
+
+    if( A==NULL || row<0 || row>=A->n )
+    {
+        return scale;
+    }
+
+    if( A->is_splited &&
+        A->D!=NULL &&
+        A->L!=NULL &&
+        A->U!=NULL )
+    {
+        scale = fabs(A->D->value[row]);
+
+        for(j=A->L->ptr[row];j<A->L->ptr[row+1];j++)
+        {
+
+            t = fabs(A->L->value[j]);
+            if( t>scale ) scale = t;
+        }
+
+        for(j=A->U->ptr[row];j<A->U->ptr[row+1];j++)
+        {
+
+            t = fabs(A->U->value[j]);
+            if( t>scale ) scale = t;
+        }
+    }
+    else
+    {
+        for(j=A->ptr[row];j<A->ptr[row+1];j++)
+        {
+
+            t = fabs(A->value[j]);
+            if( t>scale ) scale = t;
+        }
+    }
+
+    return scale;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_precon_check_ilu_pivot_tol"
+LIS_INT lis_precon_check_ilu_pivot_tol(
+    LIS_MATRIX A,
+    LIS_REAL tol)
+{
+    LIS_INT i;
+    LIS_REAL scale;
+
+    if( tol<0.0 )
+    {
+        LIS_SETERR1(
+            LIS_ERR_ILL_ARG,
+            "ILU pivot tolerance (%e) is less than 0\n",
+            (double)tol);
+        return LIS_ERR_ILL_ARG;
+    }
+
+    if( tol==0.0 )
+    {
+        return LIS_SUCCESS;
+    }
+
+    for(i=0;i<A->n;i++)
+    {
+        scale = lis_precon_csr_row_scale(A,i);
+
+        if( !(scale>0.0) )
+        {
+            LIS_SETERR1(
+                LIS_BREAKDOWN,
+                "zero row scale at row %D\n",
+                i);
+            return LIS_BREAKDOWN;
+        }
+    }
+
+    return LIS_SUCCESS;
+}
+
+
+LIS_SCALAR lis_precon_regularize_ilu_pivot(
+    LIS_SCALAR pivot,
+    LIS_REAL row_scale,
+    LIS_REAL tol)
+{
+    LIS_REAL mag,limit;
+
+    if( tol<=0.0 )
+    {
+        return pivot;
+    }
+
+    limit = tol * row_scale;
+    mag   = fabs(pivot);
+
+    if( mag < limit )
+    {
+        if( mag>0.0 )
+        {
+            pivot *= (LIS_SCALAR)(limit/mag);
+        }
+        else
+        {
+            pivot = (LIS_SCALAR)limit;
+        }
+    }
+
+    return pivot;
+}
+
 
 #undef __FUNC__
 #define __FUNC__ "lis_precon_init"
@@ -453,41 +575,91 @@ LIS_INT lis_precon_destroy(LIS_PRECON precon)
 #define __FUNC__ "lis_psolve_dispatch"
 LIS_INT lis_psolve_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
 {
-	LIS_INT precon_type;
-	LIS_PSOLVE_XXX psolve;
+        LIS_INT precon_type;
+        LIS_PSOLVE_XXX psolve;
 
-	LIS_DEBUG_FUNC_IN;
+        LIS_DEBUG_FUNC_IN;
 
-	if( solver==NULL || solver->precon==NULL )
-	{
-		LIS_SETERR(LIS_ERR_ILL_ARG,"preconditioner is not initialized\n");
-		return LIS_ERR_ILL_ARG;
-	}
+        if( solver==NULL || solver->precon==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "preconditioner is not initialized\n");
+                return LIS_ERR_ILL_ARG;
+        }
 
-	precon_type = solver->precon->precon_type;
-	if( precon_type>=LIS_PRECON_TYPE_USERDEF )
-	{
-		if( precon_type>=precon_register_type || precon_register_top==NULL )
-		{
-			LIS_SETERR(LIS_ERR_ILL_ARG,"invalid registered preconditioner type\n");
-			return LIS_ERR_ILL_ARG;
-		}
-		psolve = precon_register_top[precon_type-LIS_PRECON_TYPE_USERDEF].psolve;
-		if( psolve==NULL )
-		{
-			LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-			           "registered preconditioner has no psolve callback\n");
-			return LIS_ERR_NOT_IMPLEMENTED;
-		}
-		return psolve(solver,b,x);
-	}
+        precon_type =
+                solver->precon->precon_type;
 
-	if( precon_type<0 || precon_type>LIS_PRECON_TYPE_ADDS )
-	{
-		LIS_SETERR(LIS_ERR_ILL_ARG,"invalid built-in preconditioner type\n");
-		return LIS_ERR_ILL_ARG;
-	}
-	return lis_psolve_xxx[precon_type](solver,b,x);
+
+        if( precon_type>=LIS_PRECON_TYPE_USERDEF )
+        {
+                if(
+                        precon_type>=precon_register_type
+                        ||
+                        precon_register_top==NULL)
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "invalid registered preconditioner type\n");
+                        return LIS_ERR_ILL_ARG;
+                }
+
+                psolve =
+                        precon_register_top[
+                                precon_type
+                                -
+                                LIS_PRECON_TYPE_USERDEF].psolve;
+
+                if( psolve==NULL )
+                {
+                        LIS_SETERR(
+                                LIS_ERR_NOT_IMPLEMENTED,
+                                "registered preconditioner has no psolve callback\n");
+                        return LIS_ERR_NOT_IMPLEMENTED;
+                }
+        }
+        else
+        {
+                if(
+                        precon_type<0
+                        ||
+                        precon_type>LIS_PRECON_TYPE_ADDS)
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "invalid built-in preconditioner type\n");
+                        return LIS_ERR_ILL_ARG;
+                }
+
+                psolve =
+                        lis_psolve_xxx[precon_type];
+        }
+
+
+        if(
+                solver->options[LIS_OPTIONS_SOLVER]
+                    ==
+                LIS_SOLVER_FGMRES
+                &&
+                solver->near_nullspace_coarse!=NULL
+                &&
+                solver->near_nullspace_coarse->ready)
+        {
+                return
+                        lis_solver_near_nullspace_apply(
+                                solver,
+                                b,
+                                x,
+                                psolve);
+        }
+
+
+        return
+                psolve(
+                        solver,
+                        b,
+                        x);
 }
 
 #undef __FUNC__

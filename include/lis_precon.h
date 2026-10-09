@@ -51,6 +51,10 @@ extern "C"
 	extern LIS_INT lis_psolve_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
 	extern LIS_INT lis_psolveh_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
 
+        extern LIS_REAL lis_precon_csr_row_scale(LIS_MATRIX A, LIS_INT row);
+        extern LIS_INT lis_precon_check_ilu_pivot_tol(LIS_MATRIX A, LIS_REAL tol);
+        extern LIS_SCALAR lis_precon_regularize_ilu_pivot(LIS_SCALAR pivot, LIS_REAL row_scale, LIS_REAL tol);
+
 /*******************/
 /* NONE            */
 /*******************/

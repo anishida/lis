@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 2.1.15
+Version 2.1.16
 \end{flushleft}
 
 \vspace*{2cm}
@@ -2004,6 +2004,7 @@ Preconditioner   & Option           & Auxiliary Options \\ \hline
 None     & \verb=-p {none|0}=    &   \\
 Jacobi   & \verb=-p {jacobi|1}=  &     \\
 ILU(k)   & \verb=-p {ilu|2}=     & \verb=-ilu_fill [0]=    & The fill level $k$ \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_omega [1.0]= & The relaxation coefficient \\
          &                       &                          & $\omega$ ($0<\omega<2$) \\
 Hybrid   & \verb=-p {hybrid|4}=  & \verb=-hybrid_i [sor]=  & The linear solver\\
@@ -2032,8 +2033,9 @@ SA-AMG   & \verb=-p {saamg|7}=   & \verb=-saamg_unsym [false]=    &
          &                       &                             & (symmetric or unsymmetric) \\
 Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criterion    \\
          &                       & \verb=-iluc_rate [5.0]=     & The
- ratio of the maximum fill-in \\
-ILUT     & \verb=-p {ilut|9}=    &     \\
+ratio of the maximum fill-in \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -2215,6 +2217,7 @@ Preconditioner   & Option           & Auxiliary Options \\ \hline
 None     & \verb=-p {none|0}=    &   \\
 Jacobi   & \verb=-p {jacobi|1}=  &     \\
 ILU(k)   & \verb=-p {ilu|2}=     & \verb=-ilu_fill [0]=        & The fill level $k$ \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_omega [1.0]=    & The relaxation coefficient \\
          &                       &                             & $\omega$ ($0<\omega<2$) \\
 Hybrid   & \verb=-p {hybrid|4}=  & \verb=-hybrid_i [sor]=      & The linear solver\\
@@ -2235,7 +2238,8 @@ SA-AMG   & \verb=-p {saamg|7}=   & \verb=-saamg_unsym [false]= & Select the unsy
          &                       &                             & (symmetric or unsymmetric) \\
 Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criterion    \\
          &                       & \verb=-iluc_rate [5.0]=     & The ratio of the maximum fill-in \\
-ILUT     & \verb=-p {ilut|9}=    &     \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -6145,6 +6149,7 @@ Preconditioner   & Option           & Auxiliary Options \\ \hline
 None     & \verb=-p {none|0}=    &   \\
 Jacobi   & \verb=-p {jacobi|1}=  &     \\
 ILU(k)   & \verb=-p {ilu|2}=     & \verb=-ilu_fill [0]=        & The fill level $k$ \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_omega [1.0]=    & The relaxation coefficient \\
          &                       &                             & $\omega$ ($0<\omega<2$) \\
 Hybrid   & \verb=-p {hybrid|4}=  & \verb=-hybrid_i [sor]=      & The linear solver\\
@@ -6165,7 +6170,8 @@ SA-AMG   & \verb=-p {saamg|7}=   & \verb=-saamg_unsym [false]= & Select the unsy
          &                       &                             & (symmetric or unsymmetric) \\
 Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criterion    \\
 &                       & \verb=-iluc_rate [5.0]=     & The ratio of the maximum fill-in \\
-ILUT     & \verb=-p {ilut|9}=    &     \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -6689,6 +6695,7 @@ Preconditioner   & Option           & Auxiliary Options \\ \hline
 None     & \verb=-p {none|0}=    &   \\
 Jacobi   & \verb=-p {jacobi|1}=  &     \\
 ILU(k)   & \verb=-p {ilu|2}=     & \verb=-ilu_fill [0]=        & The fill level $k$ \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_omega [1.0]=    & The relaxation coefficient \\ 
          &                       &                             & $\omega$ ($0<\omega<2$) \\
 Hybrid   & \verb=-p {hybrid|4}=  & \verb=-hybrid_i [sor]=      & The linear solver\\
@@ -6709,7 +6716,8 @@ SA-AMG   & \verb=-p {saamg|7}=   & \verb=-saamg_unsym [false]= & Select the unsy
          &                       &                             & (symmetric or unsymmetric) \\
 Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criterion    \\
          &                       & \verb=-iluc_rate [5.0]=     & The ratio of the maximum fill-in \\
-ILUT     & \verb=-p {ilut|9}=    &     \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         

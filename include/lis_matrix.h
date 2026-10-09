@@ -70,6 +70,8 @@ extern "C"
 	extern LIS_INT lis_matrix_unset(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_copy_struct(LIS_MATRIX Ain, LIS_MATRIX Aout);
 	extern LIS_INT lis_matrix_convert_self(LIS_SOLVER solver);
+	extern LIS_INT lis_matrix_create_scaled_operator(
+	        LIS_MATRIX A, LIS_VECTOR scale, LIS_MATRIX *C);
 
 /*******************/
 /* Operations      */
@@ -342,6 +344,9 @@ extern "C"
 	extern LIS_INT lis_matvec_ilu(LIS_MATRIX A, LIS_MATRIX_ILU LU, LIS_VECTOR X, LIS_VECTOR Y);
 	extern LIS_INT lis_matvech_ilu(LIS_MATRIX A, LIS_MATRIX_ILU LU, LIS_VECTOR X, LIS_VECTOR Y);
 
+
+
+extern LIS_INT lis_matrix_prepare_symm_diag_scaling(LIS_VECTOR D);
 
 #ifdef __cplusplus
 }

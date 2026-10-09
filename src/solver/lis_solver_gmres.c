@@ -250,7 +250,11 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 			/* v[i+1]   = w / h[i+1,i]   */
 			lis_vector_nrm2(v[i1v],(LIS_REAL *)&t);
 			h[i1+iih] = t;
-			lis_vector_scale(1.0/t,v[i1v]);
+			/* Preserve a zero Arnoldi norm for lucky breakdown handling. */
+			if( t!=0.0 && t==t )
+			{
+				lis_vector_scale(1.0/t,v[i1v]);
+			}
 
 			for(k=1;k<=ii;k++)
 			{
@@ -268,7 +272,18 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 			a2 = aa*aa;
 			b2 = bb*bb;
 			rr = sqrt(a2+b2);
-			if( rr==0.0 ) rr=1.0e-17;
+			/* Reject a degenerate GMRES Givens rotation. */
+			if( rr==0.0 || rr!=rr )
+			{
+				nrm2 = fabs(s->value[ii])*bnrm2;
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
 			h[ii+cs] = aa/rr;
 			h[ii+sn] = bb/rr;
 			s->value[i1] = -h[ii+sn]*s->value[ii];
@@ -310,6 +325,18 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 		} while( i<m && iter <maxiter );
 
 		/* Solve H * Y = S for upper Hessenberg matrix H */
+		/* Guard the GMRES back substitution. */
+		if( h[ii+iih]==0.0 || h[ii+iih]!=h[ii+iih] )
+		{
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			lis_free(h);
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
+
 		s->value[ii] = s->value[ii]/h[ii+iih];
 		for(k=1;k<=ii;k++)
 		{
@@ -319,6 +346,17 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 			{
 				t -= h[jj+j*h_dim]*s->value[j];
 			}
+			if( h[jj+jj*h_dim]==0.0 || h[jj+jj*h_dim]!=h[jj+jj*h_dim] )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
 			s->value[jj] = t/h[jj+jj*h_dim];
 		}
 		/* z = z + y * v */
@@ -342,29 +380,40 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 		/* x = x + r */
 		lis_vector_axpy(1,r,x);
 
+		/* Replace the recursive residual at the GMRES restart boundary. */
+		lis_matvec(A,x,z);
+		lis_vector_xpay(b,-1.0,z);
+		time = lis_wtime();
+		lis_psolve(solver,z,v[0]);
+		ptime += lis_wtime()-time;
+		lis_vector_nrm2(v[0],&rnorm);
+		nrm2 = rnorm * bnrm2;
+
+		if( nrm2!=nrm2 || fabs(nrm2)>LIS_SCALAR_MAX )
+		{
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			lis_free(h);
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
+
+		if( output & LIS_PRINT_MEM )
+		{
+			solver->rhistory[iter] = nrm2;
+		}
+
 		if( tol >= nrm2 )
 		{
-			solver->retcode    = LIS_SUCCESS;
-			solver->iter       = iter;
-			solver->resid      = nrm2;
-			solver->ptime      = ptime;
+			solver->retcode = LIS_SUCCESS;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
 			lis_free(h);
 			LIS_DEBUG_FUNC_OUT;
 			return LIS_SUCCESS;
-		}
-
-		for(j=1;j<=i;j++)
-		{
-			jj = i1-j+1;
-			s->value[jj-1] = -h[jj-1+sn]*s->value[jj];
-			s->value[jj]   =  h[jj-1+cs]*s->value[jj];
-		}
-
-		for(j=0;j<=i1;j++)
-		{
-			t = s->value[j];
-			if( j==0 ) t = t-1.0;
-			lis_vector_axpy(t,v[j],v[0]);
 		}
 	}
 
@@ -500,9 +549,13 @@ LIS_INT lis_gmres_quad(LIS_SOLVER solver)
 			lis_vector_nrm2ex_mm(v[i1v],&t);
 			h[i1+iih].hi = t.hi[0];
 			h[i1+iih].lo = t.lo[0];
-			lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)one.hi,(LIS_QUAD *)t.hi);
-			lis_vector_scaleex_mm(tmp,v[i1v]);
+			/* Preserve a zero quad Arnoldi norm for lucky breakdown handling. */
+			if( (t.hi[0]!=0.0 || t.lo[0]!=0.0) && t.hi[0]==t.hi[0] && t.lo[0]==t.lo[0] )
+			{
+				lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)one.hi,(LIS_QUAD *)t.hi);
+				lis_vector_scaleex_mm(tmp,v[i1v]);
 
+			}
 			for(k=1;k<=ii;k++)
 			{
 				jj  = k-1;
@@ -528,10 +581,17 @@ LIS_INT lis_gmres_quad(LIS_SOLVER solver)
 			lis_quad_sqr((LIS_QUAD *)b2.hi,(LIS_QUAD *)bb.hi);
 			lis_quad_add((LIS_QUAD *)rr.hi,(LIS_QUAD *)a2.hi,(LIS_QUAD *)b2.hi);
 			lis_quad_sqrt((LIS_QUAD *)rr.hi,(LIS_QUAD *)rr.hi);
-			if( rr.hi[0]==0.0 )
+			/* Reject a degenerate quad GMRES Givens rotation. */
+			if( (rr.hi[0]==0.0 && rr.lo[0]==0.0) || rr.hi[0]!=rr.hi[0] || rr.lo[0]!=rr.lo[0] )
 			{
-				rr.hi[0]=1.0e-17;
-				rr.lo[0]=0.0;
+				nrm2 = fabs(s->value[ii])*bnrm2;
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
 			}
 			lis_quad_div((LIS_QUAD *)&h[ii+cs],(LIS_QUAD *)aa.hi,(LIS_QUAD *)rr.hi);
 			lis_quad_div((LIS_QUAD *)&h[ii+sn],(LIS_QUAD *)bb.hi,(LIS_QUAD *)rr.hi);
@@ -584,6 +644,18 @@ LIS_INT lis_gmres_quad(LIS_SOLVER solver)
 		/* Solve H * Y = S for upper Hessenberg matrix H */
 		tmp.hi[0] = s->value[ii];
 		tmp.lo[0] = s->value_lo[ii];
+		/* Guard the quad GMRES back substitution. */
+		if( ((h[ii+iih]).hi==0.0 && (h[ii+iih]).lo==0.0) || (h[ii+iih]).hi!=(h[ii+iih]).hi || (h[ii+iih]).lo!=(h[ii+iih]).lo )
+		{
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			lis_free(h);
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
+
 		lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)tmp.hi,(LIS_QUAD *)&h[ii+iih]);
 		s->value[ii] = tmp.hi[0];
 		s->value_lo[ii] = tmp.lo[0];
@@ -599,6 +671,18 @@ LIS_INT lis_gmres_quad(LIS_SOLVER solver)
 				lis_quad_mul((LIS_QUAD *)tmp.hi,(LIS_QUAD *)tmp.hi,(LIS_QUAD *)&h[jj+j*h_dim]);
 				lis_quad_sub((LIS_QUAD *)t.hi,(LIS_QUAD *)t.hi,(LIS_QUAD *)tmp.hi);
 			}
+			/* Guard the quad GMRES back substitution. */
+			if( ((h[jj+jj*h_dim]).hi==0.0 && (h[jj+jj*h_dim]).lo==0.0) || (h[jj+jj*h_dim]).hi!=(h[jj+jj*h_dim]).hi || (h[jj+jj*h_dim]).lo!=(h[jj+jj*h_dim]).lo )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
 			lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)t.hi,(LIS_QUAD *)&h[jj+jj*h_dim]);
 			s->value[jj] = tmp.hi[0];
 			s->value_lo[jj] = tmp.lo[0];
@@ -797,7 +881,11 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 			/* v[i+1]   = w / h[i+1,i]   */
 			lis_vector_nrm2(v[i1v],&t.hi[0]);
 			hd[i1+iih] = t.hi[0];
-			lis_vector_scale(1.0/t.hi[0],v[i1v]);
+			/* Preserve a zero switch Arnoldi norm for lucky breakdown handling. */
+			if( t.hi[0]!=0.0 && t.hi[0]==t.hi[0] )
+			{
+				lis_vector_scale(1.0/t.hi[0],v[i1v]);
+			}
 
 			for(k=1;k<=ii;k++)
 			{
@@ -815,7 +903,19 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 			a2.hi[0] = aa.hi[0]*aa.hi[0];
 			b2.hi[0] = bb.hi[0]*bb.hi[0];
 			rr.hi[0] = sqrt(a2.hi[0]+b2.hi[0]);
-			if( rr.hi[0]==0.0 ) rr.hi[0]=1.0e-17;
+			/* Reject a degenerate switch GMRES Givens rotation. */
+			if( rr.hi[0]==0.0 || rr.hi[0]!=rr.hi[0] )
+			{
+				nrm2 = fabs(s->value[ii])*bnrm2;
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->iter2   = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
 			hd[ii+cs] = aa.hi[0]/rr.hi[0];
 			hd[ii+sn] = bb.hi[0]/rr.hi[0];
 			s->value[i1] = -hd[ii+sn]*s->value[ii];
@@ -838,6 +938,19 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 		} while( i<m && iter <maxiter2 );
 
 		/* Solve H * Y = S for upper Hessenberg matrix H */
+		/* Guard the switch GMRES back substitution. */
+		if( hd[ii+iih]==0.0 || hd[ii+iih]!=hd[ii+iih] )
+		{
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->iter2   = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			lis_free(h);
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
+
 		s->value[ii] = s->value[ii]/hd[ii+iih];
 		for(k=1;k<=ii;k++)
 		{
@@ -847,6 +960,19 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 			{
 				t.hi[0] -= hd[jj+j*h_dim]*s->value[j];
 			}
+			/* Guard the switch GMRES back substitution. */
+			if( hd[jj+jj*h_dim]==0.0 || hd[jj+jj*h_dim]!=hd[jj+jj*h_dim] )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->iter2   = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
 			s->value[jj] = t.hi[0]/hd[jj+jj*h_dim];
 		}
 		/* z = z + y * v */
@@ -948,8 +1074,12 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 			lis_vector_nrm2ex_mm(v[i1v],&t);
 			h[i1+iih].hi = t.hi[0];
 			h[i1+iih].lo = t.lo[0];
-			lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)one.hi,(LIS_QUAD *)t.hi);
-			lis_vector_scaleex_mm(tmp,v[i1v]);
+			/* Preserve a zero switch quad Arnoldi norm for lucky breakdown handling. */
+			if( (t.hi[0]!=0.0 || t.lo[0]!=0.0) && t.hi[0]==t.hi[0] && t.lo[0]==t.lo[0] )
+			{
+				lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)one.hi,(LIS_QUAD *)t.hi);
+				lis_vector_scaleex_mm(tmp,v[i1v]);
+			}
 
 			for(k=1;k<=ii;k++)
 			{
@@ -976,6 +1106,20 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 			lis_quad_sqr((LIS_QUAD *)b2.hi,(LIS_QUAD *)bb.hi);
 			lis_quad_add((LIS_QUAD *)rr.hi,(LIS_QUAD *)a2.hi,(LIS_QUAD *)b2.hi);
 			lis_quad_sqrt((LIS_QUAD *)rr.hi,(LIS_QUAD *)rr.hi);
+			/* Reject a degenerate switch quad GMRES Givens rotation. */
+			if( (rr.hi[0]==0.0 && rr.lo[0]==0.0) || rr.hi[0]!=rr.hi[0] || rr.lo[0]!=rr.lo[0] )
+			{
+				nrm2 = fabs(s->value[ii])*bnrm2;
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter2;
+				solver->iter2   = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
 			lis_quad_div((LIS_QUAD *)&h[ii+cs],(LIS_QUAD *)aa.hi,(LIS_QUAD *)rr.hi);
 			lis_quad_div((LIS_QUAD *)&h[ii+sn],(LIS_QUAD *)bb.hi,(LIS_QUAD *)rr.hi);
 			tmp.hi[0] = s->value[ii];
@@ -1009,6 +1153,19 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 		/* Solve H * Y = S for upper Hessenberg matrix H */
 		tmp.hi[0] = s->value[ii];
 		tmp.lo[0] = s->value_lo[ii];
+		/* Guard the switch quad GMRES back substitution. */
+		if( (h[ii+iih].hi==0.0 && h[ii+iih].lo==0.0) || h[ii+iih].hi!=h[ii+iih].hi || h[ii+iih].lo!=h[ii+iih].lo )
+		{
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter2;
+			solver->iter2   = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			lis_free(h);
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
+
 		lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)tmp.hi,(LIS_QUAD *)&h[ii+iih]);
 		s->value[ii] = tmp.hi[0];
 		s->value_lo[ii] = tmp.lo[0];
@@ -1024,6 +1181,19 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 				lis_quad_mul((LIS_QUAD *)tmp.hi,(LIS_QUAD *)tmp.hi,(LIS_QUAD *)&h[jj+j*h_dim]);
 				lis_quad_sub((LIS_QUAD *)t.hi,(LIS_QUAD *)t.hi,(LIS_QUAD *)tmp.hi);
 			}
+			/* Guard the switch quad GMRES back substitution. */
+			if( (h[jj+jj*h_dim].hi==0.0 && h[jj+jj*h_dim].lo==0.0) || h[jj+jj*h_dim].hi!=h[jj+jj*h_dim].hi || h[jj+jj*h_dim].lo!=h[jj+jj*h_dim].lo )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter2;
+				solver->iter2   = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
 			lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)t.hi,(LIS_QUAD *)&h[jj+jj*h_dim]);
 			s->value[jj] = tmp.hi[0];
 			s->value_lo[jj] = tmp.lo[0];
@@ -1205,7 +1375,7 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 	LIS_SCALAR t;
 
 	LIS_REAL bnrm2,nrm2,tol,min_nrm2;
-	LIS_INT iter,maxiter,output,maxiter_noimp,noimp_count;
+	LIS_INT err,iter,maxiter,output,maxiter_noimp,noimp_count;
 	double time,ptime;
 
 	LIS_REAL rnorm;
@@ -1273,8 +1443,18 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 
 			/* z = M^-1 * v */
 			time = lis_wtime();
-			lis_psolve(solver,v[iiv],z[iiv]);
+			err = lis_psolve(solver,v[iiv],z[iiv]);
 			ptime += lis_wtime()-time;
+
+			if( err )
+			{
+			        solver->retcode = err;
+			        solver->iter    = iter;
+			        solver->ptime   = ptime;
+			        lis_free(h);
+			        LIS_DEBUG_FUNC_OUT;
+			        return err;
+			}
 
 			/* w = A * z */
 			lis_matvec(A,z[iiv], v[i1v]);
@@ -1291,7 +1471,11 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 			/* v[i+1]   = w / h[i+1,i]   */
 			lis_vector_nrm2(v[i1v],(LIS_REAL *)&t);
 			h[i1+iih] = t;
-			lis_vector_scale(1.0/t,v[i1v]);
+			/* Preserve a zero Arnoldi norm for lucky breakdown handling. */
+			if( t!=0.0 && t==t )
+			{
+				lis_vector_scale(1.0/t,v[i1v]);
+			}
 
 			for(k=1;k<=ii;k++)
 			{
@@ -1309,7 +1493,18 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 			a2 = aa*aa;
 			b2 = bb*bb;
 			rr = sqrt(a2+b2);
-			if( rr==0.0 ) rr=1.0e-17;
+			/* Reject a degenerate FGMRES Givens rotation. */
+			if( rr==0.0 || rr!=rr )
+			{
+				nrm2 = fabs(s->value[ii]);
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
 			h[ii+cs] = aa/rr;
 			h[ii+sn] = bb/rr;
 			s->value[i1] = -h[ii+sn]*s->value[ii];
@@ -1351,6 +1546,18 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 		} while( i<m && iter <maxiter );
 
 		/* Solve H * Y = S for upper Hessenberg matrix H */
+		/* Guard the FGMRES back substitution. */
+		if( h[ii+iih]==0.0 || h[ii+iih]!=h[ii+iih] )
+		{
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			lis_free(h);
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
+
 		s->value[ii] = s->value[ii]/h[ii+iih];
 		for(k=1;k<=ii;k++)
 		{
@@ -1360,6 +1567,17 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 			{
 				t -= h[jj+j*h_dim]*s->value[j];
 			}
+			if( h[jj+jj*h_dim]==0.0 || h[jj+jj*h_dim]!=h[jj+jj*h_dim] )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
 			s->value[jj] = t/h[jj+jj*h_dim];
 		}
 		/* x = x + z * y */
@@ -1511,9 +1729,13 @@ LIS_INT lis_fgmres_quad(LIS_SOLVER solver)
 			lis_vector_nrm2ex_mm(v[i1v],&t);
 			h[i1+iih].hi = t.hi[0];
 			h[i1+iih].lo = t.lo[0];
-			lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)one.hi,(LIS_QUAD *)t.hi);
-			lis_vector_scaleex_mm(tmp,v[i1v]);
+			/* Preserve a zero quad Arnoldi norm for lucky breakdown handling. */
+			if( (t.hi[0]!=0.0 || t.lo[0]!=0.0) && t.hi[0]==t.hi[0] && t.lo[0]==t.lo[0] )
+			{
+				lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)one.hi,(LIS_QUAD *)t.hi);
+				lis_vector_scaleex_mm(tmp,v[i1v]);
 
+			}
 			for(k=1;k<=ii;k++)
 			{
 				jj  = k-1;
@@ -1539,10 +1761,17 @@ LIS_INT lis_fgmres_quad(LIS_SOLVER solver)
 			lis_quad_sqr((LIS_QUAD *)b2.hi,(LIS_QUAD *)bb.hi);
 			lis_quad_add((LIS_QUAD *)rr.hi,(LIS_QUAD *)a2.hi,(LIS_QUAD *)b2.hi);
 			lis_quad_sqrt((LIS_QUAD *)rr.hi,(LIS_QUAD *)rr.hi);
-			if( rr.hi[0]==0.0 )
+			/* Reject a degenerate quad FGMRES Givens rotation. */
+			if( (rr.hi[0]==0.0 && rr.lo[0]==0.0) || rr.hi[0]!=rr.hi[0] || rr.lo[0]!=rr.lo[0] )
 			{
-				rr.hi[0]=1.0e-17;
-				rr.lo[0]=0.0;
+				nrm2 = fabs(s->value[ii]);
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
 			}
 			lis_quad_div((LIS_QUAD *)&h[ii+cs],(LIS_QUAD *)aa.hi,(LIS_QUAD *)rr.hi);
 			lis_quad_div((LIS_QUAD *)&h[ii+sn],(LIS_QUAD *)bb.hi,(LIS_QUAD *)rr.hi);
@@ -1595,6 +1824,18 @@ LIS_INT lis_fgmres_quad(LIS_SOLVER solver)
 		/* Solve H * Y = S for upper Hessenberg matrix H */
 		tmp.hi[0] = s->value[ii];
 		tmp.lo[0] = s->value_lo[ii];
+		/* Guard the quad FGMRES back substitution. */
+		if( ((h[ii+iih]).hi==0.0 && (h[ii+iih]).lo==0.0) || (h[ii+iih]).hi!=(h[ii+iih]).hi || (h[ii+iih]).lo!=(h[ii+iih]).lo )
+		{
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			lis_free(h);
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
+
 		lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)tmp.hi,(LIS_QUAD *)&h[ii+iih]);
 		s->value[ii] = tmp.hi[0];
 		s->value_lo[ii] = tmp.lo[0];
@@ -1610,6 +1851,18 @@ LIS_INT lis_fgmres_quad(LIS_SOLVER solver)
 				lis_quad_mul((LIS_QUAD *)tmp.hi,(LIS_QUAD *)tmp.hi,(LIS_QUAD *)&h[jj+j*h_dim]);
 				lis_quad_sub((LIS_QUAD *)t.hi,(LIS_QUAD *)t.hi,(LIS_QUAD *)tmp.hi);
 			}
+			/* Guard the quad FGMRES back substitution. */
+			if( ((h[jj+jj*h_dim]).hi==0.0 && (h[jj+jj*h_dim]).lo==0.0) || (h[jj+jj*h_dim]).hi!=(h[jj+jj*h_dim]).hi || (h[jj+jj*h_dim]).lo!=(h[jj+jj*h_dim]).lo )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
 			lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)t.hi,(LIS_QUAD *)&h[jj+jj*h_dim]);
 			s->value[jj] = tmp.hi[0];
 			s->value_lo[jj] = tmp.lo[0];

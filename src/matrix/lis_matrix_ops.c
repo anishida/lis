@@ -589,10 +589,70 @@ LIS_INT lis_matrix_axpyz(LIS_SCALAR alpha, LIS_MATRIX A, LIS_MATRIX B, LIS_MATRI
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_matrix_prepare_symm_diag_scaling"
+LIS_INT lis_matrix_prepare_symm_diag_scaling(LIS_VECTOR D)
+{
+	LIS_INT i,n,invalid;
+	LIS_REAL mag;
+	LIS_SCALAR *d;
+#ifdef USE_MPI
+	LIS_INT invalid_global;
+#endif
+
+	n       = D->n;
+	d       = D->value;
+	invalid = 0;
+
+	for(i=0;i<n;i++)
+	{
+		mag = fabs(d[i]);
+
+		if( mag==0.0 || mag!=mag || mag>LIS_SCALAR_MAX )
+		{
+			invalid = 1;
+			break;
+		}
+	}
+
+#ifdef USE_MPI
+	invalid_global = 0;
+	MPI_Allreduce(
+		&invalid,
+		&invalid_global,
+		1,
+		LIS_MPI_INT,
+		MPI_SUM,
+		D->comm);
+
+	invalid = invalid_global;
+#endif
+
+	if( invalid )
+	{
+		LIS_SETERR(
+			LIS_BREAKDOWN,
+			"symmetric diagonal scaling requires finite nonzero diagonal entries\n");
+
+		return LIS_BREAKDOWN;
+	}
+
+#ifdef _OPENMP
+#pragma omp parallel for private(i)
+#endif
+	for(i=0;i<n;i++)
+	{
+		d[i] = 1.0 / sqrt(fabs(d[i]));
+	}
+
+	return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
 #define __FUNC__ "lis_matrix_scale"
 LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR D, LIS_INT action)
 {
-	LIS_INT i,n,np;
+	LIS_INT i,n,np,err;
 	LIS_SCALAR *b,*d;
 
 	n  = A->n;
@@ -600,9 +660,12 @@ LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR D, LIS_INT actio
 	b  = B->value;
 	d  = D->value;
 
-	lis_matrix_get_diagonal(A,D);
+	err = lis_matrix_get_diagonal(A,D);
+	if( err ) return err;
 	if( action==LIS_SCALE_SYMM_DIAG )
 	{
+		err = lis_matrix_prepare_symm_diag_scaling(D);
+		if( err ) return err;
 #ifdef USE_MPI
 		if( A->np>D->np )
 		{
@@ -616,13 +679,6 @@ LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR D, LIS_INT actio
 		}
 		lis_send_recv(A->commtable,d);
 #endif
-		#ifdef _OPENMP
-		#pragma omp parallel for private(i)
-		#endif
-		for(i=0; i<np; i++)
-		{
-			d[i] = 1.0 / sqrt(fabs(d[i]));
-		}
 
 		switch( A->matrix_type )
 		{
@@ -793,6 +849,31 @@ LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR D)
 	        break;
 
 	case LIS_MATRIX_OPERATOR:
+	        if( A->operator_scale!=NULL )
+	        {
+	                if( A->operator_A==NULL )
+	                {
+	                        LIS_SETERR(
+	                                LIS_ERR_ILL_ARG,
+	                                "scaled matrix operator is not initialized\n");
+	                        return LIS_ERR_ILL_ARG;
+	                }
+
+	                err = lis_matrix_get_diagonal(
+	                        A->operator_A,D);
+	                if( err ) return err;
+
+	                err = lis_vector_pmul(
+	                        D,A->operator_scale,D);
+	                if( err ) return err;
+
+	                err = lis_vector_pmul(
+	                        D,A->operator_scale,D);
+	                if( err ) return err;
+
+	                break;
+	        }
+
 	        if( A->operator_A==NULL || A->operator_B==NULL ||
 	            A->operator_work==NULL )
 	        {
