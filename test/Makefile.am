@@ -138,7 +138,6 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
 TESTS = test.sh testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) testworkcompat$(EXEEXT) testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) testilupivot$(EXEEXT)
->>>>>>> pr-72
 
 installcheck: 
 	@if test ! -f $(testdir)/test.sh; then \

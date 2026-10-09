@@ -72,7 +72,8 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	testgmreswork$(EXEEXT) testworkcompat$(EXEEXT) \
 	testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) \
 	testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) \
-	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
+	testilupivot$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
+	$(am__EXEEXT_3)
 @ENABLE_FORTRAN_TRUE@am__append_1 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_2 = test2f test6f 
 @ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__append_3 = test8f
@@ -304,6 +305,10 @@ am_testgmreswork_OBJECTS = testgmreswork.$(OBJEXT)
 testgmreswork_OBJECTS = $(am_testgmreswork_OBJECTS)
 testgmreswork_LDADD = $(LDADD)
 testgmreswork_DEPENDENCIES =
+am_testilupivot_OBJECTS = testilupivot.$(OBJEXT)
+testilupivot_OBJECTS = $(am_testilupivot_OBJECTS)
+testilupivot_LDADD = $(LDADD)
+testilupivot_DEPENDENCIES =
 am_testjacobiuser_OBJECTS = testjacobiuser.$(OBJEXT)
 testjacobiuser_OBJECTS = $(am_testjacobiuser_OBJECTS)
 testjacobiuser_LDADD = $(LDADD)
@@ -424,14 +429,15 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(test4_SOURCES) $(test4f_SOURCES) $(test5_SOURCES) \
 	$(test6_SOURCES) $(test6f_SOURCES) $(test7_SOURCES) \
 	$(test7f_SOURCES) $(test8f_SOURCES) $(testdiagonal_SOURCES) \
-	$(testgmreswork_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testoperator_SOURCES) $(testprebuiltuser_SOURCES) \
-	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
-	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
-	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
-	$(testrqirestore_SOURCES) $(testshellscale_SOURCES) \
-	$(testsymmdiagguard_SOURCES) $(testuser_SOURCES) \
-	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
+	$(testgmreswork_SOURCES) $(testilupivot_SOURCES) \
+	$(testjacobiuser_SOURCES) $(testoperator_SOURCES) \
+	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
+	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
+	$(testpreconreuse_SOURCES) $(testrepeatedsystems_SOURCES) \
+	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
+	$(testshellscale_SOURCES) $(testsymmdiagguard_SOURCES) \
+	$(testuser_SOURCES) $(testworkcompat_SOURCES) \
+	$(testworkreuse_SOURCES)
 DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
 	$(etest3_SOURCES) $(etest4_SOURCES) \
@@ -451,14 +457,15 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(test5_SOURCES) $(test6_SOURCES) $(am__test6f_SOURCES_DIST) \
 	$(test7_SOURCES) $(am__test7f_SOURCES_DIST) \
 	$(am__test8f_SOURCES_DIST) $(testdiagonal_SOURCES) \
-	$(testgmreswork_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testoperator_SOURCES) $(testprebuiltuser_SOURCES) \
-	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
-	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
-	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
-	$(testrqirestore_SOURCES) $(testshellscale_SOURCES) \
-	$(testsymmdiagguard_SOURCES) $(testuser_SOURCES) \
-	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
+	$(testgmreswork_SOURCES) $(testilupivot_SOURCES) \
+	$(testjacobiuser_SOURCES) $(testoperator_SOURCES) \
+	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
+	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
+	$(testpreconreuse_SOURCES) $(testrepeatedsystems_SOURCES) \
+	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
+	$(testshellscale_SOURCES) $(testsymmdiagguard_SOURCES) \
+	$(testuser_SOURCES) $(testworkcompat_SOURCES) \
+	$(testworkreuse_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -672,6 +679,7 @@ testworkreuse_SOURCES = testworkreuse.c
 testprebuiltuser_SOURCES = testprebuiltuser.c
 testshellscale_SOURCES = testshellscale.c
 testsymmdiagguard_SOURCES = testsymmdiagguard.c
+testilupivot_SOURCES = testilupivot.c
 @ENABLE_FORTRAN_TRUE@etest1f_SOURCES = etest1f.F
 @ENABLE_FORTRAN_TRUE@etest4f_SOURCES = etest4f.F
 @ENABLE_FORTRAN_TRUE@test1f_SOURCES = test1f.F
@@ -726,7 +734,7 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
-TESTS = test.sh testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) testworkcompat$(EXEEXT) testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT)
+TESTS = test.sh testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) testworkcompat$(EXEEXT) testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) testilupivot$(EXEEXT)
 all: all-am
 
 .SUFFIXES:
@@ -994,6 +1002,9 @@ testdiagonal$(EXEEXT): $(testdiagonal_OBJECTS) $(testdiagonal_DEPENDENCIES) $(EX
 testgmreswork$(EXEEXT): $(testgmreswork_OBJECTS) $(testgmreswork_DEPENDENCIES) $(EXTRA_testgmreswork_DEPENDENCIES) 
 	@rm -f testgmreswork$(EXEEXT)
 	$(LINK) $(testgmreswork_OBJECTS) $(testgmreswork_LDADD) $(LIBS)
+testilupivot$(EXEEXT): $(testilupivot_OBJECTS) $(testilupivot_DEPENDENCIES) $(EXTRA_testilupivot_DEPENDENCIES) 
+	@rm -f testilupivot$(EXEEXT)
+	$(LINK) $(testilupivot_OBJECTS) $(testilupivot_LDADD) $(LIBS)
 testjacobiuser$(EXEEXT): $(testjacobiuser_OBJECTS) $(testjacobiuser_DEPENDENCIES) $(EXTRA_testjacobiuser_DEPENDENCIES) 
 	@rm -f testjacobiuser$(EXEEXT)
 	$(LINK) $(testjacobiuser_OBJECTS) $(testjacobiuser_LDADD) $(LIBS)
@@ -1113,6 +1124,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test7.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testdiagonal.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testgmreswork.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testilupivot.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testjacobiuser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoperator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testprebuiltuser.Po@am__quote@
