@@ -7,6 +7,7 @@ lis_solver_bicgstabl.c \
 lis_solver_cg.c \
 lis_solver_cgs.c \
 lis_solver_gmres.c \
+lis_solver_gcrodr.c \
 lis_solver_gpbicg.c \
 lis_solver_gs.c \
 lis_solver_idrs.c \

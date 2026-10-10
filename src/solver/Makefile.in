@@ -70,7 +70,7 @@ libsolver_la_LIBADD =
 am_libsolver_la_OBJECTS = lis_solver.lo lis_solver_nearnullspace.lo \
 	lis_solver_bicg.lo lis_solver_bicgsafe.lo \
 	lis_solver_bicgstab.lo lis_solver_bicgstabl.lo \
-	lis_solver_cg.lo lis_solver_cgs.lo lis_solver_gmres.lo \
+	lis_solver_cg.lo lis_solver_cgs.lo lis_solver_gmres.lo lis_solver_gcrodr.lo \
 	lis_solver_gpbicg.lo lis_solver_gs.lo lis_solver_idrs.lo \
 	lis_solver_jacobi.lo lis_solver_minres.lo \
 	lis_solver_orthomin.lo lis_solver_qmr.lo lis_solver_sor.lo
@@ -249,6 +249,7 @@ lis_solver_bicgstabl.c \
 lis_solver_cg.c \
 lis_solver_cgs.c \
 lis_solver_gmres.c \
+lis_solver_gcrodr.c \
 lis_solver_gpbicg.c \
 lis_solver_gs.c \
 lis_solver_idrs.c \
@@ -334,6 +335,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_solver_cg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_solver_cgs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_solver_gmres.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_solver_gcrodr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_solver_gpbicg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_solver_gs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_solver_idrs.Plo@am__quote@

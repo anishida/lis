@@ -159,7 +159,7 @@ extern "C" {
 #define LIS_CONV_COND_NRM2_B 1
 #define LIS_CONV_COND_NRM1_B 2
 
-#define LIS_SOLVER_LEN 25
+#define LIS_SOLVER_LEN 26
 #define LIS_SOLVER_CG 1
 #define LIS_SOLVER_BICG 2
 #define LIS_SOLVER_CGS 3
@@ -186,6 +186,13 @@ extern "C" {
 #define LIS_SOLVER_MINRES 23
 #define LIS_SOLVER_COCG 24
 #define LIS_SOLVER_COCR 25
+#define LIS_SOLVER_GCRODR 26
+
+#define LIS_GCRODR_RECYCLE_NONE 0
+#define LIS_GCRODR_RECYCLE_BUILD 1
+#define LIS_GCRODR_RECYCLE_KEEP 2
+#define LIS_GCRODR_RECYCLE_REFRESH 3
+#define LIS_GCRODR_RECYCLE_REJECT 4
 
 #define LIS_ESOLVER_LEN 16
 #define LIS_ESOLVER_PI 1
@@ -773,6 +780,29 @@ struct LIS_SOLVER_STRUCT
 	LIS_VECTOR *near_nullspace;
 	LIS_INT near_nullspace_dim;
 	LIS_NEAR_NULLSPACE_COARSE near_nullspace_coarse;
+	/* Persistent GCRO-DR recycle state. */
+	LIS_VECTOR *recycle_u;
+	LIS_VECTOR *recycle_zu;
+	LIS_VECTOR *recycle_c;
+	LIS_INT recycle_dim;
+	LIS_INT recycle_alloc;
+	LIS_INT recycle_valid;
+	LIS_INT recycle_builds;
+	LIS_INT recycle_updates;
+	LIS_INT recycle_uses;
+	LIS_INT recycle_rejects;
+
+	/* GCRO-DR cross-solve policy/configuration. */
+	LIS_INT recycle_target_dim;
+	LIS_REAL recycle_keep_threshold;
+	LIS_REAL recycle_reject_threshold;
+	LIS_REAL recycle_quality;
+	LIS_REAL recycle_quality_min;
+	LIS_INT recycle_last_action;
+	LIS_INT recycle_cross_uses;
+	LIS_INT recycle_policy_keeps;
+	LIS_INT recycle_policy_refreshes;
+	LIS_INT recycle_policy_rejects;
 	LIS_VECTOR *work;
 	LIS_REAL *rhistory;
 	LIS_INT worklen;
@@ -1012,6 +1042,12 @@ extern "C"
 	extern LIS_INT lis_solver_destroy(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_near_nullspace(LIS_SOLVER solver, LIS_INT nvec, LIS_VECTOR vectors[]);
 	extern LIS_INT lis_solver_clear_near_nullspace(LIS_SOLVER solver);
+	extern LIS_INT lis_solver_set_gcrodr_recycle(
+		LIS_SOLVER solver, LIS_INT dim,
+		LIS_REAL keep_quality, LIS_REAL reject_quality);
+	extern LIS_INT lis_solver_get_gcrodr_recycle(
+		LIS_SOLVER solver, LIS_INT *dim, LIS_INT *action,
+		LIS_REAL *quality, LIS_REAL *quality_min);
 	extern LIS_INT lis_solver_get_iter(LIS_SOLVER solver, LIS_INT *iter);
 	extern LIS_INT lis_solver_get_iterex(LIS_SOLVER solver, LIS_INT *iter, LIS_INT *iter_double, LIS_INT *iter_quad);
 	extern LIS_INT lis_solver_get_time(LIS_SOLVER solver, double *time);

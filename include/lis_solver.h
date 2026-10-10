@@ -250,6 +250,15 @@ extern "C"
 	extern LIS_INT lis_fgmres_malloc_work(LIS_SOLVER solver);
 
 /*******************/
+/* GCRO-DR         */
+/*******************/
+	extern LIS_INT lis_gcrodr(LIS_SOLVER solver);
+	extern LIS_INT lis_gcrodr_check_params(LIS_SOLVER solver);
+	extern LIS_INT lis_gcrodr_malloc_work(LIS_SOLVER solver);
+	extern LIS_INT lis_gcrodr_clear_recycle(LIS_SOLVER solver);
+
+
+/*******************/
 /* IDR(s)          */
 /*******************/
 

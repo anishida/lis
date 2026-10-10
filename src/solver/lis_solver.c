@@ -61,7 +61,7 @@
  * lis_solve
  ************************************************/
 
-#define LIS_SOLVERS_LEN			25
+#define LIS_SOLVERS_LEN			26
 #define LIS_PRECON_TYPE_LEN		12
 
 
@@ -75,7 +75,7 @@ LIS_SOLVER_CHECK_PARAMS lis_solver_check_params[] = {
 	lis_crs_check_params      , lis_bicrstab_check_params  , lis_gpbicr_check_params,
 	lis_bicrsafe_check_params , lis_fgmres_check_params    , lis_idrs_check_params,
 	lis_idr1_check_params     , lis_minres_check_params    , lis_cocg_check_params,
-	lis_cocr_check_params
+	lis_cocr_check_params, lis_gcrodr_check_params
 };
 
 LIS_SOLVER_MALLOC_WORK lis_solver_malloc_work[] = {
@@ -88,7 +88,7 @@ LIS_SOLVER_MALLOC_WORK lis_solver_malloc_work[] = {
 	lis_crs_malloc_work      , lis_bicrstab_malloc_work  , lis_gpbicr_malloc_work,
 	lis_bicrsafe_malloc_work , lis_fgmres_malloc_work    , lis_idrs_malloc_work,
 	lis_idr1_malloc_work     , lis_minres_malloc_work    , lis_cocg_malloc_work,
-        lis_cocr_malloc_work
+        lis_cocr_malloc_work, lis_gcrodr_malloc_work
 };
 
 LIS_SOLVER_EXECUTE lis_solver_execute[] = {
@@ -101,7 +101,7 @@ LIS_SOLVER_EXECUTE lis_solver_execute[] = {
 	lis_crs      , lis_bicrstab  , lis_gpbicr,
 	lis_bicrsafe , lis_fgmres    , lis_idrs, 
 	lis_idr1     , lis_minres    , lis_cocg,
-	lis_cocr
+	lis_cocr, lis_gcrodr
 };
 
 LIS_SOLVER_EXECUTE lis_solver_execute_conv_cond[] = {
@@ -114,7 +114,7 @@ LIS_SOLVER_EXECUTE lis_solver_execute_conv_cond[] = {
 	lis_crs      , lis_bicrstab  , lis_gpbicr,
 	lis_bicrsafe , NULL          , lis_idrs, 
 	lis_idr1     , NULL          , lis_cocg,
-	lis_cocr
+	lis_cocr, NULL
 };
 
 #ifdef USE_QUAD_PRECISION
@@ -128,7 +128,7 @@ LIS_SOLVER_EXECUTE lis_solver_execute_conv_cond[] = {
 		lis_crs_quad      , lis_bicrstab_quad  , lis_gpbicr_quad,
 		lis_bicrsafe_quad , lis_fgmres_quad    , NULL,
 		NULL              , NULL               , NULL,
-		NULL
+		NULL, NULL
 	};
 	LIS_SOLVER_EXECUTE lis_solver_execute_switch[] = {
 		NULL,
@@ -140,7 +140,7 @@ LIS_SOLVER_EXECUTE lis_solver_execute_conv_cond[] = {
 		NULL                , NULL            , NULL,
 		NULL                , NULL            , NULL,
 		NULL                , NULL            , NULL,
-		NULL
+		NULL, NULL
 	};
 	/*
 	LIS_SOLVER_EXECUTE lis_solver_execute_periodic[] = {
@@ -198,7 +198,7 @@ LIS_INT LIS_SOLVER_OPTACT[] = {
 	LIS_OPTIONS_MAXITER_NO_IMP       , LIS_PARAMS_ILU_PIVOT_TOL
 };
 
-char *lis_solver_atoi[]    = {"cg", "bicg", "cgs", "bicgstab", "bicgstabl", "gpbicg", "tfqmr","orthomin", "gmres", "jacobi", "gs", "sor", "bicgsafe", "cr", "bicr", "crs", "bicrstab", "gpbicr", "bicrsafe", "fgmres", "idrs", "idr1", "minres", "cocg", "cocr"};
+char *lis_solver_atoi[]    = {"cg", "bicg", "cgs", "bicgstab", "bicgstabl", "gpbicg", "tfqmr","orthomin", "gmres", "jacobi", "gs", "sor", "bicgsafe", "cr", "bicr", "crs", "bicrstab", "gpbicr", "bicrsafe", "fgmres", "idrs", "idr1", "minres", "cocg", "cocr", "gcrodr"};
 char *lis_precon_atoi[]    = {"none", "jacobi", "ilu", "ssor", "hybrid", "is", "sainv", "saamg", "iluc", "ilut", "bjacobi", ""};
 char *lis_storage_atoi[]   = {"csr", "csc", "msr", "dia", "ell", "jad", "bsr", "bsc", "vbr", "coo", "dns"};
 char *lis_print_atoi[]     = {"none", "mem", "out", "all"};
@@ -207,7 +207,7 @@ char *lis_truefalse_atoi[] = {"false", "true"};
 char *lis_precision_atoi[] = {"double", "quad", "switch"};
 char *lis_conv_cond_atoi[] = {"nrm2_r", "nrm2_b", "nrm1_b"};
 
-char *lis_solvername[] = {"", "CG", "BiCG", "CGS", "BiCGSTAB", "BiCGSTAB(l)", "GPBiCG", "TFQMR", "Orthomin", "GMRES", "Jacobi",	"Gauss-Seidel", "SOR", "BiCGSafe", "CR", "BiCR", "CRS", "BiCRSTAB", "GPBiCR", "BiCRSafe", "FGMRES", "IDR(s)", "IDR(1)", "MINRES", "COCG", "COCR"};
+char *lis_solvername[] = {"", "CG", "BiCG", "CGS", "BiCGSTAB", "BiCGSTAB(l)", "GPBiCG", "TFQMR", "Orthomin", "GMRES", "Jacobi",	"Gauss-Seidel", "SOR", "BiCGSafe", "CR", "BiCR", "CRS", "BiCRSTAB", "GPBiCR", "BiCRSafe", "FGMRES", "IDR(s)", "IDR(1)", "MINRES", "COCG", "COCR", "GCRO-DR"};
 char *lis_preconname[] = {"none", "Jacobi", "ILU", "SSOR", "Hybrid", "I+S", "SAINV", "SAAMG", "Crout ILU", "ILUT", "Block Jacobi"};
 
 char *lis_returncode[] = {"LIS_SUCCESS", "LIS_ILL_OPTION", "LIS_BREAKDOWN", "LIS_OUT_OF_MEMORY", "LIS_MAXITER", "LIS_NOT_IMPLEMENTED", "LIS_ERR_FILE_IO"};
@@ -234,6 +234,26 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->near_nullspace = NULL;
 	solver->near_nullspace_dim = 0;
 	solver->near_nullspace_coarse = NULL;
+	solver->recycle_u = NULL;
+	solver->recycle_zu = NULL;
+	solver->recycle_c = NULL;
+	solver->recycle_dim = 0;
+	solver->recycle_alloc = 0;
+	solver->recycle_valid = LIS_FALSE;
+	solver->recycle_builds = 0;
+	solver->recycle_updates = 0;
+	solver->recycle_uses = 0;
+	solver->recycle_rejects = 0;
+	solver->recycle_target_dim = 8;
+	solver->recycle_keep_threshold = 0.90;
+	solver->recycle_reject_threshold = 0.35;
+	solver->recycle_quality = 0.0;
+	solver->recycle_quality_min = 0.0;
+	solver->recycle_last_action = LIS_GCRODR_RECYCLE_NONE;
+	solver->recycle_cross_uses = 0;
+	solver->recycle_policy_keeps = 0;
+	solver->recycle_policy_refreshes = 0;
+	solver->recycle_policy_rejects = 0;
 
 	solver->worklen   = 0;
 	solver->iter      = 0;
@@ -481,6 +501,11 @@ lis_solver_work_expected_length(LIS_SOLVER solver)
 		if( restart<0 ) return -1;
 		return 4 + (2*restart+1);
 
+	case LIS_SOLVER_GCRODR:
+		restart = solver->options[LIS_OPTIONS_RESTART];
+		if( restart<0 ) return -1;
+		return 4 + (2*restart+1);
+
 	case LIS_SOLVER_IDRS:
 	case LIS_SOLVER_IDR1:
 		s = solver->options[LIS_OPTIONS_IDRS_RESTART];
@@ -615,7 +640,8 @@ LIS_INT lis_solver_work_compatible(LIS_SOLVER solver)
 	first   = 0;
 
 	if( nsolver==LIS_SOLVER_GMRES ||
-		nsolver==LIS_SOLVER_FGMRES )
+		nsolver==LIS_SOLVER_FGMRES ||
+		nsolver==LIS_SOLVER_GCRODR )
 	{
 		restart = solver->options[LIS_OPTIONS_RESTART];
 
@@ -963,6 +989,7 @@ LIS_INT lis_solver_destroy(LIS_SOLVER solver)
 	if( solver )
 	{
 		lis_solver_work_destroy(solver);
+		lis_gcrodr_clear_recycle(solver);
 		lis_solver_clear_near_nullspace(solver);
 		lis_vector_destroy(solver->d);
 		if( solver->Ah ) lis_matrix_destroy(solver->Ah);
@@ -2253,6 +2280,75 @@ LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 	double double_value;
 
 	LIS_DEBUG_FUNC_IN;
+
+	/*
+	 * GCRO-DR solver-specific textual controls.
+	 *
+	 * Keep these outside the generic options[]/params[] index space so
+	 * existing option and parameter indices remain unchanged.
+	 *
+	 * Individual thresholds are range-checked here. Their relation
+	 * (reject <= keep) is checked by lis_gcrodr_check_params(), which
+	 * keeps textual option ordering independent.
+	 */
+	if( strcmp(arg1,"-gcrodr_k")==0 )
+	{
+		LIS_INT value;
+		char extra;
+#ifdef _LONG__LONG
+		if( arg2==NULL || sscanf(arg2,"%lld %c",&value,&extra)!=1 || value<0 )
+#else
+		if( arg2==NULL || sscanf(arg2,"%d %c",&value,&extra)!=1 || value<0 )
+#endif
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,
+				"Parameter -gcrodr_k must be a nonnegative integer\n");
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_ERR_ILL_ARG;
+		}
+		if( solver->recycle_target_dim!=value )
+		{
+			lis_gcrodr_clear_recycle(solver);
+			solver->recycle_target_dim = value;
+		}
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
+
+	if( strcmp(arg1,"-gcrodr_keep")==0 )
+	{
+		double value;
+		char extra;
+		if( arg2==NULL || sscanf(arg2,"%lg %c",&value,&extra)!=1 ||
+			value!=value || value<0.0 || value>1.0 )
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,
+				"Parameter -gcrodr_keep must satisfy 0 <= value <= 1\n");
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_ERR_ILL_ARG;
+		}
+		solver->recycle_keep_threshold = (LIS_REAL)value;
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
+
+	if( strcmp(arg1,"-gcrodr_reject")==0 )
+	{
+		double value;
+		char extra;
+		if( arg2==NULL || sscanf(arg2,"%lg %c",&value,&extra)!=1 ||
+			value!=value || value<0.0 || value>1.0 )
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,
+				"Parameter -gcrodr_reject must satisfy 0 <= value <= 1\n");
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_ERR_ILL_ARG;
+		}
+		solver->recycle_reject_threshold = (LIS_REAL)value;
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
+
 
 	err = 0;
 
