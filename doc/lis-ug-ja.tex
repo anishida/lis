@@ -1867,8 +1867,9 @@ Matrix Market形式による外部ファイル{\tt matvec.mtx}の記述例を以
  COCG        & \verb=-i {cocg|24}=      &    \\
  COCR        & \verb=-i {cocr|25}=      &    \\   
  GCRO-DR     & \verb=-i {gcrodr|26}=    & \verb=-gcrodr_k [40]= & GCRO-DRの部分空間次元数 \\ 
-             &                          & \verb=-gcrodr_keep [8]= & リサイクルして保持するベクトル数 \\ 
-             &                          & \verb=-gcrodr_reject [0.35]= & Ritzベクトルの破棄閾値 \\   
+             &                          & \verb=-gcrodr_keep [8]= & リサイクルするベクトル数 \\ 
+ &                          & \verb=-gcrodr_keep_quality [0.9]= & ベクトルの保持閾値 \\
+ &                          & \verb=-gcrodr_reject_quality [0.35]= & ベクトルの破棄閾値 \\   
 \hline         
 \end{tabular}
 \end{center}
@@ -5980,8 +5981,9 @@ COO    &  ○  &  ○  &  ○  & CSR  & CSR & CSR & CSR & CSC & CSR &     & CSR 
  COCG        & \verb=-i {cocg|24}=      &    \\
  COCR        & \verb=-i {cocr|25}=      &    \\   
  GCRO-DR     & \verb=-i {gcrodr|26}=    & \verb=-gcrodr_k [40]= & GCRO-DRの部分空間次元数 \\ 
-             &                          & \verb=-gcrodr_keep [8]= & リサイクルして保持するベクトル数 \\ 
-             &                          & \verb=-gcrodr_reject [0.35]= & Ritzベクトルの破棄閾値 \\   
+             &                          & \verb=-gcrodr_keep [8]= & リサイクルするベクトル数 \\ 
+ &                          & \verb=-gcrodr_keep_quality [0.9]= & ベクトルの保持閾値 \\
+ &                          & \verb=-gcrodr_reject_quality [0.35]= & ベクトルの破棄閾値 \\   
 \hline         
 \end{tabular}
 \end{center}

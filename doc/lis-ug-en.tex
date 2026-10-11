@@ -1992,9 +1992,10 @@ where \verb=-i {cg|1}= means \verb=-i cg= or \verb=-i 1= and \verb=-maxiter [100
  MINRES      & \verb=-i {minres|23}=    &    \\
  COCG        & \verb=-i {cocg|24}=      &    \\
  COCR        & \verb=-i {cocr|25}=      &    \\  
- GCRO-DR     & \verb=-i {gcrodr|26}=    & \verb=-gcrodr_k [40]= & Subspace dimension for GCRO-DR \\ 
-             &                          & \verb=-gcrodr_keep [8]= & Number of recycled vectors \\ 
-             &                          & \verb=-gcrodr_reject [0.35]= & Ritz vector rejection threshold \\   
+ GCRO-DR     & \verb=-i {gcrodr|26}=    & \verb=-gcrodr_k [40]= & The subspace dimension \\ 
+             &                          & \verb=-gcrodr_keep [8]= & The number of recycled vectors \\ 
+             &                          & \verb=-gcrodr_keep_quality [0.9]= & The threshold to keep vectors \\ 
+ &                          & \verb=-gcrodr_reject_quality [0.35]= & The threshold to reject vectors \\   
 \hline         
 \end{tabular}
 \end{center}
@@ -6143,9 +6144,10 @@ that \verb=-maxiter= defaults to $1,000$.
  MINRES      & \verb=-i {minres|23}=    &    \\
  COCG        & \verb=-i {cocg|24}=      &    \\
  COCR        & \verb=-i {cocr|25}=      &    \\   
- GCRO-DR     & \verb=-i {gcrodr|26}=    & \verb=-gcrodr_k [40]= & Subspace dimension for GCRO-DR \\ 
-             &                          & \verb=-gcrodr_keep [8]= & Number of recycled vectors \\ 
-             &                          & \verb=-gcrodr_reject [0.35]= & Ritz vector rejection threshold \\   
+ GCRO-DR     & \verb=-i {gcrodr|26}=    & \verb=-gcrodr_k [40]= & The subspace dimension \\ 
+             &                          & \verb=-gcrodr_keep [8]= & The number of recycled vectors \\ 
+             &                          & \verb=-gcrodr_keep_quality [0.9]= & The threshold to keep vectors \\ 
+ &                          & \verb=-gcrodr_reject_quality [0.35]= & The threshold to reject vectors \\   
 \hline         
 \end{tabular}
 \end{center}
