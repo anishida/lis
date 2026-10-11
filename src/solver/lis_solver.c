@@ -2284,14 +2284,10 @@ LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 	/*
 	 * GCRO-DR solver-specific textual controls.
 	 *
-	 * Keep these outside the generic options[]/params[] index space so
-	 * existing option and parameter indices remain unchanged.
-	 *
-	 * Individual thresholds are range-checked here. Their relation
-	 * (reject <= keep) is checked by lis_gcrodr_check_params(), which
-	 * keeps textual option ordering independent.
+	 * -gcrodr_keep specifies the target number of recycle vectors.
+	 * Quality-policy thresholds use explicit names to avoid ambiguity.
 	 */
-	if( strcmp(arg1,"-gcrodr_k")==0 )
+	if( strcmp(arg1,"-gcrodr_keep")==0 )
 	{
 		LIS_INT value;
 		char extra;
@@ -2302,7 +2298,7 @@ LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 #endif
 		{
 			LIS_SETERR(LIS_ERR_ILL_ARG,
-				"Parameter -gcrodr_k must be a nonnegative integer\n");
+				"Parameter -gcrodr_keep must be a nonnegative integer\n");
 			LIS_DEBUG_FUNC_OUT;
 			return LIS_ERR_ILL_ARG;
 		}
@@ -2315,7 +2311,7 @@ LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 		return LIS_SUCCESS;
 	}
 
-	if( strcmp(arg1,"-gcrodr_keep")==0 )
+	if( strcmp(arg1,"-gcrodr_keep_quality")==0 )
 	{
 		double value;
 		char extra;
@@ -2323,7 +2319,7 @@ LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 			value!=value || value<0.0 || value>1.0 )
 		{
 			LIS_SETERR(LIS_ERR_ILL_ARG,
-				"Parameter -gcrodr_keep must satisfy 0 <= value <= 1\n");
+				"Parameter -gcrodr_keep_quality must satisfy 0 <= value <= 1\n");
 			LIS_DEBUG_FUNC_OUT;
 			return LIS_ERR_ILL_ARG;
 		}
@@ -2332,7 +2328,7 @@ LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 		return LIS_SUCCESS;
 	}
 
-	if( strcmp(arg1,"-gcrodr_reject")==0 )
+	if( strcmp(arg1,"-gcrodr_reject_quality")==0 )
 	{
 		double value;
 		char extra;
@@ -2340,7 +2336,7 @@ LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 			value!=value || value<0.0 || value>1.0 )
 		{
 			LIS_SETERR(LIS_ERR_ILL_ARG,
-				"Parameter -gcrodr_reject must satisfy 0 <= value <= 1\n");
+				"Parameter -gcrodr_reject_quality must satisfy 0 <= value <= 1\n");
 			LIS_DEBUG_FUNC_OUT;
 			return LIS_ERR_ILL_ARG;
 		}
@@ -2348,7 +2344,6 @@ LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 		LIS_DEBUG_FUNC_OUT;
 		return LIS_SUCCESS;
 	}
-
 
 	err = 0;
 

@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
 
     err=lis_solver_set_option(
         "-i gcrodr -p jacobi -restart 8 -maxiter 2000 -tol 1e-10 "
-        "-gcrodr_k 0 -gcrodr_keep 0.90 -gcrodr_reject 0.35 "
+        "-gcrodr_keep 0 -gcrodr_keep_quality 0.90 -gcrodr_reject_quality 0.35 "
         "-print none",
         solver);
     if( err )
@@ -244,7 +244,7 @@ int main(int argc, char *argv[])
      * CASE 2: a target larger than restart is accepted, but the effective
      * recycle space is capped at restart-1.
      */
-    err=lis_solver_set_option("-gcrodr_k 20",solver);
+    err=lis_solver_set_option("-gcrodr_keep 20",solver);
     if( err )
     {
         failed |= fail_case(comm,"k>=restart","option rejected");
@@ -275,7 +275,7 @@ int main(int argc, char *argv[])
      * CASE 3: changing k invalidates the old recycle space immediately.
      */
     dim_before=solver->recycle_dim;
-    err=lis_solver_set_option("-gcrodr_k 4",solver);
+    err=lis_solver_set_option("-gcrodr_keep 4",solver);
     if( err )
     {
         failed |= fail_case(comm,"change-k-clears","option rejected");
@@ -323,7 +323,7 @@ int main(int argc, char *argv[])
     qmin_before=solver->recycle_quality_min;
 
     err=lis_solver_set_option(
-        "-gcrodr_keep 0.99 -gcrodr_reject 0.95",
+        "-gcrodr_keep_quality 0.99 -gcrodr_reject_quality 0.95",
         solver);
     if( err )
     {

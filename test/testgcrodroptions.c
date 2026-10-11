@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 
     err = lis_solver_set_option(
         "-i gcrodr -restart 30 "
-        "-gcrodr_k 6 -gcrodr_keep 0.90 -gcrodr_reject 0.35",
+        "-gcrodr_keep 6 -gcrodr_keep_quality 0.90 -gcrodr_reject_quality 0.35",
         solver);
     if( err )
     {
@@ -71,7 +71,7 @@ int main(int argc, char **argv)
      * required to present KEEP before REJECT.
      */
     err = lis_solver_set_option(
-        "-gcrodr_reject 0.95 -gcrodr_k 12 -gcrodr_keep 0.99",
+        "-gcrodr_reject_quality 0.95 -gcrodr_keep 12 -gcrodr_keep_quality 0.99",
         solver);
     if( err )
     {
@@ -103,15 +103,29 @@ int main(int argc, char **argv)
         goto fail_test;
     }
 
-    err = lis_solver_set_option("-gcrodr_reject nan",solver);
+    err = lis_solver_set_option("-gcrodr_keep_quality 1.25",solver);
     if( err==LIS_SUCCESS )
     {
-        fprintf(stderr,"NaN -gcrodr_reject was accepted\n");
+        fprintf(stderr,"invalid -gcrodr_keep_quality was accepted\n");
+        goto fail_test;
+    }
+
+    err = lis_solver_set_option("-gcrodr_keep_quality nan",solver);
+    if( err==LIS_SUCCESS )
+    {
+        fprintf(stderr,"NaN -gcrodr_keep_quality was accepted\n");
+        goto fail_test;
+    }
+
+    err = lis_solver_set_option("-gcrodr_reject_quality nan",solver);
+    if( err==LIS_SUCCESS )
+    {
+        fprintf(stderr,"NaN -gcrodr_reject_quality was accepted\n");
         goto fail_test;
     }
 
     /* Restore a valid value. */
-    err = lis_solver_set_option("-gcrodr_keep 0.99",solver);
+    err = lis_solver_set_option("-gcrodr_keep_quality 0.99",solver);
     if( err ) goto fail;
 
     /*
@@ -119,7 +133,7 @@ int main(int argc, char **argv)
      * solver parameter check so option order remains independent.
      */
     err = lis_solver_set_option(
-        "-gcrodr_keep 0.90 -gcrodr_reject 0.95",
+        "-gcrodr_keep_quality 0.90 -gcrodr_reject_quality 0.95",
         solver);
     if( err ) goto fail;
 
@@ -131,7 +145,7 @@ int main(int argc, char **argv)
     }
 
     err = lis_solver_set_option(
-        "-gcrodr_keep 0.90 -gcrodr_reject 0.35 -gcrodr_k 6",
+        "-gcrodr_keep_quality 0.90 -gcrodr_reject_quality 0.35 -gcrodr_keep 6",
         solver);
     if( err ) goto fail;
     err = lis_gcrodr_check_params(solver);

@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
 
     err=lis_solver_set_option(
         "-i gcrodr -p jacobi -restart 20 -maxiter 2000 -tol 1e-10 "
-        "-gcrodr_k 4 -gcrodr_keep 0.80 -gcrodr_reject 0.20 "
+        "-gcrodr_keep 4 -gcrodr_keep_quality 0.80 -gcrodr_reject_quality 0.20 "
         "-print none",
         solver);
     if( err ) goto fail;
