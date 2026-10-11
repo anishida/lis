@@ -192,6 +192,56 @@ int main(int argc, char *argv[])
 	                 (LIS_SCALAR)4.0,"shifted GII");
 	fail |= inputs_unchanged(A,B,x,y);
 
+        /* Explicit shift-invert must preserve the established result. */
+        fail |= run_case(A,B,x,
+                         "-e gii -shift 3.6 "
+                         "-etransform shift-invert "
+                         "-etol 1.0e-10 -emaxiter 1000",
+                         (LIS_SCALAR)4.0,
+                         "explicit shift-invert GII");
+        fail |= inputs_unchanged(A,B,x,y);
+
+        /*
+         * For lambda=2,3,... and sigma=3.6,
+         *
+         *     nu = lambda / (lambda - sigma)
+         *
+         * has largest magnitude at lambda=4.
+         */
+        fail |= run_case(A,B,x,
+                         "-e gii -shift 3.6 "
+                         "-etransform buckling "
+                         "-etol 1.0e-10 -emaxiter 1000",
+                         (LIS_SCALAR)4.0,
+                         "buckling GII");
+        fail |= inputs_unchanged(A,B,x,y);
+
+
+        /*
+         * Explicit transformed GLI must support USER matrices without
+         * materializing the shifted operator.
+         */
+        fail |= run_case(A,B,x,
+                         "-e gli -ss 4 -rval 0 "
+                         "-shift 3.6 "
+                         "-etransform shift-invert "
+                         "-ige gii "
+                         "-etol 1.0e-10 -emaxiter 1000",
+                         (LIS_SCALAR)4.0,
+                         "matrix-free shift-invert GLI");
+        fail |= inputs_unchanged(A,B,x,y);
+
+        fail |= run_case(A,B,x,
+                         "-e gli -ss 4 -rval 0 "
+                         "-shift 3.6 "
+                         "-etransform buckling "
+                         "-ige gii "
+                         "-etol 1.0e-10 -emaxiter 1000",
+                         (LIS_SCALAR)4.0,
+                         "matrix-free buckling GLI");
+        fail |= inputs_unchanged(A,B,x,y);
+
+
         /* Preserve the established shifted GCR result. */
         fail |= run_case(A,B,x,
                          "-e gcr -shift 1.0 -etol 1.0e-10 -emaxiter 1000",
