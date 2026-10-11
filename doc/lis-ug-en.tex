@@ -2613,6 +2613,9 @@ For shifted generalized eigenvalue problems $(A - \sigma B)x = \lambda Bx$, Gene
 \subsection{Preconditioner Reuse and Compatibility with User-Defined Matrices}
 Starting from Version 2.1.15, Lis clarifies preconditioner ownership and improves support for repeated solves with user-defined matrices (\texttt{LIS\_MATRIX\_USER}), relaxing previous restrictions when compatible prebuilt preconditioners are supplied.
 
+\subsection{Solver-Managed Feature Enhancements}
+Version 2.1.16 now supports the symmetric diagonal scaling of shell matrices without any direct modifications to the original matrix structure or the right-hand side vector. Furthermore, solver-managed near-nullspace support and a two-level deflation correction have been incorporated for FGMRES solvers to improve convergence robustness in nested iterations. 
+
 \newpage
 \subsection{Compiling and Linking}
 Provided below is an example {\tt test4.c} located in
