@@ -287,6 +287,7 @@ Gauss-Seidel\cite{gauss,seidel} & GMRES(m)\cite{gmres} \\
 SOR\cite{young,frankel} & FGMRES(m)\cite{fgmres} \\
 IDR(s)\cite{idrs}       & MINRES\cite{minres} \\
 COCG\cite{cocg}         & COCR\cite{cocr} \\
+GCRO-DR\cite{gcro-dr} \\
 \hline         
 \end{tabular}
 \hfil}
@@ -1865,6 +1866,9 @@ Matrix Market形式による外部ファイル{\tt matvec.mtx}の記述例を以
  MINRES      & \verb=-i {minres|23}=    &    \\
  COCG        & \verb=-i {cocg|24}=      &    \\
  COCR        & \verb=-i {cocr|25}=      &    \\   
+ GCRO-DR     & \verb=-i {gcrodr|26}=    & \verb=-gcrodr_k [40]= & GCRO-DRの部分空間次元数 \\ 
+             &                          & \verb=-gcrodr_keep [8]= & リサイクルして保持するベクトル数 \\ 
+             &                          & \verb=-gcrodr_reject [0.35]= & Ritzベクトルの破棄閾値 \\   
 \hline         
 \end{tabular}
 \end{center}
@@ -5972,6 +5976,9 @@ COO    &  ○  &  ○  &  ○  & CSR  & CSR & CSR & CSR & CSC & CSR &     & CSR 
  MINRES      & \verb=-i {minres|23}=    &    \\
  COCG        & \verb=-i {cocg|24}=      &    \\
  COCR        & \verb=-i {cocr|25}=      &    \\   
+ GCRO-DR     & \verb=-i {gcrodr|26}=    & \verb=-gcrodr_k [40]= & GCRO-DRの部分空間次元数 \\ 
+             &                          & \verb=-gcrodr_keep [8]= & リサイクルして保持するベクトル数 \\ 
+             &                          & \verb=-gcrodr_reject [0.35]= & Ritzベクトルの破棄閾値 \\   
 \hline         
 \end{tabular}
 \end{center}
@@ -8238,6 +8245,11 @@ H. A. van der Vorst and J. B. M. Melissen.
 T. Sogabe and S. Zhang.
 \newblock A COCR Method for Solving Complex Symmetric Linear Systems.
 \newblock Journal of Computational and Applied Mathematics, Vol.~199, No.~2, pp.\ 297--303, 2007.
+
+\bibitem{gcro-dr}
+Q. Niu, L-Z. Lu and G. Liu.
+\newblock Accelerated GCRO-DR method for solving sequences of systems of linear equations.
+\newblock Journal of Computational and Applied Mathematics, Vol.~253, pp.\ 131--141, 2013. 
 
 \bibitem{power}
 R. von Mises and H. Pollaczek-Geiringer.

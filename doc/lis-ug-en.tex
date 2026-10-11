@@ -309,6 +309,7 @@ Gauss-Seidel\cite{gauss,seidel} & GMRES(m)\cite{gmres} \\
 SOR\cite{young,frankel} & FGMRES(m)\cite{fgmres} \\
 IDR(s)\cite{idrs}       & MINRES\cite{minres} \\
 COCG\cite{cocg}         & COCR\cite{cocr} \\
+GCRO-DR\cite{gcro-dr} \\
 \hline         
 \end{tabular}
 \hfil}
@@ -1991,6 +1992,9 @@ where \verb=-i {cg|1}= means \verb=-i cg= or \verb=-i 1= and \verb=-maxiter [100
  MINRES      & \verb=-i {minres|23}=    &    \\
  COCG        & \verb=-i {cocg|24}=      &    \\
  COCR        & \verb=-i {cocr|25}=      &    \\  
+ GCRO-DR     & \verb=-i {gcrodr|26}=    & \verb=-gcrodr_k [40]= & Subspace dimension for GCRO-DR \\ 
+             &                          & \verb=-gcrodr_keep [8]= & Number of recycled vectors \\ 
+             &                          & \verb=-gcrodr_reject [0.35]= & Ritz vector rejection threshold \\   
 \hline         
 \end{tabular}
 \end{center}
@@ -6136,6 +6140,9 @@ that \verb=-maxiter= defaults to $1,000$.
  MINRES      & \verb=-i {minres|23}=    &    \\
  COCG        & \verb=-i {cocg|24}=      &    \\
  COCR        & \verb=-i {cocr|25}=      &    \\   
+ GCRO-DR     & \verb=-i {gcrodr|26}=    & \verb=-gcrodr_k [40]= & Subspace dimension for GCRO-DR \\ 
+             &                          & \verb=-gcrodr_keep [8]= & Number of recycled vectors \\ 
+             &                          & \verb=-gcrodr_reject [0.35]= & Ritz vector rejection threshold \\   
 \hline         
 \end{tabular}
 \end{center}
@@ -8426,6 +8433,11 @@ H. A. van der Vorst and J. B. M. Melissen.
 T. Sogabe and S. Zhang.
 \newblock A COCR Method for Solving Complex Symmetric Linear Systems.
 \newblock Journal of Computational and Applied Mathematics, Vol.~199, No.~2, pp.\ 297--303, 2007.
+
+\bibitem{gcro-dr}
+Q. Niu, L-Z. Lu and G. Liu.
+\newblock Accelerated GCRO-DR method for solving sequences of systems of linear equations.
+\newblock Journal of Computational and Applied Mathematics, Vol.~253, pp.\ 131--141, 2013. 
 
 \bibitem{power}
 R. von Mises and H. Pollaczek-Geiringer.
