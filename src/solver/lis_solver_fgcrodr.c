@@ -7,9 +7,10 @@
  * The actual flexible recycling iteration is added separately.
  */
 
-#include "lislib.h"
-#include <string.h>
 #include <math.h>
+#include <string.h>
+
+#include "lislib.h"
 
 
 #define FGCRODR_DEFAULT_RECYCLE_DIM      ((LIS_INT)8)
@@ -695,6 +696,35 @@ lis_fgcrodr_check_params(
         return err;
 
     state = solver->fgcrodr_state;
+
+
+#ifdef _COMPLEX
+    /*
+     * The current recycling implementation uses a real small-dense
+     * harmonic Ritz eigensystem.  In particular, its projected
+     * algebra is formed and interpreted as the real
+     *
+     *     G^T G y = theta G^T F y
+     *
+     * problem.
+     *
+     * A complex recycling core requires Hermitian projected products
+     * and a complex small eigensystem.  Do not silently run the real
+     * harmonic path for complex scalars.
+     *
+     * k=0 remains the existing FGMRES reference path.
+     */
+    if( state->target_dim>0 )
+    {
+        LIS_SETERR(
+            LIS_ERR_NOT_IMPLEMENTED,
+            "complex FGCRO-DR recycling core is not implemented yet; "
+            "use -fgcrodr_k 0 for the FGMRES reference path\n");
+
+        return LIS_ERR_NOT_IMPLEMENTED;
+    }
+#endif
+
 
     if(
         state->target_dim>0 &&
