@@ -2122,6 +2122,11 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \verb=-rval [0]=       & Ritz値 \\
                        & \verb=-rval {false|0}     =  Ritz値をもとに固有対を計算 \\
                        & \verb=-rval {true|1}      =  Ritz値のみを計算 \\
+\verb=-nev [1]=        & 必要な固有対の数 \\
+\verb=-etransform [0]=       & 一般化固有値変換の選択\\
+                       & \verb=-etransform {auto|0}     =  既定の変換を選択 \\
+                       & \verb=-etransform {shift-invert|1}      =  シフト反転 $T = (A - \sigma B)^{-1}B$ \\
+                       & \verb=-etransform {buckling|2}      =  座屈 $T = (A - \sigma B)^{-1}A$ \\
 \hline         
 \end{tabular}
 \end{center}
@@ -6575,6 +6580,11 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \verb=-rval [0]=       & Ritz値 \\
                        & \verb=-rval {false|0}     =  Ritz値をもとに固有対を計算 \\
                        & \verb=-rval {true|1}      =  Ritz値のみを計算 \\
+\verb=-nev [1]=        & 必要な固有対の数 \\
+\verb=-etransform [0]=       & 一般化固有値変換の選択\\
+                       & \verb=-etransform {auto|0}     =  既定の変換を選択 \\
+                       & \verb=-etransform {shift-invert|1}      =  シフト反転 $T = (A - \sigma B)^{-1}B$ \\
+                       & \verb=-etransform {buckling|2}      =  座屈 $T = (A - \sigma B)^{-1}A$ \\
 \hline         
 \end{tabular}
 \end{center}

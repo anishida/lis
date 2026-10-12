@@ -2285,6 +2285,11 @@ Option &                          \\ \hline
 \verb=-rval [0]=       & The Ritz values \\
                        & \verb=-rval {false|0}     =  The eigenpairs are computed based on the Ritz values \\
                        & \verb=-rval {true|1}      =  Only the Ritz values are computed \\
+\verb=-nev [1]=        & The number of requested eigenpairs \\
+\verb=-etransform [0]=       & The generalized eigenvalue transformation selection \\
+                       & \verb=-etransform {auto|0}     =  Select the default transformation behavior \\
+                       & \verb=-etransform {shift-invert|1}      =  Shift-invert $T = (A - \sigma B)^{-1}B$ \\
+                       & \verb=-etransform {buckling|2}      =  Buckling $T = (A - \sigma B)^{-1}A$ \\
 \hline         
 \end{tabular}
 \end{center}
@@ -6770,6 +6775,11 @@ Option &                          \\ \hline
 \verb=-rval [0]=       & The Ritz values \\
                        & \verb=-rval {false|0}     =  The eigenpairs are computed based on the Ritz values \\
                        & \verb=-rval {true|1}      =  Only the Ritz values are computed \\
+\verb=-nev [1]=        & The number of requested eigenpairs \\
+\verb=-etransform [0]=       & The generalized eigenvalue transformation selection \\
+                       & \verb=-etransform {auto|0}     =  Select the default transformation behavior \\
+                       & \verb=-etransform {shift-invert|1}      =  Shift-invert $T = (A - \sigma B)^{-1}B$ \\
+                       & \verb=-etransform {buckling|2}      =  Buckling $T = (A - \sigma B)^{-1}A$ \\
 \hline         
 \end{tabular}
 \end{center}
