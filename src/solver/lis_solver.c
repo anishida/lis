@@ -1473,8 +1473,8 @@ static LIS_INT lis_solver_sequence_warm_start_keep(
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_solve_sequence"
-LIS_INT lis_solve_sequence(
+#define __FUNC__ "lis_solver_sequence_attempt"
+static LIS_INT lis_solver_sequence_attempt(
 	LIS_MATRIX A,
 	LIS_VECTOR b,
 	LIS_VECTOR x,
@@ -1571,6 +1571,117 @@ LIS_INT lis_solve_sequence(
 			final_residual;
 	}
 
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+static LIS_INT
+lis_solver_sequence_retryable(LIS_SOLVER solver)
+{
+	if( solver==NULL ) return LIS_FALSE;
+
+	if( solver->retcode==LIS_BREAKDOWN ||
+	    solver->retcode==LIS_MAXITER )
+	{
+		return LIS_TRUE;
+	}
+
+	/*
+	 * S6 records the physical residual independently from the
+	 * solver-specific convergence normalization.  A non-finite
+	 * certified residual is a retryable numerical failure.
+	 */
+	if( solver->sequence_true_residual!=
+	        solver->sequence_true_residual ||
+	    solver->sequence_true_relative_residual!=
+	        solver->sequence_true_relative_residual ||
+	    fabs(solver->sequence_true_residual)>
+	        LIS_SCALAR_MAX ||
+	    fabs(solver->sequence_true_relative_residual)>
+	        LIS_SCALAR_MAX )
+	{
+		solver->retcode = LIS_BREAKDOWN;
+		return LIS_TRUE;
+	}
+
+	return LIS_FALSE;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_solve_sequence"
+LIS_INT lis_solve_sequence(
+	LIS_MATRIX A,
+	LIS_VECTOR b,
+	LIS_VECTOR x,
+	LIS_SOLVER solver)
+{
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	if( A==NULL || b==NULL || x==NULL || solver==NULL )
+	{
+		LIS_SETERR(
+			LIS_ERR_ILL_ARG,
+			"invalid sequence solve arguments\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	/* Attempt 0: ordinary persistent sequence solve. */
+	err = lis_solver_sequence_attempt(A,b,x,solver);
+	if( err ) return err;
+
+	if( !lis_solver_sequence_retryable(solver) )
+	{
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
+
+	/*
+	 * Attempt 1: discard Krylov recycle state, but retain the
+	 * persistent preconditioner and reusable solver workspace.
+	 */
+	err = lis_gcrodr_clear_recycle(solver);
+	if( err )
+	{
+		solver->retcode = err;
+		return err;
+	}
+
+	err = lis_solver_sequence_attempt(A,b,x,solver);
+	if( err ) return err;
+
+	if( !lis_solver_sequence_retryable(solver) )
+	{
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
+
+	/*
+	 * Attempt 2: discard recycle state again and force a fresh
+	 * persistent preconditioner before the final retry.
+	 */
+	err = lis_gcrodr_clear_recycle(solver);
+	if( err )
+	{
+		solver->retcode = err;
+		return err;
+	}
+
+	err = lis_solver_sequence_precon_destroy(solver);
+	if( err )
+	{
+		solver->retcode = err;
+		return err;
+	}
+
+	err = lis_solver_sequence_attempt(A,b,x,solver);
+	if( err ) return err;
+
+	/*
+	 * Keep existing LIS API semantics: iterative convergence
+	 * status is reported through solver->retcode.
+	 */
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 }
