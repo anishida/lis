@@ -260,6 +260,21 @@ extern "C"
 	extern LIS_INT lis_gcrodr_malloc_work(LIS_SOLVER solver);
 	extern LIS_INT lis_gcrodr_clear_recycle(LIS_SOLVER solver);
 
+/*******************/
+/* FGCRO-DR        */
+/*******************/
+        extern LIS_INT lis_fgcrodr(LIS_SOLVER solver);
+        extern LIS_INT lis_fgcrodr_quad(LIS_SOLVER solver);
+        extern LIS_INT lis_fgcrodr_check_params(LIS_SOLVER solver);
+        extern LIS_INT lis_fgcrodr_malloc_work(LIS_SOLVER solver);
+        extern LIS_INT lis_fgcrodr_clear_recycle(LIS_SOLVER solver);
+        extern LIS_INT lis_fgcrodr_state_destroy(LIS_SOLVER solver);
+        extern LIS_INT lis_fgcrodr_validate_recycle(
+                LIS_SOLVER solver, LIS_REAL *orth_error,
+                LIS_REAL *relation_error);
+        extern LIS_INT lis_fgcrodr_set_option(
+                LIS_SOLVER solver, const char *name, const char *value);
+
 
 /*******************/
 /* IDR(s)          */

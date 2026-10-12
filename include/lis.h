@@ -159,7 +159,7 @@ extern "C" {
 #define LIS_CONV_COND_NRM2_B 1
 #define LIS_CONV_COND_NRM1_B 2
 
-#define LIS_SOLVER_LEN 26
+#define LIS_SOLVER_LEN 27
 #define LIS_SOLVER_CG 1
 #define LIS_SOLVER_BICG 2
 #define LIS_SOLVER_CGS 3
@@ -187,12 +187,19 @@ extern "C" {
 #define LIS_SOLVER_COCG 24
 #define LIS_SOLVER_COCR 25
 #define LIS_SOLVER_GCRODR 26
+#define LIS_SOLVER_FGCRODR 27
 
 #define LIS_GCRODR_RECYCLE_NONE 0
 #define LIS_GCRODR_RECYCLE_BUILD 1
 #define LIS_GCRODR_RECYCLE_KEEP 2
 #define LIS_GCRODR_RECYCLE_REFRESH 3
 #define LIS_GCRODR_RECYCLE_REJECT 4
+
+#define LIS_FGCRODR_RECYCLE_NONE 0
+#define LIS_FGCRODR_RECYCLE_BUILD 1
+#define LIS_FGCRODR_RECYCLE_KEEP 2
+#define LIS_FGCRODR_RECYCLE_TRANSPORT 3
+#define LIS_FGCRODR_RECYCLE_REJECT 4
 
 #define LIS_ESOLVER_LEN 16
 #define LIS_ESOLVER_PI 1
@@ -815,6 +822,8 @@ typedef struct LIS_SEQUENCE_DIAGNOSTICS_STRUCT
     LIS_UNSIGNED_INT total_precon_rebuilds;
 } LIS_SEQUENCE_DIAGNOSTICS;
 
+typedef struct LIS_FGCRODR_STATE_STRUCT *LIS_FGCRODR_STATE;
+
 struct LIS_SOLVER_STRUCT
 {
 	LIS_MATRIX A,Ah;
@@ -909,6 +918,9 @@ struct LIS_SOLVER_STRUCT
 
 	/* Per-solver execution thread override. */
 	LIS_INT num_threads;
+
+        /* Private persistent FGCRO-DR state. */
+        LIS_FGCRODR_STATE fgcrodr_state;
 };
 typedef struct LIS_SOLVER_STRUCT *LIS_SOLVER;
 
@@ -1164,6 +1176,20 @@ extern "C"
 	extern LIS_INT lis_solver_get_solver(LIS_SOLVER solver, LIS_INT *nsol);
 	extern LIS_INT lis_solver_get_precon(LIS_SOLVER solver, LIS_INT *precon_type);
 	extern LIS_INT lis_solver_get_status(LIS_SOLVER solver, LIS_INT *status);
+	extern LIS_INT lis_solver_set_fgcrodr_recycle(
+	    LIS_SOLVER solver, LIS_INT dim,
+	    LIS_REAL keep_quality, LIS_REAL reject_quality);
+	extern LIS_INT lis_solver_get_fgcrodr_recycle_config(
+	    LIS_SOLVER solver, LIS_INT *dim,
+	    LIS_REAL *keep_quality, LIS_REAL *reject_quality,
+	    LIS_INT *update);
+	extern LIS_INT lis_solver_get_fgcrodr_recycle(
+	    LIS_SOLVER solver, LIS_INT *dim, LIS_INT *action,
+	    LIS_REAL *quality, LIS_REAL *quality_min);
+	extern LIS_INT lis_solver_set_fgcrodr_recycle_update(
+	    LIS_SOLVER solver, LIS_INT update);
+	extern LIS_INT lis_solver_get_fgcrodr_recycle_update(
+	    LIS_SOLVER solver, LIS_INT *update);
 	extern LIS_INT lis_solver_get_sequence_diagnostics(LIS_SOLVER solver, LIS_SEQUENCE_DIAGNOSTICS *diag);
 	extern LIS_INT lis_solver_set_num_threads(LIS_SOLVER solver, LIS_INT num_threads);
 	extern LIS_INT lis_solver_get_num_threads(LIS_SOLVER solver, LIS_INT *num_threads);
