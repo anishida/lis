@@ -64,6 +64,13 @@ struct LIS_FGCRODR_STATE_STRUCT
 
     LIS_INT last_action;
 
+    /*
+     * Cross-system action selected before entering the flexible core.
+     * This is transient for one solve, while last_action remains
+     * available as the public diagnostic result.
+     */
+    LIS_INT cross_action;
+
     LIS_UNSIGNED_INT builds;
     LIS_UNSIGNED_INT updates;
     LIS_UNSIGNED_INT uses;
@@ -193,6 +200,9 @@ lis_fgcrodr_vectors_destroy(
     state->quality_min = 0.0;
 
     state->last_action =
+        LIS_FGCRODR_RECYCLE_NONE;
+
+    state->cross_action =
         LIS_FGCRODR_RECYCLE_NONE;
 }
 
@@ -2796,20 +2806,45 @@ lis_fgcrodr_build_augmented_vector(
  * candidate set turns out to be rank deficient.
  */
 static LIS_INT
-lis_fgcrodr_commit_recycle_update(
+lis_fgcrodr_replace_recycle_basis(
     LIS_SOLVER solver,
     LIS_VECTOR *neww,
     LIS_VECTOR *newz,
-    LIS_INT nsel)
+    LIS_INT nsel,
+    LIS_INT count_update,
+    LIS_INT action,
+    LIS_REAL quality,
+    LIS_REAL quality_min)
 {
     LIS_FGCRODR_STATE oldstate;
     LIS_FGCRODR_STATE trial;
+
+    LIS_INT saved_cross_action;
+
+    LIS_REAL saved_quality;
+    LIS_REAL saved_quality_min;
 
     LIS_INT err;
 
 
     oldstate =
         solver->fgcrodr_state;
+
+
+    saved_cross_action =
+        oldstate
+        ? oldstate->cross_action
+        : LIS_FGCRODR_RECYCLE_NONE;
+
+    saved_quality =
+        oldstate
+        ? oldstate->quality
+        : 0.0;
+
+    saved_quality_min =
+        oldstate
+        ? oldstate->quality_min
+        : 0.0;
 
 
     if(
@@ -2824,7 +2859,7 @@ lis_fgcrodr_commit_recycle_update(
         (LIS_FGCRODR_STATE)lis_malloc(
             sizeof(
                 struct LIS_FGCRODR_STATE_STRUCT),
-            "lis_fgcrodr_commit_recycle_update::trial");
+            "lis_fgcrodr_replace_recycle_basis::trial");
 
     if( trial==NULL )
     {
@@ -2944,20 +2979,45 @@ lis_fgcrodr_commit_recycle_update(
         trial->value_generation;
 
 
-    oldstate->quality =
-        trial->quality;
-
-    oldstate->quality_min =
-        trial->quality_min;
-
-
     /*
-     * Same-operator augmented update remains a KEEP policy action.
+     * Preserve cross-system diagnostics across same-solve harmonic
+     * replacements.  For ordinary same-generation updates use the
+     * diagnostics supplied by the caller.
      */
-    oldstate->last_action =
-        LIS_FGCRODR_RECYCLE_KEEP;
+    if(
+        saved_cross_action
+        !=LIS_FGCRODR_RECYCLE_NONE )
+    {
+        oldstate->quality =
+            saved_quality;
 
-    oldstate->updates++;
+        oldstate->quality_min =
+            saved_quality_min;
+
+        oldstate->last_action =
+            saved_cross_action;
+
+        oldstate->cross_action =
+            saved_cross_action;
+    }
+    else
+    {
+        oldstate->quality =
+            quality;
+
+        oldstate->quality_min =
+            quality_min;
+
+        oldstate->last_action =
+            action;
+
+        oldstate->cross_action =
+            LIS_FGCRODR_RECYCLE_NONE;
+    }
+
+
+    if( count_update )
+        oldstate->updates++;
 
 
     /*
@@ -2977,6 +3037,27 @@ lis_fgcrodr_commit_recycle_update(
 
 
     return LIS_SUCCESS;
+}
+
+
+
+static LIS_INT
+lis_fgcrodr_commit_recycle_update(
+    LIS_SOLVER solver,
+    LIS_VECTOR *neww,
+    LIS_VECTOR *newz,
+    LIS_INT nsel)
+{
+    return
+        lis_fgcrodr_replace_recycle_basis(
+            solver,
+            neww,
+            newz,
+            nsel,
+            LIS_TRUE,
+            LIS_FGCRODR_RECYCLE_KEEP,
+            1.0,
+            1.0);
 }
 
 
@@ -3921,6 +4002,55 @@ lis_fgcrodr_get_stats(
 }
 
 
+
+LIS_INT
+lis_fgcrodr_get_policy_stats(
+    LIS_SOLVER solver,
+    LIS_UNSIGNED_INT *cross_uses,
+    LIS_UNSIGNED_INT *keeps,
+    LIS_UNSIGNED_INT *transports,
+    LIS_UNSIGNED_INT *rejects)
+{
+    LIS_FGCRODR_STATE state;
+
+
+    if( solver==NULL )
+        return LIS_ERR_ILL_ARG;
+
+
+    state =
+        solver->fgcrodr_state;
+
+
+    if( cross_uses )
+        *cross_uses =
+            state
+            ? state->cross_uses
+            : 0;
+
+    if( keeps )
+        *keeps =
+            state
+            ? state->policy_keeps
+            : 0;
+
+    if( transports )
+        *transports =
+            state
+            ? state->policy_transports
+            : 0;
+
+    if( rejects )
+        *rejects =
+            state
+            ? state->policy_rejects
+            : 0;
+
+
+    return LIS_SUCCESS;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_fgcrodr_validate_recycle"
 LIS_INT
@@ -4088,6 +4218,437 @@ lis_fgcrodr_validate_recycle(
     LIS_DEBUG_FUNC_OUT;
 
     return LIS_SUCCESS;
+}
+
+
+
+/*
+ * Prepare a persistent flexible recycle basis for a changed matrix
+ * value generation.
+ *
+ * Historical Z is authoritative:
+ *
+ *     C_new = A_new Z_old
+ *
+ * Historical directions are never reconstructed by applying the
+ * current preconditioner.
+ *
+ * Quality follows the GCRO-DR cross-solve policy:
+ *
+ *     q_i = || C_old^T (A_new Z_i) ||_2
+ *           / || A_new Z_i ||_2.
+ *
+ * KEEP      : qmin >= keep threshold
+ * REJECT    : qavg < reject threshold, or fewer than half of the
+ *             directions reach the reject threshold
+ * TRANSPORT : otherwise
+ *
+ * KEEP and TRANSPORT both rebuild A_new Z = C and apply a
+ * consistent QR transformation to W/Z/C.
+ */
+static LIS_INT
+lis_fgcrodr_prepare_recycle(
+    LIS_SOLVER solver)
+{
+    LIS_FGCRODR_STATE state;
+
+    LIS_VECTOR *scratch_c = NULL;
+
+    LIS_SCALAR alpha;
+
+    LIS_REAL nrm;
+    LIS_REAL proj2;
+    LIS_REAL qi;
+    LIS_REAL qsum;
+    LIS_REAL qmin;
+    LIS_REAL qavg;
+
+    LIS_INT oldk;
+    LIS_INT i;
+    LIS_INT j;
+    LIS_INT good;
+    LIS_INT need;
+    LIS_INT action;
+    LIS_INT err;
+
+
+    state =
+        solver->fgcrodr_state;
+
+
+    if(
+        state==NULL ||
+        !state->valid ||
+        state->dim<=0 )
+    {
+        return LIS_SUCCESS;
+    }
+
+
+    state->cross_action =
+        LIS_FGCRODR_RECYCLE_NONE;
+
+
+    /*
+     * Different matrix objects and structure generations remain
+     * non-transportable in Stage 2E-A.
+     */
+    if(
+        state->matrix!=solver->A ||
+        state->structure_generation!=
+            solver->A->structure_generation )
+    {
+        err =
+            lis_fgcrodr_clear_recycle(
+                solver);
+
+        if( err )
+            return err;
+
+
+        state->last_action =
+            LIS_FGCRODR_RECYCLE_REJECT;
+
+        state->cross_action =
+            LIS_FGCRODR_RECYCLE_REJECT;
+
+        state->rejects++;
+        state->policy_rejects++;
+
+        state->quality =
+            0.0;
+
+        state->quality_min =
+            0.0;
+
+
+        return LIS_SUCCESS;
+    }
+
+
+    /*
+     * Exact generation: normal same-system reuse.
+     */
+    if(
+        state->value_generation==
+        solver->A->value_generation )
+    {
+        state->last_action =
+            LIS_FGCRODR_RECYCLE_NONE;
+
+        return LIS_SUCCESS;
+    }
+
+
+    oldk =
+        state->dim;
+
+
+    scratch_c =
+        (LIS_VECTOR *)lis_malloc(
+            (size_t)oldk
+            *sizeof(LIS_VECTOR),
+            "lis_fgcrodr_prepare_recycle::scratch_c");
+
+    if( scratch_c==NULL )
+    {
+        LIS_SETERR_MEM(
+            (size_t)oldk
+            *sizeof(LIS_VECTOR));
+
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+
+    for(i=0;i<oldk;i++)
+        scratch_c[i] = NULL;
+
+
+    for(i=0;i<oldk;i++)
+    {
+        err =
+            lis_vector_duplicate(
+                solver->A,
+                &scratch_c[i]);
+
+        if( err )
+            goto cleanup;
+    }
+
+
+    qsum =
+        0.0;
+
+    qmin =
+        1.0;
+
+    good =
+        0;
+
+
+    /*
+     * Read-only assessment against the OLD orthonormal C basis.
+     */
+    for(i=0;i<oldk;i++)
+    {
+        lis_matvec(
+            solver->A,
+            state->z[i],
+            scratch_c[i]);
+
+
+        lis_vector_nrm2(
+            scratch_c[i],
+            &nrm);
+
+
+        if(
+            nrm<=FGCRODR_BUILD_TINY ||
+            nrm!=nrm )
+        {
+            qi =
+                0.0;
+        }
+        else
+        {
+            proj2 =
+                0.0;
+
+
+            for(j=0;j<oldk;j++)
+            {
+                lis_vector_dot(
+                    state->c[j],
+                    scratch_c[i],
+                    &alpha);
+
+
+                proj2 +=
+                    (LIS_REAL)(
+                        fabs(alpha)
+                        *fabs(alpha));
+            }
+
+
+            if( proj2<0.0 )
+                proj2 = 0.0;
+
+
+            qi =
+                sqrt(proj2)
+                /nrm;
+
+
+            if( qi<0.0 )
+                qi = 0.0;
+
+            if( qi>1.0 )
+                qi = 1.0;
+        }
+
+
+        qsum +=
+            qi;
+
+
+        if( qi<qmin )
+            qmin = qi;
+
+
+        if(
+            qi>=
+            state->reject_threshold )
+        {
+            good++;
+        }
+    }
+
+
+    qavg =
+        qsum
+        /(LIS_REAL)oldk;
+
+
+    need =
+        _max(
+            (LIS_INT)1,
+            (oldk+1)/2);
+
+
+    if(
+        qmin>=
+        state->keep_threshold )
+    {
+        action =
+            LIS_FGCRODR_RECYCLE_KEEP;
+    }
+    else if(
+        qavg<
+            state->reject_threshold ||
+        good<need )
+    {
+        action =
+            LIS_FGCRODR_RECYCLE_REJECT;
+    }
+    else
+    {
+        action =
+            LIS_FGCRODR_RECYCLE_TRANSPORT;
+    }
+
+
+    if(
+        action==
+        LIS_FGCRODR_RECYCLE_REJECT )
+    {
+        err =
+            lis_fgcrodr_clear_recycle(
+                solver);
+
+        if( err )
+            goto cleanup;
+
+
+        state->last_action =
+            LIS_FGCRODR_RECYCLE_REJECT;
+
+        state->cross_action =
+            LIS_FGCRODR_RECYCLE_REJECT;
+
+        state->rejects++;
+        state->policy_rejects++;
+
+        state->quality =
+            qavg;
+
+        state->quality_min =
+            qmin;
+
+
+        err =
+            LIS_SUCCESS;
+
+        goto cleanup;
+    }
+
+
+    /*
+     * Preserve measured quality before the atomic basis replacement.
+     */
+    state->quality =
+        qavg;
+
+    state->quality_min =
+        qmin;
+
+    state->cross_action =
+        action;
+
+
+    err =
+        lis_fgcrodr_replace_recycle_basis(
+            solver,
+            state->w,
+            state->z,
+            oldk,
+            LIS_FALSE,
+            action,
+            qavg,
+            qmin);
+
+    if( err )
+        goto cleanup;
+
+
+    state =
+        solver->fgcrodr_state;
+
+
+    if(
+        !state->valid ||
+        state->dim<=0 ||
+        state->matrix!=solver->A ||
+        state->structure_generation!=
+            solver->A->structure_generation ||
+        state->value_generation!=
+            solver->A->value_generation )
+    {
+        err =
+            lis_fgcrodr_clear_recycle(
+                solver);
+
+        if( err )
+            goto cleanup;
+
+
+        state->last_action =
+            LIS_FGCRODR_RECYCLE_REJECT;
+
+        state->cross_action =
+            LIS_FGCRODR_RECYCLE_REJECT;
+
+        state->rejects++;
+        state->policy_rejects++;
+
+        state->quality =
+            qavg;
+
+        state->quality_min =
+            qmin;
+
+        state->cross_action =
+            LIS_FGCRODR_RECYCLE_NONE;
+
+
+        err =
+            LIS_SUCCESS;
+
+        goto cleanup;
+    }
+
+
+    state->cross_uses++;
+
+    state->last_action =
+        action;
+
+    state->quality =
+        qavg;
+
+    state->quality_min =
+        qmin;
+
+
+    if(
+        action==
+        LIS_FGCRODR_RECYCLE_KEEP )
+    {
+        state->policy_keeps++;
+    }
+    else
+    {
+        state->policy_transports++;
+    }
+
+
+cleanup:
+
+    if( scratch_c )
+    {
+        for(i=0;i<oldk;i++)
+        {
+            if( scratch_c[i] )
+                lis_vector_destroy(
+                    scratch_c[i]);
+        }
+    }
+
+
+    lis_free(
+        scratch_c);
+
+
+    return err;
 }
 
 
@@ -4395,11 +4956,20 @@ lis_fgcrodr_flexible_core(
         bnrm2 =
             1.0/rnorm;
 
-        state->last_action =
-            LIS_FGCRODR_RECYCLE_KEEP;
+        if(
+            state->cross_action==
+            LIS_FGCRODR_RECYCLE_NONE )
+        {
+            state->last_action =
+                LIS_FGCRODR_RECYCLE_KEEP;
+        }
+        else
+        {
+            state->last_action =
+                state->cross_action;
+        }
 
         state->uses++;
-        state->policy_keeps++;
     }
     else
     {
@@ -5033,6 +5603,8 @@ lis_fgcrodr(
     LIS_SOLVER solver)
 {
     LIS_INT err;
+    LIS_INT solve_cross_action;
+
     LIS_FGCRODR_STATE state;
 
     LIS_DEBUG_FUNC_IN;
@@ -5050,6 +5622,10 @@ lis_fgcrodr(
         solver->fgcrodr_state;
 
 
+    solve_cross_action =
+        LIS_FGCRODR_RECYCLE_NONE;
+
+
     /*
      * Keep k=0 as an exact call into the existing FGMRES
      * implementation.  It is our numerical reference path.
@@ -5064,45 +5640,44 @@ lis_fgcrodr(
 
 
     /*
-     * Stage 2C consumes recycle vectors only for the exact operator
-     * generation that created A*Z=C.
-     *
-     * Changed-operator transport is added in a later stage.
+     * Make the persistent recycle relation compatible with the
+     * current matrix generation before entering the flexible core.
      */
-    if(
-        state->valid &&
-        state->dim>0 &&
-        (
-            state->matrix!=solver->A ||
-            state->structure_generation!=
-                solver->A->structure_generation ||
-            state->value_generation!=
-                solver->A->value_generation
-        )
-      )
-    {
-        err =
-            lis_fgcrodr_clear_recycle(
-                solver);
+    err =
+        lis_fgcrodr_prepare_recycle(
+            solver);
 
-        if( err )
-            return err;
+    if( err )
+        return err;
 
-        state->last_action =
-            LIS_FGCRODR_RECYCLE_REJECT;
 
-        state->rejects++;
-    }
-    else
-    {
-        state->last_action =
-            LIS_FGCRODR_RECYCLE_NONE;
-    }
+    solve_cross_action =
+        state->cross_action;
 
 
     err =
         lis_fgcrodr_flexible_core(
             solver);
+
+
+    /*
+     * cross_action is transient for one solve.
+     *
+     * Use the local snapshot because a REJECT may be followed by a
+     * fresh BUILD whose recycle initialization legitimately resets
+     * state->cross_action.
+     */
+    if(
+        solve_cross_action
+        !=LIS_FGCRODR_RECYCLE_NONE )
+    {
+        state->last_action =
+            solve_cross_action;
+    }
+
+
+    state->cross_action =
+        LIS_FGCRODR_RECYCLE_NONE;
 
 
     LIS_DEBUG_FUNC_OUT;

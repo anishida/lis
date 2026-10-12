@@ -280,6 +280,14 @@ extern LIS_INT lis_fgcrodr_get_stats(
         LIS_UNSIGNED_INT *uses,
         LIS_UNSIGNED_INT *rejects);
 
+extern LIS_INT lis_fgcrodr_get_policy_stats(
+        LIS_SOLVER solver,
+        LIS_UNSIGNED_INT *cross_uses,
+        LIS_UNSIGNED_INT *keeps,
+        LIS_UNSIGNED_INT *transports,
+        LIS_UNSIGNED_INT *rejects);
+
+
         extern LIS_INT lis_fgcrodr_set_option(
                 LIS_SOLVER solver, const char *name, const char *value);
 

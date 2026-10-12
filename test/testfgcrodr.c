@@ -95,6 +95,127 @@ fail:
 }
 
 
+/*
+ * Change CSR numerical values without changing ptr/index.
+ *
+ * mode 1:
+ *     moderate nonuniform perturbation.  The operator image changes,
+ *     but the old flexible recycle space remains usable.
+ *
+ * mode 2:
+ *     strongly different, still diagonally dominant operator used to
+ *     exercise the REJECT policy.
+ */
+static LIS_INT
+perturb_matrix_values(
+    LIS_MATRIX A,
+    LIS_INT mode)
+{
+    LIS_INT i;
+    LIS_INT p;
+    LIS_INT col;
+
+    LIS_SCALAR factor;
+
+
+    if(
+        A==NULL ||
+        A->matrix_type!=LIS_MATRIX_CSR ||
+        A->ptr==NULL ||
+        A->index==NULL ||
+        A->value==NULL )
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    for(i=0;i<A->n;i++)
+    {
+        for(
+            p=A->ptr[i];
+            p<A->ptr[i+1];
+            p++ )
+        {
+            col =
+                A->index[p];
+
+
+            if( mode==1 )
+            {
+                /*
+                 * Preserve a well-behaved matrix, but rotate the
+                 * operator images through nonuniform row/entry
+                 * perturbations.
+                 */
+                if( col==i )
+                {
+                    factor =
+                        (i%2)
+                        ? (LIS_SCALAR)1.35
+                        : (LIS_SCALAR)0.75;
+                }
+                else if( col<i )
+                {
+                    factor =
+                        (i%3)
+                        ? (LIS_SCALAR)0.55
+                        : (LIS_SCALAR)1.45;
+                }
+                else
+                {
+                    factor =
+                        (i%4)
+                        ? (LIS_SCALAR)1.60
+                        : (LIS_SCALAR)0.50;
+                }
+
+
+                A->value[p] *=
+                    factor;
+            }
+            else if( mode==2 )
+            {
+                /*
+                 * Strongly different but diagonally dominant
+                 * tridiagonal operator.
+                 */
+                if( col==i )
+                {
+                    A->value[p] =
+                        (LIS_SCALAR)(
+                            7.0
+                            +0.4*(i%5));
+                }
+                else if( col<i )
+                {
+                    A->value[p] =
+                        (i%2)
+                        ? (LIS_SCALAR)-2.05
+                        : (LIS_SCALAR)-0.05;
+                }
+                else
+                {
+                    A->value[p] =
+                        (i%2)
+                        ? (LIS_SCALAR)-0.03
+                        : (LIS_SCALAR)-1.80;
+                }
+            }
+            else
+            {
+                return LIS_ERR_ILL_ARG;
+            }
+        }
+    }
+
+
+    return
+        lis_matrix_mark_values_changed(
+            A);
+}
+
+
+
 static void
 set_exact_solution(LIS_VECTOR u)
 {
@@ -792,40 +913,50 @@ check_sequence_recycle(
     LIS_INT api1;
     LIS_INT api2;
     LIS_INT api3;
+    LIS_INT api4;
 
     LIS_INT status1;
     LIS_INT status2;
     LIS_INT status3;
+    LIS_INT status4;
 
     LIS_INT iter1;
     LIS_INT iter2;
     LIS_INT iter3;
+    LIS_INT iter4;
 
     LIS_INT dim1;
     LIS_INT dim2;
     LIS_INT dim3;
+    LIS_INT dim4;
 
     LIS_INT action1;
     LIS_INT action2;
     LIS_INT action3;
+    LIS_INT action4;
 
     LIS_REAL quality1;
     LIS_REAL quality2;
+    LIS_REAL quality4;
 
     LIS_REAL qmin1;
     LIS_REAL qmin2;
+    LIS_REAL qmin4;
 
     LIS_REAL orth1;
     LIS_REAL orth2;
     LIS_REAL orth3;
+    LIS_REAL orth4;
 
     LIS_REAL relation1;
     LIS_REAL relation2;
     LIS_REAL relation3;
+    LIS_REAL relation4;
 
     LIS_REAL true1;
     LIS_REAL true2;
     LIS_REAL true3;
+    LIS_REAL true4;
 
     LIS_UNSIGNED_INT builds1;
     LIS_UNSIGNED_INT builds2;
@@ -842,6 +973,11 @@ check_sequence_recycle(
     LIS_UNSIGNED_INT rejects1;
     LIS_UNSIGNED_INT rejects2;
     LIS_UNSIGNED_INT rejects3;
+
+    LIS_UNSIGNED_INT cross4;
+    LIS_UNSIGNED_INT keeps4;
+    LIS_UNSIGNED_INT transports4;
+    LIS_UNSIGNED_INT policy_rejects4;
 
     LIS_REAL diff_norm;
     LIS_REAL exact_norm;
@@ -1194,6 +1330,89 @@ check_sequence_recycle(
         goto api_fail;
 
 
+    /* ======================================================== */
+    /* Solve 4: value-generation change, identical numeric A    */
+    /*                                                          */
+    /* This isolates generation-aware cross-system KEEP.        */
+    /* ======================================================== */
+
+    err =
+        lis_solver_set_fgcrodr_recycle_update(
+            solver,
+            LIS_TRUE);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_mark_values_changed(
+            A);
+
+    if( err )
+        goto api_fail;
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x);
+
+
+    api4 =
+        lis_solve_sequence(
+            A,
+            b2,
+            x,
+            solver);
+
+    status4 =
+        solver->retcode;
+
+    iter4 =
+        solver->iter;
+
+    true4 =
+        true_relative_residual(
+            A,
+            b2,
+            x,
+            r);
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim4,
+            &action4,
+            &quality4,
+            &qmin4);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_validate_recycle(
+            solver,
+            &orth4,
+            &relation4);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_policy_stats(
+            solver,
+            &cross4,
+            &keeps4,
+            &transports4,
+            &policy_rejects4);
+
+    if( err )
+        goto api_fail;
+
+
     printf(
         "FGCRO-DR sequence solve1 "
         "api=%d status=%d iter=%d "
@@ -1252,6 +1471,29 @@ check_sequence_recycle(
         (unsigned long long)uses3,
         (double)orth3,
         (double)relation3);
+
+
+    printf(
+        "FGCRO-DR sequence solve4 value-generation "
+        "api=%d status=%d iter=%d "
+        "true=%.17e dim=%d action=%d "
+        "quality=%.6f qmin=%.6f "
+        "cross=%llu keeps=%llu transports=%llu rejects=%llu "
+        "orth=%.3e AZ-C=%.3e\n",
+        (int)api4,
+        (int)status4,
+        (int)iter4,
+        (double)true4,
+        (int)dim4,
+        (int)action4,
+        (double)quality4,
+        (double)qmin4,
+        (unsigned long long)cross4,
+        (unsigned long long)keeps4,
+        (unsigned long long)transports4,
+        (unsigned long long)policy_rejects4,
+        (double)orth4,
+        (double)relation4);
 
 
     /* ======================================================== */
@@ -1470,6 +1712,74 @@ check_sequence_recycle(
     }
 
 
+    if(
+        api4!=LIS_SUCCESS ||
+        status4!=LIS_SUCCESS ||
+        dim4!=5 ||
+        action4!=LIS_FGCRODR_RECYCLE_KEEP )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR generation KEEP failure: "
+            "api=%d status=%d dim=%d action=%d\n",
+            (int)api4,
+            (int)status4,
+            (int)dim4,
+            (int)action4);
+
+        failed = 1;
+    }
+
+
+    if(
+        quality4<0.999999 ||
+        qmin4<0.999999 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR generation KEEP quality failure: "
+            "quality=%.17e qmin=%.17e\n",
+            (double)quality4,
+            (double)qmin4);
+
+        failed = 1;
+    }
+
+
+    if(
+        cross4!=1 ||
+        transports4!=0 ||
+        policy_rejects4!=0 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR generation policy counters mismatch: "
+            "cross=%llu transports=%llu rejects=%llu\n",
+            (unsigned long long)cross4,
+            (unsigned long long)transports4,
+            (unsigned long long)policy_rejects4);
+
+        failed = 1;
+    }
+
+
+    if(
+        true4>1.0e-10 ||
+        orth4>1.0e-12 ||
+        relation4>1.0e-12 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR generation KEEP invariant failure: "
+            "true=%.17e orth=%.17e AZ-C=%.17e\n",
+            (double)true4,
+            (double)orth4,
+            (double)relation4);
+
+        failed = 1;
+    }
+
+
     if( failed )
     {
         fprintf(
@@ -1531,6 +1841,656 @@ api_fail:
     failed = 1;
 
     goto cleanup;
+}
+
+
+
+
+static LIS_INT
+check_generation_transport_reject(void)
+{
+    LIS_MATRIX A = NULL;
+
+    LIS_VECTOR u = NULL;
+    LIS_VECTOR b = NULL;
+    LIS_VECTOR x = NULL;
+    LIS_VECTOR r = NULL;
+
+    LIS_SOLVER solver = NULL;
+
+    LIS_INT err;
+    LIS_INT failed;
+
+    LIS_INT api0;
+    LIS_INT api1;
+    LIS_INT api2;
+
+    LIS_INT status0;
+    LIS_INT status1;
+    LIS_INT status2;
+
+    LIS_INT dim0;
+    LIS_INT dim1;
+    LIS_INT dim2;
+
+    LIS_INT action0;
+    LIS_INT action1;
+    LIS_INT action2;
+
+    LIS_REAL quality1;
+    LIS_REAL qmin1;
+
+    LIS_REAL true0;
+    LIS_REAL true1;
+    LIS_REAL true2;
+
+    LIS_REAL orth1;
+    LIS_REAL relation1;
+
+    LIS_REAL orth2;
+    LIS_REAL relation2;
+
+    LIS_UNSIGNED_INT cross1;
+    LIS_UNSIGNED_INT keep1;
+    LIS_UNSIGNED_INT transport1;
+    LIS_UNSIGNED_INT reject1;
+
+    LIS_UNSIGNED_INT cross2;
+    LIS_UNSIGNED_INT keep2;
+    LIS_UNSIGNED_INT transport2;
+    LIS_UNSIGNED_INT reject2;
+
+    LIS_UNSIGNED_INT builds0;
+    LIS_UNSIGNED_INT builds2;
+
+    failed = 0;
+
+
+    err =
+        build_matrix(
+            &A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &u);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &b);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &r);
+
+    if( err )
+        goto api_fail;
+
+
+    /*
+     * Use the existing deterministic second exact solution.
+     */
+    set_second_exact_solution(
+        u);
+
+
+    lis_matvec(
+        A,
+        u,
+        b);
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i fgcrodr "
+            "-p jacobi "
+            "-restart 10 "
+            "-maxiter 500 "
+            "-tol 1e-12 "
+            "-print none "
+            "-fgcrodr_k 5",
+            solver);
+
+    if( err )
+        goto api_fail;
+
+
+    /*
+     * TRANSPORT test:
+     *
+     * reject=0 guarantees a nondegenerate changed space is accepted;
+     * keep≈1 ensures a genuinely changed operator does not classify as
+     * KEEP.
+     */
+    err =
+        lis_solver_set_fgcrodr_recycle(
+            solver,
+            5,
+            (LIS_REAL)0.999999,
+            (LIS_REAL)0.0);
+
+    if( err )
+        goto api_fail;
+
+
+    /* -------------------------------------------------------- */
+    /* Solve 0: establish the initial harmonic recycle space    */
+    /* -------------------------------------------------------- */
+
+    lis_vector_set_all(
+        0.0,
+        x);
+
+
+    api0 =
+        lis_solve_sequence(
+            A,
+            b,
+            x,
+            solver);
+
+    status0 =
+        solver->retcode;
+
+
+    true0 =
+        true_relative_residual(
+            A,
+            b,
+            x,
+            r);
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim0,
+            &action0,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_stats(
+            solver,
+            &builds0,
+            NULL,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    /* -------------------------------------------------------- */
+    /* Solve 1: real value change -> TRANSPORT                  */
+    /* -------------------------------------------------------- */
+
+    err =
+        perturb_matrix_values(
+            A,
+            1);
+
+    if( err )
+        goto api_fail;
+
+
+    /*
+     * Preserve a known exact solution for the changed operator.
+     */
+    lis_matvec(
+        A,
+        u,
+        b);
+
+
+    lis_vector_set_all(
+        0.0,
+        x);
+
+
+    api1 =
+        lis_solve_sequence(
+            A,
+            b,
+            x,
+            solver);
+
+    status1 =
+        solver->retcode;
+
+
+    true1 =
+        true_relative_residual(
+            A,
+            b,
+            x,
+            r);
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim1,
+            &action1,
+            &quality1,
+            &qmin1);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_validate_recycle(
+            solver,
+            &orth1,
+            &relation1);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_policy_stats(
+            solver,
+            &cross1,
+            &keep1,
+            &transport1,
+            &reject1);
+
+    if( err )
+        goto api_fail;
+
+
+    /* -------------------------------------------------------- */
+    /* Solve 2: strong value change -> REJECT + fresh BUILD     */
+    /* -------------------------------------------------------- */
+
+    err =
+        lis_solver_set_fgcrodr_recycle(
+            solver,
+            5,
+            (LIS_REAL)1.0,
+            (LIS_REAL)0.999999);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        perturb_matrix_values(
+            A,
+            2);
+
+    if( err )
+        goto api_fail;
+
+
+    lis_matvec(
+        A,
+        u,
+        b);
+
+
+    lis_vector_set_all(
+        0.0,
+        x);
+
+
+    api2 =
+        lis_solve_sequence(
+            A,
+            b,
+            x,
+            solver);
+
+    status2 =
+        solver->retcode;
+
+
+    true2 =
+        true_relative_residual(
+            A,
+            b,
+            x,
+            r);
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim2,
+            &action2,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_validate_recycle(
+            solver,
+            &orth2,
+            &relation2);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_policy_stats(
+            solver,
+            &cross2,
+            &keep2,
+            &transport2,
+            &reject2);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_stats(
+            solver,
+            &builds2,
+            NULL,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    printf(
+        "FGCRO-DR policy base "
+        "api=%d status=%d dim=%d action=%d "
+        "true=%.3e builds=%llu\n",
+        (int)api0,
+        (int)status0,
+        (int)dim0,
+        (int)action0,
+        (double)true0,
+        (unsigned long long)builds0);
+
+
+    printf(
+        "FGCRO-DR policy transport "
+        "api=%d status=%d dim=%d action=%d "
+        "quality=%.6f qmin=%.6f "
+        "cross=%llu keep=%llu transport=%llu reject=%llu "
+        "true=%.3e orth=%.3e AZ-C=%.3e\n",
+        (int)api1,
+        (int)status1,
+        (int)dim1,
+        (int)action1,
+        (double)quality1,
+        (double)qmin1,
+        (unsigned long long)cross1,
+        (unsigned long long)keep1,
+        (unsigned long long)transport1,
+        (unsigned long long)reject1,
+        (double)true1,
+        (double)orth1,
+        (double)relation1);
+
+
+    printf(
+        "FGCRO-DR policy reject "
+        "api=%d status=%d dim=%d action=%d "
+        "cross=%llu keep=%llu transport=%llu reject=%llu "
+        "builds=%llu true=%.3e orth=%.3e AZ-C=%.3e\n",
+        (int)api2,
+        (int)status2,
+        (int)dim2,
+        (int)action2,
+        (unsigned long long)cross2,
+        (unsigned long long)keep2,
+        (unsigned long long)transport2,
+        (unsigned long long)reject2,
+        (unsigned long long)builds2,
+        (double)true2,
+        (double)orth2,
+        (double)relation2);
+
+
+    if(
+        api0!=LIS_SUCCESS ||
+        status0!=LIS_SUCCESS ||
+        dim0!=5 ||
+        action0!=LIS_FGCRODR_RECYCLE_BUILD ||
+        true0>1.0e-10 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR policy base failure\n");
+
+        failed = 1;
+    }
+
+
+    if(
+        api1!=LIS_SUCCESS ||
+        status1!=LIS_SUCCESS ||
+        dim1!=5 ||
+        action1!=
+            LIS_FGCRODR_RECYCLE_TRANSPORT )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR TRANSPORT action failure: "
+            "api=%d status=%d dim=%d action=%d "
+            "quality=%.17e qmin=%.17e\n",
+            (int)api1,
+            (int)status1,
+            (int)dim1,
+            (int)action1,
+            (double)quality1,
+            (double)qmin1);
+
+        failed = 1;
+    }
+
+
+    if(
+        qmin1>=0.999999 ||
+        cross1!=1 ||
+        transport1!=1 ||
+        reject1!=0 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR TRANSPORT policy failure: "
+            "qmin=%.17e cross=%llu transport=%llu reject=%llu\n",
+            (double)qmin1,
+            (unsigned long long)cross1,
+            (unsigned long long)transport1,
+            (unsigned long long)reject1);
+
+        failed = 1;
+    }
+
+
+    if(
+        true1>1.0e-10 ||
+        orth1>1.0e-12 ||
+        relation1>1.0e-12 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR TRANSPORT invariant failure: "
+            "true=%.17e orth=%.17e AZ-C=%.17e\n",
+            (double)true1,
+            (double)orth1,
+            (double)relation1);
+
+        failed = 1;
+    }
+
+
+    /*
+     * REJECT must remain externally visible even though the current
+     * solve is allowed to build a fresh recycle space afterward.
+     */
+    if(
+        api2!=LIS_SUCCESS ||
+        status2!=LIS_SUCCESS ||
+        action2!=
+            LIS_FGCRODR_RECYCLE_REJECT )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR REJECT action failure: "
+            "api=%d status=%d dim=%d action=%d\n",
+            (int)api2,
+            (int)status2,
+            (int)dim2,
+            (int)action2);
+
+        failed = 1;
+    }
+
+
+    if(
+        cross2!=cross1 ||
+        transport2!=transport1 ||
+        reject2!=reject1+1 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR REJECT counters failure: "
+            "cross=%llu->%llu transport=%llu->%llu "
+            "reject=%llu->%llu\n",
+            (unsigned long long)cross1,
+            (unsigned long long)cross2,
+            (unsigned long long)transport1,
+            (unsigned long long)transport2,
+            (unsigned long long)reject1,
+            (unsigned long long)reject2);
+
+        failed = 1;
+    }
+
+
+    /*
+     * With harmonic updating enabled, rejection of the stale basis
+     * should be followed by construction of a fresh basis.
+     */
+    if(
+        dim2!=5 ||
+        builds2<=builds0 ||
+        true2>1.0e-10 ||
+        orth2>1.0e-12 ||
+        relation2>1.0e-12 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR REJECT rebuild failure: "
+            "dim=%d builds=%llu->%llu "
+            "true=%.17e orth=%.17e AZ-C=%.17e\n",
+            (int)dim2,
+            (unsigned long long)builds0,
+            (unsigned long long)builds2,
+            (double)true2,
+            (double)orth2,
+            (double)relation2);
+
+        failed = 1;
+    }
+
+
+    if( failed )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR GENERATION POLICY FAILED\n");
+
+        err =
+            LIS_ERR_ILL_ARG;
+
+        goto cleanup;
+    }
+
+
+    printf(
+        "FGCRO-DR GENERATION POLICY PASSED\n");
+
+    err =
+        LIS_SUCCESS;
+
+    goto cleanup;
+
+
+api_fail:
+
+    fprintf(
+        stderr,
+        "FGCRO-DR generation policy API failure: %d\n",
+        (int)err);
+
+
+cleanup:
+
+    if( solver )
+        lis_solver_destroy(
+            solver);
+
+    if( r )
+        lis_vector_destroy(
+            r);
+
+    if( x )
+        lis_vector_destroy(
+            x);
+
+    if( b )
+        lis_vector_destroy(
+            b);
+
+    if( u )
+        lis_vector_destroy(
+            u);
+
+    if( A )
+        lis_matrix_destroy(
+            A);
+
+
+    return err;
 }
 
 
@@ -1985,6 +2945,14 @@ cleanup:
     if( u ) lis_vector_destroy(u);
 
     if( A ) lis_matrix_destroy(A);
+
+    if(
+        check_generation_transport_reject()
+        !=LIS_SUCCESS )
+    {
+        failed = 1;
+    }
+
 
     lis_finalize();
 
