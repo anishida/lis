@@ -1,0 +1,354 @@
+#ifdef HAVE_CONFIG_H
+#include "lis_config.h"
+#else
+#ifdef HAVE_CONFIG_WIN_H
+#include "lis_config_win.h"
+#endif
+#endif
+
+#include <stdio.h>
+#include "lis.h"
+
+static int check_generation(
+	LIS_MATRIX A,
+	LIS_UNSIGNED_INT expected_structure,
+	LIS_UNSIGNED_INT expected_value,
+	const char *label)
+{
+	LIS_UNSIGNED_INT sg = 0;
+	LIS_UNSIGNED_INT vg = 0;
+	LIS_INT err;
+
+	err = lis_matrix_get_generation(A,&sg,&vg);
+	if( err )
+	{
+		fprintf(stderr,"%s: get_generation failed\n",label);
+		return 1;
+	}
+
+	if( sg!=expected_structure || vg!=expected_value )
+	{
+		fprintf(
+			stderr,
+			"%s: expected=(%llu,%llu) actual=(%llu,%llu)\n",
+			label,
+			(unsigned long long)expected_structure,
+			(unsigned long long)expected_value,
+			(unsigned long long)sg,
+			(unsigned long long)vg);
+		return 1;
+	}
+
+	return 0;
+}
+
+int main(int argc, char **argv)
+{
+	LIS_MATRIX A = NULL;
+	LIS_VECTOR x = NULL;
+	LIS_VECTOR y = NULL;
+
+	/*
+	 * Deliberately use stack-owned CSR storage.
+	 * lis_matrix_destroy() must never attempt to free these arrays.
+	 */
+	LIS_INT ptr[3] = {0,2,4};
+	LIS_INT index[4] = {0,1,0,1};
+
+	LIS_SCALAR values0[4] = {
+		(LIS_SCALAR)2.0,
+		(LIS_SCALAR)1.0,
+		(LIS_SCALAR)1.0,
+		(LIS_SCALAR)3.0
+	};
+
+	LIS_SCALAR values1[4] = {
+		(LIS_SCALAR)4.0,
+		(LIS_SCALAR)1.0,
+		(LIS_SCALAR)1.0,
+		(LIS_SCALAR)5.0
+	};
+
+	LIS_SCALAR y0 = 0;
+	LIS_SCALAR y1 = 0;
+
+	LIS_INT err;
+	int failed = 0;
+	int i;
+
+	err = lis_initialize(&argc,&argv);
+	if( err ) return 1;
+
+	err = lis_matrix_create(LIS_COMM_WORLD,&A);
+	if( err )
+	{
+		failed = 1;
+		goto cleanup;
+	}
+
+	err = lis_matrix_set_size(A,0,2);
+	if( err )
+	{
+		failed = 1;
+		goto cleanup;
+	}
+
+	err = lis_matrix_set_csr_external(
+		4,ptr,index,values0,A);
+	if( err )
+	{
+		failed = 1;
+		goto cleanup;
+	}
+
+	if( !A->csr_external )
+	{
+		fprintf(stderr,"external CSR ownership flag not set\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	err = lis_matrix_assemble(A);
+	if( err )
+	{
+		failed = 1;
+		goto cleanup;
+	}
+
+	if( !A->csr_external )
+	{
+		fprintf(stderr,"external CSR ownership lost during assembly\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	failed |= check_generation(A,0,0,"INITIAL");
+
+	err = lis_vector_duplicate(A,&x);
+	if( err )
+	{
+		failed = 1;
+		goto cleanup;
+	}
+
+	err = lis_vector_duplicate(A,&y);
+	if( err )
+	{
+		failed = 1;
+		goto cleanup;
+	}
+
+	lis_vector_set_all((LIS_SCALAR)1.0,x);
+
+	err = lis_matvec(A,x,y);
+	if( err )
+	{
+		failed = 1;
+		goto cleanup;
+	}
+
+	lis_vector_get_value(y,0,&y0);
+	lis_vector_get_value(y,1,&y1);
+
+	if( y0!=(LIS_SCALAR)3.0 || y1!=(LIS_SCALAR)4.0 )
+	{
+		fprintf(stderr,"initial external CSR matvec failed\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	err = lis_matrix_set_csr_values_external(values1,A);
+	if( err )
+	{
+		failed = 1;
+		goto cleanup;
+	}
+
+	failed |= check_generation(A,0,1,"VALUES_UPDATE");
+
+	if( A->value!=values1 )
+	{
+		fprintf(stderr,"external CSR value pointer was not replaced\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	err = lis_matvec(A,x,y);
+	if( err )
+	{
+		failed = 1;
+		goto cleanup;
+	}
+
+	lis_vector_get_value(y,0,&y0);
+	lis_vector_get_value(y,1,&y1);
+
+	if( y0!=(LIS_SCALAR)5.0 || y1!=(LIS_SCALAR)6.0 )
+	{
+		fprintf(stderr,"updated external CSR matvec failed\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	/*
+	 * Exercise a sequence of related matrices with identical CSR
+	 * structure and repeatedly replaced external numerical values.
+	 */
+	for( i=0; i<100; i++ )
+	{
+		LIS_SCALAR *next_values;
+		LIS_SCALAR expected0;
+		LIS_SCALAR expected1;
+
+		if( (i & 1)==0 )
+		{
+			next_values = values0;
+			expected0 = (LIS_SCALAR)3.0;
+			expected1 = (LIS_SCALAR)4.0;
+		}
+		else
+		{
+			next_values = values1;
+			expected0 = (LIS_SCALAR)5.0;
+			expected1 = (LIS_SCALAR)6.0;
+		}
+
+		err = lis_matrix_set_csr_values_external(next_values,A);
+		if( err )
+		{
+			fprintf(stderr,"sequence update failed at %d\n",i);
+			failed = 1;
+			goto cleanup;
+		}
+
+		if( A->ptr!=ptr || A->index!=index || A->value!=next_values )
+		{
+			fprintf(stderr,"CSR pointer changed at update %d\n",i);
+			failed = 1;
+			goto cleanup;
+		}
+
+		if( !A->csr_external )
+		{
+			fprintf(stderr,"external ownership lost at update %d\n",i);
+			failed = 1;
+			goto cleanup;
+		}
+
+		err = lis_matvec(A,x,y);
+		if( err )
+		{
+			failed = 1;
+			goto cleanup;
+		}
+
+		lis_vector_get_value(y,0,&y0);
+		lis_vector_get_value(y,1,&y1);
+
+		if( y0!=expected0 || y1!=expected1 )
+		{
+			fprintf(
+				stderr,
+				"sequence matvec failed at update %d\n",
+				i);
+			failed = 1;
+			goto cleanup;
+		}
+	}
+
+	failed |= check_generation(A,0,101,"SEQUENCE_100");
+
+	if( failed )
+		goto cleanup;
+
+	printf("SEQUENCE_100 PASSED\n");
+
+	/*
+	 * Change numerical values in-place without changing the external
+	 * value pointer.  The application explicitly marks the new
+	 * numerical matrix generation.
+	 */
+	if( A->value!=values1 )
+	{
+		fprintf(stderr,"unexpected value pointer before in-place update\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	values1[0] = (LIS_SCALAR)6.0;
+	values1[1] = (LIS_SCALAR)2.0;
+	values1[2] = (LIS_SCALAR)3.0;
+	values1[3] = (LIS_SCALAR)7.0;
+
+	err = lis_matrix_mark_values_changed(A);
+	if( err )
+	{
+		fprintf(stderr,"in-place generation mark failed\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	failed |= check_generation(A,0,102,"INPLACE_UPDATE");
+	if( failed )
+		goto cleanup;
+
+	if( A->ptr!=ptr || A->index!=index || A->value!=values1 )
+	{
+		fprintf(stderr,"CSR pointer changed during in-place update\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	if( !A->csr_external )
+	{
+		fprintf(stderr,"external ownership lost during in-place update\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	err = lis_matvec(A,x,y);
+	if( err )
+	{
+		failed = 1;
+		goto cleanup;
+	}
+
+	lis_vector_get_value(y,0,&y0);
+	lis_vector_get_value(y,1,&y1);
+
+	if( y0!=(LIS_SCALAR)8.0 || y1!=(LIS_SCALAR)10.0 )
+	{
+		fprintf(stderr,"in-place external CSR matvec failed\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	printf("INPLACE_UPDATE PASSED\n");
+
+cleanup:
+
+	if( y ) lis_vector_destroy(y);
+	if( x ) lis_vector_destroy(x);
+
+	if( A )
+	{
+		lis_matrix_destroy(A);
+		A = NULL;
+	}
+
+	/*
+	 * These writes are intentional.  The arrays still belong to this
+	 * application after LIS matrix destruction.
+	 */
+	ptr[0] = 0;
+	index[0] = 0;
+	values1[0] = (LIS_SCALAR)7.0;
+
+	printf(
+		"LIS_EXTERNAL_CSR_S2 %s\n",
+		failed ? "FAILED" : "PASSED");
+
+	lis_finalize();
+
+	return failed ? 1 : 0;
+}

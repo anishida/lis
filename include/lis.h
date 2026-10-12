@@ -730,6 +730,9 @@ struct LIS_MATRIX_STRUCT
 	 */
 	LIS_UNSIGNED_INT structure_generation;
 	LIS_UNSIGNED_INT value_generation;
+
+	/* CSR ptr/index/value are borrowed from the application. */
+	LIS_INT csr_external;
 };
 typedef struct LIS_MATRIX_STRUCT *LIS_MATRIX;
 
@@ -990,6 +993,8 @@ extern "C"
 	extern LIS_INT lis_matrix_set_value_csr(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_psd_set_value_csr(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);  
 	extern LIS_INT lis_matrix_set_csr(LIS_INT nnz, LIS_INT *row, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);
+	extern LIS_INT lis_matrix_set_csr_external(LIS_INT nnz, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);
+	extern LIS_INT lis_matrix_set_csr_values_external(LIS_SCALAR *value, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_malloc_csc(LIS_INT n, LIS_INT nnz, LIS_INT **ptr, LIS_INT **index, LIS_SCALAR **value);
 	extern LIS_INT lis_matrix_set_csc(LIS_INT nnz, LIS_INT *row, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_malloc_bsr(LIS_INT n, LIS_INT bnr, LIS_INT bnc, LIS_INT bnnz, LIS_INT **bptr, LIS_INT **bindex, LIS_SCALAR **value);

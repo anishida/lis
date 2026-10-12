@@ -389,13 +389,20 @@ LIS_INT lis_matrix_storage_destroy(LIS_MATRIX Amat)
 	{
 		if( Amat->is_destroy )
 		{
-			if( Amat->ptr ) lis_free( Amat->ptr );
+			/*
+			 * External CSR storage is application-owned.  Keep LIS-owned
+			 * auxiliary storage under normal destruction semantics.
+			 */
+			if( !Amat->csr_external )
+			{
+				if( Amat->ptr ) lis_free( Amat->ptr );
+				if( Amat->index ) lis_free( Amat->index );
+				if( Amat->value ) lis_free( Amat->value );
+			}
 			if( Amat->row ) lis_free( Amat->row );
 			if( Amat->col ) lis_free( Amat->col );
-			if( Amat->index) lis_free( Amat->index );
 			if( Amat->bptr ) lis_free( Amat->bptr );
 			if( Amat->bindex ) lis_free( Amat->bindex );
-			if( Amat->value ) lis_free( Amat->value );
 			if( Amat->work ) lis_free( Amat->work );
 			if( Amat->conv_row ) lis_free( Amat->conv_row );
 			if( Amat->conv_col ) lis_free( Amat->conv_col );
@@ -422,6 +429,7 @@ LIS_INT lis_matrix_storage_destroy(LIS_MATRIX Amat)
 		Amat->bindex    = NULL;
 		Amat->value     = NULL;
 		Amat->work      = NULL;
+		Amat->csr_external = LIS_FALSE;
 		Amat->conv_row  = NULL;
 		Amat->conv_col  = NULL;
 		Amat->w_nnz     = NULL;
@@ -1374,6 +1382,7 @@ LIS_INT lis_matrix_unset(LIS_MATRIX A)
 	A->bindex  = NULL;
 	A->value   = NULL;
 	A->is_copy = LIS_FALSE;
+	A->csr_external = LIS_FALSE;
 	A->status  = LIS_MATRIX_NULL;
 
 	LIS_DEBUG_FUNC_OUT;
