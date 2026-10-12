@@ -5630,6 +5630,51 @@ lis_fgcrodr_flexible_core(
             v[0],
             &rnorm);
 
+
+        /*
+         * The physical restart residual may vanish even when the
+         * least-squares estimate which led to this restart was not
+         * exactly zero.
+         *
+         * Do not form 1/||r|| for an exact restart solution.  Keep
+         * the same zero/NaN contract as the initial recycled-residual
+         * projection above.
+         */
+        if(
+            rnorm==0.0 ||
+            rnorm!=rnorm )
+        {
+            solver->retcode =
+                (rnorm==0.0)
+                ? LIS_SUCCESS
+                : LIS_BREAKDOWN;
+
+            solver->iter =
+                iter;
+
+            solver->resid =
+                rnorm;
+
+            solver->ptime =
+                ptime;
+
+            if( bcoef )
+                lis_free(
+                    bcoef);
+
+            if( hraw )
+                lis_free(
+                    hraw);
+
+            lis_free(
+                h);
+
+
+            return
+                solver->retcode;
+        }
+
+
         bnrm2 =
             1.0/rnorm;
     }

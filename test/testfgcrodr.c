@@ -4314,6 +4314,2172 @@ cleanup:
 }
 
 
+
+
+static LIS_INT
+check_correctness_edge_cases(void)
+{
+    LIS_MATRIX A = NULL;
+
+    LIS_VECTOR b = NULL;
+    LIS_VECTOR x = NULL;
+    LIS_VECTOR u = NULL;
+    LIS_VECTOR r = NULL;
+
+    LIS_SOLVER solver = NULL;
+
+    LIS_INT err;
+    LIS_INT failed;
+
+    LIS_INT api;
+    LIS_INT status;
+    LIS_INT dim;
+    LIS_INT action;
+
+    LIS_INT dim_before;
+    LIS_INT action_before;
+
+    LIS_INT iter;
+
+    LIS_REAL true_residual;
+    LIS_REAL diff_norm;
+
+    LIS_UNSIGNED_INT builds_before;
+    LIS_UNSIGNED_INT builds_after;
+
+    LIS_UNSIGNED_INT updates_before;
+    LIS_UNSIGNED_INT updates_after;
+
+    LIS_UNSIGNED_INT uses_before;
+    LIS_UNSIGNED_INT uses_after;
+
+    LIS_UNSIGNED_INT rejects_before;
+    LIS_UNSIGNED_INT rejects_after;
+
+
+    failed =
+        0;
+
+
+    err =
+        build_recovery_matrix(
+            &A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &b);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &u);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &r);
+
+    if( err )
+        goto api_fail;
+
+
+    /*
+     * ========================================================
+     * Case 1: zero RHS, zero initial guess
+     *
+     * Must exit before Arnoldi and before any recycle BUILD.
+     *
+     * LIS reports this initially converged public solve as iter=1.
+     * ========================================================
+     */
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i fgcrodr "
+            "-p none "
+            "-scale none "
+            "-print none "
+            "-restart 4 "
+            "-maxiter 20 "
+            "-tol 1e-12 "
+            "-fgcrodr_k 2",
+            solver);
+
+    if( err )
+        goto api_fail;
+
+
+    lis_vector_set_all(
+        0.0,
+        b);
+
+    lis_vector_set_all(
+        0.0,
+        x);
+
+
+    api =
+        lis_solve(
+            A,
+            b,
+            x,
+            solver);
+
+    status =
+        solver->retcode;
+
+    iter =
+        solver->iter;
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim,
+            &action,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    printf(
+        "FGCRO-DR edge zero-rhs "
+        "api=%d status=%d iter=%d "
+        "resid=%.3e dim=%d action=%d\n",
+        (int)api,
+        (int)status,
+        (int)iter,
+        (double)solver->resid,
+        (int)dim,
+        (int)action);
+
+
+    if(
+        api!=LIS_SUCCESS ||
+        status!=LIS_SUCCESS ||
+        iter!=1 ||
+        dim!=0 ||
+        action!=LIS_FGCRODR_RECYCLE_NONE ||
+        solver->resid!=solver->resid )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR EDGE zero RHS failure\n");
+
+        failed =
+            1;
+    }
+
+
+    lis_solver_destroy(
+        solver);
+
+    solver =
+        NULL;
+
+
+    /*
+     * ========================================================
+     * Case 2: existing recycle + exact initial solution
+     *
+     * The exact x must return without consuming, replacing or
+     * updating the already valid recycle space.  The persistent
+     * basis remains valid, while the current-solve recycle action
+     * is NONE.
+     * ========================================================
+     */
+
+    lis_vector_set_all(
+        0.0,
+        u);
+
+    u->value[0] =
+        (LIS_SCALAR)1.0;
+
+    u->value[1] =
+        (LIS_SCALAR)(2.0/3.0);
+
+
+    lis_matvec(
+        A,
+        u,
+        b);
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i fgcrodr "
+            "-p none "
+            "-scale none "
+            "-print none "
+            "-restart 4 "
+            "-maxiter 100 "
+            "-tol 1e-12 "
+            "-fgcrodr_k 1",
+            solver);
+
+    if( err )
+        goto api_fail;
+
+
+    lis_vector_set_all(
+        0.0,
+        x);
+
+
+    api =
+        lis_solve_sequence(
+            A,
+            b,
+            x,
+            solver);
+
+    if(
+        api!=LIS_SUCCESS ||
+        solver->retcode!=LIS_SUCCESS )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR EDGE setup solve failure\n");
+
+        failed =
+            1;
+
+        goto edge_cleanup;
+    }
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim_before,
+            &action_before,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_stats(
+            solver,
+            &builds_before,
+            &updates_before,
+            &uses_before,
+            &rejects_before);
+
+    if( err )
+        goto api_fail;
+
+
+    lis_vector_copy(
+        u,
+        x);
+
+
+    api =
+        lis_solve_sequence(
+            A,
+            b,
+            x,
+            solver);
+
+    status =
+        solver->retcode;
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim,
+            &action,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_stats(
+            solver,
+            &builds_after,
+            &updates_after,
+            &uses_after,
+            &rejects_after);
+
+    if( err )
+        goto api_fail;
+
+
+    lis_vector_axpy(
+        -1.0,
+        u,
+        x);
+
+    lis_vector_nrm2(
+        x,
+        &diff_norm);
+
+
+    printf(
+        "FGCRO-DR edge exact-x "
+        "api=%d status=%d iter=%d "
+        "dim=%d/%d action=%d/%d "
+        "builds=%llu/%llu updates=%llu/%llu "
+        "uses=%llu/%llu rejects=%llu/%llu "
+        "error=%.3e\n",
+        (int)api,
+        (int)status,
+        (int)solver->iter,
+        (int)dim_before,
+        (int)dim,
+        (int)action_before,
+        (int)action,
+        (unsigned long long)builds_before,
+        (unsigned long long)builds_after,
+        (unsigned long long)updates_before,
+        (unsigned long long)updates_after,
+        (unsigned long long)uses_before,
+        (unsigned long long)uses_after,
+        (unsigned long long)rejects_before,
+        (unsigned long long)rejects_after,
+        (double)diff_norm);
+
+
+    if(
+        api!=LIS_SUCCESS ||
+        status!=LIS_SUCCESS ||
+        solver->iter!=1 ||
+        dim_before!=1 ||
+        dim!=dim_before ||
+        action!=LIS_FGCRODR_RECYCLE_NONE ||
+        builds_after!=builds_before ||
+        updates_after!=updates_before ||
+        uses_after!=uses_before ||
+        rejects_after!=rejects_before ||
+        diff_norm>1.0e-12 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR EDGE exact initial x failure\n");
+
+        failed =
+            1;
+    }
+
+
+edge_cleanup:
+
+    if( solver )
+    {
+        lis_solver_destroy(
+            solver);
+
+        solver =
+            NULL;
+    }
+
+
+    /*
+     * ========================================================
+     * Case 3: one-step lucky/happy Arnoldi breakdown
+     *
+     * For A=diag(2,3), b=[2,0], x0=0 the first Krylov vector is
+     * an exact eigenvector.  h(2,1)=0 is therefore a happy
+     * breakdown and must produce SUCCESS, not LIS_BREAKDOWN.
+     * ========================================================
+     */
+
+    lis_vector_set_all(
+        0.0,
+        b);
+
+    b->value[0] =
+        (LIS_SCALAR)2.0;
+
+
+    lis_vector_set_all(
+        0.0,
+        x);
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i fgcrodr "
+            "-p none "
+            "-scale none "
+            "-print none "
+            "-restart 4 "
+            "-maxiter 20 "
+            "-tol 1e-12 "
+            "-fgcrodr_k 1",
+            solver);
+
+    if( err )
+        goto api_fail;
+
+
+    api =
+        lis_solve(
+            A,
+            b,
+            x,
+            solver);
+
+    status =
+        solver->retcode;
+
+
+    true_residual =
+        true_relative_residual(
+            A,
+            b,
+            x,
+            r);
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim,
+            &action,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    printf(
+        "FGCRO-DR edge happy-breakdown "
+        "api=%d status=%d iter=%d "
+        "true=%.3e dim=%d action=%d\n",
+        (int)api,
+        (int)status,
+        (int)solver->iter,
+        (double)true_residual,
+        (int)dim,
+        (int)action);
+
+
+    if(
+        api!=LIS_SUCCESS ||
+        status!=LIS_SUCCESS ||
+        solver->iter!=1 ||
+        true_residual>1.0e-12 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR EDGE happy breakdown failure\n");
+
+        failed =
+            1;
+    }
+
+
+    lis_solver_destroy(
+        solver);
+
+    solver =
+        NULL;
+
+
+    /*
+     * ========================================================
+     * Case 4: requested k larger than restart
+     *
+     * Effective recycle dimension must never exceed restart-1.
+     * ========================================================
+     */
+
+    lis_vector_set_all(
+        (LIS_SCALAR)2.0,
+        b);
+
+    lis_vector_set_all(
+        0.0,
+        x);
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i fgcrodr "
+            "-p none "
+            "-scale none "
+            "-print none "
+            "-restart 3 "
+            "-maxiter 100 "
+            "-tol 1e-12 "
+            "-fgcrodr_k 20",
+            solver);
+
+    if( err )
+        goto api_fail;
+
+
+    api =
+        lis_solve(
+            A,
+            b,
+            x,
+            solver);
+
+    status =
+        solver->retcode;
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim,
+            &action,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    true_residual =
+        true_relative_residual(
+            A,
+            b,
+            x,
+            r);
+
+
+    printf(
+        "FGCRO-DR edge k>=restart "
+        "api=%d status=%d iter=%d "
+        "dim=%d restart=3 true=%.3e action=%d\n",
+        (int)api,
+        (int)status,
+        (int)solver->iter,
+        (int)dim,
+        (double)true_residual,
+        (int)action);
+
+
+    if(
+        api!=LIS_SUCCESS ||
+        status!=LIS_SUCCESS ||
+        dim>2 ||
+        true_residual>1.0e-12 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR EDGE k>=restart failure\n");
+
+        failed =
+            1;
+    }
+
+
+    if( failed )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR CORRECTNESS EDGE CASES FAILED\n");
+
+        err =
+            LIS_ERR_ILL_ARG;
+
+        goto cleanup;
+    }
+
+
+    printf(
+        "FGCRO-DR CORRECTNESS EDGE CASES PASSED\n");
+
+
+    err =
+        LIS_SUCCESS;
+
+    goto cleanup;
+
+
+api_fail:
+
+    fprintf(
+        stderr,
+        "FGCRO-DR correctness edge API failure: %d\n",
+        (int)err);
+
+
+cleanup:
+
+    if( solver )
+        lis_solver_destroy(
+            solver);
+
+    if( r )
+        lis_vector_destroy(
+            r);
+
+    if( u )
+        lis_vector_destroy(
+            u);
+
+    if( x )
+        lis_vector_destroy(
+            x);
+
+    if( b )
+        lis_vector_destroy(
+            b);
+
+    if( A )
+        lis_matrix_destroy(
+            A);
+
+
+    return err;
+}
+
+
+
+
+static LIS_INT
+check_runtime_configuration_transitions(void)
+{
+    LIS_MATRIX A = NULL;
+
+    LIS_VECTOR u = NULL;
+    LIS_VECTOR b = NULL;
+    LIS_VECTOR x = NULL;
+    LIS_VECTOR xref = NULL;
+    LIS_VECTOR work = NULL;
+
+    LIS_SOLVER solver = NULL;
+    LIS_SOLVER fgmres = NULL;
+
+    LIS_INT err;
+    LIS_INT failed;
+
+    LIS_INT api;
+    LIS_INT fgmres_api;
+
+    LIS_INT dim;
+    LIS_INT action;
+
+    LIS_INT target_dim;
+
+    LIS_INT iter_k0;
+    LIS_INT iter_fgmres;
+
+    LIS_REAL keep_quality;
+    LIS_REAL reject_quality;
+
+    LIS_REAL true_residual;
+    LIS_REAL true_fgmres;
+
+    LIS_REAL diff_norm;
+    LIS_REAL ref_norm;
+    LIS_REAL relative_difference;
+
+    LIS_UNSIGNED_INT builds0;
+    LIS_UNSIGNED_INT builds1;
+    LIS_UNSIGNED_INT builds2;
+    LIS_UNSIGNED_INT builds3;
+
+
+    failed = 0;
+
+
+    err =
+        build_matrix(
+            &A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &u);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &b);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &xref);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &work);
+
+    if( err )
+        goto api_fail;
+
+
+    set_second_exact_solution(
+        u);
+
+
+    lis_matvec(
+        A,
+        u,
+        b);
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i fgcrodr "
+            "-p none "
+            "-scale none "
+            "-print none "
+            "-restart 10 "
+            "-maxiter 500 "
+            "-tol 1e-12 "
+            "-fgcrodr_k 5",
+            solver);
+
+    if( err )
+        goto api_fail;
+
+
+    /*
+     * ========================================================
+     * k = 5
+     * ========================================================
+     */
+
+    lis_vector_set_all(
+        0.0,
+        x);
+
+
+    api =
+        lis_solve_sequence(
+            A,
+            b,
+            x,
+            solver);
+
+
+    true_residual =
+        true_relative_residual(
+            A,
+            b,
+            x,
+            work);
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim,
+            &action,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_stats(
+            solver,
+            &builds0,
+            NULL,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    printf(
+        "FGCRO-DR config k=5 "
+        "api=%d status=%d iter=%d "
+        "dim=%d action=%d builds=%llu true=%.3e\n",
+        (int)api,
+        (int)solver->retcode,
+        (int)solver->iter,
+        (int)dim,
+        (int)action,
+        (unsigned long long)builds0,
+        (double)true_residual);
+
+
+    if(
+        api!=LIS_SUCCESS ||
+        solver->retcode!=LIS_SUCCESS ||
+        dim!=5 ||
+        action!=LIS_FGCRODR_RECYCLE_BUILD ||
+        builds0!=1 ||
+        true_residual>1.0e-10 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR CONFIG k=5 failure\n");
+
+        failed = 1;
+    }
+
+
+    /*
+     * ========================================================
+     * k = 5 -> 2
+     *
+     * Changing the requested recycle dimension invalidates the
+     * existing persistent basis immediately.
+     * ========================================================
+     */
+
+    err =
+        lis_solver_set_fgcrodr_recycle(
+            solver,
+            2,
+            0.90,
+            0.10);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle_config(
+            solver,
+            &target_dim,
+            &keep_quality,
+            &reject_quality,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim,
+            &action,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    printf(
+        "FGCRO-DR config 5->2 clear "
+        "target=%d dim=%d action=%d\n",
+        (int)target_dim,
+        (int)dim,
+        (int)action);
+
+
+    if(
+        target_dim!=2 ||
+        dim!=0 ||
+        action!=LIS_FGCRODR_RECYCLE_NONE )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR CONFIG 5->2 clear failure\n");
+
+        failed = 1;
+    }
+
+
+    lis_vector_set_all(
+        0.0,
+        x);
+
+
+    api =
+        lis_solve_sequence(
+            A,
+            b,
+            x,
+            solver);
+
+
+    true_residual =
+        true_relative_residual(
+            A,
+            b,
+            x,
+            work);
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim,
+            &action,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_stats(
+            solver,
+            &builds1,
+            NULL,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    printf(
+        "FGCRO-DR config k=2 "
+        "api=%d status=%d iter=%d "
+        "dim=%d action=%d builds=%llu true=%.3e\n",
+        (int)api,
+        (int)solver->retcode,
+        (int)solver->iter,
+        (int)dim,
+        (int)action,
+        (unsigned long long)builds1,
+        (double)true_residual);
+
+
+    if(
+        api!=LIS_SUCCESS ||
+        solver->retcode!=LIS_SUCCESS ||
+        dim!=2 ||
+        action!=LIS_FGCRODR_RECYCLE_BUILD ||
+        builds1!=builds0+1 ||
+        true_residual>1.0e-10 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR CONFIG k=2 rebuild failure\n");
+
+        failed = 1;
+    }
+
+
+    /*
+     * ========================================================
+     * k = 2 -> 0
+     *
+     * k=0 is required to be the exact FGMRES reference path.
+     * No FGCRO recycle state may survive or be rebuilt.
+     * ========================================================
+     */
+
+    err =
+        lis_solver_set_fgcrodr_recycle(
+            solver,
+            0,
+            0.90,
+            0.10);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim,
+            &action,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    if(
+        dim!=0 ||
+        action!=LIS_FGCRODR_RECYCLE_NONE )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR CONFIG 2->0 clear failure: "
+            "dim=%d action=%d\n",
+            (int)dim,
+            (int)action);
+
+        failed = 1;
+    }
+
+
+    /*
+     * Independent FGMRES reference.
+     */
+    err =
+        lis_solver_create(
+            &fgmres);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i fgmres "
+            "-p none "
+            "-scale none "
+            "-print none "
+            "-restart 10 "
+            "-maxiter 500 "
+            "-tol 1e-12",
+            fgmres);
+
+    if( err )
+        goto api_fail;
+
+
+    lis_vector_set_all(
+        0.0,
+        xref);
+
+
+    fgmres_api =
+        lis_solve(
+            A,
+            b,
+            xref,
+            fgmres);
+
+
+    iter_fgmres =
+        fgmres->iter;
+
+
+    true_fgmres =
+        true_relative_residual(
+            A,
+            b,
+            xref,
+            work);
+
+
+    /*
+     * FGCRO-DR with k=0.
+     */
+    lis_vector_set_all(
+        0.0,
+        x);
+
+
+    api =
+        lis_solve_sequence(
+            A,
+            b,
+            x,
+            solver);
+
+
+    iter_k0 =
+        solver->iter;
+
+
+    true_residual =
+        true_relative_residual(
+            A,
+            b,
+            x,
+            work);
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim,
+            &action,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_stats(
+            solver,
+            &builds2,
+            NULL,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    /*
+     * Relative difference between the k=0 result and direct FGMRES.
+     */
+    lis_vector_copy(
+        x,
+        work);
+
+    lis_vector_axpy(
+        -1.0,
+        xref,
+        work);
+
+    lis_vector_nrm2(
+        work,
+        &diff_norm);
+
+    lis_vector_nrm2(
+        xref,
+        &ref_norm);
+
+
+    relative_difference =
+        ref_norm>0.0
+        ? diff_norm/ref_norm
+        : diff_norm;
+
+
+    printf(
+        "FGCRO-DR config k=0/FGMRES "
+        "api=%d/%d status=%d/%d "
+        "iter=%d/%d "
+        "dim=%d action=%d builds=%llu "
+        "true=%.3e/%.3e diff=%.3e\n",
+        (int)api,
+        (int)fgmres_api,
+        (int)solver->retcode,
+        (int)fgmres->retcode,
+        (int)iter_k0,
+        (int)iter_fgmres,
+        (int)dim,
+        (int)action,
+        (unsigned long long)builds2,
+        (double)true_residual,
+        (double)true_fgmres,
+        (double)relative_difference);
+
+
+    if(
+        api!=LIS_SUCCESS ||
+        fgmres_api!=LIS_SUCCESS ||
+        solver->retcode!=LIS_SUCCESS ||
+        fgmres->retcode!=LIS_SUCCESS ||
+        dim!=0 ||
+        action!=LIS_FGCRODR_RECYCLE_NONE ||
+        builds2!=builds1 ||
+        iter_k0!=iter_fgmres ||
+        true_residual>1.0e-10 ||
+        true_fgmres>1.0e-10 ||
+        relative_difference>1.0e-12 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR CONFIG k=0 FGMRES equivalence failure\n");
+
+        failed = 1;
+    }
+
+
+    lis_solver_destroy(
+        fgmres);
+
+    fgmres = NULL;
+
+
+    /*
+     * ========================================================
+     * k = 0 -> 3
+     *
+     * Returning from the reference path must start from an empty
+     * recycle state and perform a new BUILD.
+     * ========================================================
+     */
+
+    err =
+        lis_solver_set_fgcrodr_recycle(
+            solver,
+            3,
+            0.90,
+            0.10);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim,
+            &action,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    printf(
+        "FGCRO-DR config 0->3 clear "
+        "dim=%d action=%d\n",
+        (int)dim,
+        (int)action);
+
+
+    if(
+        dim!=0 ||
+        action!=LIS_FGCRODR_RECYCLE_NONE )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR CONFIG 0->3 pre-build failure\n");
+
+        failed = 1;
+    }
+
+
+    lis_vector_set_all(
+        0.0,
+        x);
+
+
+    api =
+        lis_solve_sequence(
+            A,
+            b,
+            x,
+            solver);
+
+
+    true_residual =
+        true_relative_residual(
+            A,
+            b,
+            x,
+            work);
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim,
+            &action,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_stats(
+            solver,
+            &builds3,
+            NULL,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    printf(
+        "FGCRO-DR config k=3 "
+        "api=%d status=%d iter=%d "
+        "dim=%d action=%d builds=%llu true=%.3e\n",
+        (int)api,
+        (int)solver->retcode,
+        (int)solver->iter,
+        (int)dim,
+        (int)action,
+        (unsigned long long)builds3,
+        (double)true_residual);
+
+
+    if(
+        api!=LIS_SUCCESS ||
+        solver->retcode!=LIS_SUCCESS ||
+        dim!=3 ||
+        action!=LIS_FGCRODR_RECYCLE_BUILD ||
+        builds3!=builds2+1 ||
+        true_residual>1.0e-10 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR CONFIG k=3 rebuild failure\n");
+
+        failed = 1;
+    }
+
+
+    if( failed )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR RUNTIME CONFIGURATION TRANSITIONS FAILED\n");
+
+        err =
+            LIS_ERR_ILL_ARG;
+
+        goto cleanup;
+    }
+
+
+    printf(
+        "FGCRO-DR RUNTIME CONFIGURATION TRANSITIONS PASSED\n");
+
+
+    err =
+        LIS_SUCCESS;
+
+    goto cleanup;
+
+
+api_fail:
+
+    fprintf(
+        stderr,
+        "FGCRO-DR runtime configuration API failure: %d\n",
+        (int)err);
+
+
+cleanup:
+
+    if( fgmres )
+        lis_solver_destroy(
+            fgmres);
+
+    if( solver )
+        lis_solver_destroy(
+            solver);
+
+    if( work )
+        lis_vector_destroy(
+            work);
+
+    if( xref )
+        lis_vector_destroy(
+            xref);
+
+    if( x )
+        lis_vector_destroy(
+            x);
+
+    if( b )
+        lis_vector_destroy(
+            b);
+
+    if( u )
+        lis_vector_destroy(
+            u);
+
+    if( A )
+        lis_matrix_destroy(
+            A);
+
+
+    return err;
+}
+
+
+
+
+static LIS_INT
+build_scalar_matrix(
+    LIS_MATRIX *Aout)
+{
+    LIS_MATRIX A = NULL;
+
+    LIS_INT err;
+
+
+    if( Aout==NULL )
+        return LIS_ERR_ILL_ARG;
+
+
+    err =
+        lis_matrix_create(
+            LIS_COMM_WORLD,
+            &A);
+
+    if( err )
+        return err;
+
+
+    err =
+        lis_matrix_set_size(
+            A,
+            0,
+            1);
+
+    if( err )
+        goto fail;
+
+
+    err =
+        lis_matrix_set_value(
+            LIS_INS_VALUE,
+            0,
+            0,
+            (LIS_SCALAR)2.0,
+            A);
+
+    if( err )
+        goto fail;
+
+
+    err =
+        lis_matrix_set_type(
+            A,
+            LIS_MATRIX_CSR);
+
+    if( err )
+        goto fail;
+
+
+    err =
+        lis_matrix_assemble(
+            A);
+
+    if( err )
+        goto fail;
+
+
+    *Aout =
+        A;
+
+
+    return LIS_SUCCESS;
+
+
+fail:
+
+    lis_matrix_destroy(
+        A);
+
+    return err;
+}
+
+
+static LIS_INT
+check_small_dimension_and_restart_guard(void)
+{
+    LIS_MATRIX A = NULL;
+    LIS_MATRIX A1 = NULL;
+
+    LIS_VECTOR b = NULL;
+    LIS_VECTOR x = NULL;
+    LIS_VECTOR xref = NULL;
+    LIS_VECTOR work = NULL;
+
+    LIS_VECTOR b1 = NULL;
+    LIS_VECTOR x1 = NULL;
+    LIS_VECTOR r1 = NULL;
+
+    LIS_SOLVER bad = NULL;
+    LIS_SOLVER k0 = NULL;
+    LIS_SOLVER fgmres = NULL;
+    LIS_SOLVER small = NULL;
+
+    LIS_INT err;
+    LIS_INT failed;
+
+    LIS_INT option_rc;
+    LIS_INT api;
+
+    LIS_INT api_k0;
+    LIS_INT api_fgmres;
+
+    LIS_INT dim;
+    LIS_INT action;
+
+    LIS_REAL true_k0;
+    LIS_REAL true_fgmres;
+    LIS_REAL true_small;
+
+    LIS_REAL diff_norm;
+    LIS_REAL ref_norm;
+    LIS_REAL relative_difference;
+
+    LIS_REAL orth;
+    LIS_REAL relation;
+
+    LIS_UNSIGNED_INT builds;
+
+
+    failed =
+        0;
+
+
+    /*
+     * ========================================================
+     * Case 1:
+     *
+     * Recycling requires restart >= 2.
+     * ========================================================
+     */
+
+    err =
+        build_recovery_matrix(
+            &A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &b);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &xref);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &work);
+
+    if( err )
+        goto api_fail;
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)2.0,
+        b);
+
+    lis_vector_set_all(
+        0.0,
+        x);
+
+
+    err =
+        lis_solver_create(
+            &bad);
+
+    if( err )
+        goto api_fail;
+
+
+    option_rc =
+        lis_solver_set_option(
+            "-i fgcrodr "
+            "-p none "
+            "-scale none "
+            "-print none "
+            "-restart 1 "
+            "-maxiter 100 "
+            "-tol 1e-12 "
+            "-fgcrodr_k 1",
+            bad);
+
+
+    if( option_rc==LIS_SUCCESS )
+    {
+        api =
+            lis_solve(
+                A,
+                b,
+                x,
+                bad);
+    }
+    else
+    {
+        api =
+            option_rc;
+    }
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            bad,
+            &dim,
+            &action,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    printf(
+        "FGCRO-DR edge restart=1,k=1 "
+        "option=%d api=%d status=%d "
+        "dim=%d action=%d\n",
+        (int)option_rc,
+        (int)api,
+        (int)bad->retcode,
+        (int)dim,
+        (int)action);
+
+
+    if(
+        api!=LIS_ERR_ILL_ARG ||
+        dim!=0 ||
+        action!=LIS_FGCRODR_RECYCLE_NONE )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR EDGE restart=1 recycling guard failure\n");
+
+        failed =
+            1;
+    }
+
+
+    lis_solver_destroy(
+        bad);
+
+    bad =
+        NULL;
+
+
+    /*
+     * ========================================================
+     * Case 2:
+     *
+     * restart=1 itself is valid for the k=0 reference path.
+     * FGCRO-DR(k=0) must remain exactly FGMRES.
+     * ========================================================
+     */
+
+    err =
+        lis_solver_create(
+            &k0);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i fgcrodr "
+            "-p none "
+            "-scale none "
+            "-print none "
+            "-restart 1 "
+            "-maxiter 500 "
+            "-tol 1e-12 "
+            "-fgcrodr_k 0",
+            k0);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_create(
+            &fgmres);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i fgmres "
+            "-p none "
+            "-scale none "
+            "-print none "
+            "-restart 1 "
+            "-maxiter 500 "
+            "-tol 1e-12",
+            fgmres);
+
+    if( err )
+        goto api_fail;
+
+
+    lis_vector_set_all(
+        0.0,
+        x);
+
+    lis_vector_set_all(
+        0.0,
+        xref);
+
+
+    api_k0 =
+        lis_solve(
+            A,
+            b,
+            x,
+            k0);
+
+
+    api_fgmres =
+        lis_solve(
+            A,
+            b,
+            xref,
+            fgmres);
+
+
+    true_k0 =
+        true_relative_residual(
+            A,
+            b,
+            x,
+            work);
+
+
+    true_fgmres =
+        true_relative_residual(
+            A,
+            b,
+            xref,
+            work);
+
+
+    lis_vector_copy(
+        x,
+        work);
+
+    lis_vector_axpy(
+        -1.0,
+        xref,
+        work);
+
+    lis_vector_nrm2(
+        work,
+        &diff_norm);
+
+    lis_vector_nrm2(
+        xref,
+        &ref_norm);
+
+
+    relative_difference =
+        ref_norm>0.0
+        ? diff_norm/ref_norm
+        : diff_norm;
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            k0,
+            &dim,
+            &action,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    printf(
+        "FGCRO-DR edge restart=1,k=0/FGMRES "
+        "api=%d/%d status=%d/%d "
+        "iter=%d/%d dim=%d action=%d "
+        "true=%.3e/%.3e diff=%.3e\n",
+        (int)api_k0,
+        (int)api_fgmres,
+        (int)k0->retcode,
+        (int)fgmres->retcode,
+        (int)k0->iter,
+        (int)fgmres->iter,
+        (int)dim,
+        (int)action,
+        (double)true_k0,
+        (double)true_fgmres,
+        (double)relative_difference);
+
+
+    if(
+        api_k0!=LIS_SUCCESS ||
+        api_fgmres!=LIS_SUCCESS ||
+        k0->retcode!=LIS_SUCCESS ||
+        fgmres->retcode!=LIS_SUCCESS ||
+        k0->iter!=fgmres->iter ||
+        dim!=0 ||
+        action!=LIS_FGCRODR_RECYCLE_NONE ||
+        true_k0>1.0e-10 ||
+        true_fgmres>1.0e-10 ||
+        relative_difference>1.0e-12 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR EDGE restart=1 k=0 equivalence failure\n");
+
+        failed =
+            1;
+    }
+
+
+    lis_solver_destroy(
+        fgmres);
+
+    fgmres =
+        NULL;
+
+
+    lis_solver_destroy(
+        k0);
+
+    k0 =
+        NULL;
+
+
+    /*
+     * ========================================================
+     * Case 3:
+     *
+     * One-dimensional system with an oversized requested recycle
+     * dimension.  Arnoldi terminates after one exact direction.
+     *
+     * The recycle implementation must accept this short Krylov
+     * basis and reduce the effective dimension to one.
+     * ========================================================
+     */
+
+    err =
+        build_scalar_matrix(
+            &A1);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A1,
+            &b1);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A1,
+            &x1);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A1,
+            &r1);
+
+    if( err )
+        goto api_fail;
+
+
+    b1->value[0] =
+        (LIS_SCALAR)2.0;
+
+    x1->value[0] =
+        (LIS_SCALAR)0.0;
+
+
+    err =
+        lis_solver_create(
+            &small);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i fgcrodr "
+            "-p none "
+            "-scale none "
+            "-print none "
+            "-restart 4 "
+            "-maxiter 20 "
+            "-tol 1e-12 "
+            "-fgcrodr_k 8",
+            small);
+
+    if( err )
+        goto api_fail;
+
+
+    api =
+        lis_solve(
+            A1,
+            b1,
+            x1,
+            small);
+
+
+    true_small =
+        true_relative_residual(
+            A1,
+            b1,
+            x1,
+            r1);
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            small,
+            &dim,
+            &action,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_stats(
+            small,
+            &builds,
+            NULL,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_validate_recycle(
+            small,
+            &orth,
+            &relation);
+
+    if( err )
+        goto api_fail;
+
+
+    printf(
+        "FGCRO-DR edge 1x1 "
+        "api=%d status=%d iter=%d "
+        "dim=%d action=%d builds=%llu "
+        "true=%.3e orth=%.3e AZ-C=%.3e\n",
+        (int)api,
+        (int)small->retcode,
+        (int)small->iter,
+        (int)dim,
+        (int)action,
+        (unsigned long long)builds,
+        (double)true_small,
+        (double)orth,
+        (double)relation);
+
+
+    if(
+        api!=LIS_SUCCESS ||
+        small->retcode!=LIS_SUCCESS ||
+        small->iter!=1 ||
+        dim!=1 ||
+        action!=LIS_FGCRODR_RECYCLE_BUILD ||
+        builds!=1 ||
+        true_small>1.0e-12 ||
+        orth>1.0e-12 ||
+        relation>1.0e-12 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR EDGE 1x1 short-basis failure\n");
+
+        failed =
+            1;
+    }
+
+
+    if( failed )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR SMALL-DIMENSION/RESTART GUARDS FAILED\n");
+
+        err =
+            LIS_ERR_ILL_ARG;
+
+        goto cleanup;
+    }
+
+
+    printf(
+        "FGCRO-DR SMALL-DIMENSION/RESTART GUARDS PASSED\n");
+
+
+    err =
+        LIS_SUCCESS;
+
+    goto cleanup;
+
+
+api_fail:
+
+    fprintf(
+        stderr,
+        "FGCRO-DR small-dimension/restart API failure: %d\n",
+        (int)err);
+
+
+cleanup:
+
+    if( small )
+        lis_solver_destroy(
+            small);
+
+    if( fgmres )
+        lis_solver_destroy(
+            fgmres);
+
+    if( k0 )
+        lis_solver_destroy(
+            k0);
+
+    if( bad )
+        lis_solver_destroy(
+            bad);
+
+    if( r1 )
+        lis_vector_destroy(
+            r1);
+
+    if( x1 )
+        lis_vector_destroy(
+            x1);
+
+    if( b1 )
+        lis_vector_destroy(
+            b1);
+
+    if( A1 )
+        lis_matrix_destroy(
+            A1);
+
+    if( work )
+        lis_vector_destroy(
+            work);
+
+    if( xref )
+        lis_vector_destroy(
+            xref);
+
+    if( x )
+        lis_vector_destroy(
+            x);
+
+    if( b )
+        lis_vector_destroy(
+            b);
+
+    if( A )
+        lis_matrix_destroy(
+            A);
+
+
+    return err;
+}
+
+
 int
 main(int argc, char **argv)
 {
@@ -4792,6 +6958,30 @@ cleanup:
 
     if(
         check_sequence_recovery_rebuild_lifecycle()
+        !=LIS_SUCCESS )
+    {
+        failed = 1;
+    }
+
+
+    if(
+        check_correctness_edge_cases()
+        !=LIS_SUCCESS )
+    {
+        failed = 1;
+    }
+
+
+    if(
+        check_runtime_configuration_transitions()
+        !=LIS_SUCCESS )
+    {
+        failed = 1;
+    }
+
+
+    if(
+        check_small_dimension_and_restart_guard()
         !=LIS_SUCCESS )
     {
         failed = 1;
