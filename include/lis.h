@@ -849,6 +849,13 @@ struct LIS_SOLVER_STRUCT
 	LIS_INT sequence_precon_type;
 	LIS_INT sequence_precon_options[LIS_OPTIONS_LEN];
 	LIS_SCALAR sequence_precon_params[LIS_PARAMS_LEN];
+
+	/* Sequence warm-start and physical residual state. */
+	LIS_REAL sequence_initial_residual;
+	LIS_REAL sequence_rhs_norm;
+	LIS_REAL sequence_true_residual;
+	LIS_REAL sequence_true_relative_residual;
+	LIS_INT sequence_warm_start_kept;
 };
 typedef struct LIS_SOLVER_STRUCT *LIS_SOLVER;
 

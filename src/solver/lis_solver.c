@@ -238,6 +238,11 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->sequence_precon_matrix_type = LIS_MATRIX_NULL;
 	solver->sequence_precon_is_scaled = LIS_FALSE;
 	solver->sequence_precon_type = LIS_PRECON_TYPE_NONE;
+	solver->sequence_initial_residual = 0.0;
+	solver->sequence_rhs_norm = 0.0;
+	solver->sequence_true_residual = 0.0;
+	solver->sequence_true_relative_residual = 0.0;
+	solver->sequence_warm_start_kept = LIS_FALSE;
 	solver->near_nullspace = NULL;
 	solver->near_nullspace_dim = 0;
 	solver->near_nullspace_coarse = NULL;
@@ -1385,6 +1390,89 @@ LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_solver_compute_true_residual"
+LIS_INT lis_solver_compute_true_residual(
+	LIS_MATRIX A,
+	LIS_VECTOR b,
+	LIS_VECTOR x,
+	LIS_REAL *residual_norm,
+	LIS_REAL *rhs_norm)
+{
+	LIS_INT err;
+	LIS_VECTOR r = NULL;
+
+	LIS_DEBUG_FUNC_IN;
+
+	if( A==NULL || b==NULL || x==NULL ||
+	    residual_norm==NULL || rhs_norm==NULL )
+	{
+		LIS_SETERR(
+			LIS_ERR_ILL_ARG,
+			"invalid true residual arguments\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	*residual_norm = 0.0;
+	*rhs_norm = 0.0;
+
+	err = lis_vector_duplicate(A,&r);
+	if( err ) return err;
+
+	err = lis_matvec(A,x,r);
+	if( err )
+	{
+		lis_vector_destroy(r);
+		return err;
+	}
+
+	err = lis_vector_xpay(b,-1.0,r);
+	if( err )
+	{
+		lis_vector_destroy(r);
+		return err;
+	}
+
+	err = lis_vector_nrm2(r,residual_norm);
+	if( err )
+	{
+		lis_vector_destroy(r);
+		return err;
+	}
+
+	err = lis_vector_nrm2(b,rhs_norm);
+	lis_vector_destroy(r);
+	if( err ) return err;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+static LIS_INT lis_solver_sequence_warm_start_keep(
+	LIS_REAL residual_norm,
+	LIS_REAL rhs_norm)
+{
+	if( residual_norm!=residual_norm ||
+	    rhs_norm!=rhs_norm ||
+	    fabs(residual_norm)>LIS_SCALAR_MAX ||
+	    fabs(rhs_norm)>LIS_SCALAR_MAX )
+	{
+		return LIS_FALSE;
+	}
+
+	if( residual_norm==0.0 )
+	{
+		return LIS_TRUE;
+	}
+
+	if( rhs_norm>0.0 && residual_norm<rhs_norm )
+	{
+		return LIS_TRUE;
+	}
+
+	return LIS_FALSE;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_solve_sequence"
 LIS_INT lis_solve_sequence(
 	LIS_MATRIX A,
@@ -1393,7 +1481,13 @@ LIS_INT lis_solve_sequence(
 	LIS_SOLVER solver)
 {
 	LIS_INT err;
+	LIS_INT saved_initguess_zeros;
+	LIS_INT keep_warm_start;
 	LIS_PRECON precon;
+	LIS_REAL initial_residual;
+	LIS_REAL rhs_norm;
+	LIS_REAL final_residual;
+	LIS_REAL final_rhs_norm;
 
 	LIS_DEBUG_FUNC_IN;
 
@@ -1405,6 +1499,25 @@ LIS_INT lis_solve_sequence(
 		return LIS_ERR_ILL_ARG;
 	}
 
+	/*
+	 * Evaluate the caller-provided x against the physical
+	 * unscaled system before preparing reusable solver state.
+	 */
+	err = lis_solver_compute_true_residual(
+		A,b,x,&initial_residual,&rhs_norm);
+	if( err )
+	{
+		solver->retcode = err;
+		return err;
+	}
+
+	keep_warm_start = lis_solver_sequence_warm_start_keep(
+		initial_residual,rhs_norm);
+
+	solver->sequence_initial_residual = initial_residual;
+	solver->sequence_rhs_norm = rhs_norm;
+	solver->sequence_warm_start_kept = keep_warm_start;
+
 	err = lis_solver_sequence_prepare_precon(
 		A,solver,&precon);
 	if( err )
@@ -1413,12 +1526,49 @@ LIS_INT lis_solve_sequence(
 		return err;
 	}
 
+	/*
+	 * AUTO warm start is local to this sequence solve.
+	 * Restore the user option after the kernel so it does not
+	 * become part of the next sequence-preconditioner decision.
+	 */
+	saved_initguess_zeros =
+		solver->options[LIS_OPTIONS_INITGUESS_ZEROS];
+
+	solver->options[LIS_OPTIONS_INITGUESS_ZEROS] =
+		keep_warm_start ? LIS_FALSE : LIS_TRUE;
+
 	err = lis_solve_kernel(
 		A,b,x,solver,precon);
+
+	solver->options[LIS_OPTIONS_INITGUESS_ZEROS] =
+		saved_initguess_zeros;
+
 	if( err )
 	{
 		solver->retcode = err;
 		return err;
+	}
+
+	/* Physical post-solve residual for certification/recovery. */
+	err = lis_solver_compute_true_residual(
+		A,b,x,&final_residual,&final_rhs_norm);
+	if( err )
+	{
+		solver->retcode = err;
+		return err;
+	}
+
+	solver->sequence_true_residual = final_residual;
+
+	if( final_rhs_norm>0.0 )
+	{
+		solver->sequence_true_relative_residual =
+			final_residual/final_rhs_norm;
+	}
+	else
+	{
+		solver->sequence_true_relative_residual =
+			final_residual;
 	}
 
 	LIS_DEBUG_FUNC_OUT;
@@ -1468,6 +1618,12 @@ LIS_INT lis_solver_reset_sequence(LIS_SOLVER solver)
 	solver->x = NULL;
 	solver->xx = NULL;
 	solver->precon = NULL;
+
+	solver->sequence_initial_residual = 0.0;
+	solver->sequence_rhs_norm = 0.0;
+	solver->sequence_true_residual = 0.0;
+	solver->sequence_true_relative_residual = 0.0;
+	solver->sequence_warm_start_kept = LIS_FALSE;
 
 	LIS_DEBUG_FUNC_OUT;
 	return ret;
