@@ -838,6 +838,17 @@ struct LIS_SOLVER_STRUCT
 	LIS_REAL tol;
 	LIS_REAL tol_switch;
 	LIS_INT setup;
+
+	/* Persistent preconditioner state for related systems. */
+	LIS_PRECON sequence_precon;
+	LIS_MATRIX sequence_precon_matrix;
+	LIS_UNSIGNED_INT sequence_precon_structure_generation;
+	LIS_UNSIGNED_INT sequence_precon_value_generation;
+	LIS_INT sequence_precon_matrix_type;
+	LIS_INT sequence_precon_is_scaled;
+	LIS_INT sequence_precon_type;
+	LIS_INT sequence_precon_options[LIS_OPTIONS_LEN];
+	LIS_SCALAR sequence_precon_params[LIS_PARAMS_LEN];
 };
 typedef struct LIS_SOLVER_STRUCT *LIS_SOLVER;
 

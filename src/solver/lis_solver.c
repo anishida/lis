@@ -231,6 +231,13 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->work     = NULL;
 	solver->rhistory = NULL;
 	solver->precon   = NULL;
+	solver->sequence_precon = NULL;
+	solver->sequence_precon_matrix = NULL;
+	solver->sequence_precon_structure_generation = 0;
+	solver->sequence_precon_value_generation = 0;
+	solver->sequence_precon_matrix_type = LIS_MATRIX_NULL;
+	solver->sequence_precon_is_scaled = LIS_FALSE;
+	solver->sequence_precon_type = LIS_PRECON_TYPE_NONE;
 	solver->near_nullspace = NULL;
 	solver->near_nullspace_dim = 0;
 	solver->near_nullspace_coarse = NULL;
@@ -988,6 +995,7 @@ LIS_INT lis_solver_destroy(LIS_SOLVER solver)
 
 	if( solver )
 	{
+		lis_solver_sequence_precon_destroy(solver);
 		lis_solver_work_destroy(solver);
 		lis_gcrodr_clear_recycle(solver);
 		lis_solver_clear_near_nullspace(solver);
@@ -1156,6 +1164,179 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
 	return LIS_SUCCESS;
 }
 
+static LIS_INT lis_solver_sequence_precon_config_matches(
+	LIS_SOLVER solver)
+{
+	if( memcmp(
+		solver->sequence_precon_options,
+		solver->options,
+		sizeof(solver->options))!=0 )
+	{
+		return LIS_FALSE;
+	}
+
+	if( memcmp(
+		solver->sequence_precon_params,
+		solver->params,
+		sizeof(solver->params))!=0 )
+	{
+		return LIS_FALSE;
+	}
+
+	return LIS_TRUE;
+}
+
+static void lis_solver_sequence_precon_snapshot(
+	LIS_SOLVER solver)
+{
+	memcpy(
+		solver->sequence_precon_options,
+		solver->options,
+		sizeof(solver->options));
+
+	memcpy(
+		solver->sequence_precon_params,
+		solver->params,
+		sizeof(solver->params));
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_sequence_precon_destroy"
+LIS_INT lis_solver_sequence_precon_destroy(LIS_SOLVER solver)
+{
+	LIS_INT err = LIS_SUCCESS;
+
+	LIS_DEBUG_FUNC_IN;
+
+	if( solver==NULL )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"solver is NULL\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	if( solver->sequence_precon!=NULL )
+	{
+		if( solver->precon==solver->sequence_precon )
+		{
+			solver->precon = NULL;
+		}
+
+		err = lis_precon_destroy(
+			solver->sequence_precon);
+	}
+
+	solver->sequence_precon = NULL;
+	solver->sequence_precon_matrix = NULL;
+	solver->sequence_precon_structure_generation = 0;
+	solver->sequence_precon_value_generation = 0;
+	solver->sequence_precon_matrix_type = LIS_MATRIX_NULL;
+	solver->sequence_precon_is_scaled = LIS_FALSE;
+	solver->sequence_precon_type = LIS_PRECON_TYPE_NONE;
+
+	LIS_DEBUG_FUNC_OUT;
+	return err;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_sequence_prepare_precon"
+LIS_INT lis_solver_sequence_prepare_precon(
+	LIS_MATRIX A,
+	LIS_SOLVER solver,
+	LIS_PRECON *precon)
+{
+	LIS_INT err;
+	LIS_INT precon_type;
+	LIS_UNSIGNED_INT structure_generation;
+	LIS_UNSIGNED_INT value_generation;
+
+	LIS_DEBUG_FUNC_IN;
+
+	if( A==NULL || solver==NULL || precon==NULL )
+	{
+		LIS_SETERR(
+			LIS_ERR_ILL_ARG,
+			"invalid sequence preconditioner arguments\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	*precon = NULL;
+	precon_type = solver->options[LIS_OPTIONS_PRECON];
+
+	if( precon_type < 0 ||
+	    (precon_type > LIS_PRECONNAME_MAX &&
+	     precon_type < LIS_PRECON_TYPE_USERDEF) ||
+	    precon_type >= precon_register_type )
+	{
+		LIS_SETERR1(
+			LIS_ERR_ILL_ARG,
+			"Invalid LIS_OPTIONS_PRECON value %D\n",
+			precon_type);
+		return LIS_ERR_ILL_ARG;
+	}
+
+	err = lis_matrix_get_generation(
+		A,
+		&structure_generation,
+		&value_generation);
+	if( err ) return err;
+
+	if( solver->sequence_precon!=NULL &&
+	    solver->sequence_precon_matrix==A &&
+	    solver->sequence_precon_structure_generation==
+		structure_generation &&
+	    solver->sequence_precon_value_generation==
+		value_generation &&
+	    solver->sequence_precon_matrix_type==A->matrix_type &&
+	    solver->sequence_precon_is_scaled==A->is_scaled &&
+	    solver->sequence_precon_type==precon_type &&
+	    lis_solver_sequence_precon_config_matches(solver) )
+	{
+		solver->A = A;
+		solver->precon = solver->sequence_precon;
+		*precon = solver->sequence_precon;
+
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
+
+	if( solver->sequence_precon!=NULL )
+	{
+		err = lis_solver_sequence_precon_destroy(solver);
+		if( err ) return err;
+	}
+
+	solver->A = A;
+
+	err = lis_solver_check_user_matrix(A,solver,NULL);
+	if( err ) return err;
+
+	err = lis_precon_create(
+		solver,
+		&solver->sequence_precon);
+	if( err )
+	{
+		solver->sequence_precon = NULL;
+		solver->retcode = err;
+		return err;
+	}
+
+	solver->sequence_precon_matrix = A;
+	solver->sequence_precon_structure_generation =
+		structure_generation;
+	solver->sequence_precon_value_generation =
+		value_generation;
+	solver->sequence_precon_matrix_type = A->matrix_type;
+	solver->sequence_precon_is_scaled = A->is_scaled;
+	solver->sequence_precon_type = precon_type;
+	lis_solver_sequence_precon_snapshot(solver);
+
+	solver->precon = solver->sequence_precon;
+	*precon = solver->sequence_precon;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_solve"
 LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
@@ -1190,11 +1371,13 @@ LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
 	if( err )
 	{
 		lis_solver_work_destroy(solver);	  
+		if( solver->precon==precon ) solver->precon = NULL;
 		lis_precon_destroy(precon);
 		solver->retcode = err;
 		return err;
 	}
 
+	if( solver->precon==precon ) solver->precon = NULL;
 	lis_precon_destroy(precon);
 
 	LIS_DEBUG_FUNC_OUT;

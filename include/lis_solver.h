@@ -39,6 +39,8 @@ extern "C"
 #endif
 	extern LIS_INT lis_solver_init(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_work_destroy(LIS_SOLVER solver);
+	extern LIS_INT lis_solver_sequence_prepare_precon(LIS_MATRIX A, LIS_SOLVER solver, LIS_PRECON *precon);
+	extern LIS_INT lis_solver_sequence_precon_destroy(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_work_vector_compatible(LIS_VECTOR v, LIS_MATRIX A, LIS_INT precision);
 	extern LIS_INT lis_solver_work_compatible(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VECTOR t, LIS_VECTOR r, LIS_REAL *bnrm2);
