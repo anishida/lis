@@ -163,6 +163,8 @@ LIS_INT lis_esolver_init(LIS_ESOLVER esolver)
 	esolver->p_c_time   = 0;
 
 	esolver->ishift     = 0;
+	esolver->transform  = LIS_EIGEN_TRANSFORM_AUTO;
+	esolver->nev        = 0;
 	esolver->tol        = 0;
 	esolver->eprecision = LIS_PRECISION_DOUBLE;
 
@@ -184,6 +186,29 @@ LIS_INT lis_esolver_init(LIS_ESOLVER esolver)
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+}
+
+
+static LIS_INT lis_esolver_result_count(
+        LIS_ESOLVER esolver)
+{
+        LIS_INT ss;
+
+        ss = esolver->options[
+                LIS_EOPTIONS_SUBSPACE];
+
+        if( esolver->options[
+                    LIS_EOPTIONS_ESOLVER]
+                ==LIS_ESOLVER_GLI &&
+            esolver->transform
+                !=LIS_EIGEN_TRANSFORM_AUTO &&
+            esolver->nev>0 &&
+            esolver->nev<ss )
+        {
+                return esolver->nev;
+        }
+
+        return ss;
 }
 
 #undef __FUNC__
@@ -244,10 +269,15 @@ LIS_INT lis_esolver_destroy(LIS_ESOLVER esolver)
  	        if( esolver->iter2) lis_free(esolver->iter2);
    	        if( esolver->evector ) 
 		  {
-		    if ( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_LI || esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_AI || esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_SI )
+		    if ( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_LI || esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_AI || esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_SI  || esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_GLI)
 		      {
 			ss=esolver->options[LIS_EOPTIONS_SUBSPACE];
-			for(i=0;i<ss+2;i++) lis_vector_destroy(esolver->evector[i]);
+			for(i=0;i<ss+2;i++)
+                    {
+                      if( esolver->evector[i] )
+                        lis_vector_destroy(
+                          esolver->evector[i]);
+                    }
 		      }
 		    lis_free(esolver->evector);
 		  }
@@ -354,6 +384,72 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	esolver->eprecision = eprecision;
 	rval = esolver->options[LIS_EOPTIONS_RVAL];
 
+	if( esolver->transform < LIS_EIGEN_TRANSFORM_AUTO ||
+	    esolver->transform > LIS_EIGEN_TRANSFORM_BUCKLING )
+	{
+		LIS_SETERR1(
+			LIS_ERR_ILL_ARG,
+			"Unknown spectral transformation %D\n",
+			esolver->transform);
+		return LIS_ERR_ILL_ARG;
+	}
+
+	if( esolver->transform != LIS_EIGEN_TRANSFORM_AUTO )
+	{
+		if( B==NULL )
+		{
+			LIS_SETERR(
+				LIS_ERR_ILL_ARG,
+				"spectral transformations require "
+" a generalized eigenproblem\n");
+			return LIS_ERR_ILL_ARG;
+		}
+
+		/*
+		 * GII is the reference implementation for explicit
+		 * spectral transformations. Transformed Krylov
+		 * recurrences are enabled separately.
+		 */
+		if( nesolver != LIS_ESOLVER_GII &&
+		    nesolver != LIS_ESOLVER_GLI )
+		{
+			LIS_SETERR(
+				LIS_ERR_NOT_IMPLEMENTED,
+				"spectral transformation is not implemented "
+"for this eigensolver\n");
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
+
+#ifdef _COMPLEX
+            /*
+             * The transformed generalized Lanczos path currently uses
+             * a real symmetric projected eigensystem. Reject complex
+             * arithmetic before allocating Lanczos work or starting
+             * shifted solves.
+             */
+            if( nesolver == LIS_ESOLVER_GLI )
+            {
+                    LIS_SETERR(
+                            LIS_ERR_NOT_IMPLEMENTED,
+                            "transformed generalized Lanczos is not "
+"implemented for complex arithmetic\n");
+                    return LIS_ERR_NOT_IMPLEMENTED;
+            }
+#endif
+
+		if( esolver->transform ==
+		        LIS_EIGEN_TRANSFORM_BUCKLING &&
+		    oshift==0.0 && ishift==0.0 )
+		{
+			LIS_SETERR(
+				LIS_ERR_ILL_ARG,
+				"buckling transformation requires "
+" a nonzero shift\n");
+			return LIS_ERR_ILL_ARG;
+		}
+
+	}
+
 	/*
 	 * LIS_MATRIX_USER is an operator, not materialized LIS storage.
 	 * Explicit storage conversion and matrix shifts are separate features.
@@ -368,8 +464,11 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	     (B!=NULL && B->matrix_type==LIS_MATRIX_USER)) &&
 	    (oshift!=0.0 || ishift!=0.0) &&
 	    !(B!=NULL &&
-	      (nesolver==LIS_ESOLVER_GPI || nesolver==LIS_ESOLVER_GII ||
-              nesolver==LIS_ESOLVER_GCR)) )
+	  (nesolver==LIS_ESOLVER_GPI ||
+	   nesolver==LIS_ESOLVER_GII ||
+	   nesolver==LIS_ESOLVER_GCR ||
+	   (nesolver==LIS_ESOLVER_GLI &&
+	    esolver->transform!=LIS_EIGEN_TRANSFORM_AUTO))) )
 	{
 		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
 		           "matrix shifts are unavailable for LIS_MATRIX_USER\n");
@@ -568,7 +667,9 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 		return err;
 	}
 
-	/* create residual history array */
+	    memset(evector,0,(ss+2)*sizeof(LIS_VECTOR));
+
+/* create residual history array */
 	if( esolver->rhistory ) lis_free(esolver->rhistory);
 	rhistory = (LIS_REAL *)lis_malloc((emaxiter+2)*sizeof(LIS_REAL),"lis_esolve::rhistory");
 	if( rhistory==NULL )
@@ -769,6 +870,67 @@ LIS_INT lis_esolver_set_option2(char* arg1, char *arg2, LIS_ESOLVER esolver)
 	LIS_DEBUG_FUNC_IN;
 
 	err = 0;
+
+	/*
+	 * Spectral transformations are kept outside LIS_EOPTIONS_* so
+	 * existing public option and parameter indices remain unchanged.
+	 */
+	/*
+	 * Requested eigenpair count is independent from the Lanczos
+	 * subspace dimension. A zero internal value preserves the
+	 * historical behavior nev == ss.
+	 */
+	if( strcmp(arg1,"-nev")==0 )
+	{
+		esolver->nev = atoi(arg2);
+
+		if( esolver->nev<0 )
+		{
+			LIS_SETERR(
+				LIS_ERR_ILL_ARG,
+				"Parameter -nev must not be negative\n");
+			esolver->retcode = LIS_ERR_ILL_ARG;
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_ERR_ILL_ARG;
+		}
+
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
+
+	if( strcmp(arg1,"-etransform")==0 )
+	{
+		if( strcmp(arg2,"auto")==0 || strcmp(arg2,"0")==0 )
+		{
+			esolver->transform = LIS_EIGEN_TRANSFORM_AUTO;
+		}
+		else if( strcmp(arg2,"shift-invert")==0 ||
+		         strcmp(arg2,"shiftinvert")==0 ||
+		         strcmp(arg2,"shift_invert")==0 ||
+		         strcmp(arg2,"1")==0 )
+		{
+			esolver->transform =
+				LIS_EIGEN_TRANSFORM_SHIFT_INVERT;
+		}
+		else if( strcmp(arg2,"buckling")==0 ||
+		         strcmp(arg2,"2")==0 )
+		{
+			esolver->transform =
+				LIS_EIGEN_TRANSFORM_BUCKLING;
+		}
+		else
+		{
+			LIS_SETERR(
+				LIS_ERR_ILL_ARG,
+				"Parameter -etransform is not correct\n");
+			esolver->retcode = LIS_ERR_ILL_ARG;
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_ERR_ILL_ARG;
+		}
+
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
 	
 	for(i=0;i<LIS_ESOLVER_OPTION_LEN;i++)
 	{
@@ -1199,7 +1361,7 @@ LIS_INT lis_esolver_get_evalues(LIS_ESOLVER esolver, LIS_VECTOR v)
 		return LIS_ERR_ILL_ARG;
 	}
 
-	ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
+	ss = lis_esolver_result_count(esolver);
 	lis_vector_set_size(v,0,ss);
 	lis_vector_get_size(v,&n,&gn);
 	lis_vector_get_range(v,&is,&ie);
@@ -1219,6 +1381,7 @@ LIS_INT lis_esolver_get_evalues(LIS_ESOLVER esolver, LIS_VECTOR v)
 #define __FUNC__ "lis_esolver_get_specific_evalue"
 LIS_INT lis_esolver_get_specific_evalue(LIS_ESOLVER esolver, LIS_INT mode, LIS_SCALAR *evalue)
 {
+   LIS_INT count;
 	LIS_DEBUG_FUNC_IN;
 
 	if ( esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_SI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_LI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_AI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GSI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GLI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GAI)
@@ -1227,7 +1390,20 @@ LIS_INT lis_esolver_get_specific_evalue(LIS_ESOLVER esolver, LIS_INT mode, LIS_S
 		return LIS_ERR_ILL_ARG;
 	}
 
-	*evalue = esolver->evalue[mode];
+	   count = lis_esolver_result_count(esolver);
+
+   if( mode<0 || mode>=count )
+   {
+           LIS_SETERR2(
+                   LIS_ERR_ILL_ARG,
+                   "Parameter mode is %D "
+                   "(Set between 0 and %D)\n",
+                   mode,
+                   count-1);
+           return LIS_ERR_ILL_ARG;
+   }
+
+*evalue = esolver->evalue[mode];
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
@@ -1248,7 +1424,18 @@ LIS_INT lis_esolver_get_evectors(LIS_ESOLVER esolver, LIS_MATRIX M)
 		return LIS_ERR_ILL_ARG;
 	}
 
-	ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
+	ss = lis_esolver_result_count(esolver);
+
+   if( ss<1 ||
+       esolver->evector==NULL ||
+       esolver->evector[0]==NULL )
+   {
+           LIS_SETERR(
+                   LIS_ERR_ILL_ARG,
+                   "Eigenvectors are not available\n");
+           return LIS_ERR_ILL_ARG;
+   }
+
 	lis_esolver_evector_size = esolver->evector[0]->gn; 
 	lis_matrix_set_size(M,0,lis_esolver_evector_size);
 	lis_matrix_get_size(M,&n,&gn);
@@ -1279,6 +1466,7 @@ LIS_INT lis_esolver_get_evectors(LIS_ESOLVER esolver, LIS_MATRIX M)
 #define __FUNC__ "lis_esolver_get_specific_evector"
 LIS_INT lis_esolver_get_specific_evector(LIS_ESOLVER esolver, LIS_INT mode, LIS_VECTOR x)
 {
+   LIS_INT count;
 	LIS_DEBUG_FUNC_IN;
 
 	if ( esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_SI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_LI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_AI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GSI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GLI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GAI)
@@ -1287,7 +1475,30 @@ LIS_INT lis_esolver_get_specific_evector(LIS_ESOLVER esolver, LIS_INT mode, LIS_
 		return LIS_ERR_ILL_ARG;
 	}
 
-	lis_vector_copy(esolver->evector[mode],x);
+	   count = lis_esolver_result_count(esolver);
+
+   if( mode<0 || mode>=count )
+   {
+           LIS_SETERR2(
+                   LIS_ERR_ILL_ARG,
+                   "Parameter mode is %D "
+                   "(Set between 0 and %D)\n",
+                   mode,
+                   count-1);
+           return LIS_ERR_ILL_ARG;
+   }
+
+   if( esolver->evector==NULL ||
+       esolver->evector[mode]==NULL )
+   {
+           LIS_SETERR1(
+                   LIS_ERR_ILL_ARG,
+                   "Eigenvector mode %D is not available\n",
+                   mode);
+           return LIS_ERR_ILL_ARG;
+   }
+
+lis_vector_copy(esolver->evector[mode],x);
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
@@ -1307,7 +1518,7 @@ LIS_INT lis_esolver_get_residualnorms(LIS_ESOLVER esolver, LIS_VECTOR v)
 		return LIS_ERR_ILL_ARG;
 	}
 
-	ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
+	ss = lis_esolver_result_count(esolver);
 	lis_vector_set_size(v,0,ss);
 	lis_vector_get_size(v,&n,&gn);
 	lis_vector_get_range(v,&is,&ie);
@@ -1327,6 +1538,7 @@ LIS_INT lis_esolver_get_residualnorms(LIS_ESOLVER esolver, LIS_VECTOR v)
 #define __FUNC__ "lis_esolver_get_specific_residualnorm"
 LIS_INT lis_esolver_get_specific_residualnorm(LIS_ESOLVER esolver, LIS_INT mode, LIS_REAL *residual)
 {
+   LIS_INT count;
 	LIS_DEBUG_FUNC_IN;
 
 	if ( esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_SI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_LI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_AI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GSI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GLI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GAI)
@@ -1335,7 +1547,20 @@ LIS_INT lis_esolver_get_specific_residualnorm(LIS_ESOLVER esolver, LIS_INT mode,
 		return LIS_ERR_ILL_ARG;
 	}
 
-	*residual  = esolver->resid[mode];
+	   count = lis_esolver_result_count(esolver);
+
+   if( mode<0 || mode>=count )
+   {
+           LIS_SETERR2(
+                   LIS_ERR_ILL_ARG,
+                   "Parameter mode is %D "
+                   "(Set between 0 and %D)\n",
+                   mode,
+                   count-1);
+           return LIS_ERR_ILL_ARG;
+   }
+
+*residual  = esolver->resid[mode];
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
@@ -1355,7 +1580,7 @@ LIS_INT lis_esolver_get_iters(LIS_ESOLVER esolver, LIS_VECTOR v)
 		return LIS_ERR_ILL_ARG;
 	}
 
-	ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
+	ss = lis_esolver_result_count(esolver);
 	lis_vector_set_size(v,0,ss);
 	lis_vector_get_size(v,&n,&gn);
 	lis_vector_get_range(v,&is,&ie);
@@ -1377,6 +1602,7 @@ LIS_INT lis_esolver_get_iters(LIS_ESOLVER esolver, LIS_VECTOR v)
 #define __FUNC__ "lis_esolver_get_specific_iter"
 LIS_INT lis_esolver_get_specific_iter(LIS_ESOLVER esolver, LIS_INT mode, LIS_INT *iter)
 {
+   LIS_INT count;
 	LIS_DEBUG_FUNC_IN;
 
 	if ( esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_SI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_LI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_AI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GSI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GLI && esolver->options[LIS_EOPTIONS_ESOLVER] != LIS_ESOLVER_GAI)
@@ -1385,7 +1611,20 @@ LIS_INT lis_esolver_get_specific_iter(LIS_ESOLVER esolver, LIS_INT mode, LIS_INT
 		return LIS_ERR_ILL_ARG;
 	}
 
-	*iter = esolver->iter[mode];
+	   count = lis_esolver_result_count(esolver);
+
+   if( mode<0 || mode>=count )
+   {
+           LIS_SETERR2(
+                   LIS_ERR_ILL_ARG,
+                   "Parameter mode is %D "
+                   "(Set between 0 and %D)\n",
+                   mode,
+                   count-1);
+           return LIS_ERR_ILL_ARG;
+   }
+
+*iter = esolver->iter[mode];
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;

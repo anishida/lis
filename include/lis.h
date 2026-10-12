@@ -212,6 +212,10 @@ extern "C" {
 #define LIS_ESOLVER_GLI 15
 #define LIS_ESOLVER_GAI 16
 
+#define LIS_EIGEN_TRANSFORM_AUTO 0
+#define LIS_EIGEN_TRANSFORM_SHIFT_INVERT 1
+#define LIS_EIGEN_TRANSFORM_BUCKLING 2
+
 #define LIS_INS_VALUE 0
 #define LIS_ADD_VALUE 1
 #define LIS_SUB_VALUE 2
@@ -848,6 +852,8 @@ struct LIS_ESOLVER_STRUCT
         double p_i_time;
 	LIS_INT eprecision;
         LIS_SCALAR ishift;
+        LIS_INT transform;
+        LIS_INT nev;
 	LIS_REAL nrm2;
         LIS_REAL tol;
 };
