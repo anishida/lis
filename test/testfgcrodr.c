@@ -741,6 +741,559 @@ cleanup:
 }
 
 
+
+static void
+set_second_exact_solution(
+    LIS_VECTOR u)
+{
+    LIS_INT i;
+
+
+    for(i=0;i<u->n;i++)
+    {
+        LIS_REAL g =
+            (LIS_REAL)(u->is+i+1);
+
+
+        /*
+         * Related, but deliberately non-identical, second system.
+         *
+         * The matrix remains unchanged.  Only the exact solution and
+         * therefore the right-hand side change.
+         */
+        u->value[i] =
+            (LIS_SCALAR)(
+                1.0
+                + 0.15*sin(0.071*g + 0.08)
+                + 0.04*cos(0.037*g)
+                + 0.01*sin(0.19*g));
+    }
+}
+
+
+static int
+check_sequence_recycle(
+    LIS_MATRIX A)
+{
+    LIS_SOLVER solver = NULL;
+
+    LIS_VECTOR u1 = NULL;
+    LIS_VECTOR u2 = NULL;
+
+    LIS_VECTOR b1 = NULL;
+    LIS_VECTOR b2 = NULL;
+
+    LIS_VECTOR x = NULL;
+    LIS_VECTOR r = NULL;
+    LIS_VECTOR diff = NULL;
+
+    LIS_INT err;
+
+    LIS_INT api1;
+    LIS_INT api2;
+
+    LIS_INT status1;
+    LIS_INT status2;
+
+    LIS_INT iter1;
+    LIS_INT iter2;
+
+    LIS_INT dim1;
+    LIS_INT dim2;
+
+    LIS_INT action1;
+    LIS_INT action2;
+
+    LIS_REAL quality1;
+    LIS_REAL quality2;
+
+    LIS_REAL qmin1;
+    LIS_REAL qmin2;
+
+    LIS_REAL orth1;
+    LIS_REAL orth2;
+
+    LIS_REAL relation1;
+    LIS_REAL relation2;
+
+    LIS_REAL true1;
+    LIS_REAL true2;
+
+    LIS_REAL diff_norm;
+    LIS_REAL exact_norm;
+    LIS_REAL solution_error;
+
+    int failed = 0;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &u1);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &u2);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &b1);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &b2);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &r);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &diff);
+
+    if( err )
+        goto api_fail;
+
+
+    set_exact_solution(
+        u1);
+
+    set_second_exact_solution(
+        u2);
+
+
+    err =
+        lis_matvec(
+            A,
+            u1,
+            b1);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matvec(
+            A,
+            u2,
+            b2);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i fgcrodr "
+            "-p jacobi "
+            "-restart 10 "
+            "-maxiter 500 "
+            "-tol 1e-12 "
+            "-print none "
+            "-fgcrodr_k 5",
+            solver);
+
+    if( err )
+        goto api_fail;
+
+
+    /* ======================================================== */
+    /* Solve 1: no recycle on entry -> BUILD                    */
+    /* ======================================================== */
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x);
+
+
+    api1 =
+        lis_solve_sequence(
+            A,
+            b1,
+            x,
+            solver);
+
+    status1 =
+        solver->retcode;
+
+    iter1 =
+        solver->iter;
+
+    true1 =
+        true_relative_residual(
+            A,
+            b1,
+            x,
+            r);
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim1,
+            &action1,
+            &quality1,
+            &qmin1);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_validate_recycle(
+            solver,
+            &orth1,
+            &relation1);
+
+    if( err )
+        goto api_fail;
+
+
+    /* ======================================================== */
+    /* Solve 2: same A generation -> active KEEP                */
+    /*                                                          */
+    /* Start again from zero so a nontrivial Krylov solve is     */
+    /* required and reuse cannot be hidden by an already exact x.*/
+    /* ======================================================== */
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x);
+
+
+    api2 =
+        lis_solve_sequence(
+            A,
+            b2,
+            x,
+            solver);
+
+    status2 =
+        solver->retcode;
+
+    iter2 =
+        solver->iter;
+
+    true2 =
+        true_relative_residual(
+            A,
+            b2,
+            x,
+            r);
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim2,
+            &action2,
+            &quality2,
+            &qmin2);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_validate_recycle(
+            solver,
+            &orth2,
+            &relation2);
+
+    if( err )
+        goto api_fail;
+
+
+    /*
+     * Independent solution check against the known exact second
+     * solution, not only against the solver's reported residual.
+     */
+    lis_vector_copy(
+        x,
+        diff);
+
+    lis_vector_axpy(
+        (LIS_SCALAR)-1.0,
+        u2,
+        diff);
+
+    lis_vector_nrm2(
+        diff,
+        &diff_norm);
+
+    lis_vector_nrm2(
+        u2,
+        &exact_norm);
+
+    solution_error =
+        exact_norm>0.0
+        ? diff_norm/exact_norm
+        : diff_norm;
+
+
+    printf(
+        "FGCRO-DR sequence solve1 "
+        "api=%d status=%d iter=%d "
+        "true=%.17e dim=%d action=%d "
+        "orth=%.3e AZ-C=%.3e\n",
+        (int)api1,
+        (int)status1,
+        (int)iter1,
+        (double)true1,
+        (int)dim1,
+        (int)action1,
+        (double)orth1,
+        (double)relation1);
+
+
+    printf(
+        "FGCRO-DR sequence solve2 "
+        "api=%d status=%d iter=%d "
+        "true=%.17e dim=%d action=%d "
+        "quality=%.3f solution_error=%.3e "
+        "orth=%.3e AZ-C=%.3e\n",
+        (int)api2,
+        (int)status2,
+        (int)iter2,
+        (double)true2,
+        (int)dim2,
+        (int)action2,
+        (double)quality2,
+        (double)solution_error,
+        (double)orth2,
+        (double)relation2);
+
+
+    /* ======================================================== */
+    /* Stage 2C contract                                       */
+    /* ======================================================== */
+
+    if(
+        api1!=LIS_SUCCESS ||
+        status1!=LIS_SUCCESS )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR sequence solve1 failed: "
+            "api=%d status=%d\n",
+            (int)api1,
+            (int)status1);
+
+        failed = 1;
+    }
+
+
+    if(
+        dim1!=5 ||
+        action1!=LIS_FGCRODR_RECYCLE_BUILD )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR sequence BUILD mismatch: "
+            "dim=%d action=%d\n",
+            (int)dim1,
+            (int)action1);
+
+        failed = 1;
+    }
+
+
+    if( true1>1.0e-10 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR sequence solve1 true residual "
+            "too large: %.17e\n",
+            (double)true1);
+
+        failed = 1;
+    }
+
+
+    if(
+        api2!=LIS_SUCCESS ||
+        status2!=LIS_SUCCESS )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR sequence solve2 failed: "
+            "api=%d status=%d\n",
+            (int)api2,
+            (int)status2);
+
+        failed = 1;
+    }
+
+
+    if( dim2!=5 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR sequence KEEP dimension mismatch: %d\n",
+            (int)dim2);
+
+        failed = 1;
+    }
+
+
+    if(
+        action2
+        != LIS_FGCRODR_RECYCLE_KEEP )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR sequence expected KEEP, got action=%d\n",
+            (int)action2);
+
+        failed = 1;
+    }
+
+
+    if( true2>1.0e-10 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR sequence solve2 true residual "
+            "too large: %.17e\n",
+            (double)true2);
+
+        failed = 1;
+    }
+
+
+    if( solution_error>1.0e-9 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR sequence solution error "
+            "too large: %.17e\n",
+            (double)solution_error);
+
+        failed = 1;
+    }
+
+
+    if(
+        orth2>1.0e-12 ||
+        relation2>1.0e-12 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR sequence recycle invariant failure: "
+            "orth=%.17e AZ-C=%.17e\n",
+            (double)orth2,
+            (double)relation2);
+
+        failed = 1;
+    }
+
+
+    if( failed )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR SEQUENCE REUSE FAILED\n");
+    }
+    else
+    {
+        printf(
+            "FGCRO-DR SEQUENCE REUSE PASSED\n");
+    }
+
+
+cleanup:
+
+    if( solver )
+        lis_solver_destroy(
+            solver);
+
+    if( diff )
+        lis_vector_destroy(
+            diff);
+
+    if( r )
+        lis_vector_destroy(
+            r);
+
+    if( x )
+        lis_vector_destroy(
+            x);
+
+    if( b2 )
+        lis_vector_destroy(
+            b2);
+
+    if( b1 )
+        lis_vector_destroy(
+            b1);
+
+    if( u2 )
+        lis_vector_destroy(
+            u2);
+
+    if( u1 )
+        lis_vector_destroy(
+            u1);
+
+
+    return failed;
+
+
+api_fail:
+
+    fprintf(
+        stderr,
+        "FGCRO-DR sequence API failure: %d\n",
+        (int)err);
+
+    failed = 1;
+
+    goto cleanup;
+}
+
+
 int
 main(int argc, char **argv)
 {
@@ -804,6 +1357,12 @@ main(int argc, char **argv)
     if( (err=lis_vector_duplicate(A,&xk)) ) goto api_fail;
     if( (err=lis_vector_duplicate(A,&work)) ) goto api_fail;
     if( (err=lis_vector_duplicate(A,&diff)) ) goto api_fail;
+
+    if( check_sequence_recycle(A) )
+    {
+        failed = 1;
+    }
+
 
     set_exact_solution(u);
 

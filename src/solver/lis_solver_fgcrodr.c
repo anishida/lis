@@ -47,6 +47,11 @@ struct LIS_FGCRODR_STATE_STRUCT
     LIS_INT alloc;
     LIS_INT valid;
 
+    /* Owner of the exact recycle relation A Z = C. */
+    LIS_MATRIX matrix;
+    LIS_UNSIGNED_INT structure_generation;
+    LIS_UNSIGNED_INT value_generation;
+
     LIS_INT target_dim;
 
     LIS_REAL keep_threshold;
@@ -1164,6 +1169,19 @@ lis_fgcrodr_build_recycle(
 
     if( keep>0 )
     {
+        state->matrix =
+            solver->A;
+
+        state->structure_generation =
+            solver->A->structure_generation;
+
+        state->value_generation =
+            solver->A->value_generation;
+    }
+
+
+    if( keep>0 )
+    {
         state->last_action =
             LIS_FGCRODR_RECYCLE_BUILD;
 
@@ -1402,6 +1420,7 @@ lis_fgcrodr_flexible_core(
     LIS_VECTOR *v;
 
     LIS_SCALAR *h;
+    LIS_SCALAR *bcoef;
 
     LIS_SCALAR aa;
     LIS_SCALAR bb;
@@ -1409,6 +1428,8 @@ lis_fgcrodr_flexible_core(
     LIS_SCALAR a2;
     LIS_SCALAR b2;
     LIS_SCALAR t;
+    LIS_SCALAR alpha;
+    LIS_SCALAR gamma;
 
     LIS_REAL bnrm2;
     LIS_REAL nrm2;
@@ -1439,6 +1460,12 @@ lis_fgcrodr_flexible_core(
     LIS_INT cs;
     LIS_INT sn;
 
+    LIS_FGCRODR_STATE state;
+
+    LIS_INT use_recycle;
+    LIS_INT kcur;
+    LIS_INT ri;
+
     double time;
     double ptime;
 
@@ -1448,6 +1475,30 @@ lis_fgcrodr_flexible_core(
     A = solver->A;
     b = solver->b;
     x = solver->x;
+
+    state =
+        solver->fgcrodr_state;
+
+    use_recycle =
+        (
+            state!=NULL &&
+            state->valid &&
+            state->dim>0 &&
+            state->matrix==A &&
+            state->structure_generation==
+                A->structure_generation &&
+            state->value_generation==
+                A->value_generation
+        )
+        ? LIS_TRUE
+        : LIS_FALSE;
+
+    kcur =
+        use_recycle
+        ? state->dim
+        : 0;
+
+    bcoef = NULL;
 
     maxiter =
         solver->options[LIS_OPTIONS_MAXITER];
@@ -1502,6 +1553,39 @@ lis_fgcrodr_flexible_core(
     sn = (m+2)*h_dim;
 
 
+    if( use_recycle )
+    {
+        bcoef =
+            (LIS_SCALAR *)lis_malloc(
+                (size_t)kcur
+                *(size_t)m
+                *sizeof(LIS_SCALAR),
+                "lis_fgcrodr_flexible_core::bcoef");
+
+        if( bcoef==NULL )
+        {
+            if( bcoef )
+            lis_free(bcoef);
+
+        lis_free(h);
+
+            LIS_SETERR_MEM(
+                (size_t)kcur
+                *(size_t)m
+                *sizeof(LIS_SCALAR));
+
+            return LIS_ERR_OUT_OF_MEMORY;
+        }
+
+        memset(
+            bcoef,
+            0,
+            (size_t)kcur
+            *(size_t)m
+            *sizeof(LIS_SCALAR));
+    }
+
+
     /* -------------------------------------------------------- */
     /* Initial residual                                         */
     /* -------------------------------------------------------- */
@@ -1513,6 +1597,9 @@ lis_fgcrodr_flexible_core(
             v[0],
             &bnrm2) )
     {
+        if( bcoef )
+            lis_free(bcoef);
+
         lis_free(h);
 
         return LIS_SUCCESS;
@@ -1521,7 +1608,73 @@ lis_fgcrodr_flexible_core(
 
     tol = solver->tol;
 
-    rnorm = 1.0/bnrm2;
+
+    if( use_recycle )
+    {
+        for(ri=0;ri<kcur;ri++)
+        {
+            lis_vector_dot(
+                state->c[ri],
+                v[0],
+                &gamma);
+
+            lis_vector_axpy(
+                gamma,
+                state->z[ri],
+                x);
+
+            lis_vector_axpy(
+                -gamma,
+                state->c[ri],
+                v[0]);
+        }
+
+
+        lis_vector_nrm2(
+            v[0],
+            &rnorm);
+
+
+        if(
+            rnorm==0.0 ||
+            rnorm!=rnorm )
+        {
+            solver->retcode =
+                (rnorm==0.0)
+                ? LIS_SUCCESS
+                : LIS_BREAKDOWN;
+
+            solver->iter = 0;
+            solver->resid = rnorm;
+            solver->ptime = ptime;
+
+            if( bcoef )
+                lis_free(bcoef);
+
+            lis_free(h);
+
+            return solver->retcode;
+        }
+
+
+        /*
+         * Current FGCRO-DR core follows the FGMRES/default residual
+         * normalization path: v0 is scaled by 1/||r||.
+         */
+        bnrm2 =
+            1.0/rnorm;
+
+        state->last_action =
+            LIS_FGCRODR_RECYCLE_KEEP;
+
+        state->uses++;
+        state->policy_keeps++;
+    }
+    else
+    {
+        rnorm =
+            1.0/bnrm2;
+    }
 
 
     iter = 0;
@@ -1591,7 +1744,10 @@ lis_fgcrodr_flexible_core(
                 solver->iter = iter;
                 solver->ptime = ptime;
 
-                lis_free(h);
+                if( bcoef )
+            lis_free(bcoef);
+
+        lis_free(h);
 
                 return err;
             }
@@ -1612,6 +1768,34 @@ lis_fgcrodr_flexible_core(
                 A,
                 z[iiv],
                 v[i1v]);
+
+
+            /*
+             * Active FGCRO projection:
+             *
+             *     B(:,j) = C^T A z_j
+             *     w      = A z_j - C B(:,j)
+             */
+            if( use_recycle )
+            {
+                for(ri=0;ri<kcur;ri++)
+                {
+                    lis_vector_dot(
+                        state->c[ri],
+                        v[i1v],
+                        &alpha);
+
+                    bcoef[
+                        ri
+                        + iiv*kcur] =
+                        alpha;
+
+                    lis_vector_axpy(
+                        -alpha,
+                        state->c[ri],
+                        v[i1v]);
+                }
+            }
 
 
             /* ------------------------------------------------ */
@@ -1716,7 +1900,10 @@ lis_fgcrodr_flexible_core(
                 solver->ptime =
                     ptime;
 
-                lis_free(h);
+                if( bcoef )
+            lis_free(bcoef);
+
+        lis_free(h);
 
                 return LIS_BREAKDOWN;
             }
@@ -1805,7 +1992,10 @@ lis_fgcrodr_flexible_core(
                     solver->ptime =
                         ptime;
 
-                    lis_free(h);
+                    if( bcoef )
+            lis_free(bcoef);
+
+        lis_free(h);
 
                     return LIS_MAXITER;
                 }
@@ -1837,7 +2027,10 @@ lis_fgcrodr_flexible_core(
             solver->ptime =
                 ptime;
 
-            lis_free(h);
+            if( bcoef )
+            lis_free(bcoef);
+
+        lis_free(h);
 
             return LIS_BREAKDOWN;
         }
@@ -1881,7 +2074,10 @@ lis_fgcrodr_flexible_core(
                 solver->ptime =
                     ptime;
 
-                lis_free(h);
+                if( bcoef )
+            lis_free(bcoef);
+
+        lis_free(h);
 
                 return LIS_BREAKDOWN;
             }
@@ -1907,6 +2103,29 @@ lis_fgcrodr_flexible_core(
                 s->value[j],
                 z[j],
                 x);
+        }
+
+
+        if( use_recycle )
+        {
+            for(ri=0;ri<kcur;ri++)
+            {
+                gamma = 0.0;
+
+                for(j=0;j<=ii;j++)
+                {
+                    gamma +=
+                        bcoef[
+                            ri
+                            + j*kcur]
+                        *s->value[j];
+                }
+
+                lis_vector_axpy(
+                    -gamma,
+                    state->z[ri],
+                    x);
+            }
         }
 
 
@@ -1939,7 +2158,10 @@ lis_fgcrodr_flexible_core(
             solver->ptime =
                 ptime;
 
-            lis_free(h);
+            if( bcoef )
+            lis_free(bcoef);
+
+        lis_free(h);
 
             return err;
         }
@@ -1959,7 +2181,10 @@ lis_fgcrodr_flexible_core(
             solver->ptime =
                 ptime;
 
-            lis_free(h);
+            if( bcoef )
+            lis_free(bcoef);
+
+        lis_free(h);
 
             return LIS_SUCCESS;
         }
@@ -1978,6 +2203,29 @@ lis_fgcrodr_flexible_core(
             b,
             -1.0,
             v[0]);
+
+
+        if( use_recycle )
+        {
+            for(ri=0;ri<kcur;ri++)
+            {
+                lis_vector_dot(
+                    state->c[ri],
+                    v[0],
+                    &gamma);
+
+                lis_vector_axpy(
+                    gamma,
+                    state->z[ri],
+                    x);
+
+                lis_vector_axpy(
+                    -gamma,
+                    state->c[ri],
+                    v[0]);
+            }
+        }
+
 
         lis_vector_nrm2(
             v[0],
@@ -2041,13 +2289,40 @@ lis_fgcrodr(
 
 
     /*
-     * Stage 2A deliberately has no active recycle space yet.
-     * A positive k selects the new FGCRO-DR flexible-Arnoldi path,
-     * but C/W/Z persistence is not consumed by the iteration until
-     * Stage 2B.
+     * Stage 2C consumes recycle vectors only for the exact operator
+     * generation that created A*Z=C.
+     *
+     * Changed-operator transport is added in a later stage.
      */
-    state->last_action =
-        LIS_FGCRODR_RECYCLE_NONE;
+    if(
+        state->valid &&
+        state->dim>0 &&
+        (
+            state->matrix!=solver->A ||
+            state->structure_generation!=
+                solver->A->structure_generation ||
+            state->value_generation!=
+                solver->A->value_generation
+        )
+      )
+    {
+        err =
+            lis_fgcrodr_clear_recycle(
+                solver);
+
+        if( err )
+            return err;
+
+        state->last_action =
+            LIS_FGCRODR_RECYCLE_REJECT;
+
+        state->rejects++;
+    }
+    else
+    {
+        state->last_action =
+            LIS_FGCRODR_RECYCLE_NONE;
+    }
 
 
     err =

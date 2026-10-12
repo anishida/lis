@@ -1906,6 +1906,15 @@ LIS_INT lis_solve_sequence(
         return err;
     }
 
+    err = lis_fgcrodr_clear_recycle(solver);
+    if( err )
+    {
+        solver->retcode = err;
+        solver->sequence_diag_final_retcode = err;
+        lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
+        return err;
+    }
+
     solver->sequence_diag_recycle_resets++;
     solver->sequence_diag_total_recycle_resets++;
 
@@ -1937,6 +1946,15 @@ LIS_INT lis_solve_sequence(
      * preconditioner.
      */
     err = lis_gcrodr_clear_recycle(solver);
+    if( err )
+    {
+        solver->retcode = err;
+        solver->sequence_diag_final_retcode = err;
+        lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
+        return err;
+    }
+
+    err = lis_fgcrodr_clear_recycle(solver);
     if( err )
     {
         solver->retcode = err;
