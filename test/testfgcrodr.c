@@ -791,18 +791,23 @@ check_sequence_recycle(
 
     LIS_INT api1;
     LIS_INT api2;
+    LIS_INT api3;
 
     LIS_INT status1;
     LIS_INT status2;
+    LIS_INT status3;
 
     LIS_INT iter1;
     LIS_INT iter2;
+    LIS_INT iter3;
 
     LIS_INT dim1;
     LIS_INT dim2;
+    LIS_INT dim3;
 
     LIS_INT action1;
     LIS_INT action2;
+    LIS_INT action3;
 
     LIS_REAL quality1;
     LIS_REAL quality2;
@@ -812,12 +817,31 @@ check_sequence_recycle(
 
     LIS_REAL orth1;
     LIS_REAL orth2;
+    LIS_REAL orth3;
 
     LIS_REAL relation1;
     LIS_REAL relation2;
+    LIS_REAL relation3;
 
     LIS_REAL true1;
     LIS_REAL true2;
+    LIS_REAL true3;
+
+    LIS_UNSIGNED_INT builds1;
+    LIS_UNSIGNED_INT builds2;
+    LIS_UNSIGNED_INT builds3;
+
+    LIS_UNSIGNED_INT updates1;
+    LIS_UNSIGNED_INT updates2;
+    LIS_UNSIGNED_INT updates3;
+
+    LIS_UNSIGNED_INT uses1;
+    LIS_UNSIGNED_INT uses2;
+    LIS_UNSIGNED_INT uses3;
+
+    LIS_UNSIGNED_INT rejects1;
+    LIS_UNSIGNED_INT rejects2;
+    LIS_UNSIGNED_INT rejects3;
 
     LIS_REAL diff_norm;
     LIS_REAL exact_norm;
@@ -991,6 +1015,18 @@ check_sequence_recycle(
         goto api_fail;
 
 
+    err =
+        lis_fgcrodr_get_stats(
+            solver,
+            &builds1,
+            &updates1,
+            &uses1,
+            &rejects1);
+
+    if( err )
+        goto api_fail;
+
+
     /* ======================================================== */
     /* Solve 2: same A generation -> active KEEP                */
     /*                                                          */
@@ -1046,6 +1082,18 @@ check_sequence_recycle(
         goto api_fail;
 
 
+    err =
+        lis_fgcrodr_get_stats(
+            solver,
+            &builds2,
+            &updates2,
+            &uses2,
+            &rejects2);
+
+    if( err )
+        goto api_fail;
+
+
     /*
      * Independent solution check against the known exact second
      * solution, not only against the solver's reported residual.
@@ -1073,10 +1121,84 @@ check_sequence_recycle(
         : diff_norm;
 
 
+    /* ======================================================== */
+    /* Solve 3: reuse remains active, harmonic UPDATE disabled  */
+    /* ======================================================== */
+
+    err =
+        lis_solver_set_fgcrodr_recycle_update(
+            solver,
+            LIS_FALSE);
+
+    if( err )
+        goto api_fail;
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x);
+
+
+    api3 =
+        lis_solve_sequence(
+            A,
+            b1,
+            x,
+            solver);
+
+    status3 =
+        solver->retcode;
+
+    iter3 =
+        solver->iter;
+
+    true3 =
+        true_relative_residual(
+            A,
+            b1,
+            x,
+            r);
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim3,
+            &action3,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_validate_recycle(
+            solver,
+            &orth3,
+            &relation3);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_stats(
+            solver,
+            &builds3,
+            &updates3,
+            &uses3,
+            &rejects3);
+
+    if( err )
+        goto api_fail;
+
+
     printf(
         "FGCRO-DR sequence solve1 "
         "api=%d status=%d iter=%d "
         "true=%.17e dim=%d action=%d "
+        "builds=%llu updates=%llu uses=%llu "
         "orth=%.3e AZ-C=%.3e\n",
         (int)api1,
         (int)status1,
@@ -1084,6 +1206,9 @@ check_sequence_recycle(
         (double)true1,
         (int)dim1,
         (int)action1,
+        (unsigned long long)builds1,
+        (unsigned long long)updates1,
+        (unsigned long long)uses1,
         (double)orth1,
         (double)relation1);
 
@@ -1093,6 +1218,7 @@ check_sequence_recycle(
         "api=%d status=%d iter=%d "
         "true=%.17e dim=%d action=%d "
         "quality=%.3f solution_error=%.3e "
+        "builds=%llu updates=%llu uses=%llu "
         "orth=%.3e AZ-C=%.3e\n",
         (int)api2,
         (int)status2,
@@ -1102,8 +1228,30 @@ check_sequence_recycle(
         (int)action2,
         (double)quality2,
         (double)solution_error,
+        (unsigned long long)builds2,
+        (unsigned long long)updates2,
+        (unsigned long long)uses2,
         (double)orth2,
         (double)relation2);
+
+
+    printf(
+        "FGCRO-DR sequence solve3 update=off "
+        "api=%d status=%d iter=%d "
+        "true=%.17e dim=%d action=%d "
+        "builds=%llu updates=%llu uses=%llu "
+        "orth=%.3e AZ-C=%.3e\n",
+        (int)api3,
+        (int)status3,
+        (int)iter3,
+        (double)true3,
+        (int)dim3,
+        (int)action3,
+        (unsigned long long)builds3,
+        (unsigned long long)updates3,
+        (unsigned long long)uses3,
+        (double)orth3,
+        (double)relation3);
 
 
     /* ======================================================== */
@@ -1135,6 +1283,23 @@ check_sequence_recycle(
             "dim=%d action=%d\n",
             (int)dim1,
             (int)action1);
+
+        failed = 1;
+    }
+
+
+    if(
+        builds1!=1 ||
+        updates1!=0 ||
+        uses1!=0 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR initial harmonic statistics mismatch: "
+            "builds=%llu updates=%llu uses=%llu\n",
+            (unsigned long long)builds1,
+            (unsigned long long)updates1,
+            (unsigned long long)uses1);
 
         failed = 1;
     }
@@ -1191,6 +1356,24 @@ check_sequence_recycle(
     }
 
 
+    if(
+        builds2!=builds1 ||
+        updates2<=updates1 ||
+        uses2!=uses1+1 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR harmonic UPDATE statistics mismatch: "
+            "before=%llu after=%llu uses=%llu->%llu\n",
+            (unsigned long long)updates1,
+            (unsigned long long)updates2,
+            (unsigned long long)uses1,
+            (unsigned long long)uses2);
+
+        failed = 1;
+    }
+
+
     if( true2>1.0e-10 )
     {
         fprintf(
@@ -1225,6 +1408,63 @@ check_sequence_recycle(
             "orth=%.17e AZ-C=%.17e\n",
             (double)orth2,
             (double)relation2);
+
+        failed = 1;
+    }
+
+
+    if(
+        api3!=LIS_SUCCESS ||
+        status3!=LIS_SUCCESS ||
+        dim3!=5 ||
+        action3!=LIS_FGCRODR_RECYCLE_KEEP )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR update=off solve failure: "
+            "api=%d status=%d dim=%d action=%d\n",
+            (int)api3,
+            (int)status3,
+            (int)dim3,
+            (int)action3);
+
+        failed = 1;
+    }
+
+
+    if(
+        updates3!=updates2 ||
+        builds3!=builds2 ||
+        uses3!=uses2+1 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR update=off statistics mismatch: "
+            "builds=%llu->%llu updates=%llu->%llu "
+            "uses=%llu->%llu\n",
+            (unsigned long long)builds2,
+            (unsigned long long)builds3,
+            (unsigned long long)updates2,
+            (unsigned long long)updates3,
+            (unsigned long long)uses2,
+            (unsigned long long)uses3);
+
+        failed = 1;
+    }
+
+
+    if(
+        true3>1.0e-10 ||
+        orth3>1.0e-12 ||
+        relation3>1.0e-12 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR update=off invariant failure: "
+            "true=%.17e orth=%.17e AZ-C=%.17e\n",
+            (double)true3,
+            (double)orth3,
+            (double)relation3);
 
         failed = 1;
     }

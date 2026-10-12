@@ -272,6 +272,14 @@ extern "C"
         extern LIS_INT lis_fgcrodr_validate_recycle(
                 LIS_SOLVER solver, LIS_REAL *orth_error,
                 LIS_REAL *relation_error);
+
+extern LIS_INT lis_fgcrodr_get_stats(
+        LIS_SOLVER solver,
+        LIS_UNSIGNED_INT *builds,
+        LIS_UNSIGNED_INT *updates,
+        LIS_UNSIGNED_INT *uses,
+        LIS_UNSIGNED_INT *rejects);
+
         extern LIS_INT lis_fgcrodr_set_option(
                 LIS_SOLVER solver, const char *name, const char *value);
 

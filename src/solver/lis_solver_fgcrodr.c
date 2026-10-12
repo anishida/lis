@@ -915,10 +915,1452 @@ fail:
 }
 
 
-#undef __FUNC__
-#define __FUNC__ "lis_fgcrodr_build_recycle"
+
+/* ---------------------------------------------------------------------- */
+/* Harmonic Ritz support for the flexible recycle basis                    */
+/* ---------------------------------------------------------------------- */
+
+typedef struct
+{
+    LIS_REAL r;
+    LIS_REAL i;
+} LIS_FGCRODR_CPX;
+
+
+typedef struct
+{
+    LIS_REAL lr;
+    LIS_REAL li;
+    LIS_REAL score;
+    LIS_INT pair;
+} LIS_FGCRODR_EIG;
+
+
+static LIS_FGCRODR_CPX
+lis_fgcrodr_cpx(
+    LIS_REAL r,
+    LIS_REAL i)
+{
+    LIS_FGCRODR_CPX z;
+
+    z.r = r;
+    z.i = i;
+
+    return z;
+}
+
+
+static LIS_REAL
+lis_fgcrodr_cabs2(
+    LIS_FGCRODR_CPX z)
+{
+    return
+        z.r*z.r
+        + z.i*z.i;
+}
+
+
+static LIS_FGCRODR_CPX
+lis_fgcrodr_csub(
+    LIS_FGCRODR_CPX a,
+    LIS_FGCRODR_CPX b)
+{
+    return
+        lis_fgcrodr_cpx(
+            a.r-b.r,
+            a.i-b.i);
+}
+
+
+static LIS_FGCRODR_CPX
+lis_fgcrodr_cmul(
+    LIS_FGCRODR_CPX a,
+    LIS_FGCRODR_CPX b)
+{
+    return
+        lis_fgcrodr_cpx(
+            a.r*b.r-a.i*b.i,
+            a.r*b.i+a.i*b.r);
+}
+
+
+static LIS_FGCRODR_CPX
+lis_fgcrodr_cdiv(
+    LIS_FGCRODR_CPX a,
+    LIS_FGCRODR_CPX b)
+{
+    LIS_REAL d;
+
+    d =
+        b.r*b.r
+        + b.i*b.i;
+
+    if(
+        d<=
+        FGCRODR_BUILD_TINY
+        *FGCRODR_BUILD_TINY )
+    {
+        return
+            lis_fgcrodr_cpx(
+                0.0,
+                0.0);
+    }
+
+    return
+        lis_fgcrodr_cpx(
+            (a.r*b.r+a.i*b.i)/d,
+            (a.i*b.r-a.r*b.i)/d);
+}
+
+
 static LIS_INT
-lis_fgcrodr_build_recycle(
+lis_fgcrodr_csolve(
+    LIS_INT n,
+    LIS_FGCRODR_CPX *a,
+    LIS_FGCRODR_CPX *b,
+    LIS_FGCRODR_CPX *x)
+{
+    LIS_INT i;
+    LIS_INT j;
+    LIS_INT k;
+    LIS_INT p;
+
+    LIS_REAL vmax;
+    LIS_REAL v;
+
+    LIS_FGCRODR_CPX tmp;
+    LIS_FGCRODR_CPX factor;
+    LIS_FGCRODR_CPX sum;
+
+
+    for(k=0;k<n;k++)
+    {
+        p = k;
+
+        vmax =
+            lis_fgcrodr_cabs2(
+                a[k*n+k]);
+
+
+        for(i=k+1;i<n;i++)
+        {
+            v =
+                lis_fgcrodr_cabs2(
+                    a[i*n+k]);
+
+            if( v>vmax )
+            {
+                vmax = v;
+                p = i;
+            }
+        }
+
+
+        if(
+            vmax<=
+            FGCRODR_BUILD_TINY
+            *FGCRODR_BUILD_TINY )
+        {
+            return LIS_BREAKDOWN;
+        }
+
+
+        if( p!=k )
+        {
+            for(j=k;j<n;j++)
+            {
+                tmp =
+                    a[k*n+j];
+
+                a[k*n+j] =
+                    a[p*n+j];
+
+                a[p*n+j] =
+                    tmp;
+            }
+
+            tmp = b[k];
+            b[k] = b[p];
+            b[p] = tmp;
+        }
+
+
+        for(i=k+1;i<n;i++)
+        {
+            factor =
+                lis_fgcrodr_cdiv(
+                    a[i*n+k],
+                    a[k*n+k]);
+
+            a[i*n+k] =
+                lis_fgcrodr_cpx(
+                    0.0,
+                    0.0);
+
+
+            for(j=k+1;j<n;j++)
+            {
+                a[i*n+j] =
+                    lis_fgcrodr_csub(
+                        a[i*n+j],
+                        lis_fgcrodr_cmul(
+                            factor,
+                            a[k*n+j]));
+            }
+
+
+            b[i] =
+                lis_fgcrodr_csub(
+                    b[i],
+                    lis_fgcrodr_cmul(
+                        factor,
+                        b[k]));
+        }
+    }
+
+
+    for(i=n-1;i>=0;i--)
+    {
+        sum = b[i];
+
+
+        for(j=i+1;j<n;j++)
+        {
+            sum =
+                lis_fgcrodr_csub(
+                    sum,
+                    lis_fgcrodr_cmul(
+                        a[i*n+j],
+                        x[j]));
+        }
+
+
+        if(
+            lis_fgcrodr_cabs2(
+                a[i*n+i])
+            <=
+            FGCRODR_BUILD_TINY
+            *FGCRODR_BUILD_TINY )
+        {
+            return LIS_BREAKDOWN;
+        }
+
+
+        x[i] =
+            lis_fgcrodr_cdiv(
+                sum,
+                a[i*n+i]);
+    }
+
+
+    return LIS_SUCCESS;
+}
+
+
+static void
+lis_fgcrodr_sort_eigs(
+    LIS_FGCRODR_EIG *eig,
+    LIS_INT n)
+{
+    LIS_INT i;
+    LIS_INT j;
+
+    LIS_FGCRODR_EIG x;
+
+
+    for(i=1;i<n;i++)
+    {
+        x =
+            eig[i];
+
+        j =
+            i-1;
+
+
+        while(
+            j>=0 &&
+            eig[j].score<x.score )
+        {
+            eig[j+1] =
+                eig[j];
+
+            j--;
+        }
+
+
+        eig[j+1] =
+            x;
+    }
+}
+
+
+static LIS_INT
+lis_fgcrodr_extract_eigs(
+    LIS_INT n,
+    LIS_SCALAR *tqr,
+    LIS_FGCRODR_EIG *eig,
+    LIS_INT *neig)
+{
+    LIS_INT i;
+    LIS_INT m;
+
+    LIS_REAL a;
+    LIS_REAL b;
+    LIS_REAL c;
+    LIS_REAL d;
+
+    LIS_REAL tr;
+    LIS_REAL det;
+    LIS_REAL disc;
+    LIS_REAL s;
+
+    LIS_REAL sub;
+    LIS_REAL scale;
+
+
+    m = 0;
+    i = 0;
+
+
+    while( i<n )
+    {
+        scale =
+            (LIS_REAL)1.0
+            + fabs(
+                (LIS_REAL)
+                tqr[i+i*n]);
+
+        sub =
+            (i+1<n)
+            ? fabs(
+                (LIS_REAL)
+                tqr[(i+1)+i*n])
+            : 0.0;
+
+
+        if(
+            i+1<n &&
+            sub>
+            (LIS_REAL)1.0e-10
+            *scale )
+        {
+            a =
+                (LIS_REAL)
+                tqr[i+i*n];
+
+            b =
+                (LIS_REAL)
+                tqr[i+(i+1)*n];
+
+            c =
+                (LIS_REAL)
+                tqr[(i+1)+i*n];
+
+            d =
+                (LIS_REAL)
+                tqr[
+                    (i+1)
+                    +(i+1)*n];
+
+
+            tr =
+                a+d;
+
+            det =
+                a*d-b*c;
+
+            disc =
+                tr*tr
+                -(LIS_REAL)4.0*det;
+
+
+            if( disc>=0.0 )
+            {
+                s =
+                    sqrt(disc);
+
+
+                eig[m].lr =
+                    ((LIS_REAL)0.5)
+                    *(tr+s);
+
+                eig[m].li =
+                    0.0;
+
+                eig[m].score =
+                    fabs(
+                        eig[m].lr);
+
+                eig[m].pair =
+                    0;
+
+                m++;
+
+
+                eig[m].lr =
+                    ((LIS_REAL)0.5)
+                    *(tr-s);
+
+                eig[m].li =
+                    0.0;
+
+                eig[m].score =
+                    fabs(
+                        eig[m].lr);
+
+                eig[m].pair =
+                    0;
+
+                m++;
+            }
+            else
+            {
+                eig[m].lr =
+                    ((LIS_REAL)0.5)
+                    *tr;
+
+                eig[m].li =
+                    ((LIS_REAL)0.5)
+                    *sqrt(-disc);
+
+                eig[m].score =
+                    sqrt(
+                        eig[m].lr
+                        *eig[m].lr
+                        +
+                        eig[m].li
+                        *eig[m].li);
+
+                eig[m].pair =
+                    1;
+
+                m++;
+            }
+
+
+            i += 2;
+        }
+        else
+        {
+            eig[m].lr =
+                (LIS_REAL)
+                tqr[i+i*n];
+
+            eig[m].li =
+                0.0;
+
+            eig[m].score =
+                fabs(
+                    eig[m].lr);
+
+            eig[m].pair =
+                0;
+
+            m++;
+            i++;
+        }
+    }
+
+
+    *neig =
+        m;
+
+
+    lis_fgcrodr_sort_eigs(
+        eig,
+        m);
+
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+lis_fgcrodr_inverse_eigenvector(
+    LIS_INT n,
+    const LIS_SCALAR *T,
+    LIS_REAL lr,
+    LIS_REAL li,
+    LIS_REAL *vr,
+    LIS_REAL *vi)
+{
+    LIS_FGCRODR_CPX *a = NULL;
+    LIS_FGCRODR_CPX *rhs = NULL;
+    LIS_FGCRODR_CPX *x = NULL;
+
+    LIS_FGCRODR_CPX sigma;
+
+    LIS_REAL delta;
+    LIS_REAL nrm;
+    LIS_REAL mag;
+
+    LIS_INT i;
+    LIS_INT j;
+    LIS_INT it;
+    LIS_INT err;
+
+
+    a =
+        (LIS_FGCRODR_CPX *)lis_malloc(
+            (size_t)n
+            *(size_t)n
+            *sizeof(*a),
+            "lis_fgcrodr_inverse_eigenvector::a");
+
+    rhs =
+        (LIS_FGCRODR_CPX *)lis_malloc(
+            (size_t)n
+            *sizeof(*rhs),
+            "lis_fgcrodr_inverse_eigenvector::rhs");
+
+    x =
+        (LIS_FGCRODR_CPX *)lis_malloc(
+            (size_t)n
+            *sizeof(*x),
+            "lis_fgcrodr_inverse_eigenvector::x");
+
+
+    if(
+        a==NULL ||
+        rhs==NULL ||
+        x==NULL )
+    {
+        lis_free(a);
+        lis_free(rhs);
+        lis_free(x);
+
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+
+    mag =
+        sqrt(
+            lr*lr
+            + li*li);
+
+    delta =
+        (LIS_REAL)1.0e-8
+        *((LIS_REAL)1.0+mag);
+
+
+    sigma.r =
+        lr+delta;
+
+    sigma.i =
+        (li==0.0)
+        ? 0.0
+        : li
+          + (
+              (li>0.0)
+              ? (LIS_REAL)0.125*delta
+              : -(LIS_REAL)0.125*delta
+            );
+
+
+    for(i=0;i<n;i++)
+    {
+        rhs[i].r =
+            (LIS_REAL)1.0
+            /(LIS_REAL)(i+1);
+
+        rhs[i].i =
+            (li!=0.0)
+            ? (LIS_REAL)0.125
+              /(LIS_REAL)(n-i)
+            : 0.0;
+    }
+
+
+    err =
+        LIS_SUCCESS;
+
+
+    for(it=0;it<5;it++)
+    {
+        for(i=0;i<n;i++)
+        {
+            for(j=0;j<n;j++)
+            {
+                a[i*n+j].r =
+                    (LIS_REAL)
+                    T[i+j*n];
+
+                a[i*n+j].i =
+                    0.0;
+            }
+
+
+            a[i*n+i] =
+                lis_fgcrodr_csub(
+                    a[i*n+i],
+                    sigma);
+
+            x[i] =
+                lis_fgcrodr_cpx(
+                    0.0,
+                    0.0);
+        }
+
+
+        err =
+            lis_fgcrodr_csolve(
+                n,
+                a,
+                rhs,
+                x);
+
+        if( err )
+            break;
+
+
+        nrm =
+            0.0;
+
+
+        for(i=0;i<n;i++)
+        {
+            nrm +=
+                lis_fgcrodr_cabs2(
+                    x[i]);
+        }
+
+
+        nrm =
+            sqrt(nrm);
+
+
+        if(
+            nrm<=FGCRODR_BUILD_TINY ||
+            nrm!=nrm )
+        {
+            err =
+                LIS_BREAKDOWN;
+
+            break;
+        }
+
+
+        for(i=0;i<n;i++)
+        {
+            rhs[i].r =
+                x[i].r/nrm;
+
+            rhs[i].i =
+                x[i].i/nrm;
+        }
+    }
+
+
+    if( err==LIS_SUCCESS )
+    {
+        for(i=0;i<n;i++)
+        {
+            vr[i] =
+                rhs[i].r;
+
+            vi[i] =
+                rhs[i].i;
+        }
+    }
+
+
+    lis_free(a);
+    lis_free(rhs);
+    lis_free(x);
+
+
+    return err;
+}
+
+
+/*
+ * Build a candidate in the real solution-space basis Z.
+ *
+ * W receives the same Ritz coefficients applied to V only as an
+ * auxiliary search-space representation.  Persistent Z is always the
+ * authoritative flexible direction.
+ */
+static LIS_INT
+lis_fgcrodr_build_harmonic_vector(
+    LIS_VECTOR *v,
+    LIS_VECTOR *z,
+    LIS_INT jdim,
+    const LIS_REAL *coef,
+    LIS_VECTOR wout,
+    LIS_VECTOR zout)
+{
+    LIS_INT i;
+    LIS_INT err;
+
+    LIS_REAL nrm;
+
+
+    err =
+        lis_vector_set_all(
+            0.0,
+            wout);
+
+    if( err )
+        return err;
+
+
+    err =
+        lis_vector_set_all(
+            0.0,
+            zout);
+
+    if( err )
+        return err;
+
+
+    for(i=0;i<jdim;i++)
+    {
+        err =
+            lis_vector_axpy(
+                (LIS_SCALAR)coef[i],
+                v[i],
+                wout);
+
+        if( err )
+            return err;
+
+
+        err =
+            lis_vector_axpy(
+                (LIS_SCALAR)coef[i],
+                z[i],
+                zout);
+
+        if( err )
+            return err;
+    }
+
+
+    err =
+        lis_vector_nrm2(
+            zout,
+            &nrm);
+
+    if( err )
+        return err;
+
+
+    if(
+        nrm<=FGCRODR_BUILD_TINY ||
+        nrm!=nrm )
+    {
+        return LIS_BREAKDOWN;
+    }
+
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+lis_fgcrodr_install_recycle(
+    LIS_SOLVER solver,
+    LIS_VECTOR *v,
+    LIS_VECTOR *z,
+    LIS_INT jdim);
+
+
+/*
+ * First-generation harmonic Ritz BUILD.
+ *
+ * Stage 2D-A intentionally handles oldk=0 only.  Existing persistent
+ * recycle vectors are consumed by the Stage-2C path and are not replaced
+ * here.  The augmented oldk>0 harmonic update is added next.
+ *
+ * Algebra:
+ *
+ *     P = Z_m
+ *     Q = V_{m+1}
+ *
+ *     A P = Q G
+ *
+ *     F = Q^T P = V_{m+1}^T Z_m
+ *
+ *     G^T G y = theta G^T F y
+ *
+ *     T = (G^T G)^-1 (G^T F)
+ *
+ * eig(T) = 1/theta.
+ */
+static LIS_INT
+lis_fgcrodr_try_harmonic_build(
+    LIS_SOLVER solver,
+    LIS_VECTOR *v,
+    LIS_VECTOR *z,
+    LIS_INT jdim,
+    const LIS_SCALAR *hraw,
+    LIS_INT hld)
+{
+    LIS_FGCRODR_STATE state;
+
+    LIS_SCALAR *G = NULL;
+    LIS_SCALAR *F = NULL;
+
+    LIS_SCALAR *AP = NULL;
+    LIS_SCALAR *BP = NULL;
+
+    LIS_SCALAR *T = NULL;
+    LIS_SCALAR *TQR = NULL;
+
+    LIS_SCALAR *QW = NULL;
+    LIS_SCALAR *RW = NULL;
+    LIS_SCALAR *AINV = NULL;
+
+    LIS_FGCRODR_EIG *eig = NULL;
+
+    LIS_REAL *vr = NULL;
+    LIS_REAL *vi = NULL;
+
+    LIS_VECTOR *neww = NULL;
+    LIS_VECTOR *newz = NULL;
+
+    LIS_SCALAR ag;
+    LIS_SCALAR bg;
+    LIS_SCALAR s;
+
+    LIS_INT target;
+    LIS_INT psmall;
+    LIS_INT qsmall;
+
+    LIS_INT i;
+    LIS_INT r;
+    LIS_INT c;
+    LIS_INT l;
+
+    LIS_INT neig;
+    LIS_INT nsel;
+    LIS_INT eidx;
+
+    LIS_INT qriter;
+    LIS_REAL qrerr;
+
+    LIS_INT err;
+
+
+    if(
+        solver==NULL ||
+        v==NULL ||
+        z==NULL ||
+        hraw==NULL ||
+        jdim<=0 ||
+        hld<jdim+1 )
+    {
+        return LIS_SUCCESS;
+    }
+
+
+    state =
+        solver->fgcrodr_state;
+
+
+    if(
+        state==NULL ||
+        !state->update ||
+        state->valid ||
+        state->target_dim<=0 )
+    {
+        return LIS_SUCCESS;
+    }
+
+
+    target =
+        solver->options[
+            LIS_OPTIONS_RESTART]
+        - 1;
+
+    if( target>state->target_dim )
+        target = state->target_dim;
+
+    if( target>jdim )
+        target = jdim;
+
+
+    if( target<=0 )
+        return LIS_SUCCESS;
+
+
+    psmall =
+        jdim;
+
+    qsmall =
+        jdim+1;
+
+
+    G =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)qsmall
+            *(size_t)psmall
+            *sizeof(LIS_SCALAR),
+            "lis_fgcrodr_try_harmonic_build::G");
+
+    F =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)qsmall
+            *(size_t)psmall
+            *sizeof(LIS_SCALAR),
+            "lis_fgcrodr_try_harmonic_build::F");
+
+    AP =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)psmall
+            *(size_t)psmall
+            *sizeof(LIS_SCALAR),
+            "lis_fgcrodr_try_harmonic_build::AP");
+
+    BP =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)psmall
+            *(size_t)psmall
+            *sizeof(LIS_SCALAR),
+            "lis_fgcrodr_try_harmonic_build::BP");
+
+    T =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)psmall
+            *(size_t)psmall
+            *sizeof(LIS_SCALAR),
+            "lis_fgcrodr_try_harmonic_build::T");
+
+    TQR =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)psmall
+            *(size_t)psmall
+            *sizeof(LIS_SCALAR),
+            "lis_fgcrodr_try_harmonic_build::TQR");
+
+    QW =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)psmall
+            *(size_t)psmall
+            *sizeof(LIS_SCALAR),
+            "lis_fgcrodr_try_harmonic_build::QW");
+
+    RW =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)psmall
+            *(size_t)psmall
+            *sizeof(LIS_SCALAR),
+            "lis_fgcrodr_try_harmonic_build::RW");
+
+    AINV =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)psmall
+            *(size_t)psmall
+            *sizeof(LIS_SCALAR),
+            "lis_fgcrodr_try_harmonic_build::AINV");
+
+    eig =
+        (LIS_FGCRODR_EIG *)lis_malloc(
+            (size_t)psmall
+            *sizeof(*eig),
+            "lis_fgcrodr_try_harmonic_build::eig");
+
+    vr =
+        (LIS_REAL *)lis_malloc(
+            (size_t)psmall
+            *sizeof(LIS_REAL),
+            "lis_fgcrodr_try_harmonic_build::vr");
+
+    vi =
+        (LIS_REAL *)lis_malloc(
+            (size_t)psmall
+            *sizeof(LIS_REAL),
+            "lis_fgcrodr_try_harmonic_build::vi");
+
+    neww =
+        (LIS_VECTOR *)lis_malloc(
+            (size_t)target
+            *sizeof(LIS_VECTOR),
+            "lis_fgcrodr_try_harmonic_build::neww");
+
+    newz =
+        (LIS_VECTOR *)lis_malloc(
+            (size_t)target
+            *sizeof(LIS_VECTOR),
+            "lis_fgcrodr_try_harmonic_build::newz");
+
+
+    if( neww )
+    {
+        for(i=0;i<target;i++)
+            neww[i] = NULL;
+    }
+
+    if( newz )
+    {
+        for(i=0;i<target;i++)
+            newz[i] = NULL;
+    }
+
+
+    if(
+        G==NULL ||
+        F==NULL ||
+        AP==NULL ||
+        BP==NULL ||
+        T==NULL ||
+        TQR==NULL ||
+        QW==NULL ||
+        RW==NULL ||
+        AINV==NULL ||
+        eig==NULL ||
+        vr==NULL ||
+        vi==NULL ||
+        neww==NULL ||
+        newz==NULL )
+    {
+        err =
+            LIS_ERR_OUT_OF_MEMORY;
+
+        goto cleanup;
+    }
+
+
+    memset(
+        G,
+        0,
+        (size_t)qsmall
+        *(size_t)psmall
+        *sizeof(LIS_SCALAR));
+
+    memset(
+        F,
+        0,
+        (size_t)qsmall
+        *(size_t)psmall
+        *sizeof(LIS_SCALAR));
+
+
+    /*
+     * Unrotated flexible Arnoldi relation:
+     *
+     *     A Z_m = V_{m+1} Hbar_m
+     */
+    for(c=0;c<psmall;c++)
+    {
+        for(r=0;r<qsmall;r++)
+        {
+            G[
+                r+c*qsmall] =
+                hraw[
+                    r+c*hld];
+        }
+    }
+
+
+    /*
+     * Flexible-domain overlap:
+     *
+     *     F = V_{m+1}^T Z_m
+     *
+     * Unlike ordinary GCRO-DR, this is not an identity block because
+     * flexible Z_j are not the Arnoldi vectors V_j.
+     */
+    for(c=0;c<psmall;c++)
+    {
+        for(r=0;r<qsmall;r++)
+        {
+            err =
+                lis_vector_dot(
+                    v[r],
+                    z[c],
+                    &F[
+                        r
+                        +c*qsmall]);
+
+            if( err )
+                goto cleanup;
+        }
+    }
+
+
+    /*
+     * AP = G^T G
+     * BP = G^T F
+     */
+    for(c=0;c<psmall;c++)
+    {
+        for(r=0;r<psmall;r++)
+        {
+            ag =
+                0.0;
+
+            bg =
+                0.0;
+
+
+            for(l=0;l<qsmall;l++)
+            {
+                ag +=
+                    G[
+                        l+r*qsmall]
+                    *G[
+                        l+c*qsmall];
+
+                bg +=
+                    G[
+                        l+r*qsmall]
+                    *F[
+                        l+c*qsmall];
+            }
+
+
+            AP[
+                r+c*psmall] =
+                ag;
+
+            BP[
+                r+c*psmall] =
+                bg;
+        }
+    }
+
+
+    memcpy(
+        AINV,
+        AP,
+        (size_t)psmall
+        *(size_t)psmall
+        *sizeof(LIS_SCALAR));
+
+
+    err =
+        lis_array_ge(
+            psmall,
+            AINV);
+
+    if( err )
+    {
+        /*
+         * Harmonic selection is optional.  The caller will fall back
+         * to the already verified Stage-2B candidate selection.
+         */
+        err =
+            LIS_SUCCESS;
+
+        goto cleanup;
+    }
+
+
+    /*
+     * T = AP^-1 BP
+     */
+    for(c=0;c<psmall;c++)
+    {
+        for(r=0;r<psmall;r++)
+        {
+            s =
+                0.0;
+
+
+            for(l=0;l<psmall;l++)
+            {
+                s +=
+                    AINV[
+                        r+l*psmall]
+                    *BP[
+                        l+c*psmall];
+            }
+
+
+            T[
+                r+c*psmall] =
+                s;
+        }
+    }
+
+
+    memcpy(
+        TQR,
+        T,
+        (size_t)psmall
+        *(size_t)psmall
+        *sizeof(LIS_SCALAR));
+
+
+    err =
+        lis_array_qr(
+            psmall,
+            TQR,
+            QW,
+            RW,
+            &qriter,
+            &qrerr);
+
+    if( err )
+    {
+        err =
+            LIS_SUCCESS;
+
+        goto cleanup;
+    }
+
+
+    (void)qriter;
+    (void)qrerr;
+
+
+    err =
+        lis_fgcrodr_extract_eigs(
+            psmall,
+            TQR,
+            eig,
+            &neig);
+
+    if( err )
+    {
+        err =
+            LIS_SUCCESS;
+
+        goto cleanup;
+    }
+
+
+    for(i=0;i<target;i++)
+    {
+        err =
+            lis_vector_duplicate(
+                solver->A,
+                &neww[i]);
+
+        if( err )
+            goto cleanup;
+
+
+        err =
+            lis_vector_duplicate(
+                solver->A,
+                &newz[i]);
+
+        if( err )
+            goto cleanup;
+    }
+
+
+    nsel =
+        0;
+
+
+    for(
+        eidx=0;
+        eidx<neig && nsel<target;
+        eidx++ )
+    {
+        if(
+            eig[eidx].pair &&
+            nsel+2>target )
+        {
+            continue;
+        }
+
+
+        err =
+            lis_fgcrodr_inverse_eigenvector(
+                psmall,
+                T,
+                eig[eidx].lr,
+                eig[eidx].li,
+                vr,
+                vi);
+
+
+        if( err==LIS_ERR_OUT_OF_MEMORY )
+            goto cleanup;
+
+        if( err )
+        {
+            err =
+                LIS_SUCCESS;
+
+            continue;
+        }
+
+
+        if( eig[eidx].pair )
+        {
+            err =
+                lis_fgcrodr_build_harmonic_vector(
+                    v,
+                    z,
+                    jdim,
+                    vr,
+                    neww[nsel],
+                    newz[nsel]);
+
+            if( err )
+            {
+                if(
+                    err==
+                    LIS_ERR_OUT_OF_MEMORY )
+                {
+                    goto cleanup;
+                }
+
+                err =
+                    LIS_SUCCESS;
+
+                continue;
+            }
+
+
+            err =
+                lis_fgcrodr_build_harmonic_vector(
+                    v,
+                    z,
+                    jdim,
+                    vi,
+                    neww[nsel+1],
+                    newz[nsel+1]);
+
+            if( err )
+            {
+                if(
+                    err==
+                    LIS_ERR_OUT_OF_MEMORY )
+                {
+                    goto cleanup;
+                }
+
+                err =
+                    LIS_SUCCESS;
+
+                continue;
+            }
+
+
+            nsel +=
+                2;
+        }
+        else
+        {
+            err =
+                lis_fgcrodr_build_harmonic_vector(
+                    v,
+                    z,
+                    jdim,
+                    vr,
+                    neww[nsel],
+                    newz[nsel]);
+
+            if( err )
+            {
+                if(
+                    err==
+                    LIS_ERR_OUT_OF_MEMORY )
+                {
+                    goto cleanup;
+                }
+
+                err =
+                    LIS_SUCCESS;
+
+                continue;
+            }
+
+
+            nsel++;
+        }
+    }
+
+
+    /*
+     * Require a complete requested space at this stage.
+     *
+     * If the small eigensystem is rank-deficient or an odd target
+     * cannot be filled because only complex pairs remain, retain the
+     * proven Stage-2B fallback.
+     */
+    if( nsel!=target )
+    {
+        err =
+            LIS_SUCCESS;
+
+        goto cleanup;
+    }
+
+
+    err =
+        lis_fgcrodr_install_recycle(
+            solver,
+            neww,
+            newz,
+            nsel);
+
+    if( err )
+        goto cleanup;
+
+
+    state =
+        solver->fgcrodr_state;
+
+
+    if(
+        state!=NULL &&
+        state->valid &&
+        state->dim>0 )
+    {
+    }
+
+
+cleanup:
+
+    if( neww )
+    {
+        for(i=0;i<target;i++)
+        {
+            if( neww[i] )
+                lis_vector_destroy(
+                    neww[i]);
+        }
+    }
+
+
+    if( newz )
+    {
+        for(i=0;i<target;i++)
+        {
+            if( newz[i] )
+                lis_vector_destroy(
+                    newz[i]);
+        }
+    }
+
+
+    lis_free(neww);
+    lis_free(newz);
+
+    lis_free(G);
+    lis_free(F);
+
+    lis_free(AP);
+    lis_free(BP);
+
+    lis_free(T);
+    lis_free(TQR);
+
+    lis_free(QW);
+    lis_free(RW);
+    lis_free(AINV);
+
+    lis_free(eig);
+
+    lis_free(vr);
+    lis_free(vi);
+
+
+    return err;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_fgcrodr_install_recycle"
+static LIS_INT
+lis_fgcrodr_install_recycle(
     LIS_SOLVER solver,
     LIS_VECTOR *v,
     LIS_VECTOR *z,
@@ -947,7 +2389,7 @@ lis_fgcrodr_build_recycle(
     {
         LIS_SETERR(
             LIS_ERR_ILL_ARG,
-            "invalid FGCRO-DR recycle BUILD arguments\n");
+            "invalid FGCRO-DR recycle install arguments\n");
 
         return LIS_ERR_ILL_ARG;
     }
@@ -972,10 +2414,9 @@ lis_fgcrodr_build_recycle(
 
 
     /*
-     * Stage 2B performs only the first BUILD.
-     *
-     * Reuse/projection of an already valid C space is introduced in
-     * Stage 2C.
+     * Installation is only allowed when no persistent recycle space
+     * is currently active.  Existing state is consumed by the reuse
+     * path and is updated by a later augmented harmonic stage.
      */
     if(
         state->valid &&
@@ -1028,11 +2469,8 @@ lis_fgcrodr_build_recycle(
 
 
     /*
-     * Stage 2B uses the first independent flexible directions from
-     * the final Arnoldi cycle.
-     *
-     * Harmonic-Ritz selection replaces this provisional choice in a
-     * later stage.
+     * Install the supplied candidate pairs.  They may come from the
+     * harmonic-Ritz selector or from the provisional fallback.
      */
     for(
         candidate=0;
@@ -1232,6 +2670,1257 @@ fail:
 
 
 
+
+
+/*
+ * Build one harmonic candidate from the augmented flexible domain basis
+ *
+ *     [ Z_old , Z_krylov ].
+ *
+ * W follows the same small coefficients only as an auxiliary
+ * search-space representation.  Z remains authoritative.
+ */
+static LIS_INT
+lis_fgcrodr_build_augmented_vector(
+    LIS_FGCRODR_STATE state,
+    LIS_VECTOR *v,
+    LIS_VECTOR *z,
+    LIS_INT jdim,
+    LIS_INT oldk,
+    const LIS_REAL *coef,
+    LIS_VECTOR wout,
+    LIS_VECTOR zout)
+{
+    LIS_INT i;
+    LIS_INT err;
+
+    LIS_REAL nrm;
+
+
+    err =
+        lis_vector_set_all(
+            0.0,
+            wout);
+
+    if( err )
+        return err;
+
+
+    err =
+        lis_vector_set_all(
+            0.0,
+            zout);
+
+    if( err )
+        return err;
+
+
+    /*
+     * Persistent part.
+     */
+    for(i=0;i<oldk;i++)
+    {
+        err =
+            lis_vector_axpy(
+                (LIS_SCALAR)coef[i],
+                state->w[i],
+                wout);
+
+        if( err )
+            return err;
+
+
+        err =
+            lis_vector_axpy(
+                (LIS_SCALAR)coef[i],
+                state->z[i],
+                zout);
+
+        if( err )
+            return err;
+    }
+
+
+    /*
+     * Current flexible Krylov part.
+     */
+    for(i=0;i<jdim;i++)
+    {
+        err =
+            lis_vector_axpy(
+                (LIS_SCALAR)coef[oldk+i],
+                v[i],
+                wout);
+
+        if( err )
+            return err;
+
+
+        err =
+            lis_vector_axpy(
+                (LIS_SCALAR)coef[oldk+i],
+                z[i],
+                zout);
+
+        if( err )
+            return err;
+    }
+
+
+    err =
+        lis_vector_nrm2(
+            zout,
+            &nrm);
+
+    if( err )
+        return err;
+
+
+    if(
+        nrm<=FGCRODR_BUILD_TINY ||
+        nrm!=nrm )
+    {
+        return LIS_BREAKDOWN;
+    }
+
+
+    return LIS_SUCCESS;
+}
+
+
+/*
+ * Atomically replace an existing recycle space.
+ *
+ * Candidate installation is first performed in a private trial state.
+ * The currently usable recycle relation is therefore retained if the
+ * candidate set turns out to be rank deficient.
+ */
+static LIS_INT
+lis_fgcrodr_commit_recycle_update(
+    LIS_SOLVER solver,
+    LIS_VECTOR *neww,
+    LIS_VECTOR *newz,
+    LIS_INT nsel)
+{
+    LIS_FGCRODR_STATE oldstate;
+    LIS_FGCRODR_STATE trial;
+
+    LIS_INT err;
+
+
+    oldstate =
+        solver->fgcrodr_state;
+
+
+    if(
+        oldstate==NULL ||
+        nsel<=0 )
+    {
+        return LIS_SUCCESS;
+    }
+
+
+    trial =
+        (LIS_FGCRODR_STATE)lis_malloc(
+            sizeof(
+                struct LIS_FGCRODR_STATE_STRUCT),
+            "lis_fgcrodr_commit_recycle_update::trial");
+
+    if( trial==NULL )
+    {
+        LIS_SETERR_MEM(
+            sizeof(
+                struct LIS_FGCRODR_STATE_STRUCT));
+
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+
+    lis_fgcrodr_state_defaults(
+        trial);
+
+
+    /*
+     * Preserve user configuration in the trial installer.
+     */
+    trial->target_dim =
+        oldstate->target_dim;
+
+    trial->keep_threshold =
+        oldstate->keep_threshold;
+
+    trial->reject_threshold =
+        oldstate->reject_threshold;
+
+    trial->update =
+        oldstate->update;
+
+
+    /*
+     * Install candidates into an isolated state.
+     */
+    solver->fgcrodr_state =
+        trial;
+
+
+    err =
+        lis_fgcrodr_install_recycle(
+            solver,
+            neww,
+            newz,
+            nsel);
+
+
+    solver->fgcrodr_state =
+        oldstate;
+
+
+    if( err )
+    {
+        lis_fgcrodr_vectors_destroy(
+            trial);
+
+        lis_free(
+            trial);
+
+        return err;
+    }
+
+
+    /*
+     * A failed/rank-deficient harmonic candidate is nonfatal.
+     * Keep the previous valid recycle space.
+     */
+    if(
+        !trial->valid ||
+        trial->dim<=0 )
+    {
+        lis_fgcrodr_vectors_destroy(
+            trial);
+
+        lis_free(
+            trial);
+
+        return LIS_SUCCESS;
+    }
+
+
+    /*
+     * Commit atomically.
+     *
+     * lis_fgcrodr_vectors_destroy() deliberately leaves configuration
+     * and lifetime counters intact.
+     */
+    lis_fgcrodr_vectors_destroy(
+        oldstate);
+
+
+    oldstate->w =
+        trial->w;
+
+    oldstate->z =
+        trial->z;
+
+    oldstate->c =
+        trial->c;
+
+    oldstate->dim =
+        trial->dim;
+
+    oldstate->alloc =
+        trial->alloc;
+
+    oldstate->valid =
+        trial->valid;
+
+
+    oldstate->matrix =
+        trial->matrix;
+
+    oldstate->structure_generation =
+        trial->structure_generation;
+
+    oldstate->value_generation =
+        trial->value_generation;
+
+
+    oldstate->quality =
+        trial->quality;
+
+    oldstate->quality_min =
+        trial->quality_min;
+
+
+    /*
+     * Same-operator augmented update remains a KEEP policy action.
+     */
+    oldstate->last_action =
+        LIS_FGCRODR_RECYCLE_KEEP;
+
+    oldstate->updates++;
+
+
+    /*
+     * Detach vectors before freeing the temporary state.
+     */
+    trial->w = NULL;
+    trial->z = NULL;
+    trial->c = NULL;
+
+    trial->dim = 0;
+    trial->alloc = 0;
+    trial->valid = LIS_FALSE;
+
+
+    lis_free(
+        trial);
+
+
+    return LIS_SUCCESS;
+}
+
+
+/*
+ * Augmented harmonic Ritz UPDATE.
+ *
+ * Existing flexible recycle basis:
+ *
+ *     Z_o = [Z_1,...,Z_k]
+ *
+ * Current flexible Krylov basis:
+ *
+ *     Z_m = [z_0,...,z_{m-1}]
+ *
+ * Orthogonal image basis:
+ *
+ *     Q = [C_o,V_{m+1}]
+ *
+ * with
+ *
+ *     A [Z_o,Z_m] = Q G
+ *
+ * and
+ *
+ *             [ I  B ]
+ *     G =     [      ].
+ *             [ 0  H ]
+ *
+ * The flexible harmonic overlap is computed explicitly:
+ *
+ *     F = Q^T [Z_o,Z_m].
+ *
+ * No current or future preconditioner is applied to reconstruct any
+ * historical Z vector.
+ */
+static LIS_INT
+lis_fgcrodr_try_harmonic_update(
+    LIS_SOLVER solver,
+    LIS_VECTOR *v,
+    LIS_VECTOR *z,
+    LIS_INT jdim,
+    const LIS_SCALAR *hraw,
+    LIS_INT hld,
+    const LIS_SCALAR *bcoef,
+    LIS_INT bld)
+{
+    LIS_FGCRODR_STATE state;
+
+    LIS_SCALAR *G = NULL;
+    LIS_SCALAR *F = NULL;
+
+    LIS_SCALAR *AP = NULL;
+    LIS_SCALAR *BP = NULL;
+
+    LIS_SCALAR *T = NULL;
+    LIS_SCALAR *TQR = NULL;
+
+    LIS_SCALAR *QW = NULL;
+    LIS_SCALAR *RW = NULL;
+    LIS_SCALAR *AINV = NULL;
+
+    LIS_FGCRODR_EIG *eig = NULL;
+
+    LIS_REAL *vr = NULL;
+    LIS_REAL *vi = NULL;
+
+    LIS_VECTOR *neww = NULL;
+    LIS_VECTOR *newz = NULL;
+
+    LIS_SCALAR ag;
+    LIS_SCALAR bg;
+    LIS_SCALAR s;
+
+    LIS_INT oldk;
+    LIS_INT target;
+
+    LIS_INT psmall;
+    LIS_INT qsmall;
+
+    LIS_INT i;
+    LIS_INT r;
+    LIS_INT c;
+    LIS_INT l;
+
+    LIS_INT neig;
+    LIS_INT nsel;
+    LIS_INT eidx;
+
+    LIS_INT qriter;
+    LIS_REAL qrerr;
+
+    LIS_INT err;
+
+
+    if(
+        solver==NULL ||
+        v==NULL ||
+        z==NULL ||
+        hraw==NULL ||
+        bcoef==NULL ||
+        jdim<=0 )
+    {
+        return LIS_SUCCESS;
+    }
+
+
+    state =
+        solver->fgcrodr_state;
+
+
+    if(
+        state==NULL ||
+        !state->update ||
+        !state->valid ||
+        state->dim<=0 )
+    {
+        return LIS_SUCCESS;
+    }
+
+
+    oldk =
+        state->dim;
+
+
+    if(
+        bld<oldk ||
+        hld<jdim+1 )
+    {
+        return LIS_SUCCESS;
+    }
+
+
+    target =
+        solver->options[
+            LIS_OPTIONS_RESTART]
+        - 1;
+
+    if( target>state->target_dim )
+        target = state->target_dim;
+
+
+    /*
+     * The update should preserve a useful nonzero recycle rank.
+     */
+    if( target<=0 )
+        return LIS_SUCCESS;
+
+
+    psmall =
+        oldk+jdim;
+
+    qsmall =
+        oldk+jdim+1;
+
+
+    if( target>psmall )
+        target = psmall;
+
+
+    G =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)qsmall
+            *(size_t)psmall
+            *sizeof(LIS_SCALAR),
+            "lis_fgcrodr_try_harmonic_update::G");
+
+    F =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)qsmall
+            *(size_t)psmall
+            *sizeof(LIS_SCALAR),
+            "lis_fgcrodr_try_harmonic_update::F");
+
+    AP =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)psmall
+            *(size_t)psmall
+            *sizeof(LIS_SCALAR),
+            "lis_fgcrodr_try_harmonic_update::AP");
+
+    BP =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)psmall
+            *(size_t)psmall
+            *sizeof(LIS_SCALAR),
+            "lis_fgcrodr_try_harmonic_update::BP");
+
+    T =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)psmall
+            *(size_t)psmall
+            *sizeof(LIS_SCALAR),
+            "lis_fgcrodr_try_harmonic_update::T");
+
+    TQR =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)psmall
+            *(size_t)psmall
+            *sizeof(LIS_SCALAR),
+            "lis_fgcrodr_try_harmonic_update::TQR");
+
+    QW =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)psmall
+            *(size_t)psmall
+            *sizeof(LIS_SCALAR),
+            "lis_fgcrodr_try_harmonic_update::QW");
+
+    RW =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)psmall
+            *(size_t)psmall
+            *sizeof(LIS_SCALAR),
+            "lis_fgcrodr_try_harmonic_update::RW");
+
+    AINV =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)psmall
+            *(size_t)psmall
+            *sizeof(LIS_SCALAR),
+            "lis_fgcrodr_try_harmonic_update::AINV");
+
+    eig =
+        (LIS_FGCRODR_EIG *)lis_malloc(
+            (size_t)psmall
+            *sizeof(*eig),
+            "lis_fgcrodr_try_harmonic_update::eig");
+
+    vr =
+        (LIS_REAL *)lis_malloc(
+            (size_t)psmall
+            *sizeof(LIS_REAL),
+            "lis_fgcrodr_try_harmonic_update::vr");
+
+    vi =
+        (LIS_REAL *)lis_malloc(
+            (size_t)psmall
+            *sizeof(LIS_REAL),
+            "lis_fgcrodr_try_harmonic_update::vi");
+
+    neww =
+        (LIS_VECTOR *)lis_malloc(
+            (size_t)target
+            *sizeof(LIS_VECTOR),
+            "lis_fgcrodr_try_harmonic_update::neww");
+
+    newz =
+        (LIS_VECTOR *)lis_malloc(
+            (size_t)target
+            *sizeof(LIS_VECTOR),
+            "lis_fgcrodr_try_harmonic_update::newz");
+
+
+    if( neww )
+    {
+        for(i=0;i<target;i++)
+            neww[i] = NULL;
+    }
+
+    if( newz )
+    {
+        for(i=0;i<target;i++)
+            newz[i] = NULL;
+    }
+
+
+    if(
+        G==NULL ||
+        F==NULL ||
+        AP==NULL ||
+        BP==NULL ||
+        T==NULL ||
+        TQR==NULL ||
+        QW==NULL ||
+        RW==NULL ||
+        AINV==NULL ||
+        eig==NULL ||
+        vr==NULL ||
+        vi==NULL ||
+        neww==NULL ||
+        newz==NULL )
+    {
+        err =
+            LIS_ERR_OUT_OF_MEMORY;
+
+        goto cleanup;
+    }
+
+
+    memset(
+        G,
+        0,
+        (size_t)qsmall
+        *(size_t)psmall
+        *sizeof(LIS_SCALAR));
+
+    memset(
+        F,
+        0,
+        (size_t)qsmall
+        *(size_t)psmall
+        *sizeof(LIS_SCALAR));
+
+
+    /*
+     * Old recycle columns:
+     *
+     *     A Z_old = C_old.
+     */
+    for(i=0;i<oldk;i++)
+    {
+        G[
+            i+i*qsmall] =
+            1.0;
+    }
+
+
+    /*
+     * Current flexible Krylov columns:
+     *
+     *     A z_j =
+     *         C B(:,j)
+     *       + Vnext H(:,j).
+     */
+    for(c=0;c<jdim;c++)
+    {
+        for(r=0;r<oldk;r++)
+        {
+            G[
+                r
+                +(oldk+c)*qsmall] =
+                bcoef[
+                    r+c*bld];
+        }
+
+
+        for(r=0;r<=jdim;r++)
+        {
+            G[
+                oldk+r
+                +(oldk+c)*qsmall] =
+                hraw[
+                    r+c*hld];
+        }
+    }
+
+
+    /*
+     * Full flexible overlap:
+     *
+     *     F = [C,Vnext]^T [Z_old,Z_krylov].
+     *
+     * We intentionally compute every block explicitly.
+     */
+
+    /* old domain columns */
+    for(c=0;c<oldk;c++)
+    {
+        for(r=0;r<oldk;r++)
+        {
+            err =
+                lis_vector_dot(
+                    state->c[r],
+                    state->z[c],
+                    &F[
+                        r+c*qsmall]);
+
+            if( err )
+                goto cleanup;
+        }
+
+
+        for(r=0;r<=jdim;r++)
+        {
+            err =
+                lis_vector_dot(
+                    v[r],
+                    state->z[c],
+                    &F[
+                        oldk+r
+                        +c*qsmall]);
+
+            if( err )
+                goto cleanup;
+        }
+    }
+
+
+    /* new flexible Krylov domain columns */
+    for(c=0;c<jdim;c++)
+    {
+        for(r=0;r<oldk;r++)
+        {
+            err =
+                lis_vector_dot(
+                    state->c[r],
+                    z[c],
+                    &F[
+                        r
+                        +(oldk+c)*qsmall]);
+
+            if( err )
+                goto cleanup;
+        }
+
+
+        for(r=0;r<=jdim;r++)
+        {
+            err =
+                lis_vector_dot(
+                    v[r],
+                    z[c],
+                    &F[
+                        oldk+r
+                        +(oldk+c)*qsmall]);
+
+            if( err )
+                goto cleanup;
+        }
+    }
+
+
+    /*
+     * AP = G^T G
+     * BP = G^T F
+     */
+    for(c=0;c<psmall;c++)
+    {
+        for(r=0;r<psmall;r++)
+        {
+            ag = 0.0;
+            bg = 0.0;
+
+
+            for(l=0;l<qsmall;l++)
+            {
+                ag +=
+                    G[
+                        l+r*qsmall]
+                    *G[
+                        l+c*qsmall];
+
+                bg +=
+                    G[
+                        l+r*qsmall]
+                    *F[
+                        l+c*qsmall];
+            }
+
+
+            AP[
+                r+c*psmall] =
+                ag;
+
+            BP[
+                r+c*psmall] =
+                bg;
+        }
+    }
+
+
+    memcpy(
+        AINV,
+        AP,
+        (size_t)psmall
+        *(size_t)psmall
+        *sizeof(LIS_SCALAR));
+
+
+    err =
+        lis_array_ge(
+            psmall,
+            AINV);
+
+    if( err )
+    {
+        /*
+         * Failure of recycle enhancement is nonfatal.
+         */
+        err =
+            LIS_SUCCESS;
+
+        goto cleanup;
+    }
+
+
+    /*
+     * T = (G^T G)^-1 (G^T F)
+     */
+    for(c=0;c<psmall;c++)
+    {
+        for(r=0;r<psmall;r++)
+        {
+            s = 0.0;
+
+
+            for(l=0;l<psmall;l++)
+            {
+                s +=
+                    AINV[
+                        r+l*psmall]
+                    *BP[
+                        l+c*psmall];
+            }
+
+
+            T[
+                r+c*psmall] =
+                s;
+        }
+    }
+
+
+    memcpy(
+        TQR,
+        T,
+        (size_t)psmall
+        *(size_t)psmall
+        *sizeof(LIS_SCALAR));
+
+
+    err =
+        lis_array_qr(
+            psmall,
+            TQR,
+            QW,
+            RW,
+            &qriter,
+            &qrerr);
+
+    if( err )
+    {
+        err =
+            LIS_SUCCESS;
+
+        goto cleanup;
+    }
+
+
+    (void)qriter;
+    (void)qrerr;
+
+
+    err =
+        lis_fgcrodr_extract_eigs(
+            psmall,
+            TQR,
+            eig,
+            &neig);
+
+    if( err )
+    {
+        err =
+            LIS_SUCCESS;
+
+        goto cleanup;
+    }
+
+
+    for(i=0;i<target;i++)
+    {
+        err =
+            lis_vector_duplicate(
+                solver->A,
+                &neww[i]);
+
+        if( err )
+            goto cleanup;
+
+
+        err =
+            lis_vector_duplicate(
+                solver->A,
+                &newz[i]);
+
+        if( err )
+            goto cleanup;
+    }
+
+
+    nsel = 0;
+
+
+    for(
+        eidx=0;
+        eidx<neig && nsel<target;
+        eidx++ )
+    {
+        if(
+            eig[eidx].pair &&
+            nsel+2>target )
+        {
+            continue;
+        }
+
+
+        err =
+            lis_fgcrodr_inverse_eigenvector(
+                psmall,
+                T,
+                eig[eidx].lr,
+                eig[eidx].li,
+                vr,
+                vi);
+
+
+        if( err==LIS_ERR_OUT_OF_MEMORY )
+            goto cleanup;
+
+        if( err )
+        {
+            err =
+                LIS_SUCCESS;
+
+            continue;
+        }
+
+
+        if( eig[eidx].pair )
+        {
+            err =
+                lis_fgcrodr_build_augmented_vector(
+                    state,
+                    v,
+                    z,
+                    jdim,
+                    oldk,
+                    vr,
+                    neww[nsel],
+                    newz[nsel]);
+
+            if( err )
+            {
+                if(
+                    err==
+                    LIS_ERR_OUT_OF_MEMORY )
+                {
+                    goto cleanup;
+                }
+
+                err =
+                    LIS_SUCCESS;
+
+                continue;
+            }
+
+
+            err =
+                lis_fgcrodr_build_augmented_vector(
+                    state,
+                    v,
+                    z,
+                    jdim,
+                    oldk,
+                    vi,
+                    neww[nsel+1],
+                    newz[nsel+1]);
+
+            if( err )
+            {
+                if(
+                    err==
+                    LIS_ERR_OUT_OF_MEMORY )
+                {
+                    goto cleanup;
+                }
+
+                err =
+                    LIS_SUCCESS;
+
+                continue;
+            }
+
+
+            nsel += 2;
+        }
+        else
+        {
+            err =
+                lis_fgcrodr_build_augmented_vector(
+                    state,
+                    v,
+                    z,
+                    jdim,
+                    oldk,
+                    vr,
+                    neww[nsel],
+                    newz[nsel]);
+
+            if( err )
+            {
+                if(
+                    err==
+                    LIS_ERR_OUT_OF_MEMORY )
+                {
+                    goto cleanup;
+                }
+
+                err =
+                    LIS_SUCCESS;
+
+                continue;
+            }
+
+
+            nsel++;
+        }
+    }
+
+
+    /*
+     * Do not replace a healthy persistent recycle space by a
+     * partially filled harmonic selection.
+     */
+    if( nsel!=target )
+    {
+        err =
+            LIS_SUCCESS;
+
+        goto cleanup;
+    }
+
+
+    err =
+        lis_fgcrodr_commit_recycle_update(
+            solver,
+            neww,
+            newz,
+            nsel);
+
+    if( err )
+        goto cleanup;
+
+
+    state =
+        solver->fgcrodr_state;
+
+
+    if(
+        state!=NULL &&
+        state->valid &&
+        state->dim>0 )
+    {
+    }
+
+
+cleanup:
+
+    if( neww )
+    {
+        for(i=0;i<target;i++)
+        {
+            if( neww[i] )
+                lis_vector_destroy(
+                    neww[i]);
+        }
+    }
+
+
+    if( newz )
+    {
+        for(i=0;i<target;i++)
+        {
+            if( newz[i] )
+                lis_vector_destroy(
+                    newz[i]);
+        }
+    }
+
+
+    lis_free(neww);
+    lis_free(newz);
+
+    lis_free(G);
+    lis_free(F);
+
+    lis_free(AP);
+    lis_free(BP);
+
+    lis_free(T);
+    lis_free(TQR);
+
+    lis_free(QW);
+    lis_free(RW);
+    lis_free(AINV);
+
+    lis_free(eig);
+
+    lis_free(vr);
+    lis_free(vi);
+
+
+    return err;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_fgcrodr_build_recycle"
+static LIS_INT
+lis_fgcrodr_build_recycle(
+    LIS_SOLVER solver,
+    LIS_VECTOR *v,
+    LIS_VECTOR *z,
+    LIS_INT jdim,
+    const LIS_SCALAR *hraw,
+    LIS_INT hld,
+    const LIS_SCALAR *bcoef,
+    LIS_INT bld)
+{
+    LIS_FGCRODR_STATE state;
+
+    LIS_INT err;
+
+
+    if( solver==NULL )
+        return LIS_ERR_ILL_ARG;
+
+
+    state =
+        solver->fgcrodr_state;
+
+
+    if(
+        state==NULL ||
+        !state->update )
+    {
+        return LIS_SUCCESS;
+    }
+
+
+    /*
+     * Existing same-operator recycle space:
+     *
+     * perform the augmented flexible harmonic update.
+     */
+    if(
+        state->valid &&
+        state->dim>0 )
+    {
+        return
+            lis_fgcrodr_try_harmonic_update(
+                solver,
+                v,
+                z,
+                jdim,
+                hraw,
+                hld,
+                bcoef,
+                bld);
+    }
+
+
+    /*
+     * No recycle space yet:
+     *
+     * preferred Stage-2D harmonic BUILD.
+     */
+    err =
+        lis_fgcrodr_try_harmonic_build(
+            solver,
+            v,
+            z,
+            jdim,
+            hraw,
+            hld);
+
+    if( err )
+        return err;
+
+
+    state =
+        solver->fgcrodr_state;
+
+
+    if(
+        state!=NULL &&
+        state->valid &&
+        state->dim>0 )
+    {
+        return LIS_SUCCESS;
+    }
+
+
+    /*
+     * Nonfatal fallback to the verified Stage-2B initial selection.
+     */
+    return
+        lis_fgcrodr_install_recycle(
+            solver,
+            v,
+            z,
+            jdim);
+}
+
+
+
+LIS_INT
+lis_fgcrodr_get_stats(
+    LIS_SOLVER solver,
+    LIS_UNSIGNED_INT *builds,
+    LIS_UNSIGNED_INT *updates,
+    LIS_UNSIGNED_INT *uses,
+    LIS_UNSIGNED_INT *rejects)
+{
+    LIS_FGCRODR_STATE state;
+
+
+    if( solver==NULL )
+        return LIS_ERR_ILL_ARG;
+
+
+    state =
+        solver->fgcrodr_state;
+
+
+    if( builds )
+        *builds =
+            state
+            ? state->builds
+            : 0;
+
+    if( updates )
+        *updates =
+            state
+            ? state->updates
+            : 0;
+
+    if( uses )
+        *uses =
+            state
+            ? state->uses
+            : 0;
+
+    if( rejects )
+        *rejects =
+            state
+            ? state->rejects
+            : 0;
+
+
+    return LIS_SUCCESS;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_fgcrodr_validate_recycle"
 LIS_INT
@@ -1420,6 +4109,7 @@ lis_fgcrodr_flexible_core(
     LIS_VECTOR *v;
 
     LIS_SCALAR *h;
+    LIS_SCALAR *hraw;
     LIS_SCALAR *bcoef;
 
     LIS_SCALAR aa;
@@ -1498,6 +4188,7 @@ lis_fgcrodr_flexible_core(
         ? state->dim
         : 0;
 
+    hraw = NULL;
     bcoef = NULL;
 
     maxiter =
@@ -1553,6 +4244,37 @@ lis_fgcrodr_flexible_core(
     sn = (m+2)*h_dim;
 
 
+    hraw =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)h_dim
+            *(size_t)m
+            *sizeof(LIS_SCALAR),
+            "lis_fgcrodr_flexible_core::hraw");
+
+    if( hraw==NULL )
+    {
+        if( hraw )
+            lis_free(hraw);
+
+        lis_free(h);
+
+        LIS_SETERR_MEM(
+            (size_t)h_dim
+            *(size_t)m
+            *sizeof(LIS_SCALAR));
+
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+
+    memset(
+        hraw,
+        0,
+        (size_t)h_dim
+        *(size_t)m
+        *sizeof(LIS_SCALAR));
+
+
     if( use_recycle )
     {
         bcoef =
@@ -1566,6 +4288,9 @@ lis_fgcrodr_flexible_core(
         {
             if( bcoef )
             lis_free(bcoef);
+
+        if( hraw )
+            lis_free(hraw);
 
         lis_free(h);
 
@@ -1599,6 +4324,9 @@ lis_fgcrodr_flexible_core(
     {
         if( bcoef )
             lis_free(bcoef);
+
+        if( hraw )
+            lis_free(hraw);
 
         lis_free(h);
 
@@ -1650,6 +4378,9 @@ lis_fgcrodr_flexible_core(
 
             if( bcoef )
                 lis_free(bcoef);
+
+            if( hraw )
+                lis_free(hraw);
 
             lis_free(h);
 
@@ -1747,6 +4478,9 @@ lis_fgcrodr_flexible_core(
                 if( bcoef )
             lis_free(bcoef);
 
+        if( hraw )
+            lis_free(hraw);
+
         lis_free(h);
 
                 return err;
@@ -1830,6 +4564,22 @@ lis_fgcrodr_flexible_core(
 
 
             /*
+             * Preserve the unrotated flexible Arnoldi column before
+             * Givens transformations modify h.
+             */
+            for(k=0;k<=i;k++)
+            {
+                hraw[
+                    k
+                    +iiv*h_dim] =
+                    h[
+                        k
+                        +iih];
+            }
+
+
+
+            /*
              * Preserve a zero norm so the existing lucky-breakdown
              * behavior remains identical to FGMRES.
              */
@@ -1902,6 +4652,9 @@ lis_fgcrodr_flexible_core(
 
                 if( bcoef )
             lis_free(bcoef);
+
+        if( hraw )
+            lis_free(hraw);
 
         lis_free(h);
 
@@ -1995,6 +4748,9 @@ lis_fgcrodr_flexible_core(
                     if( bcoef )
             lis_free(bcoef);
 
+        if( hraw )
+            lis_free(hraw);
+
         lis_free(h);
 
                     return LIS_MAXITER;
@@ -2029,6 +4785,9 @@ lis_fgcrodr_flexible_core(
 
             if( bcoef )
             lis_free(bcoef);
+
+        if( hraw )
+            lis_free(hraw);
 
         lis_free(h);
 
@@ -2076,6 +4835,9 @@ lis_fgcrodr_flexible_core(
 
                 if( bcoef )
             lis_free(bcoef);
+
+        if( hraw )
+            lis_free(hraw);
 
         lis_free(h);
 
@@ -2133,16 +4895,20 @@ lis_fgcrodr_flexible_core(
          * Preserve the first usable flexible Arnoldi cycle before
          * restart overwrites V/Z.
          *
-         * lis_fgcrodr_build_recycle() is intentionally a no-op once
-         * a valid initial recycle space exists, so later cycles do
-         * not replace this Stage-2B BUILD.
+         * The first cycle can BUILD a harmonic recycle space.
+         * Subsequent cycles with active recycling perform an augmented
+         * harmonic UPDATE using [Z_old,Z_krylov].
          */
         err =
             lis_fgcrodr_build_recycle(
                 solver,
                 v,
                 z,
-                ii+1);
+                ii+1,
+                hraw,
+                h_dim,
+                bcoef,
+                kcur);
 
         if( err )
         {
@@ -2160,6 +4926,9 @@ lis_fgcrodr_flexible_core(
 
             if( bcoef )
             lis_free(bcoef);
+
+        if( hraw )
+            lis_free(hraw);
 
         lis_free(h);
 
@@ -2183,6 +4952,9 @@ lis_fgcrodr_flexible_core(
 
             if( bcoef )
             lis_free(bcoef);
+
+        if( hraw )
+            lis_free(hraw);
 
         lis_free(h);
 
@@ -2244,6 +5016,9 @@ lis_fgcrodr_flexible_core(
 
     solver->resid =
         nrm2;
+
+    if( hraw )
+        lis_free(hraw);
 
     lis_free(h);
 
