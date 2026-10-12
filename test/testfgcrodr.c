@@ -4,6 +4,7 @@
 
 #include "lis.h"
 #include "lis_solver.h"
+#include "lis_precon.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -93,6 +94,306 @@ fail:
     lis_matrix_destroy(A);
     return err;
 }
+
+
+
+/*
+ * Stage 2F-C deterministic recovery preconditioner.
+ *
+ * The first psolve intentionally distorts one component so a
+ * one-iteration FGCRO-DR attempt cannot satisfy tol=0.2.
+ *
+ * All later psolve calls are identity.  Therefore Attempt 1 uses the
+ * SAME persistent preconditioner object but receives an undistorted
+ * flexible direction and converges.
+ */
+static LIS_INT fgcrodr_recovery_create_count = 0;
+static LIS_INT fgcrodr_recovery_destroy_count = 0;
+static LIS_INT fgcrodr_recovery_psolve_count = 0;
+
+
+static LIS_INT
+fgcrodr_recovery_create(
+    LIS_SOLVER solver,
+    LIS_PRECON precon)
+{
+    (void)solver;
+    (void)precon;
+
+    fgcrodr_recovery_create_count++;
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+fgcrodr_recovery_psolve(
+    LIS_SOLVER solver,
+    LIS_VECTOR b,
+    LIS_VECTOR x)
+{
+    LIS_INT err;
+
+    (void)solver;
+
+
+    err =
+        lis_vector_copy(
+            b,
+            x);
+
+    if( err )
+        return err;
+
+
+    fgcrodr_recovery_psolve_count++;
+
+
+    /*
+     * The Stage 2F-C recovery matrix is a serial 2x2 test problem.
+     *
+     * First flexible direction:
+     *
+     *     z = [v0, 0.01*v1]
+     *
+     * gives a one-step residual reduction of about 0.696, which is
+     * deliberately worse than tol=0.2.
+     *
+     * Subsequent calls are identity.
+     */
+    if(
+        fgcrodr_recovery_psolve_count==1 &&
+        x->n>=2 )
+    {
+        x->value[1] *=
+            (LIS_SCALAR)0.01;
+    }
+
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+fgcrodr_recovery_destroy(
+    LIS_PRECON precon)
+{
+    (void)precon;
+
+    fgcrodr_recovery_destroy_count++;
+
+    return LIS_SUCCESS;
+}
+
+
+static void
+fgcrodr_recovery_reset_counts(void)
+{
+    fgcrodr_recovery_create_count = 0;
+    fgcrodr_recovery_destroy_count = 0;
+    fgcrodr_recovery_psolve_count = 0;
+}
+
+
+
+/*
+ * Stage 2F-D deterministic preconditioner-rebuild test.
+ *
+ * The first persistent preconditioner instance intentionally distorts
+ * every flexible direction:
+ *
+ *     z = [v0, 0.01*v1]
+ *
+ * On the 2x2 recovery system a single FGCRO-DR iteration then reduces
+ * the current residual by about 0.696, which remains above tol=0.2.
+ *
+ * Therefore:
+ *
+ *     Attempt 0 -> MAXITER
+ *     Attempt 1 -> MAXITER
+ *
+ * Sequence recovery then destroys the first persistent preconditioner.
+ *
+ * The second preconditioner instance is identity:
+ *
+ *     Attempt 2 -> SUCCESS
+ *
+ * This isolates the second recovery tier:
+ *
+ *     recycle reset
+ *     persistent preconditioner rebuild
+ *     fresh FGCRO recycle BUILD
+ */
+static LIS_INT fgcrodr_rebuild_create_count = 0;
+static LIS_INT fgcrodr_rebuild_destroy_count = 0;
+static LIS_INT fgcrodr_rebuild_psolve_count = 0;
+
+
+static LIS_INT
+fgcrodr_rebuild_create(
+    LIS_SOLVER solver,
+    LIS_PRECON precon)
+{
+    (void)solver;
+    (void)precon;
+
+    fgcrodr_rebuild_create_count++;
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+fgcrodr_rebuild_psolve(
+    LIS_SOLVER solver,
+    LIS_VECTOR b,
+    LIS_VECTOR x)
+{
+    LIS_INT err;
+
+    (void)solver;
+
+
+    err =
+        lis_vector_copy(
+            b,
+            x);
+
+    if( err )
+        return err;
+
+
+    fgcrodr_rebuild_psolve_count++;
+
+
+    /*
+     * Only the FIRST persistent preconditioner instance is poor.
+     *
+     * Generic recovery destroys it before Attempt 2.  Once create
+     * count reaches two, this callback becomes identity.
+     */
+    if(
+        fgcrodr_rebuild_create_count==1 &&
+        x->n>=2 )
+    {
+        x->value[1] *=
+            (LIS_SCALAR)0.01;
+    }
+
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+fgcrodr_rebuild_destroy(
+    LIS_PRECON precon)
+{
+    (void)precon;
+
+    fgcrodr_rebuild_destroy_count++;
+
+    return LIS_SUCCESS;
+}
+
+
+static void
+fgcrodr_rebuild_reset_counts(void)
+{
+    fgcrodr_rebuild_create_count = 0;
+    fgcrodr_rebuild_destroy_count = 0;
+    fgcrodr_rebuild_psolve_count = 0;
+}
+
+
+static LIS_INT
+build_recovery_matrix(
+    LIS_MATRIX *Aout)
+{
+    LIS_MATRIX A = NULL;
+
+    LIS_INT err;
+
+
+    if( Aout==NULL )
+        return LIS_ERR_ILL_ARG;
+
+
+    err =
+        lis_matrix_create(
+            LIS_COMM_WORLD,
+            &A);
+
+    if( err )
+        return err;
+
+
+    err =
+        lis_matrix_set_size(
+            A,
+            0,
+            2);
+
+    if( err )
+        goto fail;
+
+
+    err =
+        lis_matrix_set_value(
+            LIS_INS_VALUE,
+            0,
+            0,
+            (LIS_SCALAR)2.0,
+            A);
+
+    if( err )
+        goto fail;
+
+
+    err =
+        lis_matrix_set_value(
+            LIS_INS_VALUE,
+            1,
+            1,
+            (LIS_SCALAR)3.0,
+            A);
+
+    if( err )
+        goto fail;
+
+
+    err =
+        lis_matrix_set_type(
+            A,
+            LIS_MATRIX_CSR);
+
+    if( err )
+        goto fail;
+
+
+    err =
+        lis_matrix_assemble(
+            A);
+
+    if( err )
+        goto fail;
+
+
+    *Aout =
+        A;
+
+
+    return LIS_SUCCESS;
+
+
+fail:
+
+    lis_matrix_destroy(
+        A);
+
+    return err;
+}
+
 
 
 /*
@@ -2494,6 +2795,1525 @@ cleanup:
 }
 
 
+
+
+static LIS_INT
+check_sequence_reset_lifecycle(void)
+{
+    LIS_MATRIX A = NULL;
+    LIS_MATRIX stored_matrix;
+
+    LIS_VECTOR u = NULL;
+    LIS_VECTOR b = NULL;
+    LIS_VECTOR x = NULL;
+    LIS_VECTOR r = NULL;
+
+    LIS_SOLVER solver = NULL;
+
+    LIS_SEQUENCE_DIAGNOSTICS diag;
+
+    LIS_INT err;
+    LIS_INT failed;
+
+    LIS_INT valid;
+
+    LIS_INT api1;
+    LIS_INT api2;
+
+    LIS_INT status1;
+    LIS_INT status2;
+
+    LIS_INT dim1;
+    LIS_INT dim0;
+    LIS_INT dim2;
+
+    LIS_INT action1;
+    LIS_INT action0;
+    LIS_INT action2;
+
+    LIS_REAL true1;
+    LIS_REAL true2;
+
+    LIS_REAL orth2;
+    LIS_REAL relation2;
+
+    LIS_UNSIGNED_INT sg;
+    LIS_UNSIGNED_INT vg;
+
+    LIS_UNSIGNED_INT builds1;
+    LIS_UNSIGNED_INT builds0;
+    LIS_UNSIGNED_INT builds2;
+
+    LIS_UNSIGNED_INT updates1;
+    LIS_UNSIGNED_INT updates0;
+
+    LIS_UNSIGNED_INT uses1;
+    LIS_UNSIGNED_INT uses0;
+
+    LIS_UNSIGNED_INT rejects1;
+    LIS_UNSIGNED_INT rejects0;
+
+
+    failed = 0;
+
+
+    err =
+        build_matrix(
+            &A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &u);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &b);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &r);
+
+    if( err )
+        goto api_fail;
+
+
+    set_second_exact_solution(
+        u);
+
+
+    lis_matvec(
+        A,
+        u,
+        b);
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i fgcrodr "
+            "-p jacobi "
+            "-restart 10 "
+            "-maxiter 500 "
+            "-tol 1e-12 "
+            "-print none "
+            "-fgcrodr_k 5",
+            solver);
+
+    if( err )
+        goto api_fail;
+
+
+    /* -------------------------------------------------------- */
+    /* Solve 1: establish persistent FGCRO recycle state        */
+    /* -------------------------------------------------------- */
+
+    lis_vector_set_all(
+        0.0,
+        x);
+
+
+    api1 =
+        lis_solve_sequence(
+            A,
+            b,
+            x,
+            solver);
+
+    status1 =
+        solver->retcode;
+
+
+    true1 =
+        true_relative_residual(
+            A,
+            b,
+            x,
+            r);
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim1,
+            &action1,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_stats(
+            solver,
+            &builds1,
+            &updates1,
+            &uses1,
+            &rejects1);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_lifecycle_state(
+            solver,
+            &valid,
+            &stored_matrix,
+            &sg,
+            &vg);
+
+    if( err )
+        goto api_fail;
+
+
+    if(
+        api1!=LIS_SUCCESS ||
+        status1!=LIS_SUCCESS ||
+        dim1!=5 ||
+        action1!=LIS_FGCRODR_RECYCLE_BUILD ||
+        !valid ||
+        stored_matrix!=A ||
+        true1>1.0e-10 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR RESET initial BUILD failure: "
+            "api=%d status=%d dim=%d action=%d "
+            "valid=%d matrix=%p/%p true=%.17e\n",
+            (int)api1,
+            (int)status1,
+            (int)dim1,
+            (int)action1,
+            (int)valid,
+            (void *)stored_matrix,
+            (void *)A,
+            (double)true1);
+
+        failed = 1;
+    }
+
+
+    /* -------------------------------------------------------- */
+    /* Explicit sequence reset                                  */
+    /* -------------------------------------------------------- */
+
+    err =
+        lis_solver_reset_sequence(
+            solver);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim0,
+            &action0,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_stats(
+            solver,
+            &builds0,
+            &updates0,
+            &uses0,
+            &rejects0);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_lifecycle_state(
+            solver,
+            &valid,
+            &stored_matrix,
+            &sg,
+            &vg);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_get_sequence_diagnostics(
+            solver,
+            &diag);
+
+    if( err )
+        goto api_fail;
+
+
+    printf(
+        "FGCRO-DR reset cleared "
+        "dim=%d action=%d valid=%d matrix=%p "
+        "sg=%llu vg=%llu "
+        "builds=%llu updates=%llu uses=%llu rejects=%llu "
+        "diag=%d/%d/%d/%d\n",
+        (int)dim0,
+        (int)action0,
+        (int)valid,
+        (void *)stored_matrix,
+        (unsigned long long)sg,
+        (unsigned long long)vg,
+        (unsigned long long)builds0,
+        (unsigned long long)updates0,
+        (unsigned long long)uses0,
+        (unsigned long long)rejects0,
+        (int)diag.attempts,
+        (int)diag.retries,
+        (int)diag.recycle_resets,
+        (int)diag.precon_rebuilds);
+
+
+    if(
+        dim0!=0 ||
+        action0!=LIS_FGCRODR_RECYCLE_NONE ||
+        valid ||
+        stored_matrix!=NULL ||
+        sg!=0 ||
+        vg!=0 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR RESET metadata failure: "
+            "dim=%d action=%d valid=%d matrix=%p "
+            "sg=%llu vg=%llu\n",
+            (int)dim0,
+            (int)action0,
+            (int)valid,
+            (void *)stored_matrix,
+            (unsigned long long)sg,
+            (unsigned long long)vg);
+
+        failed = 1;
+    }
+
+
+    /*
+     * Clearing recycle vectors must not erase lifetime FGCRO
+     * statistics/configuration.
+     */
+    if(
+        builds0!=builds1 ||
+        updates0!=updates1 ||
+        uses0!=uses1 ||
+        rejects0!=rejects1 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR RESET lifetime counter failure\n");
+
+        failed = 1;
+    }
+
+
+    /*
+     * reset_sequence() clears per-call diagnostics, while lifetime
+     * sequence totals intentionally survive.
+     */
+    if(
+        diag.attempts!=0 ||
+        diag.retries!=0 ||
+        diag.recycle_resets!=0 ||
+        diag.precon_rebuilds!=0 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR RESET sequence diagnostic failure: "
+            "%d/%d/%d/%d\n",
+            (int)diag.attempts,
+            (int)diag.retries,
+            (int)diag.recycle_resets,
+            (int)diag.precon_rebuilds);
+
+        failed = 1;
+    }
+
+
+    /* -------------------------------------------------------- */
+    /* Solve 2: reset must cause a completely fresh BUILD       */
+    /* -------------------------------------------------------- */
+
+    lis_vector_set_all(
+        0.0,
+        x);
+
+
+    api2 =
+        lis_solve_sequence(
+            A,
+            b,
+            x,
+            solver);
+
+    status2 =
+        solver->retcode;
+
+
+    true2 =
+        true_relative_residual(
+            A,
+            b,
+            x,
+            r);
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim2,
+            &action2,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_stats(
+            solver,
+            &builds2,
+            NULL,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_validate_recycle(
+            solver,
+            &orth2,
+            &relation2);
+
+    if( err )
+        goto api_fail;
+
+
+    printf(
+        "FGCRO-DR reset rebuild "
+        "api=%d status=%d dim=%d action=%d "
+        "builds=%llu->%llu true=%.3e "
+        "orth=%.3e AZ-C=%.3e\n",
+        (int)api2,
+        (int)status2,
+        (int)dim2,
+        (int)action2,
+        (unsigned long long)builds1,
+        (unsigned long long)builds2,
+        (double)true2,
+        (double)orth2,
+        (double)relation2);
+
+
+    if(
+        api2!=LIS_SUCCESS ||
+        status2!=LIS_SUCCESS ||
+        dim2!=5 ||
+        action2!=LIS_FGCRODR_RECYCLE_BUILD ||
+        builds2!=builds1+1 ||
+        true2>1.0e-10 ||
+        orth2>1.0e-12 ||
+        relation2>1.0e-12 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR RESET rebuild failure\n");
+
+        failed = 1;
+    }
+
+
+    if( failed )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR SEQUENCE RESET LIFECYCLE FAILED\n");
+
+        err =
+            LIS_ERR_ILL_ARG;
+
+        goto cleanup;
+    }
+
+
+    printf(
+        "FGCRO-DR SEQUENCE RESET LIFECYCLE PASSED\n");
+
+    err =
+        LIS_SUCCESS;
+
+    goto cleanup;
+
+
+api_fail:
+
+    fprintf(
+        stderr,
+        "FGCRO-DR sequence reset API failure: %d\n",
+        (int)err);
+
+
+cleanup:
+
+    if( solver )
+        lis_solver_destroy(
+            solver);
+
+    if( r )
+        lis_vector_destroy(
+            r);
+
+    if( x )
+        lis_vector_destroy(
+            x);
+
+    if( b )
+        lis_vector_destroy(
+            b);
+
+    if( u )
+        lis_vector_destroy(
+            u);
+
+    if( A )
+        lis_matrix_destroy(
+            A);
+
+
+    return err;
+}
+
+
+
+
+static LIS_INT
+check_sequence_recovery_lifecycle(void)
+{
+    LIS_MATRIX A = NULL;
+    LIS_MATRIX stored_matrix = NULL;
+
+    LIS_VECTOR b = NULL;
+    LIS_VECTOR x = NULL;
+    LIS_VECTOR r = NULL;
+
+    LIS_SOLVER solver = NULL;
+
+    LIS_SEQUENCE_DIAGNOSTICS diag;
+
+    LIS_INT err;
+    LIS_INT failed;
+
+    LIS_INT api;
+    LIS_INT status;
+
+    LIS_INT dim;
+    LIS_INT action;
+    LIS_INT valid;
+
+    LIS_REAL true_residual;
+    LIS_REAL orth;
+    LIS_REAL relation;
+
+    LIS_UNSIGNED_INT sg;
+    LIS_UNSIGNED_INT vg;
+
+    LIS_UNSIGNED_INT builds;
+    LIS_UNSIGNED_INT updates;
+    LIS_UNSIGNED_INT uses;
+    LIS_UNSIGNED_INT rejects;
+
+
+    failed =
+        0;
+
+
+    err =
+        build_recovery_matrix(
+            &A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &b);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &r);
+
+    if( err )
+        goto api_fail;
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)2.0,
+        b);
+
+
+    fgcrodr_recovery_reset_counts();
+
+
+    err =
+        lis_precon_register_ex(
+            "fgc2fc",
+            fgcrodr_recovery_create,
+            fgcrodr_recovery_psolve,
+            fgcrodr_recovery_psolve,
+            fgcrodr_recovery_destroy);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if( err )
+        goto api_fail;
+
+
+    /*
+     * Use the deterministic Stage 2F-C flexible preconditioner.
+     *
+     * The persistent preconditioner object must survive Attempt 0 and
+     * Attempt 1.  Only its first psolve call is intentionally
+     * distorted.
+     */
+    err =
+        lis_solver_set_option(
+            "-i fgcrodr "
+            "-p fgc2fc "
+            "-scale none "
+            "-print none "
+            "-restart 2 "
+            "-maxiter 20 "
+            "-tol 1e-12 "
+            "-fgcrodr_k 1",
+            solver);
+
+    if( err )
+        goto api_fail;
+
+
+    /*
+     * Attempt 0:
+     *
+     *     distorted flexible direction
+     *     one-step normalized residual ~= 0.696 > 0.2
+     *     -> MAXITER
+     *
+     * Recovery:
+     *
+     *     clear recycle only
+     *     retain persistent preconditioner
+     *
+     * Attempt 1:
+     *
+     *     same preconditioner object
+     *     identity flexible direction
+     *     improved warm start
+     *     one-step normalized residual << 0.2
+     *     -> SUCCESS
+     */
+    solver->options[LIS_OPTIONS_MAXITER] =
+        1;
+
+    solver->params[
+        LIS_PARAMS_RESID
+        -LIS_OPTIONS_LEN] =
+            (LIS_SCALAR)2.0e-1;
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x);
+
+
+    api =
+        lis_solve_sequence(
+            A,
+            b,
+            x,
+            solver);
+
+    status =
+        solver->retcode;
+
+
+    true_residual =
+        true_relative_residual(
+            A,
+            b,
+            x,
+            r);
+
+
+    err =
+        lis_solver_get_sequence_diagnostics(
+            solver,
+            &diag);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim,
+            &action,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_stats(
+            solver,
+            &builds,
+            &updates,
+            &uses,
+            &rejects);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_lifecycle_state(
+            solver,
+            &valid,
+            &stored_matrix,
+            &sg,
+            &vg);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_validate_recycle(
+            solver,
+            &orth,
+            &relation);
+
+    if( err )
+        goto api_fail;
+
+
+    printf(
+        "FGCRO-DR recovery "
+        "api=%d status=%d "
+        "attempts=%d retries=%d resets=%d rebuilds=%d "
+        "first=%d final=%d warm=%d/%d "
+        "dim=%d action=%d "
+        "builds=%llu updates=%llu uses=%llu rejects=%llu "
+        "precon=%d/%d psolve=%d "
+        "true=%.6e orth=%.3e AZ-C=%.3e\n",
+        (int)api,
+        (int)status,
+        (int)diag.attempts,
+        (int)diag.retries,
+        (int)diag.recycle_resets,
+        (int)diag.precon_rebuilds,
+        (int)diag.first_retcode,
+        (int)diag.final_retcode,
+        (int)diag.initial_warm_start_kept,
+        (int)diag.last_warm_start_kept,
+        (int)dim,
+        (int)action,
+        (unsigned long long)builds,
+        (unsigned long long)updates,
+        (unsigned long long)uses,
+        (unsigned long long)rejects,
+        (int)fgcrodr_recovery_create_count,
+        (int)fgcrodr_recovery_destroy_count,
+        (int)fgcrodr_recovery_psolve_count,
+        (double)true_residual,
+        (double)orth,
+        (double)relation);
+
+
+    /*
+     * Generic recovery contract.
+     */
+    if(
+        api!=LIS_SUCCESS ||
+        status!=LIS_SUCCESS ||
+        diag.attempts!=2 ||
+        diag.retries!=1 ||
+        diag.recycle_resets!=1 ||
+        diag.precon_rebuilds!=0 ||
+        diag.first_retcode!=LIS_MAXITER ||
+        diag.final_retcode!=LIS_SUCCESS )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR recovery diagnostics failure: "
+            "api=%d status=%d "
+            "attempts=%d retries=%d resets=%d rebuilds=%d "
+            "first=%d final=%d\n",
+            (int)api,
+            (int)status,
+            (int)diag.attempts,
+            (int)diag.retries,
+            (int)diag.recycle_resets,
+            (int)diag.precon_rebuilds,
+            (int)diag.first_retcode,
+            (int)diag.final_retcode);
+
+        failed =
+            1;
+    }
+
+
+    /*
+     * Attempt 0 starts from zero.
+     * Attempt 1 must preserve the useful partial solution produced by
+     * the MAXITER attempt.
+     */
+    if(
+        diag.initial_warm_start_kept!=LIS_FALSE ||
+        diag.last_warm_start_kept!=LIS_TRUE )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR recovery warm-start failure: "
+            "initial=%d last=%d\n",
+            (int)diag.initial_warm_start_kept,
+            (int)diag.last_warm_start_kept);
+
+        failed =
+            1;
+    }
+
+
+    /*
+     * Attempt 1 must retain the same persistent preconditioner.
+     * Rebuild is reserved for Attempt 2.
+     */
+    if(
+        fgcrodr_recovery_create_count!=1 ||
+        fgcrodr_recovery_destroy_count!=0 ||
+        fgcrodr_recovery_psolve_count<2 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR recovery preconditioner lifecycle failure: "
+            "create=%d destroy=%d psolve=%d\n",
+            (int)fgcrodr_recovery_create_count,
+            (int)fgcrodr_recovery_destroy_count,
+            (int)fgcrodr_recovery_psolve_count);
+
+        failed =
+            1;
+    }
+
+
+    /*
+     * Both attempts reach the harmonic recycle BUILD point:
+     *
+     *     attempt 0 -> BUILD #1 -> MAXITER
+     *     recovery  -> clear recycle
+     *     attempt 1 -> BUILD #2 -> SUCCESS
+     *
+     * If recovery accidentally reused the first basis, builds would
+     * not have this clean 2/0/0 lifecycle.
+     */
+    if(
+        builds!=2 ||
+        updates!=0 ||
+        uses!=0 ||
+        rejects!=0 ||
+        dim!=1 ||
+        action!=LIS_FGCRODR_RECYCLE_BUILD )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR recovery recycle lifecycle failure: "
+            "builds=%llu updates=%llu uses=%llu rejects=%llu "
+            "dim=%d action=%d\n",
+            (unsigned long long)builds,
+            (unsigned long long)updates,
+            (unsigned long long)uses,
+            (unsigned long long)rejects,
+            (int)dim,
+            (int)action);
+
+        failed =
+            1;
+    }
+
+
+    /*
+     * The successful retry owns a fresh, generation-compatible
+     * recycle relation.
+     */
+    if(
+        !valid ||
+        stored_matrix!=A ||
+        true_residual>2.0e-1 ||
+        orth>1.0e-12 ||
+        relation>1.0e-12 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR recovery final-state failure: "
+            "valid=%d matrix=%p/%p "
+            "true=%.17e orth=%.17e AZ-C=%.17e "
+            "sg=%llu vg=%llu\n",
+            (int)valid,
+            (void *)stored_matrix,
+            (void *)A,
+            (double)true_residual,
+            (double)orth,
+            (double)relation,
+            (unsigned long long)sg,
+            (unsigned long long)vg);
+
+        failed =
+            1;
+    }
+
+
+    /*
+     * Fresh solver: lifetime sequence diagnostics must reflect exactly
+     * this one call and its one recovery retry.
+     */
+    if(
+        diag.total_solves!=1 ||
+        diag.total_attempts!=2 ||
+        diag.total_retries!=1 ||
+        diag.total_recycle_resets!=1 ||
+        diag.total_precon_rebuilds!=0 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR recovery lifetime diagnostics failure: "
+            "%llu/%llu/%llu/%llu/%llu\n",
+            (unsigned long long)diag.total_solves,
+            (unsigned long long)diag.total_attempts,
+            (unsigned long long)diag.total_retries,
+            (unsigned long long)diag.total_recycle_resets,
+            (unsigned long long)diag.total_precon_rebuilds);
+
+        failed =
+            1;
+    }
+
+
+    if( failed )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR SEQUENCE RECOVERY LIFECYCLE FAILED\n");
+
+        err =
+            LIS_ERR_ILL_ARG;
+
+        goto cleanup;
+    }
+
+
+    printf(
+        "FGCRO-DR SEQUENCE RECOVERY LIFECYCLE PASSED\n");
+
+
+    err =
+        LIS_SUCCESS;
+
+    goto cleanup;
+
+
+api_fail:
+
+    fprintf(
+        stderr,
+        "FGCRO-DR sequence recovery API failure: %d\n",
+        (int)err);
+
+
+cleanup:
+
+    if( solver )
+        lis_solver_destroy(
+            solver);
+
+    if( r )
+        lis_vector_destroy(
+            r);
+
+    if( x )
+        lis_vector_destroy(
+            x);
+
+    if( b )
+        lis_vector_destroy(
+            b);
+
+    if( A )
+        lis_matrix_destroy(
+            A);
+
+
+    return err;
+}
+
+
+
+
+static LIS_INT
+check_sequence_recovery_rebuild_lifecycle(void)
+{
+    LIS_MATRIX A = NULL;
+    LIS_MATRIX stored_matrix = NULL;
+
+    LIS_VECTOR b = NULL;
+    LIS_VECTOR x = NULL;
+    LIS_VECTOR r = NULL;
+
+    LIS_SOLVER solver = NULL;
+
+    LIS_SEQUENCE_DIAGNOSTICS diag;
+
+    LIS_INT err;
+    LIS_INT failed;
+
+    LIS_INT api;
+    LIS_INT status;
+
+    LIS_INT dim;
+    LIS_INT action;
+    LIS_INT valid;
+
+    LIS_REAL true_residual;
+    LIS_REAL orth;
+    LIS_REAL relation;
+
+    LIS_UNSIGNED_INT sg;
+    LIS_UNSIGNED_INT vg;
+
+    LIS_UNSIGNED_INT builds;
+    LIS_UNSIGNED_INT updates;
+    LIS_UNSIGNED_INT uses;
+    LIS_UNSIGNED_INT rejects;
+
+
+    failed =
+        0;
+
+
+    err =
+        build_recovery_matrix(
+            &A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &b);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &r);
+
+    if( err )
+        goto api_fail;
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)2.0,
+        b);
+
+
+    fgcrodr_rebuild_reset_counts();
+
+
+    err =
+        lis_precon_register_ex(
+            "fgc2fd",
+            fgcrodr_rebuild_create,
+            fgcrodr_rebuild_psolve,
+            fgcrodr_rebuild_psolve,
+            fgcrodr_rebuild_destroy);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i fgcrodr "
+            "-p fgc2fd "
+            "-scale none "
+            "-print none "
+            "-restart 2 "
+            "-maxiter 20 "
+            "-tol 1e-12 "
+            "-fgcrodr_k 1",
+            solver);
+
+    if( err )
+        goto api_fail;
+
+
+    /*
+     * One iteration per sequence attempt.
+     *
+     * First preconditioner instance:
+     *
+     *     Attempt 0 remains above the 0.3 solver threshold
+     *     Attempt 1 remains above the 0.3 solver threshold
+     *
+     * This forces the second recovery tier.
+     *
+     * Rebuilt preconditioner:
+     *
+     *     Attempt 2 uses identity and crosses tol=0.3.
+     */
+    solver->options[LIS_OPTIONS_MAXITER] =
+        1;
+
+    /*
+     * The final identity-preconditioned Attempt 2 reaches a physical
+     * relative residual near 9.51e-2.  On this test system
+     * ||b||_2=sqrt(8), corresponding to an absolute residual near
+     * 2.69e-1.  A threshold of 3.0e-1 cleanly separates Attempt 2
+     * from the two deliberately poor earlier attempts.
+     */
+    solver->params[
+        LIS_PARAMS_RESID
+        -LIS_OPTIONS_LEN] =
+            (LIS_SCALAR)3.0e-1;
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x);
+
+
+    api =
+        lis_solve_sequence(
+            A,
+            b,
+            x,
+            solver);
+
+    status =
+        solver->retcode;
+
+
+    true_residual =
+        true_relative_residual(
+            A,
+            b,
+            x,
+            r);
+
+
+    err =
+        lis_solver_get_sequence_diagnostics(
+            solver,
+            &diag);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim,
+            &action,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_stats(
+            solver,
+            &builds,
+            &updates,
+            &uses,
+            &rejects);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_lifecycle_state(
+            solver,
+            &valid,
+            &stored_matrix,
+            &sg,
+            &vg);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_validate_recycle(
+            solver,
+            &orth,
+            &relation);
+
+    if( err )
+        goto api_fail;
+
+
+    printf(
+        "FGCRO-DR recovery rebuild "
+        "api=%d status=%d "
+        "attempts=%d retries=%d resets=%d rebuilds=%d "
+        "first=%d final=%d warm=%d/%d "
+        "dim=%d action=%d "
+        "builds=%llu updates=%llu uses=%llu rejects=%llu "
+        "precon=%d/%d psolve=%d "
+        "reported=%.6e true=%.6e "
+        "orth=%.3e AZ-C=%.3e\n",
+        (int)api,
+        (int)status,
+        (int)diag.attempts,
+        (int)diag.retries,
+        (int)diag.recycle_resets,
+        (int)diag.precon_rebuilds,
+        (int)diag.first_retcode,
+        (int)diag.final_retcode,
+        (int)diag.initial_warm_start_kept,
+        (int)diag.last_warm_start_kept,
+        (int)dim,
+        (int)action,
+        (unsigned long long)builds,
+        (unsigned long long)updates,
+        (unsigned long long)uses,
+        (unsigned long long)rejects,
+        (int)fgcrodr_rebuild_create_count,
+        (int)fgcrodr_rebuild_destroy_count,
+        (int)fgcrodr_rebuild_psolve_count,
+        (double)solver->resid,
+        (double)true_residual,
+        (double)orth,
+        (double)relation);
+
+
+    /*
+     * Exact generic second-tier recovery contract.
+     */
+    if(
+        api!=LIS_SUCCESS ||
+        status!=LIS_SUCCESS ||
+        diag.attempts!=3 ||
+        diag.retries!=2 ||
+        diag.recycle_resets!=2 ||
+        diag.precon_rebuilds!=1 ||
+        diag.first_retcode!=LIS_MAXITER ||
+        diag.final_retcode!=LIS_SUCCESS )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR recovery rebuild diagnostics failure: "
+            "api=%d status=%d "
+            "attempts=%d retries=%d resets=%d rebuilds=%d "
+            "first=%d final=%d\n",
+            (int)api,
+            (int)status,
+            (int)diag.attempts,
+            (int)diag.retries,
+            (int)diag.recycle_resets,
+            (int)diag.precon_rebuilds,
+            (int)diag.first_retcode,
+            (int)diag.final_retcode);
+
+        failed =
+            1;
+    }
+
+
+    /*
+     * The caller supplied x=0, while both retry attempts operate on
+     * progressively improved warm starts.
+     */
+    if(
+        diag.initial_warm_start_kept!=LIS_FALSE ||
+        diag.last_warm_start_kept!=LIS_TRUE )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR recovery rebuild warm-start failure: "
+            "initial=%d last=%d\n",
+            (int)diag.initial_warm_start_kept,
+            (int)diag.last_warm_start_kept);
+
+        failed =
+            1;
+    }
+
+
+    /*
+     * Persistent preconditioner lifecycle:
+     *
+     * create #1 : before Attempt 0
+     * reuse      : Attempt 1
+     * destroy #1: before Attempt 2
+     * create #2 : Attempt 2
+     */
+    if(
+        fgcrodr_rebuild_create_count!=2 ||
+        fgcrodr_rebuild_destroy_count!=1 ||
+        fgcrodr_rebuild_psolve_count!=3 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR recovery rebuild preconditioner failure: "
+            "create=%d destroy=%d psolve=%d\n",
+            (int)fgcrodr_rebuild_create_count,
+            (int)fgcrodr_rebuild_destroy_count,
+            (int)fgcrodr_rebuild_psolve_count);
+
+        failed =
+            1;
+    }
+
+
+    /*
+     * Every attempt reaches the harmonic recycle point.
+     *
+     * Attempt 0 BUILD is discarded.
+     * Attempt 1 BUILD is discarded.
+     * Attempt 2 creates the final fresh BUILD.
+     */
+    if(
+        builds!=3 ||
+        updates!=0 ||
+        uses!=0 ||
+        rejects!=0 ||
+        dim!=1 ||
+        action!=LIS_FGCRODR_RECYCLE_BUILD )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR recovery rebuild recycle failure: "
+            "builds=%llu updates=%llu uses=%llu rejects=%llu "
+            "dim=%d action=%d\n",
+            (unsigned long long)builds,
+            (unsigned long long)updates,
+            (unsigned long long)uses,
+            (unsigned long long)rejects,
+            (int)dim,
+            (int)action);
+
+        failed =
+            1;
+    }
+
+
+    /*
+     * Final recycle relation belongs to Attempt 2 and the rebuilt
+     * preconditioner.
+     */
+    if(
+        !valid ||
+        stored_matrix!=A ||
+        true_residual>2.0e-1 ||
+        orth>1.0e-12 ||
+        relation>1.0e-12 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR recovery rebuild final-state failure: "
+            "valid=%d matrix=%p/%p "
+            "true=%.17e orth=%.17e AZ-C=%.17e "
+            "sg=%llu vg=%llu\n",
+            (int)valid,
+            (void *)stored_matrix,
+            (void *)A,
+            (double)true_residual,
+            (double)orth,
+            (double)relation,
+            (unsigned long long)sg,
+            (unsigned long long)vg);
+
+        failed =
+            1;
+    }
+
+
+    /*
+     * Fresh solver: lifetime sequence diagnostics are exactly the
+     * same event counts as this one three-attempt sequence solve.
+     */
+    if(
+        diag.total_solves!=1 ||
+        diag.total_attempts!=3 ||
+        diag.total_retries!=2 ||
+        diag.total_recycle_resets!=2 ||
+        diag.total_precon_rebuilds!=1 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR recovery rebuild lifetime failure: "
+            "%llu/%llu/%llu/%llu/%llu\n",
+            (unsigned long long)diag.total_solves,
+            (unsigned long long)diag.total_attempts,
+            (unsigned long long)diag.total_retries,
+            (unsigned long long)diag.total_recycle_resets,
+            (unsigned long long)diag.total_precon_rebuilds);
+
+        failed =
+            1;
+    }
+
+
+    if( failed )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR SEQUENCE RECOVERY REBUILD FAILED\n");
+
+        err =
+            LIS_ERR_ILL_ARG;
+
+        goto cleanup;
+    }
+
+
+    printf(
+        "FGCRO-DR SEQUENCE RECOVERY REBUILD PASSED\n");
+
+
+    err =
+        LIS_SUCCESS;
+
+    goto cleanup;
+
+
+api_fail:
+
+    fprintf(
+        stderr,
+        "FGCRO-DR sequence recovery rebuild API failure: %d\n",
+        (int)err);
+
+
+cleanup:
+
+    if( solver )
+        lis_solver_destroy(
+            solver);
+
+    if( r )
+        lis_vector_destroy(
+            r);
+
+    if( x )
+        lis_vector_destroy(
+            x);
+
+    if( b )
+        lis_vector_destroy(
+            b);
+
+    if( A )
+        lis_matrix_destroy(
+            A);
+
+
+    return err;
+}
+
+
 int
 main(int argc, char **argv)
 {
@@ -2948,6 +4768,30 @@ cleanup:
 
     if(
         check_generation_transport_reject()
+        !=LIS_SUCCESS )
+    {
+        failed = 1;
+    }
+
+
+    if(
+        check_sequence_reset_lifecycle()
+        !=LIS_SUCCESS )
+    {
+        failed = 1;
+    }
+
+
+    if(
+        check_sequence_recovery_lifecycle()
+        !=LIS_SUCCESS )
+    {
+        failed = 1;
+    }
+
+
+    if(
+        check_sequence_recovery_rebuild_lifecycle()
         !=LIS_SUCCESS )
     {
         failed = 1;

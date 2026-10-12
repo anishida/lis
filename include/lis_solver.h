@@ -273,6 +273,14 @@ extern "C"
                 LIS_SOLVER solver, LIS_REAL *orth_error,
                 LIS_REAL *relation_error);
 
+
+
+extern LIS_INT lis_fgcrodr_get_lifecycle_state(
+        LIS_SOLVER solver,
+        LIS_INT *valid,
+        LIS_MATRIX *matrix,
+        LIS_UNSIGNED_INT *structure_generation,
+        LIS_UNSIGNED_INT *value_generation);
 extern LIS_INT lis_fgcrodr_get_stats(
         LIS_SOLVER solver,
         LIS_UNSIGNED_INT *builds,

@@ -196,6 +196,14 @@ lis_fgcrodr_vectors_destroy(
     state->alloc = 0;
     state->valid = LIS_FALSE;
 
+    /*
+     * No A-dependent metadata may survive recycle destruction.
+     * Configuration and lifetime counters intentionally remain.
+     */
+    state->matrix = NULL;
+    state->structure_generation = 0;
+    state->value_generation = 0;
+
     state->quality = 0.0;
     state->quality_min = 0.0;
 
@@ -3952,6 +3960,55 @@ lis_fgcrodr_build_recycle(
             jdim);
 }
 
+
+
+
+LIS_INT
+lis_fgcrodr_get_lifecycle_state(
+    LIS_SOLVER solver,
+    LIS_INT *valid,
+    LIS_MATRIX *matrix,
+    LIS_UNSIGNED_INT *structure_generation,
+    LIS_UNSIGNED_INT *value_generation)
+{
+    LIS_FGCRODR_STATE state;
+
+
+    if( solver==NULL )
+        return LIS_ERR_ILL_ARG;
+
+
+    state =
+        solver->fgcrodr_state;
+
+
+    if( valid )
+        *valid =
+            state
+            ? state->valid
+            : LIS_FALSE;
+
+    if( matrix )
+        *matrix =
+            state
+            ? state->matrix
+            : NULL;
+
+    if( structure_generation )
+        *structure_generation =
+            state
+            ? state->structure_generation
+            : 0;
+
+    if( value_generation )
+        *value_generation =
+            state
+            ? state->value_generation
+            : 0;
+
+
+    return LIS_SUCCESS;
+}
 
 
 LIS_INT
