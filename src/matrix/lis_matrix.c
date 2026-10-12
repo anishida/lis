@@ -59,6 +59,9 @@
  * lis_matrix_get_range
  * lis_matrix_get_size
  * lis_matrix_get_nnz
+ * lis_matrix_mark_values_changed
+ * lis_matrix_mark_structure_changed
+ * lis_matrix_get_generation
  * lis_matrix_get_type
  * lis_matrix_get_option
  * lis_matrix_set_type
@@ -610,12 +613,85 @@ LIS_INT lis_matrix_get_nnz(LIS_MATRIX A, LIS_INT *nnz)
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_matrix_mark_values_changed"
+LIS_INT lis_matrix_mark_values_changed(LIS_MATRIX A)
+{
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	err = lis_matrix_check(A,LIS_MATRIX_CHECK_NULL);
+	if( err ) return err;
+
+	A->value_generation++;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_mark_structure_changed"
+LIS_INT lis_matrix_mark_structure_changed(LIS_MATRIX A)
+{
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	err = lis_matrix_check(A,LIS_MATRIX_CHECK_NULL);
+	if( err ) return err;
+
+	A->structure_generation++;
+	A->value_generation++;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_get_generation"
+LIS_INT lis_matrix_get_generation(
+	LIS_MATRIX A,
+	LIS_UNSIGNED_INT *structure_generation,
+	LIS_UNSIGNED_INT *value_generation)
+{
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	err = lis_matrix_check(A,LIS_MATRIX_CHECK_NULL);
+	if( err ) return err;
+
+	if( structure_generation==NULL && value_generation==NULL )
+	{
+		LIS_SETERR(
+			LIS_ERR_ILL_ARG,
+			"both matrix generation output pointers are NULL\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	if( structure_generation!=NULL )
+	{
+		*structure_generation = A->structure_generation;
+	}
+
+	if( value_generation!=NULL )
+	{
+		*value_generation = A->value_generation;
+	}
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_matrix_assemble"
 LIS_INT lis_matrix_assemble(LIS_MATRIX A)
 {
 	LIS_INT err;
 	LIS_INT matrix_type;
 	LIS_MATRIX B;
+	LIS_UNSIGNED_INT structure_generation;
+	LIS_UNSIGNED_INT value_generation;
 
 	LIS_DEBUG_FUNC_IN;
 
@@ -625,6 +701,9 @@ LIS_INT lis_matrix_assemble(LIS_MATRIX A)
 	matrix_type = A->matrix_type;
 	if( A->status==LIS_MATRIX_ASSEMBLING )
 	{
+		structure_generation = A->structure_generation;
+		value_generation     = A->value_generation;
+
 		A->matrix_type = LIS_MATRIX_RCO;
 		A->status      = LIS_MATRIX_RCO;
 		#ifdef USE_MPI
@@ -648,6 +727,10 @@ LIS_INT lis_matrix_assemble(LIS_MATRIX A)
 		err = lis_matrix_copy_struct(B,A);
 		if( err ) return err;
 		lis_free(B);
+
+		A->structure_generation = structure_generation;
+		A->value_generation     = value_generation;
+
 		if( A->matrix_type==LIS_MATRIX_JAD )
 		{
 			A->work = (LIS_SCALAR *)lis_malloc(A->n*sizeof(LIS_SCALAR),"lis_matrix_assemble::A->work");

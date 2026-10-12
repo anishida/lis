@@ -723,6 +723,13 @@ struct LIS_MATRIX_STRUCT
 	LIS_SCALAR operator_beta;
 	LIS_VECTOR operator_work;
 	LIS_VECTOR operator_scale; /* non-owning scale for D*A*D */
+
+	/*
+	 * Explicit generations for sequences of related matrix states.
+	 * A structure change also implies a new numerical value state.
+	 */
+	LIS_UNSIGNED_INT structure_generation;
+	LIS_UNSIGNED_INT value_generation;
 };
 typedef struct LIS_MATRIX_STRUCT *LIS_MATRIX;
 
@@ -947,6 +954,12 @@ extern "C"
 	extern LIS_INT lis_matrix_get_size(LIS_MATRIX A, LIS_INT *local_n, LIS_INT *global_n);
 	extern LIS_INT lis_matrix_get_range(LIS_MATRIX A, LIS_INT *is, LIS_INT *ie);
 	extern LIS_INT lis_matrix_get_nnz(LIS_MATRIX A, LIS_INT *nnz);
+	extern LIS_INT lis_matrix_mark_values_changed(LIS_MATRIX A);
+	extern LIS_INT lis_matrix_mark_structure_changed(LIS_MATRIX A);
+	extern LIS_INT lis_matrix_get_generation(
+	                                   LIS_MATRIX A,
+	                                   LIS_UNSIGNED_INT *structure_generation,
+	                                   LIS_UNSIGNED_INT *value_generation);
 	extern LIS_INT lis_matrix_set_user(LIS_MATRIX A, void *user_data,
 	                                   LIS_MATRIX_USER_MATVEC matvec,
 	                                   LIS_MATRIX_USER_MATVEC matvech);
