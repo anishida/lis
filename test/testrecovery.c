@@ -127,6 +127,183 @@ reset_counts(void)
 	fail_once = 0;
 }
 
+static int
+check_sequence_diag(
+    const char *name,
+    LIS_SOLVER solver,
+    LIS_INT attempts,
+    LIS_INT retries,
+    LIS_INT resets,
+    LIS_INT rebuilds,
+    LIS_INT first_a,
+    LIS_INT first_b,
+    LIS_INT final_status,
+    LIS_INT initial_warm,
+    LIS_INT last_warm,
+    LIS_INT initial_valid,
+    LIS_INT true_valid,
+    LIS_UNSIGNED_INT total_solves,
+    LIS_UNSIGNED_INT total_attempts,
+    LIS_UNSIGNED_INT total_retries,
+    LIS_UNSIGNED_INT total_resets,
+    LIS_UNSIGNED_INT total_rebuilds)
+{
+    LIS_INT err;
+    LIS_SEQUENCE_DIAGNOSTICS d;
+
+    err = lis_solver_get_sequence_diagnostics(
+        solver,&d);
+
+    if( err )
+    {
+        fprintf(
+            stderr,
+            "%s diagnostics getter failed rc=%d\n",
+            name,
+            (int)err);
+        return 1;
+    }
+
+    if( d.attempts!=attempts ||
+        d.retries!=retries ||
+        d.recycle_resets!=resets ||
+        d.precon_rebuilds!=rebuilds )
+    {
+        fprintf(
+            stderr,
+            "%s per-call mismatch "
+            "attempts=%d/%d retries=%d/%d "
+            "resets=%d/%d rebuilds=%d/%d\n",
+            name,
+            (int)d.attempts,
+            (int)attempts,
+            (int)d.retries,
+            (int)retries,
+            (int)d.recycle_resets,
+            (int)resets,
+            (int)d.precon_rebuilds,
+            (int)rebuilds);
+        return 1;
+    }
+
+    if( d.first_retcode!=first_a &&
+        d.first_retcode!=first_b )
+    {
+        fprintf(
+            stderr,
+            "%s first status=%d expected=%d/%d\n",
+            name,
+            (int)d.first_retcode,
+            (int)first_a,
+            (int)first_b);
+        return 1;
+    }
+
+    if( d.final_retcode!=final_status )
+    {
+        fprintf(
+            stderr,
+            "%s final status=%d expected=%d\n",
+            name,
+            (int)d.final_retcode,
+            (int)final_status);
+        return 1;
+    }
+
+    if( initial_warm>=0 &&
+        d.initial_warm_start_kept!=initial_warm )
+    {
+        fprintf(
+            stderr,
+            "%s initial warm=%d expected=%d\n",
+            name,
+            (int)d.initial_warm_start_kept,
+            (int)initial_warm);
+        return 1;
+    }
+
+    if( last_warm>=0 &&
+        d.last_warm_start_kept!=last_warm )
+    {
+        fprintf(
+            stderr,
+            "%s last warm=%d expected=%d\n",
+            name,
+            (int)d.last_warm_start_kept,
+            (int)last_warm);
+        return 1;
+    }
+
+    if( d.initial_residual_valid!=initial_valid ||
+        d.true_residual_valid!=true_valid )
+    {
+        fprintf(
+            stderr,
+            "%s residual validity=%d/%d expected=%d/%d\n",
+            name,
+            (int)d.initial_residual_valid,
+            (int)d.true_residual_valid,
+            (int)initial_valid,
+            (int)true_valid);
+        return 1;
+    }
+
+    if( d.total_solves!=total_solves ||
+        d.total_attempts!=total_attempts ||
+        d.total_retries!=total_retries ||
+        d.total_recycle_resets!=total_resets ||
+        d.total_precon_rebuilds!=total_rebuilds )
+    {
+        fprintf(
+            stderr,
+            "%s lifetime mismatch "
+            "solves=%llu/%llu "
+            "attempts=%llu/%llu "
+            "retries=%llu/%llu "
+            "resets=%llu/%llu "
+            "rebuilds=%llu/%llu\n",
+            name,
+            (unsigned long long)d.total_solves,
+            (unsigned long long)total_solves,
+            (unsigned long long)d.total_attempts,
+            (unsigned long long)total_attempts,
+            (unsigned long long)d.total_retries,
+            (unsigned long long)total_retries,
+            (unsigned long long)d.total_recycle_resets,
+            (unsigned long long)total_resets,
+            (unsigned long long)d.total_precon_rebuilds,
+            (unsigned long long)total_rebuilds);
+        return 1;
+    }
+
+    printf(
+        "%s DIAG attempts=%d retries=%d "
+        "resets=%d rebuilds=%d "
+        "first=%d final=%d warm=%d/%d valid=%d/%d "
+        "initial=%.6e final_resid=%.6e "
+        "totals=%llu/%llu/%llu/%llu/%llu\n",
+        name,
+        (int)d.attempts,
+        (int)d.retries,
+        (int)d.recycle_resets,
+        (int)d.precon_rebuilds,
+        (int)d.first_retcode,
+        (int)d.final_retcode,
+        (int)d.initial_warm_start_kept,
+        (int)d.last_warm_start_kept,
+        (int)d.initial_residual_valid,
+        (int)d.true_residual_valid,
+        (double)d.initial_residual,
+        (double)d.true_residual,
+        (unsigned long long)d.total_solves,
+        (unsigned long long)d.total_attempts,
+        (unsigned long long)d.total_retries,
+        (unsigned long long)d.total_recycle_resets,
+        (unsigned long long)d.total_precon_rebuilds);
+
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
 	LIS_MATRIX A = NULL;
@@ -177,7 +354,7 @@ int main(int argc, char **argv)
 
 
 	/* ======================================================== */
-	/* Case 1: first attempt breaks, recycle-reset retry works. */
+	/* Case 1: first attempt reaches MAXITER, retry succeeds.   */
 	/* ======================================================== */
 
 	reset_counts();
@@ -238,6 +415,20 @@ int main(int argc, char **argv)
 		goto cleanup;
 	}
 
+    if( check_sequence_diag(
+            "RETRY_REUSE",
+            solver,
+            2,1,1,0,
+            LIS_MAXITER,LIS_MAXITER,
+            LIS_SUCCESS,
+            LIS_FALSE,LIS_TRUE,
+            LIS_TRUE,LIS_TRUE,
+            1,2,1,1,0) )
+    {
+        failed = 1;
+        goto cleanup;
+    }
+
 	printf(
 		"RETRY_REUSE PASSED "
 		"create=%d destroy=%d failures=%d\n",
@@ -252,6 +443,20 @@ int main(int argc, char **argv)
 		failed = 1;
 		goto cleanup;
 	}
+
+    if( check_sequence_diag(
+            "RETRY_REUSE_RESET",
+            solver,
+            0,0,0,0,
+            LIS_SUCCESS,LIS_SUCCESS,
+            LIS_SUCCESS,
+            LIS_FALSE,LIS_FALSE,
+            LIS_FALSE,LIS_FALSE,
+            1,2,1,1,0) )
+    {
+        failed = 1;
+        goto cleanup;
+    }
 
 	lis_solver_destroy(solver);
 	solver = NULL;
@@ -311,6 +516,20 @@ int main(int argc, char **argv)
 		failed = 1;
 		goto cleanup;
 	}
+
+    if( check_sequence_diag(
+            "PRECON_REBUILD",
+            solver,
+            3,2,2,1,
+            LIS_BREAKDOWN,LIS_MAXITER,
+            solver->retcode,
+            LIS_FALSE,-1,
+            LIS_TRUE,LIS_TRUE,
+            1,3,2,2,1) )
+    {
+        failed = 1;
+        goto cleanup;
+    }
 
 	printf(
 		"PRECON_REBUILD PASSED "
@@ -373,6 +592,20 @@ int main(int argc, char **argv)
 			failed = 1;
 			goto cleanup;
 		}
+
+        if( check_sequence_diag(
+                "NONRETRYABLE",
+                solver,
+                1,0,0,0,
+                LIS_ERR_ILL_ARG,LIS_ERR_ILL_ARG,
+                LIS_ERR_ILL_ARG,
+                LIS_FALSE,LIS_FALSE,
+                LIS_TRUE,LIS_FALSE,
+                1,1,0,0,0) )
+        {
+            failed = 1;
+            goto cleanup;
+        }
 
 		if( create_count!=1 ||
 		    destroy_count!=0 ||

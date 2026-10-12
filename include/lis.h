@@ -786,6 +786,35 @@ struct LIS_NEAR_NULLSPACE_COARSE_STRUCT;
 typedef struct LIS_NEAR_NULLSPACE_COARSE_STRUCT *LIS_NEAR_NULLSPACE_COARSE;
 
 
+typedef struct LIS_SEQUENCE_DIAGNOSTICS_STRUCT
+{
+    /* Diagnostics for the most recent sequence solve. */
+    LIS_INT attempts;
+    LIS_INT retries;
+    LIS_INT recycle_resets;
+    LIS_INT precon_rebuilds;
+
+    LIS_INT first_retcode;
+    LIS_INT final_retcode;
+
+    LIS_INT initial_warm_start_kept;
+    LIS_INT last_warm_start_kept;
+
+    LIS_INT initial_residual_valid;
+    LIS_INT true_residual_valid;
+    LIS_REAL initial_residual;
+    LIS_REAL rhs_norm;
+    LIS_REAL true_residual;
+    LIS_REAL true_relative_residual;
+
+    /* Lifetime counters for this solver object. */
+    LIS_UNSIGNED_INT total_solves;
+    LIS_UNSIGNED_INT total_attempts;
+    LIS_UNSIGNED_INT total_retries;
+    LIS_UNSIGNED_INT total_recycle_resets;
+    LIS_UNSIGNED_INT total_precon_rebuilds;
+} LIS_SEQUENCE_DIAGNOSTICS;
+
 struct LIS_SOLVER_STRUCT
 {
 	LIS_MATRIX A,Ah;
@@ -856,6 +885,27 @@ struct LIS_SOLVER_STRUCT
 	LIS_REAL sequence_true_residual;
 	LIS_REAL sequence_true_relative_residual;
 	LIS_INT sequence_warm_start_kept;
+
+	LIS_INT sequence_initial_residual_valid;
+	LIS_INT sequence_true_residual_valid;
+	/* Most recent sequence-solve diagnostics. */
+	LIS_INT sequence_diag_attempts;
+	LIS_INT sequence_diag_retries;
+	LIS_INT sequence_diag_recycle_resets;
+	LIS_INT sequence_diag_precon_rebuilds;
+	LIS_INT sequence_diag_first_retcode;
+	LIS_INT sequence_diag_final_retcode;
+	LIS_INT sequence_diag_initial_warm_start_kept;
+	LIS_INT sequence_diag_initial_residual_valid;
+	LIS_REAL sequence_diag_initial_residual;
+	LIS_REAL sequence_diag_rhs_norm;
+
+	/* Lifetime sequence-solve diagnostics. */
+	LIS_UNSIGNED_INT sequence_diag_total_solves;
+	LIS_UNSIGNED_INT sequence_diag_total_attempts;
+	LIS_UNSIGNED_INT sequence_diag_total_retries;
+	LIS_UNSIGNED_INT sequence_diag_total_recycle_resets;
+	LIS_UNSIGNED_INT sequence_diag_total_precon_rebuilds;
 };
 typedef struct LIS_SOLVER_STRUCT *LIS_SOLVER;
 
@@ -1101,6 +1151,7 @@ extern "C"
 	extern LIS_INT lis_solver_get_solver(LIS_SOLVER solver, LIS_INT *nsol);
 	extern LIS_INT lis_solver_get_precon(LIS_SOLVER solver, LIS_INT *precon_type);
 	extern LIS_INT lis_solver_get_status(LIS_SOLVER solver, LIS_INT *status);
+	extern LIS_INT lis_solver_get_sequence_diagnostics(LIS_SOLVER solver, LIS_SEQUENCE_DIAGNOSTICS *diag);
         extern LIS_INT lis_solver_get_rhistory(LIS_SOLVER solver, LIS_VECTOR v);
 	extern LIS_INT lis_solver_set_option(char *text, LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_optionC(LIS_SOLVER solver);
