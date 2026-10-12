@@ -548,6 +548,8 @@ struct LIS_VECTOR_STRUCT
 	LIS_SCALAR *value_lo;
 	LIS_SCALAR *work;
 	LIS_INT intvalue;
+	/* value points to application-owned storage. */
+	LIS_INT value_external;
 };
 typedef struct LIS_VECTOR_STRUCT *LIS_VECTOR;
 
@@ -909,6 +911,7 @@ extern "C"
 
 	extern LIS_INT lis_vector_create(LIS_Comm comm, LIS_VECTOR *vec); 
 	extern LIS_INT lis_vector_set_size(LIS_VECTOR vec, LIS_INT local_n, LIS_INT global_n); 
+	extern LIS_INT lis_vector_set_external(LIS_VECTOR vec, LIS_SCALAR *value);
 /*NEH support for extended "solve_kernel" workflow*/
 	extern LIS_INT lis_vector_psd_reset_scale(LIS_VECTOR vec); 
 	extern LIS_INT lis_vector_destroy(LIS_VECTOR vec);

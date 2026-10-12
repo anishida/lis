@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include "lis.h"
+#include "lis_vector.h"
 
 static int check_generation(
 	LIS_MATRIX A,
@@ -40,6 +41,161 @@ static int check_generation(
 	}
 
 	return 0;
+}
+
+static int check_external_vector_storage(void)
+{
+	LIS_VECTOR v = NULL;
+	LIS_VECTOR duplicate = NULL;
+	LIS_SCALAR values0[3] = {
+		(LIS_SCALAR)1.0,
+		(LIS_SCALAR)2.0,
+		(LIS_SCALAR)3.0
+	};
+	LIS_SCALAR values1[3] = {
+		(LIS_SCALAR)4.0,
+		(LIS_SCALAR)5.0,
+		(LIS_SCALAR)6.0
+	};
+	LIS_SCALAR got = 0;
+	LIS_INT err;
+	int failed = 0;
+
+	err = lis_vector_create(LIS_COMM_WORLD,&v);
+	if( err ) return 1;
+
+	err = lis_vector_set_size(v,0,3);
+	if( err )
+	{
+		failed = 1;
+		goto cleanup;
+	}
+
+	err = lis_vector_set_external(v,values0);
+	if( err )
+	{
+		failed = 1;
+		goto cleanup;
+	}
+
+	if( v->value!=values0 || !v->value_external )
+	{
+		fprintf(stderr,"initial external vector attachment failed\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	if( !v->is_destroy )
+	{
+		fprintf(stderr,"external vector changed destroy policy\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	err = lis_vector_get_value(v,1,&got);
+	if( err || got!=(LIS_SCALAR)2.0 )
+	{
+		fprintf(stderr,"external vector read failed\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	err = lis_vector_set_value(
+		LIS_INS_VALUE,1,(LIS_SCALAR)8.0,v);
+	if( err || values0[1]!=(LIS_SCALAR)8.0 )
+	{
+		fprintf(stderr,"external vector write-through failed\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	err = lis_vector_set_external(v,values1);
+	if( err )
+	{
+		failed = 1;
+		goto cleanup;
+	}
+
+	if( v->value!=values1 || !v->value_external )
+	{
+		fprintf(stderr,"external vector rebind failed\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	if( values0[0]!=(LIS_SCALAR)1.0 ||
+	    values0[1]!=(LIS_SCALAR)8.0 ||
+	    values0[2]!=(LIS_SCALAR)3.0 )
+	{
+		fprintf(stderr,"previous external storage changed\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	err = lis_vector_duplicate(v,&duplicate);
+	if( err )
+	{
+		failed = 1;
+		goto cleanup;
+	}
+
+	if( duplicate->value==values1 ||
+	    duplicate->value_external )
+	{
+		fprintf(stderr,"duplicate inherited external storage\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	err = lis_vector_unset(v);
+	if( err )
+	{
+		fprintf(stderr,"external vector unset failed\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	if( v->value!=NULL || v->value_external ||
+	    v->status!=LIS_VECTOR_NULL )
+	{
+		fprintf(stderr,"external vector unset state is invalid\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	/* Borrowed storage must remain application-owned after unset. */
+	values1[0] = (LIS_SCALAR)9.0;
+
+	err = lis_vector_reuse(&v);
+	if( err )
+	{
+		fprintf(stderr,"vector reuse after external unset failed\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	if( v->value==values1 || v->value_external || !v->is_copy )
+	{
+		fprintf(stderr,"vector reuse ownership transition failed\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	printf("VECTOR_UNSET_REUSE PASSED\n");
+
+cleanup:
+
+	if( duplicate ) lis_vector_destroy(duplicate);
+	if( v ) lis_vector_destroy(v);
+
+	values0[0] = (LIS_SCALAR)11.0;
+	values1[0] = (LIS_SCALAR)12.0;
+
+	printf(
+		"LIS_EXTERNAL_VECTOR_S3 %s\n",
+		failed ? "FAILED" : "PASSED");
+
+	return failed;
 }
 
 int main(int argc, char **argv)
@@ -324,6 +480,12 @@ int main(int argc, char **argv)
 	}
 
 	printf("INPLACE_UPDATE PASSED\n");
+
+	if( check_external_vector_storage() )
+	{
+		failed = 1;
+		goto cleanup;
+	}
 
 cleanup:
 

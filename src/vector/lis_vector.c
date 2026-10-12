@@ -52,6 +52,7 @@
  * lis_vector_create
  * lis_vector_duplicate
  * lis_vector_destroy
+ * lis_vector_set_external
  * lis_vector_set_value
  * lis_vector_set_values
  * lis_vector_set_values2
@@ -234,6 +235,7 @@ LIS_INT lis_vector_set_size(LIS_VECTOR vec, LIS_INT local_n, LIS_INT global_n)
 	}
 	
 	vec->is_copy     = LIS_TRUE;
+	vec->value_external = LIS_FALSE;
 	vec->status      = LIS_VECTOR_ASSEMBLED;
 	vec->n           = local_n;
 	vec->gn          = global_n;
@@ -319,9 +321,75 @@ LIS_INT lis_vector_unset(LIS_VECTOR vec)
 	err = lis_vector_check(vec,LIS_VECTOR_CHECK_NULL);
 	if( err ) return err;
 
-	if( vec->is_copy ) lis_free(vec->value);
+	if( vec->is_copy && !vec->value_external ) lis_free(vec->value);
 	vec->value  = NULL;
+	vec->value_lo = NULL;
+	vec->value_external = LIS_FALSE;
 	vec->status = LIS_VECTOR_NULL;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_vector_set_external"
+LIS_INT lis_vector_set_external(
+	LIS_VECTOR vec,
+	LIS_SCALAR *value)
+{
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	err = lis_vector_check(vec,LIS_VECTOR_CHECK_NULL);
+	if( err ) return err;
+
+	if( vec->status==LIS_VECTOR_NULL )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,
+			"vector size must be set before external storage is attached\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	if( vec->precision!=LIS_PRECISION_DEFAULT )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,
+			"external vector storage requires default precision\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	if( vec->np>0 && value==NULL )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,
+			"external vector storage pointer is NULL\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	if( value==vec->value && !vec->value_external )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,
+			"external storage cannot alias LIS-owned vector storage\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	if( value==vec->value && vec->value_external )
+	{
+		vec->status = LIS_VECTOR_ASSEMBLED;
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
+
+	if( vec->value && vec->is_destroy && !vec->value_external )
+	{
+		lis_free(vec->value);
+	}
+
+	vec->value          = value;
+	vec->value_lo       = NULL;
+	vec->is_copy        = LIS_FALSE;
+	vec->value_external = LIS_TRUE;
+	vec->is_scaled      = LIS_FALSE;
+	vec->status         = LIS_VECTOR_ASSEMBLED;
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
@@ -338,9 +406,11 @@ LIS_INT lis_vector_set(LIS_VECTOR vec, LIS_SCALAR *value)
 	err = lis_vector_check(vec,LIS_VECTOR_CHECK_NULL);
 	if( err ) return err;
 
-	if( vec->is_destroy ) lis_free(vec->value);
+	if( vec->value && vec->is_destroy && !vec->value_external )
+		lis_free(vec->value);
 	vec->value   = value;
 	vec->is_copy = LIS_FALSE;
+	vec->value_external = LIS_FALSE;
 
 	vec->status = LIS_VECTOR_ASSEMBLING;
 
@@ -355,7 +425,7 @@ LIS_INT lis_vector_destroy(LIS_VECTOR vec)
 	LIS_DEBUG_FUNC_IN;
 	if( lis_is_malloc(vec) )
 	{
-		if( vec->value && vec->is_destroy ) lis_free( vec->value );
+		if( vec->value && vec->is_destroy && !vec->value_external ) lis_free( vec->value );
 		if( vec->work ) lis_free( vec->work );
 		if( vec->ranges ) lis_free( vec->ranges );
 		if( vec ) lis_free(vec);
@@ -491,6 +561,7 @@ LIS_INT lis_vector_duplicateex(LIS_INT precision, void *A, LIS_VECTOR *vout)
 
 
 	(*vout)->is_copy     = LIS_TRUE;
+	(*vout)->value_external = LIS_FALSE;
 	(*vout)->status      = LIS_VECTOR_ASSEMBLED;
 	(*vout)->precision   = precision;
 	(*vout)->n           = ((LIS_VECTOR)A)->n;
