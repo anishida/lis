@@ -1385,6 +1385,95 @@ LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_solve_sequence"
+LIS_INT lis_solve_sequence(
+	LIS_MATRIX A,
+	LIS_VECTOR b,
+	LIS_VECTOR x,
+	LIS_SOLVER solver)
+{
+	LIS_INT err;
+	LIS_PRECON precon;
+
+	LIS_DEBUG_FUNC_IN;
+
+	if( A==NULL || b==NULL || x==NULL || solver==NULL )
+	{
+		LIS_SETERR(
+			LIS_ERR_ILL_ARG,
+			"invalid sequence solve arguments\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	err = lis_solver_sequence_prepare_precon(
+		A,solver,&precon);
+	if( err )
+	{
+		solver->retcode = err;
+		return err;
+	}
+
+	err = lis_solve_kernel(
+		A,b,x,solver,precon);
+	if( err )
+	{
+		solver->retcode = err;
+		return err;
+	}
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_reset_sequence"
+LIS_INT lis_solver_reset_sequence(LIS_SOLVER solver)
+{
+	LIS_INT err;
+	LIS_INT ret = LIS_SUCCESS;
+
+	LIS_DEBUG_FUNC_IN;
+
+	if( solver==NULL )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"solver is NULL\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	err = lis_solver_sequence_precon_destroy(solver);
+	if( err && ret==LIS_SUCCESS ) ret = err;
+
+	err = lis_solver_work_destroy(solver);
+	if( err && ret==LIS_SUCCESS ) ret = err;
+
+	err = lis_gcrodr_clear_recycle(solver);
+	if( err && ret==LIS_SUCCESS ) ret = err;
+
+	/*
+	 * The user-provided near-nullspace vectors are solver
+	 * configuration and intentionally survive a sequence reset.
+	 * Only A-dependent coarse state is discarded.
+	 */
+	lis_solver_near_nullspace_coarse_destroy(solver);
+
+	if( solver->rhistory!=NULL )
+	{
+		lis_free(solver->rhistory);
+		solver->rhistory = NULL;
+	}
+
+	/* Clear transient borrowed/per-solve references. */
+	solver->A = NULL;
+	solver->b = NULL;
+	solver->x = NULL;
+	solver->xx = NULL;
+	solver->precon = NULL;
+
+	LIS_DEBUG_FUNC_OUT;
+	return ret;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_solve_setup"
 LIS_INT lis_solve_setup(LIS_MATRIX A, LIS_SOLVER solver)
 {

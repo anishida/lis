@@ -97,6 +97,9 @@ int main(int argc, char **argv)
 	LIS_MATRIX A1 = NULL;
 	LIS_SOLVER solver = NULL;
 	LIS_SOLVER legacy_solver = NULL;
+	LIS_SOLVER sequence_solver = NULL;
+	LIS_PRECON sequence_precon0 = NULL;
+	void *sequence_work0 = NULL;
 	LIS_VECTOR b = NULL;
 	LIS_VECTOR x = NULL;
 	LIS_PRECON p0 = NULL;
@@ -365,7 +368,198 @@ int main(int argc, char **argv)
 
 	printf("LEGACY_SOLVE PASSED\n");
 
+	/* ---------------------------------------------------- */
+	/* S5 public sequence-solve API                         */
+	/* ---------------------------------------------------- */
+
+	err = lis_solver_create(&sequence_solver);
+	if( err )
+	{
+		failed = 1;
+		goto cleanup;
+	}
+
+	err = lis_solver_set_option(
+		"-i gmres -p seqs4 "
+		"-scale none -print none "
+		"-restart 2 -maxiter 20 "
+		"-maxiter_noimp 0 -tol 1e-12",
+		sequence_solver);
+	if( err )
+	{
+		failed = 1;
+		goto cleanup;
+	}
+
+	/* First solve -> BUILD. */
+	lis_vector_set_all((LIS_SCALAR)1.0,b);
+	lis_vector_set_all((LIS_SCALAR)0.0,x);
+
+	err = lis_solve_sequence(
+		A0,b,x,sequence_solver);
+	if( err )
+	{
+		fprintf(stderr,"SEQUENCE_SOLVE_0 failed\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	if( sequence_solver->retcode!=LIS_SUCCESS )
+	{
+		fprintf(
+			stderr,
+			"SEQUENCE_SOLVE_0 iterative status=%d\n",
+			(int)sequence_solver->retcode);
+		failed = 1;
+		goto cleanup;
+	}
+
+	failed |= check_counts(8,7,"SEQUENCE_SOLVE_0");
+	if( failed ) goto cleanup;
+
+	if( sequence_solver->sequence_precon==NULL ||
+	    sequence_solver->work==NULL )
+	{
+		fprintf(
+			stderr,
+			"SEQUENCE_SOLVE_0 did not retain reusable state\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	sequence_precon0 = sequence_solver->sequence_precon;
+	sequence_work0 = (void *)sequence_solver->work;
+
+	/* Second solve -> REUSE preconditioner and workspace. */
+	lis_vector_set_all((LIS_SCALAR)2.0,b);
+	lis_vector_set_all((LIS_SCALAR)0.0,x);
+
+	err = lis_solve_sequence(
+		A0,b,x,sequence_solver);
+	if( err )
+	{
+		fprintf(stderr,"SEQUENCE_SOLVE_1 failed\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	if( sequence_solver->retcode!=LIS_SUCCESS )
+	{
+		fprintf(
+			stderr,
+			"SEQUENCE_SOLVE_1 iterative status=%d\n",
+			(int)sequence_solver->retcode);
+		failed = 1;
+		goto cleanup;
+	}
+
+	if( sequence_solver->sequence_precon!=sequence_precon0 )
+	{
+		fprintf(stderr,"SEQUENCE_SOLVE_1 rebuilt preconditioner\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	if( (void *)sequence_solver->work!=sequence_work0 )
+	{
+		fprintf(stderr,"SEQUENCE_SOLVE_1 rebuilt workspace\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	failed |= check_counts(8,7,"SEQUENCE_SOLVE_1");
+	if( failed ) goto cleanup;
+
+	/* Matrix value generation change -> REBUILD. */
+	err = lis_matrix_mark_values_changed(A0);
+	if( err )
+	{
+		failed = 1;
+		goto cleanup;
+	}
+
+	lis_vector_set_all((LIS_SCALAR)3.0,b);
+	lis_vector_set_all((LIS_SCALAR)0.0,x);
+
+	err = lis_solve_sequence(
+		A0,b,x,sequence_solver);
+	if( err )
+	{
+		fprintf(stderr,"SEQUENCE_SOLVE_REBUILD failed\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	if( sequence_solver->retcode!=LIS_SUCCESS )
+	{
+		fprintf(
+			stderr,
+			"SEQUENCE_SOLVE_REBUILD iterative status=%d\n",
+			(int)sequence_solver->retcode);
+		failed = 1;
+		goto cleanup;
+	}
+
+	failed |= check_counts(
+		9,8,"SEQUENCE_SOLVE_REBUILD");
+	if( failed ) goto cleanup;
+
+	if( sequence_solver->sequence_precon==NULL )
+	{
+		fprintf(stderr,"SEQUENCE_SOLVE_REBUILD lost preconditioner\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	/* Explicit sequence reset. */
+	err = lis_solver_reset_sequence(sequence_solver);
+	if( err )
+	{
+		fprintf(stderr,"SEQUENCE_RESET failed\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	failed |= check_counts(9,9,"SEQUENCE_RESET");
+	if( failed ) goto cleanup;
+
+	if( sequence_solver->sequence_precon!=NULL ||
+	    sequence_solver->precon!=NULL ||
+	    sequence_solver->work!=NULL ||
+	    sequence_solver->rhistory!=NULL ||
+	    sequence_solver->A!=NULL ||
+	    sequence_solver->b!=NULL ||
+	    sequence_solver->x!=NULL ||
+	    sequence_solver->xx!=NULL )
+	{
+		fprintf(
+			stderr,
+			"SEQUENCE_RESET left persistent/transient state\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	/* Reset must be idempotent. */
+	err = lis_solver_reset_sequence(sequence_solver);
+	if( err )
+	{
+		fprintf(stderr,"SEQUENCE_RESET_2 failed\n");
+		failed = 1;
+		goto cleanup;
+	}
+
+	failed |= check_counts(9,9,"SEQUENCE_RESET_2");
+	if( failed ) goto cleanup;
+
+	printf("LIS_SEQUENCE_SOLVE_S5 PASSED\n");
+
 cleanup:
+
+	if( sequence_solver )
+	{
+		lis_solver_destroy(sequence_solver);
+		sequence_solver = NULL;
+	}
 
 	if( x )
 	{
@@ -395,7 +589,7 @@ cleanup:
 	if( A0 ) lis_matrix_destroy(A0);
 
 	printf(
-		"LIS_SEQUENCE_PRECON_S4 %s "
+		"LIS_SEQUENCE_PRECON_S4_S5 %s "
 		"create=%d destroy=%d\n",
 		failed ? "FAILED" : "PASSED",
 		create_count,
