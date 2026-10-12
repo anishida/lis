@@ -906,6 +906,9 @@ struct LIS_SOLVER_STRUCT
 	LIS_UNSIGNED_INT sequence_diag_total_retries;
 	LIS_UNSIGNED_INT sequence_diag_total_recycle_resets;
 	LIS_UNSIGNED_INT sequence_diag_total_precon_rebuilds;
+
+	/* Per-solver execution thread override. */
+	LIS_INT num_threads;
 };
 typedef struct LIS_SOLVER_STRUCT *LIS_SOLVER;
 
@@ -1152,6 +1155,8 @@ extern "C"
 	extern LIS_INT lis_solver_get_precon(LIS_SOLVER solver, LIS_INT *precon_type);
 	extern LIS_INT lis_solver_get_status(LIS_SOLVER solver, LIS_INT *status);
 	extern LIS_INT lis_solver_get_sequence_diagnostics(LIS_SOLVER solver, LIS_SEQUENCE_DIAGNOSTICS *diag);
+	extern LIS_INT lis_solver_set_num_threads(LIS_SOLVER solver, LIS_INT num_threads);
+	extern LIS_INT lis_solver_get_num_threads(LIS_SOLVER solver, LIS_INT *num_threads);
         extern LIS_INT lis_solver_get_rhistory(LIS_SOLVER solver, LIS_VECTOR v);
 	extern LIS_INT lis_solver_set_option(char *text, LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_optionC(LIS_SOLVER solver);

@@ -65,6 +65,7 @@ int lis_mpi_initialized = LIS_FALSE;
 int lis_mpi_management = LIS_TRUE;
 LIS_SCALAR *lis_vec_tmp = NULL;
 
+LIS_INT lis_omp_thread_capacity = 1;
 #ifdef USE_QUAD_PRECISION
 	#define LIS_QUAD_SCALAR_SIZE 128
 	double *lis_quad_scalar_tmp = NULL;
@@ -170,6 +171,7 @@ LIS_INT lis_initialize(int* argc, char** argv[])
 
 	#ifdef _OPENMP
 		omp_set_num_threads(nprocs);
+		lis_omp_thread_capacity = nprocs;
 		lis_vec_tmp = (LIS_SCALAR *)lis_malloc( nprocs*LIS_VEC_TMP_PADD*sizeof(LIS_QUAD),"lis_initialize::lis_vec_tmp" );
 		if( lis_vec_tmp==NULL )
 		{

@@ -231,6 +231,7 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->work     = NULL;
 	solver->rhistory = NULL;
 	solver->precon   = NULL;
+	solver->num_threads = 0;
 	solver->sequence_precon = NULL;
 	solver->sequence_precon_matrix = NULL;
 	solver->sequence_precon_structure_generation = 0;
@@ -1361,15 +1362,165 @@ LIS_INT lis_solver_sequence_prepare_precon(
 	return LIS_SUCCESS;
 }
 
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_num_threads"
+LIS_INT lis_solver_set_num_threads(
+    LIS_SOLVER solver,
+    LIS_INT num_threads)
+{
+    LIS_DEBUG_FUNC_IN;
+
+    if( solver==NULL || num_threads<0 )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid solver thread count\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+#ifdef _OPENMP
+    if( num_threads>lis_omp_thread_capacity )
+    {
+        LIS_SETERR2(
+            LIS_ERR_ILL_ARG,
+            "solver thread count %D exceeds initialized capacity %D\n",
+            num_threads,
+            lis_omp_thread_capacity);
+        return LIS_ERR_ILL_ARG;
+    }
+#else
+    if( num_threads>1 )
+    {
+        LIS_SETERR(
+            LIS_ERR_NOT_IMPLEMENTED,
+            "multiple solver threads require OpenMP\n");
+        return LIS_ERR_NOT_IMPLEMENTED;
+    }
+#endif
+
+    solver->num_threads = num_threads;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_get_num_threads"
+LIS_INT lis_solver_get_num_threads(
+    LIS_SOLVER solver,
+    LIS_INT *num_threads)
+{
+    LIS_DEBUG_FUNC_IN;
+
+    if( solver==NULL || num_threads==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid solver thread query\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *num_threads = solver->num_threads;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_thread_scope_begin"
+static LIS_INT lis_solver_thread_scope_begin(
+    LIS_SOLVER solver,
+    LIS_INT *saved_num_threads,
+    LIS_INT *changed)
+{
+    if( solver==NULL ||
+        saved_num_threads==NULL ||
+        changed==NULL )
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *saved_num_threads = 1;
+    *changed = LIS_FALSE;
+
+#ifdef _OPENMP
+    if( solver->num_threads<0 ||
+        solver->num_threads>lis_omp_thread_capacity )
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *saved_num_threads = omp_get_max_threads();
+
+    /*
+     * A zero solver override inherits the current OpenMP setting,
+     * but that setting must not exceed the scratch capacity
+     * established by lis_initialize().
+     */
+    if( solver->num_threads==0 &&
+        *saved_num_threads>lis_omp_thread_capacity )
+    {
+        LIS_SETERR2(
+            LIS_ERR_ILL_ARG,
+            "current OpenMP thread count %D exceeds initialized capacity %D\n",
+            *saved_num_threads,
+            lis_omp_thread_capacity);
+        return LIS_ERR_ILL_ARG;
+    }
+
+    if( solver->num_threads>0 &&
+        solver->num_threads!=*saved_num_threads )
+    {
+        omp_set_num_threads(solver->num_threads);
+        *changed = LIS_TRUE;
+    }
+#else
+    if( solver->num_threads>1 )
+    {
+        return LIS_ERR_NOT_IMPLEMENTED;
+    }
+#endif
+
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_thread_scope_end"
+static void lis_solver_thread_scope_end(
+    LIS_INT saved_num_threads,
+    LIS_INT changed)
+{
+#ifdef _OPENMP
+    if( changed )
+    {
+        omp_set_num_threads(saved_num_threads);
+    }
+#else
+    (void)saved_num_threads;
+    (void)changed;
+#endif
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_solve"
 LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
 {
     LIS_INT	err;
+    LIS_INT saved_num_threads;
+    LIS_INT thread_scope_changed;
 	LIS_PRECON precon;
 
 	LIS_DEBUG_FUNC_IN;
 
+
+	err = lis_solver_thread_scope_begin(
+	    solver,&saved_num_threads,&thread_scope_changed);
+	if( err ) return err;
 	solver->A = A;	/* create preconditioner */
 	if( solver->options[LIS_OPTIONS_PRECON] < 0 ||
 	    (solver->options[LIS_OPTIONS_PRECON] > LIS_PRECONNAME_MAX &&
@@ -1377,16 +1528,23 @@ LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
 	    solver->options[LIS_OPTIONS_PRECON] >= precon_register_type )
 	{
 		LIS_SETERR1(LIS_ERR_ILL_ARG,"Invalid LIS_OPTIONS_PRECON value %D\n",solver->options[LIS_OPTIONS_PRECON]);
+		lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
 		return LIS_ERR_ILL_ARG;
 	}
 	err = lis_solver_check_user_matrix(A,solver,NULL);
-	if( err ) return err;
+	if( err )
+	{
+		lis_solver_thread_scope_end(
+			saved_num_threads,thread_scope_changed);
+		return err;
+	}
 
 	err = lis_precon_create(solver, &precon);
 	if( err )
 	{
 		lis_solver_work_destroy(solver);
 		solver->retcode = err;
+		lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
 		return err;
 	}
 
@@ -1398,6 +1556,7 @@ LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
 		if( solver->precon==precon ) solver->precon = NULL;
 		lis_precon_destroy(precon);
 		solver->retcode = err;
+		lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
 		return err;
 	}
 
@@ -1405,6 +1564,7 @@ LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
 	lis_precon_destroy(precon);
 
 	LIS_DEBUG_FUNC_OUT;
+	lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
 	return LIS_SUCCESS;
 }
 
@@ -1642,6 +1802,8 @@ LIS_INT lis_solve_sequence(
 {
     LIS_INT err;
 
+    LIS_INT saved_num_threads;
+    LIS_INT thread_scope_changed;
     LIS_DEBUG_FUNC_IN;
 
     if( A==NULL || b==NULL || x==NULL || solver==NULL )
@@ -1651,6 +1813,15 @@ LIS_INT lis_solve_sequence(
             "invalid sequence solve arguments\n");
         return LIS_ERR_ILL_ARG;
     }
+
+    err = lis_solver_thread_scope_begin(
+        solver,&saved_num_threads,&thread_scope_changed);
+    if( err )
+    {
+        solver->retcode = err;
+        return err;
+    }
+
 
     /* Reset per-call diagnostics; lifetime counters survive. */
     solver->sequence_diag_attempts = 0;
@@ -1689,6 +1860,7 @@ LIS_INT lis_solve_sequence(
     {
         solver->sequence_diag_first_retcode = solver->retcode;
         solver->sequence_diag_final_retcode = solver->retcode;
+        lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
         return err;
     }
 
@@ -1698,6 +1870,7 @@ LIS_INT lis_solve_sequence(
         solver->sequence_diag_final_retcode = solver->retcode;
 
         LIS_DEBUG_FUNC_OUT;
+        lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
         return LIS_SUCCESS;
     }
 
@@ -1716,6 +1889,7 @@ LIS_INT lis_solve_sequence(
     {
         solver->retcode = err;
         solver->sequence_diag_final_retcode = err;
+        lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
         return err;
     }
 
@@ -1732,6 +1906,7 @@ LIS_INT lis_solve_sequence(
     if( err )
     {
         solver->sequence_diag_final_retcode = solver->retcode;
+        lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
         return err;
     }
 
@@ -1740,6 +1915,7 @@ LIS_INT lis_solve_sequence(
         solver->sequence_diag_final_retcode = solver->retcode;
 
         LIS_DEBUG_FUNC_OUT;
+        lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
         return LIS_SUCCESS;
     }
 
@@ -1752,6 +1928,7 @@ LIS_INT lis_solve_sequence(
     {
         solver->retcode = err;
         solver->sequence_diag_final_retcode = err;
+        lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
         return err;
     }
 
@@ -1763,6 +1940,7 @@ LIS_INT lis_solve_sequence(
     {
         solver->retcode = err;
         solver->sequence_diag_final_retcode = err;
+        lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
         return err;
     }
 
@@ -1779,13 +1957,18 @@ LIS_INT lis_solve_sequence(
 
     solver->sequence_diag_final_retcode = solver->retcode;
 
-    if( err ) return err;
-
+    if( err )
+    {
+        lis_solver_thread_scope_end(
+            saved_num_threads,thread_scope_changed);
+        return err;
+    }
     /*
      * Preserve existing LIS solve semantics: API success means
      * execution completed; final iterative status is in retcode.
      */
     LIS_DEBUG_FUNC_OUT;
+    lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
     return LIS_SUCCESS;
 }
 
