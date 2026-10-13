@@ -63,7 +63,11 @@ lis_precon_mfamg_get_distributed_hierarchy_info(
     LIS_INT *terminal_nnz,
     LIS_INT *terminal_row,
     LIS_INT *terminal_global_cols,
-    LIS_SCALAR *terminal_values);
+    LIS_SCALAR *terminal_values,
+    LIS_INT terminal_dense_capacity,
+    LIS_INT terminal_vector_capacity,
+    LIS_SCALAR *terminal_dense,
+    LIS_SCALAR *terminal_solution);
 
 
 extern LIS_INT
@@ -2472,6 +2476,9 @@ check_mfamg_distributed_hierarchy(
     LIS_INT global_cols[3*TEST_N];
     LIS_SCALAR values[3*TEST_N];
 
+    LIS_SCALAR terminal_dense[64];
+    LIS_SCALAR terminal_solution[8];
+
     LIS_INT nlevels;
     LIS_INT terminal_np;
     LIS_INT terminal_nnz;
@@ -2580,7 +2587,11 @@ check_mfamg_distributed_hierarchy(
             &terminal_nnz,
             row,
             global_cols,
-            values);
+            values,
+            64,
+            8,
+            terminal_dense,
+            terminal_solution);
 
     if(err)
     {
@@ -2859,6 +2870,98 @@ check_mfamg_distributed_hierarchy(
     }
 
 
+    if(
+        nlevels==3
+        &&
+        global_n[2]==6)
+    {
+        for(i=0;i<6;i++)
+        {
+            for(p=0;p<6;p++)
+            {
+                if(i==p)
+                {
+                    expected =
+                        (LIS_SCALAR)0.5;
+                }
+                else if(
+                    p==i-1
+                    ||
+                    p==i+1)
+                {
+                    expected =
+                        (LIS_SCALAR)-0.25;
+                }
+                else
+                {
+                    expected =
+                        (LIS_SCALAR)0.0;
+                }
+
+
+                diff =
+                    fabs(
+                        terminal_dense[
+                            i*6+p]
+                        -
+                        expected);
+
+
+                if(diff>MATCH_TOL)
+                {
+                    fprintf(
+                        stderr,
+                        "MPI replicated terminal matrix mismatch "
+                        "rank=%d row=%d col=%d got=%.16e "
+                        "expected=%.16e diff=%.3e\n",
+                        rank,
+                        (int)i,
+                        (int)p,
+                        (double)terminal_dense[
+                            i*6+p],
+                        (double)expected,
+                        (double)diff);
+
+                    local_failed = 1;
+                }
+            }
+
+
+            expected =
+                (LIS_SCALAR)(
+                    i+1);
+
+
+            diff =
+                fabs(
+                    terminal_solution[i]
+                    -
+                    expected);
+
+
+            if(diff>MATCH_TOL)
+            {
+                fprintf(
+                    stderr,
+                    "MPI replicated terminal solve mismatch "
+                    "rank=%d i=%d got=%.16e expected=%.16e "
+                    "diff=%.3e\n",
+                    rank,
+                    (int)i,
+                    (double)terminal_solution[i],
+                    (double)expected,
+                    (double)diff);
+
+                local_failed = 1;
+            }
+        }
+    }
+    else
+    {
+        local_failed = 1;
+    }
+
+
 reduce_result:
 
 #ifdef USE_MPI
@@ -2925,6 +3028,20 @@ reduce_result:
             (int)nlevels,
             (int)global_terminal_nnz,
             (int)boundary_hits);
+    }
+
+
+    if(rank==0)
+    {
+        printf(
+            "MPI_REPLICATED_TERMINAL=%s "
+            "ranks=%d global_n=6 dense_entries=36\n",
+            global_failed
+            ?
+            "FAILED"
+            :
+            "PASSED",
+            nprocs);
     }
 
 

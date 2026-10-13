@@ -61,6 +61,9 @@ struct LIS_MFAMG_STRUCT
     LIS_SCALAR *lu;
     LIS_INT *pivots;
 
+    LIS_SCALAR *coarse_rhs;
+    LIS_SCALAR *coarse_x;
+
     LIS_REAL omega;
 };
 
@@ -136,6 +139,12 @@ lis_mfamg_state_free(
 
     if(state->pivots)
         lis_free(state->pivots);
+
+    if(state->coarse_rhs)
+        lis_free(state->coarse_rhs);
+
+    if(state->coarse_x)
+        lis_free(state->coarse_x);
 
 
     lis_free(state);
@@ -3241,10 +3250,17 @@ lis_mfamg_factor_csr_terminal(
     struct LIS_MFAMG_STRUCT *state)
 {
     LIS_INT i;
-    LIS_INT j;
     LIS_INT p;
 
+    LIS_INT local_col;
+    LIS_INT global_row;
+    LIS_INT global_col;
+
+    LIS_INT local_error;
+    LIS_INT global_error;
+
     size_t pos;
+    size_t coarse_entries;
 
 
     if(
@@ -3254,9 +3270,21 @@ lis_mfamg_factor_csr_terminal(
         ||
         A->matrix_type!=LIS_MATRIX_CSR
         ||
-        A->n!=state->coarse_n
+        A->n<=0
+        ||
+        A->gn!=state->coarse_n
+        ||
+        A->is<0
+        ||
+        A->ie<A->is
+        ||
+        A->ie>A->gn
+        ||
+        A->ie-A->is!=A->n
         ||
         state->coarse_n<=0
+        ||
+        state->coarse==NULL
         ||
         state->lu==NULL
         ||
@@ -3266,51 +3294,167 @@ lis_mfamg_factor_csr_terminal(
     }
 
 
+    coarse_entries =
+        (size_t)state->coarse_n
+        *
+        (size_t)state->coarse_n;
+
+
     memset(
-        state->lu,
+        state->coarse,
         0,
-        (size_t)state->coarse_n
-            *
-        (size_t)state->coarse_n
-            *
+        coarse_entries
+        *
         sizeof(LIS_SCALAR));
+
+
+    local_error = 0;
+    global_error = 0;
 
 
     for(i=0;i<A->n;i++)
     {
+        global_row =
+            A->is
+            +
+            i;
+
+
+        if(
+            global_row<0
+            ||
+            global_row>=state->coarse_n)
+        {
+            local_error = 1;
+            continue;
+        }
+
+
         for(
             p=A->ptr[i];
             p<A->ptr[i+1];
             p++)
         {
-            j =
-                A->index[p]
-                    -
-                A->is;
+            local_col =
+                A->index[p];
+
 
             if(
-                j<0
+                local_col<0
                 ||
-                j>=state->coarse_n)
+                local_col>=A->np)
             {
-                LIS_SETERR(
-                    LIS_ERR_ILL_ARG,
-                    "MFAMG internal coarse CSR contains a nonlocal column\n");
-
-                return LIS_ERR_ILL_ARG;
+                local_error = 1;
+                continue;
             }
 
-            pos =
-                (size_t)i
-                    *
-                (size_t)state->coarse_n
-                    +
-                (size_t)j;
 
-            state->lu[pos] +=
+            if(local_col<A->n)
+            {
+                global_col =
+                    A->is
+                    +
+                    local_col;
+            }
+            else
+            {
+                if(A->l2g_map==NULL)
+                {
+                    local_error = 1;
+                    continue;
+                }
+
+
+                global_col =
+                    A->l2g_map[
+                        local_col
+                        -
+                        A->n];
+            }
+
+
+            if(
+                global_col<0
+                ||
+                global_col>=state->coarse_n)
+            {
+                local_error = 1;
+                continue;
+            }
+
+
+            pos =
+                (size_t)global_row
+                *
+                (size_t)state->coarse_n
+                +
+                (size_t)global_col;
+
+
+            state->coarse[pos] +=
                 A->value[p];
         }
     }
+
+
+#ifdef USE_MPI
+
+    if(A->nprocs>1)
+    {
+        MPI_Allreduce(
+            &local_error,
+            &global_error,
+            1,
+            LIS_MPI_INT,
+            MPI_MAX,
+            A->comm);
+    }
+    else
+    {
+        global_error =
+            local_error;
+    }
+
+#else
+
+    global_error =
+        local_error;
+
+#endif
+
+
+    if(global_error)
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "MFAMG terminal CSR contains an invalid distributed column\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+#ifdef USE_MPI
+
+    if(A->nprocs>1)
+    {
+        MPI_Allreduce(
+            MPI_IN_PLACE,
+            state->coarse,
+            (int)coarse_entries,
+            LIS_MPI_SCALAR,
+            MPI_SUM,
+            A->comm);
+    }
+
+#endif
+
+
+    memcpy(
+        state->lu,
+        state->coarse,
+        coarse_entries
+        *
+        sizeof(LIS_SCALAR));
 
 
     return
@@ -3318,6 +3462,408 @@ lis_mfamg_factor_csr_terminal(
             state->coarse_n,
             state->lu,
             state->pivots);
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_mfamg_prepare_terminal"
+static LIS_INT
+lis_mfamg_prepare_terminal(
+    LIS_MATRIX A,
+    struct LIS_MFAMG_STRUCT *state)
+{
+    size_t coarse_entries;
+    size_t allocation_size;
+
+    LIS_INT err;
+
+
+    if(
+        A==NULL
+        ||
+        state==NULL
+        ||
+        A->matrix_type!=LIS_MATRIX_CSR
+        ||
+        A->gn<=0
+        ||
+        A->gn>LIS_MFAMG_COARSE_LIMIT
+        ||
+        state->coarse!=NULL
+        ||
+        state->lu!=NULL
+        ||
+        state->pivots!=NULL
+        ||
+        state->coarse_rhs!=NULL
+        ||
+        state->coarse_x!=NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    state->coarse_n =
+        A->gn;
+
+
+    if(
+        (size_t)state->coarse_n
+        >
+        ((size_t)-1)
+        /
+        (size_t)state->coarse_n)
+    {
+        LIS_SETERR(
+            LIS_OUT_OF_MEMORY,
+            "MFAMG terminal matrix dimension overflow\n");
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+
+    coarse_entries =
+        (size_t)state->coarse_n
+        *
+        (size_t)state->coarse_n;
+
+
+    if(
+        coarse_entries
+        >
+        ((size_t)-1)
+        /
+        sizeof(LIS_SCALAR))
+    {
+        LIS_SETERR(
+            LIS_OUT_OF_MEMORY,
+            "MFAMG terminal factor allocation overflow\n");
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+
+    state->coarse =
+        (LIS_SCALAR *)lis_malloc(
+            coarse_entries
+            *
+            sizeof(LIS_SCALAR),
+            "lis_mfamg_prepare_terminal::coarse");
+
+    state->lu =
+        (LIS_SCALAR *)lis_malloc(
+            coarse_entries
+            *
+            sizeof(LIS_SCALAR),
+            "lis_mfamg_prepare_terminal::lu");
+
+    state->pivots =
+        (LIS_INT *)lis_malloc(
+            (size_t)state->coarse_n
+            *
+            sizeof(LIS_INT),
+            "lis_mfamg_prepare_terminal::pivots");
+
+    state->coarse_rhs =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)state->coarse_n
+            *
+            sizeof(LIS_SCALAR),
+            "lis_mfamg_prepare_terminal::rhs");
+
+    state->coarse_x =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)state->coarse_n
+            *
+            sizeof(LIS_SCALAR),
+            "lis_mfamg_prepare_terminal::x");
+
+
+    if(
+        state->coarse==NULL
+        ||
+        state->lu==NULL
+        ||
+        state->pivots==NULL
+        ||
+        state->coarse_rhs==NULL
+        ||
+        state->coarse_x==NULL)
+    {
+        allocation_size =
+            2
+            *
+            coarse_entries
+            *
+            sizeof(LIS_SCALAR)
+            +
+            2
+            *
+            (size_t)state->coarse_n
+            *
+            sizeof(LIS_SCALAR)
+            +
+            (size_t)state->coarse_n
+            *
+            sizeof(LIS_INT);
+
+
+        LIS_SETERR_MEM(
+            allocation_size);
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+
+    err =
+        lis_mfamg_factor_csr_terminal(
+            A,
+            state);
+
+    if(err)
+        return err;
+
+
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_mfamg_dense_solve_distributed"
+static LIS_INT
+lis_mfamg_dense_solve_distributed(
+    LIS_MATRIX A,
+    struct LIS_MFAMG_STRUCT *state,
+    LIS_VECTOR rhs,
+    LIS_VECTOR x)
+{
+    LIS_INT i;
+    LIS_INT j;
+    LIS_INT k;
+    LIS_INT p;
+
+    LIS_SCALAR tmp;
+    LIS_SCALAR sum;
+
+    LIS_REAL mag;
+
+    LIS_SCALAR *rhs_value;
+    LIS_SCALAR *x_value;
+
+
+    if(
+        A==NULL
+        ||
+        state==NULL
+        ||
+        rhs==NULL
+        ||
+        x==NULL
+        ||
+        A->nprocs<=1
+        ||
+        A->gn!=state->coarse_n
+        ||
+        A->n<=0
+        ||
+        A->is<0
+        ||
+        A->ie>A->gn
+        ||
+        A->ie-A->is!=A->n
+        ||
+        state->coarse_n<=0
+        ||
+        state->lu==NULL
+        ||
+        state->pivots==NULL
+        ||
+        state->coarse_rhs==NULL
+        ||
+        state->coarse_x==NULL
+        ||
+        rhs->n!=A->n
+        ||
+        rhs->gn!=A->gn
+        ||
+        x->n!=A->n
+        ||
+        x->gn!=A->gn)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    rhs_value =
+        rhs->value;
+
+    x_value =
+        x->value;
+
+
+    memset(
+        state->coarse_rhs,
+        0,
+        (size_t)state->coarse_n
+        *
+        sizeof(LIS_SCALAR));
+
+
+    for(i=0;i<A->n;i++)
+    {
+        state->coarse_rhs[
+            A->is+i] =
+            rhs_value[i];
+    }
+
+
+#ifdef USE_MPI
+
+    MPI_Allreduce(
+        MPI_IN_PLACE,
+        state->coarse_rhs,
+        (int)state->coarse_n,
+        LIS_MPI_SCALAR,
+        MPI_SUM,
+        A->comm);
+
+#else
+
+    return LIS_ERR_NOT_IMPLEMENTED;
+
+#endif
+
+
+    memcpy(
+        state->coarse_x,
+        state->coarse_rhs,
+        (size_t)state->coarse_n
+        *
+        sizeof(LIS_SCALAR));
+
+
+    for(k=0;k<state->coarse_n;k++)
+    {
+        p =
+            state->pivots[k];
+
+
+        if(
+            p<0
+            ||
+            p>=state->coarse_n)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+
+
+        if(p!=k)
+        {
+            tmp =
+                state->coarse_x[k];
+
+            state->coarse_x[k] =
+                state->coarse_x[p];
+
+            state->coarse_x[p] =
+                tmp;
+        }
+    }
+
+
+    for(i=1;i<state->coarse_n;i++)
+    {
+        sum =
+            state->coarse_x[i];
+
+
+        for(j=0;j<i;j++)
+        {
+            sum -=
+                state->lu[
+                    i*state->coarse_n+j]
+                *
+                state->coarse_x[j];
+        }
+
+
+        state->coarse_x[i] =
+            sum;
+    }
+
+
+    for(
+        i=state->coarse_n-1;
+        i>=0;
+        i--)
+    {
+        sum =
+            state->coarse_x[i];
+
+
+        for(
+            j=i+1;
+            j<state->coarse_n;
+            j++)
+        {
+            sum -=
+                state->lu[
+                    i*state->coarse_n+j]
+                *
+                state->coarse_x[j];
+        }
+
+
+        if(
+            fabs(
+                state->lu[
+                    i*state->coarse_n+i])
+            ==
+            0.0)
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "MFAMG coarse solve encountered a zero pivot\n");
+
+            return LIS_BREAKDOWN;
+        }
+
+
+        state->coarse_x[i] =
+            sum
+            /
+            state->lu[
+                i*state->coarse_n+i];
+
+
+        mag =
+            fabs(
+                state->coarse_x[i]);
+
+
+        if(
+            mag!=mag
+            ||
+            mag>LIS_SCALAR_MAX)
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "MFAMG coarse solve became non-finite\n");
+
+            return LIS_BREAKDOWN;
+        }
+    }
+
+
+    for(i=0;i<A->n;i++)
+    {
+        x_value[i] =
+            state->coarse_x[
+                A->is+i];
+    }
+
+
+    return LIS_SUCCESS;
 }
 
 
@@ -3383,8 +3929,23 @@ lis_mfamg_v_cycle(
 
     if(level_id==state->nlevels-1)
     {
+        if(level->A->nprocs>1)
+        {
+            if(level->A->gn!=state->coarse_n)
+                return LIS_ERR_ILL_ARG;
+
+            return
+                lis_mfamg_dense_solve_distributed(
+                    level->A,
+                    state,
+                    b,
+                    x);
+        }
+
+
         if(level->n!=state->coarse_n)
             return LIS_ERR_ILL_ARG;
+
 
         return
             lis_mfamg_dense_solve(
@@ -4474,7 +5035,11 @@ lis_precon_mfamg_get_distributed_hierarchy_info(
     LIS_INT *terminal_nnz,
     LIS_INT *terminal_row,
     LIS_INT *terminal_global_cols,
-    LIS_SCALAR *terminal_values)
+    LIS_SCALAR *terminal_values,
+    LIS_INT terminal_dense_capacity,
+    LIS_INT terminal_vector_capacity,
+    LIS_SCALAR *terminal_dense,
+    LIS_SCALAR *terminal_solution)
 {
     struct LIS_MFAMG_STRUCT *state;
     struct LIS_MFAMG_LEVEL *level;
@@ -4492,6 +5057,9 @@ lis_precon_mfamg_get_distributed_hierarchy_info(
     LIS_INT local_col;
 
     LIS_INT err;
+    LIS_INT global_row;
+
+    LIS_SCALAR terminal_sum;
 
 
     if(
@@ -4516,6 +5084,14 @@ lis_precon_mfamg_get_distributed_hierarchy_info(
         terminal_global_cols==NULL
         ||
         terminal_values==NULL
+        ||
+        terminal_dense_capacity<=0
+        ||
+        terminal_vector_capacity<=0
+        ||
+        terminal_dense==NULL
+        ||
+        terminal_solution==NULL
         ||
         level_capacity<=0
         ||
@@ -4936,6 +5512,123 @@ lis_precon_mfamg_get_distributed_hierarchy_info(
         terminal_values[p] =
             terminal->A->value[p];
     }
+
+
+    if(
+        terminal->A->gn<=0
+        ||
+        terminal->A->gn>LIS_MFAMG_COARSE_LIMIT
+        ||
+        (size_t)terminal->A->gn
+            >
+        ((size_t)-1)
+            /
+        (size_t)terminal->A->gn
+        ||
+        (size_t)terminal_dense_capacity
+            <
+        (size_t)terminal->A->gn
+            *
+        (size_t)terminal->A->gn
+        ||
+        terminal_vector_capacity
+            <
+        terminal->A->gn)
+    {
+        err = LIS_ERR_ILL_ARG;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_mfamg_prepare_terminal(
+            terminal->A,
+            state);
+
+    if(err)
+        goto cleanup;
+
+
+    for(
+        level_id=0;
+        level_id<terminal->A->n;
+        level_id++)
+    {
+        global_row =
+            terminal->A->is
+            +
+            level_id;
+
+
+        if(
+            global_row<0
+            ||
+            global_row>=state->coarse_n)
+        {
+            err = LIS_ERR_ILL_ARG;
+            goto cleanup;
+        }
+
+
+        terminal_sum =
+            (LIS_SCALAR)0.0;
+
+
+        for(
+            local_col=0;
+            local_col<state->coarse_n;
+            local_col++)
+        {
+            terminal_sum +=
+                state->coarse[
+                    global_row
+                        *
+                    state->coarse_n
+                        +
+                    local_col]
+                *
+                (LIS_SCALAR)(
+                    local_col+1);
+        }
+
+
+        terminal->rhs->value[
+            level_id] =
+            terminal_sum;
+
+        terminal->x->value[
+            level_id] =
+            (LIS_SCALAR)0.0;
+    }
+
+
+    err =
+        lis_mfamg_dense_solve_distributed(
+            terminal->A,
+            state,
+            terminal->rhs,
+            terminal->x);
+
+    if(err)
+        goto cleanup;
+
+
+    memcpy(
+        terminal_dense,
+        state->coarse,
+        (size_t)state->coarse_n
+            *
+        (size_t)state->coarse_n
+            *
+        sizeof(LIS_SCALAR));
+
+
+    memcpy(
+        terminal_solution,
+        state->coarse_x,
+        (size_t)state->coarse_n
+            *
+        sizeof(LIS_SCALAR));
 
 
     err = LIS_SUCCESS;
@@ -5447,6 +6140,8 @@ lis_precon_create_mfamg(
     LIS_SOLVER solver,
     LIS_PRECON precon)
 {
+    size_t coarse_entries;
+
     struct LIS_MFAMG_STRUCT *state;
     struct LIS_MFAMG_LEVEL *level;
     struct LIS_MFAMG_LEVEL *coarse_level;
@@ -5466,7 +6161,6 @@ lis_precon_create_mfamg(
     LIS_INT i;
     LIS_INT err;
 
-    size_t coarse_entries;
 
 
     LIS_DEBUG_FUNC_IN;
@@ -5998,89 +6692,8 @@ lis_precon_create_mfamg(
             state->nlevels-1];
 
 
-    state->coarse_n =
-        terminal_level->n;
-
-
-    if(
-        state->coarse_n<=0
-        ||
-        (size_t)state->coarse_n
-        >
-        ((size_t)-1)
-        /
-        (size_t)state->coarse_n)
-    {
-        LIS_SETERR(
-            LIS_OUT_OF_MEMORY,
-            "MFAMG terminal matrix dimension overflow\n");
-
-        lis_mfamg_state_free(state);
-
-        return LIS_OUT_OF_MEMORY;
-    }
-
-
-    coarse_entries =
-        (size_t)state->coarse_n
-            *
-        (size_t)state->coarse_n;
-
-
-    if(
-        coarse_entries
-        >
-        ((size_t)-1)
-        /
-        sizeof(LIS_SCALAR))
-    {
-        LIS_SETERR(
-            LIS_OUT_OF_MEMORY,
-            "MFAMG terminal factor allocation overflow\n");
-
-        lis_mfamg_state_free(state);
-
-        return LIS_OUT_OF_MEMORY;
-    }
-
-
-    state->lu =
-        (LIS_SCALAR *)lis_malloc(
-            coarse_entries
-                *
-            sizeof(LIS_SCALAR),
-            "lis_precon_create_mfamg::terminal_lu");
-
-    state->pivots =
-        (LIS_INT *)lis_malloc(
-            (size_t)state->coarse_n
-                *
-            sizeof(LIS_INT),
-            "lis_precon_create_mfamg::terminal_pivots");
-
-
-    if(
-        state->lu==NULL
-        ||
-        state->pivots==NULL)
-    {
-        LIS_SETERR_MEM(
-            coarse_entries
-                *
-            sizeof(LIS_SCALAR)
-            +
-            (size_t)state->coarse_n
-                *
-            sizeof(LIS_INT));
-
-        lis_mfamg_state_free(state);
-
-        return LIS_OUT_OF_MEMORY;
-    }
-
-
     err =
-        lis_mfamg_factor_csr_terminal(
+        lis_mfamg_prepare_terminal(
             terminal_level->A,
             state);
 
