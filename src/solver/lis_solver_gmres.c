@@ -1376,6 +1376,7 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 
 	LIS_REAL bnrm2,nrm2,tol,min_nrm2;
 	LIS_INT err,iter,maxiter,output,maxiter_noimp,noimp_count;
+     LIS_INT noimp_stop;
 	double time,ptime;
 
 	LIS_REAL rnorm;
@@ -1397,6 +1398,7 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 	maxiter_noimp = solver->options[LIS_OPTIONS_MAXITER_NO_IMP];
 	noimp_count   = 0;
 	min_nrm2      = LIS_SCALAR_MAX;
+     noimp_stop    = LIS_FALSE;
 	h_dim   = m+1;
 	ptime   = 0.0;
 
@@ -1534,12 +1536,13 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 				}
 				else if (++noimp_count > maxiter_noimp)
 				{
-					solver->retcode = LIS_MAXITER;
-					solver->iter = iter;
-					solver->resid = nrm2;
-					solver->ptime = ptime;
-					LIS_DEBUG_FUNC_OUT;
-					return LIS_MAXITER;
+					/*
+					 * Finish the current Krylov cycle before reporting
+					 * a no-improvement stop.  Do not discard the
+					 * least-squares approximation already computed.
+					 */
+					noimp_stop = LIS_TRUE;
+					break;
 				}
 			}
 
@@ -1584,6 +1587,21 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 		for(j=0;j<=ii;j++)
 		{
 			lis_vector_axpy(s->value[j],z[j],x);
+		}
+
+		/*
+		 * A no-improvement decision terminates the solve, but
+		 * the current Krylov approximation has now been applied.
+		 */
+		if( noimp_stop )
+		{
+			solver->retcode = LIS_MAXITER;
+			solver->iter = iter;
+			solver->resid = nrm2;
+			solver->ptime = ptime;
+			lis_free(h);
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_MAXITER;
 		}
 
 		if( tol >= nrm2 )

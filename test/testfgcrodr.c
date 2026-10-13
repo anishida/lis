@@ -7484,6 +7484,638 @@ cleanup:
 }
 
 
+#ifndef _COMPLEX
+
+static LIS_INT
+check_active_recycle_noimp_progress(void)
+{
+    LIS_MATRIX A = NULL;
+
+    LIS_VECTOR b = NULL;
+    LIS_VECTOR x = NULL;
+    LIS_VECTOR r = NULL;
+
+    LIS_SOLVER solver = NULL;
+
+    LIS_INT err;
+    LIS_INT api1;
+    LIS_INT api2;
+
+    LIS_INT dim1;
+    LIS_INT dim2;
+
+    LIS_INT action1;
+    LIS_INT action2;
+
+    LIS_INT valid1;
+    LIS_INT valid2;
+
+    LIS_MATRIX stored1;
+    LIS_MATRIX stored2;
+
+    LIS_UNSIGNED_INT sg1;
+    LIS_UNSIGNED_INT vg1;
+    LIS_UNSIGNED_INT sg2;
+    LIS_UNSIGNED_INT vg2;
+
+    LIS_UNSIGNED_INT builds1;
+    LIS_UNSIGNED_INT updates1;
+    LIS_UNSIGNED_INT uses1;
+    LIS_UNSIGNED_INT rejects1;
+
+    LIS_UNSIGNED_INT builds2;
+    LIS_UNSIGNED_INT updates2;
+    LIS_UNSIGNED_INT uses2;
+    LIS_UNSIGNED_INT rejects2;
+
+    LIS_REAL true1;
+    LIS_REAL true2;
+    LIS_REAL xnorm2;
+
+    LIS_REAL orth1;
+    LIS_REAL relation1;
+    LIS_REAL orth2;
+    LIS_REAL relation2;
+
+    LIS_INT failed;
+
+
+    failed =
+        0;
+
+
+    err =
+        lis_matrix_create(
+            LIS_COMM_WORLD,
+            &A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_set_size(
+            A,
+            0,
+            5);
+
+    if( err )
+        goto api_fail;
+
+
+#define SET_A(row,col,val)                                      \
+    do                                                          \
+    {                                                           \
+        err =                                                   \
+            lis_matrix_set_value(                               \
+                LIS_INS_VALUE,                                  \
+                (row),                                          \
+                (col),                                          \
+                (LIS_SCALAR)(val),                              \
+                A);                                             \
+                                                                \
+        if( err )                                               \
+            goto api_fail;                                      \
+    }                                                           \
+    while(0)
+
+
+    /*
+     * Block 0:
+     *
+     *     [2]
+     *
+     * Solve 1 uses b=e0 and creates an exact one-dimensional
+     * recycle space.
+     */
+    SET_A(0,0,2.0);
+
+
+    /*
+     * Independent Stage-2J no-improvement block on indices 1..4:
+     *
+     *     [ 1  1  1  0 ]
+     *     [ 1  1  1  1 ]
+     *     [ 0  1  1  0 ]
+     *     [ 0  0  1  0 ]
+     *
+     * Solve 2 uses b=e1.  The existing recycle space is valid and
+     * active, but orthogonal to this block.
+     */
+    SET_A(1,1,1.0);
+    SET_A(2,1,1.0);
+
+    SET_A(1,2,1.0);
+    SET_A(2,2,1.0);
+    SET_A(3,2,1.0);
+
+    SET_A(1,3,1.0);
+    SET_A(2,3,1.0);
+    SET_A(3,3,1.0);
+    SET_A(4,3,1.0);
+
+    SET_A(2,4,1.0);
+
+
+#undef SET_A
+
+
+    err =
+        lis_matrix_set_type(
+            A,
+            LIS_MATRIX_CSR);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_assemble(
+            A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &b);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &r);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i fgcrodr "
+            "-p none "
+            "-scale none "
+            "-print none "
+            "-restart 4 "
+            "-maxiter 4 "
+            "-maxiter_noimp 0 "
+            "-tol 1e-14 "
+            "-fgcrodr_k 1 "
+            "-fgcrodr_update 1",
+            solver);
+
+    if( err )
+        goto api_fail;
+
+
+    /*
+     * --------------------------------------------------------
+     * Solve 1: create the recycle space.
+     * --------------------------------------------------------
+     */
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        b);
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x);
+
+    b->value[0] =
+        (LIS_SCALAR)1.0;
+
+
+    api1 =
+        lis_solve(
+            A,
+            b,
+            x,
+            solver);
+
+
+    if( api1!=LIS_SUCCESS )
+    {
+        err =
+            api1;
+
+        goto api_fail;
+    }
+
+
+    err =
+        lis_matvec(
+            A,
+            x,
+            r);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_xpay(
+            b,
+            (LIS_SCALAR)-1.0,
+            r);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_nrm2(
+            r,
+            &true1);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim1,
+            &action1,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_stats(
+            solver,
+            &builds1,
+            &updates1,
+            &uses1,
+            &rejects1);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_lifecycle_state(
+            solver,
+            &valid1,
+            &stored1,
+            &sg1,
+            &vg1);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_validate_recycle(
+            solver,
+            &orth1,
+            &relation1);
+
+    if( err )
+        goto api_fail;
+
+
+    printf(
+        "FGCRO-DR active recycle build "
+        "api=%d status=%d iter=%d true=% .17e "
+        "dim=%d action=%d valid=%d "
+        "builds=%llu updates=%llu uses=%llu rejects=%llu "
+        "orth=% .3e AZ-C=% .3e\n",
+        (int)api1,
+        (int)solver->retcode,
+        (int)solver->iter,
+        (double)true1,
+        (int)dim1,
+        (int)action1,
+        (int)valid1,
+        (unsigned long long)builds1,
+        (unsigned long long)updates1,
+        (unsigned long long)uses1,
+        (unsigned long long)rejects1,
+        (double)orth1,
+        (double)relation1);
+
+
+    if(
+        solver->retcode!=LIS_SUCCESS ||
+        solver->iter!=1 ||
+        true1>1.0e-13 ||
+        dim1!=1 ||
+        action1!=LIS_FGCRODR_RECYCLE_BUILD ||
+        !valid1 ||
+        stored1!=A ||
+        builds1!=1 ||
+        updates1!=0 ||
+        uses1!=0 ||
+        rejects1!=0 ||
+        orth1>1.0e-12 ||
+        relation1>1.0e-12 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR ACTIVE RECYCLE BUILD FAILED\n");
+
+        failed =
+            1;
+
+        err =
+            LIS_ERR_ILL_ARG;
+
+        goto cleanup;
+    }
+
+
+    /*
+     * --------------------------------------------------------
+     * Solve 2: active recycle + deterministic no-improvement.
+     * --------------------------------------------------------
+     */
+
+    solver->options[
+        LIS_OPTIONS_MAXITER] =
+            3;
+
+    solver->options[
+        LIS_OPTIONS_MAXITER_NO_IMP] =
+            1;
+
+    solver->params[
+        LIS_PARAMS_RESID
+        -LIS_OPTIONS_LEN] =
+            (LIS_SCALAR)1.0e-14;
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        b);
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x);
+
+    b->value[1] =
+        (LIS_SCALAR)1.0;
+
+
+    api2 =
+        lis_solve(
+            A,
+            b,
+            x,
+            solver);
+
+
+    if( api2!=LIS_SUCCESS )
+    {
+        err =
+            api2;
+
+        goto api_fail;
+    }
+
+
+    err =
+        lis_matvec(
+            A,
+            x,
+            r);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_xpay(
+            b,
+            (LIS_SCALAR)-1.0,
+            r);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_nrm2(
+            r,
+            &true2);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_nrm2(
+            x,
+            &xnorm2);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim2,
+            &action2,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_stats(
+            solver,
+            &builds2,
+            &updates2,
+            &uses2,
+            &rejects2);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_lifecycle_state(
+            solver,
+            &valid2,
+            &stored2,
+            &sg2,
+            &vg2);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_validate_recycle(
+            solver,
+            &orth2,
+            &relation2);
+
+    if( err )
+        goto api_fail;
+
+
+    printf(
+        "FGCRO-DR active recycle noimp "
+        "api=%d status=%d iter=%d "
+        "reported=% .17e true=% .17e xnorm=% .17e "
+        "x=[% .17e,% .17e,% .17e,% .17e,% .17e] "
+        "dim=%d action=%d valid=%d "
+        "builds=%llu updates=%llu uses=%llu rejects=%llu "
+        "orth=% .3e AZ-C=% .3e\n",
+        (int)api2,
+        (int)solver->retcode,
+        (int)solver->iter,
+        (double)solver->resid,
+        (double)true2,
+        (double)xnorm2,
+        (double)x->value[0],
+        (double)x->value[1],
+        (double)x->value[2],
+        (double)x->value[3],
+        (double)x->value[4],
+        (int)dim2,
+        (int)action2,
+        (int)valid2,
+        (unsigned long long)builds2,
+        (unsigned long long)updates2,
+        (unsigned long long)uses2,
+        (unsigned long long)rejects2,
+        (double)orth2,
+        (double)relation2);
+
+
+    if(
+        solver->retcode!=LIS_MAXITER ||
+        solver->iter!=3 ||
+        fabs(
+            solver->resid
+            -0.7071067811865476)
+            >1.0e-12 ||
+        fabs(
+            true2
+            -0.7071067811865476)
+            >1.0e-12 ||
+        fabs(
+            xnorm2
+            -0.5)
+            >1.0e-12 ||
+        fabs(
+            (LIS_REAL)x->value[0])
+            >1.0e-12 ||
+        fabs(
+            (LIS_REAL)x->value[1]
+            -0.5)
+            >1.0e-12 ||
+        fabs(
+            (LIS_REAL)x->value[2])
+            >1.0e-12 ||
+        fabs(
+            (LIS_REAL)x->value[3])
+            >1.0e-12 ||
+        fabs(
+            (LIS_REAL)x->value[4])
+            >1.0e-12 ||
+        dim2!=1 ||
+        action2!=LIS_FGCRODR_RECYCLE_KEEP ||
+        !valid2 ||
+        stored2!=A ||
+        sg2!=sg1 ||
+        vg2!=vg1 ||
+        builds2!=builds1 ||
+        updates2!=updates1+1 ||
+        uses2!=uses1+1 ||
+        rejects2!=rejects1 ||
+        orth2>1.0e-12 ||
+        relation2>1.0e-12 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR ACTIVE RECYCLE NO-IMPROVEMENT FAILED\n");
+
+        failed =
+            1;
+    }
+    else
+    {
+        printf(
+            "FGCRO-DR ACTIVE RECYCLE NO-IMPROVEMENT PASSED\n");
+    }
+
+
+    err =
+        failed
+        ? LIS_ERR_ILL_ARG
+        : LIS_SUCCESS;
+
+    goto cleanup;
+
+
+api_fail:
+
+    fprintf(
+        stderr,
+        "FGCRO-DR active recycle no-improvement API failure: %d\n",
+        (int)err);
+
+
+cleanup:
+
+    if( solver )
+        lis_solver_destroy(
+            solver);
+
+    if( r )
+        lis_vector_destroy(
+            r);
+
+    if( x )
+        lis_vector_destroy(
+            x);
+
+    if( b )
+        lis_vector_destroy(
+            b);
+
+    if( A )
+        lis_matrix_destroy(
+            A);
+
+
+    return err;
+}
+
+#endif
+
+
 int
 main(int argc, char **argv)
 {
@@ -8013,6 +8645,16 @@ cleanup:
 
     if(
         check_backsub_earlier_coefficient_guard()
+        !=LIS_SUCCESS )
+    {
+        failed = 1;
+    }
+#endif
+
+
+#ifndef _COMPLEX
+    if(
+        check_active_recycle_noimp_progress()
         !=LIS_SUCCESS )
     {
         failed = 1;
