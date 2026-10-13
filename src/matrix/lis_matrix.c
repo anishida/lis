@@ -610,6 +610,165 @@ LIS_INT lis_matrix_get_nnz(LIS_MATRIX A, LIS_INT *nnz)
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_matrix_get_capabilities"
+LIS_INT lis_matrix_get_capabilities(
+        LIS_MATRIX A,
+        LIS_INT *capabilities)
+{
+        LIS_INT err;
+        LIS_INT cap_a;
+        LIS_INT cap_b;
+        LIS_INT base;
+
+        LIS_DEBUG_FUNC_IN;
+
+        err = lis_matrix_check(
+                A,
+                LIS_MATRIX_CHECK_SIZE);
+
+        if( err ) return err;
+
+        if( capabilities==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "capabilities output pointer is NULL\n");
+
+                return LIS_ERR_ILL_ARG;
+        }
+
+        *capabilities = 0;
+
+        base =
+                LIS_MATRIX_CAP_MATVEC
+                |
+                LIS_MATRIX_CAP_MATVECH
+                |
+                LIS_MATRIX_CAP_DIAGONAL;
+
+        switch( A->matrix_type )
+        {
+        case LIS_MATRIX_CSR:
+        case LIS_MATRIX_CSC:
+        case LIS_MATRIX_MSR:
+        case LIS_MATRIX_DIA:
+        case LIS_MATRIX_ELL:
+        case LIS_MATRIX_JAD:
+        case LIS_MATRIX_BSR:
+        case LIS_MATRIX_BSC:
+        case LIS_MATRIX_VBR:
+        case LIS_MATRIX_COO:
+        case LIS_MATRIX_DNS:
+
+                *capabilities = base;
+                break;
+
+
+        case LIS_MATRIX_USER:
+
+                if( A->user_matvec!=NULL )
+                {
+                        *capabilities |=
+                                LIS_MATRIX_CAP_MATVEC;
+                }
+
+                if( A->user_matvech!=NULL )
+                {
+                        *capabilities |=
+                                LIS_MATRIX_CAP_MATVECH;
+                }
+
+                if( A->user_get_diagonal!=NULL )
+                {
+                        *capabilities |=
+                                LIS_MATRIX_CAP_DIAGONAL;
+                }
+
+                if( A->user_get_row!=NULL )
+                {
+                        *capabilities |=
+                                LIS_MATRIX_CAP_ROW_ACCESS;
+                }
+
+                break;
+
+
+        case LIS_MATRIX_OPERATOR:
+
+                if( A->operator_A==NULL )
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "matrix operator is not initialized\n");
+
+                        return LIS_ERR_ILL_ARG;
+                }
+
+                err = lis_matrix_get_capabilities(
+                        A->operator_A,
+                        &cap_a);
+
+                if( err ) return err;
+
+                /*
+                 * Scaled operator D*A*D.
+                 *
+                 * Row access is intentionally not inherited because
+                 * LIS_MATRIX_OPERATOR does not expose a row-access API.
+                 */
+                if( A->operator_scale!=NULL )
+                {
+                        *capabilities =
+                                cap_a
+                                &
+                                base;
+
+                        break;
+                }
+
+                /*
+                 * Linear-combination operator alpha*A + beta*B.
+                 *
+                 * An operation is available only when both operands
+                 * provide it. Row access is not exposed for operators.
+                 */
+                if( A->operator_B==NULL )
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "matrix operator is not initialized\n");
+
+                        return LIS_ERR_ILL_ARG;
+                }
+
+                err = lis_matrix_get_capabilities(
+                        A->operator_B,
+                        &cap_b);
+
+                if( err ) return err;
+
+                *capabilities =
+                        cap_a
+                        &
+                        cap_b
+                        &
+                        base;
+
+                break;
+
+
+        default:
+
+                *capabilities = 0;
+                break;
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
 #define __FUNC__ "lis_matrix_assemble"
 LIS_INT lis_matrix_assemble(LIS_MATRIX A)
 {

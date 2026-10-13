@@ -279,6 +279,18 @@ extern "C" {
 #define LIS_MATRIX_MSC 21
 #define LIS_MATRIX_USER 22
 #define LIS_MATRIX_OPERATOR 23
+
+/*
+ * Matrix operation capabilities.
+ *
+ * These flags describe operation support provided by the current
+ * matrix type and callbacks. They do not imply that matrix assembly
+ * or numerical setup has been completed.
+ */
+#define LIS_MATRIX_CAP_MATVEC      0x01
+#define LIS_MATRIX_CAP_MATVECH     0x02
+#define LIS_MATRIX_CAP_DIAGONAL    0x04
+#define LIS_MATRIX_CAP_ROW_ACCESS  0x08
 #define LIS_MATRIX_DECIDING_SIZE -(LIS_MATRIX_RCO+1)
 #define LIS_MATRIX_NULL -(LIS_MATRIX_RCO+2)
 
@@ -932,6 +944,7 @@ extern "C"
 	extern LIS_INT lis_matrix_set_size(LIS_MATRIX A, LIS_INT local_n, LIS_INT global_n);
 	extern LIS_INT lis_matrix_get_size(LIS_MATRIX A, LIS_INT *local_n, LIS_INT *global_n);
 	extern LIS_INT lis_matrix_get_range(LIS_MATRIX A, LIS_INT *is, LIS_INT *ie);
+    extern LIS_INT lis_matrix_get_capabilities(LIS_MATRIX A, LIS_INT *capabilities);
 	extern LIS_INT lis_matrix_get_nnz(LIS_MATRIX A, LIS_INT *nnz);
 	extern LIS_INT lis_matrix_set_user(LIS_MATRIX A, void *user_data,
 	                                   LIS_MATRIX_USER_MATVEC matvec,
