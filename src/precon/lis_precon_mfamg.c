@@ -18,9 +18,10 @@
 #include "lislib.h"
 
 
-struct LIS_MFAMG_STRUCT
+struct LIS_MFAMG_LEVEL
 {
     LIS_MATRIX A;
+    LIS_INT owns_A;
 
     LIS_INT n;
     LIS_INT nc;
@@ -28,15 +29,24 @@ struct LIS_MFAMG_STRUCT
     LIS_INT *aggregate;
     LIS_SCALAR *prolong;
 
+    LIS_VECTOR diagonal;
+    LIS_VECTOR ax;
+};
+
+
+struct LIS_MFAMG_STRUCT
+{
+    LIS_INT nlevels;
+    struct LIS_MFAMG_LEVEL *levels;
+
+    LIS_INT coarse_n;
+
     LIS_SCALAR *coarse;
     LIS_SCALAR *lu;
     LIS_INT *pivots;
 
     LIS_SCALAR *coarse_rhs;
     LIS_SCALAR *coarse_x;
-
-    LIS_VECTOR diagonal;
-    LIS_VECTOR ax;
 
     LIS_REAL omega;
 };
@@ -46,14 +56,49 @@ static void
 lis_mfamg_state_free(
     struct LIS_MFAMG_STRUCT *state)
 {
+    LIS_INT level_id;
+
+    struct LIS_MFAMG_LEVEL *level;
+
+
     if(state==NULL)
         return;
 
-    if(state->aggregate)
-        lis_free(state->aggregate);
 
-    if(state->prolong)
-        lis_free(state->prolong);
+    if(state->levels)
+    {
+        for(
+            level_id=0;
+            level_id<state->nlevels;
+            level_id++)
+        {
+            level =
+                &state->levels[level_id];
+
+            if(level->aggregate)
+                lis_free(level->aggregate);
+
+            if(level->prolong)
+                lis_free(level->prolong);
+
+            if(level->diagonal)
+                lis_vector_destroy(level->diagonal);
+
+            if(level->ax)
+                lis_vector_destroy(level->ax);
+
+            if(
+                level->owns_A
+                &&
+                level->A)
+            {
+                lis_matrix_destroy(level->A);
+            }
+        }
+
+        lis_free(state->levels);
+    }
+
 
     if(state->coarse)
         lis_free(state->coarse);
@@ -70,11 +115,6 @@ lis_mfamg_state_free(
     if(state->coarse_x)
         lis_free(state->coarse_x);
 
-    if(state->diagonal)
-        lis_vector_destroy(state->diagonal);
-
-    if(state->ax)
-        lis_vector_destroy(state->ax);
 
     lis_free(state);
 }
@@ -449,12 +489,12 @@ lis_mfamg_dense_solve(
     memcpy(
         state->coarse_x,
         state->coarse_rhs,
-        (size_t)state->nc
+        (size_t)state->coarse_n
             *
         sizeof(LIS_SCALAR));
 
 
-    for(k=0;k<state->nc;k++)
+    for(k=0;k<state->coarse_n;k++)
     {
         p =
             state->pivots[k];
@@ -473,7 +513,7 @@ lis_mfamg_dense_solve(
     }
 
 
-    for(i=1;i<state->nc;i++)
+    for(i=1;i<state->coarse_n;i++)
     {
         sum =
             state->coarse_x[i];
@@ -482,7 +522,7 @@ lis_mfamg_dense_solve(
         {
             sum -=
                 state->lu[
-                    i*state->nc+j]
+                    i*state->coarse_n+j]
                 *
                 state->coarse_x[j];
         }
@@ -492,16 +532,16 @@ lis_mfamg_dense_solve(
     }
 
 
-    for(i=state->nc-1;i>=0;i--)
+    for(i=state->coarse_n-1;i>=0;i--)
     {
         sum =
             state->coarse_x[i];
 
-        for(j=i+1;j<state->nc;j++)
+        for(j=i+1;j<state->coarse_n;j++)
         {
             sum -=
                 state->lu[
-                    i*state->nc+j]
+                    i*state->coarse_n+j]
                 *
                 state->coarse_x[j];
         }
@@ -509,7 +549,7 @@ lis_mfamg_dense_solve(
         if(
             fabs(
                 state->lu[
-                    i*state->nc+i])
+                    i*state->coarse_n+i])
             ==
             0.0)
         {
@@ -524,7 +564,7 @@ lis_mfamg_dense_solve(
             sum
             /
             state->lu[
-                i*state->nc+i];
+                i*state->coarse_n+i];
 
         mag =
             fabs(
@@ -551,7 +591,7 @@ lis_mfamg_dense_solve(
 static LIS_INT
 lis_mfamg_build_aggregates(
     LIS_MATRIX A,
-    struct LIS_MFAMG_STRUCT *state,
+    struct LIS_MFAMG_LEVEL *level,
     LIS_INT max_row_nnz,
     LIS_INT *cols,
     LIS_SCALAR *vals)
@@ -567,18 +607,18 @@ lis_mfamg_build_aggregates(
     LIS_REAL mag;
 
 
-    for(i=0;i<state->n;i++)
-        state->aggregate[i] = -1;
+    for(i=0;i<level->n;i++)
+        level->aggregate[i] = -1;
 
 
     aggregate = 0;
 
-    for(i=0;i<state->n;i++)
+    for(i=0;i<level->n;i++)
     {
-        if(state->aggregate[i]>=0)
+        if(level->aggregate[i]>=0)
             continue;
 
-        state->aggregate[i] =
+        level->aggregate[i] =
             aggregate;
 
         best = -1;
@@ -611,11 +651,11 @@ lis_mfamg_build_aggregates(
             if(
                 j<0
                 ||
-                j>=state->n
+                j>=level->n
                 ||
                 j==i
                 ||
-                state->aggregate[j]>=0)
+                level->aggregate[j]>=0)
             {
                 continue;
             }
@@ -633,17 +673,17 @@ lis_mfamg_build_aggregates(
 
         if(best>=0)
         {
-            state->aggregate[best] =
+            level->aggregate[best] =
                 aggregate;
         }
 
         aggregate++;
     }
 
-    state->nc =
+    level->nc =
         aggregate;
 
-    if(state->nc<=0)
+    if(level->nc<=0)
         return LIS_BREAKDOWN;
 
     return LIS_SUCCESS;
@@ -655,11 +695,9 @@ lis_mfamg_build_aggregates(
 #define __FUNC__ "lis_mfamg_build_prolongation"
 static LIS_INT
 lis_mfamg_build_prolongation(
-    LIS_SOLVER solver,
-    struct LIS_MFAMG_STRUCT *state)
+    LIS_VECTOR z,
+    struct LIS_MFAMG_LEVEL *level)
 {
-    LIS_VECTOR z;
-
     LIS_REAL *norm2;
 
     LIS_INT i;
@@ -669,13 +707,9 @@ lis_mfamg_build_prolongation(
     LIS_REAL denom;
 
 
-    z =
-        solver->near_nullspace[0];
-
-
     norm2 =
         (LIS_REAL *)lis_malloc(
-            (size_t)state->nc
+            (size_t)level->nc
                 *
             sizeof(LIS_REAL),
             "lis_mfamg_build_prolongation::norm2");
@@ -683,7 +717,7 @@ lis_mfamg_build_prolongation(
     if(norm2==NULL)
     {
         LIS_SETERR_MEM(
-            (size_t)state->nc
+            (size_t)level->nc
                 *
             sizeof(LIS_REAL));
 
@@ -694,15 +728,15 @@ lis_mfamg_build_prolongation(
     memset(
         norm2,
         0,
-        (size_t)state->nc
+        (size_t)level->nc
             *
         sizeof(LIS_REAL));
 
 
-    for(i=0;i<state->n;i++)
+    for(i=0;i<level->n;i++)
     {
         a =
-            state->aggregate[i];
+            level->aggregate[i];
 
         mag =
             fabs(
@@ -745,7 +779,7 @@ lis_mfamg_build_prolongation(
     }
 
 
-    for(a=0;a<state->nc;a++)
+    for(a=0;a<level->nc;a++)
     {
         if(norm2[a]==0.0)
         {
@@ -761,10 +795,10 @@ lis_mfamg_build_prolongation(
     }
 
 
-    for(i=0;i<state->n;i++)
+    for(i=0;i<level->n;i++)
     {
         a =
-            state->aggregate[i];
+            level->aggregate[i];
 
         /*
          * LIS math macros map sqrt/fabs correctly for both
@@ -777,7 +811,7 @@ lis_mfamg_build_prolongation(
                     (LIS_SCALAR)
                     norm2[a]));
 
-        state->prolong[i] =
+        level->prolong[i] =
             z->value[i]
             /
             denom;
@@ -796,6 +830,7 @@ lis_mfamg_build_prolongation(
 static LIS_INT
 lis_mfamg_build_coarse(
     LIS_MATRIX A,
+    struct LIS_MFAMG_LEVEL *level,
     struct LIS_MFAMG_STRUCT *state,
     LIS_INT max_row_nnz,
     LIS_INT *cols,
@@ -815,20 +850,20 @@ lis_mfamg_build_coarse(
     memset(
         state->coarse,
         0,
-        (size_t)state->nc
+        (size_t)level->nc
             *
-        (size_t)state->nc
+        (size_t)level->nc
             *
         sizeof(LIS_SCALAR));
 
 
-    for(i=0;i<state->n;i++)
+    for(i=0;i<level->n;i++)
     {
         ai =
-            state->aggregate[i];
+            level->aggregate[i];
 
         pi =
-            state->prolong[i];
+            level->prolong[i];
 
         nnz =
             max_row_nnz;
@@ -857,7 +892,7 @@ lis_mfamg_build_coarse(
             if(
                 j<0
                 ||
-                j>=state->n)
+                j>=level->n)
             {
                 LIS_SETERR(
                     LIS_ERR_ILL_ARG,
@@ -867,10 +902,10 @@ lis_mfamg_build_coarse(
             }
 
             aj =
-                state->aggregate[j];
+                level->aggregate[j];
 
             state->coarse[
-                ai*state->nc
+                ai*level->nc
                 +
                 aj]
                 +=
@@ -878,7 +913,7 @@ lis_mfamg_build_coarse(
                 *
                 vals[k]
                 *
-                state->prolong[j];
+                level->prolong[j];
         }
     }
 
@@ -886,16 +921,16 @@ lis_mfamg_build_coarse(
     memcpy(
         state->lu,
         state->coarse,
-        (size_t)state->nc
+        (size_t)level->nc
             *
-        (size_t)state->nc
+        (size_t)level->nc
             *
         sizeof(LIS_SCALAR));
 
 
     return
         lis_mfamg_dense_factor(
-            state->nc,
+            level->nc,
             state->lu,
             state->pivots);
 }
@@ -909,6 +944,7 @@ lis_precon_create_mfamg(
     LIS_PRECON precon)
 {
     struct LIS_MFAMG_STRUCT *state;
+    struct LIS_MFAMG_LEVEL *level;
 
     LIS_MATRIX A;
 
@@ -1094,37 +1130,69 @@ lis_precon_create_mfamg(
         sizeof(struct LIS_MFAMG_STRUCT));
 
 
-    state->A =
+    state->nlevels =
+        1;
+
+    state->levels =
+        (struct LIS_MFAMG_LEVEL *)
+        lis_malloc(
+            sizeof(struct LIS_MFAMG_LEVEL),
+            "lis_precon_create_mfamg::levels");
+
+    if(state->levels==NULL)
+    {
+        LIS_SETERR_MEM(
+            sizeof(struct LIS_MFAMG_LEVEL));
+
+        lis_mfamg_state_free(state);
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+
+    memset(
+        state->levels,
+        0,
+        sizeof(struct LIS_MFAMG_LEVEL));
+
+
+    level =
+        &state->levels[0];
+
+    level->A =
         A;
 
-    state->n =
+    level->owns_A =
+        LIS_FALSE;
+
+    level->n =
         A->n;
 
     state->omega =
         (LIS_REAL)(2.0/3.0);
 
 
-    state->aggregate =
+    level->aggregate =
         (LIS_INT *)lis_malloc(
-            (size_t)state->n
+            (size_t)level->n
                 *
             sizeof(LIS_INT),
             "lis_precon_create_mfamg::aggregate");
 
-    state->prolong =
+    level->prolong =
         (LIS_SCALAR *)lis_malloc(
-            (size_t)state->n
+            (size_t)level->n
                 *
             sizeof(LIS_SCALAR),
             "lis_precon_create_mfamg::prolong");
 
     if(
-        state->aggregate==NULL
+        level->aggregate==NULL
         ||
-        state->prolong==NULL)
+        level->prolong==NULL)
     {
         LIS_SETERR_MEM(
-            (size_t)state->n
+            (size_t)level->n
                 *
             (
                 sizeof(LIS_INT)
@@ -1140,7 +1208,7 @@ lis_precon_create_mfamg(
 
     max_row_nnz = 0;
 
-    for(i=0;i<state->n;i++)
+    for(i=0;i<level->n;i++)
     {
         row_nnz = 0;
 
@@ -1222,7 +1290,7 @@ lis_precon_create_mfamg(
     err =
         lis_mfamg_build_aggregates(
             A,
-            state,
+            level,
             max_row_nnz,
             cols,
             vals);
@@ -1239,8 +1307,8 @@ lis_precon_create_mfamg(
 
     err =
         lis_mfamg_build_prolongation(
-            solver,
-            state);
+            solver->near_nullspace[0],
+            level);
 
     if(err)
     {
@@ -1252,12 +1320,16 @@ lis_precon_create_mfamg(
     }
 
 
+    state->coarse_n =
+        level->nc;
+
+
     if(
-        (size_t)state->nc
+        (size_t)level->nc
         >
         ((size_t)-1)
         /
-        (size_t)state->nc)
+        (size_t)level->nc)
     {
         LIS_SETERR(
             LIS_OUT_OF_MEMORY,
@@ -1272,9 +1344,9 @@ lis_precon_create_mfamg(
 
 
     coarse_entries =
-        (size_t)state->nc
+        (size_t)level->nc
             *
-        (size_t)state->nc;
+        (size_t)level->nc;
 
 
     if(
@@ -1312,21 +1384,21 @@ lis_precon_create_mfamg(
 
     state->pivots =
         (LIS_INT *)lis_malloc(
-            (size_t)state->nc
+            (size_t)level->nc
                 *
             sizeof(LIS_INT),
             "lis_precon_create_mfamg::pivots");
 
     state->coarse_rhs =
         (LIS_SCALAR *)lis_malloc(
-            (size_t)state->nc
+            (size_t)level->nc
                 *
             sizeof(LIS_SCALAR),
             "lis_precon_create_mfamg::coarse_rhs");
 
     state->coarse_x =
         (LIS_SCALAR *)lis_malloc(
-            (size_t)state->nc
+            (size_t)level->nc
                 *
             sizeof(LIS_SCALAR),
             "lis_precon_create_mfamg::coarse_x");
@@ -1354,6 +1426,7 @@ lis_precon_create_mfamg(
     err =
         lis_mfamg_build_coarse(
             A,
+            level,
             state,
             max_row_nnz,
             cols,
@@ -1372,7 +1445,7 @@ lis_precon_create_mfamg(
     err =
         lis_vector_duplicate(
             A,
-            &state->diagonal);
+            &level->diagonal);
 
     if(err)
     {
@@ -1384,7 +1457,7 @@ lis_precon_create_mfamg(
     err =
         lis_vector_duplicate(
             A,
-            &state->ax);
+            &level->ax);
 
     if(err)
     {
@@ -1396,7 +1469,7 @@ lis_precon_create_mfamg(
     err =
         lis_matrix_get_diagonal(
             A,
-            state->diagonal);
+            level->diagonal);
 
     if(err)
     {
@@ -1405,11 +1478,11 @@ lis_precon_create_mfamg(
     }
 
 
-    for(i=0;i<state->n;i++)
+    for(i=0;i<level->n;i++)
     {
         diagonal_mag =
             fabs(
-                state->diagonal->value[i]);
+                level->diagonal->value[i]);
 
         if(
             diagonal_mag!=diagonal_mag
@@ -1474,6 +1547,7 @@ lis_psolve_mfamg(
     LIS_VECTOR x)
 {
     struct LIS_MFAMG_STRUCT *state;
+    struct LIS_MFAMG_LEVEL *level;
 
     LIS_INT i;
     LIS_INT a;
@@ -1510,9 +1584,22 @@ lis_psolve_mfamg(
 
 
     if(
-        b->n!=state->n
+        state->nlevels<=0
         ||
-        x->n!=state->n)
+        state->levels==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    level =
+        &state->levels[0];
+
+
+    if(
+        b->n!=level->n
+        ||
+        x->n!=level->n)
     {
         return LIS_ERR_ILL_ARG;
     }
@@ -1525,16 +1612,16 @@ lis_psolve_mfamg(
         x->value;
 
     av =
-        state->ax->value;
+        level->ax->value;
 
     diag =
-        state->diagonal->value;
+        level->diagonal->value;
 
 
     /*
      * One weighted-Jacobi pre-smoothing step from zero.
      */
-    for(i=0;i<state->n;i++)
+    for(i=0;i<level->n;i++)
     {
         xv[i] =
             state->omega
@@ -1547,9 +1634,9 @@ lis_psolve_mfamg(
 
     err =
         lis_matvec(
-            state->A,
+            level->A,
             x,
-            state->ax);
+            level->ax);
 
     if(err)
         return err;
@@ -1558,7 +1645,7 @@ lis_psolve_mfamg(
     memset(
         state->coarse_rhs,
         0,
-        (size_t)state->nc
+        (size_t)level->nc
             *
         sizeof(LIS_SCALAR));
 
@@ -1566,7 +1653,7 @@ lis_psolve_mfamg(
     /*
      * Restriction r_c = P^H (b - A x).
      */
-    for(i=0;i<state->n;i++)
+    for(i=0;i<level->n;i++)
     {
         residual =
             bv[i]
@@ -1574,11 +1661,11 @@ lis_psolve_mfamg(
             av[i];
 
         a =
-            state->aggregate[i];
+            level->aggregate[i];
 
         state->coarse_rhs[a] +=
             conj(
-                state->prolong[i])
+                level->prolong[i])
             *
             residual;
     }
@@ -1595,13 +1682,13 @@ lis_psolve_mfamg(
     /*
      * Coarse correction x <- x + P e_c.
      */
-    for(i=0;i<state->n;i++)
+    for(i=0;i<level->n;i++)
     {
         a =
-            state->aggregate[i];
+            level->aggregate[i];
 
         xv[i] +=
-            state->prolong[i]
+            level->prolong[i]
             *
             state->coarse_x[a];
     }
@@ -1609,9 +1696,9 @@ lis_psolve_mfamg(
 
     err =
         lis_matvec(
-            state->A,
+            level->A,
             x,
-            state->ax);
+            level->ax);
 
     if(err)
         return err;
@@ -1620,7 +1707,7 @@ lis_psolve_mfamg(
     /*
      * One weighted-Jacobi post-smoothing step.
      */
-    for(i=0;i<state->n;i++)
+    for(i=0;i<level->n;i++)
     {
         residual =
             bv[i]
