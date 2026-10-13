@@ -4763,8 +4763,18 @@ lis_fgcrodr_flexible_core(
     LIS_SCALAR aa;
     LIS_SCALAR bb;
     LIS_SCALAR rr;
+
+#ifdef _COMPLEX
     LIS_SCALAR a2;
     LIS_SCALAR b2;
+#else
+    LIS_REAL aa_abs;
+    LIS_REAL bb_abs;
+    LIS_REAL givens_scale;
+    LIS_REAL givens_a;
+    LIS_REAL givens_b;
+#endif
+
     LIS_SCALAR t;
     LIS_SCALAR alpha;
     LIS_SCALAR gamma;
@@ -5284,10 +5294,65 @@ lis_fgcrodr_flexible_core(
             aa = h[ii+iih];
             bb = h[i1+iih];
 
+#ifdef _COMPLEX
+            /*
+             * Complex recycling is rejected before this core is
+             * entered.  Keep the existing expression here so the
+             * complex build remains source-compatible.
+             */
             a2 = aa*aa;
             b2 = bb*bb;
 
             rr = sqrt(a2+b2);
+#else
+            /*
+             * Scale the Euclidean norm before squaring.
+             *
+             * Direct evaluation of
+             *
+             *     sqrt(aa*aa + bb*bb)
+             *
+             * can overflow when aa or bb is large and underflow when
+             * both are small, even though the corresponding Givens
+             * rotation is perfectly representable.
+             *
+             * After division by max(|aa|,|bb|), both squared terms
+             * are bounded by one.
+             */
+            aa_abs =
+                fabs(aa);
+
+            bb_abs =
+                fabs(bb);
+
+            givens_scale =
+                (aa_abs>bb_abs)
+                ? aa_abs
+                : bb_abs;
+
+            if( givens_scale==0.0 )
+            {
+                rr =
+                    0.0;
+            }
+            else
+            {
+                givens_a =
+                    aa_abs
+                    /givens_scale;
+
+                givens_b =
+                    bb_abs
+                    /givens_scale;
+
+                rr =
+                    givens_scale
+                    *sqrt(
+                        givens_a*givens_a
+                        +
+                        givens_b*givens_b);
+            }
+#endif
 
 
             if( rr==0.0 || rr!=rr )
@@ -5457,6 +5522,42 @@ lis_fgcrodr_flexible_core(
             /h[ii+iih];
 
 
+        /*
+         * A nonzero pivot can still produce an unrepresentable
+         * reduced coefficient.  Reject it before applying Z*y to
+         * the physical solution vector.
+         */
+        if(
+            s->value[ii]!=s->value[ii] ||
+            fabs(s->value[ii])>LIS_SCALAR_MAX )
+        {
+            solver->retcode =
+                LIS_BREAKDOWN;
+
+            solver->iter =
+                iter;
+
+            solver->resid =
+                nrm2;
+
+            solver->ptime =
+                ptime;
+
+            if( bcoef )
+                lis_free(
+                    bcoef);
+
+            if( hraw )
+                lis_free(
+                    hraw);
+
+            lis_free(
+                h);
+
+            return LIS_BREAKDOWN;
+        }
+
+
         for(k=1;k<=ii;k++)
         {
             jj = ii-k;
@@ -5505,6 +5606,42 @@ lis_fgcrodr_flexible_core(
             s->value[jj] =
                 t
                 /h[jj+jj*h_dim];
+
+
+            /*
+             * Preserve x until the complete reduced solution is
+             * representable.  A finite nonzero pivot alone does
+             * not guarantee a finite quotient.
+             */
+            if(
+                s->value[jj]!=s->value[jj] ||
+                fabs(s->value[jj])>LIS_SCALAR_MAX )
+            {
+                solver->retcode =
+                    LIS_BREAKDOWN;
+
+                solver->iter =
+                    iter;
+
+                solver->resid =
+                    nrm2;
+
+                solver->ptime =
+                    ptime;
+
+                if( bcoef )
+                    lis_free(
+                        bcoef);
+
+                if( hraw )
+                    lis_free(
+                        hraw);
+
+                lis_free(
+                    h);
+
+                return LIS_BREAKDOWN;
+            }
         }
 
 

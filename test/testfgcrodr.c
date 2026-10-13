@@ -5848,6 +5848,1010 @@ fail:
 }
 
 
+#ifndef _COMPLEX
+
+static LIS_INT
+run_scaled_givens_case(
+    LIS_SCALAR scale,
+    const char *name)
+{
+    LIS_MATRIX A = NULL;
+
+    LIS_VECTOR b = NULL;
+    LIS_VECTOR x = NULL;
+
+    LIS_SOLVER solver = NULL;
+
+    LIS_INT err;
+    LIS_INT api;
+
+    LIS_REAL true_residual;
+    LIS_REAL xabs;
+
+    LIS_INT finite;
+    LIS_INT failed;
+
+
+    failed =
+        0;
+
+
+    err =
+        lis_matrix_create(
+            LIS_COMM_WORLD,
+            &A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_set_size(
+            A,
+            0,
+            1);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_set_value(
+            LIS_INS_VALUE,
+            0,
+            0,
+            scale,
+            A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_set_type(
+            A,
+            LIS_MATRIX_CSR);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_assemble(
+            A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &b);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x);
+
+    if( err )
+        goto api_fail;
+
+
+    b->value[0] =
+        (LIS_SCALAR)1.0;
+
+    x->value[0] =
+        (LIS_SCALAR)0.0;
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i fgcrodr "
+            "-p none "
+            "-scale none "
+            "-print none "
+            "-restart 4 "
+            "-maxiter 20 "
+            "-tol 1e-12 "
+            "-fgcrodr_k 1",
+            solver);
+
+    if( err )
+        goto api_fail;
+
+
+    api =
+        lis_solve(
+            A,
+            b,
+            x,
+            solver);
+
+
+    true_residual =
+        fabs(
+            (LIS_REAL)(
+                1.0
+                - scale*x->value[0]));
+
+    xabs =
+        fabs(
+            (LIS_REAL)x->value[0]);
+
+
+    finite =
+        (
+            xabs==xabs &&
+            xabs<=LIS_SCALAR_MAX
+        )
+        ? 1
+        : 0;
+
+
+    printf(
+        "FGCRO-DR scaled %-9s "
+        "scale=% .3e api=%d status=%d iter=%d "
+        "x=% .17e true=% .17e finite=%d\n",
+        name,
+        (double)scale,
+        (int)api,
+        (int)solver->retcode,
+        (int)solver->iter,
+        (double)x->value[0],
+        (double)true_residual,
+        (int)finite);
+
+
+    if(
+        api!=LIS_SUCCESS ||
+        solver->retcode!=LIS_SUCCESS ||
+        solver->iter!=1 ||
+        true_residual>1.0e-12 ||
+        !finite )
+    {
+        failed =
+            1;
+    }
+
+
+    err =
+        failed
+        ? LIS_ERR_ILL_ARG
+        : LIS_SUCCESS;
+
+    goto cleanup;
+
+
+api_fail:
+
+    fprintf(
+        stderr,
+        "FGCRO-DR scaled %s API failure: %d\n",
+        name,
+        (int)err);
+
+
+cleanup:
+
+    if( solver )
+        lis_solver_destroy(
+            solver);
+
+    if( x )
+        lis_vector_destroy(
+            x);
+
+    if( b )
+        lis_vector_destroy(
+            b);
+
+    if( A )
+        lis_matrix_destroy(
+            A);
+
+
+    return err;
+}
+
+
+static LIS_INT
+fgcrodr_backsub_create(
+    LIS_SOLVER solver,
+    LIS_PRECON precon)
+{
+    (void)solver;
+    (void)precon;
+
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+fgcrodr_backsub_psolve(
+    LIS_SOLVER solver,
+    LIS_VECTOR b,
+    LIS_VECTOR x)
+{
+    LIS_INT err;
+
+
+    (void)solver;
+
+
+    err =
+        lis_vector_copy(
+            b,
+            x);
+
+    if( err )
+        return err;
+
+
+    /*
+     * Keep the physical flexible direction finite while making
+     * the reduced triangular coefficient unrepresentable.
+     *
+     * For A = [1]:
+     *
+     *     z = 1e-310 v
+     *     H = 1e-310
+     *     y = 1 / H -> overflow
+     *
+     * The solver must detect the nonfinite reduced coefficient
+     * before applying x += Z y.
+     */
+    lis_vector_scale(
+        (LIS_SCALAR)1.0e-310,
+        x);
+
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+fgcrodr_backsub_destroy(
+    LIS_PRECON precon)
+{
+    (void)precon;
+
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+check_backsub_nonfinite_guard(void)
+{
+    LIS_MATRIX A = NULL;
+
+    LIS_VECTOR b = NULL;
+    LIS_VECTOR x = NULL;
+
+    LIS_SOLVER solver = NULL;
+
+    LIS_INT err;
+    LIS_INT api;
+
+    LIS_REAL xabs;
+    LIS_REAL true_residual;
+
+    LIS_INT finite;
+    LIS_INT failed;
+
+
+    failed =
+        0;
+
+
+    err =
+        lis_precon_register_ex(
+            "fgc2ic",
+            fgcrodr_backsub_create,
+            fgcrodr_backsub_psolve,
+            fgcrodr_backsub_psolve,
+            fgcrodr_backsub_destroy);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_create(
+            LIS_COMM_WORLD,
+            &A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_set_size(
+            A,
+            0,
+            1);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_set_value(
+            LIS_INS_VALUE,
+            0,
+            0,
+            (LIS_SCALAR)1.0,
+            A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_set_type(
+            A,
+            LIS_MATRIX_CSR);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_assemble(
+            A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &b);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x);
+
+    if( err )
+        goto api_fail;
+
+
+    b->value[0] =
+        (LIS_SCALAR)1.0;
+
+    x->value[0] =
+        (LIS_SCALAR)0.0;
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i fgcrodr "
+            "-p fgc2ic "
+            "-scale none "
+            "-print none "
+            "-restart 4 "
+            "-maxiter 20 "
+            "-tol 1e-12 "
+            "-fgcrodr_k 1",
+            solver);
+
+    if( err )
+        goto api_fail;
+
+
+    api =
+        lis_solve(
+            A,
+            b,
+            x,
+            solver);
+
+
+    xabs =
+        fabs(
+            (LIS_REAL)x->value[0]);
+
+
+    finite =
+        (
+            xabs==xabs &&
+            xabs<=LIS_SCALAR_MAX
+        )
+        ? 1
+        : 0;
+
+
+    if( finite )
+    {
+        true_residual =
+            fabs(
+                1.0
+                -
+                (LIS_REAL)x->value[0]);
+    }
+    else
+    {
+        true_residual =
+            LIS_SCALAR_MAX;
+    }
+
+
+    printf(
+        "FGCRO-DR backsub nonfinite "
+        "api=%d status=%d iter=%d "
+        "x=% .17e finite=%d true=% .17e\n",
+        (int)api,
+        (int)solver->retcode,
+        (int)solver->iter,
+        (double)x->value[0],
+        (int)finite,
+        (double)true_residual);
+
+
+    /*
+     * lis_solve() reports API execution success while the solver
+     * status carries the numerical breakdown.
+     *
+     * Most importantly, x must remain untouched and finite.
+     */
+    if(
+        api!=LIS_SUCCESS ||
+        solver->retcode!=LIS_BREAKDOWN ||
+        !finite ||
+        xabs!=0.0 ||
+        true_residual!=1.0 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR BACKSUB NONFINITE GUARD FAILED\n");
+
+        failed =
+            1;
+    }
+
+
+    if( !failed )
+    {
+        printf(
+            "FGCRO-DR BACKSUB NONFINITE GUARD PASSED\n");
+    }
+
+
+    err =
+        failed
+        ? LIS_ERR_ILL_ARG
+        : LIS_SUCCESS;
+
+    goto cleanup;
+
+
+api_fail:
+
+    fprintf(
+        stderr,
+        "FGCRO-DR backsub nonfinite API failure: %d\n",
+        (int)err);
+
+
+cleanup:
+
+    if( solver )
+        lis_solver_destroy(
+            solver);
+
+    if( x )
+        lis_vector_destroy(
+            x);
+
+    if( b )
+        lis_vector_destroy(
+            b);
+
+    if( A )
+        lis_matrix_destroy(
+            A);
+
+
+    return err;
+}
+
+
+static LIS_INT
+fgcrodr_backsub_earlier_psolve_count = 0;
+
+
+static LIS_INT
+fgcrodr_backsub_earlier_create(
+    LIS_SOLVER solver,
+    LIS_PRECON precon)
+{
+    (void)solver;
+    (void)precon;
+
+
+    fgcrodr_backsub_earlier_psolve_count =
+        0;
+
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+fgcrodr_backsub_earlier_psolve(
+    LIS_SOLVER solver,
+    LIS_VECTOR b,
+    LIS_VECTOR x)
+{
+    LIS_INT err;
+
+
+    (void)solver;
+
+
+    fgcrodr_backsub_earlier_psolve_count++;
+
+
+    if(
+        fgcrodr_backsub_earlier_psolve_count
+        ==
+        1 )
+    {
+        /*
+         * Initial Arnoldi vector is e0.
+         *
+         * Use
+         *
+         *     z0 = 1e-308 * e0.
+         *
+         * With the matrix used by the regression:
+         *
+         *     A*z0 ~= e1.
+         *
+         * The first rotated diagonal is therefore O(1), so this
+         * case must continue into a second Arnoldi iteration.
+         */
+        err =
+            lis_vector_set_all(
+                (LIS_SCALAR)0.0,
+                x);
+
+        if( err )
+            return err;
+
+
+        if( x->n<2 )
+            return LIS_ERR_ILL_ARG;
+
+
+        x->value[0] =
+            (LIS_SCALAR)1.0e-308;
+
+
+        return LIS_SUCCESS;
+    }
+
+
+    /*
+     * At the second Arnoldi iteration v1=e1.
+     *
+     * Identity gives z1=e1.  The reduced triangular system then
+     * has a finite final coefficient y1 but an unrepresentable
+     * earlier coefficient y0.
+     */
+    return
+        lis_vector_copy(
+            b,
+            x);
+}
+
+
+static LIS_INT
+fgcrodr_backsub_earlier_destroy(
+    LIS_PRECON precon)
+{
+    (void)precon;
+
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+check_backsub_earlier_coefficient_guard(void)
+{
+    LIS_MATRIX A = NULL;
+
+    LIS_VECTOR b = NULL;
+    LIS_VECTOR x = NULL;
+
+    LIS_SOLVER solver = NULL;
+
+    LIS_INT err;
+    LIS_INT api;
+
+    LIS_REAL x0abs;
+    LIS_REAL x1abs;
+
+    LIS_INT finite;
+    LIS_INT failed;
+
+
+    failed =
+        0;
+
+
+    err =
+        lis_precon_register_ex(
+            "fgc2ic4",
+            fgcrodr_backsub_earlier_create,
+            fgcrodr_backsub_earlier_psolve,
+            fgcrodr_backsub_earlier_psolve,
+            fgcrodr_backsub_earlier_destroy);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_create(
+            LIS_COMM_WORLD,
+            &A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_set_size(
+            A,
+            0,
+            2);
+
+    if( err )
+        goto api_fail;
+
+
+    /*
+     * A =
+     *
+     *     [ 0      0.5   ]
+     *     [ 1e308  1e308 ]
+     *
+     * The matrix is nonsingular:
+     *
+     *     det(A) = -0.5e308.
+     *
+     * For b=[1,0], the exact physical solution is [-2,2].
+     *
+     * The flexible directions are deliberately chosen so the
+     * reduced solve instead reaches
+     *
+     *     R00 ~= 1
+     *     R01 ~= 1e308
+     *     R11 ~= -0.5
+     *
+     * with finite y1 but overflowing earlier y0.
+     */
+
+    err =
+        lis_matrix_set_value(
+            LIS_INS_VALUE,
+            0,
+            1,
+            (LIS_SCALAR)0.5,
+            A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_set_value(
+            LIS_INS_VALUE,
+            1,
+            0,
+            (LIS_SCALAR)1.0e308,
+            A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_set_value(
+            LIS_INS_VALUE,
+            1,
+            1,
+            (LIS_SCALAR)1.0e308,
+            A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_set_type(
+            A,
+            LIS_MATRIX_CSR);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_assemble(
+            A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &b);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x);
+
+    if( err )
+        goto api_fail;
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        b);
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x);
+
+
+    b->value[0] =
+        (LIS_SCALAR)1.0;
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i fgcrodr "
+            "-p fgc2ic4 "
+            "-scale none "
+            "-print none "
+            "-restart 4 "
+            "-maxiter 20 "
+            "-tol 1e-12 "
+            "-fgcrodr_k 1",
+            solver);
+
+    if( err )
+        goto api_fail;
+
+
+    api =
+        lis_solve(
+            A,
+            b,
+            x,
+            solver);
+
+
+    x0abs =
+        fabs(
+            (LIS_REAL)x->value[0]);
+
+    x1abs =
+        fabs(
+            (LIS_REAL)x->value[1]);
+
+
+    finite =
+        (
+            x0abs==x0abs &&
+            x1abs==x1abs &&
+            x0abs<=LIS_SCALAR_MAX &&
+            x1abs<=LIS_SCALAR_MAX
+        )
+        ? 1
+        : 0;
+
+
+    printf(
+        "FGCRO-DR backsub earlier "
+        "api=%d status=%d iter=%d psolve=%d "
+        "x=[% .17e,% .17e] finite=%d\n",
+        (int)api,
+        (int)solver->retcode,
+        (int)solver->iter,
+        (int)fgcrodr_backsub_earlier_psolve_count,
+        (double)x->value[0],
+        (double)x->value[1],
+        (int)finite);
+
+
+    /*
+     * iter=2 and psolve=2 prove that the first reduced
+     * coefficient was accepted and the failure occurred only
+     * while back-substituting the earlier coefficient.
+     *
+     * x must remain untouched.
+     */
+    if(
+        api!=LIS_SUCCESS ||
+        solver->retcode!=LIS_BREAKDOWN ||
+        solver->iter!=2 ||
+        fgcrodr_backsub_earlier_psolve_count!=2 ||
+        !finite ||
+        x0abs!=0.0 ||
+        x1abs!=0.0 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR BACKSUB EARLIER-COEFFICIENT GUARD FAILED\n");
+
+        failed =
+            1;
+    }
+
+
+    if( !failed )
+    {
+        printf(
+            "FGCRO-DR BACKSUB EARLIER-COEFFICIENT GUARD PASSED\n");
+    }
+
+
+    err =
+        failed
+        ? LIS_ERR_ILL_ARG
+        : LIS_SUCCESS;
+
+    goto cleanup;
+
+
+api_fail:
+
+    fprintf(
+        stderr,
+        "FGCRO-DR backsub earlier API failure: %d\n",
+        (int)err);
+
+
+cleanup:
+
+    if( solver )
+        lis_solver_destroy(
+            solver);
+
+    if( x )
+        lis_vector_destroy(
+            x);
+
+    if( b )
+        lis_vector_destroy(
+            b);
+
+    if( A )
+        lis_matrix_destroy(
+            A);
+
+
+    return err;
+}
+
+
+static LIS_INT
+check_scaled_givens_robustness(void)
+{
+    LIS_INT err;
+
+    LIS_INT failed;
+
+
+    failed =
+        0;
+
+
+    /*
+     * Direct evaluation of
+     *
+     *     sqrt(a*a + b*b)
+     *
+     * in the Givens construction can overflow or underflow even
+     * when the rotation and the linear-system solution are finite.
+     *
+     * Both systems below are nonsingular:
+     *
+     *     1e+200 * x = 1  ->  x = 1e-200
+     *     1e-200 * x = 1  ->  x = 1e+200
+     */
+
+    err =
+        run_scaled_givens_case(
+            (LIS_SCALAR)1.0e200,
+            "overflow");
+
+    if( err!=LIS_SUCCESS )
+    {
+        failed =
+            1;
+    }
+
+
+    err =
+        run_scaled_givens_case(
+            (LIS_SCALAR)1.0e-200,
+            "underflow");
+
+    if( err!=LIS_SUCCESS )
+    {
+        failed =
+            1;
+    }
+
+
+    if( failed )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR SCALED GIVENS ROBUSTNESS FAILED\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    printf(
+        "FGCRO-DR SCALED GIVENS ROBUSTNESS PASSED\n");
+
+
+    return LIS_SUCCESS;
+}
+
+#endif
+
+
 static LIS_INT
 check_small_dimension_and_restart_guard(void)
 {
@@ -6986,6 +7990,34 @@ cleanup:
     {
         failed = 1;
     }
+
+
+#ifndef _COMPLEX
+    if(
+        check_scaled_givens_robustness()
+        !=LIS_SUCCESS )
+    {
+        failed = 1;
+    }
+#endif
+
+
+#ifndef _COMPLEX
+    if(
+        check_backsub_nonfinite_guard()
+        !=LIS_SUCCESS )
+    {
+        failed = 1;
+    }
+
+
+    if(
+        check_backsub_earlier_coefficient_guard()
+        !=LIS_SUCCESS )
+    {
+        failed = 1;
+    }
+#endif
 
 
     lis_finalize();
