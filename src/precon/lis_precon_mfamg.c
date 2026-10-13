@@ -918,19 +918,340 @@ lis_mfamg_build_coarse(
     }
 
 
-    memcpy(
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_mfamg_create_csr_from_dense"
+static LIS_INT
+lis_mfamg_create_csr_from_dense(
+    LIS_Comm comm,
+    LIS_INT n,
+    LIS_SCALAR *dense,
+    struct LIS_MFAMG_LEVEL *level)
+{
+    LIS_MATRIX A;
+
+    LIS_INT *ptr;
+    LIS_INT *index;
+    LIS_SCALAR *value;
+
+    LIS_INT i;
+    LIS_INT j;
+    LIS_INT k;
+    LIS_INT nnz;
+    LIS_INT err;
+
+    size_t pos;
+    size_t nnz_size;
+
+    LIS_SCALAR aij;
+
+
+    if(
+        n<=0
+        ||
+        dense==NULL
+        ||
+        level==NULL
+        ||
+        level->A!=NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    A = NULL;
+    ptr = NULL;
+    index = NULL;
+    value = NULL;
+
+    nnz_size = 0;
+
+
+    for(i=0;i<n;i++)
+    {
+        for(j=0;j<n;j++)
+        {
+            pos =
+                (size_t)i
+                    *
+                (size_t)n
+                    +
+                (size_t)j;
+
+            aij =
+                dense[pos];
+
+            if(aij!=(LIS_SCALAR)0.0)
+                nnz_size++;
+        }
+    }
+
+
+    if(nnz_size==0)
+    {
+        LIS_SETERR(
+            LIS_BREAKDOWN,
+            "MFAMG coarse CSR matrix has no entries\n");
+
+        return LIS_BREAKDOWN;
+    }
+
+
+    nnz =
+        (LIS_INT)nnz_size;
+
+    if(
+        nnz<0
+        ||
+        (size_t)nnz!=nnz_size)
+    {
+        LIS_SETERR(
+            LIS_OUT_OF_MEMORY,
+            "MFAMG coarse CSR nonzero count overflow\n");
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+
+    err =
+        lis_matrix_create(
+            comm,
+            &A);
+
+    if(err)
+        return err;
+
+
+    err =
+        lis_matrix_set_size(
+            A,
+            n,
+            n);
+
+    if(err)
+    {
+        lis_matrix_destroy(A);
+        return err;
+    }
+
+
+    err =
+        lis_matrix_malloc_csr(
+            n,
+            nnz,
+            &ptr,
+            &index,
+            &value);
+
+    if(err)
+    {
+        lis_matrix_destroy(A);
+        return err;
+    }
+
+
+    k = 0;
+    ptr[0] = 0;
+
+    for(i=0;i<n;i++)
+    {
+        for(j=0;j<n;j++)
+        {
+            pos =
+                (size_t)i
+                    *
+                (size_t)n
+                    +
+                (size_t)j;
+
+            aij =
+                dense[pos];
+
+            if(aij==(LIS_SCALAR)0.0)
+                continue;
+
+            index[k] =
+                j;
+
+            value[k] =
+                aij;
+
+            k++;
+        }
+
+        ptr[i+1] =
+            k;
+    }
+
+
+    if(k!=nnz)
+    {
+        lis_free(ptr);
+        lis_free(index);
+        lis_free(value);
+        lis_matrix_destroy(A);
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    err =
+        lis_matrix_set_csr(
+            nnz,
+            ptr,
+            index,
+            value,
+            A);
+
+    if(err)
+    {
+        lis_free(ptr);
+        lis_free(index);
+        lis_free(value);
+        lis_matrix_destroy(A);
+
+        return err;
+    }
+
+
+    /*
+     * Ownership of ptr/index/value now belongs to A.
+     */
+    ptr = NULL;
+    index = NULL;
+    value = NULL;
+
+
+    err =
+        lis_matrix_assemble(A);
+
+    if(err)
+    {
+        lis_matrix_destroy(A);
+        return err;
+    }
+
+
+    if(
+        A->matrix_type!=LIS_MATRIX_CSR
+        ||
+        A->n!=n
+        ||
+        A->gn!=n)
+    {
+        lis_matrix_destroy(A);
+
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "MFAMG internal coarse CSR matrix is inconsistent\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    level->A =
+        A;
+
+    level->owns_A =
+        LIS_TRUE;
+
+    level->n =
+        n;
+
+    level->nc =
+        0;
+
+
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_mfamg_factor_csr_terminal"
+static LIS_INT
+lis_mfamg_factor_csr_terminal(
+    LIS_MATRIX A,
+    struct LIS_MFAMG_STRUCT *state)
+{
+    LIS_INT i;
+    LIS_INT j;
+    LIS_INT p;
+
+    size_t pos;
+
+
+    if(
+        A==NULL
+        ||
+        state==NULL
+        ||
+        A->matrix_type!=LIS_MATRIX_CSR
+        ||
+        A->n!=state->coarse_n
+        ||
+        state->coarse_n<=0
+        ||
+        state->lu==NULL
+        ||
+        state->pivots==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    memset(
         state->lu,
-        state->coarse,
-        (size_t)level->nc
+        0,
+        (size_t)state->coarse_n
             *
-        (size_t)level->nc
+        (size_t)state->coarse_n
             *
         sizeof(LIS_SCALAR));
 
 
+    for(i=0;i<A->n;i++)
+    {
+        for(
+            p=A->ptr[i];
+            p<A->ptr[i+1];
+            p++)
+        {
+            j =
+                A->index[p]
+                    -
+                A->is;
+
+            if(
+                j<0
+                ||
+                j>=state->coarse_n)
+            {
+                LIS_SETERR(
+                    LIS_ERR_ILL_ARG,
+                    "MFAMG internal coarse CSR contains a nonlocal column\n");
+
+                return LIS_ERR_ILL_ARG;
+            }
+
+            pos =
+                (size_t)i
+                    *
+                (size_t)state->coarse_n
+                    +
+                (size_t)j;
+
+            state->lu[pos] +=
+                A->value[p];
+        }
+    }
+
+
     return
         lis_mfamg_dense_factor(
-            level->nc,
+            state->coarse_n,
             state->lu,
             state->pivots);
 }
@@ -945,6 +1266,7 @@ lis_precon_create_mfamg(
 {
     struct LIS_MFAMG_STRUCT *state;
     struct LIS_MFAMG_LEVEL *level;
+    struct LIS_MFAMG_LEVEL *coarse_level;
 
     LIS_MATRIX A;
 
@@ -1131,17 +1453,21 @@ lis_precon_create_mfamg(
 
 
     state->nlevels =
-        1;
+        2;
 
     state->levels =
         (struct LIS_MFAMG_LEVEL *)
         lis_malloc(
+            (size_t)state->nlevels
+                *
             sizeof(struct LIS_MFAMG_LEVEL),
             "lis_precon_create_mfamg::levels");
 
     if(state->levels==NULL)
     {
         LIS_SETERR_MEM(
+            (size_t)state->nlevels
+                *
             sizeof(struct LIS_MFAMG_LEVEL));
 
         lis_mfamg_state_free(state);
@@ -1153,11 +1479,17 @@ lis_precon_create_mfamg(
     memset(
         state->levels,
         0,
+        (size_t)state->nlevels
+            *
         sizeof(struct LIS_MFAMG_LEVEL));
 
 
     level =
         &state->levels[0];
+
+    coarse_level =
+        &state->levels[1];
+
 
     level->A =
         A;
@@ -1434,6 +1766,32 @@ lis_precon_create_mfamg(
 
     lis_free(vals);
     lis_free(cols);
+
+    if(err)
+    {
+        lis_mfamg_state_free(state);
+        return err;
+    }
+
+
+    err =
+        lis_mfamg_create_csr_from_dense(
+            A->comm,
+            state->coarse_n,
+            state->coarse,
+            coarse_level);
+
+    if(err)
+    {
+        lis_mfamg_state_free(state);
+        return err;
+    }
+
+
+    err =
+        lis_mfamg_factor_csr_terminal(
+            coarse_level->A,
+            state);
 
     if(err)
     {
