@@ -1,6 +1,8 @@
 #include <math.h>
 #include <stdio.h>
 
+#include <string.h>
+
 #include "lislib.h"
 
 
@@ -44,6 +46,24 @@ lis_precon_mfamg_get_distributed_prolongation_info(
     LIS_INT *global_nc,
     LIS_SCALAR *fine_prolong,
     LIS_SCALAR *coarse_z);
+
+
+extern LIS_INT
+lis_precon_mfamg_get_distributed_hierarchy_info(
+    LIS_MATRIX A,
+    LIS_VECTOR z,
+    LIS_INT level_capacity,
+    LIS_INT terminal_row_capacity,
+    LIS_INT terminal_nnz_capacity,
+    LIS_INT *nlevels,
+    LIS_INT *local_n,
+    LIS_INT *global_n,
+    LIS_INT *owns_A,
+    LIS_INT *terminal_np,
+    LIS_INT *terminal_nnz,
+    LIS_INT *terminal_row,
+    LIS_INT *terminal_global_cols,
+    LIS_SCALAR *terminal_values);
 
 
 extern LIS_INT
@@ -2437,6 +2457,486 @@ reduce_result:
 
 
 static int
+check_mfamg_distributed_hierarchy(
+    LIS_MATRIX A,
+    int rank,
+    int nprocs)
+{
+    LIS_VECTOR z;
+
+    LIS_INT local_n[8];
+    LIS_INT global_n[8];
+    LIS_INT owns_A[8];
+
+    LIS_INT row[TEST_N+1];
+    LIS_INT global_cols[3*TEST_N];
+    LIS_SCALAR values[3*TEST_N];
+
+    LIS_INT nlevels;
+    LIS_INT terminal_np;
+    LIS_INT terminal_nnz;
+
+    LIS_INT global_terminal_nnz;
+
+    LIS_INT i;
+    LIS_INT p;
+    LIS_INT global_row;
+    LIS_INT col;
+
+    LIS_INT expected_nnz;
+
+    LIS_INT seen_left;
+    LIS_INT seen_diag;
+    LIS_INT seen_right;
+
+    LIS_INT boundary_local;
+    LIS_INT boundary_hits;
+
+    LIS_SCALAR expected;
+    LIS_REAL diff;
+
+    LIS_INT err;
+
+    int local_failed;
+    int global_failed;
+
+
+    z = NULL;
+
+    nlevels = 0;
+    terminal_np = 0;
+    terminal_nnz = 0;
+
+    global_terminal_nnz = 0;
+
+    boundary_local = 0;
+    boundary_hits = 0;
+
+    local_failed = 0;
+    global_failed = 0;
+
+
+    memset(
+        local_n,
+        0,
+        sizeof(local_n));
+
+    memset(
+        global_n,
+        0,
+        sizeof(global_n));
+
+    memset(
+        owns_A,
+        0,
+        sizeof(owns_A));
+
+
+    if(
+        A==NULL
+        ||
+        nprocs!=2
+        ||
+        TEST_N!=24
+        ||
+        A->n!=12
+        ||
+        A->gn!=24)
+    {
+        local_failed = 1;
+        goto reduce_result;
+    }
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &z);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto reduce_result;
+    }
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)1.0,
+        z);
+
+
+    err =
+        lis_precon_mfamg_get_distributed_hierarchy_info(
+            A,
+            z,
+            8,
+            TEST_N+1,
+            3*TEST_N,
+            &nlevels,
+            local_n,
+            global_n,
+            owns_A,
+            &terminal_np,
+            &terminal_nnz,
+            row,
+            global_cols,
+            values);
+
+    if(err)
+    {
+        fprintf(
+            stderr,
+            "MPI hierarchy query failed on rank %d rc=%d\n",
+            rank,
+            (int)err);
+
+        local_failed = 1;
+        terminal_nnz = 0;
+
+        goto reduce_result;
+    }
+
+
+    if(
+        nlevels!=3
+        ||
+        local_n[0]!=12
+        ||
+        local_n[1]!=6
+        ||
+        local_n[2]!=3
+        ||
+        global_n[0]!=24
+        ||
+        global_n[1]!=12
+        ||
+        global_n[2]!=6
+        ||
+        owns_A[0]!=0
+        ||
+        owns_A[1]!=1
+        ||
+        owns_A[2]!=1)
+    {
+        fprintf(
+            stderr,
+            "MPI hierarchy metadata mismatch on rank %d: "
+            "nlevels=%d local=%d,%d,%d global=%d,%d,%d "
+            "owns=%d,%d,%d\n",
+            rank,
+            (int)nlevels,
+            (int)local_n[0],
+            (int)local_n[1],
+            (int)local_n[2],
+            (int)global_n[0],
+            (int)global_n[1],
+            (int)global_n[2],
+            (int)owns_A[0],
+            (int)owns_A[1],
+            (int)owns_A[2]);
+
+        local_failed = 1;
+    }
+
+
+    if(
+        terminal_np!=4
+        ||
+        terminal_nnz!=8
+        ||
+        row[0]!=0
+        ||
+        row[3]!=8)
+    {
+        fprintf(
+            stderr,
+            "MPI terminal metadata mismatch on rank %d: "
+            "np=%d nnz=%d row0=%d row3=%d\n",
+            rank,
+            (int)terminal_np,
+            (int)terminal_nnz,
+            (int)row[0],
+            (int)row[3]);
+
+        local_failed = 1;
+    }
+
+
+    if(
+        nlevels==3
+        &&
+        local_n[2]==3
+        &&
+        global_n[2]==6)
+    {
+        for(i=0;i<3;i++)
+        {
+            global_row =
+                3*rank
+                +
+                i;
+
+            expected_nnz =
+                (
+                    global_row==0
+                    ||
+                    global_row==5
+                )
+                ?
+                2
+                :
+                3;
+
+
+            if(
+                row[i+1]-row[i]
+                !=
+                expected_nnz)
+            {
+                fprintf(
+                    stderr,
+                    "MPI terminal row nnz mismatch rank=%d "
+                    "row=%d got=%d expected=%d\n",
+                    rank,
+                    (int)global_row,
+                    (int)(
+                        row[i+1]
+                        -
+                        row[i]),
+                    (int)expected_nnz);
+
+                local_failed = 1;
+            }
+
+
+            seen_left = 0;
+            seen_diag = 0;
+            seen_right = 0;
+
+
+            for(
+                p=row[i];
+                p<row[i+1];
+                p++)
+            {
+                col =
+                    global_cols[p];
+
+
+                if(col==global_row)
+                {
+                    expected =
+                        (LIS_SCALAR)0.5;
+
+                    seen_diag++;
+                }
+                else if(
+                    global_row>0
+                    &&
+                    col==global_row-1)
+                {
+                    expected =
+                        (LIS_SCALAR)-0.25;
+
+                    seen_left++;
+
+
+                    if(
+                        global_row==3
+                        &&
+                        col==2)
+                    {
+                        boundary_local = 1;
+                    }
+                }
+                else if(
+                    global_row<5
+                    &&
+                    col==global_row+1)
+                {
+                    expected =
+                        (LIS_SCALAR)-0.25;
+
+                    seen_right++;
+
+
+                    if(
+                        global_row==2
+                        &&
+                        col==3)
+                    {
+                        boundary_local = 1;
+                    }
+                }
+                else
+                {
+                    fprintf(
+                        stderr,
+                        "MPI terminal unexpected column rank=%d "
+                        "row=%d col=%d value=%.16e\n",
+                        rank,
+                        (int)global_row,
+                        (int)col,
+                        (double)values[p]);
+
+                    local_failed = 1;
+                    continue;
+                }
+
+
+                diff =
+                    fabs(
+                        values[p]
+                        -
+                        expected);
+
+
+                if(diff>MATCH_TOL)
+                {
+                    fprintf(
+                        stderr,
+                        "MPI terminal value mismatch rank=%d "
+                        "row=%d col=%d got=%.16e expected=%.16e "
+                        "diff=%.3e\n",
+                        rank,
+                        (int)global_row,
+                        (int)col,
+                        (double)values[p],
+                        (double)expected,
+                        (double)diff);
+
+                    local_failed = 1;
+                }
+            }
+
+
+            if(seen_diag!=1)
+                local_failed = 1;
+
+            if(
+                global_row>0
+                &&
+                seen_left!=1)
+            {
+                local_failed = 1;
+            }
+
+            if(
+                global_row==0
+                &&
+                seen_left!=0)
+            {
+                local_failed = 1;
+            }
+
+            if(
+                global_row<5
+                &&
+                seen_right!=1)
+            {
+                local_failed = 1;
+            }
+
+            if(
+                global_row==5
+                &&
+                seen_right!=0)
+            {
+                local_failed = 1;
+            }
+        }
+    }
+
+
+    if(boundary_local!=1)
+    {
+        fprintf(
+            stderr,
+            "MPI terminal boundary coupling missing on rank %d\n",
+            rank);
+
+        local_failed = 1;
+    }
+
+
+reduce_result:
+
+#ifdef USE_MPI
+
+    MPI_Allreduce(
+        &terminal_nnz,
+        &global_terminal_nnz,
+        1,
+        LIS_MPI_INT,
+        MPI_SUM,
+        LIS_COMM_WORLD);
+
+    MPI_Allreduce(
+        &boundary_local,
+        &boundary_hits,
+        1,
+        LIS_MPI_INT,
+        MPI_SUM,
+        LIS_COMM_WORLD);
+
+    MPI_Allreduce(
+        &local_failed,
+        &global_failed,
+        1,
+        MPI_INT,
+        MPI_MAX,
+        LIS_COMM_WORLD);
+
+#else
+
+    global_terminal_nnz =
+        terminal_nnz;
+
+    boundary_hits =
+        boundary_local;
+
+    global_failed =
+        local_failed;
+
+#endif
+
+
+    if(
+        global_terminal_nnz!=16
+        ||
+        boundary_hits!=2)
+    {
+        global_failed = 1;
+    }
+
+
+    if(rank==0)
+    {
+        printf(
+            "MPI_DISTRIBUTED_HIERARCHY=%s "
+            "ranks=%d levels=%d global=24,12,6 "
+            "local=12,6,3 terminal_nnz=%d boundary_edges=%d\n",
+            global_failed
+            ?
+            "FAILED"
+            :
+            "PASSED",
+            nprocs,
+            (int)nlevels,
+            (int)global_terminal_nnz,
+            (int)boundary_hits);
+    }
+
+
+    if(z)
+        lis_vector_destroy(z);
+
+
+    return global_failed;
+}
+
+
+static int
 check_mfamg_distributed_galerkin(
     LIS_MATRIX A,
     int rank,
@@ -3101,6 +3601,13 @@ run_mpi_rejection(
 
     row_failed |=
         check_mfamg_distributed_prolongation(
+            A,
+            rank,
+            nprocs);
+
+
+    row_failed |=
+        check_mfamg_distributed_hierarchy(
             A,
             rank,
             nprocs);

@@ -2663,6 +2663,12 @@ lis_mfamg_build_coarse_nullspace(
 }
 
 
+static LIS_INT
+lis_mfamg_build_distributed_coarse(
+    LIS_MATRIX A,
+    struct LIS_MFAMG_LEVEL *level,
+    LIS_MATRIX *coarse_A);
+
 #undef __FUNC__
 #define __FUNC__ "lis_mfamg_extend_hierarchy"
 static LIS_INT
@@ -2675,6 +2681,8 @@ lis_mfamg_extend_hierarchy(
 
     LIS_VECTOR current_z;
     LIS_VECTOR next_z;
+
+    LIS_MATRIX distributed_Ac;
 
     LIS_INT level_id;
     LIS_INT max_row_nnz;
@@ -2708,6 +2716,8 @@ lis_mfamg_extend_hierarchy(
 
     current_z = NULL;
     next_z = NULL;
+    distributed_Ac = NULL;
+
     cols = NULL;
     vals = NULL;
     dense = NULL;
@@ -2727,10 +2737,15 @@ lis_mfamg_extend_hierarchy(
     level_id = 1;
 
 
+    /*
+     * Use the global matrix size as the hierarchy stop
+     * criterion.  In serial A->gn == A->n, so the existing
+     * serial hierarchy remains unchanged.
+     */
     while(
         level_id<state->level_capacity-1
         &&
-        state->levels[level_id].n
+        state->levels[level_id].A->gn
             >
         LIS_MFAMG_COARSE_LIMIT)
     {
@@ -2739,6 +2754,18 @@ lis_mfamg_extend_hierarchy(
 
         next_level =
             &state->levels[level_id+1];
+
+
+        if(
+            level->A==NULL
+            ||
+            level->A->n!=level->n
+            ||
+            level->A->gn<=0)
+        {
+            err = LIS_ERR_ILL_ARG;
+            goto fail;
+        }
 
 
         max_row_nnz = 0;
@@ -2817,7 +2844,10 @@ lis_mfamg_extend_hierarchy(
             goto fail;
 
 
-        if(level->nc>=level->n)
+        if(
+            level->nc<=0
+            ||
+            level->nc>=level->n)
         {
             lis_free(
                 level->aggregate);
@@ -2871,85 +2901,161 @@ lis_mfamg_extend_hierarchy(
             goto fail;
 
 
-        if(
-            (size_t)level->nc
-            >
-            ((size_t)-1)
-            /
-            (size_t)level->nc)
+        if(level->A->nprocs>1)
         {
-            LIS_SETERR(
-                LIS_OUT_OF_MEMORY,
-                "MFAMG hierarchy coarse dimension overflow\n");
+            /*
+             * Distributed path:
+             *
+             *   local aggregates
+             *        |
+             *        v
+             *   global aggregate ownership
+             *        |
+             *        v
+             *   halo tentative prolongation
+             *        |
+             *        v
+             *   distributed sparse P^H A P
+             */
+            err =
+                lis_mfamg_build_distributed_aggregate_metadata(
+                    level->A,
+                    level);
 
-            err = LIS_OUT_OF_MEMORY;
-            goto fail;
+            if(err)
+                goto fail;
+
+
+            err =
+                lis_mfamg_build_distributed_prolongation(
+                    level->A,
+                    level);
+
+            if(err)
+                goto fail;
+
+
+            distributed_Ac = NULL;
+
+            err =
+                lis_mfamg_build_distributed_coarse(
+                    level->A,
+                    level,
+                    &distributed_Ac);
+
+            if(err)
+                goto fail;
+
+
+            if(
+                distributed_Ac==NULL
+                ||
+                distributed_Ac->n!=level->nc
+                ||
+                distributed_Ac->gn!=level->global_nc)
+            {
+                err = LIS_ERR_ILL_ARG;
+                goto fail;
+            }
+
+
+            next_level->A =
+                distributed_Ac;
+
+            next_level->owns_A =
+                LIS_TRUE;
+
+            next_level->n =
+                distributed_Ac->n;
+
+            distributed_Ac = NULL;
         }
-
-
-        dense_entries =
-            (size_t)level->nc
-                *
-            (size_t)level->nc;
-
-
-        if(
-            dense_entries
-            >
-            ((size_t)-1)
-            /
-            sizeof(LIS_SCALAR))
+        else
         {
-            LIS_SETERR(
-                LIS_OUT_OF_MEMORY,
-                "MFAMG hierarchy coarse allocation overflow\n");
+            /*
+             * Preserve the existing serial dense Galerkin
+             * construction exactly.
+             */
+            if(
+                (size_t)level->nc
+                >
+                ((size_t)-1)
+                /
+                (size_t)level->nc)
+            {
+                LIS_SETERR(
+                    LIS_OUT_OF_MEMORY,
+                    "MFAMG hierarchy coarse dimension overflow\n");
 
-            err = LIS_OUT_OF_MEMORY;
-            goto fail;
-        }
+                err = LIS_OUT_OF_MEMORY;
+                goto fail;
+            }
 
 
-        dense =
-            (LIS_SCALAR *)lis_malloc(
-                dense_entries
+            dense_entries =
+                (size_t)level->nc
                     *
-                sizeof(LIS_SCALAR),
-                "lis_mfamg_extend_hierarchy::dense");
+                (size_t)level->nc;
 
-        if(dense==NULL)
-        {
-            LIS_SETERR_MEM(
+
+            if(
                 dense_entries
-                    *
-                sizeof(LIS_SCALAR));
+                >
+                ((size_t)-1)
+                /
+                sizeof(LIS_SCALAR))
+            {
+                LIS_SETERR(
+                    LIS_OUT_OF_MEMORY,
+                    "MFAMG hierarchy coarse allocation overflow\n");
 
-            err = LIS_OUT_OF_MEMORY;
-            goto fail;
+                err = LIS_OUT_OF_MEMORY;
+                goto fail;
+            }
+
+
+            dense =
+                (LIS_SCALAR *)lis_malloc(
+                    dense_entries
+                        *
+                    sizeof(LIS_SCALAR),
+                    "lis_mfamg_extend_hierarchy::dense");
+
+            if(dense==NULL)
+            {
+                LIS_SETERR_MEM(
+                    dense_entries
+                        *
+                    sizeof(LIS_SCALAR));
+
+                err = LIS_OUT_OF_MEMORY;
+                goto fail;
+            }
+
+
+            err =
+                lis_mfamg_build_coarse(
+                    level->A,
+                    level,
+                    dense,
+                    max_row_nnz,
+                    cols,
+                    vals);
+
+            if(err)
+                goto fail;
+
+
+            err =
+                lis_mfamg_create_csr_from_dense(
+                    level->A->comm,
+                    level->nc,
+                    dense,
+                    next_level);
+
+            if(err)
+                goto fail;
         }
-
-
-        err =
-            lis_mfamg_build_coarse(
-                level->A,
-                level,
-                dense,
-                max_row_nnz,
-                cols,
-                vals);
-
-        if(err)
-            goto fail;
-
-
-        err =
-            lis_mfamg_create_csr_from_dense(
-                level->A->comm,
-                level->nc,
-                dense,
-                next_level);
-
-        if(err)
-            goto fail;
 
 
         state->nlevels =
@@ -2967,11 +3073,15 @@ lis_mfamg_extend_hierarchy(
             goto fail;
 
 
-        lis_free(dense);
+        if(dense)
+        {
+            lis_free(dense);
+            dense = NULL;
+        }
+
         lis_free(vals);
         lis_free(cols);
 
-        dense = NULL;
         vals = NULL;
         cols = NULL;
 
@@ -2991,10 +3101,14 @@ lis_mfamg_extend_hierarchy(
     if(current_z)
         lis_vector_destroy(current_z);
 
+
     return LIS_SUCCESS;
 
 
 fail:
+
+    if(distributed_Ac)
+        lis_matrix_destroy(distributed_Ac);
 
     if(dense)
         lis_free(dense);
@@ -3010,6 +3124,7 @@ fail:
 
     if(current_z)
         lis_vector_destroy(current_z);
+
 
     return err;
 }
@@ -4333,6 +4448,512 @@ cleanup:
 
     if(level.aggregate)
         lis_free(level.aggregate);
+
+
+    return err;
+}
+
+
+/*
+ * Internal distributed hierarchy query used by the regression
+ * test.  It exercises the production hierarchy extension path
+ * while the public MPI solve path remains disabled.
+ */
+LIS_INT
+lis_precon_mfamg_get_distributed_hierarchy_info(
+    LIS_MATRIX A,
+    LIS_VECTOR z,
+    LIS_INT level_capacity,
+    LIS_INT terminal_row_capacity,
+    LIS_INT terminal_nnz_capacity,
+    LIS_INT *nlevels,
+    LIS_INT *local_n,
+    LIS_INT *global_n,
+    LIS_INT *owns_A,
+    LIS_INT *terminal_np,
+    LIS_INT *terminal_nnz,
+    LIS_INT *terminal_row,
+    LIS_INT *terminal_global_cols,
+    LIS_SCALAR *terminal_values)
+{
+    struct LIS_MFAMG_STRUCT *state;
+    struct LIS_MFAMG_LEVEL *level;
+    struct LIS_MFAMG_LEVEL *terminal;
+
+    LIS_INT max_row_nnz;
+
+    LIS_INT *work_cols;
+    LIS_SCALAR *work_vals;
+
+    LIS_MATRIX first_Ac;
+
+    LIS_INT level_id;
+    LIS_INT p;
+    LIS_INT local_col;
+
+    LIS_INT err;
+
+
+    if(
+        A==NULL
+        ||
+        z==NULL
+        ||
+        nlevels==NULL
+        ||
+        local_n==NULL
+        ||
+        global_n==NULL
+        ||
+        owns_A==NULL
+        ||
+        terminal_np==NULL
+        ||
+        terminal_nnz==NULL
+        ||
+        terminal_row==NULL
+        ||
+        terminal_global_cols==NULL
+        ||
+        terminal_values==NULL
+        ||
+        level_capacity<=0
+        ||
+        terminal_row_capacity<=0
+        ||
+        terminal_nnz_capacity<=0
+        ||
+        A->matrix_type!=LIS_MATRIX_CSR
+        ||
+        A->nprocs<=1
+        ||
+        A->n<=0
+        ||
+        A->gn<=0
+        ||
+        z->n!=A->n
+        ||
+        z->gn!=A->gn
+        ||
+        z->is!=A->is
+        ||
+        z->ie!=A->ie)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    state = NULL;
+    work_cols = NULL;
+    work_vals = NULL;
+    first_Ac = NULL;
+
+
+    state =
+        (struct LIS_MFAMG_STRUCT *)lis_malloc(
+            sizeof(struct LIS_MFAMG_STRUCT),
+            "lis_precon_mfamg_get_distributed_hierarchy_info::state");
+
+    if(state==NULL)
+    {
+        LIS_SETERR_MEM(
+            sizeof(struct LIS_MFAMG_STRUCT));
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+
+    memset(
+        state,
+        0,
+        sizeof(struct LIS_MFAMG_STRUCT));
+
+
+    state->level_capacity =
+        LIS_MFAMG_MAX_LEVELS;
+
+    state->nlevels =
+        2;
+
+
+    state->levels =
+        (struct LIS_MFAMG_LEVEL *)lis_malloc(
+            (size_t)state->level_capacity
+                *
+            sizeof(struct LIS_MFAMG_LEVEL),
+            "lis_precon_mfamg_get_distributed_hierarchy_info::levels");
+
+    if(state->levels==NULL)
+    {
+        LIS_SETERR_MEM(
+            (size_t)state->level_capacity
+                *
+            sizeof(struct LIS_MFAMG_LEVEL));
+
+        err = LIS_OUT_OF_MEMORY;
+
+        goto cleanup;
+    }
+
+
+    memset(
+        state->levels,
+        0,
+        (size_t)state->level_capacity
+            *
+        sizeof(struct LIS_MFAMG_LEVEL));
+
+
+    level =
+        &state->levels[0];
+
+    level->A =
+        A;
+
+    level->owns_A =
+        LIS_FALSE;
+
+    level->n =
+        A->n;
+
+
+    level->aggregate =
+        (LIS_INT *)lis_malloc(
+            (size_t)level->n
+                *
+            sizeof(LIS_INT),
+            "lis_precon_mfamg_get_distributed_hierarchy_info::aggregate");
+
+    level->prolong =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)level->n
+                *
+            sizeof(LIS_SCALAR),
+            "lis_precon_mfamg_get_distributed_hierarchy_info::prolong");
+
+    if(
+        level->aggregate==NULL
+        ||
+        level->prolong==NULL)
+    {
+        LIS_SETERR_MEM(
+            (size_t)level->n
+                *
+            (
+                sizeof(LIS_INT)
+                +
+                sizeof(LIS_SCALAR)
+            ));
+
+        err = LIS_OUT_OF_MEMORY;
+
+        goto cleanup;
+    }
+
+
+    max_row_nnz = 0;
+
+    err =
+        lis_mfamg_get_max_row_nnz(
+            A,
+            level->n,
+            &max_row_nnz);
+
+    if(err)
+        goto cleanup;
+
+
+    work_cols =
+        (LIS_INT *)lis_malloc(
+            (size_t)max_row_nnz
+                *
+            sizeof(LIS_INT),
+            "lis_precon_mfamg_get_distributed_hierarchy_info::work_cols");
+
+    work_vals =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)max_row_nnz
+                *
+            sizeof(LIS_SCALAR),
+            "lis_precon_mfamg_get_distributed_hierarchy_info::work_vals");
+
+    if(
+        work_cols==NULL
+        ||
+        work_vals==NULL)
+    {
+        LIS_SETERR_MEM(
+            (size_t)max_row_nnz
+                *
+            (
+                sizeof(LIS_INT)
+                +
+                sizeof(LIS_SCALAR)
+            ));
+
+        err = LIS_OUT_OF_MEMORY;
+
+        goto cleanup;
+    }
+
+
+    err =
+        lis_mfamg_build_aggregates(
+            A,
+            level,
+            max_row_nnz,
+            work_cols,
+            work_vals);
+
+    if(err)
+        goto cleanup;
+
+
+    if(
+        level->nc<=0
+        ||
+        level->nc>=level->n)
+    {
+        err = LIS_ERR_ILL_ARG;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_mfamg_build_prolongation(
+            z,
+            level);
+
+    if(err)
+        goto cleanup;
+
+
+    err =
+        lis_mfamg_build_distributed_aggregate_metadata(
+            A,
+            level);
+
+    if(err)
+        goto cleanup;
+
+
+    err =
+        lis_mfamg_build_distributed_prolongation(
+            A,
+            level);
+
+    if(err)
+        goto cleanup;
+
+
+    err =
+        lis_mfamg_build_distributed_coarse(
+            A,
+            level,
+            &first_Ac);
+
+    if(err)
+        goto cleanup;
+
+
+    state->levels[1].A =
+        first_Ac;
+
+    state->levels[1].owns_A =
+        LIS_TRUE;
+
+    state->levels[1].n =
+        first_Ac->n;
+
+    first_Ac = NULL;
+
+
+    err =
+        lis_mfamg_extend_hierarchy(
+            state,
+            z);
+
+    if(err)
+        goto cleanup;
+
+
+    /*
+     * Mirror the production setup sequence before hierarchy
+     * validation.  The extension prepares work vectors for
+     * newly created nonterminal coarse levels, but level zero
+     * and the per-level cycle rhs/x vectors are prepared after
+     * hierarchy construction.
+     */
+    err =
+        lis_mfamg_prepare_level_work(
+            &state->levels[0]);
+
+    if(err)
+        goto cleanup;
+
+
+    err =
+        lis_mfamg_prepare_cycle_vectors(
+            state);
+
+    if(err)
+        goto cleanup;
+
+
+    err =
+        lis_mfamg_validate_hierarchy(
+            state);
+
+    if(err)
+        goto cleanup;
+
+
+    if(
+        state->nlevels<=0
+        ||
+        state->nlevels>level_capacity)
+    {
+        err = LIS_ERR_ILL_ARG;
+        goto cleanup;
+    }
+
+
+    *nlevels =
+        state->nlevels;
+
+
+    for(
+        level_id=0;
+        level_id<state->nlevels;
+        level_id++)
+    {
+        if(
+            state->levels[level_id].A==NULL
+            ||
+            state->levels[level_id].A->n
+                !=
+            state->levels[level_id].n)
+        {
+            err = LIS_ERR_ILL_ARG;
+            goto cleanup;
+        }
+
+
+        local_n[level_id] =
+            state->levels[level_id].A->n;
+
+        global_n[level_id] =
+            state->levels[level_id].A->gn;
+
+        owns_A[level_id] =
+            state->levels[level_id].owns_A;
+    }
+
+
+    terminal =
+        &state->levels[
+            state->nlevels-1];
+
+
+    if(
+        terminal->A==NULL
+        ||
+        terminal->A->matrix_type!=LIS_MATRIX_CSR
+        ||
+        terminal_row_capacity
+            <
+        terminal->A->n+1
+        ||
+        terminal_nnz_capacity
+            <
+        terminal->A->nnz)
+    {
+        err = LIS_ERR_ILL_ARG;
+        goto cleanup;
+    }
+
+
+    *terminal_np =
+        terminal->A->np;
+
+    *terminal_nnz =
+        terminal->A->nnz;
+
+
+    for(
+        level_id=0;
+        level_id<=terminal->A->n;
+        level_id++)
+    {
+        terminal_row[level_id] =
+            terminal->A->ptr[level_id];
+    }
+
+
+    for(
+        p=0;
+        p<terminal->A->nnz;
+        p++)
+    {
+        local_col =
+            terminal->A->index[p];
+
+
+        if(
+            local_col<0
+            ||
+            local_col>=terminal->A->np)
+        {
+            err = LIS_ERR_ILL_ARG;
+            goto cleanup;
+        }
+
+
+        if(local_col<terminal->A->n)
+        {
+            terminal_global_cols[p] =
+                terminal->A->is
+                +
+                local_col;
+        }
+        else
+        {
+            if(terminal->A->l2g_map==NULL)
+            {
+                err = LIS_ERR_ILL_ARG;
+                goto cleanup;
+            }
+
+
+            terminal_global_cols[p] =
+                terminal->A->l2g_map[
+                    local_col
+                    -
+                    terminal->A->n];
+        }
+
+
+        terminal_values[p] =
+            terminal->A->value[p];
+    }
+
+
+    err = LIS_SUCCESS;
+
+
+cleanup:
+
+    if(first_Ac)
+        lis_matrix_destroy(first_Ac);
+
+    if(work_vals)
+        lis_free(work_vals);
+
+    if(work_cols)
+        lis_free(work_cols);
+
+    if(state)
+        lis_mfamg_state_free(state);
 
 
     return err;
