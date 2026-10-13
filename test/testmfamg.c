@@ -13,6 +13,14 @@ lis_precon_mfamg_get_hierarchy_info(
     LIS_INT *level_n,
     LIS_INT *owns_A);
 
+extern LIS_INT
+lis_precon_mfamg_get_global_row(
+    LIS_MATRIX A,
+    LIS_INT local_row,
+    LIS_INT *nnz,
+    LIS_INT *cols,
+    LIS_SCALAR *vals);
+
 
 #define TEST_N 24
 #define SOLVE_TOL 1.0e-8
@@ -28,6 +36,8 @@ lis_precon_mfamg_get_hierarchy_info(
 typedef struct
 {
     LIS_INT n;
+    LIS_INT gn;
+    LIS_INT is;
 } USER_CTX;
 
 
@@ -107,6 +117,8 @@ user_row(
     LIS_SCALAR *vals)
 {
     USER_CTX *ctx;
+
+    LIS_INT global_row;
     LIS_INT need;
     LIS_INT k;
 
@@ -116,6 +128,8 @@ user_row(
 
 
     if(
+        ctx==NULL
+        ||
         nnz==NULL
         ||
         local_row<0
@@ -126,14 +140,31 @@ user_row(
     }
 
 
+    global_row =
+        ctx->is
+        +
+        local_row;
+
+
+    if(
+        global_row<0
+        ||
+        global_row>=ctx->gn)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
     need = 1;
 
-    if(local_row>0)
+
+    if(global_row>0)
     {
         need++;
     }
 
-    if(local_row+1<ctx->n)
+
+    if(global_row+1<ctx->gn)
     {
         need++;
     }
@@ -170,10 +201,10 @@ user_row(
     k = 0;
 
 
-    if(local_row>0)
+    if(global_row>0)
     {
         cols[k] =
-            local_row-1;
+            global_row-1;
 
         vals[k] =
             (LIS_SCALAR)-1.0;
@@ -183,7 +214,7 @@ user_row(
 
 
     cols[k] =
-        local_row;
+        global_row;
 
     vals[k] =
         (LIS_SCALAR)2.0;
@@ -191,10 +222,10 @@ user_row(
     k++;
 
 
-    if(local_row+1<ctx->n)
+    if(global_row+1<ctx->gn)
     {
         cols[k] =
-            local_row+1;
+            global_row+1;
 
         vals[k] =
             (LIS_SCALAR)-1.0;
@@ -208,7 +239,6 @@ user_row(
 
     return LIS_SUCCESS;
 }
-
 
 /* ============================================================
  * Matrix creation
@@ -303,8 +333,14 @@ create_user(
     LIS_INT err;
 
 
-    ctx->n =
-        TEST_N;
+    if(
+        ctx==NULL
+        ||
+        A==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
 
     *A = NULL;
 
@@ -326,6 +362,16 @@ create_user(
 
     if(err)
         return err;
+
+
+    ctx->n =
+        (*A)->n;
+
+    ctx->gn =
+        (*A)->gn;
+
+    ctx->is =
+        (*A)->is;
 
 
     err =
@@ -353,7 +399,6 @@ create_user(
             *A,
             user_row);
 }
-
 
 /* ============================================================
  * Helpers
@@ -1590,8 +1635,233 @@ cleanup:
 
 
 /* ============================================================
- * MPI serial-only rejection
+ * MPI global-row regression and serial-only rejection
  * ============================================================ */
+
+static int
+check_mfamg_global_rows(
+    const char *name,
+    LIS_MATRIX A,
+    int rank)
+{
+    LIS_INT local_row;
+    LIS_INT global_row;
+    LIS_INT expected_nnz;
+    LIS_INT nnz;
+    LIS_INT k;
+    LIS_INT err;
+
+    LIS_INT cols[3];
+    LIS_SCALAR vals[3];
+
+    int seen_lower;
+    int seen_diag;
+    int seen_upper;
+    int failed;
+
+
+    if(
+        name==NULL
+        ||
+        A==NULL)
+    {
+        return 1;
+    }
+
+
+    failed = 0;
+
+
+    for(
+        local_row=0;
+        local_row<A->n;
+        local_row++)
+    {
+        global_row =
+            A->is
+            +
+            local_row;
+
+
+        expected_nnz = 1;
+
+        if(global_row>0)
+        {
+            expected_nnz++;
+        }
+
+        if(global_row+1<A->gn)
+        {
+            expected_nnz++;
+        }
+
+
+        nnz = 0;
+
+
+        err =
+            lis_precon_mfamg_get_global_row(
+                A,
+                local_row,
+                &nnz,
+                NULL,
+                NULL);
+
+
+        if(
+            err
+            ||
+            nnz!=expected_nnz)
+        {
+            fprintf(
+                stderr,
+                "%s MPI row query failed on rank %d row %d: rc=%d nnz=%d expected=%d\n",
+                name,
+                rank,
+                (int)global_row,
+                (int)err,
+                (int)nnz,
+                (int)expected_nnz);
+
+            failed = 1;
+
+            continue;
+        }
+
+
+        nnz = 3;
+
+
+        err =
+            lis_precon_mfamg_get_global_row(
+                A,
+                local_row,
+                &nnz,
+                cols,
+                vals);
+
+
+        if(
+            err
+            ||
+            nnz!=expected_nnz)
+        {
+            fprintf(
+                stderr,
+                "%s MPI row fill failed on rank %d row %d: rc=%d nnz=%d expected=%d\n",
+                name,
+                rank,
+                (int)global_row,
+                (int)err,
+                (int)nnz,
+                (int)expected_nnz);
+
+            failed = 1;
+
+            continue;
+        }
+
+
+        seen_lower = 0;
+        seen_diag = 0;
+        seen_upper = 0;
+
+
+        for(k=0;k<nnz;k++)
+        {
+            if(
+                global_row>0
+                &&
+                cols[k]==global_row-1
+                &&
+                fabs(
+                    vals[k]
+                    -
+                    (LIS_SCALAR)-1.0)
+                    <=
+                    MATCH_TOL
+                &&
+                !seen_lower)
+            {
+                seen_lower = 1;
+
+                continue;
+            }
+
+
+            if(
+                cols[k]==global_row
+                &&
+                fabs(
+                    vals[k]
+                    -
+                    (LIS_SCALAR)2.0)
+                    <=
+                    MATCH_TOL
+                &&
+                !seen_diag)
+            {
+                seen_diag = 1;
+
+                continue;
+            }
+
+
+            if(
+                global_row+1<A->gn
+                &&
+                cols[k]==global_row+1
+                &&
+                fabs(
+                    vals[k]
+                    -
+                    (LIS_SCALAR)-1.0)
+                    <=
+                    MATCH_TOL
+                &&
+                !seen_upper)
+            {
+                seen_upper = 1;
+
+                continue;
+            }
+
+
+            fprintf(
+                stderr,
+                "%s MPI row entry failed on rank %d row %d entry %d col=%d\n",
+                name,
+                rank,
+                (int)global_row,
+                (int)k,
+                (int)cols[k]);
+
+            failed = 1;
+        }
+
+
+        if(
+            (global_row>0 && !seen_lower)
+            ||
+            !seen_diag
+            ||
+            (global_row+1<A->gn && !seen_upper))
+        {
+            fprintf(
+                stderr,
+                "%s MPI row coverage failed on rank %d row %d\n",
+                name,
+                rank,
+                (int)global_row);
+
+            failed = 1;
+        }
+    }
+
+
+    return failed;
+}
+
 
 static int
 run_mpi_rejection(
@@ -1599,6 +1869,9 @@ run_mpi_rejection(
     int nprocs)
 {
     LIS_MATRIX A;
+    LIS_MATRIX U;
+
+    USER_CTX user_ctx;
 
     LIS_VECTOR z;
     LIS_VECTOR basis[1];
@@ -1609,14 +1882,20 @@ run_mpi_rejection(
     LIS_INT i;
     LIS_INT err;
 
+    int row_failed;
+    int global_row_failed;
+    int local_failed;
     int failed;
 
 
     A = NULL;
+    U = NULL;
     z = NULL;
     solver = NULL;
     precon = NULL;
 
+    row_failed = 0;
+    global_row_failed = 0;
     failed = 0;
 
 
@@ -1649,6 +1928,25 @@ run_mpi_rejection(
 
     for(i=A->is;i<A->ie;i++)
     {
+        if(i>0)
+        {
+            err =
+                lis_matrix_set_value(
+                    LIS_INS_VALUE,
+                    i,
+                    i-1,
+                    (LIS_SCALAR)-1.0,
+                    A);
+
+            if(err)
+            {
+                failed = 1;
+
+                goto cleanup;
+            }
+        }
+
+
         err =
             lis_matrix_set_value(
                 LIS_INS_VALUE,
@@ -1663,6 +1961,25 @@ run_mpi_rejection(
 
             goto cleanup;
         }
+
+
+        if(i+1<TEST_N)
+        {
+            err =
+                lis_matrix_set_value(
+                    LIS_INS_VALUE,
+                    i,
+                    i+1,
+                    (LIS_SCALAR)-1.0,
+                    A);
+
+            if(err)
+            {
+                failed = 1;
+
+                goto cleanup;
+            }
+        }
     }
 
 
@@ -1675,6 +1992,86 @@ run_mpi_rejection(
         failed = 1;
 
         goto cleanup;
+    }
+
+
+    if(
+        A->np<=A->n
+        ||
+        A->l2g_map==NULL)
+    {
+        fprintf(
+            stderr,
+            "CSR MPI halo was not created on rank %d: n=%d np=%d\n",
+            rank,
+            (int)A->n,
+            (int)A->np);
+
+        row_failed = 1;
+    }
+
+
+    err =
+        create_user(
+            &user_ctx,
+            &U);
+
+    if(err)
+    {
+        failed = 1;
+
+        goto cleanup;
+    }
+
+
+    row_failed |=
+        check_mfamg_global_rows(
+            "CSR",
+            A,
+            rank);
+
+
+    row_failed |=
+        check_mfamg_global_rows(
+            "USER",
+            U,
+            rank);
+
+
+#ifdef USE_MPI
+
+    MPI_Allreduce(
+        &row_failed,
+        &global_row_failed,
+        1,
+        MPI_INT,
+        MPI_MAX,
+        LIS_COMM_WORLD);
+
+#else
+
+    global_row_failed =
+        row_failed;
+
+#endif
+
+
+    if(rank==0)
+    {
+        printf(
+            "MPI_GLOBAL_ROW_ACCESS=%s ranks=%d\n",
+            global_row_failed
+            ?
+            "FAILED"
+            :
+            "PASSED",
+            nprocs);
+    }
+
+
+    if(global_row_failed)
+    {
+        failed = 1;
     }
 
 
@@ -1786,6 +2183,29 @@ run_mpi_rejection(
     }
 
 
+#ifdef USE_MPI
+
+    local_failed =
+        failed;
+
+    MPI_Allreduce(
+        &local_failed,
+        &failed,
+        1,
+        MPI_INT,
+        MPI_MAX,
+        LIS_COMM_WORLD);
+
+#else
+
+    local_failed =
+        failed;
+
+    (void)local_failed;
+
+#endif
+
+
 cleanup:
 
     if(precon)
@@ -1806,6 +2226,12 @@ cleanup:
             z);
     }
 
+    if(U)
+    {
+        lis_matrix_destroy(
+            U);
+    }
+
     if(A)
     {
         lis_matrix_destroy(
@@ -1819,12 +2245,12 @@ cleanup:
         {
             fprintf(
                 stderr,
-                "MFAMG MPI REJECTION FAILED\n");
+                "MFAMG MPI ROW/REJECTION TEST FAILED\n");
         }
         else
         {
             printf(
-                "MFAMG MPI REJECTION PASSED\n");
+                "MFAMG MPI ROW/REJECTION TEST PASSED\n");
         }
     }
 
@@ -1836,7 +2262,6 @@ cleanup:
         :
         0;
 }
-
 
 /* ============================================================
  * Main

@@ -180,6 +180,8 @@ lis_mfamg_row_fill(
     LIS_INT k;
     LIS_INT p;
     LIS_INT count;
+    LIS_INT local_col;
+
 
     if(
         A==NULL
@@ -199,6 +201,7 @@ lis_mfamg_row_fill(
         return LIS_ERR_ILL_ARG;
     }
 
+
     if(A->matrix_type==LIS_MATRIX_CSR)
     {
         count =
@@ -206,42 +209,87 @@ lis_mfamg_row_fill(
             -
             A->ptr[row];
 
+
         if(count>capacity)
         {
             *nnz = count;
+
             return LIS_ERR_ILL_ARG;
         }
 
+
         k = 0;
+
 
         for(
             p=A->ptr[row];
             p<A->ptr[row+1];
             p++)
         {
-            /*
-             * Stage 3 is serial, so the internal CSR column index
-             * maps directly to the global range starting at A->is.
-             */
-            cols[k] =
-                A->index[p]
-                +
-                A->is;
+            local_col =
+                A->index[p];
+
+
+            if(
+                local_col<0
+                ||
+                local_col>=A->np)
+            {
+                return LIS_ERR_ILL_ARG;
+            }
+
+
+            if(local_col<A->n)
+            {
+                cols[k] =
+                    A->is
+                    +
+                    local_col;
+            }
+            else
+            {
+                if(A->l2g_map==NULL)
+                {
+                    return LIS_ERR_ILL_ARG;
+                }
+
+
+                cols[k] =
+                    A->l2g_map[
+                        local_col
+                        -
+                        A->n];
+            }
+
+
+            if(
+                cols[k]<0
+                ||
+                cols[k]>=A->gn)
+            {
+                return LIS_ERR_ILL_ARG;
+            }
+
 
             vals[k] =
                 A->value[p];
 
+
             k++;
         }
 
+
         *nnz = count;
+
 
         return LIS_SUCCESS;
     }
 
+
     if(A->matrix_type==LIS_MATRIX_USER)
     {
         *nnz = capacity;
+
 
         return
             lis_matrix_get_user_row(
@@ -252,10 +300,68 @@ lis_mfamg_row_fill(
                 vals);
     }
 
+
     return LIS_ERR_NOT_IMPLEMENTED;
 }
 
 
+/*
+ * Internal MFAMG global-row query used by the regression test.
+ *
+ * local_row is local to the calling process. Returned columns
+ * always use zero-based global numbering for both CSR and USER.
+ */
+LIS_INT
+lis_precon_mfamg_get_global_row(
+    LIS_MATRIX A,
+    LIS_INT local_row,
+    LIS_INT *nnz,
+    LIS_INT *cols,
+    LIS_SCALAR *vals)
+{
+    if(nnz==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    if(
+        (cols==NULL)
+        !=
+        (vals==NULL))
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    if(
+        cols==NULL
+        &&
+        vals==NULL)
+    {
+        return
+            lis_mfamg_row_query(
+                A,
+                local_row,
+                nnz);
+    }
+
+
+    if(*nnz<0)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    return
+        lis_mfamg_row_fill(
+            A,
+            local_row,
+            *nnz,
+            nnz,
+            cols,
+            vals);
+}
 
 #undef __FUNC__
 #define __FUNC__ "lis_mfamg_dense_factor"
