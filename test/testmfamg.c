@@ -21,6 +21,17 @@ lis_precon_mfamg_get_global_row(
     LIS_INT *cols,
     LIS_SCALAR *vals);
 
+extern LIS_INT
+lis_precon_mfamg_get_distributed_aggregate_info(
+    LIS_MATRIX A,
+    LIS_INT map_capacity,
+    LIS_INT *local_nc,
+    LIS_INT *global_nc,
+    LIS_INT *coarse_is,
+    LIS_INT *coarse_ie,
+    LIS_INT *map_n,
+    LIS_INT *fine_to_coarse);
+
 
 #define TEST_N 24
 #define SOLVE_TOL 1.0e-8
@@ -1864,6 +1875,221 @@ check_mfamg_global_rows(
 
 
 static int
+check_mfamg_distributed_aggregates(
+    LIS_MATRIX A,
+    int rank,
+    int nprocs)
+{
+    LIS_INT local_nc;
+    LIS_INT global_nc;
+    LIS_INT coarse_is;
+    LIS_INT coarse_ie;
+    LIS_INT map_n;
+
+    LIS_INT expected_local_nc;
+    LIS_INT expected_global_nc;
+    LIS_INT expected_coarse_is;
+    LIS_INT expected_coarse_ie;
+
+    LIS_INT fine_to_coarse[TEST_N];
+
+    LIS_INT i;
+    LIS_INT global_fine;
+    LIS_INT expected_gid;
+    LIS_INT err;
+
+    int local_failed;
+    int global_failed;
+
+
+    local_nc = -1;
+    global_nc = -1;
+    coarse_is = -1;
+    coarse_ie = -1;
+    map_n = -1;
+
+    local_failed = 0;
+    global_failed = 0;
+
+
+    if(
+        A==NULL
+        ||
+        nprocs!=2
+        ||
+        TEST_N!=24
+        ||
+        A->n!=12
+        ||
+        A->is%2!=0)
+    {
+        local_failed = 1;
+    }
+    else
+    {
+        err =
+            lis_precon_mfamg_get_distributed_aggregate_info(
+                A,
+                TEST_N,
+                &local_nc,
+                &global_nc,
+                &coarse_is,
+                &coarse_ie,
+                &map_n,
+                fine_to_coarse);
+
+
+        if(err)
+        {
+            fprintf(
+                stderr,
+                "MPI aggregate query failed on rank %d rc=%d\n",
+                rank,
+                (int)err);
+
+            local_failed = 1;
+        }
+        else
+        {
+            expected_local_nc =
+                A->n/2;
+
+            expected_global_nc =
+                TEST_N/2;
+
+            expected_coarse_is =
+                A->is/2;
+
+            expected_coarse_ie =
+                expected_coarse_is
+                +
+                expected_local_nc;
+
+
+            if(
+                local_nc!=expected_local_nc
+                ||
+                global_nc!=expected_global_nc
+                ||
+                coarse_is!=expected_coarse_is
+                ||
+                coarse_ie!=expected_coarse_ie
+                ||
+                map_n!=A->np)
+            {
+                fprintf(
+                    stderr,
+                    "MPI aggregate ownership mismatch on rank %d: "
+                    "local_nc=%d global_nc=%d coarse=[%d,%d) map_n=%d np=%d\n",
+                    rank,
+                    (int)local_nc,
+                    (int)global_nc,
+                    (int)coarse_is,
+                    (int)coarse_ie,
+                    (int)map_n,
+                    (int)A->np);
+
+                local_failed = 1;
+            }
+
+
+            for(i=0;i<A->n;i++)
+            {
+                expected_gid =
+                    coarse_is
+                    +
+                    i/2;
+
+
+                if(
+                    fine_to_coarse[i]
+                    !=
+                    expected_gid)
+                {
+                    fprintf(
+                        stderr,
+                        "MPI owned aggregate ID mismatch on rank %d "
+                        "local=%d got=%d expected=%d\n",
+                        rank,
+                        (int)i,
+                        (int)fine_to_coarse[i],
+                        (int)expected_gid);
+
+                    local_failed = 1;
+                }
+            }
+
+
+            for(i=A->n;i<A->np;i++)
+            {
+                global_fine =
+                    A->l2g_map[
+                        i
+                        -
+                        A->n];
+
+                expected_gid =
+                    global_fine/2;
+
+
+                if(
+                    fine_to_coarse[i]
+                    !=
+                    expected_gid)
+                {
+                    fprintf(
+                        stderr,
+                        "MPI halo aggregate ID mismatch on rank %d "
+                        "fine=%d got=%d expected=%d\n",
+                        rank,
+                        (int)global_fine,
+                        (int)fine_to_coarse[i],
+                        (int)expected_gid);
+
+                    local_failed = 1;
+                }
+            }
+        }
+    }
+
+
+#ifdef USE_MPI
+
+    MPI_Allreduce(
+        &local_failed,
+        &global_failed,
+        1,
+        MPI_INT,
+        MPI_MAX,
+        LIS_COMM_WORLD);
+
+#else
+
+    global_failed =
+        local_failed;
+
+#endif
+
+
+    if(rank==0)
+    {
+        printf(
+            "MPI_AGGREGATE_OWNERSHIP=%s ranks=%d global_nc=%d\n",
+            global_failed
+            ?
+            "FAILED"
+            :
+            "PASSED",
+            nprocs,
+            (int)global_nc);
+    }
+
+
+    return global_failed;
+}
+
+
+static int
 run_mpi_rejection(
     int rank,
     int nprocs)
@@ -2036,6 +2262,13 @@ run_mpi_rejection(
             "USER",
             U,
             rank);
+
+
+    row_failed |=
+        check_mfamg_distributed_aggregates(
+            A,
+            rank,
+            nprocs);
 
 
 #ifdef USE_MPI
