@@ -6149,6 +6149,10 @@ lis_precon_create_mfamg(
 
     LIS_MATRIX A;
 
+#ifdef USE_MPI
+    LIS_MATRIX distributed_Ac;
+#endif
+
     LIS_INT capabilities;
     LIS_INT required;
 
@@ -6189,18 +6193,6 @@ lis_precon_create_mfamg(
 
         return LIS_ERR_ILL_ARG;
     }
-
-
-#ifdef USE_MPI
-    if(A->nprocs!=1)
-    {
-        LIS_SETERR(
-            LIS_ERR_NOT_IMPLEMENTED,
-            "MFAMG supports one MPI process\n");
-
-        return LIS_ERR_NOT_IMPLEMENTED;
-    }
-#endif
 
 
     if(
@@ -6272,6 +6264,23 @@ lis_precon_create_mfamg(
 
         return LIS_ERR_NOT_IMPLEMENTED;
     }
+
+
+#ifdef USE_MPI
+
+    if(
+        A->nprocs>1
+        &&
+        A->matrix_type!=LIS_MATRIX_CSR)
+    {
+        LIS_SETERR(
+            LIS_ERR_NOT_IMPLEMENTED,
+            "MFAMG MPI supports CSR matrices\n");
+
+        return LIS_ERR_NOT_IMPLEMENTED;
+    }
+
+#endif
 
 
     if(A->matrix_type==LIS_MATRIX_USER)
@@ -6531,110 +6540,207 @@ lis_precon_create_mfamg(
     }
 
 
-    if(
-        (size_t)level->nc
-        >
-        ((size_t)-1)
-        /
-        (size_t)level->nc)
+#ifdef USE_MPI
+
+    if(A->nprocs>1)
     {
-        LIS_SETERR(
-            LIS_OUT_OF_MEMORY,
-            "MFAMG coarse matrix dimension overflow\n");
+        distributed_Ac = NULL;
+
+
+        err =
+            lis_mfamg_build_distributed_aggregate_metadata(
+                A,
+                level);
+
+        if(err)
+        {
+            lis_free(vals);
+            lis_free(cols);
+            lis_mfamg_state_free(state);
+
+            return err;
+        }
+
+
+        err =
+            lis_mfamg_build_distributed_prolongation(
+                A,
+                level);
+
+        if(err)
+        {
+            lis_free(vals);
+            lis_free(cols);
+            lis_mfamg_state_free(state);
+
+            return err;
+        }
+
+
+        err =
+            lis_mfamg_build_distributed_coarse(
+                A,
+                level,
+                &distributed_Ac);
+
 
         lis_free(vals);
         lis_free(cols);
-        lis_mfamg_state_free(state);
 
-        return LIS_OUT_OF_MEMORY;
+        vals = NULL;
+        cols = NULL;
+
+
+        if(err)
+        {
+            lis_mfamg_state_free(state);
+            return err;
+        }
+
+
+        if(
+            distributed_Ac==NULL
+            ||
+            distributed_Ac->matrix_type!=LIS_MATRIX_CSR
+            ||
+            distributed_Ac->n!=level->nc
+            ||
+            distributed_Ac->gn!=level->global_nc)
+        {
+            if(distributed_Ac)
+            {
+                lis_matrix_destroy(
+                    distributed_Ac);
+            }
+
+
+            lis_mfamg_state_free(state);
+
+            return LIS_ERR_ILL_ARG;
+        }
+
+
+        coarse_level->A =
+            distributed_Ac;
+
+        coarse_level->owns_A =
+            LIS_TRUE;
+
+        coarse_level->n =
+            distributed_Ac->n;
+
+
+        distributed_Ac = NULL;
     }
+    else
 
-
-    coarse_entries =
-        (size_t)level->nc
-            *
-        (size_t)level->nc;
-
-
-    if(
-        coarse_entries
-        >
-        ((size_t)-1)
-        /
-        sizeof(LIS_SCALAR))
+#endif
     {
-        LIS_SETERR(
-            LIS_OUT_OF_MEMORY,
-            "MFAMG coarse matrix allocation size overflow\n");
+        if(
+            (size_t)level->nc
+            >
+            ((size_t)-1)
+            /
+            (size_t)level->nc)
+        {
+            LIS_SETERR(
+                LIS_OUT_OF_MEMORY,
+                "MFAMG coarse matrix dimension overflow\n");
 
-        lis_free(vals);
-        lis_free(cols);
-        lis_mfamg_state_free(state);
+            lis_free(vals);
+            lis_free(cols);
+            lis_mfamg_state_free(state);
 
-        return LIS_OUT_OF_MEMORY;
-    }
+            return LIS_OUT_OF_MEMORY;
+        }
 
 
-    state->coarse =
-        (LIS_SCALAR *)lis_malloc(
-            coarse_entries
+        coarse_entries =
+            (size_t)level->nc
                 *
-            sizeof(LIS_SCALAR),
-            "lis_precon_create_mfamg::coarse");
+            (size_t)level->nc;
 
-    if(state->coarse==NULL)
-    {
+
+        if(
+            coarse_entries
+            >
+            ((size_t)-1)
+            /
+            sizeof(LIS_SCALAR))
+        {
+            LIS_SETERR(
+                LIS_OUT_OF_MEMORY,
+                "MFAMG coarse matrix allocation size overflow\n");
+
+            lis_free(vals);
+            lis_free(cols);
+            lis_mfamg_state_free(state);
+
+            return LIS_OUT_OF_MEMORY;
+        }
+
+
+        state->coarse =
+            (LIS_SCALAR *)lis_malloc(
+                coarse_entries
+                    *
+                sizeof(LIS_SCALAR),
+                "lis_precon_create_mfamg::coarse");
+
+        if(state->coarse==NULL)
+        {
+            lis_free(vals);
+            lis_free(cols);
+
+            LIS_SETERR_MEM(
+                coarse_entries
+                    *
+                sizeof(LIS_SCALAR));
+
+            lis_mfamg_state_free(state);
+
+            return LIS_OUT_OF_MEMORY;
+        }
+
+
+        err =
+            lis_mfamg_build_coarse(
+                A,
+                level,
+                state->coarse,
+                max_row_nnz,
+                cols,
+                vals);
+
         lis_free(vals);
         lis_free(cols);
 
-        LIS_SETERR_MEM(
-            coarse_entries
-                *
-            sizeof(LIS_SCALAR));
+        if(err)
+        {
+            lis_mfamg_state_free(state);
+            return err;
+        }
 
-        lis_mfamg_state_free(state);
 
-        return LIS_OUT_OF_MEMORY;
+        err =
+            lis_mfamg_create_csr_from_dense(
+                A->comm,
+                level->nc,
+                state->coarse,
+                coarse_level);
+
+        if(err)
+        {
+            lis_mfamg_state_free(state);
+            return err;
+        }
+
+
+        lis_free(
+            state->coarse);
+
+        state->coarse = NULL;
     }
-
-
-    err =
-        lis_mfamg_build_coarse(
-            A,
-            level,
-            state->coarse,
-            max_row_nnz,
-            cols,
-            vals);
-
-    lis_free(vals);
-    lis_free(cols);
-
-    if(err)
-    {
-        lis_mfamg_state_free(state);
-        return err;
-    }
-
-
-    err =
-        lis_mfamg_create_csr_from_dense(
-            A->comm,
-            level->nc,
-            state->coarse,
-            coarse_level);
-
-    if(err)
-    {
-        lis_mfamg_state_free(state);
-        return err;
-    }
-
-
-    lis_free(
-        state->coarse);
-
-    state->coarse = NULL;
 
 
     err =

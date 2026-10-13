@@ -3535,6 +3535,527 @@ reduce_result:
 
 
 static int
+check_mfamg_distributed_psolve(
+    LIS_MATRIX A,
+    int rank,
+    int nprocs)
+{
+    LIS_VECTOR b;
+    LIS_VECTOR x;
+    LIS_VECTOR ax;
+    LIS_VECTOR z;
+
+    LIS_VECTOR basis[1];
+
+    LIS_SOLVER solver;
+    LIS_PRECON precon;
+
+    LIS_REAL local_rhs2;
+    LIS_REAL global_rhs2;
+
+    LIS_REAL local_residual2;
+    LIS_REAL global_residual2;
+
+    LIS_REAL local_correction2;
+    LIS_REAL global_correction2;
+
+    LIS_REAL local_remote2;
+    LIS_REAL global_remote2;
+
+    LIS_REAL residual_ratio;
+    LIS_REAL correction_norm;
+    LIS_REAL remote_norm;
+
+    LIS_REAL mag;
+
+    LIS_INT global_i;
+    LIS_INT i;
+    LIS_INT err;
+    LIS_INT destroy_err;
+
+    int local_failed;
+    int global_failed;
+
+
+    b = NULL;
+    x = NULL;
+    ax = NULL;
+    z = NULL;
+
+    solver = NULL;
+    precon = NULL;
+
+    local_rhs2 = 0.0;
+    global_rhs2 = 0.0;
+
+    local_residual2 = 0.0;
+    global_residual2 = 0.0;
+
+    local_correction2 = 0.0;
+    global_correction2 = 0.0;
+
+    local_remote2 = 0.0;
+    global_remote2 = 0.0;
+
+    residual_ratio = -1.0;
+    correction_norm = -1.0;
+    remote_norm = -1.0;
+
+    local_failed = 0;
+    global_failed = 0;
+
+
+    if(
+        A==NULL
+        ||
+        nprocs!=2
+        ||
+        TEST_N!=24
+        ||
+        A->matrix_type!=LIS_MATRIX_CSR
+        ||
+        A->n!=12
+        ||
+        A->gn!=TEST_N)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &b);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &ax);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &z);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        b);
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x);
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        ax);
+
+    lis_vector_set_all(
+        (LIS_SCALAR)1.0,
+        z);
+
+
+    /*
+     * Unit impulse on the first global row.
+     *
+     * The right half of the global domain starts with a zero
+     * right-hand side.  A nonzero correction there therefore
+     * demonstrates that the applied V-cycle crosses the rank
+     * boundary.
+     */
+    if(
+        A->is<=0
+        &&
+        A->ie>0)
+    {
+        b->value[
+            -A->is] =
+            (LIS_SCALAR)1.0;
+    }
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_solver_set_option(
+            "-i gmres "
+            "-p mfamg "
+            "-scale none "
+            "-print none",
+            solver);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    basis[0] =
+        z;
+
+
+    err =
+        lis_solver_set_near_nullspace(
+            solver,
+            1,
+            basis);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_solver_set_matrix(
+            A,
+            solver);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_precon_create(
+            solver,
+            &precon);
+
+    if(err)
+    {
+        precon = NULL;
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    solver->precon =
+        precon;
+
+
+    err =
+        lis_psolve(
+            solver,
+            b,
+            x);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_matvec(
+            A,
+            x,
+            ax);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    for(i=0;i<A->n;i++)
+    {
+        global_i =
+            A->is
+            +
+            i;
+
+
+        mag =
+            fabs(
+                b->value[i]);
+
+        local_rhs2 +=
+            mag
+            *
+            mag;
+
+
+        mag =
+            fabs(
+                b->value[i]
+                -
+                ax->value[i]);
+
+        local_residual2 +=
+            mag
+            *
+            mag;
+
+
+        mag =
+            fabs(
+                x->value[i]);
+
+        if(
+            mag!=mag
+            ||
+            mag>LIS_SCALAR_MAX)
+        {
+            local_failed = 1;
+        }
+
+
+        local_correction2 +=
+            mag
+            *
+            mag;
+
+
+        if(
+            global_i
+            >=
+            TEST_N/2)
+        {
+            local_remote2 +=
+                mag
+                *
+                mag;
+        }
+    }
+
+
+#ifdef USE_MPI
+
+    MPI_Allreduce(
+        &local_rhs2,
+        &global_rhs2,
+        1,
+        LIS_MPI_REAL,
+        MPI_SUM,
+        A->comm);
+
+    MPI_Allreduce(
+        &local_residual2,
+        &global_residual2,
+        1,
+        LIS_MPI_REAL,
+        MPI_SUM,
+        A->comm);
+
+    MPI_Allreduce(
+        &local_correction2,
+        &global_correction2,
+        1,
+        LIS_MPI_REAL,
+        MPI_SUM,
+        A->comm);
+
+    MPI_Allreduce(
+        &local_remote2,
+        &global_remote2,
+        1,
+        LIS_MPI_REAL,
+        MPI_SUM,
+        A->comm);
+
+#else
+
+    global_rhs2 =
+        local_rhs2;
+
+    global_residual2 =
+        local_residual2;
+
+    global_correction2 =
+        local_correction2;
+
+    global_remote2 =
+        local_remote2;
+
+#endif
+
+
+    if(!(global_rhs2>0.0))
+    {
+        local_failed = 1;
+    }
+    else
+    {
+        residual_ratio =
+            sqrt(
+                global_residual2
+                /
+                global_rhs2);
+    }
+
+
+    correction_norm =
+        sqrt(
+            global_correction2);
+
+    remote_norm =
+        sqrt(
+            global_remote2);
+
+
+    if(
+        residual_ratio!=residual_ratio
+        ||
+        !(residual_ratio<1.0)
+        ||
+        correction_norm!=correction_norm
+        ||
+        !(correction_norm>0.0)
+        ||
+        remote_norm!=remote_norm
+        ||
+        !(remote_norm>1.0e-12))
+    {
+        local_failed = 1;
+    }
+
+
+cleanup:
+
+    if(precon)
+    {
+        if(solver)
+        {
+            solver->precon =
+                NULL;
+        }
+
+
+        destroy_err =
+            lis_precon_destroy(
+                precon);
+
+        if(destroy_err)
+        {
+            local_failed = 1;
+        }
+
+
+        precon = NULL;
+    }
+
+
+    if(solver)
+    {
+        lis_solver_destroy(
+            solver);
+    }
+
+
+    if(z)
+    {
+        lis_vector_destroy(
+            z);
+    }
+
+    if(ax)
+    {
+        lis_vector_destroy(
+            ax);
+    }
+
+    if(x)
+    {
+        lis_vector_destroy(
+            x);
+    }
+
+    if(b)
+    {
+        lis_vector_destroy(
+            b);
+    }
+
+
+#ifdef USE_MPI
+
+    MPI_Allreduce(
+        &local_failed,
+        &global_failed,
+        1,
+        MPI_INT,
+        MPI_MAX,
+        LIS_COMM_WORLD);
+
+#else
+
+    global_failed =
+        local_failed;
+
+#endif
+
+
+    if(rank==0)
+    {
+        printf(
+            "MPI_DISTRIBUTED_PSOLVE=%s "
+            "ranks=%d relres=%.12e "
+            "correction=%.12e remote=%.12e\n",
+            global_failed
+            ?
+            "FAILED"
+            :
+            "PASSED",
+            nprocs,
+            (double)residual_ratio,
+            (double)correction_norm,
+            (double)remote_norm);
+    }
+
+
+    return global_failed;
+}
+
+
+static int
 run_mpi_rejection(
     int rank,
     int nprocs)
@@ -3774,6 +4295,13 @@ run_mpi_rejection(
     }
 
 
+    failed |=
+        check_mfamg_distributed_psolve(
+            A,
+            rank,
+            nprocs);
+
+
     err =
         lis_vector_duplicate(
             A,
@@ -3840,7 +4368,7 @@ run_mpi_rejection(
 
     err =
         lis_solver_set_matrix(
-            A,
+            U,
             solver);
 
     if(err)
@@ -3866,7 +4394,7 @@ run_mpi_rejection(
     if(rank==0)
     {
         printf(
-            "MPI_REJECT rc=%d expected=%d ranks=%d\n",
+            "MPI_USER_REJECT rc=%d expected=%d ranks=%d\n",
             (int)err,
             (int)LIS_ERR_NOT_IMPLEMENTED,
             nprocs);
@@ -3944,12 +4472,12 @@ cleanup:
         {
             fprintf(
                 stderr,
-                "MFAMG MPI ROW/REJECTION TEST FAILED\n");
+                "MFAMG MPI DISTRIBUTED TEST FAILED\n");
         }
         else
         {
             printf(
-                "MFAMG MPI ROW/REJECTION TEST PASSED\n");
+                "MFAMG MPI DISTRIBUTED TEST PASSED\n");
         }
     }
 
