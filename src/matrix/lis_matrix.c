@@ -1096,6 +1096,7 @@ LIS_INT lis_matrix_set_user(LIS_MATRIX A, void *user_data,
 	A->user_matvec  = matvec;
 	A->user_matvech = matvech;
 	A->user_get_diagonal = NULL;
+	A->user_get_row      = NULL;
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
@@ -1120,6 +1121,157 @@ LIS_INT lis_matrix_set_user_diagonal(
         }
 
         A->user_get_diagonal = get_diagonal;
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_set_user_row"
+LIS_INT lis_matrix_set_user_row(
+        LIS_MATRIX A, LIS_MATRIX_USER_GET_ROW get_row)
+{
+        LIS_INT err;
+
+        LIS_DEBUG_FUNC_IN;
+
+        err = lis_matrix_check(A,LIS_MATRIX_CHECK_ALL);
+        if( err ) return err;
+
+        if( A->matrix_type!=LIS_MATRIX_USER )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "matrix is not LIS_MATRIX_USER\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        A->user_get_row = get_row;
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_get_user_row"
+LIS_INT lis_matrix_get_user_row(
+        LIS_MATRIX A,
+        LIS_INT local_row,
+        LIS_INT *nnz,
+        LIS_INT *cols,
+        LIS_SCALAR *vals)
+{
+        LIS_INT err;
+        LIS_INT k;
+        LIS_INT capacity;
+        LIS_INT query_mode;
+
+        LIS_DEBUG_FUNC_IN;
+
+        err = lis_matrix_check(A,LIS_MATRIX_CHECK_ALL);
+        if( err ) return err;
+
+        if( A->matrix_type!=LIS_MATRIX_USER )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "matrix is not LIS_MATRIX_USER\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( nnz==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "nnz output pointer is NULL\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( local_row<0 || local_row>=A->n )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "local row is outside the local matrix range\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( (cols==NULL)!=(vals==NULL) )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "cols and vals must either both be NULL "
+                        "or both be non-NULL\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( A->user_get_row==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_NOT_IMPLEMENTED,
+                        "LIS_MATRIX_USER row callback is not set\n");
+                return LIS_ERR_NOT_IMPLEMENTED;
+        }
+
+        query_mode = (cols==NULL && vals==NULL);
+
+        if( query_mode )
+        {
+                capacity = 0;
+        }
+        else
+        {
+                capacity = *nnz;
+
+                if( capacity<0 )
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "row capacity is negative\n");
+                        return LIS_ERR_ILL_ARG;
+                }
+        }
+
+        err = A->user_get_row(
+                A->user_data,
+                local_row,
+                nnz,
+                cols,
+                vals);
+
+        if( err ) return err;
+
+        if( *nnz<0 )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "LIS_MATRIX_USER row callback returned "
+                        "a negative nnz\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( !query_mode && *nnz>capacity )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "LIS_MATRIX_USER row callback exceeded "
+                        "the supplied capacity\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( !query_mode )
+        {
+                for(k=0;k<*nnz;k++)
+                {
+                        if( cols[k]<0 || cols[k]>=A->gn )
+                        {
+                                LIS_SETERR(
+                                        LIS_ERR_ILL_ARG,
+                                        "LIS_MATRIX_USER row callback "
+                                        "returned an invalid global column\n");
+                                return LIS_ERR_ILL_ARG;
+                        }
+                }
+        }
 
         LIS_DEBUG_FUNC_OUT;
         return LIS_SUCCESS;
