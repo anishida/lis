@@ -89,6 +89,7 @@ lis_precon_mfamg_get_distributed_coarse_info(
 
 #define TEST_N 24
 #define HARD_N 31
+#define STRENGTH_N 8
 #define SOLVE_TOL 1.0e-8
 #define MATCH_TOL 1.0e-12
 
@@ -2142,6 +2143,304 @@ check_mfamg_distributed_aggregates(
 
     return global_failed;
 }
+
+static int
+check_mfamg_strength_aggregation(
+    int rank,
+    int nprocs)
+{
+    LIS_MATRIX A;
+
+    LIS_INT i;
+    LIS_INT local_i;
+    LIS_INT err;
+
+    LIS_INT local_nc;
+    LIS_INT global_nc;
+    LIS_INT coarse_is;
+    LIS_INT coarse_ie;
+    LIS_INT map_n;
+
+    LIS_INT fine_to_coarse[STRENGTH_N];
+
+    LIS_INT expected;
+
+    int local_failed;
+    int global_failed;
+
+
+    A = NULL;
+
+    local_nc = 0;
+    global_nc = 0;
+    coarse_is = 0;
+    coarse_ie = 0;
+    map_n = 0;
+
+    local_failed = 0;
+    global_failed = 0;
+
+
+    if(nprocs!=2)
+        return 0;
+
+
+    err =
+        lis_matrix_create(
+            LIS_COMM_WORLD,
+            &A);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_matrix_set_size(
+            A,
+            0,
+            STRENGTH_N);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    if(
+        A->gn!=STRENGTH_N
+        ||
+        A->n!=4)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    for(i=A->is;i<A->ie;i++)
+    {
+        local_i =
+            i
+            -
+            A->is;
+
+
+        err =
+            lis_matrix_set_value(
+                LIS_INS_VALUE,
+                i,
+                i,
+                (LIS_SCALAR)2.0,
+                A);
+
+        if(err)
+        {
+            local_failed = 1;
+            goto cleanup;
+        }
+
+
+        if(local_i==0)
+        {
+            err =
+                lis_matrix_set_value(
+                    LIS_INS_VALUE,
+                    i,
+                    i+1,
+                    (LIS_SCALAR)-1.0,
+                    A);
+        }
+        else if(local_i==1)
+        {
+            err =
+                lis_matrix_set_value(
+                    LIS_INS_VALUE,
+                    i,
+                    i-1,
+                    (LIS_SCALAR)-1.0,
+                    A);
+
+            if(!err)
+            {
+                err =
+                    lis_matrix_set_value(
+                        LIS_INS_VALUE,
+                        i,
+                        i+1,
+                        (LIS_SCALAR)-1.0,
+                        A);
+            }
+        }
+        else if(local_i==2)
+        {
+            err =
+                lis_matrix_set_value(
+                    LIS_INS_VALUE,
+                    i,
+                    i-1,
+                    (LIS_SCALAR)-1.0,
+                    A);
+
+            if(!err)
+            {
+                err =
+                    lis_matrix_set_value(
+                        LIS_INS_VALUE,
+                        i,
+                        i+1,
+                        (LIS_SCALAR)-1.0e-6,
+                        A);
+            }
+        }
+        else if(local_i==3)
+        {
+            err =
+                lis_matrix_set_value(
+                    LIS_INS_VALUE,
+                    i,
+                    i-1,
+                    (LIS_SCALAR)-1.0e-6,
+                    A);
+        }
+        else
+        {
+            err = LIS_ERR_ILL_ARG;
+        }
+
+
+        if(err)
+        {
+            local_failed = 1;
+            goto cleanup;
+        }
+    }
+
+
+    err =
+        lis_matrix_assemble(
+            A);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_precon_mfamg_get_distributed_aggregate_info(
+            A,
+            STRENGTH_N,
+            &local_nc,
+            &global_nc,
+            &coarse_is,
+            &coarse_ie,
+            &map_n,
+            fine_to_coarse);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    if(
+        local_nc!=3
+        ||
+        global_nc!=6
+        ||
+        coarse_is!=3*rank
+        ||
+        coarse_ie!=3*(rank+1)
+        ||
+        map_n!=4)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    for(i=0;i<4;i++)
+    {
+        if(i<2)
+        {
+            expected =
+                coarse_is;
+        }
+        else if(i==2)
+        {
+            expected =
+                coarse_is
+                +
+                1;
+        }
+        else
+        {
+            expected =
+                coarse_is
+                +
+                2;
+        }
+
+
+        if(fine_to_coarse[i]!=expected)
+        {
+            local_failed = 1;
+            goto cleanup;
+        }
+    }
+
+
+cleanup:
+
+    if(A)
+    {
+        lis_matrix_destroy(
+            A);
+    }
+
+
+#ifdef USE_MPI
+
+    MPI_Allreduce(
+        &local_failed,
+        &global_failed,
+        1,
+        MPI_INT,
+        MPI_MAX,
+        LIS_COMM_WORLD);
+
+#else
+
+    global_failed =
+        local_failed;
+
+#endif
+
+
+    if(rank==0)
+    {
+        printf(
+            "MPI_STRENGTH_AGGREGATION=%s "
+            "ranks=%d global_nc=%d theta=%.2e\n",
+            global_failed
+            ?
+            "FAILED"
+            :
+            "PASSED",
+            nprocs,
+            (int)global_nc,
+            (double)0.05);
+    }
+
+
+    return global_failed;
+}
+
 
 
 static int
@@ -4554,6 +4853,11 @@ run_mpi_rejection(
         row_failed |=
             check_mfamg_distributed_aggregates(
                 A,
+                rank,
+                nprocs);
+
+        row_failed |=
+            check_mfamg_strength_aggregation(
                 rank,
                 nprocs);
 

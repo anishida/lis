@@ -20,6 +20,7 @@
 
 #define LIS_MFAMG_MAX_LEVELS 32
 #define LIS_MFAMG_COARSE_LIMIT 8
+#define LIS_MFAMG_STRENGTH_THETA ((LIS_REAL)0.05)
 
 
 struct LIS_MFAMG_LEVEL
@@ -774,15 +775,93 @@ lis_mfamg_build_aggregates(
     LIS_INT *cols,
     LIS_SCALAR *vals)
 {
+    LIS_VECTOR diagonal;
+
     LIS_INT i;
     LIS_INT j;
     LIS_INT k;
     LIS_INT nnz;
     LIS_INT best;
     LIS_INT aggregate;
+    LIS_INT err;
 
     LIS_REAL best_mag;
     LIS_REAL mag;
+    LIS_REAL diagonal_i;
+    LIS_REAL diagonal_j;
+    LIS_REAL strength_limit;
+
+
+    if(
+        A==NULL
+        ||
+        level==NULL
+        ||
+        level->aggregate==NULL
+        ||
+        level->n!=A->n
+        ||
+        level->n<=0
+        ||
+        max_row_nnz<=0
+        ||
+        cols==NULL
+        ||
+        vals==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    diagonal = NULL;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &diagonal);
+
+    if(err)
+        return err;
+
+
+    err =
+        lis_matrix_get_diagonal(
+            A,
+            diagonal);
+
+    if(err)
+    {
+        lis_vector_destroy(
+            diagonal);
+
+        return err;
+    }
+
+
+    for(i=0;i<level->n;i++)
+    {
+        diagonal_i =
+            fabs(
+                diagonal->value[i]);
+
+        if(
+            diagonal_i!=diagonal_i
+            ||
+            diagonal_i>LIS_SCALAR_MAX
+            ||
+            diagonal_i==0.0)
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "MFAMG aggregation requires finite nonzero diagonal entries\n");
+
+            lis_vector_destroy(
+                diagonal);
+
+            return LIS_ERR_ILL_ARG;
+        }
+    }
 
 
     for(i=0;i<level->n;i++)
@@ -790,34 +869,44 @@ lis_mfamg_build_aggregates(
 
 
     aggregate = 0;
+    err = LIS_SUCCESS;
+
 
     for(i=0;i<level->n;i++)
     {
         if(level->aggregate[i]>=0)
             continue;
 
+
         level->aggregate[i] =
             aggregate;
+
 
         best = -1;
         best_mag = 0.0;
 
+
         nnz =
             max_row_nnz;
 
-        if(
+
+        err =
             lis_mfamg_row_fill(
                 A,
                 i,
                 max_row_nnz,
                 &nnz,
                 cols,
-                vals)
-            !=
-            LIS_SUCCESS)
-        {
-            return LIS_ERR_ILL_ARG;
-        }
+                vals);
+
+        if(err)
+            goto cleanup;
+
+
+        diagonal_i =
+            fabs(
+                diagonal->value[i]);
+
 
         for(k=0;k<nnz;k++)
         {
@@ -826,11 +915,11 @@ lis_mfamg_build_aggregates(
                 -
                 A->is;
 
+
             /*
-             * Aggregates are owned by one MPI rank.  Remote
-             * columns are therefore not paired here; their
-             * aggregate IDs are exchanged after local
-             * aggregation has completed.
+             * Aggregates remain rank-owned. Remote columns are
+             * not paired here; their aggregate metadata is
+             * exchanged after local aggregation.
              */
             if(
                 j<0
@@ -844,9 +933,58 @@ lis_mfamg_build_aggregates(
                 continue;
             }
 
+
             mag =
                 fabs(
                     vals[k]);
+
+
+            if(
+                mag!=mag
+                ||
+                mag>LIS_SCALAR_MAX)
+            {
+                LIS_SETERR(
+                    LIS_ERR_ILL_ARG,
+                    "MFAMG aggregation encountered a non-finite matrix entry\n");
+
+                err = LIS_ERR_ILL_ARG;
+                goto cleanup;
+            }
+
+
+            diagonal_j =
+                fabs(
+                    diagonal->value[j]);
+
+
+            strength_limit =
+                LIS_MFAMG_STRENGTH_THETA
+                *
+                sqrt(
+                    diagonal_i)
+                *
+                sqrt(
+                    diagonal_j);
+
+
+            if(
+                strength_limit!=strength_limit
+                ||
+                strength_limit>LIS_SCALAR_MAX)
+            {
+                LIS_SETERR(
+                    LIS_ERR_ILL_ARG,
+                    "MFAMG aggregation strength threshold overflowed\n");
+
+                err = LIS_ERR_ILL_ARG;
+                goto cleanup;
+            }
+
+
+            if(mag<strength_limit)
+                continue;
+
 
             if(mag>best_mag)
             {
@@ -855,22 +993,33 @@ lis_mfamg_build_aggregates(
             }
         }
 
+
         if(best>=0)
         {
             level->aggregate[best] =
                 aggregate;
         }
 
+
         aggregate++;
     }
+
 
     level->nc =
         aggregate;
 
-    if(level->nc<=0)
-        return LIS_BREAKDOWN;
 
-    return LIS_SUCCESS;
+    if(level->nc<=0)
+        err = LIS_BREAKDOWN;
+
+
+cleanup:
+
+    lis_vector_destroy(
+        diagonal);
+
+
+    return err;
 }
 
 
