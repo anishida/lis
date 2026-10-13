@@ -946,6 +946,42 @@ lis_mfamg_exchange_scalar_halo(
     }
 
 
+    if(
+        commtable->export_ptr[0]!=0
+        ||
+        commtable->import_ptr[0]!=0)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    for(
+        neib=0;
+        neib<commtable->neibpetot;
+        neib++)
+    {
+        if(
+            commtable->export_ptr[neib]<0
+            ||
+            commtable->export_ptr[neib+1]
+                <
+            commtable->export_ptr[neib]
+            ||
+            commtable->import_ptr[neib]<0
+            ||
+            commtable->import_ptr[neib+1]
+                <
+            commtable->import_ptr[neib]
+            ||
+            commtable->neibpe[neib]<0
+            ||
+            commtable->neibpe[neib]>=A->nprocs)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+
     send_count =
         commtable->export_ptr[
             commtable->neibpetot];
@@ -961,6 +997,34 @@ lis_mfamg_exchange_scalar_halo(
         recv_count<0)
     {
         return LIS_ERR_ILL_ARG;
+    }
+
+
+    /*
+     * Validate the complete communication topology before
+     * posting any nonblocking MPI request.
+     */
+    for(i=0;i<send_count;i++)
+    {
+        if(
+            commtable->export_index[i]<0
+            ||
+            commtable->export_index[i]>=A->n)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+
+    for(i=0;i<recv_count;i++)
+    {
+        if(
+            commtable->import_index[i]<A->n
+            ||
+            commtable->import_index[i]>=A->np)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
     }
 
 
@@ -1017,6 +1081,18 @@ lis_mfamg_exchange_scalar_halo(
     }
 
 
+    for(i=0;i<send_count;i++)
+    {
+        ws[i] =
+            x[
+                commtable->export_index[i]];
+    }
+
+
+    /*
+     * From this point onward there are no locally generated
+     * error exits until both request sets have completed.
+     */
     for(
         neib=0;
         neib<commtable->neibpetot;
@@ -1029,26 +1105,6 @@ lis_mfamg_exchange_scalar_halo(
             commtable->export_ptr[neib+1]
             -
             is;
-
-
-        for(i=is;i<is+count;i++)
-        {
-            if(
-                commtable->export_index[i]<0
-                ||
-                commtable->export_index[i]>=A->n)
-            {
-                lis_free(wr);
-                lis_free(ws);
-
-                return LIS_ERR_ILL_ARG;
-            }
-
-
-            ws[i] =
-                x[
-                    commtable->export_index[i]];
-        }
 
 
         MPI_Isend(
@@ -1093,39 +1149,12 @@ lis_mfamg_exchange_scalar_halo(
         commtable->sta2);
 
 
-    for(
-        neib=0;
-        neib<commtable->neibpetot;
-        neib++)
+    for(i=0;i<recv_count;i++)
     {
-        is =
-            commtable->import_ptr[neib];
-
-        count =
-            commtable->import_ptr[neib+1]
-            -
-            is;
-
-
-        for(i=is;i<is+count;i++)
-        {
-            if(
-                commtable->import_index[i]<A->n
-                ||
-                commtable->import_index[i]>=A->np)
-            {
-                lis_free(wr);
-                lis_free(ws);
-
-                return LIS_ERR_ILL_ARG;
-            }
-
-
-            x[
-                commtable->import_index[i]]
-                =
-                wr[i];
-        }
+        x[
+            commtable->import_index[i]]
+            =
+            wr[i];
     }
 
 
@@ -1229,6 +1258,42 @@ lis_mfamg_exchange_int_halo(
     }
 
 
+    if(
+        commtable->export_ptr[0]!=0
+        ||
+        commtable->import_ptr[0]!=0)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    for(
+        neib=0;
+        neib<commtable->neibpetot;
+        neib++)
+    {
+        if(
+            commtable->export_ptr[neib]<0
+            ||
+            commtable->export_ptr[neib+1]
+                <
+            commtable->export_ptr[neib]
+            ||
+            commtable->import_ptr[neib]<0
+            ||
+            commtable->import_ptr[neib+1]
+                <
+            commtable->import_ptr[neib]
+            ||
+            commtable->neibpe[neib]<0
+            ||
+            commtable->neibpe[neib]>=A->nprocs)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+
     send_count =
         commtable->export_ptr[
             commtable->neibpetot];
@@ -1244,6 +1309,34 @@ lis_mfamg_exchange_int_halo(
         recv_count<0)
     {
         return LIS_ERR_ILL_ARG;
+    }
+
+
+    /*
+     * Validate the complete communication topology before
+     * posting any nonblocking MPI request.
+     */
+    for(i=0;i<send_count;i++)
+    {
+        if(
+            commtable->export_index[i]<0
+            ||
+            commtable->export_index[i]>=A->n)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+
+    for(i=0;i<recv_count;i++)
+    {
+        if(
+            commtable->import_index[i]<A->n
+            ||
+            commtable->import_index[i]>=A->np)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
     }
 
 
@@ -1300,6 +1393,18 @@ lis_mfamg_exchange_int_halo(
     }
 
 
+    for(i=0;i<send_count;i++)
+    {
+        ws[i] =
+            x[
+                commtable->export_index[i]];
+    }
+
+
+    /*
+     * From this point onward there are no locally generated
+     * error exits until both request sets have completed.
+     */
     for(
         neib=0;
         neib<commtable->neibpetot;
@@ -1312,26 +1417,6 @@ lis_mfamg_exchange_int_halo(
             commtable->export_ptr[neib+1]
             -
             is;
-
-
-        for(i=is;i<is+count;i++)
-        {
-            if(
-                commtable->export_index[i]<0
-                ||
-                commtable->export_index[i]>=A->n)
-            {
-                lis_free(wr);
-                lis_free(ws);
-
-                return LIS_ERR_ILL_ARG;
-            }
-
-
-            ws[i] =
-                x[
-                    commtable->export_index[i]];
-        }
 
 
         MPI_Isend(
@@ -1376,39 +1461,12 @@ lis_mfamg_exchange_int_halo(
         commtable->sta2);
 
 
-    for(
-        neib=0;
-        neib<commtable->neibpetot;
-        neib++)
+    for(i=0;i<recv_count;i++)
     {
-        is =
-            commtable->import_ptr[neib];
-
-        count =
-            commtable->import_ptr[neib+1]
-            -
-            is;
-
-
-        for(i=is;i<is+count;i++)
-        {
-            if(
-                commtable->import_index[i]<A->n
-                ||
-                commtable->import_index[i]>=A->np)
-            {
-                lis_free(wr);
-                lis_free(ws);
-
-                return LIS_ERR_ILL_ARG;
-            }
-
-
-            x[
-                commtable->import_index[i]]
-                =
-                wr[i];
-        }
+        x[
+            commtable->import_index[i]]
+            =
+            wr[i];
     }
 
 
