@@ -18,6 +18,10 @@
 #include "lislib.h"
 
 
+#define LIS_MFAMG_MAX_LEVELS 32
+#define LIS_MFAMG_COARSE_LIMIT 8
+
+
 struct LIS_MFAMG_LEVEL
 {
     LIS_MATRIX A;
@@ -37,6 +41,7 @@ struct LIS_MFAMG_LEVEL
 struct LIS_MFAMG_STRUCT
 {
     LIS_INT nlevels;
+    LIS_INT level_capacity;
     struct LIS_MFAMG_LEVEL *levels;
 
     LIS_INT coarse_n;
@@ -831,7 +836,7 @@ static LIS_INT
 lis_mfamg_build_coarse(
     LIS_MATRIX A,
     struct LIS_MFAMG_LEVEL *level,
-    struct LIS_MFAMG_STRUCT *state,
+    LIS_SCALAR *coarse,
     LIS_INT max_row_nnz,
     LIS_INT *cols,
     LIS_SCALAR *vals)
@@ -848,7 +853,7 @@ lis_mfamg_build_coarse(
 
 
     memset(
-        state->coarse,
+        coarse,
         0,
         (size_t)level->nc
             *
@@ -904,7 +909,7 @@ lis_mfamg_build_coarse(
             aj =
                 level->aggregate[j];
 
-            state->coarse[
+            coarse[
                 ai*level->nc
                 +
                 aj]
@@ -1170,6 +1175,707 @@ lis_mfamg_create_csr_from_dense(
 
 
 #undef __FUNC__
+#define __FUNC__ "lis_mfamg_prepare_level_work"
+static LIS_INT
+lis_mfamg_prepare_level_work(
+    struct LIS_MFAMG_LEVEL *level)
+{
+    LIS_INT i;
+    LIS_INT err;
+
+    LIS_REAL diagonal_mag;
+
+
+    if(
+        level==NULL
+        ||
+        level->A==NULL
+        ||
+        level->n<=0)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    if(
+        level->diagonal!=NULL
+        ||
+        level->ax!=NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    err =
+        lis_vector_duplicate(
+            level->A,
+            &level->diagonal);
+
+    if(err)
+        return err;
+
+
+    err =
+        lis_vector_duplicate(
+            level->A,
+            &level->ax);
+
+    if(err)
+        return err;
+
+
+    err =
+        lis_matrix_get_diagonal(
+            level->A,
+            level->diagonal);
+
+    if(err)
+        return err;
+
+
+    for(i=0;i<level->n;i++)
+    {
+        diagonal_mag =
+            fabs(
+                level->diagonal->value[i]);
+
+        if(
+            diagonal_mag!=diagonal_mag
+            ||
+            diagonal_mag>LIS_SCALAR_MAX
+            ||
+            diagonal_mag==0.0)
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "MFAMG requires finite nonzero diagonal entries\n");
+
+            return LIS_BREAKDOWN;
+        }
+    }
+
+
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_mfamg_get_max_row_nnz"
+static LIS_INT
+lis_mfamg_get_max_row_nnz(
+    LIS_MATRIX A,
+    LIS_INT n,
+    LIS_INT *max_row_nnz)
+{
+    LIS_INT i;
+    LIS_INT row_nnz;
+    LIS_INT err;
+
+
+    if(
+        A==NULL
+        ||
+        n<=0
+        ||
+        max_row_nnz==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    *max_row_nnz = 0;
+
+
+    for(i=0;i<n;i++)
+    {
+        row_nnz = 0;
+
+        err =
+            lis_mfamg_row_query(
+                A,
+                i,
+                &row_nnz);
+
+        if(err)
+            return err;
+
+        if(row_nnz<0)
+            return LIS_ERR_ILL_ARG;
+
+        if(row_nnz>*max_row_nnz)
+        {
+            *max_row_nnz =
+                row_nnz;
+        }
+    }
+
+
+    if(*max_row_nnz<=0)
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "MFAMG requires matrix rows with entries\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_mfamg_build_coarse_nullspace"
+static LIS_INT
+lis_mfamg_build_coarse_nullspace(
+    LIS_VECTOR z,
+    struct LIS_MFAMG_LEVEL *level,
+    LIS_MATRIX coarse_A,
+    LIS_VECTOR *coarse_z)
+{
+    LIS_VECTOR zc;
+
+    LIS_INT i;
+    LIS_INT a;
+    LIS_INT err;
+
+    LIS_REAL mag;
+
+
+    if(
+        z==NULL
+        ||
+        level==NULL
+        ||
+        coarse_A==NULL
+        ||
+        coarse_z==NULL
+        ||
+        level->n<=0
+        ||
+        level->nc<=0
+        ||
+        z->n!=level->n
+        ||
+        coarse_A->n!=level->nc)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    *coarse_z = NULL;
+    zc = NULL;
+
+
+    err =
+        lis_vector_duplicate(
+            coarse_A,
+            &zc);
+
+    if(err)
+        return err;
+
+
+    memset(
+        zc->value,
+        0,
+        (size_t)level->nc
+            *
+        sizeof(LIS_SCALAR));
+
+
+    for(i=0;i<level->n;i++)
+    {
+        a =
+            level->aggregate[i];
+
+        if(
+            a<0
+            ||
+            a>=level->nc)
+        {
+            lis_vector_destroy(zc);
+            return LIS_ERR_ILL_ARG;
+        }
+
+        zc->value[a] +=
+            conj(
+                level->prolong[i])
+            *
+            z->value[i];
+    }
+
+
+    for(a=0;a<level->nc;a++)
+    {
+        mag =
+            fabs(
+                zc->value[a]);
+
+        if(
+            mag!=mag
+            ||
+            mag>LIS_SCALAR_MAX
+            ||
+            mag==0.0)
+        {
+            lis_vector_destroy(zc);
+
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "MFAMG coarse near-nullspace vector is invalid\n");
+
+            return LIS_BREAKDOWN;
+        }
+    }
+
+
+    *coarse_z =
+        zc;
+
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_mfamg_extend_hierarchy"
+static LIS_INT
+lis_mfamg_extend_hierarchy(
+    struct LIS_MFAMG_STRUCT *state,
+    LIS_VECTOR fine_z)
+{
+    struct LIS_MFAMG_LEVEL *level;
+    struct LIS_MFAMG_LEVEL *next_level;
+
+    LIS_VECTOR current_z;
+    LIS_VECTOR next_z;
+
+    LIS_INT level_id;
+    LIS_INT max_row_nnz;
+    LIS_INT err;
+
+    LIS_INT *cols;
+    LIS_SCALAR *vals;
+    LIS_SCALAR *dense;
+
+    size_t dense_entries;
+
+
+    if(
+        state==NULL
+        ||
+        fine_z==NULL
+        ||
+        state->levels==NULL
+        ||
+        state->nlevels!=2
+        ||
+        state->level_capacity<2
+        ||
+        state->levels[0].A==NULL
+        ||
+        state->levels[1].A==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    current_z = NULL;
+    next_z = NULL;
+    cols = NULL;
+    vals = NULL;
+    dense = NULL;
+
+
+    err =
+        lis_mfamg_build_coarse_nullspace(
+            fine_z,
+            &state->levels[0],
+            state->levels[1].A,
+            &current_z);
+
+    if(err)
+        return err;
+
+
+    level_id = 1;
+
+
+    while(
+        level_id<state->level_capacity-1
+        &&
+        state->levels[level_id].n
+            >
+        LIS_MFAMG_COARSE_LIMIT)
+    {
+        level =
+            &state->levels[level_id];
+
+        next_level =
+            &state->levels[level_id+1];
+
+
+        max_row_nnz = 0;
+
+        err =
+            lis_mfamg_get_max_row_nnz(
+                level->A,
+                level->n,
+                &max_row_nnz);
+
+        if(err)
+            goto fail;
+
+
+        level->aggregate =
+            (LIS_INT *)lis_malloc(
+                (size_t)level->n
+                    *
+                sizeof(LIS_INT),
+                "lis_mfamg_extend_hierarchy::aggregate");
+
+        if(level->aggregate==NULL)
+        {
+            LIS_SETERR_MEM(
+                (size_t)level->n
+                    *
+                sizeof(LIS_INT));
+
+            err = LIS_OUT_OF_MEMORY;
+            goto fail;
+        }
+
+
+        cols =
+            (LIS_INT *)lis_malloc(
+                (size_t)max_row_nnz
+                    *
+                sizeof(LIS_INT),
+                "lis_mfamg_extend_hierarchy::cols");
+
+        vals =
+            (LIS_SCALAR *)lis_malloc(
+                (size_t)max_row_nnz
+                    *
+                sizeof(LIS_SCALAR),
+                "lis_mfamg_extend_hierarchy::vals");
+
+        if(
+            cols==NULL
+            ||
+            vals==NULL)
+        {
+            LIS_SETERR_MEM(
+                (size_t)max_row_nnz
+                    *
+                (
+                    sizeof(LIS_INT)
+                    +
+                    sizeof(LIS_SCALAR)
+                ));
+
+            err = LIS_OUT_OF_MEMORY;
+            goto fail;
+        }
+
+
+        err =
+            lis_mfamg_build_aggregates(
+                level->A,
+                level,
+                max_row_nnz,
+                cols,
+                vals);
+
+        if(err)
+            goto fail;
+
+
+        if(level->nc>=level->n)
+        {
+            lis_free(
+                level->aggregate);
+
+            level->aggregate = NULL;
+            level->nc = 0;
+
+            lis_free(vals);
+            lis_free(cols);
+
+            vals = NULL;
+            cols = NULL;
+
+            break;
+        }
+
+
+        level->prolong =
+            (LIS_SCALAR *)lis_malloc(
+                (size_t)level->n
+                    *
+                sizeof(LIS_SCALAR),
+                "lis_mfamg_extend_hierarchy::prolong");
+
+        if(level->prolong==NULL)
+        {
+            LIS_SETERR_MEM(
+                (size_t)level->n
+                    *
+                sizeof(LIS_SCALAR));
+
+            err = LIS_OUT_OF_MEMORY;
+            goto fail;
+        }
+
+
+        err =
+            lis_mfamg_build_prolongation(
+                current_z,
+                level);
+
+        if(err)
+            goto fail;
+
+
+        err =
+            lis_mfamg_prepare_level_work(
+                level);
+
+        if(err)
+            goto fail;
+
+
+        if(
+            (size_t)level->nc
+            >
+            ((size_t)-1)
+            /
+            (size_t)level->nc)
+        {
+            LIS_SETERR(
+                LIS_OUT_OF_MEMORY,
+                "MFAMG hierarchy coarse dimension overflow\n");
+
+            err = LIS_OUT_OF_MEMORY;
+            goto fail;
+        }
+
+
+        dense_entries =
+            (size_t)level->nc
+                *
+            (size_t)level->nc;
+
+
+        if(
+            dense_entries
+            >
+            ((size_t)-1)
+            /
+            sizeof(LIS_SCALAR))
+        {
+            LIS_SETERR(
+                LIS_OUT_OF_MEMORY,
+                "MFAMG hierarchy coarse allocation overflow\n");
+
+            err = LIS_OUT_OF_MEMORY;
+            goto fail;
+        }
+
+
+        dense =
+            (LIS_SCALAR *)lis_malloc(
+                dense_entries
+                    *
+                sizeof(LIS_SCALAR),
+                "lis_mfamg_extend_hierarchy::dense");
+
+        if(dense==NULL)
+        {
+            LIS_SETERR_MEM(
+                dense_entries
+                    *
+                sizeof(LIS_SCALAR));
+
+            err = LIS_OUT_OF_MEMORY;
+            goto fail;
+        }
+
+
+        err =
+            lis_mfamg_build_coarse(
+                level->A,
+                level,
+                dense,
+                max_row_nnz,
+                cols,
+                vals);
+
+        if(err)
+            goto fail;
+
+
+        err =
+            lis_mfamg_create_csr_from_dense(
+                level->A->comm,
+                level->nc,
+                dense,
+                next_level);
+
+        if(err)
+            goto fail;
+
+
+        state->nlevels =
+            level_id+2;
+
+
+        err =
+            lis_mfamg_build_coarse_nullspace(
+                current_z,
+                level,
+                next_level->A,
+                &next_z);
+
+        if(err)
+            goto fail;
+
+
+        lis_free(dense);
+        lis_free(vals);
+        lis_free(cols);
+
+        dense = NULL;
+        vals = NULL;
+        cols = NULL;
+
+
+        lis_vector_destroy(
+            current_z);
+
+        current_z =
+            next_z;
+
+        next_z = NULL;
+
+        level_id++;
+    }
+
+
+    if(current_z)
+        lis_vector_destroy(current_z);
+
+    return LIS_SUCCESS;
+
+
+fail:
+
+    if(dense)
+        lis_free(dense);
+
+    if(vals)
+        lis_free(vals);
+
+    if(cols)
+        lis_free(cols);
+
+    if(next_z)
+        lis_vector_destroy(next_z);
+
+    if(current_z)
+        lis_vector_destroy(current_z);
+
+    return err;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_mfamg_validate_hierarchy"
+static LIS_INT
+lis_mfamg_validate_hierarchy(
+    struct LIS_MFAMG_STRUCT *state)
+{
+    LIS_INT level_id;
+
+    struct LIS_MFAMG_LEVEL *level;
+    struct LIS_MFAMG_LEVEL *next_level;
+
+
+    if(
+        state==NULL
+        ||
+        state->levels==NULL
+        ||
+        state->nlevels<2
+        ||
+        state->nlevels>state->level_capacity)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    for(
+        level_id=0;
+        level_id<state->nlevels;
+        level_id++)
+    {
+        level =
+            &state->levels[level_id];
+
+        if(
+            level->A==NULL
+            ||
+            level->n<=0
+            ||
+            level->A->n!=level->n)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+
+        if(
+            level_id==0
+            &&
+            level->owns_A)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+
+        if(
+            level_id>0
+            &&
+            !level->owns_A)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+
+
+        if(level_id==state->nlevels-1)
+            continue;
+
+
+        next_level =
+            &state->levels[level_id+1];
+
+        if(
+            level->aggregate==NULL
+            ||
+            level->prolong==NULL
+            ||
+            level->nc<=0
+            ||
+            level->nc!=next_level->n)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+
+    return LIS_SUCCESS;
+}
+
+
+
+#undef __FUNC__
 #define __FUNC__ "lis_mfamg_factor_csr_terminal"
 static LIS_INT
 lis_mfamg_factor_csr_terminal(
@@ -1281,8 +1987,6 @@ lis_precon_create_mfamg(
 
     LIS_INT i;
     LIS_INT err;
-
-    LIS_REAL diagonal_mag;
 
     size_t coarse_entries;
 
@@ -1455,10 +2159,13 @@ lis_precon_create_mfamg(
     state->nlevels =
         2;
 
+    state->level_capacity =
+        LIS_MFAMG_MAX_LEVELS;
+
     state->levels =
         (struct LIS_MFAMG_LEVEL *)
         lis_malloc(
-            (size_t)state->nlevels
+            (size_t)state->level_capacity
                 *
             sizeof(struct LIS_MFAMG_LEVEL),
             "lis_precon_create_mfamg::levels");
@@ -1466,7 +2173,7 @@ lis_precon_create_mfamg(
     if(state->levels==NULL)
     {
         LIS_SETERR_MEM(
-            (size_t)state->nlevels
+            (size_t)state->level_capacity
                 *
             sizeof(struct LIS_MFAMG_LEVEL));
 
@@ -1479,7 +2186,7 @@ lis_precon_create_mfamg(
     memset(
         state->levels,
         0,
-        (size_t)state->nlevels
+        (size_t)state->level_capacity
             *
         sizeof(struct LIS_MFAMG_LEVEL));
 
@@ -1759,7 +2466,7 @@ lis_precon_create_mfamg(
         lis_mfamg_build_coarse(
             A,
             level,
-            state,
+            state->coarse,
             max_row_nnz,
             cols,
             vals);
@@ -1801,9 +2508,9 @@ lis_precon_create_mfamg(
 
 
     err =
-        lis_vector_duplicate(
-            A,
-            &level->diagonal);
+        lis_mfamg_extend_hierarchy(
+            state,
+            solver->near_nullspace[0]);
 
     if(err)
     {
@@ -1813,9 +2520,8 @@ lis_precon_create_mfamg(
 
 
     err =
-        lis_vector_duplicate(
-            A,
-            &level->ax);
+        lis_mfamg_prepare_level_work(
+            level);
 
     if(err)
     {
@@ -1825,38 +2531,18 @@ lis_precon_create_mfamg(
 
 
     err =
-        lis_matrix_get_diagonal(
-            A,
-            level->diagonal);
+        lis_mfamg_validate_hierarchy(
+            state);
 
     if(err)
     {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "MFAMG hierarchy validation failed\n");
+
         lis_mfamg_state_free(state);
+
         return err;
-    }
-
-
-    for(i=0;i<level->n;i++)
-    {
-        diagonal_mag =
-            fabs(
-                level->diagonal->value[i]);
-
-        if(
-            diagonal_mag!=diagonal_mag
-            ||
-            diagonal_mag>LIS_SCALAR_MAX
-            ||
-            diagonal_mag==0.0)
-        {
-            LIS_SETERR(
-                LIS_BREAKDOWN,
-                "MFAMG requires finite nonzero diagonal entries\n");
-
-            lis_mfamg_state_free(state);
-
-            return LIS_BREAKDOWN;
-        }
     }
 
 
