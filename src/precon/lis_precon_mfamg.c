@@ -35,6 +35,9 @@ struct LIS_MFAMG_LEVEL
 
     LIS_VECTOR diagonal;
     LIS_VECTOR ax;
+
+    LIS_VECTOR rhs;
+    LIS_VECTOR x;
 };
 
 
@@ -49,9 +52,6 @@ struct LIS_MFAMG_STRUCT
     LIS_SCALAR *coarse;
     LIS_SCALAR *lu;
     LIS_INT *pivots;
-
-    LIS_SCALAR *coarse_rhs;
-    LIS_SCALAR *coarse_x;
 
     LIS_REAL omega;
 };
@@ -92,6 +92,12 @@ lis_mfamg_state_free(
             if(level->ax)
                 lis_vector_destroy(level->ax);
 
+            if(level->rhs)
+                lis_vector_destroy(level->rhs);
+
+            if(level->x)
+                lis_vector_destroy(level->x);
+
             if(
                 level->owns_A
                 &&
@@ -113,12 +119,6 @@ lis_mfamg_state_free(
 
     if(state->pivots)
         lis_free(state->pivots);
-
-    if(state->coarse_rhs)
-        lis_free(state->coarse_rhs);
-
-    if(state->coarse_x)
-        lis_free(state->coarse_x);
 
 
     lis_free(state);
@@ -478,7 +478,9 @@ lis_mfamg_dense_factor(
 #define __FUNC__ "lis_mfamg_dense_solve"
 static LIS_INT
 lis_mfamg_dense_solve(
-    struct LIS_MFAMG_STRUCT *state)
+    struct LIS_MFAMG_STRUCT *state,
+    LIS_VECTOR rhs,
+    LIS_VECTOR x)
 {
     LIS_INT i;
     LIS_INT j;
@@ -490,10 +492,41 @@ lis_mfamg_dense_solve(
     LIS_SCALAR tmp;
     LIS_SCALAR sum;
 
+    LIS_SCALAR *rhs_value;
+    LIS_SCALAR *x_value;
+
+
+    if(
+        state==NULL
+        ||
+        rhs==NULL
+        ||
+        x==NULL
+        ||
+        state->coarse_n<=0
+        ||
+        state->lu==NULL
+        ||
+        state->pivots==NULL
+        ||
+        rhs->n!=state->coarse_n
+        ||
+        x->n!=state->coarse_n)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    rhs_value =
+        rhs->value;
+
+    x_value =
+        x->value;
+
 
     memcpy(
-        state->coarse_x,
-        state->coarse_rhs,
+        x_value,
+        rhs_value,
         (size_t)state->coarse_n
             *
         sizeof(LIS_SCALAR));
@@ -504,15 +537,23 @@ lis_mfamg_dense_solve(
         p =
             state->pivots[k];
 
+        if(
+            p<0
+            ||
+            p>=state->coarse_n)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+
         if(p!=k)
         {
             tmp =
-                state->coarse_x[k];
+                x_value[k];
 
-            state->coarse_x[k] =
-                state->coarse_x[p];
+            x_value[k] =
+                x_value[p];
 
-            state->coarse_x[p] =
+            x_value[p] =
                 tmp;
         }
     }
@@ -521,7 +562,7 @@ lis_mfamg_dense_solve(
     for(i=1;i<state->coarse_n;i++)
     {
         sum =
-            state->coarse_x[i];
+            x_value[i];
 
         for(j=0;j<i;j++)
         {
@@ -529,10 +570,10 @@ lis_mfamg_dense_solve(
                 state->lu[
                     i*state->coarse_n+j]
                 *
-                state->coarse_x[j];
+                x_value[j];
         }
 
-        state->coarse_x[i] =
+        x_value[i] =
             sum;
     }
 
@@ -540,7 +581,7 @@ lis_mfamg_dense_solve(
     for(i=state->coarse_n-1;i>=0;i--)
     {
         sum =
-            state->coarse_x[i];
+            x_value[i];
 
         for(j=i+1;j<state->coarse_n;j++)
         {
@@ -548,7 +589,7 @@ lis_mfamg_dense_solve(
                 state->lu[
                     i*state->coarse_n+j]
                 *
-                state->coarse_x[j];
+                x_value[j];
         }
 
         if(
@@ -565,7 +606,7 @@ lis_mfamg_dense_solve(
             return LIS_BREAKDOWN;
         }
 
-        state->coarse_x[i] =
+        x_value[i] =
             sum
             /
             state->lu[
@@ -573,7 +614,7 @@ lis_mfamg_dense_solve(
 
         mag =
             fabs(
-                state->coarse_x[i]);
+                x_value[i]);
 
         if(
             mag!=mag
@@ -1260,6 +1301,73 @@ lis_mfamg_prepare_level_work(
 
 
 #undef __FUNC__
+#define __FUNC__ "lis_mfamg_prepare_cycle_vectors"
+static LIS_INT
+lis_mfamg_prepare_cycle_vectors(
+    struct LIS_MFAMG_STRUCT *state)
+{
+    struct LIS_MFAMG_LEVEL *level;
+
+    LIS_INT level_id;
+    LIS_INT err;
+
+
+    if(
+        state==NULL
+        ||
+        state->levels==NULL
+        ||
+        state->nlevels<2)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    for(
+        level_id=1;
+        level_id<state->nlevels;
+        level_id++)
+    {
+        level =
+            &state->levels[level_id];
+
+        if(
+            level->A==NULL
+            ||
+            level->n<=0
+            ||
+            level->rhs!=NULL
+            ||
+            level->x!=NULL)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+
+
+        err =
+            lis_vector_duplicate(
+                level->A,
+                &level->rhs);
+
+        if(err)
+            return err;
+
+
+        err =
+            lis_vector_duplicate(
+                level->A,
+                &level->x);
+
+        if(err)
+            return err;
+    }
+
+
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
 #define __FUNC__ "lis_mfamg_get_max_row_nnz"
 static LIS_INT
 lis_mfamg_get_max_row_nnz(
@@ -1849,6 +1957,19 @@ lis_mfamg_validate_hierarchy(
         }
 
 
+        if(
+            level_id>0
+            &&
+            (
+                level->rhs==NULL
+                ||
+                level->x==NULL
+            ))
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+
+
         if(level_id==state->nlevels-1)
             continue;
 
@@ -1860,6 +1981,10 @@ lis_mfamg_validate_hierarchy(
             level->aggregate==NULL
             ||
             level->prolong==NULL
+            ||
+            level->diagonal==NULL
+            ||
+            level->ax==NULL
             ||
             level->nc<=0
             ||
@@ -1964,6 +2089,258 @@ lis_mfamg_factor_csr_terminal(
 
 
 #undef __FUNC__
+#define __FUNC__ "lis_mfamg_v_cycle"
+static LIS_INT
+lis_mfamg_v_cycle(
+    struct LIS_MFAMG_STRUCT *state,
+    LIS_INT level_id,
+    LIS_VECTOR b,
+    LIS_VECTOR x)
+{
+    struct LIS_MFAMG_LEVEL *level;
+    struct LIS_MFAMG_LEVEL *next_level;
+
+    LIS_INT i;
+    LIS_INT a;
+    LIS_INT err;
+
+    LIS_SCALAR residual;
+
+    LIS_SCALAR *bv;
+    LIS_SCALAR *xv;
+    LIS_SCALAR *av;
+    LIS_SCALAR *diag;
+    LIS_SCALAR *coarse_b;
+    LIS_SCALAR *coarse_x;
+
+
+    if(
+        state==NULL
+        ||
+        state->levels==NULL
+        ||
+        b==NULL
+        ||
+        x==NULL
+        ||
+        level_id<0
+        ||
+        level_id>=state->nlevels)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    level =
+        &state->levels[level_id];
+
+
+    if(
+        level->A==NULL
+        ||
+        level->n<=0
+        ||
+        b->n!=level->n
+        ||
+        x->n!=level->n)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    if(level_id==state->nlevels-1)
+    {
+        if(level->n!=state->coarse_n)
+            return LIS_ERR_ILL_ARG;
+
+        return
+            lis_mfamg_dense_solve(
+                state,
+                b,
+                x);
+    }
+
+
+    next_level =
+        &state->levels[level_id+1];
+
+
+    if(
+        level->aggregate==NULL
+        ||
+        level->prolong==NULL
+        ||
+        level->diagonal==NULL
+        ||
+        level->ax==NULL
+        ||
+        level->nc<=0
+        ||
+        level->nc!=next_level->n
+        ||
+        next_level->rhs==NULL
+        ||
+        next_level->x==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    bv =
+        b->value;
+
+    xv =
+        x->value;
+
+    av =
+        level->ax->value;
+
+    diag =
+        level->diagonal->value;
+
+    coarse_b =
+        next_level->rhs->value;
+
+    coarse_x =
+        next_level->x->value;
+
+
+    /*
+     * One weighted-Jacobi pre-smoothing step from zero.
+     */
+    for(i=0;i<level->n;i++)
+    {
+        xv[i] =
+            state->omega
+            *
+            bv[i]
+            /
+            diag[i];
+    }
+
+
+    err =
+        lis_matvec(
+            level->A,
+            x,
+            level->ax);
+
+    if(err)
+        return err;
+
+
+    memset(
+        coarse_b,
+        0,
+        (size_t)next_level->n
+            *
+        sizeof(LIS_SCALAR));
+
+
+    /*
+     * Restriction:
+     *
+     *     b_(l+1) = P_l^H (b_l - A_l x_l)
+     */
+    for(i=0;i<level->n;i++)
+    {
+        residual =
+            bv[i]
+            -
+            av[i];
+
+        a =
+            level->aggregate[i];
+
+        if(
+            a<0
+            ||
+            a>=next_level->n)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+
+        coarse_b[a] +=
+            conj(
+                level->prolong[i])
+            *
+            residual;
+    }
+
+
+    /*
+     * Recursive coarse-grid correction.
+     */
+    err =
+        lis_mfamg_v_cycle(
+            state,
+            level_id+1,
+            next_level->rhs,
+            next_level->x);
+
+    if(err)
+        return err;
+
+
+    /*
+     * Prolongation:
+     *
+     *     x_l <- x_l + P_l x_(l+1)
+     */
+    for(i=0;i<level->n;i++)
+    {
+        a =
+            level->aggregate[i];
+
+        if(
+            a<0
+            ||
+            a>=next_level->n)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+
+        xv[i] +=
+            level->prolong[i]
+            *
+            coarse_x[a];
+    }
+
+
+    err =
+        lis_matvec(
+            level->A,
+            x,
+            level->ax);
+
+    if(err)
+        return err;
+
+
+    /*
+     * One weighted-Jacobi post-smoothing step.
+     */
+    for(i=0;i<level->n;i++)
+    {
+        residual =
+            bv[i]
+            -
+            av[i];
+
+        xv[i] +=
+            state->omega
+            *
+            residual
+            /
+            diag[i];
+    }
+
+
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
 #define __FUNC__ "lis_precon_create_mfamg"
 LIS_INT
 lis_precon_create_mfamg(
@@ -1973,6 +2350,7 @@ lis_precon_create_mfamg(
     struct LIS_MFAMG_STRUCT *state;
     struct LIS_MFAMG_LEVEL *level;
     struct LIS_MFAMG_LEVEL *coarse_level;
+    struct LIS_MFAMG_LEVEL *terminal_level;
 
     LIS_MATRIX A;
 
@@ -2024,7 +2402,7 @@ lis_precon_create_mfamg(
     {
         LIS_SETERR(
             LIS_ERR_NOT_IMPLEMENTED,
-            "MFAMG Stage 3 supports one MPI process\n");
+            "MFAMG supports one MPI process\n");
 
         return LIS_ERR_NOT_IMPLEMENTED;
     }
@@ -2038,7 +2416,7 @@ lis_precon_create_mfamg(
     {
         LIS_SETERR(
             LIS_ERR_NOT_IMPLEMENTED,
-            "MFAMG Stage 3 supports double precision\n");
+            "MFAMG supports double precision\n");
 
         return LIS_ERR_NOT_IMPLEMENTED;
     }
@@ -2051,7 +2429,7 @@ lis_precon_create_mfamg(
     {
         LIS_SETERR(
             LIS_ERR_NOT_IMPLEMENTED,
-            "MFAMG Stage 3 requires scale=none\n");
+            "MFAMG requires scale=none\n");
 
         return LIS_ERR_NOT_IMPLEMENTED;
     }
@@ -2066,7 +2444,7 @@ lis_precon_create_mfamg(
     {
         LIS_SETERR(
             LIS_ERR_ILL_ARG,
-            "MFAMG Stage 3 requires exactly one near-nullspace vector\n");
+            "MFAMG requires exactly one near-nullspace vector\n");
 
         return LIS_ERR_ILL_ARG;
     }
@@ -2096,7 +2474,7 @@ lis_precon_create_mfamg(
     {
         LIS_SETERR(
             LIS_ERR_NOT_IMPLEMENTED,
-            "MFAMG Stage 3 supports CSR and LIS_MATRIX_USER\n");
+            "MFAMG supports CSR and LIS_MATRIX_USER\n");
 
         return LIS_ERR_NOT_IMPLEMENTED;
     }
@@ -2359,10 +2737,6 @@ lis_precon_create_mfamg(
     }
 
 
-    state->coarse_n =
-        level->nc;
-
-
     if(
         (size_t)level->nc
         >
@@ -2414,48 +2788,16 @@ lis_precon_create_mfamg(
             sizeof(LIS_SCALAR),
             "lis_precon_create_mfamg::coarse");
 
-    state->lu =
-        (LIS_SCALAR *)lis_malloc(
-            coarse_entries
-                *
-            sizeof(LIS_SCALAR),
-            "lis_precon_create_mfamg::lu");
-
-    state->pivots =
-        (LIS_INT *)lis_malloc(
-            (size_t)level->nc
-                *
-            sizeof(LIS_INT),
-            "lis_precon_create_mfamg::pivots");
-
-    state->coarse_rhs =
-        (LIS_SCALAR *)lis_malloc(
-            (size_t)level->nc
-                *
-            sizeof(LIS_SCALAR),
-            "lis_precon_create_mfamg::coarse_rhs");
-
-    state->coarse_x =
-        (LIS_SCALAR *)lis_malloc(
-            (size_t)level->nc
-                *
-            sizeof(LIS_SCALAR),
-            "lis_precon_create_mfamg::coarse_x");
-
-
-    if(
-        state->coarse==NULL
-        ||
-        state->lu==NULL
-        ||
-        state->pivots==NULL
-        ||
-        state->coarse_rhs==NULL
-        ||
-        state->coarse_x==NULL)
+    if(state->coarse==NULL)
     {
         lis_free(vals);
         lis_free(cols);
+
+        LIS_SETERR_MEM(
+            coarse_entries
+                *
+            sizeof(LIS_SCALAR));
+
         lis_mfamg_state_free(state);
 
         return LIS_OUT_OF_MEMORY;
@@ -2484,7 +2826,7 @@ lis_precon_create_mfamg(
     err =
         lis_mfamg_create_csr_from_dense(
             A->comm,
-            state->coarse_n,
+            level->nc,
             state->coarse,
             coarse_level);
 
@@ -2495,16 +2837,10 @@ lis_precon_create_mfamg(
     }
 
 
-    err =
-        lis_mfamg_factor_csr_terminal(
-            coarse_level->A,
-            state);
+    lis_free(
+        state->coarse);
 
-    if(err)
-    {
-        lis_mfamg_state_free(state);
-        return err;
-    }
+    state->coarse = NULL;
 
 
     err =
@@ -2531,6 +2867,17 @@ lis_precon_create_mfamg(
 
 
     err =
+        lis_mfamg_prepare_cycle_vectors(
+            state);
+
+    if(err)
+    {
+        lis_mfamg_state_free(state);
+        return err;
+    }
+
+
+    err =
         lis_mfamg_validate_hierarchy(
             state);
 
@@ -2542,6 +2889,104 @@ lis_precon_create_mfamg(
 
         lis_mfamg_state_free(state);
 
+        return err;
+    }
+
+
+    terminal_level =
+        &state->levels[
+            state->nlevels-1];
+
+
+    state->coarse_n =
+        terminal_level->n;
+
+
+    if(
+        state->coarse_n<=0
+        ||
+        (size_t)state->coarse_n
+        >
+        ((size_t)-1)
+        /
+        (size_t)state->coarse_n)
+    {
+        LIS_SETERR(
+            LIS_OUT_OF_MEMORY,
+            "MFAMG terminal matrix dimension overflow\n");
+
+        lis_mfamg_state_free(state);
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+
+    coarse_entries =
+        (size_t)state->coarse_n
+            *
+        (size_t)state->coarse_n;
+
+
+    if(
+        coarse_entries
+        >
+        ((size_t)-1)
+        /
+        sizeof(LIS_SCALAR))
+    {
+        LIS_SETERR(
+            LIS_OUT_OF_MEMORY,
+            "MFAMG terminal factor allocation overflow\n");
+
+        lis_mfamg_state_free(state);
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+
+    state->lu =
+        (LIS_SCALAR *)lis_malloc(
+            coarse_entries
+                *
+            sizeof(LIS_SCALAR),
+            "lis_precon_create_mfamg::terminal_lu");
+
+    state->pivots =
+        (LIS_INT *)lis_malloc(
+            (size_t)state->coarse_n
+                *
+            sizeof(LIS_INT),
+            "lis_precon_create_mfamg::terminal_pivots");
+
+
+    if(
+        state->lu==NULL
+        ||
+        state->pivots==NULL)
+    {
+        LIS_SETERR_MEM(
+            coarse_entries
+                *
+            sizeof(LIS_SCALAR)
+            +
+            (size_t)state->coarse_n
+                *
+            sizeof(LIS_INT));
+
+        lis_mfamg_state_free(state);
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+
+    err =
+        lis_mfamg_factor_csr_terminal(
+            terminal_level->A,
+            state);
+
+    if(err)
+    {
+        lis_mfamg_state_free(state);
         return err;
     }
 
@@ -2591,18 +3036,8 @@ lis_psolve_mfamg(
     LIS_VECTOR x)
 {
     struct LIS_MFAMG_STRUCT *state;
-    struct LIS_MFAMG_LEVEL *level;
 
-    LIS_INT i;
-    LIS_INT a;
     LIS_INT err;
-
-    LIS_SCALAR residual;
-
-    LIS_SCALAR *bv;
-    LIS_SCALAR *xv;
-    LIS_SCALAR *av;
-    LIS_SCALAR *diag;
 
 
     LIS_DEBUG_FUNC_IN;
@@ -2628,143 +3063,27 @@ lis_psolve_mfamg(
 
 
     if(
-        state->nlevels<=0
+        state->nlevels<2
         ||
-        state->levels==NULL)
+        state->levels==NULL
+        ||
+        b->n!=state->levels[0].n
+        ||
+        x->n!=state->levels[0].n)
     {
         return LIS_ERR_ILL_ARG;
     }
 
 
-    level =
-        &state->levels[0];
-
-
-    if(
-        b->n!=level->n
-        ||
-        x->n!=level->n)
-    {
-        return LIS_ERR_ILL_ARG;
-    }
-
-
-    bv =
-        b->value;
-
-    xv =
-        x->value;
-
-    av =
-        level->ax->value;
-
-    diag =
-        level->diagonal->value;
-
-
-    /*
-     * One weighted-Jacobi pre-smoothing step from zero.
-     */
-    for(i=0;i<level->n;i++)
-    {
-        xv[i] =
-            state->omega
-            *
-            bv[i]
-            /
-            diag[i];
-    }
-
-
     err =
-        lis_matvec(
-            level->A,
-            x,
-            level->ax);
+        lis_mfamg_v_cycle(
+            state,
+            0,
+            b,
+            x);
 
     if(err)
         return err;
-
-
-    memset(
-        state->coarse_rhs,
-        0,
-        (size_t)level->nc
-            *
-        sizeof(LIS_SCALAR));
-
-
-    /*
-     * Restriction r_c = P^H (b - A x).
-     */
-    for(i=0;i<level->n;i++)
-    {
-        residual =
-            bv[i]
-            -
-            av[i];
-
-        a =
-            level->aggregate[i];
-
-        state->coarse_rhs[a] +=
-            conj(
-                level->prolong[i])
-            *
-            residual;
-    }
-
-
-    err =
-        lis_mfamg_dense_solve(
-            state);
-
-    if(err)
-        return err;
-
-
-    /*
-     * Coarse correction x <- x + P e_c.
-     */
-    for(i=0;i<level->n;i++)
-    {
-        a =
-            level->aggregate[i];
-
-        xv[i] +=
-            level->prolong[i]
-            *
-            state->coarse_x[a];
-    }
-
-
-    err =
-        lis_matvec(
-            level->A,
-            x,
-            level->ax);
-
-    if(err)
-        return err;
-
-
-    /*
-     * One weighted-Jacobi post-smoothing step.
-     */
-    for(i=0;i<level->n;i++)
-    {
-        residual =
-            bv[i]
-            -
-            av[i];
-
-        xv[i] +=
-            state->omega
-            *
-            residual
-            /
-            diag[i];
-    }
 
 
     LIS_DEBUG_FUNC_OUT;
