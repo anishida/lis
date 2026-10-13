@@ -88,6 +88,7 @@ lis_precon_mfamg_get_distributed_coarse_info(
 
 
 #define TEST_N 24
+#define HARD_N 31
 #define SOLVE_TOL 1.0e-8
 #define MATCH_TOL 1.0e-12
 
@@ -3569,6 +3570,7 @@ check_mfamg_distributed_psolve(
     LIS_REAL mag;
 
     LIS_INT global_i;
+    LIS_INT remote_start;
     LIS_INT i;
     LIS_INT err;
     LIS_INT destroy_err;
@@ -3608,19 +3610,31 @@ check_mfamg_distributed_psolve(
     if(
         A==NULL
         ||
-        nprocs!=2
-        ||
-        TEST_N!=24
+        nprocs<2
         ||
         A->matrix_type!=LIS_MATRIX_CSR
         ||
-        A->n!=12
+        A->nprocs!=nprocs
         ||
-        A->gn!=TEST_N)
+        A->n<=0
+        ||
+        A->gn<=0
+        ||
+        A->ranges==NULL
+        ||
+        A->ranges[0]!=0
+        ||
+        A->ranges[1]<=0
+        ||
+        A->ranges[1]>=A->gn)
     {
         local_failed = 1;
         goto cleanup;
     }
+
+
+    remote_start =
+        A->ranges[1];
 
 
     err =
@@ -3857,7 +3871,7 @@ check_mfamg_distributed_psolve(
         if(
             global_i
             >=
-            TEST_N/2)
+            remote_start)
         {
             local_remote2 +=
                 mag
@@ -4035,24 +4049,329 @@ cleanup:
 
     if(rank==0)
     {
-        printf(
-            "MPI_DISTRIBUTED_PSOLVE=%s "
-            "ranks=%d relres=%.12e "
-            "correction=%.12e remote=%.12e\n",
-            global_failed
-            ?
-            "FAILED"
-            :
-            "PASSED",
-            nprocs,
-            (double)residual_ratio,
-            (double)correction_norm,
-            (double)remote_norm);
+        if(
+            A!=NULL
+            &&
+            A->gn==TEST_N)
+        {
+            printf(
+                "MPI_DISTRIBUTED_PSOLVE=%s "
+                "ranks=%d relres=%.12e "
+                "correction=%.12e remote=%.12e\n",
+                global_failed
+                ?
+                "FAILED"
+                :
+                "PASSED",
+                nprocs,
+                (double)residual_ratio,
+                (double)correction_norm,
+                (double)remote_norm);
+        }
+        else
+        {
+            printf(
+                "MPI_HARDENING_PSOLVE=%s "
+                "ranks=%d n=%d relres=%.12e "
+                "correction=%.12e remote=%.12e\n",
+                global_failed
+                ?
+                "FAILED"
+                :
+                "PASSED",
+                nprocs,
+                A
+                ?
+                (int)A->gn
+                :
+                -1,
+                (double)residual_ratio,
+                (double)correction_norm,
+                (double)remote_norm);
+        }
     }
 
 
     return global_failed;
 }
+
+static int
+check_mfamg_hardening_case(
+    int rank,
+    int nprocs)
+{
+    LIS_MATRIX A;
+
+    LIS_INT i;
+    LIS_INT err;
+
+    LIS_INT local_n;
+    LIS_INT min_local_n;
+    LIS_INT max_local_n;
+
+    int local_failed;
+    int global_layout_failed;
+    int psolve_failed;
+    int global_failed;
+
+
+    A = NULL;
+
+    local_n = 0;
+    min_local_n = 0;
+    max_local_n = 0;
+
+    local_failed = 0;
+    global_layout_failed = 0;
+    psolve_failed = 0;
+    global_failed = 0;
+
+
+    if(nprocs<2)
+    {
+        return 0;
+    }
+
+
+    err =
+        lis_matrix_create(
+            LIS_COMM_WORLD,
+            &A);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_matrix_set_size(
+            A,
+            0,
+            HARD_N);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    for(i=A->is;i<A->ie;i++)
+    {
+        if(i>0)
+        {
+            err =
+                lis_matrix_set_value(
+                    LIS_INS_VALUE,
+                    i,
+                    i-1,
+                    (LIS_SCALAR)-1.0,
+                    A);
+
+            if(err)
+            {
+                local_failed = 1;
+                goto cleanup;
+            }
+        }
+
+
+        err =
+            lis_matrix_set_value(
+                LIS_INS_VALUE,
+                i,
+                i,
+                (LIS_SCALAR)2.0,
+                A);
+
+        if(err)
+        {
+            local_failed = 1;
+            goto cleanup;
+        }
+
+
+        if(i+1<HARD_N)
+        {
+            err =
+                lis_matrix_set_value(
+                    LIS_INS_VALUE,
+                    i,
+                    i+1,
+                    (LIS_SCALAR)-1.0,
+                    A);
+
+            if(err)
+            {
+                local_failed = 1;
+                goto cleanup;
+            }
+        }
+    }
+
+
+    err =
+        lis_matrix_assemble(
+            A);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    local_n =
+        A->n;
+
+
+#ifdef USE_MPI
+
+    MPI_Allreduce(
+        &local_n,
+        &min_local_n,
+        1,
+        LIS_MPI_INT,
+        MPI_MIN,
+        A->comm);
+
+    MPI_Allreduce(
+        &local_n,
+        &max_local_n,
+        1,
+        LIS_MPI_INT,
+        MPI_MAX,
+        A->comm);
+
+#else
+
+    min_local_n =
+        local_n;
+
+    max_local_n =
+        local_n;
+
+#endif
+
+
+    if(
+        A->gn!=HARD_N
+        ||
+        A->n<=0
+        ||
+        A->ranges==NULL
+        ||
+        A->is<0
+        ||
+        A->ie>A->gn
+        ||
+        A->ie-A->is!=A->n
+        ||
+        min_local_n<=0
+        ||
+        max_local_n<min_local_n
+        ||
+        max_local_n-min_local_n>1)
+    {
+        local_failed = 1;
+    }
+
+
+    if(
+        HARD_N % nprocs != 0
+        &&
+        min_local_n==max_local_n)
+    {
+        local_failed = 1;
+    }
+
+
+#ifdef USE_MPI
+
+    MPI_Allreduce(
+        &local_failed,
+        &global_layout_failed,
+        1,
+        MPI_INT,
+        MPI_MAX,
+        LIS_COMM_WORLD);
+
+#else
+
+    global_layout_failed =
+        local_failed;
+
+#endif
+
+
+    if(rank==0)
+    {
+        printf(
+            "MPI_HARDENING_LAYOUT=%s "
+            "ranks=%d n=%d local_min=%d local_max=%d\n",
+            global_layout_failed
+            ?
+            "FAILED"
+            :
+            "PASSED",
+            nprocs,
+            HARD_N,
+            (int)min_local_n,
+            (int)max_local_n);
+    }
+
+
+    if(global_layout_failed)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    psolve_failed =
+        check_mfamg_distributed_psolve(
+            A,
+            rank,
+            nprocs);
+
+    if(psolve_failed)
+    {
+        local_failed = 1;
+    }
+
+
+cleanup:
+
+    if(A)
+    {
+        lis_matrix_destroy(
+            A);
+    }
+
+
+#ifdef USE_MPI
+
+    MPI_Allreduce(
+        &local_failed,
+        &global_failed,
+        1,
+        MPI_INT,
+        MPI_MAX,
+        LIS_COMM_WORLD);
+
+#else
+
+    global_failed =
+        local_failed;
+
+#endif
+
+
+    return global_failed;
+}
+
 
 
 static int
@@ -4230,32 +4549,35 @@ run_mpi_rejection(
             rank);
 
 
-    row_failed |=
-        check_mfamg_distributed_aggregates(
-            A,
-            rank,
-            nprocs);
+    if(nprocs==2)
+    {
+        row_failed |=
+            check_mfamg_distributed_aggregates(
+                A,
+                rank,
+                nprocs);
 
 
-    row_failed |=
-        check_mfamg_distributed_prolongation(
-            A,
-            rank,
-            nprocs);
+        row_failed |=
+            check_mfamg_distributed_prolongation(
+                A,
+                rank,
+                nprocs);
 
 
-    row_failed |=
-        check_mfamg_distributed_hierarchy(
-            A,
-            rank,
-            nprocs);
+        row_failed |=
+            check_mfamg_distributed_hierarchy(
+                A,
+                rank,
+                nprocs);
 
 
-    row_failed |=
-        check_mfamg_distributed_galerkin(
-            A,
-            rank,
-            nprocs);
+        row_failed |=
+            check_mfamg_distributed_galerkin(
+                A,
+                rank,
+                nprocs);
+    }
 
 
 #ifdef USE_MPI
@@ -4298,6 +4620,12 @@ run_mpi_rejection(
     failed |=
         check_mfamg_distributed_psolve(
             A,
+            rank,
+            nprocs);
+
+
+    failed |=
+        check_mfamg_hardening_case(
             rank,
             nprocs);
 
