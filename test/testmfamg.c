@@ -46,6 +46,23 @@ lis_precon_mfamg_get_distributed_prolongation_info(
     LIS_SCALAR *coarse_z);
 
 
+extern LIS_INT
+lis_precon_mfamg_get_distributed_coarse_info(
+    LIS_MATRIX A,
+    LIS_VECTOR z,
+    LIS_INT row_capacity,
+    LIS_INT nnz_capacity,
+    LIS_INT *local_nc,
+    LIS_INT *global_nc,
+    LIS_INT *coarse_is,
+    LIS_INT *coarse_ie,
+    LIS_INT *coarse_np,
+    LIS_INT *local_nnz,
+    LIS_INT *row,
+    LIS_INT *global_cols,
+    LIS_SCALAR *values);
+
+
 #define TEST_N 24
 #define SOLVE_TOL 1.0e-8
 #define MATCH_TOL 1.0e-12
@@ -2420,6 +2437,487 @@ reduce_result:
 
 
 static int
+check_mfamg_distributed_galerkin(
+    LIS_MATRIX A,
+    int rank,
+    int nprocs)
+{
+    LIS_VECTOR z;
+
+    LIS_INT row[TEST_N+1];
+    LIS_INT global_cols[3*TEST_N];
+    LIS_SCALAR values[3*TEST_N];
+
+    LIS_INT local_nc;
+    LIS_INT global_nc;
+    LIS_INT coarse_is;
+    LIS_INT coarse_ie;
+    LIS_INT coarse_np;
+    LIS_INT local_nnz;
+
+    LIS_INT global_nnz;
+
+    LIS_INT i;
+    LIS_INT p;
+    LIS_INT global_row;
+    LIS_INT col;
+
+    LIS_INT expected_nnz;
+
+    LIS_INT seen_left;
+    LIS_INT seen_diag;
+    LIS_INT seen_right;
+
+    LIS_INT boundary_local;
+    LIS_INT boundary_hits;
+
+    LIS_SCALAR expected;
+
+    LIS_REAL diff;
+
+    LIS_INT err;
+
+    int local_failed;
+    int global_failed;
+
+
+    z = NULL;
+
+    local_nc = -1;
+    global_nc = -1;
+    coarse_is = -1;
+    coarse_ie = -1;
+    coarse_np = -1;
+    local_nnz = 0;
+
+    global_nnz = 0;
+
+    boundary_local = 0;
+    boundary_hits = 0;
+
+    local_failed = 0;
+    global_failed = 0;
+
+
+    if(
+        A==NULL
+        ||
+        nprocs!=2
+        ||
+        TEST_N!=24
+        ||
+        A->n!=12)
+    {
+        local_failed = 1;
+
+        goto reduce_result;
+    }
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &z);
+
+    if(err)
+    {
+        local_failed = 1;
+
+        goto reduce_result;
+    }
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)1.0,
+        z);
+
+
+    err =
+        lis_precon_mfamg_get_distributed_coarse_info(
+            A,
+            z,
+            TEST_N+1,
+            3*TEST_N,
+            &local_nc,
+            &global_nc,
+            &coarse_is,
+            &coarse_ie,
+            &coarse_np,
+            &local_nnz,
+            row,
+            global_cols,
+            values);
+
+
+    if(err)
+    {
+        fprintf(
+            stderr,
+            "MPI Galerkin query failed on rank %d rc=%d\n",
+            rank,
+            (int)err);
+
+        local_failed = 1;
+
+        local_nnz = 0;
+
+        goto reduce_result;
+    }
+
+
+    if(
+        local_nc!=6
+        ||
+        global_nc!=12
+        ||
+        coarse_is!=6*rank
+        ||
+        coarse_ie!=6*(rank+1)
+        ||
+        coarse_np!=7
+        ||
+        local_nnz!=17)
+    {
+        fprintf(
+            stderr,
+            "MPI Galerkin metadata mismatch on rank %d: "
+            "local_nc=%d global_nc=%d coarse=[%d,%d) "
+            "np=%d nnz=%d\n",
+            rank,
+            (int)local_nc,
+            (int)global_nc,
+            (int)coarse_is,
+            (int)coarse_ie,
+            (int)coarse_np,
+            (int)local_nnz);
+
+        local_failed = 1;
+    }
+
+
+    if(
+        local_nc>0
+        &&
+        (
+            row[0]!=0
+            ||
+            row[local_nc]!=local_nnz
+        ))
+    {
+        fprintf(
+            stderr,
+            "MPI Galerkin row pointer mismatch on rank %d\n",
+            rank);
+
+        local_failed = 1;
+    }
+
+
+    if(local_nc==6)
+    {
+        for(i=0;i<local_nc;i++)
+        {
+            global_row =
+                coarse_is
+                +
+                i;
+
+
+            expected_nnz =
+                (
+                    global_row==0
+                    ||
+                    global_row==global_nc-1
+                )
+                ?
+                2
+                :
+                3;
+
+
+            if(
+                row[i+1]-row[i]
+                !=
+                expected_nnz)
+            {
+                fprintf(
+                    stderr,
+                    "MPI Galerkin row nnz mismatch on rank %d "
+                    "row=%d got=%d expected=%d\n",
+                    rank,
+                    (int)global_row,
+                    (int)(
+                        row[i+1]
+                        -
+                        row[i]),
+                    (int)expected_nnz);
+
+                local_failed = 1;
+            }
+
+
+            seen_left = 0;
+            seen_diag = 0;
+            seen_right = 0;
+
+
+            for(
+                p=row[i];
+                p<row[i+1];
+                p++)
+            {
+                col =
+                    global_cols[p];
+
+
+                if(col==global_row)
+                {
+                    expected =
+                        (LIS_SCALAR)1.0;
+
+                    seen_diag++;
+                }
+                else if(
+                    global_row>0
+                    &&
+                    col==global_row-1)
+                {
+                    expected =
+                        (LIS_SCALAR)-0.5;
+
+                    seen_left++;
+
+
+                    if(
+                        global_row==6
+                        &&
+                        col==5)
+                    {
+                        boundary_local = 1;
+                    }
+                }
+                else if(
+                    global_row+1<global_nc
+                    &&
+                    col==global_row+1)
+                {
+                    expected =
+                        (LIS_SCALAR)-0.5;
+
+                    seen_right++;
+
+
+                    if(
+                        global_row==5
+                        &&
+                        col==6)
+                    {
+                        boundary_local = 1;
+                    }
+                }
+                else
+                {
+                    fprintf(
+                        stderr,
+                        "MPI Galerkin unexpected column on rank %d "
+                        "row=%d col=%d value=%.16e\n",
+                        rank,
+                        (int)global_row,
+                        (int)col,
+                        (double)values[p]);
+
+                    local_failed = 1;
+
+                    continue;
+                }
+
+
+                diff =
+                    fabs(
+                        values[p]
+                        -
+                        expected);
+
+
+                if(diff>MATCH_TOL)
+                {
+                    fprintf(
+                        stderr,
+                        "MPI Galerkin value mismatch on rank %d "
+                        "row=%d col=%d got=%.16e expected=%.16e "
+                        "diff=%.3e\n",
+                        rank,
+                        (int)global_row,
+                        (int)col,
+                        (double)values[p],
+                        (double)expected,
+                        (double)diff);
+
+                    local_failed = 1;
+                }
+            }
+
+
+            if(seen_diag!=1)
+            {
+                fprintf(
+                    stderr,
+                    "MPI Galerkin diagonal count mismatch on rank %d "
+                    "row=%d count=%d\n",
+                    rank,
+                    (int)global_row,
+                    (int)seen_diag);
+
+                local_failed = 1;
+            }
+
+
+            if(
+                global_row>0
+                &&
+                seen_left!=1)
+            {
+                fprintf(
+                    stderr,
+                    "MPI Galerkin left coupling mismatch on rank %d "
+                    "row=%d count=%d\n",
+                    rank,
+                    (int)global_row,
+                    (int)seen_left);
+
+                local_failed = 1;
+            }
+
+
+            if(
+                global_row==0
+                &&
+                seen_left!=0)
+            {
+                local_failed = 1;
+            }
+
+
+            if(
+                global_row+1<global_nc
+                &&
+                seen_right!=1)
+            {
+                fprintf(
+                    stderr,
+                    "MPI Galerkin right coupling mismatch on rank %d "
+                    "row=%d count=%d\n",
+                    rank,
+                    (int)global_row,
+                    (int)seen_right);
+
+                local_failed = 1;
+            }
+
+
+            if(
+                global_row==global_nc-1
+                &&
+                seen_right!=0)
+            {
+                local_failed = 1;
+            }
+        }
+    }
+
+
+    if(boundary_local!=1)
+    {
+        fprintf(
+            stderr,
+            "MPI Galerkin boundary coupling missing on rank %d\n",
+            rank);
+
+        local_failed = 1;
+    }
+
+
+reduce_result:
+
+#ifdef USE_MPI
+
+    MPI_Allreduce(
+        &local_nnz,
+        &global_nnz,
+        1,
+        LIS_MPI_INT,
+        MPI_SUM,
+        LIS_COMM_WORLD);
+
+    MPI_Allreduce(
+        &boundary_local,
+        &boundary_hits,
+        1,
+        LIS_MPI_INT,
+        MPI_SUM,
+        LIS_COMM_WORLD);
+
+    MPI_Allreduce(
+        &local_failed,
+        &global_failed,
+        1,
+        MPI_INT,
+        MPI_MAX,
+        LIS_COMM_WORLD);
+
+#else
+
+    global_nnz =
+        local_nnz;
+
+    boundary_hits =
+        boundary_local;
+
+    global_failed =
+        local_failed;
+
+#endif
+
+
+    if(
+        global_nnz!=34
+        ||
+        boundary_hits!=2)
+    {
+        global_failed = 1;
+    }
+
+
+    if(rank==0)
+    {
+        printf(
+            "MPI_DISTRIBUTED_GALERKIN=%s "
+            "ranks=%d global_nc=%d global_nnz=%d "
+            "boundary_edges=%d\n",
+            global_failed
+            ?
+            "FAILED"
+            :
+            "PASSED",
+            nprocs,
+            (int)global_nc,
+            (int)global_nnz,
+            (int)boundary_hits);
+    }
+
+
+    if(z)
+    {
+        lis_vector_destroy(
+            z);
+    }
+
+
+    return global_failed;
+}
+
+
+static int
 run_mpi_rejection(
     int rank,
     int nprocs)
@@ -2603,6 +3101,13 @@ run_mpi_rejection(
 
     row_failed |=
         check_mfamg_distributed_prolongation(
+            A,
+            rank,
+            nprocs);
+
+
+    row_failed |=
+        check_mfamg_distributed_galerkin(
             A,
             rank,
             nprocs);

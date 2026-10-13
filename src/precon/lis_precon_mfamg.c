@@ -3617,6 +3617,344 @@ cleanup:
 
 
 /*
+ * Build owned coarse rows from owned fine rows.
+ *
+ * Aggregates are rank-owned, so every fine row owned by this
+ * rank contributes only to a coarse row owned by this rank.
+ * Fine columns may be local or halo entries.  Their exchanged
+ * global aggregate IDs and tentative prolongation values
+ * preserve off-rank coarse couplings.
+ */
+static LIS_INT
+lis_mfamg_build_distributed_coarse(
+    LIS_MATRIX A,
+    struct LIS_MFAMG_LEVEL *level,
+    LIS_MATRIX *coarse_A)
+{
+    LIS_MATRIX Ac;
+
+    LIS_SCALAR contribution;
+
+    LIS_REAL mag;
+
+    LIS_INT i;
+    LIS_INT p;
+    LIS_INT j;
+
+    LIS_INT coarse_row;
+    LIS_INT coarse_col;
+
+    LIS_INT err;
+
+
+    if(
+        A==NULL
+        ||
+        level==NULL
+        ||
+        coarse_A==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    *coarse_A = NULL;
+
+
+    if(
+        A->matrix_type!=LIS_MATRIX_CSR
+        ||
+        A->nprocs<=1
+        ||
+        A->n<=0
+        ||
+        A->np<A->n
+        ||
+        A->ptr==NULL
+        ||
+        A->index==NULL
+        ||
+        A->value==NULL
+        ||
+        level->n!=A->n
+        ||
+        level->nc<=0
+        ||
+        level->global_nc<=0
+        ||
+        level->coarse_is<0
+        ||
+        level->coarse_ie<level->coarse_is
+        ||
+        level->coarse_ie-level->coarse_is!=level->nc
+        ||
+        level->aggregate==NULL
+        ||
+        level->prolong==NULL
+        ||
+        level->global_aggregate==NULL
+        ||
+        level->global_prolong==NULL
+        ||
+        level->coarse_ranges==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    Ac = NULL;
+
+
+    err =
+        lis_matrix_create(
+            A->comm,
+            &Ac);
+
+    if(err)
+        return err;
+
+
+    err =
+        lis_matrix_set_size(
+            Ac,
+            level->nc,
+            level->global_nc);
+
+    if(err)
+        goto cleanup;
+
+
+    /*
+     * Do not call lis_matrix_set_type() here.
+     *
+     * lis_matrix_set_value() starts from LIS_MATRIX_NULL,
+     * creates the temporary RCO assembly storage, and
+     * lis_matrix_assemble() converts that storage to the
+     * matrix's default CSR type.
+     */
+    if(
+        Ac->n!=level->nc
+        ||
+        Ac->gn!=level->global_nc
+        ||
+        Ac->is!=level->coarse_is
+        ||
+        Ac->ie!=level->coarse_ie
+        ||
+        Ac->nprocs!=A->nprocs
+        ||
+        Ac->my_rank!=A->my_rank
+        ||
+        Ac->ranges==NULL)
+    {
+        err = LIS_ERR_ILL_ARG;
+
+        goto cleanup;
+    }
+
+
+    for(i=0;i<=A->nprocs;i++)
+    {
+        if(
+            Ac->ranges[i]
+            !=
+            level->coarse_ranges[i])
+        {
+            err = LIS_ERR_ILL_ARG;
+
+            goto cleanup;
+        }
+    }
+
+
+    for(i=0;i<A->n;i++)
+    {
+        if(
+            level->aggregate[i]<0
+            ||
+            level->aggregate[i]>=level->nc)
+        {
+            err = LIS_ERR_ILL_ARG;
+
+            goto cleanup;
+        }
+
+
+        coarse_row =
+            level->global_aggregate[i];
+
+
+        if(
+            coarse_row
+            !=
+            level->coarse_is
+            +
+            level->aggregate[i])
+        {
+            err = LIS_ERR_ILL_ARG;
+
+            goto cleanup;
+        }
+
+
+        for(
+            p=A->ptr[i];
+            p<A->ptr[i+1];
+            p++)
+        {
+            j =
+                A->index[p];
+
+
+            if(
+                j<0
+                ||
+                j>=A->np)
+            {
+                err = LIS_ERR_ILL_ARG;
+
+                goto cleanup;
+            }
+
+
+            coarse_col =
+                level->global_aggregate[j];
+
+
+            if(
+                coarse_col<0
+                ||
+                coarse_col>=level->global_nc)
+            {
+                err = LIS_ERR_ILL_ARG;
+
+                goto cleanup;
+            }
+
+
+            contribution =
+                conj(
+                    level->prolong[i])
+                *
+                A->value[p]
+                *
+                level->global_prolong[j];
+
+
+            mag =
+                fabs(
+                    contribution);
+
+
+            if(
+                mag!=mag
+                ||
+                mag>LIS_SCALAR_MAX)
+            {
+                LIS_SETERR(
+                    LIS_ERR_ILL_ARG,
+                    "MFAMG distributed Galerkin contribution is non-finite\n");
+
+                err = LIS_ERR_ILL_ARG;
+
+                goto cleanup;
+            }
+
+
+            if(
+                contribution
+                ==
+                (LIS_SCALAR)0.0)
+            {
+                continue;
+            }
+
+
+            err =
+                lis_matrix_set_value(
+                    LIS_ADD_VALUE,
+                    coarse_row,
+                    coarse_col,
+                    contribution,
+                    Ac);
+
+            if(err)
+                goto cleanup;
+        }
+    }
+
+
+    err =
+        lis_matrix_assemble(
+            Ac);
+
+    if(err)
+        goto cleanup;
+
+
+    if(
+        Ac->matrix_type!=LIS_MATRIX_CSR
+        ||
+        Ac->n!=level->nc
+        ||
+        Ac->gn!=level->global_nc
+        ||
+        Ac->is!=level->coarse_is
+        ||
+        Ac->ie!=level->coarse_ie
+        ||
+        Ac->ptr==NULL
+        ||
+        Ac->index==NULL
+        ||
+        Ac->value==NULL
+        ||
+        Ac->nnz<=0
+        ||
+        Ac->np<Ac->n)
+    {
+        err = LIS_ERR_ILL_ARG;
+
+        goto cleanup;
+    }
+
+
+    if(
+        Ac->np>Ac->n
+        &&
+        (
+            Ac->l2g_map==NULL
+            ||
+            Ac->commtable==NULL
+        ))
+    {
+        err = LIS_ERR_ILL_ARG;
+
+        goto cleanup;
+    }
+
+
+    *coarse_A =
+        Ac;
+
+
+    return LIS_SUCCESS;
+
+
+cleanup:
+
+    if(Ac)
+    {
+        lis_matrix_destroy(
+            Ac);
+    }
+
+
+    return err;
+}
+
+
+/*
  * Internal distributed tentative-prolongation query used by
  * the regression test.  It does not enable the distributed
  * MFAMG solve path.
@@ -3922,6 +4260,383 @@ cleanup:
 
     if(cols)
         lis_free(cols);
+
+    if(level.global_prolong)
+        lis_free(level.global_prolong);
+
+    if(level.global_aggregate)
+        lis_free(level.global_aggregate);
+
+    if(level.coarse_ranges)
+        lis_free(level.coarse_ranges);
+
+    if(level.prolong)
+        lis_free(level.prolong);
+
+    if(level.aggregate)
+        lis_free(level.aggregate);
+
+
+    return err;
+}
+
+
+/*
+ * Internal distributed Galerkin query used by the regression
+ * test.  It builds and assembles the first distributed coarse
+ * CSR matrix without enabling the distributed MFAMG solve path.
+ */
+LIS_INT
+lis_precon_mfamg_get_distributed_coarse_info(
+    LIS_MATRIX A,
+    LIS_VECTOR z,
+    LIS_INT row_capacity,
+    LIS_INT nnz_capacity,
+    LIS_INT *local_nc,
+    LIS_INT *global_nc,
+    LIS_INT *coarse_is,
+    LIS_INT *coarse_ie,
+    LIS_INT *coarse_np,
+    LIS_INT *local_nnz,
+    LIS_INT *row,
+    LIS_INT *global_cols,
+    LIS_SCALAR *values)
+{
+    struct LIS_MFAMG_LEVEL level;
+
+    LIS_MATRIX Ac;
+
+    LIS_INT max_row_nnz;
+
+    LIS_INT *work_cols;
+    LIS_SCALAR *work_vals;
+
+    LIS_INT i;
+    LIS_INT p;
+    LIS_INT local_col;
+
+    LIS_INT err;
+
+
+    if(
+        A==NULL
+        ||
+        z==NULL
+        ||
+        local_nc==NULL
+        ||
+        global_nc==NULL
+        ||
+        coarse_is==NULL
+        ||
+        coarse_ie==NULL
+        ||
+        coarse_np==NULL
+        ||
+        local_nnz==NULL
+        ||
+        row==NULL
+        ||
+        global_cols==NULL
+        ||
+        values==NULL
+        ||
+        row_capacity<0
+        ||
+        nnz_capacity<0
+        ||
+        A->matrix_type!=LIS_MATRIX_CSR
+        ||
+        A->nprocs<=1
+        ||
+        z->n!=A->n
+        ||
+        z->gn!=A->gn
+        ||
+        z->is!=A->is
+        ||
+        z->ie!=A->ie)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    memset(
+        &level,
+        0,
+        sizeof(level));
+
+
+    Ac = NULL;
+    work_cols = NULL;
+    work_vals = NULL;
+
+
+    level.A =
+        A;
+
+    level.n =
+        A->n;
+
+
+    if(level.n<=0)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    level.aggregate =
+        (LIS_INT *)lis_malloc(
+            (size_t)level.n
+                *
+            sizeof(LIS_INT),
+            "lis_precon_mfamg_get_distributed_coarse_info::aggregate");
+
+    level.prolong =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)level.n
+                *
+            sizeof(LIS_SCALAR),
+            "lis_precon_mfamg_get_distributed_coarse_info::prolong");
+
+
+    if(
+        level.aggregate==NULL
+        ||
+        level.prolong==NULL)
+    {
+        LIS_SETERR_MEM(
+            (size_t)level.n
+                *
+            (
+                sizeof(LIS_INT)
+                +
+                sizeof(LIS_SCALAR)
+            ));
+
+        err = LIS_OUT_OF_MEMORY;
+
+        goto cleanup;
+    }
+
+
+    err =
+        lis_mfamg_get_max_row_nnz(
+            A,
+            level.n,
+            &max_row_nnz);
+
+    if(err)
+        goto cleanup;
+
+
+    work_cols =
+        (LIS_INT *)lis_malloc(
+            (size_t)max_row_nnz
+                *
+            sizeof(LIS_INT),
+            "lis_precon_mfamg_get_distributed_coarse_info::work_cols");
+
+    work_vals =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)max_row_nnz
+                *
+            sizeof(LIS_SCALAR),
+            "lis_precon_mfamg_get_distributed_coarse_info::work_vals");
+
+
+    if(
+        work_cols==NULL
+        ||
+        work_vals==NULL)
+    {
+        LIS_SETERR_MEM(
+            (size_t)max_row_nnz
+                *
+            (
+                sizeof(LIS_INT)
+                +
+                sizeof(LIS_SCALAR)
+            ));
+
+        err = LIS_OUT_OF_MEMORY;
+
+        goto cleanup;
+    }
+
+
+    err =
+        lis_mfamg_build_aggregates(
+            A,
+            &level,
+            max_row_nnz,
+            work_cols,
+            work_vals);
+
+    if(err)
+        goto cleanup;
+
+
+    if(
+        level.nc<=0
+        ||
+        level.nc>=level.n)
+    {
+        err = LIS_ERR_ILL_ARG;
+
+        goto cleanup;
+    }
+
+
+    err =
+        lis_mfamg_build_prolongation(
+            z,
+            &level);
+
+    if(err)
+        goto cleanup;
+
+
+    err =
+        lis_mfamg_build_distributed_aggregate_metadata(
+            A,
+            &level);
+
+    if(err)
+        goto cleanup;
+
+
+    err =
+        lis_mfamg_build_distributed_prolongation(
+            A,
+            &level);
+
+    if(err)
+        goto cleanup;
+
+
+    err =
+        lis_mfamg_build_distributed_coarse(
+            A,
+            &level,
+            &Ac);
+
+    if(err)
+        goto cleanup;
+
+
+    if(
+        row_capacity<Ac->n+1
+        ||
+        nnz_capacity<Ac->nnz)
+    {
+        err = LIS_ERR_ILL_ARG;
+
+        goto cleanup;
+    }
+
+
+    *local_nc =
+        Ac->n;
+
+    *global_nc =
+        Ac->gn;
+
+    *coarse_is =
+        Ac->is;
+
+    *coarse_ie =
+        Ac->ie;
+
+    *coarse_np =
+        Ac->np;
+
+    *local_nnz =
+        Ac->nnz;
+
+
+    for(i=0;i<=Ac->n;i++)
+    {
+        row[i] =
+            Ac->ptr[i];
+    }
+
+
+    for(p=0;p<Ac->nnz;p++)
+    {
+        local_col =
+            Ac->index[p];
+
+
+        if(
+            local_col<0
+            ||
+            local_col>=Ac->np)
+        {
+            err = LIS_ERR_ILL_ARG;
+
+            goto cleanup;
+        }
+
+
+        if(local_col<Ac->n)
+        {
+            global_cols[p] =
+                Ac->is
+                +
+                local_col;
+        }
+        else
+        {
+            if(Ac->l2g_map==NULL)
+            {
+                err = LIS_ERR_ILL_ARG;
+
+                goto cleanup;
+            }
+
+
+            global_cols[p] =
+                Ac->l2g_map[
+                    local_col
+                    -
+                    Ac->n];
+        }
+
+
+        if(
+            global_cols[p]<0
+            ||
+            global_cols[p]>=Ac->gn)
+        {
+            err = LIS_ERR_ILL_ARG;
+
+            goto cleanup;
+        }
+
+
+        values[p] =
+            Ac->value[p];
+    }
+
+
+    err = LIS_SUCCESS;
+
+
+cleanup:
+
+    if(Ac)
+    {
+        lis_matrix_destroy(
+            Ac);
+    }
+
+
+    if(work_vals)
+        lis_free(work_vals);
+
+    if(work_cols)
+        lis_free(work_cols);
 
     if(level.global_prolong)
         lis_free(level.global_prolong);
