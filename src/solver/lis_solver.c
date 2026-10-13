@@ -62,7 +62,7 @@
  ************************************************/
 
 #define LIS_SOLVERS_LEN			25
-#define LIS_PRECON_TYPE_LEN		12
+#define LIS_PRECON_TYPE_LEN             13
 
 
 LIS_SOLVER_CHECK_PARAMS lis_solver_check_params[] = {
@@ -199,7 +199,7 @@ LIS_INT LIS_SOLVER_OPTACT[] = {
 };
 
 char *lis_solver_atoi[]    = {"cg", "bicg", "cgs", "bicgstab", "bicgstabl", "gpbicg", "tfqmr","orthomin", "gmres", "jacobi", "gs", "sor", "bicgsafe", "cr", "bicr", "crs", "bicrstab", "gpbicr", "bicrsafe", "fgmres", "idrs", "idr1", "minres", "cocg", "cocr"};
-char *lis_precon_atoi[]    = {"none", "jacobi", "ilu", "ssor", "hybrid", "is", "sainv", "saamg", "iluc", "ilut", "bjacobi", ""};
+char *lis_precon_atoi[]    = {"none", "jacobi", "ilu", "ssor", "hybrid", "is", "sainv", "saamg", "iluc", "ilut", "bjacobi", "", "mfamg"};
 char *lis_storage_atoi[]   = {"csr", "csc", "msr", "dia", "ell", "jad", "bsr", "bsc", "vbr", "coo", "dns"};
 char *lis_print_atoi[]     = {"none", "mem", "out", "all"};
 char *lis_scale_atoi[]     = {"none", "jacobi", "symm_diag"};
@@ -208,7 +208,7 @@ char *lis_precision_atoi[] = {"double", "quad", "switch"};
 char *lis_conv_cond_atoi[] = {"nrm2_r", "nrm2_b", "nrm1_b"};
 
 char *lis_solvername[] = {"", "CG", "BiCG", "CGS", "BiCGSTAB", "BiCGSTAB(l)", "GPBiCG", "TFQMR", "Orthomin", "GMRES", "Jacobi",	"Gauss-Seidel", "SOR", "BiCGSafe", "CR", "BiCR", "CRS", "BiCRSTAB", "GPBiCR", "BiCRSafe", "FGMRES", "IDR(s)", "IDR(1)", "MINRES", "COCG", "COCR"};
-char *lis_preconname[] = {"none", "Jacobi", "ILU", "SSOR", "Hybrid", "I+S", "SAINV", "SAAMG", "Crout ILU", "ILUT", "Block Jacobi"};
+char *lis_preconname[] = {"none", "Jacobi", "ILU", "SSOR", "Hybrid", "I+S", "SAINV", "SAAMG", "Crout ILU", "ILUT", "Block Jacobi", "", "MFAMG"};
 
 char *lis_returncode[] = {"LIS_SUCCESS", "LIS_ILL_OPTION", "LIS_BREAKDOWN", "LIS_OUT_OF_MEMORY", "LIS_MAXITER", "LIS_NOT_IMPLEMENTED", "LIS_ERR_FILE_IO"};
 char *lis_precisionname[] = {"double", "quad", "switch"};
@@ -1095,8 +1095,9 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
 	}
 
 	if( precon_type!=LIS_PRECON_TYPE_NONE &&
-	    precon_type<LIS_PRECON_TYPE_USERDEF &&
-	    precon==NULL )
+        precon_type<LIS_PRECON_TYPE_USERDEF &&
+        precon_type!=LIS_PRECON_TYPE_MFAMG &&
+        precon==NULL )
 	{
 	        LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
 	                   "built-in preconditioners require explicit storage unless a compatible prebuilt preconditioner is supplied\n");
@@ -1140,8 +1141,7 @@ LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
 
 	solver->A = A;	/* create preconditioner */
 	if( solver->options[LIS_OPTIONS_PRECON] < 0 ||
-	    (solver->options[LIS_OPTIONS_PRECON] > LIS_PRECONNAME_MAX &&
-	     solver->options[LIS_OPTIONS_PRECON] < LIS_PRECON_TYPE_USERDEF) ||
+	    solver->options[LIS_OPTIONS_PRECON] == LIS_PRECON_TYPE_ADDS ||
 	    solver->options[LIS_OPTIONS_PRECON] >= precon_register_type )
 	{
 		LIS_SETERR1(LIS_ERR_ILL_ARG,"Invalid LIS_OPTIONS_PRECON value %D\n",solver->options[LIS_OPTIONS_PRECON]);
@@ -1264,7 +1264,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 		return LIS_ERR_ILL_ARG;
 	}
 	if( precon_type < 0 ||
-	    (precon_type > LIS_PRECONNAME_MAX && precon_type < LIS_PRECON_TYPE_USERDEF) ||
+	    precon_type == LIS_PRECON_TYPE_ADDS ||
 	    precon_type >= precon_register_type )
 	{
 		LIS_SETERR1(LIS_ERR_ILL_ARG,"Invalid LIS_OPTIONS_PRECON value %D\n",precon_type);
@@ -1336,7 +1336,8 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 
    if( solver->near_nullspace_dim>0 )
    {
-           if( nsolver!=LIS_SOLVER_FGMRES )
+           if( nsolver!=LIS_SOLVER_FGMRES &&
+            precon_type!=LIS_PRECON_TYPE_MFAMG )
            {
                    LIS_SETERR(
                            LIS_ERR_NOT_IMPLEMENTED,
@@ -1713,7 +1714,8 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 		}
 	}
 	/* Build coarse state from the final effective operator. */
-	if( solver->near_nullspace_dim>0 )
+	if( solver->near_nullspace_dim>0 &&
+        precon_type!=LIS_PRECON_TYPE_MFAMG )
 	{
 	        err =
 	                lis_solver_near_nullspace_coarse_setup(

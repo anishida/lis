@@ -7,6 +7,7 @@ lis_precon_iluk.c \
 lis_precon_ilut.c \
 lis_precon_is.c \
 lis_precon_jacobi.c \
+lis_precon_mfamg.c \
 lis_precon_saamg.c \
 lis_precon_sainv.c \
 lis_precon_ssor.c  

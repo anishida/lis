@@ -70,7 +70,8 @@ libprecon_la_LIBADD =
 am_libprecon_la_OBJECTS = lis_precon.lo lis_precon_ads.lo \
 	lis_precon_hybrid.lo lis_precon_iluc.lo lis_precon_iluk.lo \
 	lis_precon_ilut.lo lis_precon_is.lo lis_precon_jacobi.lo \
-	lis_precon_saamg.lo lis_precon_sainv.lo lis_precon_ssor.lo
+	lis_precon_mfamg.lo lis_precon_saamg.lo lis_precon_sainv.lo \
+	lis_precon_ssor.lo
 libprecon_la_OBJECTS = $(am_libprecon_la_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/include
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
@@ -246,6 +247,7 @@ lis_precon_iluk.c \
 lis_precon_ilut.c \
 lis_precon_is.c \
 lis_precon_jacobi.c \
+lis_precon_mfamg.c \
 lis_precon_saamg.c \
 lis_precon_sainv.c \
 lis_precon_ssor.c  
@@ -326,6 +328,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precon_ilut.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precon_is.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precon_jacobi.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precon_mfamg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precon_saamg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precon_sainv.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precon_ssor.Plo@am__quote@

@@ -236,7 +236,7 @@ extern "C" {
 #define LIS_PRECONNAME_MAX 10
 #define LIS_PRECON_REGISTER_MAX 10
 
-#define LIS_PRECON_TYPE_LEN 12
+#define LIS_PRECON_TYPE_LEN 13
 #define LIS_PRECON_TYPE_NONE 0
 #define LIS_PRECON_TYPE_JACOBI 1
 #define LIS_PRECON_TYPE_ILU 2
@@ -249,6 +249,7 @@ extern "C" {
 #define LIS_PRECON_TYPE_ILUT 9
 #define LIS_PRECON_TYPE_BJACOBI 10
 #define LIS_PRECON_TYPE_ADDS 11
+#define LIS_PRECON_TYPE_MFAMG 12
 #define LIS_PRECON_TYPE_USERDEF LIS_PRECON_TYPE_LEN
 
 #define LIS_MATRIX_ASSEMBLING 0
@@ -785,6 +786,8 @@ struct LIS_PRECON_STRUCT
 	LIS_INT nprocs; /* saamg */
 	LIS_INT is_copy;
 	LIS_COMMTABLE commtable; /* saamg */
+	/* Built-in matrix-free aggregation state. */
+	struct LIS_MFAMG_STRUCT *mfamg;
 
 	/* Application-owned state for registered user preconditioners. */
 	void *user_data;

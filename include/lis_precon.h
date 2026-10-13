@@ -59,6 +59,9 @@ extern "C"
 /* NONE            */
 /*******************/
 
+	extern LIS_INT lis_precon_create_mfamg(LIS_SOLVER solver, LIS_PRECON precon);
+	extern LIS_INT lis_precon_destroy_mfamg(LIS_PRECON precon);
+	extern LIS_INT lis_psolve_mfamg(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
 	extern LIS_INT lis_precon_create_none(LIS_SOLVER solver, LIS_PRECON precon);
 	extern LIS_INT lis_psolve_none(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
 	extern LIS_INT lis_psolveh_none(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
