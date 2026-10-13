@@ -4,9 +4,25 @@
 #include "lislib.h"
 
 
+extern LIS_INT
+lis_precon_mfamg_get_hierarchy_info(
+    LIS_PRECON precon,
+    LIS_INT max_levels,
+    LIS_INT *nlevels,
+    LIS_INT *coarse_n,
+    LIS_INT *level_n,
+    LIS_INT *owns_A);
+
+
 #define TEST_N 24
 #define SOLVE_TOL 1.0e-8
 #define MATCH_TOL 1.0e-12
+
+#define EXPECTED_MFAMG_LEVELS 3
+#define EXPECTED_MFAMG_LEVEL0_N 24
+#define EXPECTED_MFAMG_LEVEL1_N 12
+#define EXPECTED_MFAMG_LEVEL2_N 6
+#define EXPECTED_MFAMG_COARSE_N 6
 
 
 typedef struct
@@ -577,6 +593,15 @@ run_direct_case(
     LIS_INT err;
     LIS_INT destroy_err;
 
+    LIS_INT hierarchy_nlevels;
+    LIS_INT hierarchy_coarse_n;
+
+    LIS_INT hierarchy_level_n[
+        EXPECTED_MFAMG_LEVELS];
+
+    LIS_INT hierarchy_owns_A[
+        EXPECTED_MFAMG_LEVELS];
+
     int failed;
 
 
@@ -586,6 +611,18 @@ run_direct_case(
 
     solver = NULL;
     precon = NULL;
+
+    hierarchy_nlevels = -1;
+    hierarchy_coarse_n = -1;
+
+    for(
+        i=0;
+        i<EXPECTED_MFAMG_LEVELS;
+        i++)
+    {
+        hierarchy_level_n[i] = -1;
+        hierarchy_owns_A[i] = -1;
+    }
 
     failed = 0;
 
@@ -700,6 +737,107 @@ run_direct_case(
 
     solver->precon =
         precon;
+
+
+    err =
+        lis_precon_mfamg_get_hierarchy_info(
+            precon,
+            EXPECTED_MFAMG_LEVELS,
+            &hierarchy_nlevels,
+            &hierarchy_coarse_n,
+            hierarchy_level_n,
+            hierarchy_owns_A);
+
+
+    printf(
+        "%s HIERARCHY rc=%d "
+        "nlevels=%d coarse_n=%d "
+        "levels=%d,%d,%d "
+        "owns=%d,%d,%d\n",
+        name,
+        (int)err,
+        (int)hierarchy_nlevels,
+        (int)hierarchy_coarse_n,
+        (int)hierarchy_level_n[0],
+        (int)hierarchy_level_n[1],
+        (int)hierarchy_level_n[2],
+        (int)hierarchy_owns_A[0],
+        (int)hierarchy_owns_A[1],
+        (int)hierarchy_owns_A[2]);
+
+
+    if(err)
+    {
+        fprintf(
+            stderr,
+            "%s MFAMG hierarchy query failed rc=%d\n",
+            name,
+            (int)err);
+
+        failed = 1;
+
+        goto cleanup;
+    }
+
+
+    if(
+        hierarchy_nlevels
+            !=
+        EXPECTED_MFAMG_LEVELS
+        ||
+        hierarchy_coarse_n
+            !=
+        EXPECTED_MFAMG_COARSE_N
+        ||
+        hierarchy_level_n[0]
+            !=
+        EXPECTED_MFAMG_LEVEL0_N
+        ||
+        hierarchy_level_n[1]
+            !=
+        EXPECTED_MFAMG_LEVEL1_N
+        ||
+        hierarchy_level_n[2]
+            !=
+        EXPECTED_MFAMG_LEVEL2_N
+        ||
+        hierarchy_owns_A[0]
+            !=
+        LIS_FALSE
+        ||
+        hierarchy_owns_A[1]
+            !=
+        LIS_TRUE
+        ||
+        hierarchy_owns_A[2]
+            !=
+        LIS_TRUE)
+    {
+        fprintf(
+            stderr,
+            "%s unexpected MFAMG hierarchy\n",
+            name);
+
+        failed = 1;
+    }
+
+
+    if(
+        hierarchy_nlevels<3
+        ||
+        hierarchy_coarse_n
+            !=
+        hierarchy_level_n[
+            EXPECTED_MFAMG_LEVELS-1])
+    {
+        fprintf(
+            stderr,
+            "%s MFAMG hierarchy is not genuinely multilevel "
+            "or terminal size is inconsistent\n",
+            name);
+
+        failed = 1;
+    }
 
 
     if(

@@ -2340,6 +2340,109 @@ lis_mfamg_v_cycle(
 }
 
 
+/*
+ * Internal MFAMG hierarchy query used by the regression test.
+ *
+ * This symbol is intentionally not part of the public LIS API.
+ */
+#undef __FUNC__
+#define __FUNC__ "lis_precon_mfamg_get_hierarchy_info"
+LIS_INT
+lis_precon_mfamg_get_hierarchy_info(
+    LIS_PRECON precon,
+    LIS_INT max_levels,
+    LIS_INT *nlevels,
+    LIS_INT *coarse_n,
+    LIS_INT *level_n,
+    LIS_INT *owns_A)
+{
+    struct LIS_MFAMG_STRUCT *state;
+
+    LIS_INT level_id;
+
+
+    if(
+        precon==NULL
+        ||
+        precon->precon_type
+            !=
+        LIS_PRECON_TYPE_MFAMG
+        ||
+        precon->mfamg==NULL
+        ||
+        max_levels<0
+        ||
+        nlevels==NULL
+        ||
+        coarse_n==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    state =
+        precon->mfamg;
+
+
+    if(
+        state->levels==NULL
+        ||
+        state->nlevels<=0
+        ||
+        state->level_capacity<=0
+        ||
+        state->nlevels>state->level_capacity
+        ||
+        state->coarse_n<=0)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    if(
+        state->nlevels>max_levels
+        ||
+        level_n==NULL
+        ||
+        owns_A==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    *nlevels =
+        state->nlevels;
+
+    *coarse_n =
+        state->coarse_n;
+
+
+    for(
+        level_id=0;
+        level_id<state->nlevels;
+        level_id++)
+    {
+        if(
+            state->levels[level_id].A==NULL
+            ||
+            state->levels[level_id].n<=0)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+
+
+        level_n[level_id] =
+            state->levels[level_id].n;
+
+        owns_A[level_id] =
+            state->levels[level_id].owns_A;
+    }
+
+
+    return LIS_SUCCESS;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_precon_create_mfamg"
 LIS_INT
