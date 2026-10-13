@@ -36,6 +36,7 @@ struct LIS_MFAMG_LEVEL
 
     LIS_INT *coarse_ranges;
     LIS_INT *global_aggregate;
+    LIS_SCALAR *global_prolong;
 
     LIS_INT *aggregate;
     LIS_SCALAR *prolong;
@@ -98,6 +99,9 @@ lis_mfamg_state_free(
 
             if(level->global_aggregate)
                 lis_free(level->global_aggregate);
+
+            if(level->global_prolong)
+                lis_free(level->global_prolong);
 
             if(level->diagonal)
                 lis_vector_destroy(level->diagonal);
@@ -863,6 +867,292 @@ lis_mfamg_build_aggregates(
 
 
 /*
+ * Exchange scalar metadata using CSR local/halo indexing.
+ *
+ * This intentionally does not use lis_send_recv().  That
+ * routine uses the padded LIS vector layout, while this array
+ * is indexed directly by matrix-local CSR column indices
+ * 0..A->np-1.
+ */
+static LIS_INT
+lis_mfamg_exchange_scalar_halo(
+    LIS_MATRIX A,
+    LIS_SCALAR *x)
+{
+#ifdef USE_MPI
+
+    LIS_COMMTABLE commtable;
+
+    LIS_INT neib;
+    LIS_INT i;
+    LIS_INT is;
+    LIS_INT count;
+
+    LIS_INT send_count;
+    LIS_INT recv_count;
+    LIS_INT send_alloc;
+    LIS_INT recv_alloc;
+
+    LIS_SCALAR *ws;
+    LIS_SCALAR *wr;
+
+
+    if(
+        A==NULL
+        ||
+        x==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    if(
+        A->nprocs<=1
+        ||
+        A->np<=A->n)
+    {
+        return LIS_SUCCESS;
+    }
+
+
+    commtable =
+        A->commtable;
+
+
+    if(
+        commtable==NULL
+        ||
+        commtable->neibpetot<=0
+        ||
+        commtable->export_ptr==NULL
+        ||
+        commtable->import_ptr==NULL
+        ||
+        commtable->export_index==NULL
+        ||
+        commtable->import_index==NULL
+        ||
+        commtable->neibpe==NULL
+        ||
+        commtable->req1==NULL
+        ||
+        commtable->req2==NULL
+        ||
+        commtable->sta1==NULL
+        ||
+        commtable->sta2==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    send_count =
+        commtable->export_ptr[
+            commtable->neibpetot];
+
+    recv_count =
+        commtable->import_ptr[
+            commtable->neibpetot];
+
+
+    if(
+        send_count<0
+        ||
+        recv_count<0)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    send_alloc =
+        send_count>0
+        ?
+        send_count
+        :
+        1;
+
+    recv_alloc =
+        recv_count>0
+        ?
+        recv_count
+        :
+        1;
+
+
+    ws =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)send_alloc
+                *
+            sizeof(LIS_SCALAR),
+            "lis_mfamg_exchange_scalar_halo::ws");
+
+    wr =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)recv_alloc
+                *
+            sizeof(LIS_SCALAR),
+            "lis_mfamg_exchange_scalar_halo::wr");
+
+
+    if(
+        ws==NULL
+        ||
+        wr==NULL)
+    {
+        if(ws)
+            lis_free(ws);
+
+        if(wr)
+            lis_free(wr);
+
+        LIS_SETERR_MEM(
+            (size_t)(
+                send_alloc
+                +
+                recv_alloc)
+                *
+            sizeof(LIS_SCALAR));
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+
+    for(
+        neib=0;
+        neib<commtable->neibpetot;
+        neib++)
+    {
+        is =
+            commtable->export_ptr[neib];
+
+        count =
+            commtable->export_ptr[neib+1]
+            -
+            is;
+
+
+        for(i=is;i<is+count;i++)
+        {
+            if(
+                commtable->export_index[i]<0
+                ||
+                commtable->export_index[i]>=A->n)
+            {
+                lis_free(wr);
+                lis_free(ws);
+
+                return LIS_ERR_ILL_ARG;
+            }
+
+
+            ws[i] =
+                x[
+                    commtable->export_index[i]];
+        }
+
+
+        MPI_Isend(
+            &ws[is],
+            count,
+            LIS_MPI_SCALAR,
+            commtable->neibpe[neib],
+            0,
+            commtable->comm,
+            &commtable->req1[neib]);
+    }
+
+
+    for(
+        neib=0;
+        neib<commtable->neibpetot;
+        neib++)
+    {
+        is =
+            commtable->import_ptr[neib];
+
+        count =
+            commtable->import_ptr[neib+1]
+            -
+            is;
+
+
+        MPI_Irecv(
+            &wr[is],
+            count,
+            LIS_MPI_SCALAR,
+            commtable->neibpe[neib],
+            0,
+            commtable->comm,
+            &commtable->req2[neib]);
+    }
+
+
+    MPI_Waitall(
+        commtable->neibpetot,
+        commtable->req2,
+        commtable->sta2);
+
+
+    for(
+        neib=0;
+        neib<commtable->neibpetot;
+        neib++)
+    {
+        is =
+            commtable->import_ptr[neib];
+
+        count =
+            commtable->import_ptr[neib+1]
+            -
+            is;
+
+
+        for(i=is;i<is+count;i++)
+        {
+            if(
+                commtable->import_index[i]<A->n
+                ||
+                commtable->import_index[i]>=A->np)
+            {
+                lis_free(wr);
+                lis_free(ws);
+
+                return LIS_ERR_ILL_ARG;
+            }
+
+
+            x[
+                commtable->import_index[i]]
+                =
+                wr[i];
+        }
+    }
+
+
+    MPI_Waitall(
+        commtable->neibpetot,
+        commtable->req1,
+        commtable->sta1);
+
+
+    lis_free(wr);
+    lis_free(ws);
+
+
+    return LIS_SUCCESS;
+
+#else
+
+    (void)A;
+    (void)x;
+
+    return LIS_SUCCESS;
+
+#endif
+}
+
+
+/*
  * Exchange integer metadata using the matrix communication
  * topology.  export_index addresses owned fine entries and
  * import_index addresses the corresponding halo entries.
@@ -1489,6 +1779,153 @@ lis_mfamg_build_prolongation(
 
     lis_free(
         norm2);
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+lis_mfamg_build_distributed_prolongation(
+    LIS_MATRIX A,
+    struct LIS_MFAMG_LEVEL *level)
+{
+    LIS_SCALAR *global_prolong;
+
+    LIS_REAL mag;
+
+    LIS_INT i;
+    LIS_INT err;
+
+
+    if(
+        A==NULL
+        ||
+        level==NULL
+        ||
+        level->n!=A->n
+        ||
+        level->prolong==NULL
+        ||
+        level->aggregate==NULL
+        ||
+        level->global_aggregate==NULL
+        ||
+        level->coarse_ranges==NULL
+        ||
+        level->nc<=0
+        ||
+        level->global_nc<=0
+        ||
+        A->matrix_type!=LIS_MATRIX_CSR
+        ||
+        A->nprocs<=1
+        ||
+        A->np<A->n
+        ||
+        level->global_prolong!=NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    global_prolong =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)A->np
+                *
+            sizeof(LIS_SCALAR),
+            "lis_mfamg_build_distributed_prolongation::global_prolong");
+
+
+    if(global_prolong==NULL)
+    {
+        LIS_SETERR_MEM(
+            (size_t)A->np
+                *
+            sizeof(LIS_SCALAR));
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+
+    for(i=0;i<A->np;i++)
+    {
+        global_prolong[i] =
+            (LIS_SCALAR)0.0;
+    }
+
+
+    for(i=0;i<A->n;i++)
+    {
+        global_prolong[i] =
+            level->prolong[i];
+    }
+
+
+    if(A->np>A->n)
+    {
+        if(A->commtable==NULL)
+        {
+            lis_free(
+                global_prolong);
+
+            return LIS_ERR_ILL_ARG;
+        }
+
+
+        err =
+            lis_mfamg_exchange_scalar_halo(
+                A,
+                global_prolong);
+
+        if(err)
+        {
+            lis_free(
+                global_prolong);
+
+            return err;
+        }
+    }
+
+
+    for(i=0;i<A->np;i++)
+    {
+        if(
+            level->global_aggregate[i]<0
+            ||
+            level->global_aggregate[i]>=level->global_nc)
+        {
+            lis_free(
+                global_prolong);
+
+            return LIS_ERR_ILL_ARG;
+        }
+
+
+        mag =
+            fabs(
+                global_prolong[i]);
+
+
+        if(
+            mag!=mag
+            ||
+            mag>LIS_SCALAR_MAX)
+        {
+            lis_free(
+                global_prolong);
+
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "MFAMG distributed prolongation contains non-finite values\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+
+    level->global_prolong =
+        global_prolong;
+
 
     return LIS_SUCCESS;
 }
@@ -3170,6 +3607,333 @@ cleanup:
 
     if(level.coarse_ranges)
         lis_free(level.coarse_ranges);
+
+    if(level.aggregate)
+        lis_free(level.aggregate);
+
+
+    return err;
+}
+
+
+/*
+ * Internal distributed tentative-prolongation query used by
+ * the regression test.  It does not enable the distributed
+ * MFAMG solve path.
+ */
+LIS_INT
+lis_precon_mfamg_get_distributed_prolongation_info(
+    LIS_MATRIX A,
+    LIS_VECTOR z,
+    LIS_INT fine_capacity,
+    LIS_INT coarse_capacity,
+    LIS_INT *map_n,
+    LIS_INT *local_nc,
+    LIS_INT *global_nc,
+    LIS_SCALAR *fine_prolong,
+    LIS_SCALAR *coarse_z)
+{
+    struct LIS_MFAMG_LEVEL level;
+
+    LIS_INT max_row_nnz;
+    LIS_INT *cols;
+    LIS_SCALAR *vals;
+
+    LIS_INT i;
+    LIS_INT a;
+    LIS_INT err;
+
+    LIS_REAL mag;
+
+
+    if(
+        A==NULL
+        ||
+        z==NULL
+        ||
+        map_n==NULL
+        ||
+        local_nc==NULL
+        ||
+        global_nc==NULL
+        ||
+        fine_prolong==NULL
+        ||
+        coarse_z==NULL
+        ||
+        fine_capacity<0
+        ||
+        coarse_capacity<0
+        ||
+        A->matrix_type!=LIS_MATRIX_CSR
+        ||
+        A->nprocs<=1
+        ||
+        z->n!=A->n)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    memset(
+        &level,
+        0,
+        sizeof(level));
+
+    cols = NULL;
+    vals = NULL;
+
+
+    level.A =
+        A;
+
+    level.n =
+        A->n;
+
+
+    if(level.n<=0)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    level.aggregate =
+        (LIS_INT *)lis_malloc(
+            (size_t)level.n
+                *
+            sizeof(LIS_INT),
+            "lis_precon_mfamg_get_distributed_prolongation_info::aggregate");
+
+    level.prolong =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)level.n
+                *
+            sizeof(LIS_SCALAR),
+            "lis_precon_mfamg_get_distributed_prolongation_info::prolong");
+
+
+    if(
+        level.aggregate==NULL
+        ||
+        level.prolong==NULL)
+    {
+        LIS_SETERR_MEM(
+            (size_t)level.n
+                *
+            (
+                sizeof(LIS_INT)
+                +
+                sizeof(LIS_SCALAR)
+            ));
+
+        err = LIS_OUT_OF_MEMORY;
+
+        goto cleanup;
+    }
+
+
+    err =
+        lis_mfamg_get_max_row_nnz(
+            A,
+            level.n,
+            &max_row_nnz);
+
+    if(err)
+        goto cleanup;
+
+
+    cols =
+        (LIS_INT *)lis_malloc(
+            (size_t)max_row_nnz
+                *
+            sizeof(LIS_INT),
+            "lis_precon_mfamg_get_distributed_prolongation_info::cols");
+
+    vals =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)max_row_nnz
+                *
+            sizeof(LIS_SCALAR),
+            "lis_precon_mfamg_get_distributed_prolongation_info::vals");
+
+
+    if(
+        cols==NULL
+        ||
+        vals==NULL)
+    {
+        LIS_SETERR_MEM(
+            (size_t)max_row_nnz
+                *
+            (
+                sizeof(LIS_INT)
+                +
+                sizeof(LIS_SCALAR)
+            ));
+
+        err = LIS_OUT_OF_MEMORY;
+
+        goto cleanup;
+    }
+
+
+    err =
+        lis_mfamg_build_aggregates(
+            A,
+            &level,
+            max_row_nnz,
+            cols,
+            vals);
+
+    if(err)
+        goto cleanup;
+
+
+    if(
+        level.nc<=0
+        ||
+        level.nc>=level.n)
+    {
+        err = LIS_ERR_ILL_ARG;
+
+        goto cleanup;
+    }
+
+
+    err =
+        lis_mfamg_build_prolongation(
+            z,
+            &level);
+
+    if(err)
+        goto cleanup;
+
+
+    err =
+        lis_mfamg_build_distributed_aggregate_metadata(
+            A,
+            &level);
+
+    if(err)
+        goto cleanup;
+
+
+    err =
+        lis_mfamg_build_distributed_prolongation(
+            A,
+            &level);
+
+    if(err)
+        goto cleanup;
+
+
+    *map_n =
+        A->np;
+
+    *local_nc =
+        level.nc;
+
+    *global_nc =
+        level.global_nc;
+
+
+    if(
+        fine_capacity<A->np
+        ||
+        coarse_capacity<level.nc)
+    {
+        err = LIS_ERR_ILL_ARG;
+
+        goto cleanup;
+    }
+
+
+    for(i=0;i<A->np;i++)
+    {
+        fine_prolong[i] =
+            level.global_prolong[i];
+    }
+
+
+    for(a=0;a<level.nc;a++)
+    {
+        coarse_z[a] =
+            (LIS_SCALAR)0.0;
+    }
+
+
+    for(i=0;i<level.n;i++)
+    {
+        a =
+            level.aggregate[i];
+
+
+        if(
+            a<0
+            ||
+            a>=level.nc)
+        {
+            err = LIS_ERR_ILL_ARG;
+
+            goto cleanup;
+        }
+
+
+        coarse_z[a] +=
+            conj(
+                level.prolong[i])
+            *
+            z->value[i];
+    }
+
+
+    for(a=0;a<level.nc;a++)
+    {
+        mag =
+            fabs(
+                coarse_z[a]);
+
+
+        if(
+            mag!=mag
+            ||
+            mag>LIS_SCALAR_MAX
+            ||
+            mag==0.0)
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "MFAMG distributed coarse near-nullspace value is invalid\n");
+
+            err = LIS_BREAKDOWN;
+
+            goto cleanup;
+        }
+    }
+
+
+    err = LIS_SUCCESS;
+
+
+cleanup:
+
+    if(vals)
+        lis_free(vals);
+
+    if(cols)
+        lis_free(cols);
+
+    if(level.global_prolong)
+        lis_free(level.global_prolong);
+
+    if(level.global_aggregate)
+        lis_free(level.global_aggregate);
+
+    if(level.coarse_ranges)
+        lis_free(level.coarse_ranges);
+
+    if(level.prolong)
+        lis_free(level.prolong);
 
     if(level.aggregate)
         lis_free(level.aggregate);

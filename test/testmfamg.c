@@ -33,6 +33,19 @@ lis_precon_mfamg_get_distributed_aggregate_info(
     LIS_INT *fine_to_coarse);
 
 
+extern LIS_INT
+lis_precon_mfamg_get_distributed_prolongation_info(
+    LIS_MATRIX A,
+    LIS_VECTOR z,
+    LIS_INT fine_capacity,
+    LIS_INT coarse_capacity,
+    LIS_INT *map_n,
+    LIS_INT *local_nc,
+    LIS_INT *global_nc,
+    LIS_SCALAR *fine_prolong,
+    LIS_SCALAR *coarse_z);
+
+
 #define TEST_N 24
 #define SOLVE_TOL 1.0e-8
 #define MATCH_TOL 1.0e-12
@@ -2090,6 +2103,323 @@ check_mfamg_distributed_aggregates(
 
 
 static int
+check_mfamg_distributed_prolongation(
+    LIS_MATRIX A,
+    int rank,
+    int nprocs)
+{
+    LIS_VECTOR z;
+
+    LIS_SCALAR fine_prolong[TEST_N];
+    LIS_SCALAR coarse_z[TEST_N];
+
+    LIS_SCALAR expected;
+
+    LIS_REAL z0;
+    LIS_REAL z1;
+    LIS_REAL denom;
+    LIS_REAL diff;
+
+    LIS_INT map_n;
+    LIS_INT local_nc;
+    LIS_INT global_nc;
+
+    LIS_INT i;
+    LIS_INT a;
+    LIS_INT global_fine;
+    LIS_INT pair_first;
+    LIS_INT err;
+
+    int local_failed;
+    int global_failed;
+
+
+    z = NULL;
+
+    map_n = -1;
+    local_nc = -1;
+    global_nc = -1;
+
+    local_failed = 0;
+    global_failed = 0;
+
+
+    if(
+        A==NULL
+        ||
+        nprocs!=2
+        ||
+        TEST_N!=24
+        ||
+        A->n!=12)
+    {
+        local_failed = 1;
+
+        goto reduce_result;
+    }
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &z);
+
+    if(err)
+    {
+        local_failed = 1;
+
+        goto reduce_result;
+    }
+
+
+    for(i=0;i<A->n;i++)
+    {
+        z->value[i] =
+            (LIS_SCALAR)(
+                A->is
+                +
+                i
+                +
+                1);
+    }
+
+
+    err =
+        lis_precon_mfamg_get_distributed_prolongation_info(
+            A,
+            z,
+            TEST_N,
+            TEST_N,
+            &map_n,
+            &local_nc,
+            &global_nc,
+            fine_prolong,
+            coarse_z);
+
+
+    if(err)
+    {
+        fprintf(
+            stderr,
+            "MPI prolongation query failed on rank %d rc=%d\n",
+            rank,
+            (int)err);
+
+        local_failed = 1;
+
+        goto reduce_result;
+    }
+
+
+    if(
+        map_n!=A->np
+        ||
+        local_nc!=6
+        ||
+        global_nc!=12)
+    {
+        fprintf(
+            stderr,
+            "MPI prolongation metadata mismatch on rank %d: "
+            "map_n=%d np=%d local_nc=%d global_nc=%d\n",
+            rank,
+            (int)map_n,
+            (int)A->np,
+            (int)local_nc,
+            (int)global_nc);
+
+        local_failed = 1;
+    }
+
+
+    for(i=0;i<A->np;i++)
+    {
+        if(i<A->n)
+        {
+            global_fine =
+                A->is
+                +
+                i;
+        }
+        else
+        {
+            global_fine =
+                A->l2g_map[
+                    i
+                    -
+                    A->n];
+        }
+
+
+        pair_first =
+            2
+            *
+            (
+                global_fine
+                /
+                2
+            );
+
+
+        z0 =
+            (LIS_REAL)(
+                pair_first
+                +
+                1);
+
+        z1 =
+            (LIS_REAL)(
+                pair_first
+                +
+                2);
+
+
+        denom =
+            sqrt(
+                z0*z0
+                +
+                z1*z1);
+
+
+        expected =
+            (LIS_SCALAR)(
+                (
+                    (LIS_REAL)(
+                        global_fine
+                        +
+                        1)
+                )
+                /
+                denom);
+
+
+        diff =
+            fabs(
+                fine_prolong[i]
+                -
+                expected);
+
+
+        if(diff>MATCH_TOL)
+        {
+            fprintf(
+                stderr,
+                "MPI prolongation mismatch on rank %d "
+                "fine=%d local=%d got=%.16e expected=%.16e diff=%.3e\n",
+                rank,
+                (int)global_fine,
+                (int)i,
+                (double)fine_prolong[i],
+                (double)expected,
+                (double)diff);
+
+            local_failed = 1;
+        }
+    }
+
+
+    for(a=0;a<local_nc;a++)
+    {
+        pair_first =
+            A->is
+            +
+            2*a;
+
+
+        z0 =
+            (LIS_REAL)(
+                pair_first
+                +
+                1);
+
+        z1 =
+            (LIS_REAL)(
+                pair_first
+                +
+                2);
+
+
+        denom =
+            sqrt(
+                z0*z0
+                +
+                z1*z1);
+
+
+        expected =
+            (LIS_SCALAR)denom;
+
+
+        diff =
+            fabs(
+                coarse_z[a]
+                -
+                expected);
+
+
+        if(diff>MATCH_TOL)
+        {
+            fprintf(
+                stderr,
+                "MPI coarse nullspace mismatch on rank %d "
+                "aggregate=%d got=%.16e expected=%.16e diff=%.3e\n",
+                rank,
+                (int)a,
+                (double)coarse_z[a],
+                (double)expected,
+                (double)diff);
+
+            local_failed = 1;
+        }
+    }
+
+
+reduce_result:
+
+#ifdef USE_MPI
+
+    MPI_Allreduce(
+        &local_failed,
+        &global_failed,
+        1,
+        MPI_INT,
+        MPI_MAX,
+        LIS_COMM_WORLD);
+
+#else
+
+    global_failed =
+        local_failed;
+
+#endif
+
+
+    if(z)
+    {
+        lis_vector_destroy(
+            z);
+    }
+
+
+    if(rank==0)
+    {
+        printf(
+            "MPI_DISTRIBUTED_PROLONGATION=%s ranks=%d global_nc=%d\n",
+            global_failed
+            ?
+            "FAILED"
+            :
+            "PASSED",
+            nprocs,
+            (int)global_nc);
+    }
+
+
+    return global_failed;
+}
+
+
+static int
 run_mpi_rejection(
     int rank,
     int nprocs)
@@ -2266,6 +2596,13 @@ run_mpi_rejection(
 
     row_failed |=
         check_mfamg_distributed_aggregates(
+            A,
+            rank,
+            nprocs);
+
+
+    row_failed |=
+        check_mfamg_distributed_prolongation(
             A,
             rank,
             nprocs);
