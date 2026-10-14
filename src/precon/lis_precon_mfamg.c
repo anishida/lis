@@ -22,6 +22,7 @@
 #define LIS_MFAMG_COARSE_LIMIT 8
 #define LIS_MFAMG_STRENGTH_THETA ((LIS_REAL)0.05)
 #define LIS_MFAMG_DEFAULT_OMEGA ((LIS_REAL)(2.0/3.0))
+#define LIS_MFAMG_RANK_TOL ((LIS_REAL)1.0e-12)
 
 
 struct LIS_MFAMG_LEVEL
@@ -2186,6 +2187,1087 @@ lis_mfamg_build_distributed_aggregate_metadata(
 
 
     return LIS_SUCCESS;
+}
+
+
+
+/*
+ * Build an aggregate-local multivector tentative basis.
+ *
+ * For each aggregate a, the local near-nullspace block is
+ * factorized as
+ *
+ *     B_a = Q_a R_a
+ *
+ * using two-pass modified Gram-Schmidt with numerical rank
+ * detection.
+ *
+ * The local rank may differ between aggregates.  Coarse
+ * numbering therefore uses prefix offsets:
+ *
+ *     coarse_n = sum_a rank(B_a)
+ *
+ * The returned arrays satisfy
+ *
+ *     B = P * Bc
+ *
+ * up to LIS_MFAMG_RANK_TOL.
+ *
+ * This routine provides the serial algebraic foundation for
+ * multivector MFAMG.  It does not modify the current scalar
+ * production hierarchy path.
+ */
+#undef __FUNC__
+#define __FUNC__ "lis_precon_mfamg_build_multivector_basis"
+LIS_INT
+lis_precon_mfamg_build_multivector_basis(
+    LIS_INT n,
+    LIS_INT aggregate_count,
+    LIS_INT *aggregate,
+    LIS_INT mode_count,
+    LIS_VECTOR basis[],
+    LIS_INT **aggregate_rank_out,
+    LIS_INT **aggregate_offset_out,
+    LIS_INT **row_ptr_out,
+    LIS_SCALAR **prolong_out,
+    LIS_SCALAR **coarse_basis_out,
+    LIS_INT *coarse_n_out)
+{
+    LIS_INT *counts;
+    LIS_INT *member_offset;
+    LIS_INT *cursor;
+    LIS_INT *members;
+
+    LIS_INT *aggregate_rank;
+    LIS_INT *aggregate_offset;
+    LIS_INT *row_ptr;
+
+    LIS_SCALAR *q_all;
+    LIS_SCALAR *r_all;
+    LIS_SCALAR *work;
+    LIS_SCALAR *prolong;
+    LIS_SCALAR *coarse_basis;
+
+    LIS_INT i;
+    LIS_INT a;
+    LIS_INT m;
+    LIS_INT q;
+    LIS_INT t;
+    LIS_INT pass;
+    LIS_INT rank;
+    LIS_INT count;
+    LIS_INT node;
+    LIS_INT coarse_n;
+    LIS_INT err;
+
+    LIS_REAL mag;
+    LIS_REAL norm2;
+    LIS_REAL norm;
+    LIS_REAL max_norm;
+    LIS_REAL threshold;
+
+    LIS_SCALAR dot;
+
+    size_t q_entries;
+    size_t r_entries;
+    size_t prolong_entries;
+    size_t coarse_entries;
+    size_t prefix;
+    size_t next_size;
+
+
+    if(
+        n<=0
+        ||
+        aggregate_count<=0
+        ||
+        aggregate==NULL
+        ||
+        mode_count<=0
+        ||
+        basis==NULL
+        ||
+        aggregate_rank_out==NULL
+        ||
+        aggregate_offset_out==NULL
+        ||
+        row_ptr_out==NULL
+        ||
+        prolong_out==NULL
+        ||
+        coarse_basis_out==NULL
+        ||
+        coarse_n_out==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    *aggregate_rank_out = NULL;
+    *aggregate_offset_out = NULL;
+    *row_ptr_out = NULL;
+    *prolong_out = NULL;
+    *coarse_basis_out = NULL;
+    *coarse_n_out = 0;
+
+
+    for(m=0;m<mode_count;m++)
+    {
+        if(
+            basis[m]==NULL
+            ||
+            basis[m]->n!=n)
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "MFAMG multivector basis has incompatible vector layout\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+
+    if(
+        (size_t)n
+        >
+        ((size_t)-1)
+        /
+        (size_t)mode_count)
+    {
+        LIS_SETERR(
+            LIS_OUT_OF_MEMORY,
+            "MFAMG multivector basis size overflow\n");
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+
+    q_entries =
+        (size_t)n
+        *
+        (size_t)mode_count;
+
+
+    if(
+        (size_t)aggregate_count
+        >
+        ((size_t)-1)
+        /
+        (size_t)mode_count)
+    {
+        LIS_SETERR(
+            LIS_OUT_OF_MEMORY,
+            "MFAMG multivector R size overflow\n");
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+
+    r_entries =
+        (size_t)aggregate_count
+        *
+        (size_t)mode_count;
+
+
+    if(
+        r_entries
+        >
+        ((size_t)-1)
+        /
+        (size_t)mode_count)
+    {
+        LIS_SETERR(
+            LIS_OUT_OF_MEMORY,
+            "MFAMG multivector R size overflow\n");
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+
+    r_entries *=
+        (size_t)mode_count;
+
+
+    counts = NULL;
+    member_offset = NULL;
+    cursor = NULL;
+    members = NULL;
+
+    aggregate_rank = NULL;
+    aggregate_offset = NULL;
+    row_ptr = NULL;
+
+    q_all = NULL;
+    r_all = NULL;
+    work = NULL;
+    prolong = NULL;
+    coarse_basis = NULL;
+
+    err = LIS_SUCCESS;
+
+
+    counts =
+        (LIS_INT *)lis_malloc(
+            (size_t)aggregate_count
+            *
+            sizeof(LIS_INT),
+            "lis_precon_mfamg_build_multivector_basis::counts");
+
+    member_offset =
+        (LIS_INT *)lis_malloc(
+            (size_t)(aggregate_count+1)
+            *
+            sizeof(LIS_INT),
+            "lis_precon_mfamg_build_multivector_basis::member_offset");
+
+    cursor =
+        (LIS_INT *)lis_malloc(
+            (size_t)aggregate_count
+            *
+            sizeof(LIS_INT),
+            "lis_precon_mfamg_build_multivector_basis::cursor");
+
+    members =
+        (LIS_INT *)lis_malloc(
+            (size_t)n
+            *
+            sizeof(LIS_INT),
+            "lis_precon_mfamg_build_multivector_basis::members");
+
+    aggregate_rank =
+        (LIS_INT *)lis_malloc(
+            (size_t)aggregate_count
+            *
+            sizeof(LIS_INT),
+            "lis_precon_mfamg_build_multivector_basis::aggregate_rank");
+
+    aggregate_offset =
+        (LIS_INT *)lis_malloc(
+            (size_t)(aggregate_count+1)
+            *
+            sizeof(LIS_INT),
+            "lis_precon_mfamg_build_multivector_basis::aggregate_offset");
+
+    row_ptr =
+        (LIS_INT *)lis_malloc(
+            (size_t)(n+1)
+            *
+            sizeof(LIS_INT),
+            "lis_precon_mfamg_build_multivector_basis::row_ptr");
+
+    q_all =
+        (LIS_SCALAR *)lis_malloc(
+            q_entries
+            *
+            sizeof(LIS_SCALAR),
+            "lis_precon_mfamg_build_multivector_basis::q_all");
+
+    r_all =
+        (LIS_SCALAR *)lis_malloc(
+            r_entries
+            *
+            sizeof(LIS_SCALAR),
+            "lis_precon_mfamg_build_multivector_basis::r_all");
+
+    work =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)n
+            *
+            sizeof(LIS_SCALAR),
+            "lis_precon_mfamg_build_multivector_basis::work");
+
+
+    if(
+        counts==NULL
+        ||
+        member_offset==NULL
+        ||
+        cursor==NULL
+        ||
+        members==NULL
+        ||
+        aggregate_rank==NULL
+        ||
+        aggregate_offset==NULL
+        ||
+        row_ptr==NULL
+        ||
+        q_all==NULL
+        ||
+        r_all==NULL
+        ||
+        work==NULL)
+    {
+        LIS_SETERR_MEM(
+            q_entries
+            *
+            sizeof(LIS_SCALAR));
+
+        err = LIS_OUT_OF_MEMORY;
+        goto fail;
+    }
+
+
+    memset(
+        counts,
+        0,
+        (size_t)aggregate_count
+        *
+        sizeof(LIS_INT));
+
+    memset(
+        q_all,
+        0,
+        q_entries
+        *
+        sizeof(LIS_SCALAR));
+
+    memset(
+        r_all,
+        0,
+        r_entries
+        *
+        sizeof(LIS_SCALAR));
+
+
+    for(i=0;i<n;i++)
+    {
+        a =
+            aggregate[i];
+
+
+        if(
+            a<0
+            ||
+            a>=aggregate_count)
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "MFAMG multivector basis contains an invalid aggregate index\n");
+
+            err = LIS_ERR_ILL_ARG;
+            goto fail;
+        }
+
+
+        counts[a]++;
+    }
+
+
+    member_offset[0] =
+        0;
+
+
+    for(a=0;a<aggregate_count;a++)
+    {
+        next_size =
+            (size_t)member_offset[a]
+            +
+            (size_t)counts[a];
+
+
+        if(
+            (size_t)((LIS_INT)next_size)
+            !=
+            next_size)
+        {
+            LIS_SETERR(
+                LIS_OUT_OF_MEMORY,
+                "MFAMG multivector aggregate membership overflow\n");
+
+            err = LIS_OUT_OF_MEMORY;
+            goto fail;
+        }
+
+
+        member_offset[a+1] =
+            (LIS_INT)next_size;
+
+        cursor[a] =
+            member_offset[a];
+    }
+
+
+    if(
+        member_offset[
+            aggregate_count]
+        !=
+        n)
+    {
+        err = LIS_ERR_ILL_ARG;
+        goto fail;
+    }
+
+
+    for(i=0;i<n;i++)
+    {
+        a =
+            aggregate[i];
+
+        members[
+            cursor[a]]
+            =
+            i;
+
+        cursor[a]++;
+    }
+
+
+    for(a=0;a<aggregate_count;a++)
+    {
+        if(counts[a]<=0)
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "MFAMG multivector basis contains an empty aggregate\n");
+
+            err = LIS_ERR_ILL_ARG;
+            goto fail;
+        }
+
+
+        count =
+            counts[a];
+
+        max_norm =
+            0.0;
+
+
+        /*
+         * Determine the local scale used for relative rank
+         * detection.
+         */
+        for(m=0;m<mode_count;m++)
+        {
+            norm2 =
+                0.0;
+
+
+            for(t=0;t<count;t++)
+            {
+                node =
+                    members[
+                        member_offset[a]
+                        +
+                        t];
+
+                mag =
+                    fabs(
+                        basis[m]
+                        ->
+                        value[node]);
+
+
+                if(
+                    mag!=mag
+                    ||
+                    mag>LIS_SCALAR_MAX)
+                {
+                    LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "MFAMG multivector basis contains non-finite values\n");
+
+                    err = LIS_ERR_ILL_ARG;
+                    goto fail;
+                }
+
+
+                norm2 +=
+                    mag
+                    *
+                    mag;
+
+
+                if(
+                    norm2!=norm2
+                    ||
+                    norm2>LIS_SCALAR_MAX)
+                {
+                    LIS_SETERR(
+                        LIS_BREAKDOWN,
+                        "MFAMG multivector basis norm overflowed\n");
+
+                    err = LIS_BREAKDOWN;
+                    goto fail;
+                }
+            }
+
+
+            norm =
+                sqrt(
+                    norm2);
+
+
+            if(norm>max_norm)
+            {
+                max_norm =
+                    norm;
+            }
+        }
+
+
+        if(max_norm==0.0)
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "MFAMG near-nullspace vanishes on an aggregate\n");
+
+            err = LIS_BREAKDOWN;
+            goto fail;
+        }
+
+
+        threshold =
+            LIS_MFAMG_RANK_TOL
+            *
+            max_norm;
+
+
+        if(
+            threshold!=threshold
+            ||
+            threshold>LIS_SCALAR_MAX)
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "MFAMG multivector rank threshold overflowed\n");
+
+            err = LIS_BREAKDOWN;
+            goto fail;
+        }
+
+
+        rank =
+            0;
+
+
+        for(m=0;m<mode_count;m++)
+        {
+            for(t=0;t<count;t++)
+            {
+                node =
+                    members[
+                        member_offset[a]
+                        +
+                        t];
+
+                work[t] =
+                    basis[m]
+                    ->
+                    value[node];
+            }
+
+
+            /*
+             * Two-pass modified Gram-Schmidt reduces the
+             * loss of orthogonality for nearly dependent
+             * local modes.
+             */
+            for(pass=0;pass<2;pass++)
+            {
+                for(q=0;q<rank;q++)
+                {
+                    dot =
+                        (LIS_SCALAR)0.0;
+
+
+                    for(t=0;t<count;t++)
+                    {
+                        node =
+                            members[
+                                member_offset[a]
+                                +
+                                t];
+
+                        dot +=
+                            conj(
+                                q_all[
+                                    (size_t)node
+                                    *
+                                    (size_t)mode_count
+                                    +
+                                    (size_t)q])
+                            *
+                            work[t];
+                    }
+
+
+                    r_all[
+                        (
+                            (size_t)a
+                            *
+                            (size_t)mode_count
+                            +
+                            (size_t)q
+                        )
+                        *
+                        (size_t)mode_count
+                        +
+                        (size_t)m]
+                        +=
+                        dot;
+
+
+                    for(t=0;t<count;t++)
+                    {
+                        node =
+                            members[
+                                member_offset[a]
+                                +
+                                t];
+
+                        work[t] -=
+                            q_all[
+                                (size_t)node
+                                *
+                                (size_t)mode_count
+                                +
+                                (size_t)q]
+                            *
+                            dot;
+                    }
+                }
+            }
+
+
+            norm2 =
+                0.0;
+
+
+            for(t=0;t<count;t++)
+            {
+                mag =
+                    fabs(
+                        work[t]);
+
+
+                if(
+                    mag!=mag
+                    ||
+                    mag>LIS_SCALAR_MAX)
+                {
+                    LIS_SETERR(
+                        LIS_BREAKDOWN,
+                        "MFAMG multivector orthogonalization produced non-finite values\n");
+
+                    err = LIS_BREAKDOWN;
+                    goto fail;
+                }
+
+
+                norm2 +=
+                    mag
+                    *
+                    mag;
+
+
+                if(
+                    norm2!=norm2
+                    ||
+                    norm2>LIS_SCALAR_MAX)
+                {
+                    LIS_SETERR(
+                        LIS_BREAKDOWN,
+                        "MFAMG multivector residual norm overflowed\n");
+
+                    err = LIS_BREAKDOWN;
+                    goto fail;
+                }
+            }
+
+
+            norm =
+                sqrt(
+                    norm2);
+
+
+            if(norm<=threshold)
+                continue;
+
+
+            if(
+                rank>=count
+                ||
+                rank>=mode_count)
+            {
+                LIS_SETERR(
+                    LIS_ERR_ILL_ARG,
+                    "MFAMG multivector local rank is inconsistent\n");
+
+                err = LIS_ERR_ILL_ARG;
+                goto fail;
+            }
+
+
+            r_all[
+                (
+                    (size_t)a
+                    *
+                    (size_t)mode_count
+                    +
+                    (size_t)rank
+                )
+                *
+                (size_t)mode_count
+                +
+                (size_t)m]
+                =
+                (LIS_SCALAR)norm;
+
+
+            for(t=0;t<count;t++)
+            {
+                node =
+                    members[
+                        member_offset[a]
+                        +
+                        t];
+
+                q_all[
+                    (size_t)node
+                    *
+                    (size_t)mode_count
+                    +
+                    (size_t)rank]
+                    =
+                    work[t]
+                    /
+                    (LIS_SCALAR)norm;
+            }
+
+
+            rank++;
+        }
+
+
+        if(rank<=0)
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "MFAMG multivector aggregate has zero numerical rank\n");
+
+            err = LIS_BREAKDOWN;
+            goto fail;
+        }
+
+
+        aggregate_rank[a] =
+            rank;
+    }
+
+
+    prefix =
+        0;
+
+    aggregate_offset[0] =
+        0;
+
+
+    for(a=0;a<aggregate_count;a++)
+    {
+        prefix +=
+            (size_t)aggregate_rank[a];
+
+
+        if(
+            (size_t)((LIS_INT)prefix)
+            !=
+            prefix)
+        {
+            LIS_SETERR(
+                LIS_OUT_OF_MEMORY,
+                "MFAMG multivector coarse dimension overflow\n");
+
+            err = LIS_OUT_OF_MEMORY;
+            goto fail;
+        }
+
+
+        aggregate_offset[a+1] =
+            (LIS_INT)prefix;
+    }
+
+
+    coarse_n =
+        aggregate_offset[
+            aggregate_count];
+
+
+    if(coarse_n<=0)
+    {
+        err = LIS_BREAKDOWN;
+        goto fail;
+    }
+
+
+    prefix =
+        0;
+
+    row_ptr[0] =
+        0;
+
+
+    for(i=0;i<n;i++)
+    {
+        a =
+            aggregate[i];
+
+        prefix +=
+            (size_t)aggregate_rank[a];
+
+
+        if(
+            (size_t)((LIS_INT)prefix)
+            !=
+            prefix)
+        {
+            LIS_SETERR(
+                LIS_OUT_OF_MEMORY,
+                "MFAMG multivector prolongation size overflow\n");
+
+            err = LIS_OUT_OF_MEMORY;
+            goto fail;
+        }
+
+
+        row_ptr[i+1] =
+            (LIS_INT)prefix;
+    }
+
+
+    prolong_entries =
+        prefix;
+
+
+    if(
+        (size_t)coarse_n
+        >
+        ((size_t)-1)
+        /
+        (size_t)mode_count)
+    {
+        LIS_SETERR(
+            LIS_OUT_OF_MEMORY,
+            "MFAMG multivector coarse basis size overflow\n");
+
+        err = LIS_OUT_OF_MEMORY;
+        goto fail;
+    }
+
+
+    coarse_entries =
+        (size_t)coarse_n
+        *
+        (size_t)mode_count;
+
+
+    if(
+        prolong_entries
+        >
+        ((size_t)-1)
+        /
+        sizeof(LIS_SCALAR)
+        ||
+        coarse_entries
+        >
+        ((size_t)-1)
+        /
+        sizeof(LIS_SCALAR))
+    {
+        LIS_SETERR(
+            LIS_OUT_OF_MEMORY,
+            "MFAMG multivector output allocation overflow\n");
+
+        err = LIS_OUT_OF_MEMORY;
+        goto fail;
+    }
+
+
+    prolong =
+        (LIS_SCALAR *)lis_malloc(
+            prolong_entries
+            *
+            sizeof(LIS_SCALAR),
+            "lis_precon_mfamg_build_multivector_basis::prolong");
+
+    coarse_basis =
+        (LIS_SCALAR *)lis_malloc(
+            coarse_entries
+            *
+            sizeof(LIS_SCALAR),
+            "lis_precon_mfamg_build_multivector_basis::coarse_basis");
+
+
+    if(
+        prolong==NULL
+        ||
+        coarse_basis==NULL)
+    {
+        LIS_SETERR_MEM(
+            coarse_entries
+            *
+            sizeof(LIS_SCALAR));
+
+        err = LIS_OUT_OF_MEMORY;
+        goto fail;
+    }
+
+
+    memset(
+        coarse_basis,
+        0,
+        coarse_entries
+        *
+        sizeof(LIS_SCALAR));
+
+
+    for(i=0;i<n;i++)
+    {
+        a =
+            aggregate[i];
+
+
+        for(
+            q=0;
+            q<aggregate_rank[a];
+            q++)
+        {
+            prolong[
+                (size_t)row_ptr[i]
+                +
+                (size_t)q]
+                =
+                q_all[
+                    (size_t)i
+                    *
+                    (size_t)mode_count
+                    +
+                    (size_t)q];
+        }
+    }
+
+
+    for(a=0;a<aggregate_count;a++)
+    {
+        for(
+            q=0;
+            q<aggregate_rank[a];
+            q++)
+        {
+            for(m=0;m<mode_count;m++)
+            {
+                coarse_basis[
+                    (
+                        (size_t)aggregate_offset[a]
+                        +
+                        (size_t)q
+                    )
+                    *
+                    (size_t)mode_count
+                    +
+                    (size_t)m]
+                    =
+                    r_all[
+                        (
+                            (size_t)a
+                            *
+                            (size_t)mode_count
+                            +
+                            (size_t)q
+                        )
+                        *
+                        (size_t)mode_count
+                        +
+                        (size_t)m];
+            }
+        }
+    }
+
+
+    lis_free(
+        work);
+
+    lis_free(
+        r_all);
+
+    lis_free(
+        q_all);
+
+    lis_free(
+        members);
+
+    lis_free(
+        cursor);
+
+    lis_free(
+        member_offset);
+
+    lis_free(
+        counts);
+
+
+    *aggregate_rank_out =
+        aggregate_rank;
+
+    *aggregate_offset_out =
+        aggregate_offset;
+
+    *row_ptr_out =
+        row_ptr;
+
+    *prolong_out =
+        prolong;
+
+    *coarse_basis_out =
+        coarse_basis;
+
+    *coarse_n_out =
+        coarse_n;
+
+
+    return LIS_SUCCESS;
+
+
+fail:
+
+    if(coarse_basis)
+        lis_free(coarse_basis);
+
+    if(prolong)
+        lis_free(prolong);
+
+    if(work)
+        lis_free(work);
+
+    if(r_all)
+        lis_free(r_all);
+
+    if(q_all)
+        lis_free(q_all);
+
+    if(row_ptr)
+        lis_free(row_ptr);
+
+    if(aggregate_offset)
+        lis_free(aggregate_offset);
+
+    if(aggregate_rank)
+        lis_free(aggregate_rank);
+
+    if(members)
+        lis_free(members);
+
+    if(cursor)
+        lis_free(cursor);
+
+    if(member_offset)
+        lis_free(member_offset);
+
+    if(counts)
+        lis_free(counts);
+
+
+    return err;
 }
 
 

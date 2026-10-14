@@ -93,6 +93,22 @@ lis_precon_mfamg_get_distributed_coarse_info(
     LIS_SCALAR *values);
 
 
+
+LIS_INT
+lis_precon_mfamg_build_multivector_basis(
+    LIS_INT n,
+    LIS_INT aggregate_count,
+    LIS_INT *aggregate,
+    LIS_INT mode_count,
+    LIS_VECTOR basis[],
+    LIS_INT **aggregate_rank_out,
+    LIS_INT **aggregate_offset_out,
+    LIS_INT **row_ptr_out,
+    LIS_SCALAR **prolong_out,
+    LIS_SCALAR **coarse_basis_out,
+    LIS_INT *coarse_n_out);
+
+
 #define TEST_N 24
 #define HARD_N 31
 #define STRENGTH_N 8
@@ -1715,6 +1731,399 @@ cleanup:
     return failed;
 }
 
+
+static int
+check_mfamg_multivector_basis_foundation(void)
+{
+    enum
+    {
+        LOCAL_N = 6,
+        LOCAL_AGGREGATES = 2,
+        LOCAL_MODES = 2
+    };
+
+    LIS_VECTOR z0;
+    LIS_VECTOR z1;
+
+    LIS_VECTOR basis[LOCAL_MODES];
+
+    LIS_INT aggregate[LOCAL_N] =
+    {
+        0, 0, 0,
+        1, 1, 1
+    };
+
+    LIS_INT *aggregate_rank;
+    LIS_INT *aggregate_offset;
+    LIS_INT *row_ptr;
+
+    LIS_SCALAR *prolong;
+    LIS_SCALAR *coarse_basis;
+
+    LIS_INT coarse_n;
+
+    LIS_INT i;
+    LIS_INT a;
+    LIS_INT m;
+    LIS_INT q;
+    LIS_INT r;
+    LIS_INT err;
+
+    LIS_SCALAR recovered;
+    LIS_SCALAR gram;
+    LIS_SCALAR target;
+
+    LIS_REAL reconstruction_error;
+    LIS_REAL orthogonality_error;
+    LIS_REAL value_error;
+
+    int failed;
+
+
+    z0 = NULL;
+    z1 = NULL;
+
+    aggregate_rank = NULL;
+    aggregate_offset = NULL;
+    row_ptr = NULL;
+
+    prolong = NULL;
+    coarse_basis = NULL;
+
+    coarse_n = -1;
+
+    reconstruction_error = 0.0;
+    orthogonality_error = 0.0;
+
+    failed = 0;
+
+
+    err =
+        lis_vector_create(
+            LIS_COMM_WORLD,
+            &z0);
+
+    if(err)
+    {
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_vector_set_size(
+            z0,
+            0,
+            LOCAL_N);
+
+    if(err)
+    {
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_vector_duplicate(
+            z0,
+            &z1);
+
+    if(err)
+    {
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    /*
+     * Aggregate 0 has local rank 2.
+     */
+    z0->value[0] = (LIS_SCALAR)1.0;
+    z0->value[1] = (LIS_SCALAR)1.0;
+    z0->value[2] = (LIS_SCALAR)1.0;
+
+    z1->value[0] = (LIS_SCALAR)0.0;
+    z1->value[1] = (LIS_SCALAR)1.0;
+    z1->value[2] = (LIS_SCALAR)2.0;
+
+
+    /*
+     * Aggregate 1 has local rank 1 because z1=2*z0.
+     */
+    z0->value[3] = (LIS_SCALAR)1.0;
+    z0->value[4] = (LIS_SCALAR)1.0;
+    z0->value[5] = (LIS_SCALAR)1.0;
+
+    z1->value[3] = (LIS_SCALAR)2.0;
+    z1->value[4] = (LIS_SCALAR)2.0;
+    z1->value[5] = (LIS_SCALAR)2.0;
+
+
+    basis[0] =
+        z0;
+
+    basis[1] =
+        z1;
+
+
+    err =
+        lis_precon_mfamg_build_multivector_basis(
+            LOCAL_N,
+            LOCAL_AGGREGATES,
+            aggregate,
+            LOCAL_MODES,
+            basis,
+            &aggregate_rank,
+            &aggregate_offset,
+            &row_ptr,
+            &prolong,
+            &coarse_basis,
+            &coarse_n);
+
+    if(err)
+    {
+        failed = 1;
+        goto report;
+    }
+
+
+    if(
+        aggregate_rank==NULL
+        ||
+        aggregate_offset==NULL
+        ||
+        row_ptr==NULL
+        ||
+        prolong==NULL
+        ||
+        coarse_basis==NULL
+        ||
+        coarse_n!=3
+        ||
+        aggregate_rank[0]!=2
+        ||
+        aggregate_rank[1]!=1
+        ||
+        aggregate_offset[0]!=0
+        ||
+        aggregate_offset[1]!=2
+        ||
+        aggregate_offset[2]!=3
+        ||
+        row_ptr[0]!=0
+        ||
+        row_ptr[1]!=2
+        ||
+        row_ptr[2]!=4
+        ||
+        row_ptr[3]!=6
+        ||
+        row_ptr[4]!=7
+        ||
+        row_ptr[5]!=8
+        ||
+        row_ptr[6]!=9)
+    {
+        failed = 1;
+        goto report;
+    }
+
+
+    /*
+     * Verify B = P * Bc.
+     */
+    for(m=0;m<LOCAL_MODES;m++)
+    {
+        for(i=0;i<LOCAL_N;i++)
+        {
+            a =
+                aggregate[i];
+
+            recovered =
+                (LIS_SCALAR)0.0;
+
+
+            for(
+                q=0;
+                q<aggregate_rank[a];
+                q++)
+            {
+                recovered +=
+                    prolong[
+                        row_ptr[i]
+                        +
+                        q]
+                    *
+                    coarse_basis[
+                        (
+                            aggregate_offset[a]
+                            +
+                            q
+                        )
+                        *
+                        LOCAL_MODES
+                        +
+                        m];
+            }
+
+
+            value_error =
+                fabs(
+                    recovered
+                    -
+                    basis[m]->value[i]);
+
+
+            if(
+                value_error
+                >
+                reconstruction_error)
+            {
+                reconstruction_error =
+                    value_error;
+            }
+        }
+    }
+
+
+    /*
+     * Verify Q_a^H Q_a = I.
+     */
+    for(a=0;a<LOCAL_AGGREGATES;a++)
+    {
+        for(
+            q=0;
+            q<aggregate_rank[a];
+            q++)
+        {
+            for(
+                r=0;
+                r<aggregate_rank[a];
+                r++)
+            {
+                gram =
+                    (LIS_SCALAR)0.0;
+
+
+                for(i=0;i<LOCAL_N;i++)
+                {
+                    if(aggregate[i]!=a)
+                        continue;
+
+
+                    gram +=
+                        conj(
+                            prolong[
+                                row_ptr[i]
+                                +
+                                q])
+                        *
+                        prolong[
+                            row_ptr[i]
+                            +
+                            r];
+                }
+
+
+                target =
+                    (q==r)
+                    ?
+                    (LIS_SCALAR)1.0
+                    :
+                    (LIS_SCALAR)0.0;
+
+
+                value_error =
+                    fabs(
+                        gram
+                        -
+                        target);
+
+
+                if(
+                    value_error
+                    >
+                    orthogonality_error)
+                {
+                    orthogonality_error =
+                        value_error;
+                }
+            }
+        }
+    }
+
+
+    if(
+        reconstruction_error>1.0e-11
+        ||
+        orthogonality_error>1.0e-11)
+    {
+        failed = 1;
+    }
+
+
+report:
+
+    printf(
+        "MULTIVECTOR_BASIS=%s "
+        "coarse_n=%d "
+        "ranks=%d,%d "
+        "entries=%d "
+        "reconstruction=% .12e "
+        "orthogonality=% .12e\n",
+        failed
+        ?
+        "FAILED"
+        :
+        "PASSED",
+        (int)coarse_n,
+        aggregate_rank
+        ?
+        (int)aggregate_rank[0]
+        :
+        -1,
+        aggregate_rank
+        ?
+        (int)aggregate_rank[1]
+        :
+        -1,
+        row_ptr
+        ?
+        (int)row_ptr[LOCAL_N]
+        :
+        -1,
+        (double)reconstruction_error,
+        (double)orthogonality_error);
+
+
+cleanup:
+
+    if(coarse_basis)
+        lis_free(coarse_basis);
+
+    if(prolong)
+        lis_free(prolong);
+
+    if(row_ptr)
+        lis_free(row_ptr);
+
+    if(aggregate_offset)
+        lis_free(aggregate_offset);
+
+    if(aggregate_rank)
+        lis_free(aggregate_rank);
+
+    if(z1)
+        lis_vector_destroy(z1);
+
+    if(z0)
+        lis_vector_destroy(z0);
+
+
+    return failed;
+}
+
+
 static int
 run_serial(void)
 {
@@ -1740,6 +2149,9 @@ run_serial(void)
     U = NULL;
 
     failed = 0;
+
+    failed |=
+        check_mfamg_multivector_basis_foundation();
 
 
     failed |=
