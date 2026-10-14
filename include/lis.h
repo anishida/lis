@@ -159,7 +159,7 @@ extern "C" {
 #define LIS_CONV_COND_NRM2_B 1
 #define LIS_CONV_COND_NRM1_B 2
 
-#define LIS_SOLVER_LEN 25
+#define LIS_SOLVER_LEN 27
 #define LIS_SOLVER_CG 1
 #define LIS_SOLVER_BICG 2
 #define LIS_SOLVER_CGS 3
@@ -186,6 +186,20 @@ extern "C" {
 #define LIS_SOLVER_MINRES 23
 #define LIS_SOLVER_COCG 24
 #define LIS_SOLVER_COCR 25
+#define LIS_SOLVER_GCRODR 26
+#define LIS_SOLVER_FGCRODR 27
+
+#define LIS_GCRODR_RECYCLE_NONE 0
+#define LIS_GCRODR_RECYCLE_BUILD 1
+#define LIS_GCRODR_RECYCLE_KEEP 2
+#define LIS_GCRODR_RECYCLE_REFRESH 3
+#define LIS_GCRODR_RECYCLE_REJECT 4
+
+#define LIS_FGCRODR_RECYCLE_NONE 0
+#define LIS_FGCRODR_RECYCLE_BUILD 1
+#define LIS_FGCRODR_RECYCLE_KEEP 2
+#define LIS_FGCRODR_RECYCLE_TRANSPORT 3
+#define LIS_FGCRODR_RECYCLE_REJECT 4
 
 #define LIS_ESOLVER_LEN 16
 #define LIS_ESOLVER_PI 1
@@ -204,6 +218,10 @@ extern "C" {
 #define LIS_ESOLVER_GSI 14
 #define LIS_ESOLVER_GLI 15
 #define LIS_ESOLVER_GAI 16
+
+#define LIS_EIGEN_TRANSFORM_AUTO 0
+#define LIS_EIGEN_TRANSFORM_SHIFT_INVERT 1
+#define LIS_EIGEN_TRANSFORM_BUCKLING 2
 
 #define LIS_INS_VALUE 0
 #define LIS_ADD_VALUE 1
@@ -550,6 +568,8 @@ struct LIS_VECTOR_STRUCT
 	LIS_SCALAR *value_lo;
 	LIS_SCALAR *work;
 	LIS_INT intvalue;
+	/* value points to application-owned storage. */
+	LIS_INT value_external;
 };
 typedef struct LIS_VECTOR_STRUCT *LIS_VECTOR;
 
@@ -747,6 +767,16 @@ struct LIS_MATRIX_STRUCT
 	LIS_SCALAR operator_beta;
 	LIS_VECTOR operator_work;
 	LIS_VECTOR operator_scale; /* non-owning scale for D*A*D */
+
+	/*
+	 * Explicit generations for sequences of related matrix states.
+	 * A structure change also implies a new numerical value state.
+	 */
+	LIS_UNSIGNED_INT structure_generation;
+	LIS_UNSIGNED_INT value_generation;
+
+	/* CSR ptr/index/value are borrowed from the application. */
+	LIS_INT csr_external;
 };
 typedef struct LIS_MATRIX_STRUCT *LIS_MATRIX;
 
@@ -800,6 +830,37 @@ struct LIS_NEAR_NULLSPACE_COARSE_STRUCT;
 typedef struct LIS_NEAR_NULLSPACE_COARSE_STRUCT *LIS_NEAR_NULLSPACE_COARSE;
 
 
+typedef struct LIS_SEQUENCE_DIAGNOSTICS_STRUCT
+{
+    /* Diagnostics for the most recent sequence solve. */
+    LIS_INT attempts;
+    LIS_INT retries;
+    LIS_INT recycle_resets;
+    LIS_INT precon_rebuilds;
+
+    LIS_INT first_retcode;
+    LIS_INT final_retcode;
+
+    LIS_INT initial_warm_start_kept;
+    LIS_INT last_warm_start_kept;
+
+    LIS_INT initial_residual_valid;
+    LIS_INT true_residual_valid;
+    LIS_REAL initial_residual;
+    LIS_REAL rhs_norm;
+    LIS_REAL true_residual;
+    LIS_REAL true_relative_residual;
+
+    /* Lifetime counters for this solver object. */
+    LIS_UNSIGNED_INT total_solves;
+    LIS_UNSIGNED_INT total_attempts;
+    LIS_UNSIGNED_INT total_retries;
+    LIS_UNSIGNED_INT total_recycle_resets;
+    LIS_UNSIGNED_INT total_precon_rebuilds;
+} LIS_SEQUENCE_DIAGNOSTICS;
+
+typedef struct LIS_FGCRODR_STATE_STRUCT *LIS_FGCRODR_STATE;
+
 struct LIS_SOLVER_STRUCT
 {
 	LIS_MATRIX A,Ah;
@@ -810,6 +871,29 @@ struct LIS_SOLVER_STRUCT
 	LIS_VECTOR *near_nullspace;
 	LIS_INT near_nullspace_dim;
 	LIS_NEAR_NULLSPACE_COARSE near_nullspace_coarse;
+	/* Persistent GCRO-DR recycle state. */
+	LIS_VECTOR *recycle_u;
+	LIS_VECTOR *recycle_zu;
+	LIS_VECTOR *recycle_c;
+	LIS_INT recycle_dim;
+	LIS_INT recycle_alloc;
+	LIS_INT recycle_valid;
+	LIS_INT recycle_builds;
+	LIS_INT recycle_updates;
+	LIS_INT recycle_uses;
+	LIS_INT recycle_rejects;
+
+	/* GCRO-DR cross-solve policy/configuration. */
+	LIS_INT recycle_target_dim;
+	LIS_REAL recycle_keep_threshold;
+	LIS_REAL recycle_reject_threshold;
+	LIS_REAL recycle_quality;
+	LIS_REAL recycle_quality_min;
+	LIS_INT recycle_last_action;
+	LIS_INT recycle_cross_uses;
+	LIS_INT recycle_policy_keeps;
+	LIS_INT recycle_policy_refreshes;
+	LIS_INT recycle_policy_rejects;
 	LIS_VECTOR *work;
 	LIS_REAL *rhistory;
 	LIS_INT worklen;
@@ -829,6 +913,51 @@ struct LIS_SOLVER_STRUCT
 	LIS_REAL tol;
 	LIS_REAL tol_switch;
 	LIS_INT setup;
+
+	/* Persistent preconditioner state for related systems. */
+	LIS_PRECON sequence_precon;
+	LIS_MATRIX sequence_precon_matrix;
+	LIS_UNSIGNED_INT sequence_precon_structure_generation;
+	LIS_UNSIGNED_INT sequence_precon_value_generation;
+	LIS_INT sequence_precon_matrix_type;
+	LIS_INT sequence_precon_is_scaled;
+	LIS_INT sequence_precon_type;
+	LIS_INT sequence_precon_options[LIS_OPTIONS_LEN];
+	LIS_SCALAR sequence_precon_params[LIS_PARAMS_LEN];
+
+	/* Sequence warm-start and physical residual state. */
+	LIS_REAL sequence_initial_residual;
+	LIS_REAL sequence_rhs_norm;
+	LIS_REAL sequence_true_residual;
+	LIS_REAL sequence_true_relative_residual;
+	LIS_INT sequence_warm_start_kept;
+
+	LIS_INT sequence_initial_residual_valid;
+	LIS_INT sequence_true_residual_valid;
+	/* Most recent sequence-solve diagnostics. */
+	LIS_INT sequence_diag_attempts;
+	LIS_INT sequence_diag_retries;
+	LIS_INT sequence_diag_recycle_resets;
+	LIS_INT sequence_diag_precon_rebuilds;
+	LIS_INT sequence_diag_first_retcode;
+	LIS_INT sequence_diag_final_retcode;
+	LIS_INT sequence_diag_initial_warm_start_kept;
+	LIS_INT sequence_diag_initial_residual_valid;
+	LIS_REAL sequence_diag_initial_residual;
+	LIS_REAL sequence_diag_rhs_norm;
+
+	/* Lifetime sequence-solve diagnostics. */
+	LIS_UNSIGNED_INT sequence_diag_total_solves;
+	LIS_UNSIGNED_INT sequence_diag_total_attempts;
+	LIS_UNSIGNED_INT sequence_diag_total_retries;
+	LIS_UNSIGNED_INT sequence_diag_total_recycle_resets;
+	LIS_UNSIGNED_INT sequence_diag_total_precon_rebuilds;
+
+	/* Per-solver execution thread override. */
+	LIS_INT num_threads;
+
+        /* Private persistent FGCRO-DR state. */
+        LIS_FGCRODR_STATE fgcrodr_state;
 };
 typedef struct LIS_SOLVER_STRUCT *LIS_SOLVER;
 
@@ -855,6 +984,8 @@ struct LIS_ESOLVER_STRUCT
         double p_i_time;
 	LIS_INT eprecision;
         LIS_SCALAR ishift;
+        LIS_INT transform;
+        LIS_INT nev;
 	LIS_REAL nrm2;
         LIS_REAL tol;
 };
@@ -900,6 +1031,12 @@ extern "C"
 
 	extern LIS_INT lis_vector_create(LIS_Comm comm, LIS_VECTOR *vec); 
 	extern LIS_INT lis_vector_set_size(LIS_VECTOR vec, LIS_INT local_n, LIS_INT global_n); 
+    /*
+     * Attach application-owned vector storage.
+     * LIS borrows the supplied array and never frees it.
+     * The caller must keep the storage valid while it is attached.
+     */
+	extern LIS_INT lis_vector_set_external(LIS_VECTOR vec, LIS_SCALAR *value);
 /*NEH support for extended "solve_kernel" workflow*/
 	extern LIS_INT lis_vector_psd_reset_scale(LIS_VECTOR vec); 
 	extern LIS_INT lis_vector_destroy(LIS_VECTOR vec);
@@ -949,6 +1086,12 @@ extern "C"
 	extern LIS_INT lis_matrix_get_range(LIS_MATRIX A, LIS_INT *is, LIS_INT *ie);
     extern LIS_INT lis_matrix_get_capabilities(LIS_MATRIX A, LIS_INT *capabilities);
 	extern LIS_INT lis_matrix_get_nnz(LIS_MATRIX A, LIS_INT *nnz);
+	extern LIS_INT lis_matrix_mark_values_changed(LIS_MATRIX A);
+	extern LIS_INT lis_matrix_mark_structure_changed(LIS_MATRIX A);
+	extern LIS_INT lis_matrix_get_generation(
+	                                   LIS_MATRIX A,
+	                                   LIS_UNSIGNED_INT *structure_generation,
+	                                   LIS_UNSIGNED_INT *value_generation);
 	extern LIS_INT lis_matrix_set_user(LIS_MATRIX A, void *user_data,
 	                                   LIS_MATRIX_USER_MATVEC matvec,
 	                                   LIS_MATRIX_USER_MATVEC matvech);
@@ -988,6 +1131,13 @@ extern "C"
 	extern LIS_INT lis_matrix_set_value_csr(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_psd_set_value_csr(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);  
 	extern LIS_INT lis_matrix_set_csr(LIS_INT nnz, LIS_INT *row, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);
+    /*
+     * Attach application-owned CSR storage.
+     * LIS borrows ptr, index, and value and never frees those arrays.
+     * The caller must keep the storage valid while it is attached.
+     */
+	extern LIS_INT lis_matrix_set_csr_external(LIS_INT nnz, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);
+	extern LIS_INT lis_matrix_set_csr_values_external(LIS_SCALAR *value, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_malloc_csc(LIS_INT n, LIS_INT nnz, LIS_INT **ptr, LIS_INT **index, LIS_SCALAR **value);
 	extern LIS_INT lis_matrix_set_csc(LIS_INT nnz, LIS_INT *row, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_malloc_bsr(LIS_INT n, LIS_INT bnr, LIS_INT bnc, LIS_INT bnnz, LIS_INT **bptr, LIS_INT **bindex, LIS_SCALAR **value);
@@ -1059,6 +1209,12 @@ extern "C"
 	extern LIS_INT lis_solver_destroy(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_near_nullspace(LIS_SOLVER solver, LIS_INT nvec, LIS_VECTOR vectors[]);
 	extern LIS_INT lis_solver_clear_near_nullspace(LIS_SOLVER solver);
+	extern LIS_INT lis_solver_set_gcrodr_recycle(
+		LIS_SOLVER solver, LIS_INT dim,
+		LIS_REAL keep_quality, LIS_REAL reject_quality);
+	extern LIS_INT lis_solver_get_gcrodr_recycle(
+		LIS_SOLVER solver, LIS_INT *dim, LIS_INT *action,
+		LIS_REAL *quality, LIS_REAL *quality_min);
 	extern LIS_INT lis_solver_get_iter(LIS_SOLVER solver, LIS_INT *iter);
 	extern LIS_INT lis_solver_get_iterex(LIS_SOLVER solver, LIS_INT *iter, LIS_INT *iter_double, LIS_INT *iter_quad);
 	extern LIS_INT lis_solver_get_time(LIS_SOLVER solver, double *time);
@@ -1067,12 +1223,31 @@ extern "C"
 	extern LIS_INT lis_solver_get_solver(LIS_SOLVER solver, LIS_INT *nsol);
 	extern LIS_INT lis_solver_get_precon(LIS_SOLVER solver, LIS_INT *precon_type);
 	extern LIS_INT lis_solver_get_status(LIS_SOLVER solver, LIS_INT *status);
+	extern LIS_INT lis_solver_set_fgcrodr_recycle(
+	    LIS_SOLVER solver, LIS_INT dim,
+	    LIS_REAL keep_quality, LIS_REAL reject_quality);
+	extern LIS_INT lis_solver_get_fgcrodr_recycle_config(
+	    LIS_SOLVER solver, LIS_INT *dim,
+	    LIS_REAL *keep_quality, LIS_REAL *reject_quality,
+	    LIS_INT *update);
+	extern LIS_INT lis_solver_get_fgcrodr_recycle(
+	    LIS_SOLVER solver, LIS_INT *dim, LIS_INT *action,
+	    LIS_REAL *quality, LIS_REAL *quality_min);
+	extern LIS_INT lis_solver_set_fgcrodr_recycle_update(
+	    LIS_SOLVER solver, LIS_INT update);
+	extern LIS_INT lis_solver_get_fgcrodr_recycle_update(
+	    LIS_SOLVER solver, LIS_INT *update);
+	extern LIS_INT lis_solver_get_sequence_diagnostics(LIS_SOLVER solver, LIS_SEQUENCE_DIAGNOSTICS *diag);
+	extern LIS_INT lis_solver_set_num_threads(LIS_SOLVER solver, LIS_INT num_threads);
+	extern LIS_INT lis_solver_get_num_threads(LIS_SOLVER solver, LIS_INT *num_threads);
         extern LIS_INT lis_solver_get_rhistory(LIS_SOLVER solver, LIS_VECTOR v);
 	extern LIS_INT lis_solver_set_option(char *text, LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_optionC(LIS_SOLVER solver);
 /*NEH support for extended "solve_kernel" workflow*/
     extern LIS_INT lis_solver_set_matrix(LIS_MATRIX A, LIS_SOLVER solver);
 	extern LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver);
+     extern LIS_INT lis_solve_sequence(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver);
+     extern LIS_INT lis_solver_reset_sequence(LIS_SOLVER solver);
 	extern LIS_INT lis_solve_setup(LIS_MATRIX A, LIS_SOLVER solver);
 	extern LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver, LIS_PRECON precon);
 	extern LIS_PRECON_REGISTER *precon_register_top;

@@ -309,6 +309,7 @@ Gauss-Seidel\cite{gauss,seidel} & GMRES(m)\cite{gmres} \\
 SOR\cite{young,frankel} & FGMRES(m)\cite{fgmres} \\
 IDR(s)\cite{idrs}       & MINRES\cite{minres} \\
 COCG\cite{cocg}         & COCR\cite{cocr} \\
+GCRO-DR\cite{gcro-dr} \\
 \hline         
 \end{tabular}
 \hfil}
@@ -1991,6 +1992,10 @@ where \verb=-i {cg|1}= means \verb=-i cg= or \verb=-i 1= and \verb=-maxiter [100
  MINRES      & \verb=-i {minres|23}=    &    \\
  COCG        & \verb=-i {cocg|24}=      &    \\
  COCR        & \verb=-i {cocr|25}=      &    \\  
+ GCRO-DR     & \verb=-i {gcrodr|26}=    & \verb=-gcrodr_k [40]= & The subspace dimension \\ 
+             &                          & \verb=-gcrodr_keep [8]= & The number of recycled vectors \\ 
+             &                          & \verb=-gcrodr_keep_quality [0.9]= & The threshold to keep vectors \\ 
+ &                          & \verb=-gcrodr_reject_quality [0.35]= & The threshold to reject vectors \\   
 \hline         
 \end{tabular}
 \end{center}
@@ -2280,6 +2285,11 @@ Option &                          \\ \hline
 \verb=-rval [0]=       & The Ritz values \\
                        & \verb=-rval {false|0}     =  The eigenpairs are computed based on the Ritz values \\
                        & \verb=-rval {true|1}      =  Only the Ritz values are computed \\
+\verb=-nev [1]=        & The number of requested eigenpairs ($\le$ \verb=ss=) \\
+\verb=-etransform [0]=       & The generalized eigenvalue transformation selection \\
+                       & \verb=-etransform {auto|0}     =  Select the default transformation behavior \\
+                       & \verb=-etransform {shift-invert|1}      =  Shift-invert $T = (A - \sigma B)^{-1}B$ \\
+                       & \verb=-etransform {buckling|2}      =  Buckling $T = (A - \sigma B)^{-1}A$ \\
 \hline         
 \end{tabular}
 \end{center}
@@ -2608,6 +2618,9 @@ For shifted generalized eigenvalue problems $(A - \sigma B)x = \lambda Bx$, Gene
 
 \subsection{Preconditioner Reuse and Compatibility with User-Defined Matrices}
 Starting from Version 2.1.15, Lis clarifies preconditioner ownership and improves support for repeated solves with user-defined matrices (\texttt{LIS\_MATRIX\_USER}), relaxing previous restrictions when compatible prebuilt preconditioners are supplied.
+
+\subsection{Solver-Managed Feature Enhancements}
+Version 2.1.16 now supports the symmetric diagonal scaling of shell matrices without any direct modifications to the original matrix structure or the right-hand side vector. Furthermore, solver-managed near-nullspace support and a two-level deflation correction have been incorporated for FGMRES solvers to improve convergence robustness in nested iterations. 
 
 \newpage
 \subsection{Compiling and Linking}
@@ -6136,6 +6149,10 @@ that \verb=-maxiter= defaults to $1,000$.
  MINRES      & \verb=-i {minres|23}=    &    \\
  COCG        & \verb=-i {cocg|24}=      &    \\
  COCR        & \verb=-i {cocr|25}=      &    \\   
+ GCRO-DR     & \verb=-i {gcrodr|26}=    & \verb=-gcrodr_k [40]= & The subspace dimension \\ 
+             &                          & \verb=-gcrodr_keep [8]= & The number of recycled vectors \\ 
+             &                          & \verb=-gcrodr_keep_quality [0.9]= & The threshold to keep vectors \\ 
+ &                          & \verb=-gcrodr_reject_quality [0.35]= & The threshold to reject vectors \\   
 \hline         
 \end{tabular}
 \end{center}
@@ -6758,6 +6775,11 @@ Option &                          \\ \hline
 \verb=-rval [0]=       & The Ritz values \\
                        & \verb=-rval {false|0}     =  The eigenpairs are computed based on the Ritz values \\
                        & \verb=-rval {true|1}      =  Only the Ritz values are computed \\
+\verb=-nev [1]=        & The number of requested eigenpairs ($\le$ \verb=ss=)) \\
+\verb=-etransform [0]=       & The generalized eigenvalue transformation selection \\
+                       & \verb=-etransform {auto|0}     =  Select the default transformation behavior \\
+                       & \verb=-etransform {shift-invert|1}      =  Shift-invert $T = (A - \sigma B)^{-1}B$ \\
+                       & \verb=-etransform {buckling|2}      =  Buckling $T = (A - \sigma B)^{-1}A$ \\
 \hline         
 \end{tabular}
 \end{center}
@@ -8426,6 +8448,11 @@ H. A. van der Vorst and J. B. M. Melissen.
 T. Sogabe and S. Zhang.
 \newblock A COCR Method for Solving Complex Symmetric Linear Systems.
 \newblock Journal of Computational and Applied Mathematics, Vol.~199, No.~2, pp.\ 297--303, 2007.
+
+\bibitem{gcro-dr}
+Q. Niu, L-Z. Lu and G. Liu.
+\newblock Accelerated GCRO-DR method for solving sequences of systems of linear equations.
+\newblock Journal of Computational and Applied Mathematics, Vol.~253, pp.\ 131--141, 2013. 
 
 \bibitem{power}
 R. von Mises and H. Pollaczek-Geiringer.

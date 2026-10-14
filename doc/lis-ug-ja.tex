@@ -287,6 +287,7 @@ Gauss-Seidel\cite{gauss,seidel} & GMRES(m)\cite{gmres} \\
 SOR\cite{young,frankel} & FGMRES(m)\cite{fgmres} \\
 IDR(s)\cite{idrs}       & MINRES\cite{minres} \\
 COCG\cite{cocg}         & COCR\cite{cocr} \\
+GCRO-DR\cite{gcro-dr} \\
 \hline         
 \end{tabular}
 \hfil}
@@ -1865,6 +1866,10 @@ Matrix Market形式による外部ファイル{\tt matvec.mtx}の記述例を以
  MINRES      & \verb=-i {minres|23}=    &    \\
  COCG        & \verb=-i {cocg|24}=      &    \\
  COCR        & \verb=-i {cocr|25}=      &    \\   
+ GCRO-DR     & \verb=-i {gcrodr|26}=    & \verb=-gcrodr_k [40]= & GCRO-DRの部分空間次元数 \\ 
+             &                          & \verb=-gcrodr_keep [8]= & リサイクルするベクトル数 \\ 
+ &                          & \verb=-gcrodr_keep_quality [0.9]= & ベクトルの保持閾値 \\
+ &                          & \verb=-gcrodr_reject_quality [0.35]= & ベクトルの破棄閾値 \\   
 \hline         
 \end{tabular}
 \end{center}
@@ -2117,6 +2122,11 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \verb=-rval [0]=       & Ritz値 \\
                        & \verb=-rval {false|0}     =  Ritz値をもとに固有対を計算 \\
                        & \verb=-rval {true|1}      =  Ritz値のみを計算 \\
+\verb=-nev [1]=        & 必要な固有対の数 ($\le$ \verb=ss=) \\
+\verb=-etransform [0]=       & 一般化固有値変換の選択\\
+                       & \verb=-etransform {auto|0}     =  既定の変換を選択 \\
+                       & \verb=-etransform {shift-invert|1}      =  シフト反転 $T = (A - \sigma B)^{-1}B$ \\
+                       & \verb=-etransform {buckling|2}      =  座屈 $T = (A - \sigma B)^{-1}A$ \\
 \hline         
 \end{tabular}
 \end{center}
@@ -2437,6 +2447,9 @@ A =
 
 \subsection{ユーザ定義行列における前処理の再利用と互換性}
 バージョン 2.1.15 より、Lis は前処理オブジェクトの所有権の明確化と、ユーザ定義行列（\texttt{LIS\_MATRIX\_USER}）を用いた繰り返し計算のサポートを強化した。これにより、互換性のある構築済み前処理が与えられている場合、従来の制限が緩和され正常に計算を実行できるようになった。
+
+\subsection{ソルバ管理機能の拡張}
+バージョン 2.1.16 より、元の行列構造や右辺ベクトルを直接変更することなく、シェル行列の対称対角スケーリングを行うことができるようになった。さらに、入れ子状の反復における収束の堅牢性を向上させるため、FGMRES ソルバに対してソルバ管理のニア零空間サポートと2レベルデフレーション補正が組み込まれた。
 
 \newpage
 \subsection{実行ファイルの生成}
@@ -5972,6 +5985,10 @@ COO    &  ○  &  ○  &  ○  & CSR  & CSR & CSR & CSR & CSC & CSR &     & CSR 
  MINRES      & \verb=-i {minres|23}=    &    \\
  COCG        & \verb=-i {cocg|24}=      &    \\
  COCR        & \verb=-i {cocr|25}=      &    \\   
+ GCRO-DR     & \verb=-i {gcrodr|26}=    & \verb=-gcrodr_k [40]= & GCRO-DRの部分空間次元数 \\ 
+             &                          & \verb=-gcrodr_keep [8]= & リサイクルするベクトル数 \\ 
+ &                          & \verb=-gcrodr_keep_quality [0.9]= & ベクトルの保持閾値 \\
+ &                          & \verb=-gcrodr_reject_quality [0.35]= & ベクトルの破棄閾値 \\   
 \hline         
 \end{tabular}
 \end{center}
@@ -6563,6 +6580,11 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
 \verb=-rval [0]=       & Ritz値 \\
                        & \verb=-rval {false|0}     =  Ritz値をもとに固有対を計算 \\
                        & \verb=-rval {true|1}      =  Ritz値のみを計算 \\
+\verb=-nev [1]=        & 必要な固有対の数 ($\le$ \verb=ss=) \\
+\verb=-etransform [0]=       & 一般化固有値変換の選択\\
+                       & \verb=-etransform {auto|0}     =  既定の変換を選択 \\
+                       & \verb=-etransform {shift-invert|1}      =  シフト反転 $T = (A - \sigma B)^{-1}B$ \\
+                       & \verb=-etransform {buckling|2}      =  座屈 $T = (A - \sigma B)^{-1}A$ \\
 \hline         
 \end{tabular}
 \end{center}
@@ -8238,6 +8260,11 @@ H. A. van der Vorst and J. B. M. Melissen.
 T. Sogabe and S. Zhang.
 \newblock A COCR Method for Solving Complex Symmetric Linear Systems.
 \newblock Journal of Computational and Applied Mathematics, Vol.~199, No.~2, pp.\ 297--303, 2007.
+
+\bibitem{gcro-dr}
+Q. Niu, L-Z. Lu and G. Liu.
+\newblock Accelerated GCRO-DR method for solving sequences of systems of linear equations.
+\newblock Journal of Computational and Applied Mathematics, Vol.~253, pp.\ 131--141, 2013. 
 
 \bibitem{power}
 R. von Mises and H. Pollaczek-Geiringer.

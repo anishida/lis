@@ -59,6 +59,9 @@
  * lis_matrix_get_range
  * lis_matrix_get_size
  * lis_matrix_get_nnz
+ * lis_matrix_mark_values_changed
+ * lis_matrix_mark_structure_changed
+ * lis_matrix_get_generation
  * lis_matrix_get_type
  * lis_matrix_get_option
  * lis_matrix_set_type
@@ -386,13 +389,20 @@ LIS_INT lis_matrix_storage_destroy(LIS_MATRIX Amat)
 	{
 		if( Amat->is_destroy )
 		{
-			if( Amat->ptr ) lis_free( Amat->ptr );
+			/*
+			 * External CSR storage is application-owned.  Keep LIS-owned
+			 * auxiliary storage under normal destruction semantics.
+			 */
+			if( !Amat->csr_external )
+			{
+				if( Amat->ptr ) lis_free( Amat->ptr );
+				if( Amat->index ) lis_free( Amat->index );
+				if( Amat->value ) lis_free( Amat->value );
+			}
 			if( Amat->row ) lis_free( Amat->row );
 			if( Amat->col ) lis_free( Amat->col );
-			if( Amat->index) lis_free( Amat->index );
 			if( Amat->bptr ) lis_free( Amat->bptr );
 			if( Amat->bindex ) lis_free( Amat->bindex );
-			if( Amat->value ) lis_free( Amat->value );
 			if( Amat->work ) lis_free( Amat->work );
 			if( Amat->conv_row ) lis_free( Amat->conv_row );
 			if( Amat->conv_col ) lis_free( Amat->conv_col );
@@ -419,6 +429,7 @@ LIS_INT lis_matrix_storage_destroy(LIS_MATRIX Amat)
 		Amat->bindex    = NULL;
 		Amat->value     = NULL;
 		Amat->work      = NULL;
+		Amat->csr_external = LIS_FALSE;
 		Amat->conv_row  = NULL;
 		Amat->conv_col  = NULL;
 		Amat->w_nnz     = NULL;
@@ -767,6 +778,76 @@ LIS_INT lis_matrix_get_capabilities(
         return LIS_SUCCESS;
 }
 
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_mark_values_changed"
+LIS_INT lis_matrix_mark_values_changed(LIS_MATRIX A)
+{
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	err = lis_matrix_check(A,LIS_MATRIX_CHECK_NULL);
+	if( err ) return err;
+
+	A->value_generation++;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_mark_structure_changed"
+LIS_INT lis_matrix_mark_structure_changed(LIS_MATRIX A)
+{
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	err = lis_matrix_check(A,LIS_MATRIX_CHECK_NULL);
+	if( err ) return err;
+
+	A->structure_generation++;
+	A->value_generation++;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_get_generation"
+LIS_INT lis_matrix_get_generation(
+	LIS_MATRIX A,
+	LIS_UNSIGNED_INT *structure_generation,
+	LIS_UNSIGNED_INT *value_generation)
+{
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	err = lis_matrix_check(A,LIS_MATRIX_CHECK_NULL);
+	if( err ) return err;
+
+	if( structure_generation==NULL && value_generation==NULL )
+	{
+		LIS_SETERR(
+			LIS_ERR_ILL_ARG,
+			"both matrix generation output pointers are NULL\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	if( structure_generation!=NULL )
+	{
+		*structure_generation = A->structure_generation;
+	}
+
+	if( value_generation!=NULL )
+	{
+		*value_generation = A->value_generation;
+	}
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_assemble"
@@ -775,6 +856,8 @@ LIS_INT lis_matrix_assemble(LIS_MATRIX A)
 	LIS_INT err;
 	LIS_INT matrix_type;
 	LIS_MATRIX B;
+	LIS_UNSIGNED_INT structure_generation;
+	LIS_UNSIGNED_INT value_generation;
 
 	LIS_DEBUG_FUNC_IN;
 
@@ -784,6 +867,9 @@ LIS_INT lis_matrix_assemble(LIS_MATRIX A)
 	matrix_type = A->matrix_type;
 	if( A->status==LIS_MATRIX_ASSEMBLING )
 	{
+		structure_generation = A->structure_generation;
+		value_generation     = A->value_generation;
+
 		A->matrix_type = LIS_MATRIX_RCO;
 		A->status      = LIS_MATRIX_RCO;
 		#ifdef USE_MPI
@@ -807,6 +893,10 @@ LIS_INT lis_matrix_assemble(LIS_MATRIX A)
 		err = lis_matrix_copy_struct(B,A);
 		if( err ) return err;
 		lis_free(B);
+
+		A->structure_generation = structure_generation;
+		A->value_generation     = value_generation;
+
 		if( A->matrix_type==LIS_MATRIX_JAD )
 		{
 			A->work = (LIS_SCALAR *)lis_malloc(A->n*sizeof(LIS_SCALAR),"lis_matrix_assemble::A->work");
@@ -1602,6 +1692,7 @@ LIS_INT lis_matrix_unset(LIS_MATRIX A)
 	A->bindex  = NULL;
 	A->value   = NULL;
 	A->is_copy = LIS_FALSE;
+	A->csr_external = LIS_FALSE;
 	A->status  = LIS_MATRIX_NULL;
 
 	LIS_DEBUG_FUNC_OUT;
