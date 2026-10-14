@@ -99,7 +99,7 @@ LIS_PRECON_PSD_CREATE_XXX lis_precon_psd_create_xxx[] = {
         NULL,                   lis_precon_psd_create_saamg, NULL,
         NULL,                   NULL,
         lis_precon_builtin_unavailable,
-        lis_precon_builtin_unavailable
+        lis_precon_create_mfamg
 };
 
 /*NEH support for extended "solve_kernel" workflow*/
@@ -109,7 +109,7 @@ LIS_PRECON_PSD_UPDATE_XXX lis_precon_psd_update_xxx[] = {
         NULL,                   lis_precon_psd_update_saamg, NULL,
         NULL,                   NULL,
         lis_precon_builtin_unavailable,
-        lis_precon_builtin_unavailable
+        lis_precon_psd_update_mfamg
 };
 
 LIS_PSOLVE_XXX lis_psolve_xxx[] = {

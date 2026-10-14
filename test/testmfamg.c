@@ -2624,6 +2624,1788 @@ cleanup:
 }
 
 
+/* ============================================================
+ * Persistent MFAMG regression helpers
+ * ============================================================ */
+
+static LIS_INT
+create_scaled_csr(
+    LIS_SCALAR scale,
+    LIS_MATRIX *A)
+{
+    LIS_INT i;
+    LIS_INT err;
+
+
+    if(
+        A==NULL
+        ||
+        !(fabs(scale)>0.0))
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    *A = NULL;
+
+
+    err =
+        lis_matrix_create(
+            LIS_COMM_WORLD,
+            A);
+
+    if(err)
+        return err;
+
+
+    err =
+        lis_matrix_set_size(
+            *A,
+            0,
+            TEST_N);
+
+    if(err)
+        goto fail;
+
+
+    for(i=0;i<TEST_N;i++)
+    {
+        if(i>0)
+        {
+            err =
+                lis_matrix_set_value(
+                    LIS_INS_VALUE,
+                    i,
+                    i-1,
+                    (LIS_SCALAR)-1.0
+                    *
+                    scale,
+                    *A);
+
+            if(err)
+                goto fail;
+        }
+
+
+        err =
+            lis_matrix_set_value(
+                LIS_INS_VALUE,
+                i,
+                i,
+                (LIS_SCALAR)2.0
+                *
+                scale,
+                *A);
+
+        if(err)
+            goto fail;
+
+
+        if(i+1<TEST_N)
+        {
+            err =
+                lis_matrix_set_value(
+                    LIS_INS_VALUE,
+                    i,
+                    i+1,
+                    (LIS_SCALAR)-1.0
+                    *
+                    scale,
+                    *A);
+
+            if(err)
+                goto fail;
+        }
+    }
+
+
+    err =
+        lis_matrix_assemble(
+            *A);
+
+    if(err)
+        goto fail;
+
+
+    return LIS_SUCCESS;
+
+
+fail:
+
+    if(*A)
+    {
+        lis_matrix_destroy(
+            *A);
+
+        *A = NULL;
+    }
+
+
+    return err;
+}
+
+
+/* ============================================================
+ * In-place preconditioner application
+ * ============================================================ */
+
+static int
+check_mfamg_alias_safety(void)
+{
+    LIS_MATRIX A;
+
+    LIS_VECTOR b;
+    LIS_VECTOR out;
+    LIS_VECTOR alias;
+    LIS_VECTOR z;
+
+    LIS_VECTOR basis[1];
+
+    LIS_SOLVER solver;
+    LIS_PRECON precon;
+
+    LIS_REAL diff;
+
+    LIS_INT err;
+
+    int failed;
+
+
+    A = NULL;
+
+    b = NULL;
+    out = NULL;
+    alias = NULL;
+    z = NULL;
+
+    solver = NULL;
+    precon = NULL;
+
+    failed = 0;
+
+
+    err =
+        create_csr(
+            &A);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &b);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &out);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &alias);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &z);
+
+    if(err)
+        goto fail;
+
+
+    build_manufactured_rhs(
+        b);
+
+
+    err =
+        lis_vector_copy(
+            b,
+            alias);
+
+    if(err)
+        goto fail;
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        out);
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)1.0,
+        z);
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i gmres "
+            "-p mfamg "
+            "-scale none "
+            "-print none",
+            solver);
+
+    if(err)
+        goto fail;
+
+
+    basis[0] =
+        z;
+
+
+    err =
+        lis_solver_set_near_nullspace(
+            solver,
+            1,
+            basis);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_solver_set_matrix(
+            A,
+            solver);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_precon_create(
+            solver,
+            &precon);
+
+    if(err)
+        goto fail;
+
+
+    solver->precon =
+        precon;
+
+
+    err =
+        lis_psolve(
+            solver,
+            b,
+            out);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_psolve(
+            solver,
+            alias,
+            alias);
+
+    if(err)
+        goto fail;
+
+
+    diff =
+        max_relative_difference(
+            out->value,
+            alias->value);
+
+
+    printf(
+        "MFAMG_ALIAS_MAX_REL_DIFF=%.12e\n",
+        (double)diff);
+
+
+    if(
+        diff!=diff
+        ||
+        diff>(LIS_REAL)1.0e-12)
+    {
+        fprintf(
+            stderr,
+            "MFAMG alias-safe psolve mismatch\n");
+
+        failed = 1;
+    }
+
+
+cleanup:
+
+    if(solver)
+    {
+        solver->precon =
+            NULL;
+    }
+
+
+    if(precon)
+    {
+        lis_precon_destroy(
+            precon);
+    }
+
+
+    if(solver)
+    {
+        lis_solver_destroy(
+            solver);
+    }
+
+
+    if(z)
+    {
+        lis_vector_destroy(
+            z);
+    }
+
+
+    if(alias)
+    {
+        lis_vector_destroy(
+            alias);
+    }
+
+
+    if(out)
+    {
+        lis_vector_destroy(
+            out);
+    }
+
+
+    if(b)
+    {
+        lis_vector_destroy(
+            b);
+    }
+
+
+    if(A)
+    {
+        lis_matrix_destroy(
+            A);
+    }
+
+
+    if(failed)
+    {
+        fprintf(
+            stderr,
+            "MFAMG ALIAS SAFETY TEST FAILED\n");
+
+        return 1;
+    }
+
+
+    printf(
+        "MFAMG ALIAS SAFETY TEST PASSED\n");
+
+
+    return 0;
+
+
+fail:
+
+    fprintf(
+        stderr,
+        "MFAMG alias safety setup failed rc=%d\n",
+        (int)err);
+
+    failed = 1;
+
+    goto cleanup;
+}
+
+
+/* ============================================================
+ * Persistent MFAMG lifecycle
+ * ============================================================ */
+
+static int
+check_mfamg_psd_lifecycle(void)
+{
+    LIS_MATRIX matrices[3];
+
+    LIS_VECTOR b;
+    LIS_VECTOR x;
+    LIS_VECTOR z;
+
+    LIS_VECTOR basis[1];
+
+    LIS_SOLVER solver;
+
+    LIS_PRECON precon;
+    LIS_PRECON precon0;
+
+    void *mfamg0;
+
+    LIS_REAL scales[3];
+    LIS_REAL direct_rel;
+    LIS_REAL solve_rel;
+
+    LIS_INT hierarchy_nlevels;
+    LIS_INT hierarchy_coarse_n;
+
+    LIS_INT hierarchy_level_n[
+        EXPECTED_MFAMG_LEVELS];
+
+    LIS_INT hierarchy_owns_A[
+        EXPECTED_MFAMG_LEVELS];
+
+    LIS_INT system_id;
+    LIS_INT i;
+    LIS_INT err;
+    LIS_INT destroy_err;
+
+    int precon_alive;
+    int failed;
+
+
+    matrices[0] = NULL;
+    matrices[1] = NULL;
+    matrices[2] = NULL;
+
+    b = NULL;
+    x = NULL;
+    z = NULL;
+
+    solver = NULL;
+
+    precon = NULL;
+    precon0 = NULL;
+
+    mfamg0 = NULL;
+
+    scales[0] =
+        (LIS_REAL)1.0;
+
+    scales[1] =
+        (LIS_REAL)1.25;
+
+    scales[2] =
+        (LIS_REAL)0.75;
+
+    precon_alive = 0;
+    failed = 0;
+
+
+    err =
+        create_csr(
+            &matrices[0]);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        create_scaled_csr(
+            (LIS_SCALAR)scales[1],
+            &matrices[1]);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        create_scaled_csr(
+            (LIS_SCALAR)scales[2],
+            &matrices[2]);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_vector_duplicate(
+            matrices[0],
+            &b);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_vector_duplicate(
+            matrices[0],
+            &x);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_vector_duplicate(
+            matrices[0],
+            &z);
+
+    if(err)
+        goto fail;
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)1.0,
+        z);
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i fgmres "
+            "-p mfamg "
+            "-scale none "
+            "-tol 1.0e-10 "
+            "-maxiter 200 "
+            "-print none",
+            solver);
+
+    if(err)
+        goto fail;
+
+
+    basis[0] =
+        z;
+
+
+    err =
+        lis_solver_set_near_nullspace(
+            solver,
+            1,
+            basis);
+
+    if(err)
+        goto fail;
+
+
+    for(
+        system_id=0;
+        system_id<3;
+        system_id++)
+    {
+        build_manufactured_rhs(
+            b);
+
+
+        if(scales[system_id]!=(LIS_REAL)1.0)
+        {
+            err =
+                lis_vector_scale(
+                    (LIS_SCALAR)
+                    scales[system_id],
+                    b);
+
+            if(err)
+                goto fail;
+        }
+
+
+        lis_vector_set_all(
+            (LIS_SCALAR)0.0,
+            x);
+
+
+        err =
+            lis_solver_set_matrix(
+                matrices[system_id],
+                solver);
+
+        if(err)
+            goto fail;
+
+
+        if(system_id==0)
+        {
+            err =
+                lis_precon_psd_create(
+                    solver,
+                    &precon);
+
+            printf(
+                "MFAMG_PSD_CREATE rc=%d\n",
+                (int)err);
+
+
+            if(err)
+            {
+                precon = NULL;
+                failed = 1;
+
+                goto cleanup;
+            }
+
+
+            precon_alive = 1;
+            precon0 = precon;
+
+            mfamg0 =
+                (void *)precon->mfamg;
+
+            if(mfamg0==NULL)
+            {
+                fprintf(
+                    stderr,
+                    "MFAMG PSD initial state is null\n");
+
+                failed = 1;
+                goto cleanup;
+            }
+        }
+        else
+        {
+            err =
+                lis_precon_psd_update(
+                    solver,
+                    precon);
+
+            printf(
+                "MFAMG_PSD_UPDATE%d rc=%d\n",
+                (int)system_id,
+                (int)err);
+
+            if(
+                !err
+                &&
+                (void *)precon->mfamg!=mfamg0)
+            {
+                fprintf(
+                    stderr,
+                    "MFAMG PSD same-pattern update replaced state system=%d\n",
+                    (int)system_id);
+
+                failed = 1;
+                goto cleanup;
+            }
+
+
+            if(err)
+            {
+                /*
+                 * The PSD dispatcher owns destruction on update
+                 * failure.
+                 */
+                precon_alive = 0;
+                precon = NULL;
+
+                failed = 1;
+
+                goto cleanup;
+            }
+        }
+
+
+        if(
+            precon==NULL
+            ||
+            precon!=precon0
+            ||
+            precon->A!=matrices[system_id]
+            ||
+            precon->precon_type
+                !=
+                LIS_PRECON_TYPE_MFAMG)
+        {
+            fprintf(
+                stderr,
+                "MFAMG PSD identity mismatch "
+                "system=%d\n",
+                (int)system_id);
+
+            failed = 1;
+
+            goto cleanup;
+        }
+
+
+        hierarchy_nlevels = -1;
+        hierarchy_coarse_n = -1;
+
+        for(
+            i=0;
+            i<EXPECTED_MFAMG_LEVELS;
+            i++)
+        {
+            hierarchy_level_n[i] = -1;
+            hierarchy_owns_A[i] = -1;
+        }
+
+
+        err =
+            lis_precon_mfamg_get_hierarchy_info(
+                precon,
+                EXPECTED_MFAMG_LEVELS,
+                &hierarchy_nlevels,
+                &hierarchy_coarse_n,
+                hierarchy_level_n,
+                hierarchy_owns_A);
+
+        if(err)
+            goto fail;
+
+
+        if(
+            hierarchy_nlevels
+                !=
+                EXPECTED_MFAMG_LEVELS
+            ||
+            hierarchy_coarse_n
+                !=
+                EXPECTED_MFAMG_COARSE_N
+            ||
+            hierarchy_level_n[0]
+                !=
+                EXPECTED_MFAMG_LEVEL0_N
+            ||
+            hierarchy_level_n[1]
+                !=
+                EXPECTED_MFAMG_LEVEL1_N
+            ||
+            hierarchy_level_n[2]
+                !=
+                EXPECTED_MFAMG_LEVEL2_N
+            ||
+            hierarchy_owns_A[0]
+                !=
+                LIS_FALSE
+            ||
+            hierarchy_owns_A[1]
+                !=
+                LIS_TRUE
+            ||
+            hierarchy_owns_A[2]
+                !=
+                LIS_TRUE)
+        {
+            fprintf(
+                stderr,
+                "MFAMG PSD hierarchy mismatch "
+                "system=%d levels=%d "
+                "sizes=%d,%d,%d coarse=%d\n",
+                (int)system_id,
+                (int)hierarchy_nlevels,
+                (int)hierarchy_level_n[0],
+                (int)hierarchy_level_n[1],
+                (int)hierarchy_level_n[2],
+                (int)hierarchy_coarse_n);
+
+            failed = 1;
+
+            goto cleanup;
+        }
+
+
+        /*
+         * Exercise the persistent hierarchy directly first.
+         */
+        solver->precon =
+            precon;
+
+
+        err =
+            lis_psolve(
+                solver,
+                b,
+                x);
+
+
+        solver->precon =
+            NULL;
+
+
+        if(err)
+        {
+            fprintf(
+                stderr,
+                "MFAMG PSD direct apply failed "
+                "system=%d rc=%d\n",
+                (int)system_id,
+                (int)err);
+
+            failed = 1;
+
+            goto cleanup;
+        }
+
+
+        err =
+            relative_residual(
+                matrices[system_id],
+                b,
+                x,
+                &direct_rel);
+
+        if(err)
+            goto fail;
+
+
+        if(
+            direct_rel!=direct_rel
+            ||
+            !(direct_rel<1.0))
+        {
+            fprintf(
+                stderr,
+                "MFAMG PSD direct residual failed "
+                "system=%d rel=%.12e\n",
+                (int)system_id,
+                (double)direct_rel);
+
+            failed = 1;
+
+            goto cleanup;
+        }
+
+
+        /*
+         * The full repeated solve uses the same caller-owned
+         * persistent preconditioner.
+         */
+        lis_vector_set_all(
+            (LIS_SCALAR)0.0,
+            x);
+
+
+        err =
+            lis_solve_kernel(
+                matrices[system_id],
+                b,
+                x,
+                solver,
+                precon);
+
+        if(err)
+        {
+            fprintf(
+                stderr,
+                "MFAMG PSD solve failed "
+                "system=%d rc=%d\n",
+                (int)system_id,
+                (int)err);
+
+            failed = 1;
+
+            goto cleanup;
+        }
+
+
+        err =
+            relative_residual(
+                matrices[system_id],
+                b,
+                x,
+                &solve_rel);
+
+        if(err)
+            goto fail;
+
+
+        printf(
+            "MFAMG_PSD_SYSTEM%d "
+            "scale=%.6e "
+            "state_reused=%d "
+            "direct_relres=%.12e "
+            "solve_relres=%.12e "
+            "levels=%d,%d,%d\n",
+            (int)system_id,
+            (double)scales[system_id],
+            (int)
+            (
+                (void *)precon->mfamg
+                ==
+                mfamg0
+            ),
+            (double)direct_rel,
+            (double)solve_rel,
+            (int)hierarchy_level_n[0],
+            (int)hierarchy_level_n[1],
+            (int)hierarchy_level_n[2]);
+
+
+        if(
+            solve_rel!=solve_rel
+            ||
+            !(
+                solve_rel
+                <=
+                SOLVE_TOL
+            ))
+        {
+            fprintf(
+                stderr,
+                "MFAMG PSD solve residual failed "
+                "system=%d rel=%.12e\n",
+                (int)system_id,
+                (double)solve_rel);
+
+            failed = 1;
+
+            goto cleanup;
+        }
+    }
+
+
+cleanup:
+
+    if(precon_alive && precon)
+    {
+        destroy_err =
+            lis_precon_destroy(
+                precon);
+
+        printf(
+            "MFAMG_PSD_DESTROY rc=%d\n",
+            (int)destroy_err);
+
+
+        if(destroy_err)
+        {
+            failed = 1;
+        }
+
+
+        precon = NULL;
+        precon_alive = 0;
+    }
+
+
+    if(solver)
+    {
+        solver->precon =
+            NULL;
+
+        lis_solver_destroy(
+            solver);
+    }
+
+
+    if(z)
+    {
+        lis_vector_destroy(
+            z);
+    }
+
+
+    if(x)
+    {
+        lis_vector_destroy(
+            x);
+    }
+
+
+    if(b)
+    {
+        lis_vector_destroy(
+            b);
+    }
+
+
+    for(
+        i=2;
+        i>=0;
+        i--)
+    {
+        if(matrices[i])
+        {
+            lis_matrix_destroy(
+                matrices[i]);
+        }
+    }
+
+
+    if(failed)
+    {
+        fprintf(
+            stderr,
+            "MFAMG PSD LIFECYCLE TEST FAILED\n");
+
+        return 1;
+    }
+
+
+    printf(
+        "MFAMG PSD LIFECYCLE TEST PASSED\n");
+
+
+    return 0;
+
+
+fail:
+
+    fprintf(
+        stderr,
+        "MFAMG PSD lifecycle setup failed rc=%d\n",
+        (int)err);
+
+    failed = 1;
+
+    goto cleanup;
+}
+
+
+static LIS_INT
+create_rewired_csr(
+    LIS_MATRIX *A)
+{
+    LIS_INT i;
+    LIS_INT err;
+
+
+    if(A==NULL)
+        return LIS_ERR_ILL_ARG;
+
+
+    *A = NULL;
+
+
+    err =
+        lis_matrix_create(
+            LIS_COMM_WORLD,
+            A);
+
+    if(err)
+        return err;
+
+
+    err =
+        lis_matrix_set_size(
+            *A,
+            0,
+            TEST_N);
+
+    if(err)
+        return err;
+
+
+    /*
+     * Keep the same number of entries per row as create_csr(),
+     * but change the graph connectivity.
+     *
+     * Removed:
+     *
+     *     5 -- 6
+     *    10 -- 11
+     *
+     * Added:
+     *
+     *     5 -- 10
+     *     6 -- 11
+     *
+     * Therefore n, nnz, and CSR ptr[] remain unchanged while
+     * CSR index[] differs.
+     */
+    for(i=0;i<TEST_N;i++)
+    {
+        err =
+            lis_matrix_set_value(
+                LIS_INS_VALUE,
+                i,
+                i,
+                (LIS_SCALAR)4.0,
+                *A);
+
+        if(err)
+            return err;
+    }
+
+
+    for(i=0;i<TEST_N-1;i++)
+    {
+        if(
+            i==5
+            ||
+            i==10)
+        {
+            continue;
+        }
+
+
+        err =
+            lis_matrix_set_value(
+                LIS_INS_VALUE,
+                i,
+                i+1,
+                (LIS_SCALAR)-1.0,
+                *A);
+
+        if(err)
+            return err;
+
+
+        err =
+            lis_matrix_set_value(
+                LIS_INS_VALUE,
+                i+1,
+                i,
+                (LIS_SCALAR)-1.0,
+                *A);
+
+        if(err)
+            return err;
+    }
+
+
+    err =
+        lis_matrix_set_value(
+            LIS_INS_VALUE,
+            5,
+            10,
+            (LIS_SCALAR)-1.0,
+            *A);
+
+    if(err)
+        return err;
+
+
+    err =
+        lis_matrix_set_value(
+            LIS_INS_VALUE,
+            10,
+            5,
+            (LIS_SCALAR)-1.0,
+            *A);
+
+    if(err)
+        return err;
+
+
+    err =
+        lis_matrix_set_value(
+            LIS_INS_VALUE,
+            6,
+            11,
+            (LIS_SCALAR)-1.0,
+            *A);
+
+    if(err)
+        return err;
+
+
+    err =
+        lis_matrix_set_value(
+            LIS_INS_VALUE,
+            11,
+            6,
+            (LIS_SCALAR)-1.0,
+            *A);
+
+    if(err)
+        return err;
+
+
+    return
+        lis_matrix_assemble(
+            *A);
+}
+
+
+static int
+check_mfamg_psd_pattern_fallback(void)
+{
+    LIS_MATRIX A0;
+    LIS_MATRIX A1;
+
+    LIS_VECTOR b;
+    LIS_VECTOR x;
+    LIS_VECTOR exact;
+    LIS_VECTOR z;
+
+    LIS_VECTOR basis[1];
+
+    LIS_SOLVER solver;
+
+    LIS_PRECON precon;
+    LIS_PRECON precon0;
+
+    void *mfamg0;
+
+    LIS_REAL relres;
+
+    LIS_INT i;
+    LIS_INT err;
+
+    LIS_INT same_nnz;
+    LIS_INT same_ptr;
+    LIS_INT different_index;
+
+    int precon_alive;
+    int failed;
+
+
+    A0 = NULL;
+    A1 = NULL;
+
+    b = NULL;
+    x = NULL;
+    exact = NULL;
+    z = NULL;
+
+    solver = NULL;
+
+    precon = NULL;
+    precon0 = NULL;
+
+    mfamg0 = NULL;
+
+    relres =
+        (LIS_REAL)-1.0;
+
+    precon_alive = 0;
+    failed = 0;
+
+
+    err =
+        create_csr(
+            &A0);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        create_rewired_csr(
+            &A1);
+
+    if(err)
+        goto fail;
+
+
+    if(
+        A0->matrix_type!=LIS_MATRIX_CSR
+        ||
+        A1->matrix_type!=LIS_MATRIX_CSR
+        ||
+        A0->n!=A1->n
+        ||
+        A0->n!=TEST_N
+        ||
+        A0->ptr==NULL
+        ||
+        A1->ptr==NULL
+        ||
+        A0->index==NULL
+        ||
+        A1->index==NULL)
+    {
+        fprintf(
+            stderr,
+            "MFAMG pattern fallback matrix setup is invalid\n");
+
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    same_nnz =
+        (
+            A0->nnz
+            ==
+            A1->nnz
+        );
+
+
+    same_ptr =
+        LIS_TRUE;
+
+    for(
+        i=0;
+        i<=A0->n;
+        i++)
+    {
+        if(A0->ptr[i]!=A1->ptr[i])
+        {
+            same_ptr =
+                LIS_FALSE;
+
+            break;
+        }
+    }
+
+
+    different_index =
+        LIS_FALSE;
+
+    if(same_nnz)
+    {
+        for(
+            i=0;
+            i<A0->nnz;
+            i++)
+        {
+            if(A0->index[i]!=A1->index[i])
+            {
+                different_index =
+                    LIS_TRUE;
+
+                break;
+            }
+        }
+    }
+
+
+    printf(
+        "MFAMG_PATTERN_VARIANT "
+        "same_nnz=%d "
+        "same_ptr=%d "
+        "different_index=%d\n",
+        (int)same_nnz,
+        (int)same_ptr,
+        (int)different_index);
+
+
+    if(
+        !same_nnz
+        ||
+        !same_ptr
+        ||
+        !different_index)
+    {
+        fprintf(
+            stderr,
+            "MFAMG pattern fallback test did not isolate CSR index change\n");
+
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_vector_duplicate(
+            A1,
+            &b);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A1,
+            &x);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A1,
+            &exact);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A1,
+            &z);
+
+    if(err)
+        goto fail;
+
+
+    for(
+        i=0;
+        i<TEST_N;
+        i++)
+    {
+        exact->value[i] =
+            (LIS_SCALAR)
+            (
+                1.0
+                +
+                0.05
+                *
+                (double)i
+            );
+    }
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x);
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)1.0,
+        z);
+
+
+    err =
+        lis_matvec(
+            A1,
+            exact,
+            b);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i fgmres "
+            "-p mfamg "
+            "-scale none "
+            "-tol 1.0e-10 "
+            "-maxiter 200 "
+            "-print none",
+            solver);
+
+    if(err)
+        goto fail;
+
+
+    basis[0] =
+        z;
+
+
+    err =
+        lis_solver_set_near_nullspace(
+            solver,
+            1,
+            basis);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_solver_set_matrix(
+            A0,
+            solver);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_precon_psd_create(
+            solver,
+            &precon);
+
+    printf(
+        "MFAMG_PATTERN_FALLBACK_CREATE rc=%d\n",
+        (int)err);
+
+
+    if(err)
+    {
+        precon = NULL;
+        failed = 1;
+
+        goto cleanup;
+    }
+
+
+    precon_alive = 1;
+
+    precon0 =
+        precon;
+
+    mfamg0 =
+        (void *)precon->mfamg;
+
+
+    if(mfamg0==NULL)
+    {
+        fprintf(
+            stderr,
+            "MFAMG pattern fallback initial state is null\n");
+
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_solver_set_matrix(
+            A1,
+            solver);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_precon_psd_update(
+            solver,
+            precon);
+
+    printf(
+        "MFAMG_PATTERN_FALLBACK_UPDATE rc=%d\n",
+        (int)err);
+
+
+    if(err)
+    {
+        /*
+         * PSD update dispatcher destroys the persistent
+         * preconditioner when its update callback fails.
+         */
+        precon_alive = 0;
+        precon = NULL;
+
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    if(precon!=precon0)
+    {
+        fprintf(
+            stderr,
+            "MFAMG pattern fallback replaced persistent preconditioner object\n");
+
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    if(
+        precon->mfamg==NULL
+        ||
+        (void *)precon->mfamg
+            ==
+        mfamg0)
+    {
+        fprintf(
+            stderr,
+            "MFAMG changed-pattern update did not replace state\n");
+
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    if(precon->A!=A1)
+    {
+        fprintf(
+            stderr,
+            "MFAMG changed-pattern update did not install new matrix\n");
+
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x);
+
+
+    err =
+        lis_solve_kernel(
+            A1,
+            b,
+            x,
+            solver,
+            precon);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        relative_residual(
+            A1,
+            b,
+            x,
+            &relres);
+
+    if(err)
+        goto fail;
+
+
+    printf(
+        "MFAMG_PATTERN_FALLBACK "
+        "precon_preserved=%d "
+        "state_replaced=%d "
+        "matrix_updated=%d "
+        "relres=%.12e\n",
+        (int)
+        (
+            precon
+            ==
+            precon0
+        ),
+        (int)
+        (
+            (void *)precon->mfamg
+            !=
+            mfamg0
+        ),
+        (int)
+        (
+            precon->A
+            ==
+            A1
+        ),
+        (double)relres);
+
+
+    if(
+        relres!=relres
+        ||
+        relres>(LIS_REAL)1.0e-8)
+    {
+        fprintf(
+            stderr,
+            "MFAMG pattern fallback solve residual is too large\n");
+
+        failed = 1;
+        goto cleanup;
+    }
+
+
+cleanup:
+
+    if(solver)
+    {
+        solver->precon =
+            NULL;
+    }
+
+
+    if(
+        precon_alive
+        &&
+        precon)
+    {
+        lis_precon_destroy(
+            precon);
+
+        precon = NULL;
+    }
+
+
+    if(solver)
+    {
+        lis_solver_destroy(
+            solver);
+
+        solver = NULL;
+    }
+
+
+    if(z)
+    {
+        lis_vector_destroy(
+            z);
+
+        z = NULL;
+    }
+
+
+    if(exact)
+    {
+        lis_vector_destroy(
+            exact);
+
+        exact = NULL;
+    }
+
+
+    if(x)
+    {
+        lis_vector_destroy(
+            x);
+
+        x = NULL;
+    }
+
+
+    if(b)
+    {
+        lis_vector_destroy(
+            b);
+
+        b = NULL;
+    }
+
+
+    if(A1)
+    {
+        lis_matrix_destroy(
+            A1);
+
+        A1 = NULL;
+    }
+
+
+    if(A0)
+    {
+        lis_matrix_destroy(
+            A0);
+
+        A0 = NULL;
+    }
+
+
+    if(failed)
+    {
+        fprintf(
+            stderr,
+            "MFAMG PATTERN FALLBACK TEST FAILED\n");
+
+        return 1;
+    }
+
+
+    printf(
+        "MFAMG PATTERN FALLBACK TEST PASSED\n");
+
+
+    return 0;
+
+
+fail:
+
+    fprintf(
+        stderr,
+        "MFAMG pattern fallback operation failed rc=%d\n",
+        (int)err);
+
+    failed = 1;
+
+    goto cleanup;
+}
+
+
 static int
 run_serial(void)
 {
@@ -2656,6 +4438,18 @@ run_serial(void)
 
     failed |=
         check_mfamg_adaptive_smoother();
+
+
+    failed |=
+        check_mfamg_alias_safety();
+
+
+    failed |=
+        check_mfamg_psd_lifecycle();
+
+
+    failed |=
+        check_mfamg_psd_pattern_fallback();
 
 
     err =

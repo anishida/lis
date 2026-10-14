@@ -70,6 +70,12 @@ struct LIS_MFAMG_STRUCT
 
     LIS_INT coarse_n;
 
+    LIS_VECTOR alias_rhs;
+
+    LIS_INT *refresh_cols;
+    LIS_SCALAR *refresh_vals;
+    LIS_INT refresh_row_capacity;
+
     LIS_SCALAR *coarse;
     LIS_SCALAR *lu;
     LIS_INT *pivots;
@@ -152,6 +158,17 @@ lis_mfamg_state_free(
 
         lis_free(state->levels);
     }
+
+
+    if(state->alias_rhs)
+        lis_vector_destroy(state->alias_rhs);
+
+
+    if(state->refresh_cols)
+        lis_free(state->refresh_cols);
+
+    if(state->refresh_vals)
+        lis_free(state->refresh_vals);
 
 
     if(state->coarse)
@@ -4699,10 +4716,25 @@ lis_mfamg_prepare_cycle_vectors(
         ||
         state->levels==NULL
         ||
-        state->nlevels<2)
+        state->nlevels<2
+        ||
+        state->levels[0].A==NULL
+        ||
+        state->levels[0].n<=0
+        ||
+        state->alias_rhs!=NULL)
     {
         return LIS_ERR_ILL_ARG;
     }
+
+
+    err =
+        lis_vector_duplicate(
+            state->levels[0].A,
+            &state->alias_rhs);
+
+    if(err)
+        return err;
 
 
     for(
@@ -11036,6 +11068,936 @@ lis_precon_create_mfamg(
 }
 
 
+static LIS_INT
+lis_mfamg_same_serial_csr_pattern(
+    LIS_MATRIX A,
+    LIS_MATRIX B,
+    LIS_INT *same)
+{
+    LIS_INT i;
+
+
+    if(same==NULL)
+        return LIS_ERR_ILL_ARG;
+
+
+    *same =
+        LIS_FALSE;
+
+
+    if(
+        A==NULL
+        ||
+        B==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    if(
+        A->matrix_type!=LIS_MATRIX_CSR
+        ||
+        B->matrix_type!=LIS_MATRIX_CSR
+        ||
+        A->nprocs!=1
+        ||
+        B->nprocs!=1)
+    {
+        return LIS_SUCCESS;
+    }
+
+
+    if(
+        A->n!=B->n
+        ||
+        A->gn!=B->gn
+        ||
+        A->np!=B->np
+        ||
+        A->is!=B->is
+        ||
+        A->ie!=B->ie
+        ||
+        A->nnz!=B->nnz)
+    {
+        return LIS_SUCCESS;
+    }
+
+
+    if(
+        A->n<=0
+        ||
+        A->nnz<=0
+        ||
+        A->ptr==NULL
+        ||
+        B->ptr==NULL
+        ||
+        A->index==NULL
+        ||
+        B->index==NULL)
+    {
+        return LIS_SUCCESS;
+    }
+
+
+    for(i=0;i<=A->n;i++)
+    {
+        if(A->ptr[i]!=B->ptr[i])
+            return LIS_SUCCESS;
+    }
+
+
+    for(i=0;i<A->nnz;i++)
+    {
+        if(A->index[i]!=B->index[i])
+            return LIS_SUCCESS;
+    }
+
+
+    *same =
+        LIS_TRUE;
+
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+lis_mfamg_ensure_refresh_row_workspace(
+    struct LIS_MFAMG_STRUCT *state,
+    LIS_INT required_capacity)
+{
+    LIS_INT *new_cols;
+
+    LIS_SCALAR *new_vals;
+
+
+    if(
+        state==NULL
+        ||
+        required_capacity<=0
+        ||
+        state->refresh_row_capacity<0)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    if(
+        state->refresh_row_capacity
+        >=
+        required_capacity)
+    {
+        if(
+            state->refresh_cols==NULL
+            ||
+            state->refresh_vals==NULL)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+
+
+        return LIS_SUCCESS;
+    }
+
+
+    if(
+        state->refresh_row_capacity>0
+        &&
+        (
+            state->refresh_cols==NULL
+            ||
+            state->refresh_vals==NULL
+        ))
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    new_cols =
+        (LIS_INT *)lis_malloc(
+            (size_t)required_capacity
+            *
+            sizeof(LIS_INT),
+            "lis_mfamg_ensure_refresh_row_workspace::cols");
+
+
+    if(new_cols==NULL)
+    {
+        LIS_SETERR_MEM(
+            (size_t)required_capacity
+            *
+            sizeof(LIS_INT));
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+
+    new_vals =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)required_capacity
+            *
+            sizeof(LIS_SCALAR),
+            "lis_mfamg_ensure_refresh_row_workspace::vals");
+
+
+    if(new_vals==NULL)
+    {
+        lis_free(
+            new_cols);
+
+        LIS_SETERR_MEM(
+            (size_t)required_capacity
+            *
+            sizeof(LIS_SCALAR));
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+
+    if(state->refresh_cols)
+    {
+        lis_free(
+            state->refresh_cols);
+    }
+
+
+    if(state->refresh_vals)
+    {
+        lis_free(
+            state->refresh_vals);
+    }
+
+
+    state->refresh_cols =
+        new_cols;
+
+    state->refresh_vals =
+        new_vals;
+
+    state->refresh_row_capacity =
+        required_capacity;
+
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+lis_mfamg_refresh_level_work(
+    struct LIS_MFAMG_LEVEL *level)
+{
+    LIS_INT i;
+    LIS_INT err;
+
+    LIS_REAL diagonal_mag;
+
+
+    if(
+        level==NULL
+        ||
+        level->A==NULL
+        ||
+        level->n<=0
+        ||
+        level->diagonal==NULL
+        ||
+        level->ax==NULL
+        ||
+        level->diagonal->n!=level->n
+        ||
+        level->ax->n!=level->n)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    err =
+        lis_matrix_get_diagonal(
+            level->A,
+            level->diagonal);
+
+    if(err)
+        return err;
+
+
+    err =
+        lis_mfamg_estimate_smoother_omega(
+            level->A,
+            level->diagonal,
+            &level->omega);
+
+    if(err)
+        return err;
+
+
+    for(i=0;i<level->n;i++)
+    {
+        diagonal_mag =
+            fabs(
+                level->diagonal->value[i]);
+
+        if(
+            diagonal_mag!=diagonal_mag
+            ||
+            diagonal_mag>LIS_SCALAR_MAX
+            ||
+            diagonal_mag==0.0)
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "MFAMG requires finite nonzero diagonal entries\n");
+
+            return LIS_BREAKDOWN;
+        }
+    }
+
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+lis_mfamg_refresh_serial_scalar_numeric(
+    LIS_SOLVER solver,
+    struct LIS_MFAMG_STRUCT *state)
+{
+    struct LIS_MFAMG_LEVEL *level;
+    struct LIS_MFAMG_LEVEL *next_level;
+    struct LIS_MFAMG_LEVEL replacement;
+
+    LIS_MATRIX old_coarse_A;
+
+    LIS_VECTOR current_z;
+    LIS_VECTOR next_z;
+
+    LIS_INT current_z_owned;
+
+    LIS_INT level_id;
+    LIS_INT max_row_nnz;
+    LIS_INT err;
+
+    LIS_SCALAR *dense;
+
+    size_t dense_entries;
+    size_t level_dense_entries;
+
+
+    if(
+        solver==NULL
+        ||
+        solver->A==NULL
+        ||
+        solver->near_nullspace_dim!=1
+        ||
+        solver->near_nullspace==NULL
+        ||
+        solver->near_nullspace[0]==NULL
+        ||
+        state==NULL
+        ||
+        state->levels==NULL
+        ||
+        state->nlevels<2
+        ||
+        state->levels[0].A==NULL
+        ||
+        solver->A->matrix_type!=LIS_MATRIX_CSR
+        ||
+        solver->A->nprocs!=1)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    if(
+        state->alias_rhs==NULL
+        ||
+        state->coarse_n<=0
+        ||
+        state->coarse==NULL
+        ||
+        state->lu==NULL
+        ||
+        state->pivots==NULL
+        ||
+        state->coarse_rhs==NULL
+        ||
+        state->coarse_x==NULL
+        ||
+        state->refresh_row_capacity<0)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    current_z =
+        solver->near_nullspace[0];
+
+    next_z = NULL;
+
+    current_z_owned =
+        LIS_FALSE;
+
+    dense = NULL;
+
+    dense_entries = 0;
+
+    memset(
+        &replacement,
+        0,
+        sizeof(replacement));
+
+
+    state->levels[0].A =
+        solver->A;
+
+    state->levels[0].owns_A =
+        LIS_FALSE;
+
+    state->levels[0].n =
+        solver->A->n;
+
+
+    /*
+     * The hierarchy topology is fixed on this reuse path, so
+     * the maximum dense Galerkin workspace size is known before
+     * numeric refresh begins.  Keep this buffer transient to
+     * avoid retaining O(nc^2) storage between updates.
+     */
+    for(
+        level_id=0;
+        level_id<state->nlevels-1;
+        level_id++)
+    {
+        level =
+            &state->levels[level_id];
+
+
+        if(
+            level->A==NULL
+            ||
+            level->n<=0
+            ||
+            level->nc<=0
+            ||
+            level->nc>=level->n)
+        {
+            err =
+                LIS_ERR_ILL_ARG;
+
+            goto fail;
+        }
+
+
+        if(
+            (size_t)level->nc
+            >
+            ((size_t)-1)
+            /
+            (size_t)level->nc)
+        {
+            LIS_SETERR(
+                LIS_OUT_OF_MEMORY,
+                "MFAMG numeric refresh coarse dimension overflow\n");
+
+            err =
+                LIS_OUT_OF_MEMORY;
+
+            goto fail;
+        }
+
+
+        level_dense_entries =
+            (size_t)level->nc
+            *
+            (size_t)level->nc;
+
+
+        if(
+            level_dense_entries
+            >
+            ((size_t)-1)
+            /
+            sizeof(LIS_SCALAR))
+        {
+            LIS_SETERR(
+                LIS_OUT_OF_MEMORY,
+                "MFAMG numeric refresh coarse allocation overflow\n");
+
+            err =
+                LIS_OUT_OF_MEMORY;
+
+            goto fail;
+        }
+
+
+        if(
+            level_dense_entries
+            >
+            dense_entries)
+        {
+            dense_entries =
+                level_dense_entries;
+        }
+    }
+
+
+    if(dense_entries==0)
+    {
+        err =
+            LIS_ERR_ILL_ARG;
+
+        goto fail;
+    }
+
+
+    dense =
+        (LIS_SCALAR *)lis_malloc(
+            dense_entries
+            *
+            sizeof(LIS_SCALAR),
+            "lis_mfamg_refresh_serial_scalar_numeric::dense");
+
+
+    if(dense==NULL)
+    {
+        LIS_SETERR_MEM(
+            dense_entries
+            *
+            sizeof(LIS_SCALAR));
+
+        err =
+            LIS_OUT_OF_MEMORY;
+
+        goto fail;
+    }
+
+
+    for(
+        level_id=0;
+        level_id<state->nlevels-1;
+        level_id++)
+    {
+        level =
+            &state->levels[level_id];
+
+        next_level =
+            &state->levels[level_id+1];
+
+
+        if(
+            level->A==NULL
+            ||
+            level->A->matrix_type!=LIS_MATRIX_CSR
+            ||
+            level->A->nprocs!=1
+            ||
+            level->n!=level->A->n
+            ||
+            level->n<=0
+            ||
+            level->nc<=0
+            ||
+            level->nc>=level->n
+            ||
+            level->aggregate==NULL
+            ||
+            level->prolong==NULL
+            ||
+            next_level->A==NULL
+            ||
+            !next_level->owns_A
+            ||
+            next_level->n!=level->nc)
+        {
+            err =
+                LIS_ERR_ILL_ARG;
+
+            goto fail;
+        }
+
+
+        err =
+            lis_mfamg_build_prolongation(
+                current_z,
+                level);
+
+        if(err)
+            goto fail;
+
+
+        err =
+            lis_mfamg_refresh_level_work(
+                level);
+
+        if(err)
+            goto fail;
+
+
+        max_row_nnz = 0;
+
+
+        err =
+            lis_mfamg_get_max_row_nnz(
+                level->A,
+                level->n,
+                &max_row_nnz);
+
+        if(err)
+            goto fail;
+
+
+        err =
+            lis_mfamg_ensure_refresh_row_workspace(
+                state,
+                max_row_nnz);
+
+        if(err)
+            goto fail;
+
+
+        err =
+            lis_mfamg_build_coarse(
+                level->A,
+                level,
+                dense,
+                state->refresh_row_capacity,
+                state->refresh_cols,
+                state->refresh_vals);
+
+        if(err)
+            goto fail;
+
+
+        memset(
+            &replacement,
+            0,
+            sizeof(replacement));
+
+
+        err =
+            lis_mfamg_create_csr_from_dense(
+                level->A->comm,
+                level->nc,
+                dense,
+                &replacement);
+
+        if(err)
+            goto fail;
+
+
+        if(
+            replacement.A==NULL
+            ||
+            replacement.n!=next_level->n
+            ||
+            replacement.A->n!=next_level->n
+            ||
+            replacement.A->gn!=next_level->A->gn)
+        {
+            err =
+                LIS_ERR_ILL_ARG;
+
+            goto fail;
+        }
+
+
+        err =
+            lis_mfamg_build_coarse_nullspace(
+                current_z,
+                level,
+                replacement.A,
+                &next_z);
+
+        if(err)
+            goto fail;
+
+
+        old_coarse_A =
+            next_level->A;
+
+
+        next_level->A =
+            replacement.A;
+
+        next_level->owns_A =
+            LIS_TRUE;
+
+        next_level->n =
+            replacement.n;
+
+
+        replacement.A =
+            NULL;
+
+        replacement.owns_A =
+            LIS_FALSE;
+
+        replacement.n =
+            0;
+
+
+        lis_matrix_destroy(
+            old_coarse_A);
+
+
+        if(current_z_owned)
+        {
+            lis_vector_destroy(
+                current_z);
+        }
+
+
+        current_z =
+            next_z;
+
+        current_z_owned =
+            LIS_TRUE;
+
+        next_z = NULL;
+    }
+
+
+    lis_free(
+        dense);
+
+    dense = NULL;
+
+
+    if(current_z_owned)
+    {
+        lis_vector_destroy(
+            current_z);
+
+        current_z = NULL;
+
+        current_z_owned =
+            LIS_FALSE;
+    }
+
+
+    err =
+        lis_mfamg_validate_hierarchy(
+            state);
+
+    if(err)
+        return err;
+
+
+    level =
+        &state->levels[
+            state->nlevels-1];
+
+
+    if(
+        level->A==NULL
+        ||
+        level->A->matrix_type!=LIS_MATRIX_CSR
+        ||
+        level->A->nprocs!=1
+        ||
+        level->A->gn!=state->coarse_n)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    err =
+        lis_mfamg_factor_csr_terminal(
+            level->A,
+            state);
+
+    if(err)
+        return err;
+
+
+    return LIS_SUCCESS;
+
+
+fail:
+
+    if(replacement.A)
+    {
+        lis_matrix_destroy(
+            replacement.A);
+    }
+
+
+    if(dense)
+    {
+        lis_free(
+            dense);
+    }
+
+
+    if(next_z)
+    {
+        lis_vector_destroy(
+            next_z);
+    }
+
+
+    if(current_z_owned)
+    {
+        lis_vector_destroy(
+            current_z);
+    }
+
+
+    return err;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_precon_psd_update_mfamg"
+LIS_INT
+lis_precon_psd_update_mfamg(
+    LIS_SOLVER solver,
+    LIS_PRECON precon)
+{
+    struct LIS_PRECON_STRUCT candidate;
+    struct LIS_MFAMG_STRUCT *old_state;
+
+    LIS_INT same_pattern;
+    LIS_INT err;
+
+
+    LIS_DEBUG_FUNC_IN;
+
+
+    if(
+        solver==NULL
+        ||
+        solver->A==NULL
+        ||
+        precon==NULL
+        ||
+        precon->mfamg==NULL
+        ||
+        precon->precon_type!=LIS_PRECON_TYPE_MFAMG)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    same_pattern =
+        LIS_FALSE;
+
+
+    if(
+        solver->near_nullspace_dim==1
+        &&
+        solver->near_nullspace!=NULL
+        &&
+        solver->near_nullspace[0]!=NULL)
+    {
+        err =
+            lis_mfamg_same_serial_csr_pattern(
+                solver->A,
+                precon->mfamg->levels[0].A,
+                &same_pattern);
+
+        if(err)
+            return err;
+    }
+
+
+    if(same_pattern)
+    {
+        err =
+            lis_mfamg_refresh_serial_scalar_numeric(
+                solver,
+                precon->mfamg);
+
+        if(err)
+            return err;
+
+
+        precon->A =
+            solver->A;
+
+        precon->is_copy =
+            LIS_FALSE;
+
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+    }
+
+
+    /*
+     * Unsupported reuse cases keep the transactional full
+     * rebuild path.
+     */
+    memset(
+        &candidate,
+        0,
+        sizeof(candidate));
+
+
+    err =
+        lis_precon_init(
+            &candidate);
+
+    if(err)
+        return err;
+
+
+    candidate.precon_type =
+        precon->precon_type;
+
+
+    err =
+        lis_precon_create_mfamg(
+            solver,
+            &candidate);
+
+    if(err)
+    {
+        if(candidate.mfamg)
+        {
+            lis_mfamg_state_free(
+                candidate.mfamg);
+
+            candidate.mfamg =
+                NULL;
+        }
+
+        return err;
+    }
+
+
+    if(candidate.mfamg==NULL)
+        return LIS_FAILS;
+
+
+    old_state =
+        precon->mfamg;
+
+
+    precon->A =
+        candidate.A;
+
+    precon->is_copy =
+        candidate.is_copy;
+
+    precon->mfamg =
+        candidate.mfamg;
+
+
+    candidate.mfamg =
+        NULL;
+
+
+    lis_mfamg_state_free(
+        old_state);
+
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_precon_destroy_mfamg"
 LIS_INT
@@ -11067,6 +12029,8 @@ lis_psolve_mfamg(
 {
     struct LIS_MFAMG_STRUCT *state;
 
+    LIS_VECTOR rhs;
+
     LIS_INT err;
 
 
@@ -11097,11 +12061,34 @@ lis_psolve_mfamg(
         ||
         state->levels==NULL
         ||
+        state->alias_rhs==NULL
+        ||
         b->n!=state->levels[0].n
         ||
-        x->n!=state->levels[0].n)
+        x->n!=state->levels[0].n
+        ||
+        state->alias_rhs->n!=state->levels[0].n)
     {
         return LIS_ERR_ILL_ARG;
+    }
+
+
+    rhs = b;
+
+
+    if(b==x)
+    {
+        err =
+            lis_vector_copy(
+                b,
+                state->alias_rhs);
+
+        if(err)
+            return err;
+
+
+        rhs =
+            state->alias_rhs;
     }
 
 
@@ -11109,7 +12096,7 @@ lis_psolve_mfamg(
         lis_mfamg_v_cycle(
             state,
             0,
-            b,
+            rhs,
             x);
 
     if(err)
