@@ -287,7 +287,7 @@ Gauss-Seidel\cite{gauss,seidel} & GMRES(m)\cite{gmres} \\
 SOR\cite{young,frankel} & FGMRES(m)\cite{fgmres} \\
 IDR(s)\cite{idrs}       & MINRES\cite{minres} \\
 COCG\cite{cocg}         & COCR\cite{cocr} \\
-GCRO-DR\cite{gcro-dr} \\
+GCRO-DR\cite{gcro-dr}   & FGCRO-DR\cite{fgcro-dr} \\
 \hline         
 \end{tabular}
 \hfil}
@@ -1870,7 +1870,12 @@ Matrix Market形式による外部ファイル{\tt matvec.mtx}の記述例を以
              &                          & \verb=-gcrodr_keep [8]= & リサイクルするベクトル数 \\ 
  &                          & \verb=-gcrodr_keep_quality [0.9]= & ベクトルの保持閾値 \\
  &                          & \verb=-gcrodr_reject_quality [0.35]= & ベクトルの破棄閾値 \\   
-\hline         
+ FGCRO-DR    & \verb=-i {fgcrodr|27}=   & \verb=-restart [40]= & リスタート値 $m$ \\
+             &                          & \verb=-fgcrodr_k [8]= & 部分空間次元数 \\
+             &                          & \verb=-fgcrodr_keep [0.90]= & 空間の保持閾値 \\
+             &                          & \verb=-fgcrodr_reject [0.10]= & 空間の破棄閾値 \\
+             &                          & \verb=-fgcrodr_update [true]= & リサイクル空間を更新 \\
+ \hline         
 \end{tabular}
 \end{center}
 \end{minipage}
@@ -5989,6 +5994,11 @@ COO    &  ○  &  ○  &  ○  & CSR  & CSR & CSR & CSR & CSC & CSR &     & CSR 
              &                          & \verb=-gcrodr_keep [8]= & リサイクルするベクトル数 \\ 
  &                          & \verb=-gcrodr_keep_quality [0.9]= & ベクトルの保持閾値 \\
  &                          & \verb=-gcrodr_reject_quality [0.35]= & ベクトルの破棄閾値 \\   
+ FGCRO-DR    & \verb=-i {fgcrodr|27}=   & \verb=-restart [40]= & リスタート値 $m$ \\
+             &                          & \verb=-fgcrodr_k [8]= & 部分空間次元数 \\
+             &                          & \verb=-fgcrodr_keep [0.90]= & 空間の保持閾値 \\
+             &                          & \verb=-fgcrodr_reject [0.10]= & 空間の破棄閾値 \\
+             &                          & \verb=-fgcrodr_update [true]= & リサイクル空間を更新 \\
 \hline         
 \end{tabular}
 \end{center}
@@ -8265,6 +8275,11 @@ T. Sogabe and S. Zhang.
 Q. Niu, L-Z. Lu and G. Liu.
 \newblock Accelerated GCRO-DR method for solving sequences of systems of linear equations.
 \newblock Journal of Computational and Applied Mathematics, Vol.~253, pp.\ 131--141, 2013. 
+
+\bibitem{fgcro-dr}
+L. M. Carvalho, S. Gratton, R. Lago and X. Vasseur.
+\newblock A Flexible Generalized Conjugate Residual Method with Inner Orthogonalization and Deflated Restarting.
+\newblock SIAM Journal on Matrix Analysis and Applications, Vol.~32, No.~4, pp.\ 1212--1235, 2011. 
 
 \bibitem{power}
 R. von Mises and H. Pollaczek-Geiringer.
