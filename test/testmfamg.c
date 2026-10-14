@@ -5493,6 +5493,807 @@ cleanup:
 }
 
 static int
+check_mfamg_distributed_multivector_psolve(
+    LIS_MATRIX A,
+    int rank,
+    int nprocs)
+{
+    enum
+    {
+        MODE_COUNT = 2,
+        LOCAL_N = 12,
+        LOCAL_AGGREGATES = 6,
+        EXPECTED_LOCAL_COARSE = 9,
+        EXPECTED_GLOBAL_COARSE = 18,
+        TERMINAL_LIMIT = 16
+    };
+
+    LIS_VECTOR b;
+    LIS_VECTOR x;
+    LIS_VECTOR ax;
+    LIS_VECTOR z0;
+    LIS_VECTOR z1;
+
+    LIS_VECTOR basis[MODE_COUNT];
+
+    LIS_INT aggregate[LOCAL_N];
+
+    LIS_INT *aggregate_rank;
+    LIS_INT *aggregate_offset;
+    LIS_INT *row_ptr;
+
+    LIS_SCALAR *prolong;
+    LIS_SCALAR *coarse_basis;
+
+    LIS_INT local_coarse_n;
+    LIS_INT global_first_coarse;
+
+    LIS_SOLVER solver;
+    LIS_PRECON precon;
+
+    LIS_REAL local_rhs2;
+    LIS_REAL global_rhs2;
+
+    LIS_REAL local_residual2;
+    LIS_REAL global_residual2;
+
+    LIS_REAL local_correction2;
+    LIS_REAL global_correction2;
+
+    LIS_REAL local_remote2;
+    LIS_REAL global_remote2;
+
+    LIS_REAL residual_ratio;
+    LIS_REAL correction_norm;
+    LIS_REAL remote_norm;
+
+    LIS_REAL mag;
+
+    LIS_INT global_i;
+    LIS_INT remote_start;
+    LIS_INT i;
+    LIS_INT a;
+    LIS_INT err;
+    LIS_INT destroy_err;
+
+    int local_failed;
+    int global_failed;
+
+
+    b = NULL;
+    x = NULL;
+    ax = NULL;
+    z0 = NULL;
+    z1 = NULL;
+
+    aggregate_rank = NULL;
+    aggregate_offset = NULL;
+    row_ptr = NULL;
+
+    prolong = NULL;
+    coarse_basis = NULL;
+
+    local_coarse_n = -1;
+    global_first_coarse = -1;
+
+    solver = NULL;
+    precon = NULL;
+
+    local_rhs2 = 0.0;
+    global_rhs2 = 0.0;
+
+    local_residual2 = 0.0;
+    global_residual2 = 0.0;
+
+    local_correction2 = 0.0;
+    global_correction2 = 0.0;
+
+    local_remote2 = 0.0;
+    global_remote2 = 0.0;
+
+    residual_ratio = -1.0;
+    correction_norm = -1.0;
+    remote_norm = -1.0;
+
+    local_failed = 0;
+    global_failed = 0;
+
+
+    if(
+        A==NULL
+        ||
+        nprocs!=2
+        ||
+        A->matrix_type!=LIS_MATRIX_CSR
+        ||
+        A->nprocs!=nprocs
+        ||
+        A->n!=LOCAL_N
+        ||
+        A->gn!=TEST_N
+        ||
+        A->ranges==NULL
+        ||
+        A->ranges[0]!=0
+        ||
+        A->ranges[1]!=LOCAL_N
+        ||
+        EXPECTED_GLOBAL_COARSE<=TERMINAL_LIMIT)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    remote_start =
+        A->ranges[1];
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &b);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &ax);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &z0);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &z1);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        b);
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x);
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        ax);
+
+    lis_vector_set_all(
+        (LIS_SCALAR)1.0,
+        z0);
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        z1);
+
+
+    for(i=0;i<LOCAL_N;i++)
+    {
+        aggregate[i] =
+            i/2;
+
+        if(
+            aggregate[i]<3
+            &&
+            (i%2)!=0)
+        {
+            z1->value[i] =
+                (LIS_SCALAR)1.0;
+        }
+    }
+
+
+    basis[0] =
+        z0;
+
+    basis[1] =
+        z1;
+
+
+    err =
+        lis_precon_mfamg_build_multivector_basis(
+            LOCAL_N,
+            LOCAL_AGGREGATES,
+            aggregate,
+            MODE_COUNT,
+            basis,
+            &aggregate_rank,
+            &aggregate_offset,
+            &row_ptr,
+            &prolong,
+            &coarse_basis,
+            &local_coarse_n);
+
+    if(err)
+    {
+        local_failed = 1;
+    }
+
+
+    if(
+        !err
+        &&
+        (
+            aggregate_rank==NULL
+            ||
+            aggregate_offset==NULL
+            ||
+            row_ptr==NULL
+            ||
+            prolong==NULL
+            ||
+            coarse_basis==NULL
+            ||
+            local_coarse_n!=EXPECTED_LOCAL_COARSE
+            ||
+            aggregate_offset[LOCAL_AGGREGATES]
+                !=
+                EXPECTED_LOCAL_COARSE
+            ||
+            row_ptr[LOCAL_N]!=18
+        ))
+    {
+        local_failed = 1;
+    }
+
+
+    if(
+        !err
+        &&
+        aggregate_rank!=NULL)
+    {
+        for(a=0;a<LOCAL_AGGREGATES;a++)
+        {
+            if(
+                aggregate_rank[a]
+                !=
+                (
+                    a<3
+                    ?
+                    2
+                    :
+                    1
+                ))
+            {
+                local_failed = 1;
+            }
+        }
+    }
+
+
+#ifdef USE_MPI
+
+    MPI_Allreduce(
+        &local_failed,
+        &global_failed,
+        1,
+        MPI_INT,
+        MPI_MAX,
+        A->comm);
+
+#else
+
+    global_failed =
+        local_failed;
+
+#endif
+
+
+    if(global_failed)
+        goto cleanup;
+
+
+#ifdef USE_MPI
+
+    MPI_Allreduce(
+        &local_coarse_n,
+        &global_first_coarse,
+        1,
+        LIS_MPI_INT,
+        MPI_SUM,
+        A->comm);
+
+#else
+
+    global_first_coarse =
+        local_coarse_n;
+
+#endif
+
+
+    if(
+        global_first_coarse
+        !=
+        EXPECTED_GLOBAL_COARSE)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    if(coarse_basis)
+    {
+        lis_free(coarse_basis);
+        coarse_basis = NULL;
+    }
+
+    if(prolong)
+    {
+        lis_free(prolong);
+        prolong = NULL;
+    }
+
+    if(row_ptr)
+    {
+        lis_free(row_ptr);
+        row_ptr = NULL;
+    }
+
+    if(aggregate_offset)
+    {
+        lis_free(aggregate_offset);
+        aggregate_offset = NULL;
+    }
+
+    if(aggregate_rank)
+    {
+        lis_free(aggregate_rank);
+        aggregate_rank = NULL;
+    }
+
+
+    /*
+     * Unit impulse on the first global row.
+     *
+     * The right half of the global domain starts with a zero
+     * right-hand side.  A nonzero correction there therefore
+     * demonstrates that the applied V-cycle crosses the rank
+     * boundary.
+     */
+    if(
+        A->is<=0
+        &&
+        A->ie>0)
+    {
+        b->value[
+            -A->is] =
+            (LIS_SCALAR)1.0;
+    }
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_solver_set_option(
+            "-i gmres "
+            "-p mfamg "
+            "-scale none "
+            "-print none",
+            solver);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    basis[0] =
+        z0;
+
+    basis[1] =
+        z1;
+
+
+    err =
+        lis_solver_set_near_nullspace(
+            solver,
+            MODE_COUNT,
+            basis);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_solver_set_matrix(
+            A,
+            solver);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_precon_create(
+            solver,
+            &precon);
+
+    if(rank==0)
+    {
+        printf(
+            "MPI_MULTIVECTOR_CREATE=%s "
+            "ranks=%d first_global_coarse=%d terminal_limit=%d\n",
+            err
+            ?
+            "FAILED"
+            :
+            "PASSED",
+            nprocs,
+            (int)global_first_coarse,
+            (int)TERMINAL_LIMIT);
+    }
+
+
+    if(err)
+    {
+        precon = NULL;
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    solver->precon =
+        precon;
+
+
+    err =
+        lis_psolve(
+            solver,
+            b,
+            x);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_matvec(
+            A,
+            x,
+            ax);
+
+    if(err)
+    {
+        local_failed = 1;
+        goto cleanup;
+    }
+
+
+    for(i=0;i<A->n;i++)
+    {
+        global_i =
+            A->is
+            +
+            i;
+
+
+        mag =
+            fabs(
+                b->value[i]);
+
+        local_rhs2 +=
+            mag
+            *
+            mag;
+
+
+        mag =
+            fabs(
+                b->value[i]
+                -
+                ax->value[i]);
+
+        local_residual2 +=
+            mag
+            *
+            mag;
+
+
+        mag =
+            fabs(
+                x->value[i]);
+
+        if(
+            mag!=mag
+            ||
+            mag>LIS_SCALAR_MAX)
+        {
+            local_failed = 1;
+        }
+
+
+        local_correction2 +=
+            mag
+            *
+            mag;
+
+
+        if(
+            global_i
+            >=
+            remote_start)
+        {
+            local_remote2 +=
+                mag
+                *
+                mag;
+        }
+    }
+
+
+#ifdef USE_MPI
+
+    MPI_Allreduce(
+        &local_rhs2,
+        &global_rhs2,
+        1,
+        LIS_MPI_REAL,
+        MPI_SUM,
+        A->comm);
+
+    MPI_Allreduce(
+        &local_residual2,
+        &global_residual2,
+        1,
+        LIS_MPI_REAL,
+        MPI_SUM,
+        A->comm);
+
+    MPI_Allreduce(
+        &local_correction2,
+        &global_correction2,
+        1,
+        LIS_MPI_REAL,
+        MPI_SUM,
+        A->comm);
+
+    MPI_Allreduce(
+        &local_remote2,
+        &global_remote2,
+        1,
+        LIS_MPI_REAL,
+        MPI_SUM,
+        A->comm);
+
+#else
+
+    global_rhs2 =
+        local_rhs2;
+
+    global_residual2 =
+        local_residual2;
+
+    global_correction2 =
+        local_correction2;
+
+    global_remote2 =
+        local_remote2;
+
+#endif
+
+
+    if(!(global_rhs2>0.0))
+    {
+        local_failed = 1;
+    }
+    else
+    {
+        residual_ratio =
+            sqrt(
+                global_residual2
+                /
+                global_rhs2);
+    }
+
+
+    correction_norm =
+        sqrt(
+            global_correction2);
+
+    remote_norm =
+        sqrt(
+            global_remote2);
+
+
+    if(
+        residual_ratio!=residual_ratio
+        ||
+        !(residual_ratio<1.0)
+        ||
+        correction_norm!=correction_norm
+        ||
+        !(correction_norm>0.0)
+        ||
+        remote_norm!=remote_norm
+        ||
+        !(remote_norm>1.0e-12))
+    {
+        local_failed = 1;
+    }
+
+
+cleanup:
+
+    if(precon)
+    {
+        if(solver)
+        {
+            solver->precon =
+                NULL;
+        }
+
+
+        destroy_err =
+            lis_precon_destroy(
+                precon);
+
+        if(destroy_err)
+        {
+            local_failed = 1;
+        }
+
+
+        precon = NULL;
+    }
+
+
+    if(solver)
+    {
+        lis_solver_destroy(
+            solver);
+    }
+
+
+    if(coarse_basis)
+        lis_free(coarse_basis);
+
+    if(prolong)
+        lis_free(prolong);
+
+    if(row_ptr)
+        lis_free(row_ptr);
+
+    if(aggregate_offset)
+        lis_free(aggregate_offset);
+
+    if(aggregate_rank)
+        lis_free(aggregate_rank);
+
+
+    if(z1)
+    {
+        lis_vector_destroy(
+            z1);
+    }
+
+    if(z0)
+    {
+        lis_vector_destroy(
+            z0);
+    }
+
+    if(ax)
+    {
+        lis_vector_destroy(
+            ax);
+    }
+
+    if(x)
+    {
+        lis_vector_destroy(
+            x);
+    }
+
+    if(b)
+    {
+        lis_vector_destroy(
+            b);
+    }
+
+
+#ifdef USE_MPI
+
+    MPI_Allreduce(
+        &local_failed,
+        &global_failed,
+        1,
+        MPI_INT,
+        MPI_MAX,
+        LIS_COMM_WORLD);
+
+#else
+
+    global_failed =
+        local_failed;
+
+#endif
+
+
+    if(rank==0)
+    {
+        printf(
+            "MPI_MULTIVECTOR_PSOLVE=%s "
+            "ranks=%d relres=%.12e "
+            "correction=%.12e remote=%.12e\n",
+            global_failed
+            ?
+            "FAILED"
+            :
+            "PASSED",
+            nprocs,
+            (double)residual_ratio,
+            (double)correction_norm,
+            (double)remote_norm);
+    }
+
+
+    return global_failed;
+}
+
+
+static int
 check_mfamg_hardening_case(
     int rank,
     int nprocs)
@@ -6024,6 +6825,16 @@ run_mpi_rejection(
             A,
             rank,
             nprocs);
+
+
+    if(nprocs==2)
+    {
+        failed |=
+            check_mfamg_distributed_multivector_psolve(
+                A,
+                rank,
+                nprocs);
+    }
 
 
     failed |=
