@@ -21,6 +21,7 @@
 #define LIS_MFAMG_MAX_LEVELS 32
 #define LIS_MFAMG_COARSE_LIMIT 8
 #define LIS_MFAMG_STRENGTH_THETA ((LIS_REAL)0.05)
+#define LIS_MFAMG_DEFAULT_OMEGA ((LIS_REAL)(2.0/3.0))
 
 
 struct LIS_MFAMG_LEVEL
@@ -45,6 +46,8 @@ struct LIS_MFAMG_LEVEL
     LIS_VECTOR diagonal;
     LIS_VECTOR ax;
 
+    LIS_REAL omega;
+
     LIS_VECTOR rhs;
     LIS_VECTOR x;
 };
@@ -64,8 +67,6 @@ struct LIS_MFAMG_STRUCT
 
     LIS_SCALAR *coarse_rhs;
     LIS_SCALAR *coarse_x;
-
-    LIS_REAL omega;
 };
 
 
@@ -329,6 +330,328 @@ lis_mfamg_row_fill(
 
 
     return LIS_ERR_NOT_IMPLEMENTED;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_mfamg_estimate_smoother_omega"
+static LIS_INT
+lis_mfamg_estimate_smoother_omega(
+    LIS_MATRIX A,
+    LIS_VECTOR diagonal,
+    LIS_REAL *omega)
+{
+    LIS_INT i;
+    LIS_INT k;
+    LIS_INT nnz;
+    LIS_INT row_nnz;
+    LIS_INT max_row_nnz;
+    LIS_INT err;
+
+    LIS_INT *cols;
+    LIS_SCALAR *vals;
+
+    LIS_REAL mag;
+    LIS_REAL diagonal_mag;
+    LIS_REAL row_sum;
+    LIS_REAL ratio;
+    LIS_REAL local_bound;
+    LIS_REAL global_bound;
+    LIS_REAL candidate;
+
+
+    if(
+        A==NULL
+        ||
+        diagonal==NULL
+        ||
+        omega==NULL
+        ||
+        A->n<=0
+        ||
+        diagonal->n!=A->n)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    cols = NULL;
+    vals = NULL;
+
+    max_row_nnz = 0;
+    local_bound = 0.0;
+    global_bound = 0.0;
+
+    err = LIS_SUCCESS;
+
+
+    for(i=0;i<A->n;i++)
+    {
+        row_nnz = 0;
+
+        err =
+            lis_mfamg_row_query(
+                A,
+                i,
+                &row_nnz);
+
+        if(err)
+            goto cleanup;
+
+
+        if(row_nnz>max_row_nnz)
+        {
+            max_row_nnz =
+                row_nnz;
+        }
+    }
+
+
+    if(max_row_nnz<=0)
+    {
+        err = LIS_ERR_ILL_ARG;
+        goto cleanup;
+    }
+
+
+    cols =
+        (LIS_INT *)lis_malloc(
+            (size_t)max_row_nnz
+                *
+            sizeof(LIS_INT),
+            "lis_mfamg_estimate_smoother_omega::cols");
+
+    vals =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)max_row_nnz
+                *
+            sizeof(LIS_SCALAR),
+            "lis_mfamg_estimate_smoother_omega::vals");
+
+
+    if(
+        cols==NULL
+        ||
+        vals==NULL)
+    {
+        LIS_SETERR_MEM(
+            (size_t)max_row_nnz
+                *
+            (
+                sizeof(LIS_INT)
+                +
+                sizeof(LIS_SCALAR)
+            ));
+
+        err = LIS_OUT_OF_MEMORY;
+        goto cleanup;
+    }
+
+
+    for(i=0;i<A->n;i++)
+    {
+        diagonal_mag =
+            fabs(
+                diagonal->value[i]);
+
+
+        if(
+            diagonal_mag!=diagonal_mag
+            ||
+            diagonal_mag>LIS_SCALAR_MAX
+            ||
+            diagonal_mag==0.0)
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "MFAMG smoother requires finite nonzero diagonal entries\n");
+
+            err = LIS_ERR_ILL_ARG;
+            goto cleanup;
+        }
+
+
+        nnz =
+            max_row_nnz;
+
+
+        err =
+            lis_mfamg_row_fill(
+                A,
+                i,
+                max_row_nnz,
+                &nnz,
+                cols,
+                vals);
+
+        if(err)
+            goto cleanup;
+
+
+        row_sum =
+            0.0;
+
+
+        for(k=0;k<nnz;k++)
+        {
+            mag =
+                fabs(
+                    vals[k]);
+
+
+            if(
+                mag!=mag
+                ||
+                mag>LIS_SCALAR_MAX)
+            {
+                LIS_SETERR(
+                    LIS_ERR_ILL_ARG,
+                    "MFAMG smoother encountered a non-finite matrix entry\n");
+
+                err = LIS_ERR_ILL_ARG;
+                goto cleanup;
+            }
+
+
+            row_sum +=
+                mag;
+
+
+            if(
+                row_sum!=row_sum
+                ||
+                row_sum>LIS_SCALAR_MAX)
+            {
+                LIS_SETERR(
+                    LIS_ERR_ILL_ARG,
+                    "MFAMG smoother row bound overflowed\n");
+
+                err = LIS_ERR_ILL_ARG;
+                goto cleanup;
+            }
+        }
+
+
+        ratio =
+            row_sum
+            /
+            diagonal_mag;
+
+
+        if(
+            ratio!=ratio
+            ||
+            ratio>LIS_SCALAR_MAX
+            ||
+            !(ratio>0.0))
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "MFAMG smoother produced an invalid row bound\n");
+
+            err = LIS_ERR_ILL_ARG;
+            goto cleanup;
+        }
+
+
+        if(ratio>local_bound)
+        {
+            local_bound =
+                ratio;
+        }
+    }
+
+
+    global_bound =
+        local_bound;
+
+
+#ifdef USE_MPI
+
+    if(A->nprocs>1)
+    {
+        if(
+            MPI_Allreduce(
+                &local_bound,
+                &global_bound,
+                1,
+                LIS_MPI_REAL,
+                MPI_MAX,
+                A->comm)
+            !=
+            MPI_SUCCESS)
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "MFAMG smoother damping reduction failed\n");
+
+            err = LIS_ERR_ILL_ARG;
+            goto cleanup;
+        }
+    }
+
+#endif
+
+
+    if(
+        global_bound!=global_bound
+        ||
+        global_bound>LIS_SCALAR_MAX
+        ||
+        !(global_bound>0.0))
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "MFAMG smoother produced an invalid global bound\n");
+
+        err = LIS_ERR_ILL_ARG;
+        goto cleanup;
+    }
+
+
+    *omega =
+        LIS_MFAMG_DEFAULT_OMEGA;
+
+
+    candidate =
+        (LIS_REAL)(4.0/3.0)
+        /
+        global_bound;
+
+
+    if(
+        candidate!=candidate
+        ||
+        candidate>LIS_SCALAR_MAX
+        ||
+        !(candidate>0.0))
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "MFAMG smoother produced an invalid damping factor\n");
+
+        err = LIS_ERR_ILL_ARG;
+        goto cleanup;
+    }
+
+
+    if(candidate<*omega)
+    {
+        *omega =
+            candidate;
+    }
+
+
+cleanup:
+
+    if(vals)
+        lis_free(vals);
+
+    if(cols)
+        lis_free(cols);
+
+
+    return err;
 }
 
 
@@ -2550,6 +2873,16 @@ lis_mfamg_prepare_level_work(
         return err;
 
 
+
+
+    err =
+        lis_mfamg_estimate_smoother_omega(
+            level->A,
+            level->diagonal,
+            &level->omega);
+
+    if(err)
+        return err;
     for(i=0;i<level->n;i++)
     {
         diagonal_mag =
@@ -4154,7 +4487,7 @@ lis_mfamg_v_cycle(
     for(i=0;i<level->n;i++)
     {
         xv[i] =
-            state->omega
+            level->omega
             *
             bv[i]
             /
@@ -4271,7 +4604,7 @@ lis_mfamg_v_cycle(
             av[i];
 
         xv[i] +=
-            state->omega
+            level->omega
             *
             residual
             /
@@ -4280,6 +4613,71 @@ lis_mfamg_v_cycle(
 
 
     return LIS_SUCCESS;
+}
+
+
+/*
+ * Internal smoother query used by the MFAMG regression test.
+ */
+LIS_INT
+lis_precon_mfamg_get_smoother_omega(
+    LIS_MATRIX A,
+    LIS_REAL *omega)
+{
+    LIS_VECTOR diagonal;
+
+    LIS_INT err;
+
+
+    if(
+        A==NULL
+        ||
+        omega==NULL
+        ||
+        A->n<=0)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    diagonal = NULL;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &diagonal);
+
+    if(err)
+        return err;
+
+
+    err =
+        lis_matrix_get_diagonal(
+            A,
+            diagonal);
+
+    if(err)
+        goto cleanup;
+
+
+    err =
+        lis_mfamg_estimate_smoother_omega(
+            A,
+            diagonal,
+            omega);
+
+
+cleanup:
+
+    if(diagonal)
+    {
+        lis_vector_destroy(
+            diagonal);
+    }
+
+
+    return err;
 }
 
 
@@ -6537,8 +6935,6 @@ lis_precon_create_mfamg(
     level->n =
         A->n;
 
-    state->omega =
-        (LIS_REAL)(2.0/3.0);
 
 
     level->aggregate =

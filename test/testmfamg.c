@@ -7,6 +7,12 @@
 
 
 extern LIS_INT
+lis_precon_mfamg_get_smoother_omega(
+    LIS_MATRIX A,
+    LIS_REAL *omega);
+
+
+LIS_INT
 lis_precon_mfamg_get_hierarchy_info(
     LIS_PRECON precon,
     LIS_INT max_levels,
@@ -1539,6 +1545,176 @@ cleanup:
  * Serial contract
  * ============================================================ */
 
+
+
+
+static int
+check_mfamg_adaptive_smoother(void)
+{
+    LIS_MATRIX A;
+
+    LIS_INT i;
+    LIS_INT err;
+
+    LIS_REAL omega;
+    LIS_REAL expected;
+    LIS_REAL diff;
+
+    int failed;
+
+
+    A = NULL;
+
+    omega = 0.0;
+
+    expected =
+        (LIS_REAL)(20.0/33.0);
+
+    failed = 0;
+
+
+    err =
+        lis_matrix_create(
+            LIS_COMM_WORLD,
+            &A);
+
+    if(err)
+    {
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_matrix_set_size(
+            A,
+            0,
+            4);
+
+    if(err)
+    {
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    for(i=0;i<4;i++)
+    {
+        err =
+            lis_matrix_set_value(
+                LIS_INS_VALUE,
+                i,
+                i,
+                (LIS_SCALAR)1.0,
+                A);
+
+        if(err)
+        {
+            failed = 1;
+            goto cleanup;
+        }
+
+
+        if(i>0)
+        {
+            err =
+                lis_matrix_set_value(
+                    LIS_INS_VALUE,
+                    i,
+                    i-1,
+                    (LIS_SCALAR)-0.6,
+                    A);
+
+            if(err)
+            {
+                failed = 1;
+                goto cleanup;
+            }
+        }
+
+
+        if(i<3)
+        {
+            err =
+                lis_matrix_set_value(
+                    LIS_INS_VALUE,
+                    i,
+                    i+1,
+                    (LIS_SCALAR)-0.6,
+                    A);
+
+            if(err)
+            {
+                failed = 1;
+                goto cleanup;
+            }
+        }
+    }
+
+
+    err =
+        lis_matrix_assemble(
+            A);
+
+    if(err)
+    {
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        lis_precon_mfamg_get_smoother_omega(
+            A,
+            &omega);
+
+    if(err)
+    {
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    diff =
+        fabs(
+            omega
+            -
+            expected);
+
+
+    if(
+        omega!=omega
+        ||
+        diff>1.0e-12)
+    {
+        failed = 1;
+    }
+
+
+cleanup:
+
+    if(A)
+    {
+        lis_matrix_destroy(
+            A);
+    }
+
+
+    printf(
+        "SMOOTHER_OMEGA=%s "
+        "omega=%.12e expected=%.12e\n",
+        failed
+        ?
+        "FAILED"
+        :
+        "PASSED",
+        (double)omega,
+        (double)expected);
+
+
+    return failed;
+}
+
 static int
 run_serial(void)
 {
@@ -1564,6 +1740,10 @@ run_serial(void)
     U = NULL;
 
     failed = 0;
+
+
+    failed |=
+        check_mfamg_adaptive_smoother();
 
 
     err =
