@@ -41,7 +41,13 @@ struct LIS_MFAMG_LEVEL
     LIS_INT *global_aggregate;
     LIS_SCALAR *global_prolong;
 
+    LIS_INT aggregate_count;
+
     LIS_INT *aggregate;
+    LIS_INT *aggregate_rank;
+    LIS_INT *aggregate_offset;
+    LIS_INT *prolong_row_ptr;
+
     LIS_SCALAR *prolong;
 
     LIS_VECTOR diagonal;
@@ -96,6 +102,15 @@ lis_mfamg_state_free(
 
             if(level->aggregate)
                 lis_free(level->aggregate);
+
+            if(level->aggregate_rank)
+                lis_free(level->aggregate_rank);
+
+            if(level->aggregate_offset)
+                lis_free(level->aggregate_offset);
+
+            if(level->prolong_row_ptr)
+                lis_free(level->prolong_row_ptr);
 
             if(level->prolong)
                 lis_free(level->prolong);
@@ -4242,6 +4257,979 @@ lis_mfamg_build_distributed_coarse(
     struct LIS_MFAMG_LEVEL *level,
     LIS_MATRIX *coarse_A);
 
+
+#undef __FUNC__
+#define __FUNC__ "lis_mfamg_install_multivector_transfer"
+static LIS_INT
+lis_mfamg_install_multivector_transfer(
+    LIS_INT mode_count,
+    LIS_VECTOR basis[],
+    struct LIS_MFAMG_LEVEL *level,
+    LIS_SCALAR **coarse_basis_out,
+    LIS_INT *coarsened)
+{
+    LIS_INT aggregate_count;
+    LIS_INT coarse_n;
+    LIS_INT err;
+
+    LIS_INT *aggregate_rank;
+    LIS_INT *aggregate_offset;
+    LIS_INT *row_ptr;
+
+    LIS_SCALAR *prolong;
+    LIS_SCALAR *coarse_basis;
+
+
+    if(
+        mode_count<=1
+        ||
+        basis==NULL
+        ||
+        level==NULL
+        ||
+        level->aggregate==NULL
+        ||
+        level->n<=0
+        ||
+        level->nc<=0
+        ||
+        coarse_basis_out==NULL
+        ||
+        coarsened==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    if(
+        level->aggregate_rank!=NULL
+        ||
+        level->aggregate_offset!=NULL
+        ||
+        level->prolong_row_ptr!=NULL
+        ||
+        level->prolong!=NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    *coarse_basis_out = NULL;
+    *coarsened = LIS_FALSE;
+
+    aggregate_count =
+        level->nc;
+
+    aggregate_rank = NULL;
+    aggregate_offset = NULL;
+    row_ptr = NULL;
+    prolong = NULL;
+    coarse_basis = NULL;
+    coarse_n = 0;
+
+
+    err =
+        lis_precon_mfamg_build_multivector_basis(
+            level->n,
+            aggregate_count,
+            level->aggregate,
+            mode_count,
+            basis,
+            &aggregate_rank,
+            &aggregate_offset,
+            &row_ptr,
+            &prolong,
+            &coarse_basis,
+            &coarse_n);
+
+    if(err)
+        return err;
+
+
+    if(
+        coarse_n<=0
+        ||
+        coarse_n>=level->n)
+    {
+        lis_free(
+            coarse_basis);
+
+        lis_free(
+            prolong);
+
+        lis_free(
+            row_ptr);
+
+        lis_free(
+            aggregate_offset);
+
+        lis_free(
+            aggregate_rank);
+
+        return LIS_SUCCESS;
+    }
+
+
+    level->aggregate_count =
+        aggregate_count;
+
+    level->aggregate_rank =
+        aggregate_rank;
+
+    level->aggregate_offset =
+        aggregate_offset;
+
+    level->prolong_row_ptr =
+        row_ptr;
+
+    level->prolong =
+        prolong;
+
+    level->nc =
+        coarse_n;
+
+    *coarse_basis_out =
+        coarse_basis;
+
+    *coarsened =
+        LIS_TRUE;
+
+
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_mfamg_build_coarse_multivector"
+static LIS_INT
+lis_mfamg_build_coarse_multivector(
+    LIS_MATRIX A,
+    struct LIS_MFAMG_LEVEL *level,
+    LIS_SCALAR *coarse,
+    LIS_INT max_row_nnz,
+    LIS_INT *cols,
+    LIS_SCALAR *vals)
+{
+    LIS_INT i;
+    LIS_INT j;
+    LIS_INT k;
+    LIS_INT nnz;
+
+    LIS_INT ai;
+    LIS_INT aj;
+
+    LIS_INT qi;
+    LIS_INT qj;
+
+    LIS_INT ri;
+    LIS_INT rj;
+
+    LIS_INT row_i;
+    LIS_INT row_j;
+
+    LIS_INT ci;
+    LIS_INT cj;
+
+    LIS_SCALAR pi;
+    LIS_SCALAR pj;
+
+
+    if(
+        A==NULL
+        ||
+        level==NULL
+        ||
+        coarse==NULL
+        ||
+        cols==NULL
+        ||
+        vals==NULL
+        ||
+        A->nprocs!=1
+        ||
+        level->n<=0
+        ||
+        level->nc<=0
+        ||
+        level->aggregate_count<=0
+        ||
+        level->aggregate==NULL
+        ||
+        level->aggregate_rank==NULL
+        ||
+        level->aggregate_offset==NULL
+        ||
+        level->prolong_row_ptr==NULL
+        ||
+        level->prolong==NULL
+        ||
+        level->aggregate_offset[0]!=0
+        ||
+        level->aggregate_offset[
+            level->aggregate_count]
+            !=
+            level->nc
+        ||
+        level->prolong_row_ptr[0]!=0)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    memset(
+        coarse,
+        0,
+        (size_t)level->nc
+            *
+        (size_t)level->nc
+            *
+        sizeof(LIS_SCALAR));
+
+
+    for(i=0;i<level->n;i++)
+    {
+        ai =
+            level->aggregate[i];
+
+        if(
+            ai<0
+            ||
+            ai>=level->aggregate_count)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+
+
+        ri =
+            level->aggregate_rank[ai];
+
+        row_i =
+            level->prolong_row_ptr[i];
+
+
+        if(
+            ri<=0
+            ||
+            row_i<0
+            ||
+            level->prolong_row_ptr[i+1]
+                -
+            row_i
+                !=
+            ri
+            ||
+            level->aggregate_offset[ai]<0
+            ||
+            level->aggregate_offset[ai]+ri
+                >
+            level->nc)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+
+
+        nnz =
+            max_row_nnz;
+
+        if(
+            lis_mfamg_row_fill(
+                A,
+                i,
+                max_row_nnz,
+                &nnz,
+                cols,
+                vals)
+            !=
+            LIS_SUCCESS)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+
+
+        for(k=0;k<nnz;k++)
+        {
+            j =
+                cols[k]
+                -
+                A->is;
+
+            if(
+                j<0
+                ||
+                j>=level->n)
+            {
+                LIS_SETERR(
+                    LIS_ERR_ILL_ARG,
+                    "MFAMG serial multivector row contains a nonlocal column\n");
+
+                return LIS_ERR_ILL_ARG;
+            }
+
+
+            aj =
+                level->aggregate[j];
+
+            if(
+                aj<0
+                ||
+                aj>=level->aggregate_count)
+            {
+                return LIS_ERR_ILL_ARG;
+            }
+
+
+            rj =
+                level->aggregate_rank[aj];
+
+            row_j =
+                level->prolong_row_ptr[j];
+
+
+            if(
+                rj<=0
+                ||
+                row_j<0
+                ||
+                level->prolong_row_ptr[j+1]
+                    -
+                row_j
+                    !=
+                rj
+                ||
+                level->aggregate_offset[aj]<0
+                ||
+                level->aggregate_offset[aj]+rj
+                    >
+                level->nc)
+            {
+                return LIS_ERR_ILL_ARG;
+            }
+
+
+            for(qi=0;qi<ri;qi++)
+            {
+                ci =
+                    level->aggregate_offset[ai]
+                    +
+                    qi;
+
+                pi =
+                    level->prolong[
+                        row_i
+                        +
+                        qi];
+
+
+                for(qj=0;qj<rj;qj++)
+                {
+                    cj =
+                        level->aggregate_offset[aj]
+                        +
+                        qj;
+
+                    pj =
+                        level->prolong[
+                            row_j
+                            +
+                            qj];
+
+
+                    coarse[
+                        (size_t)ci
+                            *
+                        (size_t)level->nc
+                            +
+                        (size_t)cj]
+                        +=
+                        conj(pi)
+                        *
+                        vals[k]
+                        *
+                        pj;
+                }
+            }
+        }
+    }
+
+
+    return LIS_SUCCESS;
+}
+
+
+static void
+lis_mfamg_destroy_basis(
+    LIS_INT mode_count,
+    LIS_VECTOR *basis)
+{
+    LIS_INT m;
+
+
+    if(basis==NULL)
+        return;
+
+
+    for(m=0;m<mode_count;m++)
+    {
+        if(basis[m])
+        {
+            lis_vector_destroy(
+                basis[m]);
+        }
+    }
+
+
+    lis_free(
+        basis);
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_mfamg_create_basis_from_array"
+static LIS_INT
+lis_mfamg_create_basis_from_array(
+    LIS_MATRIX A,
+    LIS_INT mode_count,
+    LIS_SCALAR *values,
+    LIS_VECTOR **basis_out)
+{
+    LIS_VECTOR *basis;
+
+    LIS_INT i;
+    LIS_INT m;
+    LIS_INT err;
+
+    LIS_REAL mag;
+
+
+    if(
+        A==NULL
+        ||
+        A->nprocs!=1
+        ||
+        A->n<=0
+        ||
+        mode_count<=1
+        ||
+        values==NULL
+        ||
+        basis_out==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    *basis_out = NULL;
+
+
+    basis =
+        (LIS_VECTOR *)lis_malloc(
+            (size_t)mode_count
+                *
+            sizeof(LIS_VECTOR),
+            "lis_mfamg_create_basis_from_array::basis");
+
+    if(basis==NULL)
+    {
+        LIS_SETERR_MEM(
+            (size_t)mode_count
+                *
+            sizeof(LIS_VECTOR));
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+
+    memset(
+        basis,
+        0,
+        (size_t)mode_count
+            *
+        sizeof(LIS_VECTOR));
+
+
+    for(m=0;m<mode_count;m++)
+    {
+        err =
+            lis_vector_duplicate(
+                A,
+                &basis[m]);
+
+        if(err)
+        {
+            lis_mfamg_destroy_basis(
+                mode_count,
+                basis);
+
+            return err;
+        }
+
+
+        for(i=0;i<A->n;i++)
+        {
+            basis[m]->value[i] =
+                values[
+                    (size_t)i
+                        *
+                    (size_t)mode_count
+                        +
+                    (size_t)m];
+
+            mag =
+                fabs(
+                    basis[m]->value[i]);
+
+            if(
+                mag!=mag
+                ||
+                mag>LIS_SCALAR_MAX)
+            {
+                lis_mfamg_destroy_basis(
+                    mode_count,
+                    basis);
+
+                LIS_SETERR(
+                    LIS_ERR_ILL_ARG,
+                    "MFAMG multivector coarse basis contains non-finite values\n");
+
+                return LIS_ERR_ILL_ARG;
+            }
+        }
+    }
+
+
+    *basis_out =
+        basis;
+
+
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_mfamg_extend_hierarchy_multivector"
+static LIS_INT
+lis_mfamg_extend_hierarchy_multivector(
+    struct LIS_MFAMG_STRUCT *state,
+    LIS_INT mode_count,
+    LIS_INT terminal_limit,
+    LIS_SCALAR *fine_coarse_basis)
+{
+    struct LIS_MFAMG_LEVEL *level;
+    struct LIS_MFAMG_LEVEL *next_level;
+
+    LIS_VECTOR *current_basis;
+    LIS_VECTOR *next_basis;
+
+    LIS_INT level_id;
+    LIS_INT max_row_nnz;
+    LIS_INT coarsened;
+    LIS_INT err;
+
+    LIS_INT *cols;
+    LIS_SCALAR *vals;
+    LIS_SCALAR *dense;
+    LIS_SCALAR *next_coarse_basis;
+
+    size_t dense_entries;
+
+
+    if(
+        state==NULL
+        ||
+        state->levels==NULL
+        ||
+        state->nlevels!=2
+        ||
+        state->level_capacity<2
+        ||
+        state->levels[0].A==NULL
+        ||
+        state->levels[1].A==NULL
+        ||
+        state->levels[0].A->nprocs!=1
+        ||
+        state->levels[1].A->nprocs!=1
+        ||
+        mode_count<=1
+        ||
+        terminal_limit<=0
+        ||
+        fine_coarse_basis==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    current_basis = NULL;
+    next_basis = NULL;
+
+    cols = NULL;
+    vals = NULL;
+    dense = NULL;
+    next_coarse_basis = NULL;
+
+
+    err =
+        lis_mfamg_create_basis_from_array(
+            state->levels[1].A,
+            mode_count,
+            fine_coarse_basis,
+            &current_basis);
+
+    if(err)
+        return err;
+
+
+    level_id = 1;
+
+
+    while(
+        level_id<state->level_capacity-1
+        &&
+        state->levels[level_id].A->gn
+            >
+        terminal_limit)
+    {
+        level =
+            &state->levels[level_id];
+
+        next_level =
+            &state->levels[level_id+1];
+
+
+        if(
+            level->A==NULL
+            ||
+            level->A->nprocs!=1
+            ||
+            level->A->n!=level->n
+            ||
+            level->A->gn!=level->n
+            ||
+            current_basis==NULL)
+        {
+            err = LIS_ERR_ILL_ARG;
+            goto fail;
+        }
+
+
+        max_row_nnz = 0;
+
+        err =
+            lis_mfamg_get_max_row_nnz(
+                level->A,
+                level->n,
+                &max_row_nnz);
+
+        if(err)
+            goto fail;
+
+
+        level->aggregate =
+            (LIS_INT *)lis_malloc(
+                (size_t)level->n
+                    *
+                sizeof(LIS_INT),
+                "lis_mfamg_extend_hierarchy_multivector::aggregate");
+
+        if(level->aggregate==NULL)
+        {
+            LIS_SETERR_MEM(
+                (size_t)level->n
+                    *
+                sizeof(LIS_INT));
+
+            err = LIS_OUT_OF_MEMORY;
+            goto fail;
+        }
+
+
+        cols =
+            (LIS_INT *)lis_malloc(
+                (size_t)max_row_nnz
+                    *
+                sizeof(LIS_INT),
+                "lis_mfamg_extend_hierarchy_multivector::cols");
+
+        vals =
+            (LIS_SCALAR *)lis_malloc(
+                (size_t)max_row_nnz
+                    *
+                sizeof(LIS_SCALAR),
+                "lis_mfamg_extend_hierarchy_multivector::vals");
+
+        if(
+            cols==NULL
+            ||
+            vals==NULL)
+        {
+            LIS_SETERR_MEM(
+                (size_t)max_row_nnz
+                    *
+                (
+                    sizeof(LIS_INT)
+                    +
+                    sizeof(LIS_SCALAR)
+                ));
+
+            err = LIS_OUT_OF_MEMORY;
+            goto fail;
+        }
+
+
+        err =
+            lis_mfamg_build_aggregates(
+                level->A,
+                level,
+                max_row_nnz,
+                cols,
+                vals);
+
+        if(err)
+            goto fail;
+
+
+        if(
+            level->nc<=0
+            ||
+            level->nc>=level->n)
+        {
+            lis_free(
+                level->aggregate);
+
+            level->aggregate = NULL;
+            level->nc = 0;
+
+            lis_free(vals);
+            lis_free(cols);
+
+            vals = NULL;
+            cols = NULL;
+
+            break;
+        }
+
+
+        coarsened =
+            LIS_FALSE;
+
+        next_coarse_basis =
+            NULL;
+
+
+        err =
+            lis_mfamg_install_multivector_transfer(
+                mode_count,
+                current_basis,
+                level,
+                &next_coarse_basis,
+                &coarsened);
+
+        if(err)
+            goto fail;
+
+
+        if(!coarsened)
+        {
+            lis_free(
+                level->aggregate);
+
+            level->aggregate = NULL;
+            level->aggregate_count = 0;
+            level->nc = 0;
+
+            lis_free(vals);
+            lis_free(cols);
+
+            vals = NULL;
+            cols = NULL;
+
+            break;
+        }
+
+
+        err =
+            lis_mfamg_prepare_level_work(
+                level);
+
+        if(err)
+            goto fail;
+
+
+        if(
+            (size_t)level->nc
+            >
+            ((size_t)-1)
+            /
+            (size_t)level->nc)
+        {
+            LIS_SETERR(
+                LIS_OUT_OF_MEMORY,
+                "MFAMG multivector hierarchy coarse dimension overflow\n");
+
+            err = LIS_OUT_OF_MEMORY;
+            goto fail;
+        }
+
+
+        dense_entries =
+            (size_t)level->nc
+                *
+            (size_t)level->nc;
+
+
+        if(
+            dense_entries
+            >
+            ((size_t)-1)
+            /
+            sizeof(LIS_SCALAR))
+        {
+            LIS_SETERR(
+                LIS_OUT_OF_MEMORY,
+                "MFAMG multivector hierarchy allocation overflow\n");
+
+            err = LIS_OUT_OF_MEMORY;
+            goto fail;
+        }
+
+
+        dense =
+            (LIS_SCALAR *)lis_malloc(
+                dense_entries
+                    *
+                sizeof(LIS_SCALAR),
+                "lis_mfamg_extend_hierarchy_multivector::dense");
+
+        if(dense==NULL)
+        {
+            LIS_SETERR_MEM(
+                dense_entries
+                    *
+                sizeof(LIS_SCALAR));
+
+            err = LIS_OUT_OF_MEMORY;
+            goto fail;
+        }
+
+
+        err =
+            lis_mfamg_build_coarse_multivector(
+                level->A,
+                level,
+                dense,
+                max_row_nnz,
+                cols,
+                vals);
+
+        if(err)
+            goto fail;
+
+
+        err =
+            lis_mfamg_create_csr_from_dense(
+                level->A->comm,
+                level->nc,
+                dense,
+                next_level);
+
+        if(err)
+            goto fail;
+
+
+        state->nlevels =
+            level_id+2;
+
+
+        err =
+            lis_mfamg_create_basis_from_array(
+                next_level->A,
+                mode_count,
+                next_coarse_basis,
+                &next_basis);
+
+        if(err)
+            goto fail;
+
+
+        lis_free(
+            next_coarse_basis);
+
+        next_coarse_basis = NULL;
+
+
+        lis_free(
+            dense);
+
+        dense = NULL;
+
+
+        lis_free(
+            vals);
+
+        lis_free(
+            cols);
+
+        vals = NULL;
+        cols = NULL;
+
+
+        lis_mfamg_destroy_basis(
+            mode_count,
+            current_basis);
+
+        current_basis =
+            next_basis;
+
+        next_basis =
+            NULL;
+
+
+        level_id++;
+    }
+
+
+    lis_mfamg_destroy_basis(
+        mode_count,
+        current_basis);
+
+
+    return LIS_SUCCESS;
+
+
+fail:
+
+    if(next_coarse_basis)
+        lis_free(next_coarse_basis);
+
+    if(dense)
+        lis_free(dense);
+
+    if(vals)
+        lis_free(vals);
+
+    if(cols)
+        lis_free(cols);
+
+    if(next_basis)
+    {
+        lis_mfamg_destroy_basis(
+            mode_count,
+            next_basis);
+    }
+
+    if(current_basis)
+    {
+        lis_mfamg_destroy_basis(
+            mode_count,
+            current_basis);
+    }
+
+
+    return err;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_mfamg_extend_hierarchy"
 static LIS_INT
@@ -5034,7 +6022,8 @@ lis_mfamg_factor_csr_terminal(
 static LIS_INT
 lis_mfamg_prepare_terminal(
     LIS_MATRIX A,
-    struct LIS_MFAMG_STRUCT *state)
+    struct LIS_MFAMG_STRUCT *state,
+    LIS_INT terminal_limit)
 {
     size_t coarse_entries;
     size_t allocation_size;
@@ -5051,7 +6040,9 @@ lis_mfamg_prepare_terminal(
         ||
         A->gn<=0
         ||
-        A->gn>LIS_MFAMG_COARSE_LIMIT
+        terminal_limit<=0
+        ||
+        A->gn>terminal_limit
         ||
         state->coarse!=NULL
         ||
@@ -5445,6 +6436,10 @@ lis_mfamg_v_cycle(
 
     LIS_INT i;
     LIS_INT a;
+    LIS_INT q;
+    LIS_INT p;
+    LIS_INT rank;
+    LIS_INT row_start;
     LIS_INT err;
 
     LIS_SCALAR residual;
@@ -5600,29 +6595,117 @@ lis_mfamg_v_cycle(
      *
      *     b_(l+1) = P_l^H (b_l - A_l x_l)
      */
-    for(i=0;i<level->n;i++)
+    if(level->prolong_row_ptr)
     {
-        residual =
-            bv[i]
-            -
-            av[i];
-
-        a =
-            level->aggregate[i];
-
         if(
-            a<0
+            level->aggregate_count<=0
             ||
-            a>=next_level->n)
+            level->aggregate_rank==NULL
+            ||
+            level->aggregate_offset==NULL
+            ||
+            level->aggregate_offset[
+                level->aggregate_count]
+                !=
+                next_level->n
+            ||
+            level->prolong_row_ptr[0]!=0)
         {
             return LIS_ERR_ILL_ARG;
         }
 
-        coarse_b[a] +=
-            conj(
-                level->prolong[i])
-            *
-            residual;
+
+        for(i=0;i<level->n;i++)
+        {
+            residual =
+                bv[i]
+                -
+                av[i];
+
+            a =
+                level->aggregate[i];
+
+            if(
+                a<0
+                ||
+                a>=level->aggregate_count)
+            {
+                return LIS_ERR_ILL_ARG;
+            }
+
+
+            rank =
+                level->aggregate_rank[a];
+
+            row_start =
+                level->prolong_row_ptr[i];
+
+
+            if(
+                rank<=0
+                ||
+                level->aggregate_offset[a]<0
+                ||
+                level->aggregate_offset[a]+rank
+                    >
+                next_level->n
+                ||
+                row_start<0
+                ||
+                level->prolong_row_ptr[i+1]
+                    -
+                row_start
+                    !=
+                rank)
+            {
+                return LIS_ERR_ILL_ARG;
+            }
+
+
+            for(q=0;q<rank;q++)
+            {
+                p =
+                    level->aggregate_offset[a]
+                    +
+                    q;
+
+                coarse_b[p] +=
+                    conj(
+                        level->prolong[
+                            row_start
+                            +
+                            q])
+                    *
+                    residual;
+            }
+        }
+    }
+    else
+    {
+        for(i=0;i<level->n;i++)
+        {
+            residual =
+                bv[i]
+                -
+                av[i];
+
+            a =
+                level->aggregate[i];
+
+            if(
+                a<0
+                ||
+                a>=next_level->n)
+            {
+                return LIS_ERR_ILL_ARG;
+            }
+
+            coarse_b[a] +=
+                conj(
+                    level->prolong[i])
+                *
+                residual;
+        }
     }
 
 
@@ -5645,23 +6728,87 @@ lis_mfamg_v_cycle(
      *
      *     x_l <- x_l + P_l x_(l+1)
      */
-    for(i=0;i<level->n;i++)
+    if(level->prolong_row_ptr)
     {
-        a =
-            level->aggregate[i];
-
-        if(
-            a<0
-            ||
-            a>=next_level->n)
+        for(i=0;i<level->n;i++)
         {
-            return LIS_ERR_ILL_ARG;
-        }
+            a =
+                level->aggregate[i];
 
-        xv[i] +=
-            level->prolong[i]
-            *
-            coarse_x[a];
+            if(
+                a<0
+                ||
+                a>=level->aggregate_count)
+            {
+                return LIS_ERR_ILL_ARG;
+            }
+
+
+            rank =
+                level->aggregate_rank[a];
+
+            row_start =
+                level->prolong_row_ptr[i];
+
+
+            if(
+                rank<=0
+                ||
+                level->aggregate_offset[a]<0
+                ||
+                level->aggregate_offset[a]+rank
+                    >
+                next_level->n
+                ||
+                row_start<0
+                ||
+                level->prolong_row_ptr[i+1]
+                    -
+                row_start
+                    !=
+                rank)
+            {
+                return LIS_ERR_ILL_ARG;
+            }
+
+
+            for(q=0;q<rank;q++)
+            {
+                p =
+                    level->aggregate_offset[a]
+                    +
+                    q;
+
+                xv[i] +=
+                    level->prolong[
+                        row_start
+                        +
+                        q]
+                    *
+                    coarse_x[p];
+            }
+        }
+    }
+    else
+    {
+        for(i=0;i<level->n;i++)
+        {
+            a =
+                level->aggregate[i];
+
+            if(
+                a<0
+                ||
+                a>=next_level->n)
+            {
+                return LIS_ERR_ILL_ARG;
+            }
+
+            xv[i] +=
+                level->prolong[i]
+                *
+                coarse_x[a];
+        }
     }
 
 
@@ -7172,7 +8319,8 @@ lis_precon_mfamg_get_distributed_hierarchy_info(
     err =
         lis_mfamg_prepare_terminal(
             terminal->A,
-            state);
+            state,
+            LIS_MFAMG_COARSE_LIMIT);
 
     if(err)
         goto cleanup;
@@ -7790,13 +8938,24 @@ lis_precon_create_mfamg(
 
     LIS_INT *cols;
     LIS_SCALAR *vals;
+    LIS_SCALAR *coarse_basis;
 
     LIS_INT i;
+    LIS_INT mode_count;
+    LIS_INT terminal_limit;
+    LIS_INT coarsened;
     LIS_INT err;
 
 
 
     LIS_DEBUG_FUNC_IN;
+
+
+    coarse_basis = NULL;
+    mode_count = 0;
+    terminal_limit =
+        LIS_MFAMG_COARSE_LIMIT;
+    coarsened = LIS_FALSE;
 
 
     if(
@@ -7850,35 +9009,64 @@ lis_precon_create_mfamg(
     }
 
 
+    mode_count =
+        solver->near_nullspace_dim;
+
+
     if(
-        solver->near_nullspace_dim!=1
+        mode_count<=0
         ||
-        solver->near_nullspace==NULL
-        ||
-        solver->near_nullspace[0]==NULL)
+        solver->near_nullspace==NULL)
     {
         LIS_SETERR(
             LIS_ERR_ILL_ARG,
-            "MFAMG requires exactly one near-nullspace vector\n");
+            "MFAMG requires at least one near-nullspace vector\n");
 
         return LIS_ERR_ILL_ARG;
     }
 
 
-    if(
-        solver->near_nullspace[0]->n!=A->n
-        ||
-        solver->near_nullspace[0]->gn!=A->gn
-        ||
-        solver->near_nullspace[0]->is!=A->is
-        ||
-        solver->near_nullspace[0]->ie!=A->ie)
+    if(mode_count>1)
     {
-        LIS_SETERR(
-            LIS_ERR_ILL_ARG,
-            "MFAMG near-nullspace vector is incompatible with the matrix\n");
+        if(
+            mode_count
+            >
+            A->gn
+                /
+            LIS_MFAMG_COARSE_LIMIT)
+        {
+            terminal_limit =
+                A->gn;
+        }
+        else
+        {
+            terminal_limit =
+                LIS_MFAMG_COARSE_LIMIT
+                *
+                mode_count;
+        }
+    }
 
-        return LIS_ERR_ILL_ARG;
+
+    for(i=0;i<mode_count;i++)
+    {
+        if(
+            solver->near_nullspace[i]==NULL
+            ||
+            solver->near_nullspace[i]->n!=A->n
+            ||
+            solver->near_nullspace[i]->gn!=A->gn
+            ||
+            solver->near_nullspace[i]->is!=A->is
+            ||
+            solver->near_nullspace[i]->ie!=A->ie)
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "MFAMG near-nullspace vectors are incompatible with the matrix\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
     }
 
 
@@ -7896,6 +9084,19 @@ lis_precon_create_mfamg(
 
 
 #ifdef USE_MPI
+
+    if(
+        A->nprocs>1
+        &&
+        mode_count>1)
+    {
+        LIS_SETERR(
+            LIS_ERR_NOT_IMPLEMENTED,
+            "MFAMG MPI multivector near-nullspace is not implemented\n");
+
+        return LIS_ERR_NOT_IMPLEMENTED;
+    }
+
 
     if(
         A->nprocs>1
@@ -7987,6 +9188,12 @@ lis_precon_create_mfamg(
                 *
             sizeof(struct LIS_MFAMG_LEVEL));
 
+        if(coarse_basis)
+        {
+            lis_free(coarse_basis);
+            coarse_basis = NULL;
+        }
+
         lis_mfamg_state_free(state);
 
         return LIS_OUT_OF_MEMORY;
@@ -8026,17 +9233,26 @@ lis_precon_create_mfamg(
             sizeof(LIS_INT),
             "lis_precon_create_mfamg::aggregate");
 
-    level->prolong =
-        (LIS_SCALAR *)lis_malloc(
-            (size_t)level->n
-                *
-            sizeof(LIS_SCALAR),
-            "lis_precon_create_mfamg::prolong");
+
+    if(mode_count==1)
+    {
+        level->prolong =
+            (LIS_SCALAR *)lis_malloc(
+                (size_t)level->n
+                    *
+                sizeof(LIS_SCALAR),
+                "lis_precon_create_mfamg::prolong");
+    }
+
 
     if(
         level->aggregate==NULL
         ||
-        level->prolong==NULL)
+        (
+            mode_count==1
+            &&
+            level->prolong==NULL
+        ))
     {
         LIS_SETERR_MEM(
             (size_t)level->n
@@ -8046,6 +9262,12 @@ lis_precon_create_mfamg(
                 +
                 sizeof(LIS_SCALAR)
             ));
+
+        if(coarse_basis)
+        {
+            lis_free(coarse_basis);
+            coarse_basis = NULL;
+        }
 
         lis_mfamg_state_free(state);
 
@@ -8067,12 +9289,24 @@ lis_precon_create_mfamg(
 
         if(err)
         {
+            if(coarse_basis)
+            {
+                lis_free(coarse_basis);
+                coarse_basis = NULL;
+            }
+
             lis_mfamg_state_free(state);
             return err;
         }
 
         if(row_nnz<0)
         {
+            if(coarse_basis)
+            {
+                lis_free(coarse_basis);
+                coarse_basis = NULL;
+            }
+
             lis_mfamg_state_free(state);
             return LIS_ERR_ILL_ARG;
         }
@@ -8087,6 +9321,12 @@ lis_precon_create_mfamg(
         LIS_SETERR(
             LIS_ERR_ILL_ARG,
             "MFAMG requires matrix rows with entries\n");
+
+        if(coarse_basis)
+        {
+            lis_free(coarse_basis);
+            coarse_basis = NULL;
+        }
 
         lis_mfamg_state_free(state);
 
@@ -8119,6 +9359,12 @@ lis_precon_create_mfamg(
         if(vals)
             lis_free(vals);
 
+        if(coarse_basis)
+        {
+            lis_free(coarse_basis);
+            coarse_basis = NULL;
+        }
+
         lis_mfamg_state_free(state);
 
         LIS_SETERR_MEM(
@@ -8146,24 +9392,77 @@ lis_precon_create_mfamg(
     {
         lis_free(vals);
         lis_free(cols);
+        if(coarse_basis)
+        {
+            lis_free(coarse_basis);
+            coarse_basis = NULL;
+        }
+
         lis_mfamg_state_free(state);
 
         return err;
     }
 
 
-    err =
-        lis_mfamg_build_prolongation(
-            solver->near_nullspace[0],
-            level);
+    if(mode_count==1)
+    {
+        err =
+            lis_mfamg_build_prolongation(
+                solver->near_nullspace[0],
+                level);
+    }
+    else
+    {
+        coarsened =
+            LIS_FALSE;
+
+        err =
+            lis_mfamg_install_multivector_transfer(
+                mode_count,
+                solver->near_nullspace,
+                level,
+                &coarse_basis,
+                &coarsened);
+    }
+
 
     if(err)
     {
         lis_free(vals);
         lis_free(cols);
+        if(coarse_basis)
+        {
+            lis_free(coarse_basis);
+            coarse_basis = NULL;
+        }
+
         lis_mfamg_state_free(state);
 
         return err;
+    }
+
+
+    if(
+        mode_count>1
+        &&
+        !coarsened)
+    {
+        lis_free(vals);
+        lis_free(cols);
+
+        LIS_SETERR(
+            LIS_BREAKDOWN,
+            "MFAMG multivector tentative space does not coarsen the matrix\n");
+
+        if(coarse_basis)
+        {
+            lis_free(coarse_basis);
+            coarse_basis = NULL;
+        }
+
+        lis_mfamg_state_free(state);
+
+        return LIS_BREAKDOWN;
     }
 
 
@@ -8183,6 +9482,12 @@ lis_precon_create_mfamg(
         {
             lis_free(vals);
             lis_free(cols);
+            if(coarse_basis)
+            {
+                lis_free(coarse_basis);
+                coarse_basis = NULL;
+            }
+
             lis_mfamg_state_free(state);
 
             return err;
@@ -8198,6 +9503,12 @@ lis_precon_create_mfamg(
         {
             lis_free(vals);
             lis_free(cols);
+            if(coarse_basis)
+            {
+                lis_free(coarse_basis);
+                coarse_basis = NULL;
+            }
+
             lis_mfamg_state_free(state);
 
             return err;
@@ -8220,6 +9531,12 @@ lis_precon_create_mfamg(
 
         if(err)
         {
+            if(coarse_basis)
+            {
+                lis_free(coarse_basis);
+                coarse_basis = NULL;
+            }
+
             lis_mfamg_state_free(state);
             return err;
         }
@@ -8240,6 +9557,12 @@ lis_precon_create_mfamg(
                     distributed_Ac);
             }
 
+
+            if(coarse_basis)
+            {
+                lis_free(coarse_basis);
+                coarse_basis = NULL;
+            }
 
             lis_mfamg_state_free(state);
 
@@ -8276,6 +9599,12 @@ lis_precon_create_mfamg(
 
             lis_free(vals);
             lis_free(cols);
+            if(coarse_basis)
+            {
+                lis_free(coarse_basis);
+                coarse_basis = NULL;
+            }
+
             lis_mfamg_state_free(state);
 
             return LIS_OUT_OF_MEMORY;
@@ -8301,6 +9630,12 @@ lis_precon_create_mfamg(
 
             lis_free(vals);
             lis_free(cols);
+            if(coarse_basis)
+            {
+                lis_free(coarse_basis);
+                coarse_basis = NULL;
+            }
+
             lis_mfamg_state_free(state);
 
             return LIS_OUT_OF_MEMORY;
@@ -8324,26 +9659,52 @@ lis_precon_create_mfamg(
                     *
                 sizeof(LIS_SCALAR));
 
+            if(coarse_basis)
+            {
+                lis_free(coarse_basis);
+                coarse_basis = NULL;
+            }
+
             lis_mfamg_state_free(state);
 
             return LIS_OUT_OF_MEMORY;
         }
 
 
-        err =
-            lis_mfamg_build_coarse(
-                A,
-                level,
-                state->coarse,
-                max_row_nnz,
-                cols,
-                vals);
+        if(mode_count==1)
+        {
+            err =
+                lis_mfamg_build_coarse(
+                    A,
+                    level,
+                    state->coarse,
+                    max_row_nnz,
+                    cols,
+                    vals);
+        }
+        else
+        {
+            err =
+                lis_mfamg_build_coarse_multivector(
+                    A,
+                    level,
+                    state->coarse,
+                    max_row_nnz,
+                    cols,
+                    vals);
+        }
 
         lis_free(vals);
         lis_free(cols);
 
         if(err)
         {
+            if(coarse_basis)
+            {
+                lis_free(coarse_basis);
+                coarse_basis = NULL;
+            }
+
             lis_mfamg_state_free(state);
             return err;
         }
@@ -8358,6 +9719,12 @@ lis_precon_create_mfamg(
 
         if(err)
         {
+            if(coarse_basis)
+            {
+                lis_free(coarse_basis);
+                coarse_basis = NULL;
+            }
+
             lis_mfamg_state_free(state);
             return err;
         }
@@ -8370,13 +9737,42 @@ lis_precon_create_mfamg(
     }
 
 
-    err =
-        lis_mfamg_extend_hierarchy(
-            state,
-            solver->near_nullspace[0]);
+    if(mode_count==1)
+    {
+        err =
+            lis_mfamg_extend_hierarchy(
+                state,
+                solver->near_nullspace[0]);
+    }
+    else
+    {
+        err =
+            lis_mfamg_extend_hierarchy_multivector(
+                state,
+                mode_count,
+                terminal_limit,
+                coarse_basis);
+    }
+
+
+    if(coarse_basis)
+    {
+        lis_free(
+            coarse_basis);
+
+        coarse_basis =
+            NULL;
+    }
+
 
     if(err)
     {
+        if(coarse_basis)
+        {
+            lis_free(coarse_basis);
+            coarse_basis = NULL;
+        }
+
         lis_mfamg_state_free(state);
         return err;
     }
@@ -8388,6 +9784,12 @@ lis_precon_create_mfamg(
 
     if(err)
     {
+        if(coarse_basis)
+        {
+            lis_free(coarse_basis);
+            coarse_basis = NULL;
+        }
+
         lis_mfamg_state_free(state);
         return err;
     }
@@ -8399,6 +9801,12 @@ lis_precon_create_mfamg(
 
     if(err)
     {
+        if(coarse_basis)
+        {
+            lis_free(coarse_basis);
+            coarse_basis = NULL;
+        }
+
         lis_mfamg_state_free(state);
         return err;
     }
@@ -8414,6 +9822,12 @@ lis_precon_create_mfamg(
             LIS_ERR_ILL_ARG,
             "MFAMG hierarchy validation failed\n");
 
+        if(coarse_basis)
+        {
+            lis_free(coarse_basis);
+            coarse_basis = NULL;
+        }
+
         lis_mfamg_state_free(state);
 
         return err;
@@ -8428,10 +9842,17 @@ lis_precon_create_mfamg(
     err =
         lis_mfamg_prepare_terminal(
             terminal_level->A,
-            state);
+            state,
+            terminal_limit);
 
     if(err)
     {
+        if(coarse_basis)
+        {
+            lis_free(coarse_basis);
+            coarse_basis = NULL;
+        }
+
         lis_mfamg_state_free(state);
         return err;
     }

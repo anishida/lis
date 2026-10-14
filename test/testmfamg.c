@@ -1557,6 +1557,506 @@ cleanup:
 }
 
 
+
+static int
+run_multivector_direct_case(
+    const char *name,
+    LIS_MATRIX A,
+    LIS_SCALAR *result)
+{
+    enum
+    {
+        MODE_COUNT = 2,
+        MAX_LEVELS = 32
+    };
+
+    LIS_VECTOR b;
+    LIS_VECTOR x;
+    LIS_VECTOR z0;
+    LIS_VECTOR z1;
+
+    LIS_VECTOR basis[MODE_COUNT];
+
+    LIS_SOLVER solver;
+    LIS_PRECON precon;
+
+    LIS_REAL rel;
+    LIS_REAL mag;
+
+    LIS_INT hierarchy_nlevels;
+    LIS_INT hierarchy_coarse_n;
+
+    LIS_INT hierarchy_level_n[MAX_LEVELS];
+    LIS_INT hierarchy_owns_A[MAX_LEVELS];
+
+    LIS_INT i;
+    LIS_INT level_id;
+    LIS_INT err;
+    LIS_INT destroy_err;
+
+    int failed;
+
+
+    b = NULL;
+    x = NULL;
+    z0 = NULL;
+    z1 = NULL;
+
+    solver = NULL;
+    precon = NULL;
+
+    hierarchy_nlevels = -1;
+    hierarchy_coarse_n = -1;
+
+    failed = 0;
+
+
+    for(i=0;i<MAX_LEVELS;i++)
+    {
+        hierarchy_level_n[i] = -1;
+        hierarchy_owns_A[i] = -1;
+    }
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &b);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &z0);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &z1);
+
+    if(err)
+        goto fail;
+
+
+    build_manufactured_rhs(
+        b);
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x);
+
+    lis_vector_set_all(
+        (LIS_SCALAR)1.0,
+        z0);
+
+
+    for(i=0;i<TEST_N;i++)
+    {
+        if(i<10)
+        {
+            z1->value[i] =
+                (LIS_SCALAR)(i%2);
+        }
+        else
+        {
+            z1->value[i] =
+                (LIS_SCALAR)0.0;
+        }
+    }
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i gmres "
+            "-p mfamg "
+            "-scale none "
+            "-print none",
+            solver);
+
+    if(err)
+        goto fail;
+
+
+    basis[0] =
+        z0;
+
+    basis[1] =
+        z1;
+
+
+    err =
+        lis_solver_set_near_nullspace(
+            solver,
+            MODE_COUNT,
+            basis);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_solver_set_matrix(
+            A,
+            solver);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_precon_create(
+            solver,
+            &precon);
+
+
+    printf(
+        "%s MULTIVECTOR_CREATE rc=%d\n",
+        name,
+        (int)err);
+
+
+    if(err)
+    {
+        precon = NULL;
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    solver->precon =
+        precon;
+
+
+    err =
+        lis_precon_mfamg_get_hierarchy_info(
+            precon,
+            MAX_LEVELS,
+            &hierarchy_nlevels,
+            &hierarchy_coarse_n,
+            hierarchy_level_n,
+            hierarchy_owns_A);
+
+
+    printf(
+        "%s MULTIVECTOR_HIERARCHY rc=%d "
+        "nlevels=%d coarse_n=%d\n",
+        name,
+        (int)err,
+        (int)hierarchy_nlevels,
+        (int)hierarchy_coarse_n);
+
+
+    if(err)
+    {
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    if(
+        hierarchy_nlevels!=3
+        ||
+        hierarchy_nlevels>MAX_LEVELS
+        ||
+        hierarchy_level_n[0]!=TEST_N
+        ||
+        hierarchy_level_n[1]!=17
+        ||
+        hierarchy_level_n[2]<=0
+        ||
+        hierarchy_level_n[2]>=17
+        ||
+        hierarchy_level_n[2]>16
+        ||
+        hierarchy_coarse_n
+            !=
+        hierarchy_level_n[
+            hierarchy_nlevels-1]
+        ||
+        hierarchy_owns_A[0]!=LIS_FALSE)
+    {
+        failed = 1;
+    }
+
+
+    for(
+        level_id=0;
+        level_id<hierarchy_nlevels;
+        level_id++)
+    {
+        printf(
+            "%s MULTIVECTOR_LEVEL "
+            "level=%d n=%d owns=%d\n",
+            name,
+            (int)level_id,
+            (int)hierarchy_level_n[level_id],
+            (int)hierarchy_owns_A[level_id]);
+
+
+        if(
+            hierarchy_level_n[level_id]<=0
+            ||
+            (
+                level_id>0
+                &&
+                hierarchy_owns_A[level_id]
+                    !=
+                LIS_TRUE
+            ))
+        {
+            failed = 1;
+        }
+
+
+        if(
+            level_id+1<hierarchy_nlevels
+            &&
+            hierarchy_level_n[level_id+1]
+                >=
+            hierarchy_level_n[level_id])
+        {
+            failed = 1;
+        }
+    }
+
+
+    if(failed)
+        goto cleanup;
+
+
+    printf(
+        "%s MULTIVECTOR_MULTILEVEL=PASSED "
+        "nlevels=%d levels=%d,%d,%d terminal=%d\n",
+        name,
+        (int)hierarchy_nlevels,
+        (int)hierarchy_level_n[0],
+        (int)hierarchy_level_n[1],
+        (int)hierarchy_level_n[2],
+        (int)hierarchy_coarse_n);
+
+
+    err =
+        lis_psolve(
+            solver,
+            b,
+            x);
+
+
+    printf(
+        "%s MULTIVECTOR_PSOLVE rc=%d\n",
+        name,
+        (int)err);
+
+
+    if(err)
+    {
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    err =
+        relative_residual(
+            A,
+            b,
+            x,
+            &rel);
+
+    if(err)
+        goto fail;
+
+
+    printf(
+        "%s MULTIVECTOR_RELRES=%.12e\n",
+        name,
+        (double)rel);
+
+
+    if(
+        rel!=rel
+        ||
+        !(rel<1.0))
+    {
+        failed = 1;
+    }
+
+
+    for(i=0;i<TEST_N;i++)
+    {
+        mag =
+            fabs(
+                x->value[i]);
+
+        if(
+            mag!=mag
+            ||
+            mag>LIS_SCALAR_MAX)
+        {
+            failed = 1;
+            break;
+        }
+
+
+        result[i] =
+            x->value[i];
+    }
+
+
+cleanup:
+
+    if(precon)
+    {
+        if(solver)
+        {
+            solver->precon =
+                NULL;
+        }
+
+
+        destroy_err =
+            lis_precon_destroy(
+                precon);
+
+        printf(
+            "%s MULTIVECTOR_DESTROY rc=%d\n",
+            name,
+            (int)destroy_err);
+
+
+        if(destroy_err)
+            failed = 1;
+
+        precon = NULL;
+    }
+
+
+    if(solver)
+        lis_solver_destroy(solver);
+
+    if(z1)
+        lis_vector_destroy(z1);
+
+    if(z0)
+        lis_vector_destroy(z0);
+
+    if(x)
+        lis_vector_destroy(x);
+
+    if(b)
+        lis_vector_destroy(b);
+
+
+    return failed;
+
+
+fail:
+
+    fprintf(
+        stderr,
+        "%s multivector setup failed rc=%d\n",
+        name,
+        (int)err);
+
+    failed = 1;
+
+    goto cleanup;
+}
+
+
+static int
+check_serial_multivector(
+    LIS_MATRIX A,
+    LIS_MATRIX U)
+{
+    LIS_SCALAR csr_result[TEST_N];
+    LIS_SCALAR user_result[TEST_N];
+
+    LIS_REAL diff;
+
+    int failed;
+
+
+    failed = 0;
+
+
+    failed |=
+        run_multivector_direct_case(
+            "CSR",
+            A,
+            csr_result);
+
+
+    failed |=
+        run_multivector_direct_case(
+            "USER",
+            U,
+            user_result);
+
+
+    if(failed)
+    {
+        fprintf(
+            stderr,
+            "MFAMG SERIAL MULTIVECTOR TEST FAILED\n");
+
+        return 1;
+    }
+
+
+    diff =
+        max_relative_difference(
+            csr_result,
+            user_result);
+
+
+    printf(
+        "MULTIVECTOR_CSR_USER_MAX_REL_DIFF=%.12e\n",
+        (double)diff);
+
+
+    if(diff>MATCH_TOL)
+    {
+        fprintf(
+            stderr,
+            "MFAMG serial multivector CSR/USER mismatch\n");
+
+        return 1;
+    }
+
+
+    printf(
+        "MFAMG SERIAL MULTIVECTOR TEST PASSED\n");
+
+
+    return 0;
+}
+
+
 /* ============================================================
  * Serial contract
  * ============================================================ */
@@ -2253,6 +2753,12 @@ run_serial(void)
     {
         failed = 1;
     }
+
+
+    failed |=
+        check_serial_multivector(
+            A,
+            U);
 
 
     failed |=
