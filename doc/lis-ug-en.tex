@@ -1996,6 +1996,11 @@ where \verb=-i {cg|1}= means \verb=-i cg= or \verb=-i 1= and \verb=-maxiter [100
              &                          & \verb=-gcrodr_keep [8]= & The number of recycled vectors \\ 
              &                          & \verb=-gcrodr_keep_quality [0.9]= & The threshold to keep vectors \\ 
  &                          & \verb=-gcrodr_reject_quality [0.35]= & The threshold to reject vectors \\   
+ FGCRO-DR    & \verb=-i {fgcrodr|27}=   & \verb=-restart [40]= & The restart value $m$ \\
+             &                          & \verb=-fgcrodr_k [8]= & The target dimension of the recycled subspace \\
+             &                          & \verb=-fgcrodr_keep [0.90]= & The quality threshold for keeping the recycle space \\
+             &                          & \verb=-fgcrodr_reject [0.10]= & The quality threshold for rejecting the recycle space \\
+             &                          & \verb=-fgcrodr_update [true]= & Enable recycle-space updates \\
 \hline         
 \end{tabular}
 \end{center}
@@ -6153,6 +6158,11 @@ that \verb=-maxiter= defaults to $1,000$.
              &                          & \verb=-gcrodr_keep [8]= & The number of recycled vectors \\ 
              &                          & \verb=-gcrodr_keep_quality [0.9]= & The threshold to keep vectors \\ 
  &                          & \verb=-gcrodr_reject_quality [0.35]= & The threshold to reject vectors \\   
+ FGCRO-DR    & \verb=-i {fgcrodr|27}=   & \verb=-restart [40]= & The restart value $m$ \\
+             &                          & \verb=-fgcrodr_k [8]= & The target dimension of the recycled subspace \\
+             &                          & \verb=-fgcrodr_keep [0.90]= & The quality threshold for keeping the recycle space \\
+             &                          & \verb=-fgcrodr_reject [0.10]= & The quality threshold for rejecting the recycle space \\
+             &                          & \verb=-fgcrodr_update [true]= & Enable recycle-space updates \\
 \hline         
 \end{tabular}
 \end{center}
