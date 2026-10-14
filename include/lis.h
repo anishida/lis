@@ -982,6 +982,11 @@ extern "C"
 
 	extern LIS_INT lis_vector_create(LIS_Comm comm, LIS_VECTOR *vec); 
 	extern LIS_INT lis_vector_set_size(LIS_VECTOR vec, LIS_INT local_n, LIS_INT global_n); 
+    /*
+     * Attach application-owned vector storage.
+     * LIS borrows the supplied array and never frees it.
+     * The caller must keep the storage valid while it is attached.
+     */
 	extern LIS_INT lis_vector_set_external(LIS_VECTOR vec, LIS_SCALAR *value);
 /*NEH support for extended "solve_kernel" workflow*/
 	extern LIS_INT lis_vector_psd_reset_scale(LIS_VECTOR vec); 
@@ -1067,6 +1072,11 @@ extern "C"
 	extern LIS_INT lis_matrix_set_value_csr(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_psd_set_value_csr(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);  
 	extern LIS_INT lis_matrix_set_csr(LIS_INT nnz, LIS_INT *row, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);
+    /*
+     * Attach application-owned CSR storage.
+     * LIS borrows ptr, index, and value and never frees those arrays.
+     * The caller must keep the storage valid while it is attached.
+     */
 	extern LIS_INT lis_matrix_set_csr_external(LIS_INT nnz, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_set_csr_values_external(LIS_SCALAR *value, LIS_MATRIX A);
 	extern LIS_INT lis_matrix_malloc_csc(LIS_INT n, LIS_INT nnz, LIS_INT **ptr, LIS_INT **index, LIS_SCALAR **value);

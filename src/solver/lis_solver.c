@@ -1837,6 +1837,15 @@ LIS_INT lis_solve_sequence(
 
     solver->sequence_diag_total_solves++;
 
+    /*
+     * Recovery is intentionally bounded to three solve attempts:
+     *
+     *   attempt 0: ordinary persistent sequence solve
+     *   attempt 1: retry after clearing reusable Krylov state
+     *   attempt 2: final retry after rebuilding the preconditioner
+     *
+     * There is no retry loop beyond attempt 2.
+     */
     /* Attempt 0: ordinary persistent sequence solve. */
     solver->sequence_diag_attempts++;
     solver->sequence_diag_total_attempts++;

@@ -188,6 +188,83 @@ cleanup:
 	if( duplicate ) lis_vector_destroy(duplicate);
 	if( v ) lis_vector_destroy(v);
 
+        /*
+         * Verify destruction while application-owned storage is still
+         * attached.  In particular, lis_vector_destroy() must not free
+         * the borrowed array.
+         */
+        if( !failed )
+        {
+                LIS_VECTOR borrowed = NULL;
+                LIS_INT destroy_err;
+
+                err = lis_vector_create(
+                        LIS_COMM_WORLD,&borrowed);
+
+                if( !err )
+                {
+                        err = lis_vector_set_size(
+                                borrowed,0,3);
+                }
+
+                if( !err )
+                {
+                        err = lis_vector_set_external(
+                                borrowed,values1);
+                }
+
+                if( err )
+                {
+                        fprintf(
+                                stderr,
+                                "external vector destroy setup failed rc=%d\n",
+                                (int)err);
+
+                        if( borrowed )
+                        {
+                                lis_vector_destroy(borrowed);
+                        }
+
+                        failed = 1;
+                }
+                else
+                {
+                        destroy_err =
+                                lis_vector_destroy(borrowed);
+                        borrowed = NULL;
+
+                        if( destroy_err )
+                        {
+                                fprintf(
+                                        stderr,
+                                        "external vector destroy failed rc=%d\n",
+                                        (int)destroy_err);
+                                failed = 1;
+                        }
+                        else
+                        {
+                                /*
+                                 * The array remains application-owned and
+                                 * writable after destroying the LIS object.
+                                 */
+                                values1[0] = (LIS_SCALAR)12.0;
+
+                                if( values1[0]!=(LIS_SCALAR)12.0 )
+                                {
+                                        fprintf(
+                                                stderr,
+                                                "external vector ownership lost after destroy\n");
+                                        failed = 1;
+                                }
+                                else
+                                {
+                                        printf(
+                                                "EXTERNAL_VECTOR_DESTROY_OWNERSHIP PASSED\n");
+                                }
+                        }
+                }
+        }
+
 	values0[0] = (LIS_SCALAR)11.0;
 	values1[0] = (LIS_SCALAR)12.0;
 
