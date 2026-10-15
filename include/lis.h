@@ -1257,6 +1257,7 @@ extern "C"
     extern LIS_INT lis_solver_set_matrix(LIS_MATRIX A, LIS_SOLVER solver);
 	extern LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver);
      extern LIS_INT lis_solve_sequence(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver);
+     extern LIS_INT lis_solve_sequence_with_precon_matrix(LIS_MATRIX A, LIS_MATRIX precon_A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver);
      extern LIS_INT lis_solver_reset_sequence(LIS_SOLVER solver);
 	extern LIS_INT lis_solve_setup(LIS_MATRIX A, LIS_SOLVER solver);
 	extern LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver, LIS_PRECON precon);

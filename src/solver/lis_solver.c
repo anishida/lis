@@ -1788,6 +1788,7 @@ static LIS_INT lis_solver_sequence_warm_start_keep(
 #define __FUNC__ "lis_solver_sequence_attempt"
 static LIS_INT lis_solver_sequence_attempt(
 	LIS_MATRIX A,
+    LIS_MATRIX precon_A,
 	LIS_VECTOR b,
 	LIS_VECTOR x,
 	LIS_SOLVER solver)
@@ -1835,7 +1836,8 @@ static LIS_INT lis_solver_sequence_attempt(
 
 	solver->sequence_initial_residual_valid = LIS_TRUE;
 	err = lis_solver_sequence_prepare_precon(
-		A,solver,&precon);
+	    precon_A,solver,&precon);
+	solver->A = A;
 	if( err )
 	{
 		solver->retcode = err;
@@ -1981,9 +1983,10 @@ lis_solver_sequence_clear_active_recycle(
 
 
 #undef __FUNC__
-#define __FUNC__ "lis_solve_sequence"
-LIS_INT lis_solve_sequence(
+#define __FUNC__ "lis_solve_sequence_with_precon_matrix"
+LIS_INT lis_solve_sequence_with_precon_matrix(
     LIS_MATRIX A,
+    LIS_MATRIX precon_A,
     LIS_VECTOR b,
     LIS_VECTOR x,
     LIS_SOLVER solver)
@@ -1994,7 +1997,7 @@ LIS_INT lis_solve_sequence(
     LIS_INT thread_scope_changed;
     LIS_DEBUG_FUNC_IN;
 
-    if( A==NULL || b==NULL || x==NULL || solver==NULL )
+    if( A==NULL || precon_A==NULL || b==NULL || x==NULL || solver==NULL )
     {
         LIS_SETERR(
             LIS_ERR_ILL_ARG,
@@ -2038,7 +2041,7 @@ LIS_INT lis_solve_sequence(
     solver->sequence_diag_attempts++;
     solver->sequence_diag_total_attempts++;
 
-    err = lis_solver_sequence_attempt(A,b,x,solver);
+    err = lis_solver_sequence_attempt(A,precon_A,b,x,solver);
 
     /*
      * Preserve diagnostics for the caller-provided initial x before
@@ -2099,7 +2102,7 @@ LIS_INT lis_solve_sequence(
     solver->sequence_diag_attempts++;
     solver->sequence_diag_total_attempts++;
 
-    err = lis_solver_sequence_attempt(A,b,x,solver);
+    err = lis_solver_sequence_attempt(A,precon_A,b,x,solver);
     if( err )
     {
         solver->sequence_diag_final_retcode = solver->retcode;
@@ -2150,7 +2153,7 @@ LIS_INT lis_solve_sequence(
     solver->sequence_diag_attempts++;
     solver->sequence_diag_total_attempts++;
 
-    err = lis_solver_sequence_attempt(A,b,x,solver);
+    err = lis_solver_sequence_attempt(A,precon_A,b,x,solver);
 
     solver->sequence_diag_final_retcode = solver->retcode;
 
@@ -2168,6 +2171,17 @@ LIS_INT lis_solve_sequence(
     lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
     return LIS_SUCCESS;
 }
+
+LIS_INT lis_solve_sequence(
+    LIS_MATRIX A,
+    LIS_VECTOR b,
+    LIS_VECTOR x,
+    LIS_SOLVER solver)
+{
+    return lis_solve_sequence_with_precon_matrix(
+        A,A,b,x,solver);
+}
+
 
 #undef __FUNC__
 #define __FUNC__ "lis_solver_reset_sequence"

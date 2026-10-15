@@ -1060,6 +1060,240 @@ int main(int argc, char **argv)
 
 
 
+
+	/*
+	 * The sequence solve operator and the matrix used to build the
+	 * persistent preconditioner may be distinct.
+	 *
+	 * Preconditioner generation tracking must follow precon_A, while
+	 * Krylov, residual certification, and solver state continue to use A.
+	 */
+	{
+		LIS_SOLVER split_solver;
+		LIS_PRECON split_precon;
+		LIS_UNSIGNED_INT psg0,pvg0;
+		LIS_UNSIGNED_INT psg1,pvg1;
+
+		split_solver = NULL;
+		split_precon = NULL;
+
+		err = lis_solver_create(&split_solver);
+		if( err )
+		{
+			failed = 1;
+			goto cleanup;
+		}
+
+		err = lis_solver_set_option(
+			"-i gmres -p ilu -ilu_fill 0 "
+			"-scale none -print none "
+			"-restart 4 -maxiter 50 "
+			"-maxiter_noimp 0 -tol 1e-12 "
+			"-initx_zeros true",
+			split_solver);
+		if( err )
+		{
+			fprintf(
+				stderr,
+				"SEQUENCE_SEPARATE_PRECON "
+				"option setup failed: %d\n",
+				(int)err);
+			failed = 1;
+			lis_solver_destroy(split_solver);
+			goto cleanup;
+		}
+
+		err = lis_matrix_get_generation(
+			A1,&psg0,&pvg0);
+		if( err )
+		{
+			fprintf(
+				stderr,
+				"SEQUENCE_SEPARATE_PRECON "
+				"initial generation query failed: %d\n",
+				(int)err);
+			failed = 1;
+			lis_solver_destroy(split_solver);
+			goto cleanup;
+		}
+
+		lis_vector_set_all((LIS_SCALAR)1.0,b);
+		lis_vector_set_all((LIS_SCALAR)0.0,x);
+
+		err = lis_solve_sequence_with_precon_matrix(
+			A0,A1,b,x,split_solver);
+
+		if( err!=LIS_SUCCESS ||
+		    split_solver->retcode!=LIS_SUCCESS )
+		{
+			fprintf(
+				stderr,
+				"SEQUENCE_SEPARATE_PRECON "
+				"first solve failed api=%d status=%d\n",
+				(int)err,
+				(int)split_solver->retcode);
+			failed = 1;
+			lis_solver_destroy(split_solver);
+			goto cleanup;
+		}
+
+		if( split_solver->sequence_precon==NULL ||
+		    split_solver->sequence_precon_matrix!=A1 ||
+		    split_solver->A!=A0 )
+		{
+			fprintf(
+				stderr,
+				"SEQUENCE_SEPARATE_PRECON "
+				"wrong solve/preconditioner ownership\n");
+			failed = 1;
+			lis_solver_destroy(split_solver);
+			goto cleanup;
+		}
+
+		if( split_solver->
+				sequence_precon_structure_generation!=psg0 ||
+		    split_solver->
+				sequence_precon_value_generation!=pvg0 )
+		{
+			fprintf(
+				stderr,
+				"SEQUENCE_SEPARATE_PRECON "
+				"initial preconditioner generation mismatch\n");
+			failed = 1;
+			lis_solver_destroy(split_solver);
+			goto cleanup;
+		}
+
+		split_precon =
+			split_solver->sequence_precon;
+
+		/*
+		 * Changing only the solve-operator value generation must
+		 * not invalidate the preconditioner matrix snapshot.
+		 */
+		err = lis_matrix_mark_values_changed(A0);
+		if( err )
+		{
+			failed = 1;
+			lis_solver_destroy(split_solver);
+			goto cleanup;
+		}
+
+		lis_vector_set_all((LIS_SCALAR)2.0,b);
+		lis_vector_set_all((LIS_SCALAR)0.0,x);
+
+		err = lis_solve_sequence_with_precon_matrix(
+			A0,A1,b,x,split_solver);
+
+		if( err!=LIS_SUCCESS ||
+		    split_solver->retcode!=LIS_SUCCESS ||
+		    split_solver->sequence_precon!=split_precon ||
+		    split_solver->sequence_precon_matrix!=A1 ||
+		    split_solver->
+				sequence_precon_structure_generation!=psg0 ||
+		    split_solver->
+				sequence_precon_value_generation!=pvg0 )
+		{
+			fprintf(
+				stderr,
+				"SEQUENCE_SEPARATE_PRECON "
+				"solve-A generation incorrectly "
+				"invalidated preconditioner state\n");
+			failed = 1;
+			lis_solver_destroy(split_solver);
+			goto cleanup;
+		}
+
+		/*
+		 * Changing precon_A must be observed by the persistent
+		 * preconditioner lifecycle.  With the default max age of
+		 * zero, a PSD-capable ILU performs an eager numeric update.
+		 */
+		err = lis_matrix_mark_values_changed(A1);
+		if( err )
+		{
+			failed = 1;
+			lis_solver_destroy(split_solver);
+			goto cleanup;
+		}
+
+		err = lis_matrix_get_generation(
+			A1,&psg1,&pvg1);
+		if( err )
+		{
+			failed = 1;
+			lis_solver_destroy(split_solver);
+			goto cleanup;
+		}
+
+		if( psg1!=psg0 || pvg1!=pvg0+1 )
+		{
+			fprintf(
+				stderr,
+				"SEQUENCE_SEPARATE_PRECON "
+				"unexpected preconditioner generation "
+				"%llu/%llu -> %llu/%llu\n",
+				(unsigned long long)psg0,
+				(unsigned long long)pvg0,
+				(unsigned long long)psg1,
+				(unsigned long long)pvg1);
+			failed = 1;
+			lis_solver_destroy(split_solver);
+			goto cleanup;
+		}
+
+		lis_vector_set_all((LIS_SCALAR)3.0,b);
+		lis_vector_set_all((LIS_SCALAR)0.0,x);
+
+		err = lis_solve_sequence_with_precon_matrix(
+			A0,A1,b,x,split_solver);
+
+		if( err!=LIS_SUCCESS ||
+		    split_solver->retcode!=LIS_SUCCESS )
+		{
+			fprintf(
+				stderr,
+				"SEQUENCE_SEPARATE_PRECON "
+				"preconditioner update solve failed "
+				"api=%d status=%d\n",
+				(int)err,
+				(int)split_solver->retcode);
+			failed = 1;
+			lis_solver_destroy(split_solver);
+			goto cleanup;
+		}
+
+		if( split_solver->sequence_precon!=split_precon ||
+		    split_solver->sequence_precon_matrix!=A1 ||
+		    split_solver->A!=A0 ||
+		    split_solver->
+				sequence_precon_structure_generation!=psg1 ||
+		    split_solver->
+				sequence_precon_value_generation!=pvg1 )
+		{
+			fprintf(
+				stderr,
+				"SEQUENCE_SEPARATE_PRECON "
+				"preconditioner update ownership/generation "
+				"failed\n");
+			failed = 1;
+			lis_solver_destroy(split_solver);
+			goto cleanup;
+		}
+
+		printf(
+			"SEQUENCE_SEPARATE_PRECON PASSED "
+			"solve_matrix_distinct=1 "
+			"precon_generation=%llu->%llu "
+			"precon_preserved=1\n",
+			(unsigned long long)pvg0,
+			(unsigned long long)pvg1);
+
+		lis_solver_destroy(split_solver);
+	}
+
+	printf("LIS_SEQUENCE_SEPARATE_PRECON_MATRIX PASSED\n");
+
 	printf("LIS_SEQUENCE_SOLVE_S5 PASSED\n");
 
 cleanup:
