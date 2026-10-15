@@ -1310,32 +1310,89 @@ LIS_INT lis_solver_sequence_prepare_precon(
 		&value_generation);
 	if( err ) return err;
 
-	if( solver->sequence_precon!=NULL &&
-	    solver->sequence_precon_matrix==A &&
-	    solver->sequence_precon_structure_generation==
-		structure_generation &&
-	    solver->sequence_precon_value_generation==
-		value_generation &&
-	    solver->sequence_precon_matrix_type==A->matrix_type &&
-	    solver->sequence_precon_is_scaled==A->is_scaled &&
-	    solver->sequence_precon_type==precon_type &&
-	    lis_solver_sequence_precon_config_matches(solver) )
-	{
-		solver->A = A;
-		solver->precon = solver->sequence_precon;
-		*precon = solver->sequence_precon;
+   /*
+    * Reuse persistent preconditioner state when matrix structure and
+    * solver/preconditioner configuration are unchanged.
+    *
+    * If only matrix values changed, prefer a PSD numeric update so
+    * symbolic preconditioner state can survive across related systems.
+    */
+   if( solver->sequence_precon!=NULL &&
+       solver->sequence_precon_matrix==A &&
+       solver->sequence_precon_structure_generation==
+           structure_generation &&
+       solver->sequence_precon_matrix_type==A->matrix_type &&
+       solver->sequence_precon_is_scaled==A->is_scaled &&
+       solver->sequence_precon_type==precon_type &&
+       lis_solver_sequence_precon_config_matches(solver) )
+   {
+           solver->A = A;
 
-		LIS_DEBUG_FUNC_OUT;
-		return LIS_SUCCESS;
-	}
+           if( solver->sequence_precon_value_generation==
+               value_generation )
+           {
+                   solver->precon = solver->sequence_precon;
+                   *precon = solver->sequence_precon;
 
-	if( solver->sequence_precon!=NULL )
-	{
-		err = lis_solver_sequence_precon_destroy(solver);
-		if( err ) return err;
-	}
+                   LIS_DEBUG_FUNC_OUT;
+                   return LIS_SUCCESS;
+           }
 
-	solver->A = A;
+           /*
+            * Structure is unchanged but numerical values changed.
+            * Refresh numerical preconditioner state first.
+            */
+           err = lis_precon_psd_update(
+                   solver,solver->sequence_precon);
+
+           if( err==LIS_SUCCESS )
+           {
+                   solver->sequence_precon_matrix = A;
+                   solver->sequence_precon_structure_generation =
+                           structure_generation;
+                   solver->sequence_precon_value_generation =
+                           value_generation;
+                   solver->sequence_precon_matrix_type =
+                           A->matrix_type;
+                   solver->sequence_precon_is_scaled =
+                           A->is_scaled;
+                   solver->sequence_precon_type =
+                           precon_type;
+
+                   lis_solver_sequence_precon_snapshot(solver);
+
+                   solver->precon = solver->sequence_precon;
+                   *precon = solver->sequence_precon;
+
+                   LIS_DEBUG_FUNC_OUT;
+                   return LIS_SUCCESS;
+           }
+
+           /*
+            * lis_precon_psd_update() destroys the preconditioner on
+            * failure.  Clear cached references before falling back to
+            * a full create.
+            */
+           solver->sequence_precon = NULL;
+           solver->precon = NULL;
+           solver->sequence_precon_matrix = NULL;
+           solver->sequence_precon_structure_generation = 0;
+           solver->sequence_precon_value_generation = 0;
+           solver->sequence_precon_matrix_type =
+                   LIS_MATRIX_NULL;
+           solver->sequence_precon_is_scaled =
+                   LIS_FALSE;
+           solver->sequence_precon_type =
+                   LIS_PRECON_TYPE_NONE;
+   }
+
+   if( solver->sequence_precon!=NULL )
+   {
+           err = lis_solver_sequence_precon_destroy(solver);
+           if( err ) return err;
+   }
+
+   solver->A = A;
 
 	err = lis_solver_check_user_matrix(A,solver,NULL);
 	if( err ) return err;

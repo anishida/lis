@@ -551,6 +551,261 @@ int main(int argc, char **argv)
 	failed |= check_counts(9,9,"SEQUENCE_RESET_2");
 	if( failed ) goto cleanup;
 
+
+    /*
+     * A value-generation change with a PSD-capable built-in
+     * preconditioner must perform a numeric update without replacing
+     * the persistent preconditioner object.
+     */
+    {
+        LIS_PRECON update_precon0;
+        LIS_UNSIGNED_INT structure0;
+        LIS_UNSIGNED_INT value0;
+        LIS_UNSIGNED_INT structure1;
+        LIS_UNSIGNED_INT value1;
+        LIS_SEQUENCE_DIAGNOSTICS diag;
+        void *user_data;
+        int user_sentinel;
+
+        user_sentinel = 12345;
+        user_data = NULL;
+
+        err = lis_solver_set_option(
+                "-i gmres -p ilu -ilu_fill 0 "
+                "-scale none -print none "
+                "-restart 4 -maxiter 50 "
+                "-maxiter_noimp 0 -tol 1e-12 "
+                "-initx_zeros true",
+                sequence_solver);
+        if( err )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_VALUE_UPDATE option setup failed: %d\n",
+                    (int)err);
+            failed = 1;
+            goto cleanup;
+        }
+
+        lis_vector_set_all((LIS_SCALAR)1.0,b);
+        lis_vector_set_all((LIS_SCALAR)0.0,x);
+
+        err = lis_solve_sequence(
+                A0,b,x,sequence_solver);
+        if( err!=LIS_SUCCESS ||
+            sequence_solver->retcode!=LIS_SUCCESS )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_VALUE_UPDATE first solve failed "
+                    "api=%d status=%d\n",
+                    (int)err,
+                    (int)sequence_solver->retcode);
+            failed = 1;
+            goto cleanup;
+        }
+
+        update_precon0 =
+                sequence_solver->sequence_precon;
+
+        if( update_precon0==NULL )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_VALUE_UPDATE no persistent "
+                    "preconditioner after first solve\n");
+            failed = 1;
+            goto cleanup;
+        }
+
+        err = lis_matrix_get_generation(
+                A0,&structure0,&value0);
+        if( err )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_VALUE_UPDATE generation query 0 "
+                    "failed: %d\n",
+                    (int)err);
+            failed = 1;
+            goto cleanup;
+        }
+
+        /*
+         * Mark the outer preconditioner object so an accidental
+         * destroy/create cycle cannot masquerade as pointer reuse.
+         */
+        err = lis_precon_set_user_data(
+                update_precon0,
+                (void *)&user_sentinel);
+        if( err )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_VALUE_UPDATE user-data setup "
+                    "failed: %d\n",
+                    (int)err);
+            failed = 1;
+            goto cleanup;
+        }
+
+        err = lis_matrix_mark_values_changed(A0);
+        if( err )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_VALUE_UPDATE mark-values "
+                    "failed: %d\n",
+                    (int)err);
+            failed = 1;
+            goto cleanup;
+        }
+
+        err = lis_matrix_get_generation(
+                A0,&structure1,&value1);
+        if( err )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_VALUE_UPDATE generation query 1 "
+                    "failed: %d\n",
+                    (int)err);
+            failed = 1;
+            goto cleanup;
+        }
+
+        if( structure1!=structure0 ||
+            value1!=value0+1 )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_VALUE_UPDATE bad generation "
+                    "before=%llu/%llu after=%llu/%llu\n",
+                    (unsigned long long)structure0,
+                    (unsigned long long)value0,
+                    (unsigned long long)structure1,
+                    (unsigned long long)value1);
+            failed = 1;
+            goto cleanup;
+        }
+
+        lis_vector_set_all((LIS_SCALAR)2.0,b);
+        lis_vector_set_all((LIS_SCALAR)0.0,x);
+
+        err = lis_solve_sequence(
+                A0,b,x,sequence_solver);
+        if( err!=LIS_SUCCESS ||
+            sequence_solver->retcode!=LIS_SUCCESS )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_VALUE_UPDATE second solve failed "
+                    "api=%d status=%d\n",
+                    (int)err,
+                    (int)sequence_solver->retcode);
+            failed = 1;
+            goto cleanup;
+        }
+
+        if( sequence_solver->sequence_precon!=
+            update_precon0 )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_VALUE_UPDATE replaced "
+                    "persistent preconditioner\n");
+            failed = 1;
+            goto cleanup;
+        }
+
+        err = lis_precon_get_user_data(
+                sequence_solver->sequence_precon,
+                &user_data);
+        if( err )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_VALUE_UPDATE user-data query "
+                    "failed: %d\n",
+                    (int)err);
+            failed = 1;
+            goto cleanup;
+        }
+
+        if( user_data!=(void *)&user_sentinel )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_VALUE_UPDATE preconditioner "
+                    "identity marker was lost\n");
+            failed = 1;
+            goto cleanup;
+        }
+
+        if( sequence_solver->
+                sequence_precon_structure_generation!=
+                    structure1 ||
+            sequence_solver->
+                sequence_precon_value_generation!=
+                    value1 )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_VALUE_UPDATE cached generation "
+                    "is stale\n");
+            failed = 1;
+            goto cleanup;
+        }
+
+        err = lis_solver_get_sequence_diagnostics(
+                sequence_solver,&diag);
+        if( err )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_VALUE_UPDATE diagnostics "
+                    "failed: %d\n",
+                    (int)err);
+            failed = 1;
+            goto cleanup;
+        }
+
+        if( diag.precon_rebuilds!=0 )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_VALUE_UPDATE unexpected recovery "
+                    "rebuilds=%d\n",
+                    (int)diag.precon_rebuilds);
+            failed = 1;
+            goto cleanup;
+        }
+
+        printf(
+                "SEQUENCE_VALUE_UPDATE PASSED "
+                "generation=%llu/%llu->%llu/%llu "
+                "precon_preserved=1 rebuilds=%d\n",
+                (unsigned long long)structure0,
+                (unsigned long long)value0,
+                (unsigned long long)structure1,
+                (unsigned long long)value1,
+                (int)diag.precon_rebuilds);
+
+        err = lis_solver_reset_sequence(
+                sequence_solver);
+        if( err )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_VALUE_UPDATE reset failed: %d\n",
+                    (int)err);
+            failed = 1;
+            goto cleanup;
+        }
+    }
+
+    printf("LIS_SEQUENCE_VALUE_UPDATE_S10 PASSED\n");
+
 	printf("LIS_SEQUENCE_SOLVE_S5 PASSED\n");
 
 cleanup:
