@@ -806,6 +806,260 @@ int main(int argc, char **argv)
 
     printf("LIS_SEQUENCE_VALUE_UPDATE_S10 PASSED\n");
 
+    /*
+     * A nonzero sequence preconditioner max age permits bounded
+     * numerical reuse across value-generation changes.
+     */
+    {
+        LIS_SOLVER age_solver;
+        LIS_PRECON age_precon;
+        LIS_UNSIGNED_INT sg0,vg0;
+        LIS_UNSIGNED_INT sg1,vg1;
+        LIS_INT configured_age;
+
+        age_solver = NULL;
+        age_precon = NULL;
+
+        err = lis_solver_create(&age_solver);
+        if( err )
+        {
+            failed = 1;
+            goto cleanup;
+        }
+
+        err = lis_solver_set_option(
+                "-i gmres -p ilu -ilu_fill 0 "
+                "-scale none -print none "
+                "-restart 4 -maxiter 50 "
+                "-maxiter_noimp 0 -tol 1e-12 "
+                "-initx_zeros true",
+                age_solver);
+        if( err )
+        {
+            failed = 1;
+            lis_solver_destroy(age_solver);
+            goto cleanup;
+        }
+
+        /*
+         * Newly created solvers must preserve legacy eager
+         * preconditioner updates until max-age reuse is enabled.
+         */
+        configured_age = -1;
+
+        err = lis_solver_get_sequence_precon_max_age(
+                age_solver,&configured_age);
+
+        if( err ||
+            configured_age!=0 ||
+            age_solver->sequence_precon_age!=0 )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_PRECON_MAX_AGE "
+                    "default initialization failed "
+                    "max_age=%d age=%d err=%d\n",
+                    (int)configured_age,
+                    (int)age_solver->sequence_precon_age,
+                    (int)err);
+
+            failed = 1;
+            lis_solver_destroy(age_solver);
+            goto cleanup;
+        }
+
+        err = lis_solver_set_sequence_precon_max_age(
+                age_solver,2);
+        if( err )
+        {
+            failed = 1;
+            lis_solver_destroy(age_solver);
+            goto cleanup;
+        }
+
+        configured_age = -1;
+
+        err = lis_solver_get_sequence_precon_max_age(
+                age_solver,&configured_age);
+        if( err || configured_age!=2 )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_PRECON_MAX_AGE config failed "
+                    "value=%d err=%d\n",
+                    (int)configured_age,
+                    (int)err);
+            failed = 1;
+            lis_solver_destroy(age_solver);
+            goto cleanup;
+        }
+
+        lis_vector_set_all((LIS_SCALAR)1.0,b);
+        lis_vector_set_all((LIS_SCALAR)0.0,x);
+
+        err = lis_solve_sequence(
+                A0,b,x,age_solver);
+
+        if( err!=LIS_SUCCESS ||
+            age_solver->retcode!=LIS_SUCCESS )
+        {
+            failed = 1;
+            lis_solver_destroy(age_solver);
+            goto cleanup;
+        }
+
+        age_precon = age_solver->sequence_precon;
+
+        err = lis_matrix_get_generation(
+                A0,&sg0,&vg0);
+
+        if( err )
+        {
+            failed = 1;
+            lis_solver_destroy(age_solver);
+            goto cleanup;
+        }
+
+        if( age_solver->sequence_precon_age!=0 )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_PRECON_MAX_AGE initial age=%d\n",
+                    (int)age_solver->sequence_precon_age);
+            failed = 1;
+            lis_solver_destroy(age_solver);
+            goto cleanup;
+        }
+
+        /* First changed generation: reuse stale preconditioner. */
+        err = lis_matrix_mark_values_changed(A0);
+        if( err )
+        {
+            failed = 1;
+            lis_solver_destroy(age_solver);
+            goto cleanup;
+        }
+
+        lis_vector_set_all((LIS_SCALAR)2.0,b);
+        lis_vector_set_all((LIS_SCALAR)0.0,x);
+
+        err = lis_solve_sequence(
+                A0,b,x,age_solver);
+
+        if( err!=LIS_SUCCESS ||
+            age_solver->retcode!=LIS_SUCCESS ||
+            age_solver->sequence_precon!=age_precon ||
+            age_solver->sequence_precon_age!=1 ||
+            age_solver->sequence_precon_value_generation!=vg0 )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_PRECON_MAX_AGE reuse1 failed "
+                    "age=%d factor_gen=%llu expected=%llu\n",
+                    (int)age_solver->sequence_precon_age,
+                    (unsigned long long)
+                        age_solver->sequence_precon_value_generation,
+                    (unsigned long long)vg0);
+            failed = 1;
+            lis_solver_destroy(age_solver);
+            goto cleanup;
+        }
+
+        /* Second changed generation: one more bounded stale reuse. */
+        err = lis_matrix_mark_values_changed(A0);
+        if( err )
+        {
+            failed = 1;
+            lis_solver_destroy(age_solver);
+            goto cleanup;
+        }
+
+        lis_vector_set_all((LIS_SCALAR)3.0,b);
+        lis_vector_set_all((LIS_SCALAR)0.0,x);
+
+        err = lis_solve_sequence(
+                A0,b,x,age_solver);
+
+        if( err!=LIS_SUCCESS ||
+            age_solver->retcode!=LIS_SUCCESS ||
+            age_solver->sequence_precon!=age_precon ||
+            age_solver->sequence_precon_age!=2 ||
+            age_solver->sequence_precon_value_generation!=vg0 )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_PRECON_MAX_AGE reuse2 failed "
+                    "age=%d factor_gen=%llu expected=%llu\n",
+                    (int)age_solver->sequence_precon_age,
+                    (unsigned long long)
+                        age_solver->sequence_precon_value_generation,
+                    (unsigned long long)vg0);
+            failed = 1;
+            lis_solver_destroy(age_solver);
+            goto cleanup;
+        }
+
+        /*
+         * Third changed generation: max age reached, so perform
+         * the PSD numeric update and refresh the generation snapshot.
+         */
+        err = lis_matrix_mark_values_changed(A0);
+        if( err )
+        {
+            failed = 1;
+            lis_solver_destroy(age_solver);
+            goto cleanup;
+        }
+
+        err = lis_matrix_get_generation(
+                A0,&sg1,&vg1);
+
+        if( err )
+        {
+            failed = 1;
+            lis_solver_destroy(age_solver);
+            goto cleanup;
+        }
+
+        lis_vector_set_all((LIS_SCALAR)4.0,b);
+        lis_vector_set_all((LIS_SCALAR)0.0,x);
+
+        err = lis_solve_sequence(
+                A0,b,x,age_solver);
+
+        if( err!=LIS_SUCCESS ||
+            age_solver->retcode!=LIS_SUCCESS ||
+            age_solver->sequence_precon!=age_precon ||
+            age_solver->sequence_precon_age!=0 ||
+            age_solver->sequence_precon_value_generation!=vg1 )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_PRECON_MAX_AGE refresh failed "
+                    "age=%d factor_gen=%llu current=%llu\n",
+                    (int)age_solver->sequence_precon_age,
+                    (unsigned long long)
+                        age_solver->sequence_precon_value_generation,
+                    (unsigned long long)vg1);
+            failed = 1;
+            lis_solver_destroy(age_solver);
+            goto cleanup;
+        }
+
+        printf(
+                "SEQUENCE_PRECON_MAX_AGE PASSED "
+                "max_age=2 generation=%llu->%llu "
+                "age_sequence=1,2,0 precon_preserved=1\n",
+                (unsigned long long)vg0,
+                (unsigned long long)vg1);
+
+        lis_solver_destroy(age_solver);
+    }
+
+    printf("LIS_SEQUENCE_PRECON_MAX_AGE_S11 PASSED\n");
+
+
+
 	printf("LIS_SEQUENCE_SOLVE_S5 PASSED\n");
 
 cleanup:

@@ -240,6 +240,8 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->sequence_precon_matrix_type = LIS_MATRIX_NULL;
 	solver->sequence_precon_is_scaled = LIS_FALSE;
 	solver->sequence_precon_type = LIS_PRECON_TYPE_NONE;
+	solver->sequence_precon_max_age = 0;
+	solver->sequence_precon_age = 0;
 	solver->sequence_initial_residual = 0.0;
 	solver->sequence_rhs_norm = 0.0;
 	solver->sequence_true_residual = 0.0;
@@ -1262,6 +1264,7 @@ LIS_INT lis_solver_sequence_precon_destroy(LIS_SOLVER solver)
 	solver->sequence_precon_matrix_type = LIS_MATRIX_NULL;
 	solver->sequence_precon_is_scaled = LIS_FALSE;
 	solver->sequence_precon_type = LIS_PRECON_TYPE_NONE;
+	solver->sequence_precon_age = 0;
 
 	LIS_DEBUG_FUNC_OUT;
 	return err;
@@ -1339,8 +1342,28 @@ LIS_INT lis_solver_sequence_prepare_precon(
            }
 
            /*
-            * Structure is unchanged but numerical values changed.
-            * Refresh numerical preconditioner state first.
+            * The matrix values changed while structure and solver
+            * configuration remain compatible. Optionally permit a
+            * bounded number of solves with the existing numerical
+            * preconditioner before refreshing it.
+            *
+            * max_age == 0 preserves eager update behaviour.
+            */
+           if( solver->sequence_precon_max_age>0 &&
+               solver->sequence_precon_age<
+                   solver->sequence_precon_max_age )
+           {
+                   solver->sequence_precon_age++;
+
+                   solver->precon = solver->sequence_precon;
+                   *precon = solver->sequence_precon;
+
+                   LIS_DEBUG_FUNC_OUT;
+                   return LIS_SUCCESS;
+           }
+
+           /*
+            * Refresh only numerical preconditioner state.
             */
            err = lis_precon_psd_update(
                    solver,solver->sequence_precon);
@@ -1358,6 +1381,7 @@ LIS_INT lis_solver_sequence_prepare_precon(
                            A->is_scaled;
                    solver->sequence_precon_type =
                            precon_type;
+                   solver->sequence_precon_age = 0;
 
                    lis_solver_sequence_precon_snapshot(solver);
 
@@ -1415,6 +1439,7 @@ LIS_INT lis_solver_sequence_prepare_precon(
 	solver->sequence_precon_matrix_type = A->matrix_type;
 	solver->sequence_precon_is_scaled = A->is_scaled;
 	solver->sequence_precon_type = precon_type;
+	solver->sequence_precon_age = 0;
 	lis_solver_sequence_precon_snapshot(solver);
 
 	solver->precon = solver->sequence_precon;
@@ -1485,6 +1510,54 @@ LIS_INT lis_solver_get_num_threads(
     }
 
     *num_threads = solver->num_threads;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_sequence_precon_max_age"
+LIS_INT lis_solver_set_sequence_precon_max_age(
+    LIS_SOLVER solver,
+    LIS_INT max_age)
+{
+    LIS_DEBUG_FUNC_IN;
+
+    if( solver==NULL || max_age<0 )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid sequence preconditioner max age\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    solver->sequence_precon_max_age = max_age;
+    solver->sequence_precon_age = 0;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_get_sequence_precon_max_age"
+LIS_INT lis_solver_get_sequence_precon_max_age(
+    LIS_SOLVER solver,
+    LIS_INT *max_age)
+{
+    LIS_DEBUG_FUNC_IN;
+
+    if( solver==NULL || max_age==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid sequence preconditioner max-age arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *max_age = solver->sequence_precon_max_age;
 
     LIS_DEBUG_FUNC_OUT;
     return LIS_SUCCESS;
