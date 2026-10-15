@@ -1899,10 +1899,37 @@ lis_solver_sequence_retryable(LIS_SOLVER solver)
 {
 	if( solver==NULL ) return LIS_FALSE;
 
+	/*
+	 * A certified physical residual takes precedence over a solver-specific status.
+	 *
+	 * Sequence certification recomputes ||b-Ax|| independently of
+	 * the iterative solver's internal stopping reason. A finite
+	 * certified relative residual satisfying the requested tolerance
+	 * therefore represents a successful physical solve.
+	 */
+	if( solver->sequence_true_residual_valid &&
+	    solver->sequence_true_residual==
+	        solver->sequence_true_residual &&
+	    solver->sequence_true_relative_residual==
+	        solver->sequence_true_relative_residual &&
+	    fabs(solver->sequence_true_residual)<=
+	        LIS_SCALAR_MAX &&
+	    fabs(solver->sequence_true_relative_residual)<=
+	        LIS_SCALAR_MAX &&
+	    solver->sequence_true_relative_residual<=
+	        solver->params[
+	            LIS_PARAMS_RESID-LIS_OPTIONS_LEN] )
+	{
+	    solver->retcode = LIS_SUCCESS;
+	    solver->resid =
+	        solver->sequence_true_relative_residual;
+	    return LIS_FALSE;
+	}
+
 	if( solver->retcode==LIS_BREAKDOWN ||
 	    solver->retcode==LIS_MAXITER )
 	{
-		return LIS_TRUE;
+	    return LIS_TRUE;
 	}
 
 	/*
@@ -1925,6 +1952,34 @@ lis_solver_sequence_retryable(LIS_SOLVER solver)
 
 	return LIS_FALSE;
 }
+
+/*
+ * Clear only the recycle state owned by the active Krylov solver.
+ *
+ * Sequence recovery must not touch private state belonging to an
+ * inactive recycling algorithm.  This is especially important when
+ * solver options change during a persistent solver lifetime.
+ */
+static LIS_INT
+lis_solver_sequence_clear_active_recycle(
+    LIS_SOLVER solver)
+{
+    LIS_INT nsolver;
+
+    if( solver==NULL )
+        return LIS_SUCCESS;
+
+    nsolver = solver->options[LIS_OPTIONS_SOLVER];
+
+    if( nsolver==LIS_SOLVER_GCRODR )
+        return lis_gcrodr_clear_recycle(solver);
+
+    if( nsolver==LIS_SOLVER_FGCRODR )
+        return lis_fgcrodr_clear_recycle(solver);
+
+    return LIS_SUCCESS;
+}
+
 
 #undef __FUNC__
 #define __FUNC__ "lis_solve_sequence"
@@ -2027,16 +2082,7 @@ LIS_INT lis_solve_sequence(
      * Attempt 1: clear Krylov recycling while retaining the
      * persistent preconditioner.
      */
-    err = lis_gcrodr_clear_recycle(solver);
-    if( err )
-    {
-        solver->retcode = err;
-        solver->sequence_diag_final_retcode = err;
-        lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
-        return err;
-    }
-
-    err = lis_fgcrodr_clear_recycle(solver);
+    err = lis_solver_sequence_clear_active_recycle(solver);
     if( err )
     {
         solver->retcode = err;
@@ -2075,16 +2121,7 @@ LIS_INT lis_solve_sequence(
      * Attempt 2: clear recycling again and force a new persistent
      * preconditioner.
      */
-    err = lis_gcrodr_clear_recycle(solver);
-    if( err )
-    {
-        solver->retcode = err;
-        solver->sequence_diag_final_retcode = err;
-        lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
-        return err;
-    }
-
-    err = lis_fgcrodr_clear_recycle(solver);
+    err = lis_solver_sequence_clear_active_recycle(solver);
     if( err )
     {
         solver->retcode = err;
