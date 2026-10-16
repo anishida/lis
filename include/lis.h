@@ -1259,6 +1259,7 @@ extern "C"
 	extern LIS_INT lis_solver_get_num_threads(LIS_SOLVER solver, LIS_INT *num_threads);
 	extern LIS_INT lis_solver_set_sequence_precon_max_age(LIS_SOLVER solver, LIS_INT max_age);
 	extern LIS_INT lis_solver_get_sequence_precon_max_age(LIS_SOLVER solver, LIS_INT *max_age);
+	extern LIS_INT lis_solver_get_sequence_precon_age(LIS_SOLVER solver, LIS_INT *age);
         extern LIS_INT lis_solver_get_rhistory(LIS_SOLVER solver, LIS_VECTOR v);
 	extern LIS_INT lis_solver_set_option(char *text, LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_optionC(LIS_SOLVER solver);

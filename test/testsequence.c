@@ -1045,6 +1045,28 @@ int main(int argc, char **argv)
             goto cleanup;
         }
 
+        configured_age = -1;
+
+        err = lis_solver_get_sequence_precon_age(
+            age_solver,&configured_age);
+
+        if( err || configured_age!=1 )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_PRECON_AGE manual query failed "
+                    "value=%d err=%d\n",
+                    (int)configured_age,
+                    (int)err);
+            failed = 1;
+            lis_solver_destroy(age_solver);
+            goto cleanup;
+        }
+
+        printf(
+            "SEQUENCE_PRECON_AGE_MANUAL PASSED age=%d\n",
+            (int)configured_age);
+
         /* Second changed generation: one more bounded stale reuse. */
         err = lis_matrix_mark_values_changed(A0);
         if( err )
@@ -1633,12 +1655,35 @@ int main(int argc, char **argv)
             goto cleanup;
         }
 
+        auto_policy = -1;
+
+        err = lis_solver_get_sequence_precon_age(
+            auto_solver,
+            &auto_policy);
+
+        if( err || auto_policy!=0 )
+        {
+            fprintf(
+                    stderr,
+                    "SEQUENCE_PRECON_AGE auto query failed "
+                    "value=%d err=%d\n",
+                    (int)auto_policy,
+                    (int)err);
+            failed = 1;
+            lis_solver_destroy(auto_solver);
+            goto cleanup;
+        }
+
+        printf(
+            "SEQUENCE_PRECON_AGE_AUTO PASSED age=%d\n",
+            (int)auto_policy);
+
         printf(
             "SEQUENCE_POLICY_AUTO_PRECON PASSED "
             "max_age=%d age=%d generation=%llu->%llu "
             "precon_preserved=1\n",
             (int)auto_max_age,
-            (int)auto_solver->sequence_precon_age,
+            (int)auto_policy,
             (unsigned long long)auto_vg0,
             (unsigned long long)auto_vg1);
 

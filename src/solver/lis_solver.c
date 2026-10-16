@@ -1618,6 +1618,29 @@ LIS_INT lis_solver_get_sequence_precon_max_age(
 
 
 #undef __FUNC__
+#define __FUNC__ "lis_solver_get_sequence_precon_age"
+LIS_INT lis_solver_get_sequence_precon_age(
+    LIS_SOLVER solver,
+    LIS_INT *age)
+{
+    LIS_DEBUG_FUNC_IN;
+
+    if( solver==NULL || age==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid sequence preconditioner age arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *age = solver->sequence_precon_age;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
 #define __FUNC__ "lis_solver_thread_scope_begin"
 static LIS_INT lis_solver_thread_scope_begin(
     LIS_SOLVER solver,
