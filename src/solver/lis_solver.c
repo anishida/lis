@@ -240,6 +240,8 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->sequence_precon_matrix_type = LIS_MATRIX_NULL;
 	solver->sequence_precon_is_scaled = LIS_FALSE;
 	solver->sequence_precon_type = LIS_PRECON_TYPE_NONE;
+	solver->sequence_precon_max_age = 0;
+	solver->sequence_precon_age = 0;
 	solver->sequence_initial_residual = 0.0;
 	solver->sequence_rhs_norm = 0.0;
 	solver->sequence_true_residual = 0.0;
@@ -1262,6 +1264,7 @@ LIS_INT lis_solver_sequence_precon_destroy(LIS_SOLVER solver)
 	solver->sequence_precon_matrix_type = LIS_MATRIX_NULL;
 	solver->sequence_precon_is_scaled = LIS_FALSE;
 	solver->sequence_precon_type = LIS_PRECON_TYPE_NONE;
+	solver->sequence_precon_age = 0;
 
 	LIS_DEBUG_FUNC_OUT;
 	return err;
@@ -1310,32 +1313,110 @@ LIS_INT lis_solver_sequence_prepare_precon(
 		&value_generation);
 	if( err ) return err;
 
-	if( solver->sequence_precon!=NULL &&
-	    solver->sequence_precon_matrix==A &&
-	    solver->sequence_precon_structure_generation==
-		structure_generation &&
-	    solver->sequence_precon_value_generation==
-		value_generation &&
-	    solver->sequence_precon_matrix_type==A->matrix_type &&
-	    solver->sequence_precon_is_scaled==A->is_scaled &&
-	    solver->sequence_precon_type==precon_type &&
-	    lis_solver_sequence_precon_config_matches(solver) )
-	{
-		solver->A = A;
-		solver->precon = solver->sequence_precon;
-		*precon = solver->sequence_precon;
+   /*
+    * Reuse persistent preconditioner state when matrix structure and
+    * solver/preconditioner configuration are unchanged.
+    *
+    * If only matrix values changed, prefer a PSD numeric update so
+    * symbolic preconditioner state can survive across related systems.
+    */
+   if( solver->sequence_precon!=NULL &&
+       solver->sequence_precon_matrix==A &&
+       solver->sequence_precon_structure_generation==
+           structure_generation &&
+       solver->sequence_precon_matrix_type==A->matrix_type &&
+       solver->sequence_precon_is_scaled==A->is_scaled &&
+       solver->sequence_precon_type==precon_type &&
+       lis_solver_sequence_precon_config_matches(solver) )
+   {
+           solver->A = A;
 
-		LIS_DEBUG_FUNC_OUT;
-		return LIS_SUCCESS;
-	}
+           if( solver->sequence_precon_value_generation==
+               value_generation )
+           {
+                   solver->precon = solver->sequence_precon;
+                   *precon = solver->sequence_precon;
 
-	if( solver->sequence_precon!=NULL )
-	{
-		err = lis_solver_sequence_precon_destroy(solver);
-		if( err ) return err;
-	}
+                   LIS_DEBUG_FUNC_OUT;
+                   return LIS_SUCCESS;
+           }
 
-	solver->A = A;
+           /*
+            * The matrix values changed while structure and solver
+            * configuration remain compatible. Optionally permit a
+            * bounded number of solves with the existing numerical
+            * preconditioner before refreshing it.
+            *
+            * max_age == 0 preserves eager update behaviour.
+            */
+           if( solver->sequence_precon_max_age>0 &&
+               solver->sequence_precon_age<
+                   solver->sequence_precon_max_age )
+           {
+                   solver->sequence_precon_age++;
+
+                   solver->precon = solver->sequence_precon;
+                   *precon = solver->sequence_precon;
+
+                   LIS_DEBUG_FUNC_OUT;
+                   return LIS_SUCCESS;
+           }
+
+           /*
+            * Refresh only numerical preconditioner state.
+            */
+           err = lis_precon_psd_update(
+                   solver,solver->sequence_precon);
+
+           if( err==LIS_SUCCESS )
+           {
+                   solver->sequence_precon_matrix = A;
+                   solver->sequence_precon_structure_generation =
+                           structure_generation;
+                   solver->sequence_precon_value_generation =
+                           value_generation;
+                   solver->sequence_precon_matrix_type =
+                           A->matrix_type;
+                   solver->sequence_precon_is_scaled =
+                           A->is_scaled;
+                   solver->sequence_precon_type =
+                           precon_type;
+                   solver->sequence_precon_age = 0;
+
+                   lis_solver_sequence_precon_snapshot(solver);
+
+                   solver->precon = solver->sequence_precon;
+                   *precon = solver->sequence_precon;
+
+                   LIS_DEBUG_FUNC_OUT;
+                   return LIS_SUCCESS;
+           }
+
+           /*
+            * lis_precon_psd_update() destroys the preconditioner on
+            * failure.  Clear cached references before falling back to
+            * a full create.
+            */
+           solver->sequence_precon = NULL;
+           solver->precon = NULL;
+           solver->sequence_precon_matrix = NULL;
+           solver->sequence_precon_structure_generation = 0;
+           solver->sequence_precon_value_generation = 0;
+           solver->sequence_precon_matrix_type =
+                   LIS_MATRIX_NULL;
+           solver->sequence_precon_is_scaled =
+                   LIS_FALSE;
+           solver->sequence_precon_type =
+                   LIS_PRECON_TYPE_NONE;
+   }
+
+   if( solver->sequence_precon!=NULL )
+   {
+           err = lis_solver_sequence_precon_destroy(solver);
+           if( err ) return err;
+   }
+
+   solver->A = A;
 
 	err = lis_solver_check_user_matrix(A,solver,NULL);
 	if( err ) return err;
@@ -1358,6 +1439,7 @@ LIS_INT lis_solver_sequence_prepare_precon(
 	solver->sequence_precon_matrix_type = A->matrix_type;
 	solver->sequence_precon_is_scaled = A->is_scaled;
 	solver->sequence_precon_type = precon_type;
+	solver->sequence_precon_age = 0;
 	lis_solver_sequence_precon_snapshot(solver);
 
 	solver->precon = solver->sequence_precon;
@@ -1428,6 +1510,54 @@ LIS_INT lis_solver_get_num_threads(
     }
 
     *num_threads = solver->num_threads;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_sequence_precon_max_age"
+LIS_INT lis_solver_set_sequence_precon_max_age(
+    LIS_SOLVER solver,
+    LIS_INT max_age)
+{
+    LIS_DEBUG_FUNC_IN;
+
+    if( solver==NULL || max_age<0 )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid sequence preconditioner max age\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    solver->sequence_precon_max_age = max_age;
+    solver->sequence_precon_age = 0;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_get_sequence_precon_max_age"
+LIS_INT lis_solver_get_sequence_precon_max_age(
+    LIS_SOLVER solver,
+    LIS_INT *max_age)
+{
+    LIS_DEBUG_FUNC_IN;
+
+    if( solver==NULL || max_age==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid sequence preconditioner max-age arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *max_age = solver->sequence_precon_max_age;
 
     LIS_DEBUG_FUNC_OUT;
     return LIS_SUCCESS;
@@ -1769,10 +1899,37 @@ lis_solver_sequence_retryable(LIS_SOLVER solver)
 {
 	if( solver==NULL ) return LIS_FALSE;
 
+	/*
+	 * A certified physical residual takes precedence over a solver-specific status.
+	 *
+	 * Sequence certification recomputes ||b-Ax|| independently of
+	 * the iterative solver's internal stopping reason. A finite
+	 * certified relative residual satisfying the requested tolerance
+	 * therefore represents a successful physical solve.
+	 */
+	if( solver->sequence_true_residual_valid &&
+	    solver->sequence_true_residual==
+	        solver->sequence_true_residual &&
+	    solver->sequence_true_relative_residual==
+	        solver->sequence_true_relative_residual &&
+	    fabs(solver->sequence_true_residual)<=
+	        LIS_SCALAR_MAX &&
+	    fabs(solver->sequence_true_relative_residual)<=
+	        LIS_SCALAR_MAX &&
+	    solver->sequence_true_relative_residual<=
+	        solver->params[
+	            LIS_PARAMS_RESID-LIS_OPTIONS_LEN] )
+	{
+	    solver->retcode = LIS_SUCCESS;
+	    solver->resid =
+	        solver->sequence_true_relative_residual;
+	    return LIS_FALSE;
+	}
+
 	if( solver->retcode==LIS_BREAKDOWN ||
 	    solver->retcode==LIS_MAXITER )
 	{
-		return LIS_TRUE;
+	    return LIS_TRUE;
 	}
 
 	/*
@@ -1795,6 +1952,34 @@ lis_solver_sequence_retryable(LIS_SOLVER solver)
 
 	return LIS_FALSE;
 }
+
+/*
+ * Clear only the recycle state owned by the active Krylov solver.
+ *
+ * Sequence recovery must not touch private state belonging to an
+ * inactive recycling algorithm.  This is especially important when
+ * solver options change during a persistent solver lifetime.
+ */
+static LIS_INT
+lis_solver_sequence_clear_active_recycle(
+    LIS_SOLVER solver)
+{
+    LIS_INT nsolver;
+
+    if( solver==NULL )
+        return LIS_SUCCESS;
+
+    nsolver = solver->options[LIS_OPTIONS_SOLVER];
+
+    if( nsolver==LIS_SOLVER_GCRODR )
+        return lis_gcrodr_clear_recycle(solver);
+
+    if( nsolver==LIS_SOLVER_FGCRODR )
+        return lis_fgcrodr_clear_recycle(solver);
+
+    return LIS_SUCCESS;
+}
+
 
 #undef __FUNC__
 #define __FUNC__ "lis_solve_sequence"
@@ -1897,16 +2082,7 @@ LIS_INT lis_solve_sequence(
      * Attempt 1: clear Krylov recycling while retaining the
      * persistent preconditioner.
      */
-    err = lis_gcrodr_clear_recycle(solver);
-    if( err )
-    {
-        solver->retcode = err;
-        solver->sequence_diag_final_retcode = err;
-        lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
-        return err;
-    }
-
-    err = lis_fgcrodr_clear_recycle(solver);
+    err = lis_solver_sequence_clear_active_recycle(solver);
     if( err )
     {
         solver->retcode = err;
@@ -1945,16 +2121,7 @@ LIS_INT lis_solve_sequence(
      * Attempt 2: clear recycling again and force a new persistent
      * preconditioner.
      */
-    err = lis_gcrodr_clear_recycle(solver);
-    if( err )
-    {
-        solver->retcode = err;
-        solver->sequence_diag_final_retcode = err;
-        lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
-        return err;
-    }
-
-    err = lis_fgcrodr_clear_recycle(solver);
+    err = lis_solver_sequence_clear_active_recycle(solver);
     if( err )
     {
         solver->retcode = err;
