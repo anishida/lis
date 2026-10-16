@@ -1,3 +1,10 @@
+Version 2.1.17 October 16, 2026
+
+  - Implemented the GCRO-DR and FGCRO-DR linear solvers (thanks to Rafal Brzegowy).
+  - Allowed compatible prebuilt preconditioners for LIS_MATRIX_USER and added the MFAMG preconditioner for serial/distributed matrices (thanks to Rafal Brzegowy).
+  - Supported non-conflicting near-nullspace handling between MFAMG and (F)GCRO-DR, and improved persistent sequence behavior for GCRO-DR (thanks to Rafal Brzegowy).
+  - Added matrix capability queries, row-access interfaces, sequence preconditioner reuse via lis_solver_set_sequence_precon_max_age(), and hardened sequence recovery mechanisms (thanks to Rafal Brzegowy).
+
 Version 2.1.16 October 9, 2026
 
   - Added support for symmetric diagonal scaling of shell matrices without modifying the original matrix or right-hand side (thanks to Rafal Brzegowy).
