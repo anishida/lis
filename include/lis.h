@@ -254,7 +254,7 @@ extern "C" {
 #define LIS_PRECONNAME_MAX 10
 #define LIS_PRECON_REGISTER_MAX 10
 
-#define LIS_PRECON_TYPE_LEN 12
+#define LIS_PRECON_TYPE_LEN 13
 #define LIS_PRECON_TYPE_NONE 0
 #define LIS_PRECON_TYPE_JACOBI 1
 #define LIS_PRECON_TYPE_ILU 2
@@ -267,6 +267,7 @@ extern "C" {
 #define LIS_PRECON_TYPE_ILUT 9
 #define LIS_PRECON_TYPE_BJACOBI 10
 #define LIS_PRECON_TYPE_ADDS 11
+#define LIS_PRECON_TYPE_MFAMG 12
 #define LIS_PRECON_TYPE_USERDEF LIS_PRECON_TYPE_LEN
 
 #define LIS_MATRIX_ASSEMBLING 0
@@ -297,6 +298,18 @@ extern "C" {
 #define LIS_MATRIX_MSC 21
 #define LIS_MATRIX_USER 22
 #define LIS_MATRIX_OPERATOR 23
+
+/*
+ * Matrix operation capabilities.
+ *
+ * These flags describe operation support provided by the current
+ * matrix type and callbacks. They do not imply that matrix assembly
+ * or numerical setup has been completed.
+ */
+#define LIS_MATRIX_CAP_MATVEC      0x01
+#define LIS_MATRIX_CAP_MATVECH     0x02
+#define LIS_MATRIX_CAP_DIAGONAL    0x04
+#define LIS_MATRIX_CAP_ROW_ACCESS  0x08
 #define LIS_MATRIX_DECIDING_SIZE -(LIS_MATRIX_RCO+1)
 #define LIS_MATRIX_NULL -(LIS_MATRIX_RCO+2)
 
@@ -595,6 +608,27 @@ typedef LIS_INT (*LIS_MATRIX_USER_MATVEC)(void *user_data,
 
 typedef LIS_INT (*LIS_MATRIX_USER_GET_DIAGONAL)(void *user_data,
                                                 LIS_SCALAR *d);
+/*
+ * Application-owned row access for LIS_MATRIX_USER.
+ *
+ * local_row is zero-based and local to the current process.
+ *
+ * Query mode:
+ *   cols == NULL && vals == NULL
+ *   -> *nnz receives the required number of entries.
+ *
+ * Fill mode:
+ *   cols != NULL && vals != NULL
+ *   -> on entry *nnz is the capacity of cols/vals;
+ *      on success *nnz is the number of entries written.
+ *
+ * Returned column indices are zero-based GLOBAL indices.
+ */
+typedef LIS_INT (*LIS_MATRIX_USER_GET_ROW)(void *user_data,
+                                           LIS_INT local_row,
+                                           LIS_INT *nnz,
+                                           LIS_INT *cols,
+                                           LIS_SCALAR *vals);
 
 #define LIS_MATRIX_OPTION_LEN 10
 
@@ -724,6 +758,7 @@ struct LIS_MATRIX_STRUCT
 	LIS_MATRIX_USER_MATVEC user_matvec;
 	LIS_MATRIX_USER_MATVEC user_matvech;
 	LIS_MATRIX_USER_GET_DIAGONAL user_get_diagonal;
+	LIS_MATRIX_USER_GET_ROW user_get_row;
 
 	/* Non-owning linear-combination operator: alpha*A + beta*B. */
 	struct LIS_MATRIX_STRUCT *operator_A;
@@ -781,6 +816,8 @@ struct LIS_PRECON_STRUCT
 	LIS_INT nprocs; /* saamg */
 	LIS_INT is_copy;
 	LIS_COMMTABLE commtable; /* saamg */
+	/* Built-in matrix-free aggregation state. */
+	struct LIS_MFAMG_STRUCT *mfamg;
 
 	/* Application-owned state for registered user preconditioners. */
 	void *user_data;
@@ -1047,6 +1084,7 @@ extern "C"
 	extern LIS_INT lis_matrix_set_size(LIS_MATRIX A, LIS_INT local_n, LIS_INT global_n);
 	extern LIS_INT lis_matrix_get_size(LIS_MATRIX A, LIS_INT *local_n, LIS_INT *global_n);
 	extern LIS_INT lis_matrix_get_range(LIS_MATRIX A, LIS_INT *is, LIS_INT *ie);
+    extern LIS_INT lis_matrix_get_capabilities(LIS_MATRIX A, LIS_INT *capabilities);
 	extern LIS_INT lis_matrix_get_nnz(LIS_MATRIX A, LIS_INT *nnz);
 	extern LIS_INT lis_matrix_mark_values_changed(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_mark_structure_changed(LIS_MATRIX A);
@@ -1060,6 +1098,15 @@ extern "C"
 	extern LIS_INT lis_matrix_set_user_diagonal(
 	                                   LIS_MATRIX A,
 	                                   LIS_MATRIX_USER_GET_DIAGONAL get_diagonal);
+	extern LIS_INT lis_matrix_set_user_row(
+	                                   LIS_MATRIX A,
+	                                   LIS_MATRIX_USER_GET_ROW get_row);
+	extern LIS_INT lis_matrix_get_user_row(
+	                                   LIS_MATRIX A,
+	                                   LIS_INT local_row,
+	                                   LIS_INT *nnz,
+	                                   LIS_INT *cols,
+	                                   LIS_SCALAR *vals);
 	extern LIS_INT lis_matrix_get_user_data(LIS_MATRIX A, void **user_data);
 	extern LIS_INT lis_matrix_create_operator(LIS_SCALAR alpha, LIS_MATRIX A,
 	                                          LIS_SCALAR beta, LIS_MATRIX B,

@@ -516,6 +516,20 @@ main(int argc, char **argv)
     }
 
 
+    /*
+     * A0 has already verified that the repeated solve produces
+     * the expected solution.  Use the known exact solution as
+     * the A1 initial guess so that this warm-start regression
+     * tests preservation of the supplied nonzero x rather than
+     * thread-dependent round-off from the preceding CG solve.
+     */
+    err = lis_vector_copy(exact,x);
+    if( err )
+    {
+        failed = 1;
+        goto cleanup;
+    }
+
     /* ======================================================== */
     /* SYSTEM A1                                               */
     /* ======================================================== */
