@@ -2057,6 +2057,444 @@ check_serial_multivector(
 }
 
 
+
+/* ============================================================
+ * Multivector coarsening stagnation regression
+ * ============================================================ */
+
+
+#define MFAMG_STAGNATION_N       192
+#define MFAMG_STAGNATION_PAIRS    96
+#define MFAMG_STAGNATION_MODES      6
+
+
+static int
+check_mfamg_multivector_stagnation(void)
+{
+    LIS_MATRIX A;
+
+    LIS_VECTOR b;
+    LIS_VECTOR x;
+
+    LIS_VECTOR modes[
+        MFAMG_STAGNATION_MODES];
+
+    LIS_SOLVER solver;
+
+    LIS_INT i;
+    LIS_INT k;
+    LIS_INT pair;
+    LIS_INT err;
+
+    LIS_REAL t;
+    LIS_REAL t2;
+    LIS_REAL t3;
+    LIS_REAL t4;
+    LIS_REAL t5;
+
+    LIS_REAL value[
+        MFAMG_STAGNATION_MODES];
+
+    int failed;
+
+
+    A = NULL;
+
+    b = NULL;
+    x = NULL;
+
+    solver = NULL;
+
+    failed = 0;
+    err = LIS_SUCCESS;
+
+
+    for(
+        k=0;
+        k<MFAMG_STAGNATION_MODES;
+        k++)
+    {
+        modes[k] = NULL;
+    }
+
+
+    err =
+        lis_matrix_create(
+            LIS_COMM_WORLD,
+            &A);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_matrix_set_size(
+            A,
+            0,
+            MFAMG_STAGNATION_N);
+
+    if(err)
+        goto fail;
+
+
+    /*
+     * Strongly coupled pairs are connected by weak graph edges.
+     * The initial aggregation forms the pairs.  On the resulting
+     * coarse operator, a strength-only multivector aggregation can
+     * leave singleton aggregates and stop reducing the hierarchy.
+     */
+    for(
+        i=0;
+        i<MFAMG_STAGNATION_N;
+        i++)
+    {
+        err =
+            lis_matrix_set_value(
+                LIS_INS_VALUE,
+                i,
+                i,
+                (LIS_SCALAR)2.5,
+                A);
+
+        if(err)
+            goto fail;
+    }
+
+
+    for(
+        pair=0;
+        pair<MFAMG_STAGNATION_PAIRS;
+        pair++)
+    {
+        i =
+            2
+            *
+            pair;
+
+
+        err =
+            lis_matrix_set_value(
+                LIS_INS_VALUE,
+                i,
+                i+1,
+                (LIS_SCALAR)-1.0,
+                A);
+
+        if(err)
+            goto fail;
+
+
+        err =
+            lis_matrix_set_value(
+                LIS_INS_VALUE,
+                i+1,
+                i,
+                (LIS_SCALAR)-1.0,
+                A);
+
+        if(err)
+            goto fail;
+
+
+        if(
+            pair+1
+            <
+            MFAMG_STAGNATION_PAIRS)
+        {
+            err =
+                lis_matrix_set_value(
+                    LIS_INS_VALUE,
+                    i+1,
+                    i+2,
+                    (LIS_SCALAR)-0.02,
+                    A);
+
+            if(err)
+                goto fail;
+
+
+            err =
+                lis_matrix_set_value(
+                    LIS_INS_VALUE,
+                    i+2,
+                    i+1,
+                    (LIS_SCALAR)-0.02,
+                    A);
+
+            if(err)
+                goto fail;
+        }
+    }
+
+
+    err =
+        lis_matrix_set_type(
+            A,
+            LIS_MATRIX_CSR);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_matrix_assemble(
+            A);
+
+    if(err)
+        goto fail;
+
+
+    for(
+        k=0;
+        k<MFAMG_STAGNATION_MODES;
+        k++)
+    {
+        err =
+            lis_vector_duplicate(
+                A,
+                &modes[k]);
+
+        if(err)
+            goto fail;
+    }
+
+
+    /*
+     * Six globally independent smooth modes.  Values are constant
+     * within each strong pair so its local multivector rank is one.
+     * Across multiple pairs the six modes remain independent.
+     */
+    for(
+        pair=0;
+        pair<MFAMG_STAGNATION_PAIRS;
+        pair++)
+    {
+        t =
+            -1.0
+            +
+            2.0
+            *
+            (LIS_REAL)pair
+            /
+            (LIS_REAL)(
+                MFAMG_STAGNATION_PAIRS
+                -
+                1);
+
+        t2 = t*t;
+        t3 = t2*t;
+        t4 = t2*t2;
+        t5 = t4*t;
+
+
+        value[0] =
+            1.0;
+
+        value[1] =
+            t;
+
+        value[2] =
+            0.5
+            *
+            (
+                3.0*t2
+                -
+                1.0
+            );
+
+        value[3] =
+            0.5
+            *
+            (
+                5.0*t3
+                -
+                3.0*t
+            );
+
+        value[4] =
+            0.125
+            *
+            (
+                35.0*t4
+                -
+                30.0*t2
+                +
+                3.0
+            );
+
+        value[5] =
+            0.125
+            *
+            (
+                63.0*t5
+                -
+                70.0*t3
+                +
+                15.0*t
+            );
+
+
+        for(
+            k=0;
+            k<MFAMG_STAGNATION_MODES;
+            k++)
+        {
+            modes[k]->value[
+                2*pair] =
+                    (LIS_SCALAR)
+                    value[k];
+
+            modes[k]->value[
+                2*pair+1] =
+                    (LIS_SCALAR)
+                    value[k];
+        }
+    }
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &b);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x);
+
+    if(err)
+        goto fail;
+
+
+    for(
+        i=0;
+        i<MFAMG_STAGNATION_N;
+        i++)
+    {
+        b->value[i] =
+            (LIS_SCALAR)
+            (
+                1.0
+                +
+                0.01
+                *
+                (LIS_REAL)(
+                    i%7)
+            );
+
+        x->value[i] =
+            (LIS_SCALAR)0.0;
+    }
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i bicgstab "
+            "-p mfamg "
+            "-scale none "
+            "-tol 1.0e-10 "
+            "-maxiter 1000",
+            solver);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_solver_set_near_nullspace(
+            solver,
+            MFAMG_STAGNATION_MODES,
+            modes);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_solve(
+            A,
+            b,
+            x,
+            solver);
+
+
+    printf(
+        "MFAMG_MULTIVECTOR_STAGNATION "
+        "rc=%d\n",
+        (int)err);
+
+
+    if(err)
+        goto fail;
+
+
+    printf(
+        "MFAMG MULTIVECTOR STAGNATION "
+        "REGRESSION PASSED\n");
+
+    goto cleanup;
+
+
+fail:
+
+    fprintf(
+        stderr,
+        "MFAMG MULTIVECTOR STAGNATION "
+        "REGRESSION FAILED rc=%d\n",
+        (int)err);
+
+    failed = 1;
+
+
+cleanup:
+
+    if(solver)
+        lis_solver_destroy(
+            solver);
+
+
+    if(x)
+        lis_vector_destroy(
+            x);
+
+
+    if(b)
+        lis_vector_destroy(
+            b);
+
+
+    for(
+        k=0;
+        k<MFAMG_STAGNATION_MODES;
+        k++)
+    {
+        if(modes[k])
+            lis_vector_destroy(
+                modes[k]);
+    }
+
+
+    if(A)
+        lis_matrix_destroy(
+            A);
+
+
+    return failed;
+}
+
+
 /* ============================================================
  * Serial contract
  * ============================================================ */
@@ -4434,6 +4872,10 @@ run_serial(void)
 
     failed |=
         check_mfamg_multivector_basis_foundation();
+
+
+    failed |=
+        check_mfamg_multivector_stagnation();
 
 
     failed |=
