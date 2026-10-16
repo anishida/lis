@@ -347,6 +347,7 @@ ILUT\cite{ilut,ITSOL} \\
 Crout ILU\cite{ITSOL,iluc} \\
 I+S\cite{kohno01} \\
 SA-AMG\cite{fujii01}  \\
+MFAMG \\
 Hybrid\cite{abe01} \\
 SAINV\cite{bridson01}  \\
 Additive Schwarz\cite{chan,dryja} \\
@@ -2046,6 +2047,7 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criter
 ratio of the maximum fill-in \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -2053,6 +2055,19 @@ Schwarz  &                       &                             &                
 \end{center}
 \end{minipage}
 \\ \\
+\noindent
+{\bf MFAMG Preconditioner}\\
+MFAMG is a built-in matrix-free aggregation multigrid preconditioner.
+It builds a multilevel aggregation hierarchy from one or more
+user-supplied near-nullspace vectors. Select it with
+\verb=-p mfamg= (or \verb=-p 12=).
+MFAMG supports CSR matrices and, in serial,
+{\tt LIS\_MATRIX\_USER} matrices that provide matrix-vector product,
+diagonal, and row-access operations. In MPI environments, CSR matrices
+are currently required. MFAMG currently supports double precision and
+requires \verb=-scale none=.
+\\ \\
+
 \begin{minipage}[t]{\textwidth}
 \begin{center}
 {\bf Other Options}\\
@@ -6199,6 +6214,7 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criter
 &                       & \verb=-iluc_rate [5.0]=     & The ratio of the maximum fill-in \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
