@@ -922,6 +922,14 @@ struct LIS_SOLVER_STRUCT
 	LIS_INT sequence_precon_matrix_type;
 	LIS_INT sequence_precon_is_scaled;
 	LIS_INT sequence_precon_type;
+
+	/*
+	 * Maximum number of sequence solves that may reuse a
+	 * numerically stale persistent preconditioner after
+	 * matrix values change. Zero preserves eager updates.
+	 */
+	LIS_INT sequence_precon_max_age;
+	LIS_INT sequence_precon_age;
 	LIS_INT sequence_precon_options[LIS_OPTIONS_LEN];
 	LIS_SCALAR sequence_precon_params[LIS_PARAMS_LEN];
 
@@ -1240,6 +1248,8 @@ extern "C"
 	extern LIS_INT lis_solver_get_sequence_diagnostics(LIS_SOLVER solver, LIS_SEQUENCE_DIAGNOSTICS *diag);
 	extern LIS_INT lis_solver_set_num_threads(LIS_SOLVER solver, LIS_INT num_threads);
 	extern LIS_INT lis_solver_get_num_threads(LIS_SOLVER solver, LIS_INT *num_threads);
+	extern LIS_INT lis_solver_set_sequence_precon_max_age(LIS_SOLVER solver, LIS_INT max_age);
+	extern LIS_INT lis_solver_get_sequence_precon_max_age(LIS_SOLVER solver, LIS_INT *max_age);
         extern LIS_INT lis_solver_get_rhistory(LIS_SOLVER solver, LIS_VECTOR v);
 	extern LIS_INT lis_solver_set_option(char *text, LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_optionC(LIS_SOLVER solver);
