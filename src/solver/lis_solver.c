@@ -233,6 +233,7 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->precon   = NULL;
 	solver->num_threads = 0;
         solver->fgcrodr_state = NULL;
+	solver->sequence_policy = LIS_SEQUENCE_POLICY_MANUAL;
 	solver->sequence_precon = NULL;
 	solver->sequence_precon_matrix = NULL;
 	solver->sequence_precon_structure_generation = 0;
@@ -1514,6 +1515,54 @@ LIS_INT lis_solver_get_num_threads(
     return LIS_SUCCESS;
 }
 
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_sequence_policy"
+LIS_INT lis_solver_set_sequence_policy(
+    LIS_SOLVER solver,
+    LIS_INT policy)
+{
+    LIS_DEBUG_FUNC_IN;
+
+    if( solver==NULL ||
+        (policy!=LIS_SEQUENCE_POLICY_MANUAL &&
+         policy!=LIS_SEQUENCE_POLICY_AUTO) )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid sequence policy\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    solver->sequence_policy = policy;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_get_sequence_policy"
+LIS_INT lis_solver_get_sequence_policy(
+    LIS_SOLVER solver,
+    LIS_INT *policy)
+{
+    LIS_DEBUG_FUNC_IN;
+
+    if( solver==NULL || policy==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid sequence policy query\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *policy = solver->sequence_policy;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
 
 
 #undef __FUNC__

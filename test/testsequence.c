@@ -105,6 +105,7 @@ int main(int argc, char **argv)
 	LIS_PRECON p0 = NULL;
 	LIS_PRECON p1 = NULL;
 	LIS_INT err;
+	LIS_INT policy;
 	int failed = 0;
 
 	err = lis_initialize(&argc,&argv);
@@ -141,6 +142,85 @@ int main(int argc, char **argv)
 	{
 		failed = 1;
 		goto cleanup;
+	}
+
+	/*
+	 * Sequence policy is persistent solver configuration.
+	 * AUTO is behavior-neutral until automatic sequence
+	 * decisions are implemented by the solver.
+	 */
+	err = lis_solver_get_sequence_policy(
+	        solver,&policy);
+	if( err ||
+	        policy!=LIS_SEQUENCE_POLICY_MANUAL )
+	{
+	        fprintf(
+	                stderr,
+	                "POLICY_DEFAULT failed: err=%d policy=%d\n",
+	                (int)err,(int)policy);
+	        failed = 1;
+	        goto cleanup;
+	}
+
+	err = lis_solver_set_sequence_policy(
+	        solver,LIS_SEQUENCE_POLICY_AUTO);
+	if( err )
+	{
+	        fprintf(
+	                stderr,
+	                "POLICY_SET_AUTO failed: err=%d\n",
+	                (int)err);
+	        failed = 1;
+	        goto cleanup;
+	}
+
+	err = lis_solver_get_sequence_policy(
+	        solver,&policy);
+	if( err ||
+	        policy!=LIS_SEQUENCE_POLICY_AUTO )
+	{
+	        fprintf(
+	                stderr,
+	                "POLICY_GET_AUTO failed: err=%d policy=%d\n",
+	                (int)err,(int)policy);
+	        failed = 1;
+	        goto cleanup;
+	}
+
+	err = lis_solver_reset_sequence(solver);
+	if( err )
+	{
+	        fprintf(
+	                stderr,
+	                "POLICY_RESET failed: err=%d\n",
+	                (int)err);
+	        failed = 1;
+	        goto cleanup;
+	}
+
+	err = lis_solver_get_sequence_policy(
+	        solver,&policy);
+	if( err ||
+	        policy!=LIS_SEQUENCE_POLICY_AUTO )
+	{
+	        fprintf(
+	                stderr,
+	                "POLICY_RESET_PRESERVE failed: err=%d policy=%d\n",
+	                (int)err,(int)policy);
+	        failed = 1;
+	        goto cleanup;
+	}
+
+	err = lis_solver_set_sequence_policy(
+	        solver,LIS_SEQUENCE_POLICY_MANUAL);
+	if( err )
+	{
+	        fprintf(
+	                stderr,
+	                "POLICY_SET_MANUAL failed: err=%d\n",
+	                (int)err);
+	        failed = 1;
+	        goto cleanup;
 	}
 
 	err = lis_solver_set_option(
