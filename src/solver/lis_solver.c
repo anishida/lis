@@ -1343,13 +1343,18 @@ LIS_INT lis_solver_sequence_prepare_precon(
 
            /*
             * The matrix values changed while structure and solver
-            * configuration remain compatible. Optionally permit a
-            * bounded number of solves with the existing numerical
-            * preconditioner before refreshing it.
+            * configuration remain compatible. Under manual sequence
+            * policy, optionally permit a bounded number of solves with
+            * the existing numerical preconditioner before refreshing it.
             *
-            * max_age == 0 preserves eager update behaviour.
+            * Automatic policy owns the refresh decision and therefore
+            * bypasses application-configured stale-age reuse, taking the
+            * existing numeric-update or rebuild path immediately.
+            *
+            * max_age == 0 preserves eager update behaviour in manual mode.
             */
-           if( solver->sequence_precon_max_age>0 &&
+           if( solver->sequence_policy==LIS_SEQUENCE_POLICY_MANUAL &&
+               solver->sequence_precon_max_age>0 &&
                solver->sequence_precon_age<
                    solver->sequence_precon_max_age )
            {

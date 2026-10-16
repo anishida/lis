@@ -1376,6 +1376,277 @@ int main(int argc, char **argv)
 
 	printf("LIS_SEQUENCE_SOLVE_S5 PASSED\n");
 
+
+    /*
+     * AUTO policy owns the numerical refresh decision.  A configured
+     * max age remains available for manual policy but must not permit
+     * stale numerical reuse while AUTO is active.
+     */
+    {
+        LIS_SOLVER auto_solver = NULL;
+        LIS_PRECON auto_precon = NULL;
+        LIS_UNSIGNED_INT auto_sg0 = 0;
+        LIS_UNSIGNED_INT auto_vg0 = 0;
+        LIS_UNSIGNED_INT auto_sg1 = 0;
+        LIS_UNSIGNED_INT auto_vg1 = 0;
+        LIS_INT auto_max_age = -1;
+        LIS_INT auto_policy = -1;
+
+        err = lis_solver_create(&auto_solver);
+        if( err )
+        {
+            fprintf(
+                stderr,
+                "SEQUENCE_POLICY_AUTO create failed: %d\n",
+                (int)err);
+            failed = 1;
+            goto cleanup;
+        }
+
+        err = lis_solver_set_option(
+            "-i gmres -p ilu -ilu_fill 0 "
+            "-scale none -print none "
+            "-restart 4 -maxiter 50 "
+            "-maxiter_noimp 0 -tol 1e-12 "
+            "-initx_zeros true",
+            auto_solver);
+        if( err )
+        {
+            fprintf(
+                stderr,
+                "SEQUENCE_POLICY_AUTO option failed: %d\n",
+                (int)err);
+            failed = 1;
+            lis_solver_destroy(auto_solver);
+            goto cleanup;
+        }
+
+        err = lis_solver_set_sequence_precon_max_age(
+            auto_solver,2);
+        if( err )
+        {
+            fprintf(
+                stderr,
+                "SEQUENCE_POLICY_AUTO max-age failed: %d\n",
+                (int)err);
+            failed = 1;
+            lis_solver_destroy(auto_solver);
+            goto cleanup;
+        }
+
+        err = lis_solver_set_sequence_policy(
+            auto_solver,
+            LIS_SEQUENCE_POLICY_AUTO);
+        if( err )
+        {
+            fprintf(
+                stderr,
+                "SEQUENCE_POLICY_AUTO policy failed: %d\n",
+                (int)err);
+            failed = 1;
+            lis_solver_destroy(auto_solver);
+            goto cleanup;
+        }
+
+        err = lis_solver_get_sequence_precon_max_age(
+            auto_solver,
+            &auto_max_age);
+        if( err || auto_max_age!=2 )
+        {
+            fprintf(
+                stderr,
+                "SEQUENCE_POLICY_AUTO max-age config "
+                "lost: err=%d value=%d\n",
+                (int)err,
+                (int)auto_max_age);
+            failed = 1;
+            lis_solver_destroy(auto_solver);
+            goto cleanup;
+        }
+
+        err = lis_solver_get_sequence_policy(
+            auto_solver,
+            &auto_policy);
+        if( err ||
+            auto_policy!=LIS_SEQUENCE_POLICY_AUTO )
+        {
+            fprintf(
+                stderr,
+                "SEQUENCE_POLICY_AUTO query failed: "
+                "err=%d policy=%d\n",
+                (int)err,
+                (int)auto_policy);
+            failed = 1;
+            lis_solver_destroy(auto_solver);
+            goto cleanup;
+        }
+
+        lis_vector_set_all(
+            (LIS_SCALAR)1.0,b);
+        lis_vector_set_all(
+            (LIS_SCALAR)0.0,x);
+
+        err = lis_solve_sequence(
+            A0,b,x,auto_solver);
+
+        if( err!=LIS_SUCCESS ||
+            auto_solver->retcode!=LIS_SUCCESS ||
+            auto_solver->sequence_precon==NULL )
+        {
+            fprintf(
+                stderr,
+                "SEQUENCE_POLICY_AUTO initial solve "
+                "failed api=%d status=%d\n",
+                (int)err,
+                (int)auto_solver->retcode);
+            failed = 1;
+            lis_solver_destroy(auto_solver);
+            goto cleanup;
+        }
+
+        auto_precon =
+            auto_solver->sequence_precon;
+
+        err = lis_matrix_get_generation(
+            A0,
+            &auto_sg0,
+            &auto_vg0);
+
+        if( err )
+        {
+            failed = 1;
+            lis_solver_destroy(auto_solver);
+            goto cleanup;
+        }
+
+        err = lis_matrix_mark_values_changed(A0);
+
+        if( err )
+        {
+            failed = 1;
+            lis_solver_destroy(auto_solver);
+            goto cleanup;
+        }
+
+        err = lis_matrix_get_generation(
+            A0,
+            &auto_sg1,
+            &auto_vg1);
+
+        if( err ||
+            auto_sg1!=auto_sg0 ||
+            auto_vg1==auto_vg0 )
+        {
+            fprintf(
+                stderr,
+                "SEQUENCE_POLICY_AUTO generation "
+                "transition failed\n");
+            failed = 1;
+            lis_solver_destroy(auto_solver);
+            goto cleanup;
+        }
+
+        lis_vector_set_all(
+            (LIS_SCALAR)2.0,b);
+        lis_vector_set_all(
+            (LIS_SCALAR)0.0,x);
+
+        err = lis_solve_sequence(
+            A0,b,x,auto_solver);
+
+        if( err!=LIS_SUCCESS ||
+            auto_solver->retcode!=LIS_SUCCESS )
+        {
+            fprintf(
+                stderr,
+                "SEQUENCE_POLICY_AUTO changed solve "
+                "failed api=%d status=%d\n",
+                (int)err,
+                (int)auto_solver->retcode);
+            failed = 1;
+            lis_solver_destroy(auto_solver);
+            goto cleanup;
+        }
+
+        if( auto_solver->sequence_precon!=
+                auto_precon ||
+            auto_solver->sequence_precon_age!=0 ||
+            auto_solver->
+                sequence_precon_structure_generation!=
+                    auto_sg1 ||
+            auto_solver->
+                sequence_precon_value_generation!=
+                    auto_vg1 )
+        {
+            fprintf(
+                stderr,
+                "SEQUENCE_POLICY_AUTO refresh failed "
+                "age=%d factor_gen=%llu/%llu "
+                "matrix_gen=%llu/%llu same_precon=%d\n",
+                (int)auto_solver->sequence_precon_age,
+                (unsigned long long)
+                    auto_solver->
+                        sequence_precon_structure_generation,
+                (unsigned long long)
+                    auto_solver->
+                        sequence_precon_value_generation,
+                (unsigned long long)auto_sg1,
+                (unsigned long long)auto_vg1,
+                auto_solver->sequence_precon==
+                    auto_precon);
+            failed = 1;
+            lis_solver_destroy(auto_solver);
+            goto cleanup;
+        }
+
+        auto_max_age = -1;
+
+        err = lis_solver_get_sequence_precon_max_age(
+            auto_solver,
+            &auto_max_age);
+
+        if( err || auto_max_age!=2 )
+        {
+            fprintf(
+                stderr,
+                "SEQUENCE_POLICY_AUTO changed "
+                "max-age configuration\n");
+            failed = 1;
+            lis_solver_destroy(auto_solver);
+            goto cleanup;
+        }
+
+        auto_policy = -1;
+
+        err = lis_solver_get_sequence_policy(
+            auto_solver,
+            &auto_policy);
+
+        if( err ||
+            auto_policy!=LIS_SEQUENCE_POLICY_AUTO )
+        {
+            fprintf(
+                stderr,
+                "SEQUENCE_POLICY_AUTO changed policy\n");
+            failed = 1;
+            lis_solver_destroy(auto_solver);
+            goto cleanup;
+        }
+
+        printf(
+            "SEQUENCE_POLICY_AUTO_PRECON PASSED "
+            "max_age=%d age=%d generation=%llu->%llu "
+            "precon_preserved=1\n",
+            (int)auto_max_age,
+            (int)auto_solver->sequence_precon_age,
+            (unsigned long long)auto_vg0,
+            (unsigned long long)auto_vg1);
+
+        lis_solver_destroy(auto_solver);
+    }
+
+    printf("LIS_SEQUENCE_POLICY_AUTO_A3 PASSED\n");
+
 cleanup:
 
 	if( sequence_solver )
