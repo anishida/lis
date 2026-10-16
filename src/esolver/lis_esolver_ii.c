@@ -373,6 +373,7 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
   LIS_INT err;
   LIS_PRECON precon;
   LIS_INT nsol, precon_type;
+  LIS_INT transform;
   char solvername[128], preconname[128];
 
   LIS_DEBUG_FUNC_IN;
@@ -388,6 +389,7 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
 #endif	
   ishift = esolver->ishift;
   output  = esolver->options[LIS_EOPTIONS_OUTPUT];
+  transform = esolver->transform;
 
   Aop = NULL;
   A = esolver->A;
@@ -412,6 +414,22 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
 #endif
     }
   
+  if( output )
+  {
+	if( transform == LIS_EIGEN_TRANSFORM_SHIFT_INVERT )
+	{
+		lis_printf(
+			comm,
+			"spectral transform    : shift-invert\n");
+	}
+	else if( transform == LIS_EIGEN_TRANSFORM_BUCKLING )
+	{
+		lis_printf(
+			comm,
+			"spectral transform    : buckling\n");
+	}
+  }
+
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
   err = lis_solver_set_optionC(solver);
@@ -458,8 +476,23 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
       lis_vector_nrm2(v, &nrm2);
       lis_vector_scale(1.0/nrm2, v);
 
-      /* w = B * v */
-      lis_matvec(B, v, w);
+      /*
+       * Shift-invert:
+       *
+       *     T = (A - sigma B)^-1 B
+       *
+       * Buckling:
+       *
+       *     T = (A - sigma B)^-1 A
+       */
+      if( transform == LIS_EIGEN_TRANSFORM_BUCKLING )
+      {
+	lis_matvec(esolver->A, v, w);
+      }
+      else
+      {
+	lis_matvec(B, v, w);
+      }
 
       /* v = v / <w,v>^1/2, w = w / <w,v>^1/2 */
       lis_vector_dot(w, v, &eta);
@@ -510,7 +543,16 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
 	  esolver->retcode    = LIS_SUCCESS;
 	  esolver->iter[0]    = iter;
 	  esolver->resid[0]   = resid;
-	  esolver->evalue[0]  = 1.0/theta + oshift;
+	  if( transform == LIS_EIGEN_TRANSFORM_BUCKLING )
+	  {
+		esolver->evalue[0] =
+			oshift*theta/(theta-1.0);
+	  }
+	  else
+	  {
+		esolver->evalue[0] =
+			1.0/theta + oshift;
+	  }
 	  lis_vector_nrm2(v, &nrm2);
 	  lis_vector_scale(1.0/nrm2, v);
 	  lis_precon_destroy(precon);
@@ -526,7 +568,16 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
   esolver->retcode    = LIS_MAXITER;
   esolver->iter[0]    = iter;
   esolver->resid[0]   = resid;
-  esolver->evalue[0]  = 1.0/theta + oshift;
+  if( transform == LIS_EIGEN_TRANSFORM_BUCKLING )
+  {
+	esolver->evalue[0] =
+		oshift*theta/(theta-1.0);
+  }
+  else
+  {
+	esolver->evalue[0] =
+		1.0/theta + oshift;
+  }
   lis_vector_nrm2(v, &nrm2);
   lis_vector_scale(1.0/nrm2, v);
   lis_solver_destroy(solver);

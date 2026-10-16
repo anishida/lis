@@ -59,6 +59,9 @@
  * lis_matrix_get_range
  * lis_matrix_get_size
  * lis_matrix_get_nnz
+ * lis_matrix_mark_values_changed
+ * lis_matrix_mark_structure_changed
+ * lis_matrix_get_generation
  * lis_matrix_get_type
  * lis_matrix_get_option
  * lis_matrix_set_type
@@ -386,13 +389,20 @@ LIS_INT lis_matrix_storage_destroy(LIS_MATRIX Amat)
 	{
 		if( Amat->is_destroy )
 		{
-			if( Amat->ptr ) lis_free( Amat->ptr );
+			/*
+			 * External CSR storage is application-owned.  Keep LIS-owned
+			 * auxiliary storage under normal destruction semantics.
+			 */
+			if( !Amat->csr_external )
+			{
+				if( Amat->ptr ) lis_free( Amat->ptr );
+				if( Amat->index ) lis_free( Amat->index );
+				if( Amat->value ) lis_free( Amat->value );
+			}
 			if( Amat->row ) lis_free( Amat->row );
 			if( Amat->col ) lis_free( Amat->col );
-			if( Amat->index) lis_free( Amat->index );
 			if( Amat->bptr ) lis_free( Amat->bptr );
 			if( Amat->bindex ) lis_free( Amat->bindex );
-			if( Amat->value ) lis_free( Amat->value );
 			if( Amat->work ) lis_free( Amat->work );
 			if( Amat->conv_row ) lis_free( Amat->conv_row );
 			if( Amat->conv_col ) lis_free( Amat->conv_col );
@@ -419,6 +429,7 @@ LIS_INT lis_matrix_storage_destroy(LIS_MATRIX Amat)
 		Amat->bindex    = NULL;
 		Amat->value     = NULL;
 		Amat->work      = NULL;
+		Amat->csr_external = LIS_FALSE;
 		Amat->conv_row  = NULL;
 		Amat->conv_col  = NULL;
 		Amat->w_nnz     = NULL;
@@ -610,12 +621,243 @@ LIS_INT lis_matrix_get_nnz(LIS_MATRIX A, LIS_INT *nnz)
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_matrix_get_capabilities"
+LIS_INT lis_matrix_get_capabilities(
+        LIS_MATRIX A,
+        LIS_INT *capabilities)
+{
+        LIS_INT err;
+        LIS_INT cap_a;
+        LIS_INT cap_b;
+        LIS_INT base;
+
+        LIS_DEBUG_FUNC_IN;
+
+        err = lis_matrix_check(
+                A,
+                LIS_MATRIX_CHECK_SIZE);
+
+        if( err ) return err;
+
+        if( capabilities==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "capabilities output pointer is NULL\n");
+
+                return LIS_ERR_ILL_ARG;
+        }
+
+        *capabilities = 0;
+
+        base =
+                LIS_MATRIX_CAP_MATVEC
+                |
+                LIS_MATRIX_CAP_MATVECH
+                |
+                LIS_MATRIX_CAP_DIAGONAL;
+
+        switch( A->matrix_type )
+        {
+        case LIS_MATRIX_CSR:
+        case LIS_MATRIX_CSC:
+        case LIS_MATRIX_MSR:
+        case LIS_MATRIX_DIA:
+        case LIS_MATRIX_ELL:
+        case LIS_MATRIX_JAD:
+        case LIS_MATRIX_BSR:
+        case LIS_MATRIX_BSC:
+        case LIS_MATRIX_VBR:
+        case LIS_MATRIX_COO:
+        case LIS_MATRIX_DNS:
+
+                *capabilities = base;
+                break;
+
+
+        case LIS_MATRIX_USER:
+
+                if( A->user_matvec!=NULL )
+                {
+                        *capabilities |=
+                                LIS_MATRIX_CAP_MATVEC;
+                }
+
+                if( A->user_matvech!=NULL )
+                {
+                        *capabilities |=
+                                LIS_MATRIX_CAP_MATVECH;
+                }
+
+                if( A->user_get_diagonal!=NULL )
+                {
+                        *capabilities |=
+                                LIS_MATRIX_CAP_DIAGONAL;
+                }
+
+                if( A->user_get_row!=NULL )
+                {
+                        *capabilities |=
+                                LIS_MATRIX_CAP_ROW_ACCESS;
+                }
+
+                break;
+
+
+        case LIS_MATRIX_OPERATOR:
+
+                if( A->operator_A==NULL )
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "matrix operator is not initialized\n");
+
+                        return LIS_ERR_ILL_ARG;
+                }
+
+                err = lis_matrix_get_capabilities(
+                        A->operator_A,
+                        &cap_a);
+
+                if( err ) return err;
+
+                /*
+                 * Scaled operator D*A*D.
+                 *
+                 * Row access is intentionally not inherited because
+                 * LIS_MATRIX_OPERATOR does not expose a row-access API.
+                 */
+                if( A->operator_scale!=NULL )
+                {
+                        *capabilities =
+                                cap_a
+                                &
+                                base;
+
+                        break;
+                }
+
+                /*
+                 * Linear-combination operator alpha*A + beta*B.
+                 *
+                 * An operation is available only when both operands
+                 * provide it. Row access is not exposed for operators.
+                 */
+                if( A->operator_B==NULL )
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "matrix operator is not initialized\n");
+
+                        return LIS_ERR_ILL_ARG;
+                }
+
+                err = lis_matrix_get_capabilities(
+                        A->operator_B,
+                        &cap_b);
+
+                if( err ) return err;
+
+                *capabilities =
+                        cap_a
+                        &
+                        cap_b
+                        &
+                        base;
+
+                break;
+
+
+        default:
+
+                *capabilities = 0;
+                break;
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_mark_values_changed"
+LIS_INT lis_matrix_mark_values_changed(LIS_MATRIX A)
+{
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	err = lis_matrix_check(A,LIS_MATRIX_CHECK_NULL);
+	if( err ) return err;
+
+	A->value_generation++;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_mark_structure_changed"
+LIS_INT lis_matrix_mark_structure_changed(LIS_MATRIX A)
+{
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	err = lis_matrix_check(A,LIS_MATRIX_CHECK_NULL);
+	if( err ) return err;
+
+	A->structure_generation++;
+	A->value_generation++;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_get_generation"
+LIS_INT lis_matrix_get_generation(
+	LIS_MATRIX A,
+	LIS_UNSIGNED_INT *structure_generation,
+	LIS_UNSIGNED_INT *value_generation)
+{
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	err = lis_matrix_check(A,LIS_MATRIX_CHECK_NULL);
+	if( err ) return err;
+
+	if( structure_generation==NULL && value_generation==NULL )
+	{
+		LIS_SETERR(
+			LIS_ERR_ILL_ARG,
+			"both matrix generation output pointers are NULL\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	if( structure_generation!=NULL )
+	{
+		*structure_generation = A->structure_generation;
+	}
+
+	if( value_generation!=NULL )
+	{
+		*value_generation = A->value_generation;
+	}
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_matrix_assemble"
 LIS_INT lis_matrix_assemble(LIS_MATRIX A)
 {
 	LIS_INT err;
 	LIS_INT matrix_type;
 	LIS_MATRIX B;
+	LIS_UNSIGNED_INT structure_generation;
+	LIS_UNSIGNED_INT value_generation;
 
 	LIS_DEBUG_FUNC_IN;
 
@@ -625,6 +867,9 @@ LIS_INT lis_matrix_assemble(LIS_MATRIX A)
 	matrix_type = A->matrix_type;
 	if( A->status==LIS_MATRIX_ASSEMBLING )
 	{
+		structure_generation = A->structure_generation;
+		value_generation     = A->value_generation;
+
 		A->matrix_type = LIS_MATRIX_RCO;
 		A->status      = LIS_MATRIX_RCO;
 		#ifdef USE_MPI
@@ -648,6 +893,10 @@ LIS_INT lis_matrix_assemble(LIS_MATRIX A)
 		err = lis_matrix_copy_struct(B,A);
 		if( err ) return err;
 		lis_free(B);
+
+		A->structure_generation = structure_generation;
+		A->value_generation     = value_generation;
+
 		if( A->matrix_type==LIS_MATRIX_JAD )
 		{
 			A->work = (LIS_SCALAR *)lis_malloc(A->n*sizeof(LIS_SCALAR),"lis_matrix_assemble::A->work");
@@ -1096,6 +1345,7 @@ LIS_INT lis_matrix_set_user(LIS_MATRIX A, void *user_data,
 	A->user_matvec  = matvec;
 	A->user_matvech = matvech;
 	A->user_get_diagonal = NULL;
+	A->user_get_row      = NULL;
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
@@ -1120,6 +1370,157 @@ LIS_INT lis_matrix_set_user_diagonal(
         }
 
         A->user_get_diagonal = get_diagonal;
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_set_user_row"
+LIS_INT lis_matrix_set_user_row(
+        LIS_MATRIX A, LIS_MATRIX_USER_GET_ROW get_row)
+{
+        LIS_INT err;
+
+        LIS_DEBUG_FUNC_IN;
+
+        err = lis_matrix_check(A,LIS_MATRIX_CHECK_ALL);
+        if( err ) return err;
+
+        if( A->matrix_type!=LIS_MATRIX_USER )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "matrix is not LIS_MATRIX_USER\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        A->user_get_row = get_row;
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_get_user_row"
+LIS_INT lis_matrix_get_user_row(
+        LIS_MATRIX A,
+        LIS_INT local_row,
+        LIS_INT *nnz,
+        LIS_INT *cols,
+        LIS_SCALAR *vals)
+{
+        LIS_INT err;
+        LIS_INT k;
+        LIS_INT capacity;
+        LIS_INT query_mode;
+
+        LIS_DEBUG_FUNC_IN;
+
+        err = lis_matrix_check(A,LIS_MATRIX_CHECK_ALL);
+        if( err ) return err;
+
+        if( A->matrix_type!=LIS_MATRIX_USER )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "matrix is not LIS_MATRIX_USER\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( nnz==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "nnz output pointer is NULL\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( local_row<0 || local_row>=A->n )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "local row is outside the local matrix range\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( (cols==NULL)!=(vals==NULL) )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "cols and vals must either both be NULL "
+                        "or both be non-NULL\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( A->user_get_row==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_NOT_IMPLEMENTED,
+                        "LIS_MATRIX_USER row callback is not set\n");
+                return LIS_ERR_NOT_IMPLEMENTED;
+        }
+
+        query_mode = (cols==NULL && vals==NULL);
+
+        if( query_mode )
+        {
+                capacity = 0;
+        }
+        else
+        {
+                capacity = *nnz;
+
+                if( capacity<0 )
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "row capacity is negative\n");
+                        return LIS_ERR_ILL_ARG;
+                }
+        }
+
+        err = A->user_get_row(
+                A->user_data,
+                local_row,
+                nnz,
+                cols,
+                vals);
+
+        if( err ) return err;
+
+        if( *nnz<0 )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "LIS_MATRIX_USER row callback returned "
+                        "a negative nnz\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( !query_mode && *nnz>capacity )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "LIS_MATRIX_USER row callback exceeded "
+                        "the supplied capacity\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( !query_mode )
+        {
+                for(k=0;k<*nnz;k++)
+                {
+                        if( cols[k]<0 || cols[k]>=A->gn )
+                        {
+                                LIS_SETERR(
+                                        LIS_ERR_ILL_ARG,
+                                        "LIS_MATRIX_USER row callback "
+                                        "returned an invalid global column\n");
+                                return LIS_ERR_ILL_ARG;
+                        }
+                }
+        }
 
         LIS_DEBUG_FUNC_OUT;
         return LIS_SUCCESS;
@@ -1291,6 +1692,7 @@ LIS_INT lis_matrix_unset(LIS_MATRIX A)
 	A->bindex  = NULL;
 	A->value   = NULL;
 	A->is_copy = LIS_FALSE;
+	A->csr_external = LIS_FALSE;
 	A->status  = LIS_MATRIX_NULL;
 
 	LIS_DEBUG_FUNC_OUT;

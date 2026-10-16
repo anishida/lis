@@ -56,41 +56,76 @@
  * lis_psolveh
  ************************************************/
 
+
+static LIS_INT
+lis_precon_builtin_unavailable(
+    LIS_SOLVER solver,
+    LIS_PRECON precon)
+{
+    (void)solver;
+    (void)precon;
+
+    return LIS_ERR_NOT_IMPLEMENTED;
+}
+
+
+static LIS_INT
+lis_psolve_builtin_unavailable(
+    LIS_SOLVER solver,
+    LIS_VECTOR b,
+    LIS_VECTOR x)
+{
+    (void)solver;
+    (void)b;
+    (void)x;
+
+    return LIS_ERR_NOT_IMPLEMENTED;
+}
+
+
 LIS_PRECON_CREATE_XXX lis_precon_create_xxx[] = {
-	lis_precon_create_none, lis_precon_create_jacobi, lis_precon_create_iluk,
-	lis_precon_create_ssor, lis_precon_create_hybrid, lis_precon_create_is,
-	lis_precon_create_sainv,lis_precon_create_saamg,  lis_precon_create_iluc,
-	lis_precon_create_ilut, lis_precon_create_bjacobi
+        lis_precon_create_none, lis_precon_create_jacobi, lis_precon_create_iluk,
+        lis_precon_create_ssor, lis_precon_create_hybrid, lis_precon_create_is,
+        lis_precon_create_sainv,lis_precon_create_saamg,  lis_precon_create_iluc,
+        lis_precon_create_ilut, lis_precon_create_bjacobi,
+        lis_precon_builtin_unavailable,
+        lis_precon_create_mfamg
 };
 
 /*NEH support for extended "solve_kernel" workflow*/
 LIS_PRECON_PSD_CREATE_XXX lis_precon_psd_create_xxx[] = {
-	lis_precon_create_none, NULL,                        lis_precon_psd_create_iluk,
-	NULL,                   NULL,                        NULL,
-	NULL,                   lis_precon_psd_create_saamg, NULL,
-	NULL,                   NULL
+        lis_precon_create_none, NULL,                        lis_precon_psd_create_iluk,
+        NULL,                   NULL,                        NULL,
+        NULL,                   lis_precon_psd_create_saamg, NULL,
+        NULL,                   NULL,
+        lis_precon_builtin_unavailable,
+        lis_precon_create_mfamg
 };
 
 /*NEH support for extended "solve_kernel" workflow*/
 LIS_PRECON_PSD_UPDATE_XXX lis_precon_psd_update_xxx[] = {
-	NULL,                   NULL,                        lis_precon_psd_update_iluk,
-	NULL,                   NULL,                        NULL,
-	NULL,                   lis_precon_psd_update_saamg, NULL,
-	NULL,                   NULL
+        NULL,                   NULL,                        lis_precon_psd_update_iluk,
+        NULL,                   NULL,                        NULL,
+        NULL,                   lis_precon_psd_update_saamg, NULL,
+        NULL,                   NULL,
+        lis_precon_builtin_unavailable,
+        lis_precon_psd_update_mfamg
 };
 
 LIS_PSOLVE_XXX lis_psolve_xxx[] = {
-	lis_psolve_none,     lis_psolve_jacobi, lis_psolve_iluk_csr,
-	lis_psolve_ssor,     lis_psolve_hybrid, lis_psolve_none,
-	lis_psolve_sainv,    lis_psolve_saamg,  lis_psolve_iluc,
-	lis_psolve_ilut_csr, lis_psolve_bjacobi, lis_psolve_adds
+        lis_psolve_none,     lis_psolve_jacobi, lis_psolve_iluk_csr,
+        lis_psolve_ssor,     lis_psolve_hybrid, lis_psolve_none,
+        lis_psolve_sainv,    lis_psolve_saamg,  lis_psolve_iluc,
+        lis_psolve_ilut_csr, lis_psolve_bjacobi, lis_psolve_adds,
+        lis_psolve_mfamg
 };
 
 LIS_PSOLVEH_XXX lis_psolveh_xxx[] = {
-	lis_psolveh_none,     lis_psolveh_jacobi, lis_psolveh_iluk_csr,
-	lis_psolveh_ssor,     lis_psolveh_hybrid, lis_psolveh_none,
-	lis_psolveh_sainv,    lis_psolveh_saamg,  lis_psolveh_iluc,
-	lis_psolveh_ilut_csr, lis_psolveh_bjacobi, lis_psolveh_adds
+        lis_psolveh_none,     lis_psolveh_jacobi, lis_psolveh_iluk_csr,
+        lis_psolveh_ssor,     lis_psolveh_hybrid, lis_psolveh_none,
+        lis_psolveh_sainv,    lis_psolveh_saamg,  lis_psolveh_iluc,
+        lis_psolveh_ilut_csr, lis_psolveh_bjacobi, lis_psolveh_adds,
+        lis_psolve_builtin_unavailable
 };
 
 LIS_PRECON_REGISTER *precon_register_top = NULL;
@@ -311,11 +346,26 @@ LIS_INT lis_precon_create(LIS_SOLVER solver, LIS_PRECON *precon)
 		        precon_type-LIS_PRECON_TYPE_USERDEF].pdestroy;
 		err = precon_register_top[precon_type-LIS_PRECON_TYPE_USERDEF].pcreate(solver,*precon);
 	}
-	else if( precon_type && solver->options[LIS_OPTIONS_ADDS] )
-	{
-		err = lis_precon_create_adds(solver,*precon);
-		(*precon)->precon_type = LIS_PRECON_TYPE_ADDS;
-	}
+	else if( precon_type==LIS_PRECON_TYPE_MFAMG &&
+         solver->options[LIS_OPTIONS_ADDS] )
+    {
+        LIS_SETERR(
+            LIS_ERR_NOT_IMPLEMENTED,
+            "MFAMG does not support additive Schwarz in the two-level implementation\n");
+
+        err =
+            LIS_ERR_NOT_IMPLEMENTED;
+    }
+    else if( precon_type && solver->options[LIS_OPTIONS_ADDS] )
+    {
+        err =
+            lis_precon_create_adds(
+                solver,
+                *precon);
+
+        (*precon)->precon_type =
+            LIS_PRECON_TYPE_ADDS;
+    }
 	else
 	{
 		err = lis_precon_create_xxx[precon_type](solver,*precon);
@@ -526,6 +576,7 @@ LIS_INT lis_precon_create_none(LIS_SOLVER solver, LIS_PRECON precon)
 LIS_INT lis_precon_destroy(LIS_PRECON precon)
 {
 	LIS_INT i, err = LIS_SUCCESS;
+	LIS_INT mfamg_err;
 
 	LIS_DEBUG_FUNC_IN;
 
@@ -535,6 +586,11 @@ LIS_INT lis_precon_destroy(LIS_PRECON precon)
 	    {
 	        err = precon->user_destroy(precon);
 	    }
+		if( precon->mfamg )
+		{
+			mfamg_err = lis_precon_destroy_mfamg(precon);
+			if( err==LIS_SUCCESS ) err = mfamg_err;
+		}
 		if( precon->is_copy ) lis_matrix_destroy(precon->A);
 		lis_vector_destroy(precon->Pb);
 		lis_vector_destroy(precon->D);
@@ -624,7 +680,7 @@ LIS_INT lis_psolve_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
                 if(
                         precon_type<0
                         ||
-                        precon_type>LIS_PRECON_TYPE_ADDS)
+                        precon_type>=LIS_PRECON_TYPE_LEN)
                 {
                         LIS_SETERR(
                                 LIS_ERR_ILL_ARG,
@@ -642,7 +698,9 @@ LIS_INT lis_psolve_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
                     ==
                 LIS_SOLVER_FGMRES
                 &&
-                solver->near_nullspace_coarse!=NULL
+                precon_type!=LIS_PRECON_TYPE_MFAMG
+		&&
+		solver->near_nullspace_coarse!=NULL
                 &&
                 solver->near_nullspace_coarse->ready)
         {
@@ -695,7 +753,7 @@ LIS_INT lis_psolveh_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
 		return psolveh(solver,b,x);
 	}
 
-	if( precon_type<0 || precon_type>LIS_PRECON_TYPE_ADDS )
+	if( precon_type<0 || precon_type>=LIS_PRECON_TYPE_LEN )
 	{
 		LIS_SETERR(LIS_ERR_ILL_ARG,"invalid built-in preconditioner type\n");
 		return LIS_ERR_ILL_ARG;

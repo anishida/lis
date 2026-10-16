@@ -39,6 +39,9 @@ extern "C"
 #endif
 	extern LIS_INT lis_solver_init(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_work_destroy(LIS_SOLVER solver);
+	extern LIS_INT lis_solver_sequence_prepare_precon(LIS_MATRIX A, LIS_SOLVER solver, LIS_PRECON *precon);
+	extern LIS_INT lis_solver_sequence_precon_destroy(LIS_SOLVER solver);
+	extern LIS_INT lis_solver_compute_true_residual(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_REAL *residual_norm, LIS_REAL *rhs_norm);
 	extern LIS_INT lis_solver_work_vector_compatible(LIS_VECTOR v, LIS_MATRIX A, LIS_INT precision);
 	extern LIS_INT lis_solver_work_compatible(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VECTOR t, LIS_VECTOR r, LIS_REAL *bnrm2);
@@ -248,6 +251,54 @@ extern "C"
 /*	extern LIS_INT lis_fgmres_switch(LIS_SOLVER solver);*/
 	extern LIS_INT lis_fgmres_check_params(LIS_SOLVER solver);
 	extern LIS_INT lis_fgmres_malloc_work(LIS_SOLVER solver);
+
+/*******************/
+/* GCRO-DR         */
+/*******************/
+	extern LIS_INT lis_gcrodr(LIS_SOLVER solver);
+	extern LIS_INT lis_gcrodr_check_params(LIS_SOLVER solver);
+	extern LIS_INT lis_gcrodr_malloc_work(LIS_SOLVER solver);
+	extern LIS_INT lis_gcrodr_clear_recycle(LIS_SOLVER solver);
+
+/*******************/
+/* FGCRO-DR        */
+/*******************/
+        extern LIS_INT lis_fgcrodr(LIS_SOLVER solver);
+        extern LIS_INT lis_fgcrodr_quad(LIS_SOLVER solver);
+        extern LIS_INT lis_fgcrodr_check_params(LIS_SOLVER solver);
+        extern LIS_INT lis_fgcrodr_malloc_work(LIS_SOLVER solver);
+        extern LIS_INT lis_fgcrodr_clear_recycle(LIS_SOLVER solver);
+        extern LIS_INT lis_fgcrodr_state_destroy(LIS_SOLVER solver);
+        extern LIS_INT lis_fgcrodr_validate_recycle(
+                LIS_SOLVER solver, LIS_REAL *orth_error,
+                LIS_REAL *relation_error);
+
+
+
+extern LIS_INT lis_fgcrodr_get_lifecycle_state(
+        LIS_SOLVER solver,
+        LIS_INT *valid,
+        LIS_MATRIX *matrix,
+        LIS_UNSIGNED_INT *structure_generation,
+        LIS_UNSIGNED_INT *value_generation);
+extern LIS_INT lis_fgcrodr_get_stats(
+        LIS_SOLVER solver,
+        LIS_UNSIGNED_INT *builds,
+        LIS_UNSIGNED_INT *updates,
+        LIS_UNSIGNED_INT *uses,
+        LIS_UNSIGNED_INT *rejects);
+
+extern LIS_INT lis_fgcrodr_get_policy_stats(
+        LIS_SOLVER solver,
+        LIS_UNSIGNED_INT *cross_uses,
+        LIS_UNSIGNED_INT *keeps,
+        LIS_UNSIGNED_INT *transports,
+        LIS_UNSIGNED_INT *rejects);
+
+
+        extern LIS_INT lis_fgcrodr_set_option(
+                LIS_SOLVER solver, const char *name, const char *value);
+
 
 /*******************/
 /* IDR(s)          */

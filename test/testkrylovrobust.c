@@ -605,6 +605,349 @@ print_result(
 
 /* ========================================================== */
 
+#ifndef _COMPLEX
+
+static LIS_INT
+check_fgmres_noimp_progress(void)
+{
+    LIS_MATRIX A = NULL;
+
+    LIS_VECTOR b = NULL;
+    LIS_VECTOR x = NULL;
+    LIS_VECTOR r = NULL;
+
+    LIS_SOLVER solver = NULL;
+
+    LIS_INT err;
+    LIS_INT api;
+
+    LIS_REAL true_residual;
+    LIS_REAL xnorm;
+
+    LIS_INT failed;
+
+
+    failed =
+        0;
+
+
+    err =
+        lis_matrix_create(
+            LIS_COMM_WORLD,
+            &A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_set_size(
+            A,
+            0,
+            4);
+
+    if( err )
+        goto api_fail;
+
+
+#define SET_A(row,col,val)                                      \
+    do                                                          \
+    {                                                           \
+        err =                                                   \
+            lis_matrix_set_value(                               \
+                LIS_INS_VALUE,                                  \
+                (row),                                          \
+                (col),                                          \
+                (LIS_SCALAR)(val),                              \
+                A);                                             \
+                                                                \
+        if( err )                                               \
+            goto api_fail;                                      \
+    }                                                           \
+    while(0)
+
+
+    /*
+     * Deterministic no-improvement system:
+     *
+     *     A =
+     *
+     *     [ 1  1  1  0 ]
+     *     [ 1  1  1  1 ]
+     *     [ 0  1  1  0 ]
+     *     [ 0  0  1  0 ]
+     *
+     *     b = e0
+     *
+     * The least-squares residual is unchanged after the first
+     * three Arnoldi iterations:
+     *
+     *     ||r_ls|| = 1/sqrt(2).
+     *
+     * With maxiter_noimp=1, FGMRES must terminate with MAXITER
+     * at iteration 3, but must preserve the current Krylov
+     * approximation instead of returning the initial x.
+     */
+
+    SET_A(0,0,1.0);
+    SET_A(1,0,1.0);
+
+    SET_A(0,1,1.0);
+    SET_A(1,1,1.0);
+    SET_A(2,1,1.0);
+
+    SET_A(0,2,1.0);
+    SET_A(1,2,1.0);
+    SET_A(2,2,1.0);
+    SET_A(3,2,1.0);
+
+    SET_A(1,3,1.0);
+
+
+#undef SET_A
+
+
+    err =
+        lis_matrix_set_type(
+            A,
+            LIS_MATRIX_CSR);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_assemble(
+            A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &b);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &r);
+
+    if( err )
+        goto api_fail;
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        b);
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x);
+
+
+    b->value[0] =
+        (LIS_SCALAR)1.0;
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i fgmres "
+            "-p none "
+            "-scale none "
+            "-print none "
+            "-restart 4 "
+            "-maxiter 3 "
+            "-maxiter_noimp 1 "
+            "-tol 1e-14",
+            solver);
+
+    if( err )
+        goto api_fail;
+
+
+    api =
+        lis_solve(
+            A,
+            b,
+            x,
+            solver);
+
+
+    if( api!=LIS_SUCCESS )
+    {
+        err =
+            api;
+
+        goto api_fail;
+    }
+
+
+    err =
+        lis_matvec(
+            A,
+            x,
+            r);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_xpay(
+            b,
+            (LIS_SCALAR)-1.0,
+            r);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_nrm2(
+            r,
+            &true_residual);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_nrm2(
+            x,
+            &xnorm);
+
+    if( err )
+        goto api_fail;
+
+
+    printf(
+        "FGMRES noimp progress "
+        "api=%d status=%d iter=%d "
+        "reported=% .17e true=% .17e xnorm=% .17e "
+        "x=[% .17e,% .17e,% .17e,% .17e]\n",
+        (int)api,
+        (int)solver->retcode,
+        (int)solver->iter,
+        (double)solver->resid,
+        (double)true_residual,
+        (double)xnorm,
+        (double)x->value[0],
+        (double)x->value[1],
+        (double)x->value[2],
+        (double)x->value[3]);
+
+
+    if(
+        solver->retcode!=LIS_MAXITER ||
+        solver->iter!=3 ||
+        fabs(
+            solver->resid
+            -0.7071067811865476)
+            >1.0e-12 ||
+        fabs(
+            true_residual
+            -0.7071067811865476)
+            >1.0e-12 ||
+        fabs(
+            xnorm
+            -0.5)
+            >1.0e-12 ||
+        fabs(
+            (LIS_REAL)x->value[0]
+            -0.5)
+            >1.0e-12 ||
+        fabs(
+            (LIS_REAL)x->value[1])
+            >1.0e-12 ||
+        fabs(
+            (LIS_REAL)x->value[2])
+            >1.0e-12 ||
+        fabs(
+            (LIS_REAL)x->value[3])
+            >1.0e-12 )
+    {
+        fprintf(
+            stderr,
+            "FGMRES NO-IMPROVEMENT PROGRESS FAILED\n");
+
+        failed =
+            1;
+    }
+    else
+    {
+        printf(
+            "FGMRES NO-IMPROVEMENT PROGRESS PASSED\n");
+    }
+
+
+    err =
+        failed
+        ? LIS_ERR_ILL_ARG
+        : LIS_SUCCESS;
+
+    goto cleanup;
+
+
+api_fail:
+
+    fprintf(
+        stderr,
+        "FGMRES no-improvement API failure: %d\n",
+        (int)err);
+
+
+cleanup:
+
+    if( solver )
+        lis_solver_destroy(
+            solver);
+
+    if( r )
+        lis_vector_destroy(
+            r);
+
+    if( x )
+        lis_vector_destroy(
+            x);
+
+    if( b )
+        lis_vector_destroy(
+            b);
+
+    if( A )
+        lis_matrix_destroy(
+            A);
+
+
+    return err;
+}
+
+#endif
+
+
 int
 main(
     int argc,
@@ -881,6 +1224,16 @@ main(
     printf(
         "LIS_KRYLOV_ROBUSTNESS_STAGE6F %s\n",
         failed ? "FAILED" : "PASSED");
+
+
+#ifndef _COMPLEX
+    if(
+        check_fgmres_noimp_progress()
+        !=LIS_SUCCESS )
+    {
+        failed = 1;
+    }
+#endif
 
 
     lis_finalize();

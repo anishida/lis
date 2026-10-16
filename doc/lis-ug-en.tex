@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 2.1.16
+Version 2.1.17
 \end{flushleft}
 
 \vspace*{2cm}
@@ -309,6 +309,7 @@ Gauss-Seidel\cite{gauss,seidel} & GMRES(m)\cite{gmres} \\
 SOR\cite{young,frankel} & FGMRES(m)\cite{fgmres} \\
 IDR(s)\cite{idrs}       & MINRES\cite{minres} \\
 COCG\cite{cocg}         & COCR\cite{cocr} \\
+GCRO-DR\cite{gcro-dr}   & FGCRO-DR\cite{fgcro-dr} \\
 \hline         
 \end{tabular}
 \hfil}
@@ -346,6 +347,7 @@ ILUT\cite{ilut,ITSOL} \\
 Crout ILU\cite{ITSOL,iluc} \\
 I+S\cite{kohno01} \\
 SA-AMG\cite{fujii01}  \\
+MFAMG \\
 Hybrid\cite{abe01} \\
 SAINV\cite{bridson01}  \\
 Additive Schwarz\cite{chan,dryja} \\
@@ -1991,6 +1993,15 @@ where \verb=-i {cg|1}= means \verb=-i cg= or \verb=-i 1= and \verb=-maxiter [100
  MINRES      & \verb=-i {minres|23}=    &    \\
  COCG        & \verb=-i {cocg|24}=      &    \\
  COCR        & \verb=-i {cocr|25}=      &    \\  
+ GCRO-DR     & \verb=-i {gcrodr|26}=    & \verb=-gcrodr_k [40]= & The subspace dimension \\ 
+             &                          & \verb=-gcrodr_keep [8]= & The number of recycled vectors \\ 
+             &                          & \verb=-gcrodr_keep_quality [0.9]= & The threshold to keep vectors \\ 
+ &                          & \verb=-gcrodr_reject_quality [0.35]= & The threshold to reject vectors \\   
+ FGCRO-DR    & \verb=-i {fgcrodr|27}=   & \verb=-restart [40]= & The restart value $m$ \\
+             &                          & \verb=-fgcrodr_k [8]= & The dimension of subspace \\
+             &                          & \verb=-fgcrodr_keep [0.90]= & The threshold to keep space \\
+             &                          & \verb=-fgcrodr_reject [0.10]= & The threshold to reject space \\
+             &                          & \verb=-fgcrodr_update [true]= & Enable recycle-space updates \\
 \hline         
 \end{tabular}
 \end{center}
@@ -2036,6 +2047,7 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criter
 ratio of the maximum fill-in \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -2043,6 +2055,7 @@ Schwarz  &                       &                             &                
 \end{center}
 \end{minipage}
 \\ \\
+
 \begin{minipage}[t]{\textwidth}
 \begin{center}
 {\bf Other Options}\\
@@ -2240,6 +2253,7 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criter
          &                       & \verb=-iluc_rate [5.0]=     & The ratio of the maximum fill-in \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -2280,6 +2294,11 @@ Option &                          \\ \hline
 \verb=-rval [0]=       & The Ritz values \\
                        & \verb=-rval {false|0}     =  The eigenpairs are computed based on the Ritz values \\
                        & \verb=-rval {true|1}      =  Only the Ritz values are computed \\
+\verb=-nev [1]=        & The number of requested eigenpairs ($\le$ \verb=ss=) \\
+\verb=-etransform [0]=       & The generalized eigenvalue transformation selection \\
+                       & \verb=-etransform {auto|0}     =  Select the default transformation behavior \\
+                       & \verb=-etransform {shift-invert|1}      =  Shift-invert $T = (A - \sigma B)^{-1}B$ \\
+                       & \verb=-etransform {buckling|2}      =  Buckling $T = (A - \sigma B)^{-1}A$ \\
 \hline         
 \end{tabular}
 \end{center}
@@ -2588,7 +2607,7 @@ An actual implementation can be seen in test problem test8f.F90.
 \end{itembox}
 
 \newpage
-\subsection{User-Defined Shell Matrix and Matrix Operator}
+\subsection{Matrix-Free Computations}
 Starting from Version 2.1.13, Lis introduces \texttt{LIS\_MATRIX\_USER} and \texttt{LIS\_MATRIX\_OPERATOR} for matrix-free computations.
 \subsubsection{User-Defined Shell Matrix (\texttt{LIS\_MATRIX\_USER})}
 This interface allows applications to retain custom matrix formats and register callback functions for matrix-vector products. To extract the diagonal elements of a user-defined matrix, the following function is provided to register an optional diagonal callback function:
@@ -2606,8 +2625,20 @@ This operator represents the linear combination of two matrices $C = \alpha A + 
 \subsubsection{Shifted Generalized Eigenvalue Solvers with Matrix Operators}
 For shifted generalized eigenvalue problems $(A - \sigma B)x = \lambda Bx$, Generalized Power Iteration (GPI), Generalized Inverse Iteration (GII), and Generalized Conjugate Residual (GCR) solvers now utilize \texttt{LIS\_MATRIX\_OPERATOR} to dynamically create a temporary operator for $A - \sigma B$. This ensures the original matrices remain pristine and enables full support for user-defined custom matrices (\texttt{LIS\_MATRIX\_USER}). Shifted \texttt{LIS\_MATRIX\_USER} remains unsupported for other methods like Lanczos.
 
-\subsection{Preconditioner Reuse and Compatibility with User-Defined Matrices}
+\subsubsection{Preconditioner Reuse and Compatibility with User-Defined Matrices}
 Starting from Version 2.1.15, Lis clarifies preconditioner ownership and improves support for repeated solves with user-defined matrices (\texttt{LIS\_MATRIX\_USER}), relaxing previous restrictions when compatible prebuilt preconditioners are supplied.
+
+\subsubsection{Solver-Managed Feature Enhancements}
+Version 2.1.16 now supports the symmetric diagonal scaling of shell matrices without any direct modifications to the original matrix structure or the right-hand side vector. Furthermore, solver-managed near-nullspace support and a two-level deflation correction have been incorporated for FGMRES solvers to improve convergence robustness in nested iterations. 
+
+\subsubsection{MFAMG Preconditioner}
+MFAMG is a built-in matrix-free aggregation multigrid preconditioner.
+It builds a multilevel aggregation hierarchy from one or more
+user-supplied near-nullspace vectors.
+MFAMG supports CSR matrices and, in serial,
+{\tt LIS\_MATRIX\_USER} matrices. In MPI environments, CSR matrices
+are currently required. MFAMG currently supports double precision and
+requires \verb=-scale none=.
 
 \newpage
 \subsection{Compiling and Linking}
@@ -6136,6 +6167,15 @@ that \verb=-maxiter= defaults to $1,000$.
  MINRES      & \verb=-i {minres|23}=    &    \\
  COCG        & \verb=-i {cocg|24}=      &    \\
  COCR        & \verb=-i {cocr|25}=      &    \\   
+ GCRO-DR     & \verb=-i {gcrodr|26}=    & \verb=-gcrodr_k [40]= & The subspace dimension \\ 
+             &                          & \verb=-gcrodr_keep [8]= & The number of recycled vectors \\ 
+             &                          & \verb=-gcrodr_keep_quality [0.9]= & The threshold to keep vectors \\ 
+ &                          & \verb=-gcrodr_reject_quality [0.35]= & The threshold to reject vectors \\   
+ FGCRO-DR    & \verb=-i {fgcrodr|27}=   & \verb=-restart [40]= & The restart value $m$ \\
+             &                          & \verb=-fgcrodr_k [8]= & The dimension of subspace \\
+             &                          & \verb=-fgcrodr_keep [0.90]= & The threshold to keep space \\
+             &                          & \verb=-fgcrodr_reject [0.10]= & The threshold to reject space \\
+             &                          & \verb=-fgcrodr_update [true]= & Enable recycle-space updates \\
 \hline         
 \end{tabular}
 \end{center}
@@ -6172,6 +6212,7 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criter
 &                       & \verb=-iluc_rate [5.0]=     & The ratio of the maximum fill-in \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -6718,6 +6759,7 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criter
          &                       & \verb=-iluc_rate [5.0]=     & The ratio of the maximum fill-in \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -6758,6 +6800,11 @@ Option &                          \\ \hline
 \verb=-rval [0]=       & The Ritz values \\
                        & \verb=-rval {false|0}     =  The eigenpairs are computed based on the Ritz values \\
                        & \verb=-rval {true|1}      =  Only the Ritz values are computed \\
+\verb=-nev [1]=        & The number of requested eigenpairs ($\le$ \verb=ss=)) \\
+\verb=-etransform [0]=       & The generalized eigenvalue transformation selection \\
+                       & \verb=-etransform {auto|0}     =  Select the default transformation behavior \\
+                       & \verb=-etransform {shift-invert|1}      =  Shift-invert $T = (A - \sigma B)^{-1}B$ \\
+                       & \verb=-etransform {buckling|2}      =  Buckling $T = (A - \sigma B)^{-1}A$ \\
 \hline         
 \end{tabular}
 \end{center}
@@ -8426,6 +8473,16 @@ H. A. van der Vorst and J. B. M. Melissen.
 T. Sogabe and S. Zhang.
 \newblock A COCR Method for Solving Complex Symmetric Linear Systems.
 \newblock Journal of Computational and Applied Mathematics, Vol.~199, No.~2, pp.\ 297--303, 2007.
+
+\bibitem{gcro-dr}
+Q. Niu, L-Z. Lu and G. Liu.
+\newblock Accelerated GCRO-DR method for solving sequences of systems of linear equations.
+\newblock Journal of Computational and Applied Mathematics, Vol.~253, pp.\ 131--141, 2013. 
+
+\bibitem{fgcro-dr}
+L. M. Carvalho, S. Gratton, R. Lago and X. Vasseur.
+\newblock A Flexible Generalized Conjugate Residual Method with Inner Orthogonalization and Deflated Restarting.
+\newblock SIAM Journal on Matrix Analysis and Applications, Vol.~32, No.~4, pp.\ 1212--1235, 2011. 
 
 \bibitem{power}
 R. von Mises and H. Pollaczek-Geiringer.
