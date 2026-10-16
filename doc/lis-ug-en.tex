@@ -2055,18 +2055,6 @@ Schwarz  &                       &                             &                
 \end{center}
 \end{minipage}
 \\ \\
-\noindent
-{\bf MFAMG Preconditioner}\\
-MFAMG is a built-in matrix-free aggregation multigrid preconditioner.
-It builds a multilevel aggregation hierarchy from one or more
-user-supplied near-nullspace vectors. Select it with
-\verb=-p mfamg= (or \verb=-p 12=).
-MFAMG supports CSR matrices and, in serial,
-{\tt LIS\_MATRIX\_USER} matrices that provide matrix-vector product,
-diagonal, and row-access operations. In MPI environments, CSR matrices
-are currently required. MFAMG currently supports double precision and
-requires \verb=-scale none=.
-\\ \\
 
 \begin{minipage}[t]{\textwidth}
 \begin{center}
@@ -2265,6 +2253,7 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criter
          &                       & \verb=-iluc_rate [5.0]=     & The ratio of the maximum fill-in \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -2641,6 +2630,15 @@ Starting from Version 2.1.15, Lis clarifies preconditioner ownership and improve
 
 \subsubsection{Solver-Managed Feature Enhancements}
 Version 2.1.16 now supports the symmetric diagonal scaling of shell matrices without any direct modifications to the original matrix structure or the right-hand side vector. Furthermore, solver-managed near-nullspace support and a two-level deflation correction have been incorporated for FGMRES solvers to improve convergence robustness in nested iterations. 
+
+\subsubsection{MFAMG Preconditioner}
+MFAMG is a built-in matrix-free aggregation multigrid preconditioner.
+It builds a multilevel aggregation hierarchy from one or more
+user-supplied near-nullspace vectors.
+MFAMG supports CSR matrices and, in serial,
+{\tt LIS\_MATRIX\_USER} matrices. In MPI environments, CSR matrices
+are currently required. MFAMG currently supports double precision and
+requires \verb=-scale none=.
 
 \newpage
 \subsection{Compiling and Linking}
@@ -6761,6 +6759,7 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criter
          &                       & \verb=-iluc_rate [5.0]=     & The ratio of the maximum fill-in \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         

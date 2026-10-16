@@ -325,6 +325,7 @@ ILUT\cite{ilut,ITSOL} \\
 Crout ILU\cite{ITSOL,iluc} \\
 I+S\cite{kohno01} \\
 SA-AMG\cite{fujii01}  \\
+MFAMG \\
 Hybrid\cite{abe01} \\
 SAINV\cite{bridson01}  \\
 Additive Schwarz\cite{chan,dryja} \\
@@ -1908,6 +1909,7 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & ドロップ基
          &                       & \verb=-iluc_rate [5.0]=     & 最大フィルイン数の倍率 \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
+MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
 Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数   \\
 \hline         
 \end{tabular}
@@ -2088,8 +2090,8 @@ SA-AMG   & \verb=-p {saamg|7}=   & \verb=-saamg_unsym [false]=     & 非対称�
 crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & ドロップ基準    \\
          &                       & \verb=-iluc_rate [5.0]=     & 最大フィルイン数の倍率 \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
-ILUT     & \verb=-p {ilut|9}=    &     \\
-         &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
+ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
+MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
 Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数   \\
 \hline         
 \end{tabular}
@@ -2455,6 +2457,14 @@ A =
 
 \subsubsection{ソルバ管理機能の拡張}
 バージョン 2.1.16 より、元の行列構造や右辺ベクトルを直接変更することなく、シェル行列の対称対角スケーリングを行うことができるようになった。さらに、入れ子状の反復における収束の堅牢性を向上させるため、FGMRES ソルバに対してソルバ管理のニア零空間サポートと2レベルデフレーション補正が組み込まれた。
+
+\subsubsection{MFAMG前処理}
+MFAMGは、マトリックスフリーアグリゲーションマルチグリッド前処理である。
+ユーザから提供される1つまたは複数のニア零空間ベクトルから、マルチレベルの
+アグリゲーション階層を構築する。MFAMGは、逐次環境ではCSR行列
+および{\tt LIS\_MATRIX\_USER}行列をサポートする。
+MPI環境においては、現時点ではCSR行列が必須である。また、倍精度、
+\verb=-scale none=の指定が必要である。
 
 \newpage
 \subsection{実行ファイルの生成}
@@ -6032,6 +6042,7 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & ドロップ基
          &                       & \verb=-iluc_rate [5.0]=     & 最大フィルイン数の倍率 \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
+MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
 Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数   \\
 \hline         
 \end{tabular}
@@ -6553,6 +6564,7 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & ドロップ基
          &                       & \verb=-iluc_rate [5.0]=     & 最大フィルイン数の倍率 \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
+MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
 Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数   \\
 \hline         
 \end{tabular}
