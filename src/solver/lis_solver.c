@@ -1296,9 +1296,8 @@ LIS_INT lis_solver_sequence_prepare_precon(
 	precon_type = solver->options[LIS_OPTIONS_PRECON];
 
 	if( precon_type < 0 ||
-	    (precon_type > LIS_PRECONNAME_MAX &&
-	     precon_type < LIS_PRECON_TYPE_USERDEF) ||
-	    precon_type >= precon_register_type )
+            precon_type == LIS_PRECON_TYPE_ADDS ||
+            precon_type >= precon_register_type )
 	{
 		LIS_SETERR1(
 			LIS_ERR_ILL_ARG,
