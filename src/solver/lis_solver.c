@@ -2884,19 +2884,23 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
      * projection of b or the residual for a general nonsymmetric
      * operator. Neither is projected here.
      *
-     * This initial integration supports unscaled default-precision
-     * FGMRES and FGCRO-DR.
+     * This integration supports unscaled default-precision
+     * GMRES, FGMRES, GCRO-DR and FGCRO-DR.
      */
     if( solver->nullspace_dim>0 )
     {
         if(
+            nsolver!=LIS_SOLVER_GMRES
+            &&
             nsolver!=LIS_SOLVER_FGMRES
+            &&
+            nsolver!=LIS_SOLVER_GCRODR
             &&
             nsolver!=LIS_SOLVER_FGCRODR)
         {
             LIS_SETERR(
                 LIS_ERR_NOT_IMPLEMENTED,
-                "exact nullspace deflation currently requires FGMRES or FGCRO-DR\n");
+                "exact nullspace deflation currently requires GMRES, FGMRES, GCRO-DR or FGCRO-DR\n");
             solver->retcode = LIS_ERR_NOT_IMPLEMENTED;
             return LIS_ERR_NOT_IMPLEMENTED;
         }

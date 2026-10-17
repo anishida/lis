@@ -192,6 +192,31 @@ run_supported(
             "-restart 6 "
             "-fgcrodr_k 1");
     }
+    else if(strcmp(name,"gcrodr")==0)
+    {
+        snprintf(
+            opts,
+            sizeof(opts),
+            "-i gcrodr "
+            "-p jacobi "
+            "-scale none "
+            "-tol 1.0e-12 "
+            "-maxiter 100 "
+            "-restart 6 "
+            "-gcrodr_keep 1");
+    }
+    else if(strcmp(name,"gmres")==0)
+    {
+        snprintf(
+            opts,
+            sizeof(opts),
+            "-i gmres "
+            "-p jacobi "
+            "-scale none "
+            "-tol 1.0e-12 "
+            "-maxiter 100 "
+            "-restart 6");
+    }
     else
     {
         snprintf(
@@ -423,7 +448,8 @@ run_reject(
 static int
 run_incompatible_rhs(
     LIS_MATRIX A,
-    LIS_VECTOR q)
+    LIS_VECTOR q,
+    const char *name)
 {
     LIS_SOLVER solver = NULL;
     LIS_VECTOR b = NULL;
@@ -437,6 +463,8 @@ run_incompatible_rhs(
     double x0,x1,x2;
     double r0,r1,r2;
     double rel;
+
+    char opts[512];
 
     int pass = 1;
 
@@ -491,13 +519,59 @@ run_incompatible_rhs(
         return 0;
     }
 
+    if(strcmp(name,"fgcrodr")==0)
+    {
+        snprintf(
+            opts,
+            sizeof(opts),
+            "-i fgcrodr "
+            "-p jacobi "
+            "-scale none "
+            "-tol 1.0e-12 "
+            "-maxiter 40 "
+            "-restart 6 "
+            "-fgcrodr_k 1");
+    }
+    else if(strcmp(name,"gcrodr")==0)
+    {
+        snprintf(
+            opts,
+            sizeof(opts),
+            "-i gcrodr "
+            "-p jacobi "
+            "-scale none "
+            "-tol 1.0e-12 "
+            "-maxiter 40 "
+            "-restart 6 "
+            "-gcrodr_keep 1");
+    }
+    else if(strcmp(name,"gmres")==0)
+    {
+        snprintf(
+            opts,
+            sizeof(opts),
+            "-i gmres "
+            "-p jacobi "
+            "-scale none "
+            "-tol 1.0e-12 "
+            "-maxiter 40 "
+            "-restart 6");
+    }
+    else
+    {
+        snprintf(
+            opts,
+            sizeof(opts),
+            "-i fgmres "
+            "-p jacobi "
+            "-scale none "
+            "-tol 1.0e-12 "
+            "-maxiter 40 "
+            "-restart 6");
+    }
+
     err = lis_solver_set_option(
-        "-i fgmres "
-        "-p jacobi "
-        "-scale none "
-        "-tol 1.0e-12 "
-        "-maxiter 20 "
-        "-restart 3",
+        opts,
         solver);
 
     if(err)
@@ -553,8 +627,10 @@ run_incompatible_rhs(
 
     printf(
         "NULLSPACE_INCOMPATIBLE "
+        "solver=%s "
         "api=%d status=%d iter=%d "
         "relres=% .17e\n",
+        name,
         (int)api,
         (int)status,
         (int)solver->iter,
@@ -582,6 +658,271 @@ run_incompatible_rhs(
     return pass;
 }
 
+static int
+run_gcrodr_repeated(
+    LIS_MATRIX A,
+    LIS_VECTOR q)
+{
+    LIS_SOLVER solver = NULL;
+
+    LIS_VECTOR b = NULL;
+    LIS_VECTOR x = NULL;
+    LIS_VECTOR basis[1];
+
+    LIS_INT err;
+    LIS_INT api1;
+    LIS_INT api2;
+    LIS_INT status1;
+    LIS_INT status2;
+
+    double x0,x1,x2;
+    double r0,r1,r2;
+
+    double rel1;
+    double rel2;
+    double gauge1;
+    double gauge2;
+
+    int pass = 1;
+
+    err = lis_vector_duplicate(
+        A,
+        &b);
+
+    if(err)
+    {
+        return 0;
+    }
+
+    err = lis_vector_duplicate(
+        A,
+        &x);
+
+    if(err)
+    {
+        lis_vector_destroy(b);
+        return 0;
+    }
+
+    err = lis_solver_create(
+        &solver);
+
+    if(err)
+    {
+        lis_vector_destroy(x);
+        lis_vector_destroy(b);
+        return 0;
+    }
+
+    err = lis_solver_set_option(
+        "-i gcrodr "
+        "-p jacobi "
+        "-scale none "
+        "-tol 1.0e-12 "
+        "-maxiter 40 "
+        "-restart 6 "
+        "-gcrodr_keep 1",
+        solver);
+
+    if(err)
+    {
+        pass = 0;
+    }
+
+    basis[0] = q;
+
+    err = lis_solver_set_nullspace(
+        solver,
+        1,
+        basis);
+
+    if(err)
+    {
+        pass = 0;
+    }
+
+    lis_vector_set_all(
+        0.0,
+        b);
+
+    lis_vector_set_value(
+        LIS_INS_VALUE,
+        0,
+        1.0,
+        b);
+
+    lis_vector_set_value(
+        LIS_INS_VALUE,
+        1,
+        -2.0,
+        b);
+
+    lis_vector_set_value(
+        LIS_INS_VALUE,
+        2,
+        1.0,
+        b);
+
+    lis_vector_set_all(
+        0.0,
+        x);
+
+    api1 = lis_solve(
+        A,
+        b,
+        x,
+        solver);
+
+    status1 = solver->retcode;
+
+    x0 = (double)x->value[0];
+    x1 = (double)x->value[1];
+    x2 = (double)x->value[2];
+
+    r0 = x0-x1-1.0;
+    r1 = -x0+2.0*x1-x2+2.0;
+    r2 = -x1+x2-1.0;
+
+    rel1 =
+        sqrt(
+            r0*r0
+            +
+            r1*r1
+            +
+            r2*r2)
+        /
+        sqrt(6.0);
+
+    gauge1 =
+        fabs(
+            x0
+            +
+            x1
+            +
+            x2);
+
+    if(
+        api1!=LIS_SUCCESS
+        ||
+        status1!=LIS_SUCCESS
+        ||
+        !isfinite(rel1)
+        ||
+        !isfinite(gauge1)
+        ||
+        rel1>1.0e-9
+        ||
+        gauge1>1.0e-9)
+    {
+        pass = 0;
+    }
+
+    lis_vector_set_all(
+        0.0,
+        b);
+
+    lis_vector_set_value(
+        LIS_INS_VALUE,
+        0,
+        -1.0,
+        b);
+
+    lis_vector_set_value(
+        LIS_INS_VALUE,
+        1,
+        2.0,
+        b);
+
+    lis_vector_set_value(
+        LIS_INS_VALUE,
+        2,
+        -1.0,
+        b);
+
+    lis_vector_set_all(
+        0.0,
+        x);
+
+    api2 = lis_solve(
+        A,
+        b,
+        x,
+        solver);
+
+    status2 = solver->retcode;
+
+    x0 = (double)x->value[0];
+    x1 = (double)x->value[1];
+    x2 = (double)x->value[2];
+
+    r0 = x0-x1+1.0;
+    r1 = -x0+2.0*x1-x2-2.0;
+    r2 = -x1+x2+1.0;
+
+    rel2 =
+        sqrt(
+            r0*r0
+            +
+            r1*r1
+            +
+            r2*r2)
+        /
+        sqrt(6.0);
+
+    gauge2 =
+        fabs(
+            x0
+            +
+            x1
+            +
+            x2);
+
+    if(
+        api2!=LIS_SUCCESS
+        ||
+        status2!=LIS_SUCCESS
+        ||
+        !isfinite(rel2)
+        ||
+        !isfinite(gauge2)
+        ||
+        rel2>1.0e-9
+        ||
+        gauge2>1.0e-9)
+    {
+        pass = 0;
+    }
+
+    printf(
+        "NULLSPACE_GCRODR_REPEAT "
+        "api1=%d status1=%d "
+        "rel1=% .17e gauge1=% .17e "
+        "api2=%d status2=%d "
+        "rel2=% .17e gauge2=% .17e "
+        "pass=%d\n",
+        (int)api1,
+        (int)status1,
+        rel1,
+        gauge1,
+        (int)api2,
+        (int)status2,
+        rel2,
+        gauge2,
+        pass);
+
+    lis_solver_destroy(
+        solver);
+
+    lis_vector_destroy(
+        x);
+
+    lis_vector_destroy(
+        b);
+
+    return pass;
+}
+
+
 int
 main(
     int argc,
@@ -593,11 +934,20 @@ main(
 
     LIS_INT err;
 
+    int gmres_ok;
     int fgmres_ok;
+    int gcrodr_ok;
     int fgcrodr_ok;
+
     int solver_reject_ok;
     int scale_reject_ok;
-    int incompatible_ok;
+
+    int incompatible_gmres_ok;
+    int incompatible_fgmres_ok;
+    int incompatible_gcrodr_ok;
+    int incompatible_fgcrodr_ok;
+
+    int gcrodr_repeat_ok;
 
     int pass = 1;
 
@@ -630,12 +980,26 @@ main(
         return 3;
     }
 
+    gmres_ok =
+        run_supported(
+            A,
+            b,
+            q,
+            "gmres");
+
     fgmres_ok =
         run_supported(
             A,
             b,
             q,
             "fgmres");
+
+    gcrodr_ok =
+        run_supported(
+            A,
+            b,
+            q,
+            "gcrodr");
 
     fgcrodr_ok =
         run_supported(
@@ -670,26 +1034,66 @@ main(
             "unsupported_scaling");
 
 
-    incompatible_ok =
+    incompatible_gmres_ok =
         run_incompatible_rhs(
+            A,
+            q,
+            "gmres");
+
+    incompatible_fgmres_ok =
+        run_incompatible_rhs(
+            A,
+            q,
+            "fgmres");
+
+    incompatible_gcrodr_ok =
+        run_incompatible_rhs(
+            A,
+            q,
+            "gcrodr");
+
+    incompatible_fgcrodr_ok =
+        run_incompatible_rhs(
+            A,
+            q,
+            "fgcrodr");
+
+    gcrodr_repeat_ok =
+        run_gcrodr_repeated(
             A,
             q);
 
     printf(
         "NULLSPACE_SUMMARY "
+        "gmres=%d "
         "fgmres=%d "
+        "gcrodr=%d "
         "fgcrodr=%d "
         "solver_reject=%d "
         "scale_reject=%d "
-        "incompatible=%d\n",
+        "incompatible_gmres=%d "
+        "incompatible_fgmres=%d "
+        "incompatible_gcrodr=%d "
+        "incompatible_fgcrodr=%d "
+        "gcrodr_repeat=%d\n",
+        gmres_ok,
         fgmres_ok,
+        gcrodr_ok,
         fgcrodr_ok,
         solver_reject_ok,
         scale_reject_ok,
-        incompatible_ok);
+        incompatible_gmres_ok,
+        incompatible_fgmres_ok,
+        incompatible_gcrodr_ok,
+        incompatible_fgcrodr_ok,
+        gcrodr_repeat_ok);
 
     if(
+        !gmres_ok
+        ||
         !fgmres_ok
+        ||
+        !gcrodr_ok
         ||
         !fgcrodr_ok
         ||
@@ -697,7 +1101,15 @@ main(
         ||
         !scale_reject_ok
         ||
-        !incompatible_ok)
+        !incompatible_gmres_ok
+        ||
+        !incompatible_fgmres_ok
+        ||
+        !incompatible_gcrodr_ok
+        ||
+        !incompatible_fgcrodr_ok
+        ||
+        !gcrodr_repeat_ok)
     {
         pass = 0;
     }

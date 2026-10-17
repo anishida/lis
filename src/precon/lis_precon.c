@@ -742,7 +742,7 @@ LIS_INT lis_psolve_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
         }
 
         /*
-         * Exact right-nullspace deflation for flexible right
+         * Exact right-nullspace deflation for right
          * preconditioning.
          *
          * The primal preconditioner output is a solution-space
@@ -759,7 +759,15 @@ LIS_INT lis_psolve_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
                 (
                     solver->options[LIS_OPTIONS_SOLVER]
                         ==
+                    LIS_SOLVER_GMRES
+                    ||
+                    solver->options[LIS_OPTIONS_SOLVER]
+                        ==
                     LIS_SOLVER_FGMRES
+                    ||
+                    solver->options[LIS_OPTIONS_SOLVER]
+                        ==
+                    LIS_SOLVER_GCRODR
                     ||
                     solver->options[LIS_OPTIONS_SOLVER]
                         ==
