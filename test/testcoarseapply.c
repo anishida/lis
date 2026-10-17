@@ -255,6 +255,75 @@ check_apply(void)
         failed = 1;
     }
 
+    /*
+     * FGCRO-DR uses the same flexible-preconditioning dispatch.
+     * Verify that the two-level near-nullspace correction is
+     * applied there as well.
+     */
+    err =
+        lis_solver_set_option(
+            "-i fgcrodr",
+            solver);
+
+    if(err)
+    {
+        printf(
+            "APPLY_FGCRODR option_rc=%d\n",
+            (int)err);
+
+        failed = 1;
+        goto cleanup;
+    }
+
+    lis_vector_set_all(
+        0.0,
+        out);
+
+    err =
+        lis_psolve(
+            solver,
+            Az,
+            out);
+
+    if(err)
+    {
+        printf(
+            "APPLY_FGCRODR rc=%d\n",
+            (int)err);
+
+        failed = 1;
+        goto cleanup;
+    }
+
+    lis_vector_copy(
+        out,
+        diff);
+
+    lis_vector_axpy(
+        -1.0,
+        z,
+        diff);
+
+    lis_vector_nrm2(
+        diff,
+        &error);
+
+    printf(
+        "APPLY_FGCRODR "
+        "error=% .12e "
+        "E=% .12e\n",
+        (double)error,
+        (double)test_scalar_real(
+            solver->near_nullspace_coarse->E[0]));
+
+    if(
+        !isfinite((double)error)
+        ||
+        error>1.0e-8)
+    {
+        failed = 1;
+    }
+
 cleanup:
 
     if(solver)

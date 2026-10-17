@@ -343,6 +343,9 @@ extern LIS_INT lis_fgcrodr_get_policy_stats(
   
 
 /************************************************/
+/* Exact right-nullspace projection */
+extern LIS_INT lis_solver_project_nullspace(LIS_SOLVER solver, LIS_VECTOR vector);
+
 /* Near-nullspace coarse state                  */
 /************************************************/
 

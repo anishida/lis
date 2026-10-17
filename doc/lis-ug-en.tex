@@ -6064,6 +6064,39 @@ Destroy the solver.
 \end{namelist}
 
 \newpage
+
+\subsubsection{lis\_solver\_set\_nullspace}
+
+\verb|C       LIS_INT lis_solver_set_nullspace(LIS_SOLVER solver, LIS_INT nvec,|\\
+\verb|                    LIS_VECTOR vectors[])|
+
+Set an exact right-nullspace basis for the linear solver.
+LIS stores solver-owned orthonormal copies of the supplied vectors.
+The basis vectors must be linearly independent and compatible with the
+solver vectors.
+
+The current exact-nullspace deflation path is available for GMRES, FGMRES,
+GCRO-DR and FGCRO-DR with \verb|-scale none| and the default precision.  The
+projection is applied to solution-space corrections.  The right-hand side
+and residual are not projected, so a singular system must have a
+compatible right-hand side in order to converge.
+
+\begin{description}
+\item[\tt solver] The solver
+\item[\tt nvec] The number of exact-nullspace basis vectors
+\item[\tt vectors] The exact right-nullspace basis vectors
+\end{description}
+
+\subsubsection{lis\_solver\_clear\_nullspace}
+
+\verb|C       LIS_INT lis_solver_clear_nullspace(LIS_SOLVER solver)|
+
+Clear the exact right-nullspace basis stored in the solver.
+
+\begin{description}
+\item[\tt solver] The solver
+\end{description}
+
 \subsubsection{lis\_precon\_create}
 \begin{screen}
 \verb|C       LIS_INT lis_precon_create(LIS_SOLVER solver, LIS_PRECON *precon)|\\
