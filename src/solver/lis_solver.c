@@ -2499,7 +2499,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
            {
                    LIS_SETERR(
                            LIS_ERR_NOT_IMPLEMENTED,
-                           "near-nullspace two-level correction currently requires FGMRES\n");
+                           "near-nullspace two-level correction currently requires FGMRES or FGCRO-DR\n");
                    solver->retcode = LIS_ERR_NOT_IMPLEMENTED;
                    return LIS_ERR_NOT_IMPLEMENTED;
            }

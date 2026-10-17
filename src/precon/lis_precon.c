@@ -694,9 +694,15 @@ LIS_INT lis_psolve_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
 
 
         if(
-                solver->options[LIS_OPTIONS_SOLVER]
-                    ==
-                LIS_SOLVER_FGMRES
+                (
+                    solver->options[LIS_OPTIONS_SOLVER]
+                        ==
+                    LIS_SOLVER_FGMRES
+                    ||
+                    solver->options[LIS_OPTIONS_SOLVER]
+                        ==
+                    LIS_SOLVER_FGCRODR
+                )
                 &&
                 precon_type!=LIS_PRECON_TYPE_MFAMG
 		&&
