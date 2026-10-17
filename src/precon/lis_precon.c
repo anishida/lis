@@ -693,6 +693,7 @@ LIS_INT lis_psolve_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
         }
 
 
+
         if(
                 (
                     solver->options[LIS_OPTIONS_SOLVER]
@@ -705,25 +706,80 @@ LIS_INT lis_psolve_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
                 )
                 &&
                 precon_type!=LIS_PRECON_TYPE_MFAMG
-		&&
-		solver->near_nullspace_coarse!=NULL
+                &&
+                solver->near_nullspace_coarse!=NULL
                 &&
                 solver->near_nullspace_coarse->ready)
         {
-                return
+                LIS_INT err;
+
+                err =
                         lis_solver_near_nullspace_apply(
                                 solver,
                                 b,
                                 x,
                                 psolve);
+
+                if(err)
+                {
+                        return err;
+                }
+        }
+        else
+        {
+                LIS_INT err;
+
+                err =
+                        psolve(
+                                solver,
+                                b,
+                                x);
+
+                if(err)
+                {
+                        return err;
+                }
         }
 
+        /*
+         * Exact right-nullspace deflation for flexible right
+         * preconditioning.
+         *
+         * The primal preconditioner output is a solution-space
+         * correction. Applying P preserves its image under A
+         * whenever A*Q=0.
+         *
+         * lis_psolveh_dispatch() is intentionally untouched:
+         * a right nullspace does not define a left/Hermitian
+         * projection.
+         */
+        if(
+                solver->nullspace_dim>0
+                &&
+                (
+                    solver->options[LIS_OPTIONS_SOLVER]
+                        ==
+                    LIS_SOLVER_FGMRES
+                    ||
+                    solver->options[LIS_OPTIONS_SOLVER]
+                        ==
+                    LIS_SOLVER_FGCRODR
+                ))
+        {
+                LIS_INT err;
 
-        return
-                psolve(
-                        solver,
-                        b,
-                        x);
+                err =
+                        lis_solver_project_nullspace(
+                                solver,
+                                x);
+
+                if(err)
+                {
+                        return err;
+                }
+        }
+
+        return LIS_SUCCESS;
 }
 
 #undef __FUNC__
