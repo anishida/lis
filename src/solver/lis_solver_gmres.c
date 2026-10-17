@@ -380,12 +380,14 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 		/* x = x + r */
 		lis_vector_axpy(1,r,x);
 
-		/* Replace the recursive residual at the GMRES restart boundary. */
+		/*
+		 * Right-preconditioned GMRES advances with A M^-1.
+		 * Keep the restarted Arnoldi residual in the original
+		 * residual space: v[0] = b - A*x.
+		 */
 		lis_matvec(A,x,z);
 		lis_vector_xpay(b,-1.0,z);
-		time = lis_wtime();
-		lis_psolve(solver,z,v[0]);
-		ptime += lis_wtime()-time;
+		lis_vector_copy(z,v[0]);
 		lis_vector_nrm2(v[0],&rnorm);
 		nrm2 = rnorm * bnrm2;
 
@@ -712,41 +714,44 @@ LIS_INT lis_gmres_quad(LIS_SOLVER solver)
 		/* x = x + r */
 		lis_vector_axpyex_mmm(one,r,x);
 
+		/*
+		 * Right-preconditioned GMRES advances with A M^-1.
+		 * Replace the projected restart residual with the
+		 * explicit physical residual b - A*x before accepting
+		 * convergence or starting the next Krylov cycle.
+		 */
+		lis_matvec(A,x,v[0]);
+		lis_vector_xpay(b,-1.0,v[0]);
+		memset(v[0]->value_lo,0,n*sizeof(LIS_SCALAR));
+
+		lis_solver_get_residual[0](v[0],solver,&nrm2);
+
+		if( nrm2!=nrm2 || fabs(nrm2)>LIS_SCALAR_MAX )
+		{
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			lis_free(h);
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
+
+		if( output & LIS_PRINT_MEM )
+		{
+			solver->rhistory[iter] = nrm2;
+		}
+
 		if( tol >= nrm2 )
 		{
-			solver->retcode    = LIS_SUCCESS;
-			solver->iter       = iter;
-			solver->iter2      = 0;
-			solver->resid      = nrm2;
-			solver->ptime      = ptime;
+			solver->retcode = LIS_SUCCESS;
+			solver->iter    = iter;
+			solver->iter2   = 0;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
 			lis_free(h);
 			LIS_DEBUG_FUNC_OUT;
 			return LIS_SUCCESS;
-		}
-
-		for(j=1;j<=i;j++)
-		{
-			jj = i1-j+1;
-			tmp.hi[0] = s->value[jj];
-			tmp.lo[0] = s->value_lo[jj];
-			lis_quad_mul((LIS_QUAD *)aa.hi,(LIS_QUAD *)tmp.hi,(LIS_QUAD *)&h[jj-1+sn]);
-			lis_quad_mul((LIS_QUAD *)bb.hi,(LIS_QUAD *)tmp.hi,(LIS_QUAD *)&h[jj-1+cs]);
-			lis_quad_minus((LIS_QUAD *)aa.hi);
-			s->value[jj-1] = aa.hi[0];
-			s->value_lo[jj-1] = aa.lo[0];
-			s->value[jj] = bb.hi[0];
-			s->value_lo[jj] = bb.lo[0];
-		}
-
-		for(j=0;j<=i1;j++)
-		{
-			t.hi[0] = s->value[j];
-			t.lo[0] = s->value_lo[j];
-			if( j==0 )
-			{
-				lis_quad_sub((LIS_QUAD *)t.hi,(LIS_QUAD *)t.hi,(LIS_QUAD *)one.hi);
-			}
-			lis_vector_axpyex_mmm(t,v[j],v[0]);
 		}
 	}
 
@@ -1604,20 +1609,42 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 			return LIS_MAXITER;
 		}
 
-		if( tol >= nrm2 )
-		{
-			solver->retcode    = LIS_SUCCESS;
-			solver->iter       = iter;
-			solver->resid      = nrm2;
-			solver->ptime      = ptime;
-			lis_free(h);
-			LIS_DEBUG_FUNC_OUT;
-			return LIS_SUCCESS;
-		}
-
+				/*
+		 * The projected FGMRES residual is only a convergence
+		 * candidate.  Form the explicit residual of the updated
+		 * iterate before accepting success.
+		 */
 		lis_matvec(A,x,v[0]);
 		lis_vector_xpay(b,-1.0,v[0]);
 		lis_vector_nrm2(v[0],&rnorm);
+
+		if( tol >= nrm2 )
+		{
+			lis_solver_get_residual[0](v[0],solver,&nrm2);
+
+			if( nrm2!=nrm2 || fabs(nrm2)>LIS_SCALAR_MAX )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
+			if( tol >= nrm2 )
+			{
+				solver->retcode    = LIS_SUCCESS;
+				solver->iter       = iter;
+				solver->resid      = nrm2;
+				solver->ptime      = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_SUCCESS;
+			}
+		}
+
 		bnrm2 = 1.0/rnorm;
 	}
 
@@ -1893,21 +1920,43 @@ LIS_INT lis_fgmres_quad(LIS_SOLVER solver)
 			lis_vector_axpyex_mmm(aa,z[j],x);
 		}
 
-		if( tol >= nrm2 )
-		{
-			solver->retcode    = LIS_SUCCESS;
-			solver->iter       = iter;
-			solver->resid      = nrm2;
-			solver->ptime      = ptime;
-			lis_free(h);
-			LIS_DEBUG_FUNC_OUT;
-			return LIS_SUCCESS;
-		}
-
+		/*
+		 * The projected quad FGMRES residual is only a
+		 * convergence candidate. Form the explicit residual
+		 * of the updated iterate before accepting success.
+		 */
 		lis_matvec(A,x,v[0]);
 		lis_vector_xpay(b,-1.0,v[0]);
 		memset(v[0]->value_lo,0,n*sizeof(LIS_SCALAR));
 		lis_vector_nrm2(v[0],&rnorm);
+
+		if( tol >= nrm2 )
+		{
+			lis_solver_get_residual[0](v[0],solver,&nrm2);
+
+			if( nrm2!=nrm2 || fabs(nrm2)>LIS_SCALAR_MAX )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
+			if( tol >= nrm2 )
+			{
+				solver->retcode = LIS_SUCCESS;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_SUCCESS;
+			}
+		}
+
 		bnrm2 = 1.0/rnorm;
 	}
 

@@ -7,6 +7,14 @@
  * The actual flexible recycling iteration is added separately.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "lis_config.h"
+#else
+#ifdef HAVE_CONFIG_WIN_H
+#include "lis_config_win.h"
+#endif
+#endif
+
 #include <math.h>
 #include <string.h>
 
@@ -5754,36 +5762,14 @@ lis_fgcrodr_flexible_core(
         }
 
 
-        if( tol>=nrm2 )
-        {
-            solver->retcode =
-                LIS_SUCCESS;
-
-            solver->iter =
-                iter;
-
-            solver->resid =
-                nrm2;
-
-            solver->ptime =
-                ptime;
-
-            if( bcoef )
-            lis_free(bcoef);
-
-        if( hraw )
-            lis_free(hraw);
-
-        lis_free(h);
-
-            return LIS_SUCCESS;
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Restart residual                                     */
-        /* ---------------------------------------------------- */
-
+        /*
+         * The projected FGCRO-DR residual is only a convergence
+         * candidate.  Form the explicit residual of the updated
+         * iterate before accepting success.
+         *
+         * Keep this residual in v[0] so a rejected candidate can
+         * continue directly through the existing restart path.
+         */
         lis_matvec(
             A,
             x,
@@ -5793,6 +5779,80 @@ lis_fgcrodr_flexible_core(
             b,
             -1.0,
             v[0]);
+
+
+        if( tol>=nrm2 )
+        {
+            lis_solver_get_residual[0](
+                v[0],
+                solver,
+                &nrm2);
+
+
+            if(
+                nrm2!=nrm2 ||
+                fabs(nrm2)>LIS_SCALAR_MAX )
+            {
+                solver->retcode =
+                    LIS_BREAKDOWN;
+
+                solver->iter =
+                    iter;
+
+                solver->resid =
+                    nrm2;
+
+                solver->ptime =
+                    ptime;
+
+                if( bcoef )
+                    lis_free(
+                        bcoef);
+
+                if( hraw )
+                    lis_free(
+                        hraw);
+
+                lis_free(
+                    h);
+
+                return LIS_BREAKDOWN;
+            }
+
+
+            if( tol>=nrm2 )
+            {
+                solver->retcode =
+                    LIS_SUCCESS;
+
+                solver->iter =
+                    iter;
+
+                solver->resid =
+                    nrm2;
+
+                solver->ptime =
+                    ptime;
+
+                if( bcoef )
+                    lis_free(
+                        bcoef);
+
+                if( hraw )
+                    lis_free(
+                        hraw);
+
+                lis_free(
+                    h);
+
+                return LIS_SUCCESS;
+            }
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Restart residual                                     */
+        /* ---------------------------------------------------- */
 
 
         if( use_recycle )

@@ -2370,7 +2370,8 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 			LIS_SETERR1(LIS_ERR_NOT_IMPLEMENTED,"Switch solver %s is not implemented\n",lis_solvername[nsolver]);
 			return LIS_ERR_NOT_IMPLEMENTED;
 		}
-		if( solver->options[LIS_OPTIONS_SWITCH_MAXITER]==-1 )
+		if( precision==LIS_PRECISION_SWITCH &&
+			solver->options[LIS_OPTIONS_SWITCH_MAXITER]==-1 )
 		{
 			solver->options[LIS_OPTIONS_SWITCH_MAXITER] = maxiter;
 		}
