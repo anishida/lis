@@ -2,13 +2,26 @@
 #include "lis_config.h"
 #endif
 
+#include <math.h>
 #include "lis.h"
 #include "lis_solver.h"
 #include "lis_precon.h"
 
-#include <math.h>
 #include <stdio.h>
 #include <string.h>
+
+#ifdef _COMPLEX
+int
+main(int argc, char **argv)
+{
+    (void)argc;
+    (void)argv;
+
+    printf("SKIP: FGCRO-DR recycling is not implemented for complex scalar builds\n");
+
+    return 77;
+}
+#else
 
 #define N 64
 
@@ -9176,3 +9189,4 @@ cleanup:
 
     return 0;
 }
+#endif /* !_COMPLEX */
