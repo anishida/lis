@@ -973,6 +973,34 @@ fail:
 
 
 /* ---------------------------------------------------------------------- */
+
+/*
+ * Return false if NaN or infinity entered a small harmonic
+ * projection.  Harmonic selection is optional, so callers can
+ * retain their existing verified fallback/recycle space.
+ */
+static LIS_INT
+lis_fgcrodr_dense_finite(
+    LIS_INT n,
+    const LIS_SCALAR *a)
+{
+    LIS_INT i;
+
+    for(i=0;i<n*n;i++)
+    {
+        LIS_SCALAR d =
+            a[i]-a[i];
+
+        if( d!=d )
+        {
+            return LIS_FALSE;
+        }
+    }
+
+    return LIS_TRUE;
+}
+
+
 /* Harmonic Ritz support for the flexible recycle basis                    */
 /* ---------------------------------------------------------------------- */
 
@@ -2077,6 +2105,22 @@ lis_fgcrodr_try_harmonic_build(
     }
 
 
+    if(
+        !lis_fgcrodr_dense_finite(
+            psmall,
+            AP)
+        ||
+        !lis_fgcrodr_dense_finite(
+            psmall,
+            BP) )
+    {
+        err =
+            LIS_SUCCESS;
+
+        goto cleanup;
+    }
+
+
     memcpy(
         AINV,
         AP,
@@ -2090,7 +2134,12 @@ lis_fgcrodr_try_harmonic_build(
             psmall,
             AINV);
 
-    if( err )
+    if(
+        err
+        ||
+        !lis_fgcrodr_dense_finite(
+            psmall,
+            AINV) )
     {
         /*
          * Harmonic selection is optional.  The caller will fall back
@@ -2128,6 +2177,18 @@ lis_fgcrodr_try_harmonic_build(
                 r+c*psmall] =
                 s;
         }
+    }
+
+
+    if(
+        !lis_fgcrodr_dense_finite(
+            psmall,
+            T) )
+    {
+        err =
+            LIS_SUCCESS;
+
+        goto cleanup;
     }
 
 
@@ -3581,6 +3642,22 @@ lis_fgcrodr_try_harmonic_update(
     }
 
 
+    if(
+        !lis_fgcrodr_dense_finite(
+            psmall,
+            AP)
+        ||
+        !lis_fgcrodr_dense_finite(
+            psmall,
+            BP) )
+    {
+        err =
+            LIS_SUCCESS;
+
+        goto cleanup;
+    }
+
+
     memcpy(
         AINV,
         AP,
@@ -3594,7 +3671,12 @@ lis_fgcrodr_try_harmonic_update(
             psmall,
             AINV);
 
-    if( err )
+    if(
+        err
+        ||
+        !lis_fgcrodr_dense_finite(
+            psmall,
+            AINV) )
     {
         /*
          * Failure of recycle enhancement is nonfatal.
@@ -3630,6 +3712,18 @@ lis_fgcrodr_try_harmonic_update(
                 r+c*psmall] =
                 s;
         }
+    }
+
+
+    if(
+        !lis_fgcrodr_dense_finite(
+            psmall,
+            T) )
+    {
+        err =
+            LIS_SUCCESS;
+
+        goto cleanup;
     }
 
 

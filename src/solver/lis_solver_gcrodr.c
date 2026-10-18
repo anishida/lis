@@ -739,6 +739,36 @@ static LIS_INT lis_gcrodr_assess_refresh_recycle(
 }
 
 /* ---------------------------------------------------------------------- */
+
+/*
+ * Harmonic recycling is optional.  Reject a dense candidate if
+ * NaN or infinity entered the small projected eigensystem.
+ *
+ * z-z is zero for every finite real or complex scalar and becomes
+ * non-finite when z contains NaN or infinity.
+ */
+static LIS_INT
+lis_gcrodr_dense_finite(
+    LIS_INT n,
+    const LIS_SCALAR *a)
+{
+    LIS_INT i;
+
+    for(i=0;i<n*n;i++)
+    {
+        LIS_SCALAR d =
+            a[i]-a[i];
+
+        if( d!=d )
+        {
+            return LIS_FALSE;
+        }
+    }
+
+    return LIS_TRUE;
+}
+
+
 /* harmonic Ritz update                                                   */
 /* ---------------------------------------------------------------------- */
 #ifndef _COMPLEX
@@ -849,9 +879,31 @@ static LIS_INT lis_gcrodr_update_recycle(LIS_SOLVER solver,
         }
     }
 
+    if(
+        !lis_gcrodr_dense_finite(
+            p,
+            AP)
+        ||
+        !lis_gcrodr_dense_finite(
+            p,
+            BP) )
+    {
+        goto reject;
+    }
+
     memcpy(AINV,AP,(size_t)p*p*sizeof(LIS_SCALAR));
+
     err = lis_array_ge(p,AINV);
-    if( err ) goto reject;
+
+    if(
+        err
+        ||
+        !lis_gcrodr_dense_finite(
+            p,
+            AINV) )
+    {
+        goto reject;
+    }
 
     /* T = (G^T G)^-1 (G^T F), eig(T)=1/theta_harmonic. */
     for(c=0;c<p;c++)
@@ -862,6 +914,14 @@ static LIS_INT lis_gcrodr_update_recycle(LIS_SOLVER solver,
             for(l=0;l<p;l++) s += AINV[r+l*p]*BP[l+c*p];
             T[r+c*p] = s;
         }
+    }
+
+    if(
+        !lis_gcrodr_dense_finite(
+            p,
+            T) )
+    {
+        goto reject;
     }
 
     memcpy(TQR,T,(size_t)p*p*sizeof(LIS_SCALAR));
