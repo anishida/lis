@@ -139,6 +139,11 @@ extern "C" {
 #define LIS_OPTIONS_HELP -2
 #define LIS_OPTIONS_VER -3
 
+/* RHS compatibility policy for configured left nullspaces. */
+#define LIS_RHS_POLICY_ASSUME_COMPATIBLE 0
+#define LIS_RHS_POLICY_REJECT            1
+#define LIS_RHS_POLICY_PROJECT           2
+
 
 #define LIS_PRINT_NONE 0
 #define LIS_PRINT_MEM 1
@@ -877,6 +882,8 @@ struct LIS_SOLVER_STRUCT
 	LIS_VECTOR *left_nullspace;
 	LIS_INT nullspace_dim;
 	LIS_INT left_nullspace_dim;
+	LIS_INT rhs_compatibility_policy;
+	LIS_REAL rhs_compatibility_tol;
 	LIS_INT near_nullspace_dim;
 	LIS_NEAR_NULLSPACE_COARSE near_nullspace_coarse;
 	/* Persistent GCRO-DR recycle state. */
@@ -1236,6 +1243,14 @@ extern "C"
 	extern LIS_INT lis_solver_project_rhs_compatible(
 	    LIS_SOLVER solver, LIS_VECTOR rhs,
 	    LIS_VECTOR projected_rhs);
+	extern LIS_INT lis_solver_set_rhs_compatibility_policy(
+	    LIS_SOLVER solver, LIS_INT policy);
+	extern LIS_INT lis_solver_get_rhs_compatibility_policy(
+	    LIS_SOLVER solver, LIS_INT *policy);
+	extern LIS_INT lis_solver_set_rhs_compatibility_tolerance(
+	    LIS_SOLVER solver, LIS_REAL tolerance);
+	extern LIS_INT lis_solver_get_rhs_compatibility_tolerance(
+	    LIS_SOLVER solver, LIS_REAL *tolerance);
 	extern LIS_INT lis_solver_set_near_nullspace(LIS_SOLVER solver, LIS_INT nvec, LIS_VECTOR vectors[]);
 	extern LIS_INT lis_solver_clear_near_nullspace(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_gcrodr_recycle(
