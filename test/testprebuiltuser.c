@@ -1,5 +1,11 @@
-#include "lislib.h"
+#ifdef HAVE_CONFIG_H
+#include "lis_config.h"
+#elif defined(HAVE_CONFIG_WIN_H)
+#include "lis_config_win.h"
+#endif
+
 #include <math.h>
+#include "lislib.h"
 #include <stdio.h>
 
 typedef struct
