@@ -357,6 +357,7 @@ run_reject(
     const char *opts,
     const char *name)
 {
+    char mutable_opts[512];
     LIS_SOLVER solver = NULL;
     LIS_VECTOR x = NULL;
     LIS_VECTOR basis[1];
@@ -389,8 +390,15 @@ run_reject(
         return 0;
     }
 
+    snprintf(
+        mutable_opts,
+        sizeof(mutable_opts),
+        "%s",
+        opts);
+
+
     err = lis_solver_set_option(
-        opts,
+        mutable_opts,
         solver);
 
     if(err)
