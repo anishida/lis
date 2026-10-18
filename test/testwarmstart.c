@@ -2,10 +2,10 @@
 #include "lis_config.h"
 #endif
 
+#include <math.h>
 #include "lis.h"
 #include "lis_solver.h"
 
-#include <math.h>
 #include <stdio.h>
 
 static LIS_INT
