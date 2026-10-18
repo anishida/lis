@@ -1312,6 +1312,130 @@ LIS_INT lis_solver_check_rhs_compatibility(
 
 
 #undef __FUNC__
+#define __FUNC__ "lis_solver_project_rhs_compatible"
+LIS_INT lis_solver_project_rhs_compatible(
+    LIS_SOLVER solver,
+    LIS_VECTOR rhs,
+    LIS_VECTOR projected_rhs)
+{
+    LIS_INT i,err;
+    LIS_SCALAR coefficient;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if( solver==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "solver is NULL\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    if( rhs==NULL ||
+        projected_rhs==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid RHS projection arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    if( solver->left_nullspace==NULL ||
+        solver->left_nullspace_dim<=0 )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "left nullspace is not configured\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    if( !lis_solver_vector_compatible(
+            solver->left_nullspace[0],
+            rhs) )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "RHS layout is incompatible with left nullspace\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    if( !lis_solver_vector_compatible(
+            rhs,
+            projected_rhs) )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "projected RHS layout is incompatible with input RHS\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    if( rhs==projected_rhs ||
+        (rhs->value!=NULL &&
+         rhs->value==projected_rhs->value) )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "RHS projection requires distinct input and output storage\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    for(i=0;i<solver->left_nullspace_dim;i++)
+    {
+        if(
+            projected_rhs==solver->left_nullspace[i]
+            ||
+            (projected_rhs->value!=NULL &&
+             projected_rhs->value==
+                solver->left_nullspace[i]->value))
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "projected RHS must not alias left-nullspace storage\n");
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+    err =
+        lis_vector_copy(
+            rhs,
+            projected_rhs);
+
+    if( err )
+    {
+        return err;
+    }
+
+    for(i=0;i<solver->left_nullspace_dim;i++)
+    {
+        err =
+            lis_vector_dot(
+                solver->left_nullspace[i],
+                rhs,
+                &coefficient);
+
+        if( err )
+        {
+            return err;
+        }
+
+        err =
+            lis_vector_axpy(
+                -coefficient,
+                solver->left_nullspace[i],
+                projected_rhs);
+
+        if( err )
+        {
+            return err;
+        }
+    }
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
 #define __FUNC__ "lis_solver_set_nullspace"
 LIS_INT lis_solver_set_nullspace(
 	LIS_SOLVER solver,
