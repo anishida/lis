@@ -9,6 +9,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include "lislib.h"
 
 #define N 64
 
@@ -8606,6 +8607,254 @@ cleanup:
 #endif
 
 
+
+/*
+ * Dense helper regressions used by recycle extraction.
+ */
+static int
+check_dense_recycle_helper_regressions(void)
+{
+    enum
+    {
+        GE_REPEATS = 4096
+    };
+
+    LIS_SCALAR a2[4];
+    LIS_SCALAR q2[4];
+    LIS_SCALAR r2[4];
+
+#ifndef _COMPLEX
+    LIS_SCALAR a3[9];
+    LIS_SCALAR q3[9];
+    LIS_SCALAR r3[9];
+#endif
+
+    LIS_INT err;
+    LIS_INT iter;
+    LIS_REAL qrerr;
+
+    int k;
+
+
+    /*
+     * Repeatedly invert
+     *
+     *     [ 4 1 ]
+     *     [ 2 3 ]
+     *
+     * whose inverse is
+     *
+     *     [  0.3 -0.1 ]
+     *     [ -0.2  0.4 ].
+     */
+    for(k=0;k<GE_REPEATS;k++)
+    {
+        a2[0] = (LIS_SCALAR)4.0;
+        a2[1] = (LIS_SCALAR)2.0;
+        a2[2] = (LIS_SCALAR)1.0;
+        a2[3] = (LIS_SCALAR)3.0;
+
+        err =
+            lis_array_ge(
+                2,
+                a2);
+
+        if( err!=LIS_SUCCESS )
+        {
+            fprintf(
+                stderr,
+                "lis_array_ge repeat %d failed: %d\n",
+                k,
+                (int)err);
+
+            return 1;
+        }
+
+#ifndef _COMPLEX
+        if(
+            fabs(
+                (double)(
+                    a2[0]
+                    -
+                    (LIS_SCALAR)0.3))
+                >
+            1.0e-12
+            ||
+            fabs(
+                (double)(
+                    a2[1]
+                    +
+                    (LIS_SCALAR)0.2))
+                >
+            1.0e-12
+            ||
+            fabs(
+                (double)(
+                    a2[2]
+                    +
+                    (LIS_SCALAR)0.1))
+                >
+            1.0e-12
+            ||
+            fabs(
+                (double)(
+                    a2[3]
+                    -
+                    (LIS_SCALAR)0.4))
+                >
+            1.0e-12)
+        {
+            fprintf(
+                stderr,
+                "lis_array_ge inverse mismatch "
+                "at repeat %d\n",
+                k);
+
+            return 1;
+        }
+#endif
+    }
+
+
+#ifndef _COMPLEX
+
+    /*
+     * Exact real 2x2 Schur block.
+     */
+    a2[0] = (LIS_SCALAR)0.0;
+    a2[1] = (LIS_SCALAR)1.0;
+    a2[2] = (LIS_SCALAR)-1.0;
+    a2[3] = (LIS_SCALAR)0.0;
+
+    iter = -1;
+    qrerr = -1.0;
+
+    err =
+        lis_array_qr_limit(
+            2,
+            a2,
+            q2,
+            r2,
+            4096,
+            &iter,
+            &qrerr);
+
+    if(
+        err!=LIS_SUCCESS
+        ||
+        iter<=0
+        ||
+        iter>=16
+        ||
+        qrerr>=1.0e-12)
+    {
+        fprintf(
+            stderr,
+            "bounded real Schur QR failed: "
+            "rc=%d iter=%d err=% .17e\n",
+            (int)err,
+            (int)iter,
+            (double)qrerr);
+
+        return 1;
+    }
+
+
+    /*
+     * Unreduced 3x3 block may not be accepted after a single
+     * bounded iteration.
+     */
+    a3[0] = (LIS_SCALAR)2.0;
+    a3[1] = (LIS_SCALAR)1.0;
+    a3[2] = (LIS_SCALAR)0.0;
+
+    a3[3] = (LIS_SCALAR)1.0;
+    a3[4] = (LIS_SCALAR)2.0;
+    a3[5] = (LIS_SCALAR)1.0;
+
+    a3[6] = (LIS_SCALAR)0.0;
+    a3[7] = (LIS_SCALAR)1.0;
+    a3[8] = (LIS_SCALAR)2.0;
+
+    iter = -1;
+    qrerr = -1.0;
+
+    err =
+        lis_array_qr_limit(
+            3,
+            a3,
+            q3,
+            r3,
+            1,
+            &iter,
+            &qrerr);
+
+    if(
+        err!=LIS_BREAKDOWN
+        ||
+        iter!=1)
+    {
+        fprintf(
+            stderr,
+            "bounded unreduced QR accepted: "
+            "rc=%d iter=%d err=% .17e\n",
+            (int)err,
+            (int)iter,
+            (double)qrerr);
+
+        return 1;
+    }
+
+
+    /*
+     * Non-finite candidate must be rejected.
+     */
+    a2[0] = (LIS_SCALAR)HUGE_VAL;
+    a2[1] = (LIS_SCALAR)0.0;
+    a2[2] = (LIS_SCALAR)0.0;
+    a2[3] = (LIS_SCALAR)1.0;
+
+    iter = -1;
+    qrerr = -1.0;
+
+    err =
+        lis_array_qr_limit(
+            2,
+            a2,
+            q2,
+            r2,
+            1,
+            &iter,
+            &qrerr);
+
+    if(
+        err!=LIS_BREAKDOWN
+        ||
+        iter!=1)
+    {
+        fprintf(
+            stderr,
+            "bounded non-finite QR accepted: "
+            "rc=%d iter=%d err=% .17e\n",
+            (int)err,
+            (int)iter,
+            (double)qrerr);
+
+        return 1;
+    }
+
+#endif
+
+
+    printf(
+        "LIS_DENSE_RECYCLE_HELPERS PASSED "
+        "ge_repeats=%d\n",
+        GE_REPEATS);
+
+    return 0;
+}
+
+
 int
 main(int argc, char **argv)
 {
@@ -8669,6 +8918,16 @@ main(int argc, char **argv)
     if( (err=lis_vector_duplicate(A,&xk)) ) goto api_fail;
     if( (err=lis_vector_duplicate(A,&work)) ) goto api_fail;
     if( (err=lis_vector_duplicate(A,&diff)) ) goto api_fail;
+
+    if( check_dense_recycle_helper_regressions() )
+    {
+        fprintf(
+            stderr,
+            "LIS_DENSE_RECYCLE_HELPERS FAILED\n");
+
+        return 1;
+    }
+
 
     if( check_sequence_recycle(A) )
     {
