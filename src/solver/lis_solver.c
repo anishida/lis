@@ -2446,6 +2446,9 @@ LIS_INT lis_solve_sequence_with_precon_matrix(
     LIS_SOLVER solver)
 {
     LIS_INT err;
+    LIS_INT nsolver;
+    LIS_INT had_sequence_precon;
+    LIS_INT recycling_solver;
 
     LIS_INT saved_num_threads;
     LIS_INT thread_scope_changed;
@@ -2483,7 +2486,22 @@ LIS_INT lis_solve_sequence_with_precon_matrix(
     solver->sequence_diag_total_solves++;
 
     /*
-     * Recovery is intentionally bounded to three solve attempts:
+     * Recovery must correspond to reusable state that existed before
+     * attempt 0. Repeating a full Krylov solve after a no-op recycle
+     * clear or rebuilding a preconditioner created in the same call
+     * only duplicates work.
+     */
+    nsolver = solver->options[LIS_OPTIONS_SOLVER];
+
+    had_sequence_precon =
+        (solver->sequence_precon!=NULL);
+
+    recycling_solver =
+        (nsolver==LIS_SOLVER_GCRODR ||
+         nsolver==LIS_SOLVER_FGCRODR);
+
+    /*
+     * Recovery is bounded to the useful recovery actions:
      *
      *   attempt 0: ordinary persistent sequence solve
      *   attempt 1: retry after clearing reusable Krylov state
@@ -2535,36 +2553,55 @@ LIS_INT lis_solve_sequence_with_precon_matrix(
     solver->sequence_diag_first_retcode = solver->retcode;
 
     /*
-     * Attempt 1: clear Krylov recycling while retaining the
-     * persistent preconditioner.
+     * Recycle recovery applies only to solvers that actually own
+     * persistent Krylov recycling state. For ordinary GMRES-family
+     * solvers this action is a no-op and must not trigger another
+     * complete Krylov solve.
      */
-    err = lis_solver_sequence_clear_active_recycle(solver);
-    if( err )
+    if( recycling_solver )
     {
-        solver->retcode = err;
-        solver->sequence_diag_final_retcode = err;
-        lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
-        return err;
+        err = lis_solver_sequence_clear_active_recycle(solver);
+        if( err )
+        {
+            solver->retcode = err;
+            solver->sequence_diag_final_retcode = err;
+            lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
+            return err;
+        }
+
+        solver->sequence_diag_recycle_resets++;
+        solver->sequence_diag_total_recycle_resets++;
+
+        solver->sequence_diag_retries++;
+        solver->sequence_diag_total_retries++;
+
+        solver->sequence_diag_attempts++;
+        solver->sequence_diag_total_attempts++;
+
+        err = lis_solver_sequence_attempt(A,precon_A,b,x,solver);
+        if( err )
+        {
+            solver->sequence_diag_final_retcode = solver->retcode;
+            lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
+            return err;
+        }
+
+        if( !lis_solver_sequence_retryable(solver) )
+        {
+            solver->sequence_diag_final_retcode = solver->retcode;
+
+            LIS_DEBUG_FUNC_OUT;
+            lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
+            return LIS_SUCCESS;
+        }
     }
 
-    solver->sequence_diag_recycle_resets++;
-    solver->sequence_diag_total_recycle_resets++;
-
-    solver->sequence_diag_retries++;
-    solver->sequence_diag_total_retries++;
-
-    solver->sequence_diag_attempts++;
-    solver->sequence_diag_total_attempts++;
-
-    err = lis_solver_sequence_attempt(A,precon_A,b,x,solver);
-    if( err )
-    {
-        solver->sequence_diag_final_retcode = solver->retcode;
-        lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
-        return err;
-    }
-
-    if( !lis_solver_sequence_retryable(solver) )
+    /*
+     * A preconditioner created during attempt 0 is already fresh.
+     * Rebuilding the same configuration in the same sequence call
+     * cannot recover stale reusable state.
+     */
+    if( !had_sequence_precon )
     {
         solver->sequence_diag_final_retcode = solver->retcode;
 
@@ -2574,20 +2611,23 @@ LIS_INT lis_solve_sequence_with_precon_matrix(
     }
 
     /*
-     * Attempt 2: clear recycling again and force a new persistent
-     * preconditioner.
+     * Final recovery: discard reusable Krylov state and rebuild a
+     * preconditioner that was inherited from an earlier sequence call.
      */
-    err = lis_solver_sequence_clear_active_recycle(solver);
-    if( err )
+    if( recycling_solver )
     {
-        solver->retcode = err;
-        solver->sequence_diag_final_retcode = err;
-        lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
-        return err;
-    }
+        err = lis_solver_sequence_clear_active_recycle(solver);
+        if( err )
+        {
+            solver->retcode = err;
+            solver->sequence_diag_final_retcode = err;
+            lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
+            return err;
+        }
 
-    solver->sequence_diag_recycle_resets++;
-    solver->sequence_diag_total_recycle_resets++;
+        solver->sequence_diag_recycle_resets++;
+        solver->sequence_diag_total_recycle_resets++;
+    }
 
     err = lis_solver_sequence_precon_destroy(solver);
     if( err )

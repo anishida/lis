@@ -3947,7 +3947,7 @@ check_sequence_recovery_rebuild_lifecycle(void)
     /*
      * One iteration per sequence attempt.
      *
-     * First preconditioner instance:
+     * Inherited first preconditioner instance:
      *
      *     Attempt 0 remains above the 0.3 solver threshold
      *     Attempt 1 remains above the 0.3 solver threshold
@@ -3973,11 +3973,58 @@ check_sequence_recovery_rebuild_lifecycle(void)
         -LIS_OPTIONS_LEN] =
             (LIS_SCALAR)3.0e-1;
 
+    /*
+     * Prime the persistent sequence preconditioner with an exact
+     * zero-RHS solve.  The recovery call below must therefore start
+     * with preconditioner state inherited from an earlier sequence
+     * solve; rebuilding a preconditioner created during the same call
+     * is intentionally not a recovery action.
+     */
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        b);
 
     lis_vector_set_all(
         (LIS_SCALAR)0.0,
         x);
 
+    api =
+        lis_solve_sequence(
+            A,
+            b,
+            x,
+            solver);
+
+    if(
+        api!=LIS_SUCCESS ||
+        solver->retcode!=LIS_SUCCESS ||
+        solver->sequence_precon==NULL ||
+        fgcrodr_rebuild_create_count!=1 ||
+        fgcrodr_rebuild_destroy_count!=0 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR recovery rebuild prime failure: "
+            "api=%d status=%d precon=%p create=%d destroy=%d\n",
+            (int)api,
+            (int)solver->retcode,
+            (void *)solver->sequence_precon,
+            (int)fgcrodr_rebuild_create_count,
+            (int)fgcrodr_rebuild_destroy_count);
+
+        err =
+            LIS_ERR_ILL_ARG;
+
+        goto cleanup;
+    }
+
+    lis_vector_set_all(
+        (LIS_SCALAR)2.0,
+        b);
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x);
 
     api =
         lis_solve_sequence(
@@ -4144,10 +4191,11 @@ check_sequence_recovery_rebuild_lifecycle(void)
     /*
      * Persistent preconditioner lifecycle:
      *
-     * create #1 : before Attempt 0
-     * reuse      : Attempt 1
-     * destroy #1: before Attempt 2
-     * create #2 : Attempt 2
+     * create #1 : zero-RHS priming solve
+     * reuse      : recovery Attempt 0
+     * reuse      : recovery Attempt 1
+     * destroy #1: before recovery Attempt 2
+     * create #2 : recovery Attempt 2
      */
     if(
         fgcrodr_rebuild_create_count!=2 ||
@@ -4231,12 +4279,12 @@ check_sequence_recovery_rebuild_lifecycle(void)
 
 
     /*
-     * Fresh solver: lifetime sequence diagnostics are exactly the
-     * same event counts as this one three-attempt sequence solve.
+     * Lifetime diagnostics include the one-attempt zero-RHS priming
+     * solve plus this three-attempt recovery solve.
      */
     if(
-        diag.total_solves!=1 ||
-        diag.total_attempts!=3 ||
+        diag.total_solves!=2 ||
+        diag.total_attempts!=4 ||
         diag.total_retries!=2 ||
         diag.total_recycle_resets!=2 ||
         diag.total_precon_rebuilds!=1 )
