@@ -931,6 +931,551 @@ run_gcrodr_repeated(
 }
 
 
+static LIS_INT
+make_vector3(
+    LIS_MATRIX A,
+    LIS_SCALAR value0,
+    LIS_SCALAR value1,
+    LIS_SCALAR value2,
+    LIS_VECTOR *vector)
+{
+    LIS_INT err;
+
+    *vector = NULL;
+
+    err =
+        lis_vector_duplicate(
+            A,
+            vector);
+
+    if(err)
+    {
+        return err;
+    }
+
+    err =
+        lis_vector_set_all(
+            0.0,
+            *vector);
+
+    if(err)
+    {
+        goto fail;
+    }
+
+    err =
+        lis_vector_set_value(
+            LIS_INS_VALUE,
+            0,
+            value0,
+            *vector);
+
+    if(err)
+    {
+        goto fail;
+    }
+
+    err =
+        lis_vector_set_value(
+            LIS_INS_VALUE,
+            1,
+            value1,
+            *vector);
+
+    if(err)
+    {
+        goto fail;
+    }
+
+    err =
+        lis_vector_set_value(
+            LIS_INS_VALUE,
+            2,
+            value2,
+            *vector);
+
+    if(err)
+    {
+        goto fail;
+    }
+
+    return LIS_SUCCESS;
+
+fail:
+    lis_vector_destroy(
+        *vector);
+
+    *vector = NULL;
+
+    return err;
+}
+
+
+static int
+run_left_nullspace_api(
+    LIS_MATRIX A)
+{
+    LIS_SOLVER solver = NULL;
+
+    LIS_VECTOR v0 = NULL;
+    LIS_VECTOR v1 = NULL;
+    LIS_VECTOR replacement = NULL;
+    LIS_VECTOR dependent0 = NULL;
+    LIS_VECTOR dependent1 = NULL;
+
+    LIS_VECTOR basis[2];
+    LIS_VECTOR one[1];
+    LIS_VECTOR dependent[2];
+
+    LIS_SCALAR before[3];
+    LIS_SCALAR after[3];
+    LIS_SCALAR dot = 0.0;
+
+    LIS_REAL nrm0 = 0.0;
+    LIS_REAL nrm1 = 0.0;
+    LIS_REAL replacement_nrm = 0.0;
+    LIS_REAL dot_abs = 0.0;
+    LIS_REAL ownership_delta = 0.0;
+
+    LIS_INT err;
+    LIS_INT api_error = LIS_SUCCESS;
+    LIS_INT dependent_api = LIS_SUCCESS;
+
+    int i;
+    int ownership_ok = 0;
+    int orthonormal_ok = 0;
+    int replacement_ok = 0;
+    int clear_ok = 0;
+    int zero_clear_ok = 0;
+    int dependent_ok = 0;
+    int right_untouched_ok = 0;
+
+    int pass = 1;
+
+    const LIS_REAL tol =
+        (LIS_REAL)1.0e-10;
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        make_vector3(
+            A,
+            1.0,
+            1.0,
+            0.0,
+            &v0);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        make_vector3(
+            A,
+            1.0,
+            0.0,
+            1.0,
+            &v1);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    basis[0] = v0;
+    basis[1] = v1;
+
+    err =
+        lis_solver_set_left_nullspace(
+            solver,
+            2,
+            basis);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    ownership_ok =
+        solver->left_nullspace!=NULL
+        &&
+        solver->left_nullspace_dim==2
+        &&
+        solver->left_nullspace[0]!=v0
+        &&
+        solver->left_nullspace[1]!=v1;
+
+    if(ownership_ok)
+    {
+        err =
+            lis_vector_get_values(
+                solver->left_nullspace[0],
+                0,
+                3,
+                before);
+
+        if(err)
+        {
+            api_error = err;
+            pass = 0;
+            goto cleanup;
+        }
+
+        err =
+            lis_vector_set_all(
+                9.0,
+                v0);
+
+        if(err)
+        {
+            api_error = err;
+            pass = 0;
+            goto cleanup;
+        }
+
+        err =
+            lis_vector_get_values(
+                solver->left_nullspace[0],
+                0,
+                3,
+                after);
+
+        if(err)
+        {
+            api_error = err;
+            pass = 0;
+            goto cleanup;
+        }
+
+        for(i=0;i<3;i++)
+        {
+            LIS_REAL delta =
+                (LIS_REAL)fabs(
+                    after[i]-before[i]);
+
+            if(delta>ownership_delta)
+            {
+                ownership_delta = delta;
+            }
+        }
+
+        if(ownership_delta>tol)
+        {
+            ownership_ok = 0;
+        }
+    }
+
+    err =
+        lis_vector_nrm2(
+            solver->left_nullspace[0],
+            &nrm0);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        lis_vector_nrm2(
+            solver->left_nullspace[1],
+            &nrm1);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        lis_vector_dot(
+            solver->left_nullspace[0],
+            solver->left_nullspace[1],
+            &dot);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    dot_abs =
+        (LIS_REAL)fabs(dot);
+
+    orthonormal_ok =
+        ((nrm0>=1.0 ? nrm0-1.0 : 1.0-nrm0)<=tol)
+        &&
+        ((nrm1>=1.0 ? nrm1-1.0 : 1.0-nrm1)<=tol)
+        &&
+        dot_abs<=tol;
+
+    right_untouched_ok =
+        solver->nullspace==NULL
+        &&
+        solver->nullspace_dim==0;
+
+    err =
+        make_vector3(
+            A,
+            1.0,
+            -1.0,
+            0.0,
+            &replacement);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    one[0] = replacement;
+
+    err =
+        lis_solver_set_left_nullspace(
+            solver,
+            1,
+            one);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        lis_vector_nrm2(
+            solver->left_nullspace[0],
+            &replacement_nrm);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    replacement_ok =
+        solver->left_nullspace!=NULL
+        &&
+        solver->left_nullspace_dim==1
+        &&
+        solver->left_nullspace[0]!=replacement
+        &&
+        ((replacement_nrm>=1.0
+            ? replacement_nrm-1.0
+            : 1.0-replacement_nrm)<=tol);
+
+    err =
+        lis_solver_clear_left_nullspace(
+            solver);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    clear_ok =
+        solver->left_nullspace==NULL
+        &&
+        solver->left_nullspace_dim==0;
+
+    err =
+        lis_solver_set_left_nullspace(
+            solver,
+            1,
+            one);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        lis_solver_set_left_nullspace(
+            solver,
+            0,
+            NULL);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    zero_clear_ok =
+        solver->left_nullspace==NULL
+        &&
+        solver->left_nullspace_dim==0;
+
+    err =
+        make_vector3(
+            A,
+            1.0,
+            2.0,
+            3.0,
+            &dependent0);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        make_vector3(
+            A,
+            2.0,
+            4.0,
+            6.0,
+            &dependent1);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    dependent[0] = dependent0;
+    dependent[1] = dependent1;
+
+    dependent_api =
+        lis_solver_set_left_nullspace(
+            solver,
+            2,
+            dependent);
+
+    dependent_ok =
+        dependent_api==LIS_ERR_ILL_ARG
+        &&
+        solver->left_nullspace==NULL
+        &&
+        solver->left_nullspace_dim==0;
+
+    right_untouched_ok =
+        right_untouched_ok
+        &&
+        solver->nullspace==NULL
+        &&
+        solver->nullspace_dim==0;
+
+    if(
+        !ownership_ok
+        ||
+        !orthonormal_ok
+        ||
+        !replacement_ok
+        ||
+        !clear_ok
+        ||
+        !zero_clear_ok
+        ||
+        !dependent_ok
+        ||
+        !right_untouched_ok)
+    {
+        pass = 0;
+    }
+
+cleanup:
+
+    printf(
+        "LEFT_NULLSPACE_API "
+        "ownership=%d "
+        "orthonormal=%d "
+        "replacement=%d "
+        "clear=%d "
+        "zero_clear=%d "
+        "dependent=%d "
+        "right_untouched=%d "
+        "api_error=%d "
+        "dependent_api=%d "
+        "owner_delta=% .3e "
+        "nrm0=% .16e "
+        "nrm1=% .16e "
+        "dot=% .3e "
+        "replacement_nrm=% .16e\n",
+        ownership_ok,
+        orthonormal_ok,
+        replacement_ok,
+        clear_ok,
+        zero_clear_ok,
+        dependent_ok,
+        right_untouched_ok,
+        (int)api_error,
+        (int)dependent_api,
+        (double)ownership_delta,
+        (double)nrm0,
+        (double)nrm1,
+        (double)dot_abs,
+        (double)replacement_nrm);
+
+    if(solver)
+    {
+        lis_solver_destroy(
+            solver);
+    }
+
+    if(dependent1)
+    {
+        lis_vector_destroy(
+            dependent1);
+    }
+
+    if(dependent0)
+    {
+        lis_vector_destroy(
+            dependent0);
+    }
+
+    if(replacement)
+    {
+        lis_vector_destroy(
+            replacement);
+    }
+
+    if(v1)
+    {
+        lis_vector_destroy(
+            v1);
+    }
+
+    if(v0)
+    {
+        lis_vector_destroy(
+            v0);
+    }
+
+    return pass;
+}
+
 int
 main(
     int argc,
@@ -956,6 +1501,7 @@ main(
     int incompatible_fgcrodr_ok;
 
     int gcrodr_repeat_ok;
+    int left_api_ok;
 
     int pass = 1;
 
@@ -1071,6 +1617,10 @@ main(
             A,
             q);
 
+    left_api_ok =
+        run_left_nullspace_api(
+            A);
+
     printf(
         "NULLSPACE_SUMMARY "
         "gmres=%d "
@@ -1083,7 +1633,8 @@ main(
         "incompatible_fgmres=%d "
         "incompatible_gcrodr=%d "
         "incompatible_fgcrodr=%d "
-        "gcrodr_repeat=%d\n",
+        "gcrodr_repeat=%d "
+        "left_api=%d\n",
         gmres_ok,
         fgmres_ok,
         gcrodr_ok,
@@ -1094,7 +1645,8 @@ main(
         incompatible_fgmres_ok,
         incompatible_gcrodr_ok,
         incompatible_fgcrodr_ok,
-        gcrodr_repeat_ok);
+        gcrodr_repeat_ok,
+        left_api_ok);
 
     if(
         !gmres_ok
@@ -1117,7 +1669,9 @@ main(
         ||
         !incompatible_fgcrodr_ok
         ||
-        !gcrodr_repeat_ok)
+        !gcrodr_repeat_ok
+        ||
+        !left_api_ok)
     {
         pass = 0;
     }

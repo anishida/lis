@@ -269,7 +269,9 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->sequence_diag_total_precon_rebuilds = 0;
 	solver->near_nullspace = NULL;
 	solver->nullspace = NULL;
+	solver->left_nullspace = NULL;
 	solver->nullspace_dim = 0;
+	solver->left_nullspace_dim = 0;
 	solver->near_nullspace_dim = 0;
 	solver->near_nullspace_coarse = NULL;
 	solver->recycle_u = NULL;
@@ -848,10 +850,12 @@ lis_solver_vector_compatible(
 
 
 #undef __FUNC__
-#define __FUNC__ "lis_solver_orthonormalize_nullspace"
+#define __FUNC__ "lis_solver_orthonormalize_basis"
 static LIS_INT
-lis_solver_orthonormalize_nullspace(
-    LIS_SOLVER solver)
+lis_solver_orthonormalize_basis(
+    LIS_SOLVER solver,
+    LIS_VECTOR basis[],
+    LIS_INT basis_dim)
 {
     LIS_INT i,j,pass,err;
     LIS_REAL nrm0,nrm;
@@ -869,19 +873,19 @@ lis_solver_orthonormalize_nullspace(
     }
 
     if(
-        solver->nullspace_dim<=0
+        basis_dim<=0
         ||
-        solver->nullspace==NULL)
+        basis==NULL)
     {
         LIS_DEBUG_FUNC_OUT;
         return LIS_SUCCESS;
     }
 
-    for(i=0;i<solver->nullspace_dim;i++)
+    for(i=0;i<basis_dim;i++)
     {
         err =
             lis_vector_nrm2(
-                solver->nullspace[i],
+                basis[i],
                 &nrm0);
 
         if(err)
@@ -911,8 +915,8 @@ lis_solver_orthonormalize_nullspace(
             {
                 err =
                     lis_vector_dot(
-                        solver->nullspace[j],
-                        solver->nullspace[i],
+                        basis[j],
+                        basis[i],
                         &alpha);
 
                 if(err)
@@ -923,8 +927,8 @@ lis_solver_orthonormalize_nullspace(
                 err =
                     lis_vector_axpy(
                         -alpha,
-                        solver->nullspace[j],
-                        solver->nullspace[i]);
+                        basis[j],
+                        basis[i]);
 
                 if(err)
                 {
@@ -935,7 +939,7 @@ lis_solver_orthonormalize_nullspace(
 
         err =
             lis_vector_nrm2(
-                solver->nullspace[i],
+                basis[i],
                 &nrm);
 
         if(err)
@@ -957,7 +961,7 @@ lis_solver_orthonormalize_nullspace(
         err =
             lis_vector_scale(
                 (LIS_SCALAR)(1.0/nrm),
-                solver->nullspace[i]);
+                basis[i]);
 
         if(err)
         {
@@ -1007,6 +1011,193 @@ LIS_INT lis_solver_clear_nullspace(LIS_SOLVER solver)
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_clear_left_nullspace"
+LIS_INT lis_solver_clear_left_nullspace(LIS_SOLVER solver)
+{
+    LIS_INT i;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if( solver==NULL )
+    {
+            LIS_SETERR(
+                    LIS_ERR_ILL_ARG,
+                    "solver is NULL\n");
+
+            return LIS_ERR_ILL_ARG;
+    }
+
+
+    if( solver->left_nullspace )
+    {
+            for(i=0;i<solver->left_nullspace_dim;i++)
+            {
+                    if( solver->left_nullspace[i] )
+                    {
+                            lis_vector_destroy(
+                                    solver->left_nullspace[i]);
+                    }
+            }
+
+            lis_free(solver->left_nullspace);
+    }
+
+    solver->left_nullspace = NULL;
+    solver->left_nullspace_dim = 0;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_left_nullspace"
+LIS_INT lis_solver_set_left_nullspace(
+    LIS_SOLVER solver,
+    LIS_INT nvec,
+    LIS_VECTOR vectors[])
+{
+    LIS_VECTOR *owned;
+    LIS_INT i,j,err;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if( solver==NULL || nvec<0 )
+    {
+            LIS_SETERR(
+                    LIS_ERR_ILL_ARG,
+                    "invalid left-nullspace arguments\n");
+
+            return LIS_ERR_ILL_ARG;
+    }
+
+    if( nvec==0 )
+    {
+            return lis_solver_clear_left_nullspace(solver);
+    }
+
+    if( vectors==NULL )
+    {
+            LIS_SETERR(
+                    LIS_ERR_ILL_ARG,
+                    "left-nullspace vector array is NULL\n");
+
+            return LIS_ERR_ILL_ARG;
+    }
+
+    for(i=0;i<nvec;i++)
+    {
+            if( vectors[i]==NULL ||
+                    vectors[i]->label!=LIS_LABEL_VECTOR )
+            {
+                    LIS_SETERR(
+                            LIS_ERR_ILL_ARG,
+                            "invalid left-nullspace vector\n");
+
+                    return LIS_ERR_ILL_ARG;
+            }
+
+            if( i>0 &&
+                    !lis_solver_vector_compatible(
+                            vectors[0],vectors[i]) )
+            {
+                    LIS_SETERR(
+                            LIS_ERR_ILL_ARG,
+                            "left-nullspace vectors must have compatible layouts\n");
+
+                    return LIS_ERR_ILL_ARG;
+            }
+    }
+
+    owned = (LIS_VECTOR *)lis_malloc(
+            nvec*sizeof(LIS_VECTOR),
+            "lis_solver_set_left_nullspace::owned");
+
+    if( owned==NULL )
+    {
+            LIS_SETERR_MEM(nvec*sizeof(LIS_VECTOR));
+            return LIS_OUT_OF_MEMORY;
+    }
+
+    for(i=0;i<nvec;i++)
+    {
+            owned[i] = NULL;
+    }
+
+    for(i=0;i<nvec;i++)
+    {
+            err = lis_vector_duplicate(
+                    vectors[i],
+                    &owned[i]);
+
+            if( err )
+            {
+                    for(j=0;j<nvec;j++)
+                    {
+                            if( owned[j] )
+                            {
+                                    lis_vector_destroy(
+                                            owned[j]);
+                            }
+                    }
+
+                    lis_free(owned);
+                    return err;
+            }
+
+            err = lis_vector_copy(
+                    vectors[i],
+                    owned[i]);
+
+            if( err )
+            {
+                    for(j=0;j<nvec;j++)
+                    {
+                            if( owned[j] )
+                            {
+                                    lis_vector_destroy(
+                                            owned[j]);
+                            }
+                    }
+
+                    lis_free(owned);
+                    return err;
+            }
+    }
+
+    err = lis_solver_clear_left_nullspace(solver);
+    if( err )
+    {
+            for(i=0;i<nvec;i++)
+            {
+                    lis_vector_destroy(owned[i]);
+            }
+
+            lis_free(owned);
+            return err;
+    }
+
+    solver->left_nullspace = owned;
+    solver->left_nullspace_dim = nvec;
+
+    err =
+        lis_solver_orthonormalize_basis(
+            solver,
+            solver->left_nullspace,
+            solver->left_nullspace_dim);
+
+    if( err )
+    {
+        lis_solver_clear_left_nullspace(solver);
+        return err;
+    }
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
 }
 
 
@@ -1138,8 +1329,10 @@ LIS_INT lis_solver_set_nullspace(
 	solver->nullspace = owned;
 	solver->nullspace_dim = nvec;
 	err =
-	    lis_solver_orthonormalize_nullspace(
-	        solver);
+	    lis_solver_orthonormalize_basis(
+	        solver,
+	        solver->nullspace,
+	        solver->nullspace_dim);
 
 	if(err)
 	{
@@ -1407,6 +1600,7 @@ LIS_INT lis_solver_destroy(LIS_SOLVER solver)
 		lis_gcrodr_clear_recycle(solver);
                 lis_fgcrodr_state_destroy(solver);
 		lis_solver_clear_nullspace(solver);
+		lis_solver_clear_left_nullspace(solver);
 	lis_solver_clear_near_nullspace(solver);
 		lis_vector_destroy(solver->d);
 		if( solver->Ah ) lis_matrix_destroy(solver->Ah);

@@ -871,10 +871,12 @@ struct LIS_SOLVER_STRUCT
 	LIS_VECTOR b,x,xx,d;
 	LIS_MATRIX_DIAG WD;
 	LIS_PRECON precon;
-	/* Solver-owned copies of user-provided exact and near-nullspace vectors. */
+	/* Solver-owned copies of exact right, exact left, and near-nullspace vectors. */
 	LIS_VECTOR *near_nullspace;
 	LIS_VECTOR *nullspace;
+	LIS_VECTOR *left_nullspace;
 	LIS_INT nullspace_dim;
+	LIS_INT left_nullspace_dim;
 	LIS_INT near_nullspace_dim;
 	LIS_NEAR_NULLSPACE_COARSE near_nullspace_coarse;
 	/* Persistent GCRO-DR recycle state. */
@@ -1226,6 +1228,8 @@ extern "C"
 	extern LIS_INT lis_solver_destroy(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_nullspace(LIS_SOLVER solver, LIS_INT nvec, LIS_VECTOR vectors[]);
 	extern LIS_INT lis_solver_clear_nullspace(LIS_SOLVER solver);
+	extern LIS_INT lis_solver_set_left_nullspace(LIS_SOLVER solver, LIS_INT nvec, LIS_VECTOR vectors[]);
+	extern LIS_INT lis_solver_clear_left_nullspace(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_near_nullspace(LIS_SOLVER solver, LIS_INT nvec, LIS_VECTOR vectors[]);
 	extern LIS_INT lis_solver_clear_near_nullspace(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_gcrodr_recycle(
