@@ -2139,12 +2139,28 @@ lis_fgcrodr_try_harmonic_build(
         *sizeof(LIS_SCALAR));
 
 
+    /*
+     * Harmonic recycle extraction is optional.  Bound the
+     * unshifted QR iteration so a difficult small eigensystem
+     * cannot dominate the linear solve.
+     */
+    if( psmall<=16 )
+        qriter =
+            4096;
+    else if( psmall>=64 )
+        qriter =
+            16384;
+    else
+        qriter =
+            256*psmall;
+
     err =
-        lis_array_qr(
+        lis_array_qr_limit(
             psmall,
             TQR,
             QW,
             RW,
+            qriter,
             &qriter,
             &qrerr);
 
@@ -3625,12 +3641,28 @@ lis_fgcrodr_try_harmonic_update(
         *sizeof(LIS_SCALAR));
 
 
+    /*
+     * Harmonic recycle extraction is optional.  Bound the
+     * unshifted QR iteration so a difficult small eigensystem
+     * cannot dominate the linear solve.
+     */
+    if( psmall<=16 )
+        qriter =
+            4096;
+    else if( psmall>=64 )
+        qriter =
+            16384;
+    else
+        qriter =
+            256*psmall;
+
     err =
-        lis_array_qr(
+        lis_array_qr_limit(
             psmall,
             TQR,
             QW,
             RW,
+            qriter,
             &qriter,
             &qrerr);
 

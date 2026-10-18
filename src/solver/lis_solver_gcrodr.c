@@ -865,7 +865,26 @@ static LIS_INT lis_gcrodr_update_recycle(LIS_SOLVER solver,
     }
 
     memcpy(TQR,T,(size_t)p*p*sizeof(LIS_SCALAR));
-    err = lis_array_qr(p,TQR,QW,RW,&qriter,&qrerr);
+    /*
+     * Harmonic recycle extraction is optional.  Bound the
+     * unshifted QR iteration so a difficult small eigensystem
+     * cannot dominate the linear solve.
+     */
+    if( p<=16 )
+        qriter = 4096;
+    else if( p>=64 )
+        qriter = 16384;
+    else
+        qriter = 256*p;
+
+    err = lis_array_qr_limit(
+        p,
+        TQR,
+        QW,
+        RW,
+        qriter,
+        &qriter,
+        &qrerr);
     if( err ) goto reject;
     (void)qriter;
     (void)qrerr;

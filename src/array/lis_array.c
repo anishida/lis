@@ -1133,43 +1133,142 @@ LIS_INT lis_array_mgs(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *q, LIS_SCALAR *r)
 
 #undef __FUNC__
 #define __FUNC__ "lis_array_qr"
-LIS_INT lis_array_qr(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *q, LIS_SCALAR *r, LIS_INT *qriter, LIS_REAL *qrerr)
+static LIS_INT lis_array_qr_core(
+    LIS_INT n,
+    LIS_SCALAR *a,
+    LIS_SCALAR *q,
+    LIS_SCALAR *r,
+    LIS_INT maxiter,
+    LIS_INT *qriter,
+    LIS_REAL *qrerr)
 {
-  LIS_INT i, j, k, iter, maxiter; 
-  LIS_SCALAR *a0;
-  LIS_REAL tol, err;
+    LIS_INT i,j,k,iter;
+    LIS_SCALAR *a0;
+    LIS_REAL tol,err;
 
-  LIS_DEBUG_FUNC_IN;
+    LIS_DEBUG_FUNC_IN;
 
-  maxiter = 100000;
-  tol = 1e-12;
+    tol = 1e-12;
 
-  a0 = (LIS_SCALAR *)lis_malloc(n*n*sizeof(LIS_SCALAR), "lis_array_qr::a0");
-  iter = 0;
-  while (iter < maxiter)
+    a0 = (LIS_SCALAR *)lis_malloc(
+        n*n*sizeof(LIS_SCALAR),
+        "lis_array_qr::a0");
+
+    iter = 0;
+
+    while( iter<maxiter )
     {
-      iter = iter + 1;
-      lis_array_cgs(n, a, q, r);
-      for (j=0;j<n;j++)
-	{
-	  for (i=0;i<n;i++)
-	    {
-	      a[i+j*n] = 0;
-	      for (k=0;k<n;k++)
-		{
-		  a[i+j*n] += r[i+k*n] * q[k+j*n];
-		}
-	    }
-	}
-      err = fabs(a[1]);
-      if (err<tol) break;
+        iter++;
+
+        lis_array_cgs(
+            n,
+            a,
+            q,
+            r);
+
+        for(j=0;j<n;j++)
+        {
+            for(i=0;i<n;i++)
+            {
+                a[i+j*n] = 0;
+
+                for(k=0;k<n;k++)
+                {
+                    a[i+j*n] +=
+                        r[i+k*n]
+                        *q[k+j*n];
+                }
+            }
+        }
+
+        err = fabs(a[1]);
+
+        if( err<tol )
+        {
+            break;
+        }
     }
 
-  *qriter = iter;
-  *qrerr = err;
+    *qriter = iter;
+    *qrerr = err;
 
-  lis_free(a0);
+    lis_free(a0);
 
-  LIS_DEBUG_FUNC_OUT;
-  return LIS_SUCCESS;
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+
+LIS_INT lis_array_qr(
+    LIS_INT n,
+    LIS_SCALAR *a,
+    LIS_SCALAR *q,
+    LIS_SCALAR *r,
+    LIS_INT *qriter,
+    LIS_REAL *qrerr)
+{
+    return lis_array_qr_core(
+        n,
+        a,
+        q,
+        r,
+        100000,
+        qriter,
+        qrerr);
+}
+
+
+LIS_INT lis_array_qr_limit(
+    LIS_INT n,
+    LIS_SCALAR *a,
+    LIS_SCALAR *q,
+    LIS_SCALAR *r,
+    LIS_INT maxiter,
+    LIS_INT *qriter,
+    LIS_REAL *qrerr)
+{
+    LIS_INT err;
+
+    if( n<=0 || maxiter<=0 )
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+    /*
+     * A 1x1 matrix is already in real Schur form.
+     * Keep the bounded path from accessing a[1].
+     */
+    if( n==1 )
+    {
+        q[0] = 1.0;
+        r[0] = a[0];
+
+        *qriter = 1;
+        *qrerr = 0.0;
+
+        return LIS_SUCCESS;
+    }
+
+    err = lis_array_qr_core(
+        n,
+        a,
+        q,
+        r,
+        maxiter,
+        qriter,
+        qrerr);
+
+    if( err )
+    {
+        return err;
+    }
+
+    if(
+        *qrerr!=*qrerr ||
+        *qrerr>=1e-12)
+    {
+        return LIS_BREAKDOWN;
+    }
+
+    return LIS_SUCCESS;
 }
