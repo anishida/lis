@@ -1476,6 +1476,616 @@ cleanup:
     return pass;
 }
 
+static int
+run_rhs_compatibility_nonsymmetric(
+    LIS_MATRIX A)
+{
+    LIS_SOLVER solver = NULL;
+
+    LIS_VECTOR right_vector = NULL;
+    LIS_VECTOR left_vector = NULL;
+    LIS_VECTOR compatible_rhs = NULL;
+    LIS_VECTOR incompatible_rhs = NULL;
+    LIS_VECTOR zero_rhs = NULL;
+
+    LIS_VECTOR right_basis[1];
+    LIS_VECTOR left_basis[1];
+
+    LIS_SCALAR right_coefficient = 0.0;
+    LIS_SCALAR rhs_before[3];
+    LIS_SCALAR rhs_after[3];
+
+    LIS_REAL compatible_defect = 0.0;
+    LIS_REAL compatible_relative = 0.0;
+    LIS_REAL incompatible_defect = 0.0;
+    LIS_REAL incompatible_relative = 0.0;
+    LIS_REAL zero_defect = 0.0;
+    LIS_REAL zero_relative = 0.0;
+    LIS_REAL right_coefficient_abs = 0.0;
+    LIS_REAL rhs_delta = 0.0;
+
+    LIS_REAL expected_defect;
+    LIS_REAL expected_relative;
+
+    LIS_INT err;
+    LIS_INT api_error = LIS_SUCCESS;
+    LIS_INT missing_left_api = LIS_SUCCESS;
+
+    int i;
+    int missing_left_ok = 0;
+    int compatible_ok = 0;
+    int right_distinction_ok = 0;
+    int incompatible_ok = 0;
+    int zero_ok = 0;
+    int rhs_unchanged_ok = 0;
+    int state_ok = 0;
+
+    int pass = 1;
+
+    const LIS_REAL tol =
+        (LIS_REAL)1.0e-10;
+
+    /*
+     * Conceptual nonsymmetric operator:
+     *
+     *       [ 1 0 0 ]
+     *   A = [ 1 0 0 ]
+     *       [ 0 0 1 ]
+     *
+     * ker(A)   = span([0,1,0]^T)
+     * ker(A^H) = span([1,-1,0]^T).
+     *
+     * The compatibility query itself consumes the registered
+     * left basis and RHS only, so the existing matrix A is used
+     * here only as the vector-layout template.
+     */
+
+    expected_defect =
+        (LIS_REAL)(1.0/sqrt(2.0));
+
+    expected_relative =
+        (LIS_REAL)(1.0/sqrt(10.0));
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        make_vector3(
+            A,
+            0.0,
+            1.0,
+            0.0,
+            &right_vector);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        make_vector3(
+            A,
+            1.0,
+            -1.0,
+            0.0,
+            &left_vector);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        make_vector3(
+            A,
+            1.0,
+            1.0,
+            2.0,
+            &compatible_rhs);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        make_vector3(
+            A,
+            1.0,
+            0.0,
+            2.0,
+            &incompatible_rhs);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        make_vector3(
+            A,
+            0.0,
+            0.0,
+            0.0,
+            &zero_rhs);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    right_basis[0] = right_vector;
+    left_basis[0] = left_vector;
+
+    err =
+        lis_solver_set_nullspace(
+            solver,
+            1,
+            right_basis);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    /*
+     * A registered right nullspace must not be used as an
+     * implicit compatibility basis.
+     */
+    missing_left_api =
+        lis_solver_check_rhs_compatibility(
+            solver,
+            compatible_rhs,
+            &compatible_defect,
+            &compatible_relative);
+
+    missing_left_ok =
+        missing_left_api==LIS_ERR_ILL_ARG;
+
+    err =
+        lis_solver_set_left_nullspace(
+            solver,
+            1,
+            left_basis);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        lis_vector_dot(
+            solver->nullspace[0],
+            compatible_rhs,
+            &right_coefficient);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    right_coefficient_abs =
+        (LIS_REAL)fabs(right_coefficient);
+
+    right_distinction_ok =
+        fabs(right_coefficient_abs-1.0)<=tol;
+
+    compatible_defect = -1.0;
+    compatible_relative = -1.0;
+
+    err =
+        lis_solver_check_rhs_compatibility(
+            solver,
+            compatible_rhs,
+            &compatible_defect,
+            &compatible_relative);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    compatible_ok =
+        compatible_defect<=tol
+        &&
+        compatible_relative<=tol;
+
+    err =
+        lis_vector_get_values(
+            incompatible_rhs,
+            0,
+            3,
+            rhs_before);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        lis_solver_check_rhs_compatibility(
+            solver,
+            incompatible_rhs,
+            &incompatible_defect,
+            &incompatible_relative);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    incompatible_ok =
+        fabs(incompatible_defect-expected_defect)<=tol
+        &&
+        fabs(incompatible_relative-expected_relative)<=tol;
+
+    err =
+        lis_vector_get_values(
+            incompatible_rhs,
+            0,
+            3,
+            rhs_after);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    for(i=0;i<3;i++)
+    {
+        LIS_REAL delta =
+            (LIS_REAL)fabs(
+                rhs_after[i]-rhs_before[i]);
+
+        if(delta>rhs_delta)
+        {
+            rhs_delta = delta;
+        }
+    }
+
+    rhs_unchanged_ok =
+        rhs_delta<=tol;
+
+    err =
+        lis_solver_check_rhs_compatibility(
+            solver,
+            zero_rhs,
+            &zero_defect,
+            &zero_relative);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    zero_ok =
+        zero_defect<=tol
+        &&
+        zero_relative<=tol;
+
+    state_ok =
+        solver->nullspace!=NULL
+        &&
+        solver->nullspace_dim==1
+        &&
+        solver->left_nullspace!=NULL
+        &&
+        solver->left_nullspace_dim==1;
+
+    if(
+        !missing_left_ok
+        ||
+        !compatible_ok
+        ||
+        !right_distinction_ok
+        ||
+        !incompatible_ok
+        ||
+        !zero_ok
+        ||
+        !rhs_unchanged_ok
+        ||
+        !state_ok)
+    {
+        pass = 0;
+    }
+
+cleanup:
+
+    printf(
+        "RHS_COMPATIBILITY_NONSYMMETRIC "
+        "missing_left=%d "
+        "compatible=%d "
+        "right_distinction=%d "
+        "incompatible=%d "
+        "zero=%d "
+        "rhs_unchanged=%d "
+        "state=%d "
+        "api_error=%d "
+        "missing_left_api=%d "
+        "compatible_defect=% .16e "
+        "right_coeff=% .16e "
+        "incompatible_defect=% .16e "
+        "incompatible_relative=% .16e "
+        "rhs_delta=% .3e\n",
+        missing_left_ok,
+        compatible_ok,
+        right_distinction_ok,
+        incompatible_ok,
+        zero_ok,
+        rhs_unchanged_ok,
+        state_ok,
+        (int)api_error,
+        (int)missing_left_api,
+        (double)compatible_defect,
+        (double)right_coefficient_abs,
+        (double)incompatible_defect,
+        (double)incompatible_relative,
+        (double)rhs_delta);
+
+    if(solver)
+    {
+        lis_solver_destroy(
+            solver);
+    }
+
+    if(zero_rhs)
+    {
+        lis_vector_destroy(
+            zero_rhs);
+    }
+
+    if(incompatible_rhs)
+    {
+        lis_vector_destroy(
+            incompatible_rhs);
+    }
+
+    if(compatible_rhs)
+    {
+        lis_vector_destroy(
+            compatible_rhs);
+    }
+
+    if(left_vector)
+    {
+        lis_vector_destroy(
+            left_vector);
+    }
+
+    if(right_vector)
+    {
+        lis_vector_destroy(
+            right_vector);
+    }
+
+    return pass;
+}
+
+static int
+run_rhs_compatibility_multivector(
+    LIS_MATRIX A)
+{
+    LIS_SOLVER solver = NULL;
+
+    LIS_VECTOR w0 = NULL;
+    LIS_VECTOR w1 = NULL;
+    LIS_VECTOR rhs = NULL;
+
+    LIS_VECTOR basis[2];
+
+    LIS_REAL defect = 0.0;
+    LIS_REAL relative_defect = 0.0;
+
+    LIS_INT err;
+    LIS_INT api_error = LIS_SUCCESS;
+
+    int dimension_ok = 0;
+    int value_ok = 0;
+    int pass = 1;
+
+    const LIS_REAL tol =
+        (LIS_REAL)1.0e-10;
+
+    const LIS_REAL expected_defect =
+        (LIS_REAL)5.0;
+
+    const LIS_REAL expected_relative =
+        (LIS_REAL)(5.0/13.0);
+
+    /*
+     * Orthonormal two-vector left basis:
+     *
+     *   w0 = [1,0,0]^T
+     *   w1 = [0,1,0]^T
+     *
+     * For rhs = [3,4,12]^T:
+     *
+     *   ||W^H rhs||_2 = sqrt(3^2 + 4^2) = 5
+     *   ||rhs||_2     = 13
+     *   relative      = 5/13.
+     */
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        make_vector3(
+            A,
+            1.0,
+            0.0,
+            0.0,
+            &w0);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        make_vector3(
+            A,
+            0.0,
+            1.0,
+            0.0,
+            &w1);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        make_vector3(
+            A,
+            3.0,
+            4.0,
+            12.0,
+            &rhs);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    basis[0] = w0;
+    basis[1] = w1;
+
+    err =
+        lis_solver_set_left_nullspace(
+            solver,
+            2,
+            basis);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    dimension_ok =
+        solver->left_nullspace!=NULL
+        &&
+        solver->left_nullspace_dim==2;
+
+    err =
+        lis_solver_check_rhs_compatibility(
+            solver,
+            rhs,
+            &defect,
+            &relative_defect);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    value_ok =
+        fabs(defect-expected_defect)<=tol
+        &&
+        fabs(relative_defect-expected_relative)<=tol;
+
+    if(
+        !dimension_ok
+        ||
+        !value_ok)
+    {
+        pass = 0;
+    }
+
+cleanup:
+
+    printf(
+        "RHS_COMPATIBILITY_MULTIVECTOR "
+        "dimension=%d "
+        "value=%d "
+        "api_error=%d "
+        "defect=% .16e "
+        "relative=% .16e\n",
+        dimension_ok,
+        value_ok,
+        (int)api_error,
+        (double)defect,
+        (double)relative_defect);
+
+    if(solver)
+    {
+        lis_solver_destroy(
+            solver);
+    }
+
+    if(rhs)
+    {
+        lis_vector_destroy(
+            rhs);
+    }
+
+    if(w1)
+    {
+        lis_vector_destroy(
+            w1);
+    }
+
+    if(w0)
+    {
+        lis_vector_destroy(
+            w0);
+    }
+
+    return pass;
+}
+
 int
 main(
     int argc,
@@ -1502,6 +2112,8 @@ main(
 
     int gcrodr_repeat_ok;
     int left_api_ok;
+    int rhs_compat_ok;
+    int rhs_multi_ok;
 
     int pass = 1;
 
@@ -1621,6 +2233,14 @@ main(
         run_left_nullspace_api(
             A);
 
+    rhs_compat_ok =
+        run_rhs_compatibility_nonsymmetric(
+            A);
+
+    rhs_multi_ok =
+        run_rhs_compatibility_multivector(
+            A);
+
     printf(
         "NULLSPACE_SUMMARY "
         "gmres=%d "
@@ -1634,7 +2254,9 @@ main(
         "incompatible_gcrodr=%d "
         "incompatible_fgcrodr=%d "
         "gcrodr_repeat=%d "
-        "left_api=%d\n",
+        "left_api=%d "
+        "rhs_compat=%d "
+        "rhs_multi=%d\n",
         gmres_ok,
         fgmres_ok,
         gcrodr_ok,
@@ -1646,7 +2268,9 @@ main(
         incompatible_gcrodr_ok,
         incompatible_fgcrodr_ok,
         gcrodr_repeat_ok,
-        left_api_ok);
+        left_api_ok,
+        rhs_compat_ok,
+        rhs_multi_ok);
 
     if(
         !gmres_ok
@@ -1671,7 +2295,11 @@ main(
         ||
         !gcrodr_repeat_ok
         ||
-        !left_api_ok)
+        !left_api_ok
+        ||
+        !rhs_compat_ok
+        ||
+        !rhs_multi_ok)
     {
         pass = 0;
     }

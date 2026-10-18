@@ -1230,6 +1230,9 @@ extern "C"
 	extern LIS_INT lis_solver_clear_nullspace(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_left_nullspace(LIS_SOLVER solver, LIS_INT nvec, LIS_VECTOR vectors[]);
 	extern LIS_INT lis_solver_clear_left_nullspace(LIS_SOLVER solver);
+	extern LIS_INT lis_solver_check_rhs_compatibility(
+	    LIS_SOLVER solver, LIS_VECTOR rhs,
+	    LIS_REAL *defect, LIS_REAL *relative_defect);
 	extern LIS_INT lis_solver_set_near_nullspace(LIS_SOLVER solver, LIS_INT nvec, LIS_VECTOR vectors[]);
 	extern LIS_INT lis_solver_clear_near_nullspace(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_gcrodr_recycle(
