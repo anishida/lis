@@ -1148,7 +1148,7 @@ testcoarsesetup$(EXEEXT): $(testcoarsesetup_OBJECTS) $(testcoarsesetup_DEPENDENC
 testdiagonal$(EXEEXT): $(testdiagonal_OBJECTS) $(testdiagonal_DEPENDENCIES) $(EXTRA_testdiagonal_DEPENDENCIES) 
 	@rm -f testdiagonal$(EXEEXT)
 	$(LINK) $(testdiagonal_OBJECTS) $(testdiagonal_LDADD) $(LIBS)
-testexactnullspace$(EXEEXT): $(testexactnullspace_OBJECTS) $(testexactnullspace_DEPENDENCIES) $(EXTRA_testexactnullspace_DEPENDENCIES)
+testexactnullspace$(EXEEXT): $(testexactnullspace_OBJECTS) $(testexactnullspace_DEPENDENCIES) $(EXTRA_testexactnullspace_DEPENDENCIES) 
 	@rm -f testexactnullspace$(EXEEXT)
 	$(LINK) $(testexactnullspace_OBJECTS) $(testexactnullspace_LDADD) $(LIBS)
 testexternalstorage$(EXEEXT): $(testexternalstorage_OBJECTS) $(testexternalstorage_DEPENDENCIES) $(EXTRA_testexternalstorage_DEPENDENCIES) 
