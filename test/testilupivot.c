@@ -2,9 +2,9 @@
 #include "lis_config.h"
 #endif
 
+#include <math.h>
 #include "lislib.h"
 
-#include <math.h>
 #include <stdio.h>
 
 #define TEST_N       8

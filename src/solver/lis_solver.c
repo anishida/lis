@@ -2213,14 +2213,24 @@ LIS_INT lis_solver_compute_true_residual(
 	return LIS_SUCCESS;
 }
 
+/*
+ * Residual norms and certified residual metrics are LIS_REAL even when
+ * LIS_SCALAR is complex.  Do not use the scalar fabs macro for these
+ * real-valued quantities because it maps to cabs in complex builds.
+ */
+static LIS_REAL lis_solver_real_abs(LIS_REAL value)
+{
+        return value < 0.0 ? -value : value;
+}
+
 static LIS_INT lis_solver_sequence_warm_start_keep(
 	LIS_REAL residual_norm,
 	LIS_REAL rhs_norm)
 {
 	if( residual_norm!=residual_norm ||
 	    rhs_norm!=rhs_norm ||
-	    fabs(residual_norm)>LIS_SCALAR_MAX ||
-	    fabs(rhs_norm)>LIS_SCALAR_MAX )
+	    lis_solver_real_abs(residual_norm)>LIS_SCALAR_MAX ||
+	    lis_solver_real_abs(rhs_norm)>LIS_SCALAR_MAX )
 	{
 		return LIS_FALSE;
 	}
@@ -2367,13 +2377,13 @@ lis_solver_sequence_retryable(LIS_SOLVER solver)
 	        solver->sequence_true_residual &&
 	    solver->sequence_true_relative_residual==
 	        solver->sequence_true_relative_residual &&
-	    fabs(solver->sequence_true_residual)<=
+	    lis_solver_real_abs(solver->sequence_true_residual)<=
 	        LIS_SCALAR_MAX &&
-	    fabs(solver->sequence_true_relative_residual)<=
+	    lis_solver_real_abs(solver->sequence_true_relative_residual)<=
 	        LIS_SCALAR_MAX &&
 	    solver->sequence_true_relative_residual<=
-	        solver->params[
-	            LIS_PARAMS_RESID-LIS_OPTIONS_LEN] )
+	        fabs(solver->params[
+	            LIS_PARAMS_RESID-LIS_OPTIONS_LEN]) )
 	{
 	    solver->retcode = LIS_SUCCESS;
 	    solver->resid =
@@ -2396,9 +2406,9 @@ lis_solver_sequence_retryable(LIS_SOLVER solver)
 	        solver->sequence_true_residual ||
 	    solver->sequence_true_relative_residual!=
 	        solver->sequence_true_relative_residual ||
-	    fabs(solver->sequence_true_residual)>
+	    lis_solver_real_abs(solver->sequence_true_residual)>
 	        LIS_SCALAR_MAX ||
-	    fabs(solver->sequence_true_relative_residual)>
+	    lis_solver_real_abs(solver->sequence_true_relative_residual)>
 	        LIS_SCALAR_MAX )
 	{
 		solver->retcode = LIS_BREAKDOWN;
@@ -3674,7 +3684,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 		solver->resid = nrm2;
 
 		/* Reject non-finite or falsely converged iterates. */
-		if( nrm2!=nrm2 || fabs(nrm2)>LIS_SCALAR_MAX || nrm2>solver->tol )
+		if( nrm2!=nrm2 || lis_solver_real_abs(nrm2)>LIS_SCALAR_MAX || nrm2>solver->tol )
 		{
 			err = LIS_BREAKDOWN;
 			solver->retcode = LIS_BREAKDOWN;

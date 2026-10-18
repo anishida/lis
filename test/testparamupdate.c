@@ -2,12 +2,12 @@
 #include "lis_config.h"
 #endif
 
+#include <math.h>
 #include "lis.h"
 #include "lis_precon.h"
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 
 #define PARAM_MAGIC 0x36435055
 #define TEST_N 4
