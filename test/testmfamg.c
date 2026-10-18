@@ -2675,8 +2675,8 @@ check_mfamg_multivector_basis_foundation(void)
 {
     enum
     {
-        LOCAL_N = 6,
-        LOCAL_AGGREGATES = 2,
+        LOCAL_N = 9,
+        LOCAL_AGGREGATES = 3,
         LOCAL_MODES = 2
     };
 
@@ -2688,7 +2688,8 @@ check_mfamg_multivector_basis_foundation(void)
     LIS_INT aggregate[LOCAL_N] =
     {
         0, 0, 0,
-        1, 1, 1
+        1, 1, 1,
+        2, 2, 2
     };
 
     LIS_INT *aggregate_rank;
@@ -2797,6 +2798,19 @@ check_mfamg_multivector_basis_foundation(void)
     z1->value[5] = (LIS_SCALAR)2.0;
 
 
+    /*
+     * Aggregate 2 has zero local rank because both supplied
+     * near-nullspace modes vanish on all of its rows.
+     */
+    z0->value[6] = (LIS_SCALAR)0.0;
+    z0->value[7] = (LIS_SCALAR)0.0;
+    z0->value[8] = (LIS_SCALAR)0.0;
+
+    z1->value[6] = (LIS_SCALAR)0.0;
+    z1->value[7] = (LIS_SCALAR)0.0;
+    z1->value[8] = (LIS_SCALAR)0.0;
+
+
     basis[0] =
         z0;
 
@@ -2842,11 +2856,15 @@ check_mfamg_multivector_basis_foundation(void)
         ||
         aggregate_rank[1]!=1
         ||
+        aggregate_rank[2]!=0
+        ||
         aggregate_offset[0]!=0
         ||
         aggregate_offset[1]!=2
         ||
         aggregate_offset[2]!=3
+        ||
+        aggregate_offset[3]!=3
         ||
         row_ptr[0]!=0
         ||
@@ -2860,7 +2878,13 @@ check_mfamg_multivector_basis_foundation(void)
         ||
         row_ptr[5]!=8
         ||
-        row_ptr[6]!=9)
+        row_ptr[6]!=9
+        ||
+        row_ptr[7]!=9
+        ||
+        row_ptr[8]!=9
+        ||
+        row_ptr[9]!=9)
     {
         failed = 1;
         goto report;
@@ -3005,7 +3029,7 @@ report:
     printf(
         "MULTIVECTOR_BASIS=%s "
         "coarse_n=%d "
-        "ranks=%d,%d "
+        "ranks=%d,%d,%d "
         "entries=%d "
         "reconstruction=% .12e "
         "orthogonality=% .12e\n",
@@ -3023,6 +3047,11 @@ report:
         aggregate_rank
         ?
         (int)aggregate_rank[1]
+        :
+        -1,
+        aggregate_rank
+        ?
+        (int)aggregate_rank[2]
         :
         -1,
         row_ptr

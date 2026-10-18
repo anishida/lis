@@ -2329,7 +2329,7 @@ lis_mfamg_build_distributed_multivector_aggregate_metadata(
 
 
         if(
-            rank<=0
+            rank<0
             ||
             offset<0
             ||
@@ -2384,11 +2384,11 @@ lis_mfamg_build_distributed_multivector_aggregate_metadata(
             global_aggregate_rank[i];
 
         if(
-            rank<=0
+            rank<0
             ||
             global_aggregate[i]<0
             ||
-            global_aggregate[i]>=global_nc
+            global_aggregate[i]>global_nc
             ||
             global_aggregate[i]+rank>global_nc)
         {
@@ -3181,12 +3181,18 @@ lis_precon_mfamg_build_multivector_basis(
 
         if(max_norm==0.0)
         {
-            LIS_SETERR(
-                LIS_BREAKDOWN,
-                "MFAMG near-nullspace vanishes on an aggregate\n");
+            /*
+             * A locally constrained aggregate may see every
+             * supplied near-nullspace mode vanish.  It has zero
+             * numerical rank and contributes no coarse unknowns.
+             *
+             * A globally vanishing basis remains invalid because
+             * the total coarse dimension is checked below.
+             */
+            aggregate_rank[a] =
+                0;
 
-            err = LIS_BREAKDOWN;
-            goto fail;
+            continue;
         }
 
 
@@ -3413,15 +3419,6 @@ lis_precon_mfamg_build_multivector_basis(
         }
 
 
-        if(rank<=0)
-        {
-            LIS_SETERR(
-                LIS_BREAKDOWN,
-                "MFAMG multivector aggregate has zero numerical rank\n");
-
-            err = LIS_BREAKDOWN;
-            goto fail;
-        }
 
 
         aggregate_rank[a] =
@@ -3951,7 +3948,7 @@ lis_mfamg_build_distributed_multivector_prolongation(
         rank =
             level->aggregate_rank[a];
 
-        if(rank<=0)
+        if(rank<0)
             return LIS_ERR_ILL_ARG;
 
         if(rank>local_width)
@@ -4073,7 +4070,7 @@ lis_mfamg_build_distributed_multivector_prolongation(
 
 
         if(
-            rank<=0
+            rank<0
             ||
             rank>width
             ||
@@ -4150,13 +4147,13 @@ lis_mfamg_build_distributed_multivector_prolongation(
 
 
         if(
-            rank<=0
+            rank<0
             ||
             rank>width
             ||
             level->global_aggregate[i]<0
             ||
-            level->global_aggregate[i]>=level->global_nc
+            level->global_aggregate[i]>level->global_nc
             ||
             level->global_aggregate[i]+rank
                 >
@@ -5348,7 +5345,7 @@ lis_mfamg_build_coarse_multivector(
 
 
         if(
-            ri<=0
+            ri<0
             ||
             row_i<0
             ||
@@ -5426,7 +5423,7 @@ lis_mfamg_build_coarse_multivector(
 
 
             if(
-                rj<=0
+                rj<0
                 ||
                 row_j<0
                 ||
@@ -7572,7 +7569,7 @@ lis_mfamg_v_cycle(
 
 
             if(
-                rank<=0
+                rank<0
                 ||
                 level->aggregate_offset[a]<0
                 ||
@@ -7682,7 +7679,7 @@ lis_mfamg_v_cycle(
 
 
             if(
-                rank<=0
+                rank<0
                 ||
                 level->aggregate_offset[a]<0
                 ||
@@ -8244,7 +8241,7 @@ lis_mfamg_build_distributed_coarse_multivector(
 
 
         if(
-            ri<=0
+            ri<0
             ||
             ri>level->global_prolong_width
             ||
@@ -8301,13 +8298,13 @@ lis_mfamg_build_distributed_coarse_multivector(
 
 
             if(
-                rj<=0
+                rj<0
                 ||
                 rj>level->global_prolong_width
                 ||
                 level->global_aggregate[j]<0
                 ||
-                level->global_aggregate[j]>=level->global_nc
+                level->global_aggregate[j]>level->global_nc
                 ||
                 level->global_aggregate[j]+rj
                     >
