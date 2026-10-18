@@ -949,7 +949,7 @@ LIS_INT lis_array_ge(LIS_INT n, LIS_SCALAR *a)
 			a[k*n+i] = t * lu[i+i*n];
 		}
 	}
-	free(lu);
+	lis_free(lu);
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
