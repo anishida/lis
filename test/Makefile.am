@@ -11,7 +11,7 @@ test_DATA = testmat.mtx testmat2.mtx testmat3.mtx testmat4.mtx testmat0.mtx test
 
 test_SCRIPTS = defs test.sh
 
-test_PROGRAMS = etest1 etest2 etest3 etest4 etest5 etest5b etest6 etest7 getest1 getest5 getest5b spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b spmvtest4 spmvtest5 test1 test2 test2b test3 test3b test3c test4 test5 test6 test7 testuser testuserrow testcapabilities getestuser testoperator getestoperator testdiagonal testpreconlifecycle testjacobiuser testpreconpsd testpreconreuse testrqirestore testrhistoryerror testrepeatedsystems testpreconpolicy testgmreswork testworkcompat testworkreuse testprebuiltuser testshellscale testsymmdiagguard testilupivot testparamupdate testbreakretry testchangingsystem testkrylovrobust testnearnullspace testcoarsesetup testcoarseapply testgcrodroptions testgcrodrconfig testgcrodrsequence testmatrixgeneration testexternalstorage testsequence testwarmstart testrecovery testthreads testfgcrodr testmfamg testexactnullspace
+test_PROGRAMS = etest1 etest2 etest3 etest4 etest5 etest5b etest6 etest7 getest1 getest5 getest5b spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b spmvtest4 spmvtest5 test1 test2 test2b test3 test3b test3c test4 test5 test6 test7 testuser testuserrow testcapabilities getestuser testoperator getestoperator testdiagonal testpreconlifecycle testjacobiuser testpreconpsd testpreconreuse testrqirestore testrhistoryerror testrepeatedsystems testpreconpolicy testgmreswork testsolvermonitor testsolvercallbackpaths testsolvercallbackcert testworkcompat testworkreuse testprebuiltuser testshellscale testsymmdiagguard testilupivot testparamupdate testbreakretry testchangingsystem testkrylovrobust testnearnullspace testcoarsesetup testcoarseapply testgcrodroptions testgcrodrconfig testgcrodrsequence testmatrixgeneration testexternalstorage testsequence testwarmstart testrecovery testthreads testfgcrodr testmfamg testexactnullspace
 testgcrodroptions_SOURCES = testgcrodroptions.c
 testgcrodrconfig_SOURCES = testgcrodrconfig.c
 testgcrodrsequence_SOURCES = testgcrodrsequence.c
@@ -77,6 +77,9 @@ testrhistoryerror_SOURCES = testrhistoryerror.c
 testrepeatedsystems_SOURCES = testrepeatedsystems.c
 testpreconpolicy_SOURCES = testpreconpolicy.c
 testgmreswork_SOURCES = testgmreswork.c
+testsolvermonitor_SOURCES = testsolvermonitor.c
+testsolvercallbackpaths_SOURCES = testsolvercallbackpaths.c
+testsolvercallbackcert_SOURCES = testsolvercallbackcert.c
 testworkcompat_SOURCES = testworkcompat.c
 testworkreuse_SOURCES = testworkreuse.c
 testprebuiltuser_SOURCES = testprebuiltuser.c
@@ -155,7 +158,7 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
-TESTS = test.sh testuserrow$(EXEEXT) testcapabilities$(EXEEXT) testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) testworkcompat$(EXEEXT) testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) testilupivot$(EXEEXT) testparamupdate$(EXEEXT) testbreakretry$(EXEEXT) testchangingsystem$(EXEEXT) testkrylovrobust$(EXEEXT) testnearnullspace$(EXEEXT) testcoarsesetup$(EXEEXT) testcoarseapply$(EXEEXT) testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) testgcrodrsequence$(EXEEXT) testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testsequence$(EXEEXT) testwarmstart$(EXEEXT) testrecovery$(EXEEXT) testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) testexactnullspace$(EXEEXT)
+TESTS = test.sh testuserrow$(EXEEXT) testcapabilities$(EXEEXT) testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) testsolvermonitor$(EXEEXT) testsolvercallbackpaths$(EXEEXT) testsolvercallbackcert$(EXEEXT) testworkcompat$(EXEEXT) testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) testilupivot$(EXEEXT) testparamupdate$(EXEEXT) testbreakretry$(EXEEXT) testchangingsystem$(EXEEXT) testkrylovrobust$(EXEEXT) testnearnullspace$(EXEEXT) testcoarsesetup$(EXEEXT) testcoarseapply$(EXEEXT) testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) testgcrodrsequence$(EXEEXT) testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testsequence$(EXEEXT) testwarmstart$(EXEEXT) testrecovery$(EXEEXT) testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) testexactnullspace$(EXEEXT)
 
 installcheck: 
 	@if test ! -f $(testdir)/test.sh; then \

@@ -159,6 +159,11 @@ extern "C" {
 #define LIS_CONV_COND_NRM2_B 1
 #define LIS_CONV_COND_NRM1_B 2
 
+/* Residual classification reported by solver callbacks. */
+#define LIS_SOLVER_RESIDUAL_RECURSIVE 0
+#define LIS_SOLVER_RESIDUAL_PROJECTED 1
+#define LIS_SOLVER_RESIDUAL_TRUE      2
+
 #define LIS_SOLVER_LEN 27
 #define LIS_SOLVER_CG 1
 #define LIS_SOLVER_BICG 2
@@ -865,6 +870,26 @@ typedef struct LIS_SEQUENCE_DIAGNOSTICS_STRUCT
 
 typedef struct LIS_FGCRODR_STATE_STRUCT *LIS_FGCRODR_STATE;
 
+struct LIS_SOLVER_STRUCT;
+
+/* Application-owned solver residual monitor. */
+typedef void (*LIS_SOLVER_MONITOR_CALLBACK)(
+	struct LIS_SOLVER_STRUCT *solver,
+	LIS_INT iter,
+	LIS_REAL residual,
+	LIS_REAL tolerance,
+	LIS_INT residual_kind,
+	void *user_data);
+
+/* Application-owned solver convergence decision. */
+typedef LIS_INT (*LIS_SOLVER_CONVERGENCE_CALLBACK)(
+	struct LIS_SOLVER_STRUCT *solver,
+	LIS_INT iter,
+	LIS_REAL residual,
+	LIS_REAL tolerance,
+	LIS_INT residual_kind,
+	void *user_data);
+
 struct LIS_SOLVER_STRUCT
 {
 	LIS_MATRIX A,Ah;
@@ -902,6 +927,13 @@ struct LIS_SOLVER_STRUCT
 	LIS_INT recycle_policy_rejects;
 	LIS_VECTOR *work;
 	LIS_REAL *rhistory;
+
+	/* Application-owned residual monitor configuration. */
+	LIS_SOLVER_MONITOR_CALLBACK monitor;
+	void *monitor_data;
+
+	LIS_SOLVER_CONVERGENCE_CALLBACK convergence;
+	void *convergence_data;
 	LIS_INT worklen;
 	LIS_INT options[LIS_OPTIONS_LEN];
 	LIS_SCALAR params[LIS_PARAMS_LEN];
@@ -1223,6 +1255,14 @@ extern "C"
 /****************************/
 
     extern LIS_INT lis_solver_create(LIS_SOLVER *solver);
+    extern LIS_INT lis_solver_set_monitor(
+            LIS_SOLVER solver,
+            LIS_SOLVER_MONITOR_CALLBACK monitor,
+            void *user_data);
+    extern LIS_INT lis_solver_set_convergence(
+            LIS_SOLVER solver,
+            LIS_SOLVER_CONVERGENCE_CALLBACK convergence,
+            void *user_data);
 	extern LIS_INT lis_solver_destroy(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_nullspace(LIS_SOLVER solver, LIS_INT nvec, LIS_VECTOR vectors[]);
 	extern LIS_INT lis_solver_clear_nullspace(LIS_SOLVER solver);

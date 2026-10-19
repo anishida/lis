@@ -1066,7 +1066,7 @@ LIS_INT lis_gcrodr(LIS_SOLVER solver)
     LIS_REAL bnrm,nrm2,tol,min_nrm2,rnorm,wnorm;
     LIS_INT err,iter,maxiter,output,maxiter_noimp,noimp_count;
     LIS_INT i,j,k,m,kmax,kcur,cycle_steps,jdim,ii,i1,jj,hld,cs,sn,pass;
-    LIS_INT lucky;
+    LIS_INT lucky,candidate;
     double time,ptime;
 
     LIS_DEBUG_FUNC_IN;
@@ -1170,6 +1170,7 @@ LIS_INT lis_gcrodr(LIS_SOLVER solver)
 
         jdim = 0;
         lucky = LIS_FALSE;
+        candidate = LIS_FALSE;
         cycle_steps = m-kcur;
         if( cycle_steps<1 ) cycle_steps = 1;
         for(j=0;j<cycle_steps && iter<maxiter;j++)
@@ -1255,8 +1256,17 @@ LIS_INT lis_gcrodr(LIS_SOLVER solver)
                 if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
             }
 
+            lis_solver_monitor_residual(
+                solver,iter,nrm2,tol,
+                LIS_SOLVER_RESIDUAL_PROJECTED);
+
+            candidate = lis_solver_test_convergence(
+                solver,iter,nrm2,tol,
+                LIS_SOLVER_RESIDUAL_PROJECTED,
+                nrm2<=tol);
+
             jdim = j+1;
-            if( nrm2<=tol || lucky ) break;
+            if( candidate || lucky ) break;
 
             if( maxiter_noimp )
             {
@@ -1346,14 +1356,22 @@ LIS_INT lis_gcrodr(LIS_SOLVER solver)
             goto fail;
         }
         if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-        if( nrm2<=tol )
+
+        lis_solver_monitor_residual(
+            solver,iter,nrm2,tol,
+            LIS_SOLVER_RESIDUAL_TRUE);
+
+        if( lis_solver_test_convergence(
+                solver,iter,nrm2,tol,
+                LIS_SOLVER_RESIDUAL_TRUE,
+                nrm2<=tol) )
         {
             err = LIS_SUCCESS;
             break;
         }
     }
 
-    if( iter>=maxiter && nrm2>tol ) err = LIS_MAXITER;
+    if( iter>=maxiter ) err = LIS_MAXITER;
     solver->retcode = err;
     solver->iter = iter;
     solver->resid = nrm2;
