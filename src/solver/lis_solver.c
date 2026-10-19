@@ -1202,6 +1202,116 @@ LIS_INT lis_solver_set_left_nullspace(
 
 
 #undef __FUNC__
+#define __FUNC__ "lis_solver_check_rhs_compatibility"
+LIS_INT lis_solver_check_rhs_compatibility(
+    LIS_SOLVER solver,
+    LIS_VECTOR rhs,
+    LIS_REAL *defect,
+    LIS_REAL *relative_defect)
+{
+    LIS_INT i,err;
+    LIS_SCALAR *coefficients;
+    LIS_REAL rhs_norm;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if( solver==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "solver is NULL\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    if( rhs==NULL ||
+        defect==NULL ||
+        relative_defect==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid RHS compatibility arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    if( solver->left_nullspace==NULL ||
+        solver->left_nullspace_dim<=0 )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "left nullspace is not configured\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    if( !lis_solver_vector_compatible(
+            solver->left_nullspace[0],
+            rhs) )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "RHS layout is incompatible with left nullspace\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    coefficients =
+        (LIS_SCALAR *)lis_malloc(
+            solver->left_nullspace_dim
+                *sizeof(LIS_SCALAR),
+            "lis_solver_check_rhs_compatibility::coefficients");
+
+    if( coefficients==NULL )
+    {
+        LIS_SETERR_MEM(
+            solver->left_nullspace_dim
+                *sizeof(LIS_SCALAR));
+        return LIS_OUT_OF_MEMORY;
+    }
+
+    for(i=0;i<solver->left_nullspace_dim;i++)
+    {
+        err =
+            lis_vector_dot(
+                solver->left_nullspace[i],
+                rhs,
+                &coefficients[i]);
+
+        if( err )
+        {
+            lis_free(coefficients);
+            return err;
+        }
+    }
+
+    err =
+        lis_array_nrm2(
+            solver->left_nullspace_dim,
+            coefficients,
+            defect);
+
+    lis_free(coefficients);
+
+    if( err )
+    {
+        return err;
+    }
+
+    err = lis_vector_nrm2(rhs,&rhs_norm);
+
+    if( err )
+    {
+        return err;
+    }
+
+    *relative_defect =
+        rhs_norm==0.0
+        ? 0.0
+        : *defect/rhs_norm;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
 #define __FUNC__ "lis_solver_set_nullspace"
 LIS_INT lis_solver_set_nullspace(
 	LIS_SOLVER solver,
