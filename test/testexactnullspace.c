@@ -1,8 +1,18 @@
+#include <math.h>
 #include "lis.h"
 
-#include <math.h>
 #include <stdio.h>
 #include <string.h>
+
+#ifdef _COMPLEX
+
+int main(void)
+{
+    printf("testexactnullspace: skipped for complex scalar builds\n");
+    return 77;
+}
+
+#else
 
 static LIS_INT
 make_system(
@@ -1146,3 +1156,5 @@ main(
 
     return 1;
 }
+
+#endif
