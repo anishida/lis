@@ -2096,6 +2096,833 @@ cleanup:
     return pass;
 }
 
+static int
+run_rhs_projection_nonsymmetric(
+    LIS_MATRIX A)
+{
+    LIS_SOLVER solver = NULL;
+
+    LIS_VECTOR left_vector = NULL;
+    LIS_VECTOR rhs = NULL;
+    LIS_VECTOR projected_rhs = NULL;
+
+    LIS_VECTOR left_basis[1];
+
+    LIS_SCALAR rhs_before[3];
+    LIS_SCALAR rhs_after[3];
+
+    LIS_REAL pre_defect = 0.0;
+    LIS_REAL pre_relative = 0.0;
+    LIS_REAL post_defect = 0.0;
+    LIS_REAL post_relative = 0.0;
+
+    LIS_REAL rhs_delta = 0.0;
+    LIS_REAL projected_delta = 0.0;
+
+    LIS_INT err;
+    LIS_INT api_error = LIS_SUCCESS;
+
+    int i;
+    int pre_incompatible_ok = 0;
+    int projected_values_ok = 0;
+    int post_compatible_ok = 0;
+    int rhs_unchanged_ok = 0;
+    int state_ok = 0;
+
+    int pass = 1;
+
+    const LIS_REAL tol =
+        (LIS_REAL)1.0e-10;
+
+    const LIS_REAL expected_pre_defect =
+        (LIS_REAL)(1.0/sqrt(2.0));
+
+    const LIS_REAL expected_pre_relative =
+        (LIS_REAL)(1.0/sqrt(10.0));
+
+    /*
+     * Conceptual nonsymmetric operator:
+     *
+     *       [ 1 0 0 ]
+     *   A = [ 1 0 0 ]
+     *       [ 0 0 1 ]
+     *
+     * Left nullspace:
+     *
+     *   W = span([1,-1,0]^T).
+     *
+     * After normalization:
+     *
+     *   w = [1,-1,0]^T / sqrt(2).
+     *
+     * For
+     *
+     *   b = [1,0,2]^T
+     *
+     * the incompatible component is
+     *
+     *   w^H b = 1/sqrt(2),
+     *
+     * and therefore
+     *
+     *   b_p = b - w(w^H b)
+     *       = [0.5,0.5,2]^T.
+     *
+     * The matrix A is used only as the vector-layout
+     * template; the projection consumes the registered
+     * left-nullspace basis and RHS.
+     */
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        make_vector3(
+            A,
+            1.0,
+            -1.0,
+            0.0,
+            &left_vector);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        make_vector3(
+            A,
+            1.0,
+            0.0,
+            2.0,
+            &rhs);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        make_vector3(
+            A,
+            7.0,
+            8.0,
+            9.0,
+            &projected_rhs);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    for(i=0;i<3;i++)
+    {
+        rhs_before[i] = rhs->value[i];
+    }
+
+    left_basis[0] = left_vector;
+
+    err =
+        lis_solver_set_left_nullspace(
+            solver,
+            1,
+            left_basis);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        lis_solver_check_rhs_compatibility(
+            solver,
+            rhs,
+            &pre_defect,
+            &pre_relative);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    pre_incompatible_ok =
+        fabs(pre_defect-expected_pre_defect)<=tol
+        &&
+        fabs(pre_relative-expected_pre_relative)<=tol;
+
+    err =
+        lis_solver_project_rhs_compatible(
+            solver,
+            rhs,
+            projected_rhs);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    for(i=0;i<3;i++)
+    {
+        rhs_after[i] = rhs->value[i];
+
+        rhs_delta +=
+            (LIS_REAL)fabs(
+                rhs_after[i]-rhs_before[i]);
+    }
+
+    rhs_unchanged_ok =
+        rhs_delta<=tol;
+
+    projected_delta =
+        (LIS_REAL)fabs(
+            projected_rhs->value[0]
+            -(LIS_SCALAR)0.5)
+        +
+        (LIS_REAL)fabs(
+            projected_rhs->value[1]
+            -(LIS_SCALAR)0.5)
+        +
+        (LIS_REAL)fabs(
+            projected_rhs->value[2]
+            -(LIS_SCALAR)2.0);
+
+    projected_values_ok =
+        projected_delta<=tol;
+
+    err =
+        lis_solver_check_rhs_compatibility(
+            solver,
+            projected_rhs,
+            &post_defect,
+            &post_relative);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    post_compatible_ok =
+        post_defect<=tol
+        &&
+        post_relative<=tol;
+
+    state_ok =
+        solver->left_nullspace!=NULL
+        &&
+        solver->left_nullspace_dim==1;
+
+    if(
+        !pre_incompatible_ok
+        ||
+        !projected_values_ok
+        ||
+        !post_compatible_ok
+        ||
+        !rhs_unchanged_ok
+        ||
+        !state_ok)
+    {
+        pass = 0;
+    }
+
+cleanup:
+
+    printf(
+        "RHS_PROJECTION_NONSYMMETRIC "
+        "pre_incompatible=%d "
+        "values=%d "
+        "post_compatible=%d "
+        "rhs_unchanged=%d "
+        "state=%d "
+        "api_error=%d "
+        "pre_defect=% .16e "
+        "pre_relative=% .16e "
+        "post_defect=% .16e "
+        "post_relative=% .16e "
+        "rhs_delta=% .3e "
+        "projected_delta=% .3e "
+        "p0=% .16e "
+        "p1=% .16e "
+        "p2=% .16e\n",
+        pre_incompatible_ok,
+        projected_values_ok,
+        post_compatible_ok,
+        rhs_unchanged_ok,
+        state_ok,
+        (int)api_error,
+        (double)pre_defect,
+        (double)pre_relative,
+        (double)post_defect,
+        (double)post_relative,
+        (double)rhs_delta,
+        (double)projected_delta,
+        projected_rhs
+            ? (double)projected_rhs->value[0]
+            : 0.0,
+        projected_rhs
+            ? (double)projected_rhs->value[1]
+            : 0.0,
+        projected_rhs
+            ? (double)projected_rhs->value[2]
+            : 0.0);
+
+    if(solver)
+    {
+        lis_solver_destroy(
+            solver);
+    }
+
+    if(projected_rhs)
+    {
+        lis_vector_destroy(
+            projected_rhs);
+    }
+
+    if(rhs)
+    {
+        lis_vector_destroy(
+            rhs);
+    }
+
+    if(left_vector)
+    {
+        lis_vector_destroy(
+            left_vector);
+    }
+
+    return pass;
+}
+
+
+static int
+run_rhs_projection_multivector(
+    LIS_MATRIX A)
+{
+    LIS_SOLVER solver = NULL;
+
+    LIS_VECTOR w0 = NULL;
+    LIS_VECTOR w1 = NULL;
+    LIS_VECTOR rhs = NULL;
+    LIS_VECTOR projected_rhs = NULL;
+
+    LIS_VECTOR basis[2];
+
+    LIS_SCALAR rhs_before[3];
+
+    LIS_REAL pre_defect = 0.0;
+    LIS_REAL pre_relative = 0.0;
+    LIS_REAL post_defect = 0.0;
+    LIS_REAL post_relative = 0.0;
+
+    LIS_REAL rhs_delta = 0.0;
+    LIS_REAL projected_delta = 0.0;
+
+    LIS_INT err;
+    LIS_INT api_error = LIS_SUCCESS;
+
+    int i;
+    int dimension_ok = 0;
+    int pre_ok = 0;
+    int values_ok = 0;
+    int post_ok = 0;
+    int rhs_unchanged_ok = 0;
+
+    int pass = 1;
+
+    const LIS_REAL tol =
+        (LIS_REAL)1.0e-10;
+
+    const LIS_REAL expected_defect =
+        (LIS_REAL)5.0;
+
+    const LIS_REAL expected_relative =
+        (LIS_REAL)(5.0/13.0);
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        make_vector3(
+            A,
+            1.0,
+            0.0,
+            0.0,
+            &w0);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        make_vector3(
+            A,
+            0.0,
+            1.0,
+            0.0,
+            &w1);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        make_vector3(
+            A,
+            3.0,
+            4.0,
+            12.0,
+            &rhs);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        make_vector3(
+            A,
+            7.0,
+            8.0,
+            9.0,
+            &projected_rhs);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    for(i=0;i<3;i++)
+    {
+        rhs_before[i] =
+            rhs->value[i];
+    }
+
+    basis[0] = w0;
+    basis[1] = w1;
+
+    err =
+        lis_solver_set_left_nullspace(
+            solver,
+            2,
+            basis);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    dimension_ok =
+        solver->left_nullspace_dim==2;
+
+    err =
+        lis_solver_check_rhs_compatibility(
+            solver,
+            rhs,
+            &pre_defect,
+            &pre_relative);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    pre_ok =
+        fabs(pre_defect-expected_defect)<=tol
+        &&
+        fabs(pre_relative-expected_relative)<=tol;
+
+    err =
+        lis_solver_project_rhs_compatible(
+            solver,
+            rhs,
+            projected_rhs);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    for(i=0;i<3;i++)
+    {
+        rhs_delta +=
+            (LIS_REAL)fabs(
+                rhs->value[i]
+                -rhs_before[i]);
+    }
+
+    rhs_unchanged_ok =
+        rhs_delta<=tol;
+
+    projected_delta =
+        (LIS_REAL)fabs(
+            projected_rhs->value[0])
+        +
+        (LIS_REAL)fabs(
+            projected_rhs->value[1])
+        +
+        (LIS_REAL)fabs(
+            projected_rhs->value[2]
+            -(LIS_SCALAR)12.0);
+
+    values_ok =
+        projected_delta<=tol;
+
+    err =
+        lis_solver_check_rhs_compatibility(
+            solver,
+            projected_rhs,
+            &post_defect,
+            &post_relative);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    post_ok =
+        post_defect<=tol
+        &&
+        post_relative<=tol;
+
+    if(
+        !dimension_ok
+        ||
+        !pre_ok
+        ||
+        !values_ok
+        ||
+        !post_ok
+        ||
+        !rhs_unchanged_ok)
+    {
+        pass = 0;
+    }
+
+cleanup:
+
+    printf(
+        "RHS_PROJECTION_MULTIVECTOR "
+        "dimension=%d "
+        "pre=%d "
+        "values=%d "
+        "post=%d "
+        "rhs_unchanged=%d "
+        "api_error=%d "
+        "pre_defect=% .16e "
+        "pre_relative=% .16e "
+        "post_defect=% .16e "
+        "post_relative=% .16e "
+        "rhs_delta=% .3e "
+        "projected_delta=% .3e "
+        "p0=% .16e "
+        "p1=% .16e "
+        "p2=% .16e\n",
+        dimension_ok,
+        pre_ok,
+        values_ok,
+        post_ok,
+        rhs_unchanged_ok,
+        (int)api_error,
+        (double)pre_defect,
+        (double)pre_relative,
+        (double)post_defect,
+        (double)post_relative,
+        (double)rhs_delta,
+        (double)projected_delta,
+        projected_rhs
+            ? (double)projected_rhs->value[0]
+            : 0.0,
+        projected_rhs
+            ? (double)projected_rhs->value[1]
+            : 0.0,
+        projected_rhs
+            ? (double)projected_rhs->value[2]
+            : 0.0);
+
+    if(solver)
+    {
+        lis_solver_destroy(
+            solver);
+    }
+
+    if(projected_rhs)
+    {
+        lis_vector_destroy(
+            projected_rhs);
+    }
+
+    if(rhs)
+    {
+        lis_vector_destroy(
+            rhs);
+    }
+
+    if(w1)
+    {
+        lis_vector_destroy(
+            w1);
+    }
+
+    if(w0)
+    {
+        lis_vector_destroy(
+            w0);
+    }
+
+    return pass;
+}
+
+
+static int
+run_rhs_projection_alias_rejection(
+    LIS_MATRIX A)
+{
+    LIS_SOLVER solver = NULL;
+
+    LIS_VECTOR w = NULL;
+    LIS_VECTOR rhs = NULL;
+
+    LIS_VECTOR basis[1];
+
+    LIS_SCALAR rhs_before[3];
+    LIS_SCALAR basis_before[3];
+
+    LIS_REAL rhs_delta = 0.0;
+    LIS_REAL basis_delta = 0.0;
+
+    LIS_INT err;
+    LIS_INT same_api = LIS_SUCCESS;
+    LIS_INT basis_api = LIS_SUCCESS;
+    LIS_INT api_error = LIS_SUCCESS;
+
+    int i;
+    int same_object_ok = 0;
+    int basis_alias_ok = 0;
+    int rhs_unchanged_ok = 0;
+    int basis_unchanged_ok = 0;
+    int state_ok = 0;
+
+    int pass = 1;
+
+    const LIS_REAL tol =
+        (LIS_REAL)1.0e-10;
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        make_vector3(
+            A,
+            1.0,
+            -1.0,
+            0.0,
+            &w);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        make_vector3(
+            A,
+            1.0,
+            0.0,
+            2.0,
+            &rhs);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    basis[0] = w;
+
+    err =
+        lis_solver_set_left_nullspace(
+            solver,
+            1,
+            basis);
+
+    if(err)
+    {
+        api_error = err;
+        pass = 0;
+        goto cleanup;
+    }
+
+    for(i=0;i<3;i++)
+    {
+        rhs_before[i] =
+            rhs->value[i];
+
+        basis_before[i] =
+            solver->left_nullspace[0]->value[i];
+    }
+
+    same_api =
+        lis_solver_project_rhs_compatible(
+            solver,
+            rhs,
+            rhs);
+
+    same_object_ok =
+        same_api==LIS_ERR_ILL_ARG;
+
+    basis_api =
+        lis_solver_project_rhs_compatible(
+            solver,
+            rhs,
+            solver->left_nullspace[0]);
+
+    basis_alias_ok =
+        basis_api==LIS_ERR_ILL_ARG;
+
+    for(i=0;i<3;i++)
+    {
+        rhs_delta +=
+            (LIS_REAL)fabs(
+                rhs->value[i]
+                -rhs_before[i]);
+
+        basis_delta +=
+            (LIS_REAL)fabs(
+                solver->left_nullspace[0]->value[i]
+                -basis_before[i]);
+    }
+
+    rhs_unchanged_ok =
+        rhs_delta<=tol;
+
+    basis_unchanged_ok =
+        basis_delta<=tol;
+
+    state_ok =
+        solver->left_nullspace!=NULL
+        &&
+        solver->left_nullspace_dim==1;
+
+    if(
+        !same_object_ok
+        ||
+        !basis_alias_ok
+        ||
+        !rhs_unchanged_ok
+        ||
+        !basis_unchanged_ok
+        ||
+        !state_ok)
+    {
+        pass = 0;
+    }
+
+cleanup:
+
+    printf(
+        "RHS_PROJECTION_ALIAS "
+        "same_object=%d "
+        "basis_alias=%d "
+        "rhs_unchanged=%d "
+        "basis_unchanged=%d "
+        "state=%d "
+        "api_error=%d "
+        "same_api=%d "
+        "basis_api=%d "
+        "rhs_delta=% .3e "
+        "basis_delta=% .3e\n",
+        same_object_ok,
+        basis_alias_ok,
+        rhs_unchanged_ok,
+        basis_unchanged_ok,
+        state_ok,
+        (int)api_error,
+        (int)same_api,
+        (int)basis_api,
+        (double)rhs_delta,
+        (double)basis_delta);
+
+    if(solver)
+    {
+        lis_solver_destroy(
+            solver);
+    }
+
+    if(rhs)
+    {
+        lis_vector_destroy(
+            rhs);
+    }
+
+    if(w)
+    {
+        lis_vector_destroy(
+            w);
+    }
+
+    return pass;
+}
+
+
 int
 main(
     int argc,
@@ -2124,6 +2951,9 @@ main(
     int left_api_ok;
     int rhs_compat_ok;
     int rhs_multi_ok;
+    int rhs_project_ok;
+    int rhs_project_multi_ok;
+    int rhs_project_alias_ok;
 
     int pass = 1;
 
@@ -2251,6 +3081,18 @@ main(
         run_rhs_compatibility_multivector(
             A);
 
+    rhs_project_ok =
+        run_rhs_projection_nonsymmetric(
+            A);
+
+    rhs_project_multi_ok =
+        run_rhs_projection_multivector(
+            A);
+
+    rhs_project_alias_ok =
+        run_rhs_projection_alias_rejection(
+            A);
+
     printf(
         "NULLSPACE_SUMMARY "
         "gmres=%d "
@@ -2266,7 +3108,10 @@ main(
         "gcrodr_repeat=%d "
         "left_api=%d "
         "rhs_compat=%d "
-        "rhs_multi=%d\n",
+        "rhs_multi=%d "
+        "rhs_project=%d "
+        "rhs_project_multi=%d "
+        "rhs_project_alias=%d\n",
         gmres_ok,
         fgmres_ok,
         gcrodr_ok,
@@ -2280,7 +3125,10 @@ main(
         gcrodr_repeat_ok,
         left_api_ok,
         rhs_compat_ok,
-        rhs_multi_ok);
+        rhs_multi_ok,
+        rhs_project_ok,
+        rhs_project_multi_ok,
+        rhs_project_alias_ok);
 
     if(
         !gmres_ok
@@ -2309,7 +3157,13 @@ main(
         ||
         !rhs_compat_ok
         ||
-        !rhs_multi_ok)
+        !rhs_multi_ok
+        ||
+        !rhs_project_ok
+        ||
+        !rhs_project_multi_ok
+        ||
+        !rhs_project_alias_ok)
     {
         pass = 0;
     }
