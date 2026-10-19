@@ -2205,15 +2205,8 @@ lis_fgcrodr_try_harmonic_build(
      * unshifted QR iteration so a difficult small eigensystem
      * cannot dominate the linear solve.
      */
-    if( psmall<=16 )
-        qriter =
-            4096;
-    else if( psmall>=64 )
-        qriter =
-            16384;
-    else
-        qriter =
-            256*psmall;
+    qriter =
+        1024;
 
     err =
         lis_array_qr_limit(
@@ -3740,15 +3733,8 @@ lis_fgcrodr_try_harmonic_update(
      * unshifted QR iteration so a difficult small eigensystem
      * cannot dominate the linear solve.
      */
-    if( psmall<=16 )
-        qriter =
-            4096;
-    else if( psmall>=64 )
-        qriter =
-            16384;
-    else
-        qriter =
-            256*psmall;
+    qriter =
+        512;
 
     err =
         lis_array_qr_limit(

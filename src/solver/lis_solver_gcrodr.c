@@ -930,12 +930,10 @@ static LIS_INT lis_gcrodr_update_recycle(LIS_SOLVER solver,
      * unshifted QR iteration so a difficult small eigensystem
      * cannot dominate the linear solve.
      */
-    if( p<=16 )
-        qriter = 4096;
-    else if( p>=64 )
-        qriter = 16384;
+    if( oldk>0 )
+        qriter = 512;
     else
-        qriter = 256*p;
+        qriter = 1024;
 
     err = lis_array_qr_limit(
         p,
