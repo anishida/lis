@@ -1344,11 +1344,42 @@ LIS_INT lis_matrix_set_user(LIS_MATRIX A, void *user_data,
 	A->user_data    = user_data;
 	A->user_matvec  = matvec;
 	A->user_matvech = matvech;
+	A->user_matvec_block  = NULL;
+	A->user_matvech_block = NULL;
 	A->user_get_diagonal = NULL;
 	A->user_get_row      = NULL;
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_set_user_matvec_block"
+LIS_INT lis_matrix_set_user_matvec_block(
+        LIS_MATRIX A,
+        LIS_MATRIX_USER_MATVEC_BLOCK matvec_block,
+        LIS_MATRIX_USER_MATVEC_BLOCK matvech_block)
+{
+        LIS_INT err;
+
+        LIS_DEBUG_FUNC_IN;
+
+        err = lis_matrix_check(A,LIS_MATRIX_CHECK_ALL);
+        if( err ) return err;
+
+        if( A->matrix_type!=LIS_MATRIX_USER )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "matrix is not LIS_MATRIX_USER\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        A->user_matvec_block  = matvec_block;
+        A->user_matvech_block = matvech_block;
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
 }
 
 #undef __FUNC__

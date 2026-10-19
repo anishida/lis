@@ -610,6 +610,18 @@ typedef LIS_INT (*LIS_MATRIX_USER_MATVEC)(void *user_data,
                                           const LIS_SCALAR *x,
                                           LIS_SCALAR *y);
 
+/*
+ * Optional application-owned block matrix-vector callback.
+ *
+ * X and Y contain nvec LIS vectors. LIS does not take ownership
+ * of the vectors or their storage.
+ */
+typedef LIS_INT (*LIS_MATRIX_USER_MATVEC_BLOCK)(
+        void *user_data,
+        LIS_INT nvec,
+        LIS_VECTOR X[],
+        LIS_VECTOR Y[]);
+
 typedef LIS_INT (*LIS_MATRIX_USER_GET_DIAGONAL)(void *user_data,
                                                 LIS_SCALAR *d);
 /*
@@ -761,6 +773,8 @@ struct LIS_MATRIX_STRUCT
 	void *user_data;
 	LIS_MATRIX_USER_MATVEC user_matvec;
 	LIS_MATRIX_USER_MATVEC user_matvech;
+	LIS_MATRIX_USER_MATVEC_BLOCK user_matvec_block;
+	LIS_MATRIX_USER_MATVEC_BLOCK user_matvech_block;
 	LIS_MATRIX_USER_GET_DIAGONAL user_get_diagonal;
 	LIS_MATRIX_USER_GET_ROW user_get_row;
 
@@ -1112,6 +1126,10 @@ extern "C"
 	extern LIS_INT lis_matrix_set_user(LIS_MATRIX A, void *user_data,
 	                                   LIS_MATRIX_USER_MATVEC matvec,
 	                                   LIS_MATRIX_USER_MATVEC matvech);
+	extern LIS_INT lis_matrix_set_user_matvec_block(
+	                                   LIS_MATRIX A,
+	                                   LIS_MATRIX_USER_MATVEC_BLOCK matvec_block,
+	                                   LIS_MATRIX_USER_MATVEC_BLOCK matvech_block);
 	extern LIS_INT lis_matrix_set_user_diagonal(
 	                                   LIS_MATRIX A,
 	                                   LIS_MATRIX_USER_GET_DIAGONAL get_diagonal);
@@ -1183,6 +1201,16 @@ extern "C"
 
 	extern LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y);
 	extern LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y);  
+	extern LIS_INT lis_matvec_block(
+	                                   LIS_MATRIX A,
+	                                   LIS_INT nvec,
+	                                   LIS_VECTOR X[],
+	                                   LIS_VECTOR Y[]);
+	extern LIS_INT lis_matvech_block(
+	                                   LIS_MATRIX A,
+	                                   LIS_INT nvec,
+	                                   LIS_VECTOR X[],
+	                                   LIS_VECTOR Y[]);
 
 /****************************/
 /* Array Operations         */

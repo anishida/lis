@@ -2617,6 +2617,46 @@ This interface allows applications to retain custom matrix formats and register 
 \item \texttt{A}: The target matrix defined as \texttt{LIS\_MATRIX\_USER}.
 \item \texttt{callback}: The user-defined function pointer that computes and stores the diagonal into vector \texttt{d}.
 \end{itemize}
+
+User-defined matrices can optionally provide block matrix-vector callbacks.
+The callbacks are registered independently of the existing scalar callbacks
+using:
+
+\noindent
+\texttt{LIS\_INT lis\_matrix\_set\_user\_matvec\_block(}\\
+\texttt{\hspace*{5mm}LIS\_MATRIX A,}\\
+\texttt{\hspace*{5mm}LIS\_MATRIX\_USER\_MATVEC\_BLOCK matvec\_block,}\\
+\texttt{\hspace*{5mm}LIS\_MATRIX\_USER\_MATVEC\_BLOCK matvech\_block)}
+
+The block callback type is:
+
+\noindent
+\texttt{LIS\_INT (*callback)(void *user\_data, LIS\_INT nvec,}\\
+\texttt{\hspace*{28mm}LIS\_VECTOR X[], LIS\_VECTOR Y[])}
+
+The arrays \texttt{X} and \texttt{Y} contain \texttt{nvec} vectors.
+The application retains ownership of these vectors.  The
+\texttt{matvec\_block} callback computes $Y_i=A X_i$, while
+\texttt{matvech\_block} computes the corresponding Hermitian-transpose
+operation.
+
+The public functions
+
+\noindent
+\texttt{lis\_matvec\_block(A,nvec,X,Y)} and\\
+\texttt{lis\_matvech\_block(A,nvec,X,Y)}
+
+apply a matrix to several vectors.  If a user-defined matrix provides a
+native block callback, it is invoked once for the complete vector block.
+Otherwise, Lis automatically falls back to the existing scalar
+matrix-vector operation for each vector.  Therefore, existing matrix
+formats and existing user-defined scalar callbacks remain compatible
+without modification.
+
+Passing \texttt{NULL} block callbacks to
+\texttt{lis\_matrix\_set\_user\_matvec\_block()} restores the scalar
+fallback behavior.
+
 \subsubsection{Linear-Combination Matrix Operator (\texttt{LIS\_MATRIX\_OPERATOR})}
 This operator represents the linear combination of two matrices $C = \alpha A + \beta B$ without altering the original matrices. For operator matrices, the diagonal is automatically evaluated recursively as follows:
 \[
