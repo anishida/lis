@@ -30,8 +30,9 @@
 
 #include "lis.h"
 
-/* Internal bounded QR iteration helper. */
+/* Internal bounded dense QR helpers. */
 extern LIS_INT lis_array_qr_limit(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *q, LIS_SCALAR *r, LIS_INT maxiter, LIS_INT *qriter, LIS_REAL *qrerr);
+extern LIS_INT lis_array_hqr_limit(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *q, LIS_SCALAR *r, LIS_INT maxiter, LIS_INT *qriter, LIS_REAL *qrerr);
 #include "lis_precision.h"
 #include "lis_system.h"
 #include "lis_vector.h"

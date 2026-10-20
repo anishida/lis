@@ -8820,6 +8820,94 @@ check_dense_recycle_helper_regressions(void)
 
 
     /*
+     * Cyclic 3x3: bounded failure first, then convergence to
+     * a finite real 1x1 + 2x2 Schur split.
+     */
+    a3[0]=(LIS_SCALAR)0.0;
+    a3[1]=(LIS_SCALAR)1.0;
+    a3[2]=(LIS_SCALAR)0.0;
+    a3[3]=(LIS_SCALAR)0.0;
+    a3[4]=(LIS_SCALAR)0.0;
+    a3[5]=(LIS_SCALAR)1.0;
+    a3[6]=(LIS_SCALAR)1.0;
+    a3[7]=(LIS_SCALAR)0.0;
+    a3[8]=(LIS_SCALAR)0.0;
+
+    iter = -1;
+    qrerr = -1.0;
+
+    err =
+        lis_array_hqr_limit(
+            3,a3,q3,r3,1,&iter,&qrerr);
+
+    if( err!=LIS_BREAKDOWN || iter!=1 )
+    {
+        fprintf(
+            stderr,
+            "bounded shifted HQR limit failed: "
+            "rc=%d iter=%d err=% .17e\n",
+            (int)err,(int)iter,(double)qrerr);
+
+        return 1;
+    }
+
+    a3[0]=(LIS_SCALAR)0.0;
+    a3[1]=(LIS_SCALAR)1.0;
+    a3[2]=(LIS_SCALAR)0.0;
+    a3[3]=(LIS_SCALAR)0.0;
+    a3[4]=(LIS_SCALAR)0.0;
+    a3[5]=(LIS_SCALAR)1.0;
+    a3[6]=(LIS_SCALAR)1.0;
+    a3[7]=(LIS_SCALAR)0.0;
+    a3[8]=(LIS_SCALAR)0.0;
+
+    iter = -1;
+    qrerr = -1.0;
+
+    err =
+        lis_array_hqr_limit(
+            3,a3,q3,r3,128,&iter,&qrerr);
+
+    if(
+        err!=LIS_SUCCESS
+        ||
+        iter<=0
+        ||
+        iter>=64
+        ||
+        qrerr>=1.0e-12
+        ||
+        (
+            fabs((double)a3[1])
+            /(1.0+fabs((double)a3[0])+fabs((double)a3[4]))
+            >=1.0e-10
+            &&
+            fabs((double)a3[5])
+            /(1.0+fabs((double)a3[4])+fabs((double)a3[8]))
+            >=1.0e-10
+        )
+        ||
+        fabs((double)(a3[0]+a3[4]+a3[8]))>1.0e-8
+        ||
+        fabs(
+            (double)(
+                a3[0]*(a3[4]*a3[8]-a3[7]*a3[5])
+                -a3[3]*(a3[1]*a3[8]-a3[7]*a3[2])
+                +a3[6]*(a3[1]*a3[5]-a3[4]*a3[2])
+                -(LIS_SCALAR)1.0))
+            >1.0e-8 )
+    {
+        fprintf(
+            stderr,
+            "shifted HQR cyclic regression failed: "
+            "rc=%d iter=%d err=% .17e\n",
+            (int)err,(int)iter,(double)qrerr);
+
+        return 1;
+    }
+
+
+    /*
      * Non-finite candidate must be rejected.
      */
     a2[0] = (LIS_SCALAR)HUGE_VAL;

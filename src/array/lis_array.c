@@ -77,6 +77,7 @@
  * lis_array_cgs		Q * R <- A with classical Gram-Schmidt
  * lis_array_mgs		Q * R <- A with modified Gram-Schmidt
  * lis_array_qr			QR algorithm
+ * lis_array_hqr_limit          bounded shifted Hessenberg QR
  *************************************************************************/
 
 #undef __FUNC__
@@ -1412,6 +1413,344 @@ static LIS_INT lis_array_qr_core(
 }
 
 
+
+#ifndef _COMPLEX
+
+static LIS_INT
+lis_array_hqr_reflector(
+    LIS_REAL *v,
+    LIS_INT n,
+    LIS_REAL *beta,
+    LIS_REAL *alpha)
+{
+    LIS_INT i;
+    LIS_REAL norm = 0.0;
+    LIS_REAL vv = 0.0;
+    LIS_REAL x;
+
+    for(i=0;i<n;i++)
+    {
+        x = v[i];
+        if( (x-x)!=(x-x) ) return LIS_BREAKDOWN;
+        norm += x*x;
+    }
+
+    norm = sqrt(norm);
+    if( (norm-norm)!=(norm-norm) ) return LIS_BREAKDOWN;
+
+    if( norm==0.0 )
+    {
+        *alpha = 0.0;
+        *beta = 0.0;
+        return LIS_SUCCESS;
+    }
+
+    *alpha = (v[0]>=0.0) ? -norm : norm;
+    v[0] -= *alpha;
+
+    for(i=0;i<n;i++) vv += v[i]*v[i];
+
+    if( (vv-vv)!=(vv-vv) ) return LIS_BREAKDOWN;
+
+    *beta = (vv==0.0) ? 0.0 : 2.0/vv;
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+lis_array_hqr_hessenberg(
+    LIS_INT n,
+    LIS_SCALAR *a,
+    LIS_REAL *v)
+{
+    LIS_INT i,j,k,m,err;
+    LIS_REAL alpha,beta,dot;
+
+    for(k=0;k<n-2;k++)
+    {
+        m = n-k-1;
+
+        for(i=0;i<m;i++)
+            v[i] = (LIS_REAL)a[(k+1+i)+k*n];
+
+        err = lis_array_hqr_reflector(v,m,&beta,&alpha);
+        if( err ) return err;
+        if( beta==0.0 ) continue;
+
+        for(j=k;j<n;j++)
+        {
+            dot = 0.0;
+            for(i=0;i<m;i++)
+                dot += v[i]*(LIS_REAL)a[(k+1+i)+j*n];
+
+            dot *= beta;
+
+            for(i=0;i<m;i++)
+                a[(k+1+i)+j*n] -= (LIS_SCALAR)(v[i]*dot);
+        }
+
+        for(i=0;i<n;i++)
+        {
+            dot = 0.0;
+            for(j=0;j<m;j++)
+                dot += (LIS_REAL)a[i+(k+1+j)*n]*v[j];
+
+            dot *= beta;
+
+            for(j=0;j<m;j++)
+                a[i+(k+1+j)*n] -= (LIS_SCALAR)(dot*v[j]);
+        }
+
+        for(i=k+2;i<n;i++)
+            a[i+k*n] = (LIS_SCALAR)0.0;
+    }
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+lis_array_hqr_householder_qr(
+    LIS_INT n,
+    LIS_SCALAR *work,
+    LIS_SCALAR *q,
+    LIS_SCALAR *r,
+    LIS_REAL *v)
+{
+    LIS_INT i,j,k,m,err;
+    LIS_REAL alpha,beta,dot;
+
+    for(j=0;j<n;j++)
+    {
+        for(i=0;i<n;i++)
+        {
+            r[i+j*n] = work[i+j*n];
+            q[i+j*n] =
+                (i==j) ? (LIS_SCALAR)1.0 : (LIS_SCALAR)0.0;
+        }
+    }
+
+    for(k=0;k<n;k++)
+    {
+        m = n-k;
+
+        for(i=0;i<m;i++)
+            v[i] = (LIS_REAL)r[(k+i)+k*n];
+
+        err = lis_array_hqr_reflector(v,m,&beta,&alpha);
+        if( err ) return err;
+        if( beta==0.0 ) continue;
+
+        for(j=k;j<n;j++)
+        {
+            dot = 0.0;
+            for(i=0;i<m;i++)
+                dot += v[i]*(LIS_REAL)r[(k+i)+j*n];
+
+            dot *= beta;
+
+            for(i=0;i<m;i++)
+                r[(k+i)+j*n] -= (LIS_SCALAR)(v[i]*dot);
+        }
+
+        for(i=0;i<n;i++)
+        {
+            dot = 0.0;
+            for(j=0;j<m;j++)
+                dot += (LIS_REAL)q[i+(k+j)*n]*v[j];
+
+            dot *= beta;
+
+            for(j=0;j<m;j++)
+                q[i+(k+j)*n] -= (LIS_SCALAR)(dot*v[j]);
+        }
+
+        r[k+k*n] = (LIS_SCALAR)alpha;
+
+        for(i=k+1;i<n;i++)
+            r[i+k*n] = (LIS_SCALAR)0.0;
+    }
+
+    return LIS_SUCCESS;
+}
+
+
+static void
+lis_array_hqr_deflate(
+    LIS_INT n,
+    LIS_SCALAR *a,
+    LIS_REAL tol)
+{
+    LIS_INT i;
+    LIS_REAL scale;
+
+    for(i=1;i<n;i++)
+    {
+        scale =
+            1.0
+            + fabs((LIS_REAL)a[(i-1)+(i-1)*n])
+            + fabs((LIS_REAL)a[i+i*n]);
+
+        if( fabs((LIS_REAL)a[i+(i-1)*n])<=tol*scale )
+            a[i+(i-1)*n] = (LIS_SCALAR)0.0;
+    }
+}
+
+
+static LIS_INT
+lis_array_hqr_active_block(
+    LIS_INT n,
+    LIS_SCALAR *a,
+    LIS_INT *lo,
+    LIS_INT *hi)
+{
+    LIS_INT i,j;
+
+    i = n-1;
+
+    while(i>0)
+    {
+        if( a[i+(i-1)*n]==(LIS_SCALAR)0.0 )
+        {
+            i--;
+            continue;
+        }
+
+        if(
+            i==1
+            ||
+            a[(i-1)+(i-2)*n]==(LIS_SCALAR)0.0 )
+        {
+            i -= 2;
+            continue;
+        }
+
+        *hi = i;
+        j = i-1;
+
+        while(
+            j>0
+            &&
+            a[j+(j-1)*n]!=(LIS_SCALAR)0.0 )
+            j--;
+
+        *lo = j;
+
+        return LIS_TRUE;
+    }
+
+    return LIS_FALSE;
+}
+
+
+/*
+ * One explicit shifted QR similarity step on an unreduced
+ * Hessenberg block.  Complex-conjugate shifts use the real
+ * quadratic H^2-sH+tI.
+ */
+static LIS_INT
+lis_array_hqr_shift_step(
+    LIS_INT n,
+    LIS_SCALAR *a,
+    LIS_INT lo,
+    LIS_INT hi,
+    LIS_INT double_shift,
+    LIS_REAL shift_s,
+    LIS_REAL shift_t,
+    LIS_SCALAR *q,
+    LIS_SCALAR *r,
+    LIS_SCALAR *work,
+    LIS_REAL *v)
+{
+    LIS_INT i,j,k,m,err;
+    LIS_REAL sum;
+
+    m = hi-lo+1;
+
+    for(j=0;j<m;j++)
+    {
+        for(i=0;i<m;i++)
+        {
+            if( double_shift )
+            {
+                sum = 0.0;
+
+                for(k=0;k<m;k++)
+                    sum +=
+                        (LIS_REAL)a[(lo+i)+(lo+k)*n]
+                        *(LIS_REAL)a[(lo+k)+(lo+j)*n];
+
+                sum -=
+                    shift_s
+                    *(LIS_REAL)a[(lo+i)+(lo+j)*n];
+
+                if( i==j ) sum += shift_t;
+            }
+            else
+            {
+                sum = (LIS_REAL)a[(lo+i)+(lo+j)*n];
+                if( i==j ) sum -= shift_s;
+            }
+
+            work[i+j*m] = (LIS_SCALAR)sum;
+        }
+    }
+
+    err =
+        lis_array_hqr_householder_qr(
+            m,work,q,r,v);
+
+    if( err ) return err;
+
+    for(j=0;j<m;j++)
+    {
+        for(i=0;i<n;i++)
+        {
+            sum = 0.0;
+
+            for(k=0;k<m;k++)
+                sum +=
+                    (LIS_REAL)a[i+(lo+k)*n]
+                    *(LIS_REAL)q[k+j*m];
+
+            work[i+(lo+j)*n] = (LIS_SCALAR)sum;
+        }
+    }
+
+    for(j=0;j<m;j++)
+        for(i=0;i<n;i++)
+            a[i+(lo+j)*n] = work[i+(lo+j)*n];
+
+    for(j=0;j<n;j++)
+    {
+        for(i=0;i<m;i++)
+        {
+            sum = 0.0;
+
+            for(k=0;k<m;k++)
+                sum +=
+                    (LIS_REAL)q[k+i*m]
+                    *(LIS_REAL)a[(lo+k)+j*n];
+
+            work[(lo+i)+j*n] = (LIS_SCALAR)sum;
+        }
+    }
+
+    for(j=0;j<n;j++)
+        for(i=0;i<m;i++)
+            a[(lo+i)+j*n] = work[(lo+i)+j*n];
+
+    for(j=0;j<n;j++)
+        for(i=j+2;i<n;i++)
+            a[i+j*n] = (LIS_SCALAR)0.0;
+
+    return LIS_SUCCESS;
+}
+
+#endif /* !_COMPLEX */
+
+
 LIS_INT lis_array_qr(
     LIS_INT n,
     LIS_SCALAR *a,
@@ -1486,4 +1825,261 @@ LIS_INT lis_array_qr_limit(
     }
 
     return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_array_hqr_limit"
+LIS_INT lis_array_hqr_limit(
+    LIS_INT n,
+    LIS_SCALAR *a,
+    LIS_SCALAR *q,
+    LIS_SCALAR *r,
+    LIS_INT maxiter,
+    LIS_INT *qriter,
+    LIS_REAL *qrerr)
+{
+#ifdef _COMPLEX
+
+    return lis_array_qr_limit(
+        n,a,q,r,maxiter,qriter,qrerr);
+
+#else
+
+    LIS_INT i,j,iter,lo,hi,err;
+    LIS_INT converged,double_shift,exceptional;
+
+    LIS_REAL tol,residual;
+    LIS_REAL aa,bb,cc,dd;
+    LIS_REAL trace,det,disc,root;
+    LIS_REAL lambda1,lambda2;
+    LIS_REAL shift_s,shift_t,shift_scale;
+    LIS_REAL finite_test;
+
+    LIS_SCALAR *work;
+    LIS_REAL *v;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if(
+        n<=0
+        ||
+        maxiter<=0
+        ||
+        a==NULL
+        ||
+        q==NULL
+        ||
+        r==NULL
+        ||
+        qriter==NULL
+        ||
+        qrerr==NULL )
+    {
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_ERR_ILL_ARG;
+    }
+
+    tol = 1.0e-12;
+    iter = 0;
+    residual = 0.0;
+    converged = LIS_FALSE;
+
+    for(j=0;j<n;j++)
+    {
+        for(i=0;i<n;i++)
+        {
+            q[i+j*n] =
+                (i==j) ? (LIS_SCALAR)1.0 : (LIS_SCALAR)0.0;
+            r[i+j*n] = a[i+j*n];
+        }
+    }
+
+    if( lis_array_qr_real_quasi_schur(n,a,tol,&residual) )
+    {
+        *qriter = 0;
+        *qrerr = residual;
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+    }
+
+    if( residual!=residual )
+    {
+        *qriter = 0;
+        *qrerr = residual;
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_BREAKDOWN;
+    }
+
+    work =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)n*(size_t)n*sizeof(LIS_SCALAR),
+            "lis_array_hqr_limit::work");
+
+    v =
+        (LIS_REAL *)lis_malloc(
+            (size_t)n*sizeof(LIS_REAL),
+            "lis_array_hqr_limit::v");
+
+    if( work==NULL || v==NULL )
+    {
+        lis_free(work);
+        lis_free(v);
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+    err = lis_array_hqr_hessenberg(n,a,v);
+
+    if( err )
+    {
+        lis_free(work);
+        lis_free(v);
+        *qriter = 0;
+        *qrerr = residual;
+        LIS_DEBUG_FUNC_OUT;
+        return err;
+    }
+
+    lis_array_hqr_deflate(n,a,tol);
+
+    converged =
+        lis_array_qr_real_quasi_schur(
+            n,a,tol,&residual);
+
+    while( !converged && iter<maxiter )
+    {
+        if( !lis_array_hqr_active_block(n,a,&lo,&hi) )
+        {
+            converged =
+                lis_array_qr_real_quasi_schur(
+                    n,a,tol,&residual);
+            break;
+        }
+
+        aa = (LIS_REAL)a[(hi-1)+(hi-1)*n];
+        bb = (LIS_REAL)a[(hi-1)+hi*n];
+        cc = (LIS_REAL)a[hi+(hi-1)*n];
+        dd = (LIS_REAL)a[hi+hi*n];
+
+        finite_test =
+            aa-aa + bb-bb + cc-cc + dd-dd;
+
+        if( finite_test!=finite_test )
+        {
+            residual = finite_test;
+            break;
+        }
+
+        trace = aa+dd;
+        det = aa*dd-bb*cc;
+        disc = trace*trace-4.0*det;
+
+        shift_scale =
+            1.0
+            +fabs(aa)
+            +fabs(bb)
+            +fabs(cc)
+            +fabs(dd);
+
+        double_shift = LIS_FALSE;
+        exceptional = (((iter+1)%32)==0);
+        shift_s = 0.0;
+        shift_t = 0.0;
+
+        if( disc>=0.0 )
+        {
+            root = sqrt(disc);
+            lambda1 = 0.5*(trace+root);
+            lambda2 = 0.5*(trace-root);
+
+            shift_s =
+                (
+                    fabs(lambda1-dd)
+                    <=
+                    fabs(lambda2-dd)
+                )
+                ? lambda1
+                : lambda2;
+
+            if(
+                fabs(shift_s-dd)<=1.0e-14*shift_scale
+                &&
+                fabs(cc)>1.0e-14*shift_scale )
+                exceptional = LIS_TRUE;
+
+            if( exceptional )
+                shift_s =
+                    dd
+                    +0.75*fabs(cc)
+                    +0.25*fabs(aa-dd);
+        }
+        else if( exceptional )
+        {
+            shift_s =
+                dd
+                +0.75*fabs(cc)
+                +0.25*fabs(aa-dd);
+        }
+        else
+        {
+            double_shift = LIS_TRUE;
+            shift_s = trace;
+            shift_t = det;
+        }
+
+        finite_test =
+            shift_s-shift_s
+            +shift_t-shift_t;
+
+        if( finite_test!=finite_test )
+        {
+            residual = finite_test;
+            break;
+        }
+
+        err =
+            lis_array_hqr_shift_step(
+                n,a,lo,hi,double_shift,
+                shift_s,shift_t,q,r,work,v);
+
+        if( err )
+        {
+            residual = (LIS_REAL)err;
+            break;
+        }
+
+        iter++;
+
+        lis_array_hqr_deflate(n,a,tol);
+
+        converged =
+            lis_array_qr_real_quasi_schur(
+                n,a,tol,&residual);
+
+        if( residual!=residual )
+            break;
+    }
+
+    *qriter = iter;
+    *qrerr = residual;
+
+    lis_free(work);
+    lis_free(v);
+
+    if(
+        !converged
+        ||
+        residual!=residual
+        ||
+        residual>=tol )
+    {
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_BREAKDOWN;
+    }
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+
+#endif
 }
