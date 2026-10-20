@@ -3408,27 +3408,19 @@ LIS_INT lis_solve_sequence_with_precon_matrix(
      */
     if( recycling_solver )
     {
-<<<<<<< HEAD
         err = lis_solver_sequence_clear_active_recycle(solver);
         if( err )
         {
             solver->retcode = err;
             solver->sequence_diag_final_retcode = err;
+            if( projected_b )
+            {
+                lis_vector_destroy(projected_b);
+                projected_b = NULL;
+            }
             lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
             return err;
         }
-=======
-        solver->retcode = err;
-        solver->sequence_diag_final_retcode = err;
-        if( projected_b )
-        {
-            lis_vector_destroy(projected_b);
-            projected_b = NULL;
-        }
-        lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
-        return err;
-    }
->>>>>>> pr-96
 
         solver->sequence_diag_recycle_resets++;
         solver->sequence_diag_total_recycle_resets++;
