@@ -84,8 +84,8 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	testexternalstorage$(EXEEXT) testsequence$(EXEEXT) \
 	testwarmstart$(EXEEXT) testrecovery$(EXEEXT) \
 	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
-	testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
-	$(am__EXEEXT_3)
+	testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
+	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
 @ENABLE_FORTRAN_TRUE@am__append_1 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_2 = test2f test6f 
 @ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__append_3 = test8f
@@ -556,15 +556,14 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
 	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
 	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
-	$(testmfamggalerkin_SOURCES) \
-	$(testnearnullspace_SOURCES) $(testoperator_SOURCES) \
-	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
-	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
-	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
-	$(testrecovery_SOURCES) $(testrepeatedsystems_SOURCES) \
-	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
-	$(testsequence_SOURCES) $(testshellscale_SOURCES) \
-	$(testsolvercallbackcert_SOURCES) \
+	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
+	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
+	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
+	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
+	$(testpreconreuse_SOURCES) $(testrecovery_SOURCES) \
+	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
+	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
+	$(testshellscale_SOURCES) $(testsolvercallbackcert_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
 	$(testsolvermonitor_SOURCES) $(testsymmdiagguard_SOURCES) \
 	$(testthreads_SOURCES) $(testuser_SOURCES) \
@@ -598,15 +597,14 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
 	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
 	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
-	$(testmfamggalerkin_SOURCES) \
-	$(testnearnullspace_SOURCES) $(testoperator_SOURCES) \
-	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
-	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
-	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
-	$(testrecovery_SOURCES) $(testrepeatedsystems_SOURCES) \
-	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
-	$(testsequence_SOURCES) $(testshellscale_SOURCES) \
-	$(testsolvercallbackcert_SOURCES) \
+	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
+	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
+	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
+	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
+	$(testpreconreuse_SOURCES) $(testrecovery_SOURCES) \
+	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
+	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
+	$(testshellscale_SOURCES) $(testsolvercallbackcert_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
 	$(testsolvermonitor_SOURCES) $(testsymmdiagguard_SOURCES) \
 	$(testthreads_SOURCES) $(testuser_SOURCES) \
@@ -1238,7 +1236,7 @@ testmatvecblock$(EXEEXT): $(testmatvecblock_OBJECTS) $(testmatvecblock_DEPENDENC
 testmfamg$(EXEEXT): $(testmfamg_OBJECTS) $(testmfamg_DEPENDENCIES) $(EXTRA_testmfamg_DEPENDENCIES) 
 	@rm -f testmfamg$(EXEEXT)
 	$(LINK) $(testmfamg_OBJECTS) $(testmfamg_LDADD) $(LIBS)
-testmfamggalerkin$(EXEEXT): $(testmfamggalerkin_OBJECTS) $(testmfamggalerkin_DEPENDENCIES) $(EXTRA_testmfamggalerkin_DEPENDENCIES)
+testmfamggalerkin$(EXEEXT): $(testmfamggalerkin_OBJECTS) $(testmfamggalerkin_DEPENDENCIES) $(EXTRA_testmfamggalerkin_DEPENDENCIES) 
 	@rm -f testmfamggalerkin$(EXEEXT)
 	$(LINK) $(testmfamggalerkin_OBJECTS) $(testmfamggalerkin_LDADD) $(LIBS)
 testnearnullspace$(EXEEXT): $(testnearnullspace_OBJECTS) $(testnearnullspace_DEPENDENCIES) $(EXTRA_testnearnullspace_DEPENDENCIES) 
