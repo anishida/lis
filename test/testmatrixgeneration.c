@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include "lis.h"
+#include <math.h>
 
 static int check_generation(
 	LIS_MATRIX A,
@@ -48,6 +49,267 @@ static int check_generation(
 
 	return 0;
 }
+
+
+/*
+ * Incremental RCO assembly regression.
+ *
+ * Unique entries force row-capacity growth.  Repeated ADD updates
+ * then exercise duplicate lookup without extending the structure.
+ */
+static int
+check_incremental_add_assembly(void)
+{
+    enum
+    {
+        GLOBAL_N = 256,
+        WIDTH = 64,
+        REPEATS = 4
+    };
+
+    LIS_MATRIX A;
+
+    LIS_VECTOR x;
+    LIS_VECTOR y;
+
+    LIS_INT err;
+    LIS_INT i;
+    LIS_INT j;
+    LIS_INT pass;
+    LIS_INT row;
+    LIS_INT col;
+
+    LIS_REAL ynorm;
+    LIS_REAL expected_row;
+    LIS_REAL expected_norm;
+    LIS_REAL relerr;
+
+
+    A = NULL;
+    x = NULL;
+    y = NULL;
+
+    ynorm = 0.0;
+
+
+    err =
+        lis_matrix_create(
+            LIS_COMM_WORLD,
+            &A);
+
+    if( err )
+        goto fail;
+
+
+    err =
+        lis_matrix_set_size(
+            A,
+            0,
+            GLOBAL_N);
+
+    if( err )
+        goto fail;
+
+
+    for(i=0;i<A->n;i++)
+    {
+        row =
+            A->is
+            +
+            i;
+
+        for(j=0;j<WIDTH;j++)
+        {
+            col =
+                (
+                    row
+                    +
+                    j
+                )
+                %
+                GLOBAL_N;
+
+            err =
+                lis_matrix_set_value(
+                    LIS_ADD_VALUE,
+                    row,
+                    col,
+                    (LIS_SCALAR)1.0,
+                    A);
+
+            if( err )
+                goto fail;
+        }
+    }
+
+
+    for(pass=0;pass<REPEATS;pass++)
+    {
+        for(i=0;i<A->n;i++)
+        {
+            row =
+                A->is
+                +
+                i;
+
+            for(j=0;j<WIDTH;j++)
+            {
+                col =
+                    (
+                        row
+                        +
+                        j
+                    )
+                    %
+                    GLOBAL_N;
+
+                err =
+                    lis_matrix_set_value(
+                        LIS_ADD_VALUE,
+                        row,
+                        col,
+                        (LIS_SCALAR)0.25,
+                        A);
+
+                if( err )
+                    goto fail;
+            }
+        }
+    }
+
+
+    err =
+        lis_matrix_assemble(
+            A);
+
+    if( err )
+        goto fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x);
+
+    if( err )
+        goto fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &y);
+
+    if( err )
+        goto fail;
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)1.0,
+        x);
+
+
+    err =
+        lis_matvec(
+            A,
+            x,
+            y);
+
+    if( err )
+        goto fail;
+
+
+    err =
+        lis_vector_nrm2(
+            y,
+            &ynorm);
+
+    if( err )
+        goto fail;
+
+
+    expected_row =
+        (LIS_REAL)WIDTH
+        *
+        (
+            1.0
+            +
+            0.25
+            *
+            (LIS_REAL)REPEATS
+        );
+
+    expected_norm =
+        expected_row
+        *
+        sqrt(
+            (double)GLOBAL_N);
+
+
+    relerr =
+        fabs(
+            (double)(
+                ynorm
+                -
+                expected_norm))
+        /
+        (
+            1.0
+            +
+            fabs(
+                (double)expected_norm)
+        );
+
+
+    if( relerr>1.0e-12 )
+    {
+        fprintf(
+            stderr,
+            "incremental ADD assembly mismatch: "
+            "norm=% .17e expected=% .17e rel=% .3e\n",
+            (double)ynorm,
+            (double)expected_norm,
+            (double)relerr);
+
+        goto fail;
+    }
+
+
+    if(y)
+        lis_vector_destroy(y);
+
+    if(x)
+        lis_vector_destroy(x);
+
+    if(A)
+        lis_matrix_destroy(A);
+
+
+    printf(
+        "LIS_INCREMENTAL_ADD_ASSEMBLY PASSED "
+        "n=%d width=%d repeats=%d rel=% .3e\n",
+        GLOBAL_N,
+        WIDTH,
+        REPEATS,
+        (double)relerr);
+
+    return 0;
+
+
+fail:
+
+    if(y)
+        lis_vector_destroy(y);
+
+    if(x)
+        lis_vector_destroy(x);
+
+    if(A)
+        lis_matrix_destroy(A);
+
+    return 1;
+}
+
 
 int main(int argc, char **argv)
 {
@@ -179,6 +441,9 @@ cleanup:
 	printf(
 		"LIS_MATRIX_GENERATION_S1 %s\n",
 		failed ? "FAILED" : "PASSED");
+
+	failed |=
+	    check_incremental_add_assembly();
 
 	lis_finalize();
 

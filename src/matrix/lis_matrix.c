@@ -1015,21 +1015,6 @@ LIS_INT lis_matrix_set_value(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR valu
 		A->status  = LIS_MATRIX_ASSEMBLING;
 		A->is_copy = LIS_TRUE;
 	}
-	if( A->w_nnz[i-is]==A->w_row[i-is] )
-	{
-		A->w_nnz[i-is] += A->w_annz;
-		err = lis_matrix_realloc_rco(i-is,A->w_nnz[i-is],&A->w_index,&A->w_value);
-		if( err )
-		{
-			for(k=0;k<n;k++)
-			{
-				lis_free(A->w_index[k]);
-				lis_free(A->w_value[k]);
-			}
-			lis_free2(4,A->w_nnz,A->w_row,A->w_index,A->w_value);
-			return err;
-		}
-	}
 	for(k=0;k<A->w_row[i-is];k++)
 	{
 		if( A->w_index[i-is][k]==j ) break;
@@ -1047,6 +1032,51 @@ LIS_INT lis_matrix_set_value(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR valu
 	}
 	else
 	{
+		if( A->w_nnz[i-is]==A->w_row[i-is] )
+		{
+			LIS_INT old_nnz,new_nnz,growth;
+
+			old_nnz = A->w_nnz[i-is];
+			growth  = old_nnz;
+
+			if( growth<A->w_annz )
+			{
+				growth = A->w_annz;
+			}
+			if( growth<1 )
+			{
+				growth = 1;
+			}
+
+			if( old_nnz>=gn || growth>gn-old_nnz )
+			{
+				new_nnz = gn;
+			}
+			else
+			{
+				new_nnz = old_nnz + growth;
+			}
+
+			if( new_nnz<=old_nnz )
+			{
+				LIS_SETERR_MEM((old_nnz+1)*sizeof(LIS_SCALAR));
+				return LIS_OUT_OF_MEMORY;
+			}
+
+			err = lis_matrix_realloc_rco(i-is,new_nnz,&A->w_index,&A->w_value);
+			if( err )
+			{
+				for(k=0;k<n;k++)
+				{
+					lis_free(A->w_index[k]);
+					lis_free(A->w_value[k]);
+				}
+				lis_free2(4,A->w_nnz,A->w_row,A->w_index,A->w_value);
+				return err;
+			}
+			A->w_nnz[i-is] = new_nnz;
+		}
+
 		k                   = A->w_row[i-is]++;
 		A->w_index[i-is][k] = j;
 		A->w_value[i-is][k] = value;
