@@ -4,11 +4,11 @@ Version 2.1.18 October 20, 2026
   - Fixed an issue with complex-build exposed by reliable residual changes, improving test portability (thanks to Rafal Brzegowy).
   - Added an API and lifecycle infrastructure to store exact left nullspace within the solver (thanks to Rafal Brzegowy).
   - Added compatibility queries and non-destructive projections for right-hand side terms RHS against a specified left nullspace (thanks to Rafal Brzegowy).
-  - Introduced explicit solver-time RHS compatibility policies for rejecting or projecting incompatible right-hand side (RHS) terms (thanks to Rafal Brzegowy).
+  - Introduced explicit solver-time RHS compatibility policies for rejecting or projecting incompatible right-hand side terms (thanks to Rafal Brzegowy).
   - Improved the efficiency of matrix assembly by avoiding memory expansion for duplicate elements, and enhanced robustness by limiting the number of QR iterations during Krylov solver recycling (thanks to Rafal Brzegowy).
   - Added support for block matrix and vector multiplication callbacks (lis_matvec_block and lis_matvech_block) whilst retaining the existing Scalar interface (thanks to Rafal Brzegowy).
-  - Added application-owned residual monitors (solver monitor) and custom convergence callbacks (custom convergence callbacks) that do not bypass the final physical residual safety check (thanks to Rafal Brzegowy).
-  - Added a comprehensive regression test suite (regression tests) for the new features and policies (thanks to Rafal Brzegowy).
+  - Added application-owned residual monitors and custom convergence callbacks that do not bypass the final physical residual safety check (thanks to Rafal Brzegowy).
+  - Added a comprehensive regression test suite for the new features and policies (thanks to Rafal Brzegowy).
 
 Version 2.1.17 October 16, 2026
 
