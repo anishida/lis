@@ -23,7 +23,7 @@ test_PROGRAMS = etest1 etest2 etest3 etest4 etest5 etest5b etest6 etest7 getest1
         testparamupdate testbreakretry testchangingsystem testkrylovrobust testnearnullspace \
         testcoarsesetup testcoarseapply testgcrodroptions testgcrodrconfig testgcrodrsequence \
         testmatrixgeneration testexternalstorage testsequence testwarmstart testrecovery \
-        testthreads testfgcrodr testmfamg testexactnullspace
+        testthreads testfgcrodr testmfamg testmfamggalerkin testexactnullspace
 
 testgcrodroptions_SOURCES = testgcrodroptions.c
 testgcrodrconfig_SOURCES = testgcrodrconfig.c
@@ -79,6 +79,7 @@ testuserrow_SOURCES = testuserrow.c
 testmatvecblock_SOURCES = testmatvecblock.c
 testcapabilities_SOURCES = testcapabilities.c
 testmfamg_SOURCES = testmfamg.c
+testmfamggalerkin_SOURCES = testmfamggalerkin.c
 getestuser_SOURCES = getestuser.c
 testoperator_SOURCES = testoperator.c
 testdiagonal_SOURCES = testdiagonal.c
@@ -185,7 +186,7 @@ TESTS = test.sh testuserrow$(EXEEXT) testmatvecblock$(EXEEXT) testcapabilities$(
         testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) testgcrodrsequence$(EXEEXT) \
         testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testsequence$(EXEEXT) \
         testwarmstart$(EXEEXT) testrecovery$(EXEEXT) testthreads$(EXEEXT) \
-        testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) testexactnullspace$(EXEEXT)
+        testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT)
 
 installcheck: 
 	@if test ! -f $(testdir)/test.sh; then \
