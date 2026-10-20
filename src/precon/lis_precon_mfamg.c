@@ -1129,9 +1129,10 @@ lis_mfamg_dense_solve(
 
 
 static LIS_INT
-lis_mfamg_build_aggregates(
+lis_mfamg_build_aggregates_sized(
     LIS_MATRIX A,
     struct LIS_MFAMG_LEVEL *level,
+    LIS_INT target_size,
     LIS_INT max_row_nnz,
     LIS_INT *cols,
     LIS_SCALAR *vals)
@@ -1143,10 +1144,17 @@ lis_mfamg_build_aggregates(
     LIS_INT k;
     LIS_INT nnz;
     LIS_INT best;
+    LIS_INT fallback_best;
     LIS_INT aggregate;
+    LIS_INT aggregate_size;
+    LIS_INT member_id;
+    LIS_INT row;
     LIS_INT err;
 
+    LIS_INT *members;
+
     LIS_REAL best_mag;
+    LIS_REAL fallback_mag;
     LIS_REAL mag;
     LIS_REAL diagonal_i;
     LIS_REAL diagonal_j;
@@ -1164,6 +1172,8 @@ lis_mfamg_build_aggregates(
         ||
         level->n<=0
         ||
+        target_size<=0
+        ||
         max_row_nnz<=0
         ||
         cols==NULL
@@ -1175,6 +1185,10 @@ lis_mfamg_build_aggregates(
 
 
     diagonal = NULL;
+    members = NULL;
+
+    if(target_size>level->n)
+        target_size = level->n;
 
 
     err =
@@ -1225,6 +1239,37 @@ lis_mfamg_build_aggregates(
     }
 
 
+    if(
+        (size_t)target_size
+        >
+        ((size_t)-1)
+            /
+        sizeof(LIS_INT))
+    {
+        err = LIS_OUT_OF_MEMORY;
+        goto cleanup;
+    }
+
+
+    members =
+        (LIS_INT *)lis_malloc(
+            (size_t)target_size
+                *
+            sizeof(LIS_INT),
+            "lis_mfamg_build_aggregates_sized::members");
+
+    if(members==NULL)
+    {
+        LIS_SETERR_MEM(
+            (size_t)target_size
+                *
+            sizeof(LIS_INT));
+
+        err = LIS_OUT_OF_MEMORY;
+        goto cleanup;
+    }
+
+
     for(i=0;i<level->n;i++)
         level->aggregate[i] = -1;
 
@@ -1242,123 +1287,187 @@ lis_mfamg_build_aggregates(
         level->aggregate[i] =
             aggregate;
 
+        members[0] =
+            i;
 
-        best = -1;
-        best_mag = 0.0;
-
-
-        nnz =
-            max_row_nnz;
+        aggregate_size =
+            1;
 
 
-        err =
-            lis_mfamg_row_fill(
-                A,
-                i,
-                max_row_nnz,
-                &nnz,
-                cols,
-                vals);
-
-        if(err)
-            goto cleanup;
-
-
-        diagonal_i =
-            fabs(
-                diagonal->value[i]);
-
-
-        for(k=0;k<nnz;k++)
+        while(aggregate_size<target_size)
         {
-            j =
-                cols[k]
-                -
-                A->is;
+            best = -1;
+            fallback_best = -1;
+
+            best_mag = 0.0;
+            fallback_mag = 0.0;
 
 
-            /*
-             * Aggregates remain rank-owned. Remote columns are
-             * not paired here; their aggregate metadata is
-             * exchanged after local aggregation.
-             */
+            for(
+                member_id=0;
+                member_id<aggregate_size;
+                member_id++)
+            {
+                row =
+                    members[member_id];
+
+                nnz =
+                    max_row_nnz;
+
+                err =
+                    lis_mfamg_row_fill(
+                        A,
+                        row,
+                        max_row_nnz,
+                        &nnz,
+                        cols,
+                        vals);
+
+                if(err)
+                    goto cleanup;
+
+
+                diagonal_i =
+                    fabs(
+                        diagonal->value[row]);
+
+
+                for(k=0;k<nnz;k++)
+                {
+                    j =
+                        cols[k]
+                        -
+                        A->is;
+
+
+                    /*
+                     * Aggregates remain rank-owned. Remote
+                     * columns are not grown here; distributed
+                     * metadata is exchanged after local
+                     * aggregation.
+                     */
+                    if(
+                        j<0
+                        ||
+                        j>=level->n
+                        ||
+                        j==row
+                        ||
+                        level->aggregate[j]>=0)
+                    {
+                        continue;
+                    }
+
+
+                    mag =
+                        fabs(
+                            vals[k]);
+
+                    if(
+                        mag!=mag
+                        ||
+                        mag>LIS_SCALAR_MAX)
+                    {
+                        LIS_SETERR(
+                            LIS_ERR_ILL_ARG,
+                            "MFAMG aggregation encountered a non-finite matrix entry\n");
+
+                        err =
+                            LIS_ERR_ILL_ARG;
+
+                        goto cleanup;
+                    }
+
+
+                    diagonal_j =
+                        fabs(
+                            diagonal->value[j]);
+
+                    strength_limit =
+                        LIS_MFAMG_STRENGTH_THETA
+                        *
+                        sqrt(
+                            diagonal_i)
+                        *
+                        sqrt(
+                            diagonal_j);
+
+                    if(
+                        strength_limit!=strength_limit
+                        ||
+                        strength_limit>LIS_SCALAR_MAX)
+                    {
+                        LIS_SETERR(
+                            LIS_ERR_ILL_ARG,
+                            "MFAMG aggregation strength threshold overflowed\n");
+
+                        err =
+                            LIS_ERR_ILL_ARG;
+
+                        goto cleanup;
+                    }
+
+
+                    /*
+                     * Preserve the original strength-based
+                     * aggregation whenever a strong connection
+                     * is available.  For larger multivector
+                     * aggregates, remember the strongest local
+                     * unused graph edge as a fallback so that
+                     * aggregate growth does not stop solely
+                     * because the coarse operator weakens the
+                     * strength test.
+                     */
+                    if(
+                        target_size>2
+                        &&
+                        mag>fallback_mag)
+                    {
+                        fallback_mag =
+                            mag;
+
+                        fallback_best =
+                            j;
+                    }
+
+
+                    if(mag<strength_limit)
+                        continue;
+
+
+                    if(mag>best_mag)
+                    {
+                        best_mag =
+                            mag;
+
+                        best =
+                            j;
+                    }
+                }
+            }
+
+
             if(
-                j<0
-                ||
-                j>=level->n
-                ||
-                j==i
-                ||
-                level->aggregate[j]>=0)
+                best<0
+                &&
+                target_size>2)
             {
-                continue;
+                best =
+                    fallback_best;
             }
 
 
-            mag =
-                fabs(
-                    vals[k]);
+            if(best<0)
+                break;
 
 
-            if(
-                mag!=mag
-                ||
-                mag>LIS_SCALAR_MAX)
-            {
-                LIS_SETERR(
-                    LIS_ERR_ILL_ARG,
-                    "MFAMG aggregation encountered a non-finite matrix entry\n");
-
-                err = LIS_ERR_ILL_ARG;
-                goto cleanup;
-            }
-
-
-            diagonal_j =
-                fabs(
-                    diagonal->value[j]);
-
-
-            strength_limit =
-                LIS_MFAMG_STRENGTH_THETA
-                *
-                sqrt(
-                    diagonal_i)
-                *
-                sqrt(
-                    diagonal_j);
-
-
-            if(
-                strength_limit!=strength_limit
-                ||
-                strength_limit>LIS_SCALAR_MAX)
-            {
-                LIS_SETERR(
-                    LIS_ERR_ILL_ARG,
-                    "MFAMG aggregation strength threshold overflowed\n");
-
-                err = LIS_ERR_ILL_ARG;
-                goto cleanup;
-            }
-
-
-            if(mag<strength_limit)
-                continue;
-
-
-            if(mag>best_mag)
-            {
-                best_mag = mag;
-                best = j;
-            }
-        }
-
-
-        if(best>=0)
-        {
             level->aggregate[best] =
                 aggregate;
+
+            members[aggregate_size] =
+                best;
+
+            aggregate_size++;
         }
 
 
@@ -1376,12 +1485,35 @@ lis_mfamg_build_aggregates(
 
 cleanup:
 
+    if(members)
+        lis_free(
+            members);
+
     lis_vector_destroy(
         diagonal);
 
 
     return err;
 }
+
+static LIS_INT
+lis_mfamg_build_aggregates(
+    LIS_MATRIX A,
+    struct LIS_MFAMG_LEVEL *level,
+    LIS_INT max_row_nnz,
+    LIS_INT *cols,
+    LIS_SCALAR *vals)
+{
+    return
+        lis_mfamg_build_aggregates_sized(
+            A,
+            level,
+            2,
+            max_row_nnz,
+            cols,
+            vals);
+}
+
 
 
 
@@ -2197,7 +2329,7 @@ lis_mfamg_build_distributed_multivector_aggregate_metadata(
 
 
         if(
-            rank<=0
+            rank<0
             ||
             offset<0
             ||
@@ -2252,11 +2384,11 @@ lis_mfamg_build_distributed_multivector_aggregate_metadata(
             global_aggregate_rank[i];
 
         if(
-            rank<=0
+            rank<0
             ||
             global_aggregate[i]<0
             ||
-            global_aggregate[i]>=global_nc
+            global_aggregate[i]>global_nc
             ||
             global_aggregate[i]+rank>global_nc)
         {
@@ -3049,12 +3181,18 @@ lis_precon_mfamg_build_multivector_basis(
 
         if(max_norm==0.0)
         {
-            LIS_SETERR(
-                LIS_BREAKDOWN,
-                "MFAMG near-nullspace vanishes on an aggregate\n");
+            /*
+             * A locally constrained aggregate may see every
+             * supplied near-nullspace mode vanish.  It has zero
+             * numerical rank and contributes no coarse unknowns.
+             *
+             * A globally vanishing basis remains invalid because
+             * the total coarse dimension is checked below.
+             */
+            aggregate_rank[a] =
+                0;
 
-            err = LIS_BREAKDOWN;
-            goto fail;
+            continue;
         }
 
 
@@ -3281,15 +3419,6 @@ lis_precon_mfamg_build_multivector_basis(
         }
 
 
-        if(rank<=0)
-        {
-            LIS_SETERR(
-                LIS_BREAKDOWN,
-                "MFAMG multivector aggregate has zero numerical rank\n");
-
-            err = LIS_BREAKDOWN;
-            goto fail;
-        }
 
 
         aggregate_rank[a] =
@@ -3819,7 +3948,7 @@ lis_mfamg_build_distributed_multivector_prolongation(
         rank =
             level->aggregate_rank[a];
 
-        if(rank<=0)
+        if(rank<0)
             return LIS_ERR_ILL_ARG;
 
         if(rank>local_width)
@@ -3941,7 +4070,7 @@ lis_mfamg_build_distributed_multivector_prolongation(
 
 
         if(
-            rank<=0
+            rank<0
             ||
             rank>width
             ||
@@ -4018,13 +4147,13 @@ lis_mfamg_build_distributed_multivector_prolongation(
 
 
         if(
-            rank<=0
+            rank<0
             ||
             rank>width
             ||
             level->global_aggregate[i]<0
             ||
-            level->global_aggregate[i]>=level->global_nc
+            level->global_aggregate[i]>level->global_nc
             ||
             level->global_aggregate[i]+rank
                 >
@@ -5216,7 +5345,7 @@ lis_mfamg_build_coarse_multivector(
 
 
         if(
-            ri<=0
+            ri<0
             ||
             row_i<0
             ||
@@ -5294,7 +5423,7 @@ lis_mfamg_build_coarse_multivector(
 
 
             if(
-                rj<=0
+                rj<0
                 ||
                 row_j<0
                 ||
@@ -5531,6 +5660,7 @@ lis_mfamg_extend_hierarchy_multivector(
     LIS_INT level_id;
     LIS_INT max_row_nnz;
     LIS_INT coarsened;
+    LIS_INT aggregate_target;
     LIS_INT err;
 
     LIS_INT *cols;
@@ -5680,10 +5810,34 @@ lis_mfamg_extend_hierarchy_multivector(
         }
 
 
+        aggregate_target =
+            2;
+
+        if(mode_count>1)
+        {
+            if(
+                mode_count
+                >
+                level->n/2)
+            {
+                aggregate_target =
+                    level->n;
+            }
+            else
+            {
+                aggregate_target =
+                    2
+                    *
+                    mode_count;
+            }
+        }
+
+
         err =
-            lis_mfamg_build_aggregates(
+            lis_mfamg_build_aggregates_sized(
                 level->A,
                 level,
+                aggregate_target,
                 max_row_nnz,
                 cols,
                 vals);
@@ -7415,7 +7569,7 @@ lis_mfamg_v_cycle(
 
 
             if(
-                rank<=0
+                rank<0
                 ||
                 level->aggregate_offset[a]<0
                 ||
@@ -7525,7 +7679,7 @@ lis_mfamg_v_cycle(
 
 
             if(
-                rank<=0
+                rank<0
                 ||
                 level->aggregate_offset[a]<0
                 ||
@@ -8087,7 +8241,7 @@ lis_mfamg_build_distributed_coarse_multivector(
 
 
         if(
-            ri<=0
+            ri<0
             ||
             ri>level->global_prolong_width
             ||
@@ -8144,13 +8298,13 @@ lis_mfamg_build_distributed_coarse_multivector(
 
 
             if(
-                rj<=0
+                rj<0
                 ||
                 rj>level->global_prolong_width
                 ||
                 level->global_aggregate[j]<0
                 ||
-                level->global_aggregate[j]>=level->global_nc
+                level->global_aggregate[j]>level->global_nc
                 ||
                 level->global_aggregate[j]+rj
                     >

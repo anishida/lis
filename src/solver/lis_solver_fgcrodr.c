@@ -7,6 +7,14 @@
  * The actual flexible recycling iteration is added separately.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "lis_config.h"
+#else
+#ifdef HAVE_CONFIG_WIN_H
+#include "lis_config_win.h"
+#endif
+#endif
+
 #include <math.h>
 #include <string.h>
 
@@ -965,6 +973,34 @@ fail:
 
 
 /* ---------------------------------------------------------------------- */
+
+/*
+ * Return false if NaN or infinity entered a small harmonic
+ * projection.  Harmonic selection is optional, so callers can
+ * retain their existing verified fallback/recycle space.
+ */
+static LIS_INT
+lis_fgcrodr_dense_finite(
+    LIS_INT n,
+    const LIS_SCALAR *a)
+{
+    LIS_INT i;
+
+    for(i=0;i<n*n;i++)
+    {
+        LIS_SCALAR d =
+            a[i]-a[i];
+
+        if( d!=d )
+        {
+            return LIS_FALSE;
+        }
+    }
+
+    return LIS_TRUE;
+}
+
+
 /* Harmonic Ritz support for the flexible recycle basis                    */
 /* ---------------------------------------------------------------------- */
 
@@ -2069,6 +2105,22 @@ lis_fgcrodr_try_harmonic_build(
     }
 
 
+    if(
+        !lis_fgcrodr_dense_finite(
+            psmall,
+            AP)
+        ||
+        !lis_fgcrodr_dense_finite(
+            psmall,
+            BP) )
+    {
+        err =
+            LIS_SUCCESS;
+
+        goto cleanup;
+    }
+
+
     memcpy(
         AINV,
         AP,
@@ -2082,7 +2134,12 @@ lis_fgcrodr_try_harmonic_build(
             psmall,
             AINV);
 
-    if( err )
+    if(
+        err
+        ||
+        !lis_fgcrodr_dense_finite(
+            psmall,
+            AINV) )
     {
         /*
          * Harmonic selection is optional.  The caller will fall back
@@ -2123,6 +2180,18 @@ lis_fgcrodr_try_harmonic_build(
     }
 
 
+    if(
+        !lis_fgcrodr_dense_finite(
+            psmall,
+            T) )
+    {
+        err =
+            LIS_SUCCESS;
+
+        goto cleanup;
+    }
+
+
     memcpy(
         TQR,
         T,
@@ -2131,12 +2200,21 @@ lis_fgcrodr_try_harmonic_build(
         *sizeof(LIS_SCALAR));
 
 
+    /*
+     * Harmonic recycle extraction is optional.  Bound the
+     * unshifted QR iteration so a difficult small eigensystem
+     * cannot dominate the linear solve.
+     */
+    qriter =
+        1024;
+
     err =
-        lis_array_qr(
+        lis_array_qr_limit(
             psmall,
             TQR,
             QW,
             RW,
+            qriter,
             &qriter,
             &qrerr);
 
@@ -3557,6 +3635,22 @@ lis_fgcrodr_try_harmonic_update(
     }
 
 
+    if(
+        !lis_fgcrodr_dense_finite(
+            psmall,
+            AP)
+        ||
+        !lis_fgcrodr_dense_finite(
+            psmall,
+            BP) )
+    {
+        err =
+            LIS_SUCCESS;
+
+        goto cleanup;
+    }
+
+
     memcpy(
         AINV,
         AP,
@@ -3570,7 +3664,12 @@ lis_fgcrodr_try_harmonic_update(
             psmall,
             AINV);
 
-    if( err )
+    if(
+        err
+        ||
+        !lis_fgcrodr_dense_finite(
+            psmall,
+            AINV) )
     {
         /*
          * Failure of recycle enhancement is nonfatal.
@@ -3609,6 +3708,18 @@ lis_fgcrodr_try_harmonic_update(
     }
 
 
+    if(
+        !lis_fgcrodr_dense_finite(
+            psmall,
+            T) )
+    {
+        err =
+            LIS_SUCCESS;
+
+        goto cleanup;
+    }
+
+
     memcpy(
         TQR,
         T,
@@ -3617,12 +3728,21 @@ lis_fgcrodr_try_harmonic_update(
         *sizeof(LIS_SCALAR));
 
 
+    /*
+     * Harmonic recycle extraction is optional.  Bound the
+     * unshifted QR iteration so a difficult small eigensystem
+     * cannot dominate the linear solve.
+     */
+    qriter =
+        512;
+
     err =
-        lis_array_qr(
+        lis_array_qr_limit(
             psmall,
             TQR,
             QW,
             RW,
+            qriter,
             &qriter,
             &qrerr);
 
@@ -4792,6 +4912,7 @@ lis_fgcrodr_flexible_core(
     LIS_INT maxiter_noimp;
     LIS_INT noimp_count;
     LIS_INT noimp_stop;
+    LIS_INT candidate;
 
     LIS_INT i;
     LIS_INT j;
@@ -5082,6 +5203,7 @@ lis_fgcrodr_flexible_core(
 
     while( iter<maxiter )
     {
+        candidate = LIS_FALSE;
         /*
          * First Arnoldi vector:
          *
@@ -5439,7 +5561,16 @@ lis_fgcrodr_flexible_core(
             }
 
 
-            if( tol>=nrm2 )
+            lis_solver_monitor_residual(
+                solver,iter,nrm2,tol,
+                LIS_SOLVER_RESIDUAL_PROJECTED);
+
+            candidate = lis_solver_test_convergence(
+                solver,iter,nrm2,tol,
+                LIS_SOLVER_RESIDUAL_PROJECTED,
+                tol>=nrm2);
+
+            if( candidate )
                 break;
 
 
@@ -5754,36 +5885,14 @@ lis_fgcrodr_flexible_core(
         }
 
 
-        if( tol>=nrm2 )
-        {
-            solver->retcode =
-                LIS_SUCCESS;
-
-            solver->iter =
-                iter;
-
-            solver->resid =
-                nrm2;
-
-            solver->ptime =
-                ptime;
-
-            if( bcoef )
-            lis_free(bcoef);
-
-        if( hraw )
-            lis_free(hraw);
-
-        lis_free(h);
-
-            return LIS_SUCCESS;
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Restart residual                                     */
-        /* ---------------------------------------------------- */
-
+        /*
+         * The projected FGCRO-DR residual is only a convergence
+         * candidate.  Form the explicit residual of the updated
+         * iterate before accepting success.
+         *
+         * Keep this residual in v[0] so a rejected candidate can
+         * continue directly through the existing restart path.
+         */
         lis_matvec(
             A,
             x,
@@ -5793,6 +5902,93 @@ lis_fgcrodr_flexible_core(
             b,
             -1.0,
             v[0]);
+
+
+        if( candidate )
+        {
+            lis_solver_get_residual[0](
+                v[0],
+                solver,
+                &nrm2);
+
+
+            if(
+                nrm2!=nrm2 ||
+                fabs(nrm2)>LIS_SCALAR_MAX )
+            {
+                solver->retcode =
+                    LIS_BREAKDOWN;
+
+                solver->iter =
+                    iter;
+
+                solver->resid =
+                    nrm2;
+
+                solver->ptime =
+                    ptime;
+
+                if( bcoef )
+                    lis_free(
+                        bcoef);
+
+                if( hraw )
+                    lis_free(
+                        hraw);
+
+                lis_free(
+                    h);
+
+                return LIS_BREAKDOWN;
+            }
+
+
+            lis_solver_monitor_residual(
+                solver,
+                iter,
+                nrm2,
+                tol,
+                LIS_SOLVER_RESIDUAL_TRUE);
+
+            if( lis_solver_test_convergence(
+                    solver,
+                    iter,
+                    nrm2,
+                    tol,
+                    LIS_SOLVER_RESIDUAL_TRUE,
+                    tol>=nrm2) )
+            {
+                solver->retcode =
+                    LIS_SUCCESS;
+
+                solver->iter =
+                    iter;
+
+                solver->resid =
+                    nrm2;
+
+                solver->ptime =
+                    ptime;
+
+                if( bcoef )
+                    lis_free(
+                        bcoef);
+
+                if( hraw )
+                    lis_free(
+                        hraw);
+
+                lis_free(
+                    h);
+
+                return LIS_SUCCESS;
+            }
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Restart residual                                     */
+        /* ---------------------------------------------------- */
 
 
         if( use_recycle )

@@ -2,13 +2,27 @@
 #include "lis_config.h"
 #endif
 
+#include <math.h>
 #include "lis.h"
 #include "lis_solver.h"
 #include "lis_precon.h"
 
-#include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include "lislib.h"
+
+#ifdef _COMPLEX
+int
+main(int argc, char **argv)
+{
+    (void)argc;
+    (void)argv;
+
+    printf("SKIP: FGCRO-DR recycling is not implemented for complex scalar builds\n");
+
+    return 77;
+}
+#else
 
 #define N 64
 
@@ -3947,7 +3961,7 @@ check_sequence_recovery_rebuild_lifecycle(void)
     /*
      * One iteration per sequence attempt.
      *
-     * First preconditioner instance:
+     * Inherited first preconditioner instance:
      *
      *     Attempt 0 remains above the 0.3 solver threshold
      *     Attempt 1 remains above the 0.3 solver threshold
@@ -3973,11 +3987,58 @@ check_sequence_recovery_rebuild_lifecycle(void)
         -LIS_OPTIONS_LEN] =
             (LIS_SCALAR)3.0e-1;
 
+    /*
+     * Prime the persistent sequence preconditioner with an exact
+     * zero-RHS solve.  The recovery call below must therefore start
+     * with preconditioner state inherited from an earlier sequence
+     * solve; rebuilding a preconditioner created during the same call
+     * is intentionally not a recovery action.
+     */
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        b);
 
     lis_vector_set_all(
         (LIS_SCALAR)0.0,
         x);
 
+    api =
+        lis_solve_sequence(
+            A,
+            b,
+            x,
+            solver);
+
+    if(
+        api!=LIS_SUCCESS ||
+        solver->retcode!=LIS_SUCCESS ||
+        solver->sequence_precon==NULL ||
+        fgcrodr_rebuild_create_count!=1 ||
+        fgcrodr_rebuild_destroy_count!=0 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR recovery rebuild prime failure: "
+            "api=%d status=%d precon=%p create=%d destroy=%d\n",
+            (int)api,
+            (int)solver->retcode,
+            (void *)solver->sequence_precon,
+            (int)fgcrodr_rebuild_create_count,
+            (int)fgcrodr_rebuild_destroy_count);
+
+        err =
+            LIS_ERR_ILL_ARG;
+
+        goto cleanup;
+    }
+
+    lis_vector_set_all(
+        (LIS_SCALAR)2.0,
+        b);
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x);
 
     api =
         lis_solve_sequence(
@@ -4144,10 +4205,11 @@ check_sequence_recovery_rebuild_lifecycle(void)
     /*
      * Persistent preconditioner lifecycle:
      *
-     * create #1 : before Attempt 0
-     * reuse      : Attempt 1
-     * destroy #1: before Attempt 2
-     * create #2 : Attempt 2
+     * create #1 : zero-RHS priming solve
+     * reuse      : recovery Attempt 0
+     * reuse      : recovery Attempt 1
+     * destroy #1: before recovery Attempt 2
+     * create #2 : recovery Attempt 2
      */
     if(
         fgcrodr_rebuild_create_count!=2 ||
@@ -4231,12 +4293,12 @@ check_sequence_recovery_rebuild_lifecycle(void)
 
 
     /*
-     * Fresh solver: lifetime sequence diagnostics are exactly the
-     * same event counts as this one three-attempt sequence solve.
+     * Lifetime diagnostics include the one-attempt zero-RHS priming
+     * solve plus this three-attempt recovery solve.
      */
     if(
-        diag.total_solves!=1 ||
-        diag.total_attempts!=3 ||
+        diag.total_solves!=2 ||
+        diag.total_attempts!=4 ||
         diag.total_retries!=2 ||
         diag.total_recycle_resets!=2 ||
         diag.total_precon_rebuilds!=1 )
@@ -8113,7 +8175,697 @@ cleanup:
     return err;
 }
 
+
+static LIS_INT
+check_reliable_candidate_active_recycle(void)
+{
+    LIS_MATRIX A = NULL;
+
+    LIS_VECTOR b = NULL;
+    LIS_VECTOR x = NULL;
+    LIS_VECTOR r = NULL;
+
+    LIS_SOLVER solver = NULL;
+
+    LIS_INT err = LIS_SUCCESS;
+
+    LIS_INT api1;
+    LIS_INT status1;
+    LIS_INT iter1;
+
+    LIS_INT api2;
+    LIS_INT status2;
+    LIS_INT iter2;
+
+    LIS_INT dim1;
+    LIS_INT action1;
+
+    LIS_INT dim2;
+    LIS_INT action2;
+
+    LIS_UNSIGNED_INT builds1;
+    LIS_UNSIGNED_INT updates1;
+    LIS_UNSIGNED_INT uses1;
+    LIS_UNSIGNED_INT rejects1;
+
+    LIS_UNSIGNED_INT builds2;
+    LIS_UNSIGNED_INT updates2;
+    LIS_UNSIGNED_INT uses2;
+    LIS_UNSIGNED_INT rejects2;
+
+    LIS_REAL true1;
+    LIS_REAL true2;
+
+    LIS_REAL reported2;
+
+    LIS_INT i;
+
+    int failed = 0;
+
+    const LIS_INT row[] = {
+        0, 0, 0,
+        1,
+        2,
+        3, 3, 3
+    };
+
+    const LIS_INT col[] = {
+        0, 2, 3,
+        1,
+        2,
+        1, 2, 3
+    };
+
+    const LIS_SCALAR val[] = {
+         9.6635805078063965e+11,
+         1.0655399464330062e-07,
+        -2.9511571135475290e-12,
+
+         8.0844035225373991e+03,
+
+         2.0245180553697102e-05,
+
+         1.1098830243238601e-03,
+        -1.9650356386922263e+02,
+         1.3661903277464329e+10
+    };
+
+    const LIS_SCALAR seed_rhs[] = {
+         1.0,
+        -1.0,
+        -1.0,
+        -1.0
+    };
+
+    const LIS_SCALAR active_rhs[] = {
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+    };
+
+
+    err =
+        lis_matrix_create(
+            LIS_COMM_WORLD,
+            &A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_set_size(
+            A,
+            0,
+            4);
+
+    if( err )
+        goto api_fail;
+
+
+    for(i=0;i<8;i++)
+    {
+        err =
+            lis_matrix_set_value(
+                LIS_INS_VALUE,
+                row[i],
+                col[i],
+                val[i],
+                A);
+
+        if( err )
+            goto api_fail;
+    }
+
+
+    err =
+        lis_matrix_set_type(
+            A,
+            LIS_MATRIX_CSR);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_matrix_assemble(
+            A);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &b);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &r);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_create(
+            &solver);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_solver_set_option(
+            "-i fgcrodr "
+            "-fgcrodr_k 1 "
+            "-p jacobi "
+            "-scale none "
+            "-print none "
+            "-restart 4 "
+            "-maxiter 32 "
+            "-maxiter_noimp 0 "
+            "-tol 1e-10",
+            solver);
+
+    if( err )
+        goto api_fail;
+
+
+    /*
+     * Solve 1 builds the persistent recycle space.
+     */
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        b);
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x);
+
+
+    for(i=0;i<4;i++)
+        b->value[i] = seed_rhs[i];
+
+
+    api1 =
+        lis_solve_sequence(
+            A,
+            b,
+            x,
+            solver);
+
+    status1 =
+        solver->retcode;
+
+    iter1 =
+        solver->iter;
+
+    true1 =
+        true_relative_residual(
+            A,
+            b,
+            x,
+            r);
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim1,
+            &action1,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_stats(
+            solver,
+            &builds1,
+            &updates1,
+            &uses1,
+            &rejects1);
+
+    if( err )
+        goto api_fail;
+
+
+    /*
+     * Solve 2 starts from zero and consumes the persistent
+     * recycle space.  The projected residual is known to produce
+     * a premature convergence candidate on the uncorrected core.
+     */
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        b);
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x);
+
+
+    for(i=0;i<4;i++)
+        b->value[i] = active_rhs[i];
+
+
+    api2 =
+        lis_solve_sequence(
+            A,
+            b,
+            x,
+            solver);
+
+    status2 =
+        solver->retcode;
+
+    iter2 =
+        solver->iter;
+
+    reported2 =
+        solver->resid;
+
+    true2 =
+        true_relative_residual(
+            A,
+            b,
+            x,
+            r);
+
+
+    err =
+        lis_solver_get_fgcrodr_recycle(
+            solver,
+            &dim2,
+            &action2,
+            NULL,
+            NULL);
+
+    if( err )
+        goto api_fail;
+
+
+    err =
+        lis_fgcrodr_get_stats(
+            solver,
+            &builds2,
+            &updates2,
+            &uses2,
+            &rejects2);
+
+    if( err )
+        goto api_fail;
+
+
+    printf(
+        "FGCRO-DR reliable candidate "
+        "seed_api=%d seed_status=%d seed_iter=%d "
+        "seed_true=%.17e seed_dim=%d seed_action=%d "
+        "api=%d status=%d iter=%d "
+        "reported=%.17e true=%.17e "
+        "dim=%d action=%d "
+        "builds=%llu/%llu "
+        "updates=%llu/%llu "
+        "uses=%llu/%llu "
+        "rejects=%llu/%llu\n",
+        (int)api1,
+        (int)status1,
+        (int)iter1,
+        (double)true1,
+        (int)dim1,
+        (int)action1,
+        (int)api2,
+        (int)status2,
+        (int)iter2,
+        (double)reported2,
+        (double)true2,
+        (int)dim2,
+        (int)action2,
+        (unsigned long long)builds1,
+        (unsigned long long)builds2,
+        (unsigned long long)updates1,
+        (unsigned long long)updates2,
+        (unsigned long long)uses1,
+        (unsigned long long)uses2,
+        (unsigned long long)rejects1,
+        (unsigned long long)rejects2);
+
+
+    if(
+        api1!=LIS_SUCCESS ||
+        status1!=LIS_SUCCESS ||
+        true1>1.0e-10 ||
+        dim1!=1 ||
+        action1!=LIS_FGCRODR_RECYCLE_BUILD ||
+        builds1!=1 ||
+        uses1!=0 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR RELIABLE CANDIDATE SEED FAILED\n");
+
+        failed = 1;
+    }
+
+
+    if(
+        api2!=LIS_SUCCESS ||
+        status2!=LIS_SUCCESS ||
+        iter2<=1 ||
+        reported2!=reported2 ||
+        true2!=true2 ||
+        reported2>1.0e-10 ||
+        true2>1.0e-10 ||
+        dim2!=1 ||
+        action2!=LIS_FGCRODR_RECYCLE_KEEP ||
+        builds2!=builds1 ||
+        uses2<uses1+1 )
+    {
+        fprintf(
+            stderr,
+            "FGCRO-DR RELIABLE CANDIDATE FAILED\n");
+
+        failed = 1;
+    }
+
+
+    if( !failed )
+    {
+        printf(
+            "FGCRO-DR RELIABLE CANDIDATE PASSED\n");
+    }
+
+
+    err =
+        failed
+        ? LIS_ERR_ILL_ARG
+        : LIS_SUCCESS;
+
+    goto cleanup;
+
+
+api_fail:
+
+    fprintf(
+        stderr,
+        "FGCRO-DR reliable candidate API failure: %d\n",
+        (int)err);
+
+
+cleanup:
+
+    if( solver )
+        lis_solver_destroy(
+            solver);
+
+    if( r )
+        lis_vector_destroy(
+            r);
+
+    if( x )
+        lis_vector_destroy(
+            x);
+
+    if( b )
+        lis_vector_destroy(
+            b);
+
+    if( A )
+        lis_matrix_destroy(
+            A);
+
+
+    return err;
+}
+
+
 #endif
+
+
+
+/*
+ * Dense helper regressions used by recycle extraction.
+ */
+static int
+check_dense_recycle_helper_regressions(void)
+{
+    enum
+    {
+        GE_REPEATS = 4096
+    };
+
+    LIS_SCALAR a2[4];
+    LIS_SCALAR q2[4];
+    LIS_SCALAR r2[4];
+
+#ifndef _COMPLEX
+    LIS_SCALAR a3[9];
+    LIS_SCALAR q3[9];
+    LIS_SCALAR r3[9];
+#endif
+
+    LIS_INT err;
+    LIS_INT iter;
+    LIS_REAL qrerr;
+
+    int k;
+
+
+    /*
+     * Repeatedly invert
+     *
+     *     [ 4 1 ]
+     *     [ 2 3 ]
+     *
+     * whose inverse is
+     *
+     *     [  0.3 -0.1 ]
+     *     [ -0.2  0.4 ].
+     */
+    for(k=0;k<GE_REPEATS;k++)
+    {
+        a2[0] = (LIS_SCALAR)4.0;
+        a2[1] = (LIS_SCALAR)2.0;
+        a2[2] = (LIS_SCALAR)1.0;
+        a2[3] = (LIS_SCALAR)3.0;
+
+        err =
+            lis_array_ge(
+                2,
+                a2);
+
+        if( err!=LIS_SUCCESS )
+        {
+            fprintf(
+                stderr,
+                "lis_array_ge repeat %d failed: %d\n",
+                k,
+                (int)err);
+
+            return 1;
+        }
+
+#ifndef _COMPLEX
+        if(
+            fabs(
+                (double)(
+                    a2[0]
+                    -
+                    (LIS_SCALAR)0.3))
+                >
+            1.0e-12
+            ||
+            fabs(
+                (double)(
+                    a2[1]
+                    +
+                    (LIS_SCALAR)0.2))
+                >
+            1.0e-12
+            ||
+            fabs(
+                (double)(
+                    a2[2]
+                    +
+                    (LIS_SCALAR)0.1))
+                >
+            1.0e-12
+            ||
+            fabs(
+                (double)(
+                    a2[3]
+                    -
+                    (LIS_SCALAR)0.4))
+                >
+            1.0e-12)
+        {
+            fprintf(
+                stderr,
+                "lis_array_ge inverse mismatch "
+                "at repeat %d\n",
+                k);
+
+            return 1;
+        }
+#endif
+    }
+
+
+#ifndef _COMPLEX
+
+    /*
+     * Exact real 2x2 Schur block.
+     */
+    a2[0] = (LIS_SCALAR)0.0;
+    a2[1] = (LIS_SCALAR)1.0;
+    a2[2] = (LIS_SCALAR)-1.0;
+    a2[3] = (LIS_SCALAR)0.0;
+
+    iter = -1;
+    qrerr = -1.0;
+
+    err =
+        lis_array_qr_limit(
+            2,
+            a2,
+            q2,
+            r2,
+            4096,
+            &iter,
+            &qrerr);
+
+    if(
+        err!=LIS_SUCCESS
+        ||
+        iter<=0
+        ||
+        iter>=16
+        ||
+        qrerr>=1.0e-12)
+    {
+        fprintf(
+            stderr,
+            "bounded real Schur QR failed: "
+            "rc=%d iter=%d err=% .17e\n",
+            (int)err,
+            (int)iter,
+            (double)qrerr);
+
+        return 1;
+    }
+
+
+    /*
+     * Unreduced 3x3 block may not be accepted after a single
+     * bounded iteration.
+     */
+    a3[0] = (LIS_SCALAR)2.0;
+    a3[1] = (LIS_SCALAR)1.0;
+    a3[2] = (LIS_SCALAR)0.0;
+
+    a3[3] = (LIS_SCALAR)1.0;
+    a3[4] = (LIS_SCALAR)2.0;
+    a3[5] = (LIS_SCALAR)1.0;
+
+    a3[6] = (LIS_SCALAR)0.0;
+    a3[7] = (LIS_SCALAR)1.0;
+    a3[8] = (LIS_SCALAR)2.0;
+
+    iter = -1;
+    qrerr = -1.0;
+
+    err =
+        lis_array_qr_limit(
+            3,
+            a3,
+            q3,
+            r3,
+            1,
+            &iter,
+            &qrerr);
+
+    if(
+        err!=LIS_BREAKDOWN
+        ||
+        iter!=1)
+    {
+        fprintf(
+            stderr,
+            "bounded unreduced QR accepted: "
+            "rc=%d iter=%d err=% .17e\n",
+            (int)err,
+            (int)iter,
+            (double)qrerr);
+
+        return 1;
+    }
+
+
+    /*
+     * Non-finite candidate must be rejected.
+     */
+    a2[0] = (LIS_SCALAR)HUGE_VAL;
+    a2[1] = (LIS_SCALAR)0.0;
+    a2[2] = (LIS_SCALAR)0.0;
+    a2[3] = (LIS_SCALAR)1.0;
+
+    iter = -1;
+    qrerr = -1.0;
+
+    err =
+        lis_array_qr_limit(
+            2,
+            a2,
+            q2,
+            r2,
+            1,
+            &iter,
+            &qrerr);
+
+    if(
+        err!=LIS_BREAKDOWN
+        ||
+        iter!=1)
+    {
+        fprintf(
+            stderr,
+            "bounded non-finite QR accepted: "
+            "rc=%d iter=%d err=% .17e\n",
+            (int)err,
+            (int)iter,
+            (double)qrerr);
+
+        return 1;
+    }
+
+#endif
+
+
+    printf(
+        "LIS_DENSE_RECYCLE_HELPERS PASSED "
+        "ge_repeats=%d\n",
+        GE_REPEATS);
+
+    return 0;
+}
 
 
 int
@@ -8179,6 +8931,16 @@ main(int argc, char **argv)
     if( (err=lis_vector_duplicate(A,&xk)) ) goto api_fail;
     if( (err=lis_vector_duplicate(A,&work)) ) goto api_fail;
     if( (err=lis_vector_duplicate(A,&diff)) ) goto api_fail;
+
+    if( check_dense_recycle_helper_regressions() )
+    {
+        fprintf(
+            stderr,
+            "LIS_DENSE_RECYCLE_HELPERS FAILED\n");
+
+        return 1;
+    }
+
 
     if( check_sequence_recycle(A) )
     {
@@ -8654,6 +9416,14 @@ cleanup:
 
 #ifndef _COMPLEX
     if(
+        check_reliable_candidate_active_recycle()
+        !=LIS_SUCCESS )
+    {
+        failed = 1;
+    }
+
+
+    if(
         check_active_recycle_noimp_progress()
         !=LIS_SUCCESS )
     {
@@ -8678,3 +9448,4 @@ cleanup:
 
     return 0;
 }
+#endif /* !_COMPLEX */

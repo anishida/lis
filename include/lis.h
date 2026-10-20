@@ -33,7 +33,7 @@ extern "C" {
 #endif
 
 /**************************************/
-#define LIS_VERSION	"2.1.17"
+#define LIS_VERSION	"2.1.18"
 /**************************************/
 #include <stdio.h>
 #ifdef USE_COMPLEX
@@ -139,6 +139,11 @@ extern "C" {
 #define LIS_OPTIONS_HELP -2
 #define LIS_OPTIONS_VER -3
 
+/* RHS compatibility policy for configured left nullspaces. */
+#define LIS_RHS_POLICY_ASSUME_COMPATIBLE 0
+#define LIS_RHS_POLICY_REJECT            1
+#define LIS_RHS_POLICY_PROJECT           2
+
 
 #define LIS_PRINT_NONE 0
 #define LIS_PRINT_MEM 1
@@ -158,6 +163,11 @@ extern "C" {
 #define LIS_CONV_COND_NRM2_R 0
 #define LIS_CONV_COND_NRM2_B 1
 #define LIS_CONV_COND_NRM1_B 2
+
+/* Residual classification reported by solver callbacks. */
+#define LIS_SOLVER_RESIDUAL_RECURSIVE 0
+#define LIS_SOLVER_RESIDUAL_PROJECTED 1
+#define LIS_SOLVER_RESIDUAL_TRUE      2
 
 #define LIS_SOLVER_LEN 27
 #define LIS_SOLVER_CG 1
@@ -269,6 +279,10 @@ extern "C" {
 #define LIS_PRECON_TYPE_ADDS 11
 #define LIS_PRECON_TYPE_MFAMG 12
 #define LIS_PRECON_TYPE_USERDEF LIS_PRECON_TYPE_LEN
+
+/* Sequence policy selection. */
+#define LIS_SEQUENCE_POLICY_MANUAL 0
+#define LIS_SEQUENCE_POLICY_AUTO 1
 
 #define LIS_MATRIX_ASSEMBLING 0
 #define LIS_MATRIX_CSR 1
@@ -606,6 +620,18 @@ typedef LIS_INT (*LIS_MATRIX_USER_MATVEC)(void *user_data,
                                           const LIS_SCALAR *x,
                                           LIS_SCALAR *y);
 
+/*
+ * Optional application-owned block matrix-vector callback.
+ *
+ * X and Y contain nvec LIS vectors. LIS does not take ownership
+ * of the vectors or their storage.
+ */
+typedef LIS_INT (*LIS_MATRIX_USER_MATVEC_BLOCK)(
+        void *user_data,
+        LIS_INT nvec,
+        LIS_VECTOR X[],
+        LIS_VECTOR Y[]);
+
 typedef LIS_INT (*LIS_MATRIX_USER_GET_DIAGONAL)(void *user_data,
                                                 LIS_SCALAR *d);
 /*
@@ -757,6 +783,8 @@ struct LIS_MATRIX_STRUCT
 	void *user_data;
 	LIS_MATRIX_USER_MATVEC user_matvec;
 	LIS_MATRIX_USER_MATVEC user_matvech;
+	LIS_MATRIX_USER_MATVEC_BLOCK user_matvec_block;
+	LIS_MATRIX_USER_MATVEC_BLOCK user_matvech_block;
 	LIS_MATRIX_USER_GET_DIAGONAL user_get_diagonal;
 	LIS_MATRIX_USER_GET_ROW user_get_row;
 
@@ -861,14 +889,40 @@ typedef struct LIS_SEQUENCE_DIAGNOSTICS_STRUCT
 
 typedef struct LIS_FGCRODR_STATE_STRUCT *LIS_FGCRODR_STATE;
 
+struct LIS_SOLVER_STRUCT;
+
+/* Application-owned solver residual monitor. */
+typedef void (*LIS_SOLVER_MONITOR_CALLBACK)(
+	struct LIS_SOLVER_STRUCT *solver,
+	LIS_INT iter,
+	LIS_REAL residual,
+	LIS_REAL tolerance,
+	LIS_INT residual_kind,
+	void *user_data);
+
+/* Application-owned solver convergence decision. */
+typedef LIS_INT (*LIS_SOLVER_CONVERGENCE_CALLBACK)(
+	struct LIS_SOLVER_STRUCT *solver,
+	LIS_INT iter,
+	LIS_REAL residual,
+	LIS_REAL tolerance,
+	LIS_INT residual_kind,
+	void *user_data);
+
 struct LIS_SOLVER_STRUCT
 {
 	LIS_MATRIX A,Ah;
 	LIS_VECTOR b,x,xx,d;
 	LIS_MATRIX_DIAG WD;
 	LIS_PRECON precon;
-	/* Solver-owned copies of user-provided near-nullspace vectors. */
+	/* Solver-owned copies of exact right, exact left, and near-nullspace vectors. */
 	LIS_VECTOR *near_nullspace;
+	LIS_VECTOR *nullspace;
+	LIS_VECTOR *left_nullspace;
+	LIS_INT nullspace_dim;
+	LIS_INT left_nullspace_dim;
+	LIS_INT rhs_compatibility_policy;
+	LIS_REAL rhs_compatibility_tol;
 	LIS_INT near_nullspace_dim;
 	LIS_NEAR_NULLSPACE_COARSE near_nullspace_coarse;
 	/* Persistent GCRO-DR recycle state. */
@@ -896,6 +950,13 @@ struct LIS_SOLVER_STRUCT
 	LIS_INT recycle_policy_rejects;
 	LIS_VECTOR *work;
 	LIS_REAL *rhistory;
+
+	/* Application-owned residual monitor configuration. */
+	LIS_SOLVER_MONITOR_CALLBACK monitor;
+	void *monitor_data;
+
+	LIS_SOLVER_CONVERGENCE_CALLBACK convergence;
+	void *convergence_data;
 	LIS_INT worklen;
 	LIS_INT options[LIS_OPTIONS_LEN];
 	LIS_SCALAR params[LIS_PARAMS_LEN];
@@ -913,6 +974,9 @@ struct LIS_SOLVER_STRUCT
 	LIS_REAL tol;
 	LIS_REAL tol_switch;
 	LIS_INT setup;
+
+	/* Policy controlling solver-owned sequence decisions. */
+	LIS_INT sequence_policy;
 
 	/* Persistent preconditioner state for related systems. */
 	LIS_PRECON sequence_precon;
@@ -1103,6 +1167,10 @@ extern "C"
 	extern LIS_INT lis_matrix_set_user(LIS_MATRIX A, void *user_data,
 	                                   LIS_MATRIX_USER_MATVEC matvec,
 	                                   LIS_MATRIX_USER_MATVEC matvech);
+	extern LIS_INT lis_matrix_set_user_matvec_block(
+	                                   LIS_MATRIX A,
+	                                   LIS_MATRIX_USER_MATVEC_BLOCK matvec_block,
+	                                   LIS_MATRIX_USER_MATVEC_BLOCK matvech_block);
 	extern LIS_INT lis_matrix_set_user_diagonal(
 	                                   LIS_MATRIX A,
 	                                   LIS_MATRIX_USER_GET_DIAGONAL get_diagonal);
@@ -1174,6 +1242,16 @@ extern "C"
 
 	extern LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y);
 	extern LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y);  
+	extern LIS_INT lis_matvec_block(
+	                                   LIS_MATRIX A,
+	                                   LIS_INT nvec,
+	                                   LIS_VECTOR X[],
+	                                   LIS_VECTOR Y[]);
+	extern LIS_INT lis_matvech_block(
+	                                   LIS_MATRIX A,
+	                                   LIS_INT nvec,
+	                                   LIS_VECTOR X[],
+	                                   LIS_VECTOR Y[]);
 
 /****************************/
 /* Array Operations         */
@@ -1214,7 +1292,33 @@ extern "C"
 /****************************/
 
     extern LIS_INT lis_solver_create(LIS_SOLVER *solver);
+    extern LIS_INT lis_solver_set_monitor(
+            LIS_SOLVER solver,
+            LIS_SOLVER_MONITOR_CALLBACK monitor,
+            void *user_data);
+    extern LIS_INT lis_solver_set_convergence(
+            LIS_SOLVER solver,
+            LIS_SOLVER_CONVERGENCE_CALLBACK convergence,
+            void *user_data);
 	extern LIS_INT lis_solver_destroy(LIS_SOLVER solver);
+	extern LIS_INT lis_solver_set_nullspace(LIS_SOLVER solver, LIS_INT nvec, LIS_VECTOR vectors[]);
+	extern LIS_INT lis_solver_clear_nullspace(LIS_SOLVER solver);
+	extern LIS_INT lis_solver_set_left_nullspace(LIS_SOLVER solver, LIS_INT nvec, LIS_VECTOR vectors[]);
+	extern LIS_INT lis_solver_clear_left_nullspace(LIS_SOLVER solver);
+	extern LIS_INT lis_solver_check_rhs_compatibility(
+	    LIS_SOLVER solver, LIS_VECTOR rhs,
+	    LIS_REAL *defect, LIS_REAL *relative_defect);
+	extern LIS_INT lis_solver_project_rhs_compatible(
+	    LIS_SOLVER solver, LIS_VECTOR rhs,
+	    LIS_VECTOR projected_rhs);
+	extern LIS_INT lis_solver_set_rhs_compatibility_policy(
+	    LIS_SOLVER solver, LIS_INT policy);
+	extern LIS_INT lis_solver_get_rhs_compatibility_policy(
+	    LIS_SOLVER solver, LIS_INT *policy);
+	extern LIS_INT lis_solver_set_rhs_compatibility_tolerance(
+	    LIS_SOLVER solver, LIS_REAL tolerance);
+	extern LIS_INT lis_solver_get_rhs_compatibility_tolerance(
+	    LIS_SOLVER solver, LIS_REAL *tolerance);
 	extern LIS_INT lis_solver_set_near_nullspace(LIS_SOLVER solver, LIS_INT nvec, LIS_VECTOR vectors[]);
 	extern LIS_INT lis_solver_clear_near_nullspace(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_gcrodr_recycle(
@@ -1246,10 +1350,13 @@ extern "C"
 	extern LIS_INT lis_solver_get_fgcrodr_recycle_update(
 	    LIS_SOLVER solver, LIS_INT *update);
 	extern LIS_INT lis_solver_get_sequence_diagnostics(LIS_SOLVER solver, LIS_SEQUENCE_DIAGNOSTICS *diag);
+	extern LIS_INT lis_solver_set_sequence_policy(LIS_SOLVER solver, LIS_INT policy);
+	extern LIS_INT lis_solver_get_sequence_policy(LIS_SOLVER solver, LIS_INT *policy);
 	extern LIS_INT lis_solver_set_num_threads(LIS_SOLVER solver, LIS_INT num_threads);
 	extern LIS_INT lis_solver_get_num_threads(LIS_SOLVER solver, LIS_INT *num_threads);
 	extern LIS_INT lis_solver_set_sequence_precon_max_age(LIS_SOLVER solver, LIS_INT max_age);
 	extern LIS_INT lis_solver_get_sequence_precon_max_age(LIS_SOLVER solver, LIS_INT *max_age);
+	extern LIS_INT lis_solver_get_sequence_precon_age(LIS_SOLVER solver, LIS_INT *age);
         extern LIS_INT lis_solver_get_rhistory(LIS_SOLVER solver, LIS_VECTOR v);
 	extern LIS_INT lis_solver_set_option(char *text, LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_optionC(LIS_SOLVER solver);
@@ -1257,6 +1364,7 @@ extern "C"
     extern LIS_INT lis_solver_set_matrix(LIS_MATRIX A, LIS_SOLVER solver);
 	extern LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver);
      extern LIS_INT lis_solve_sequence(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver);
+     extern LIS_INT lis_solve_sequence_with_precon_matrix(LIS_MATRIX A, LIS_MATRIX precon_A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver);
      extern LIS_INT lis_solver_reset_sequence(LIS_SOLVER solver);
 	extern LIS_INT lis_solve_setup(LIS_MATRIX A, LIS_SOLVER solver);
 	extern LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver, LIS_PRECON precon);

@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 2.1.17
+Version 2.1.18
 \end{flushleft}
 
 \vspace*{2cm}
@@ -1939,6 +1939,65 @@ To create a solver, the following functions are used:
 \end{itemize}
 
 \noindent
+{\bf Monitoring Residuals and Custom Convergence}
+
+Applications can attach C callbacks to a linear solver without changing
+the command line options. A residual monitor is registered with
+
+\begin{verbatim}
+LIS_INT lis_solver_set_monitor(
+    LIS_SOLVER solver,
+    LIS_SOLVER_MONITOR_CALLBACK monitor,
+    void *user_data);
+\end{verbatim}
+
+and a custom convergence callback is registered with
+
+\begin{verbatim}
+LIS_INT lis_solver_set_convergence(
+    LIS_SOLVER solver,
+    LIS_SOLVER_CONVERGENCE_CALLBACK convergence,
+    void *user_data);
+\end{verbatim}
+
+The monitor observes residual progress and does not change the solver
+decision. The convergence callback returns a nonzero value to accept a
+convergence candidate and zero to reject it. Passing a null callback
+restores the default behavior. The application retains ownership of
+\verb|user_data|.
+
+Callbacks receive one of the following residual classifications:
+
+\begin{verbatim}
+LIS_SOLVER_RESIDUAL_RECURSIVE
+LIS_SOLVER_RESIDUAL_PROJECTED
+LIS_SOLVER_RESIDUAL_TRUE
+\end{verbatim}
+
+\verb|LIS_SOLVER_RESIDUAL_PROJECTED| identifies a Krylov projected
+residual estimate, while \verb|LIS_SOLVER_RESIDUAL_TRUE| identifies an
+explicitly evaluated residual of the original system. Restarted
+GMRES-family solvers use projected residuals to form convergence
+candidates and perform a true-residual decision before solver-level
+success.
+
+For switch-precision GMRES, the double-precision switch threshold is
+reported to the monitor but remains an algorithmic precision-switch
+criterion. Custom convergence controls the final convergence phase and
+does not redefine the double-to-quad switch threshold.
+
+The common initial-residual path reports a true residual. Sequence
+recovery also honors a custom convergence veto when an independently
+certified physical residual would otherwise promote a failed iterative
+attempt to success.
+
+A custom callback does not bypass the final safety certification in
+\verb|lis_solve|. A successful iterative result is still rejected when
+the final true residual is non-finite or exceeds the solver tolerance.
+Callback configuration is part of the solver object and is preserved by
+\verb|lis_solver_reset_sequence|.
+
+\noindent
 {\bf Specifying Options}
 
 To specify options, 
@@ -2617,6 +2676,46 @@ This interface allows applications to retain custom matrix formats and register 
 \item \texttt{A}: The target matrix defined as \texttt{LIS\_MATRIX\_USER}.
 \item \texttt{callback}: The user-defined function pointer that computes and stores the diagonal into vector \texttt{d}.
 \end{itemize}
+
+User-defined matrices can optionally provide block matrix-vector callbacks.
+The callbacks are registered independently of the existing scalar callbacks
+using:
+
+\noindent
+\texttt{LIS\_INT lis\_matrix\_set\_user\_matvec\_block(}\\
+\texttt{\hspace*{5mm}LIS\_MATRIX A,}\\
+\texttt{\hspace*{5mm}LIS\_MATRIX\_USER\_MATVEC\_BLOCK matvec\_block,}\\
+\texttt{\hspace*{5mm}LIS\_MATRIX\_USER\_MATVEC\_BLOCK matvech\_block)}
+
+The block callback type is:
+
+\noindent
+\texttt{LIS\_INT (*callback)(void *user\_data, LIS\_INT nvec,}\\
+\texttt{\hspace*{28mm}LIS\_VECTOR X[], LIS\_VECTOR Y[])}
+
+The arrays \texttt{X} and \texttt{Y} contain \texttt{nvec} vectors.
+The application retains ownership of these vectors.  The
+\texttt{matvec\_block} callback computes $Y_i=A X_i$, while
+\texttt{matvech\_block} computes the corresponding Hermitian-transpose
+operation.
+
+The public functions
+
+\noindent
+\texttt{lis\_matvec\_block(A,nvec,X,Y)} and\\
+\texttt{lis\_matvech\_block(A,nvec,X,Y)}
+
+apply a matrix to several vectors.  If a user-defined matrix provides a
+native block callback, it is invoked once for the complete vector block.
+Otherwise, Lis automatically falls back to the existing scalar
+matrix-vector operation for each vector.  Therefore, existing matrix
+formats and existing user-defined scalar callbacks remain compatible
+without modification.
+
+Passing \texttt{NULL} block callbacks to
+\texttt{lis\_matrix\_set\_user\_matvec\_block()} restores the scalar
+fallback behavior.
+
 \subsubsection{Linear-Combination Matrix Operator (\texttt{LIS\_MATRIX\_OPERATOR})}
 This operator represents the linear combination of two matrices $C = \alpha A + \beta B$ without altering the original matrices. For operator matrices, the diagonal is automatically evaluated recursively as follows:
 \[
@@ -6064,6 +6163,39 @@ Destroy the solver.
 \end{namelist}
 
 \newpage
+
+\subsubsection{lis\_solver\_set\_nullspace}
+
+\verb|C       LIS_INT lis_solver_set_nullspace(LIS_SOLVER solver, LIS_INT nvec,|\\
+\verb|                    LIS_VECTOR vectors[])|
+
+Set an exact right-nullspace basis for the linear solver.
+LIS stores solver-owned orthonormal copies of the supplied vectors.
+The basis vectors must be linearly independent and compatible with the
+solver vectors.
+
+The current exact-nullspace deflation path is available for GMRES, FGMRES,
+GCRO-DR and FGCRO-DR with \verb|-scale none| and the default precision.  The
+projection is applied to solution-space corrections.  The right-hand side
+and residual are not projected, so a singular system must have a
+compatible right-hand side in order to converge.
+
+\begin{description}
+\item[\tt solver] The solver
+\item[\tt nvec] The number of exact-nullspace basis vectors
+\item[\tt vectors] The exact right-nullspace basis vectors
+\end{description}
+
+\subsubsection{lis\_solver\_clear\_nullspace}
+
+\verb|C       LIS_INT lis_solver_clear_nullspace(LIS_SOLVER solver)|
+
+Clear the exact right-nullspace basis stored in the solver.
+
+\begin{description}
+\item[\tt solver] The solver
+\end{description}
+
 \subsubsection{lis\_precon\_create}
 \begin{screen}
 \verb|C       LIS_INT lis_precon_create(LIS_SOLVER solver, LIS_PRECON *precon)|\\

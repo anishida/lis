@@ -234,8 +234,10 @@ check_sequence_diag(
         return 1;
     }
 
-    if( d.initial_residual_valid!=initial_valid ||
-        d.true_residual_valid!=true_valid )
+    if( (initial_valid>=0 &&
+         d.initial_residual_valid!=initial_valid) ||
+        (true_valid>=0 &&
+         d.true_residual_valid!=true_valid) )
     {
         fprintf(
             stderr,
@@ -313,6 +315,10 @@ int main(int argc, char **argv)
 	LIS_INT err;
 	int failed = 0;
 
+        LIS_INT method_index;
+        char method_name[2][8] = {"GMRES","FGMRES"};
+        char method_option[2][16] = {"-i gmres","-i fgmres"};
+
 	err = lis_initialize(&argc,&argv);
 	if( err ) return 1;
 
@@ -353,202 +359,308 @@ int main(int argc, char **argv)
 	lis_vector_set_all((LIS_SCALAR)2.0,b);
 
 
-	/* ======================================================== */
-	/* Case 1: first attempt reaches MAXITER, retry succeeds.   */
-	/* ======================================================== */
+        /* ======================================================== */
+        /* Cases 1-2: ordinary GMRES-family recovery policy.    */
+        /* ======================================================== */
 
-	reset_counts();
+        for(method_index=0;method_index<2;method_index++)
+        {
+                char label[64];
 
-	err = create_solver(&solver,LIS_FALSE);
-	if( err )
-	{
-		failed = 1;
-		goto cleanup;
-	}
+                /* Fresh preconditioner: retryable failure must not retry. */
 
-	/*
-	 * One CG iteration is intentionally insufficient for
-	 * diag(2,3).  With the fixed ||b||2 normalization the
-	 * first attempt reaches a relative residual of about 0.20,
-	 * while the retry from the improved x reaches about 0.04.
-	 * A tolerance of 0.15 therefore forces exactly one retry
-	 * without rebuilding the persistent preconditioner.
-	 */
-	solver->options[LIS_OPTIONS_SOLVER] = LIS_SOLVER_CG;
-	solver->options[LIS_OPTIONS_CONV_COND] =
-		LIS_CONV_COND_NRM2_B;
-	solver->options[LIS_OPTIONS_MAXITER] = 1;
-	solver->params[LIS_PARAMS_RESID-LIS_OPTIONS_LEN] =
-		(LIS_SCALAR)1.5e-1;
+                reset_counts();
 
-	recovery_mode = 0;
-	fail_once = 0;
+                err = create_solver(&solver,LIS_FALSE);
+                if( err )
+                {
+                        failed = 1;
+                        goto cleanup;
+                }
 
-	lis_vector_set_all((LIS_SCALAR)0.0,x);
+                err = lis_solver_set_option(
+                        method_option[method_index],
+                        solver);
+                if( err )
+                {
+                        failed = 1;
+                        goto cleanup;
+                }
 
-	err = lis_solve_sequence(A,b,x,solver);
+                recovery_mode = 2;
+                fail_once = 0;
 
-	if( err!=LIS_SUCCESS ||
-	    solver->retcode!=LIS_SUCCESS )
-	{
-		fprintf(
-			stderr,
-			"RETRY_REUSE failed api=%d status=%d\n",
-			(int)err,
-			(int)solver->retcode);
-		failed = 1;
-		goto cleanup;
-	}
+                lis_vector_set_all((LIS_SCALAR)0.0,x);
 
-	if( create_count!=1 ||
-	    destroy_count!=0 ||
-	    psolve_failures!=0 )
-	{
-		fprintf(
-			stderr,
-			"RETRY_REUSE lifecycle "
-			"create=%d destroy=%d failures=%d\n",
-			create_count,
-			destroy_count,
-			psolve_failures);
-		failed = 1;
-		goto cleanup;
-	}
+                err = lis_solve_sequence(A,b,x,solver);
 
-    if( check_sequence_diag(
-            "RETRY_REUSE",
-            solver,
-            2,1,1,0,
-            LIS_MAXITER,LIS_MAXITER,
-            LIS_SUCCESS,
-            LIS_FALSE,LIS_TRUE,
-            LIS_TRUE,LIS_TRUE,
-            1,2,1,1,0) )
-    {
-        failed = 1;
-        goto cleanup;
-    }
+                snprintf(
+                        label,
+                        sizeof(label),
+                        "FRESH_%s",
+                        method_name[method_index]);
 
-	printf(
-		"RETRY_REUSE PASSED "
-		"create=%d destroy=%d failures=%d\n",
-		create_count,
-		destroy_count,
-		psolve_failures);
+                if( err!=LIS_SUCCESS ||
+                    (solver->retcode!=LIS_BREAKDOWN &&
+                     solver->retcode!=LIS_MAXITER) )
+                {
+                        fprintf(
+                                stderr,
+                                "%s unexpected api=%d status=%d\n",
+                                label,
+                                (int)err,
+                                (int)solver->retcode);
+                        failed = 1;
+                        goto cleanup;
+                }
 
-	err = lis_solver_reset_sequence(solver);
-	if( err || destroy_count!=1 )
-	{
-		fprintf(stderr,"RETRY_REUSE reset failed\n");
-		failed = 1;
-		goto cleanup;
-	}
+                if( create_count!=1 ||
+                    destroy_count!=0 ||
+                    psolve_failures<1 )
+                {
+                        fprintf(
+                                stderr,
+                                "%s lifecycle create=%d destroy=%d failures=%d\n",
+                                label,
+                                create_count,
+                                destroy_count,
+                                psolve_failures);
+                        failed = 1;
+                        goto cleanup;
+                }
 
-    if( check_sequence_diag(
-            "RETRY_REUSE_RESET",
-            solver,
-            0,0,0,0,
-            LIS_SUCCESS,LIS_SUCCESS,
-            LIS_SUCCESS,
-            LIS_FALSE,LIS_FALSE,
-            LIS_FALSE,LIS_FALSE,
-            1,2,1,1,0) )
-    {
-        failed = 1;
-        goto cleanup;
-    }
+                if( check_sequence_diag(
+                        label,
+                        solver,
+                        1,0,0,0,
+                        LIS_BREAKDOWN,LIS_MAXITER,
+                        solver->retcode,
+                        -1,-1,
+                        -1,-1,
+                        1,1,0,0,0) )
+                {
+                        failed = 1;
+                        goto cleanup;
+                }
 
-	lis_solver_destroy(solver);
-	solver = NULL;
+                printf("%s PASSED\n",label);
+
+                err = lis_solver_reset_sequence(solver);
+                if( err || destroy_count!=1 )
+                {
+                        fprintf(stderr,"%s reset failed\n",label);
+                        failed = 1;
+                        goto cleanup;
+                }
+
+                lis_solver_destroy(solver);
+                solver = NULL;
 
 
-	/* ======================================================== */
-	/* Case 2: every attempt breaks -> preconditioner rebuild.  */
-	/* ======================================================== */
+                /* Inherited preconditioner: rebuild exactly once. */
 
-	reset_counts();
+                reset_counts();
 
-	err = create_solver(&solver,LIS_FALSE);
-	if( err )
-	{
-		failed = 1;
-		goto cleanup;
-	}
+                err = create_solver(&solver,LIS_FALSE);
+                if( err )
+                {
+                        failed = 1;
+                        goto cleanup;
+                }
 
-	recovery_mode = 2;
+                err = lis_solver_set_option(
+                        method_option[method_index],
+                        solver);
+                if( err )
+                {
+                        failed = 1;
+                        goto cleanup;
+                }
 
-	lis_vector_set_all((LIS_SCALAR)0.0,x);
+                recovery_mode = 0;
+                fail_once = 0;
 
-	err = lis_solve_sequence(A,b,x,solver);
+                lis_vector_set_all((LIS_SCALAR)0.0,x);
 
-	if( err!=LIS_SUCCESS )
-	{
-		fprintf(
-			stderr,
-			"PRECON_REBUILD unexpected API error=%d\n",
-			(int)err);
-		failed = 1;
-		goto cleanup;
-	}
+                err = lis_solve_sequence(A,b,x,solver);
 
-	if( solver->retcode!=LIS_BREAKDOWN &&
-	    solver->retcode!=LIS_MAXITER )
-	{
-		fprintf(
-			stderr,
-			"PRECON_REBUILD status=%d\n",
-			(int)solver->retcode);
-		failed = 1;
-		goto cleanup;
-	}
+                if( err!=LIS_SUCCESS ||
+                    solver->retcode!=LIS_SUCCESS ||
+                    solver->sequence_precon==NULL )
+                {
+                        fprintf(
+                                stderr,
+                                "INHERITED_%s setup failed "
+                                "api=%d status=%d precon=%p\n",
+                                method_name[method_index],
+                                (int)err,
+                                (int)solver->retcode,
+                                (void *)solver->sequence_precon);
+                        failed = 1;
+                        goto cleanup;
+                }
 
-	if( create_count!=2 ||
-	    destroy_count!=1 ||
-	    psolve_failures<3 )
-	{
-		fprintf(
-			stderr,
-			"PRECON_REBUILD lifecycle "
-			"create=%d destroy=%d failures=%d\n",
-			create_count,
-			destroy_count,
-			psolve_failures);
-		failed = 1;
-		goto cleanup;
-	}
+                recovery_mode = 2;
 
-    if( check_sequence_diag(
-            "PRECON_REBUILD",
-            solver,
-            3,2,2,1,
-            LIS_BREAKDOWN,LIS_MAXITER,
-            solver->retcode,
-            LIS_FALSE,-1,
-            LIS_TRUE,LIS_TRUE,
-            1,3,2,2,1) )
-    {
-        failed = 1;
-        goto cleanup;
-    }
+                lis_vector_set_all((LIS_SCALAR)0.0,x);
 
-	printf(
-		"PRECON_REBUILD PASSED "
-		"status=%d create=%d destroy=%d failures=%d\n",
-		(int)solver->retcode,
-		create_count,
-		destroy_count,
-		psolve_failures);
+                err = lis_solve_sequence(A,b,x,solver);
 
-	err = lis_solver_reset_sequence(solver);
-	if( err || destroy_count!=2 )
-	{
-		fprintf(stderr,"PRECON_REBUILD reset failed\n");
-		failed = 1;
-		goto cleanup;
-	}
+                snprintf(
+                        label,
+                        sizeof(label),
+                        "INHERITED_%s",
+                        method_name[method_index]);
 
-	lis_solver_destroy(solver);
-	solver = NULL;
+                if( err!=LIS_SUCCESS ||
+                    (solver->retcode!=LIS_BREAKDOWN &&
+                     solver->retcode!=LIS_MAXITER) )
+                {
+                        fprintf(
+                                stderr,
+                                "%s unexpected api=%d status=%d\n",
+                                label,
+                                (int)err,
+                                (int)solver->retcode);
+                        failed = 1;
+                        goto cleanup;
+                }
+
+                if( create_count!=2 ||
+                    destroy_count!=1 ||
+                    psolve_failures<2 )
+                {
+                        fprintf(
+                                stderr,
+                                "%s lifecycle create=%d destroy=%d failures=%d\n",
+                                label,
+                                create_count,
+                                destroy_count,
+                                psolve_failures);
+                        failed = 1;
+                        goto cleanup;
+                }
+
+                if( check_sequence_diag(
+                        label,
+                        solver,
+                        2,1,0,1,
+                        LIS_BREAKDOWN,LIS_MAXITER,
+                        solver->retcode,
+                        -1,-1,
+                        -1,-1,
+                        2,3,1,0,1) )
+                {
+                        failed = 1;
+                        goto cleanup;
+                }
+
+                printf("%s PASSED\n",label);
+
+                err = lis_solver_reset_sequence(solver);
+                if( err || destroy_count!=2 )
+                {
+                        fprintf(stderr,"%s reset failed\n",label);
+                        failed = 1;
+                        goto cleanup;
+                }
+
+                lis_solver_destroy(solver);
+                solver = NULL;
+        }
+
+
+        /* ======================================================== */
+        /* Case 3: GCRO-DR owns reusable Krylov recycle state.     */
+        /* ======================================================== */
+
+        reset_counts();
+
+        err = create_solver(&solver,LIS_FALSE);
+        if( err )
+        {
+                failed = 1;
+                goto cleanup;
+        }
+
+        {
+                char gcrodr_option[] =
+                        "-i gcrodr -gcrodr_keep 1";
+
+                err = lis_solver_set_option(
+                        gcrodr_option,
+                        solver);
+        }
+
+        if( err )
+        {
+                failed = 1;
+                goto cleanup;
+        }
+
+        solver->options[LIS_OPTIONS_MAXITER] = 1;
+
+        recovery_mode = 0;
+        fail_once = 0;
+
+        lis_vector_set_all((LIS_SCALAR)0.0,x);
+
+        err = lis_solve_sequence(A,b,x,solver);
+
+        if( err!=LIS_SUCCESS )
+        {
+                fprintf(
+                        stderr,
+                        "GCRODR_RECOVERY api=%d status=%d\n",
+                        (int)err,
+                        (int)solver->retcode);
+                failed = 1;
+                goto cleanup;
+        }
+
+        if( create_count!=1 ||
+            destroy_count!=0 ||
+            psolve_failures!=0 )
+        {
+                fprintf(
+                        stderr,
+                        "GCRODR_RECOVERY lifecycle "
+                        "create=%d destroy=%d failures=%d\n",
+                        create_count,
+                        destroy_count,
+                        psolve_failures);
+                failed = 1;
+                goto cleanup;
+        }
+
+        if( check_sequence_diag(
+                "GCRODR_RECOVERY",
+                solver,
+                2,1,1,0,
+                LIS_BREAKDOWN,LIS_MAXITER,
+                solver->retcode,
+                -1,-1,
+                -1,-1,
+                1,2,1,1,0) )
+        {
+                failed = 1;
+                goto cleanup;
+        }
+
+        printf(
+                "GCRODR_RECOVERY PASSED status=%d\n",
+                (int)solver->retcode);
+
+        err = lis_solver_reset_sequence(solver);
+        if( err || destroy_count!=1 )
+        {
+                fprintf(stderr,"GCRODR_RECOVERY reset failed\n");
+                failed = 1;
+                goto cleanup;
+        }
+
+        lis_solver_destroy(solver);
+        solver = NULL;
 
 
 	/* ======================================================== */

@@ -739,6 +739,36 @@ static LIS_INT lis_gcrodr_assess_refresh_recycle(
 }
 
 /* ---------------------------------------------------------------------- */
+
+/*
+ * Harmonic recycling is optional.  Reject a dense candidate if
+ * NaN or infinity entered the small projected eigensystem.
+ *
+ * z-z is zero for every finite real or complex scalar and becomes
+ * non-finite when z contains NaN or infinity.
+ */
+static LIS_INT
+lis_gcrodr_dense_finite(
+    LIS_INT n,
+    const LIS_SCALAR *a)
+{
+    LIS_INT i;
+
+    for(i=0;i<n*n;i++)
+    {
+        LIS_SCALAR d =
+            a[i]-a[i];
+
+        if( d!=d )
+        {
+            return LIS_FALSE;
+        }
+    }
+
+    return LIS_TRUE;
+}
+
+
 /* harmonic Ritz update                                                   */
 /* ---------------------------------------------------------------------- */
 #ifndef _COMPLEX
@@ -849,9 +879,31 @@ static LIS_INT lis_gcrodr_update_recycle(LIS_SOLVER solver,
         }
     }
 
+    if(
+        !lis_gcrodr_dense_finite(
+            p,
+            AP)
+        ||
+        !lis_gcrodr_dense_finite(
+            p,
+            BP) )
+    {
+        goto reject;
+    }
+
     memcpy(AINV,AP,(size_t)p*p*sizeof(LIS_SCALAR));
+
     err = lis_array_ge(p,AINV);
-    if( err ) goto reject;
+
+    if(
+        err
+        ||
+        !lis_gcrodr_dense_finite(
+            p,
+            AINV) )
+    {
+        goto reject;
+    }
 
     /* T = (G^T G)^-1 (G^T F), eig(T)=1/theta_harmonic. */
     for(c=0;c<p;c++)
@@ -864,8 +916,33 @@ static LIS_INT lis_gcrodr_update_recycle(LIS_SOLVER solver,
         }
     }
 
+    if(
+        !lis_gcrodr_dense_finite(
+            p,
+            T) )
+    {
+        goto reject;
+    }
+
     memcpy(TQR,T,(size_t)p*p*sizeof(LIS_SCALAR));
-    err = lis_array_qr(p,TQR,QW,RW,&qriter,&qrerr);
+    /*
+     * Harmonic recycle extraction is optional.  Bound the
+     * unshifted QR iteration so a difficult small eigensystem
+     * cannot dominate the linear solve.
+     */
+    if( oldk>0 )
+        qriter = 512;
+    else
+        qriter = 1024;
+
+    err = lis_array_qr_limit(
+        p,
+        TQR,
+        QW,
+        RW,
+        qriter,
+        &qriter,
+        &qrerr);
     if( err ) goto reject;
     (void)qriter;
     (void)qrerr;
@@ -1066,7 +1143,7 @@ LIS_INT lis_gcrodr(LIS_SOLVER solver)
     LIS_REAL bnrm,nrm2,tol,min_nrm2,rnorm,wnorm;
     LIS_INT err,iter,maxiter,output,maxiter_noimp,noimp_count;
     LIS_INT i,j,k,m,kmax,kcur,cycle_steps,jdim,ii,i1,jj,hld,cs,sn,pass;
-    LIS_INT lucky;
+    LIS_INT lucky,candidate;
     double time,ptime;
 
     LIS_DEBUG_FUNC_IN;
@@ -1170,6 +1247,7 @@ LIS_INT lis_gcrodr(LIS_SOLVER solver)
 
         jdim = 0;
         lucky = LIS_FALSE;
+        candidate = LIS_FALSE;
         cycle_steps = m-kcur;
         if( cycle_steps<1 ) cycle_steps = 1;
         for(j=0;j<cycle_steps && iter<maxiter;j++)
@@ -1255,8 +1333,17 @@ LIS_INT lis_gcrodr(LIS_SOLVER solver)
                 if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
             }
 
+            lis_solver_monitor_residual(
+                solver,iter,nrm2,tol,
+                LIS_SOLVER_RESIDUAL_PROJECTED);
+
+            candidate = lis_solver_test_convergence(
+                solver,iter,nrm2,tol,
+                LIS_SOLVER_RESIDUAL_PROJECTED,
+                nrm2<=tol);
+
             jdim = j+1;
-            if( nrm2<=tol || lucky ) break;
+            if( candidate || lucky ) break;
 
             if( maxiter_noimp )
             {
@@ -1346,14 +1433,22 @@ LIS_INT lis_gcrodr(LIS_SOLVER solver)
             goto fail;
         }
         if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
-        if( nrm2<=tol )
+
+        lis_solver_monitor_residual(
+            solver,iter,nrm2,tol,
+            LIS_SOLVER_RESIDUAL_TRUE);
+
+        if( lis_solver_test_convergence(
+                solver,iter,nrm2,tol,
+                LIS_SOLVER_RESIDUAL_TRUE,
+                nrm2<=tol) )
         {
             err = LIS_SUCCESS;
             break;
         }
     }
 
-    if( iter>=maxiter && nrm2>tol ) err = LIS_MAXITER;
+    if( iter>=maxiter ) err = LIS_MAXITER;
     solver->retcode = err;
     solver->iter = iter;
     solver->resid = nrm2;

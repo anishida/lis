@@ -949,7 +949,7 @@ LIS_INT lis_array_ge(LIS_INT n, LIS_SCALAR *a)
 			a[k*n+i] = t * lu[i+i*n];
 		}
 	}
-	free(lu);
+	lis_free(lu);
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
@@ -1132,44 +1132,358 @@ LIS_INT lis_array_mgs(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *q, LIS_SCALAR *r)
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_array_qr"
-LIS_INT lis_array_qr(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *q, LIS_SCALAR *r, LIS_INT *qriter, LIS_REAL *qrerr)
+
+#ifndef _COMPLEX
+/*
+ * Return LIS_TRUE when A has converged to a real quasi-triangular
+ * form suitable for the recycling eigensystem extractors.
+ *
+ * Isolated nonzero first-subdiagonal entries represent real 2x2
+ * Schur blocks.  Entries below the first subdiagonal must have
+ * converged to zero at the requested relative tolerance.
+ */
+static LIS_INT
+lis_array_qr_real_quasi_schur(
+    LIS_INT n,
+    LIS_SCALAR *a,
+    LIS_REAL tol,
+    LIS_REAL *residual)
 {
-  LIS_INT i, j, k, iter, maxiter; 
-  LIS_SCALAR *a0;
-  LIS_REAL tol, err;
+    LIS_INT i,j;
+    LIS_INT active;
+    LIS_INT previous_active;
 
-  LIS_DEBUG_FUNC_IN;
+    LIS_REAL scale;
+    LIS_REAL value;
+    LIS_REAL max_below;
+    LIS_REAL finite_test;
 
-  maxiter = 100000;
-  tol = 1e-12;
+    max_below =
+        0.0;
 
-  a0 = (LIS_SCALAR *)lis_malloc(n*n*sizeof(LIS_SCALAR), "lis_array_qr::a0");
-  iter = 0;
-  while (iter < maxiter)
+
+    /*
+     * Reject NaN and infinity before classifying the block
+     * structure.  For every finite real scalar x, x-x is zero;
+     * NaN or infinity produces a non-finite result.
+     */
+    for(i=0;i<n*n;i++)
     {
-      iter = iter + 1;
-      lis_array_cgs(n, a, q, r);
-      for (j=0;j<n;j++)
-	{
-	  for (i=0;i<n;i++)
-	    {
-	      a[i+j*n] = 0;
-	      for (k=0;k<n;k++)
-		{
-		  a[i+j*n] += r[i+k*n] * q[k+j*n];
-		}
-	    }
-	}
-      err = fabs(a[1]);
-      if (err<tol) break;
+        finite_test =
+            (LIS_REAL)a[i];
+
+        finite_test =
+            finite_test
+            -finite_test;
+
+        if(
+            finite_test
+            !=finite_test )
+        {
+            *residual =
+                finite_test;
+
+            return LIS_FALSE;
+        }
     }
 
-  *qriter = iter;
-  *qrerr = err;
 
-  lis_free(a0);
+    /*
+     * A real Schur matrix is upper quasi-triangular.
+     */
+    for(j=0;j<n;j++)
+    {
+        for(i=j+2;i<n;i++)
+        {
+            scale =
+                1.0
+                +fabs(
+                    (LIS_REAL)a[
+                        j+j*n])
+                +fabs(
+                    (LIS_REAL)a[
+                        i+i*n]);
 
-  LIS_DEBUG_FUNC_OUT;
-  return LIS_SUCCESS;
+            value =
+                fabs(
+                    (LIS_REAL)a[
+                        i+j*n])
+                /scale;
+
+            if( value!=value )
+            {
+                *residual =
+                    value;
+
+                return LIS_FALSE;
+            }
+
+            if( value>max_below )
+            {
+                max_below =
+                    value;
+            }
+        }
+    }
+
+
+    if( max_below>=tol )
+    {
+        *residual =
+            max_below;
+
+        return LIS_FALSE;
+    }
+
+
+    /*
+     * Isolated active first-subdiagonal entries are valid 2x2
+     * real Schur blocks.  Adjacent active entries would create
+     * an unreduced block of order greater than two.
+     */
+    previous_active =
+        LIS_FALSE;
+
+    for(i=0;i<n-1;i++)
+    {
+        scale =
+            1.0
+            +fabs(
+                (LIS_REAL)a[
+                    i+i*n])
+            +fabs(
+                (LIS_REAL)a[
+                    (i+1)+(i+1)*n]);
+
+        value =
+            fabs(
+                (LIS_REAL)a[
+                    (i+1)+i*n])
+            /scale;
+
+        if( value!=value )
+        {
+            *residual =
+                value;
+
+            return LIS_FALSE;
+        }
+
+        active =
+            value>=tol;
+
+        if(
+            active
+            &&
+            previous_active )
+        {
+            *residual =
+                value;
+
+            return LIS_FALSE;
+        }
+
+        previous_active =
+            active;
+    }
+
+
+    *residual =
+        max_below;
+
+    return LIS_TRUE;
+}
+#endif
+
+
+#define __FUNC__ "lis_array_qr"
+static LIS_INT lis_array_qr_core(
+    LIS_INT n,
+    LIS_SCALAR *a,
+    LIS_SCALAR *q,
+    LIS_SCALAR *r,
+    LIS_INT maxiter,
+    LIS_INT quasi_schur,
+    LIS_INT *qriter,
+    LIS_REAL *qrerr)
+{
+    LIS_INT i,j,k,iter;
+    LIS_INT converged;
+    LIS_SCALAR *a0;
+    LIS_REAL tol,err;
+
+    LIS_DEBUG_FUNC_IN;
+
+    tol = 1e-12;
+
+    a0 = (LIS_SCALAR *)lis_malloc(
+        n*n*sizeof(LIS_SCALAR),
+        "lis_array_qr::a0");
+
+    iter = 0;
+    converged = LIS_FALSE;
+
+    while( iter<maxiter )
+    {
+        iter++;
+
+        lis_array_cgs(
+            n,
+            a,
+            q,
+            r);
+
+        for(j=0;j<n;j++)
+        {
+            for(i=0;i<n;i++)
+            {
+                a[i+j*n] = 0;
+
+                for(k=0;k<n;k++)
+                {
+                    a[i+j*n] +=
+                        r[i+k*n]
+                        *q[k+j*n];
+                }
+            }
+        }
+
+        err = fabs(a[1]);
+
+        if( quasi_schur )
+        {
+#ifndef _COMPLEX
+            if(
+                lis_array_qr_real_quasi_schur(
+                    n,
+                    a,
+                    tol,
+                    &err) )
+            {
+                converged =
+                    LIS_TRUE;
+
+                break;
+            }
+#else
+            if( err<tol )
+            {
+                converged =
+                    LIS_TRUE;
+
+                break;
+            }
+#endif
+        }
+        else if( err<tol )
+        {
+            converged =
+                LIS_TRUE;
+
+            break;
+        }
+    }
+
+    /*
+     * For the bounded quasi-Schur path, exhaustion of maxiter
+     * must remain distinguishable from successful convergence
+     * even when a[1] happened to deflate earlier.
+     */
+    if(
+        quasi_schur
+        &&
+        !converged
+        &&
+        err==err
+        &&
+        err<tol )
+    {
+        err =
+            tol;
+    }
+
+    *qriter = iter;
+    *qrerr = err;
+
+    lis_free(a0);
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+
+LIS_INT lis_array_qr(
+    LIS_INT n,
+    LIS_SCALAR *a,
+    LIS_SCALAR *q,
+    LIS_SCALAR *r,
+    LIS_INT *qriter,
+    LIS_REAL *qrerr)
+{
+    return lis_array_qr_core(
+        n,
+        a,
+        q,
+        r,
+        100000,
+        LIS_FALSE,
+        qriter,
+        qrerr);
+}
+
+
+LIS_INT lis_array_qr_limit(
+    LIS_INT n,
+    LIS_SCALAR *a,
+    LIS_SCALAR *q,
+    LIS_SCALAR *r,
+    LIS_INT maxiter,
+    LIS_INT *qriter,
+    LIS_REAL *qrerr)
+{
+    LIS_INT err;
+
+    if( n<=0 || maxiter<=0 )
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+    /*
+     * A 1x1 matrix is already in real Schur form.
+     * Keep the bounded path from accessing a[1].
+     */
+    if( n==1 )
+    {
+        q[0] = 1.0;
+        r[0] = a[0];
+
+        *qriter = 1;
+        *qrerr = 0.0;
+
+        return LIS_SUCCESS;
+    }
+
+    err = lis_array_qr_core(
+        n,
+        a,
+        q,
+        r,
+        maxiter,
+        LIS_TRUE,
+        qriter,
+        qrerr);
+
+    if( err )
+    {
+        return err;
+    }
+
+    if(
+        *qrerr!=*qrerr ||
+        *qrerr>=1e-12)
+    {
+        return LIS_BREAKDOWN;
+    }
+
+    return LIS_SUCCESS;
 }

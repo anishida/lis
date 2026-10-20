@@ -6,9 +6,9 @@
 #endif
 #endif
 
+#include <math.h>
 #include "lis.h"
 
-#include <math.h>
 #include <stdio.h>
 
 #define TEST_N 8
