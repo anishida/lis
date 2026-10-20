@@ -302,7 +302,13 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 				if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 			}
 
-			if( tol >= nrm2 ) break;
+			lis_solver_monitor_residual(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_PROJECTED);
+			if( lis_solver_test_convergence(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_PROJECTED,
+				tol >= nrm2) ) break;
 
 			if (maxiter_noimp)
 			{
@@ -407,7 +413,13 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 			solver->rhistory[iter] = nrm2;
 		}
 
-		if( tol >= nrm2 )
+		lis_solver_monitor_residual(
+			solver,iter,nrm2,tol,
+			LIS_SOLVER_RESIDUAL_TRUE);
+		if( lis_solver_test_convergence(
+			solver,iter,nrm2,tol,
+			LIS_SOLVER_RESIDUAL_TRUE,
+			tol >= nrm2) )
 		{
 			solver->retcode = LIS_SUCCESS;
 			solver->iter    = iter;
@@ -622,7 +634,13 @@ LIS_INT lis_gmres_quad(LIS_SOLVER solver)
 				if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 			}
 
-			if( tol >= nrm2 ) break;
+			lis_solver_monitor_residual(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_PROJECTED);
+			if( lis_solver_test_convergence(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_PROJECTED,
+				tol >= nrm2) ) break;
 
 			if ( maxiter_noimp )
 			{
@@ -742,7 +760,13 @@ LIS_INT lis_gmres_quad(LIS_SOLVER solver)
 			solver->rhistory[iter] = nrm2;
 		}
 
-		if( tol >= nrm2 )
+		lis_solver_monitor_residual(
+			solver,iter,nrm2,tol,
+			LIS_SOLVER_RESIDUAL_TRUE);
+		if( lis_solver_test_convergence(
+			solver,iter,nrm2,tol,
+			LIS_SOLVER_RESIDUAL_TRUE,
+			tol >= nrm2) )
 		{
 			solver->retcode = LIS_SUCCESS;
 			solver->iter    = iter;
@@ -778,7 +802,7 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 	LIS_QUAD_PTR rnorm;
 	LIS_REAL bnrm2,nrm2,tol,tol2;
 	LIS_INT iter,maxiter,n,output;
-	LIS_INT iter2,maxiter2;
+	LIS_INT iter2,maxiter2,candidate;
 	double time,ptime;
 
 	LIS_INT i,j,k,m;
@@ -939,6 +963,13 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 				if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 			}
 
+			lis_solver_monitor_residual(
+				solver,
+				iter,
+				nrm2,
+				tol2,
+				LIS_SOLVER_RESIDUAL_PROJECTED);
+
 			if( tol2 >= nrm2 ) break;
 		} while( i<m && iter <maxiter2 );
 
@@ -1026,13 +1057,23 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 	solver->options[LIS_OPTIONS_INITGUESS_ZEROS] = LIS_FALSE;
 	lis_vector_copyex_mn(x,solver->xx);
 
-	lis_solver_get_initial_residual(solver,NULL,NULL,v[0],&bnrm2);
+	if( lis_solver_get_initial_residual(
+		solver,NULL,NULL,v[0],&bnrm2) )
+	{
+		solver->iter  = iter;
+		solver->iter2 = iter;
+		solver->ptime = ptime;
+		lis_free(h);
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
 	tol     = solver->tol;
 
 
 	iter2=iter;
 	while( iter2<maxiter )
 	{
+		candidate = LIS_FALSE;
 		/* first column of V */
 		/* v = r / ||r||_2 */
 		lis_vector_nrm2ex_mm(v[0],&rnorm);
@@ -1152,7 +1193,22 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 				if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 			}
 
-			if( tol >= nrm2 ) break;
+			lis_solver_monitor_residual(
+				solver,
+				iter2,
+				nrm2,
+				tol,
+				LIS_SOLVER_RESIDUAL_PROJECTED);
+
+			candidate = lis_solver_test_convergence(
+				solver,
+				iter2,
+				nrm2,
+				tol,
+				LIS_SOLVER_RESIDUAL_PROJECTED,
+				tol >= nrm2);
+
+			if( candidate ) break;
 		} while( i<m && iter2 <maxiter );
 
 		/* Solve H * Y = S for upper Hessenberg matrix H */
@@ -1228,16 +1284,66 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 		/* x = x + r */
 		lis_vector_axpyex_mmm(one,r,x);
 
-		if( tol >= nrm2 )
+		if( candidate )
 		{
-			solver->retcode    = LIS_SUCCESS;
-			solver->iter       = iter2;
-			solver->iter2      = iter;
-			solver->resid      = nrm2;
-			solver->ptime      = ptime;
-			lis_free(h);
-			LIS_DEBUG_FUNC_OUT;
-			return LIS_SUCCESS;
+			/* Replace the projected candidate with b - A*x. */
+			lis_matvec(A,x,v[0]);
+			lis_vector_xpay(b,-1.0,v[0]);
+			memset(
+				v[0]->value_lo,
+				0,
+				n*sizeof(LIS_SCALAR));
+
+			lis_solver_get_residual[0](
+				v[0],
+				solver,
+				&nrm2);
+
+			if( nrm2!=nrm2 ||
+			    fabs(nrm2)>LIS_SCALAR_MAX )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter2;
+				solver->iter2   = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
+			if( output & LIS_PRINT_MEM )
+			{
+				solver->rhistory[iter2] = nrm2;
+			}
+
+			lis_solver_monitor_residual(
+				solver,
+				iter2,
+				nrm2,
+				tol,
+				LIS_SOLVER_RESIDUAL_TRUE);
+
+			if( lis_solver_test_convergence(
+				solver,
+				iter2,
+				nrm2,
+				tol,
+				LIS_SOLVER_RESIDUAL_TRUE,
+				tol >= nrm2) )
+			{
+				solver->retcode = LIS_SUCCESS;
+				solver->iter    = iter2;
+				solver->iter2   = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_SUCCESS;
+			}
+
+			/* v[0] contains the certified TRUE residual. */
+			continue;
 		}
 
 		for(j=1;j<=i;j++)
@@ -1380,7 +1486,7 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 	LIS_SCALAR t;
 
 	LIS_REAL bnrm2,nrm2,tol,min_nrm2;
-	LIS_INT err,iter,maxiter,output,maxiter_noimp,noimp_count;
+	LIS_INT err,iter,maxiter,output,maxiter_noimp,noimp_count,candidate;
      LIS_INT noimp_stop;
 	double time,ptime;
 
@@ -1429,6 +1535,7 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 	iter=0;
 	while( iter<maxiter )
 	{
+		candidate = LIS_FALSE;
 		/* first column of V */
 		/* v = r / ||r||_2 */
 		lis_vector_scale(bnrm2,v[0]);
@@ -1530,7 +1637,14 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 				if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 			}
 
-			if( tol >= nrm2 ) break;
+			lis_solver_monitor_residual(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_PROJECTED);
+			candidate = lis_solver_test_convergence(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_PROJECTED,
+				tol >= nrm2);
+			if( candidate ) break;
 
 			if (maxiter_noimp)
 			{
@@ -1618,7 +1732,7 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 		lis_vector_xpay(b,-1.0,v[0]);
 		lis_vector_nrm2(v[0],&rnorm);
 
-		if( tol >= nrm2 )
+		if( candidate )
 		{
 			lis_solver_get_residual[0](v[0],solver,&nrm2);
 
@@ -1633,7 +1747,14 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 				return LIS_BREAKDOWN;
 			}
 
-			if( tol >= nrm2 )
+			lis_solver_monitor_residual(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_TRUE);
+
+			if( lis_solver_test_convergence(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_TRUE,
+				tol >= nrm2) )
 			{
 				solver->retcode    = LIS_SUCCESS;
 				solver->iter       = iter;
@@ -1669,7 +1790,7 @@ LIS_INT lis_fgmres_quad(LIS_SOLVER solver)
 	LIS_QUAD_PTR aa,bb,rr,a2,b2,t,one,tmp;
 
 	LIS_REAL bnrm2,nrm2,tol,min_nrm2;
-	LIS_INT iter,maxiter,n,output,maxiter_noimp,noimp_count;
+	LIS_INT iter,maxiter,n,output,maxiter_noimp,noimp_count,candidate;
 	double time,ptime;
 
 	LIS_REAL rnorm;
@@ -1730,6 +1851,7 @@ LIS_INT lis_fgmres_quad(LIS_SOLVER solver)
 	iter=0;
 	while( iter<maxiter )
 	{
+		candidate = LIS_FALSE;
 		/* first column of V */
 		/* v = r / ||r||_2 */
 		lis_vector_scaleex_nm(bnrm2,v[0]);
@@ -1845,7 +1967,14 @@ LIS_INT lis_fgmres_quad(LIS_SOLVER solver)
 				if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 			}
 
-			if( tol >= nrm2 ) break;
+			lis_solver_monitor_residual(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_PROJECTED);
+			candidate = lis_solver_test_convergence(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_PROJECTED,
+				tol >= nrm2);
+			if( candidate ) break;
 
 			if ( maxiter_noimp )
 			{
@@ -1930,7 +2059,7 @@ LIS_INT lis_fgmres_quad(LIS_SOLVER solver)
 		memset(v[0]->value_lo,0,n*sizeof(LIS_SCALAR));
 		lis_vector_nrm2(v[0],&rnorm);
 
-		if( tol >= nrm2 )
+		if( candidate )
 		{
 			lis_solver_get_residual[0](v[0],solver,&nrm2);
 
@@ -1945,7 +2074,14 @@ LIS_INT lis_fgmres_quad(LIS_SOLVER solver)
 				return LIS_BREAKDOWN;
 			}
 
-			if( tol >= nrm2 )
+			lis_solver_monitor_residual(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_TRUE);
+
+			if( lis_solver_test_convergence(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_TRUE,
+				tol >= nrm2) )
 			{
 				solver->retcode = LIS_SUCCESS;
 				solver->iter    = iter;

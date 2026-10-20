@@ -4912,6 +4912,7 @@ lis_fgcrodr_flexible_core(
     LIS_INT maxiter_noimp;
     LIS_INT noimp_count;
     LIS_INT noimp_stop;
+    LIS_INT candidate;
 
     LIS_INT i;
     LIS_INT j;
@@ -5202,6 +5203,7 @@ lis_fgcrodr_flexible_core(
 
     while( iter<maxiter )
     {
+        candidate = LIS_FALSE;
         /*
          * First Arnoldi vector:
          *
@@ -5559,7 +5561,16 @@ lis_fgcrodr_flexible_core(
             }
 
 
-            if( tol>=nrm2 )
+            lis_solver_monitor_residual(
+                solver,iter,nrm2,tol,
+                LIS_SOLVER_RESIDUAL_PROJECTED);
+
+            candidate = lis_solver_test_convergence(
+                solver,iter,nrm2,tol,
+                LIS_SOLVER_RESIDUAL_PROJECTED,
+                tol>=nrm2);
+
+            if( candidate )
                 break;
 
 
@@ -5893,7 +5904,7 @@ lis_fgcrodr_flexible_core(
             v[0]);
 
 
-        if( tol>=nrm2 )
+        if( candidate )
         {
             lis_solver_get_residual[0](
                 v[0],
@@ -5932,7 +5943,20 @@ lis_fgcrodr_flexible_core(
             }
 
 
-            if( tol>=nrm2 )
+            lis_solver_monitor_residual(
+                solver,
+                iter,
+                nrm2,
+                tol,
+                LIS_SOLVER_RESIDUAL_TRUE);
+
+            if( lis_solver_test_convergence(
+                    solver,
+                    iter,
+                    nrm2,
+                    tol,
+                    LIS_SOLVER_RESIDUAL_TRUE,
+                    tol>=nrm2) )
             {
                 solver->retcode =
                     LIS_SUCCESS;

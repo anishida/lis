@@ -230,6 +230,10 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->d        = NULL;
 	solver->work     = NULL;
 	solver->rhistory = NULL;
+	solver->monitor = NULL;
+	solver->monitor_data = NULL;
+	solver->convergence = NULL;
+	solver->convergence_data = NULL;
 	solver->precon   = NULL;
 	solver->num_threads = 0;
         solver->fgcrodr_state = NULL;
@@ -380,6 +384,93 @@ LIS_INT lis_solver_create(LIS_SOLVER *solver)
 	return LIS_SUCCESS;
 }
 
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_monitor"
+LIS_INT lis_solver_set_monitor(
+	LIS_SOLVER solver,
+	LIS_SOLVER_MONITOR_CALLBACK monitor,
+	void *user_data)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	if( solver==NULL )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"solver is NULL\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	solver->monitor = monitor;
+	solver->monitor_data = monitor ? user_data : NULL;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_convergence"
+LIS_INT lis_solver_set_convergence(
+	LIS_SOLVER solver,
+	LIS_SOLVER_CONVERGENCE_CALLBACK convergence,
+	void *user_data)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	if( solver==NULL )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"solver is NULL\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	solver->convergence = convergence;
+	solver->convergence_data =
+		convergence ? user_data : NULL;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+void lis_solver_monitor_residual(
+	LIS_SOLVER solver,
+	LIS_INT iter,
+	LIS_REAL residual,
+	LIS_REAL tolerance,
+	LIS_INT residual_kind)
+{
+	if( solver==NULL || solver->monitor==NULL )
+	{
+		return;
+	}
+
+	solver->monitor(
+		solver,
+		iter,
+		residual,
+		tolerance,
+		residual_kind,
+		solver->monitor_data);
+}
+
+LIS_INT lis_solver_test_convergence(
+	LIS_SOLVER solver,
+	LIS_INT iter,
+	LIS_REAL residual,
+	LIS_REAL tolerance,
+	LIS_INT residual_kind,
+	LIS_INT default_converged)
+{
+	if( solver!=NULL && solver->convergence!=NULL )
+	{
+		return solver->convergence(
+			solver,
+			iter,
+			residual,
+			tolerance,
+			residual_kind,
+			solver->convergence_data)
+			? LIS_TRUE : LIS_FALSE;
+	}
+
+	return default_converged ? LIS_TRUE : LIS_FALSE;
+}
 #undef __FUNC__
 #define __FUNC__ "lis_solver_work_vector_compatible"
 LIS_INT lis_solver_work_vector_compatible(
@@ -3107,10 +3198,26 @@ lis_solver_sequence_retryable(LIS_SOLVER solver)
 	        fabs(solver->params[
 	            LIS_PARAMS_RESID-LIS_OPTIONS_LEN]) )
 	{
-	    solver->retcode = LIS_SUCCESS;
-	    solver->resid =
-	        solver->sequence_true_relative_residual;
-	    return LIS_FALSE;
+	    if(
+	        solver->retcode==LIS_SUCCESS
+	        ||
+	        solver->sequence_true_relative_residual==0.0
+	        ||
+	        lis_solver_test_convergence(
+	            solver,
+	            solver->iter,
+	            solver->sequence_true_relative_residual,
+	            solver->params[
+	                LIS_PARAMS_RESID-LIS_OPTIONS_LEN],
+	            LIS_SOLVER_RESIDUAL_TRUE,
+	            LIS_TRUE)
+	    )
+	    {
+	        solver->retcode = LIS_SUCCESS;
+	        solver->resid =
+	            solver->sequence_true_relative_residual;
+	        return LIS_FALSE;
+	    }
 	}
 
 	if( solver->retcode==LIS_BREAKDOWN ||
@@ -4652,11 +4759,32 @@ LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VEC
 	  if( output & LIS_PRINT_MEM ) solver->rhistory[0] = nrm2;
 	  if( output & LIS_PRINT_OUT ) lis_printf(comm,"iteration: %5d  relative residual = %e\n", 0, (double)nrm2); 
 	}
-	if( nrm2 <= fabs(solver->params[LIS_PARAMS_RESID-LIS_OPTIONS_LEN]) )
+	lis_solver_monitor_residual(
+		solver,
+		0,
+		nrm2,
+		fabs(solver->params[LIS_PARAMS_RESID-LIS_OPTIONS_LEN]),
+		LIS_SOLVER_RESIDUAL_TRUE);
+
+	if(
+		nrm2 <= fabs(solver->params[LIS_PARAMS_RESID-LIS_OPTIONS_LEN])
+		&&
+		(
+			nrm2==0.0
+			||
+			lis_solver_test_convergence(
+				solver,
+				0,
+				nrm2,
+				fabs(solver->params[LIS_PARAMS_RESID-LIS_OPTIONS_LEN]),
+				LIS_SOLVER_RESIDUAL_TRUE,
+				LIS_TRUE)
+		)
+	)
 	{
 		solver->retcode = LIS_SUCCESS;
 		solver->iter    = 1;
-		solver->resid   = nrm2; 
+		solver->resid   = nrm2;
 		LIS_DEBUG_FUNC_OUT;
 		return LIS_FAILS;
 	}

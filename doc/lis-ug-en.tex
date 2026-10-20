@@ -1939,6 +1939,65 @@ To create a solver, the following functions are used:
 \end{itemize}
 
 \noindent
+{\bf Monitoring Residuals and Custom Convergence}
+
+Applications can attach C callbacks to a linear solver without changing
+the command line options. A residual monitor is registered with
+
+\begin{verbatim}
+LIS_INT lis_solver_set_monitor(
+    LIS_SOLVER solver,
+    LIS_SOLVER_MONITOR_CALLBACK monitor,
+    void *user_data);
+\end{verbatim}
+
+and a custom convergence callback is registered with
+
+\begin{verbatim}
+LIS_INT lis_solver_set_convergence(
+    LIS_SOLVER solver,
+    LIS_SOLVER_CONVERGENCE_CALLBACK convergence,
+    void *user_data);
+\end{verbatim}
+
+The monitor observes residual progress and does not change the solver
+decision. The convergence callback returns a nonzero value to accept a
+convergence candidate and zero to reject it. Passing a null callback
+restores the default behavior. The application retains ownership of
+\verb|user_data|.
+
+Callbacks receive one of the following residual classifications:
+
+\begin{verbatim}
+LIS_SOLVER_RESIDUAL_RECURSIVE
+LIS_SOLVER_RESIDUAL_PROJECTED
+LIS_SOLVER_RESIDUAL_TRUE
+\end{verbatim}
+
+\verb|LIS_SOLVER_RESIDUAL_PROJECTED| identifies a Krylov projected
+residual estimate, while \verb|LIS_SOLVER_RESIDUAL_TRUE| identifies an
+explicitly evaluated residual of the original system. Restarted
+GMRES-family solvers use projected residuals to form convergence
+candidates and perform a true-residual decision before solver-level
+success.
+
+For switch-precision GMRES, the double-precision switch threshold is
+reported to the monitor but remains an algorithmic precision-switch
+criterion. Custom convergence controls the final convergence phase and
+does not redefine the double-to-quad switch threshold.
+
+The common initial-residual path reports a true residual. Sequence
+recovery also honors a custom convergence veto when an independently
+certified physical residual would otherwise promote a failed iterative
+attempt to success.
+
+A custom callback does not bypass the final safety certification in
+\verb|lis_solve|. A successful iterative result is still rejected when
+the final true residual is non-finite or exceeds the solver tolerance.
+Callback configuration is part of the solver object and is preserved by
+\verb|lis_solver_reset_sequence|.
+
+\noindent
 {\bf Specifying Options}
 
 To specify options, 

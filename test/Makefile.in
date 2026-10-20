@@ -63,26 +63,27 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	test1$(EXEEXT) test2$(EXEEXT) test2b$(EXEEXT) test3$(EXEEXT) \
 	test3b$(EXEEXT) test3c$(EXEEXT) test4$(EXEEXT) test5$(EXEEXT) \
 	test6$(EXEEXT) test7$(EXEEXT) testuser$(EXEEXT) \
-	testuserrow$(EXEEXT) testmatvecblock$(EXEEXT) \
-	testcapabilities$(EXEEXT) getestuser$(EXEEXT) \
-	testoperator$(EXEEXT) getestoperator$(EXEEXT) \
-	testdiagonal$(EXEEXT) testpreconlifecycle$(EXEEXT) \
-	testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
-	testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) \
-	testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) \
-	testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
-	testworkcompat$(EXEEXT) testworkreuse$(EXEEXT) \
-	testprebuiltuser$(EXEEXT) testshellscale$(EXEEXT) \
-	testsymmdiagguard$(EXEEXT) testilupivot$(EXEEXT) \
-	testparamupdate$(EXEEXT) testbreakretry$(EXEEXT) \
-	testchangingsystem$(EXEEXT) testkrylovrobust$(EXEEXT) \
-	testnearnullspace$(EXEEXT) testcoarsesetup$(EXEEXT) \
-	testcoarseapply$(EXEEXT) testgcrodroptions$(EXEEXT) \
-	testgcrodrconfig$(EXEEXT) testgcrodrsequence$(EXEEXT) \
-	testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) \
-	testsequence$(EXEEXT) testwarmstart$(EXEEXT) \
-	testrecovery$(EXEEXT) testthreads$(EXEEXT) \
-	testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
+        testuserrow$(EXEEXT) testmatvecblock$(EXEEXT) \
+        testcapabilities$(EXEEXT) getestuser$(EXEEXT) \
+        testoperator$(EXEEXT) getestoperator$(EXEEXT) \
+        testdiagonal$(EXEEXT) testpreconlifecycle$(EXEEXT) \
+        testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
+        testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) \
+        testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) \
+        testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
+        testsolvermonitor$(EXEEXT) testsolvercallbackpaths$(EXEEXT) \
+        testsolvercallbackcert$(EXEEXT) testworkcompat$(EXEEXT) \
+        testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) \
+        testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) \
+        testilupivot$(EXEEXT) testparamupdate$(EXEEXT) \
+        testbreakretry$(EXEEXT) testchangingsystem$(EXEEXT) \
+        testkrylovrobust$(EXEEXT) testnearnullspace$(EXEEXT) \
+        testcoarsesetup$(EXEEXT) testcoarseapply$(EXEEXT) \
+        testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) \
+        testgcrodrsequence$(EXEEXT) testmatrixgeneration$(EXEEXT) \
+        testexternalstorage$(EXEEXT) testsequence$(EXEEXT) \
+        testwarmstart$(EXEEXT) testrecovery$(EXEEXT) \
+        testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
 	testexactnullspace$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
 	$(am__EXEEXT_3)
 @ENABLE_FORTRAN_TRUE@am__append_1 = etest1f etest4f test1f test4f test7f
@@ -460,6 +461,18 @@ am_testwarmstart_OBJECTS = testwarmstart.$(OBJEXT)
 testwarmstart_OBJECTS = $(am_testwarmstart_OBJECTS)
 testwarmstart_LDADD = $(LDADD)
 testwarmstart_DEPENDENCIES =
+am_testsolvermonitor_OBJECTS = testsolvermonitor.$(OBJEXT)
+testsolvermonitor_OBJECTS = $(am_testsolvermonitor_OBJECTS)
+testsolvermonitor_LDADD = $(LDADD)
+testsolvermonitor_DEPENDENCIES =
+am_testsolvercallbackpaths_OBJECTS = testsolvercallbackpaths.$(OBJEXT)
+testsolvercallbackpaths_OBJECTS = $(am_testsolvercallbackpaths_OBJECTS)
+testsolvercallbackpaths_LDADD = $(LDADD)
+testsolvercallbackpaths_DEPENDENCIES =
+am_testsolvercallbackcert_OBJECTS = testsolvercallbackcert.$(OBJEXT)
+testsolvercallbackcert_OBJECTS = $(am_testsolvercallbackcert_OBJECTS)
+testsolvercallbackcert_LDADD = $(LDADD)
+testsolvercallbackcert_DEPENDENCIES =
 am_testworkcompat_OBJECTS = testworkcompat.$(OBJEXT)
 testworkcompat_OBJECTS = $(am_testworkcompat_OBJECTS)
 testworkcompat_LDADD = $(LDADD)
@@ -534,6 +547,7 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testexternalstorage_SOURCES) $(testfgcrodr_SOURCES) \
 	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
 	$(testgcrodrsequence_SOURCES) $(testgmreswork_SOURCES) \
+	$(testsolvermonitor_SOURCES) $(testsolvercallbackpaths_SOURCES) $(testsolvercallbackcert_SOURCES) \
 	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
 	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
 	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
@@ -573,6 +587,7 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testexternalstorage_SOURCES) $(testfgcrodr_SOURCES) \
 	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
 	$(testgcrodrsequence_SOURCES) $(testgmreswork_SOURCES) \
+	$(testsolvermonitor_SOURCES) $(testsolvercallbackpaths_SOURCES) $(testsolvercallbackcert_SOURCES) \
 	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
 	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
 	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
@@ -807,6 +822,9 @@ testrhistoryerror_SOURCES = testrhistoryerror.c
 testrepeatedsystems_SOURCES = testrepeatedsystems.c
 testpreconpolicy_SOURCES = testpreconpolicy.c
 testgmreswork_SOURCES = testgmreswork.c
+testsolvermonitor_SOURCES = testsolvermonitor.c
+testsolvercallbackpaths_SOURCES = testsolvercallbackpaths.c
+testsolvercallbackcert_SOURCES = testsolvercallbackcert.c
 testworkcompat_SOURCES = testworkcompat.c
 testworkreuse_SOURCES = testworkreuse.c
 testprebuiltuser_SOURCES = testprebuiltuser.c
@@ -874,7 +892,21 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
-TESTS = test.sh testuserrow$(EXEEXT) testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) testworkcompat$(EXEEXT) testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) testilupivot$(EXEEXT) testparamupdate$(EXEEXT) testbreakretry$(EXEEXT) testchangingsystem$(EXEEXT) testkrylovrobust$(EXEEXT) testnearnullspace$(EXEEXT) testcoarsesetup$(EXEEXT) testcoarseapply$(EXEEXT) testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) testgcrodrsequence$(EXEEXT) testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testsequence$(EXEEXT) testwarmstart$(EXEEXT) testrecovery$(EXEEXT) testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) testexactnullspace$(EXEEXT)
+TESTS = test.sh testuserrow$(EXEEXT) testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
+        testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
+        testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
+        testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
+        testsolvermonitor$(EXEEXT) testsolvercallbackpaths$(EXEEXT) \
+        testsolvercallbackcert$(EXEEXT) testworkcompat$(EXEEXT) \
+        testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) testshellscale$(EXEEXT) \
+        testsymmdiagguard$(EXEEXT) testilupivot$(EXEEXT) testparamupdate$(EXEEXT) \
+        testbreakretry$(EXEEXT) testchangingsystem$(EXEEXT) testkrylovrobust$(EXEEXT) \
+        testnearnullspace$(EXEEXT) testcoarsesetup$(EXEEXT) testcoarseapply$(EXEEXT) \
+        testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) testgcrodrsequence$(EXEEXT) \
+        testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testsequence$(EXEEXT) \
+        testwarmstart$(EXEEXT) testrecovery$(EXEEXT) testthreads$(EXEEXT) \
+        testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) testexactnullspace$(EXEEXT)
+
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
 all: all-am
@@ -1252,6 +1284,15 @@ testuserrow$(EXEEXT): $(testuserrow_OBJECTS) $(testuserrow_DEPENDENCIES) $(EXTRA
 testwarmstart$(EXEEXT): $(testwarmstart_OBJECTS) $(testwarmstart_DEPENDENCIES) $(EXTRA_testwarmstart_DEPENDENCIES) 
 	@rm -f testwarmstart$(EXEEXT)
 	$(LINK) $(testwarmstart_OBJECTS) $(testwarmstart_LDADD) $(LIBS)
+testsolvermonitor$(EXEEXT): $(testsolvermonitor_OBJECTS) $(testsolvermonitor_DEPENDENCIES) $(EXTRA_testsolvermonitor_DEPENDENCIES)
+	@rm -f testsolvermonitor$(EXEEXT)
+	$(LINK) $(testsolvermonitor_OBJECTS) $(testsolvermonitor_LDADD) $(LIBS)
+testsolvercallbackpaths$(EXEEXT): $(testsolvercallbackpaths_OBJECTS) $(testsolvercallbackpaths_DEPENDENCIES) $(EXTRA_testsolvercallbackpaths_DEPENDENCIES)
+	@rm -f testsolvercallbackpaths$(EXEEXT)
+	$(LINK) $(testsolvercallbackpaths_OBJECTS) $(testsolvercallbackpaths_LDADD) $(LIBS)
+testsolvercallbackcert$(EXEEXT): $(testsolvercallbackcert_OBJECTS) $(testsolvercallbackcert_DEPENDENCIES) $(EXTRA_testsolvercallbackcert_DEPENDENCIES)
+	@rm -f testsolvercallbackcert$(EXEEXT)
+	$(LINK) $(testsolvercallbackcert_OBJECTS) $(testsolvercallbackcert_LDADD) $(LIBS)
 testworkcompat$(EXEEXT): $(testworkcompat_OBJECTS) $(testworkcompat_DEPENDENCIES) $(EXTRA_testworkcompat_DEPENDENCIES) 
 	@rm -f testworkcompat$(EXEEXT)
 	$(LINK) $(testworkcompat_OBJECTS) $(testworkcompat_LDADD) $(LIBS)
@@ -1368,6 +1409,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuserrow.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testwarmstart.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsolvermonitor.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsolvercallbackpaths.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsolvercallbackcert.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testworkcompat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testworkreuse.Po@am__quote@
 
