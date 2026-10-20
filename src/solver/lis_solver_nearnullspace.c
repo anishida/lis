@@ -875,14 +875,25 @@ lis_solver_near_nullspace_coarse_setup(
         }
 
 
-        err = lis_matvec(
-            A,
-            coarse->Z[i],
-            coarse->AZ[i]);
-
-        if(err)
-            goto fail;
     }
+
+
+    /*
+     * Apply the effective operator to the complete near-nullspace basis.
+     *
+     * lis_matvec_block() preserves the scalar fallback for ordinary
+     * matrix formats while allowing USER matrices to process the basis
+     * in one native block callback.
+     */
+    err =
+        lis_matvec_block(
+            A,
+            k,
+            coarse->Z,
+            coarse->AZ);
+
+    if(err)
+        goto fail;
 
 
     /*

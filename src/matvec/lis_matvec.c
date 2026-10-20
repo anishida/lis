@@ -516,6 +516,202 @@ LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 
 
 #undef __FUNC__
+#define __FUNC__ "lis_matvec_block"
+LIS_INT lis_matvec_block(
+        LIS_MATRIX A,
+        LIS_INT nvec,
+        LIS_VECTOR X[],
+        LIS_VECTOR Y[])
+{
+        LIS_INT i,err;
+        LIS_INT use_user_block;
+
+        LIS_DEBUG_FUNC_IN;
+
+        if( nvec<0 )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "number of block vectors is negative\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( nvec==0 )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_SUCCESS;
+        }
+
+        if( A==NULL || X==NULL || Y==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "invalid block matvec argument\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        for(i=0;i<nvec;i++)
+        {
+                if( X[i]==NULL || Y[i]==NULL )
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "block matvec contains a null vector\n");
+                        return LIS_ERR_ILL_ARG;
+                }
+        }
+
+        /*
+         * A USER matrix may provide a native block callback.
+         *
+         * The USER callback interface is currently default-precision.
+         * If a vector requests another precision, preserve the existing
+         * scalar lis_matvec() behavior through the fallback below.
+         */
+        use_user_block =
+                A->matrix_type==LIS_MATRIX_USER &&
+                A->user_matvec_block!=NULL;
+
+        if( use_user_block )
+        {
+                for(i=0;i<nvec;i++)
+                {
+                        if( X[i]->precision!=LIS_PRECISION_DEFAULT )
+                        {
+                                use_user_block = LIS_FALSE;
+                                break;
+                        }
+                }
+        }
+
+        if( use_user_block )
+        {
+                err = A->user_matvec_block(
+                        A->user_data,
+                        nvec,
+                        X,
+                        Y);
+
+                if( err ) return err;
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_SUCCESS;
+        }
+
+        /*
+         * Compatibility fallback.
+         *
+         * This deliberately reuses lis_matvec() so all existing matrix
+         * formats, operator semantics, MPI communication, and precision
+         * handling remain unchanged.
+         */
+        for(i=0;i<nvec;i++)
+        {
+                err = lis_matvec(
+                        A,
+                        X[i],
+                        Y[i]);
+
+                if( err ) return err;
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_matvech_block"
+LIS_INT lis_matvech_block(
+        LIS_MATRIX A,
+        LIS_INT nvec,
+        LIS_VECTOR X[],
+        LIS_VECTOR Y[])
+{
+        LIS_INT i,err;
+        LIS_INT use_user_block;
+
+        LIS_DEBUG_FUNC_IN;
+
+        if( nvec<0 )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "number of block vectors is negative\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( nvec==0 )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_SUCCESS;
+        }
+
+        if( A==NULL || X==NULL || Y==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "invalid block matvech argument\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        for(i=0;i<nvec;i++)
+        {
+                if( X[i]==NULL || Y[i]==NULL )
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "block matvech contains a null vector\n");
+                        return LIS_ERR_ILL_ARG;
+                }
+        }
+
+        use_user_block =
+                A->matrix_type==LIS_MATRIX_USER &&
+                A->user_matvech_block!=NULL;
+
+        if( use_user_block )
+        {
+                for(i=0;i<nvec;i++)
+                {
+                        if( X[i]->precision!=LIS_PRECISION_DEFAULT )
+                        {
+                                use_user_block = LIS_FALSE;
+                                break;
+                        }
+                }
+        }
+
+        if( use_user_block )
+        {
+                err = A->user_matvech_block(
+                        A->user_data,
+                        nvec,
+                        X,
+                        Y);
+
+                if( err ) return err;
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_SUCCESS;
+        }
+
+        for(i=0;i<nvec;i++)
+        {
+                err = lis_matvech(
+                        A,
+                        X[i],
+                        Y[i]);
+
+                if( err ) return err;
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
 #define __FUNC__ "lis_matvec_optimize"
 LIS_INT lis_matvec_optimize(LIS_MATRIX A, LIS_INT *matrix_type_maxperf)
 {
