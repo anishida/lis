@@ -63,25 +63,26 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	test1$(EXEEXT) test2$(EXEEXT) test2b$(EXEEXT) test3$(EXEEXT) \
 	test3b$(EXEEXT) test3c$(EXEEXT) test4$(EXEEXT) test5$(EXEEXT) \
 	test6$(EXEEXT) test7$(EXEEXT) testuser$(EXEEXT) \
-	testuserrow$(EXEEXT) testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
-	getestuser$(EXEEXT) testoperator$(EXEEXT) \
-	getestoperator$(EXEEXT) testdiagonal$(EXEEXT) \
-	testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) \
-	testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) \
-	testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
-	testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) \
-	testgmreswork$(EXEEXT) testworkcompat$(EXEEXT) \
-	testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) \
-	testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) \
-	testilupivot$(EXEEXT) testparamupdate$(EXEEXT) \
-	testbreakretry$(EXEEXT) testchangingsystem$(EXEEXT) \
-	testkrylovrobust$(EXEEXT) testnearnullspace$(EXEEXT) \
-	testcoarsesetup$(EXEEXT) testcoarseapply$(EXEEXT) \
-	testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) \
-	testgcrodrsequence$(EXEEXT) testmatrixgeneration$(EXEEXT) \
-	testexternalstorage$(EXEEXT) testsequence$(EXEEXT) \
-	testwarmstart$(EXEEXT) testrecovery$(EXEEXT) \
-	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
+	testuserrow$(EXEEXT) testmatvecblock$(EXEEXT) \
+	testcapabilities$(EXEEXT) getestuser$(EXEEXT) \
+	testoperator$(EXEEXT) getestoperator$(EXEEXT) \
+	testdiagonal$(EXEEXT) testpreconlifecycle$(EXEEXT) \
+	testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
+	testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) \
+	testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) \
+	testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
+	testworkcompat$(EXEEXT) testworkreuse$(EXEEXT) \
+	testprebuiltuser$(EXEEXT) testshellscale$(EXEEXT) \
+	testsymmdiagguard$(EXEEXT) testilupivot$(EXEEXT) \
+	testparamupdate$(EXEEXT) testbreakretry$(EXEEXT) \
+	testchangingsystem$(EXEEXT) testkrylovrobust$(EXEEXT) \
+	testnearnullspace$(EXEEXT) testcoarsesetup$(EXEEXT) \
+	testcoarseapply$(EXEEXT) testgcrodroptions$(EXEEXT) \
+	testgcrodrconfig$(EXEEXT) testgcrodrsequence$(EXEEXT) \
+	testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) \
+	testsequence$(EXEEXT) testwarmstart$(EXEEXT) \
+	testrecovery$(EXEEXT) testthreads$(EXEEXT) \
+	testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
 	testexactnullspace$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
 	$(am__EXEEXT_3)
 @ENABLE_FORTRAN_TRUE@am__append_1 = etest1f etest4f test1f test4f test7f
@@ -535,17 +536,18 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testgcrodrsequence_SOURCES) $(testgmreswork_SOURCES) \
 	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
 	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
-	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) $(testnearnullspace_SOURCES) \
-	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
-	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
-	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
-	$(testpreconreuse_SOURCES) $(testrecovery_SOURCES) \
-	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
-	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
-	$(testshellscale_SOURCES) $(testsymmdiagguard_SOURCES) \
-	$(testthreads_SOURCES) $(testuser_SOURCES) \
-	$(testuserrow_SOURCES) $(testwarmstart_SOURCES) \
-	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
+	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
+	$(testnearnullspace_SOURCES) $(testoperator_SOURCES) \
+	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
+	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
+	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
+	$(testrecovery_SOURCES) $(testrepeatedsystems_SOURCES) \
+	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
+	$(testsequence_SOURCES) $(testshellscale_SOURCES) \
+	$(testsymmdiagguard_SOURCES) $(testthreads_SOURCES) \
+	$(testuser_SOURCES) $(testuserrow_SOURCES) \
+	$(testwarmstart_SOURCES) $(testworkcompat_SOURCES) \
+	$(testworkreuse_SOURCES)
 DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
 	$(etest3_SOURCES) $(etest4_SOURCES) \
@@ -573,17 +575,18 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testgcrodrsequence_SOURCES) $(testgmreswork_SOURCES) \
 	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
 	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
-	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) $(testnearnullspace_SOURCES) \
-	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
-	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
-	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
-	$(testpreconreuse_SOURCES) $(testrecovery_SOURCES) \
-	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
-	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
-	$(testshellscale_SOURCES) $(testsymmdiagguard_SOURCES) \
-	$(testthreads_SOURCES) $(testuser_SOURCES) \
-	$(testuserrow_SOURCES) $(testwarmstart_SOURCES) \
-	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
+	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
+	$(testnearnullspace_SOURCES) $(testoperator_SOURCES) \
+	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
+	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
+	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
+	$(testrecovery_SOURCES) $(testrepeatedsystems_SOURCES) \
+	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
+	$(testsequence_SOURCES) $(testshellscale_SOURCES) \
+	$(testsymmdiagguard_SOURCES) $(testthreads_SOURCES) \
+	$(testuser_SOURCES) $(testuserrow_SOURCES) \
+	$(testwarmstart_SOURCES) $(testworkcompat_SOURCES) \
+	$(testworkreuse_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -1186,7 +1189,7 @@ testkrylovrobust$(EXEEXT): $(testkrylovrobust_OBJECTS) $(testkrylovrobust_DEPEND
 testmatrixgeneration$(EXEEXT): $(testmatrixgeneration_OBJECTS) $(testmatrixgeneration_DEPENDENCIES) $(EXTRA_testmatrixgeneration_DEPENDENCIES) 
 	@rm -f testmatrixgeneration$(EXEEXT)
 	$(LINK) $(testmatrixgeneration_OBJECTS) $(testmatrixgeneration_LDADD) $(LIBS)
-testmatvecblock$(EXEEXT): $(testmatvecblock_OBJECTS) $(testmatvecblock_DEPENDENCIES) $(EXTRA_testmatvecblock_DEPENDENCIES)
+testmatvecblock$(EXEEXT): $(testmatvecblock_OBJECTS) $(testmatvecblock_DEPENDENCIES) $(EXTRA_testmatvecblock_DEPENDENCIES) 
 	@rm -f testmatvecblock$(EXEEXT)
 	$(LINK) $(testmatvecblock_OBJECTS) $(testmatvecblock_LDADD) $(LIBS)
 testmfamg$(EXEEXT): $(testmfamg_OBJECTS) $(testmfamg_DEPENDENCIES) $(EXTRA_testmfamg_DEPENDENCIES) 
