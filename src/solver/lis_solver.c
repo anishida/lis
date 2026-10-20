@@ -272,6 +272,9 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->left_nullspace = NULL;
 	solver->nullspace_dim = 0;
 	solver->left_nullspace_dim = 0;
+	solver->rhs_compatibility_policy =
+	    LIS_RHS_POLICY_ASSUME_COMPATIBLE;
+	solver->rhs_compatibility_tol = (LIS_REAL)1.0e-12;
 	solver->near_nullspace_dim = 0;
 	solver->near_nullspace_coarse = NULL;
 	solver->recycle_u = NULL;
@@ -1436,6 +1439,244 @@ LIS_INT lis_solver_project_rhs_compatible(
 
 
 #undef __FUNC__
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_rhs_compatibility_policy"
+LIS_INT lis_solver_set_rhs_compatibility_policy(
+    LIS_SOLVER solver,
+    LIS_INT policy)
+{
+    if( solver==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "solver is NULL\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    if(
+        policy!=LIS_RHS_POLICY_ASSUME_COMPATIBLE
+        &&
+        policy!=LIS_RHS_POLICY_REJECT
+        &&
+        policy!=LIS_RHS_POLICY_PROJECT)
+    {
+        LIS_SETERR1(
+            LIS_ERR_ILL_ARG,
+            "invalid RHS compatibility policy (%D)\n",
+            policy);
+        return LIS_ERR_ILL_ARG;
+    }
+
+    solver->rhs_compatibility_policy = policy;
+
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_get_rhs_compatibility_policy"
+LIS_INT lis_solver_get_rhs_compatibility_policy(
+    LIS_SOLVER solver,
+    LIS_INT *policy)
+{
+    if( solver==NULL || policy==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid RHS compatibility policy query\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *policy = solver->rhs_compatibility_policy;
+
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_rhs_compatibility_tolerance"
+LIS_INT lis_solver_set_rhs_compatibility_tolerance(
+    LIS_SOLVER solver,
+    LIS_REAL tolerance)
+{
+    if(
+        solver==NULL
+        ||
+        tolerance!=tolerance
+        ||
+        !isfinite((double)tolerance)
+        ||
+        tolerance<0.0)
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid RHS compatibility tolerance\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    solver->rhs_compatibility_tol = tolerance;
+
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_get_rhs_compatibility_tolerance"
+LIS_INT lis_solver_get_rhs_compatibility_tolerance(
+    LIS_SOLVER solver,
+    LIS_REAL *tolerance)
+{
+    if( solver==NULL || tolerance==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid RHS compatibility tolerance query\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *tolerance = solver->rhs_compatibility_tol;
+
+    return LIS_SUCCESS;
+}
+
+
+
+static LIS_INT
+lis_solver_prepare_rhs_for_solve(
+    LIS_MATRIX A,
+    LIS_VECTOR rhs,
+    LIS_SOLVER solver,
+    LIS_VECTOR *effective_rhs,
+    LIS_VECTOR *owned_rhs)
+{
+    LIS_INT err;
+    LIS_REAL defect;
+    LIS_REAL relative_defect;
+    LIS_VECTOR projected_rhs = NULL;
+
+    *effective_rhs = rhs;
+    *owned_rhs = NULL;
+
+    /*
+     * lis_solve_setup() uses a temporary RHS only to prepare the
+     * solver/preconditioner.  It is not a physical solve RHS.
+     */
+    if( solver->setup )
+    {
+        return LIS_SUCCESS;
+    }
+
+    /*
+     * Preserve legacy behaviour by default.  A configured policy
+     * has an effect only when a left nullspace is available.
+     */
+    if(
+        solver->rhs_compatibility_policy==
+            LIS_RHS_POLICY_ASSUME_COMPATIBLE
+        ||
+        solver->left_nullspace==NULL
+        ||
+        solver->left_nullspace_dim<=0)
+    {
+        return LIS_SUCCESS;
+    }
+
+    if(
+        solver->rhs_compatibility_policy==
+            LIS_RHS_POLICY_REJECT)
+    {
+        err =
+            lis_solver_check_rhs_compatibility(
+                solver,
+                rhs,
+                &defect,
+                &relative_defect);
+
+        if( err )
+        {
+            return err;
+        }
+
+        if(
+            relative_defect!=relative_defect
+            ||
+            relative_defect>
+                solver->rhs_compatibility_tol)
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "RHS is incompatible with the configured left nullspace\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+
+        return LIS_SUCCESS;
+    }
+
+    if(
+        solver->rhs_compatibility_policy==
+            LIS_RHS_POLICY_PROJECT)
+    {
+        #ifndef USE_QUAD_PRECISION
+            err =
+                lis_vector_duplicate(
+                    A,
+                    &projected_rhs);
+        #else
+            if(
+                solver->options[LIS_OPTIONS_PRECISION]==
+                    LIS_PRECISION_DOUBLE)
+            {
+                err =
+                    lis_vector_duplicate(
+                        A,
+                        &projected_rhs);
+            }
+            else
+            {
+                err =
+                    lis_vector_duplicateex(
+                        LIS_PRECISION_QUAD,
+                        A,
+                        &projected_rhs);
+            }
+        #endif
+
+        if( err )
+        {
+            return err;
+        }
+
+        err =
+            lis_solver_project_rhs_compatible(
+                solver,
+                rhs,
+                projected_rhs);
+
+        if( err )
+        {
+            lis_vector_destroy(
+                projected_rhs);
+
+            return err;
+        }
+
+        *effective_rhs = projected_rhs;
+        *owned_rhs = projected_rhs;
+
+        return LIS_SUCCESS;
+    }
+
+    LIS_SETERR(
+        LIS_ERR_ILL_ARG,
+        "invalid RHS compatibility policy\n");
+
+    return LIS_ERR_ILL_ARG;
+}
+
+
+#undef __FUNC__
 #define __FUNC__ "lis_solver_set_nullspace"
 LIS_INT lis_solver_set_nullspace(
 	LIS_SOLVER solver,
@@ -2530,6 +2771,8 @@ LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
     LIS_INT saved_num_threads;
     LIS_INT thread_scope_changed;
 	LIS_PRECON precon;
+	LIS_VECTOR effective_b = b;
+	LIS_VECTOR projected_b = NULL;
 
 	LIS_DEBUG_FUNC_IN;
 
@@ -2543,34 +2786,80 @@ LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
 	    solver->options[LIS_OPTIONS_PRECON] >= precon_register_type )
 	{
 		LIS_SETERR1(LIS_ERR_ILL_ARG,"Invalid LIS_OPTIONS_PRECON value %D\n",solver->options[LIS_OPTIONS_PRECON]);
+		if( projected_b )
+		{
+		        lis_vector_destroy(projected_b);
+		        projected_b = NULL;
+		}
 		lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
 		return LIS_ERR_ILL_ARG;
 	}
 	err = lis_solver_check_user_matrix(A,solver,NULL);
 	if( err )
 	{
+		if( projected_b )
+		{
+		        lis_vector_destroy(projected_b);
+		        projected_b = NULL;
+		}
 		lis_solver_thread_scope_end(
 			saved_num_threads,thread_scope_changed);
 		return err;
 	}
 
-	err = lis_precon_create(solver, &precon);
+	err = lis_solver_prepare_rhs_for_solve(
+                A,
+                b,
+                solver,
+                &effective_b,
+                &projected_b);
+
+        if( err )
+        {
+                solver->retcode = err;
+                if( projected_b )
+                {
+                        lis_vector_destroy(projected_b);
+                        projected_b = NULL;
+                }
+                if( projected_b )
+                {
+                        lis_vector_destroy(projected_b);
+                        projected_b = NULL;
+                }
+                lis_solver_thread_scope_end(
+                        saved_num_threads,
+                        thread_scope_changed);
+                return err;
+        }
+
+        err = lis_precon_create(solver, &precon);
 	if( err )
 	{
 		lis_solver_work_destroy(solver);
 		solver->retcode = err;
+		if( projected_b )
+		{
+		        lis_vector_destroy(projected_b);
+		        projected_b = NULL;
+		}
 		lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
 		return err;
 	}
 
 	/* core kernel of lis_solve() */
-	err = lis_solve_kernel(A, b, x, solver, precon);
+	err = lis_solve_kernel(A, effective_b, x, solver, precon);
 	if( err )
 	{
 		lis_solver_work_destroy(solver);	  
 		if( solver->precon==precon ) solver->precon = NULL;
 		lis_precon_destroy(precon);
 		solver->retcode = err;
+		if( projected_b )
+		{
+		        lis_vector_destroy(projected_b);
+		        projected_b = NULL;
+		}
 		lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
 		return err;
 	}
@@ -2579,6 +2868,11 @@ LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver)
 	lis_precon_destroy(precon);
 
 	LIS_DEBUG_FUNC_OUT;
+	if( projected_b )
+	{
+	        lis_vector_destroy(projected_b);
+	        projected_b = NULL;
+	}
 	lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
 	return LIS_SUCCESS;
 }
@@ -2890,6 +3184,8 @@ LIS_INT lis_solve_sequence_with_precon_matrix(
 
     LIS_INT saved_num_threads;
     LIS_INT thread_scope_changed;
+    LIS_VECTOR effective_b = b;
+    LIS_VECTOR projected_b = NULL;
     LIS_DEBUG_FUNC_IN;
 
     if( A==NULL || precon_A==NULL || b==NULL || x==NULL || solver==NULL )
@@ -2923,6 +3219,39 @@ LIS_INT lis_solve_sequence_with_precon_matrix(
 
     solver->sequence_diag_total_solves++;
 
+    err =
+        lis_solver_prepare_rhs_for_solve(
+            A,
+            b,
+            solver,
+            &effective_b,
+            &projected_b);
+
+    if( err )
+    {
+        solver->retcode = err;
+        solver->sequence_diag_first_retcode = err;
+        solver->sequence_diag_final_retcode = err;
+
+        if( projected_b )
+        {
+            lis_vector_destroy(projected_b);
+            projected_b = NULL;
+        }
+
+        if( projected_b )
+        {
+            lis_vector_destroy(projected_b);
+            projected_b = NULL;
+        }
+        lis_solver_thread_scope_end(
+            saved_num_threads,
+            thread_scope_changed);
+
+        return err;
+    }
+
+
     /*
      * Recovery must correspond to reusable state that existed before
      * attempt 0. Repeating a full Krylov solve after a no-op recycle
@@ -2951,7 +3280,7 @@ LIS_INT lis_solve_sequence_with_precon_matrix(
     solver->sequence_diag_attempts++;
     solver->sequence_diag_total_attempts++;
 
-    err = lis_solver_sequence_attempt(A,precon_A,b,x,solver);
+    err = lis_solver_sequence_attempt(A,precon_A,effective_b,x,solver);
 
     /*
      * Preserve diagnostics for the caller-provided initial x before
@@ -2970,6 +3299,11 @@ LIS_INT lis_solve_sequence_with_precon_matrix(
     {
         solver->sequence_diag_first_retcode = solver->retcode;
         solver->sequence_diag_final_retcode = solver->retcode;
+        if( projected_b )
+        {
+            lis_vector_destroy(projected_b);
+            projected_b = NULL;
+        }
         lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
         return err;
     }
@@ -2980,6 +3314,11 @@ LIS_INT lis_solve_sequence_with_precon_matrix(
         solver->sequence_diag_final_retcode = solver->retcode;
 
         LIS_DEBUG_FUNC_OUT;
+        if( projected_b )
+        {
+            lis_vector_destroy(projected_b);
+            projected_b = NULL;
+        }
         lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
         return LIS_SUCCESS;
     }
@@ -3003,6 +3342,11 @@ LIS_INT lis_solve_sequence_with_precon_matrix(
         {
             solver->retcode = err;
             solver->sequence_diag_final_retcode = err;
+            if( projected_b )
+            {
+                lis_vector_destroy(projected_b);
+                projected_b = NULL;
+            }
             lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
             return err;
         }
@@ -3016,10 +3360,15 @@ LIS_INT lis_solve_sequence_with_precon_matrix(
         solver->sequence_diag_attempts++;
         solver->sequence_diag_total_attempts++;
 
-        err = lis_solver_sequence_attempt(A,precon_A,b,x,solver);
+        err = lis_solver_sequence_attempt(A,precon_A,effective_b,x,solver);
         if( err )
         {
             solver->sequence_diag_final_retcode = solver->retcode;
+            if( projected_b )
+            {
+                lis_vector_destroy(projected_b);
+                projected_b = NULL;
+            }
             lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
             return err;
         }
@@ -3044,6 +3393,11 @@ LIS_INT lis_solve_sequence_with_precon_matrix(
         solver->sequence_diag_final_retcode = solver->retcode;
 
         LIS_DEBUG_FUNC_OUT;
+        if( projected_b )
+        {
+            lis_vector_destroy(projected_b);
+            projected_b = NULL;
+        }
         lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
         return LIS_SUCCESS;
     }
@@ -3054,6 +3408,7 @@ LIS_INT lis_solve_sequence_with_precon_matrix(
      */
     if( recycling_solver )
     {
+<<<<<<< HEAD
         err = lis_solver_sequence_clear_active_recycle(solver);
         if( err )
         {
@@ -3062,6 +3417,18 @@ LIS_INT lis_solve_sequence_with_precon_matrix(
             lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
             return err;
         }
+=======
+        solver->retcode = err;
+        solver->sequence_diag_final_retcode = err;
+        if( projected_b )
+        {
+            lis_vector_destroy(projected_b);
+            projected_b = NULL;
+        }
+        lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
+        return err;
+    }
+>>>>>>> pr-96
 
         solver->sequence_diag_recycle_resets++;
         solver->sequence_diag_total_recycle_resets++;
@@ -3072,6 +3439,11 @@ LIS_INT lis_solve_sequence_with_precon_matrix(
     {
         solver->retcode = err;
         solver->sequence_diag_final_retcode = err;
+        if( projected_b )
+        {
+            lis_vector_destroy(projected_b);
+            projected_b = NULL;
+        }
         lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
         return err;
     }
@@ -3085,12 +3457,17 @@ LIS_INT lis_solve_sequence_with_precon_matrix(
     solver->sequence_diag_attempts++;
     solver->sequence_diag_total_attempts++;
 
-    err = lis_solver_sequence_attempt(A,precon_A,b,x,solver);
+    err = lis_solver_sequence_attempt(A,precon_A,effective_b,x,solver);
 
     solver->sequence_diag_final_retcode = solver->retcode;
 
     if( err )
     {
+        if( projected_b )
+        {
+            lis_vector_destroy(projected_b);
+            projected_b = NULL;
+        }
         lis_solver_thread_scope_end(
             saved_num_threads,thread_scope_changed);
         return err;
@@ -3100,6 +3477,11 @@ LIS_INT lis_solve_sequence_with_precon_matrix(
      * execution completed; final iterative status is in retcode.
      */
     LIS_DEBUG_FUNC_OUT;
+    if( projected_b )
+    {
+        lis_vector_destroy(projected_b);
+        projected_b = NULL;
+    }
     lis_solver_thread_scope_end(saved_num_threads,thread_scope_changed);
     return LIS_SUCCESS;
 }

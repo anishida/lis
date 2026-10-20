@@ -2923,6 +2923,581 @@ cleanup:
 }
 
 
+static LIS_INT
+configure_rhs_policy_solver(
+    LIS_VECTOR null_vector,
+    LIS_SOLVER *solver)
+{
+    LIS_VECTOR basis[1];
+    LIS_INT err;
+
+    char options[] =
+        "-i gmres "
+        "-p jacobi "
+        "-scale none "
+        "-tol 1.0e-12 "
+        "-maxiter 100 "
+        "-restart 6";
+
+    *solver = NULL;
+
+    err =
+        lis_solver_create(
+            solver);
+
+    if(err)
+    {
+        return err;
+    }
+
+    err =
+        lis_solver_set_option(
+            options,
+            *solver);
+
+    if(err)
+    {
+        goto fail;
+    }
+
+    basis[0] = null_vector;
+
+    err =
+        lis_solver_set_nullspace(
+            *solver,
+            1,
+            basis);
+
+    if(err)
+    {
+        goto fail;
+    }
+
+    err =
+        lis_solver_set_left_nullspace(
+            *solver,
+            1,
+            basis);
+
+    if(err)
+    {
+        goto fail;
+    }
+
+    return LIS_SUCCESS;
+
+fail:
+
+    lis_solver_destroy(
+        *solver);
+
+    *solver = NULL;
+
+    return err;
+}
+
+
+static int
+run_rhs_policy_solve(
+    LIS_MATRIX A,
+    LIS_VECTOR compatible_rhs,
+    LIS_VECTOR null_vector)
+{
+    LIS_SOLVER solver = NULL;
+    LIS_SOLVER sequence_solver = NULL;
+
+    LIS_VECTOR incompatible_rhs = NULL;
+    LIS_VECTOR projected_rhs = NULL;
+    LIS_VECTOR residual = NULL;
+    LIS_VECTOR x = NULL;
+
+    LIS_INT err;
+    LIS_INT api;
+    LIS_INT policy = -1;
+
+    LIS_REAL tolerance = 0.0;
+    LIS_REAL project_residual = 0.0;
+    LIS_REAL sequence_residual = 0.0;
+
+    LIS_SCALAR rhs_before[3];
+
+    int default_ok = 0;
+    int invalid_tolerance_ok = 0;
+    int assume_ok = 0;
+    int reject_ok = 0;
+    int project_ok = 0;
+    int sequence_reject_ok = 0;
+    int sequence_project_ok = 0;
+    int rhs_unchanged_ok = 0;
+
+    int pass = 1;
+    int i;
+
+    err =
+        make_vector3(
+            A,
+            1.0,
+            -2.0,
+            2.0,
+            &incompatible_rhs);
+
+    if(err)
+    {
+        return 0;
+    }
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &projected_rhs);
+
+    if(err)
+    {
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &residual);
+
+    if(err)
+    {
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x);
+
+    if(err)
+    {
+        pass = 0;
+        goto cleanup;
+    }
+
+    for(i=0;i<3;i++)
+    {
+        rhs_before[i] =
+            incompatible_rhs->value[i];
+    }
+
+    /*
+     * Ordinary lis_solve() policy path.
+     */
+    err =
+        configure_rhs_policy_solver(
+            null_vector,
+            &solver);
+
+    if(err)
+    {
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        lis_solver_get_rhs_compatibility_policy(
+            solver,
+            &policy);
+
+    if(err)
+    {
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        lis_solver_get_rhs_compatibility_tolerance(
+            solver,
+            &tolerance);
+
+    if(err)
+    {
+        pass = 0;
+        goto cleanup;
+    }
+
+    default_ok =
+        policy==
+            LIS_RHS_POLICY_ASSUME_COMPATIBLE
+        &&
+        fabs(
+            tolerance-
+            (LIS_REAL)1.0e-12)
+            <=
+            (LIS_REAL)1.0e-18;
+
+    err =
+        lis_solver_set_rhs_compatibility_tolerance(
+            solver,
+            (LIS_REAL)2.0e-12);
+
+    if(err)
+    {
+        pass = 0;
+        goto cleanup;
+    }
+
+    api =
+        lis_solver_set_rhs_compatibility_tolerance(
+            solver,
+            (LIS_REAL)INFINITY);
+
+    err =
+        lis_solver_get_rhs_compatibility_tolerance(
+            solver,
+            &tolerance);
+
+    invalid_tolerance_ok =
+        api==LIS_ERR_ILL_ARG
+        &&
+        err==LIS_SUCCESS
+        &&
+        fabs(
+            tolerance-
+            (LIS_REAL)2.0e-12)
+            <=
+            (LIS_REAL)1.0e-18;
+
+    lis_vector_set_all(
+        0.0,
+        x);
+
+    api =
+        lis_solve(
+            A,
+            compatible_rhs,
+            x,
+            solver);
+
+    assume_ok =
+        api==LIS_SUCCESS
+        &&
+        solver->retcode==LIS_SUCCESS;
+
+    err =
+        lis_solver_set_rhs_compatibility_policy(
+            solver,
+            LIS_RHS_POLICY_REJECT);
+
+    if(err)
+    {
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        lis_solver_set_rhs_compatibility_tolerance(
+            solver,
+            (LIS_REAL)1.0e-12);
+
+    if(err)
+    {
+        pass = 0;
+        goto cleanup;
+    }
+
+    lis_vector_set_all(
+        0.0,
+        x);
+
+    api =
+        lis_solve(
+            A,
+            incompatible_rhs,
+            x,
+            solver);
+
+    reject_ok =
+        api==LIS_ERR_ILL_ARG
+        &&
+        solver->retcode==
+            LIS_ERR_ILL_ARG;
+
+    err =
+        lis_solver_set_rhs_compatibility_policy(
+            solver,
+            LIS_RHS_POLICY_PROJECT);
+
+    if(err)
+    {
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        lis_solver_project_rhs_compatible(
+            solver,
+            incompatible_rhs,
+            projected_rhs);
+
+    if(err)
+    {
+        pass = 0;
+        goto cleanup;
+    }
+
+    lis_vector_set_all(
+        0.0,
+        x);
+
+    api =
+        lis_solve(
+            A,
+            incompatible_rhs,
+            x,
+            solver);
+
+    if(
+        api==LIS_SUCCESS
+        &&
+        solver->retcode==LIS_SUCCESS)
+    {
+        err =
+            lis_matvec(
+                A,
+                x,
+                residual);
+
+        if(!err)
+        {
+            err =
+                lis_vector_axpy(
+                    -1.0,
+                    projected_rhs,
+                    residual);
+        }
+
+        if(!err)
+        {
+            err =
+                lis_vector_nrm2(
+                    residual,
+                    &project_residual);
+        }
+
+        if(!err)
+        {
+            project_ok =
+                project_residual
+                <
+                (LIS_REAL)1.0e-10;
+        }
+    }
+
+    /*
+     * Persistent sequence path.
+     *
+     * REJECT must stop before an attempt is made.
+     * PROJECT must use the compatible effective RHS.
+     */
+    err =
+        configure_rhs_policy_solver(
+            null_vector,
+            &sequence_solver);
+
+    if(err)
+    {
+        pass = 0;
+        goto cleanup;
+    }
+
+    err =
+        lis_solver_set_rhs_compatibility_policy(
+            sequence_solver,
+            LIS_RHS_POLICY_REJECT);
+
+    if(err)
+    {
+        pass = 0;
+        goto cleanup;
+    }
+
+    lis_vector_set_all(
+        0.0,
+        x);
+
+    api =
+        lis_solve_sequence(
+            A,
+            incompatible_rhs,
+            x,
+            sequence_solver);
+
+    sequence_reject_ok =
+        api==LIS_ERR_ILL_ARG
+        &&
+        sequence_solver->retcode==
+            LIS_ERR_ILL_ARG
+        &&
+        sequence_solver->
+            sequence_diag_attempts==0;
+
+    err =
+        lis_solver_set_rhs_compatibility_policy(
+            sequence_solver,
+            LIS_RHS_POLICY_PROJECT);
+
+    if(err)
+    {
+        pass = 0;
+        goto cleanup;
+    }
+
+    lis_vector_set_all(
+        0.0,
+        x);
+
+    api =
+        lis_solve_sequence(
+            A,
+            incompatible_rhs,
+            x,
+            sequence_solver);
+
+    if(
+        api==LIS_SUCCESS
+        &&
+        sequence_solver->retcode==
+            LIS_SUCCESS
+        &&
+        sequence_solver->
+            sequence_diag_attempts>=1)
+    {
+        err =
+            lis_matvec(
+                A,
+                x,
+                residual);
+
+        if(!err)
+        {
+            err =
+                lis_vector_axpy(
+                    -1.0,
+                    projected_rhs,
+                    residual);
+        }
+
+        if(!err)
+        {
+            err =
+                lis_vector_nrm2(
+                    residual,
+                    &sequence_residual);
+        }
+
+        if(!err)
+        {
+            sequence_project_ok =
+                sequence_residual
+                <
+                (LIS_REAL)1.0e-10;
+        }
+    }
+
+    rhs_unchanged_ok = 1;
+
+    for(i=0;i<3;i++)
+    {
+        if(
+            incompatible_rhs->value[i]
+            !=
+            rhs_before[i])
+        {
+            rhs_unchanged_ok = 0;
+        }
+    }
+
+    printf(
+        "RHS_POLICY_SOLVE "
+        "default=%d "
+        "inf_tolerance=%d "
+        "assume=%d "
+        "reject=%d "
+        "project=%d "
+        "sequence_reject=%d "
+        "sequence_project=%d "
+        "rhs_unchanged=%d "
+        "project_residual=% .16e "
+        "sequence_residual=% .16e\n",
+        default_ok,
+        invalid_tolerance_ok,
+        assume_ok,
+        reject_ok,
+        project_ok,
+        sequence_reject_ok,
+        sequence_project_ok,
+        rhs_unchanged_ok,
+        (double)project_residual,
+        (double)sequence_residual);
+
+    if(
+        !default_ok
+        ||
+        !invalid_tolerance_ok
+        ||
+        !assume_ok
+        ||
+        !reject_ok
+        ||
+        !project_ok
+        ||
+        !sequence_reject_ok
+        ||
+        !sequence_project_ok
+        ||
+        !rhs_unchanged_ok)
+    {
+        pass = 0;
+    }
+
+cleanup:
+
+    if(sequence_solver)
+    {
+        lis_solver_destroy(
+            sequence_solver);
+    }
+
+    if(solver)
+    {
+        lis_solver_destroy(
+            solver);
+    }
+
+    if(x)
+    {
+        lis_vector_destroy(
+            x);
+    }
+
+    if(residual)
+    {
+        lis_vector_destroy(
+            residual);
+    }
+
+    if(projected_rhs)
+    {
+        lis_vector_destroy(
+            projected_rhs);
+    }
+
+    if(incompatible_rhs)
+    {
+        lis_vector_destroy(
+            incompatible_rhs);
+    }
+
+    return pass;
+}
+
+
 int
 main(
     int argc,
@@ -2954,6 +3529,7 @@ main(
     int rhs_project_ok;
     int rhs_project_multi_ok;
     int rhs_project_alias_ok;
+    int rhs_policy_ok;
 
     int pass = 1;
 
@@ -3093,6 +3669,12 @@ main(
         run_rhs_projection_alias_rejection(
             A);
 
+    rhs_policy_ok =
+        run_rhs_policy_solve(
+            A,
+            b,
+            q);
+
     printf(
         "NULLSPACE_SUMMARY "
         "gmres=%d "
@@ -3111,7 +3693,8 @@ main(
         "rhs_multi=%d "
         "rhs_project=%d "
         "rhs_project_multi=%d "
-        "rhs_project_alias=%d\n",
+        "rhs_project_alias=%d "
+        "rhs_policy=%d\n",
         gmres_ok,
         fgmres_ok,
         gcrodr_ok,
@@ -3128,7 +3711,8 @@ main(
         rhs_multi_ok,
         rhs_project_ok,
         rhs_project_multi_ok,
-        rhs_project_alias_ok);
+        rhs_project_alias_ok,
+        rhs_policy_ok);
 
     if(
         !gmres_ok
@@ -3163,7 +3747,9 @@ main(
         ||
         !rhs_project_multi_ok
         ||
-        !rhs_project_alias_ok)
+        !rhs_project_alias_ok
+        ||
+        !rhs_policy_ok)
     {
         pass = 0;
     }
