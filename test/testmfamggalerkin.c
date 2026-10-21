@@ -22,6 +22,16 @@
  * This is intentionally not part of the public LIS API.
  */
 extern LIS_INT
+lis_precon_mfamg_dense_coarse_solve_for_test(
+    LIS_INT n,
+    const LIS_SCALAR *matrix,
+    const LIS_SCALAR *rhs,
+    LIS_SCALAR *x,
+    LIS_INT *nullity);
+
+
+
+LIS_INT
 lis_precon_mfamg_build_serial_coarse_for_test(
     LIS_MATRIX A,
     LIS_INT nc,
@@ -1256,6 +1266,527 @@ check_invalid_multivector_metadata(
 }
 
 
+static LIS_REAL
+dense_max_relative_residual(
+    LIS_INT n,
+    const LIS_SCALAR *matrix,
+    const LIS_SCALAR *rhs,
+    const LIS_SCALAR *x)
+{
+    LIS_INT i;
+    LIS_INT j;
+
+    LIS_REAL maximum;
+    LIS_REAL scale;
+    LIS_REAL value;
+
+    LIS_SCALAR ax;
+
+
+    maximum =
+        0.0;
+
+    scale =
+        0.0;
+
+
+    for(i=0;i<n;i++)
+    {
+        ax =
+            0.0;
+
+        for(j=0;j<n;j++)
+        {
+            ax +=
+                matrix[i*n+j]
+                *
+                x[j];
+        }
+
+        value =
+            fabs(
+                rhs[i]
+                -
+                ax);
+
+        if(value>maximum)
+            maximum = value;
+
+        value =
+            fabs(
+                rhs[i]);
+
+        if(value>scale)
+            scale = value;
+    }
+
+
+    if(scale==0.0)
+        return maximum;
+
+
+    return
+        maximum
+        /
+        scale;
+}
+
+
+
+static int
+check_dense_coarse_pivot_robustness(void)
+{
+    LIS_INT err;
+    LIS_INT nullity;
+
+    LIS_REAL relres;
+
+    LIS_SCALAR x[3];
+
+    LIS_SCALAR full_A[4] =
+    {
+        4.0, 1.0,
+        1.0, 3.0
+    };
+
+    LIS_SCALAR full_b[2] =
+    {
+        1.0,
+        2.0
+    };
+
+    LIS_SCALAR singular_A[4] =
+    {
+        1.0, 1.0,
+        2.0, 2.0
+    };
+
+    LIS_SCALAR singular_b[2] =
+    {
+        3.0,
+        6.0
+    };
+
+    LIS_SCALAR incompatible_b[2] =
+    {
+        3.0,
+        7.0
+    };
+
+    LIS_SCALAR near_A[4] =
+    {
+        1.0, 1.0,
+        1.0, 1.0 + 1.0e-14
+    };
+
+    LIS_SCALAR near_b[2] =
+    {
+        2.0,
+        2.0
+    };
+
+    LIS_SCALAR resolved_A[4] =
+    {
+        1.0, 1.0,
+        1.0, 1.0 + 1.0e-8
+    };
+
+    LIS_SCALAR resolved_b[2] =
+    {
+        2.0,
+        2.0 + 1.0e-8
+    };
+
+    LIS_SCALAR pivot_A[9] =
+    {
+        0.0, 1.0, 1.0,
+        2.0, 1.0, 3.0,
+        4.0, 2.0, 6.0
+    };
+
+    LIS_SCALAR pivot_b[3] =
+    {
+        2.0,
+        4.0,
+        8.0
+    };
+
+    /*
+     * Rank-one system whose first variable is free while the
+     * first row still carries an independent later-column
+     * equation.  A rank-revealing singular solve must retain
+     * that equation instead of consuming the row as a null
+     * pivot.
+     */
+    LIS_SCALAR deferred_A[4] =
+    {
+        0.0, 1.0,
+        0.0, 0.0
+    };
+
+    LIS_SCALAR deferred_b[2] =
+    {
+        2.0,
+        0.0
+    };
+
+
+    LIS_SCALAR scaled_A[4];
+    LIS_SCALAR scaled_b[2];
+
+    LIS_REAL scales[2] =
+    {
+        1.0e-100,
+        1.0e100
+    };
+
+    LIS_INT s;
+    LIS_INT i;
+
+
+    memset(
+        x,
+        0,
+        sizeof(x));
+
+    nullity =
+        -1;
+
+    err =
+        lis_precon_mfamg_dense_coarse_solve_for_test(
+            2,
+            full_A,
+            full_b,
+            x,
+            &nullity);
+
+    relres =
+        dense_max_relative_residual(
+            2,
+            full_A,
+            full_b,
+            x);
+
+    printf(
+        "COARSE_PIVOT_FULL rc=%d nullity=%d relres=%.12e\n",
+        (int)err,
+        (int)nullity,
+        (double)relres);
+
+    if(
+        err!=LIS_SUCCESS
+        ||
+        nullity!=0
+        ||
+        relres>1.0e-12)
+    {
+        return 1;
+    }
+
+
+    memset(
+        x,
+        0,
+        sizeof(x));
+
+    nullity =
+        -1;
+
+    err =
+        lis_precon_mfamg_dense_coarse_solve_for_test(
+            2,
+            singular_A,
+            singular_b,
+            x,
+            &nullity);
+
+    relres =
+        dense_max_relative_residual(
+            2,
+            singular_A,
+            singular_b,
+            x);
+
+    printf(
+        "COARSE_PIVOT_EXACT rc=%d nullity=%d relres=%.12e\n",
+        (int)err,
+        (int)nullity,
+        (double)relres);
+
+    if(
+        err!=LIS_SUCCESS
+        ||
+        nullity!=1
+        ||
+        relres>1.0e-12)
+    {
+        return 1;
+    }
+
+
+    memset(
+        x,
+        0,
+        sizeof(x));
+
+    nullity =
+        -1;
+
+    err =
+        lis_precon_mfamg_dense_coarse_solve_for_test(
+            2,
+            singular_A,
+            incompatible_b,
+            x,
+            &nullity);
+
+    printf(
+        "COARSE_PIVOT_INCOMPATIBLE rc=%d expected=%d nullity=%d\n",
+        (int)err,
+        (int)LIS_BREAKDOWN,
+        (int)nullity);
+
+    if(
+        err!=LIS_BREAKDOWN
+        ||
+        nullity!=1)
+    {
+        return 1;
+    }
+
+
+    memset(
+        x,
+        0,
+        sizeof(x));
+
+    nullity =
+        -1;
+
+    err =
+        lis_precon_mfamg_dense_coarse_solve_for_test(
+            2,
+            near_A,
+            near_b,
+            x,
+            &nullity);
+
+    relres =
+        dense_max_relative_residual(
+            2,
+            near_A,
+            near_b,
+            x);
+
+    printf(
+        "COARSE_PIVOT_NEAR rc=%d nullity=%d relres=%.12e\n",
+        (int)err,
+        (int)nullity,
+        (double)relres);
+
+    if(
+        err!=LIS_SUCCESS
+        ||
+        nullity!=1
+        ||
+        relres>1.0e-12)
+    {
+        return 1;
+    }
+
+
+    memset(
+        x,
+        0,
+        sizeof(x));
+
+    nullity =
+        -1;
+
+    err =
+        lis_precon_mfamg_dense_coarse_solve_for_test(
+            2,
+            resolved_A,
+            resolved_b,
+            x,
+            &nullity);
+
+    relres =
+        dense_max_relative_residual(
+            2,
+            resolved_A,
+            resolved_b,
+            x);
+
+    printf(
+        "COARSE_PIVOT_RESOLVED rc=%d nullity=%d relres=%.12e\n",
+        (int)err,
+        (int)nullity,
+        (double)relres);
+
+    if(
+        err!=LIS_SUCCESS
+        ||
+        nullity!=0
+        ||
+        relres>1.0e-10)
+    {
+        return 1;
+    }
+
+
+    for(s=0;s<2;s++)
+    {
+        for(i=0;i<4;i++)
+        {
+            scaled_A[i] =
+                scales[s]
+                *
+                near_A[i];
+        }
+
+        for(i=0;i<2;i++)
+        {
+            scaled_b[i] =
+                scales[s]
+                *
+                near_b[i];
+        }
+
+
+        memset(
+            x,
+            0,
+            sizeof(x));
+
+        nullity =
+            -1;
+
+        err =
+            lis_precon_mfamg_dense_coarse_solve_for_test(
+                2,
+                scaled_A,
+                scaled_b,
+                x,
+                &nullity);
+
+        relres =
+            dense_max_relative_residual(
+                2,
+                scaled_A,
+                scaled_b,
+                x);
+
+        printf(
+            "COARSE_PIVOT_SCALE scale=%.1e rc=%d nullity=%d relres=%.12e\n",
+            (double)scales[s],
+            (int)err,
+            (int)nullity,
+            (double)relres);
+
+        if(
+            err!=LIS_SUCCESS
+            ||
+            nullity!=1
+            ||
+            relres>1.0e-12)
+        {
+            return 1;
+        }
+    }
+
+
+    memset(
+        x,
+        0,
+        sizeof(x));
+
+    nullity =
+        -1;
+
+    err =
+        lis_precon_mfamg_dense_coarse_solve_for_test(
+            3,
+            pivot_A,
+            pivot_b,
+            x,
+            &nullity);
+
+    relres =
+        dense_max_relative_residual(
+            3,
+            pivot_A,
+            pivot_b,
+            x);
+
+    printf(
+        "COARSE_PIVOT_PERMUTED rc=%d nullity=%d relres=%.12e\n",
+        (int)err,
+        (int)nullity,
+        (double)relres);
+
+    if(
+        err!=LIS_SUCCESS
+        ||
+        nullity!=1
+        ||
+        relres>1.0e-12)
+    {
+        return 1;
+    }
+
+
+    memset(
+        x,
+        0,
+        sizeof(x));
+
+    nullity =
+        -1;
+
+    err =
+        lis_precon_mfamg_dense_coarse_solve_for_test(
+            2,
+            deferred_A,
+            deferred_b,
+            x,
+            &nullity);
+
+    relres =
+        dense_max_relative_residual(
+            2,
+            deferred_A,
+            deferred_b,
+            x);
+
+    printf(
+        "COARSE_PIVOT_DEFERRED rc=%d nullity=%d relres=%.12e x=%.12e,%.12e\n",
+        (int)err,
+        (int)nullity,
+        (double)relres,
+        (double)x[0],
+        (double)x[1]);
+
+    if(
+        err!=LIS_SUCCESS
+        ||
+        nullity!=1
+        ||
+        relres>1.0e-12)
+    {
+        return 1;
+    }
+
+
+    printf(
+        "MFAMG COARSE PIVOT ROBUSTNESS TEST PASSED\n");
+
+
+    return 0;
+}
+
+
+
 static int
 check_exact_cancellation(void)
 {
@@ -1388,6 +1919,9 @@ run_serial(void)
     failed |=
         check_invalid_multivector_metadata(
             A);
+
+    failed |=
+        check_dense_coarse_pivot_robustness();
 
     failed |=
         check_exact_cancellation();

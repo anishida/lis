@@ -23,6 +23,7 @@
 #define LIS_MFAMG_STRENGTH_THETA ((LIS_REAL)0.05)
 #define LIS_MFAMG_DEFAULT_OMEGA ((LIS_REAL)(2.0/3.0))
 #define LIS_MFAMG_RANK_TOL ((LIS_REAL)1.0e-12)
+#define LIS_MFAMG_COARSE_PIVOT_TOL LIS_MFAMG_RANK_TOL
 
 #define LIS_MFAMG_SMOOTHER_WEIGHTED_JACOBI 0
 
@@ -1186,18 +1187,11 @@ lis_mfamg_dense_factor(
                 scale = mag;
         }
 
-        if(scale==0.0)
-        {
-            lis_free(
-                row_scale);
-
-            LIS_SETERR(
-                LIS_BREAKDOWN,
-                "MFAMG coarse matrix has a zero row\n");
-
-            return LIS_BREAKDOWN;
-        }
-
+        /*
+         * A zero row is an exact null direction.  Keep its
+         * zero scale and let the relative pivot test below
+         * classify the corresponding pivot.
+         */
         row_scale[i] =
             scale;
     }
@@ -1214,10 +1208,18 @@ lis_mfamg_dense_factor(
                 fabs(
                     lu[i*n+k]);
 
-            ratio =
-                mag
-                /
-                row_scale[i];
+            if(row_scale[i]>0.0)
+            {
+                ratio =
+                    mag
+                    /
+                    row_scale[i];
+            }
+            else
+            {
+                ratio =
+                    0.0;
+            }
 
             if(ratio>best_ratio)
             {
@@ -1226,23 +1228,53 @@ lis_mfamg_dense_factor(
             }
         }
 
-        if(
-            p<0
-            ||
-            fabs(
-                lu[p*n+k])
-            ==
-            0.0)
+        if(p<0)
         {
             lis_free(
                 row_scale);
 
             LIS_SETERR(
                 LIS_BREAKDOWN,
-                "MFAMG coarse matrix is singular\n");
+                "MFAMG coarse pivot search failed\n");
 
             return LIS_BREAKDOWN;
         }
+
+
+        /*
+         * Scaled partial pivoting already provides a
+         * dimensionless measure of pivot quality:
+         *
+         *     |pivot| / row_scale
+         *
+         * Treat a sufficiently small ratio as a numerical
+         * null direction.  Store an exact zero diagonal as
+         * the canonical marker consumed by the solve path.
+         *
+         * This factorization records the null pivot.  The
+         * solve path switches to a rank-revealing row-and-
+         * column fallback whenever such a marker is present.
+         */
+        if(
+            best_ratio
+            <=
+            LIS_MFAMG_COARSE_PIVOT_TOL)
+        {
+            pivots[k] =
+                k;
+
+            lu[k*n+k] =
+                0.0;
+
+            for(i=k+1;i<n;i++)
+            {
+                lu[i*n+k] =
+                    0.0;
+            }
+
+            continue;
+        }
+
 
         pivots[k] =
             p;
@@ -1336,10 +1368,791 @@ lis_mfamg_dense_factor(
 #undef __FUNC__
 #define __FUNC__ "lis_mfamg_dense_solve"
 static LIS_INT
-lis_mfamg_dense_solve(
-    struct LIS_MFAMG_STRUCT *state,
-    LIS_VECTOR rhs,
-    LIS_VECTOR x)
+lis_mfamg_dense_certify_null_solve(
+    LIS_INT n,
+    const LIS_SCALAR *matrix,
+    const LIS_SCALAR *rhs,
+    const LIS_SCALAR *x)
+{
+    LIS_INT i;
+    LIS_INT j;
+
+    LIS_REAL matrix_mag;
+    LIS_REAL x_mag;
+    LIS_REAL residual_mag;
+    LIS_REAL reference;
+    LIS_REAL limit;
+
+    LIS_SCALAR ax;
+    LIS_SCALAR residual;
+
+
+    if(
+        n<=0
+        ||
+        matrix==NULL
+        ||
+        rhs==NULL
+        ||
+        x==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    for(i=0;i<n;i++)
+    {
+        ax = 0.0;
+        reference =
+            fabs(
+                rhs[i]);
+
+
+        if(
+            reference!=reference
+            ||
+            reference>LIS_SCALAR_MAX)
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "MFAMG coarse RHS contains non-finite values\n");
+
+            return LIS_BREAKDOWN;
+        }
+
+
+        for(j=0;j<n;j++)
+        {
+            matrix_mag =
+                fabs(
+                    matrix[i*n+j]);
+
+            x_mag =
+                fabs(
+                    x[j]);
+
+            if(
+                matrix_mag!=matrix_mag
+                ||
+                matrix_mag>LIS_SCALAR_MAX
+                ||
+                x_mag!=x_mag
+                ||
+                x_mag>LIS_SCALAR_MAX)
+            {
+                LIS_SETERR(
+                    LIS_BREAKDOWN,
+                    "MFAMG coarse residual check encountered non-finite values\n");
+
+                return LIS_BREAKDOWN;
+            }
+
+
+            ax +=
+                matrix[i*n+j]
+                *
+                x[j];
+
+            reference +=
+                matrix_mag
+                *
+                x_mag;
+
+            if(
+                reference!=reference
+                ||
+                reference>LIS_SCALAR_MAX)
+            {
+                LIS_SETERR(
+                    LIS_BREAKDOWN,
+                    "MFAMG coarse residual scale became non-finite\n");
+
+                return LIS_BREAKDOWN;
+            }
+        }
+
+
+        residual =
+            rhs[i]
+            -
+            ax;
+
+        residual_mag =
+            fabs(
+                residual);
+
+        if(
+            residual_mag!=residual_mag
+            ||
+            residual_mag>LIS_SCALAR_MAX)
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "MFAMG coarse residual became non-finite\n");
+
+            return LIS_BREAKDOWN;
+        }
+
+
+        if(reference==0.0)
+        {
+            if(residual_mag!=0.0)
+            {
+                LIS_SETERR(
+                    LIS_BREAKDOWN,
+                    "MFAMG singular coarse system has an incompatible RHS\n");
+
+                return LIS_BREAKDOWN;
+            }
+
+            continue;
+        }
+
+
+        limit =
+            ((LIS_REAL)32.0)
+            *
+            LIS_MFAMG_COARSE_PIVOT_TOL
+            *
+            reference;
+
+
+        if(residual_mag>limit)
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "MFAMG singular coarse system has an incompatible RHS\n");
+
+            return LIS_BREAKDOWN;
+        }
+    }
+
+
+    return LIS_SUCCESS;
+}
+
+
+
+static LIS_INT
+lis_mfamg_dense_rank_revealing_solve(
+    LIS_INT n,
+    const LIS_SCALAR *matrix,
+    const LIS_SCALAR *rhs,
+    LIS_SCALAR *x,
+    LIS_INT *nullity)
+{
+    LIS_SCALAR *work;
+    LIS_SCALAR *work_rhs;
+    LIS_SCALAR *y;
+
+    LIS_REAL *row_scale;
+
+    LIS_INT *col_perm;
+
+    LIS_INT i;
+    LIS_INT j;
+    LIS_INT k;
+    LIS_INT p;
+    LIS_INT q;
+    LIS_INT rank;
+    LIS_INT err;
+    LIS_INT tmp_index;
+
+    LIS_REAL best_ratio;
+    LIS_REAL ratio;
+    LIS_REAL mag;
+    LIS_REAL scale;
+    LIS_REAL tmp_scale;
+
+    LIS_SCALAR pivot;
+    LIS_SCALAR factor;
+    LIS_SCALAR sum;
+    LIS_SCALAR tmp;
+
+
+    if(
+        n<=0
+        ||
+        matrix==NULL
+        ||
+        rhs==NULL
+        ||
+        x==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    if(nullity)
+    {
+        *nullity =
+            0;
+    }
+
+
+    work = NULL;
+    work_rhs = NULL;
+    y = NULL;
+    row_scale = NULL;
+    col_perm = NULL;
+
+
+    work =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)n
+            *
+            (size_t)n
+            *
+            sizeof(LIS_SCALAR),
+            "lis_mfamg_dense_rank_revealing_solve::work");
+
+    work_rhs =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)n
+            *
+            sizeof(LIS_SCALAR),
+            "lis_mfamg_dense_rank_revealing_solve::work_rhs");
+
+    y =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)n
+            *
+            sizeof(LIS_SCALAR),
+            "lis_mfamg_dense_rank_revealing_solve::y");
+
+    row_scale =
+        (LIS_REAL *)lis_malloc(
+            (size_t)n
+            *
+            sizeof(LIS_REAL),
+            "lis_mfamg_dense_rank_revealing_solve::row_scale");
+
+    col_perm =
+        (LIS_INT *)lis_malloc(
+            (size_t)n
+            *
+            sizeof(LIS_INT),
+            "lis_mfamg_dense_rank_revealing_solve::col_perm");
+
+
+    if(
+        work==NULL
+        ||
+        work_rhs==NULL
+        ||
+        y==NULL
+        ||
+        row_scale==NULL
+        ||
+        col_perm==NULL)
+    {
+        LIS_SETERR_MEM(
+            (size_t)n
+            *
+            (
+                (size_t)n
+                *
+                sizeof(LIS_SCALAR)
+                +
+                (size_t)2
+                *
+                sizeof(LIS_SCALAR)
+                +
+                sizeof(LIS_REAL)
+                +
+                sizeof(LIS_INT)
+            ));
+
+        err =
+            LIS_OUT_OF_MEMORY;
+
+        goto cleanup;
+    }
+
+
+    for(i=0;i<n;i++)
+    {
+        mag =
+            fabs(
+                rhs[i]);
+
+        if(
+            mag!=mag
+            ||
+            mag>LIS_SCALAR_MAX)
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "MFAMG coarse RHS contains non-finite values\n");
+
+            err =
+                LIS_BREAKDOWN;
+
+            goto cleanup;
+        }
+
+
+        work_rhs[i] =
+            rhs[i];
+
+        y[i] =
+            0.0;
+
+        col_perm[i] =
+            i;
+
+        scale =
+            0.0;
+
+
+        for(j=0;j<n;j++)
+        {
+            work[i*n+j] =
+                matrix[i*n+j];
+
+            mag =
+                fabs(
+                    work[i*n+j]);
+
+            if(
+                mag!=mag
+                ||
+                mag>LIS_SCALAR_MAX)
+            {
+                LIS_SETERR(
+                    LIS_BREAKDOWN,
+                    "MFAMG coarse matrix contains non-finite values\n");
+
+                err =
+                    LIS_BREAKDOWN;
+
+                goto cleanup;
+            }
+
+
+            if(mag>scale)
+            {
+                scale =
+                    mag;
+            }
+        }
+
+
+        row_scale[i] =
+            scale;
+    }
+
+
+    rank =
+        0;
+
+
+    for(k=0;k<n;k++)
+    {
+        p =
+            -1;
+
+        q =
+            -1;
+
+        best_ratio =
+            -1.0;
+
+
+        /*
+         * Complete pivot search over the remaining submatrix,
+         * scaled by the original magnitude of each row.
+         *
+         * Row and column pivoting are both required here:
+         * a free early variable must not consume a row that
+         * contains an independent equation in a later column.
+         */
+        for(i=k;i<n;i++)
+        {
+            if(row_scale[i]==0.0)
+            {
+                continue;
+            }
+
+
+            for(j=k;j<n;j++)
+            {
+                mag =
+                    fabs(
+                        work[i*n+j]);
+
+                ratio =
+                    mag
+                    /
+                    row_scale[i];
+
+                if(
+                    ratio!=ratio
+                    ||
+                    ratio>LIS_SCALAR_MAX)
+                {
+                    LIS_SETERR(
+                        LIS_BREAKDOWN,
+                        "MFAMG rank-revealing pivot search became non-finite\n");
+
+                    err =
+                        LIS_BREAKDOWN;
+
+                    goto cleanup;
+                }
+
+
+                if(ratio>best_ratio)
+                {
+                    best_ratio =
+                        ratio;
+
+                    p =
+                        i;
+
+                    q =
+                        j;
+                }
+            }
+        }
+
+
+        if(
+            p<0
+            ||
+            q<0
+            ||
+            best_ratio
+            <=
+            LIS_MFAMG_COARSE_PIVOT_TOL)
+        {
+            break;
+        }
+
+
+        if(p!=k)
+        {
+            for(j=0;j<n;j++)
+            {
+                tmp =
+                    work[k*n+j];
+
+                work[k*n+j] =
+                    work[p*n+j];
+
+                work[p*n+j] =
+                    tmp;
+            }
+
+
+            tmp =
+                work_rhs[k];
+
+            work_rhs[k] =
+                work_rhs[p];
+
+            work_rhs[p] =
+                tmp;
+
+
+            tmp_scale =
+                row_scale[k];
+
+            row_scale[k] =
+                row_scale[p];
+
+            row_scale[p] =
+                tmp_scale;
+        }
+
+
+        if(q!=k)
+        {
+            for(i=0;i<n;i++)
+            {
+                tmp =
+                    work[i*n+k];
+
+                work[i*n+k] =
+                    work[i*n+q];
+
+                work[i*n+q] =
+                    tmp;
+            }
+
+
+            tmp_index =
+                col_perm[k];
+
+            col_perm[k] =
+                col_perm[q];
+
+            col_perm[q] =
+                tmp_index;
+        }
+
+
+        pivot =
+            work[k*n+k];
+
+        mag =
+            fabs(
+                pivot);
+
+        if(
+            mag!=mag
+            ||
+            mag>LIS_SCALAR_MAX
+            ||
+            mag==0.0)
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "MFAMG rank-revealing pivot is invalid\n");
+
+            err =
+                LIS_BREAKDOWN;
+
+            goto cleanup;
+        }
+
+
+        for(i=k+1;i<n;i++)
+        {
+            factor =
+                work[i*n+k]
+                /
+                pivot;
+
+            mag =
+                fabs(
+                    factor);
+
+            if(
+                mag!=mag
+                ||
+                mag>LIS_SCALAR_MAX)
+            {
+                LIS_SETERR(
+                    LIS_BREAKDOWN,
+                    "MFAMG rank-revealing elimination became non-finite\n");
+
+                err =
+                    LIS_BREAKDOWN;
+
+                goto cleanup;
+            }
+
+
+            work[i*n+k] =
+                0.0;
+
+
+            for(j=k+1;j<n;j++)
+            {
+                work[i*n+j] -=
+                    factor
+                    *
+                    work[k*n+j];
+
+                mag =
+                    fabs(
+                        work[i*n+j]);
+
+                if(
+                    mag!=mag
+                    ||
+                    mag>LIS_SCALAR_MAX)
+                {
+                    LIS_SETERR(
+                        LIS_BREAKDOWN,
+                        "MFAMG rank-revealing matrix update became non-finite\n");
+
+                    err =
+                        LIS_BREAKDOWN;
+
+                    goto cleanup;
+                }
+            }
+
+
+            work_rhs[i] -=
+                factor
+                *
+                work_rhs[k];
+
+            mag =
+                fabs(
+                    work_rhs[i]);
+
+            if(
+                mag!=mag
+                ||
+                mag>LIS_SCALAR_MAX)
+            {
+                LIS_SETERR(
+                    LIS_BREAKDOWN,
+                    "MFAMG rank-revealing RHS update became non-finite\n");
+
+                err =
+                    LIS_BREAKDOWN;
+
+                goto cleanup;
+            }
+        }
+
+
+        rank++;
+    }
+
+
+    for(i=0;i<n;i++)
+    {
+        y[i] =
+            0.0;
+    }
+
+
+    for(i=rank-1;i>=0;i--)
+    {
+        sum =
+            work_rhs[i];
+
+
+        for(j=i+1;j<rank;j++)
+        {
+            sum -=
+                work[i*n+j]
+                *
+                y[j];
+        }
+
+
+        pivot =
+            work[i*n+i];
+
+        mag =
+            fabs(
+                pivot);
+
+        if(
+            mag!=mag
+            ||
+            mag>LIS_SCALAR_MAX
+            ||
+            mag==0.0)
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "MFAMG rank-revealing backsolve encountered an invalid pivot\n");
+
+            err =
+                LIS_BREAKDOWN;
+
+            goto cleanup;
+        }
+
+
+        y[i] =
+            sum
+            /
+            pivot;
+
+        mag =
+            fabs(
+                y[i]);
+
+        if(
+            mag!=mag
+            ||
+            mag>LIS_SCALAR_MAX)
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "MFAMG rank-revealing coarse solve became non-finite\n");
+
+            err =
+                LIS_BREAKDOWN;
+
+            goto cleanup;
+        }
+    }
+
+
+    for(i=0;i<n;i++)
+    {
+        x[i] =
+            0.0;
+    }
+
+
+    for(i=0;i<n;i++)
+    {
+        if(
+            col_perm[i]<0
+            ||
+            col_perm[i]>=n)
+        {
+            err =
+                LIS_ERR_ILL_ARG;
+
+            goto cleanup;
+        }
+
+
+        x[col_perm[i]] =
+            y[i];
+    }
+
+
+    if(nullity)
+    {
+        *nullity =
+            n
+            -
+            rank;
+    }
+
+
+    err =
+        lis_mfamg_dense_certify_null_solve(
+            n,
+            matrix,
+            rhs,
+            x);
+
+
+cleanup:
+
+    if(work)
+        lis_free(work);
+
+    if(work_rhs)
+        lis_free(work_rhs);
+
+    if(y)
+        lis_free(y);
+
+    if(row_scale)
+        lis_free(row_scale);
+
+    if(col_perm)
+        lis_free(col_perm);
+
+
+    return err;
+}
+
+
+
+static LIS_INT
+lis_mfamg_dense_solve_values(
+    LIS_INT n,
+    const LIS_SCALAR *matrix,
+    const LIS_SCALAR *lu,
+    const LIS_INT *pivots,
+    const LIS_SCALAR *rhs,
+    LIS_SCALAR *x)
 {
     LIS_INT i;
     LIS_INT j;
@@ -1351,129 +2164,155 @@ lis_mfamg_dense_solve(
     LIS_SCALAR tmp;
     LIS_SCALAR sum;
 
-    LIS_SCALAR *rhs_value;
-    LIS_SCALAR *x_value;
-
 
     if(
-        state==NULL
+        n<=0
+        ||
+        matrix==NULL
+        ||
+        lu==NULL
+        ||
+        pivots==NULL
         ||
         rhs==NULL
         ||
-        x==NULL
-        ||
-        state->coarse_n<=0
-        ||
-        state->lu==NULL
-        ||
-        state->pivots==NULL
-        ||
-        rhs->n!=state->coarse_n
-        ||
-        x->n!=state->coarse_n)
+        x==NULL)
     {
         return LIS_ERR_ILL_ARG;
     }
 
 
-    rhs_value =
-        rhs->value;
+    /*
+     * Preserve the normal LU fast path.  A canonical zero
+     * diagonal is the only trigger for the more expensive
+     * rank-revealing singular fallback.
+     */
+    for(i=0;i<n;i++)
+    {
+        mag =
+            fabs(
+                lu[i*n+i]);
 
-    x_value =
-        x->value;
+        if(
+            mag!=mag
+            ||
+            mag>LIS_SCALAR_MAX)
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "MFAMG coarse solve contains a non-finite pivot\n");
+
+            return LIS_BREAKDOWN;
+        }
+
+
+        if(mag==0.0)
+        {
+            return
+                lis_mfamg_dense_rank_revealing_solve(
+                    n,
+                    matrix,
+                    rhs,
+                    x,
+                    NULL);
+        }
+    }
 
 
     memcpy(
-        x_value,
-        rhs_value,
-        (size_t)state->coarse_n
-            *
+        x,
+        rhs,
+        (size_t)n
+        *
         sizeof(LIS_SCALAR));
 
 
-    for(k=0;k<state->coarse_n;k++)
+    for(k=0;k<n;k++)
     {
         p =
-            state->pivots[k];
+            pivots[k];
 
         if(
             p<0
             ||
-            p>=state->coarse_n)
+            p>=n)
         {
             return LIS_ERR_ILL_ARG;
         }
 
+
         if(p!=k)
         {
             tmp =
-                x_value[k];
+                x[k];
 
-            x_value[k] =
-                x_value[p];
+            x[k] =
+                x[p];
 
-            x_value[p] =
+            x[p] =
                 tmp;
         }
     }
 
 
-    for(i=1;i<state->coarse_n;i++)
+    for(i=1;i<n;i++)
     {
         sum =
-            x_value[i];
+            x[i];
 
         for(j=0;j<i;j++)
         {
             sum -=
-                state->lu[
-                    i*state->coarse_n+j]
+                lu[i*n+j]
                 *
-                x_value[j];
+                x[j];
         }
 
-        x_value[i] =
+        x[i] =
             sum;
     }
 
 
-    for(i=state->coarse_n-1;i>=0;i--)
+    for(i=n-1;i>=0;i--)
     {
         sum =
-            x_value[i];
+            x[i];
 
-        for(j=i+1;j<state->coarse_n;j++)
+        for(j=i+1;j<n;j++)
         {
             sum -=
-                state->lu[
-                    i*state->coarse_n+j]
+                lu[i*n+j]
                 *
-                x_value[j];
+                x[j];
         }
 
-        if(
+
+        mag =
             fabs(
-                state->lu[
-                    i*state->coarse_n+i])
-            ==
-            0.0)
+                sum);
+
+        if(
+            mag!=mag
+            ||
+            mag>LIS_SCALAR_MAX)
         {
             LIS_SETERR(
                 LIS_BREAKDOWN,
-                "MFAMG coarse solve encountered a zero pivot\n");
+                "MFAMG coarse solve residual became non-finite\n");
 
             return LIS_BREAKDOWN;
         }
 
-        x_value[i] =
+
+        x[i] =
             sum
             /
-            state->lu[
-                i*state->coarse_n+i];
+            lu[i*n+i];
+
 
         mag =
             fabs(
-                x_value[i]);
+                x[i]);
 
         if(
             mag!=mag
@@ -1490,6 +2329,47 @@ lis_mfamg_dense_solve(
 
 
     return LIS_SUCCESS;
+}
+
+
+
+static LIS_INT
+lis_mfamg_dense_solve(
+    struct LIS_MFAMG_STRUCT *state,
+    LIS_VECTOR rhs,
+    LIS_VECTOR x)
+{
+    if(
+        state==NULL
+        ||
+        rhs==NULL
+        ||
+        x==NULL
+        ||
+        state->coarse_n<=0
+        ||
+        state->coarse==NULL
+        ||
+        state->lu==NULL
+        ||
+        state->pivots==NULL
+        ||
+        rhs->n!=state->coarse_n
+        ||
+        x->n!=state->coarse_n)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    return
+        lis_mfamg_dense_solve_values(
+            state->coarse_n,
+            state->coarse,
+            state->lu,
+            state->pivots,
+            rhs->value,
+            x->value);
 }
 
 
@@ -5144,6 +6024,160 @@ lis_mfamg_get_max_row_nnz(
 #undef __FUNC__
 #define __FUNC__ "lis_precon_mfamg_build_serial_coarse_for_test"
 LIS_INT
+lis_precon_mfamg_dense_coarse_solve_for_test(
+    LIS_INT n,
+    const LIS_SCALAR *matrix,
+    const LIS_SCALAR *rhs,
+    LIS_SCALAR *x,
+    LIS_INT *nullity)
+{
+    LIS_SCALAR *lu;
+    LIS_INT *pivots;
+
+    LIS_INT i;
+    LIS_INT has_null;
+    LIS_INT err;
+
+
+    if(
+        n<=0
+        ||
+        matrix==NULL
+        ||
+        rhs==NULL
+        ||
+        x==NULL
+        ||
+        nullity==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    *nullity =
+        0;
+
+    lu =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)n
+            *
+            (size_t)n
+            *
+            sizeof(LIS_SCALAR),
+            "lis_precon_mfamg_dense_coarse_solve_for_test::lu");
+
+    pivots =
+        (LIS_INT *)lis_malloc(
+            (size_t)n
+            *
+            sizeof(LIS_INT),
+            "lis_precon_mfamg_dense_coarse_solve_for_test::pivots");
+
+
+    if(
+        lu==NULL
+        ||
+        pivots==NULL)
+    {
+        if(lu)
+            lis_free(lu);
+
+        if(pivots)
+            lis_free(pivots);
+
+        LIS_SETERR_MEM(
+            (size_t)n
+            *
+            (
+                (size_t)n
+                *
+                sizeof(LIS_SCALAR)
+                +
+                sizeof(LIS_INT)
+            ));
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+
+    memcpy(
+        lu,
+        matrix,
+        (size_t)n
+        *
+        (size_t)n
+        *
+        sizeof(LIS_SCALAR));
+
+
+    err =
+        lis_mfamg_dense_factor(
+            n,
+            lu,
+            pivots);
+
+    if(err)
+        goto cleanup;
+
+
+    has_null =
+        LIS_FALSE;
+
+
+    for(i=0;i<n;i++)
+    {
+        if(
+            fabs(
+                lu[i*n+i])
+            ==
+            0.0)
+        {
+            has_null =
+                LIS_TRUE;
+
+            break;
+        }
+    }
+
+
+    if(has_null)
+    {
+        err =
+            lis_mfamg_dense_rank_revealing_solve(
+                n,
+                matrix,
+                rhs,
+                x,
+                nullity);
+    }
+    else
+    {
+        err =
+            lis_mfamg_dense_solve_values(
+                n,
+                matrix,
+                lu,
+                pivots,
+                rhs,
+                x);
+    }
+
+
+cleanup:
+
+    lis_free(
+        lu);
+
+    lis_free(
+        pivots);
+
+
+    return err;
+}
+
+
+
+LIS_INT
 lis_precon_mfamg_build_serial_coarse_for_test(
     LIS_MATRIX A,
     LIS_INT nc,
@@ -7239,14 +8273,7 @@ lis_mfamg_dense_solve_distributed(
     LIS_VECTOR x)
 {
     LIS_INT i;
-    LIS_INT j;
-    LIS_INT k;
-    LIS_INT p;
-
-    LIS_SCALAR tmp;
-    LIS_SCALAR sum;
-
-    LIS_REAL mag;
+    LIS_INT err;
 
     LIS_SCALAR *rhs_value;
     LIS_SCALAR *x_value;
@@ -7335,125 +8362,17 @@ lis_mfamg_dense_solve_distributed(
 #endif
 
 
-    memcpy(
-        state->coarse_x,
-        state->coarse_rhs,
-        (size_t)state->coarse_n
-        *
-        sizeof(LIS_SCALAR));
+    err =
+        lis_mfamg_dense_solve_values(
+            state->coarse_n,
+            state->coarse,
+            state->lu,
+            state->pivots,
+            state->coarse_rhs,
+            state->coarse_x);
 
-
-    for(k=0;k<state->coarse_n;k++)
-    {
-        p =
-            state->pivots[k];
-
-
-        if(
-            p<0
-            ||
-            p>=state->coarse_n)
-        {
-            return LIS_ERR_ILL_ARG;
-        }
-
-
-        if(p!=k)
-        {
-            tmp =
-                state->coarse_x[k];
-
-            state->coarse_x[k] =
-                state->coarse_x[p];
-
-            state->coarse_x[p] =
-                tmp;
-        }
-    }
-
-
-    for(i=1;i<state->coarse_n;i++)
-    {
-        sum =
-            state->coarse_x[i];
-
-
-        for(j=0;j<i;j++)
-        {
-            sum -=
-                state->lu[
-                    i*state->coarse_n+j]
-                *
-                state->coarse_x[j];
-        }
-
-
-        state->coarse_x[i] =
-            sum;
-    }
-
-
-    for(
-        i=state->coarse_n-1;
-        i>=0;
-        i--)
-    {
-        sum =
-            state->coarse_x[i];
-
-
-        for(
-            j=i+1;
-            j<state->coarse_n;
-            j++)
-        {
-            sum -=
-                state->lu[
-                    i*state->coarse_n+j]
-                *
-                state->coarse_x[j];
-        }
-
-
-        if(
-            fabs(
-                state->lu[
-                    i*state->coarse_n+i])
-            ==
-            0.0)
-        {
-            LIS_SETERR(
-                LIS_BREAKDOWN,
-                "MFAMG coarse solve encountered a zero pivot\n");
-
-            return LIS_BREAKDOWN;
-        }
-
-
-        state->coarse_x[i] =
-            sum
-            /
-            state->lu[
-                i*state->coarse_n+i];
-
-
-        mag =
-            fabs(
-                state->coarse_x[i]);
-
-
-        if(
-            mag!=mag
-            ||
-            mag>LIS_SCALAR_MAX)
-        {
-            LIS_SETERR(
-                LIS_BREAKDOWN,
-                "MFAMG coarse solve became non-finite\n");
-
-            return LIS_BREAKDOWN;
-        }
-    }
+    if(err)
+        return err;
 
 
     for(i=0;i<A->n;i++)
