@@ -62,6 +62,147 @@
  ************************************************/
 
 #define EBABLE_BSR	0
+
+static void
+lis_precon_release_ilut_numeric_values(
+	LIS_MATRIX_ILU A)
+{
+#ifndef USE_QUAD_PRECISION
+
+	LIS_INT i;
+
+	if( A==NULL ||
+		A->value==NULL )
+	{
+		return;
+	}
+
+	for(i=0;i<A->n;i++)
+	{
+		if( A->nnz[i]>0 &&
+			A->value[i]!=NULL )
+		{
+			lis_free(
+				A->value[i]);
+
+			A->value[i] = NULL;
+		}
+	}
+
+#else
+
+	(void)A;
+
+#endif
+}
+
+
+static LIS_INT
+lis_precon_refresh_half_ilut(
+	LIS_SOLVER solver,
+	LIS_PRECON precon)
+{
+	LIS_HALF_ILU half;
+
+	LIS_REAL underflow;
+	LIS_REAL probe_error;
+	LIS_REAL probe_tolerance;
+
+	LIS_INT accepted;
+	LIS_INT err;
+	LIS_INT mode;
+
+	if( solver==NULL ||
+		precon==NULL )
+	{
+		return LIS_SUCCESS;
+	}
+
+	if( precon->half!=NULL )
+	{
+		lis_half_ilu_destroy(
+			precon->half);
+
+		precon->half = NULL;
+	}
+
+	mode =
+		solver->precon_half_mode;
+
+	if( mode==LIS_PRECON_HALF_OFF )
+	{
+		return LIS_SUCCESS;
+	}
+
+	if( precon->L==NULL ||
+		precon->U==NULL ||
+		precon->D==NULL ||
+		precon->L->bs!=1 ||
+		precon->U->bs!=1 )
+	{
+		return LIS_SUCCESS;
+	}
+
+	half = NULL;
+	underflow = 0.0;
+
+	err =
+		lis_half_ilu_compress(
+			precon->L,
+			precon->U,
+			&half,
+			&underflow);
+
+	/*
+	 * Half storage is optional.
+	 * Any compression failure keeps the normal factors.
+	 */
+	if( err || half==NULL )
+	{
+		lis_half_ilu_destroy(half);
+		return LIS_SUCCESS;
+	}
+
+	accepted = LIS_FALSE;
+	probe_error = 0.0;
+	probe_tolerance = 0.0;
+
+	err =
+		lis_half_ilu_assess(
+			precon->L,
+			precon->U,
+			precon->D,
+			half,
+			mode,
+			&accepted,
+			&probe_error,
+			&probe_tolerance);
+
+	if( err || !accepted )
+	{
+		lis_half_ilu_destroy(half);
+		return LIS_SUCCESS;
+	}
+
+	precon->half = half;
+
+	/*
+	 * Non-quad builds no longer need the normal numerical
+	 * L/U values after accepted binary16 storage.
+	 *
+	 * The symbolic pattern remains alive and is borrowed
+	 * by the half representation.
+	 */
+	lis_precon_release_ilut_numeric_values(
+		precon->L);
+
+	lis_precon_release_ilut_numeric_values(
+		precon->U);
+
+	return LIS_SUCCESS;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_precon_create_ilut"
 LIS_INT lis_precon_create_ilut(LIS_SOLVER solver, LIS_PRECON precon)
@@ -93,6 +234,12 @@ LIS_INT lis_precon_create_ilut(LIS_SOLVER solver, LIS_PRECON precon)
 		solver->A = A;
 		break;
 	}
+
+	if( err ) return err;
+
+	err = lis_precon_refresh_half_ilut(
+		solver,
+		precon);
 
 	if( err ) return err;
 
@@ -672,6 +819,20 @@ LIS_INT lis_psolve_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 	LIS_DEBUG_FUNC_IN;
 
 	precon = solver->precon;
+
+#ifdef USE_QUAD_PRECISION
+	if( precon->half!=NULL &&
+		B->precision==LIS_PRECISION_DEFAULT )
+#else
+	if( precon->half!=NULL )
+#endif
+	{
+		return lis_half_ilu_psolve(
+			solver,
+			B,
+			X);
+	}
+
 	L = precon->L;
 	U = precon->U;
 	D = precon->D;
@@ -780,6 +941,20 @@ LIS_INT lis_psolve_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 	LIS_DEBUG_FUNC_IN;
 
 	precon = solver->precon;
+
+#ifdef USE_QUAD_PRECISION
+	if( precon->half!=NULL &&
+		B->precision==LIS_PRECISION_DEFAULT )
+#else
+	if( precon->half!=NULL )
+#endif
+	{
+		return lis_half_ilu_psolve(
+			solver,
+			B,
+			X);
+	}
+
 	L = precon->L;
 	U = precon->U;
 	D = precon->D;
@@ -876,6 +1051,20 @@ LIS_INT lis_psolveh_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 	LIS_DEBUG_FUNC_IN;
 
 	precon = solver->precon;
+
+#ifdef USE_QUAD_PRECISION
+	if( precon->half!=NULL &&
+		B->precision==LIS_PRECISION_DEFAULT )
+#else
+	if( precon->half!=NULL )
+#endif
+	{
+		return lis_half_ilu_psolveh(
+			solver,
+			B,
+			X);
+	}
+
 	L = precon->L;
 	U = precon->U;
 	D = precon->D;
@@ -982,6 +1171,20 @@ LIS_INT lis_psolveh_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 	LIS_DEBUG_FUNC_IN;
 
 	precon = solver->precon;
+
+#ifdef USE_QUAD_PRECISION
+	if( precon->half!=NULL &&
+		B->precision==LIS_PRECISION_DEFAULT )
+#else
+	if( precon->half!=NULL )
+#endif
+	{
+		return lis_half_ilu_psolveh(
+			solver,
+			B,
+			X);
+	}
+
 	L = precon->L;
 	U = precon->U;
 	D = precon->D;

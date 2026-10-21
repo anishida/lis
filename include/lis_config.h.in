@@ -130,6 +130,9 @@
 /* Define to 1 to enable Fortran subroutines. */
 #undef USE_FORTRAN
 
+/* Define to 1 to enable half precision preconditioner storage support. */
+#undef USE_HALF_PRECISION
+
 /* Use MAIN__ macro with Fortran. */
 #undef USE_MAIN__
 
