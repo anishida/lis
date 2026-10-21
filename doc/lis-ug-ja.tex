@@ -325,7 +325,7 @@ ILUT\cite{ilut,ITSOL} \\
 Crout ILU\cite{ITSOL,iluc} \\
 I+S\cite{kohno01} \\
 SA-AMG\cite{fujii01}  \\
-MFAMG \\
+MFAMG\cite{epperly} \\
 Hybrid\cite{abe01} \\
 SAINV\cite{bridson01}  \\
 Additive Schwarz\cite{chan,dryja} \\
@@ -1910,6 +1910,8 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & ドロップ基
          &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
+         &                       & \verb=-mfamg_block_size [1]= & ローカル連続平滑化ブロックサイズ \\
+         &                       &                              & (1:重み付きヤコビ 2-:ブロックヤコビ) \\
 Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数   \\
 \hline         
 \end{tabular}
@@ -2092,6 +2094,8 @@ crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & ドロップ基
          &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
+         &                       & \verb=-mfamg_block_size [1]= & ローカル連続平滑化ブロックサイズ \\
+         &                       &                              & (1:重み付きヤコビ 2-:ブロックヤコビ) \\
 Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数   \\
 \hline         
 \end{tabular}
@@ -2460,11 +2464,14 @@ A =
 
 \subsubsection{MFAMG前処理}
 MFAMGは、マトリックスフリーアグリゲーションマルチグリッド前処理である。
-ユーザから提供される1つまたは複数のニア零空間ベクトルから、マルチレベルの
+ユーザから提供される1つまたは複数の近似零空間ベクトルから、マルチレベルの
 アグリゲーション階層を構築する。MFAMGは、逐次環境ではCSR行列
 および{\tt LIS\_MATRIX\_USER}行列をサポートする。
 MPI環境においては、現時点ではCSR行列が必須である。また、倍精度、
 \verb=-scale none=の指定が必要である。
+オプション \verb=-mfamg_block_size= は、局所平滑化のブロックサイズを制御する。デフォルト値の 1 は、従来の重み付きヤコビ平滑化を維持する。2 から 16 までの値は、連続するローカルな未知数を用いたブロックヤコビ法を有効にする。ブロックがプロセス境界をまたぐことはなく、最後のローカルブロックに含まれる未知数の数は、要求されたブロックサイズよりも少なくなることがある。
+利用可能な各対角ブロックに対しては、ピボッティングを伴う行列分解が行われる。ブロックが数値的に特異である場合、そのスカラ対角成分が利用可能であれば、MFAMGはそのブロックに対して重み付きヤコビ補正へと切り替える。
+既存のMFAMG数値更新パスが階層構造を再利用する場合、分解されたブロックの行列は更新された行列の値に基づいて再計算される。
 
 \newpage
 \subsection{実行ファイルの生成}
@@ -6043,6 +6050,8 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & ドロップ基
          &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
+         &                       & \verb=-mfamg_block_size [1]= & ローカル連続平滑化ブロックサイズ \\
+         &                       &                              & (1:重み付きヤコビ 2-:ブロックヤコビ) \\
 Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数   \\
 \hline         
 \end{tabular}
@@ -6565,6 +6574,8 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & ドロップ基
          &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
+         &                       & \verb=-mfamg_block_size [1]= & ローカル連続平滑化ブロックサイズ \\
+         &                       &                              & (1:重み付きヤコビ 2-:ブロックヤコビ) \\
 Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数   \\
 \hline         
 \end{tabular}
@@ -8385,6 +8396,11 @@ T. Kohno, H. Kotakemori, and H. Niki.
 A. Fujii, A. Nishida, and Y. Oyanagi.
 \newblock Evaluation of Parallel Aggregate Creation Orders : Smoothed Aggregation Algebraic Multigrid Method.
 \newblock High Performance Computational Science and Engineering, pp.\ 99--122, Springer, 2005. 
+
+\bibitem{epperly}
+E. N. Epperly, A. T. Barker, and R. D. Falgout.
+\newblock Smoothers for Matrix-Free Algebraic Multigrid Preconditioning of High-Order Finite Elements.
+\newblock LLNL-TR-814531, 2020.
 
 \bibitem{abe01}
 K. Abe, S. Zhang, H. Hasegawa, and R. Himeno.
