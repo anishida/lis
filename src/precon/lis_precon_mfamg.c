@@ -2798,7 +2798,8 @@ lis_mfamg_dense_rank_revealing_solve(
     const LIS_SCALAR *matrix,
     const LIS_SCALAR *rhs,
     LIS_SCALAR *x,
-    LIS_INT *nullity)
+    LIS_INT *nullity,
+    LIS_INT certify_singular)
 {
     LIS_SCALAR *work;
     LIS_SCALAR *work_rhs;
@@ -3373,12 +3374,27 @@ lis_mfamg_dense_rank_revealing_solve(
     }
 
 
-    err =
-        lis_mfamg_dense_certify_null_solve(
-            n,
-            matrix,
-            rhs,
-            x);
+    if(certify_singular)
+    {
+        err =
+            lis_mfamg_dense_certify_null_solve(
+                n,
+                matrix,
+                rhs,
+                x);
+    }
+    else
+    {
+        /*
+         * A singular coarse correction may receive an RHS with a
+         * component outside the range of the coarse operator.
+         * Keep the rank-revealing basic correction for the
+         * independent equations instead of rejecting the V-cycle.
+         * Free variables remain zero.
+         */
+        err =
+            LIS_SUCCESS;
+    }
 
 
 cleanup:
@@ -3411,7 +3427,8 @@ lis_mfamg_dense_solve_values(
     const LIS_SCALAR *lu,
     const LIS_INT *pivots,
     const LIS_SCALAR *rhs,
-    LIS_SCALAR *x)
+    LIS_SCALAR *x,
+    LIS_INT certify_singular)
 {
     LIS_INT i;
     LIS_INT j;
@@ -3473,7 +3490,8 @@ lis_mfamg_dense_solve_values(
                     matrix,
                     rhs,
                     x,
-                    NULL);
+                    NULL,
+                    certify_singular);
         }
     }
 
@@ -3628,7 +3646,8 @@ lis_mfamg_dense_solve(
             state->lu,
             state->pivots,
             rhs->value,
-            x->value);
+            x->value,
+            LIS_FALSE);
 }
 
 
@@ -7407,7 +7426,8 @@ lis_precon_mfamg_dense_coarse_solve_for_test(
                 matrix,
                 rhs,
                 x,
-                nullity);
+                nullity,
+                LIS_TRUE);
     }
     else
     {
@@ -7418,7 +7438,8 @@ lis_precon_mfamg_dense_coarse_solve_for_test(
                 lu,
                 pivots,
                 rhs,
-                x);
+                x,
+                LIS_TRUE);
     }
 
 
@@ -7433,6 +7454,114 @@ cleanup:
 
     return err;
 }
+
+
+/*
+ * Internal regression hook for the terminal V-cycle coarse
+ * correction.  Unlike the strict dense-solve hook above, this
+ * follows the relaxed singular policy used by the V-cycle.
+ */
+LIS_INT
+lis_precon_mfamg_dense_coarse_correction_for_test(
+    LIS_INT n,
+    const LIS_SCALAR *matrix,
+    const LIS_SCALAR *rhs,
+    LIS_SCALAR *x)
+{
+    LIS_SCALAR *lu;
+    LIS_INT *pivots;
+
+    LIS_INT err;
+
+
+    if(
+        n<=0
+        ||
+        matrix==NULL
+        ||
+        rhs==NULL
+        ||
+        x==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    lu =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)n
+            *
+            (size_t)n
+            *
+            sizeof(LIS_SCALAR),
+            "lis_precon_mfamg_dense_coarse_correction_for_test::lu");
+
+    pivots =
+        (LIS_INT *)lis_malloc(
+            (size_t)n
+            *
+            sizeof(LIS_INT),
+            "lis_precon_mfamg_dense_coarse_correction_for_test::pivots");
+
+
+    if(
+        lu==NULL
+        ||
+        pivots==NULL)
+    {
+        if(lu)
+            lis_free(lu);
+
+        if(pivots)
+            lis_free(pivots);
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+
+    memcpy(
+        lu,
+        matrix,
+        (size_t)n
+        *
+        (size_t)n
+        *
+        sizeof(LIS_SCALAR));
+
+
+    err =
+        lis_mfamg_dense_factor(
+            n,
+            lu,
+            pivots);
+
+    if(err)
+        goto cleanup;
+
+
+    err =
+        lis_mfamg_dense_solve_values(
+            n,
+            matrix,
+            lu,
+            pivots,
+            rhs,
+            x,
+            LIS_FALSE);
+
+
+cleanup:
+
+    lis_free(
+        lu);
+
+    lis_free(
+        pivots);
+
+
+    return err;
+}
+
 
 
 
@@ -9553,7 +9682,8 @@ lis_mfamg_dense_solve_distributed(
     LIS_MATRIX A,
     struct LIS_MFAMG_STRUCT *state,
     LIS_VECTOR rhs,
-    LIS_VECTOR x)
+    LIS_VECTOR x,
+    LIS_INT certify_singular)
 {
     LIS_INT i;
     LIS_INT err;
@@ -9652,7 +9782,8 @@ lis_mfamg_dense_solve_distributed(
             state->lu,
             state->pivots,
             state->coarse_rhs,
-            state->coarse_x);
+            state->coarse_x,
+            certify_singular);
 
     if(err)
         return err;
@@ -9745,7 +9876,8 @@ lis_mfamg_v_cycle(
                     level->A,
                     state,
                     b,
-                    x);
+                    x,
+                    LIS_FALSE);
         }
 
 
@@ -12049,7 +12181,8 @@ lis_precon_mfamg_get_distributed_hierarchy_info(
             terminal->A,
             state,
             terminal->rhs,
-            terminal->x);
+            terminal->x,
+            LIS_TRUE);
 
     if(err)
         goto cleanup;

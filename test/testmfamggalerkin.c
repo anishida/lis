@@ -29,6 +29,14 @@ lis_precon_mfamg_dense_coarse_solve_for_test(
     LIS_SCALAR *x,
     LIS_INT *nullity);
 
+extern LIS_INT
+lis_precon_mfamg_dense_coarse_correction_for_test(
+    LIS_INT n,
+    const LIS_SCALAR *matrix,
+    const LIS_SCALAR *rhs,
+    LIS_SCALAR *x);
+
+
 
 
 LIS_INT
@@ -1879,6 +1887,109 @@ cleanup:
 
 
 static int
+check_relaxed_singular_coarse_correction(void)
+{
+    LIS_SCALAR matrix[4] =
+    {
+        (LIS_SCALAR)1.0,
+        (LIS_SCALAR)1.0,
+        (LIS_SCALAR)1.0,
+        (LIS_SCALAR)1.0
+    };
+
+    LIS_SCALAR rhs[2] =
+    {
+        (LIS_SCALAR)1.0,
+        (LIS_SCALAR)0.0
+    };
+
+    LIS_SCALAR x[2] =
+    {
+        (LIS_SCALAR)0.0,
+        (LIS_SCALAR)0.0
+    };
+
+    LIS_SCALAR retained;
+
+    LIS_REAL retained_error;
+    LIS_REAL incompatible_residual;
+    LIS_REAL x0_mag;
+    LIS_REAL x1_mag;
+
+    LIS_INT err;
+
+
+    err =
+        lis_precon_mfamg_dense_coarse_correction_for_test(
+            2,
+            matrix,
+            rhs,
+            x);
+
+
+    retained =
+        x[0]
+        +
+        x[1];
+
+    retained_error =
+        scalar_abs(
+            retained
+            -
+            (LIS_SCALAR)1.0);
+
+    incompatible_residual =
+        scalar_abs(
+            retained
+            -
+            rhs[1]);
+
+    x0_mag =
+        scalar_abs(
+            x[0]);
+
+    x1_mag =
+        scalar_abs(
+            x[1]);
+
+
+    printf(
+        "COARSE_VCYCLE_RELAXED rc=%d retained_error=%.12e incompatible_residual=%.12e xmag=%.12e,%.12e\n",
+        (int)err,
+        (double)retained_error,
+        (double)incompatible_residual,
+        (double)x0_mag,
+        (double)x1_mag);
+
+
+    if(
+        err!=LIS_SUCCESS
+        ||
+        retained_error>1.0e-12
+        ||
+        incompatible_residual<5.0e-1
+        ||
+        x0_mag!=x0_mag
+        ||
+        x1_mag!=x1_mag
+        ||
+        x0_mag>LIS_SCALAR_MAX
+        ||
+        x1_mag>LIS_SCALAR_MAX)
+    {
+        return 1;
+    }
+
+
+    printf(
+        "MFAMG RELAXED SINGULAR COARSE CORRECTION TEST PASSED\n");
+
+
+    return 0;
+}
+
+
+static int
 run_serial(void)
 {
     LIS_MATRIX A;
@@ -1922,6 +2033,9 @@ run_serial(void)
 
     failed |=
         check_dense_coarse_pivot_robustness();
+
+    failed |=
+        check_relaxed_singular_coarse_correction();
 
     failed |=
         check_exact_cancellation();
