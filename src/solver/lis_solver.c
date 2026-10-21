@@ -280,6 +280,7 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	    LIS_RHS_POLICY_ASSUME_COMPATIBLE;
 	solver->rhs_compatibility_tol = (LIS_REAL)1.0e-12;
 	solver->near_nullspace_dim = 0;
+	solver->mfamg_block_size = 1;
 	solver->near_nullspace_coarse = NULL;
 	solver->recycle_u = NULL;
 	solver->recycle_zu = NULL;
@@ -4864,6 +4865,47 @@ LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 	double double_value;
 
 	LIS_DEBUG_FUNC_IN;
+
+	if( strcmp(arg1,"-mfamg_block_size")==0 )
+	{
+		LIS_INT value;
+		char extra;
+
+#ifdef _LONG__LONG
+		if(
+			arg2==NULL
+			||
+			sscanf(arg2,"%lld %c",&value,&extra)!=1
+			||
+			value<1
+			||
+			value>16)
+#else
+		if(
+			arg2==NULL
+			||
+			sscanf(arg2,"%d %c",&value,&extra)!=1
+			||
+			value<1
+			||
+			value>16)
+#endif
+		{
+			LIS_SETERR(
+				LIS_ERR_ILL_ARG,
+				"Parameter -mfamg_block_size must satisfy 1 <= value <= 16\n");
+
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_ERR_ILL_ARG;
+		}
+
+		solver->mfamg_block_size =
+			value;
+
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
+
 
 	/*
 	 * GCRO-DR solver-specific textual controls.

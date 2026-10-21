@@ -25,6 +25,8 @@
 #define LIS_MFAMG_RANK_TOL ((LIS_REAL)1.0e-12)
 
 #define LIS_MFAMG_SMOOTHER_WEIGHTED_JACOBI 0
+#define LIS_MFAMG_SMOOTHER_BLOCK_JACOBI 1
+#define LIS_MFAMG_BLOCK_MAX_SIZE 16
 
 
 struct LIS_MFAMG_LEVEL
@@ -61,6 +63,20 @@ struct LIS_MFAMG_LEVEL
 
     LIS_REAL omega;
 
+    /*
+     * Fixed-size local block-Jacobi state.
+     *
+     * The final local block may be shorter than block_size.
+     * Singular numerical blocks fall back to scalar Jacobi.
+     */
+    LIS_INT block_size;
+    LIS_INT block_count;
+    LIS_SCALAR *block_lu;
+    LIS_INT *block_pivots;
+    LIS_INT *block_valid;
+    LIS_SCALAR *block_work;
+    LIS_REAL *block_row_scale;
+
     LIS_VECTOR rhs;
     LIS_VECTOR x;
 };
@@ -70,6 +86,7 @@ struct LIS_MFAMG_STRUCT
 {
     LIS_INT nlevels;
     LIS_INT level_capacity;
+    LIS_INT smoother_block_size;
     struct LIS_MFAMG_LEVEL *levels;
 
     LIS_INT coarse_n;
@@ -116,6 +133,62 @@ lis_mfamg_smoother_destroy(
             NULL;
     }
 
+
+    if(level->block_lu)
+    {
+        lis_free(
+            level->block_lu);
+
+        level->block_lu =
+            NULL;
+    }
+
+
+    if(level->block_pivots)
+    {
+        lis_free(
+            level->block_pivots);
+
+        level->block_pivots =
+            NULL;
+    }
+
+
+    if(level->block_valid)
+    {
+        lis_free(
+            level->block_valid);
+
+        level->block_valid =
+            NULL;
+    }
+
+
+    if(level->block_work)
+    {
+        lis_free(
+            level->block_work);
+
+        level->block_work =
+            NULL;
+    }
+
+
+    if(level->block_row_scale)
+    {
+        lis_free(
+            level->block_row_scale);
+
+        level->block_row_scale =
+            NULL;
+    }
+
+
+    level->block_size =
+        0;
+
+    level->block_count =
+        0;
 
     level->omega =
         0.0;
@@ -775,6 +848,725 @@ lis_mfamg_smoother_validate_diagonal(
 }
 
 
+static LIS_INT
+lis_mfamg_block_factor(
+    LIS_INT n,
+    LIS_INT ld,
+    LIS_SCALAR *lu,
+    LIS_INT *pivots,
+    LIS_REAL *row_scale,
+    LIS_INT *usable)
+{
+    LIS_INT i;
+    LIS_INT j;
+    LIS_INT k;
+    LIS_INT p;
+
+    LIS_REAL best_ratio;
+    LIS_REAL ratio;
+    LIS_REAL mag;
+    LIS_REAL scale;
+    LIS_REAL tmp_scale;
+
+    LIS_SCALAR pivot;
+    LIS_SCALAR factor;
+    LIS_SCALAR tmp;
+
+
+    if(
+        n<=0
+        ||
+        ld<n
+        ||
+        lu==NULL
+        ||
+        pivots==NULL
+        ||
+        row_scale==NULL
+        ||
+        usable==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    *usable =
+        LIS_FALSE;
+
+
+    for(i=0;i<n;i++)
+    {
+        scale =
+            0.0;
+
+        for(j=0;j<n;j++)
+        {
+            mag =
+                fabs(
+                    lu[i*ld+j]);
+
+            if(
+                mag!=mag
+                ||
+                mag>LIS_SCALAR_MAX)
+            {
+                LIS_SETERR(
+                    LIS_BREAKDOWN,
+                    "MFAMG block smoother contains non-finite values\n");
+
+                return LIS_BREAKDOWN;
+            }
+
+
+            if(mag>scale)
+            {
+                scale =
+                    mag;
+            }
+        }
+
+
+        /*
+         * A completely zero row makes this numerical block
+         * unsuitable for dense block inversion.  The caller
+         * may still use the scalar fallback for the block.
+         */
+        if(scale==0.0)
+        {
+            return LIS_SUCCESS;
+        }
+
+
+        row_scale[i] =
+            scale;
+    }
+
+
+    for(k=0;k<n;k++)
+    {
+        p =
+            -1;
+
+        best_ratio =
+            -1.0;
+
+
+        for(i=k;i<n;i++)
+        {
+            ratio =
+                fabs(
+                    lu[i*ld+k])
+                /
+                row_scale[i];
+
+            if(
+                ratio!=ratio
+                ||
+                ratio>LIS_SCALAR_MAX)
+            {
+                LIS_SETERR(
+                    LIS_BREAKDOWN,
+                    "MFAMG block pivot search became non-finite\n");
+
+                return LIS_BREAKDOWN;
+            }
+
+
+            if(ratio>best_ratio)
+            {
+                best_ratio =
+                    ratio;
+
+                p =
+                    i;
+            }
+        }
+
+
+        if(
+            p<0
+            ||
+            best_ratio<=LIS_MFAMG_RANK_TOL)
+        {
+            return LIS_SUCCESS;
+        }
+
+
+        pivots[k] =
+            p;
+
+
+        if(p!=k)
+        {
+            for(j=0;j<n;j++)
+            {
+                tmp =
+                    lu[k*ld+j];
+
+                lu[k*ld+j] =
+                    lu[p*ld+j];
+
+                lu[p*ld+j] =
+                    tmp;
+            }
+
+
+            tmp_scale =
+                row_scale[k];
+
+            row_scale[k] =
+                row_scale[p];
+
+            row_scale[p] =
+                tmp_scale;
+        }
+
+
+        pivot =
+            lu[k*ld+k];
+
+        mag =
+            fabs(
+                pivot);
+
+        if(
+            mag!=mag
+            ||
+            mag>LIS_SCALAR_MAX
+            ||
+            mag==0.0)
+        {
+            return LIS_SUCCESS;
+        }
+
+
+        for(i=k+1;i<n;i++)
+        {
+            factor =
+                lu[i*ld+k]
+                /
+                pivot;
+
+            mag =
+                fabs(
+                    factor);
+
+            if(
+                mag!=mag
+                ||
+                mag>LIS_SCALAR_MAX)
+            {
+                LIS_SETERR(
+                    LIS_BREAKDOWN,
+                    "MFAMG block elimination became non-finite\n");
+
+                return LIS_BREAKDOWN;
+            }
+
+
+            lu[i*ld+k] =
+                factor;
+
+
+            for(j=k+1;j<n;j++)
+            {
+                lu[i*ld+j] -=
+                    factor
+                    *
+                    lu[k*ld+j];
+
+                mag =
+                    fabs(
+                        lu[i*ld+j]);
+
+                if(
+                    mag!=mag
+                    ||
+                    mag>LIS_SCALAR_MAX)
+                {
+                    LIS_SETERR(
+                        LIS_BREAKDOWN,
+                        "MFAMG block factorization became non-finite\n");
+
+                    return LIS_BREAKDOWN;
+                }
+            }
+        }
+    }
+
+
+    *usable =
+        LIS_TRUE;
+
+
+    return LIS_SUCCESS;
+}
+
+
+
+static LIS_INT
+lis_mfamg_block_solve(
+    LIS_INT n,
+    LIS_INT ld,
+    const LIS_SCALAR *lu,
+    const LIS_INT *pivots,
+    LIS_SCALAR *x)
+{
+    LIS_INT i;
+    LIS_INT j;
+    LIS_INT k;
+    LIS_INT p;
+
+    LIS_REAL mag;
+
+    LIS_SCALAR sum;
+    LIS_SCALAR tmp;
+
+
+    if(
+        n<=0
+        ||
+        ld<n
+        ||
+        lu==NULL
+        ||
+        pivots==NULL
+        ||
+        x==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    for(k=0;k<n;k++)
+    {
+        p =
+            pivots[k];
+
+        if(
+            p<0
+            ||
+            p>=n)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+
+
+        if(p!=k)
+        {
+            tmp =
+                x[k];
+
+            x[k] =
+                x[p];
+
+            x[p] =
+                tmp;
+        }
+    }
+
+
+    for(i=1;i<n;i++)
+    {
+        sum =
+            x[i];
+
+        for(j=0;j<i;j++)
+        {
+            sum -=
+                lu[i*ld+j]
+                *
+                x[j];
+        }
+
+        x[i] =
+            sum;
+    }
+
+
+    for(i=n-1;i>=0;i--)
+    {
+        sum =
+            x[i];
+
+        for(j=i+1;j<n;j++)
+        {
+            sum -=
+                lu[i*ld+j]
+                *
+                x[j];
+        }
+
+
+        mag =
+            fabs(
+                lu[i*ld+i]);
+
+        if(
+            mag!=mag
+            ||
+            mag>LIS_SCALAR_MAX
+            ||
+            mag==0.0)
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "MFAMG block solve encountered an invalid pivot\n");
+
+            return LIS_BREAKDOWN;
+        }
+
+
+        x[i] =
+            sum
+            /
+            lu[i*ld+i];
+
+
+        mag =
+            fabs(
+                x[i]);
+
+        if(
+            mag!=mag
+            ||
+            mag>LIS_SCALAR_MAX)
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "MFAMG block solve became non-finite\n");
+
+            return LIS_BREAKDOWN;
+        }
+    }
+
+
+    return LIS_SUCCESS;
+}
+
+
+
+static LIS_INT
+lis_mfamg_block_refresh(
+    struct LIS_MFAMG_LEVEL *level)
+{
+    LIS_INT i;
+    LIS_INT k;
+    LIS_INT row;
+    LIS_INT block;
+    LIS_INT start;
+    LIS_INT width;
+    LIS_INT nnz;
+    LIS_INT max_row_nnz;
+    LIS_INT usable;
+    LIS_INT err;
+
+    LIS_INT *cols;
+
+    LIS_SCALAR *vals;
+    LIS_SCALAR *lu;
+
+    LIS_REAL mag;
+
+    LIS_INT global_start;
+
+
+    if(
+        level==NULL
+        ||
+        level->A==NULL
+        ||
+        level->diagonal==NULL
+        ||
+        level->n<=0
+        ||
+        level->block_size<=1
+        ||
+        level->block_size>LIS_MFAMG_BLOCK_MAX_SIZE
+        ||
+        level->block_count<=0
+        ||
+        level->block_lu==NULL
+        ||
+        level->block_pivots==NULL
+        ||
+        level->block_valid==NULL
+        ||
+        level->block_row_scale==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    err =
+        lis_matrix_get_diagonal(
+            level->A,
+            level->diagonal);
+
+    if(err)
+        return err;
+
+
+    /*
+     * Use the historical MFAMG damping as a conservative
+     * block-Jacobi damping factor.  Scalar adaptive damping
+     * remains unchanged for the default smoother.
+     */
+    level->omega =
+        LIS_MFAMG_DEFAULT_OMEGA;
+
+
+    max_row_nnz =
+        0;
+
+
+    for(i=0;i<level->n;i++)
+    {
+        nnz =
+            0;
+
+        err =
+            lis_mfamg_row_query(
+                level->A,
+                i,
+                &nnz);
+
+        if(err)
+            return err;
+
+
+        if(nnz>max_row_nnz)
+        {
+            max_row_nnz =
+                nnz;
+        }
+    }
+
+
+    if(max_row_nnz<=0)
+    {
+        LIS_SETERR(
+            LIS_BREAKDOWN,
+            "MFAMG block smoother matrix has no row entries\n");
+
+        return LIS_BREAKDOWN;
+    }
+
+
+    cols =
+        (LIS_INT *)lis_malloc(
+            (size_t)max_row_nnz
+            *
+            sizeof(LIS_INT),
+            "lis_mfamg_block_refresh::cols");
+
+    vals =
+        (LIS_SCALAR *)lis_malloc(
+            (size_t)max_row_nnz
+            *
+            sizeof(LIS_SCALAR),
+            "lis_mfamg_block_refresh::vals");
+
+
+    if(
+        cols==NULL
+        ||
+        vals==NULL)
+    {
+        if(cols)
+            lis_free(cols);
+
+        if(vals)
+            lis_free(vals);
+
+        LIS_SETERR_MEM(
+            (size_t)max_row_nnz
+            *
+            (
+                sizeof(LIS_INT)
+                +
+                sizeof(LIS_SCALAR)
+            ));
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+
+    for(
+        block=0;
+        block<level->block_count;
+        block++)
+    {
+        start =
+            block
+            *
+            level->block_size;
+
+        width =
+            level->n
+            -
+            start;
+
+        if(width>level->block_size)
+        {
+            width =
+                level->block_size;
+        }
+
+
+        lu =
+            level->block_lu
+            +
+            (size_t)block
+            *
+            (size_t)level->block_size
+            *
+            (size_t)level->block_size;
+
+
+        memset(
+            lu,
+            0,
+            (size_t)level->block_size
+            *
+            (size_t)level->block_size
+            *
+            sizeof(LIS_SCALAR));
+
+
+        global_start =
+            level->A->is
+            +
+            start;
+
+
+        for(i=0;i<width;i++)
+        {
+            row =
+                start
+                +
+                i;
+
+            nnz =
+                max_row_nnz;
+
+            err =
+                lis_mfamg_row_fill(
+                    level->A,
+                    row,
+                    max_row_nnz,
+                    &nnz,
+                    cols,
+                    vals);
+
+            if(err)
+            {
+                lis_free(vals);
+                lis_free(cols);
+
+                return err;
+            }
+
+
+            for(k=0;k<nnz;k++)
+            {
+                if(
+                    cols[k]>=global_start
+                    &&
+                    cols[k]<global_start+width)
+                {
+                    lu[
+                        i*level->block_size
+                        +
+                        (
+                            cols[k]
+                            -
+                            global_start
+                        )]
+                        +=
+                        vals[k];
+                }
+            }
+        }
+
+
+        usable =
+            LIS_FALSE;
+
+        err =
+            lis_mfamg_block_factor(
+                width,
+                level->block_size,
+                lu,
+                level->block_pivots
+                    +
+                    block
+                    *
+                    level->block_size,
+                level->block_row_scale,
+                &usable);
+
+        if(err)
+        {
+            lis_free(vals);
+            lis_free(cols);
+
+            return err;
+        }
+
+
+        level->block_valid[block] =
+            usable;
+
+
+        /*
+         * A singular or numerically deficient diagonal block
+         * is not fatal if all scalar diagonal entries in that
+         * block remain valid.  Such a block uses the existing
+         * weighted-Jacobi correction.
+         */
+        if(!usable)
+        {
+            for(i=0;i<width;i++)
+            {
+                mag =
+                    fabs(
+                        level->diagonal->value[
+                            start+i]);
+
+                if(
+                    mag!=mag
+                    ||
+                    mag>LIS_SCALAR_MAX
+                    ||
+                    mag==0.0)
+                {
+                    lis_free(vals);
+                    lis_free(cols);
+
+                    LIS_SETERR(
+                        LIS_BREAKDOWN,
+                        "MFAMG block fallback requires finite nonzero diagonal entries\n");
+
+                    return LIS_BREAKDOWN;
+                }
+            }
+        }
+    }
+
+
+    lis_free(
+        vals);
+
+    lis_free(
+        cols);
+
+
+    return LIS_SUCCESS;
+}
+
+
+
 
 static LIS_INT
 lis_mfamg_smoother_refresh(
@@ -788,6 +1580,9 @@ lis_mfamg_smoother_setup(
 {
     LIS_INT err;
 
+    size_t block_entries;
+    size_t pivot_entries;
+
 
     if(
         level==NULL
@@ -800,7 +1595,17 @@ lis_mfamg_smoother_setup(
         ||
         level->diagonal!=NULL
         ||
-        level->ax!=NULL)
+        level->ax!=NULL
+        ||
+        level->block_lu!=NULL
+        ||
+        level->block_pivots!=NULL
+        ||
+        level->block_valid!=NULL
+        ||
+        level->block_work!=NULL
+        ||
+        level->block_row_scale!=NULL)
     {
         return LIS_ERR_ILL_ARG;
     }
@@ -826,6 +1631,167 @@ lis_mfamg_smoother_setup(
 
         if(err)
             goto cleanup;
+
+
+        err =
+            lis_mfamg_smoother_refresh(
+                level);
+
+        if(err)
+            goto cleanup;
+
+
+        return LIS_SUCCESS;
+
+
+    case LIS_MFAMG_SMOOTHER_BLOCK_JACOBI:
+
+        if(
+            level->block_size<=1
+            ||
+            level->block_size>LIS_MFAMG_BLOCK_MAX_SIZE)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+
+
+        level->block_count =
+            1
+            +
+            (
+                level->n
+                -
+                1
+            )
+            /
+            level->block_size;
+
+
+        block_entries =
+            (size_t)level->block_count
+            *
+            (size_t)level->block_size
+            *
+            (size_t)level->block_size;
+
+        pivot_entries =
+            (size_t)level->block_count
+            *
+            (size_t)level->block_size;
+
+
+        if(
+            block_entries
+            >
+            ((size_t)-1)
+            /
+            sizeof(LIS_SCALAR)
+            ||
+            pivot_entries
+            >
+            ((size_t)-1)
+            /
+            sizeof(LIS_INT))
+        {
+            LIS_SETERR(
+                LIS_OUT_OF_MEMORY,
+                "MFAMG block smoother allocation size overflow\n");
+
+            return LIS_OUT_OF_MEMORY;
+        }
+
+
+        err =
+            lis_vector_duplicate(
+                level->A,
+                &level->diagonal);
+
+        if(err)
+            goto cleanup;
+
+
+        err =
+            lis_vector_duplicate(
+                level->A,
+                &level->ax);
+
+        if(err)
+            goto cleanup;
+
+
+        level->block_lu =
+            (LIS_SCALAR *)lis_malloc(
+                block_entries
+                *
+                sizeof(LIS_SCALAR),
+                "lis_mfamg_smoother_setup::block_lu");
+
+        level->block_pivots =
+            (LIS_INT *)lis_malloc(
+                pivot_entries
+                *
+                sizeof(LIS_INT),
+                "lis_mfamg_smoother_setup::block_pivots");
+
+        level->block_valid =
+            (LIS_INT *)lis_malloc(
+                (size_t)level->block_count
+                *
+                sizeof(LIS_INT),
+                "lis_mfamg_smoother_setup::block_valid");
+
+        level->block_work =
+            (LIS_SCALAR *)lis_malloc(
+                (size_t)level->block_size
+                *
+                sizeof(LIS_SCALAR),
+                "lis_mfamg_smoother_setup::block_work");
+
+        level->block_row_scale =
+            (LIS_REAL *)lis_malloc(
+                (size_t)level->block_size
+                *
+                sizeof(LIS_REAL),
+                "lis_mfamg_smoother_setup::block_row_scale");
+
+
+        if(
+            level->block_lu==NULL
+            ||
+            level->block_pivots==NULL
+            ||
+            level->block_valid==NULL
+            ||
+            level->block_work==NULL
+            ||
+            level->block_row_scale==NULL)
+        {
+            LIS_SETERR_MEM(
+                block_entries
+                *
+                sizeof(LIS_SCALAR)
+                +
+                pivot_entries
+                *
+                sizeof(LIS_INT)
+                +
+                (size_t)level->block_count
+                *
+                sizeof(LIS_INT)
+                +
+                (size_t)level->block_size
+                *
+                (
+                    sizeof(LIS_SCALAR)
+                    +
+                    sizeof(LIS_REAL)
+                ));
+
+            err =
+                LIS_OUT_OF_MEMORY;
+
+            goto cleanup;
+        }
 
 
         err =
@@ -916,6 +1882,13 @@ lis_mfamg_smoother_refresh(
                 level);
 
 
+    case LIS_MFAMG_SMOOTHER_BLOCK_JACOBI:
+
+        return
+            lis_mfamg_block_refresh(
+                level);
+
+
     default:
 
         LIS_SETERR(
@@ -936,14 +1909,20 @@ lis_mfamg_smoother_apply(
     LIS_INT initial_zero)
 {
     LIS_INT i;
+    LIS_INT block;
+    LIS_INT start;
+    LIS_INT width;
     LIS_INT err;
 
     LIS_SCALAR residual;
+    LIS_SCALAR correction;
 
     LIS_SCALAR *bv;
     LIS_SCALAR *xv;
     LIS_SCALAR *av;
     LIS_SCALAR *diag;
+    LIS_SCALAR *lu;
+    LIS_SCALAR *work;
 
 
     if(
@@ -979,25 +1958,22 @@ lis_mfamg_smoother_apply(
     }
 
 
+    bv =
+        b->value;
+
+    xv =
+        x->value;
+
+    diag =
+        level->diagonal->value;
+
+
     switch(level->smoother_type)
     {
     case LIS_MFAMG_SMOOTHER_WEIGHTED_JACOBI:
 
-        bv =
-            b->value;
-
-        xv =
-            x->value;
-
-        diag =
-            level->diagonal->value;
-
-
         if(initial_zero)
         {
-            /*
-             * Weighted-Jacobi from x=0.
-             */
             for(i=0;i<level->n;i++)
             {
                 xv[i] =
@@ -1046,6 +2022,172 @@ lis_mfamg_smoother_apply(
         return LIS_SUCCESS;
 
 
+    case LIS_MFAMG_SMOOTHER_BLOCK_JACOBI:
+
+        if(
+            level->block_size<=1
+            ||
+            level->block_size>LIS_MFAMG_BLOCK_MAX_SIZE
+            ||
+            level->block_count<=0
+            ||
+            level->block_lu==NULL
+            ||
+            level->block_pivots==NULL
+            ||
+            level->block_valid==NULL
+            ||
+            level->block_work==NULL)
+        {
+            return LIS_ERR_ILL_ARG;
+        }
+
+
+        av =
+            NULL;
+
+
+        if(!initial_zero)
+        {
+            err =
+                lis_matvec(
+                    level->A,
+                    x,
+                    level->ax);
+
+            if(err)
+                return err;
+
+
+            av =
+                level->ax->value;
+        }
+
+
+        work =
+            level->block_work;
+
+
+        for(
+            block=0;
+            block<level->block_count;
+            block++)
+        {
+            start =
+                block
+                *
+                level->block_size;
+
+            width =
+                level->n
+                -
+                start;
+
+            if(width>level->block_size)
+            {
+                width =
+                    level->block_size;
+            }
+
+
+            /*
+             * Gather the complete block residual before any
+             * x entry in this block is modified.  This also
+             * preserves the existing alias-safe behavior.
+             */
+            for(i=0;i<width;i++)
+            {
+                if(initial_zero)
+                {
+                    work[i] =
+                        bv[start+i];
+                }
+                else
+                {
+                    work[i] =
+                        bv[start+i]
+                        -
+                        av[start+i];
+                }
+            }
+
+
+            if(level->block_valid[block])
+            {
+                lu =
+                    level->block_lu
+                    +
+                    (size_t)block
+                    *
+                    (size_t)level->block_size
+                    *
+                    (size_t)level->block_size;
+
+
+                err =
+                    lis_mfamg_block_solve(
+                        width,
+                        level->block_size,
+                        lu,
+                        level->block_pivots
+                            +
+                            block
+                            *
+                            level->block_size,
+                        work);
+
+                if(err)
+                    return err;
+
+
+                for(i=0;i<width;i++)
+                {
+                    correction =
+                        level->omega
+                        *
+                        work[i];
+
+                    if(initial_zero)
+                    {
+                        xv[start+i] =
+                            correction;
+                    }
+                    else
+                    {
+                        xv[start+i] +=
+                            correction;
+                    }
+                }
+            }
+            else
+            {
+                for(i=0;i<width;i++)
+                {
+                    correction =
+                        level->omega
+                        *
+                        work[i]
+                        /
+                        diag[start+i];
+
+                    if(initial_zero)
+                    {
+                        xv[start+i] =
+                            correction;
+                    }
+                    else
+                    {
+                        xv[start+i] +=
+                            correction;
+                    }
+                }
+            }
+        }
+
+
+        return LIS_SUCCESS;
+
+
     default:
 
         LIS_SETERR(
@@ -1054,6 +2196,123 @@ lis_mfamg_smoother_apply(
 
         return LIS_ERR_NOT_IMPLEMENTED;
     }
+}
+
+
+
+LIS_INT
+lis_precon_mfamg_apply_block_smoother_for_test(
+    LIS_MATRIX A,
+    LIS_INT block_size,
+    LIS_VECTOR b,
+    LIS_VECTOR x,
+    LIS_INT initial_zero,
+    LIS_INT *active_blocks,
+    LIS_INT *fallback_blocks,
+    LIS_REAL *omega)
+{
+    struct LIS_MFAMG_LEVEL level;
+
+    LIS_INT block;
+    LIS_INT err;
+
+
+    if(
+        A==NULL
+        ||
+        b==NULL
+        ||
+        x==NULL
+        ||
+        active_blocks==NULL
+        ||
+        fallback_blocks==NULL
+        ||
+        omega==NULL
+        ||
+        block_size<=1
+        ||
+        block_size>LIS_MFAMG_BLOCK_MAX_SIZE
+        ||
+        A->n<=0
+        ||
+        b->n!=A->n
+        ||
+        x->n!=A->n)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    memset(
+        &level,
+        0,
+        sizeof(level));
+
+
+    level.A =
+        A;
+
+    level.n =
+        A->n;
+
+    level.smoother_type =
+        LIS_MFAMG_SMOOTHER_BLOCK_JACOBI;
+
+    level.block_size =
+        block_size;
+
+
+    err =
+        lis_mfamg_smoother_setup(
+            &level);
+
+    if(err)
+        goto cleanup;
+
+
+    *active_blocks =
+        0;
+
+    *fallback_blocks =
+        0;
+
+
+    for(
+        block=0;
+        block<level.block_count;
+        block++)
+    {
+        if(level.block_valid[block])
+        {
+            (*active_blocks)++;
+        }
+        else
+        {
+            (*fallback_blocks)++;
+        }
+    }
+
+
+    *omega =
+        level.omega;
+
+
+    err =
+        lis_mfamg_smoother_apply(
+            &level,
+            b,
+            x,
+            initial_zero);
+
+
+cleanup:
+
+    lis_mfamg_smoother_destroy(
+        &level);
+
+
+    return err;
 }
 
 
@@ -5355,19 +6614,41 @@ cleanup:
 #define __FUNC__ "lis_mfamg_prepare_level_work"
 static LIS_INT
 lis_mfamg_prepare_level_work(
-    struct LIS_MFAMG_LEVEL *level)
+    struct LIS_MFAMG_LEVEL *level,
+    LIS_INT block_size)
 {
-    if(level==NULL)
+    if(
+        level==NULL
+        ||
+        block_size<0
+        ||
+        block_size>LIS_MFAMG_BLOCK_MAX_SIZE)
+    {
         return LIS_ERR_ILL_ARG;
+    }
 
 
     /*
-     * Preserve the historical MFAMG default.  The dispatcher
-     * allows additional smoother implementations to be added
-     * without changing the multigrid cycle.
+     * Zero is accepted internally for helper states that are
+     * initialized with memset.  The public option itself begins
+     * at one.
      */
-    level->smoother_type =
-        LIS_MFAMG_SMOOTHER_WEIGHTED_JACOBI;
+    if(block_size>1)
+    {
+        level->smoother_type =
+            LIS_MFAMG_SMOOTHER_BLOCK_JACOBI;
+
+        level->block_size =
+            block_size;
+    }
+    else
+    {
+        level->smoother_type =
+            LIS_MFAMG_SMOOTHER_WEIGHTED_JACOBI;
+
+        level->block_size =
+            0;
+    }
 
 
     return
@@ -6197,7 +7478,8 @@ lis_mfamg_extend_hierarchy_multivector(
 
         err =
             lis_mfamg_prepare_level_work(
-                level);
+                level,
+                state->smoother_block_size);
 
         if(err)
             goto fail;
@@ -6586,7 +7868,8 @@ lis_mfamg_extend_hierarchy(
 
         err =
             lis_mfamg_prepare_level_work(
-                level);
+                level,
+                state->smoother_block_size);
 
         if(err)
             goto fail;
@@ -9600,7 +10883,8 @@ lis_precon_mfamg_get_distributed_hierarchy_info(
      */
     err =
         lis_mfamg_prepare_level_work(
-            &state->levels[0]);
+            &state->levels[0],
+            state->smoother_block_size);
 
     if(err)
         goto cleanup;
@@ -10269,6 +11553,101 @@ cleanup:
 }
 
 
+LIS_INT
+lis_precon_mfamg_get_level_smoother_info(
+    LIS_PRECON precon,
+    LIS_INT level_id,
+    LIS_INT *smoother_type,
+    LIS_INT *block_size,
+    LIS_INT *block_count,
+    LIS_INT *fallback_blocks)
+{
+    struct LIS_MFAMG_STRUCT *state;
+    struct LIS_MFAMG_LEVEL *level;
+
+    LIS_INT block;
+    LIS_INT fallback;
+
+
+    if(
+        precon==NULL
+        ||
+        precon->mfamg==NULL
+        ||
+        smoother_type==NULL
+        ||
+        block_size==NULL
+        ||
+        block_count==NULL
+        ||
+        fallback_blocks==NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    state =
+        precon->mfamg;
+
+
+    if(
+        level_id<0
+        ||
+        level_id>=state->nlevels)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    level =
+        &state->levels[level_id];
+
+
+    *smoother_type =
+        level->smoother_type;
+
+    *block_size =
+        level->block_size;
+
+    *block_count =
+        level->block_count;
+
+
+    fallback =
+        0;
+
+
+    if(
+        level->smoother_type
+            ==
+            LIS_MFAMG_SMOOTHER_BLOCK_JACOBI
+        &&
+        level->block_count>0
+        &&
+        level->block_valid!=NULL)
+    {
+        for(
+            block=0;
+            block<level->block_count;
+            block++)
+        {
+            if(!level->block_valid[block])
+            {
+                fallback++;
+            }
+        }
+    }
+
+
+    *fallback_blocks =
+        fallback;
+
+
+    return LIS_SUCCESS;
+}
+
+
+
 /*
  * Internal MFAMG hierarchy query used by the regression test.
  *
@@ -10594,6 +11973,19 @@ lis_precon_create_mfamg(
     }
 
 
+    if(
+        solver->mfamg_block_size<1
+        ||
+        solver->mfamg_block_size>LIS_MFAMG_BLOCK_MAX_SIZE)
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "MFAMG block size must satisfy 1 <= value <= 16\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+
     state =
         (struct LIS_MFAMG_STRUCT *)
         lis_malloc(
@@ -10620,6 +12012,9 @@ lis_precon_create_mfamg(
 
     state->level_capacity =
         LIS_MFAMG_MAX_LEVELS;
+
+    state->smoother_block_size =
+        solver->mfamg_block_size;
 
     state->levels =
         (struct LIS_MFAMG_LEVEL *)
@@ -11103,7 +12498,8 @@ lis_precon_create_mfamg(
 
     err =
         lis_mfamg_prepare_level_work(
-            level);
+                level,
+                state->smoother_block_size);
 
     if(err)
     {

@@ -924,6 +924,8 @@ struct LIS_SOLVER_STRUCT
 	LIS_INT rhs_compatibility_policy;
 	LIS_REAL rhs_compatibility_tol;
 	LIS_INT near_nullspace_dim;
+	/* MFAMG block size; 1 preserves weighted Jacobi. */
+	LIS_INT mfamg_block_size;
 	LIS_NEAR_NULLSPACE_COARSE near_nullspace_coarse;
 	/* Persistent GCRO-DR recycle state. */
 	LIS_VECTOR *recycle_u;
