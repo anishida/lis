@@ -2107,6 +2107,8 @@ ratio of the maximum fill-in \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
+         &                       & \verb=-mfamg_block_size [1]= & The local contiguous smoother block size \\
+         &                       &                              & (1: weighted Jacobi; 2--16: block Jacobi) \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -2313,6 +2315,8 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criter
          &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
+         &                       & \verb=-mfamg_block_size [1]= & The local contiguous smoother block size \\
+         &                       &                              & (1: weighted Jacobi; 2--16: block Jacobi) \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -2738,6 +2742,16 @@ MFAMG supports CSR matrices and, in serial,
 {\tt LIS\_MATRIX\_USER} matrices. In MPI environments, CSR matrices
 are currently required. MFAMG currently supports double precision and
 requires \verb=-scale none=.
+The option \verb=-mfamg_block_size [1]= controls the local smoother
+block size. The default value 1 preserves the weighted-Jacobi smoother.
+Values from 2 through 16 enable block Jacobi using consecutive local
+unknowns. Blocks do not cross process boundaries, and the final local
+block may contain fewer unknowns than the requested block size.
+Each usable diagonal block is factored with pivoting. If a block is
+numerically singular, MFAMG falls back to the weighted-Jacobi correction
+for that block when its scalar diagonal entries remain usable.
+When the existing MFAMG numeric-update path reuses a hierarchy, the
+block factors are refreshed from the updated matrix values.
 
 \newpage
 \subsection{Compiling and Linking}
@@ -6345,6 +6359,8 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criter
          &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
+         &                       & \verb=-mfamg_block_size [1]= & The local contiguous smoother block size \\
+         &                       &                              & (1: weighted Jacobi; 2--16: block Jacobi) \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -6892,6 +6908,8 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criter
          &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
+         &                       & \verb=-mfamg_block_size [1]= & The local contiguous smoother block size \\
+         &                       &                              & (1: weighted Jacobi; 2--16: block Jacobi) \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
