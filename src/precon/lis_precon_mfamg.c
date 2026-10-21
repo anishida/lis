@@ -24,6 +24,8 @@
 #define LIS_MFAMG_DEFAULT_OMEGA ((LIS_REAL)(2.0/3.0))
 #define LIS_MFAMG_RANK_TOL ((LIS_REAL)1.0e-12)
 
+#define LIS_MFAMG_SMOOTHER_WEIGHTED_JACOBI 0
+
 
 struct LIS_MFAMG_LEVEL
 {
@@ -51,6 +53,8 @@ struct LIS_MFAMG_LEVEL
     LIS_INT *prolong_row_ptr;
 
     LIS_SCALAR *prolong;
+
+    LIS_INT smoother_type;
 
     LIS_VECTOR diagonal;
     LIS_VECTOR ax;
@@ -83,6 +87,40 @@ struct LIS_MFAMG_STRUCT
     LIS_SCALAR *coarse_rhs;
     LIS_SCALAR *coarse_x;
 };
+
+
+static void
+lis_mfamg_smoother_destroy(
+    struct LIS_MFAMG_LEVEL *level)
+{
+    if(level==NULL)
+        return;
+
+
+    if(level->diagonal)
+    {
+        lis_vector_destroy(
+            level->diagonal);
+
+        level->diagonal =
+            NULL;
+    }
+
+
+    if(level->ax)
+    {
+        lis_vector_destroy(
+            level->ax);
+
+        level->ax =
+            NULL;
+    }
+
+
+    level->omega =
+        0.0;
+}
+
 
 
 static void
@@ -135,11 +173,8 @@ lis_mfamg_state_free(
             if(level->global_prolong)
                 lis_free(level->global_prolong);
 
-            if(level->diagonal)
-                lis_vector_destroy(level->diagonal);
-
-            if(level->ax)
-                lis_vector_destroy(level->ax);
+            lis_mfamg_smoother_destroy(
+                level);
 
             if(level->rhs)
                 lis_vector_destroy(level->rhs);
@@ -691,6 +726,336 @@ cleanup:
 
     return err;
 }
+
+static LIS_INT
+lis_mfamg_smoother_validate_diagonal(
+    struct LIS_MFAMG_LEVEL *level)
+{
+    LIS_INT i;
+
+    LIS_REAL diagonal_mag;
+
+
+    if(
+        level==NULL
+        ||
+        level->diagonal==NULL
+        ||
+        level->n<=0
+        ||
+        level->diagonal->n!=level->n)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    for(i=0;i<level->n;i++)
+    {
+        diagonal_mag =
+            fabs(
+                level->diagonal->value[i]);
+
+        if(
+            diagonal_mag!=diagonal_mag
+            ||
+            diagonal_mag>LIS_SCALAR_MAX
+            ||
+            diagonal_mag==0.0)
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "MFAMG requires finite nonzero diagonal entries\n");
+
+            return LIS_BREAKDOWN;
+        }
+    }
+
+
+    return LIS_SUCCESS;
+}
+
+
+
+static LIS_INT
+lis_mfamg_smoother_refresh(
+    struct LIS_MFAMG_LEVEL *level);
+
+
+
+static LIS_INT
+lis_mfamg_smoother_setup(
+    struct LIS_MFAMG_LEVEL *level)
+{
+    LIS_INT err;
+
+
+    if(
+        level==NULL
+        ||
+        level->A==NULL
+        ||
+        level->n<=0
+        ||
+        level->A->n!=level->n
+        ||
+        level->diagonal!=NULL
+        ||
+        level->ax!=NULL)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    switch(level->smoother_type)
+    {
+    case LIS_MFAMG_SMOOTHER_WEIGHTED_JACOBI:
+
+        err =
+            lis_vector_duplicate(
+                level->A,
+                &level->diagonal);
+
+        if(err)
+            goto cleanup;
+
+
+        err =
+            lis_vector_duplicate(
+                level->A,
+                &level->ax);
+
+        if(err)
+            goto cleanup;
+
+
+        err =
+            lis_mfamg_smoother_refresh(
+                level);
+
+        if(err)
+            goto cleanup;
+
+
+        return LIS_SUCCESS;
+
+
+    default:
+
+        LIS_SETERR(
+            LIS_ERR_NOT_IMPLEMENTED,
+            "MFAMG smoother type is not implemented\n");
+
+        return LIS_ERR_NOT_IMPLEMENTED;
+    }
+
+
+cleanup:
+
+    lis_mfamg_smoother_destroy(
+        level);
+
+
+    return err;
+}
+
+
+
+static LIS_INT
+lis_mfamg_smoother_refresh(
+    struct LIS_MFAMG_LEVEL *level)
+{
+    LIS_INT err;
+
+
+    if(
+        level==NULL
+        ||
+        level->A==NULL
+        ||
+        level->n<=0
+        ||
+        level->A->n!=level->n
+        ||
+        level->diagonal==NULL
+        ||
+        level->ax==NULL
+        ||
+        level->diagonal->n!=level->n
+        ||
+        level->ax->n!=level->n)
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    switch(level->smoother_type)
+    {
+    case LIS_MFAMG_SMOOTHER_WEIGHTED_JACOBI:
+
+        err =
+            lis_matrix_get_diagonal(
+                level->A,
+                level->diagonal);
+
+        if(err)
+            return err;
+
+
+        err =
+            lis_mfamg_estimate_smoother_omega(
+                level->A,
+                level->diagonal,
+                &level->omega);
+
+        if(err)
+            return err;
+
+
+        return
+            lis_mfamg_smoother_validate_diagonal(
+                level);
+
+
+    default:
+
+        LIS_SETERR(
+            LIS_ERR_NOT_IMPLEMENTED,
+            "MFAMG smoother type is not implemented\n");
+
+        return LIS_ERR_NOT_IMPLEMENTED;
+    }
+}
+
+
+
+static LIS_INT
+lis_mfamg_smoother_apply(
+    struct LIS_MFAMG_LEVEL *level,
+    LIS_VECTOR b,
+    LIS_VECTOR x,
+    LIS_INT initial_zero)
+{
+    LIS_INT i;
+    LIS_INT err;
+
+    LIS_SCALAR residual;
+
+    LIS_SCALAR *bv;
+    LIS_SCALAR *xv;
+    LIS_SCALAR *av;
+    LIS_SCALAR *diag;
+
+
+    if(
+        level==NULL
+        ||
+        level->A==NULL
+        ||
+        b==NULL
+        ||
+        x==NULL
+        ||
+        level->n<=0
+        ||
+        b->n!=level->n
+        ||
+        x->n!=level->n
+        ||
+        level->diagonal==NULL
+        ||
+        level->ax==NULL
+        ||
+        level->diagonal->n!=level->n
+        ||
+        level->ax->n!=level->n
+        ||
+        (
+            initial_zero!=LIS_FALSE
+            &&
+            initial_zero!=LIS_TRUE
+        ))
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+
+    switch(level->smoother_type)
+    {
+    case LIS_MFAMG_SMOOTHER_WEIGHTED_JACOBI:
+
+        bv =
+            b->value;
+
+        xv =
+            x->value;
+
+        diag =
+            level->diagonal->value;
+
+
+        if(initial_zero)
+        {
+            /*
+             * Weighted-Jacobi from x=0.
+             */
+            for(i=0;i<level->n;i++)
+            {
+                xv[i] =
+                    level->omega
+                    *
+                    bv[i]
+                    /
+                    diag[i];
+            }
+
+
+            return LIS_SUCCESS;
+        }
+
+
+        err =
+            lis_matvec(
+                level->A,
+                x,
+                level->ax);
+
+        if(err)
+            return err;
+
+
+        av =
+            level->ax->value;
+
+
+        for(i=0;i<level->n;i++)
+        {
+            residual =
+                bv[i]
+                -
+                av[i];
+
+            xv[i] +=
+                level->omega
+                *
+                residual
+                /
+                diag[i];
+        }
+
+
+        return LIS_SUCCESS;
+
+
+    default:
+
+        LIS_SETERR(
+            LIS_ERR_NOT_IMPLEMENTED,
+            "MFAMG smoother type is not implemented\n");
+
+        return LIS_ERR_NOT_IMPLEMENTED;
+    }
+}
+
 
 
 /*
@@ -4992,92 +5357,22 @@ static LIS_INT
 lis_mfamg_prepare_level_work(
     struct LIS_MFAMG_LEVEL *level)
 {
-    LIS_INT i;
-    LIS_INT err;
-
-    LIS_REAL diagonal_mag;
-
-
-    if(
-        level==NULL
-        ||
-        level->A==NULL
-        ||
-        level->n<=0)
-    {
+    if(level==NULL)
         return LIS_ERR_ILL_ARG;
-    }
 
 
-    if(
-        level->diagonal!=NULL
-        ||
-        level->ax!=NULL)
-    {
-        return LIS_ERR_ILL_ARG;
-    }
+    /*
+     * Preserve the historical MFAMG default.  The dispatcher
+     * allows additional smoother implementations to be added
+     * without changing the multigrid cycle.
+     */
+    level->smoother_type =
+        LIS_MFAMG_SMOOTHER_WEIGHTED_JACOBI;
 
 
-    err =
-        lis_vector_duplicate(
-            level->A,
-            &level->diagonal);
-
-    if(err)
-        return err;
-
-
-    err =
-        lis_vector_duplicate(
-            level->A,
-            &level->ax);
-
-    if(err)
-        return err;
-
-
-    err =
-        lis_matrix_get_diagonal(
-            level->A,
-            level->diagonal);
-
-    if(err)
-        return err;
-
-
-
-
-    err =
-        lis_mfamg_estimate_smoother_omega(
-            level->A,
-            level->diagonal,
-            &level->omega);
-
-    if(err)
-        return err;
-    for(i=0;i<level->n;i++)
-    {
-        diagonal_mag =
-            fabs(
-                level->diagonal->value[i]);
-
-        if(
-            diagonal_mag!=diagonal_mag
-            ||
-            diagonal_mag>LIS_SCALAR_MAX
-            ||
-            diagonal_mag==0.0)
-        {
-            LIS_SETERR(
-                LIS_BREAKDOWN,
-                "MFAMG requires finite nonzero diagonal entries\n");
-
-            return LIS_BREAKDOWN;
-        }
-    }
-
-
-    return LIS_SUCCESS;
+    return
+        lis_mfamg_smoother_setup(
+            level);
 }
 
 
@@ -7198,7 +7493,6 @@ lis_mfamg_v_cycle(
     LIS_SCALAR *bv;
     LIS_SCALAR *xv;
     LIS_SCALAR *av;
-    LIS_SCALAR *diag;
     LIS_SCALAR *coarse_b;
     LIS_SCALAR *coarse_x;
 
@@ -7299,9 +7593,6 @@ lis_mfamg_v_cycle(
     av =
         level->ax->value;
 
-    diag =
-        level->diagonal->value;
-
     coarse_b =
         next_level->rhs->value;
 
@@ -7310,17 +7601,17 @@ lis_mfamg_v_cycle(
 
 
     /*
-     * One weighted-Jacobi pre-smoothing step from zero.
+     * One pre-smoothing step from zero.
      */
-    for(i=0;i<level->n;i++)
-    {
-        xv[i] =
-            level->omega
-            *
-            bv[i]
-            /
-            diag[i];
-    }
+    err =
+        lis_mfamg_smoother_apply(
+            level,
+            b,
+            x,
+            LIS_TRUE);
+
+    if(err)
+        return err;
 
 
     err =
@@ -7563,33 +7854,18 @@ lis_mfamg_v_cycle(
     }
 
 
+    /*
+     * One post-smoothing step.
+     */
     err =
-        lis_matvec(
-            level->A,
+        lis_mfamg_smoother_apply(
+            level,
+            b,
             x,
-            level->ax);
+            LIS_FALSE);
 
     if(err)
         return err;
-
-
-    /*
-     * One weighted-Jacobi post-smoothing step.
-     */
-    for(i=0;i<level->n;i++)
-    {
-        residual =
-            bv[i]
-            -
-            av[i];
-
-        xv[i] +=
-            level->omega
-            *
-            residual
-            /
-            diag[i];
-    }
 
 
     return LIS_SUCCESS;
@@ -11140,73 +11416,9 @@ static LIS_INT
 lis_mfamg_refresh_level_work(
     struct LIS_MFAMG_LEVEL *level)
 {
-    LIS_INT i;
-    LIS_INT err;
-
-    LIS_REAL diagonal_mag;
-
-
-    if(
-        level==NULL
-        ||
-        level->A==NULL
-        ||
-        level->n<=0
-        ||
-        level->diagonal==NULL
-        ||
-        level->ax==NULL
-        ||
-        level->diagonal->n!=level->n
-        ||
-        level->ax->n!=level->n)
-    {
-        return LIS_ERR_ILL_ARG;
-    }
-
-
-    err =
-        lis_matrix_get_diagonal(
-            level->A,
-            level->diagonal);
-
-    if(err)
-        return err;
-
-
-    err =
-        lis_mfamg_estimate_smoother_omega(
-            level->A,
-            level->diagonal,
-            &level->omega);
-
-    if(err)
-        return err;
-
-
-    for(i=0;i<level->n;i++)
-    {
-        diagonal_mag =
-            fabs(
-                level->diagonal->value[i]);
-
-        if(
-            diagonal_mag!=diagonal_mag
-            ||
-            diagonal_mag>LIS_SCALAR_MAX
-            ||
-            diagonal_mag==0.0)
-        {
-            LIS_SETERR(
-                LIS_BREAKDOWN,
-                "MFAMG requires finite nonzero diagonal entries\n");
-
-            return LIS_BREAKDOWN;
-        }
-    }
-
-
-    return LIS_SUCCESS;
+    return
+        lis_mfamg_smoother_refresh(
+            level);
 }
 
 
