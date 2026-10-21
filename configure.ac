@@ -31,6 +31,7 @@ AC_ARG_ENABLE(saamg, AS_HELP_STRING([--enable-saamg],[enable SA-AMG precondition
 AC_ARG_ENABLE(mpi, AS_HELP_STRING([--enable-mpi],[build with MPI library [[default=no]]]))
 AC_ARG_ENABLE(omp, AS_HELP_STRING([--enable-omp],[build with OpenMP library [[default=no]]]))
 AC_ARG_ENABLE(quad, AS_HELP_STRING([--enable-quad],[enable quadruple precision operations [[default=no]]]))
+AC_ARG_ENABLE(half, AS_HELP_STRING([--enable-half],[enable half precision preconditioner storage support [[default=no]]]))
 AC_ARG_ENABLE(sse2, AS_HELP_STRING([--enable-sse2],[use Intel Streaming SIMD Extensions [[default=yes]]]),[],enable_sse2=yes)
 AC_ARG_ENABLE(fma, AS_HELP_STRING([--enable-fma],[use fused multiply add [[default=no]]]))
 AC_ARG_ENABLE(debug, AS_HELP_STRING([--enable-debug],[enable debugging [[default=no]]]))
@@ -925,6 +926,16 @@ if test "$enable_omp" = "yes"; then
   fi
 fi
 
+########## Enable Half Precision Preconditioner Storage ##########
+if test "$enable_half" = "yes"; then
+  AC_DEFINE(
+    [USE_HALF_PRECISION],
+    [1],
+    [Define to 1 to enable half precision preconditioner storage support.])
+else
+  enable_half="no"
+fi
+
 ########## Enable x87 FPUs ##########
   AC_MSG_CHECKING([for x87 FPU])
   case $target in
@@ -1261,12 +1272,17 @@ AM_CONDITIONAL(ENABLE_SAAMG, test x$enable_saamg = xyes)
 AM_CONDITIONAL(ENABLE_MPI, test x"$enable_mpi" = xyes)
 AM_CONDITIONAL(ENABLE_OMP, test x"$enable_omp" = xyes)
 AM_CONDITIONAL(ENABLE_QUAD, test x$enable_quad = xyes)
+AM_CONDITIONAL([ENABLE_HALF_REAL_DOUBLE],
+  [test x"$enable_half" = xyes &&
+   test x"$enable_longdouble" != xyes &&
+   test x"$enable_complex" != xyes])
 AM_CONDITIONAL(ENABLE_SSE2, test x$enable_sse2 = xyes)
 AM_CONDITIONAL(DISABLE_TEST, test x$enable_test = xno)
 AC_SUBST(enable_mpi)
 AC_SUBST(enable_omp)
 AC_SUBST(enable_saamg)
 AC_SUBST(enable_quad)
+AC_SUBST(enable_half)
 AC_SUBST(enable_longdouble)
 AC_SUBST(enable_complex)
 AC_SUBST(enable_fortran)
@@ -1333,6 +1349,7 @@ echo "  Enable FORTRAN 77 compatible interface     = $enable_fortran"
 echo "  Enable Fortran 90 compatible interface     = $enable_f90"
 echo "  Enable SA-AMG preconditioner               = $enable_saamg"
 echo "  Enable double-double precision support     = $enable_quad"
+echo "  Enable half precision preconditioner store = $enable_half"
 if test "$enable_quad" = "yes"; then
 echo "  Enable SSE2                                = $enable_sse2"
 echo "  Enable FMA                                 = $enable_fma"

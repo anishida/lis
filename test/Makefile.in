@@ -124,10 +124,13 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	testwarmstart$(EXEEXT) testrecovery$(EXEEXT) \
 	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
 	testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
-	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
-@ENABLE_FORTRAN_TRUE@am__append_1 = etest1f etest4f test1f test4f test7f
-@ENABLE_F90_TRUE@am__append_2 = test2f test6f 
-@ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__append_3 = test8f
+	testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) \
+	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
+	$(am__EXEEXT_4)
+@ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
+@ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
+@ENABLE_F90_TRUE@am__append_3 = test2f test6f 
+@ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__append_4 = test8f
 bin_PROGRAMS = esolve$(EXEEXT) esolver$(EXEEXT) gesolve$(EXEEXT) \
 	gesolver$(EXEEXT) hpcg_kernel$(EXEEXT) hpcg_spmvtest$(EXEEXT) \
 	lsolve$(EXEEXT) spmvtest1$(EXEEXT) spmvtest2$(EXEEXT) \
@@ -139,6 +142,10 @@ LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 F77LINK = $(LIBTOOL) $(AM_V_lt) --tag=F77 $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(F77LD) $(AM_FFLAGS) $(FFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+@ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_5 = testhalfstorage$(EXEEXT) testhalfprobe$(EXEEXT) testhalfdispatch$(EXEEXT) \
+@ENABLE_HALF_REAL_DOUBLE_TRUE@         testhalfilukmemory$(EXEEXT) testhalfiluksimd$(EXEEXT) \
+@ENABLE_HALF_REAL_DOUBLE_TRUE@         testhalfilut$(EXEEXT)
+
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
@@ -154,11 +161,17 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(testdir)" \
 	"$(DESTDIR)$(testdir)" "$(DESTDIR)$(testdir)"
-@ENABLE_FORTRAN_TRUE@am__EXEEXT_1 = etest1f$(EXEEXT) etest4f$(EXEEXT) \
+@ENABLE_HALF_REAL_DOUBLE_TRUE@am__EXEEXT_1 = testhalfstorage$(EXEEXT) \
+@ENABLE_HALF_REAL_DOUBLE_TRUE@	testhalfprobe$(EXEEXT) \
+@ENABLE_HALF_REAL_DOUBLE_TRUE@	testhalfdispatch$(EXEEXT) \
+@ENABLE_HALF_REAL_DOUBLE_TRUE@	testhalfilukmemory$(EXEEXT) \
+@ENABLE_HALF_REAL_DOUBLE_TRUE@	testhalfiluksimd$(EXEEXT) \
+@ENABLE_HALF_REAL_DOUBLE_TRUE@	testhalfilut$(EXEEXT)
+@ENABLE_FORTRAN_TRUE@am__EXEEXT_2 = etest1f$(EXEEXT) etest4f$(EXEEXT) \
 @ENABLE_FORTRAN_TRUE@	test1f$(EXEEXT) test4f$(EXEEXT) \
 @ENABLE_FORTRAN_TRUE@	test7f$(EXEEXT)
-@ENABLE_F90_TRUE@am__EXEEXT_2 = test2f$(EXEEXT) test6f$(EXEEXT)
-@ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__EXEEXT_3 = test8f$(EXEEXT)
+@ENABLE_F90_TRUE@am__EXEEXT_3 = test2f$(EXEEXT) test6f$(EXEEXT)
+@ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__EXEEXT_4 = test8f$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(test_PROGRAMS)
 am_esolve_OBJECTS = etest5.$(OBJEXT)
 esolve_OBJECTS = $(am_esolve_OBJECTS)
@@ -404,6 +417,38 @@ am_testgmreswork_OBJECTS = testgmreswork.$(OBJEXT)
 testgmreswork_OBJECTS = $(am_testgmreswork_OBJECTS)
 testgmreswork_LDADD = $(LDADD)
 testgmreswork_DEPENDENCIES =
+am_testhalfconfig_OBJECTS = testhalfconfig.$(OBJEXT)
+testhalfconfig_OBJECTS = $(am_testhalfconfig_OBJECTS)
+testhalfconfig_LDADD = $(LDADD)
+testhalfconfig_DEPENDENCIES =
+am_testhalfconvert_OBJECTS = testhalfconvert.$(OBJEXT)
+testhalfconvert_OBJECTS = $(am_testhalfconvert_OBJECTS)
+testhalfconvert_LDADD = $(LDADD)
+testhalfconvert_DEPENDENCIES =
+am_testhalfdispatch_OBJECTS = testhalfdispatch.$(OBJEXT)
+testhalfdispatch_OBJECTS = $(am_testhalfdispatch_OBJECTS)
+testhalfdispatch_LDADD = $(LDADD)
+testhalfdispatch_DEPENDENCIES =
+am_testhalfilukmemory_OBJECTS = testhalfilukmemory.$(OBJEXT)
+testhalfilukmemory_OBJECTS = $(am_testhalfilukmemory_OBJECTS)
+testhalfilukmemory_LDADD = $(LDADD)
+testhalfilukmemory_DEPENDENCIES =
+am_testhalfiluksimd_OBJECTS = testhalfiluksimd.$(OBJEXT)
+testhalfiluksimd_OBJECTS = $(am_testhalfiluksimd_OBJECTS)
+testhalfiluksimd_LDADD = $(LDADD)
+testhalfiluksimd_DEPENDENCIES =
+am_testhalfilut_OBJECTS = testhalfilut.$(OBJEXT)
+testhalfilut_OBJECTS = $(am_testhalfilut_OBJECTS)
+testhalfilut_LDADD = $(LDADD)
+testhalfilut_DEPENDENCIES =
+am_testhalfprobe_OBJECTS = testhalfprobe.$(OBJEXT)
+testhalfprobe_OBJECTS = $(am_testhalfprobe_OBJECTS)
+testhalfprobe_LDADD = $(LDADD)
+testhalfprobe_DEPENDENCIES =
+am_testhalfstorage_OBJECTS = testhalfstorage.$(OBJEXT)
+testhalfstorage_OBJECTS = $(am_testhalfstorage_OBJECTS)
+testhalfstorage_LDADD = $(LDADD)
+testhalfstorage_DEPENDENCIES =
 am_testilupivot_OBJECTS = testilupivot.$(OBJEXT)
 testilupivot_OBJECTS = $(am_testilupivot_OBJECTS)
 testilupivot_LDADD = $(LDADD)
@@ -595,6 +640,11 @@ am__depfiles_remade = ./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
 	./$(DEPDIR)/testgcrodrconfig.Po \
 	./$(DEPDIR)/testgcrodroptions.Po \
 	./$(DEPDIR)/testgcrodrsequence.Po ./$(DEPDIR)/testgmreswork.Po \
+	./$(DEPDIR)/testhalfconfig.Po ./$(DEPDIR)/testhalfconvert.Po \
+	./$(DEPDIR)/testhalfdispatch.Po \
+	./$(DEPDIR)/testhalfilukmemory.Po \
+	./$(DEPDIR)/testhalfiluksimd.Po ./$(DEPDIR)/testhalfilut.Po \
+	./$(DEPDIR)/testhalfprobe.Po ./$(DEPDIR)/testhalfstorage.Po \
 	./$(DEPDIR)/testilupivot.Po ./$(DEPDIR)/testjacobiuser.Po \
 	./$(DEPDIR)/testkrylovrobust.Po \
 	./$(DEPDIR)/testmatrixgeneration.Po \
@@ -675,6 +725,10 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testexternalstorage_SOURCES) $(testfgcrodr_SOURCES) \
 	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
 	$(testgcrodrsequence_SOURCES) $(testgmreswork_SOURCES) \
+	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
+	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
+	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
+	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
 	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
 	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
 	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
@@ -716,6 +770,10 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testexternalstorage_SOURCES) $(testfgcrodr_SOURCES) \
 	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
 	$(testgcrodrsequence_SOURCES) $(testgmreswork_SOURCES) \
+	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
+	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
+	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
+	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
 	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
 	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
 	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
@@ -1057,6 +1115,7 @@ dvidir = @dvidir@
 enable_complex = @enable_complex@
 enable_f90 = @enable_f90@
 enable_fortran = @enable_fortran@
+enable_half = @enable_half@
 enable_longdouble = @enable_longdouble@
 enable_mpi = @enable_mpi@
 enable_omp = @enable_omp@
@@ -1145,6 +1204,14 @@ testuser_SOURCES = testuser.c
 testuserrow_SOURCES = testuserrow.c
 testmatvecblock_SOURCES = testmatvecblock.c
 testcapabilities_SOURCES = testcapabilities.c
+testhalfconfig_SOURCES = testhalfconfig.c
+testhalfconvert_SOURCES = testhalfconvert.c
+testhalfstorage_SOURCES = testhalfstorage.c
+testhalfprobe_SOURCES = testhalfprobe.c
+testhalfdispatch_SOURCES = testhalfdispatch.c
+testhalfilukmemory_SOURCES = testhalfilukmemory.c
+testhalfiluksimd_SOURCES = testhalfiluksimd.c
+testhalfilut_SOURCES = testhalfilut.c
 testmfamg_SOURCES = testmfamg.c
 testmfamggalerkin_SOURCES = testmfamggalerkin.c
 getestuser_SOURCES = getestuser.c
@@ -1224,26 +1291,34 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_mpi=$(enable_mpi) \
                     enable_omp=$(enable_omp) \
                     enable_quad=$(enable_quad) \
+                    enable_half=$(enable_half) \
                     enable_longdouble=$(enable_longdouble) \
                     enable_complex=$(enable_complex) \
                     enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
-TESTS = test.sh testuserrow$(EXEEXT) testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
-        testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
-        testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
-        testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
-        testsolvermonitor$(EXEEXT) testsolvercallbackpaths$(EXEEXT) \
-        testsolvercallbackcert$(EXEEXT) testworkcompat$(EXEEXT) \
-        testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) testshellscale$(EXEEXT) \
-        testsymmdiagguard$(EXEEXT) testilupivot$(EXEEXT) testparamupdate$(EXEEXT) \
-        testbreakretry$(EXEEXT) testchangingsystem$(EXEEXT) testkrylovrobust$(EXEEXT) \
-        testnearnullspace$(EXEEXT) testcoarsesetup$(EXEEXT) testcoarseapply$(EXEEXT) \
-        testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) testgcrodrsequence$(EXEEXT) \
-        testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testsequence$(EXEEXT) \
-        testwarmstart$(EXEEXT) testrecovery$(EXEEXT) testthreads$(EXEEXT) \
-        testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT)
-
+TESTS = test.sh testuserrow$(EXEEXT) testmatvecblock$(EXEEXT) \
+	testcapabilities$(EXEEXT) testpreconlifecycle$(EXEEXT) \
+	testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
+	testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) \
+	testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) \
+	testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
+	testsolvermonitor$(EXEEXT) testsolvercallbackpaths$(EXEEXT) \
+	testsolvercallbackcert$(EXEEXT) testworkcompat$(EXEEXT) \
+	testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) \
+	testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) \
+	testilupivot$(EXEEXT) testparamupdate$(EXEEXT) \
+	testbreakretry$(EXEEXT) testchangingsystem$(EXEEXT) \
+	testkrylovrobust$(EXEEXT) testnearnullspace$(EXEEXT) \
+	testcoarsesetup$(EXEEXT) testcoarseapply$(EXEEXT) \
+	testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) \
+	testgcrodrsequence$(EXEEXT) testmatrixgeneration$(EXEEXT) \
+	testexternalstorage$(EXEEXT) testsequence$(EXEEXT) \
+	testwarmstart$(EXEEXT) testrecovery$(EXEEXT) \
+	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
+	testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
+	testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) \
+	$(am__append_5)
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
 all: all-am
@@ -1600,6 +1675,38 @@ testgmreswork$(EXEEXT): $(testgmreswork_OBJECTS) $(testgmreswork_DEPENDENCIES) $
 	@rm -f testgmreswork$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testgmreswork_OBJECTS) $(testgmreswork_LDADD) $(LIBS)
 
+testhalfconfig$(EXEEXT): $(testhalfconfig_OBJECTS) $(testhalfconfig_DEPENDENCIES) $(EXTRA_testhalfconfig_DEPENDENCIES) 
+	@rm -f testhalfconfig$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testhalfconfig_OBJECTS) $(testhalfconfig_LDADD) $(LIBS)
+
+testhalfconvert$(EXEEXT): $(testhalfconvert_OBJECTS) $(testhalfconvert_DEPENDENCIES) $(EXTRA_testhalfconvert_DEPENDENCIES) 
+	@rm -f testhalfconvert$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testhalfconvert_OBJECTS) $(testhalfconvert_LDADD) $(LIBS)
+
+testhalfdispatch$(EXEEXT): $(testhalfdispatch_OBJECTS) $(testhalfdispatch_DEPENDENCIES) $(EXTRA_testhalfdispatch_DEPENDENCIES) 
+	@rm -f testhalfdispatch$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testhalfdispatch_OBJECTS) $(testhalfdispatch_LDADD) $(LIBS)
+
+testhalfilukmemory$(EXEEXT): $(testhalfilukmemory_OBJECTS) $(testhalfilukmemory_DEPENDENCIES) $(EXTRA_testhalfilukmemory_DEPENDENCIES) 
+	@rm -f testhalfilukmemory$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testhalfilukmemory_OBJECTS) $(testhalfilukmemory_LDADD) $(LIBS)
+
+testhalfiluksimd$(EXEEXT): $(testhalfiluksimd_OBJECTS) $(testhalfiluksimd_DEPENDENCIES) $(EXTRA_testhalfiluksimd_DEPENDENCIES) 
+	@rm -f testhalfiluksimd$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testhalfiluksimd_OBJECTS) $(testhalfiluksimd_LDADD) $(LIBS)
+
+testhalfilut$(EXEEXT): $(testhalfilut_OBJECTS) $(testhalfilut_DEPENDENCIES) $(EXTRA_testhalfilut_DEPENDENCIES) 
+	@rm -f testhalfilut$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testhalfilut_OBJECTS) $(testhalfilut_LDADD) $(LIBS)
+
+testhalfprobe$(EXEEXT): $(testhalfprobe_OBJECTS) $(testhalfprobe_DEPENDENCIES) $(EXTRA_testhalfprobe_DEPENDENCIES) 
+	@rm -f testhalfprobe$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testhalfprobe_OBJECTS) $(testhalfprobe_LDADD) $(LIBS)
+
+testhalfstorage$(EXEEXT): $(testhalfstorage_OBJECTS) $(testhalfstorage_DEPENDENCIES) $(EXTRA_testhalfstorage_DEPENDENCIES) 
+	@rm -f testhalfstorage$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testhalfstorage_OBJECTS) $(testhalfstorage_LDADD) $(LIBS)
+
 testilupivot$(EXEEXT): $(testilupivot_OBJECTS) $(testilupivot_DEPENDENCIES) $(EXTRA_testilupivot_DEPENDENCIES) 
 	@rm -f testilupivot$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testilupivot_OBJECTS) $(testilupivot_LDADD) $(LIBS)
@@ -1808,6 +1915,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testgcrodroptions.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testgcrodrsequence.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testgmreswork.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testhalfconfig.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testhalfconvert.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testhalfdispatch.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testhalfilukmemory.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testhalfiluksimd.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testhalfilut.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testhalfprobe.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testhalfstorage.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testilupivot.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testjacobiuser.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testkrylovrobust.Po@am__quote@ # am--include-marker
@@ -2426,6 +2541,62 @@ testexactnullspace.log: testexactnullspace$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testhalfconfig.log: testhalfconfig$(EXEEXT)
+	@p='testhalfconfig$(EXEEXT)'; \
+	b='testhalfconfig'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testhalfconvert.log: testhalfconvert$(EXEEXT)
+	@p='testhalfconvert$(EXEEXT)'; \
+	b='testhalfconvert'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testhalfstorage.log: testhalfstorage$(EXEEXT)
+	@p='testhalfstorage$(EXEEXT)'; \
+	b='testhalfstorage'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testhalfprobe.log: testhalfprobe$(EXEEXT)
+	@p='testhalfprobe$(EXEEXT)'; \
+	b='testhalfprobe'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testhalfdispatch.log: testhalfdispatch$(EXEEXT)
+	@p='testhalfdispatch$(EXEEXT)'; \
+	b='testhalfdispatch'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testhalfilukmemory.log: testhalfilukmemory$(EXEEXT)
+	@p='testhalfilukmemory$(EXEEXT)'; \
+	b='testhalfilukmemory'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testhalfiluksimd.log: testhalfiluksimd$(EXEEXT)
+	@p='testhalfiluksimd$(EXEEXT)'; \
+	b='testhalfiluksimd'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testhalfilut.log: testhalfilut$(EXEEXT)
+	@p='testhalfilut$(EXEEXT)'; \
+	b='testhalfilut'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -2563,6 +2734,14 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testgcrodroptions.Po
 	-rm -f ./$(DEPDIR)/testgcrodrsequence.Po
 	-rm -f ./$(DEPDIR)/testgmreswork.Po
+	-rm -f ./$(DEPDIR)/testhalfconfig.Po
+	-rm -f ./$(DEPDIR)/testhalfconvert.Po
+	-rm -f ./$(DEPDIR)/testhalfdispatch.Po
+	-rm -f ./$(DEPDIR)/testhalfilukmemory.Po
+	-rm -f ./$(DEPDIR)/testhalfiluksimd.Po
+	-rm -f ./$(DEPDIR)/testhalfilut.Po
+	-rm -f ./$(DEPDIR)/testhalfprobe.Po
+	-rm -f ./$(DEPDIR)/testhalfstorage.Po
 	-rm -f ./$(DEPDIR)/testilupivot.Po
 	-rm -f ./$(DEPDIR)/testjacobiuser.Po
 	-rm -f ./$(DEPDIR)/testkrylovrobust.Po
@@ -2683,6 +2862,14 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testgcrodroptions.Po
 	-rm -f ./$(DEPDIR)/testgcrodrsequence.Po
 	-rm -f ./$(DEPDIR)/testgmreswork.Po
+	-rm -f ./$(DEPDIR)/testhalfconfig.Po
+	-rm -f ./$(DEPDIR)/testhalfconvert.Po
+	-rm -f ./$(DEPDIR)/testhalfdispatch.Po
+	-rm -f ./$(DEPDIR)/testhalfilukmemory.Po
+	-rm -f ./$(DEPDIR)/testhalfiluksimd.Po
+	-rm -f ./$(DEPDIR)/testhalfilut.Po
+	-rm -f ./$(DEPDIR)/testhalfprobe.Po
+	-rm -f ./$(DEPDIR)/testhalfstorage.Po
 	-rm -f ./$(DEPDIR)/testilupivot.Po
 	-rm -f ./$(DEPDIR)/testjacobiuser.Po
 	-rm -f ./$(DEPDIR)/testkrylovrobust.Po

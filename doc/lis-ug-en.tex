@@ -2728,6 +2728,51 @@ This operator represents the linear combination of two matrices $C = \alpha A + 
 \subsubsection{Shifted Generalized Eigenvalue Solvers with Matrix Operators}
 For shifted generalized eigenvalue problems $(A - \sigma B)x = \lambda Bx$, Generalized Power Iteration (GPI), Generalized Inverse Iteration (GII), and Generalized Conjugate Residual (GCR) solvers now utilize \texttt{LIS\_MATRIX\_OPERATOR} to dynamically create a temporary operator for $A - \sigma B$. This ensures the original matrices remain pristine and enables full support for user-defined custom matrices (\texttt{LIS\_MATRIX\_USER}). Shifted \texttt{LIS\_MATRIX\_USER} remains unsupported for other methods like Lanczos.
 
+
+\subsubsection{Half Precision Preconditioner Storage}
+
+Lis can optionally store the numerical $L$ and $U$ factor values of the
+ILU(k) and ILUT preconditioners in IEEE 754 binary16 format. This feature
+reduces the storage required for the numerical factors; matrix indices,
+the inverse diagonal, vectors, arithmetic operations, residuals, and
+convergence tests remain in the normal Lis scalar precision.
+
+The feature is enabled at build time with
+\verb|--enable-half|. The run-time option is
+
+\begin{verbatim}
+-precon_half {0|1|2}
+\end{verbatim}
+
+where
+
+\begin{itemize}
+\item \verb|0| disables half precision preconditioner storage;
+\item \verb|1| enables binary16 storage with a quality probe and automatic
+fallback to the normal numerical factors if the compressed factors do not
+satisfy the quality criterion;
+\item \verb|2| enables binary16 storage without the quality probe. Hard
+validity and finite-value checks are still applied, and normal factors are
+retained if half storage cannot be used safely.
+\end{itemize}
+
+The half storage mode is a policy setting. If half storage is unavailable
+for the selected build or scalar configuration, Lis keeps the normal
+preconditioner factors and continues without an error.
+
+For ILU(k), the half numerical factors are refreshed after a PSD numerical
+preconditioner update. ILUT uses the same binary16 storage and application
+kernels when the preconditioner is created normally.
+
+The default relative tolerance of the quality probe is $5\times10^{-2}$.
+It can be overridden with the environment variable
+\verb|LIS_HALF_PROBE_TOL|.
+
+On supported x86 systems, Lis may use the F16C instruction set to decode
+binary16 factor values at run time. The scalar decoder remains available
+as the reference and fallback implementation. Setting
+\verb|LIS_HALF_NO_SIMD=1| forces the scalar decoder.
+
 \subsubsection{Preconditioner Reuse and Compatibility with User-Defined Matrices}
 Starting from Version 2.1.15, Lis clarifies preconditioner ownership and improves support for repeated solves with user-defined matrices (\texttt{LIS\_MATRIX\_USER}), relaxing previous restrictions when compatible prebuilt preconditioners are supplied.
 

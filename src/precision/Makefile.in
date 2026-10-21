@@ -107,7 +107,7 @@ CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libprecision_la_LIBADD =
 am_libprecision_la_OBJECTS = lis_precision.lo lis_precision_matvec.lo \
-	lis_precision_vec.lo
+	lis_precision_vec.lo lis_half.lo
 libprecision_la_OBJECTS = $(am_libprecision_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -128,7 +128,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/include
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/lis_precision.Plo \
+am__depfiles_remade = ./$(DEPDIR)/lis_half.Plo \
+	./$(DEPDIR)/lis_precision.Plo \
 	./$(DEPDIR)/lis_precision_matvec.Plo \
 	./$(DEPDIR)/lis_precision_vec.Plo
 am__mv = mv -f
@@ -285,6 +286,7 @@ dvidir = @dvidir@
 enable_complex = @enable_complex@
 enable_f90 = @enable_f90@
 enable_fortran = @enable_fortran@
+enable_half = @enable_half@
 enable_longdouble = @enable_longdouble@
 enable_mpi = @enable_mpi@
 enable_omp = @enable_omp@
@@ -327,7 +329,8 @@ top_srcdir = @top_srcdir@
 noinst_LTLIBRARIES = libprecision.la
 libprecision_la_SOURCES = lis_precision.c \
 lis_precision_matvec.c \
-lis_precision_vec.c
+lis_precision_vec.c \
+lis_half.c
 
 AM_CFLAGS = -I$(top_srcdir)/include $(MPFLAG)
 CLEANFILES = *.il
@@ -397,6 +400,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_half.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precision.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precision_matvec.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precision_vec.Plo@am__quote@ # am--include-marker
@@ -560,6 +564,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
+	-rm -f ./$(DEPDIR)/lis_half.Plo
 	-rm -f ./$(DEPDIR)/lis_precision.Plo
 	-rm -f ./$(DEPDIR)/lis_precision_matvec.Plo
 	-rm -f ./$(DEPDIR)/lis_precision_vec.Plo
@@ -608,6 +613,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
+	-rm -f ./$(DEPDIR)/lis_half.Plo
 	-rm -f ./$(DEPDIR)/lis_precision.Plo
 	-rm -f ./$(DEPDIR)/lis_precision_matvec.Plo
 	-rm -f ./$(DEPDIR)/lis_precision_vec.Plo

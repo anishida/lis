@@ -595,6 +595,12 @@ LIS_INT lis_precon_destroy(LIS_PRECON precon)
 		lis_vector_destroy(precon->Pb);
 		lis_vector_destroy(precon->D);
 		lis_vector_destroy(precon->temp);
+
+		lis_half_ilu_destroy(
+			precon->half);
+
+		precon->half = NULL;
+
 		lis_matrix_ilu_destroy(precon->L);
 		lis_matrix_ilu_destroy(precon->U);
 		lis_matrix_diag_destroy(precon->WD);

@@ -664,6 +664,7 @@ enable_f90
 enable_fortran
 enable_complex
 enable_longdouble
+enable_half
 enable_quad
 enable_saamg
 enable_omp
@@ -672,6 +673,8 @@ DISABLE_TEST_FALSE
 DISABLE_TEST_TRUE
 ENABLE_SSE2_FALSE
 ENABLE_SSE2_TRUE
+ENABLE_HALF_REAL_DOUBLE_FALSE
+ENABLE_HALF_REAL_DOUBLE_TRUE
 ENABLE_QUAD_FALSE
 ENABLE_QUAD_TRUE
 ENABLE_OMP_FALSE
@@ -836,6 +839,7 @@ enable_saamg
 enable_mpi
 enable_omp
 enable_quad
+enable_half
 enable_sse2
 enable_fma
 enable_debug
@@ -1517,6 +1521,8 @@ Optional Features:
   --enable-mpi            build with MPI library [[default=no]]
   --enable-omp            build with OpenMP library [[default=no]]
   --enable-quad           enable quadruple precision operations [[default=no]]
+  --enable-half           enable half precision preconditioner storage support
+                          [[default=no]]
   --enable-sse2           use Intel Streaming SIMD Extensions [[default=yes]]
   --enable-fma            use fused multiply add [[default=no]]
   --enable-debug          enable debugging [[default=no]]
@@ -4264,6 +4270,12 @@ then :
   enableval=$enable_quad;
 fi
 
+# Check whether --enable-half was given.
+if test ${enable_half+y}
+then :
+  enableval=$enable_half;
+fi
+
 # Check whether --enable-sse2 was given.
 if test ${enable_sse2+y}
 then :
@@ -6006,7 +6018,7 @@ _ACEOF
 	# flags.
 	ac_save_CFLAGS=$CFLAGS
 	CFLAGS="$CFLAGS $ac_verb"
-	(eval echo $as_me:6009: \"$ac_link\") >&5
+	(eval echo $as_me:6021: \"$ac_link\") >&5
 	ac_c_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 	echo "$ac_c_v_output" >&5
 	CFLAGS=$ac_save_CFLAGS
@@ -6082,7 +6094,7 @@ _ACEOF
 	# flags.
 	ac_save_CFLAGS=$CFLAGS
 	CFLAGS="$CFLAGS $ac_cv_prog_c_v"
-	(eval echo $as_me:6085: \"$ac_link\") >&5
+	(eval echo $as_me:6097: \"$ac_link\") >&5
 	ac_c_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 	echo "$ac_c_v_output" >&5
 	CFLAGS=$ac_save_CFLAGS
@@ -8071,6 +8083,15 @@ if test "$enable_omp" = "yes"; then
     FCFLAGS="$FCFLAGS $OMPFLAG"
     LDFLAGS="$LDFLAGS $OMPFLAG"
   fi
+fi
+
+########## Enable Half Precision Preconditioner Storage ##########
+if test "$enable_half" = "yes"; then
+
+printf "%s\n" "#define USE_HALF_PRECISION 1" >>confdefs.h
+
+else
+  enable_half="no"
 fi
 
 ########## Enable x87 FPUs ##########
@@ -23197,6 +23218,16 @@ else
   ENABLE_QUAD_FALSE=
 fi
 
+ if test x"$enable_half" = xyes &&
+   test x"$enable_longdouble" != xyes &&
+   test x"$enable_complex" != xyes; then
+  ENABLE_HALF_REAL_DOUBLE_TRUE=
+  ENABLE_HALF_REAL_DOUBLE_FALSE='#'
+else
+  ENABLE_HALF_REAL_DOUBLE_TRUE='#'
+  ENABLE_HALF_REAL_DOUBLE_FALSE=
+fi
+
  if test x$enable_sse2 = xyes; then
   ENABLE_SSE2_TRUE=
   ENABLE_SSE2_FALSE='#'
@@ -23212,6 +23243,7 @@ else
   DISABLE_TEST_TRUE='#'
   DISABLE_TEST_FALSE=
 fi
+
 
 
 
@@ -23633,6 +23665,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_QUAD_TRUE}" && test -z "${ENABLE_QUAD_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_QUAD\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_HALF_REAL_DOUBLE_TRUE}" && test -z "${ENABLE_HALF_REAL_DOUBLE_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_HALF_REAL_DOUBLE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_SSE2_TRUE}" && test -z "${ENABLE_SSE2_FALSE}"; then
@@ -26320,6 +26356,7 @@ echo "  Enable FORTRAN 77 compatible interface     = $enable_fortran"
 echo "  Enable Fortran 90 compatible interface     = $enable_f90"
 echo "  Enable SA-AMG preconditioner               = $enable_saamg"
 echo "  Enable double-double precision support     = $enable_quad"
+echo "  Enable half precision preconditioner store = $enable_half"
 if test "$enable_quad" = "yes"; then
 echo "  Enable SSE2                                = $enable_sse2"
 echo "  Enable FMA                                 = $enable_fma"
