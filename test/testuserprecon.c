@@ -726,6 +726,22 @@ main(
                 0);
 
         failed += run_case(
+                "USER_ILUC",
+                "-i gmres -p iluc "
+                "-iluc_drop 0 "
+                "-iluc_rate 5 "
+                "-scale none "
+                "-tol 1.0e-12 "
+                "-maxiter 200 "
+                "-maxiter_noimp 0 "
+                "-print none",
+                0,
+                1,
+                1,
+                1,
+                0);
+
+        failed += run_case(
                 "USER_JACOBI",
                 "-i gmres -p jacobi "
                 "-scale none "
