@@ -409,8 +409,6 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
       
     }
 
-  lis_precon_destroy(precon);
-  lis_solver_destroy(solver);
 
   esolver->iter[0]    = iter;
   esolver->resid[0]   = resid;
@@ -421,6 +419,9 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
   esolver->itime = solver->itime;
   esolver->p_c_time = solver->p_c_time;
   esolver->p_i_time = solver->p_i_time;
+
+  lis_precon_destroy(precon);
+  lis_solver_destroy(solver);
 
   if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);
 
@@ -834,8 +835,6 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
       
     }
 
-  lis_precon_destroy(precon);
-  lis_solver_destroy(solver);
 
   esolver->iter[0]    = iter;
   esolver->resid[0]   = resid;
@@ -846,6 +845,9 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
   esolver->itime = solver->itime;
   esolver->p_c_time = solver->p_c_time;
   esolver->p_i_time = solver->p_i_time;
+
+  lis_precon_destroy(precon);
+  lis_solver_destroy(solver);
 
   if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, -oshift);
 
@@ -1200,8 +1202,6 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
       
     }
 
-  lis_precon_destroy(precon);
-  lis_solver_destroy(solver);
 
   esolver->iter[0]    = iter;
   esolver->resid[0]   = resid;
@@ -1223,6 +1223,9 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
   esolver->itime = solver->itime;
   esolver->p_c_time = solver->p_c_time;
   esolver->p_i_time = solver->p_i_time;
+
+  lis_precon_destroy(precon);
+  lis_solver_destroy(solver);
 
   if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);  
 
@@ -1612,8 +1615,6 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
       
     }
 
-  lis_precon_destroy(precon);
-  lis_solver_destroy(solver);
 
   esolver->iter[0]    = iter;
   esolver->resid[0]   = resid;
@@ -1635,6 +1636,9 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   esolver->itime = solver->itime;
   esolver->p_c_time = solver->p_c_time;
   esolver->p_i_time = solver->p_i_time;
+
+  lis_precon_destroy(precon);
+  lis_solver_destroy(solver);
 
   if( Aop ) lis_matrix_destroy(Aop);
 
