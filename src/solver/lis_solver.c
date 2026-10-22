@@ -247,6 +247,8 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->sequence_precon_type = LIS_PRECON_TYPE_NONE;
 	solver->sequence_precon_max_age = 0;
 	solver->sequence_precon_age = 0;
+	solver->precon_half_mode = LIS_PRECON_HALF_OFF;
+	solver->sequence_precon_half_mode = LIS_PRECON_HALF_OFF;
 	solver->sequence_initial_residual = 0.0;
 	solver->sequence_rhs_norm = 0.0;
 	solver->sequence_true_residual = 0.0;
@@ -280,6 +282,7 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	    LIS_RHS_POLICY_ASSUME_COMPATIBLE;
 	solver->rhs_compatibility_tol = (LIS_REAL)1.0e-12;
 	solver->near_nullspace_dim = 0;
+	solver->mfamg_block_size = 1;
 	solver->near_nullspace_coarse = NULL;
 	solver->recycle_u = NULL;
 	solver->recycle_zu = NULL;
@@ -2353,6 +2356,12 @@ static LIS_INT lis_solver_sequence_precon_config_matches(
 		return LIS_FALSE;
 	}
 
+	if( solver->sequence_precon_half_mode!=
+		solver->precon_half_mode )
+	{
+		return LIS_FALSE;
+	}
+
 	return LIS_TRUE;
 }
 
@@ -2368,6 +2377,9 @@ static void lis_solver_sequence_precon_snapshot(
 		solver->sequence_precon_params,
 		solver->params,
 		sizeof(solver->params));
+
+	solver->sequence_precon_half_mode =
+		solver->precon_half_mode;
 }
 
 #undef __FUNC__
@@ -2403,6 +2415,8 @@ LIS_INT lis_solver_sequence_precon_destroy(LIS_SOLVER solver)
 	solver->sequence_precon_is_scaled = LIS_FALSE;
 	solver->sequence_precon_type = LIS_PRECON_TYPE_NONE;
 	solver->sequence_precon_age = 0;
+	solver->sequence_precon_half_mode =
+		LIS_PRECON_HALF_OFF;
 
 	LIS_DEBUG_FUNC_OUT;
 	return err;
@@ -2704,6 +2718,65 @@ LIS_INT lis_solver_get_sequence_policy(
 
     LIS_DEBUG_FUNC_OUT;
     return LIS_SUCCESS;
+}
+
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_precon_half"
+LIS_INT lis_solver_set_precon_half(
+	LIS_SOLVER solver,
+	LIS_INT mode)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	/*
+	 * This setter stores policy only.
+	 *
+	 * Runtime/build capability is evaluated when the
+	 * preconditioner attempts to create half storage.
+	 * Unsupported configurations safely retain their
+	 * normal numerical factors.
+	 */
+	if( solver==NULL ||
+		mode<LIS_PRECON_HALF_OFF ||
+		mode>LIS_PRECON_HALF_NOPROBE )
+	{
+		LIS_SETERR(
+			LIS_ERR_ILL_ARG,
+			"invalid half precision preconditioner storage mode\n");
+
+		return LIS_ERR_ILL_ARG;
+	}
+
+	solver->precon_half_mode = mode;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_get_precon_half"
+LIS_INT lis_solver_get_precon_half(
+	LIS_SOLVER solver,
+	LIS_INT *mode)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	if( solver==NULL || mode==NULL )
+	{
+		LIS_SETERR(
+			LIS_ERR_ILL_ARG,
+			"invalid half precision preconditioner storage query\n");
+
+		return LIS_ERR_ILL_ARG;
+	}
+
+	*mode = solver->precon_half_mode;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
 }
 
 
@@ -4864,6 +4937,78 @@ LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 	double double_value;
 
 	LIS_DEBUG_FUNC_IN;
+
+	if( strcmp(arg1,"-mfamg_block_size")==0 )
+	{
+		LIS_INT value;
+		char extra;
+
+#ifdef _LONG__LONG
+		if(
+			arg2==NULL
+			||
+			sscanf(arg2,"%lld %c",&value,&extra)!=1
+			||
+			value<1
+			||
+			value>16)
+#else
+		if(
+			arg2==NULL
+			||
+			sscanf(arg2,"%d %c",&value,&extra)!=1
+			||
+			value<1
+			||
+			value>16)
+#endif
+		{
+			LIS_SETERR(
+				LIS_ERR_ILL_ARG,
+				"Parameter -mfamg_block_size must satisfy 1 <= value <= 16\n");
+
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_ERR_ILL_ARG;
+		}
+
+		solver->mfamg_block_size =
+			value;
+
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
+
+	if( strcmp(arg1,"-precon_half")==0 )
+	{
+		LIS_INT value;
+		char extra;
+
+#ifdef _LONG__LONG
+		if( arg2==NULL ||
+			sscanf(arg2,"%lld %c",&value,&extra)!=1 )
+#else
+		if( arg2==NULL ||
+			sscanf(arg2,"%d %c",&value,&extra)!=1 )
+#endif
+		{
+			LIS_SETERR(
+				LIS_ERR_ILL_ARG,
+				"Parameter -precon_half must be 0, 1 or 2\n");
+
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_ERR_ILL_ARG;
+		}
+
+		err = lis_solver_set_precon_half(
+			solver,
+			value);
+
+		LIS_DEBUG_FUNC_OUT;
+		return err;
+	}
+
+
+
 
 	/*
 	 * GCRO-DR solver-specific textual controls.

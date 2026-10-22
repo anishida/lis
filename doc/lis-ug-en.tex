@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 2.1.18
+Version 2.1.19
 \end{flushleft}
 
 \vspace*{2cm}
@@ -347,7 +347,7 @@ ILUT\cite{ilut,ITSOL} \\
 Crout ILU\cite{ITSOL,iluc} \\
 I+S\cite{kohno01} \\
 SA-AMG\cite{fujii01}  \\
-MFAMG \\
+MFAMG\cite{epperly} \\
 Hybrid\cite{abe01} \\
 SAINV\cite{bridson01}  \\
 Additive Schwarz\cite{chan,dryja} \\
@@ -2107,6 +2107,8 @@ ratio of the maximum fill-in \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
+         &                       & \verb=-mfamg_block_size [1]= & The local contiguous smoother block size \\
+         &                       &                              & (1: weighted Jacobi; 2--16: block Jacobi) \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -2313,6 +2315,8 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criter
          &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
+         &                       & \verb=-mfamg_block_size [1]= & The local contiguous smoother block size \\
+         &                       &                              & (1: weighted Jacobi; 2--16: block Jacobi) \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -2724,6 +2728,51 @@ This operator represents the linear combination of two matrices $C = \alpha A + 
 \subsubsection{Shifted Generalized Eigenvalue Solvers with Matrix Operators}
 For shifted generalized eigenvalue problems $(A - \sigma B)x = \lambda Bx$, Generalized Power Iteration (GPI), Generalized Inverse Iteration (GII), and Generalized Conjugate Residual (GCR) solvers now utilize \texttt{LIS\_MATRIX\_OPERATOR} to dynamically create a temporary operator for $A - \sigma B$. This ensures the original matrices remain pristine and enables full support for user-defined custom matrices (\texttt{LIS\_MATRIX\_USER}). Shifted \texttt{LIS\_MATRIX\_USER} remains unsupported for other methods like Lanczos.
 
+
+\subsubsection{Half Precision Preconditioner Storage}
+
+Lis can optionally store the numerical $L$ and $U$ factor values of the
+ILU(k) and ILUT preconditioners in IEEE 754 binary16 format. This feature
+reduces the storage required for the numerical factors; matrix indices,
+the inverse diagonal, vectors, arithmetic operations, residuals, and
+convergence tests remain in the normal Lis scalar precision.
+
+The feature is enabled at build time with
+\verb|--enable-half|. The run-time option is
+
+\begin{verbatim}
+-precon_half {0|1|2}
+\end{verbatim}
+
+where
+
+\begin{itemize}
+\item \verb|0| disables half precision preconditioner storage;
+\item \verb|1| enables binary16 storage with a quality probe and automatic
+fallback to the normal numerical factors if the compressed factors do not
+satisfy the quality criterion;
+\item \verb|2| enables binary16 storage without the quality probe. Hard
+validity and finite-value checks are still applied, and normal factors are
+retained if half storage cannot be used safely.
+\end{itemize}
+
+The half storage mode is a policy setting. If half storage is unavailable
+for the selected build or scalar configuration, Lis keeps the normal
+preconditioner factors and continues without an error.
+
+For ILU(k), the half numerical factors are refreshed after a PSD numerical
+preconditioner update. ILUT uses the same binary16 storage and application
+kernels when the preconditioner is created normally.
+
+The default relative tolerance of the quality probe is $5\times10^{-2}$.
+It can be overridden with the environment variable
+\verb|LIS_HALF_PROBE_TOL|.
+
+On supported x86 systems, Lis may use the F16C instruction set to decode
+binary16 factor values at run time. The scalar decoder remains available
+as the reference and fallback implementation. Setting
+\verb|LIS_HALF_NO_SIMD=1| forces the scalar decoder.
+
 \subsubsection{Preconditioner Reuse and Compatibility with User-Defined Matrices}
 Starting from Version 2.1.15, Lis clarifies preconditioner ownership and improves support for repeated solves with user-defined matrices (\texttt{LIS\_MATRIX\_USER}), relaxing previous restrictions when compatible prebuilt preconditioners are supplied.
 
@@ -2738,6 +2787,16 @@ MFAMG supports CSR matrices and, in serial,
 {\tt LIS\_MATRIX\_USER} matrices. In MPI environments, CSR matrices
 are currently required. MFAMG currently supports double precision and
 requires \verb=-scale none=.
+The option \verb=-mfamg_block_size [1]= controls the local smoother
+block size. The default value 1 preserves the weighted-Jacobi smoother.
+Values from 2 through 16 enable block Jacobi using consecutive local
+unknowns. Blocks do not cross process boundaries, and the final local
+block may contain fewer unknowns than the requested block size.
+Each usable diagonal block is factored with pivoting. If a block is
+numerically singular, MFAMG falls back to the weighted-Jacobi correction
+for that block when its scalar diagonal entries remain usable.
+When the existing MFAMG numeric-update path reuses a hierarchy, the
+block factors are refreshed from the updated matrix values.
 
 \newpage
 \subsection{Compiling and Linking}
@@ -6345,6 +6404,8 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criter
          &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
+         &                       & \verb=-mfamg_block_size [1]= & The local contiguous smoother block size \\
+         &                       &                              & (1: weighted Jacobi; 2--16: block Jacobi) \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -6892,6 +6953,8 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criter
          &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
+         &                       & \verb=-mfamg_block_size [1]= & The local contiguous smoother block size \\
+         &                       &                              & (1: weighted Jacobi; 2--16: block Jacobi) \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -8703,7 +8766,12 @@ T. Kohno, H. Kotakemori, and H. Niki.
 \bibitem{fujii01}
 A. Fujii, A. Nishida, and Y. Oyanagi.
 \newblock Evaluation of Parallel Aggregate Creation Orders : Smoothed Aggregation Algebraic Multigrid Method.
-\newblock High Performance Computational Science and Engineering, pp.\ 99--122, Springer, 2005. 
+\newblock High Performance Computational Science and Engineering, pp.\ 99--122, Springer, 2005.
+
+\bibitem{epperly}
+E. N. Epperly, A. T. Barker, and R. D. Falgout.
+\newblock Smoothers for Matrix-Free Algebraic Multigrid Preconditioning of High-Order Finite Elements.
+\newblock LLNL-TR-814531, 2020.
 
 \bibitem{abe01}
 K. Abe, S. Zhang, H. Hasegawa, and R. Himeno.

@@ -18,6 +18,28 @@ lis_precon_mfamg_get_smoother_omega(
     LIS_REAL *omega);
 
 
+extern LIS_INT
+lis_precon_mfamg_apply_block_smoother_for_test(
+    LIS_MATRIX A,
+    LIS_INT block_size,
+    LIS_VECTOR b,
+    LIS_VECTOR x,
+    LIS_INT initial_zero,
+    LIS_INT *active_blocks,
+    LIS_INT *fallback_blocks,
+    LIS_REAL *omega);
+
+extern LIS_INT
+lis_precon_mfamg_get_level_smoother_info(
+    LIS_PRECON precon,
+    LIS_INT level_id,
+    LIS_INT *smoother_type,
+    LIS_INT *block_size,
+    LIS_INT *block_count,
+    LIS_INT *fallback_blocks);
+
+
+
 LIS_INT
 lis_precon_mfamg_get_hierarchy_info(
     LIS_PRECON precon,
@@ -3541,6 +3563,11 @@ check_mfamg_psd_lifecycle(void)
     LIS_INT hierarchy_nlevels;
     LIS_INT hierarchy_coarse_n;
 
+    LIS_INT smoother_type;
+    LIS_INT smoother_block_size;
+    LIS_INT smoother_block_count;
+    LIS_INT smoother_fallback_count;
+
     LIS_INT hierarchy_level_n[
         EXPECTED_MFAMG_LEVELS];
 
@@ -3654,6 +3681,7 @@ check_mfamg_psd_lifecycle(void)
         lis_solver_set_option(
             "-i fgmres "
             "-p mfamg "
+            "-mfamg_block_size 3 "
             "-scale none "
             "-tol 1.0e-10 "
             "-maxiter 200 "
@@ -3662,6 +3690,17 @@ check_mfamg_psd_lifecycle(void)
 
     if(err)
         goto fail;
+
+
+    if(solver->mfamg_block_size!=3)
+    {
+        fprintf(
+            stderr,
+            "MFAMG block-size option was not stored\n");
+
+        failed = 1;
+        goto cleanup;
+    }
 
 
     basis[0] =
@@ -3813,6 +3852,53 @@ check_mfamg_psd_lifecycle(void)
 
             failed = 1;
 
+            goto cleanup;
+        }
+
+
+        smoother_type = -1;
+        smoother_block_size = -1;
+        smoother_block_count = -1;
+        smoother_fallback_count = -1;
+
+
+        err =
+            lis_precon_mfamg_get_level_smoother_info(
+                precon,
+                0,
+                &smoother_type,
+                &smoother_block_size,
+                &smoother_block_count,
+                &smoother_fallback_count);
+
+        if(err)
+            goto fail;
+
+
+        printf(
+            "MFAMG_BLOCK_PSD_CONFIG "
+            "system=%d type=%d size=%d blocks=%d fallback=%d\n",
+            (int)system_id,
+            (int)smoother_type,
+            (int)smoother_block_size,
+            (int)smoother_block_count,
+            (int)smoother_fallback_count);
+
+
+        if(
+            smoother_block_size!=3
+            ||
+            smoother_block_count!=8
+            ||
+            smoother_fallback_count!=0)
+        {
+            fprintf(
+                stderr,
+                "MFAMG block smoother configuration mismatch "
+                "system=%d\n",
+                (int)system_id);
+
+            failed = 1;
             goto cleanup;
         }
 
@@ -4880,6 +4966,443 @@ fail:
 
 
 static int
+check_mfamg_block_smoother_engine(void)
+{
+    LIS_MATRIX A;
+    LIS_MATRIX U;
+    LIS_MATRIX F;
+
+    USER_CTX ctx;
+
+    LIS_VECTOR b;
+    LIS_VECTOR x_csr;
+    LIS_VECTOR x_user;
+    LIS_VECTOR b_fallback;
+    LIS_VECTOR x_fallback;
+
+    LIS_REAL diff;
+    LIS_REAL rel;
+    LIS_REAL omega_csr;
+    LIS_REAL omega_user;
+    LIS_REAL omega_fallback;
+    LIS_REAL mag;
+
+    LIS_INT active_csr;
+    LIS_INT fallback_csr;
+    LIS_INT active_user;
+    LIS_INT fallback_user;
+    LIS_INT active_fallback;
+    LIS_INT fallback_fallback;
+
+    LIS_INT i;
+    LIS_INT j;
+    LIS_INT err;
+
+    int failed;
+
+
+    A = NULL;
+    U = NULL;
+    F = NULL;
+
+    b = NULL;
+    x_csr = NULL;
+    x_user = NULL;
+    b_fallback = NULL;
+    x_fallback = NULL;
+
+    failed = 0;
+
+
+    err =
+        create_csr(
+            &A);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        create_user(
+            &ctx,
+            &U);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &b);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x_csr);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_vector_duplicate(
+            A,
+            &x_user);
+
+    if(err)
+        goto fail;
+
+
+    build_manufactured_rhs(
+        b);
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x_csr);
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x_user);
+
+
+    active_csr = -1;
+    fallback_csr = -1;
+    omega_csr = 0.0;
+
+
+    err =
+        lis_precon_mfamg_apply_block_smoother_for_test(
+            A,
+            3,
+            b,
+            x_csr,
+            LIS_TRUE,
+            &active_csr,
+            &fallback_csr,
+            &omega_csr);
+
+    if(err)
+        goto fail;
+
+
+    active_user = -1;
+    fallback_user = -1;
+    omega_user = 0.0;
+
+
+    err =
+        lis_precon_mfamg_apply_block_smoother_for_test(
+            U,
+            3,
+            b,
+            x_user,
+            LIS_TRUE,
+            &active_user,
+            &fallback_user,
+            &omega_user);
+
+    if(err)
+        goto fail;
+
+
+    diff =
+        max_relative_difference(
+            x_csr->value,
+            x_user->value);
+
+
+    err =
+        relative_residual(
+            A,
+            b,
+            x_csr,
+            &rel);
+
+    if(err)
+        goto fail;
+
+
+    printf(
+        "MFAMG_BLOCK_SMOOTHER "
+        "csr_active=%d csr_fallback=%d "
+        "user_active=%d user_fallback=%d "
+        "omega_csr=%.12e omega_user=%.12e "
+        "csr_user_diff=%.12e relres=%.12e\n",
+        (int)active_csr,
+        (int)fallback_csr,
+        (int)active_user,
+        (int)fallback_user,
+        (double)omega_csr,
+        (double)omega_user,
+        (double)diff,
+        (double)rel);
+
+
+    if(
+        active_csr!=8
+        ||
+        fallback_csr!=0
+        ||
+        active_user!=8
+        ||
+        fallback_user!=0
+        ||
+        omega_csr!=omega_csr
+        ||
+        omega_user!=omega_user
+        ||
+        !(omega_csr>0.0)
+        ||
+        !(omega_user>0.0)
+        ||
+        fabs(
+            omega_csr
+            -
+            omega_user)
+            >
+            MATCH_TOL
+        ||
+        diff>MATCH_TOL
+        ||
+        rel!=rel
+        ||
+        !(rel<1.0))
+    {
+        fprintf(
+            stderr,
+            "MFAMG block smoother CSR/USER equivalence failed\n");
+
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    /*
+     * Build one deliberately singular 3x3 diagonal block.
+     * Its scalar diagonal remains nonzero, so that block must
+     * use scalar Jacobi while the other seven blocks keep the
+     * dense block-Jacobi path.
+     */
+    err =
+        lis_matrix_create(
+            LIS_COMM_WORLD,
+            &F);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_matrix_set_size(
+            F,
+            0,
+            TEST_N);
+
+    if(err)
+        goto fail;
+
+
+    for(i=0;i<TEST_N;i++)
+    {
+        if(i<3)
+        {
+            for(j=0;j<3;j++)
+            {
+                err =
+                    lis_matrix_set_value(
+                        LIS_INS_VALUE,
+                        i,
+                        j,
+                        (LIS_SCALAR)1.0,
+                        F);
+
+                if(err)
+                    goto fail;
+            }
+        }
+        else
+        {
+            err =
+                lis_matrix_set_value(
+                    LIS_INS_VALUE,
+                    i,
+                    i,
+                    (LIS_SCALAR)2.0,
+                    F);
+
+            if(err)
+                goto fail;
+        }
+    }
+
+
+    err =
+        lis_matrix_assemble(
+            F);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_vector_duplicate(
+            F,
+            &b_fallback);
+
+    if(err)
+        goto fail;
+
+
+    err =
+        lis_vector_duplicate(
+            F,
+            &x_fallback);
+
+    if(err)
+        goto fail;
+
+
+    lis_vector_set_all(
+        (LIS_SCALAR)1.0,
+        b_fallback);
+
+    lis_vector_set_all(
+        (LIS_SCALAR)0.0,
+        x_fallback);
+
+
+    active_fallback = -1;
+    fallback_fallback = -1;
+    omega_fallback = 0.0;
+
+
+    err =
+        lis_precon_mfamg_apply_block_smoother_for_test(
+            F,
+            3,
+            b_fallback,
+            x_fallback,
+            LIS_TRUE,
+            &active_fallback,
+            &fallback_fallback,
+            &omega_fallback);
+
+    if(err)
+        goto fail;
+
+
+    printf(
+        "MFAMG_BLOCK_FALLBACK "
+        "active=%d fallback=%d omega=%.12e\n",
+        (int)active_fallback,
+        (int)fallback_fallback,
+        (double)omega_fallback);
+
+
+    if(
+        active_fallback!=7
+        ||
+        fallback_fallback!=1
+        ||
+        omega_fallback!=omega_fallback
+        ||
+        !(omega_fallback>0.0))
+    {
+        fprintf(
+            stderr,
+            "MFAMG block singular fallback count failed\n");
+
+        failed = 1;
+        goto cleanup;
+    }
+
+
+    for(i=0;i<TEST_N;i++)
+    {
+        mag =
+            fabs(
+                x_fallback->value[i]);
+
+        if(
+            mag!=mag
+            ||
+            mag>LIS_SCALAR_MAX)
+        {
+            fprintf(
+                stderr,
+                "MFAMG block singular fallback produced non-finite output\n");
+
+            failed = 1;
+            goto cleanup;
+        }
+    }
+
+
+cleanup:
+
+    if(x_fallback)
+        lis_vector_destroy(x_fallback);
+
+    if(b_fallback)
+        lis_vector_destroy(b_fallback);
+
+    if(F)
+        lis_matrix_destroy(F);
+
+    if(x_user)
+        lis_vector_destroy(x_user);
+
+    if(x_csr)
+        lis_vector_destroy(x_csr);
+
+    if(b)
+        lis_vector_destroy(b);
+
+    if(U)
+        lis_matrix_destroy(U);
+
+    if(A)
+        lis_matrix_destroy(A);
+
+
+    if(failed)
+    {
+        fprintf(
+            stderr,
+            "MFAMG BLOCK SMOOTHER ENGINE TEST FAILED\n");
+
+        return 1;
+    }
+
+
+    printf(
+        "MFAMG BLOCK SMOOTHER ENGINE TEST PASSED\n");
+
+
+    return 0;
+
+
+fail:
+
+    fprintf(
+        stderr,
+        "MFAMG block smoother operation failed rc=%d\n",
+        (int)err);
+
+    failed = 1;
+
+    goto cleanup;
+}
+
+
+
+static int
 run_serial(void)
 {
     LIS_MATRIX A;
@@ -4911,6 +5434,10 @@ run_serial(void)
 
     failed |=
         check_mfamg_multivector_stagnation();
+
+
+    failed |=
+        check_mfamg_block_smoother_engine();
 
 
     failed |=

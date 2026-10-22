@@ -67,6 +67,274 @@ LIS_INT lis_numerical_fact_bsr(LIS_SOLVER solver, LIS_PRECON precon);
 LIS_INT lis_symbolic_fact_vbr(LIS_SOLVER solver, LIS_PRECON precon);
 LIS_INT lis_numerical_fact_vbr(LIS_SOLVER solver, LIS_PRECON precon);
 
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_precon_allocate_ilu_numeric_values"
+static LIS_INT
+lis_precon_allocate_ilu_numeric_values(
+	LIS_MATRIX_ILU A)
+{
+	LIS_INT i,j,n;
+	LIS_INT *created;
+
+	if( A==NULL ||
+		A->nnz==NULL ||
+		A->value==NULL )
+	{
+		return LIS_ERR_ILL_ARG;
+	}
+
+	n = A->n;
+
+	if( n==0 )
+	{
+		return LIS_SUCCESS;
+	}
+
+	created =
+		(LIS_INT *)lis_malloc(
+			n*sizeof(LIS_INT),
+			"lis_precon_allocate_ilu_numeric_values::created");
+
+	if( created==NULL )
+	{
+		LIS_SETERR_MEM(
+			n*sizeof(LIS_INT));
+
+		return LIS_OUT_OF_MEMORY;
+	}
+
+	for(i=0;i<n;i++)
+	{
+		created[i] = 0;
+	}
+
+	for(i=0;i<n;i++)
+	{
+		if( A->nnz[i]<=0 ||
+			A->value[i]!=NULL )
+		{
+			continue;
+		}
+
+		A->value[i] =
+			(LIS_SCALAR *)lis_malloc(
+				A->nnz[i] *
+				sizeof(LIS_SCALAR),
+				"lis_precon_allocate_ilu_numeric_values::row");
+
+		if( A->value[i]==NULL )
+		{
+			for(j=0;j<n;j++)
+			{
+				if( created[j] )
+				{
+					lis_free(
+						A->value[j]);
+
+					A->value[j] = NULL;
+				}
+			}
+
+			lis_free(created);
+
+			LIS_SETERR_MEM(
+				A->nnz[i] *
+				sizeof(LIS_SCALAR));
+
+			return LIS_OUT_OF_MEMORY;
+		}
+
+		created[i] = 1;
+	}
+
+	lis_free(created);
+
+	return LIS_SUCCESS;
+}
+
+
+static void
+lis_precon_release_ilu_numeric_values(
+	LIS_MATRIX_ILU A)
+{
+#ifndef USE_QUAD_PRECISION
+
+	LIS_INT i;
+
+	if( A==NULL ||
+		A->value==NULL )
+	{
+		return;
+	}
+
+	for(i=0;i<A->n;i++)
+	{
+		if( A->nnz[i]>0 &&
+			A->value[i]!=NULL )
+		{
+			lis_free(
+				A->value[i]);
+
+			A->value[i] = NULL;
+		}
+	}
+
+#else
+
+	(void)A;
+
+#endif
+}
+
+
+static LIS_INT
+lis_precon_prepare_half_iluk_update(
+	LIS_PRECON precon)
+{
+	LIS_INT err;
+
+	if( precon==NULL ||
+		precon->L==NULL ||
+		precon->U==NULL )
+	{
+		return LIS_ERR_ILL_ARG;
+	}
+
+	/*
+	 * Accepted half storage may have released normal
+	 * numerical L/U values in a non-quad build.
+	 */
+	err =
+		lis_precon_allocate_ilu_numeric_values(
+			precon->L);
+
+	if( err )
+	{
+		return err;
+	}
+
+	err =
+		lis_precon_allocate_ilu_numeric_values(
+			precon->U);
+
+	if( err )
+	{
+		return err;
+	}
+
+	/*
+	 * The old half factors represent the previous
+	 * numerical matrix state.
+	 */
+	if( precon->half!=NULL )
+	{
+		lis_half_ilu_destroy(
+			precon->half);
+
+		precon->half = NULL;
+	}
+
+	return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+lis_precon_refresh_half_iluk(
+	LIS_SOLVER solver,
+	LIS_PRECON precon)
+{
+	LIS_HALF_ILU half;
+	LIS_REAL underflow;
+	LIS_REAL probe_error;
+	LIS_REAL probe_tolerance;
+	LIS_INT accepted;
+	LIS_INT err;
+	LIS_INT mode;
+
+	if( solver==NULL || precon==NULL )
+	{
+		return LIS_SUCCESS;
+	}
+
+	if( precon->half!=NULL )
+	{
+		lis_half_ilu_destroy(
+			precon->half);
+
+		precon->half = NULL;
+	}
+
+	mode = solver->precon_half_mode;
+
+	if( mode==LIS_PRECON_HALF_OFF )
+	{
+		return LIS_SUCCESS;
+	}
+
+	if( precon->L==NULL ||
+		precon->U==NULL ||
+		precon->D==NULL ||
+		precon->L->bs!=1 ||
+		precon->U->bs!=1 )
+	{
+		return LIS_SUCCESS;
+	}
+
+	half = NULL;
+	underflow = 0.0;
+
+	err = lis_half_ilu_compress(
+		precon->L,
+		precon->U,
+		&half,
+		&underflow);
+
+	if( err || half==NULL )
+	{
+		lis_half_ilu_destroy(half);
+		return LIS_SUCCESS;
+	}
+
+	accepted = LIS_FALSE;
+	probe_error = 0.0;
+	probe_tolerance = 0.0;
+
+	err = lis_half_ilu_assess(
+		precon->L,
+		precon->U,
+		precon->D,
+		half,
+		mode,
+		&accepted,
+		&probe_error,
+		&probe_tolerance);
+
+	if( err || !accepted )
+	{
+		lis_half_ilu_destroy(half);
+		return LIS_SUCCESS;
+	}
+
+	precon->half = half;
+
+	/*
+	 * Symbolic L/U remain alive because half storage borrows
+	 * their pattern.  Only normal numerical values are
+	 * released, and only when quad precision does not need
+	 * them as a fallback representation.
+	 */
+	lis_precon_release_ilu_numeric_values(
+		precon->L);
+
+	lis_precon_release_ilu_numeric_values(
+		precon->U);
+
+	return LIS_SUCCESS;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_precon_create_iluk"
 LIS_INT lis_precon_create_iluk(LIS_SOLVER solver, LIS_PRECON precon)
@@ -134,6 +402,9 @@ LIS_INT lis_precon_create_iluk(LIS_SOLVER solver, LIS_PRECON precon)
 		precon->is_copy = LIS_TRUE;
 		break;
 	}
+
+	err = lis_precon_refresh_half_iluk(solver,precon);
+	if( err ) return err;
 
 	LIS_DEBUG_FUNC_OUT;
     return LIS_SUCCESS;
@@ -225,7 +496,18 @@ LIS_INT lis_precon_psd_update_iluk(LIS_SOLVER solver, LIS_PRECON precon)
 	switch( solver->A->matrix_type )
 	{
 	case LIS_MATRIX_CSR:
+		err = lis_precon_prepare_half_iluk_update(
+			precon);
+
+		if( err ) return err;
+
 		err = lis_numerical_fact_csr(solver,precon);
+		if( err ) return err;
+
+		err = lis_precon_refresh_half_iluk(
+			solver,
+			precon);
+
 		if( err ) return err;
 		break;
 	case LIS_MATRIX_BSR:
@@ -926,6 +1208,20 @@ LIS_INT lis_psolve_iluk_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 	LIS_DEBUG_FUNC_IN;
 
 	precon = solver->precon;
+
+#ifdef USE_QUAD_PRECISION
+	if( precon->half!=NULL &&
+		B->precision==LIS_PRECISION_DEFAULT )
+#else
+	if( precon->half!=NULL )
+#endif
+	{
+		return lis_half_ilu_psolve(
+			solver,
+			B,
+			X);
+	}
+
 	L = precon->L;
 	U = precon->U;
 	D = precon->D;
@@ -1036,6 +1332,20 @@ LIS_INT lis_psolve_iluk_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 	LIS_DEBUG_FUNC_IN;
 
 	precon = solver->precon;
+
+#ifdef USE_QUAD_PRECISION
+	if( precon->half!=NULL &&
+		B->precision==LIS_PRECISION_DEFAULT )
+#else
+	if( precon->half!=NULL )
+#endif
+	{
+		return lis_half_ilu_psolve(
+			solver,
+			B,
+			X);
+	}
+
 	L = precon->L;
 	U = precon->U;
 	D = precon->D;
@@ -1132,6 +1442,20 @@ LIS_INT lis_psolveh_iluk_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 	LIS_DEBUG_FUNC_IN;
 
 	precon = solver->precon;
+
+#ifdef USE_QUAD_PRECISION
+	if( precon->half!=NULL &&
+		B->precision==LIS_PRECISION_DEFAULT )
+#else
+	if( precon->half!=NULL )
+#endif
+	{
+		return lis_half_ilu_psolveh(
+			solver,
+			B,
+			X);
+	}
+
 	L = precon->L;
 	U = precon->U;
 	D = precon->D;
@@ -1238,6 +1562,20 @@ LIS_INT lis_psolveh_iluk_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 	LIS_DEBUG_FUNC_IN;
 
 	precon = solver->precon;
+
+#ifdef USE_QUAD_PRECISION
+	if( precon->half!=NULL &&
+		B->precision==LIS_PRECISION_DEFAULT )
+#else
+	if( precon->half!=NULL )
+#endif
+	{
+		return lis_half_ilu_psolveh(
+			solver,
+			B,
+			X);
+	}
+
 	L = precon->L;
 	U = precon->U;
 	D = precon->D;

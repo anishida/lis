@@ -30,8 +30,9 @@
 
 #include "lis.h"
 
-/* Internal bounded QR iteration helper. */
+/* Internal bounded dense QR helpers. */
 extern LIS_INT lis_array_qr_limit(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *q, LIS_SCALAR *r, LIS_INT maxiter, LIS_INT *qriter, LIS_REAL *qrerr);
+extern LIS_INT lis_array_hqr_limit(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *q, LIS_SCALAR *r, LIS_INT maxiter, LIS_INT *qriter, LIS_REAL *qrerr);
 #include "lis_precision.h"
 #include "lis_system.h"
 #include "lis_vector.h"
@@ -44,5 +45,41 @@ extern LIS_INT lis_array_qr_limit(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *q, LIS_S
 #include "lis_io.h"
 #include "lis_mpi.h"
 #include "mt19937ar.h"
+
+
+/* Internal binary16 preconditioner storage support. */
+LIS_INT lis_half_ilu_compress(
+	LIS_MATRIX_ILU L,
+	LIS_MATRIX_ILU U,
+	LIS_HALF_ILU *half,
+	LIS_REAL *underflow_ratio);
+
+LIS_INT lis_half_ilu_expand(
+	LIS_HALF_ILU half,
+	LIS_MATRIX_ILU *L,
+	LIS_MATRIX_ILU *U);
+
+LIS_INT lis_half_ilu_destroy(
+	LIS_HALF_ILU half);
+
+LIS_INT lis_half_ilu_assess(
+	LIS_MATRIX_ILU L,
+	LIS_MATRIX_ILU U,
+	LIS_VECTOR D,
+	LIS_HALF_ILU half,
+	LIS_INT mode,
+	LIS_INT *accepted,
+	LIS_REAL *probe_error,
+	LIS_REAL *probe_tolerance);
+
+LIS_INT lis_half_ilu_psolve(
+	LIS_SOLVER solver,
+	LIS_VECTOR B,
+	LIS_VECTOR X);
+
+LIS_INT lis_half_ilu_psolveh(
+	LIS_SOLVER solver,
+	LIS_VECTOR B,
+	LIS_VECTOR X);
 
 #endif

@@ -23,7 +23,7 @@ test_PROGRAMS = etest1 etest2 etest3 etest4 etest5 etest5b etest6 etest7 getest1
         testparamupdate testbreakretry testchangingsystem testkrylovrobust testnearnullspace \
         testcoarsesetup testcoarseapply testgcrodroptions testgcrodrconfig testgcrodrsequence \
         testmatrixgeneration testexternalstorage testsequence testwarmstart testrecovery \
-        testthreads testfgcrodr testmfamg testexactnullspace
+        testthreads testfgcrodr testmfamg testmfamggalerkin testexactnullspace testhalfconfig testhalfconvert
 
 testgcrodroptions_SOURCES = testgcrodroptions.c
 testgcrodrconfig_SOURCES = testgcrodrconfig.c
@@ -33,6 +33,10 @@ testexternalstorage_SOURCES = testexternalstorage.c
 testsequence_SOURCES = testsequence.c
 testwarmstart_SOURCES = testwarmstart.c
 testrecovery_SOURCES = testrecovery.c
+if ENABLE_HALF_REAL_DOUBLE
+  test_PROGRAMS += testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
+endif
+
 if ENABLE_FORTRAN
   test_PROGRAMS += etest1f etest4f test1f test4f test7f
 endif
@@ -78,7 +82,16 @@ testuser_SOURCES = testuser.c
 testuserrow_SOURCES = testuserrow.c
 testmatvecblock_SOURCES = testmatvecblock.c
 testcapabilities_SOURCES = testcapabilities.c
+testhalfconfig_SOURCES = testhalfconfig.c
+testhalfconvert_SOURCES = testhalfconvert.c
+testhalfstorage_SOURCES = testhalfstorage.c
+testhalfprobe_SOURCES = testhalfprobe.c
+testhalfdispatch_SOURCES = testhalfdispatch.c
+testhalfilukmemory_SOURCES = testhalfilukmemory.c
+testhalfiluksimd_SOURCES = testhalfiluksimd.c
+testhalfilut_SOURCES = testhalfilut.c
 testmfamg_SOURCES = testmfamg.c
+testmfamggalerkin_SOURCES = testmfamggalerkin.c
 getestuser_SOURCES = getestuser.c
 testoperator_SOURCES = testoperator.c
 testdiagonal_SOURCES = testdiagonal.c
@@ -167,6 +180,7 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_mpi=$(enable_mpi) \
                     enable_omp=$(enable_omp) \
                     enable_quad=$(enable_quad) \
+                    enable_half=$(enable_half) \
                     enable_longdouble=$(enable_longdouble) \
                     enable_complex=$(enable_complex) \
                     enable_saamg=$(enable_saamg) \
@@ -185,7 +199,14 @@ TESTS = test.sh testuserrow$(EXEEXT) testmatvecblock$(EXEEXT) testcapabilities$(
         testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) testgcrodrsequence$(EXEEXT) \
         testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testsequence$(EXEEXT) \
         testwarmstart$(EXEEXT) testrecovery$(EXEEXT) testthreads$(EXEEXT) \
-        testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) testexactnullspace$(EXEEXT)
+        testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
+        testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT)
+
+if ENABLE_HALF_REAL_DOUBLE
+TESTS += testhalfstorage$(EXEEXT) testhalfprobe$(EXEEXT) testhalfdispatch$(EXEEXT) \
+         testhalfilukmemory$(EXEEXT) testhalfiluksimd$(EXEEXT) \
+         testhalfilut$(EXEEXT)
+endif
 
 installcheck: 
 	@if test ! -f $(testdir)/test.sh; then \

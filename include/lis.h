@@ -33,7 +33,7 @@ extern "C" {
 #endif
 
 /**************************************/
-#define LIS_VERSION	"2.1.18"
+#define LIS_VERSION	"2.1.19"
 /**************************************/
 #include <stdio.h>
 #ifdef USE_COMPLEX
@@ -251,6 +251,15 @@ extern "C" {
 #define LIS_PRECISION_DOUBLE 0
 #define LIS_PRECISION_QUAD 1
 #define LIS_PRECISION_SWITCH 2
+
+/*
+ * Storage precision policy for supported preconditioners.
+ *
+ * This is independent of LIS_PRECISION_* solver arithmetic.
+ */
+#define LIS_PRECON_HALF_OFF   0
+#define LIS_PRECON_HALF_ON    1
+#define LIS_PRECON_HALF_NOPROBE 2
 
 #define LIS_LABEL_VECTOR 0
 #define LIS_LABEL_MATRIX 1
@@ -822,6 +831,12 @@ struct LIS_MATRIX_ILU_STRUCT
 };
 typedef struct LIS_MATRIX_ILU_STRUCT *LIS_MATRIX_ILU;
 
+/*
+ * Private half-storage implementation state.
+ */
+struct LIS_HALF_ILU_STRUCT;
+typedef struct LIS_HALF_ILU_STRUCT *LIS_HALF_ILU;
+
 struct LIS_PRECON_STRUCT
 {
 	LIS_INT precon_type;
@@ -851,6 +866,12 @@ struct LIS_PRECON_STRUCT
 	void *user_data;
 	/* USERDEF cleanup callback copied from the registry at create time. */
 	LIS_INT (*user_destroy)(struct LIS_PRECON_STRUCT *precon);
+
+	/*
+	 * Optional private FP16 storage state.
+	 * Kept at the end of LIS_PRECON_STRUCT.
+	 */
+	LIS_HALF_ILU half;
 };
 typedef struct LIS_PRECON_STRUCT *LIS_PRECON;
 
@@ -924,6 +945,8 @@ struct LIS_SOLVER_STRUCT
 	LIS_INT rhs_compatibility_policy;
 	LIS_REAL rhs_compatibility_tol;
 	LIS_INT near_nullspace_dim;
+	/* MFAMG block size; 1 preserves weighted Jacobi. */
+	LIS_INT mfamg_block_size;
 	LIS_NEAR_NULLSPACE_COARSE near_nullspace_coarse;
 	/* Persistent GCRO-DR recycle state. */
 	LIS_VECTOR *recycle_u;
@@ -1030,6 +1053,15 @@ struct LIS_SOLVER_STRUCT
 
         /* Private persistent FGCRO-DR state. */
         LIS_FGCRODR_STATE fgcrodr_state;
+
+	/*
+	 * Half-storage policy remains separate from options[].
+	 *
+	 * This preserves LIS_OPTIONS_LEN and all existing
+	 * LIS_PARAMS_* numeric identifiers.
+	 */
+	LIS_INT precon_half_mode;
+	LIS_INT sequence_precon_half_mode;
 };
 typedef struct LIS_SOLVER_STRUCT *LIS_SOLVER;
 
@@ -1352,6 +1384,12 @@ extern "C"
 	extern LIS_INT lis_solver_get_sequence_diagnostics(LIS_SOLVER solver, LIS_SEQUENCE_DIAGNOSTICS *diag);
 	extern LIS_INT lis_solver_set_sequence_policy(LIS_SOLVER solver, LIS_INT policy);
 	extern LIS_INT lis_solver_get_sequence_policy(LIS_SOLVER solver, LIS_INT *policy);
+
+	/* Half precision preconditioner storage capability and policy. */
+	extern LIS_INT lis_half_get_capability(LIS_INT *available);
+	extern LIS_INT lis_solver_set_precon_half(LIS_SOLVER solver, LIS_INT mode);
+	extern LIS_INT lis_solver_get_precon_half(LIS_SOLVER solver, LIS_INT *mode);
+
 	extern LIS_INT lis_solver_set_num_threads(LIS_SOLVER solver, LIS_INT num_threads);
 	extern LIS_INT lis_solver_get_num_threads(LIS_SOLVER solver, LIS_INT *num_threads);
 	extern LIS_INT lis_solver_set_sequence_precon_max_age(LIS_SOLVER solver, LIS_INT max_age);

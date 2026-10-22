@@ -2202,14 +2202,14 @@ lis_fgcrodr_try_harmonic_build(
 
     /*
      * Harmonic recycle extraction is optional.  Bound the
-     * unshifted QR iteration so a difficult small eigensystem
+     * shifted Hessenberg QR iteration so a difficult small eigensystem
      * cannot dominate the linear solve.
      */
     qriter =
         1024;
 
     err =
-        lis_array_qr_limit(
+        lis_array_hqr_limit(
             psmall,
             TQR,
             QW,
@@ -3730,14 +3730,14 @@ lis_fgcrodr_try_harmonic_update(
 
     /*
      * Harmonic recycle extraction is optional.  Bound the
-     * unshifted QR iteration so a difficult small eigensystem
+     * shifted Hessenberg QR iteration so a difficult small eigensystem
      * cannot dominate the linear solve.
      */
     qriter =
         512;
 
     err =
-        lis_array_qr_limit(
+        lis_array_hqr_limit(
             psmall,
             TQR,
             QW,

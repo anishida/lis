@@ -927,7 +927,7 @@ static LIS_INT lis_gcrodr_update_recycle(LIS_SOLVER solver,
     memcpy(TQR,T,(size_t)p*p*sizeof(LIS_SCALAR));
     /*
      * Harmonic recycle extraction is optional.  Bound the
-     * unshifted QR iteration so a difficult small eigensystem
+     * shifted Hessenberg QR iteration so a difficult small eigensystem
      * cannot dominate the linear solve.
      */
     if( oldk>0 )
@@ -935,7 +935,7 @@ static LIS_INT lis_gcrodr_update_recycle(LIS_SOLVER solver,
     else
         qriter = 1024;
 
-    err = lis_array_qr_limit(
+    err = lis_array_hqr_limit(
         p,
         TQR,
         QW,
