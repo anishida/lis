@@ -143,6 +143,375 @@ LIS_INT	precon_register_type = LIS_PRECON_TYPE_USERDEF;
 	extern char *f_clear_matrix_ptr;
 #endif
 
+
+#undef __FUNC__
+#define __FUNC__ "lis_precon_row_source_init"
+LIS_INT lis_precon_row_source_init(
+	LIS_MATRIX A,
+	LIS_PRECON_ROW_SOURCE *source)
+{
+	if( A==NULL || source==NULL )
+	{
+		return LIS_ERR_ILL_ARG;
+	}
+
+	memset(source,0,sizeof(*source));
+	source->A = A;
+
+	switch( A->matrix_type )
+	{
+	case LIS_MATRIX_CSR:
+		return LIS_SUCCESS;
+
+	case LIS_MATRIX_USER:
+		/*
+		 * USER callbacks expose global column indices.  In serial
+		 * mode global and local numbering coincide.  Distributed
+		 * USER matrices keep the existing explicit-storage path
+		 * until a direct local/halo mapping is available.
+		 */
+		if( A->nprocs!=1 || A->n!=A->gn )
+		{
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
+
+		return LIS_SUCCESS;
+
+	default:
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_precon_row_source_destroy"
+void lis_precon_row_source_destroy(
+	LIS_PRECON_ROW_SOURCE *source)
+{
+	if( source==NULL )
+	{
+		return;
+	}
+
+	if( source->index_buffer!=NULL )
+	{
+		lis_free(source->index_buffer);
+	}
+
+	if( source->value_buffer!=NULL )
+	{
+		lis_free(source->value_buffer);
+	}
+
+	memset(source,0,sizeof(*source));
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_precon_row_source_get"
+LIS_INT lis_precon_row_source_get(
+	LIS_PRECON_ROW_SOURCE *source,
+	LIS_INT local_row)
+{
+	LIS_MATRIX A;
+	LIS_INT err;
+	LIS_INT needed;
+	LIS_INT count;
+	LIS_INT k;
+	LIS_INT *new_index;
+	LIS_SCALAR *new_value;
+
+	if(
+		source==NULL
+		||
+		source->A==NULL)
+	{
+		return LIS_ERR_ILL_ARG;
+	}
+
+	A = source->A;
+
+	if(
+		local_row<0
+		||
+		local_row>=A->n)
+	{
+		return LIS_ERR_ILL_ARG;
+	}
+
+	source->index = NULL;
+	source->value = NULL;
+	source->nnz = 0;
+
+
+	/*
+	 * Native CSR: expose the existing row directly.
+	 * No allocation and no value/index copy.
+	 */
+	if( A->matrix_type==LIS_MATRIX_CSR )
+	{
+		if( A->ptr==NULL )
+		{
+			return LIS_ERR_ILL_ARG;
+		}
+
+		if(
+			A->ptr[local_row]<0
+			||
+			A->ptr[local_row+1]<A->ptr[local_row])
+		{
+			return LIS_ERR_ILL_ARG;
+		}
+
+		count =
+			A->ptr[local_row+1]
+			-
+			A->ptr[local_row];
+
+		if(
+			count>0
+			&&
+			(
+				A->index==NULL
+				||
+				A->value==NULL
+			))
+		{
+			return LIS_ERR_ILL_ARG;
+		}
+
+		source->nnz = count;
+
+		if( count>0 )
+		{
+			source->index =
+				&A->index[A->ptr[local_row]];
+
+			source->value =
+				&A->value[A->ptr[local_row]];
+		}
+
+		return LIS_SUCCESS;
+	}
+
+
+	if( A->matrix_type!=LIS_MATRIX_USER )
+	{
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
+	if( A->nprocs!=1 || A->n!=A->gn )
+	{
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
+
+	/*
+	 * First callback invocation is a row-size query.
+	 */
+	needed = 0;
+
+	err = lis_matrix_get_user_row(
+		A,
+		local_row,
+		&needed,
+		NULL,
+		NULL);
+
+	if( err )
+	{
+		return err;
+	}
+
+	if( needed<0 )
+	{
+		return LIS_ERR_ILL_ARG;
+	}
+
+
+	/*
+	 * Grow only to the largest row observed so far.
+	 * There is never storage proportional to total matrix nnz here.
+	 */
+	if( needed>source->capacity )
+	{
+		new_index = NULL;
+		new_value = NULL;
+
+		if( needed>0 )
+		{
+			new_index =
+				(LIS_INT *)lis_malloc(
+					needed*sizeof(LIS_INT),
+					"lis_precon_row_source_get::index");
+
+			if( new_index==NULL )
+			{
+				LIS_SETERR_MEM(
+					needed*sizeof(LIS_INT));
+
+				return LIS_OUT_OF_MEMORY;
+			}
+
+			new_value =
+				(LIS_SCALAR *)lis_malloc(
+					needed*sizeof(LIS_SCALAR),
+					"lis_precon_row_source_get::value");
+
+			if( new_value==NULL )
+			{
+				lis_free(new_index);
+
+				LIS_SETERR_MEM(
+					needed*sizeof(LIS_SCALAR));
+
+				return LIS_OUT_OF_MEMORY;
+			}
+		}
+
+		if( source->index_buffer!=NULL )
+		{
+			lis_free(source->index_buffer);
+		}
+
+		if( source->value_buffer!=NULL )
+		{
+			lis_free(source->value_buffer);
+		}
+
+		source->index_buffer = new_index;
+		source->value_buffer = new_value;
+		source->capacity = needed;
+	}
+
+
+	if( needed>0 )
+	{
+		count = source->capacity;
+
+		err = lis_matrix_get_user_row(
+			A,
+			local_row,
+			&count,
+			source->index_buffer,
+			source->value_buffer);
+
+		if( err )
+		{
+			return err;
+		}
+
+		if( count!=needed )
+		{
+			return LIS_ERR_ILL_ARG;
+		}
+
+		/*
+		 * USER columns are global.  The current direct path is
+		 * intentionally serial, therefore the same values are also
+		 * valid local column indices for the ILU-family algorithms.
+		 */
+		for(k=0;k<count;k++)
+		{
+			if(
+				source->index_buffer[k]<0
+				||
+				source->index_buffer[k]>=A->n)
+			{
+				return LIS_ERR_ILL_ARG;
+			}
+		}
+
+		source->index =
+			source->index_buffer;
+
+		source->value =
+			source->value_buffer;
+	}
+
+	source->nnz = needed;
+
+	return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_precon_row_source_count_nnz"
+LIS_INT lis_precon_row_source_count_nnz(
+	LIS_MATRIX A,
+	LIS_INT *nnz)
+{
+	LIS_INT err;
+	LIS_INT i;
+	LIS_INT row_nnz;
+	LIS_INT total;
+
+	if( A==NULL || nnz==NULL )
+	{
+		return LIS_ERR_ILL_ARG;
+	}
+
+	if( A->matrix_type==LIS_MATRIX_CSR )
+	{
+		if( A->nnz<0 )
+		{
+			return LIS_ERR_ILL_ARG;
+		}
+
+		*nnz = A->nnz;
+
+		return LIS_SUCCESS;
+	}
+
+	if( A->matrix_type!=LIS_MATRIX_USER )
+	{
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
+	if( A->nprocs!=1 || A->n!=A->gn )
+	{
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
+	total = 0;
+
+	for(i=0;i<A->n;i++)
+	{
+		row_nnz = 0;
+
+		err = lis_matrix_get_user_row(
+			A,
+			i,
+			&row_nnz,
+			NULL,
+			NULL);
+
+		if( err )
+		{
+			return err;
+		}
+
+		if( row_nnz<0 )
+		{
+			return LIS_ERR_ILL_ARG;
+		}
+
+		total += row_nnz;
+
+		if( total<0 )
+		{
+			return LIS_ERR_ILL_ARG;
+		}
+	}
+
+	*nnz = total;
+
+	return LIS_SUCCESS;
+}
+
+
+
+#undef __FUNC__
 LIS_REAL lis_precon_csr_row_scale(
     LIS_MATRIX A,
     LIS_INT row)
@@ -195,41 +564,111 @@ LIS_REAL lis_precon_csr_row_scale(
 #undef __FUNC__
 #define __FUNC__ "lis_precon_check_ilu_pivot_tol"
 LIS_INT lis_precon_check_ilu_pivot_tol(
-    LIS_MATRIX A,
-    LIS_REAL tol)
+	LIS_MATRIX A,
+	LIS_REAL tol)
 {
-    LIS_INT i;
-    LIS_REAL scale;
+	LIS_INT i,j,err;
+	LIS_REAL scale,t;
+	LIS_PRECON_ROW_SOURCE source;
 
-    if( tol<0.0 )
-    {
-        LIS_SETERR1(
-            LIS_ERR_ILL_ARG,
-            "ILU pivot tolerance (%e) is less than 0\n",
-            (double)tol);
-        return LIS_ERR_ILL_ARG;
-    }
+	if( tol<0.0 )
+	{
+		LIS_SETERR1(
+			LIS_ERR_ILL_ARG,
+			"ILU pivot tolerance (%e) is less than 0\n",
+			(double)tol);
+		return LIS_ERR_ILL_ARG;
+	}
 
-    if( tol==0.0 )
-    {
-        return LIS_SUCCESS;
-    }
+	if( tol==0.0 )
+	{
+		return LIS_SUCCESS;
+	}
 
-    for(i=0;i<A->n;i++)
-    {
-        scale = lis_precon_csr_row_scale(A,i);
+	/*
+	 * USER matrices have no explicit CSR storage.  Validate their
+	 * row scale directly through the row-access capability.
+	 */
+	if( A->matrix_type==LIS_MATRIX_USER )
+	{
+		err = lis_precon_row_source_init(
+			A,
+			&source);
 
-        if( !(scale>0.0) )
-        {
-            LIS_SETERR1(
-                LIS_BREAKDOWN,
-                "zero row scale at row %D\n",
-                i);
-            return LIS_BREAKDOWN;
-        }
-    }
+		if( err )
+		{
+			return err;
+		}
 
-    return LIS_SUCCESS;
+		for(i=0;i<A->n;i++)
+		{
+			err = lis_precon_row_source_get(
+				&source,
+				i);
+
+			if( err )
+			{
+				lis_precon_row_source_destroy(
+					&source);
+
+				return err;
+			}
+
+			scale = 0.0;
+
+			for(j=0;j<source.nnz;j++)
+			{
+				t = fabs(
+					source.value[j]);
+
+				if( t>scale )
+				{
+					scale = t;
+				}
+			}
+
+			if( !(scale>0.0) )
+			{
+				lis_precon_row_source_destroy(
+					&source);
+
+				LIS_SETERR1(
+					LIS_BREAKDOWN,
+					"zero row scale at row %D\n",
+					i);
+
+				return LIS_BREAKDOWN;
+			}
+		}
+
+		lis_precon_row_source_destroy(
+			&source);
+
+		return LIS_SUCCESS;
+	}
+
+	/*
+	 * Existing explicit-storage path.
+	 */
+	for(i=0;i<A->n;i++)
+	{
+		scale =
+			lis_precon_csr_row_scale(
+				A,
+				i);
+
+		if( !(scale>0.0) )
+		{
+			LIS_SETERR1(
+				LIS_BREAKDOWN,
+				"zero row scale at row %D\n",
+				i);
+
+			return LIS_BREAKDOWN;
+		}
+	}
+
+	return LIS_SUCCESS;
 }
 
 
