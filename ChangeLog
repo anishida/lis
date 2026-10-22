@@ -1,3 +1,8 @@
+Version 2.1.19 October 22, 2026
+
+  - MFAMG: Optimized sparse Galerkin assembly (thanks to Rafal Brzegowy).
+  - SAINV & Factor Storage: Optimized setup overhead and added half-precision factor storage (thanks to Rafal Brzegowy).
+
 Version 2.1.18 October 20, 2026
 
   - Improved the construction of the MFAMG coarsening hierarchy when multiple vectors are supplied (thanks to Rafal Brzegowy).
