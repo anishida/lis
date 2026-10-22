@@ -189,7 +189,6 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
       LIS_SETERR(LIS_BREAKDOWN,
               "invalid Subspace initial vector norm\n");
       esolver->retcode = LIS_BREAKDOWN;
-      lis_solver_destroy(solver);
       LIS_DEBUG_FUNC_OUT;
       return LIS_BREAKDOWN;
     }
@@ -562,7 +561,6 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
       LIS_SETERR(LIS_BREAKDOWN,
               "invalid generalized Subspace initial vector norm\n");
       esolver->retcode = LIS_BREAKDOWN;
-      lis_solver_destroy(solver);
       LIS_DEBUG_FUNC_OUT;
       return LIS_BREAKDOWN;
     }

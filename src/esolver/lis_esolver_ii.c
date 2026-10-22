@@ -325,7 +325,6 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
       LIS_SETERR(LIS_BREAKDOWN,
               "invalid Inverse iteration vector norm\n");
       esolver->retcode = LIS_BREAKDOWN;
-      lis_precon_destroy(precon);
       lis_solver_destroy(solver);
       if ( oshift != 0.0 )
         lis_matrix_shift_diagonal(A, -oshift);
@@ -739,7 +738,6 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
       LIS_SETERR(LIS_BREAKDOWN,
               "invalid generalized Inverse vector norm\n");
       esolver->retcode = LIS_BREAKDOWN;
-      lis_precon_destroy(precon);
       lis_solver_destroy(solver);
       if( Aop ) lis_matrix_destroy(Aop);
       LIS_DEBUG_FUNC_OUT;

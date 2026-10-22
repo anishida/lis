@@ -331,7 +331,6 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
       LIS_SETERR(LIS_BREAKDOWN,
               "invalid Rayleigh Quotient iteration vector norm\n");
       esolver->retcode = LIS_BREAKDOWN;
-      lis_precon_destroy(precon);
       lis_solver_destroy(solver);
       LIS_DEBUG_FUNC_OUT;
       return LIS_BREAKDOWN;
@@ -673,7 +672,6 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
       LIS_SETERR(LIS_BREAKDOWN,
               "invalid generalized Rayleigh Quotient vector norm\n");
       esolver->retcode = LIS_BREAKDOWN;
-      lis_precon_destroy(precon);
       lis_solver_destroy(solver);
       LIS_DEBUG_FUNC_OUT;
       return LIS_BREAKDOWN;

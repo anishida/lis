@@ -605,7 +605,6 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
       LIS_SETERR(LIS_BREAKDOWN,
               "invalid generalized Power vector norm\n");
       esolver->retcode = LIS_BREAKDOWN;
-      lis_precon_destroy(precon);
       lis_solver_destroy(solver);
       if( Aop ) lis_matrix_destroy(Aop);
       LIS_DEBUG_FUNC_OUT;
