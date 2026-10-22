@@ -2199,7 +2199,7 @@ LIS_INT lis_solver_set_matrix(LIS_MATRIX A, LIS_SOLVER solver)
 static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
                                             LIS_PRECON precon)
 {
-	LIS_INT nsolver, precon_type;
+	LIS_INT nsolver, precon_type, capabilities, err;
 
 	if( A->matrix_type!=LIS_MATRIX_USER &&
 	    A->matrix_type!=LIS_MATRIX_OPERATOR ) return LIS_SUCCESS;
@@ -2302,13 +2302,57 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
 	}
 
 	if( precon_type!=LIS_PRECON_TYPE_NONE &&
-        precon_type<LIS_PRECON_TYPE_USERDEF &&
-        precon_type!=LIS_PRECON_TYPE_MFAMG &&
-        precon==NULL )
+	    precon_type<LIS_PRECON_TYPE_USERDEF &&
+	    precon_type!=LIS_PRECON_TYPE_MFAMG &&
+	    precon==NULL )
 	{
-	        LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-	                   "built-in preconditioners require explicit storage unless a compatible prebuilt preconditioner is supplied\n");
-	        return LIS_ERR_NOT_IMPLEMENTED;
+		if( A->matrix_type==LIS_MATRIX_USER )
+		{
+			capabilities = 0;
+			err = lis_matrix_get_capabilities(A,&capabilities);
+			if( err ) return err;
+
+			switch( precon_type )
+			{
+			case LIS_PRECON_TYPE_JACOBI:
+				if( !(capabilities & LIS_MATRIX_CAP_DIAGONAL) )
+				{
+					LIS_SETERR(
+						LIS_ERR_NOT_IMPLEMENTED,
+						"Jacobi preconditioner requires matrix diagonal access\n");
+					return LIS_ERR_NOT_IMPLEMENTED;
+				}
+				break;
+
+			case LIS_PRECON_TYPE_ILU:
+			case LIS_PRECON_TYPE_IS:
+			case LIS_PRECON_TYPE_SAI:
+			case LIS_PRECON_TYPE_SAAMG:
+			case LIS_PRECON_TYPE_ILUC:
+			case LIS_PRECON_TYPE_ILUT:
+				if( !(capabilities & LIS_MATRIX_CAP_ROW_ACCESS) )
+				{
+					LIS_SETERR(
+						LIS_ERR_NOT_IMPLEMENTED,
+						"selected built-in preconditioner requires matrix row access\n");
+					return LIS_ERR_NOT_IMPLEMENTED;
+				}
+				break;
+
+			default:
+				LIS_SETERR(
+					LIS_ERR_NOT_IMPLEMENTED,
+					"selected built-in preconditioner is unavailable for LIS_MATRIX_USER\n");
+				return LIS_ERR_NOT_IMPLEMENTED;
+			}
+		}
+		else
+		{
+			LIS_SETERR(
+				LIS_ERR_NOT_IMPLEMENTED,
+				"built-in preconditioners require explicit storage unless a compatible prebuilt preconditioner is supplied\n");
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
 	}
 	if( precon_type>=LIS_PRECON_TYPE_USERDEF )
 	{

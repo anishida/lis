@@ -14,7 +14,7 @@ test_SCRIPTS = defs test.sh
 test_PROGRAMS = etest1 etest2 etest3 etest4 etest5 etest5b etest6 etest7 getest1 \
         getest5 getest5b spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b \
         spmvtest4 spmvtest5 test1 test2 test2b test3 test3b test3c \
-        test4 test5 test6 test7 testuser testuserrow testmatvecblock \
+        test4 test5 test6 test7 testuser testuserrow testuserprecon testmatvecblock \
         testcapabilities getestuser testoperator getestoperator testdiagonal \
         testpreconlifecycle testjacobiuser testpreconpsd testpreconreuse testrqirestore \
         testrhistoryerror testrepeatedsystems testpreconpolicy testgmreswork \
@@ -80,6 +80,7 @@ test6_SOURCES = test6.c
 test7_SOURCES = test7.c
 testuser_SOURCES = testuser.c
 testuserrow_SOURCES = testuserrow.c
+testuserprecon_SOURCES = testuserprecon.c
 testmatvecblock_SOURCES = testmatvecblock.c
 testcapabilities_SOURCES = testcapabilities.c
 testhalfconfig_SOURCES = testhalfconfig.c
@@ -186,7 +187,7 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
-TESTS = test.sh testuserrow$(EXEEXT) testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
+TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
         testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
         testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
         testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
