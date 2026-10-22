@@ -177,18 +177,54 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
 
       /* v = v / ||v||_2 */
       lis_vector_nrm2(v, &nrm2);
+      if( !lis_esolver_is_valid_norm(nrm2) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid Power iteration vector norm\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          if ( oshift != 0.0 )
+            lis_matrix_shift_diagonal(A, -oshift);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
       lis_vector_scale(1.0/nrm2, v);
 
       /* y = A * v */
       lis_matvec(A,v,y);
 
       /* theta = <v,y> */
-      lis_vector_dot(v, y, &theta);   
+      lis_vector_dot(v, y, &theta);
+
+      if( !lis_esolver_is_valid_denominator(theta) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid Power iteration Rayleigh denominator\n");
+          esolver->retcode = LIS_BREAKDOWN;
+
+          if ( oshift != 0.0 )
+            lis_matrix_shift_diagonal(A, -oshift);
+
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
       /* resid = ||y - theta * v||_2 / |theta| */
       lis_vector_axpyz(-theta, v, y, q); 
       lis_vector_nrm2(q, &resid); 
       resid = resid / fabs(theta);
+
+      if( !isfinite((double)resid) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite Power iteration residual\n");
+          esolver->retcode = LIS_BREAKDOWN;
+
+          if ( oshift != 0.0 )
+            lis_matrix_shift_diagonal(A, -oshift);
+
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
       /* v = y */
       lis_vector_copy(y, v);
@@ -207,6 +243,16 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
 	  esolver->resid[0]   = resid;
 	  esolver->evalue[0]  = theta + oshift;
 	  lis_vector_nrm2(v, &nrm2);
+	  if( !lis_esolver_is_valid_norm(nrm2) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "invalid Power iteration vector norm\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_diagonal(A, -oshift);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
 	  lis_vector_scale(1.0/nrm2, v);
 	  if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);	  
 	  LIS_DEBUG_FUNC_OUT;
@@ -219,6 +265,16 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
   esolver->resid[0]  = resid;
   esolver->evalue[0] = theta + oshift;
   lis_vector_nrm2(v, &nrm2);
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid Power iteration vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      if ( oshift != 0.0 )
+        lis_matrix_shift_diagonal(A, -oshift);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   lis_vector_scale(1.0/nrm2, v);
   if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);  
   LIS_DEBUG_FUNC_OUT;
@@ -401,6 +457,17 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
 
       /* v = v / ||v||_2 */
       lis_vector_nrm2(v, &nrm2);
+      if( !lis_esolver_is_valid_norm(nrm2) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid generalized Power vector norm\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if( Aop ) lis_matrix_destroy(Aop);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
       lis_vector_scale(1.0/nrm2, v);
 
       /* w = A * v */
@@ -408,7 +475,33 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
 
       /* v = v / <v,w>^1/2, w = w / <v,w>^1/2 */
       lis_vector_dot(v, w, &eta);
+
+      if( !lis_esolver_is_finite_scalar(eta) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite generalized Power normalization product\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if( Aop ) lis_matrix_destroy(Aop);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
+
       eta = sqrt(eta);
+
+      if( !lis_esolver_is_valid_denominator(eta) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid generalized Power normalization factor\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if( Aop ) lis_matrix_destroy(Aop);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
+
       lis_vector_scale(1.0/eta, v);
       lis_vector_scale(1.0/eta, w);
 
@@ -426,12 +519,36 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
       lis_solver_get_iter(solver, &iter2);
 
       /* theta = <w,y> */
-      lis_vector_dot(w, y, &theta); 
+      lis_vector_dot(w, y, &theta);
+
+      if( !lis_esolver_is_valid_denominator(theta) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid generalized Power Rayleigh denominator\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if( Aop ) lis_matrix_destroy(Aop);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
       /* resid = ||y - theta * v||_2 / |theta| */
       lis_vector_axpyz(-theta, v, y, q); 
       lis_vector_nrm2(q, &resid); 
       resid = resid / fabs(theta);
+
+      if( !isfinite((double)resid) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite generalized Power residual\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if( Aop ) lis_matrix_destroy(Aop);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
       /* v = y */
       lis_vector_copy(y, v);
@@ -456,6 +573,17 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
 	  esolver->resid[0]   = resid;
 	  esolver->evalue[0]  = theta + oshift;
 	  lis_vector_nrm2(v, &nrm2);
+	  if( !lis_esolver_is_valid_norm(nrm2) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "invalid generalized Power vector norm\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      if( Aop ) lis_matrix_destroy(Aop);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
 	  lis_vector_scale(1.0/nrm2, v);
 	  lis_precon_destroy(precon);
 	  lis_solver_destroy(solver);
@@ -472,6 +600,17 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
   esolver->resid[0]  = resid;
   esolver->evalue[0] = theta + oshift;
   lis_vector_nrm2(v, &nrm2);
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid generalized Power vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_precon_destroy(precon);
+      lis_solver_destroy(solver);
+      if( Aop ) lis_matrix_destroy(Aop);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   lis_vector_scale(1.0/nrm2, v);
   lis_solver_destroy(solver);
   if( Aop ) lis_matrix_destroy(Aop);

@@ -210,6 +210,18 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
 
       /* v = v / ||v||_2 */
       lis_vector_nrm2(v, &nrm2);
+      if( !lis_esolver_is_valid_norm(nrm2) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid Inverse iteration vector norm\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if ( oshift != 0.0 )
+            lis_matrix_shift_diagonal(A, -oshift);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
       lis_vector_scale(1.0/nrm2, v);
 
       /* y = A^-1 * v */
@@ -226,10 +238,36 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
       /* theta = <v,y> */
       lis_vector_dot(v, y, &theta);
 
+      if( !lis_esolver_is_valid_denominator(theta) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid Inverse iteration Rayleigh denominator\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if ( oshift != 0.0 )
+            lis_matrix_shift_diagonal(A, -oshift);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
+
       /* resid = ||y - theta * v||_2 / |theta| */
       lis_vector_axpyz(-theta, v, y, q); 
       lis_vector_nrm2(q, &resid); 
       resid = resid / fabs(theta);
+
+      if( !isfinite((double)resid) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite Inverse iteration residual\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if ( oshift != 0.0 )
+            lis_matrix_shift_diagonal(A, -oshift);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
       /* v = y */
       lis_vector_copy(y, v);
@@ -254,6 +292,18 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
 	  esolver->resid[0]   = resid;
 	  esolver->evalue[0]  = 1.0/theta + oshift;
 	  lis_vector_nrm2(v, &nrm2);
+	  if( !lis_esolver_is_valid_norm(nrm2) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "invalid Inverse iteration vector norm\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_diagonal(A, -oshift);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
 	  lis_vector_scale(1.0/nrm2, v);
 	  if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);
 	  lis_precon_destroy(precon);
@@ -270,6 +320,18 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
   esolver->resid[0]   = resid;
   esolver->evalue[0]  = 1.0/theta + oshift;
   lis_vector_nrm2(v, &nrm2);
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid Inverse iteration vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_precon_destroy(precon);
+      lis_solver_destroy(solver);
+      if ( oshift != 0.0 )
+        lis_matrix_shift_diagonal(A, -oshift);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   lis_vector_scale(1.0/nrm2, v);
   if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);
   lis_solver_destroy(solver); 
@@ -474,6 +536,17 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
 
       /* v = v / ||v||_2 */
       lis_vector_nrm2(v, &nrm2);
+      if( !lis_esolver_is_valid_norm(nrm2) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid generalized Inverse vector norm\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if( Aop ) lis_matrix_destroy(Aop);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
       lis_vector_scale(1.0/nrm2, v);
 
       /*
@@ -496,7 +569,33 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
 
       /* v = v / <w,v>^1/2, w = w / <w,v>^1/2 */
       lis_vector_dot(w, v, &eta);
+
+      if( !lis_esolver_is_finite_scalar(eta) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite generalized Inverse normalization product\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if( Aop ) lis_matrix_destroy(Aop);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
+
       eta = sqrt(eta);
+
+      if( !lis_esolver_is_valid_denominator(eta) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid generalized Inverse normalization factor\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if( Aop ) lis_matrix_destroy(Aop);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
+
       lis_vector_scale(1.0/eta, v);
       lis_vector_scale(1.0/eta, w);
 
@@ -516,11 +615,35 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
       /* theta = <w,y> */
       lis_vector_dot(w, y, &theta);
 
+      if( !lis_esolver_is_valid_denominator(theta) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid generalized Inverse Rayleigh denominator\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if( Aop ) lis_matrix_destroy(Aop);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
+
       /* resid = ||y - theta * v||_2 / |theta| */
 
       lis_vector_axpyz(-theta, v, y, q); 
       lis_vector_nrm2(q, &resid); 
       resid = resid / fabs(theta);
+
+      if( !isfinite((double)resid) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite generalized Inverse residual\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if( Aop ) lis_matrix_destroy(Aop);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
       /* v = y */
       lis_vector_copy(y, v);
@@ -545,6 +668,17 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
 	  esolver->resid[0]   = resid;
 	  if( transform == LIS_EIGEN_TRANSFORM_BUCKLING )
 	  {
+		if( !lis_esolver_is_valid_denominator(theta-1.0) )
+		  {
+		    LIS_SETERR(LIS_BREAKDOWN,
+		            "invalid generalized Inverse buckling mapping denominator\n");
+		    esolver->retcode = LIS_BREAKDOWN;
+		    lis_precon_destroy(precon);
+		    lis_solver_destroy(solver);
+		    if( Aop ) lis_matrix_destroy(Aop);
+		    LIS_DEBUG_FUNC_OUT;
+		    return LIS_BREAKDOWN;
+		  }
 		esolver->evalue[0] =
 			oshift*theta/(theta-1.0);
 	  }
@@ -554,6 +688,17 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
 			1.0/theta + oshift;
 	  }
 	  lis_vector_nrm2(v, &nrm2);
+	  if( !lis_esolver_is_valid_norm(nrm2) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "invalid generalized Inverse vector norm\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      if( Aop ) lis_matrix_destroy(Aop);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
 	  lis_vector_scale(1.0/nrm2, v);
 	  lis_precon_destroy(precon);
 	  lis_solver_destroy(solver);
@@ -570,6 +715,16 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
   esolver->resid[0]   = resid;
   if( transform == LIS_EIGEN_TRANSFORM_BUCKLING )
   {
+	if( !lis_esolver_is_valid_denominator(theta-1.0) )
+	  {
+	    LIS_SETERR(LIS_BREAKDOWN,
+	            "invalid generalized Inverse buckling mapping denominator\n");
+	    esolver->retcode = LIS_BREAKDOWN;
+	    lis_solver_destroy(solver);
+	    if( Aop ) lis_matrix_destroy(Aop);
+	    LIS_DEBUG_FUNC_OUT;
+	    return LIS_BREAKDOWN;
+	  }
 	esolver->evalue[0] =
 		oshift*theta/(theta-1.0);
   }
@@ -579,6 +734,17 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
 		1.0/theta + oshift;
   }
   lis_vector_nrm2(v, &nrm2);
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid generalized Inverse vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_precon_destroy(precon);
+      lis_solver_destroy(solver);
+      if( Aop ) lis_matrix_destroy(Aop);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   lis_vector_scale(1.0/nrm2, v);
   lis_solver_destroy(solver);
   if( Aop ) lis_matrix_destroy(Aop);

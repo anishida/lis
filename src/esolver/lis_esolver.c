@@ -138,6 +138,42 @@ LIS_INT lis_esolver_evector_count = 0;
 LIS_VECTOR lis_esolver_residual_history = NULL;
 LIS_INT lis_esolver_residual_history_count = 0;
 
+LIS_INT lis_esolver_is_finite_scalar(
+        LIS_SCALAR value)
+{
+        LIS_REAL magnitude;
+
+#ifdef _COMPLEX
+        magnitude = cabs(value);
+#else
+        magnitude = fabs(value);
+#endif
+
+        return isfinite((double)magnitude);
+}
+
+LIS_INT lis_esolver_is_valid_denominator(
+        LIS_SCALAR value)
+{
+        LIS_REAL magnitude;
+
+#ifdef _COMPLEX
+        magnitude = cabs(value);
+#else
+        magnitude = fabs(value);
+#endif
+
+        return isfinite((double)magnitude) &&
+               magnitude>0.0;
+}
+
+LIS_INT lis_esolver_is_valid_norm(
+        LIS_REAL value)
+{
+        return isfinite((double)value) &&
+               value>0.0;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_esolver_init"
 LIS_INT lis_esolver_init(LIS_ESOLVER esolver)

@@ -188,6 +188,19 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   v = &esolver->work[1];
   lis_vector_set_all(1.0,v[0]);
   lis_vector_nrm2(v[0],&nrm2);
+
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid Arnoldi initial vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_free(h);
+      lis_free(hq);
+      lis_free(hr);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
+
   lis_vector_scale(1.0/nrm2,v[0]);
   
   lis_solver_create(&solver);
@@ -228,8 +241,34 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
       /* h(j+1,j) = ||w||_2 */
       lis_vector_nrm2(w, (LIS_REAL *)&h[j+1+j*ss]);
 
-      /* convergence check */
+      if( !lis_esolver_is_finite_scalar(h[j+1+j*ss]) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite Arnoldi Hessenberg norm\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_solver_destroy(solver);
+          lis_free(h);
+          lis_free(hq);
+          lis_free(hr);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
+
+      /* convergence check / happy breakdown */
       if (fabs(h[j+1+j*ss])<tol) break;
+
+      if( !lis_esolver_is_valid_denominator(h[j+1+j*ss]) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid Arnoldi Hessenberg denominator\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_solver_destroy(solver);
+          lis_free(h);
+          lis_free(hq);
+          lis_free(hr);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
       /* v(j+1) = w / h(j,j-1) */
       lis_vector_scale(1/h[j+1+j*ss],w);
@@ -531,6 +570,19 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
   v = &esolver->work[2];
   lis_vector_set_all(1.0,v[0]);
   lis_vector_nrm2(v[0],&nrm2);
+
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid generalized Arnoldi initial vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_free(h);
+      lis_free(hq);
+      lis_free(hr);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
+
   lis_vector_scale(1.0/nrm2,v[0]);
   
   lis_solver_create(&solver);
@@ -593,8 +645,36 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
       /* h(j+1,j) = ||w||_2 */
       lis_vector_nrm2(w, (LIS_REAL *)&h[j+1+j*ss]);
 
-      /* convergence check */
+      if( !lis_esolver_is_finite_scalar(h[j+1+j*ss]) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite generalized Arnoldi Hessenberg norm\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          lis_free(h);
+          lis_free(hq);
+          lis_free(hr);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
+
+      /* convergence check / happy breakdown */
       if (fabs(h[j+1+j*ss])<tol) break;
+
+      if( !lis_esolver_is_valid_denominator(h[j+1+j*ss]) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid generalized Arnoldi Hessenberg denominator\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          lis_free(h);
+          lis_free(hq);
+          lis_free(hr);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
       /* v(j+1) = w / h(j,j-1) */
       lis_vector_scale(1/h[j+1+j*ss],w);

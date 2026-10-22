@@ -183,6 +183,17 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   Ax = esolver->work[3];
   lis_vector_set_all(1.0,r);
   lis_vector_nrm2(r, &nrm2);
+
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid Subspace initial vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_solver_destroy(solver);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
+
   lis_vector_scale(1.0/nrm2,r);
 
   if ( esolver->ishift != 0.0 ) oshift = ishift;
@@ -301,12 +312,52 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 
 	  /* Z = V*R */
 	  lis_vector_nrm2(r, &nrm2);
+
+	  if( !lis_esolver_is_valid_norm(nrm2) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "invalid Subspace iteration vector norm\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_diagonal(A, -oshift);
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
+
 	  lis_vector_dot(v[j],r,&theta);
+
+	  if( !lis_esolver_is_valid_denominator(theta) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "invalid Subspace Rayleigh denominator\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_diagonal(A, -oshift);
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
 
 	  /* resid = ||Z - V*R||_2 */
 	  lis_vector_axpyz(-theta,v[j],r,q);
 	  lis_vector_nrm2(q, &resid);
 	  resid = resid / fabs(theta);
+
+	  if( !isfinite((double)resid) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "non-finite Subspace residual\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_diagonal(A, -oshift);
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
 
 	  lis_vector_scale(1.0/nrm2,r);
 	  lis_vector_copy(r, v[j]);
@@ -505,6 +556,17 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   Ax = esolver->work[4];
   lis_vector_set_all(1.0,y);
   lis_vector_nrm2(y,&nrm2);
+
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid generalized Subspace initial vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_solver_destroy(solver);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
+
   lis_vector_scale(1.0/nrm2,y);
 
   if ( esolver->ishift != 0.0 ) oshift = ishift;
@@ -603,7 +665,35 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 
 	      /* v = v / <v,w>^1/2, w = w / <v,w>^1/2 */	      
 	      lis_vector_dot(v[j], w, &eta);
+
+	      if( !lis_esolver_is_finite_scalar(eta) )
+	        {
+	          LIS_SETERR(LIS_BREAKDOWN,
+	                  "non-finite generalized Subspace normalization product\n");
+	          esolver->retcode = LIS_BREAKDOWN;
+	          if ( oshift != 0.0 )
+	            lis_matrix_shift_matrix(A, B, -oshift);
+	          lis_precon_destroy(precon);
+	          lis_solver_destroy(solver);
+	          LIS_DEBUG_FUNC_OUT;
+	          return LIS_BREAKDOWN;
+	        }
+
 	      eta = sqrt(eta);
+
+	      if( !lis_esolver_is_valid_denominator(eta) )
+	        {
+	          LIS_SETERR(LIS_BREAKDOWN,
+	                  "invalid generalized Subspace normalization factor\n");
+	          esolver->retcode = LIS_BREAKDOWN;
+	          if ( oshift != 0.0 )
+	            lis_matrix_shift_matrix(A, B, -oshift);
+	          lis_precon_destroy(precon);
+	          lis_solver_destroy(solver);
+	          LIS_DEBUG_FUNC_OUT;
+	          return LIS_BREAKDOWN;
+	        }
+
 	      lis_vector_scale(1.0/eta, v[j]);
 	      lis_vector_scale(1.0/eta, w);
 
@@ -626,7 +716,35 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	      
 	      /* v = v / <v,w>^1/2, w = w / <v,w>^1/2 */
 	      lis_vector_dot(v[j], w, &eta);
+
+	      if( !lis_esolver_is_finite_scalar(eta) )
+	        {
+	          LIS_SETERR(LIS_BREAKDOWN,
+	                  "non-finite generalized Subspace normalization product\n");
+	          esolver->retcode = LIS_BREAKDOWN;
+	          if ( oshift != 0.0 )
+	            lis_matrix_shift_matrix(A, B, -oshift);
+	          lis_precon_destroy(precon);
+	          lis_solver_destroy(solver);
+	          LIS_DEBUG_FUNC_OUT;
+	          return LIS_BREAKDOWN;
+	        }
+
 	      eta = sqrt(eta);
+
+	      if( !lis_esolver_is_valid_denominator(eta) )
+	        {
+	          LIS_SETERR(LIS_BREAKDOWN,
+	                  "invalid generalized Subspace normalization factor\n");
+	          esolver->retcode = LIS_BREAKDOWN;
+	          if ( oshift != 0.0 )
+	            lis_matrix_shift_matrix(A, B, -oshift);
+	          lis_precon_destroy(precon);
+	          lis_solver_destroy(solver);
+	          LIS_DEBUG_FUNC_OUT;
+	          return LIS_BREAKDOWN;
+	        }
+
 	      lis_vector_scale(1.0/eta, v[j]);
 	      lis_vector_scale(1.0/eta, w);
 
@@ -656,13 +774,53 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	  /* theta = <w,y> */
 	  lis_vector_dot(w, y, &theta);
 
+	  if( !lis_esolver_is_valid_denominator(theta) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "invalid generalized Subspace Rayleigh denominator\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_matrix(A, B, -oshift);
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
+
 	  /* resid = ||y - theta * v||_2 / |theta| */
 	  lis_vector_axpyz(-theta, v[j], y, q);
 	  lis_vector_nrm2(q, &resid);
 	  resid = resid / fabs(theta);
 
+	  if( !isfinite((double)resid) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "non-finite generalized Subspace residual\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_matrix(A, B, -oshift);
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
+
 	  /* y = y / ||y||_2 */
 	  lis_vector_nrm2(y, &nrm2);
+
+	  if( !lis_esolver_is_valid_norm(nrm2) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "invalid generalized Subspace iteration vector norm\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_matrix(A, B, -oshift);
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
+
 	  lis_vector_scale(1.0/nrm2, y);
 	  
 	  /* v = y */

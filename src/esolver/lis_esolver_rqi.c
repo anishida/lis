@@ -185,6 +185,16 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
 
   /* v = v / ||v||_2 */
   lis_vector_nrm2(v, &nrm2);
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid Rayleigh Quotient iteration vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_precon_destroy(precon);
+      lis_solver_destroy(solver);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   lis_vector_scale(1.0/nrm2, v);
 
   /* rho = <v,A*v> / <v,v> */
@@ -211,17 +221,61 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
 
       /* theta = ||y||_2 */      
       lis_vector_nrm2(y, (LIS_REAL *)&theta);
+
+      if( !lis_esolver_is_valid_denominator(theta) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid Rayleigh Quotient iteration solve norm\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
  
       /* <v,y> */
       lis_vector_dot(v, y, &dotvy);
 
+      if( !lis_esolver_is_valid_denominator(dotvy) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid Rayleigh Quotient iteration projection\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
+
       /* rho = rho + <v,y> / theta^2 */
       rho = rho + dotvy / (theta * theta);
+
+      if( !lis_esolver_is_finite_scalar(rho) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite Rayleigh Quotient iteration shift\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
       /* resid = ||y - <v,y> * v||_2 / <v,y> */
       lis_vector_axpyz(-dotvy,v,y,q); 
       lis_vector_nrm2(q, &resid); 
       resid = resid / fabs(dotvy);
+
+      if( !isfinite((double)resid) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite Rayleigh Quotient iteration residual\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
       /* v = y / theta */
       lis_vector_scale(1.0/theta, y);
@@ -247,6 +301,16 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
 	  esolver->resid[0]   = resid;
 	  esolver->evalue[0]  = rho;
 	  lis_vector_nrm2(v, &nrm2);
+	  if( !lis_esolver_is_valid_norm(nrm2) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "invalid Rayleigh Quotient iteration vector norm\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
 	  lis_vector_scale(1.0/nrm2, v);
 	  lis_precon_destroy(precon);
 	  lis_solver_destroy(solver); 
@@ -262,6 +326,16 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   esolver->resid[0]   = resid;
   esolver->evalue[0]  = rho;
   lis_vector_nrm2(v, &nrm2);
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid Rayleigh Quotient iteration vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_precon_destroy(precon);
+      lis_solver_destroy(solver);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   lis_vector_scale(1.0/nrm2, v);
   lis_solver_destroy(solver); 
   LIS_DEBUG_FUNC_OUT;
@@ -409,6 +483,16 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
 
   /* v = v / ||v||_2 */
   lis_vector_nrm2(v, &nrm2);
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid generalized Rayleigh Quotient vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_precon_destroy(precon);
+      lis_solver_destroy(solver);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   lis_vector_scale(1.0/nrm2, v);
 
   /* w = B * v */
@@ -418,7 +502,29 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
   lis_matvec(A, v, y);
   lis_vector_dot(w, y, &rho);
   lis_vector_dot(w, w, &dotww);
+
+  if( !lis_esolver_is_valid_denominator(dotww) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid generalized Rayleigh Quotient denominator\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_precon_destroy(precon);
+      lis_solver_destroy(solver);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   rho = rho / dotww;
+
+  if( !lis_esolver_is_finite_scalar(rho) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "non-finite generalized Rayleigh Quotient shift\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_precon_destroy(precon);
+      lis_solver_destroy(solver);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   
   iter=0;
   while (iter<emaxiter)
@@ -441,12 +547,46 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
       /* theta = <w, y> */      
       lis_vector_dot(w, y, &theta);
 
+      if( !lis_esolver_is_valid_denominator(theta) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid generalized Rayleigh Quotient projection\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
+
       /* w = B * y */
       lis_matvec(B, y, w);
 
       /* eta = <w, y>^1/2 */
       lis_vector_dot(w, y, &eta);
+
+      if( !lis_esolver_is_finite_scalar(eta) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite generalized Rayleigh Quotient normalization product\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
+
       eta = sqrt(eta);
+
+      if( !lis_esolver_is_valid_denominator(eta) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid generalized Rayleigh Quotient normalization factor\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
       /* v = y / eta */
       lis_vector_scale(1.0/eta, y);
@@ -458,8 +598,30 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
       /* rho = rho + theta / eta^2 */
       rho = rho + theta / (eta * eta);
 
+      if( !lis_esolver_is_finite_scalar(rho) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite generalized Rayleigh Quotient shift update\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
+
       /* resid = 1/|theta| */
-      resid = 1.0/fabs(theta);      
+      resid = 1.0/fabs(theta);
+
+      if( !isfinite((double)resid) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite generalized Rayleigh Quotient residual\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
       
       if( output )
 	{
@@ -481,6 +643,16 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
 	  esolver->resid[0]   = resid;
 	  esolver->evalue[0]  = rho;
 	  lis_vector_nrm2(v, &nrm2);
+	  if( !lis_esolver_is_valid_norm(nrm2) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "invalid generalized Rayleigh Quotient vector norm\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
 	  lis_vector_scale(1.0/nrm2, v);
 	  lis_precon_destroy(precon);
 	  lis_solver_destroy(solver); 
@@ -496,6 +668,16 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
   esolver->resid[0]   = resid;
   esolver->evalue[0]  = rho;
   lis_vector_nrm2(v, &nrm2);
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid generalized Rayleigh Quotient vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_precon_destroy(precon);
+      lis_solver_destroy(solver);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   lis_vector_scale(1.0/nrm2, v);
   lis_solver_destroy(solver); 
   LIS_DEBUG_FUNC_OUT;

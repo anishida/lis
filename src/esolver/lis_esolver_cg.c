@@ -196,6 +196,18 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
   ptime = 0;
 
   lis_vector_nrm2(x,&nrm2);
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid Conjugate Gradient initial vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);
+      lis_free(A3); lis_free(B3); lis_free(W3);
+      lis_free(v3); lis_free(z3); lis_free(q3);
+      lis_free(A3v3); lis_free(B3v3); lis_free(B3z3);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   lis_vector_scale(1.0/nrm2,x);
   lis_matvec(A,x,Ax);
 
@@ -240,6 +252,20 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
 
       /* mu=<x,x>/<x,A*x>, where mu=1/lambda */
       lis_vector_dot(x,Ax,&lambda);
+      if( !lis_esolver_is_valid_denominator(lambda) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid Conjugate Gradient Rayleigh denominator\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);
+          lis_free(A3); lis_free(B3); lis_free(W3);
+          lis_free(v3); lis_free(z3); lis_free(q3);
+          lis_free(A3v3); lis_free(B3v3); lis_free(B3z3);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
       /* r=x-mu*A*x */
       lis_vector_axpyz(-1.0/lambda,Ax,x,r); 
@@ -259,6 +285,20 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
       lis_psolve(solver,r,w);
       ptime += lis_wtime() - time;
       lis_vector_nrm2(w,&nrm2);
+      if( !lis_esolver_is_valid_norm(nrm2) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid Conjugate Gradient preconditioned vector norm\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);
+          lis_free(A3); lis_free(B3); lis_free(W3);
+          lis_free(v3); lis_free(z3); lis_free(q3);
+          lis_free(A3v3); lis_free(B3v3); lis_free(B3z3);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
       lis_vector_scale(1.0/nrm2,w);
       lis_matvec(A,w,Aw);
 
@@ -294,6 +334,20 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
 	{
 	  iter3=iter3+1;
 	  lis_array_nrm2(3,v3,&nrm2);
+	  if( !lis_esolver_is_valid_norm(nrm2) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "invalid Conjugate Gradient local Ritz vector norm\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);
+	      lis_free(A3); lis_free(B3); lis_free(W3);
+	      lis_free(v3); lis_free(z3); lis_free(q3);
+	      lis_free(A3v3); lis_free(B3v3); lis_free(B3z3);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
 	  lis_array_scale(3,1.0/nrm2,v3);
 	  lis_array_matvec(3,B3,v3,B3v3,LIS_INS_VALUE);
 	  lis_array_solve(3,A3,B3v3,z3,W3);
@@ -318,10 +372,38 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
       
       /* compute Ritz vector x corresponding to the smallest Ritz value */
       lis_vector_nrm2(x,&nrm2);
+      if( !lis_esolver_is_valid_norm(nrm2) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid Conjugate Gradient Ritz vector norm\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);
+          lis_free(A3); lis_free(B3); lis_free(W3);
+          lis_free(v3); lis_free(z3); lis_free(q3);
+          lis_free(A3v3); lis_free(B3v3); lis_free(B3z3);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
       lis_vector_scale(1.0/nrm2,x);
       lis_vector_scale(1.0/nrm2,Ax);      
       
       lis_vector_nrm2(p,&nrm2);
+      if( !lis_esolver_is_valid_norm(nrm2) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid Conjugate Gradient search direction norm\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);
+          lis_free(A3); lis_free(B3); lis_free(W3);
+          lis_free(v3); lis_free(z3); lis_free(q3);
+          lis_free(A3v3); lis_free(B3v3); lis_free(B3z3);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
       lis_vector_scale(1.0/nrm2,p);
       lis_vector_scale(1.0/nrm2,Ap);
       
@@ -516,6 +598,18 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
   ptime = 0;
 
   lis_vector_nrm2(x,&nrm2);
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid generalized Conjugate Gradient initial vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, -oshift);
+      lis_free(A3); lis_free(B3); lis_free(W3);
+      lis_free(v3); lis_free(z3); lis_free(q3);
+      lis_free(A3v3); lis_free(B3v3); lis_free(B3z3);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   lis_vector_scale(1.0/nrm2,x);
   lis_matvec(A,x,Ax);
   lis_matvec(B,x,Bx);
@@ -564,7 +658,35 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
       /* mu=<B*x,B*x>/<B*x,A*x>, where mu=1/lambda */
       lis_vector_dot(Ax,Bx,&lambda);
       lis_vector_dot(Bx,Bx,&BxBx);
+      if( !lis_esolver_is_valid_denominator(BxBx) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid generalized Conjugate Gradient metric denominator\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, -oshift);
+          lis_free(A3); lis_free(B3); lis_free(W3);
+          lis_free(v3); lis_free(z3); lis_free(q3);
+          lis_free(A3v3); lis_free(B3v3); lis_free(B3z3);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
       lambda = lambda / BxBx;
+      if( !lis_esolver_is_valid_denominator(lambda) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid generalized Conjugate Gradient Rayleigh denominator\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, -oshift);
+          lis_free(A3); lis_free(B3); lis_free(W3);
+          lis_free(v3); lis_free(z3); lis_free(q3);
+          lis_free(A3v3); lis_free(B3v3); lis_free(B3z3);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
       /* r=B*x-mu*A*x */
       lis_vector_axpyz(-1.0/lambda,Ax,Bx,r); 
@@ -584,6 +706,20 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
       lis_psolve(solver,r,w);
       ptime += lis_wtime() - time;
       lis_vector_nrm2(w,&nrm2);
+      if( !lis_esolver_is_valid_norm(nrm2) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid generalized Conjugate Gradient preconditioned vector norm\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, -oshift);
+          lis_free(A3); lis_free(B3); lis_free(W3);
+          lis_free(v3); lis_free(z3); lis_free(q3);
+          lis_free(A3v3); lis_free(B3v3); lis_free(B3z3);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
       lis_vector_scale(1.0/nrm2,w);
       lis_matvec(A,w,Aw);
       lis_matvec(B,w,Bw);
@@ -621,6 +757,20 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
 	{
 	  iter3=iter3+1;
 	  lis_array_nrm2(3,v3,&nrm2); 
+	  if( !lis_esolver_is_valid_norm(nrm2) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "invalid generalized Conjugate Gradient local Ritz vector norm\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, -oshift);
+	      lis_free(A3); lis_free(B3); lis_free(W3);
+	      lis_free(v3); lis_free(z3); lis_free(q3);
+	      lis_free(A3v3); lis_free(B3v3); lis_free(B3z3);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
 	  lis_array_scale(3,1.0/nrm2,v3);
 	  lis_array_matvec(3,B3,v3,B3v3,LIS_INS_VALUE);
 	  lis_array_solve(3,A3,B3v3,z3,W3);
@@ -645,11 +795,39 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
       
       /* compute Ritz vector x corresponding to the smallest Ritz value */
       lis_vector_nrm2(x,&nrm2);
+      if( !lis_esolver_is_valid_norm(nrm2) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid generalized Conjugate Gradient Ritz vector norm\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, -oshift);
+          lis_free(A3); lis_free(B3); lis_free(W3);
+          lis_free(v3); lis_free(z3); lis_free(q3);
+          lis_free(A3v3); lis_free(B3v3); lis_free(B3z3);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
       lis_vector_scale(1.0/nrm2,x);
       lis_vector_scale(1.0/nrm2,Ax);
       lis_vector_scale(1.0/nrm2,Bx);      
       
       lis_vector_nrm2(p,&nrm2);
+      if( !lis_esolver_is_valid_norm(nrm2) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid generalized Conjugate Gradient search direction norm\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, -oshift);
+          lis_free(A3); lis_free(B3); lis_free(W3);
+          lis_free(v3); lis_free(z3); lis_free(q3);
+          lis_free(A3v3); lis_free(B3v3); lis_free(B3z3);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
       lis_vector_scale(1.0/nrm2,p);
       lis_vector_scale(1.0/nrm2,Ap);
       lis_vector_scale(1.0/nrm2,Bp);      
@@ -790,7 +968,7 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
   LIS_REAL nrm2,resid;
   LIS_SCALAR oshift,ishift;
   LIS_VECTOR r,p,w,Ax,Ap,Aw;
-  LIS_SCALAR alpha,beta;
+  LIS_SCALAR alpha,beta,denom;
   LIS_SCALAR rAp,rp,ApAp,pAp,pp,AwAp,pAw,wAp,wp;
   LIS_SOLVER solver;
   LIS_PRECON precon;
@@ -841,6 +1019,15 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
   ptime = 0;
 
   lis_vector_nrm2(x,&nrm2);
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid Conjugate Residual initial vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   lis_vector_scale(1.0/nrm2,x);
   lis_matvec(A,x,Ax);
   lis_vector_set_all(0.0,p);
@@ -896,8 +1083,19 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
       lis_vector_dot(Ap,Ap,&ApAp);
       lis_vector_dot(p,Ap,&pAp); 
       lis_vector_dot(p,p,&pp);
-      alpha = (rAp - lambda * rp)
-	    / (ApAp - 2.0 * lambda * pAp + lambda * lambda * pp);
+      denom = ApAp - 2.0 * lambda * pAp + lambda * lambda * pp;
+      if( !lis_esolver_is_valid_denominator(denom) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid Conjugate Residual alpha denominator\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
+      alpha = (rAp - lambda * rp) / denom;
 
       /* x=x+alpha*p */
       lis_vector_axpy(alpha,p,x);
@@ -906,7 +1104,29 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
       lis_matvec(A,x,Ax);
       lis_vector_dot(x,Ax,&lambda);
       lis_vector_nrm2(x, &nrm2);
+      if( !lis_esolver_is_valid_norm(nrm2) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid Conjugate Residual Rayleigh vector norm\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
       lambda = lambda / (nrm2 * nrm2);
+      if( !lis_esolver_is_finite_scalar(lambda) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite Conjugate Residual Ritz value\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
       /* r=lambda*x-A*x */
       lis_vector_axpyz(-lambda,x,Ax,r); 
@@ -924,8 +1144,19 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
       lis_vector_dot(p,Aw,&pAw);
       lis_vector_dot(w,Ap,&wAp);      
       lis_vector_dot(w,p,&wp);
-      beta = - (AwAp - lambda * (pAw + wAp) + lambda * lambda * wp)
-	     / (ApAp - 2.0 * lambda * pAp + lambda * lambda * pp);
+      denom = ApAp - 2.0 * lambda * pAp + lambda * lambda * pp;
+      if( !lis_esolver_is_valid_denominator(denom) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid Conjugate Residual beta denominator\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
+      beta = - (AwAp - lambda * (pAw + wAp) + lambda * lambda * wp) / denom;
 
       /* p=w+beta*p */
       lis_vector_xpay(w,beta,p);
@@ -935,7 +1166,29 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
 
       /* convergence check */
       lis_vector_nrm2(r,&nrm2);
+      if( !lis_esolver_is_valid_denominator(lambda) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid Conjugate Residual residual denominator\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
       resid = nrm2 / fabs(lambda);
+      if( !isfinite((double)resid) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite Conjugate Residual residual\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
       if( output )
 	{
@@ -954,6 +1207,15 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
   esolver->resid[0]   = resid;
   esolver->evalue[0]  = lambda + oshift;
   lis_vector_nrm2(x, &nrm2);
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid Conjugate Residual final vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   lis_vector_scale(1.0/nrm2, x);
 
   lis_solver_get_timeex(solver,&time,&itime,&ptime,&p_c_time,&p_i_time);
@@ -1073,7 +1335,7 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   LIS_REAL nrm2,resid;
   LIS_SCALAR oshift,ishift;
   LIS_VECTOR r,p,w,Ax,Ap,Aw,Bx,Bp,Bw;
-  LIS_SCALAR alpha,beta;
+  LIS_SCALAR alpha,beta,denom;
   LIS_SCALAR rAp,rBp,rp,BxBx,ApAp,ApBp,BpBp,AwAp,AwBp,ApBw,BwBp;
   LIS_SOLVER solver;
   LIS_PRECON precon;
@@ -1135,6 +1397,15 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   ptime = 0;
 
   lis_vector_nrm2(x,&nrm2);
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid generalized Conjugate Residual initial vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      if( Aop ) lis_matrix_destroy(Aop);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   lis_vector_scale(1.0/nrm2,x);
   lis_matvec(A,x,Ax);
   lis_matvec(B,x,Bx);
@@ -1175,7 +1446,29 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   /* lambda=<A*x,B*x>/<B*x,B*x> */
   lis_vector_dot(Ax,Bx,&lambda);
   lis_vector_dot(Bx,Bx,&BxBx);
+  if( !lis_esolver_is_valid_denominator(BxBx) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid generalized Conjugate Residual metric denominator\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_precon_destroy(precon);
+      lis_solver_destroy(solver);
+      if( Aop ) lis_matrix_destroy(Aop);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   lambda = lambda / BxBx;
+  if( !lis_esolver_is_finite_scalar(lambda) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "non-finite generalized Conjugate Residual Ritz value\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_precon_destroy(precon);
+      lis_solver_destroy(solver);
+      if( Aop ) lis_matrix_destroy(Aop);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   
   /* r=lambda*B*x-A*x */
   lis_vector_axpyz(-lambda,Bx,Ax,r);
@@ -1197,8 +1490,19 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
       lis_vector_dot(Ap,Ap,&ApAp);
       lis_vector_dot(Ap,Bp,&ApBp); 
       lis_vector_dot(Bp,Bp,&BpBp);
-      alpha = (rAp - lambda * rBp)
-	    / (ApAp - 2.0 * lambda * ApBp + lambda * lambda * BpBp);
+      denom = ApAp - 2.0 * lambda * ApBp + lambda * lambda * BpBp;
+      if( !lis_esolver_is_valid_denominator(denom) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid generalized Conjugate Residual alpha denominator\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if( Aop ) lis_matrix_destroy(Aop);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
+      alpha = (rAp - lambda * rBp) / denom;
 
       /* x=x+alpha*p */
       lis_vector_axpy(alpha,p,x);
@@ -1208,7 +1512,29 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
       lis_matvec(B,x,Bx);      
       lis_vector_dot(Ax,Bx,&lambda);
       lis_vector_dot(Bx,Bx,&BxBx);
+      if( !lis_esolver_is_valid_denominator(BxBx) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid generalized Conjugate Residual metric denominator\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if( Aop ) lis_matrix_destroy(Aop);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
       lambda = lambda / BxBx;
+      if( !lis_esolver_is_finite_scalar(lambda) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite generalized Conjugate Residual Ritz value\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if( Aop ) lis_matrix_destroy(Aop);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
       /* r=lambdaB**x-A*x */
       lis_vector_axpyz(-lambda,Bx,Ax,r); 
@@ -1227,8 +1553,19 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
       lis_vector_dot(Aw,Bp,&AwBp);
       lis_vector_dot(Ap,Bw,&ApBw);      
       lis_vector_dot(Bw,Bp,&BwBp);
-      beta = - (AwAp - lambda * (AwBp + ApBw) + lambda * lambda * BwBp)
-	     / (ApAp - 2.0 * lambda * ApBp + lambda * lambda * BpBp);
+      denom = ApAp - 2.0 * lambda * ApBp + lambda * lambda * BpBp;
+      if( !lis_esolver_is_valid_denominator(denom) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid generalized Conjugate Residual beta denominator\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if( Aop ) lis_matrix_destroy(Aop);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
+      beta = - (AwAp - lambda * (AwBp + ApBw) + lambda * lambda * BwBp) / denom;
 
       /* p=w+beta*p */
       lis_vector_xpay(w,beta,p);
@@ -1241,7 +1578,29 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
 
       /* convergence check */
       lis_vector_nrm2(r,&nrm2);
+      if( !lis_esolver_is_valid_denominator(lambda) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid generalized Conjugate Residual residual denominator\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if( Aop ) lis_matrix_destroy(Aop);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
       resid = nrm2 / fabs(lambda);
+      if( !isfinite((double)resid) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite generalized Conjugate Residual residual\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if( Aop ) lis_matrix_destroy(Aop);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
       if( output )
 	{
@@ -1260,6 +1619,15 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   esolver->resid[0]   = resid;
   esolver->evalue[0]  = lambda + oshift;
   lis_vector_nrm2(x, &nrm2);
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid generalized Conjugate Residual final vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      if( Aop ) lis_matrix_destroy(Aop);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   lis_vector_scale(1.0/nrm2, x);
 
   lis_solver_get_timeex(solver,&time,&itime,&ptime,&p_c_time,&p_i_time);

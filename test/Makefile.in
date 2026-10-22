@@ -108,7 +108,7 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	getestoperator$(EXEEXT) testdiagonal$(EXEEXT) \
 	testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) \
 	testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) \
-	testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
+	testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
 	testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) \
 	testgmreswork$(EXEEXT) testsolvermonitor$(EXEEXT) \
 	testsolvercallbackpaths$(EXEEXT) \
@@ -522,6 +522,10 @@ am_testrhistoryerror_OBJECTS = testrhistoryerror.$(OBJEXT)
 testrhistoryerror_OBJECTS = $(am_testrhistoryerror_OBJECTS)
 testrhistoryerror_LDADD = $(LDADD)
 testrhistoryerror_DEPENDENCIES =
+am_testeigenbreakdown_OBJECTS = testeigenbreakdown.$(OBJEXT)
+testeigenbreakdown_OBJECTS = $(am_testeigenbreakdown_OBJECTS)
+testeigenbreakdown_LDADD = $(LDADD)
+testeigenbreakdown_DEPENDENCIES =
 am_testrqirestore_OBJECTS = testrqirestore.$(OBJEXT)
 testrqirestore_OBJECTS = $(am_testrqirestore_OBJECTS)
 testrqirestore_LDADD = $(LDADD)
@@ -661,7 +665,7 @@ am__depfiles_remade = ./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
 	./$(DEPDIR)/testpreconpolicy.Po ./$(DEPDIR)/testpreconpsd.Po \
 	./$(DEPDIR)/testpreconreuse.Po ./$(DEPDIR)/testrecovery.Po \
 	./$(DEPDIR)/testrepeatedsystems.Po \
-	./$(DEPDIR)/testrhistoryerror.Po ./$(DEPDIR)/testrqirestore.Po \
+	./$(DEPDIR)/testrhistoryerror.Po ./$(DEPDIR)/testeigenbreakdown.Po ./$(DEPDIR)/testrqirestore.Po \
 	./$(DEPDIR)/testsequence.Po ./$(DEPDIR)/testshellscale.Po \
 	./$(DEPDIR)/testsolvercallbackcert.Po \
 	./$(DEPDIR)/testsolvercallbackpaths.Po \
@@ -743,7 +747,7 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
 	$(testpreconreuse_SOURCES) $(testrecovery_SOURCES) \
 	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
-	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
+	$(testeigenbreakdown_SOURCES) $(testrqirestore_SOURCES) $(testsequence_SOURCES) \
 	$(testshellscale_SOURCES) $(testsolvercallbackcert_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
 	$(testsolvermonitor_SOURCES) $(testsymmdiagguard_SOURCES) \
@@ -789,7 +793,7 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
 	$(testpreconreuse_SOURCES) $(testrecovery_SOURCES) \
 	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
-	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
+	$(testeigenbreakdown_SOURCES) $(testrqirestore_SOURCES) $(testsequence_SOURCES) \
 	$(testshellscale_SOURCES) $(testsolvercallbackcert_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
 	$(testsolvermonitor_SOURCES) $(testsymmdiagguard_SOURCES) \
@@ -1229,6 +1233,7 @@ testpreconlifecycle_SOURCES = testpreconlifecycle.c
 testjacobiuser_SOURCES = testjacobiuser.c
 testpreconpsd_SOURCES = testpreconpsd.c
 testpreconreuse_SOURCES = testpreconreuse.c
+testeigenbreakdown_SOURCES = testeigenbreakdown.c
 testrqirestore_SOURCES = testrqirestore.c
 testrhistoryerror_SOURCES = testrhistoryerror.c
 testrepeatedsystems_SOURCES = testrepeatedsystems.c
@@ -1309,7 +1314,7 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
 	testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) \
 	testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) \
-	testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
+	testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
 	testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) \
 	testgmreswork$(EXEEXT) testsolvermonitor$(EXEEXT) \
 	testsolvercallbackpaths$(EXEEXT) \
@@ -1788,6 +1793,9 @@ testrhistoryerror$(EXEEXT): $(testrhistoryerror_OBJECTS) $(testrhistoryerror_DEP
 	@rm -f testrhistoryerror$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testrhistoryerror_OBJECTS) $(testrhistoryerror_LDADD) $(LIBS)
 
+testeigenbreakdown$(EXEEXT): $(testeigenbreakdown_OBJECTS) $(testeigenbreakdown_DEPENDENCIES) $(EXTRA_testeigenbreakdown_DEPENDENCIES)
+	@rm -f testeigenbreakdown$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testeigenbreakdown_OBJECTS) $(testeigenbreakdown_LDADD) $(LIBS)
 testrqirestore$(EXEEXT): $(testrqirestore_OBJECTS) $(testrqirestore_DEPENDENCIES) $(EXTRA_testrqirestore_DEPENDENCIES) 
 	@rm -f testrqirestore$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testrqirestore_OBJECTS) $(testrqirestore_LDADD) $(LIBS)
@@ -1954,6 +1962,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrecovery.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrepeatedsystems.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrhistoryerror.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testeigenbreakdown.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrqirestore.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsequence.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testshellscale.Po@am__quote@ # am--include-marker
@@ -2320,6 +2329,13 @@ testpreconpsd.log: testpreconpsd$(EXEEXT)
 testpreconreuse.log: testpreconreuse$(EXEEXT)
 	@p='testpreconreuse$(EXEEXT)'; \
 	b='testpreconreuse'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testeigenbreakdown.log: testeigenbreakdown$(EXEEXT)
+	@p='testeigenbreakdown$(EXEEXT)'; \
+	b='testeigenbreakdown'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -2781,6 +2797,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testrecovery.Po
 	-rm -f ./$(DEPDIR)/testrepeatedsystems.Po
 	-rm -f ./$(DEPDIR)/testrhistoryerror.Po
+	-rm -f ./$(DEPDIR)/testeigenbreakdown.Po
 	-rm -f ./$(DEPDIR)/testrqirestore.Po
 	-rm -f ./$(DEPDIR)/testsequence.Po
 	-rm -f ./$(DEPDIR)/testshellscale.Po
@@ -2910,6 +2927,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testrecovery.Po
 	-rm -f ./$(DEPDIR)/testrepeatedsystems.Po
 	-rm -f ./$(DEPDIR)/testrhistoryerror.Po
+	-rm -f ./$(DEPDIR)/testeigenbreakdown.Po
 	-rm -f ./$(DEPDIR)/testrqirestore.Po
 	-rm -f ./$(DEPDIR)/testsequence.Po
 	-rm -f ./$(DEPDIR)/testshellscale.Po
