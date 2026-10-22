@@ -108,10 +108,10 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	getestoperator$(EXEEXT) testdiagonal$(EXEEXT) \
 	testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) \
 	testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) \
-	testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
-	testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) \
-	testgmreswork$(EXEEXT) testsolvermonitor$(EXEEXT) \
-	testsolvercallbackpaths$(EXEEXT) \
+	testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) \
+	testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) \
+	testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
+	testsolvermonitor$(EXEEXT) testsolvercallbackpaths$(EXEEXT) \
 	testsolvercallbackcert$(EXEEXT) testworkcompat$(EXEEXT) \
 	testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) \
 	testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) \
@@ -390,6 +390,10 @@ am_testdiagonal_OBJECTS = testdiagonal.$(OBJEXT)
 testdiagonal_OBJECTS = $(am_testdiagonal_OBJECTS)
 testdiagonal_LDADD = $(LDADD)
 testdiagonal_DEPENDENCIES =
+am_testeigenbreakdown_OBJECTS = testeigenbreakdown.$(OBJEXT)
+testeigenbreakdown_OBJECTS = $(am_testeigenbreakdown_OBJECTS)
+testeigenbreakdown_LDADD = $(LDADD)
+testeigenbreakdown_DEPENDENCIES =
 testexactnullspace_SOURCES = testexactnullspace.c
 testexactnullspace_OBJECTS = testexactnullspace.$(OBJEXT)
 testexactnullspace_LDADD = $(LDADD)
@@ -522,10 +526,6 @@ am_testrhistoryerror_OBJECTS = testrhistoryerror.$(OBJEXT)
 testrhistoryerror_OBJECTS = $(am_testrhistoryerror_OBJECTS)
 testrhistoryerror_LDADD = $(LDADD)
 testrhistoryerror_DEPENDENCIES =
-am_testeigenbreakdown_OBJECTS = testeigenbreakdown.$(OBJEXT)
-testeigenbreakdown_OBJECTS = $(am_testeigenbreakdown_OBJECTS)
-testeigenbreakdown_LDADD = $(LDADD)
-testeigenbreakdown_DEPENDENCIES =
 am_testrqirestore_OBJECTS = testrqirestore.$(OBJEXT)
 testrqirestore_OBJECTS = $(am_testrqirestore_OBJECTS)
 testrqirestore_LDADD = $(LDADD)
@@ -644,7 +644,8 @@ am__depfiles_remade = ./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
 	./$(DEPDIR)/testcapabilities.Po \
 	./$(DEPDIR)/testchangingsystem.Po \
 	./$(DEPDIR)/testcoarseapply.Po ./$(DEPDIR)/testcoarsesetup.Po \
-	./$(DEPDIR)/testdiagonal.Po ./$(DEPDIR)/testexactnullspace.Po \
+	./$(DEPDIR)/testdiagonal.Po ./$(DEPDIR)/testeigenbreakdown.Po \
+	./$(DEPDIR)/testexactnullspace.Po \
 	./$(DEPDIR)/testexternalstorage.Po ./$(DEPDIR)/testfgcrodr.Po \
 	./$(DEPDIR)/testgcrodrconfig.Po \
 	./$(DEPDIR)/testgcrodroptions.Po \
@@ -665,7 +666,7 @@ am__depfiles_remade = ./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
 	./$(DEPDIR)/testpreconpolicy.Po ./$(DEPDIR)/testpreconpsd.Po \
 	./$(DEPDIR)/testpreconreuse.Po ./$(DEPDIR)/testrecovery.Po \
 	./$(DEPDIR)/testrepeatedsystems.Po \
-	./$(DEPDIR)/testrhistoryerror.Po ./$(DEPDIR)/testeigenbreakdown.Po ./$(DEPDIR)/testrqirestore.Po \
+	./$(DEPDIR)/testrhistoryerror.Po ./$(DEPDIR)/testrqirestore.Po \
 	./$(DEPDIR)/testsequence.Po ./$(DEPDIR)/testshellscale.Po \
 	./$(DEPDIR)/testsolvercallbackcert.Po \
 	./$(DEPDIR)/testsolvercallbackpaths.Po \
@@ -730,25 +731,26 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(test7f_SOURCES) $(test8f_SOURCES) $(testbreakretry_SOURCES) \
 	$(testcapabilities_SOURCES) $(testchangingsystem_SOURCES) \
 	$(testcoarseapply_SOURCES) $(testcoarsesetup_SOURCES) \
-	$(testdiagonal_SOURCES) testexactnullspace.c \
-	$(testexternalstorage_SOURCES) $(testfgcrodr_SOURCES) \
-	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
-	$(testgcrodrsequence_SOURCES) $(testgmreswork_SOURCES) \
-	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
-	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
-	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
-	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
-	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
-	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
-	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
-	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
-	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
-	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
-	$(testpreconreuse_SOURCES) $(testrecovery_SOURCES) \
-	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
-	$(testeigenbreakdown_SOURCES) $(testrqirestore_SOURCES) $(testsequence_SOURCES) \
-	$(testshellscale_SOURCES) $(testsolvercallbackcert_SOURCES) \
+	$(testdiagonal_SOURCES) $(testeigenbreakdown_SOURCES) \
+	testexactnullspace.c $(testexternalstorage_SOURCES) \
+	$(testfgcrodr_SOURCES) $(testgcrodrconfig_SOURCES) \
+	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
+	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
+	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
+	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
+	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
+	$(testhalfstorage_SOURCES) $(testilupivot_SOURCES) \
+	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
+	$(testmatrixgeneration_SOURCES) $(testmatvecblock_SOURCES) \
+	$(testmfamg_SOURCES) $(testmfamggalerkin_SOURCES) \
+	$(testnearnullspace_SOURCES) $(testoperator_SOURCES) \
+	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
+	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
+	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
+	$(testrecovery_SOURCES) $(testrepeatedsystems_SOURCES) \
+	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
+	$(testsequence_SOURCES) $(testshellscale_SOURCES) \
+	$(testsolvercallbackcert_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
 	$(testsolvermonitor_SOURCES) $(testsymmdiagguard_SOURCES) \
 	$(testthreads_SOURCES) $(testuser_SOURCES) \
@@ -776,25 +778,26 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__test8f_SOURCES_DIST) $(testbreakretry_SOURCES) \
 	$(testcapabilities_SOURCES) $(testchangingsystem_SOURCES) \
 	$(testcoarseapply_SOURCES) $(testcoarsesetup_SOURCES) \
-	$(testdiagonal_SOURCES) testexactnullspace.c \
-	$(testexternalstorage_SOURCES) $(testfgcrodr_SOURCES) \
-	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
-	$(testgcrodrsequence_SOURCES) $(testgmreswork_SOURCES) \
-	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
-	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
-	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
-	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
-	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
-	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
-	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
-	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
-	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
-	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
-	$(testpreconreuse_SOURCES) $(testrecovery_SOURCES) \
-	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
-	$(testeigenbreakdown_SOURCES) $(testrqirestore_SOURCES) $(testsequence_SOURCES) \
-	$(testshellscale_SOURCES) $(testsolvercallbackcert_SOURCES) \
+	$(testdiagonal_SOURCES) $(testeigenbreakdown_SOURCES) \
+	testexactnullspace.c $(testexternalstorage_SOURCES) \
+	$(testfgcrodr_SOURCES) $(testgcrodrconfig_SOURCES) \
+	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
+	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
+	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
+	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
+	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
+	$(testhalfstorage_SOURCES) $(testilupivot_SOURCES) \
+	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
+	$(testmatrixgeneration_SOURCES) $(testmatvecblock_SOURCES) \
+	$(testmfamg_SOURCES) $(testmfamggalerkin_SOURCES) \
+	$(testnearnullspace_SOURCES) $(testoperator_SOURCES) \
+	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
+	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
+	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
+	$(testrecovery_SOURCES) $(testrepeatedsystems_SOURCES) \
+	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
+	$(testsequence_SOURCES) $(testshellscale_SOURCES) \
+	$(testsolvercallbackcert_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
 	$(testsolvermonitor_SOURCES) $(testsymmdiagguard_SOURCES) \
 	$(testthreads_SOURCES) $(testuser_SOURCES) \
@@ -1314,10 +1317,10 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
 	testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) \
 	testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) \
-	testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
-	testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) \
-	testgmreswork$(EXEEXT) testsolvermonitor$(EXEEXT) \
-	testsolvercallbackpaths$(EXEEXT) \
+	testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) \
+	testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) \
+	testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
+	testsolvermonitor$(EXEEXT) testsolvercallbackpaths$(EXEEXT) \
 	testsolvercallbackcert$(EXEEXT) testworkcompat$(EXEEXT) \
 	testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) \
 	testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) \
@@ -1661,6 +1664,10 @@ testdiagonal$(EXEEXT): $(testdiagonal_OBJECTS) $(testdiagonal_DEPENDENCIES) $(EX
 	@rm -f testdiagonal$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testdiagonal_OBJECTS) $(testdiagonal_LDADD) $(LIBS)
 
+testeigenbreakdown$(EXEEXT): $(testeigenbreakdown_OBJECTS) $(testeigenbreakdown_DEPENDENCIES) $(EXTRA_testeigenbreakdown_DEPENDENCIES) 
+	@rm -f testeigenbreakdown$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testeigenbreakdown_OBJECTS) $(testeigenbreakdown_LDADD) $(LIBS)
+
 testexactnullspace$(EXEEXT): $(testexactnullspace_OBJECTS) $(testexactnullspace_DEPENDENCIES) $(EXTRA_testexactnullspace_DEPENDENCIES) 
 	@rm -f testexactnullspace$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testexactnullspace_OBJECTS) $(testexactnullspace_LDADD) $(LIBS)
@@ -1793,9 +1800,6 @@ testrhistoryerror$(EXEEXT): $(testrhistoryerror_OBJECTS) $(testrhistoryerror_DEP
 	@rm -f testrhistoryerror$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testrhistoryerror_OBJECTS) $(testrhistoryerror_LDADD) $(LIBS)
 
-testeigenbreakdown$(EXEEXT): $(testeigenbreakdown_OBJECTS) $(testeigenbreakdown_DEPENDENCIES) $(EXTRA_testeigenbreakdown_DEPENDENCIES)
-	@rm -f testeigenbreakdown$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(testeigenbreakdown_OBJECTS) $(testeigenbreakdown_LDADD) $(LIBS)
 testrqirestore$(EXEEXT): $(testrqirestore_OBJECTS) $(testrqirestore_DEPENDENCIES) $(EXTRA_testrqirestore_DEPENDENCIES) 
 	@rm -f testrqirestore$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testrqirestore_OBJECTS) $(testrqirestore_LDADD) $(LIBS)
@@ -1929,6 +1933,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testcoarseapply.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testcoarsesetup.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testdiagonal.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testeigenbreakdown.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testexactnullspace.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testexternalstorage.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodr.Po@am__quote@ # am--include-marker
@@ -1962,7 +1967,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrecovery.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrepeatedsystems.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrhistoryerror.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testeigenbreakdown.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrqirestore.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsequence.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testshellscale.Po@am__quote@ # am--include-marker
@@ -2764,6 +2768,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testcoarseapply.Po
 	-rm -f ./$(DEPDIR)/testcoarsesetup.Po
 	-rm -f ./$(DEPDIR)/testdiagonal.Po
+	-rm -f ./$(DEPDIR)/testeigenbreakdown.Po
 	-rm -f ./$(DEPDIR)/testexactnullspace.Po
 	-rm -f ./$(DEPDIR)/testexternalstorage.Po
 	-rm -f ./$(DEPDIR)/testfgcrodr.Po
@@ -2797,7 +2802,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testrecovery.Po
 	-rm -f ./$(DEPDIR)/testrepeatedsystems.Po
 	-rm -f ./$(DEPDIR)/testrhistoryerror.Po
-	-rm -f ./$(DEPDIR)/testeigenbreakdown.Po
 	-rm -f ./$(DEPDIR)/testrqirestore.Po
 	-rm -f ./$(DEPDIR)/testsequence.Po
 	-rm -f ./$(DEPDIR)/testshellscale.Po
@@ -2894,6 +2898,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testcoarseapply.Po
 	-rm -f ./$(DEPDIR)/testcoarsesetup.Po
 	-rm -f ./$(DEPDIR)/testdiagonal.Po
+	-rm -f ./$(DEPDIR)/testeigenbreakdown.Po
 	-rm -f ./$(DEPDIR)/testexactnullspace.Po
 	-rm -f ./$(DEPDIR)/testexternalstorage.Po
 	-rm -f ./$(DEPDIR)/testfgcrodr.Po
@@ -2927,7 +2932,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testrecovery.Po
 	-rm -f ./$(DEPDIR)/testrepeatedsystems.Po
 	-rm -f ./$(DEPDIR)/testrhistoryerror.Po
-	-rm -f ./$(DEPDIR)/testeigenbreakdown.Po
 	-rm -f ./$(DEPDIR)/testrqirestore.Po
 	-rm -f ./$(DEPDIR)/testsequence.Po
 	-rm -f ./$(DEPDIR)/testshellscale.Po
