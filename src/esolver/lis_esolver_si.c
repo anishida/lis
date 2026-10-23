@@ -132,6 +132,288 @@ LIS_INT lis_esi_malloc_work(LIS_ESOLVER esolver)
 	return LIS_SUCCESS;
 }
 
+static LIS_INT
+lis_esi_solve_with_retry(
+        LIS_MATRIX A,
+        LIS_VECTOR b,
+        LIS_VECTOR x,
+        LIS_SOLVER solver,
+        LIS_PRECON *precon)
+{
+        LIS_INT err,status;
+
+        status =
+                lis_esolver_inner_solve_attempt(
+                        A,b,x,solver,*precon);
+        if( status==LIS_SUCCESS )
+        {
+                return LIS_SUCCESS;
+        }
+
+        if( !lis_esolver_inner_solve_retryable(status) )
+        {
+                return status;
+        }
+
+        err = lis_esolver_rebuild_precon(
+                A,solver,precon);
+        if( err )
+        {
+                return err;
+        }
+
+        lis_vector_set_all(0.0,x);
+
+        return lis_esolver_inner_solve_attempt(
+                A,b,x,solver,*precon);
+}
+
+
+static LIS_INT
+lis_esi_solve_with_recovery(
+        LIS_MATRIX A,
+        LIS_VECTOR b,
+        LIS_VECTOR x,
+        LIS_SOLVER solver,
+        LIS_PRECON *precon,
+        LIS_SCALAR base_shift,
+        LIS_REAL acceptance_tol,
+        LIS_SCALAR *used_shift)
+{
+        LIS_INT err,status,attempt;
+        LIS_SCALAR perturbation;
+        LIS_SCALAR trial_shift;
+        LIS_SCALAR shift_change;
+
+        *used_shift = base_shift;
+
+        status =
+                lis_esolver_inner_solve_attempt(
+                        A,b,x,solver,*precon);
+        if( status==LIS_SUCCESS )
+        {
+                return LIS_SUCCESS;
+        }
+
+        if( !lis_esolver_inner_solve_retryable(status) )
+        {
+                return status;
+        }
+
+        err = lis_esolver_rebuild_precon(
+                A,solver,precon);
+        if( err )
+        {
+                return err;
+        }
+
+        lis_vector_set_all(0.0,x);
+
+        status =
+                lis_esolver_inner_solve_attempt(
+                        A,b,x,solver,*precon);
+        if( status==LIS_SUCCESS )
+        {
+                return LIS_SUCCESS;
+        }
+
+        if( !lis_esolver_inner_solve_retryable(status) )
+        {
+                return status;
+        }
+
+        perturbation =
+                lis_esolver_shift_perturbation(
+                        base_shift);
+        if( perturbation==0.0 )
+        {
+                return status;
+        }
+
+        for(attempt=0;attempt<2;attempt++)
+        {
+                trial_shift =
+                        attempt==0 ?
+                        base_shift+perturbation :
+                        base_shift-perturbation;
+
+                shift_change =
+                        trial_shift-base_shift;
+
+                lis_matrix_shift_diagonal(
+                        A,shift_change);
+
+                err = lis_esolver_rebuild_precon(
+                        A,solver,precon);
+                if( err )
+                {
+                        lis_matrix_shift_diagonal(
+                                A,-shift_change);
+                        return err;
+                }
+
+                lis_vector_set_all(0.0,x);
+
+                status =
+                        lis_esolver_inner_solve_attempt(
+                                A,b,x,solver,*precon);
+
+                status =
+                        lis_esolver_inner_solve_certify(
+                                A,b,x,solver,
+                                status,
+                                acceptance_tol);
+
+                lis_matrix_shift_diagonal(
+                        A,-shift_change);
+
+                if( status==LIS_SUCCESS )
+                {
+                        *used_shift = trial_shift;
+
+                        err = lis_esolver_rebuild_precon(
+                                A,solver,precon);
+                        if( err )
+                        {
+                                return err;
+                        }
+
+                        return LIS_SUCCESS;
+                }
+
+                if( !lis_esolver_inner_solve_retryable(status) )
+                {
+                        return status;
+                }
+        }
+
+        return status;
+}
+
+
+static LIS_INT
+lis_egsi_solve_with_recovery(
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_VECTOR b,
+        LIS_VECTOR x,
+        LIS_SOLVER solver,
+        LIS_PRECON *precon,
+        LIS_SCALAR base_shift,
+        LIS_REAL acceptance_tol,
+        LIS_SCALAR *used_shift)
+{
+        LIS_INT err,status,attempt;
+        LIS_SCALAR perturbation;
+        LIS_SCALAR trial_shift;
+        LIS_SCALAR shift_change;
+
+        *used_shift = base_shift;
+
+        status =
+                lis_esolver_inner_solve_attempt(
+                        A,b,x,solver,*precon);
+        if( status==LIS_SUCCESS )
+        {
+                return LIS_SUCCESS;
+        }
+
+        if( !lis_esolver_inner_solve_retryable(status) )
+        {
+                return status;
+        }
+
+        err = lis_esolver_rebuild_precon(
+                A,solver,precon);
+        if( err )
+        {
+                return err;
+        }
+
+        lis_vector_set_all(0.0,x);
+
+        status =
+                lis_esolver_inner_solve_attempt(
+                        A,b,x,solver,*precon);
+        if( status==LIS_SUCCESS )
+        {
+                return LIS_SUCCESS;
+        }
+
+        if( !lis_esolver_inner_solve_retryable(status) )
+        {
+                return status;
+        }
+
+        perturbation =
+                lis_esolver_shift_perturbation(
+                        base_shift);
+        if( perturbation==0.0 )
+        {
+                return status;
+        }
+
+        for(attempt=0;attempt<2;attempt++)
+        {
+                trial_shift =
+                        attempt==0 ?
+                        base_shift+perturbation :
+                        base_shift-perturbation;
+
+                shift_change =
+                        trial_shift-base_shift;
+
+                lis_matrix_shift_matrix(
+                        A,B,shift_change);
+
+                err = lis_esolver_rebuild_precon(
+                        A,solver,precon);
+                if( err )
+                {
+                        lis_matrix_shift_matrix(
+                                A,B,-shift_change);
+                        return err;
+                }
+
+                lis_vector_set_all(0.0,x);
+
+                status =
+                        lis_esolver_inner_solve_attempt(
+                                A,b,x,solver,*precon);
+
+                status =
+                        lis_esolver_inner_solve_certify(
+                                A,b,x,solver,
+                                status,
+                                acceptance_tol);
+
+                lis_matrix_shift_matrix(
+                        A,B,-shift_change);
+
+                if( status==LIS_SUCCESS )
+                {
+                        *used_shift = trial_shift;
+
+                        err = lis_esolver_rebuild_precon(
+                                A,solver,precon);
+                        if( err )
+                        {
+                                return err;
+                        }
+
+                        return LIS_SUCCESS;
+                }
+
+                if( !lis_esolver_inner_solve_retryable(status) )
+                {
+                        return status;
+                }
+        }
+
+        return status;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_esi"
 LIS_INT lis_esi(LIS_ESOLVER esolver)
@@ -140,7 +422,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   LIS_MATRIX A;
   LIS_VECTOR x, Ax;
   LIS_SCALAR xAx, xx;
-  LIS_SCALAR oshift, ishift;
+  LIS_SCALAR oshift, ishift, solve_shift;
   LIS_INT ss;
   LIS_INT emaxiter;
   LIS_REAL tol;
@@ -217,7 +499,15 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
       lis_solver_create(&solver);
       lis_solver_set_option("-i bicg -p none",solver);
       err = lis_solver_set_optionC(solver);
-      CHKERR(err);
+      if( err )
+        {
+          esolver->retcode = err;
+          if ( oshift != 0.0 )
+            lis_matrix_shift_diagonal(A, -oshift);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return err;
+        }
       lis_solver_get_solver(solver, &nsol);
       lis_solver_get_precon(solver, &precon_type);
       lis_solver_get_solvername(nsol, solvername);
@@ -227,6 +517,20 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	  lis_printf(comm,"linear solver         : %s\n", solvername);
 	  lis_printf(comm,"preconditioner        : %s\n", preconname);
 	}
+
+      precon = NULL;
+      solver->A = A;
+      err = lis_precon_create(solver, &precon);
+      if( err )
+        {
+          esolver->retcode = err;
+          if ( oshift != 0.0 )
+            lis_matrix_shift_diagonal(A, -oshift);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return err;
+        }
+
       break;
 
     }
@@ -245,19 +549,6 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
       lis_vector_duplicate(A,&esolver->evector[j]); 
       j = j+1;
       lis_vector_copy(r, v[j]);
-
-      if (niesolver==LIS_ESOLVER_II )
-	{
-	  /* create preconditioner */
-	  solver->A = A;
-	  err = lis_precon_create(solver, &precon);
-	  if( err )
-	    {
-	      lis_solver_work_destroy(solver);
-	      solver->retcode = err;
-	      return err;
-	    }
-	}
 
       ptime = 0;
       iter = 0;
@@ -286,12 +577,18 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	    case LIS_ESOLVER_II:
 
 	      /* R = A^-1 * V */
-	      err = lis_solve_kernel(A, v[j], r, solver, precon);
+	      solve_shift = oshift;
+	      err = lis_esi_solve_with_recovery(
+	              A, v[j], r, solver, &precon,
+	              oshift, tol, &solve_shift);
 	      if( err )
 		{
-		  lis_solver_work_destroy(solver);	  
-		  solver->retcode = err;
+		  esolver->retcode = err;
+		  if ( oshift != 0.0 )
+		    lis_matrix_shift_diagonal(A, -oshift);
 		  lis_precon_destroy(precon);
+		  lis_solver_destroy(solver);
+		  LIS_DEBUG_FUNC_OUT;
 		  return err;
 		}
 
@@ -382,7 +679,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	  esolver->iter[j-1] = iter;
 	  break;
 	case LIS_ESOLVER_II:
-	  esolver->evalue[j-1] = 1/theta + oshift;
+	  esolver->evalue[j-1] = 1/theta + solve_shift;
 	  esolver->resid[j-1] = resid;
 	  esolver->iter[j-1] = iter;
 	  break;
@@ -533,7 +830,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   LIS_MATRIX A, B;
   LIS_VECTOR x, Ax;
   LIS_SCALAR xAx, xx;
-  LIS_SCALAR oshift, ishift;
+  LIS_SCALAR oshift, ishift, solve_shift;
   LIS_INT ss;
   LIS_INT emaxiter;
   LIS_REAL tol;
@@ -608,7 +905,15 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
   err = lis_solver_set_optionC(solver);
-  CHKERR(err);
+  if( err )
+    {
+      esolver->retcode = err;
+      if ( oshift != 0.0 )
+        lis_matrix_shift_matrix(A, B, -oshift);
+      lis_solver_destroy(solver);
+      LIS_DEBUG_FUNC_OUT;
+      return err;
+    }
   lis_solver_get_solver(solver, &nsol);
   lis_solver_get_precon(solver, &precon_type);
   lis_solver_get_solvername(nsol, solvername);
@@ -617,6 +922,36 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
     {
       lis_printf(comm,"linear solver         : %s\n", solvername);
       lis_printf(comm,"preconditioner        : %s\n", preconname);
+    }
+
+  precon = NULL;
+
+  switch ( nigesolver )
+    {
+    case LIS_ESOLVER_GII:
+      solver->A = A;
+      err = lis_precon_create(solver, &precon);
+      break;
+
+    case LIS_ESOLVER_GPI:
+      solver->A = B;
+      err = lis_precon_create(solver, &precon);
+      break;
+
+    default:
+      err = LIS_ERR_ILL_ARG;
+      break;
+    }
+
+  if( err )
+    {
+      esolver->retcode = err;
+      if ( oshift != 0.0 )
+        lis_matrix_shift_matrix(A, B, -oshift);
+      lis_precon_destroy(precon);
+      lis_solver_destroy(solver);
+      LIS_DEBUG_FUNC_OUT;
+      return err;
     }
 
   if( output ) 
@@ -633,34 +968,6 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
       lis_vector_duplicate(A,&esolver->evector[j]); 
       j = j+1;
       lis_vector_copy(y, v[j]);
-
-      switch ( nigesolver )
-	{
-	case LIS_ESOLVER_GII:
-	  {
-	    /* create preconditioner */
-	    solver->A = A;
-	    err = lis_precon_create(solver, &precon);
-	    if( err )
-	      {
-		lis_solver_work_destroy(solver);
-		solver->retcode = err;
-		return err;
-	      }
-	  }
-	case LIS_ESOLVER_GPI:
-	  {
-	    /* create preconditioner */
-	    solver->A = B;
-	    err = lis_precon_create(solver, &precon);
-	    if( err )
-	      {
-		lis_solver_work_destroy(solver);
-		solver->retcode = err;
-		return err;
-	      }
-	  }
-	}
 
       ptime = 0;
       iter = 0;
@@ -719,12 +1026,16 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	      lis_vector_scale(1.0/eta, w);
 
 	      /* y = B^-1 * w */
-	      err = lis_solve_kernel(B, w, y, solver, precon);
+	      err = lis_esi_solve_with_retry(
+	              B, w, y, solver, &precon);
 	      if( err )
 		{
-		  lis_solver_work_destroy(solver);	  
-		  solver->retcode = err;
+		  esolver->retcode = err;
+		  if ( oshift != 0.0 )
+		    lis_matrix_shift_matrix(A, B, -oshift);
 		  lis_precon_destroy(precon);
+		  lis_solver_destroy(solver);
+		  LIS_DEBUG_FUNC_OUT;
 		  return err;
 		}
 
@@ -770,12 +1081,18 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	      lis_vector_scale(1.0/eta, w);
 
 	      /* y = A^-1 * w */
-	      err = lis_solve_kernel(A, w, y, solver, precon);
+	      solve_shift = oshift;
+	      err = lis_egsi_solve_with_recovery(
+	              A, B, w, y, solver, &precon,
+	              oshift, tol, &solve_shift);
 	      if( err )
 		{
-		  lis_solver_work_destroy(solver);	  
-		  solver->retcode = err;
+		  esolver->retcode = err;
+		  if ( oshift != 0.0 )
+		    lis_matrix_shift_matrix(A, B, -oshift);
 		  lis_precon_destroy(precon);
+		  lis_solver_destroy(solver);
+		  LIS_DEBUG_FUNC_OUT;
 		  return err;
 		}
 	      break;
@@ -868,7 +1185,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	  esolver->iter[j-1] = iter;
 	  break;
 	case LIS_ESOLVER_GII:
-	  esolver->evalue[j-1] = 1.0/theta + oshift;
+	  esolver->evalue[j-1] = 1.0/theta + solve_shift;
 	  esolver->resid[j-1] = resid;
 	  esolver->iter[j-1] = iter;
 	  break;

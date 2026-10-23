@@ -6,6 +6,7 @@
 
 #include "lis.h"
 #include <stdio.h>
+#include <math.h>
 
 
 static LIS_INT
@@ -46,6 +47,49 @@ create_diagonal_matrix(
         1,
         a1,
         *A);
+    if( err )
+        return err;
+
+    return lis_matrix_assemble(*A);
+}
+
+
+static LIS_INT
+create_diagonal_matrix3(
+    LIS_MATRIX *A,
+    LIS_SCALAR a0,
+    LIS_SCALAR a1,
+    LIS_SCALAR a2)
+{
+    LIS_INT err;
+
+    *A = NULL;
+
+    err = lis_matrix_create(
+        LIS_COMM_WORLD,
+        A);
+    if( err )
+        return err;
+
+    err = lis_matrix_set_size(
+        *A,
+        0,
+        3);
+    if( err )
+        return err;
+
+    err = lis_matrix_set_value(
+        LIS_INS_VALUE,0,0,a0,*A);
+    if( err )
+        return err;
+
+    err = lis_matrix_set_value(
+        LIS_INS_VALUE,1,1,a1,*A);
+    if( err )
+        return err;
+
+    err = lis_matrix_set_value(
+        LIS_INS_VALUE,2,2,a2,*A);
     if( err )
         return err;
 
@@ -466,6 +510,201 @@ cleanup:
     if( esolver )
         lis_esolver_destroy(esolver);
 
+    if( x )
+        lis_vector_destroy(x);
+
+    return err;
+}
+
+
+static LIS_INT
+check_standard_recovery(
+    const char *name,
+    const char *options,
+    LIS_MATRIX A,
+    LIS_SCALAR expected,
+    LIS_REAL tol)
+{
+    LIS_INT err,api,status;
+    LIS_REAL residual,error;
+    LIS_VECTOR x;
+    LIS_ESOLVER esolver;
+    LIS_SCALAR evalue;
+
+    x = NULL;
+    esolver = NULL;
+    evalue = 0.0;
+    residual = 0.0;
+
+    err = lis_vector_duplicate(A,&x);
+    if( err ) goto cleanup;
+
+    err = lis_vector_set_all(1.0,x);
+    if( err ) goto cleanup;
+
+    err = lis_esolver_create(&esolver);
+    if( err ) goto cleanup;
+
+    err = lis_esolver_set_option(
+        (char *)options,esolver);
+    if( err ) goto cleanup;
+
+    api = lis_esolve(
+        A,x,&evalue,esolver);
+    if( api!=LIS_SUCCESS )
+    {
+        printf(
+            "%s: API return %d, expected LIS_SUCCESS\n",
+            name,(int)api);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = lis_esolver_get_status(
+        esolver,&status);
+    if( err ) goto cleanup;
+
+    if( status!=LIS_SUCCESS )
+    {
+        printf(
+            "%s: status %d, expected LIS_SUCCESS\n",
+            name,(int)status);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = lis_esolver_get_residualnorm(
+        esolver,&residual);
+    if( err ) goto cleanup;
+
+#ifdef _COMPLEX
+    error = cabs(evalue-expected);
+#else
+    error = fabs(evalue-expected);
+#endif
+
+    if( !isfinite((double)residual) ||
+        residual>tol ||
+        !isfinite((double)error) ||
+        error>1.0e-5 )
+    {
+        printf(
+            "%s: error %.17e, residual %.17e\n",
+            name,
+            (double)error,
+            (double)residual);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    printf(
+        "PASS: %s -> residual %.6e\n",
+        name,
+        (double)residual);
+
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( esolver )
+        lis_esolver_destroy(esolver);
+    if( x )
+        lis_vector_destroy(x);
+
+    return err;
+}
+
+
+static LIS_INT
+check_generalized_recovery(
+    const char *name,
+    const char *options,
+    LIS_MATRIX A,
+    LIS_MATRIX B,
+    LIS_SCALAR expected,
+    LIS_REAL tol)
+{
+    LIS_INT err,api,status;
+    LIS_REAL residual,error;
+    LIS_VECTOR x;
+    LIS_ESOLVER esolver;
+    LIS_SCALAR evalue;
+
+    x = NULL;
+    esolver = NULL;
+    evalue = 0.0;
+    residual = 0.0;
+
+    err = lis_vector_duplicate(A,&x);
+    if( err ) goto cleanup;
+
+    err = lis_vector_set_all(1.0,x);
+    if( err ) goto cleanup;
+
+    err = lis_esolver_create(&esolver);
+    if( err ) goto cleanup;
+
+    err = lis_esolver_set_option(
+        (char *)options,esolver);
+    if( err ) goto cleanup;
+
+    api = lis_gesolve(
+        A,B,x,&evalue,esolver);
+    if( api!=LIS_SUCCESS )
+    {
+        printf(
+            "%s: API return %d, expected LIS_SUCCESS\n",
+            name,(int)api);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = lis_esolver_get_status(
+        esolver,&status);
+    if( err ) goto cleanup;
+
+    if( status!=LIS_SUCCESS )
+    {
+        printf(
+            "%s: status %d, expected LIS_SUCCESS\n",
+            name,(int)status);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = lis_esolver_get_residualnorm(
+        esolver,&residual);
+    if( err ) goto cleanup;
+
+#ifdef _COMPLEX
+    error = cabs(evalue-expected);
+#else
+    error = fabs(evalue-expected);
+#endif
+
+    if( !isfinite((double)residual) ||
+        residual>tol ||
+        !isfinite((double)error) ||
+        error>1.0e-5 )
+    {
+        printf(
+            "%s: error %.17e, residual %.17e\n",
+            name,
+            (double)error,
+            (double)residual);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    printf(
+        "PASS: %s -> residual %.6e\n",
+        name,
+        (double)residual);
+
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( esolver )
+        lis_esolver_destroy(esolver);
     if( x )
         lis_vector_destroy(x);
 
@@ -1012,6 +1251,356 @@ cleanup:
 
 
 static LIS_INT
+test_inverse_shift_recovery(void)
+{
+    LIS_INT err;
+    LIS_MATRIX A;
+
+    A = NULL;
+
+    err = create_diagonal_matrix(
+        &A,1.0,2.0);
+    if( err ) goto cleanup;
+
+    err = check_standard_recovery(
+        "Inverse singular-shift recovery",
+        "-e ii -shift 1.0 -emaxiter 8 -etol 1.0e-8",
+        A,1.0,1.0e-8);
+
+cleanup:
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
+static LIS_INT
+test_generalized_inverse_shift_recovery(void)
+{
+    LIS_INT err;
+    LIS_MATRIX A,B;
+
+    A = NULL;
+    B = NULL;
+
+    err = create_diagonal_matrix(
+        &A,1.0,2.0);
+    if( err ) goto cleanup;
+
+    err = create_diagonal_matrix(
+        &B,1.0,1.0);
+    if( err ) goto cleanup;
+
+    err = check_generalized_recovery(
+        "Generalized Inverse singular-shift recovery",
+        "-e gii -shift 1.0 -emaxiter 8 -etol 1.0e-8",
+        A,B,1.0,1.0e-8);
+
+cleanup:
+    if( B )
+        lis_matrix_destroy(B);
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
+static LIS_INT
+test_rqi_shift_recovery(void)
+{
+    LIS_INT err;
+    LIS_MATRIX A;
+
+    A = NULL;
+
+    err = create_diagonal_matrix3(
+        &A,1.0,2.0,3.0);
+    if( err ) goto cleanup;
+
+    err = check_standard_recovery(
+        "RQI singular-shift recovery",
+        "-e rqi -emaxiter 8 -etol 1.0e-8",
+        A,2.0,1.0e-8);
+
+cleanup:
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
+static LIS_INT
+test_grqi_shift_recovery(void)
+{
+    LIS_INT err;
+    LIS_MATRIX A,B;
+
+    A = NULL;
+    B = NULL;
+
+    err = create_diagonal_matrix3(
+        &A,1.0,2.0,3.0);
+    if( err ) goto cleanup;
+
+    err = create_diagonal_matrix3(
+        &B,1.0,1.0,1.0);
+    if( err ) goto cleanup;
+
+    err = check_generalized_recovery(
+        "Generalized RQI singular-shift recovery",
+        "-e grqi -emaxiter 8 -etol 1.0e-8",
+        A,B,2.0,1.0e-8);
+
+cleanup:
+    if( B )
+        lis_matrix_destroy(B);
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
+static LIS_INT
+test_subspace_inverse_shift_recovery(void)
+{
+    LIS_INT err;
+    LIS_MATRIX A;
+
+    A = NULL;
+
+    err = create_diagonal_matrix(
+        &A,1.0,2.0);
+    if( err ) goto cleanup;
+
+    err = check_standard_recovery(
+        "Subspace/II singular-shift recovery",
+        "-e si -ie ii -ss 1 -shift 1.0 -emaxiter 8 -etol 1.0e-8",
+        A,1.0,1.0e-8);
+
+cleanup:
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
+static LIS_INT
+test_generalized_subspace_inverse_shift_recovery(void)
+{
+    LIS_INT err;
+    LIS_MATRIX A,B;
+
+    A = NULL;
+    B = NULL;
+
+    err = create_diagonal_matrix(
+        &A,1.0,2.0);
+    if( err ) goto cleanup;
+
+    err = create_diagonal_matrix(
+        &B,1.0,1.0);
+    if( err ) goto cleanup;
+
+    err = check_generalized_recovery(
+        "Generalized Subspace/GII singular-shift recovery",
+        "-e gsi -ige gii -ss 1 -shift 1.0 -emaxiter 8 -etol 1.0e-8",
+        A,B,1.0,1.0e-8);
+
+cleanup:
+    if( B )
+        lis_matrix_destroy(B);
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
+static LIS_INT
+check_transformed_gli_recovery(
+    const char *name,
+    const char *options,
+    LIS_MATRIX A,
+    LIS_MATRIX B,
+    LIS_SCALAR expected,
+    LIS_REAL tol)
+{
+    LIS_INT err;
+    LIS_INT api;
+    LIS_INT status;
+    LIS_REAL residual;
+    LIS_VECTOR x;
+    LIS_ESOLVER esolver;
+    LIS_SCALAR evalue;
+
+    x = NULL;
+    esolver = NULL;
+    evalue = 0.0;
+    residual = 0.0;
+
+    err = lis_vector_duplicate(A,&x);
+    if( err ) goto cleanup;
+
+    err = lis_vector_set_all(1.0,x);
+    if( err ) goto cleanup;
+
+    err = lis_esolver_create(&esolver);
+    if( err ) goto cleanup;
+
+    err = lis_esolver_set_option(
+        (char *)options,
+        esolver);
+    if( err ) goto cleanup;
+
+    api = lis_gesolve(
+        A,B,x,&evalue,esolver);
+
+    if( api!=LIS_SUCCESS )
+    {
+        printf(
+            "%s: API return %d, expected LIS_SUCCESS (%d)\n",
+            name,
+            (int)api,
+            (int)LIS_SUCCESS);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = lis_esolver_get_status(
+        esolver,
+        &status);
+    if( err ) goto cleanup;
+
+    if( status!=LIS_SUCCESS )
+    {
+        printf(
+            "%s: status %d, expected LIS_SUCCESS (%d)\n",
+            name,
+            (int)status,
+            (int)LIS_SUCCESS);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = lis_esolver_get_residualnorm(
+        esolver,
+        &residual);
+    if( err ) goto cleanup;
+
+    if( !isfinite((double)residual) || residual>tol )
+    {
+        printf(
+            "%s: physical residual %.17e, expected <= %.17e\n",
+            name,
+            (double)residual,
+            (double)tol);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+#ifdef _COMPLEX
+    if( cabs(evalue-expected)>1.0e-6 )
+#else
+    if( fabs(evalue-expected)>1.0e-6 )
+#endif
+    {
+        printf(
+            "%s: eigenvalue mismatch\n",
+            name);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    printf(
+        "PASS: %s -> residual %.6e\n",
+        name,
+        (double)residual);
+
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( esolver )
+        lis_esolver_destroy(esolver);
+
+    if( x )
+        lis_vector_destroy(x);
+
+    return err;
+}
+
+
+static LIS_INT
+test_gli_shift_invert_singular_shift_recovery(void)
+{
+    LIS_INT err;
+    LIS_MATRIX A,B;
+
+    A = NULL;
+    B = NULL;
+
+    err = create_diagonal_matrix(
+        &A,1.0,2.0);
+    if( err ) goto cleanup;
+
+    err = create_diagonal_matrix(
+        &B,1.0,1.0);
+    if( err ) goto cleanup;
+
+    err = check_transformed_gli_recovery(
+        "GLI shift-invert singular-shift recovery",
+        "-e gli -etransform shift-invert -shift 1.0 "
+        "-ss 2 -nev 1 -emaxiter 8 -etol 1.0e-8",
+        A,B,1.0,1.0e-8);
+
+cleanup:
+    if( B )
+        lis_matrix_destroy(B);
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
+static LIS_INT
+test_gli_buckling_singular_shift_recovery(void)
+{
+    LIS_INT err;
+    LIS_MATRIX A,B;
+
+    A = NULL;
+    B = NULL;
+
+    err = create_diagonal_matrix(
+        &A,1.0,2.0);
+    if( err ) goto cleanup;
+
+    err = create_diagonal_matrix(
+        &B,1.0,1.0);
+    if( err ) goto cleanup;
+
+    err = check_transformed_gli_recovery(
+        "GLI buckling singular-shift recovery",
+        "-e gli -etransform buckling -shift 1.0 "
+        "-ss 2 -nev 1 -emaxiter 8 -etol 1.0e-8",
+        A,B,1.0,1.0e-8);
+
+cleanup:
+    if( B )
+        lis_matrix_destroy(B);
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
+static LIS_INT
 test_arnoldi_happy_breakdown(void)
 {
     LIS_INT err;
@@ -1155,6 +1744,78 @@ main(
     {
         printf(
             "LIS_EIGEN_CERTIFICATION GSUBSPACE FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_inverse_shift_recovery();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_RECOVERY INVERSE FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_generalized_inverse_shift_recovery();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_RECOVERY GINVERSE FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_rqi_shift_recovery();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_RECOVERY RQI FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_grqi_shift_recovery();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_RECOVERY GRQI FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_subspace_inverse_shift_recovery();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_RECOVERY SUBSPACE_II FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_generalized_subspace_inverse_shift_recovery();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_RECOVERY GSUBSPACE_GII FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_gli_shift_invert_singular_shift_recovery();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_RECOVERY GLI_SHIFT_INVERT FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_gli_buckling_singular_shift_recovery();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_RECOVERY GLI_BUCKLING FAILED\n");
         lis_finalize();
         return 1;
     }

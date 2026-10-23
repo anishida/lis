@@ -175,6 +175,226 @@ LIS_INT lis_esolver_is_valid_norm(
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_esolver_inner_solve_attempt"
+LIS_INT lis_esolver_inner_solve_attempt(
+        LIS_MATRIX A,
+        LIS_VECTOR b,
+        LIS_VECTOR x,
+        LIS_SOLVER solver,
+        LIS_PRECON precon)
+{
+        LIS_INT err;
+
+        LIS_DEBUG_FUNC_IN;
+
+        if( A==NULL || b==NULL || x==NULL ||
+            solver==NULL || precon==NULL )
+        {
+                LIS_SETERR(LIS_ERR_ILL_ARG,
+                        "invalid eigensolver inner solve arguments\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        solver->retcode = LIS_SUCCESS;
+
+        err = lis_solve_kernel(
+                A,b,x,solver,precon);
+        if( err )
+        {
+                solver->retcode = err;
+                return err;
+        }
+
+        if( solver->retcode!=LIS_SUCCESS )
+        {
+                return solver->retcode;
+        }
+
+        if( !isfinite((double)solver->resid) )
+        {
+                LIS_SETERR(LIS_BREAKDOWN,
+                        "non-finite eigensolver inner solve residual\n");
+                solver->retcode = LIS_BREAKDOWN;
+                return LIS_BREAKDOWN;
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+LIS_INT lis_esolver_inner_solve_retryable(
+        LIS_INT status)
+{
+        return status==LIS_BREAKDOWN ||
+               status==LIS_MAXITER;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_inner_solve_certify"
+LIS_INT lis_esolver_inner_solve_certify(
+        LIS_MATRIX A,
+        LIS_VECTOR b,
+        LIS_VECTOR x,
+        LIS_SOLVER solver,
+        LIS_INT status,
+        LIS_REAL tolerance)
+{
+        LIS_INT err;
+        LIS_REAL residual_norm;
+        LIS_REAL rhs_norm;
+        LIS_REAL relative_residual;
+
+        LIS_DEBUG_FUNC_IN;
+
+        if( status==LIS_SUCCESS )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_SUCCESS;
+        }
+
+        if( !lis_esolver_inner_solve_retryable(status) )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return status;
+        }
+
+        if( A==NULL || b==NULL || x==NULL ||
+            solver==NULL )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return status;
+        }
+
+        if( !isfinite((double)tolerance) ||
+            tolerance<=0.0 )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return status;
+        }
+
+        residual_norm = 0.0;
+        rhs_norm = 0.0;
+
+        err = lis_solver_compute_true_residual(
+                A,b,x,
+                &residual_norm,
+                &rhs_norm);
+        if( err )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return status;
+        }
+
+        if( !isfinite((double)residual_norm) ||
+            !isfinite((double)rhs_norm) ||
+            residual_norm<0.0 ||
+            rhs_norm<0.0 )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return status;
+        }
+
+        relative_residual =
+                rhs_norm>0.0 ?
+                residual_norm/rhs_norm :
+                residual_norm;
+
+        if( !isfinite((double)relative_residual) ||
+            relative_residual>tolerance )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return status;
+        }
+
+        solver->resid = relative_residual;
+        solver->retcode = LIS_SUCCESS;
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+LIS_SCALAR lis_esolver_shift_perturbation(
+        LIS_SCALAR shift)
+{
+        LIS_REAL magnitude;
+        LIS_REAL scale;
+        LIS_REAL step;
+
+#ifdef _COMPLEX
+        magnitude = cabs(shift);
+#else
+        magnitude = fabs(shift);
+#endif
+
+        if( !isfinite((double)magnitude) )
+        {
+                return 0.0;
+        }
+
+        scale = magnitude>1.0 ? magnitude : 1.0;
+
+        step =
+                (LIS_REAL)1.490116119384765625e-8 *
+                scale;
+
+#ifdef _COMPLEX
+        if( magnitude>0.0 )
+        {
+                return shift/magnitude*step;
+        }
+#endif
+
+        return (LIS_SCALAR)step;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_rebuild_precon"
+LIS_INT lis_esolver_rebuild_precon(
+        LIS_MATRIX A,
+        LIS_SOLVER solver,
+        LIS_PRECON *precon)
+{
+        LIS_INT err;
+
+        LIS_DEBUG_FUNC_IN;
+
+        if( A==NULL || solver==NULL ||
+            precon==NULL )
+        {
+                LIS_SETERR(LIS_ERR_ILL_ARG,
+                        "invalid eigensolver preconditioner rebuild arguments\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( *precon )
+        {
+                if( solver->precon==*precon )
+                {
+                        solver->precon = NULL;
+                }
+
+                lis_precon_destroy(*precon);
+                *precon = NULL;
+        }
+
+        lis_solver_work_destroy(solver);
+
+        solver->A = A;
+        solver->retcode = LIS_SUCCESS;
+
+        err = lis_precon_create(
+                solver,precon);
+        if( err )
+        {
+                solver->retcode = err;
+                return err;
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_esolver_standard_residual"
 LIS_INT lis_esolver_standard_residual(
         LIS_MATRIX A,

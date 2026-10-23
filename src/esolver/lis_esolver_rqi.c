@@ -124,6 +124,209 @@ LIS_INT lis_erqi_malloc_work(LIS_ESOLVER esolver)
 	return LIS_SUCCESS;
 }
 
+static LIS_INT
+lis_erqi_solve_with_recovery(
+        LIS_MATRIX A,
+        LIS_VECTOR b,
+        LIS_VECTOR x,
+        LIS_SOLVER solver,
+        LIS_PRECON *precon,
+        LIS_SCALAR shift,
+        LIS_REAL acceptance_tol,
+        LIS_SCALAR *used_shift)
+{
+        LIS_INT err,status,attempt;
+        LIS_SCALAR perturbation;
+        LIS_SCALAR trial_shift;
+
+        perturbation =
+                lis_esolver_shift_perturbation(
+                        shift);
+
+        for(attempt=0;attempt<4;attempt++)
+        {
+                if( attempt<2 )
+                {
+                        trial_shift = shift;
+                }
+                else if( attempt==2 )
+                {
+                        trial_shift =
+                                shift+perturbation;
+                }
+                else
+                {
+                        trial_shift =
+                                shift-perturbation;
+                }
+
+                lis_matrix_shift_diagonal(
+                        A,trial_shift);
+
+                if( attempt>0 )
+                {
+                        err = lis_esolver_rebuild_precon(
+                                A,solver,precon);
+                        if( err )
+                        {
+                                lis_matrix_shift_diagonal(
+                                        A,-trial_shift);
+                                return err;
+                        }
+
+                        lis_vector_set_all(0.0,x);
+                }
+
+                status =
+                        lis_esolver_inner_solve_attempt(
+                                A,b,x,solver,*precon);
+
+                if( attempt>=2 )
+                {
+                        status =
+                                lis_esolver_inner_solve_certify(
+                                        A,b,x,solver,
+                                        status,
+                                        acceptance_tol);
+                }
+
+                lis_matrix_shift_diagonal(
+                        A,-trial_shift);
+
+                if( status==LIS_SUCCESS )
+                {
+                        *used_shift = trial_shift;
+
+                        if( attempt>0 )
+                        {
+                                err = lis_esolver_rebuild_precon(
+                                        A,solver,precon);
+                                if( err )
+                                {
+                                        return err;
+                                }
+                        }
+
+                        return LIS_SUCCESS;
+                }
+
+                if( !lis_esolver_inner_solve_retryable(status) )
+                {
+                        return status;
+                }
+
+                if( attempt==1 &&
+                    perturbation==0.0 )
+                {
+                        return status;
+                }
+        }
+
+        return status;
+}
+
+static LIS_INT
+lis_egrqi_solve_with_recovery(
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_VECTOR b,
+        LIS_VECTOR x,
+        LIS_SOLVER solver,
+        LIS_PRECON *precon,
+        LIS_SCALAR shift,
+        LIS_REAL acceptance_tol,
+        LIS_SCALAR *used_shift)
+{
+        LIS_INT err,status,attempt;
+        LIS_SCALAR perturbation;
+        LIS_SCALAR trial_shift;
+
+        perturbation =
+                lis_esolver_shift_perturbation(
+                        shift);
+
+        for(attempt=0;attempt<4;attempt++)
+        {
+                if( attempt<2 )
+                {
+                        trial_shift = shift;
+                }
+                else if( attempt==2 )
+                {
+                        trial_shift =
+                                shift+perturbation;
+                }
+                else
+                {
+                        trial_shift =
+                                shift-perturbation;
+                }
+
+                lis_matrix_shift_matrix(
+                        A,B,trial_shift);
+
+                if( attempt>0 )
+                {
+                        err = lis_esolver_rebuild_precon(
+                                A,solver,precon);
+                        if( err )
+                        {
+                                lis_matrix_shift_matrix(
+                                        A,B,-trial_shift);
+                                return err;
+                        }
+
+                        lis_vector_set_all(0.0,x);
+                }
+
+                status =
+                        lis_esolver_inner_solve_attempt(
+                                A,b,x,solver,*precon);
+
+                if( attempt>=2 )
+                {
+                        status =
+                                lis_esolver_inner_solve_certify(
+                                        A,b,x,solver,
+                                        status,
+                                        acceptance_tol);
+                }
+
+                lis_matrix_shift_matrix(
+                        A,B,-trial_shift);
+
+                if( status==LIS_SUCCESS )
+                {
+                        *used_shift = trial_shift;
+
+                        if( attempt>0 )
+                        {
+                                err = lis_esolver_rebuild_precon(
+                                        A,solver,precon);
+                                if( err )
+                                {
+                                        return err;
+                                }
+                        }
+
+                        return LIS_SUCCESS;
+                }
+
+                if( !lis_esolver_inner_solve_retryable(status) )
+                {
+                        return status;
+                }
+
+                if( attempt==1 &&
+                    perturbation==0.0 )
+                {
+                        return status;
+                }
+        }
+
+        return status;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_erqi"
 LIS_INT lis_erqi(LIS_ESOLVER esolver)
@@ -132,7 +335,7 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   LIS_MATRIX A;
   LIS_VECTOR v;
   LIS_SCALAR theta,dotvy;
-  LIS_SCALAR rho;
+  LIS_SCALAR rho,solve_shift;
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter2,output;
@@ -207,12 +410,13 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
       iter = iter+1;
 
       /* y = (A - rho * I)^-1 * v */
-      lis_matrix_shift_diagonal(A, rho);
-      err = lis_solve_kernel(A, v, y, solver, precon);
-      lis_matrix_shift_diagonal(A, -rho);
+      solve_shift = rho;
+      err = lis_erqi_solve_with_recovery(
+              A, v, y, solver, &precon,
+              rho, tol, &solve_shift);
       if( err )
       {
-        solver->retcode = err;
+        esolver->retcode = err;
         lis_precon_destroy(precon);
         lis_solver_destroy(solver);
         return err;
@@ -248,7 +452,7 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
         }
 
       /* rho = rho + <v,y> / theta^2 */
-      rho = rho + dotvy / (theta * theta);
+      rho = solve_shift + dotvy / (theta * theta);
 
       if( !lis_esolver_is_finite_scalar(rho) )
         {
@@ -443,7 +647,7 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
   LIS_MATRIX A,B;
   LIS_VECTOR v;
   LIS_SCALAR theta,eta,dotvy,dotww;
-  LIS_SCALAR rho;
+  LIS_SCALAR rho,solve_shift;
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter2,output;
@@ -451,7 +655,7 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
   LIS_VECTOR w,y,q;
   LIS_SOLVER solver;
   double time,itime,ptime,p_c_time,p_i_time;
-  LIS_INT err;
+  LIS_INT err,recovered_shift;
   LIS_PRECON precon;
   LIS_INT nsol, precon_type;
   char solvername[128], preconname[128];
@@ -547,16 +751,19 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
       iter = iter+1;
 
       /* y = (A - rho * B)^-1 * w */
-      lis_matrix_shift_matrix(A, B, rho);
-      err = lis_solve_kernel(A, w, y, solver, precon);
-      lis_matrix_shift_matrix(A, B, -rho);
+      recovered_shift = LIS_FALSE;
+      solve_shift = rho;
+      err = lis_egrqi_solve_with_recovery(
+              A, B, w, y, solver, &precon,
+              rho, tol, &solve_shift);
       if( err )
       {
-        solver->retcode = err;
+        esolver->retcode = err;
         lis_precon_destroy(precon);
         lis_solver_destroy(solver);
         return err;
       }
+      recovered_shift = solve_shift!=rho;
       lis_solver_get_iter(solver,&iter2);
 
       /* theta = <w, y> */      
@@ -611,7 +818,7 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
       lis_vector_scale(1.0/eta, w);
 
       /* rho = rho + theta / eta^2 */
-      rho = rho + theta / (eta * eta);
+      rho = solve_shift + theta / (eta * eta);
 
       if( !lis_esolver_is_finite_scalar(rho) )
         {
@@ -638,7 +845,13 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
           return LIS_BREAKDOWN;
         }
       
-      if( tol >= resid )
+      /*
+       * The transformed GRQI estimator 1/|theta| is tied to the
+       * requested shift.  When recovery perturbs that shift, use
+       * the physical generalized eigenpair residual as the
+       * authoritative convergence measure.
+       */
+      if( recovered_shift || tol >= resid )
         {
           err = lis_esolver_generalized_residual(
                   A, B, v, rho, y, q, w, &cert_resid);
