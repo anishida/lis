@@ -385,3 +385,235 @@ LIS_INT lis_eigen_block_bgram(
 
     return LIS_SUCCESS;
 }
+
+#undef __FUNC__
+#define __FUNC__ "lis_eigen_block_orthogonalize"
+LIS_INT lis_eigen_block_orthogonalize(
+    LIS_INT nq,
+    LIS_VECTOR Q[],
+    LIS_INT nw,
+    LIS_VECTOR W[],
+    LIS_INT passes,
+    LIS_SCALAR *coeff,
+    LIS_SCALAR *work)
+{
+    LIS_INT i,j,k,p,err;
+    LIS_SCALAR alpha;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if( nq<=0 || nw<=0 ||
+        Q==NULL || W==NULL ||
+        passes<=0 ||
+        coeff==NULL || work==NULL ||
+        coeff==work )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid block orthogonalization arguments\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+    for(i=0;i<nq;i++)
+    {
+        if( Q[i]==NULL )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "null orthogonalization basis vector\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+    for(j=0;j<nw;j++)
+    {
+        if( W[j]==NULL )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "null orthogonalization candidate vector\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+    for(k=0;k<nq*nw;k++)
+    {
+        coeff[k] = 0.0;
+    }
+
+    for(p=0;p<passes;p++)
+    {
+        err = lis_eigen_block_gram(
+            nq,
+            Q,
+            nw,
+            W,
+            work);
+
+        if( err )
+        {
+            return err;
+        }
+
+        for(i=0;i<nq;i++)
+        {
+            for(j=0;j<nw;j++)
+            {
+                k = i*nw+j;
+
+                coeff[k] += work[k];
+
+                alpha = -work[k];
+
+                err = lis_vector_axpy(
+                    alpha,
+                    Q[i],
+                    W[j]);
+
+                if( err )
+                {
+                    return err;
+                }
+            }
+        }
+    }
+
+    LIS_DEBUG_FUNC_OUT;
+
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_eigen_block_borthogonalize"
+LIS_INT lis_eigen_block_borthogonalize(
+    LIS_MATRIX B,
+    LIS_INT nq,
+    LIS_VECTOR Q[],
+    LIS_INT nw,
+    LIS_VECTOR W[],
+    LIS_VECTOR BW[],
+    LIS_INT passes,
+    LIS_SCALAR *coeff,
+    LIS_SCALAR *work)
+{
+    LIS_INT i,j,k,p,err;
+    LIS_SCALAR alpha;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if( B==NULL )
+    {
+        return lis_eigen_block_orthogonalize(
+            nq,
+            Q,
+            nw,
+            W,
+            passes,
+            coeff,
+            work);
+    }
+
+    if( nq<=0 || nw<=0 ||
+        Q==NULL || W==NULL ||
+        BW==NULL ||
+        passes<=0 ||
+        coeff==NULL || work==NULL ||
+        coeff==work )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid block B-orthogonalization arguments\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+    for(i=0;i<nq;i++)
+    {
+        if( Q[i]==NULL )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "null B-orthogonalization basis vector\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+    for(j=0;j<nw;j++)
+    {
+        if( W[j]==NULL || BW[j]==NULL )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "null B-orthogonalization candidate or work vector\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+    for(k=0;k<nq*nw;k++)
+    {
+        coeff[k] = 0.0;
+    }
+
+    for(p=0;p<passes;p++)
+    {
+        err = lis_eigen_block_bgram(
+            B,
+            nq,
+            Q,
+            nw,
+            W,
+            BW,
+            work);
+
+        if( err )
+        {
+            return err;
+        }
+
+        for(i=0;i<nq;i++)
+        {
+            for(j=0;j<nw;j++)
+            {
+                k = i*nw+j;
+
+                coeff[k] += work[k];
+
+                alpha = -work[k];
+
+                err = lis_vector_axpy(
+                    alpha,
+                    Q[i],
+                    W[j]);
+
+                if( err )
+                {
+                    return err;
+                }
+            }
+        }
+    }
+
+    /*
+     * Keep BW synchronized with the final orthogonalized W.
+     */
+    err = lis_matvec_block(
+        B,
+        nw,
+        W,
+        BW);
+
+    if( err )
+    {
+        return err;
+    }
+
+    LIS_DEBUG_FUNC_OUT;
+
+    return LIS_SUCCESS;
+}

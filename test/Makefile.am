@@ -23,7 +23,7 @@ test_PROGRAMS = etest1 etest2 etest3 etest4 etest5 etest5b etest6 etest7 getest1
         testparamupdate testbreakretry testchangingsystem testkrylovrobust testnearnullspace \
         testcoarsesetup testcoarseapply testgcrodroptions testgcrodrconfig testgcrodrsequence \
         testmatrixgeneration testexternalstorage testsequence testwarmstart testrecovery \
-        testthreads testfgcrodr testmfamg testmfamggalerkin testexactnullspace testhalfconfig testhalfconvert testprojectedeigen testblockgram
+        testthreads testfgcrodr testmfamg testmfamggalerkin testexactnullspace testhalfconfig testhalfconvert testprojectedeigen testblockgram testblockorthogonal
 
 testgcrodroptions_SOURCES = testgcrodroptions.c
 testgcrodrconfig_SOURCES = testgcrodrconfig.c
@@ -103,6 +103,7 @@ testpreconreuse_SOURCES = testpreconreuse.c
 testeigenbreakdown_SOURCES = testeigenbreakdown.c
 testprojectedeigen_SOURCES = testprojectedeigen.c
 testblockgram_SOURCES = testblockgram.c
+testblockorthogonal_SOURCES = testblockorthogonal.c
 testrqirestore_SOURCES = testrqirestore.c
 testrhistoryerror_SOURCES = testrhistoryerror.c
 testrepeatedsystems_SOURCES = testrepeatedsystems.c
@@ -192,7 +193,7 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
 
 TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
         testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
-        testpreconreuse$(EXEEXT) testprojectedeigen$(EXEEXT) testblockgram$(EXEEXT) testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
+        testpreconreuse$(EXEEXT) testprojectedeigen$(EXEEXT) testblockgram$(EXEEXT) testblockorthogonal$(EXEEXT) testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
         testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
         testsolvermonitor$(EXEEXT) testsolvercallbackpaths$(EXEEXT) \
         testsolvercallbackcert$(EXEEXT) testworkcompat$(EXEEXT) \
