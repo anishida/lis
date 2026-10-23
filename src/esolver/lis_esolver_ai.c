@@ -159,14 +159,14 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   double time,time0;    
   LIS_INT i,j;
   LIS_INT output, niesolver;
-  LIS_REAL nrm2,resid0; 
+  LIS_REAL nrm2,resid0,cert_resid;
   LIS_VECTOR *v,w;
   LIS_SCALAR *h,*hq,*hr,evalue,evalue0;
   LIS_SOLVER solver;
   LIS_ESOLVER esolver2;
   char esolvername[128],solvername[128],preconname[128];
   LIS_INT nsol,precon_type;
-  LIS_INT rval;
+  LIS_INT rval,final_status;
 
   LIS_DEBUG_FUNC_IN;
 
@@ -365,6 +365,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 
   /* compute refined (real) eigenpairs */
 
+  final_status = LIS_SUCCESS;
   for (i=0;i<ss;i++)
     {
       lis_esolver_create(&esolver2);
@@ -380,13 +381,31 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
       lis_esolver_work_destroy(esolver2); 
       esolver->evalue[i] = evalue;
       esolver->iter[i] = esolver2->iter[0];
-      esolver->resid[i] = esolver2->resid[0];
+
+      err = lis_esolver_standard_residual(
+              A, esolver->evector[i], esolver->evalue[i],
+              w, v[0], &cert_resid);
+      if( err )
+        {
+          esolver->retcode = err;
+          lis_esolver_destroy(esolver2);
+          lis_free(h);
+          lis_free(hq);
+          lis_free(hr);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return err;
+        }
+
+      esolver->resid[i] = cert_resid;
+      if( cert_resid>tol && final_status==LIS_SUCCESS )
+        final_status = LIS_MAXITER;
 
       if (i==0) 
 	{
 	  evalue0 = esolver->evalue[0];
 	  iter0 = esolver2->iter[0];
-	  resid0 = esolver2->resid[0];
+	  resid0 = esolver->resid[0];
 	  if( output & LIS_EPRINT_MEM ) 
 	    {
 	      for (ic=0;ic<iter0+1;ic++)
@@ -411,7 +430,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 #endif
 	  lis_printf(comm,"Arnoldi: elapsed time         = %e sec.\n", esolver2->time);	  
 	  lis_printf(comm,"Arnoldi: number of iterations = %D\n",esolver2->iter[0]);
-	  lis_printf(comm,"Arnoldi: relative residual    = %e\n\n",(double)esolver2->resid[0]);
+	  lis_printf(comm,"Arnoldi: relative residual    = %e\n\n",(double)esolver->resid[i]);
 	}
 
       lis_esolver_destroy(esolver2); 
@@ -426,7 +445,8 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   lis_solver_destroy(solver);
 
   LIS_DEBUG_FUNC_OUT;
-  return LIS_SUCCESS;
+  esolver->retcode = final_status;
+  return final_status;
 } 
 
 /***************************************
@@ -538,7 +558,7 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
   double time,time0;  
   LIS_INT i,j;
   LIS_INT output, nigesolver;
-  LIS_REAL nrm2,resid0; 
+  LIS_REAL nrm2,resid0,cert_resid;
   LIS_VECTOR *v,w,y;
   LIS_SCALAR *h,*hq,*hr,evalue,evalue0;
   LIS_SOLVER solver;
@@ -546,7 +566,7 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
   LIS_ESOLVER esolver2;
   char esolvername[128],solvername[128],preconname[128];
   LIS_INT nsol,precon_type;
-  LIS_INT rval;
+  LIS_INT rval,final_status;
 
   LIS_DEBUG_FUNC_IN;
 
@@ -771,6 +791,7 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
 
   /* compute refined (real) eigenpairs */
 
+  final_status = LIS_SUCCESS;
   for (i=0;i<ss;i++)
     {
       lis_vector_duplicate(A, &esolver->evector[i]); 
@@ -779,13 +800,32 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
       lis_esolver_work_destroy(esolver2); 
       esolver->evalue[i] = evalue;
       esolver->iter[i] = esolver2->iter[0];
-      esolver->resid[i] = esolver2->resid[0];
+
+      err = lis_esolver_generalized_residual(
+              A, B, esolver->evector[i], esolver->evalue[i],
+              w, y, v[0], &cert_resid);
+      if( err )
+        {
+          esolver->retcode = err;
+          lis_esolver_destroy(esolver2);
+          lis_free(h);
+          lis_free(hq);
+          lis_free(hr);
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return err;
+        }
+
+      esolver->resid[i] = cert_resid;
+      if( cert_resid>tol && final_status==LIS_SUCCESS )
+        final_status = LIS_MAXITER;
 
       if (i==0) 
 	{
 	  evalue0 = esolver->evalue[0];
 	  iter0 = esolver2->iter[0];
-	  resid0 = esolver2->resid[0];
+	  resid0 = esolver->resid[0];
 	  if( output & LIS_EPRINT_MEM ) 
 	    {
 	      for (ic=0;ic<iter0+1;ic++)
@@ -811,7 +851,7 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
 #endif
 	  lis_printf(comm,"Generalized Arnoldi: elapsed time         = %e sec.\n", esolver2->time);	  
 	  lis_printf(comm,"Generalized Arnoldi: number of iterations = %D\n",esolver2->iter[0]);
-	  lis_printf(comm,"Generalized Arnoldi: relative residual    = %e\n\n",(double)esolver2->resid[0]);
+	  lis_printf(comm,"Generalized Arnoldi: relative residual    = %e\n\n",(double)esolver->resid[i]);
 	}
     }
 
@@ -827,6 +867,7 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
   lis_solver_destroy(solver);
 
   LIS_DEBUG_FUNC_OUT;
-  return LIS_SUCCESS;
+  esolver->retcode = final_status;
+  return final_status;
 } 
 

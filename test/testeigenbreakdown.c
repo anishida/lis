@@ -238,6 +238,241 @@ cleanup:
 }
 
 
+
+static LIS_INT
+check_standard_certification_rejects(
+    const char *name,
+    const char *options,
+    LIS_MATRIX A,
+    LIS_REAL tol)
+{
+    LIS_INT err;
+    LIS_INT api;
+    LIS_INT status;
+    LIS_REAL residual;
+    LIS_VECTOR x;
+    LIS_ESOLVER esolver;
+    LIS_SCALAR evalue;
+
+    x = NULL;
+    esolver = NULL;
+    evalue = 0.0;
+    residual = 0.0;
+
+    err = lis_vector_duplicate(
+        A,
+        &x);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_set_all(
+        1.0,
+        x);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_create(
+        &esolver);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_set_option(
+        (char *)options,
+        esolver);
+    if( err )
+        goto cleanup;
+
+    api = lis_esolve(
+        A,
+        x,
+        &evalue,
+        esolver);
+
+    /*
+     * The public solve call reports completed API execution with
+     * LIS_SUCCESS.  The eigensolver result is read through retcode.
+     */
+    if( api!=LIS_SUCCESS )
+    {
+        printf(
+            "%s: API return %d, expected LIS_SUCCESS (%d)\n",
+            name,
+            (int)api,
+            (int)LIS_SUCCESS);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = lis_esolver_get_status(
+        esolver,
+        &status);
+    if( err )
+        goto cleanup;
+
+    if( status!=LIS_MAXITER )
+    {
+        printf(
+            "%s: status %d, expected LIS_MAXITER (%d)\n",
+            name,
+            (int)status,
+            (int)LIS_MAXITER);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = lis_esolver_get_residualnorm(
+        esolver,
+        &residual);
+    if( err )
+        goto cleanup;
+
+    if( !(residual>tol) )
+    {
+        printf(
+            "%s: physical residual %.17e, expected > %.17e\n",
+            name,
+            (double)residual,
+            (double)tol);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    printf(
+        "PASS: %s -> LIS_MAXITER, physical residual %.6e\n",
+        name,
+        (double)residual);
+
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( esolver )
+        lis_esolver_destroy(esolver);
+
+    if( x )
+        lis_vector_destroy(x);
+
+    return err;
+}
+
+
+static LIS_INT
+check_generalized_certification_rejects(
+    const char *name,
+    const char *options,
+    LIS_MATRIX A,
+    LIS_MATRIX B,
+    LIS_REAL tol)
+{
+    LIS_INT err;
+    LIS_INT api;
+    LIS_INT status;
+    LIS_REAL residual;
+    LIS_VECTOR x;
+    LIS_ESOLVER esolver;
+    LIS_SCALAR evalue;
+
+    x = NULL;
+    esolver = NULL;
+    evalue = 0.0;
+    residual = 0.0;
+
+    err = lis_vector_duplicate(
+        A,
+        &x);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_set_all(
+        1.0,
+        x);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_create(
+        &esolver);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_set_option(
+        (char *)options,
+        esolver);
+    if( err )
+        goto cleanup;
+
+    api = lis_gesolve(
+        A,
+        B,
+        x,
+        &evalue,
+        esolver);
+
+    /*
+     * The public solve call reports completed API execution with
+     * LIS_SUCCESS.  The eigensolver result is read through retcode.
+     */
+    if( api!=LIS_SUCCESS )
+    {
+        printf(
+            "%s: API return %d, expected LIS_SUCCESS (%d)\n",
+            name,
+            (int)api,
+            (int)LIS_SUCCESS);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = lis_esolver_get_status(
+        esolver,
+        &status);
+    if( err )
+        goto cleanup;
+
+    if( status!=LIS_MAXITER )
+    {
+        printf(
+            "%s: status %d, expected LIS_MAXITER (%d)\n",
+            name,
+            (int)status,
+            (int)LIS_MAXITER);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = lis_esolver_get_residualnorm(
+        esolver,
+        &residual);
+    if( err )
+        goto cleanup;
+
+    if( !(residual>tol) )
+    {
+        printf(
+            "%s: physical residual %.17e, expected > %.17e\n",
+            name,
+            (double)residual,
+            (double)tol);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    printf(
+        "PASS: %s -> LIS_MAXITER, physical residual %.6e\n",
+        name,
+        (double)residual);
+
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( esolver )
+        lis_esolver_destroy(esolver);
+
+    if( x )
+        lis_vector_destroy(x);
+
+    return err;
+}
+
+
 static LIS_INT
 check_arnoldi_happy_breakdown(
     LIS_MATRIX A)
@@ -626,6 +861,156 @@ cleanup:
 }
 
 
+
+static LIS_INT
+test_power_physical_certification(void)
+{
+    LIS_INT err;
+    LIS_MATRIX A;
+
+    A = NULL;
+
+    err = create_diagonal_matrix(
+        &A,
+        1.0,
+        2.0);
+    if( err )
+        goto cleanup;
+
+    /*
+     * A large spectral shift makes the shifted residual estimator
+     * artificially small after one iteration, although the candidate
+     * is still far from an eigenpair of the physical problem.
+     */
+    err = check_standard_certification_rejects(
+        "Power shifted false convergence",
+        "-e pi -shift 1.0e6 -emaxiter 1 -etol 1.0e-6",
+        A,
+        1.0e-6);
+
+cleanup:
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
+static LIS_INT
+test_generalized_power_physical_certification(void)
+{
+    LIS_INT err;
+    LIS_MATRIX A;
+    LIS_MATRIX B;
+
+    A = NULL;
+    B = NULL;
+
+    err = create_diagonal_matrix(
+        &A,
+        1.0,
+        2.0);
+    if( err )
+        goto cleanup;
+
+    err = create_diagonal_matrix(
+        &B,
+        1.0,
+        1.0);
+    if( err )
+        goto cleanup;
+
+    err = check_generalized_certification_rejects(
+        "Generalized Power shifted false convergence",
+        "-e gpi -shift -1.0e6 -emaxiter 1 -etol 1.0e-6",
+        A,
+        B,
+        1.0e-6);
+
+cleanup:
+    if( B )
+        lis_matrix_destroy(B);
+
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
+static LIS_INT
+test_subspace_physical_certification(void)
+{
+    LIS_INT err;
+    LIS_MATRIX A;
+
+    A = NULL;
+
+    err = create_diagonal_matrix(
+        &A,
+        1.0,
+        2.0);
+    if( err )
+        goto cleanup;
+
+    err = check_standard_certification_rejects(
+        "Subspace shifted false convergence",
+        "-e si -ie pi -ss 1 -shift 1.0e6 "
+        "-emaxiter 1 -etol 1.0e-6",
+        A,
+        1.0e-6);
+
+cleanup:
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
+static LIS_INT
+test_generalized_subspace_physical_certification(void)
+{
+    LIS_INT err;
+    LIS_MATRIX A;
+    LIS_MATRIX B;
+
+    A = NULL;
+    B = NULL;
+
+    err = create_diagonal_matrix(
+        &A,
+        1.0,
+        2.0);
+    if( err )
+        goto cleanup;
+
+    err = create_diagonal_matrix(
+        &B,
+        1.0,
+        1.0);
+    if( err )
+        goto cleanup;
+
+    err = check_generalized_certification_rejects(
+        "Generalized Subspace shifted false convergence",
+        "-e gsi -ige gpi -ss 1 -shift -1.0e6 "
+        "-emaxiter 1 -etol 1.0e-6",
+        A,
+        B,
+        1.0e-6);
+
+cleanup:
+    if( B )
+        lis_matrix_destroy(B);
+
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
 static LIS_INT
 test_arnoldi_happy_breakdown(void)
 {
@@ -733,6 +1118,43 @@ main(
     {
         printf(
             "LIS_EIGEN_BREAKDOWN GCR FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+
+    err = test_power_physical_certification();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_CERTIFICATION POWER FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_generalized_power_physical_certification();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_CERTIFICATION GPOWER FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_subspace_physical_certification();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_CERTIFICATION SUBSPACE FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_generalized_subspace_physical_certification();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_CERTIFICATION GSUBSPACE FAILED\n");
         lis_finalize();
         return 1;
     }

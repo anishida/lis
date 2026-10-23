@@ -136,7 +136,7 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter2,output;
-  LIS_REAL nrm2,resid;
+  LIS_REAL nrm2,resid,cert_resid;
   LIS_VECTOR y,q;
   LIS_SOLVER solver;
   double time,itime,ptime,p_c_time,p_i_time;
@@ -280,6 +280,22 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
       /* v = y / theta */
       lis_vector_scale(1.0/theta, y);
       lis_vector_copy(y, v);
+
+      if( tol >= resid )
+        {
+          err = lis_esolver_standard_residual(
+                  A, v, rho, y, q, &cert_resid);
+          if( err )
+            {
+              esolver->retcode = err;
+              lis_precon_destroy(precon);
+              lis_solver_destroy(solver);
+              LIS_DEBUG_FUNC_OUT;
+              return err;
+            }
+
+          resid = cert_resid;
+        }
 
       if( output )
 	{
@@ -431,7 +447,7 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter2,output;
-  LIS_REAL nrm2,resid;
+  LIS_REAL nrm2,resid,cert_resid;
   LIS_VECTOR w,y,q;
   LIS_SOLVER solver;
   double time,itime,ptime,p_c_time,p_i_time;
@@ -622,6 +638,28 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
           return LIS_BREAKDOWN;
         }
       
+      if( tol >= resid )
+        {
+          err = lis_esolver_generalized_residual(
+                  A, B, v, rho, y, q, w, &cert_resid);
+          if( err )
+            {
+              esolver->retcode = err;
+              lis_precon_destroy(precon);
+              lis_solver_destroy(solver);
+              LIS_DEBUG_FUNC_OUT;
+              return err;
+            }
+
+          resid = cert_resid;
+
+          if( tol < resid )
+            {
+              /* Restore the live B*v state before another iteration. */
+              lis_matvec(B, v, w);
+            }
+        }
+
       if( output )
 	{
 	  if( output & LIS_EPRINT_MEM ) esolver->rhistory[iter] = resid;

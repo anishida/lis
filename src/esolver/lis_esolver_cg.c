@@ -133,7 +133,7 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter3,output;
-  LIS_REAL nrm2,resid,resid3;
+  LIS_REAL nrm2,resid,resid3,cert_resid;
   LIS_SCALAR oshift,ishift;
   LIS_VECTOR r,w,p,Aw,Ax,Ap;
   LIS_SCALAR *A3,*B3,*W3,*v3,*A3v3,*B3v3,*z3,*q3,*B3z3,mu3;
@@ -273,6 +273,40 @@ LIS_INT lis_ecg(LIS_ESOLVER esolver)
  
       /* convergence check */
       resid = nrm2;
+
+      if (resid<tol)
+        {
+          /*
+           * Certify the candidate against the original, unshifted
+           * eigenproblem. Aw and w are scratch here and are overwritten
+           * before they are needed by the next iteration.
+           */
+          if ( oshift != 0.0 )
+            lis_matrix_shift_diagonal(A, -oshift);
+
+          err = lis_esolver_standard_residual(
+                  A, x, lambda + oshift,
+                  Aw, w, &cert_resid);
+
+          if ( oshift != 0.0 )
+            lis_matrix_shift_diagonal(A, oshift);
+
+          if( err )
+            {
+              esolver->retcode = err;
+              lis_precon_destroy(precon);
+              lis_solver_destroy(solver);
+              if ( oshift != 0.0 )
+                lis_matrix_shift_diagonal(A, -oshift);
+              lis_free(A3); lis_free(B3); lis_free(W3);
+              lis_free(v3); lis_free(z3); lis_free(q3);
+              lis_free(A3v3); lis_free(B3v3); lis_free(B3z3);
+              LIS_DEBUG_FUNC_OUT;
+              return err;
+            }
+
+          resid = cert_resid;
+        }
       if( output )
 	{
 	  if( output & LIS_EPRINT_MEM ) esolver->rhistory[iter] = resid;
@@ -532,7 +566,7 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter3,output;
-  LIS_REAL nrm2,resid,resid3;
+  LIS_REAL nrm2,resid,resid3,cert_resid;
   LIS_SCALAR oshift,ishift;
   LIS_VECTOR r,w,p,Aw,Ax,Ap,Bw,Bx,Bp;
   LIS_SCALAR BxBx,*A3,*B3,*W3,*v3,*A3v3,*B3v3,*z3,*q3,*B3z3,mu3;
@@ -695,6 +729,39 @@ LIS_INT lis_egcg(LIS_ESOLVER esolver)
  
       /* convergence check */
       resid = nrm2;
+
+      if (resid<tol)
+        {
+          /*
+           * Restore the physical generalized problem for certification,
+           * then reapply the shift if the candidate is rejected.
+           */
+          if ( oshift != 0.0 )
+            lis_matrix_shift_matrix(A, B, -oshift);
+
+          err = lis_esolver_generalized_residual(
+                  A, B, x, lambda + oshift,
+                  Aw, Bw, w, &cert_resid);
+
+          if ( oshift != 0.0 )
+            lis_matrix_shift_matrix(A, B, oshift);
+
+          if( err )
+            {
+              esolver->retcode = err;
+              lis_precon_destroy(precon);
+              lis_solver_destroy(solver);
+              if ( oshift != 0.0 )
+                lis_matrix_shift_matrix(A, B, -oshift);
+              lis_free(A3); lis_free(B3); lis_free(W3);
+              lis_free(v3); lis_free(z3); lis_free(q3);
+              lis_free(A3v3); lis_free(B3v3); lis_free(B3z3);
+              LIS_DEBUG_FUNC_OUT;
+              return err;
+            }
+
+          resid = cert_resid;
+        }
       if( output )
 	{
 	  if( output & LIS_EPRINT_MEM ) esolver->rhistory[iter] = resid;
@@ -967,7 +1034,7 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,output;
-  LIS_REAL nrm2,resid;
+  LIS_REAL nrm2,resid,cert_resid;
   LIS_SCALAR oshift,ishift;
   LIS_VECTOR r,p,w,Ax,Ap,Aw;
   LIS_SCALAR alpha,beta,denom;
@@ -1180,6 +1247,35 @@ LIS_INT lis_ecr(LIS_ESOLVER esolver)
           return LIS_BREAKDOWN;
         }
       resid = nrm2 / fabs(lambda);
+
+      if (resid<tol)
+        {
+          /*
+           * Aw and w are scratch at the convergence boundary.
+           */
+          if ( oshift != 0.0 )
+            lis_matrix_shift_diagonal(A, -oshift);
+
+          err = lis_esolver_standard_residual(
+                  A, x, lambda + oshift,
+                  Aw, w, &cert_resid);
+
+          if ( oshift != 0.0 )
+            lis_matrix_shift_diagonal(A, oshift);
+
+          if( err )
+            {
+              esolver->retcode = err;
+              lis_precon_destroy(precon);
+              lis_solver_destroy(solver);
+              if ( oshift != 0.0 )
+                lis_matrix_shift_diagonal(A, -oshift);
+              LIS_DEBUG_FUNC_OUT;
+              return err;
+            }
+
+          resid = cert_resid;
+        }
       if( !isfinite((double)resid) )
         {
           LIS_SETERR(LIS_BREAKDOWN,
@@ -1335,7 +1431,7 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,output;
-  LIS_REAL nrm2,resid;
+  LIS_REAL nrm2,resid,cert_resid;
   LIS_SCALAR oshift,ishift;
   LIS_VECTOR r,p,w,Ax,Ap,Aw,Bx,Bp,Bw;
   LIS_SCALAR alpha,beta,denom;
@@ -1593,6 +1689,29 @@ LIS_INT lis_egcr(LIS_ESOLVER esolver)
           return LIS_BREAKDOWN;
         }
       resid = nrm2 / fabs(lambda);
+
+      if (resid<tol)
+        {
+          /*
+           * esolver->A is the physical matrix. Aw, Bw and w are scratch
+           * at the convergence boundary.
+           */
+          err = lis_esolver_generalized_residual(
+                  esolver->A, B, x, lambda + oshift,
+                  Aw, Bw, w, &cert_resid);
+
+          if( err )
+            {
+              esolver->retcode = err;
+              lis_precon_destroy(precon);
+              lis_solver_destroy(solver);
+              if( Aop ) lis_matrix_destroy(Aop);
+              LIS_DEBUG_FUNC_OUT;
+              return err;
+            }
+
+          resid = cert_resid;
+        }
       if( !isfinite((double)resid) )
         {
           LIS_SETERR(LIS_BREAKDOWN,

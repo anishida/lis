@@ -147,14 +147,14 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   LIS_INT j,k;
   LIS_SCALAR theta;
   LIS_INT iter,giter,output,niesolver;
-  LIS_REAL nrm2,resid;
+  LIS_REAL nrm2,resid,cert_resid;
   LIS_SCALAR dot;
   LIS_VECTOR *v,r,q;
   LIS_SOLVER solver;
   LIS_PRECON precon;
   double time,itime,ptime,p_c_time,p_i_time;
   double etime0,etime;
-  LIS_INT err;
+  LIS_INT err,final_status;
   LIS_INT nsol, precon_type;
   char solvername[128], preconname[128], esolvername[128];
 
@@ -405,7 +405,29 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	}
     }
   
-  if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);  
+  if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);
+
+  /*
+   * Certify every returned eigenpair against the physical problem.
+   * Ax and r are scratch after the subspace iterations.
+   */
+  final_status = LIS_SUCCESS;
+  for(k=0;k<ss;k++)
+    {
+      err = lis_esolver_standard_residual(
+              A, esolver->evector[k], esolver->evalue[k],
+              Ax, r, &cert_resid);
+      if( err )
+        {
+          final_status = err;
+          break;
+        }
+
+      esolver->resid[k] = cert_resid;
+      if( cert_resid>tol && final_status==LIS_SUCCESS )
+        final_status = LIS_MAXITER;
+    }
+
   lis_vector_copy(esolver->evector[0], esolver->x);
 
   switch ( niesolver )
@@ -417,7 +439,8 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
     }
 
   LIS_DEBUG_FUNC_OUT;
-  return LIS_SUCCESS;
+  esolver->retcode = final_status;
+  return final_status;
 }
 
 /***************************************
@@ -517,14 +540,14 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   LIS_INT j,k;
   LIS_SCALAR theta,eta;
   LIS_INT iter,giter,output,nigesolver;
-  LIS_REAL nrm2,resid;
+  LIS_REAL nrm2,resid,cert_resid;
   LIS_SCALAR dot;
   LIS_VECTOR *v,w,y,q;
   LIS_SOLVER solver;
   LIS_PRECON precon;
   double time,itime,ptime,p_c_time,p_i_time;
   double etime0,etime;  
-  LIS_INT err;
+  LIS_INT err,final_status;
   LIS_INT nsol, precon_type;
   char solvername[128], preconname[128], esolvername[128];
 
@@ -868,11 +891,34 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	}
     }
   
-  if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, -oshift);  
+  if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, -oshift);
+
+  /*
+   * Certify every returned generalized eigenpair after restoring
+   * the physical operator. Ax, w and y are scratch here.
+   */
+  final_status = LIS_SUCCESS;
+  for(k=0;k<ss;k++)
+    {
+      err = lis_esolver_generalized_residual(
+              A, B, esolver->evector[k], esolver->evalue[k],
+              Ax, w, y, &cert_resid);
+      if( err )
+        {
+          final_status = err;
+          break;
+        }
+
+      esolver->resid[k] = cert_resid;
+      if( cert_resid>tol && final_status==LIS_SUCCESS )
+        final_status = LIS_MAXITER;
+    }
+
   lis_vector_copy(esolver->evector[0], esolver->x);
 
   lis_precon_destroy(precon);
   lis_solver_destroy(solver);
   LIS_DEBUG_FUNC_OUT;
-  return LIS_SUCCESS;
+  esolver->retcode = final_status;
+  return final_status;
 }

@@ -175,6 +175,159 @@ LIS_INT lis_esolver_is_valid_norm(
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_esolver_standard_residual"
+LIS_INT lis_esolver_standard_residual(
+        LIS_MATRIX A,
+        LIS_VECTOR x,
+        LIS_SCALAR lambda,
+        LIS_VECTOR Ax,
+        LIS_VECTOR r,
+        LIS_REAL *resid)
+{
+        LIS_INT err;
+        LIS_REAL anrm,xnrm,rnrm,denom;
+        LIS_REAL lmag;
+
+        LIS_DEBUG_FUNC_IN;
+
+        err = lis_matvec(A,x,Ax);
+        if( err ) return err;
+
+        err = lis_vector_nrm2(Ax,&anrm);
+        if( err ) return err;
+
+        err = lis_vector_nrm2(x,&xnrm);
+        if( err ) return err;
+
+        lis_vector_axpyz(-lambda,x,Ax,r);
+
+        err = lis_vector_nrm2(r,&rnrm);
+        if( err ) return err;
+
+#ifdef _COMPLEX
+        lmag = cabs(lambda);
+#else
+        lmag = fabs(lambda);
+#endif
+
+        if( !isfinite((double)anrm) ||
+            !isfinite((double)xnrm) ||
+            !isfinite((double)rnrm) ||
+            !isfinite((double)lmag) )
+        {
+                LIS_SETERR(LIS_BREAKDOWN,
+                        "non-finite standard eigenpair certification data\n");
+                return LIS_BREAKDOWN;
+        }
+
+        denom = anrm+lmag*xnrm;
+        if( !isfinite((double)denom) )
+        {
+                LIS_SETERR(LIS_BREAKDOWN,
+                        "non-finite standard eigenpair certification denominator\n");
+                return LIS_BREAKDOWN;
+        }
+
+        if( denom>0.0 )
+        {
+                *resid = rnrm/denom;
+        }
+        else
+        {
+                *resid = rnrm;
+        }
+
+        if( !isfinite((double)*resid) )
+        {
+                LIS_SETERR(LIS_BREAKDOWN,
+                        "non-finite standard eigenpair certification residual\n");
+                return LIS_BREAKDOWN;
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_generalized_residual"
+LIS_INT lis_esolver_generalized_residual(
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_VECTOR x,
+        LIS_SCALAR lambda,
+        LIS_VECTOR Ax,
+        LIS_VECTOR Bx,
+        LIS_VECTOR r,
+        LIS_REAL *resid)
+{
+        LIS_INT err;
+        LIS_REAL anrm,bnrm,rnrm,denom;
+        LIS_REAL lmag;
+
+        LIS_DEBUG_FUNC_IN;
+
+        err = lis_matvec(A,x,Ax);
+        if( err ) return err;
+
+        err = lis_matvec(B,x,Bx);
+        if( err ) return err;
+
+        err = lis_vector_nrm2(Ax,&anrm);
+        if( err ) return err;
+
+        err = lis_vector_nrm2(Bx,&bnrm);
+        if( err ) return err;
+
+        lis_vector_axpyz(-lambda,Bx,Ax,r);
+
+        err = lis_vector_nrm2(r,&rnrm);
+        if( err ) return err;
+
+#ifdef _COMPLEX
+        lmag = cabs(lambda);
+#else
+        lmag = fabs(lambda);
+#endif
+
+        if( !isfinite((double)anrm) ||
+            !isfinite((double)bnrm) ||
+            !isfinite((double)rnrm) ||
+            !isfinite((double)lmag) )
+        {
+                LIS_SETERR(LIS_BREAKDOWN,
+                        "non-finite generalized eigenpair certification data\n");
+                return LIS_BREAKDOWN;
+        }
+
+        denom = anrm+lmag*bnrm;
+        if( !isfinite((double)denom) )
+        {
+                LIS_SETERR(LIS_BREAKDOWN,
+                        "non-finite generalized eigenpair certification denominator\n");
+                return LIS_BREAKDOWN;
+        }
+
+        if( denom>0.0 )
+        {
+                *resid = rnrm/denom;
+        }
+        else
+        {
+                *resid = rnrm;
+        }
+
+        if( !isfinite((double)*resid) )
+        {
+                LIS_SETERR(LIS_BREAKDOWN,
+                        "non-finite generalized eigenpair certification residual\n");
+                return LIS_BREAKDOWN;
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_esolver_init"
 LIS_INT lis_esolver_init(LIS_ESOLVER esolver)
 {
@@ -305,7 +458,7 @@ LIS_INT lis_esolver_destroy(LIS_ESOLVER esolver)
  	        if( esolver->iter2) lis_free(esolver->iter2);
    	        if( esolver->evector ) 
 		  {
-		    if ( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_LI || esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_AI || esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_SI  || esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_GLI)
+		    if ( esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_LI || esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_AI || esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_SI || esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_GLI || esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_GSI || esolver->options[LIS_EOPTIONS_ESOLVER] == LIS_ESOLVER_GAI)
 		      {
 			ss=esolver->options[LIS_EOPTIONS_SUBSPACE];
 			for(i=0;i<ss+2;i++)

@@ -134,7 +134,8 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
   LIS_REAL tol;
   LIS_INT iter,output;
   LIS_SCALAR oshift,ishift;
-  LIS_REAL nrm2,resid;
+  LIS_REAL nrm2,resid,cert_resid;
+  LIS_INT err;
 
   LIS_DEBUG_FUNC_IN;
   
@@ -230,6 +231,33 @@ LIS_INT lis_epi(LIS_ESOLVER esolver)
       lis_vector_copy(y, v);
 
       /* convergence check */
+      if( tol >= resid )
+        {
+          /*
+           * Restore the original problem for physical certification.
+           * Reapply the shift if another iteration is required.
+           */
+          if( oshift != 0.0 )
+            lis_matrix_shift_diagonal(A, -oshift);
+
+          err = lis_esolver_standard_residual(
+                  A, v, theta+oshift, y, q, &cert_resid);
+
+          if( oshift != 0.0 )
+            lis_matrix_shift_diagonal(A, oshift);
+
+          if( err )
+            {
+              esolver->retcode = err;
+              if( oshift != 0.0 )
+                lis_matrix_shift_diagonal(A, -oshift);
+              LIS_DEBUG_FUNC_OUT;
+              return err;
+            }
+
+          resid = cert_resid;
+        }
+
       if( output )
 	{
 	  if( output & LIS_EPRINT_MEM ) esolver->rhistory[iter] = resid;
@@ -368,7 +396,7 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
   LIS_REAL tol;
   LIS_INT iter,iter2,output;
   LIS_SCALAR oshift,ishift;
-  LIS_REAL nrm2,resid;
+  LIS_REAL nrm2,resid,cert_resid;
   LIS_SOLVER solver;
   double time,itime,ptime,p_c_time,p_i_time;
 
@@ -559,6 +587,24 @@ LIS_INT lis_egpi(LIS_ESOLVER esolver)
       esolver->itime += solver->itime;
       esolver->p_c_time += solver->p_c_time;
       esolver->p_i_time += solver->p_i_time;
+
+      if( tol >= resid )
+        {
+          err = lis_esolver_generalized_residual(
+                  esolver->A, B, v, theta+oshift,
+                  w, y, q, &cert_resid);
+          if( err )
+            {
+              esolver->retcode = err;
+              lis_precon_destroy(precon);
+              lis_solver_destroy(solver);
+              if( Aop ) lis_matrix_destroy(Aop);
+              LIS_DEBUG_FUNC_OUT;
+              return err;
+            }
+
+          resid = cert_resid;
+        }
 
       if( output )
 	{

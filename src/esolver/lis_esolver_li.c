@@ -157,7 +157,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   double time,time0;    
   LIS_INT i,j,k;
   LIS_INT output, niesolver;
-  LIS_REAL nrm2,resid0;
+  LIS_REAL nrm2,resid0,cert_resid;
   LIS_SCALAR dot;
   LIS_VECTOR *v,r;
   LIS_SCALAR *t,*tq,*tr,evalue,evalue0;
@@ -165,7 +165,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   LIS_ESOLVER esolver2;
   char esolvername[128],solvername[128],preconname[128];
   LIS_INT nsol,precon_type;
-  LIS_INT rval;
+  LIS_INT rval,final_status;
 
   LIS_DEBUG_FUNC_IN;
 
@@ -295,6 +295,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   esolver2->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN] = tol; 
 
   /* compute refined eigenpairs */
+  final_status = LIS_SUCCESS;
   for (i=0;i<ss;i++)
     {
       lis_vector_duplicate(A, &esolver->evector[i]); 
@@ -302,14 +303,32 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
       lis_esolve(A, esolver->evector[i], &evalue, esolver2);
       lis_esolver_work_destroy(esolver2); 
       esolver->evalue[i] = evalue;
-      esolver->iter[i] = esolver2->iter[0];      
-      esolver->resid[i] = esolver2->resid[0];
+      esolver->iter[i] = esolver2->iter[0];
+
+      err = lis_esolver_standard_residual(
+              A, esolver->evector[i], esolver->evalue[i],
+              r, v[0], &cert_resid);
+      if( err )
+        {
+          esolver->retcode = err;
+          lis_esolver_destroy(esolver2);
+          lis_free(t);
+          lis_free(tq);
+          lis_free(tr);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return err;
+        }
+
+      esolver->resid[i] = cert_resid;
+      if( cert_resid>tol && final_status==LIS_SUCCESS )
+        final_status = LIS_MAXITER;
 
       if (i==0) 
 	{
 	  evalue0 = esolver->evalue[0];
 	  iter0 = esolver2->iter[0];
-	  resid0 = esolver2->resid[0];
+	  resid0 = esolver->resid[0];
 	  if( output & LIS_EPRINT_MEM ) 
 	    {
 	      for (ic=0;ic<iter0+1;ic++)
@@ -334,7 +353,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
 #endif
 	  lis_printf(comm,"Lanczos: elapsed time         = %e sec.\n", esolver2->time);	  	  
 	  lis_printf(comm,"Lanczos: number of iterations = %D\n",esolver2->iter[0]);
-	  lis_printf(comm,"Lanczos: relative residual    = %e\n\n",(double)esolver2->resid[0]);
+	  lis_printf(comm,"Lanczos: relative residual    = %e\n\n",(double)esolver->resid[i]);
 	}
     }
   esolver->evalue[0] = evalue0; 
@@ -352,7 +371,8 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   lis_solver_destroy(solver);
 
   LIS_DEBUG_FUNC_OUT;
-  return LIS_SUCCESS;
+  esolver->retcode = final_status;
+  return final_status;
 }
 
 /***************************************
@@ -620,63 +640,6 @@ static LIS_INT lis_egli_projected_jacobi(
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 #endif
-}
-
-
-#undef __FUNC__
-#define __FUNC__ "lis_egli_true_residual"
-static LIS_INT lis_egli_true_residual(
-	LIS_MATRIX A,
-	LIS_MATRIX B,
-	LIS_VECTOR x,
-	LIS_SCALAR lambda,
-	LIS_VECTOR Ax,
-	LIS_VECTOR Bx,
-	LIS_VECTOR r,
-	LIS_REAL *resid)
-{
-	LIS_INT err;
-	LIS_REAL anrm,bnrm,rnrm,denom;
-	LIS_REAL lmag;
-
-	LIS_DEBUG_FUNC_IN;
-
-	err = lis_matvec(A,x,Ax);
-	if( err ) return err;
-
-	err = lis_matvec(B,x,Bx);
-	if( err ) return err;
-
-	err = lis_vector_nrm2(Ax,&anrm);
-	if( err ) return err;
-
-	err = lis_vector_nrm2(Bx,&bnrm);
-	if( err ) return err;
-
-	lis_vector_axpyz(-lambda,Bx,Ax,r);
-
-	err = lis_vector_nrm2(r,&rnrm);
-	if( err ) return err;
-
-#ifdef _COMPLEX
-	lmag = cabs(lambda);
-#else
-	lmag = fabs(lambda);
-#endif
-
-	denom = anrm+lmag*bnrm;
-
-	if( denom>0.0 )
-	{
-		*resid = rnrm/denom;
-	}
-	else
-	{
-		*resid = rnrm;
-	}
-
-	LIS_DEBUG_FUNC_OUT;
-	return LIS_SUCCESS;
 }
 
 
@@ -1296,7 +1259,7 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 			1.0/nrm2,
 			esolver->evector[i]);
 
-		err = lis_egli_true_residual(
+		err = lis_esolver_generalized_residual(
 			A,
 			B,
 			esolver->evector[i],
@@ -1384,7 +1347,7 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 			esolver->iter[i] =
 				esolver2->iter[0];
 
-			err = lis_egli_true_residual(
+			err = lis_esolver_generalized_residual(
 				A,
 				B,
 				esolver->evector[i],

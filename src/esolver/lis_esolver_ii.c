@@ -134,7 +134,7 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter2,output;
-  LIS_REAL nrm2,resid;
+  LIS_REAL nrm2,resid,cert_resid;
   LIS_VECTOR y,q;
   LIS_SOLVER solver;
   double time,itime,ptime,p_c_time,p_i_time;
@@ -279,6 +279,32 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
       esolver->p_c_time += solver->p_c_time;
       esolver->p_i_time += solver->p_i_time;
 
+      if( tol >= resid )
+        {
+          if( oshift != 0.0 )
+            lis_matrix_shift_diagonal(A, -oshift);
+
+          err = lis_esolver_standard_residual(
+                  A, v, 1.0/theta+oshift,
+                  y, q, &cert_resid);
+
+          if( oshift != 0.0 )
+            lis_matrix_shift_diagonal(A, oshift);
+
+          if( err )
+            {
+              esolver->retcode = err;
+              if( oshift != 0.0 )
+                lis_matrix_shift_diagonal(A, -oshift);
+              lis_precon_destroy(precon);
+              lis_solver_destroy(solver);
+              LIS_DEBUG_FUNC_OUT;
+              return err;
+            }
+
+          resid = cert_resid;
+        }
+
       if( output )
 	{
 	  if( output & LIS_EPRINT_MEM ) esolver->rhistory[iter] = resid;
@@ -421,12 +447,12 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
   LIS_Comm comm;  
   LIS_MATRIX A,B,Aop;
   LIS_VECTOR v;
-  LIS_SCALAR eta,theta;
+  LIS_SCALAR eta,theta,cert_evalue;
   LIS_SCALAR oshift,ishift;
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter2,output;
-  LIS_REAL nrm2,resid;
+  LIS_REAL nrm2,resid,cert_resid;
   LIS_VECTOR w,y,q;
   LIS_SOLVER solver;
   double time,itime,ptime,p_c_time,p_i_time;
@@ -653,6 +679,44 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
       esolver->itime += solver->itime;
       esolver->p_c_time += solver->p_c_time;
       esolver->p_i_time += solver->p_i_time;
+
+      if( tol >= resid )
+        {
+          if( transform == LIS_EIGEN_TRANSFORM_BUCKLING )
+            {
+              if( !lis_esolver_is_valid_denominator(theta-1.0) )
+                {
+                  LIS_SETERR(LIS_BREAKDOWN,
+                          "invalid generalized Inverse buckling mapping denominator\n");
+                  esolver->retcode = LIS_BREAKDOWN;
+                  lis_precon_destroy(precon);
+                  lis_solver_destroy(solver);
+                  if( Aop ) lis_matrix_destroy(Aop);
+                  LIS_DEBUG_FUNC_OUT;
+                  return LIS_BREAKDOWN;
+                }
+              cert_evalue = oshift*theta/(theta-1.0);
+            }
+          else
+            {
+              cert_evalue = 1.0/theta + oshift;
+            }
+
+          err = lis_esolver_generalized_residual(
+                  esolver->A, B, v, cert_evalue,
+                  w, y, q, &cert_resid);
+          if( err )
+            {
+              esolver->retcode = err;
+              lis_precon_destroy(precon);
+              lis_solver_destroy(solver);
+              if( Aop ) lis_matrix_destroy(Aop);
+              LIS_DEBUG_FUNC_OUT;
+              return err;
+            }
+
+          resid = cert_resid;
+        }
 
       if( output )
 	{

@@ -44,6 +44,22 @@ extern LIS_INT lis_esolver_is_valid_denominator(
         LIS_SCALAR value);
 extern LIS_INT lis_esolver_is_valid_norm(
         LIS_REAL value);
+extern LIS_INT lis_esolver_standard_residual(
+        LIS_MATRIX A,
+        LIS_VECTOR x,
+        LIS_SCALAR lambda,
+        LIS_VECTOR Ax,
+        LIS_VECTOR r,
+        LIS_REAL *resid);
+extern LIS_INT lis_esolver_generalized_residual(
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_VECTOR x,
+        LIS_SCALAR lambda,
+        LIS_VECTOR Ax,
+        LIS_VECTOR Bx,
+        LIS_VECTOR r,
+        LIS_REAL *resid);
 	extern LIS_INT lis_esolver_work_destroy(LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_option2(char* arg1, char *arg2, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_option_esolver(char *argv, LIS_ESOLVER esolver);
