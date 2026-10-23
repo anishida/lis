@@ -3045,6 +3045,167 @@ cleanup:
 }
 
 
+
+static LIS_INT
+test_transformed_generalized_lanczos_clustered_spectrum(void)
+{
+    LIS_INT err;
+    LIS_INT api;
+    LIS_INT i;
+    LIS_MATRIX A;
+    LIS_MATRIX B;
+    LIS_VECTOR x;
+    LIS_ESOLVER esolver;
+    LIS_SCALAR evalue;
+    LIS_REAL error;
+    const LIS_REAL expected[3] = {
+        1.0,
+        1.05,
+        1.1025
+    };
+
+    A = NULL;
+    B = NULL;
+    x = NULL;
+    esolver = NULL;
+    evalue = 0.0;
+
+    err = create_arnoldi_orthogonality_matrix(
+        &A);
+    if( err )
+        goto cleanup;
+
+    err = create_eigen_identity_matrix(
+        &B);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_duplicate(
+        A,
+        &x);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_set_all(
+        1.0,
+        x);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_create(
+        &esolver);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_set_option(
+        "-e gli -ss 20 -emaxiter 20 "
+        "-etol 1.0e-10",
+        esolver);
+    if( err )
+        goto cleanup;
+
+    /*
+     * Explicitly exercise lis_egli_transformed().
+     * A zero spectral shift is nonsingular for this positive
+     * diagonal spectrum and targets the smallest eigenvalues.
+     */
+    esolver->transform =
+        LIS_EIGEN_TRANSFORM_SHIFT_INVERT;
+    esolver->nev = 3;
+    esolver->options[
+        LIS_EOPTIONS_RVAL] = 1;
+
+    api = lis_gesolve(
+        A,
+        B,
+        x,
+        &evalue,
+        esolver);
+
+    if( api!=LIS_SUCCESS )
+    {
+        printf(
+            "Transformed generalized Lanczos clustered spectrum: "
+            "API return %d\n",
+            (int)api);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    if( esolver->retcode!=LIS_SUCCESS )
+    {
+        printf(
+            "Transformed generalized Lanczos clustered spectrum: "
+            "status %d, expected LIS_SUCCESS\n",
+            (int)esolver->retcode);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    for(i=0;i<3;i++)
+    {
+        if( !lis_esolver_is_finite_scalar(
+                esolver->evalue[i]) )
+        {
+            printf(
+                "Transformed generalized Lanczos clustered spectrum: "
+                "non-finite eigenvalue[%d]\n",
+                (int)i);
+            err = LIS_FAILS;
+            goto cleanup;
+        }
+
+        error = eigen_scalar_magnitude(
+            esolver->evalue[i] -
+            (LIS_SCALAR)expected[i]);
+
+        if( !isfinite((double)error) ||
+            error>1.0e-6 )
+        {
+            printf(
+                "Transformed generalized Lanczos clustered spectrum: "
+                "eigenvalue[%d] error %.17e, expected <= %.17e\n",
+                (int)i,
+                (double)error,
+                1.0e-6);
+            err = LIS_FAILS;
+            goto cleanup;
+        }
+
+        if( !isfinite((double)esolver->resid[i]) ||
+            esolver->resid[i]>1.0e-8 )
+        {
+            printf(
+                "Transformed generalized Lanczos clustered spectrum: "
+                "residual[%d] %.17e, expected <= %.17e\n",
+                (int)i,
+                (double)esolver->resid[i],
+                1.0e-8);
+            err = LIS_FAILS;
+            goto cleanup;
+        }
+    }
+
+    printf(
+        "PASS: Transformed generalized Lanczos "
+        "clustered spectrum\n");
+
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( esolver )
+        lis_esolver_destroy(esolver);
+    if( x )
+        lis_vector_destroy(x);
+    if( B )
+        lis_matrix_destroy(B);
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
 static LIS_INT
 test_arnoldi_happy_breakdown(void)
 {
@@ -3307,6 +3468,16 @@ main(
         printf(
             "LIS_EIGEN_ORTHOGONALITY "
             "GENERALIZED LANCZOS FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_transformed_generalized_lanczos_clustered_spectrum();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_DIAGNOSTIC "
+            "TRANSFORMED GENERALIZED LANCZOS FAILED\n");
         lis_finalize();
         return 1;
     }

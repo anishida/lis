@@ -1489,7 +1489,7 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 		{
 			LIS_SETERR(
 				LIS_BREAKDOWN,
-				"invalid transformed Ritz vector norm\n");
+				"invalid transformed generalized Lanczos Ritz vector norm\n");
 			err = LIS_BREAKDOWN;
 			goto cleanup;
 		}
