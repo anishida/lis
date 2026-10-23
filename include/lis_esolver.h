@@ -223,6 +223,18 @@ extern LIS_INT lis_esolver_is_valid_norm(
 		LIS_REAL *w_real,
 		LIS_REAL *w_imag);
 
+	extern LIS_INT lis_efeast_shifted_matvec_split(
+		LIS_MATRIX A,
+		LIS_MATRIX B,
+		LIS_REAL z_real,
+		LIS_REAL z_imag,
+		LIS_VECTOR x_real,
+		LIS_VECTOR x_imag,
+		LIS_VECTOR y_real,
+		LIS_VECTOR y_imag,
+		LIS_VECTOR work_real,
+		LIS_VECTOR work_imag);
+
 #ifdef __cplusplus
 }
 #endif

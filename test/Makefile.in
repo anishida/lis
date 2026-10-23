@@ -127,8 +127,8 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
 	testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) \
 	testfeastfoundation$(EXEEXT) testfeastcontour$(EXEEXT) \
-	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
-	$(am__EXEEXT_4)
+	testfeastshifted$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
+	$(am__EXEEXT_3) $(am__EXEEXT_4)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_3 = test2f test6f
@@ -411,6 +411,10 @@ am_testfeastfoundation_OBJECTS = testfeastfoundation.$(OBJEXT)
 testfeastfoundation_OBJECTS = $(am_testfeastfoundation_OBJECTS)
 testfeastfoundation_LDADD = $(LDADD)
 testfeastfoundation_DEPENDENCIES =
+am_testfeastshifted_OBJECTS = testfeastshifted.$(OBJEXT)
+testfeastshifted_OBJECTS = $(am_testfeastshifted_OBJECTS)
+testfeastshifted_LDADD = $(LDADD)
+testfeastshifted_DEPENDENCIES =
 am_testfgcrodr_OBJECTS = testfgcrodr.$(OBJEXT)
 testfgcrodr_OBJECTS = $(am_testfgcrodr_OBJECTS)
 testfgcrodr_LDADD = $(LDADD)
@@ -657,7 +661,8 @@ am__depfiles_remade = ./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
 	./$(DEPDIR)/testexactnullspace.Po \
 	./$(DEPDIR)/testexternalstorage.Po \
 	./$(DEPDIR)/testfeastcontour.Po \
-	./$(DEPDIR)/testfeastfoundation.Po ./$(DEPDIR)/testfgcrodr.Po \
+	./$(DEPDIR)/testfeastfoundation.Po \
+	./$(DEPDIR)/testfeastshifted.Po ./$(DEPDIR)/testfgcrodr.Po \
 	./$(DEPDIR)/testgcrodrconfig.Po \
 	./$(DEPDIR)/testgcrodroptions.Po \
 	./$(DEPDIR)/testgcrodrsequence.Po ./$(DEPDIR)/testgmreswork.Po \
@@ -745,24 +750,24 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testdiagonal_SOURCES) $(testeigenbreakdown_SOURCES) \
 	testexactnullspace.c $(testexternalstorage_SOURCES) \
 	$(testfeastcontour_SOURCES) $(testfeastfoundation_SOURCES) \
-	$(testfgcrodr_SOURCES) $(testgcrodrconfig_SOURCES) \
-	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
-	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
-	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
-	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
-	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
-	$(testhalfstorage_SOURCES) $(testilupivot_SOURCES) \
-	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
-	$(testmatrixgeneration_SOURCES) $(testmatvecblock_SOURCES) \
-	$(testmfamg_SOURCES) $(testmfamggalerkin_SOURCES) \
-	$(testnearnullspace_SOURCES) $(testoperator_SOURCES) \
-	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
-	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
-	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
-	$(testrecovery_SOURCES) $(testrepeatedsystems_SOURCES) \
-	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
-	$(testsequence_SOURCES) $(testshellscale_SOURCES) \
-	$(testsolvercallbackcert_SOURCES) \
+	$(testfeastshifted_SOURCES) $(testfgcrodr_SOURCES) \
+	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
+	$(testgcrodrsequence_SOURCES) $(testgmreswork_SOURCES) \
+	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
+	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
+	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
+	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
+	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
+	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
+	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
+	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
+	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
+	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
+	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
+	$(testpreconreuse_SOURCES) $(testrecovery_SOURCES) \
+	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
+	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
+	$(testshellscale_SOURCES) $(testsolvercallbackcert_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
 	$(testsolvermonitor_SOURCES) $(testsymmdiagguard_SOURCES) \
 	$(testthreads_SOURCES) $(testuser_SOURCES) \
@@ -793,24 +798,24 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testdiagonal_SOURCES) $(testeigenbreakdown_SOURCES) \
 	testexactnullspace.c $(testexternalstorage_SOURCES) \
 	$(testfeastcontour_SOURCES) $(testfeastfoundation_SOURCES) \
-	$(testfgcrodr_SOURCES) $(testgcrodrconfig_SOURCES) \
-	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
-	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
-	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
-	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
-	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
-	$(testhalfstorage_SOURCES) $(testilupivot_SOURCES) \
-	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
-	$(testmatrixgeneration_SOURCES) $(testmatvecblock_SOURCES) \
-	$(testmfamg_SOURCES) $(testmfamggalerkin_SOURCES) \
-	$(testnearnullspace_SOURCES) $(testoperator_SOURCES) \
-	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
-	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
-	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
-	$(testrecovery_SOURCES) $(testrepeatedsystems_SOURCES) \
-	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
-	$(testsequence_SOURCES) $(testshellscale_SOURCES) \
-	$(testsolvercallbackcert_SOURCES) \
+	$(testfeastshifted_SOURCES) $(testfgcrodr_SOURCES) \
+	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
+	$(testgcrodrsequence_SOURCES) $(testgmreswork_SOURCES) \
+	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
+	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
+	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
+	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
+	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
+	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
+	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
+	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
+	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
+	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
+	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
+	$(testpreconreuse_SOURCES) $(testrecovery_SOURCES) \
+	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
+	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
+	$(testshellscale_SOURCES) $(testsolvercallbackcert_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
 	$(testsolvermonitor_SOURCES) $(testsymmdiagguard_SOURCES) \
 	$(testthreads_SOURCES) $(testuser_SOURCES) \
@@ -1193,6 +1198,7 @@ test_SCRIPTS = defs test.sh
 testgcrodroptions_SOURCES = testgcrodroptions.c
 testfeastfoundation_SOURCES = testfeastfoundation.c
 testfeastcontour_SOURCES = testfeastcontour.c
+testfeastshifted_SOURCES = testfeastshifted.c
 testgcrodrconfig_SOURCES = testgcrodrconfig.c
 testgcrodrsequence_SOURCES = testgcrodrsequence.c
 testmatrixgeneration_SOURCES = testmatrixgeneration.c
@@ -1699,6 +1705,10 @@ testfeastfoundation$(EXEEXT): $(testfeastfoundation_OBJECTS) $(testfeastfoundati
 	@rm -f testfeastfoundation$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testfeastfoundation_OBJECTS) $(testfeastfoundation_LDADD) $(LIBS)
 
+testfeastshifted$(EXEEXT): $(testfeastshifted_OBJECTS) $(testfeastshifted_DEPENDENCIES) $(EXTRA_testfeastshifted_DEPENDENCIES)
+	@rm -f testfeastshifted$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testfeastshifted_OBJECTS) $(testfeastshifted_LDADD) $(LIBS)
+
 testfgcrodr$(EXEEXT): $(testfgcrodr_OBJECTS) $(testfgcrodr_DEPENDENCIES) $(EXTRA_testfgcrodr_DEPENDENCIES)
 	@rm -f testfgcrodr$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testfgcrodr_OBJECTS) $(testfgcrodr_LDADD) $(LIBS)
@@ -1961,6 +1971,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testexternalstorage.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfeastcontour.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfeastfoundation.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfeastshifted.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodr.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testgcrodrconfig.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testgcrodroptions.Po@am__quote@ # am--include-marker
@@ -2798,6 +2809,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testexternalstorage.Po
 	-rm -f ./$(DEPDIR)/testfeastcontour.Po
 	-rm -f ./$(DEPDIR)/testfeastfoundation.Po
+	-rm -f ./$(DEPDIR)/testfeastshifted.Po
 	-rm -f ./$(DEPDIR)/testfgcrodr.Po
 	-rm -f ./$(DEPDIR)/testgcrodrconfig.Po
 	-rm -f ./$(DEPDIR)/testgcrodroptions.Po
@@ -2930,6 +2942,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testexternalstorage.Po
 	-rm -f ./$(DEPDIR)/testfeastcontour.Po
 	-rm -f ./$(DEPDIR)/testfeastfoundation.Po
+	-rm -f ./$(DEPDIR)/testfeastshifted.Po
 	-rm -f ./$(DEPDIR)/testfgcrodr.Po
 	-rm -f ./$(DEPDIR)/testgcrodrconfig.Po
 	-rm -f ./$(DEPDIR)/testgcrodroptions.Po

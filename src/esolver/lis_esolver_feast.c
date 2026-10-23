@@ -336,6 +336,235 @@ LIS_INT lis_efeast_contour_gauss(
 }
 
 
+/*
+ * Apply the complex shifted operator
+ *
+ *     y = (z B - A) x
+ *
+ * for real A and B using split-complex vectors:
+ *
+ *     x = x_real + i x_imag
+ *     z = z_real + i z_imag
+ *
+ * If B is NULL, the identity matrix is used.
+ *
+ * This representation is intentionally available in both real
+ * and complex LIS builds.  It provides the foundation for the
+ * real 2N block formulation required by applications that keep
+ * the original matrices real.
+ */
+#undef __FUNC__
+#define __FUNC__ "lis_efeast_shifted_matvec_split"
+
+LIS_INT lis_efeast_shifted_matvec_split(
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_REAL z_real,
+        LIS_REAL z_imag,
+        LIS_VECTOR x_real,
+        LIS_VECTOR x_imag,
+        LIS_VECTOR y_real,
+        LIS_VECTOR y_imag,
+        LIS_VECTOR work_real,
+        LIS_VECTOR work_imag)
+{
+        LIS_INT err;
+
+        LIS_DEBUG_FUNC_IN;
+
+        if( A==NULL ||
+            x_real==NULL ||
+            x_imag==NULL ||
+            y_real==NULL ||
+            y_imag==NULL ||
+            work_real==NULL ||
+            work_imag==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "FEAST shifted operator received an undefined argument\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( !isfinite((double)z_real) ||
+            !isfinite((double)z_imag) )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "FEAST shifted operator requires a finite complex shift\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        /*
+         * y_real = -A*x_real
+         */
+        err = lis_matvec(
+                A,
+                x_real,
+                y_real);
+
+        if( err )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return err;
+        }
+
+        err = lis_vector_scale(
+                (LIS_SCALAR)-1.0,
+                y_real);
+
+        if( err )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return err;
+        }
+
+        /*
+         * y_imag = -A*x_imag
+         */
+        err = lis_matvec(
+                A,
+                x_imag,
+                y_imag);
+
+        if( err )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return err;
+        }
+
+        err = lis_vector_scale(
+                (LIS_SCALAR)-1.0,
+                y_imag);
+
+        if( err )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return err;
+        }
+
+        /*
+         * work_real = B*x_real
+         * work_imag = B*x_imag
+         *
+         * B == NULL means B = I.
+         */
+        if( B!=NULL )
+        {
+                err = lis_matvec(
+                        B,
+                        x_real,
+                        work_real);
+
+                if( err )
+                {
+                        LIS_DEBUG_FUNC_OUT;
+                        return err;
+                }
+
+                err = lis_matvec(
+                        B,
+                        x_imag,
+                        work_imag);
+
+                if( err )
+                {
+                        LIS_DEBUG_FUNC_OUT;
+                        return err;
+                }
+        }
+        else
+        {
+                err = lis_vector_copy(
+                        x_real,
+                        work_real);
+
+                if( err )
+                {
+                        LIS_DEBUG_FUNC_OUT;
+                        return err;
+                }
+
+                err = lis_vector_copy(
+                        x_imag,
+                        work_imag);
+
+                if( err )
+                {
+                        LIS_DEBUG_FUNC_OUT;
+                        return err;
+                }
+        }
+
+        /*
+         * Real part:
+         *
+         * y_real =
+         *     -A*x_real
+         *     + z_real*B*x_real
+         *     - z_imag*B*x_imag
+         */
+        err = lis_vector_axpy(
+                (LIS_SCALAR)z_real,
+                work_real,
+                y_real);
+
+        if( err )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return err;
+        }
+
+        err = lis_vector_axpy(
+                (LIS_SCALAR)(-z_imag),
+                work_imag,
+                y_real);
+
+        if( err )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return err;
+        }
+
+        /*
+         * Imaginary part:
+         *
+         * y_imag =
+         *     -A*x_imag
+         *     + z_imag*B*x_real
+         *     + z_real*B*x_imag
+         */
+        err = lis_vector_axpy(
+                (LIS_SCALAR)z_imag,
+                work_real,
+                y_imag);
+
+        if( err )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return err;
+        }
+
+        err = lis_vector_axpy(
+                (LIS_SCALAR)z_real,
+                work_imag,
+                y_imag);
+
+        if( err )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return err;
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+
 static LIS_INT lis_efeast_parse_real(
         const char *text,
         LIS_REAL *value)
