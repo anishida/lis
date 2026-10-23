@@ -144,6 +144,82 @@ LIS_INT lis_eli_malloc_work(LIS_ESOLVER esolver)
 	return LIS_SUCCESS;
 }
 
+/*
+ * Orthogonalize one Lanczos residual against an active basis span.
+ * Keeping the active range explicit separates basis length from the
+ * requested Ritz count and allows the operation to be reused by
+ * multi-vector recurrences.
+ */
+static LIS_INT
+lis_lanczos_reorthogonalize_residual(
+    LIS_VECTOR *basis,
+    LIS_INT first,
+    LIS_INT last,
+    LIS_VECTOR residual)
+{
+    LIS_INT err,k;
+    LIS_SCALAR dot;
+
+    for(k=first;k<=last;k++)
+    {
+        err = lis_vector_dot(
+            basis[k],
+            residual,
+            &dot);
+        if( err )
+            return err;
+
+        err = lis_vector_axpy(
+            -dot,
+            basis[k],
+            residual);
+        if( err )
+            return err;
+    }
+
+    return LIS_SUCCESS;
+}
+
+
+/*
+ * Orthogonalize the generalized Lanczos dual residual.
+ *
+ * With dual_basis[k] = B*basis[k], subtracting
+ * <basis[k],residual>*dual_basis[k] makes B^-1*residual
+ * orthogonal to the active basis in the B inner product.
+ */
+static LIS_INT
+lis_lanczos_reorthogonalize_dual_residual(
+    LIS_VECTOR *basis,
+    LIS_VECTOR *dual_basis,
+    LIS_INT first,
+    LIS_INT last,
+    LIS_VECTOR residual)
+{
+    LIS_INT err,k;
+    LIS_SCALAR dot;
+
+    for(k=first;k<=last;k++)
+    {
+        err = lis_vector_dot(
+            basis[k],
+            residual,
+            &dot);
+        if( err )
+            return err;
+
+        err = lis_vector_axpy(
+            -dot,
+            dual_basis[k],
+            residual);
+        if( err )
+            return err;
+    }
+
+    return LIS_SUCCESS;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_eli"
 LIS_INT lis_eli(LIS_ESOLVER esolver)
@@ -237,11 +313,13 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
        * Include the current vector as well to remove round-off
        * left after the alpha(j) recurrence update.
        */
-      for (k=1;k<=j;k++)
-	{
-	  lis_vector_dot(v[k], r, &dot);
-	  lis_vector_axpy(-dot, v[k], r);
-	}
+      err = lis_lanczos_reorthogonalize_residual(
+          v,
+          1,
+          j,
+          r);
+      if( err )
+          return err;
 
       /* beta(j) = ||r||_2 */
       lis_vector_nrm2(r, (LIS_REAL *)&t[(j-1)*ss+j]);
@@ -1848,11 +1926,14 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
        * subtracting <v(k),r>*w(k) makes q=B^-1*r orthogonal
        * to the existing basis in the B inner product.
        */
-      for (k=1;k<=j;k++)
-	{
-	  lis_vector_dot(v[k], r, &dot);
-	  lis_vector_axpy(-dot, w[k], r);
-	}
+      err = lis_lanczos_reorthogonalize_dual_residual(
+          v,
+          w,
+          1,
+          j,
+          r);
+      if( err )
+          return err;
 
       /* solve B * q = r */
       err = lis_solve_kernel(B, r, q, solver, precon);

@@ -3046,6 +3046,185 @@ cleanup:
 
 
 
+
+static LIS_INT
+test_lanczos_clustered_basis_stability(void)
+{
+    LIS_INT err;
+    LIS_INT api;
+    LIS_MATRIX A;
+    LIS_MATRIX B;
+    LIS_VECTOR x;
+    LIS_ESOLVER esolver;
+    LIS_SCALAR evalue;
+    LIS_REAL standard_defect;
+    LIS_REAL generalized_defect;
+
+    A = NULL;
+    B = NULL;
+    x = NULL;
+    esolver = NULL;
+    evalue = 0.0;
+    standard_defect = 0.0;
+    generalized_defect = 0.0;
+
+    /*
+     * Reuse the geometric 1.05 spectrum used by the Arnoldi stress
+     * regression.  This stresses basis independence while preserving
+     * the single-vector Lanczos contract.
+     */
+    err = create_arnoldi_orthogonality_matrix(
+        &A);
+    if( err )
+        goto cleanup;
+
+    err = create_eigen_identity_matrix(
+        &B);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_duplicate(
+        A,
+        &x);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_set_all(
+        1.0,
+        x);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_create(
+        &esolver);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_set_option(
+        "-e li -ss 20 -emaxiter 4 "
+        "-etol 1.0e-12",
+        esolver);
+    if( err )
+        goto cleanup;
+
+    esolver->options[
+        LIS_EOPTIONS_RVAL] = 1;
+
+    api = lis_esolve(
+        A,
+        x,
+        &evalue,
+        esolver);
+
+    if( api!=LIS_SUCCESS )
+    {
+        printf(
+            "Clustered standard Lanczos basis: "
+            "API return %d\n",
+            (int)api);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = standard_lanczos_basis_defect(
+        esolver,
+        &standard_defect);
+    if( err )
+        goto cleanup;
+
+    if( !isfinite((double)standard_defect) ||
+        standard_defect>LIS_EIGEN_ORTHO_TOL )
+    {
+        printf(
+            "Clustered standard Lanczos basis defect "
+            "%.17e, expected <= %.17e\n",
+            (double)standard_defect,
+            (double)LIS_EIGEN_ORTHO_TOL);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    lis_esolver_destroy(esolver);
+    esolver = NULL;
+
+    err = lis_vector_set_all(
+        1.0,
+        x);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_create(
+        &esolver);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_set_option(
+        "-e gli -ss 20 -emaxiter 4 "
+        "-etol 1.0e-12",
+        esolver);
+    if( err )
+        goto cleanup;
+
+    esolver->options[
+        LIS_EOPTIONS_RVAL] = 1;
+
+    api = lis_gesolve(
+        A,
+        B,
+        x,
+        &evalue,
+        esolver);
+
+    if( api!=LIS_SUCCESS )
+    {
+        printf(
+            "Clustered generalized Lanczos basis: "
+            "API return %d\n",
+            (int)api);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = generalized_lanczos_basis_defect(
+        esolver,
+        &generalized_defect);
+    if( err )
+        goto cleanup;
+
+    if( !isfinite((double)generalized_defect) ||
+        generalized_defect>LIS_EIGEN_ORTHO_TOL )
+    {
+        printf(
+            "Clustered generalized Lanczos B-basis defect "
+            "%.17e, expected <= %.17e\n",
+            (double)generalized_defect,
+            (double)LIS_EIGEN_ORTHO_TOL);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    printf(
+        "PASS: Lanczos clustered basis stability "
+        "standard %.6e generalized %.6e\n",
+        (double)standard_defect,
+        (double)generalized_defect);
+
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( esolver )
+        lis_esolver_destroy(esolver);
+    if( x )
+        lis_vector_destroy(x);
+    if( B )
+        lis_matrix_destroy(B);
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
 static LIS_INT
 test_transformed_generalized_lanczos_clustered_spectrum(void)
 {
@@ -3468,6 +3647,16 @@ main(
         printf(
             "LIS_EIGEN_ORTHOGONALITY "
             "GENERALIZED LANCZOS FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_lanczos_clustered_basis_stability();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_ORTHOGONALITY "
+            "CLUSTERED LANCZOS BASIS FAILED\n");
         lis_finalize();
         return 1;
     }
