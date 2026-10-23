@@ -1372,17 +1372,15 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 
 		if( err ) goto cleanup;
 
-		lis_vector_set_all(
-			0.0,
-			esolver->evector[i]);
+		err = lis_eigen_ritz_reconstruct(
+			ss,
+			&v[1],
+			1,
+			&tr[i],
+			ss,
+			&esolver->evector[i]);
 
-		for(k=0;k<ss;k++)
-		{
-			lis_vector_axpy(
-				tr[k*ss+i],
-				v[k+1],
-				esolver->evector[i]);
-		}
+		if( err ) goto cleanup;
 
 		err = lis_vector_nrm2(
 			esolver->evector[i],
