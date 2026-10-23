@@ -1006,6 +1006,345 @@ check_b_rank(
 
 
 static int
+check_ritz_reconstruction(
+    LIS_VECTOR basis[],
+    LIS_VECTOR ritz[])
+{
+    LIS_SCALAR coeff[6];
+    LIS_SCALAR scalar_coeff[1];
+
+    LIS_SCALAR value[3];
+
+    LIS_INT err;
+
+
+    /*
+     * Use a three-vector coordinate basis and reconstruct two
+     * Ritz vectors.  This also verifies nritz < basis_rank.
+     */
+    err = set_vector3(
+        basis[0],
+        1.0,
+        0.0,
+        0.0);
+
+    if( err )
+        return 1;
+
+    err = set_vector3(
+        basis[1],
+        0.0,
+        1.0,
+        0.0);
+
+    if( err )
+        return 1;
+
+    err = set_vector3(
+        basis[2],
+        0.0,
+        0.0,
+        1.0);
+
+    if( err )
+        return 1;
+
+
+#ifndef _COMPLEX
+
+    coeff[0] = 1.0;
+    coeff[1] = 2.0;
+
+    coeff[2] = 3.0;
+    coeff[3] = 4.0;
+
+    coeff[4] = 5.0;
+    coeff[5] = 6.0;
+
+#else
+
+    coeff[0] = 1.0 + 1.0*I;
+    coeff[1] = 2.0;
+
+    coeff[2] = 3.0;
+    coeff[3] = 4.0 - 1.0*I;
+
+    coeff[4] = 5.0 + 2.0*I;
+    coeff[5] = 6.0;
+
+#endif
+
+
+    err = lis_eigen_ritz_reconstruct(
+        3,
+        basis,
+        2,
+        coeff,
+        2,
+        ritz);
+
+    if( err )
+    {
+        printf(
+            "FAIL: Ritz reconstruction returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+
+    if( read_vector3(
+            ritz[0],
+            value) )
+    {
+        return 1;
+    }
+
+
+#ifndef _COMPLEX
+
+    if( scalar_error(
+            value[0],
+            1.0)>TEST_TOL ||
+        scalar_error(
+            value[1],
+            3.0)>TEST_TOL ||
+        scalar_error(
+            value[2],
+            5.0)>TEST_TOL )
+    {
+        printf(
+            "FAIL: REAL Ritz vector 0\n");
+
+        return 1;
+    }
+
+#else
+
+    if( scalar_error(
+            value[0],
+            1.0 + 1.0*I)>TEST_TOL ||
+        scalar_error(
+            value[1],
+            3.0)>TEST_TOL ||
+        scalar_error(
+            value[2],
+            5.0 + 2.0*I)>TEST_TOL )
+    {
+        printf(
+            "FAIL: COMPLEX Ritz vector 0\n");
+
+        return 1;
+    }
+
+#endif
+
+
+    if( read_vector3(
+            ritz[1],
+            value) )
+    {
+        return 1;
+    }
+
+
+#ifndef _COMPLEX
+
+    if( scalar_error(
+            value[0],
+            2.0)>TEST_TOL ||
+        scalar_error(
+            value[1],
+            4.0)>TEST_TOL ||
+        scalar_error(
+            value[2],
+            6.0)>TEST_TOL )
+    {
+        printf(
+            "FAIL: REAL Ritz vector 1\n");
+
+        return 1;
+    }
+
+#else
+
+    if( scalar_error(
+            value[0],
+            2.0)>TEST_TOL ||
+        scalar_error(
+            value[1],
+            4.0 - 1.0*I)>TEST_TOL ||
+        scalar_error(
+            value[2],
+            6.0)>TEST_TOL )
+    {
+        printf(
+            "FAIL: COMPLEX Ritz vector 1\n");
+
+        return 1;
+    }
+
+#endif
+
+
+    /*
+     * Scalar basis_rank=1 compatibility.
+     */
+    err = set_vector3(
+        basis[0],
+        2.0,
+        -1.0,
+        0.5);
+
+    if( err )
+        return 1;
+
+
+#ifndef _COMPLEX
+
+    scalar_coeff[0] = 2.0;
+
+#else
+
+    scalar_coeff[0] = 2.0 - 1.0*I;
+
+#endif
+
+
+    err = lis_eigen_ritz_reconstruct(
+        1,
+        basis,
+        1,
+        scalar_coeff,
+        1,
+        ritz);
+
+    if( err )
+    {
+        printf(
+            "FAIL: scalar Ritz reconstruction returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+
+    if( read_vector3(
+            ritz[0],
+            value) )
+    {
+        return 1;
+    }
+
+
+#ifndef _COMPLEX
+
+    if( scalar_error(
+            value[0],
+            4.0)>TEST_TOL ||
+        scalar_error(
+            value[1],
+            -2.0)>TEST_TOL ||
+        scalar_error(
+            value[2],
+            1.0)>TEST_TOL )
+    {
+        printf(
+            "FAIL: scalar REAL Ritz reconstruction\n");
+
+        return 1;
+    }
+
+#else
+
+    if( scalar_error(
+            value[0],
+            4.0 - 2.0*I)>TEST_TOL ||
+        scalar_error(
+            value[1],
+            -2.0 + 1.0*I)>TEST_TOL ||
+        scalar_error(
+            value[2],
+            1.0 - 0.5*I)>TEST_TOL )
+    {
+        printf(
+            "FAIL: scalar COMPLEX Ritz reconstruction\n");
+
+        return 1;
+    }
+
+#endif
+
+
+    /*
+     * API guard: zero basis rank.
+     */
+    err = lis_eigen_ritz_reconstruct(
+        0,
+        basis,
+        1,
+        scalar_coeff,
+        1,
+        ritz);
+
+    if( err!=LIS_ERR_ILL_ARG )
+    {
+        printf(
+            "FAIL: Ritz basis-rank guard returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+
+    /*
+     * API guard: coefficient leading dimension too small.
+     */
+    err = lis_eigen_ritz_reconstruct(
+        3,
+        basis,
+        2,
+        coeff,
+        1,
+        ritz);
+
+    if( err!=LIS_ERR_ILL_ARG )
+    {
+        printf(
+            "FAIL: Ritz leading-dimension guard returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+
+    /*
+     * Out-of-place requirement is inherited from the shared
+     * linear-combination kernel.
+     */
+    err = lis_eigen_ritz_reconstruct(
+        1,
+        basis,
+        1,
+        scalar_coeff,
+        1,
+        basis);
+
+    if( err!=LIS_ERR_ILL_ARG )
+    {
+        printf(
+            "FAIL: Ritz alias guard returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+
+    return 0;
+}
+
+
+static int
 check_rectangular_coupling(
     LIS_VECTOR W[],
     LIS_VECTOR Q[],
@@ -1592,6 +1931,14 @@ main(
                 BW,
                 Q,
                 BQ);
+    }
+
+    if( !failed )
+    {
+        failed =
+            check_ritz_reconstruction(
+                W,
+                Q);
     }
 
     if( !failed )

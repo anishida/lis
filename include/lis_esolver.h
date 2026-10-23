@@ -166,6 +166,14 @@ extern LIS_INT lis_eigen_block_rectangular_coupling(
         LIS_SCALAR *eval,
         LIS_SCALAR *evec,
         LIS_SCALAR *coupling);
+
+extern LIS_INT lis_eigen_ritz_reconstruct(
+        LIS_INT basis_rank,
+        LIS_VECTOR basis[],
+        LIS_INT nritz,
+        LIS_SCALAR *coeff,
+        LIS_INT ldcoeff,
+        LIS_VECTOR ritz[]);
 	extern LIS_INT lis_esolver_work_destroy(LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_option2(char* arg1, char *arg2, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_option_esolver(char *argv, LIS_ESOLVER esolver);

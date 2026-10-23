@@ -1713,3 +1713,60 @@ LIS_INT lis_eigen_block_rectangular_coupling(
 
     return LIS_SUCCESS;
 }
+
+#undef __FUNC__
+#define __FUNC__ "lis_eigen_ritz_reconstruct"
+LIS_INT lis_eigen_ritz_reconstruct(
+    LIS_INT basis_rank,
+    LIS_VECTOR basis[],
+    LIS_INT nritz,
+    LIS_SCALAR *coeff,
+    LIS_INT ldcoeff,
+    LIS_VECTOR ritz[])
+{
+    LIS_INT err;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if( basis_rank<=0 ||
+        nritz<=0 ||
+        basis==NULL ||
+        coeff==NULL ||
+        ritz==NULL ||
+        ldcoeff<nritz )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid Ritz reconstruction arguments\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+    /*
+     * Reconstruct physical Ritz vectors from projected
+     * eigenvector coefficients:
+     *
+     *     ritz[j] =
+     *         sum_i basis[i] * coeff[i*ldcoeff+j]
+     *
+     * Coefficients are applied directly.  Complex
+     * reconstruction does not conjugate the projected
+     * eigenvector coefficients.
+     */
+    err = lis_eigen_block_linear_combination(
+        basis_rank,
+        basis,
+        nritz,
+        ritz,
+        coeff,
+        ldcoeff);
+
+    if( err )
+    {
+        return err;
+    }
+
+    LIS_DEBUG_FUNC_OUT;
+
+    return LIS_SUCCESS;
+}
