@@ -81,6 +81,17 @@ extern LIS_INT lis_esolver_generalized_residual(
         LIS_VECTOR Bx,
         LIS_VECTOR r,
         LIS_REAL *resid);
+
+/*
+ * Shared internal block eigensolver helpers.
+ */
+extern LIS_INT lis_eigen_projected_solve(
+        LIS_INT n,
+        LIS_SCALAR *a,
+        LIS_SCALAR *eval,
+        LIS_SCALAR *evec,
+        LIS_INT *niter,
+        LIS_REAL *error);
 	extern LIS_INT lis_esolver_work_destroy(LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_option2(char* arg1, char *arg2, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_option_esolver(char *argv, LIS_ESOLVER esolver);
