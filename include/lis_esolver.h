@@ -196,6 +196,18 @@ extern LIS_INT lis_esolver_is_valid_norm(
 	extern LIS_INT lis_egai_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_egai_malloc_work(LIS_ESOLVER esolver);
 
+/**********************/
+/* Native FEAST       */
+/**********************/
+
+	extern LIS_INT lis_efeast(LIS_ESOLVER esolver);
+	extern LIS_INT lis_efeast_check_params(LIS_ESOLVER esolver);
+	extern LIS_INT lis_efeast_malloc_work(LIS_ESOLVER esolver);
+	extern LIS_INT lis_efeast_set_option(
+		char *arg1,
+		char *arg2,
+		LIS_ESOLVER esolver);
+
 #ifdef __cplusplus
 }
 #endif

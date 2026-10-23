@@ -211,7 +211,7 @@ extern "C" {
 #define LIS_FGCRODR_RECYCLE_TRANSPORT 3
 #define LIS_FGCRODR_RECYCLE_REJECT 4
 
-#define LIS_ESOLVER_LEN 16
+#define LIS_ESOLVER_LEN 17
 #define LIS_ESOLVER_PI 1
 #define LIS_ESOLVER_II 2
 #define LIS_ESOLVER_RQI 3
@@ -228,6 +228,7 @@ extern "C" {
 #define LIS_ESOLVER_GSI 14
 #define LIS_ESOLVER_GLI 15
 #define LIS_ESOLVER_GAI 16
+#define LIS_ESOLVER_FEAST 17
 
 #define LIS_EIGEN_TRANSFORM_AUTO 0
 #define LIS_EIGEN_TRANSFORM_SHIFT_INVERT 1
@@ -1092,6 +1093,17 @@ struct LIS_ESOLVER_STRUCT
         LIS_INT nev;
 	LIS_REAL nrm2;
         LIS_REAL tol;
+
+        /*
+         * Native FEAST configuration.
+         *
+         * Kept outside LIS_EOPTIONS_* and LIS_EPARAMS_* so that
+         * existing public numeric option identifiers remain stable.
+         */
+        LIS_REAL feast_emin;
+        LIS_REAL feast_emax;
+        LIS_INT feast_points;
+        LIS_INT feast_interval_mask;
 };
 typedef struct LIS_ESOLVER_STRUCT *LIS_ESOLVER;
 
