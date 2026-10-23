@@ -1814,6 +1814,46 @@ Matrix Market形式による外部ファイル{\tt matvec.mtx}の記述例を以
 \end{itemize}
 を用いる. 
 \\ \\
+
+\noindent
+{\bf 残差の監視とカスタム収束判定}
+
+アプリケーションは、コマンドラインオプションを変更することなく、線形ソルバに C 言語のコールバック関数を追加できる。残差モニタは以下の関数で登録する。
+
+\begin{verbatim}
+LIS_INT lis_solver_set_monitor(
+    LIS_SOLVER solver,
+    LIS_SOLVER_MONITOR_CALLBACK monitor,
+    void *user_data);
+\end{verbatim}
+
+また、カスタム収束コールバックは以下の関数で登録する。
+
+\begin{verbatim}
+LIS_INT lis_solver_set_convergence(
+    LIS_SOLVER solver,
+    LIS_SOLVER_CONVERGENCE_CALLBACK convergence,
+    void *user_data);
+\end{verbatim}
+
+モニタは残差の推移を監視するだけであり、ソルバの意思決定を変更しない。一方で、収束コールバックは、収束候補を受け入れる場合は 0 以外の値を返し、拒否する場合は 0 を返す。コールバックに null を渡すと、デフォルトの挙動に戻る。\verb|user_data| の所有権はアプリケーション側が保持する。
+
+コールバックは、以下の残差分類のいずれかを受け取る。
+
+\begin{verbatim}
+LIS_SOLVER_RESIDUAL_RECURSIVE
+LIS_SOLVER_RESIDUAL_PROJECTED
+LIS_SOLVER_RESIDUAL_TRUE
+\end{verbatim}
+
+\verb|LIS_SOLVER_RESIDUAL_PROJECTED| はクリロフ部分空間に射影された残差の推定値を表し、\verb|LIS_SOLVER_RESIDUAL_TRUE| は元の線形方程式から明示的に計算された真の残差を表す。リスタート型 GMRES 法ソルバは、射影残差を使って収束候補を形成し、ソルバレベルで成功（収束）とする前に、真の残差による判定を行う。
+
+精度切り替え型 GMRES の場合、倍精度への切り替え閾値がモニタに報告されるが、これはアルゴリズム上の精度切り替え基準のまま維持される。カスタム収束は最終的な収束フェーズを制御するものであり、倍精度から4倍精度への切り替え閾値を再定義することはない。
+
+一般的な初期残差の経路では、真の残差が報告される。また、独立して検証された物理的な残差によって、失敗した反復試行が成功へと変更されるような場面（シーケンス復元時）であっても、シーケンス復元はカスタム収束による拒否を尊重する。
+
+カスタムコールバックを設定した場合でも、\verb|lis_solve| 内の最終的な安全性検証を回避することはできない。最終的な真の残差が非有限値（NaNやInfなど）であるか、ソルバの許容誤差を超えている場合は、反復計算の結果が成功と判定されていても拒否される。コールバックの設定はソルバオブジェクトの一部であり、\verb|lis_solver_reset_sequence| の実行後も保持される。
+
 \noindent
 {\bf オプションの設定}
 
