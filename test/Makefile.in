@@ -126,11 +126,12 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
 	testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
 	testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) \
-	testfeastfoundation$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
-	$(am__EXEEXT_3) $(am__EXEEXT_4)
+	testfeastfoundation$(EXEEXT) testfeastcontour$(EXEEXT) \
+	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
+	$(am__EXEEXT_4)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
-@ENABLE_F90_TRUE@am__append_3 = test2f test6f 
+@ENABLE_F90_TRUE@am__append_3 = test2f test6f
 @ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__append_4 = test8f
 bin_PROGRAMS = esolve$(EXEEXT) esolver$(EXEEXT) gesolve$(EXEEXT) \
 	gesolver$(EXEEXT) hpcg_kernel$(EXEEXT) hpcg_spmvtest$(EXEEXT) \
@@ -181,7 +182,7 @@ esolve_DEPENDENCIES =
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
-am__v_lt_1 = 
+am__v_lt_1 =
 am_esolver_OBJECTS = etest5b.$(OBJEXT)
 esolver_OBJECTS = $(am_esolver_OBJECTS)
 esolver_LDADD = $(LDADD)
@@ -402,6 +403,10 @@ am_testexternalstorage_OBJECTS = testexternalstorage.$(OBJEXT)
 testexternalstorage_OBJECTS = $(am_testexternalstorage_OBJECTS)
 testexternalstorage_LDADD = $(LDADD)
 testexternalstorage_DEPENDENCIES =
+am_testfeastcontour_OBJECTS = testfeastcontour.$(OBJEXT)
+testfeastcontour_OBJECTS = $(am_testfeastcontour_OBJECTS)
+testfeastcontour_LDADD = $(LDADD)
+testfeastcontour_DEPENDENCIES =
 am_testfeastfoundation_OBJECTS = testfeastfoundation.$(OBJEXT)
 testfeastfoundation_OBJECTS = $(am_testfeastfoundation_OBJECTS)
 testfeastfoundation_LDADD = $(LDADD)
@@ -622,11 +627,11 @@ am__v_P_1 = :
 AM_V_GEN = $(am__v_GEN_@AM_V@)
 am__v_GEN_ = $(am__v_GEN_@AM_DEFAULT_V@)
 am__v_GEN_0 = @echo "  GEN     " $@;
-am__v_GEN_1 = 
+am__v_GEN_1 =
 AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
-am__v_at_1 = 
+am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/include
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__maybe_remake_depfiles = depfiles
@@ -651,6 +656,7 @@ am__depfiles_remade = ./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
 	./$(DEPDIR)/testdiagonal.Po ./$(DEPDIR)/testeigenbreakdown.Po \
 	./$(DEPDIR)/testexactnullspace.Po \
 	./$(DEPDIR)/testexternalstorage.Po \
+	./$(DEPDIR)/testfeastcontour.Po \
 	./$(DEPDIR)/testfeastfoundation.Po ./$(DEPDIR)/testfgcrodr.Po \
 	./$(DEPDIR)/testgcrodrconfig.Po \
 	./$(DEPDIR)/testgcrodroptions.Po \
@@ -684,12 +690,12 @@ am__mv = mv -f
 AM_V_PPF77 = $(am__v_PPF77_@AM_V@)
 am__v_PPF77_ = $(am__v_PPF77_@AM_DEFAULT_V@)
 am__v_PPF77_0 = @echo "  PPF77   " $@;
-am__v_PPF77_1 = 
+am__v_PPF77_1 =
 F77LD = $(F77)
 AM_V_F77LD = $(am__v_F77LD_@AM_V@)
 am__v_F77LD_ = $(am__v_F77LD_@AM_DEFAULT_V@)
 am__v_F77LD_0 = @echo "  F77LD   " $@;
-am__v_F77LD_1 = 
+am__v_F77LD_1 =
 PPFCCOMPILE = $(FC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_FCFLAGS) $(FCFLAGS)
 LTPPFCCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=FC $(AM_LIBTOOLFLAGS) \
@@ -699,7 +705,7 @@ LTPPFCCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=FC $(AM_LIBTOOLFLAGS) \
 AM_V_PPFC = $(am__v_PPFC_@AM_V@)
 am__v_PPFC_ = $(am__v_PPFC_@AM_DEFAULT_V@)
 am__v_PPFC_0 = @echo "  PPFC    " $@;
-am__v_PPFC_1 = 
+am__v_PPFC_1 =
 FCLD = $(FC)
 FCLINK = $(LIBTOOL) $(AM_V_lt) --tag=FC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(FCLD) $(AM_FCFLAGS) $(FCFLAGS) \
@@ -707,16 +713,16 @@ FCLINK = $(LIBTOOL) $(AM_V_lt) --tag=FC $(AM_LIBTOOLFLAGS) \
 AM_V_FCLD = $(am__v_FCLD_@AM_V@)
 am__v_FCLD_ = $(am__v_FCLD_@AM_DEFAULT_V@)
 am__v_FCLD_0 = @echo "  FCLD    " $@;
-am__v_FCLD_1 = 
+am__v_FCLD_1 =
 AM_V_CC = $(am__v_CC_@AM_V@)
 am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
 am__v_CC_0 = @echo "  CC      " $@;
-am__v_CC_1 = 
+am__v_CC_1 =
 CCLD = $(CC)
 AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
-am__v_CCLD_1 = 
+am__v_CCLD_1 =
 SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(etest1f_SOURCES) $(etest2_SOURCES) $(etest3_SOURCES) \
 	$(etest4_SOURCES) $(etest4f_SOURCES) $(etest5_SOURCES) \
@@ -738,24 +744,25 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testcoarseapply_SOURCES) $(testcoarsesetup_SOURCES) \
 	$(testdiagonal_SOURCES) $(testeigenbreakdown_SOURCES) \
 	testexactnullspace.c $(testexternalstorage_SOURCES) \
-	$(testfeastfoundation_SOURCES) $(testfgcrodr_SOURCES) \
-	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
-	$(testgcrodrsequence_SOURCES) $(testgmreswork_SOURCES) \
-	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
-	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
-	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
-	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
-	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
-	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
-	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
-	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
-	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
-	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
-	$(testpreconreuse_SOURCES) $(testrecovery_SOURCES) \
-	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
-	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
-	$(testshellscale_SOURCES) $(testsolvercallbackcert_SOURCES) \
+	$(testfeastcontour_SOURCES) $(testfeastfoundation_SOURCES) \
+	$(testfgcrodr_SOURCES) $(testgcrodrconfig_SOURCES) \
+	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
+	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
+	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
+	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
+	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
+	$(testhalfstorage_SOURCES) $(testilupivot_SOURCES) \
+	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
+	$(testmatrixgeneration_SOURCES) $(testmatvecblock_SOURCES) \
+	$(testmfamg_SOURCES) $(testmfamggalerkin_SOURCES) \
+	$(testnearnullspace_SOURCES) $(testoperator_SOURCES) \
+	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
+	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
+	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
+	$(testrecovery_SOURCES) $(testrepeatedsystems_SOURCES) \
+	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
+	$(testsequence_SOURCES) $(testshellscale_SOURCES) \
+	$(testsolvercallbackcert_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
 	$(testsolvermonitor_SOURCES) $(testsymmdiagguard_SOURCES) \
 	$(testthreads_SOURCES) $(testuser_SOURCES) \
@@ -785,24 +792,25 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testcoarseapply_SOURCES) $(testcoarsesetup_SOURCES) \
 	$(testdiagonal_SOURCES) $(testeigenbreakdown_SOURCES) \
 	testexactnullspace.c $(testexternalstorage_SOURCES) \
-	$(testfeastfoundation_SOURCES) $(testfgcrodr_SOURCES) \
-	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
-	$(testgcrodrsequence_SOURCES) $(testgmreswork_SOURCES) \
-	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
-	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
-	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
-	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
-	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
-	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
-	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
-	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
-	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
-	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
-	$(testpreconreuse_SOURCES) $(testrecovery_SOURCES) \
-	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
-	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
-	$(testshellscale_SOURCES) $(testsolvercallbackcert_SOURCES) \
+	$(testfeastcontour_SOURCES) $(testfeastfoundation_SOURCES) \
+	$(testfgcrodr_SOURCES) $(testgcrodrconfig_SOURCES) \
+	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
+	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
+	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
+	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
+	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
+	$(testhalfstorage_SOURCES) $(testilupivot_SOURCES) \
+	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
+	$(testmatrixgeneration_SOURCES) $(testmatvecblock_SOURCES) \
+	$(testmfamg_SOURCES) $(testmfamggalerkin_SOURCES) \
+	$(testnearnullspace_SOURCES) $(testoperator_SOURCES) \
+	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
+	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
+	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
+	$(testrecovery_SOURCES) $(testrepeatedsystems_SOURCES) \
+	$(testrhistoryerror_SOURCES) $(testrqirestore_SOURCES) \
+	$(testsequence_SOURCES) $(testshellscale_SOURCES) \
+	$(testsolvercallbackcert_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
 	$(testsolvermonitor_SOURCES) $(testsymmdiagguard_SOURCES) \
 	$(testthreads_SOURCES) $(testuser_SOURCES) \
@@ -1184,6 +1192,7 @@ test_DATA = testmat.mtx testmat2.mtx testmat3.mtx testmat4.mtx testmat0.mtx test
 test_SCRIPTS = defs test.sh
 testgcrodroptions_SOURCES = testgcrodroptions.c
 testfeastfoundation_SOURCES = testfeastfoundation.c
+testfeastcontour_SOURCES = testfeastcontour.c
 testgcrodrconfig_SOURCES = testgcrodrconfig.c
 testgcrodrsequence_SOURCES = testgcrodrsequence.c
 testmatrixgeneration_SOURCES = testmatrixgeneration.c
@@ -1466,403 +1475,407 @@ clean-testPROGRAMS:
 	$(am__rm_f) $(test_PROGRAMS)
 	test -z "$(EXEEXT)" || $(am__rm_f) $(test_PROGRAMS:$(EXEEXT)=)
 
-esolve$(EXEEXT): $(esolve_OBJECTS) $(esolve_DEPENDENCIES) $(EXTRA_esolve_DEPENDENCIES) 
+esolve$(EXEEXT): $(esolve_OBJECTS) $(esolve_DEPENDENCIES) $(EXTRA_esolve_DEPENDENCIES)
 	@rm -f esolve$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(esolve_OBJECTS) $(esolve_LDADD) $(LIBS)
 
-esolver$(EXEEXT): $(esolver_OBJECTS) $(esolver_DEPENDENCIES) $(EXTRA_esolver_DEPENDENCIES) 
+esolver$(EXEEXT): $(esolver_OBJECTS) $(esolver_DEPENDENCIES) $(EXTRA_esolver_DEPENDENCIES)
 	@rm -f esolver$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(esolver_OBJECTS) $(esolver_LDADD) $(LIBS)
 
-etest1$(EXEEXT): $(etest1_OBJECTS) $(etest1_DEPENDENCIES) $(EXTRA_etest1_DEPENDENCIES) 
+etest1$(EXEEXT): $(etest1_OBJECTS) $(etest1_DEPENDENCIES) $(EXTRA_etest1_DEPENDENCIES)
 	@rm -f etest1$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(etest1_OBJECTS) $(etest1_LDADD) $(LIBS)
 
-etest1f$(EXEEXT): $(etest1f_OBJECTS) $(etest1f_DEPENDENCIES) $(EXTRA_etest1f_DEPENDENCIES) 
+etest1f$(EXEEXT): $(etest1f_OBJECTS) $(etest1f_DEPENDENCIES) $(EXTRA_etest1f_DEPENDENCIES)
 	@rm -f etest1f$(EXEEXT)
 	$(AM_V_F77LD)$(F77LINK) $(etest1f_OBJECTS) $(etest1f_LDADD) $(LIBS)
 
-etest2$(EXEEXT): $(etest2_OBJECTS) $(etest2_DEPENDENCIES) $(EXTRA_etest2_DEPENDENCIES) 
+etest2$(EXEEXT): $(etest2_OBJECTS) $(etest2_DEPENDENCIES) $(EXTRA_etest2_DEPENDENCIES)
 	@rm -f etest2$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(etest2_OBJECTS) $(etest2_LDADD) $(LIBS)
 
-etest3$(EXEEXT): $(etest3_OBJECTS) $(etest3_DEPENDENCIES) $(EXTRA_etest3_DEPENDENCIES) 
+etest3$(EXEEXT): $(etest3_OBJECTS) $(etest3_DEPENDENCIES) $(EXTRA_etest3_DEPENDENCIES)
 	@rm -f etest3$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(etest3_OBJECTS) $(etest3_LDADD) $(LIBS)
 
-etest4$(EXEEXT): $(etest4_OBJECTS) $(etest4_DEPENDENCIES) $(EXTRA_etest4_DEPENDENCIES) 
+etest4$(EXEEXT): $(etest4_OBJECTS) $(etest4_DEPENDENCIES) $(EXTRA_etest4_DEPENDENCIES)
 	@rm -f etest4$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(etest4_OBJECTS) $(etest4_LDADD) $(LIBS)
 
-etest4f$(EXEEXT): $(etest4f_OBJECTS) $(etest4f_DEPENDENCIES) $(EXTRA_etest4f_DEPENDENCIES) 
+etest4f$(EXEEXT): $(etest4f_OBJECTS) $(etest4f_DEPENDENCIES) $(EXTRA_etest4f_DEPENDENCIES)
 	@rm -f etest4f$(EXEEXT)
 	$(AM_V_F77LD)$(F77LINK) $(etest4f_OBJECTS) $(etest4f_LDADD) $(LIBS)
 
-etest5$(EXEEXT): $(etest5_OBJECTS) $(etest5_DEPENDENCIES) $(EXTRA_etest5_DEPENDENCIES) 
+etest5$(EXEEXT): $(etest5_OBJECTS) $(etest5_DEPENDENCIES) $(EXTRA_etest5_DEPENDENCIES)
 	@rm -f etest5$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(etest5_OBJECTS) $(etest5_LDADD) $(LIBS)
 
-etest5b$(EXEEXT): $(etest5b_OBJECTS) $(etest5b_DEPENDENCIES) $(EXTRA_etest5b_DEPENDENCIES) 
+etest5b$(EXEEXT): $(etest5b_OBJECTS) $(etest5b_DEPENDENCIES) $(EXTRA_etest5b_DEPENDENCIES)
 	@rm -f etest5b$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(etest5b_OBJECTS) $(etest5b_LDADD) $(LIBS)
 
-etest6$(EXEEXT): $(etest6_OBJECTS) $(etest6_DEPENDENCIES) $(EXTRA_etest6_DEPENDENCIES) 
+etest6$(EXEEXT): $(etest6_OBJECTS) $(etest6_DEPENDENCIES) $(EXTRA_etest6_DEPENDENCIES)
 	@rm -f etest6$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(etest6_OBJECTS) $(etest6_LDADD) $(LIBS)
 
-etest7$(EXEEXT): $(etest7_OBJECTS) $(etest7_DEPENDENCIES) $(EXTRA_etest7_DEPENDENCIES) 
+etest7$(EXEEXT): $(etest7_OBJECTS) $(etest7_DEPENDENCIES) $(EXTRA_etest7_DEPENDENCIES)
 	@rm -f etest7$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(etest7_OBJECTS) $(etest7_LDADD) $(LIBS)
 
-gesolve$(EXEEXT): $(gesolve_OBJECTS) $(gesolve_DEPENDENCIES) $(EXTRA_gesolve_DEPENDENCIES) 
+gesolve$(EXEEXT): $(gesolve_OBJECTS) $(gesolve_DEPENDENCIES) $(EXTRA_gesolve_DEPENDENCIES)
 	@rm -f gesolve$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(gesolve_OBJECTS) $(gesolve_LDADD) $(LIBS)
 
-gesolver$(EXEEXT): $(gesolver_OBJECTS) $(gesolver_DEPENDENCIES) $(EXTRA_gesolver_DEPENDENCIES) 
+gesolver$(EXEEXT): $(gesolver_OBJECTS) $(gesolver_DEPENDENCIES) $(EXTRA_gesolver_DEPENDENCIES)
 	@rm -f gesolver$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(gesolver_OBJECTS) $(gesolver_LDADD) $(LIBS)
 
-getest1$(EXEEXT): $(getest1_OBJECTS) $(getest1_DEPENDENCIES) $(EXTRA_getest1_DEPENDENCIES) 
+getest1$(EXEEXT): $(getest1_OBJECTS) $(getest1_DEPENDENCIES) $(EXTRA_getest1_DEPENDENCIES)
 	@rm -f getest1$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(getest1_OBJECTS) $(getest1_LDADD) $(LIBS)
 
-getest5$(EXEEXT): $(getest5_OBJECTS) $(getest5_DEPENDENCIES) $(EXTRA_getest5_DEPENDENCIES) 
+getest5$(EXEEXT): $(getest5_OBJECTS) $(getest5_DEPENDENCIES) $(EXTRA_getest5_DEPENDENCIES)
 	@rm -f getest5$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(getest5_OBJECTS) $(getest5_LDADD) $(LIBS)
 
-getest5b$(EXEEXT): $(getest5b_OBJECTS) $(getest5b_DEPENDENCIES) $(EXTRA_getest5b_DEPENDENCIES) 
+getest5b$(EXEEXT): $(getest5b_OBJECTS) $(getest5b_DEPENDENCIES) $(EXTRA_getest5b_DEPENDENCIES)
 	@rm -f getest5b$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(getest5b_OBJECTS) $(getest5b_LDADD) $(LIBS)
 
-getestoperator$(EXEEXT): $(getestoperator_OBJECTS) $(getestoperator_DEPENDENCIES) $(EXTRA_getestoperator_DEPENDENCIES) 
+getestoperator$(EXEEXT): $(getestoperator_OBJECTS) $(getestoperator_DEPENDENCIES) $(EXTRA_getestoperator_DEPENDENCIES)
 	@rm -f getestoperator$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(getestoperator_OBJECTS) $(getestoperator_LDADD) $(LIBS)
 
-getestuser$(EXEEXT): $(getestuser_OBJECTS) $(getestuser_DEPENDENCIES) $(EXTRA_getestuser_DEPENDENCIES) 
+getestuser$(EXEEXT): $(getestuser_OBJECTS) $(getestuser_DEPENDENCIES) $(EXTRA_getestuser_DEPENDENCIES)
 	@rm -f getestuser$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(getestuser_OBJECTS) $(getestuser_LDADD) $(LIBS)
 
-hpcg_kernel$(EXEEXT): $(hpcg_kernel_OBJECTS) $(hpcg_kernel_DEPENDENCIES) $(EXTRA_hpcg_kernel_DEPENDENCIES) 
+hpcg_kernel$(EXEEXT): $(hpcg_kernel_OBJECTS) $(hpcg_kernel_DEPENDENCIES) $(EXTRA_hpcg_kernel_DEPENDENCIES)
 	@rm -f hpcg_kernel$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(hpcg_kernel_OBJECTS) $(hpcg_kernel_LDADD) $(LIBS)
 
-hpcg_spmvtest$(EXEEXT): $(hpcg_spmvtest_OBJECTS) $(hpcg_spmvtest_DEPENDENCIES) $(EXTRA_hpcg_spmvtest_DEPENDENCIES) 
+hpcg_spmvtest$(EXEEXT): $(hpcg_spmvtest_OBJECTS) $(hpcg_spmvtest_DEPENDENCIES) $(EXTRA_hpcg_spmvtest_DEPENDENCIES)
 	@rm -f hpcg_spmvtest$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(hpcg_spmvtest_OBJECTS) $(hpcg_spmvtest_LDADD) $(LIBS)
 
-lsolve$(EXEEXT): $(lsolve_OBJECTS) $(lsolve_DEPENDENCIES) $(EXTRA_lsolve_DEPENDENCIES) 
+lsolve$(EXEEXT): $(lsolve_OBJECTS) $(lsolve_DEPENDENCIES) $(EXTRA_lsolve_DEPENDENCIES)
 	@rm -f lsolve$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(lsolve_OBJECTS) $(lsolve_LDADD) $(LIBS)
 
-spmvtest1$(EXEEXT): $(spmvtest1_OBJECTS) $(spmvtest1_DEPENDENCIES) $(EXTRA_spmvtest1_DEPENDENCIES) 
+spmvtest1$(EXEEXT): $(spmvtest1_OBJECTS) $(spmvtest1_DEPENDENCIES) $(EXTRA_spmvtest1_DEPENDENCIES)
 	@rm -f spmvtest1$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(spmvtest1_OBJECTS) $(spmvtest1_LDADD) $(LIBS)
 
-spmvtest2$(EXEEXT): $(spmvtest2_OBJECTS) $(spmvtest2_DEPENDENCIES) $(EXTRA_spmvtest2_DEPENDENCIES) 
+spmvtest2$(EXEEXT): $(spmvtest2_OBJECTS) $(spmvtest2_DEPENDENCIES) $(EXTRA_spmvtest2_DEPENDENCIES)
 	@rm -f spmvtest2$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(spmvtest2_OBJECTS) $(spmvtest2_LDADD) $(LIBS)
 
-spmvtest2b$(EXEEXT): $(spmvtest2b_OBJECTS) $(spmvtest2b_DEPENDENCIES) $(EXTRA_spmvtest2b_DEPENDENCIES) 
+spmvtest2b$(EXEEXT): $(spmvtest2b_OBJECTS) $(spmvtest2b_DEPENDENCIES) $(EXTRA_spmvtest2b_DEPENDENCIES)
 	@rm -f spmvtest2b$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(spmvtest2b_OBJECTS) $(spmvtest2b_LDADD) $(LIBS)
 
-spmvtest3$(EXEEXT): $(spmvtest3_OBJECTS) $(spmvtest3_DEPENDENCIES) $(EXTRA_spmvtest3_DEPENDENCIES) 
+spmvtest3$(EXEEXT): $(spmvtest3_OBJECTS) $(spmvtest3_DEPENDENCIES) $(EXTRA_spmvtest3_DEPENDENCIES)
 	@rm -f spmvtest3$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(spmvtest3_OBJECTS) $(spmvtest3_LDADD) $(LIBS)
 
-spmvtest3b$(EXEEXT): $(spmvtest3b_OBJECTS) $(spmvtest3b_DEPENDENCIES) $(EXTRA_spmvtest3b_DEPENDENCIES) 
+spmvtest3b$(EXEEXT): $(spmvtest3b_OBJECTS) $(spmvtest3b_DEPENDENCIES) $(EXTRA_spmvtest3b_DEPENDENCIES)
 	@rm -f spmvtest3b$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(spmvtest3b_OBJECTS) $(spmvtest3b_LDADD) $(LIBS)
 
-spmvtest4$(EXEEXT): $(spmvtest4_OBJECTS) $(spmvtest4_DEPENDENCIES) $(EXTRA_spmvtest4_DEPENDENCIES) 
+spmvtest4$(EXEEXT): $(spmvtest4_OBJECTS) $(spmvtest4_DEPENDENCIES) $(EXTRA_spmvtest4_DEPENDENCIES)
 	@rm -f spmvtest4$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(spmvtest4_OBJECTS) $(spmvtest4_LDADD) $(LIBS)
 
-spmvtest5$(EXEEXT): $(spmvtest5_OBJECTS) $(spmvtest5_DEPENDENCIES) $(EXTRA_spmvtest5_DEPENDENCIES) 
+spmvtest5$(EXEEXT): $(spmvtest5_OBJECTS) $(spmvtest5_DEPENDENCIES) $(EXTRA_spmvtest5_DEPENDENCIES)
 	@rm -f spmvtest5$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(spmvtest5_OBJECTS) $(spmvtest5_LDADD) $(LIBS)
 
-test1$(EXEEXT): $(test1_OBJECTS) $(test1_DEPENDENCIES) $(EXTRA_test1_DEPENDENCIES) 
+test1$(EXEEXT): $(test1_OBJECTS) $(test1_DEPENDENCIES) $(EXTRA_test1_DEPENDENCIES)
 	@rm -f test1$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test1_OBJECTS) $(test1_LDADD) $(LIBS)
 
-test1f$(EXEEXT): $(test1f_OBJECTS) $(test1f_DEPENDENCIES) $(EXTRA_test1f_DEPENDENCIES) 
+test1f$(EXEEXT): $(test1f_OBJECTS) $(test1f_DEPENDENCIES) $(EXTRA_test1f_DEPENDENCIES)
 	@rm -f test1f$(EXEEXT)
 	$(AM_V_F77LD)$(F77LINK) $(test1f_OBJECTS) $(test1f_LDADD) $(LIBS)
 
-test2$(EXEEXT): $(test2_OBJECTS) $(test2_DEPENDENCIES) $(EXTRA_test2_DEPENDENCIES) 
+test2$(EXEEXT): $(test2_OBJECTS) $(test2_DEPENDENCIES) $(EXTRA_test2_DEPENDENCIES)
 	@rm -f test2$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test2_OBJECTS) $(test2_LDADD) $(LIBS)
 
-test2b$(EXEEXT): $(test2b_OBJECTS) $(test2b_DEPENDENCIES) $(EXTRA_test2b_DEPENDENCIES) 
+test2b$(EXEEXT): $(test2b_OBJECTS) $(test2b_DEPENDENCIES) $(EXTRA_test2b_DEPENDENCIES)
 	@rm -f test2b$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test2b_OBJECTS) $(test2b_LDADD) $(LIBS)
 
-test2f$(EXEEXT): $(test2f_OBJECTS) $(test2f_DEPENDENCIES) $(EXTRA_test2f_DEPENDENCIES) 
+test2f$(EXEEXT): $(test2f_OBJECTS) $(test2f_DEPENDENCIES) $(EXTRA_test2f_DEPENDENCIES)
 	@rm -f test2f$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(test2f_OBJECTS) $(test2f_LDADD) $(LIBS)
 
-test3$(EXEEXT): $(test3_OBJECTS) $(test3_DEPENDENCIES) $(EXTRA_test3_DEPENDENCIES) 
+test3$(EXEEXT): $(test3_OBJECTS) $(test3_DEPENDENCIES) $(EXTRA_test3_DEPENDENCIES)
 	@rm -f test3$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test3_OBJECTS) $(test3_LDADD) $(LIBS)
 
-test3b$(EXEEXT): $(test3b_OBJECTS) $(test3b_DEPENDENCIES) $(EXTRA_test3b_DEPENDENCIES) 
+test3b$(EXEEXT): $(test3b_OBJECTS) $(test3b_DEPENDENCIES) $(EXTRA_test3b_DEPENDENCIES)
 	@rm -f test3b$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test3b_OBJECTS) $(test3b_LDADD) $(LIBS)
 
-test3c$(EXEEXT): $(test3c_OBJECTS) $(test3c_DEPENDENCIES) $(EXTRA_test3c_DEPENDENCIES) 
+test3c$(EXEEXT): $(test3c_OBJECTS) $(test3c_DEPENDENCIES) $(EXTRA_test3c_DEPENDENCIES)
 	@rm -f test3c$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test3c_OBJECTS) $(test3c_LDADD) $(LIBS)
 
-test4$(EXEEXT): $(test4_OBJECTS) $(test4_DEPENDENCIES) $(EXTRA_test4_DEPENDENCIES) 
+test4$(EXEEXT): $(test4_OBJECTS) $(test4_DEPENDENCIES) $(EXTRA_test4_DEPENDENCIES)
 	@rm -f test4$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test4_OBJECTS) $(test4_LDADD) $(LIBS)
 
-test4f$(EXEEXT): $(test4f_OBJECTS) $(test4f_DEPENDENCIES) $(EXTRA_test4f_DEPENDENCIES) 
+test4f$(EXEEXT): $(test4f_OBJECTS) $(test4f_DEPENDENCIES) $(EXTRA_test4f_DEPENDENCIES)
 	@rm -f test4f$(EXEEXT)
 	$(AM_V_F77LD)$(F77LINK) $(test4f_OBJECTS) $(test4f_LDADD) $(LIBS)
 
-test5$(EXEEXT): $(test5_OBJECTS) $(test5_DEPENDENCIES) $(EXTRA_test5_DEPENDENCIES) 
+test5$(EXEEXT): $(test5_OBJECTS) $(test5_DEPENDENCIES) $(EXTRA_test5_DEPENDENCIES)
 	@rm -f test5$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test5_OBJECTS) $(test5_LDADD) $(LIBS)
 
-test6$(EXEEXT): $(test6_OBJECTS) $(test6_DEPENDENCIES) $(EXTRA_test6_DEPENDENCIES) 
+test6$(EXEEXT): $(test6_OBJECTS) $(test6_DEPENDENCIES) $(EXTRA_test6_DEPENDENCIES)
 	@rm -f test6$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test6_OBJECTS) $(test6_LDADD) $(LIBS)
 
-test6f$(EXEEXT): $(test6f_OBJECTS) $(test6f_DEPENDENCIES) $(EXTRA_test6f_DEPENDENCIES) 
+test6f$(EXEEXT): $(test6f_OBJECTS) $(test6f_DEPENDENCIES) $(EXTRA_test6f_DEPENDENCIES)
 	@rm -f test6f$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(test6f_OBJECTS) $(test6f_LDADD) $(LIBS)
 
-test7$(EXEEXT): $(test7_OBJECTS) $(test7_DEPENDENCIES) $(EXTRA_test7_DEPENDENCIES) 
+test7$(EXEEXT): $(test7_OBJECTS) $(test7_DEPENDENCIES) $(EXTRA_test7_DEPENDENCIES)
 	@rm -f test7$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test7_OBJECTS) $(test7_LDADD) $(LIBS)
 
-test7f$(EXEEXT): $(test7f_OBJECTS) $(test7f_DEPENDENCIES) $(EXTRA_test7f_DEPENDENCIES) 
+test7f$(EXEEXT): $(test7f_OBJECTS) $(test7f_DEPENDENCIES) $(EXTRA_test7f_DEPENDENCIES)
 	@rm -f test7f$(EXEEXT)
 	$(AM_V_F77LD)$(F77LINK) $(test7f_OBJECTS) $(test7f_LDADD) $(LIBS)
 
-test8f$(EXEEXT): $(test8f_OBJECTS) $(test8f_DEPENDENCIES) $(EXTRA_test8f_DEPENDENCIES) 
+test8f$(EXEEXT): $(test8f_OBJECTS) $(test8f_DEPENDENCIES) $(EXTRA_test8f_DEPENDENCIES)
 	@rm -f test8f$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(test8f_OBJECTS) $(test8f_LDADD) $(LIBS)
 
-testbreakretry$(EXEEXT): $(testbreakretry_OBJECTS) $(testbreakretry_DEPENDENCIES) $(EXTRA_testbreakretry_DEPENDENCIES) 
+testbreakretry$(EXEEXT): $(testbreakretry_OBJECTS) $(testbreakretry_DEPENDENCIES) $(EXTRA_testbreakretry_DEPENDENCIES)
 	@rm -f testbreakretry$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testbreakretry_OBJECTS) $(testbreakretry_LDADD) $(LIBS)
 
-testcapabilities$(EXEEXT): $(testcapabilities_OBJECTS) $(testcapabilities_DEPENDENCIES) $(EXTRA_testcapabilities_DEPENDENCIES) 
+testcapabilities$(EXEEXT): $(testcapabilities_OBJECTS) $(testcapabilities_DEPENDENCIES) $(EXTRA_testcapabilities_DEPENDENCIES)
 	@rm -f testcapabilities$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testcapabilities_OBJECTS) $(testcapabilities_LDADD) $(LIBS)
 
-testchangingsystem$(EXEEXT): $(testchangingsystem_OBJECTS) $(testchangingsystem_DEPENDENCIES) $(EXTRA_testchangingsystem_DEPENDENCIES) 
+testchangingsystem$(EXEEXT): $(testchangingsystem_OBJECTS) $(testchangingsystem_DEPENDENCIES) $(EXTRA_testchangingsystem_DEPENDENCIES)
 	@rm -f testchangingsystem$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testchangingsystem_OBJECTS) $(testchangingsystem_LDADD) $(LIBS)
 
-testcoarseapply$(EXEEXT): $(testcoarseapply_OBJECTS) $(testcoarseapply_DEPENDENCIES) $(EXTRA_testcoarseapply_DEPENDENCIES) 
+testcoarseapply$(EXEEXT): $(testcoarseapply_OBJECTS) $(testcoarseapply_DEPENDENCIES) $(EXTRA_testcoarseapply_DEPENDENCIES)
 	@rm -f testcoarseapply$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testcoarseapply_OBJECTS) $(testcoarseapply_LDADD) $(LIBS)
 
-testcoarsesetup$(EXEEXT): $(testcoarsesetup_OBJECTS) $(testcoarsesetup_DEPENDENCIES) $(EXTRA_testcoarsesetup_DEPENDENCIES) 
+testcoarsesetup$(EXEEXT): $(testcoarsesetup_OBJECTS) $(testcoarsesetup_DEPENDENCIES) $(EXTRA_testcoarsesetup_DEPENDENCIES)
 	@rm -f testcoarsesetup$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testcoarsesetup_OBJECTS) $(testcoarsesetup_LDADD) $(LIBS)
 
-testdiagonal$(EXEEXT): $(testdiagonal_OBJECTS) $(testdiagonal_DEPENDENCIES) $(EXTRA_testdiagonal_DEPENDENCIES) 
+testdiagonal$(EXEEXT): $(testdiagonal_OBJECTS) $(testdiagonal_DEPENDENCIES) $(EXTRA_testdiagonal_DEPENDENCIES)
 	@rm -f testdiagonal$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testdiagonal_OBJECTS) $(testdiagonal_LDADD) $(LIBS)
 
-testeigenbreakdown$(EXEEXT): $(testeigenbreakdown_OBJECTS) $(testeigenbreakdown_DEPENDENCIES) $(EXTRA_testeigenbreakdown_DEPENDENCIES) 
+testeigenbreakdown$(EXEEXT): $(testeigenbreakdown_OBJECTS) $(testeigenbreakdown_DEPENDENCIES) $(EXTRA_testeigenbreakdown_DEPENDENCIES)
 	@rm -f testeigenbreakdown$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testeigenbreakdown_OBJECTS) $(testeigenbreakdown_LDADD) $(LIBS)
 
-testexactnullspace$(EXEEXT): $(testexactnullspace_OBJECTS) $(testexactnullspace_DEPENDENCIES) $(EXTRA_testexactnullspace_DEPENDENCIES) 
+testexactnullspace$(EXEEXT): $(testexactnullspace_OBJECTS) $(testexactnullspace_DEPENDENCIES) $(EXTRA_testexactnullspace_DEPENDENCIES)
 	@rm -f testexactnullspace$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testexactnullspace_OBJECTS) $(testexactnullspace_LDADD) $(LIBS)
 
-testexternalstorage$(EXEEXT): $(testexternalstorage_OBJECTS) $(testexternalstorage_DEPENDENCIES) $(EXTRA_testexternalstorage_DEPENDENCIES) 
+testexternalstorage$(EXEEXT): $(testexternalstorage_OBJECTS) $(testexternalstorage_DEPENDENCIES) $(EXTRA_testexternalstorage_DEPENDENCIES)
 	@rm -f testexternalstorage$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testexternalstorage_OBJECTS) $(testexternalstorage_LDADD) $(LIBS)
+
+testfeastcontour$(EXEEXT): $(testfeastcontour_OBJECTS) $(testfeastcontour_DEPENDENCIES) $(EXTRA_testfeastcontour_DEPENDENCIES)
+	@rm -f testfeastcontour$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testfeastcontour_OBJECTS) $(testfeastcontour_LDADD) $(LIBS)
 
 testfeastfoundation$(EXEEXT): $(testfeastfoundation_OBJECTS) $(testfeastfoundation_DEPENDENCIES) $(EXTRA_testfeastfoundation_DEPENDENCIES)
 	@rm -f testfeastfoundation$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testfeastfoundation_OBJECTS) $(testfeastfoundation_LDADD) $(LIBS)
 
-testfgcrodr$(EXEEXT): $(testfgcrodr_OBJECTS) $(testfgcrodr_DEPENDENCIES) $(EXTRA_testfgcrodr_DEPENDENCIES) 
+testfgcrodr$(EXEEXT): $(testfgcrodr_OBJECTS) $(testfgcrodr_DEPENDENCIES) $(EXTRA_testfgcrodr_DEPENDENCIES)
 	@rm -f testfgcrodr$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testfgcrodr_OBJECTS) $(testfgcrodr_LDADD) $(LIBS)
 
-testgcrodrconfig$(EXEEXT): $(testgcrodrconfig_OBJECTS) $(testgcrodrconfig_DEPENDENCIES) $(EXTRA_testgcrodrconfig_DEPENDENCIES) 
+testgcrodrconfig$(EXEEXT): $(testgcrodrconfig_OBJECTS) $(testgcrodrconfig_DEPENDENCIES) $(EXTRA_testgcrodrconfig_DEPENDENCIES)
 	@rm -f testgcrodrconfig$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testgcrodrconfig_OBJECTS) $(testgcrodrconfig_LDADD) $(LIBS)
 
-testgcrodroptions$(EXEEXT): $(testgcrodroptions_OBJECTS) $(testgcrodroptions_DEPENDENCIES) $(EXTRA_testgcrodroptions_DEPENDENCIES) 
+testgcrodroptions$(EXEEXT): $(testgcrodroptions_OBJECTS) $(testgcrodroptions_DEPENDENCIES) $(EXTRA_testgcrodroptions_DEPENDENCIES)
 	@rm -f testgcrodroptions$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testgcrodroptions_OBJECTS) $(testgcrodroptions_LDADD) $(LIBS)
 
-testgcrodrsequence$(EXEEXT): $(testgcrodrsequence_OBJECTS) $(testgcrodrsequence_DEPENDENCIES) $(EXTRA_testgcrodrsequence_DEPENDENCIES) 
+testgcrodrsequence$(EXEEXT): $(testgcrodrsequence_OBJECTS) $(testgcrodrsequence_DEPENDENCIES) $(EXTRA_testgcrodrsequence_DEPENDENCIES)
 	@rm -f testgcrodrsequence$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testgcrodrsequence_OBJECTS) $(testgcrodrsequence_LDADD) $(LIBS)
 
-testgmreswork$(EXEEXT): $(testgmreswork_OBJECTS) $(testgmreswork_DEPENDENCIES) $(EXTRA_testgmreswork_DEPENDENCIES) 
+testgmreswork$(EXEEXT): $(testgmreswork_OBJECTS) $(testgmreswork_DEPENDENCIES) $(EXTRA_testgmreswork_DEPENDENCIES)
 	@rm -f testgmreswork$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testgmreswork_OBJECTS) $(testgmreswork_LDADD) $(LIBS)
 
-testhalfconfig$(EXEEXT): $(testhalfconfig_OBJECTS) $(testhalfconfig_DEPENDENCIES) $(EXTRA_testhalfconfig_DEPENDENCIES) 
+testhalfconfig$(EXEEXT): $(testhalfconfig_OBJECTS) $(testhalfconfig_DEPENDENCIES) $(EXTRA_testhalfconfig_DEPENDENCIES)
 	@rm -f testhalfconfig$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testhalfconfig_OBJECTS) $(testhalfconfig_LDADD) $(LIBS)
 
-testhalfconvert$(EXEEXT): $(testhalfconvert_OBJECTS) $(testhalfconvert_DEPENDENCIES) $(EXTRA_testhalfconvert_DEPENDENCIES) 
+testhalfconvert$(EXEEXT): $(testhalfconvert_OBJECTS) $(testhalfconvert_DEPENDENCIES) $(EXTRA_testhalfconvert_DEPENDENCIES)
 	@rm -f testhalfconvert$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testhalfconvert_OBJECTS) $(testhalfconvert_LDADD) $(LIBS)
 
-testhalfdispatch$(EXEEXT): $(testhalfdispatch_OBJECTS) $(testhalfdispatch_DEPENDENCIES) $(EXTRA_testhalfdispatch_DEPENDENCIES) 
+testhalfdispatch$(EXEEXT): $(testhalfdispatch_OBJECTS) $(testhalfdispatch_DEPENDENCIES) $(EXTRA_testhalfdispatch_DEPENDENCIES)
 	@rm -f testhalfdispatch$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testhalfdispatch_OBJECTS) $(testhalfdispatch_LDADD) $(LIBS)
 
-testhalfilukmemory$(EXEEXT): $(testhalfilukmemory_OBJECTS) $(testhalfilukmemory_DEPENDENCIES) $(EXTRA_testhalfilukmemory_DEPENDENCIES) 
+testhalfilukmemory$(EXEEXT): $(testhalfilukmemory_OBJECTS) $(testhalfilukmemory_DEPENDENCIES) $(EXTRA_testhalfilukmemory_DEPENDENCIES)
 	@rm -f testhalfilukmemory$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testhalfilukmemory_OBJECTS) $(testhalfilukmemory_LDADD) $(LIBS)
 
-testhalfiluksimd$(EXEEXT): $(testhalfiluksimd_OBJECTS) $(testhalfiluksimd_DEPENDENCIES) $(EXTRA_testhalfiluksimd_DEPENDENCIES) 
+testhalfiluksimd$(EXEEXT): $(testhalfiluksimd_OBJECTS) $(testhalfiluksimd_DEPENDENCIES) $(EXTRA_testhalfiluksimd_DEPENDENCIES)
 	@rm -f testhalfiluksimd$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testhalfiluksimd_OBJECTS) $(testhalfiluksimd_LDADD) $(LIBS)
 
-testhalfilut$(EXEEXT): $(testhalfilut_OBJECTS) $(testhalfilut_DEPENDENCIES) $(EXTRA_testhalfilut_DEPENDENCIES) 
+testhalfilut$(EXEEXT): $(testhalfilut_OBJECTS) $(testhalfilut_DEPENDENCIES) $(EXTRA_testhalfilut_DEPENDENCIES)
 	@rm -f testhalfilut$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testhalfilut_OBJECTS) $(testhalfilut_LDADD) $(LIBS)
 
-testhalfprobe$(EXEEXT): $(testhalfprobe_OBJECTS) $(testhalfprobe_DEPENDENCIES) $(EXTRA_testhalfprobe_DEPENDENCIES) 
+testhalfprobe$(EXEEXT): $(testhalfprobe_OBJECTS) $(testhalfprobe_DEPENDENCIES) $(EXTRA_testhalfprobe_DEPENDENCIES)
 	@rm -f testhalfprobe$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testhalfprobe_OBJECTS) $(testhalfprobe_LDADD) $(LIBS)
 
-testhalfstorage$(EXEEXT): $(testhalfstorage_OBJECTS) $(testhalfstorage_DEPENDENCIES) $(EXTRA_testhalfstorage_DEPENDENCIES) 
+testhalfstorage$(EXEEXT): $(testhalfstorage_OBJECTS) $(testhalfstorage_DEPENDENCIES) $(EXTRA_testhalfstorage_DEPENDENCIES)
 	@rm -f testhalfstorage$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testhalfstorage_OBJECTS) $(testhalfstorage_LDADD) $(LIBS)
 
-testilupivot$(EXEEXT): $(testilupivot_OBJECTS) $(testilupivot_DEPENDENCIES) $(EXTRA_testilupivot_DEPENDENCIES) 
+testilupivot$(EXEEXT): $(testilupivot_OBJECTS) $(testilupivot_DEPENDENCIES) $(EXTRA_testilupivot_DEPENDENCIES)
 	@rm -f testilupivot$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testilupivot_OBJECTS) $(testilupivot_LDADD) $(LIBS)
 
-testjacobiuser$(EXEEXT): $(testjacobiuser_OBJECTS) $(testjacobiuser_DEPENDENCIES) $(EXTRA_testjacobiuser_DEPENDENCIES) 
+testjacobiuser$(EXEEXT): $(testjacobiuser_OBJECTS) $(testjacobiuser_DEPENDENCIES) $(EXTRA_testjacobiuser_DEPENDENCIES)
 	@rm -f testjacobiuser$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testjacobiuser_OBJECTS) $(testjacobiuser_LDADD) $(LIBS)
 
-testkrylovrobust$(EXEEXT): $(testkrylovrobust_OBJECTS) $(testkrylovrobust_DEPENDENCIES) $(EXTRA_testkrylovrobust_DEPENDENCIES) 
+testkrylovrobust$(EXEEXT): $(testkrylovrobust_OBJECTS) $(testkrylovrobust_DEPENDENCIES) $(EXTRA_testkrylovrobust_DEPENDENCIES)
 	@rm -f testkrylovrobust$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testkrylovrobust_OBJECTS) $(testkrylovrobust_LDADD) $(LIBS)
 
-testmatrixgeneration$(EXEEXT): $(testmatrixgeneration_OBJECTS) $(testmatrixgeneration_DEPENDENCIES) $(EXTRA_testmatrixgeneration_DEPENDENCIES) 
+testmatrixgeneration$(EXEEXT): $(testmatrixgeneration_OBJECTS) $(testmatrixgeneration_DEPENDENCIES) $(EXTRA_testmatrixgeneration_DEPENDENCIES)
 	@rm -f testmatrixgeneration$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmatrixgeneration_OBJECTS) $(testmatrixgeneration_LDADD) $(LIBS)
 
-testmatvecblock$(EXEEXT): $(testmatvecblock_OBJECTS) $(testmatvecblock_DEPENDENCIES) $(EXTRA_testmatvecblock_DEPENDENCIES) 
+testmatvecblock$(EXEEXT): $(testmatvecblock_OBJECTS) $(testmatvecblock_DEPENDENCIES) $(EXTRA_testmatvecblock_DEPENDENCIES)
 	@rm -f testmatvecblock$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmatvecblock_OBJECTS) $(testmatvecblock_LDADD) $(LIBS)
 
-testmfamg$(EXEEXT): $(testmfamg_OBJECTS) $(testmfamg_DEPENDENCIES) $(EXTRA_testmfamg_DEPENDENCIES) 
+testmfamg$(EXEEXT): $(testmfamg_OBJECTS) $(testmfamg_DEPENDENCIES) $(EXTRA_testmfamg_DEPENDENCIES)
 	@rm -f testmfamg$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmfamg_OBJECTS) $(testmfamg_LDADD) $(LIBS)
 
-testmfamggalerkin$(EXEEXT): $(testmfamggalerkin_OBJECTS) $(testmfamggalerkin_DEPENDENCIES) $(EXTRA_testmfamggalerkin_DEPENDENCIES) 
+testmfamggalerkin$(EXEEXT): $(testmfamggalerkin_OBJECTS) $(testmfamggalerkin_DEPENDENCIES) $(EXTRA_testmfamggalerkin_DEPENDENCIES)
 	@rm -f testmfamggalerkin$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmfamggalerkin_OBJECTS) $(testmfamggalerkin_LDADD) $(LIBS)
 
-testnearnullspace$(EXEEXT): $(testnearnullspace_OBJECTS) $(testnearnullspace_DEPENDENCIES) $(EXTRA_testnearnullspace_DEPENDENCIES) 
+testnearnullspace$(EXEEXT): $(testnearnullspace_OBJECTS) $(testnearnullspace_DEPENDENCIES) $(EXTRA_testnearnullspace_DEPENDENCIES)
 	@rm -f testnearnullspace$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testnearnullspace_OBJECTS) $(testnearnullspace_LDADD) $(LIBS)
 
-testoperator$(EXEEXT): $(testoperator_OBJECTS) $(testoperator_DEPENDENCIES) $(EXTRA_testoperator_DEPENDENCIES) 
+testoperator$(EXEEXT): $(testoperator_OBJECTS) $(testoperator_DEPENDENCIES) $(EXTRA_testoperator_DEPENDENCIES)
 	@rm -f testoperator$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testoperator_OBJECTS) $(testoperator_LDADD) $(LIBS)
 
-testparamupdate$(EXEEXT): $(testparamupdate_OBJECTS) $(testparamupdate_DEPENDENCIES) $(EXTRA_testparamupdate_DEPENDENCIES) 
+testparamupdate$(EXEEXT): $(testparamupdate_OBJECTS) $(testparamupdate_DEPENDENCIES) $(EXTRA_testparamupdate_DEPENDENCIES)
 	@rm -f testparamupdate$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testparamupdate_OBJECTS) $(testparamupdate_LDADD) $(LIBS)
 
-testprebuiltuser$(EXEEXT): $(testprebuiltuser_OBJECTS) $(testprebuiltuser_DEPENDENCIES) $(EXTRA_testprebuiltuser_DEPENDENCIES) 
+testprebuiltuser$(EXEEXT): $(testprebuiltuser_OBJECTS) $(testprebuiltuser_DEPENDENCIES) $(EXTRA_testprebuiltuser_DEPENDENCIES)
 	@rm -f testprebuiltuser$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testprebuiltuser_OBJECTS) $(testprebuiltuser_LDADD) $(LIBS)
 
-testpreconlifecycle$(EXEEXT): $(testpreconlifecycle_OBJECTS) $(testpreconlifecycle_DEPENDENCIES) $(EXTRA_testpreconlifecycle_DEPENDENCIES) 
+testpreconlifecycle$(EXEEXT): $(testpreconlifecycle_OBJECTS) $(testpreconlifecycle_DEPENDENCIES) $(EXTRA_testpreconlifecycle_DEPENDENCIES)
 	@rm -f testpreconlifecycle$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testpreconlifecycle_OBJECTS) $(testpreconlifecycle_LDADD) $(LIBS)
 
-testpreconpolicy$(EXEEXT): $(testpreconpolicy_OBJECTS) $(testpreconpolicy_DEPENDENCIES) $(EXTRA_testpreconpolicy_DEPENDENCIES) 
+testpreconpolicy$(EXEEXT): $(testpreconpolicy_OBJECTS) $(testpreconpolicy_DEPENDENCIES) $(EXTRA_testpreconpolicy_DEPENDENCIES)
 	@rm -f testpreconpolicy$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testpreconpolicy_OBJECTS) $(testpreconpolicy_LDADD) $(LIBS)
 
-testpreconpsd$(EXEEXT): $(testpreconpsd_OBJECTS) $(testpreconpsd_DEPENDENCIES) $(EXTRA_testpreconpsd_DEPENDENCIES) 
+testpreconpsd$(EXEEXT): $(testpreconpsd_OBJECTS) $(testpreconpsd_DEPENDENCIES) $(EXTRA_testpreconpsd_DEPENDENCIES)
 	@rm -f testpreconpsd$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testpreconpsd_OBJECTS) $(testpreconpsd_LDADD) $(LIBS)
 
-testpreconreuse$(EXEEXT): $(testpreconreuse_OBJECTS) $(testpreconreuse_DEPENDENCIES) $(EXTRA_testpreconreuse_DEPENDENCIES) 
+testpreconreuse$(EXEEXT): $(testpreconreuse_OBJECTS) $(testpreconreuse_DEPENDENCIES) $(EXTRA_testpreconreuse_DEPENDENCIES)
 	@rm -f testpreconreuse$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testpreconreuse_OBJECTS) $(testpreconreuse_LDADD) $(LIBS)
 
-testrecovery$(EXEEXT): $(testrecovery_OBJECTS) $(testrecovery_DEPENDENCIES) $(EXTRA_testrecovery_DEPENDENCIES) 
+testrecovery$(EXEEXT): $(testrecovery_OBJECTS) $(testrecovery_DEPENDENCIES) $(EXTRA_testrecovery_DEPENDENCIES)
 	@rm -f testrecovery$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testrecovery_OBJECTS) $(testrecovery_LDADD) $(LIBS)
 
-testrepeatedsystems$(EXEEXT): $(testrepeatedsystems_OBJECTS) $(testrepeatedsystems_DEPENDENCIES) $(EXTRA_testrepeatedsystems_DEPENDENCIES) 
+testrepeatedsystems$(EXEEXT): $(testrepeatedsystems_OBJECTS) $(testrepeatedsystems_DEPENDENCIES) $(EXTRA_testrepeatedsystems_DEPENDENCIES)
 	@rm -f testrepeatedsystems$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testrepeatedsystems_OBJECTS) $(testrepeatedsystems_LDADD) $(LIBS)
 
-testrhistoryerror$(EXEEXT): $(testrhistoryerror_OBJECTS) $(testrhistoryerror_DEPENDENCIES) $(EXTRA_testrhistoryerror_DEPENDENCIES) 
+testrhistoryerror$(EXEEXT): $(testrhistoryerror_OBJECTS) $(testrhistoryerror_DEPENDENCIES) $(EXTRA_testrhistoryerror_DEPENDENCIES)
 	@rm -f testrhistoryerror$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testrhistoryerror_OBJECTS) $(testrhistoryerror_LDADD) $(LIBS)
 
-testrqirestore$(EXEEXT): $(testrqirestore_OBJECTS) $(testrqirestore_DEPENDENCIES) $(EXTRA_testrqirestore_DEPENDENCIES) 
+testrqirestore$(EXEEXT): $(testrqirestore_OBJECTS) $(testrqirestore_DEPENDENCIES) $(EXTRA_testrqirestore_DEPENDENCIES)
 	@rm -f testrqirestore$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testrqirestore_OBJECTS) $(testrqirestore_LDADD) $(LIBS)
 
-testsequence$(EXEEXT): $(testsequence_OBJECTS) $(testsequence_DEPENDENCIES) $(EXTRA_testsequence_DEPENDENCIES) 
+testsequence$(EXEEXT): $(testsequence_OBJECTS) $(testsequence_DEPENDENCIES) $(EXTRA_testsequence_DEPENDENCIES)
 	@rm -f testsequence$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testsequence_OBJECTS) $(testsequence_LDADD) $(LIBS)
 
-testshellscale$(EXEEXT): $(testshellscale_OBJECTS) $(testshellscale_DEPENDENCIES) $(EXTRA_testshellscale_DEPENDENCIES) 
+testshellscale$(EXEEXT): $(testshellscale_OBJECTS) $(testshellscale_DEPENDENCIES) $(EXTRA_testshellscale_DEPENDENCIES)
 	@rm -f testshellscale$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testshellscale_OBJECTS) $(testshellscale_LDADD) $(LIBS)
 
-testsolvercallbackcert$(EXEEXT): $(testsolvercallbackcert_OBJECTS) $(testsolvercallbackcert_DEPENDENCIES) $(EXTRA_testsolvercallbackcert_DEPENDENCIES) 
+testsolvercallbackcert$(EXEEXT): $(testsolvercallbackcert_OBJECTS) $(testsolvercallbackcert_DEPENDENCIES) $(EXTRA_testsolvercallbackcert_DEPENDENCIES)
 	@rm -f testsolvercallbackcert$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testsolvercallbackcert_OBJECTS) $(testsolvercallbackcert_LDADD) $(LIBS)
 
-testsolvercallbackpaths$(EXEEXT): $(testsolvercallbackpaths_OBJECTS) $(testsolvercallbackpaths_DEPENDENCIES) $(EXTRA_testsolvercallbackpaths_DEPENDENCIES) 
+testsolvercallbackpaths$(EXEEXT): $(testsolvercallbackpaths_OBJECTS) $(testsolvercallbackpaths_DEPENDENCIES) $(EXTRA_testsolvercallbackpaths_DEPENDENCIES)
 	@rm -f testsolvercallbackpaths$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testsolvercallbackpaths_OBJECTS) $(testsolvercallbackpaths_LDADD) $(LIBS)
 
-testsolvermonitor$(EXEEXT): $(testsolvermonitor_OBJECTS) $(testsolvermonitor_DEPENDENCIES) $(EXTRA_testsolvermonitor_DEPENDENCIES) 
+testsolvermonitor$(EXEEXT): $(testsolvermonitor_OBJECTS) $(testsolvermonitor_DEPENDENCIES) $(EXTRA_testsolvermonitor_DEPENDENCIES)
 	@rm -f testsolvermonitor$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testsolvermonitor_OBJECTS) $(testsolvermonitor_LDADD) $(LIBS)
 
-testsymmdiagguard$(EXEEXT): $(testsymmdiagguard_OBJECTS) $(testsymmdiagguard_DEPENDENCIES) $(EXTRA_testsymmdiagguard_DEPENDENCIES) 
+testsymmdiagguard$(EXEEXT): $(testsymmdiagguard_OBJECTS) $(testsymmdiagguard_DEPENDENCIES) $(EXTRA_testsymmdiagguard_DEPENDENCIES)
 	@rm -f testsymmdiagguard$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testsymmdiagguard_OBJECTS) $(testsymmdiagguard_LDADD) $(LIBS)
 
-testthreads$(EXEEXT): $(testthreads_OBJECTS) $(testthreads_DEPENDENCIES) $(EXTRA_testthreads_DEPENDENCIES) 
+testthreads$(EXEEXT): $(testthreads_OBJECTS) $(testthreads_DEPENDENCIES) $(EXTRA_testthreads_DEPENDENCIES)
 	@rm -f testthreads$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testthreads_OBJECTS) $(testthreads_LDADD) $(LIBS)
 
-testuser$(EXEEXT): $(testuser_OBJECTS) $(testuser_DEPENDENCIES) $(EXTRA_testuser_DEPENDENCIES) 
+testuser$(EXEEXT): $(testuser_OBJECTS) $(testuser_DEPENDENCIES) $(EXTRA_testuser_DEPENDENCIES)
 	@rm -f testuser$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testuser_OBJECTS) $(testuser_LDADD) $(LIBS)
 
-testuserprecon$(EXEEXT): $(testuserprecon_OBJECTS) $(testuserprecon_DEPENDENCIES) $(EXTRA_testuserprecon_DEPENDENCIES) 
+testuserprecon$(EXEEXT): $(testuserprecon_OBJECTS) $(testuserprecon_DEPENDENCIES) $(EXTRA_testuserprecon_DEPENDENCIES)
 	@rm -f testuserprecon$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testuserprecon_OBJECTS) $(testuserprecon_LDADD) $(LIBS)
 
-testuserrow$(EXEEXT): $(testuserrow_OBJECTS) $(testuserrow_DEPENDENCIES) $(EXTRA_testuserrow_DEPENDENCIES) 
+testuserrow$(EXEEXT): $(testuserrow_OBJECTS) $(testuserrow_DEPENDENCIES) $(EXTRA_testuserrow_DEPENDENCIES)
 	@rm -f testuserrow$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testuserrow_OBJECTS) $(testuserrow_LDADD) $(LIBS)
 
-testwarmstart$(EXEEXT): $(testwarmstart_OBJECTS) $(testwarmstart_DEPENDENCIES) $(EXTRA_testwarmstart_DEPENDENCIES) 
+testwarmstart$(EXEEXT): $(testwarmstart_OBJECTS) $(testwarmstart_DEPENDENCIES) $(EXTRA_testwarmstart_DEPENDENCIES)
 	@rm -f testwarmstart$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testwarmstart_OBJECTS) $(testwarmstart_LDADD) $(LIBS)
 
-testworkcompat$(EXEEXT): $(testworkcompat_OBJECTS) $(testworkcompat_DEPENDENCIES) $(EXTRA_testworkcompat_DEPENDENCIES) 
+testworkcompat$(EXEEXT): $(testworkcompat_OBJECTS) $(testworkcompat_DEPENDENCIES) $(EXTRA_testworkcompat_DEPENDENCIES)
 	@rm -f testworkcompat$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testworkcompat_OBJECTS) $(testworkcompat_LDADD) $(LIBS)
 
-testworkreuse$(EXEEXT): $(testworkreuse_OBJECTS) $(testworkreuse_DEPENDENCIES) $(EXTRA_testworkreuse_DEPENDENCIES) 
+testworkreuse$(EXEEXT): $(testworkreuse_OBJECTS) $(testworkreuse_DEPENDENCIES) $(EXTRA_testworkreuse_DEPENDENCIES)
 	@rm -f testworkreuse$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testworkreuse_OBJECTS) $(testworkreuse_LDADD) $(LIBS)
 install-testSCRIPTS: $(test_SCRIPTS)
@@ -1946,6 +1959,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testeigenbreakdown.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testexactnullspace.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testexternalstorage.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfeastcontour.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfeastfoundation.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodr.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testgcrodrconfig.Po@am__quote@ # am--include-marker
@@ -2265,7 +2279,7 @@ echo "information.  Thanks.";                                                \
 	fi;								\
 	$$success || exit 1
 
-check-TESTS: 
+check-TESTS:
 	@$(am__rm_f) $(RECHECK_LOGS)
 	@$(am__rm_f) $(RECHECK_LOGS:.log=.trs)
 	@$(am__rm_f) $(TEST_SUITE_LOG)
@@ -2274,7 +2288,7 @@ check-TESTS:
 	log_list=`echo $$log_list`; \
 	$(MAKE) $(AM_MAKEFLAGS) $(TEST_SUITE_LOG) TEST_LOGS="$$log_list"; \
 	exit $$?;
-recheck: all 
+recheck: all
 	@$(am__rm_f) $(TEST_SUITE_LOG)
 	@set +e; $(am__set_TESTS_bases); \
 	bases=`for i in $$bases; do echo $$i; done \
@@ -2782,6 +2796,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testeigenbreakdown.Po
 	-rm -f ./$(DEPDIR)/testexactnullspace.Po
 	-rm -f ./$(DEPDIR)/testexternalstorage.Po
+	-rm -f ./$(DEPDIR)/testfeastcontour.Po
 	-rm -f ./$(DEPDIR)/testfeastfoundation.Po
 	-rm -f ./$(DEPDIR)/testfgcrodr.Po
 	-rm -f ./$(DEPDIR)/testgcrodrconfig.Po
@@ -2913,6 +2928,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testeigenbreakdown.Po
 	-rm -f ./$(DEPDIR)/testexactnullspace.Po
 	-rm -f ./$(DEPDIR)/testexternalstorage.Po
+	-rm -f ./$(DEPDIR)/testfeastcontour.Po
 	-rm -f ./$(DEPDIR)/testfeastfoundation.Po
 	-rm -f ./$(DEPDIR)/testfgcrodr.Po
 	-rm -f ./$(DEPDIR)/testgcrodrconfig.Po
@@ -3001,7 +3017,7 @@ uninstall-am: uninstall-binPROGRAMS uninstall-testDATA \
 .PRECIOUS: Makefile
 
 
-installcheck: 
+installcheck:
 	@if test ! -f $(testdir)/test.sh; then \
 	    echo '=== Test programs not installed'; \
 	    exit; \

@@ -1102,6 +1102,7 @@ struct LIS_ESOLVER_STRUCT
          */
         LIS_REAL feast_emin;
         LIS_REAL feast_emax;
+        LIS_REAL feast_ratio;
         LIS_INT feast_points;
         LIS_INT feast_interval_mask;
 };

@@ -208,6 +208,21 @@ extern LIS_INT lis_esolver_is_valid_norm(
 		char *arg2,
 		LIS_ESOLVER esolver);
 
+	extern LIS_INT lis_efeast_gauss_legendre(
+		LIS_INT n,
+		LIS_REAL *x,
+		LIS_REAL *w);
+
+	extern LIS_INT lis_efeast_contour_gauss(
+		LIS_REAL emin,
+		LIS_REAL emax,
+		LIS_INT n,
+		LIS_REAL ratio,
+		LIS_REAL *z_real,
+		LIS_REAL *z_imag,
+		LIS_REAL *w_real,
+		LIS_REAL *w_imag);
+
 #ifdef __cplusplus
 }
 #endif

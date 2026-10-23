@@ -214,6 +214,7 @@ LIS_INT lis_esolver_init(LIS_ESOLVER esolver)
 
         esolver->feast_emin          = 0.0;
         esolver->feast_emax          = 0.0;
+        esolver->feast_ratio         = 0.30;
         esolver->feast_points        = 8;
         esolver->feast_interval_mask = 0;
 

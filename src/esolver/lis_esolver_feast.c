@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <float.h>
 
 #include "lislib.h"
 
@@ -52,6 +53,287 @@
 
 #define LIS_FEAST_INTERVAL_EMIN 0x01
 #define LIS_FEAST_INTERVAL_EMAX 0x02
+
+#define LIS_FEAST_PI \
+        ((LIS_REAL)3.141592653589793238462643383279502884)
+
+
+/*
+ * Compute the n-point Gauss-Legendre rule on [-1,1].
+ *
+ * The implementation uses Newton refinement of the Legendre roots
+ * and does not depend on a table of precomputed quadrature nodes.
+ */
+#undef __FUNC__
+#define __FUNC__ "lis_efeast_gauss_legendre"
+
+LIS_INT lis_efeast_gauss_legendre(
+        LIS_INT n,
+        LIS_REAL *x,
+        LIS_REAL *w)
+{
+        LIS_INT i;
+        LIS_INT j;
+        LIS_INT m;
+        LIS_INT iter;
+
+        LIS_REAL z;
+        LIS_REAL zold;
+        LIS_REAL p1;
+        LIS_REAL p2;
+        LIS_REAL p3;
+        LIS_REAL pp;
+        LIS_REAL wi;
+        LIS_REAL tol;
+
+        LIS_DEBUG_FUNC_IN;
+
+        if( n<1 || x==NULL || w==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "Gauss-Legendre quadrature requires n >= 1 and valid arrays\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        m = (n+1)/2;
+
+        tol = (LIS_REAL)(64.0*DBL_EPSILON);
+
+        for(i=0;i<m;i++)
+        {
+                /*
+                 * Standard asymptotic initial estimate for the
+                 * positive roots.
+                 */
+                z = cos(
+                        LIS_FEAST_PI *
+                        ((LIS_REAL)i + (LIS_REAL)0.75) /
+                        ((LIS_REAL)n + (LIS_REAL)0.5));
+
+                for(iter=0;iter<100;iter++)
+                {
+                        p1 = 1.0;
+                        p2 = 0.0;
+
+                        for(j=1;j<=n;j++)
+                        {
+                                p3 = p2;
+                                p2 = p1;
+
+                                p1 =
+                                        (((LIS_REAL)(2*j-1))*z*p2 -
+                                         ((LIS_REAL)(j-1))*p3) /
+                                        (LIS_REAL)j;
+                        }
+
+                        pp =
+                                ((LIS_REAL)n) *
+                                (z*p1-p2) /
+                                (z*z-(LIS_REAL)1.0);
+
+                        zold = z;
+                        z = zold-p1/pp;
+
+                        if( fabs(z-zold) <=
+                            tol*((LIS_REAL)1.0+fabs(z)) )
+                        {
+                                break;
+                        }
+                }
+
+                if( iter==100 )
+                {
+                        LIS_SETERR1(
+                                LIS_BREAKDOWN,
+                                "Gauss-Legendre root %D did not converge\n",
+                                i);
+
+                        LIS_DEBUG_FUNC_OUT;
+                        return LIS_BREAKDOWN;
+                }
+
+                /*
+                 * Re-evaluate P_n and its derivative at the
+                 * converged root before forming the weight.
+                 */
+                p1 = 1.0;
+                p2 = 0.0;
+
+                for(j=1;j<=n;j++)
+                {
+                        p3 = p2;
+                        p2 = p1;
+
+                        p1 =
+                                (((LIS_REAL)(2*j-1))*z*p2 -
+                                 ((LIS_REAL)(j-1))*p3) /
+                                (LIS_REAL)j;
+                }
+
+                pp =
+                        ((LIS_REAL)n) *
+                        (z*p1-p2) /
+                        (z*z-(LIS_REAL)1.0);
+
+                wi =
+                        ((LIS_REAL)2.0) /
+                        (((LIS_REAL)1.0-z*z)*pp*pp);
+
+                x[i] = -z;
+                x[n-1-i] = z;
+
+                w[i] = wi;
+                w[n-1-i] = wi;
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+
+/*
+ * Generate the upper-half elliptic contour used by the native
+ * real-symmetric FEAST path.
+ *
+ * The complex values are represented as separate real and imaginary
+ * arrays so this geometry kernel is available in both real and
+ * complex LIS builds.
+ */
+#undef __FUNC__
+#define __FUNC__ "lis_efeast_contour_gauss"
+
+LIS_INT lis_efeast_contour_gauss(
+        LIS_REAL emin,
+        LIS_REAL emax,
+        LIS_INT n,
+        LIS_REAL ratio,
+        LIS_REAL *z_real,
+        LIS_REAL *z_imag,
+        LIS_REAL *w_real,
+        LIS_REAL *w_imag)
+{
+        LIS_REAL x[1024];
+        LIS_REAL w[1024];
+
+        LIS_REAL radius;
+        LIS_REAL center;
+        LIS_REAL theta;
+        LIS_REAL ctheta;
+        LIS_REAL stheta;
+
+        LIS_INT i;
+        LIS_INT err;
+
+        LIS_DEBUG_FUNC_IN;
+
+        if( !(emin<emax) )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "FEAST contour requires emin < emax\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( n<1 || n>1024 )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "FEAST contour point count must be in [1,1024]\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( !(ratio>0.0) || !isfinite((double)ratio) )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "FEAST contour ratio must be finite and positive\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( z_real==NULL ||
+            z_imag==NULL ||
+            w_real==NULL ||
+            w_imag==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "FEAST contour output arrays are undefined\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        err = lis_efeast_gauss_legendre(
+                n,
+                x,
+                w);
+
+        if( err )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return err;
+        }
+
+        radius =
+                (emax-emin) /
+                (LIS_REAL)2.0;
+
+        center = emin+radius;
+
+        for(i=0;i<n;i++)
+        {
+                /*
+                 * Map [-1,1] to the upper half ellipse:
+                 *
+                 * theta in [pi,0].
+                 */
+                theta =
+                        -(LIS_FEAST_PI/(LIS_REAL)2.0)*x[i] +
+                        LIS_FEAST_PI/(LIS_REAL)2.0;
+
+                ctheta = cos(theta);
+                stheta = sin(theta);
+
+                z_real[i] =
+                        center +
+                        radius*ctheta;
+
+                z_imag[i] =
+                        radius*ratio*stheta;
+
+                /*
+                 * FEAST projector weight:
+                 *
+                 *   (1/4) * w_i * dz/dtheta
+                 *
+                 * after the half-contour parameter mapping.
+                 */
+                w_real[i] =
+                        (LIS_REAL)0.25 *
+                        w[i] *
+                        radius *
+                        ratio *
+                        ctheta;
+
+                w_imag[i] =
+                        (LIS_REAL)0.25 *
+                        w[i] *
+                        radius *
+                        stheta;
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
 
 
 static LIS_INT lis_efeast_parse_real(
@@ -177,6 +459,26 @@ LIS_INT lis_efeast_set_option(
                 return LIS_SUCCESS;
         }
 
+        if( strcmp(arg1,"-feast_ratio")==0 )
+        {
+                err = lis_efeast_parse_real(arg2,&value);
+
+                if( err ||
+                    !(value>0.0) )
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "Parameter -feast_ratio must be finite and positive\n");
+                        LIS_DEBUG_FUNC_OUT;
+                        return LIS_ERR_ILL_ARG;
+                }
+
+                esolver->feast_ratio = value;
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_SUCCESS;
+        }
+
         if( strcmp(arg1,"-feast_points")==0 )
         {
                 err = lis_efeast_parse_int(arg2,&ivalue);
@@ -253,6 +555,17 @@ LIS_INT lis_efeast_check_params(
                 LIS_SETERR(
                         LIS_ERR_ILL_ARG,
                         "Native FEAST requires -feast_emin < -feast_emax\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( !(esolver->feast_ratio>0.0) ||
+            !isfinite((double)esolver->feast_ratio) )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "Native FEAST contour ratio must be finite and positive\n");
 
                 LIS_DEBUG_FUNC_OUT;
                 return LIS_ERR_ILL_ARG;
