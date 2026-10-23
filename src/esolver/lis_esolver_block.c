@@ -34,13 +34,17 @@
 
 #include <math.h>
 
+#ifdef _COMPLEX
+#include <complex.h>
+#endif
+
 #include "lislib.h"
 
 /*
  * Shared internal dense eigensystem support for block eigensolvers.
  *
- * The first implementation is the existing real symmetric Jacobi
- * projected eigensolver extracted into shared internal infrastructure.
+ * The projected dense eigensystem helper supports real symmetric
+ * and complex Hermitian matrices.
  */
 
 #undef __FUNC__
@@ -54,11 +58,213 @@ LIS_INT lis_eigen_projected_solve(
 	LIS_REAL *error)
 {
 #ifdef _COMPLEX
-	LIS_SETERR(
-		LIS_ERR_NOT_IMPLEMENTED,
-		"projected eigensystem solve is not yet implemented "
-		"for complex arithmetic\n");
-	return LIS_ERR_NOT_IMPLEMENTED;
+        LIS_INT i,j,p,q,sweep;
+        LIS_INT max_sweeps;
+        LIS_REAL app,aqq;
+        LIS_REAL mag,tau,t,c,sabs;
+        LIS_REAL off,maxoff,scale,threshold;
+        LIS_SCALAR apq,phase,s;
+        LIS_SCALAR akp,akq;
+        LIS_SCALAR vip,viq;
+
+        LIS_DEBUG_FUNC_IN;
+
+        if( n<=0 || a==NULL || eval==NULL || evec==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "invalid projected eigensystem arguments\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        for(i=0;i<n*n;i++)
+        {
+                evec[i] = 0.0;
+        }
+
+        for(i=0;i<n;i++)
+        {
+                evec[i*n+i] = 1.0;
+        }
+
+        scale = 0.0;
+
+        for(i=0;i<n;i++)
+        {
+                app = creal(a[i*n+i]);
+
+                if( fabs(app)>scale )
+                {
+                        scale = fabs(app);
+                }
+        }
+
+        if( scale<1.0 )
+        {
+                scale = 1.0;
+        }
+
+        threshold = 1.0e-14*scale;
+        max_sweeps = 50;
+        maxoff = 0.0;
+
+        for(sweep=0;sweep<max_sweeps;sweep++)
+        {
+                maxoff = 0.0;
+
+                for(p=0;p<n-1;p++)
+                {
+                        for(q=p+1;q<n;q++)
+                        {
+                                apq = a[p*n+q];
+                                off = cabs(apq);
+
+                                if( off>maxoff )
+                                {
+                                        maxoff = off;
+                                }
+
+                                if( off<=threshold )
+                                {
+                                        continue;
+                                }
+
+                                app = creal(a[p*n+p]);
+                                aqq = creal(a[q*n+q]);
+
+                                mag = off;
+                                phase = apq/mag;
+
+                                tau =
+                                        (aqq-app)/
+                                        (2.0*mag);
+
+                                if( tau>=0.0 )
+                                {
+                                        t =
+                                                1.0/
+                                                (
+                                                        tau+
+                                                        sqrt(
+                                                                1.0+
+                                                                tau*tau)
+                                                );
+                                }
+                                else
+                                {
+                                        t =
+                                                -1.0/
+                                                (
+                                                        -tau+
+                                                        sqrt(
+                                                                1.0+
+                                                                tau*tau)
+                                                );
+                                }
+
+                                c =
+                                        1.0/
+                                        sqrt(
+                                                1.0+
+                                                t*t);
+
+                                sabs = t*c;
+                                s = sabs*phase;
+
+                                for(j=0;j<n;j++)
+                                {
+                                        if( j==p || j==q )
+                                        {
+                                                continue;
+                                        }
+
+                                        akp =
+                                                a[j*n+p];
+
+                                        akq =
+                                                a[j*n+q];
+
+                                        a[j*n+p] =
+                                                c*akp-
+                                                conj(s)*akq;
+
+                                        a[p*n+j] =
+                                                conj(
+                                                        a[j*n+p]);
+
+                                        a[j*n+q] =
+                                                s*akp+
+                                                c*akq;
+
+                                        a[q*n+j] =
+                                                conj(
+                                                        a[j*n+q]);
+                                }
+
+                                a[p*n+p] =
+                                        app-t*mag;
+
+                                a[q*n+q] =
+                                        aqq+t*mag;
+
+                                a[p*n+q] = 0.0;
+                                a[q*n+p] = 0.0;
+
+                                for(j=0;j<n;j++)
+                                {
+                                        vip =
+                                                evec[j*n+p];
+
+                                        viq =
+                                                evec[j*n+q];
+
+                                        evec[j*n+p] =
+                                                c*vip-
+                                                conj(s)*viq;
+
+                                        evec[j*n+q] =
+                                                s*vip+
+                                                c*viq;
+                                }
+                        }
+                }
+
+                if( maxoff<=threshold )
+                {
+                        break;
+                }
+        }
+
+        for(i=0;i<n;i++)
+        {
+                eval[i] =
+                        creal(
+                                a[i*n+i]);
+        }
+
+        if( niter )
+        {
+                *niter = sweep+1;
+        }
+
+        if( error )
+        {
+                *error = maxoff;
+        }
+
+        if( maxoff>threshold )
+        {
+                LIS_SETERR(
+                        LIS_MAXITER,
+                        "projected Hermitian Jacobi eigensolver "
+                        "did not converge\n");
+
+                return LIS_MAXITER;
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+
+        return LIS_SUCCESS;
 #else
 	LIS_INT i,j,p,q,sweep;
 	LIS_INT max_sweeps;

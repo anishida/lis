@@ -200,7 +200,7 @@ check_real_projected_eigensystem(void)
 #else
 
 static int
-check_complex_guard(void)
+check_complex_projected_eigensystem(void)
 {
     LIS_SCALAR a[4];
     LIS_SCALAR eval[2];
@@ -227,12 +227,11 @@ check_complex_guard(void)
         &niter,
         &error);
 
-    if( err!=LIS_ERR_NOT_IMPLEMENTED )
+    if( err!=LIS_SUCCESS )
     {
         printf(
-            "FAIL: complex guard returned %d, expected %d\n",
-            (int)err,
-            (int)LIS_ERR_NOT_IMPLEMENTED);
+            "FAIL: complex projected solve returned %d\n",
+            (int)err);
 
         return 1;
     }
@@ -268,7 +267,7 @@ main(int argc, char **argv)
 #else
 
     failed =
-        check_complex_guard();
+        check_complex_projected_eigensystem();
 
 #endif
 
@@ -287,7 +286,7 @@ main(int argc, char **argv)
 #else
 
     printf(
-        "PASS: common projected eigensystem complex guard\n");
+        "PASS: common projected eigensystem complex path\n");
 
 #endif
 

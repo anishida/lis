@@ -126,9 +126,10 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
 	testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
 	testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) \
-	testprojectedeigen$(EXEEXT) testblockgram$(EXEEXT) \
-	testblockorthogonal$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
-	$(am__EXEEXT_3) $(am__EXEEXT_4)
+	testprojectedeigen$(EXEEXT) testprojectedhermitian$(EXEEXT) \
+	testblockgram$(EXEEXT) testblockorthogonal$(EXEEXT) \
+	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
+	$(am__EXEEXT_4)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_3 = test2f test6f 
@@ -527,6 +528,10 @@ am_testprojectedeigen_OBJECTS = testprojectedeigen.$(OBJEXT)
 testprojectedeigen_OBJECTS = $(am_testprojectedeigen_OBJECTS)
 testprojectedeigen_LDADD = $(LDADD)
 testprojectedeigen_DEPENDENCIES =
+am_testprojectedhermitian_OBJECTS = testprojectedhermitian.$(OBJEXT)
+testprojectedhermitian_OBJECTS = $(am_testprojectedhermitian_OBJECTS)
+testprojectedhermitian_LDADD = $(LDADD)
+testprojectedhermitian_DEPENDENCIES =
 am_testrecovery_OBJECTS = testrecovery.$(OBJEXT)
 testrecovery_OBJECTS = $(am_testrecovery_OBJECTS)
 testrecovery_LDADD = $(LDADD)
@@ -679,8 +684,9 @@ am__depfiles_remade = ./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
 	./$(DEPDIR)/testpreconlifecycle.Po \
 	./$(DEPDIR)/testpreconpolicy.Po ./$(DEPDIR)/testpreconpsd.Po \
 	./$(DEPDIR)/testpreconreuse.Po \
-	./$(DEPDIR)/testprojectedeigen.Po ./$(DEPDIR)/testrecovery.Po \
-	./$(DEPDIR)/testrepeatedsystems.Po \
+	./$(DEPDIR)/testprojectedeigen.Po \
+	./$(DEPDIR)/testprojectedhermitian.Po \
+	./$(DEPDIR)/testrecovery.Po ./$(DEPDIR)/testrepeatedsystems.Po \
 	./$(DEPDIR)/testrhistoryerror.Po ./$(DEPDIR)/testrqirestore.Po \
 	./$(DEPDIR)/testsequence.Po ./$(DEPDIR)/testshellscale.Po \
 	./$(DEPDIR)/testsolvercallbackcert.Po \
@@ -763,7 +769,8 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
 	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
 	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
-	$(testprojectedeigen_SOURCES) $(testrecovery_SOURCES) \
+	$(testprojectedeigen_SOURCES) \
+	$(testprojectedhermitian_SOURCES) $(testrecovery_SOURCES) \
 	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
 	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
 	$(testshellscale_SOURCES) $(testsolvercallbackcert_SOURCES) \
@@ -811,7 +818,8 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
 	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
 	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
-	$(testprojectedeigen_SOURCES) $(testrecovery_SOURCES) \
+	$(testprojectedeigen_SOURCES) \
+	$(testprojectedhermitian_SOURCES) $(testrecovery_SOURCES) \
 	$(testrepeatedsystems_SOURCES) $(testrhistoryerror_SOURCES) \
 	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
 	$(testshellscale_SOURCES) $(testsolvercallbackcert_SOURCES) \
@@ -1255,6 +1263,7 @@ testpreconpsd_SOURCES = testpreconpsd.c
 testpreconreuse_SOURCES = testpreconreuse.c
 testeigenbreakdown_SOURCES = testeigenbreakdown.c
 testprojectedeigen_SOURCES = testprojectedeigen.c
+testprojectedhermitian_SOURCES = testprojectedhermitian.c
 testblockgram_SOURCES = testblockgram.c
 testblockorthogonal_SOURCES = testblockorthogonal.c
 testrqirestore_SOURCES = testrqirestore.c
@@ -1337,12 +1346,12 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
 	testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) \
 	testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) \
-	testprojectedeigen$(EXEEXT) testblockgram$(EXEEXT) \
-	testblockorthogonal$(EXEEXT) testeigenbreakdown$(EXEEXT) \
-	testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
-	testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) \
-	testgmreswork$(EXEEXT) testsolvermonitor$(EXEEXT) \
-	testsolvercallbackpaths$(EXEEXT) \
+	testprojectedeigen$(EXEEXT) testprojectedhermitian$(EXEEXT) \
+	testblockgram$(EXEEXT) testblockorthogonal$(EXEEXT) \
+	testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) \
+	testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) \
+	testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
+	testsolvermonitor$(EXEEXT) testsolvercallbackpaths$(EXEEXT) \
 	testsolvercallbackcert$(EXEEXT) testworkcompat$(EXEEXT) \
 	testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) \
 	testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) \
@@ -1822,6 +1831,10 @@ testprojectedeigen$(EXEEXT): $(testprojectedeigen_OBJECTS) $(testprojectedeigen_
 	@rm -f testprojectedeigen$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testprojectedeigen_OBJECTS) $(testprojectedeigen_LDADD) $(LIBS)
 
+testprojectedhermitian$(EXEEXT): $(testprojectedhermitian_OBJECTS) $(testprojectedhermitian_DEPENDENCIES) $(EXTRA_testprojectedhermitian_DEPENDENCIES)
+	@rm -f testprojectedhermitian$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testprojectedhermitian_OBJECTS) $(testprojectedhermitian_LDADD) $(LIBS)
+
 testrecovery$(EXEEXT): $(testrecovery_OBJECTS) $(testrecovery_DEPENDENCIES) $(EXTRA_testrecovery_DEPENDENCIES) 
 	@rm -f testrecovery$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testrecovery_OBJECTS) $(testrecovery_LDADD) $(LIBS)
@@ -2001,6 +2014,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testpreconpsd.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testpreconreuse.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testprojectedeigen.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testprojectedhermitian.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrecovery.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrepeatedsystems.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrhistoryerror.Po@am__quote@ # am--include-marker
@@ -2377,6 +2391,13 @@ testpreconreuse.log: testpreconreuse$(EXEEXT)
 testprojectedeigen.log: testprojectedeigen$(EXEEXT)
 	@p='testprojectedeigen$(EXEEXT)'; \
 	b='testprojectedeigen'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testprojectedhermitian.log: testprojectedhermitian$(EXEEXT)
+	@p='testprojectedhermitian$(EXEEXT)'; \
+	b='testprojectedhermitian'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -2860,6 +2881,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testpreconpsd.Po
 	-rm -f ./$(DEPDIR)/testpreconreuse.Po
 	-rm -f ./$(DEPDIR)/testprojectedeigen.Po
+	-rm -f ./$(DEPDIR)/testprojectedhermitian.Po
 	-rm -f ./$(DEPDIR)/testrecovery.Po
 	-rm -f ./$(DEPDIR)/testrepeatedsystems.Po
 	-rm -f ./$(DEPDIR)/testrhistoryerror.Po
@@ -2993,6 +3015,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testpreconpsd.Po
 	-rm -f ./$(DEPDIR)/testpreconreuse.Po
 	-rm -f ./$(DEPDIR)/testprojectedeigen.Po
+	-rm -f ./$(DEPDIR)/testprojectedhermitian.Po
 	-rm -f ./$(DEPDIR)/testrecovery.Po
 	-rm -f ./$(DEPDIR)/testrepeatedsystems.Po
 	-rm -f ./$(DEPDIR)/testrhistoryerror.Po
