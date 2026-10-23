@@ -80,6 +80,7 @@
  ***************************************/
 
 #define NWORK 2
+#define LIS_EAI_REORTH_THRESHOLD 0.717
 #undef __FUNC__
 #define __FUNC__ "lis_eai_check_params"
 LIS_INT lis_eai_check_params(LIS_ESOLVER esolver)
@@ -159,8 +160,9 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   double time,time0;    
   LIS_INT i,j;
   LIS_INT output, niesolver;
-  LIS_REAL nrm2,resid0,cert_resid;
+  LIS_REAL nrm2,resid0,cert_resid,nrm_before,nrm_after;
   LIS_VECTOR *v,w;
+  LIS_SCALAR correction;
   LIS_SCALAR *h,*hq,*hr,evalue,evalue0;
   LIS_SOLVER solver;
   LIS_ESOLVER esolver2;
@@ -229,19 +231,34 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
       /* w = A * v(j) */
       lis_matvec(A, v[j], w);
 
-      /* reorthogonalization */
+      /*
+       * Modified Gram-Schmidt orthogonalization.
+       * A second pass is used only when the first pass loses a
+       * substantial fraction of the candidate-vector norm.
+       */
+      lis_vector_nrm2(w, &nrm_before);
       for (i=0;i<=j;i++)
 	{
 	  /* h(i,j) = <v(i), w> */
 	  lis_vector_dot(v[i], w, &h[i+j*ss]);
 	  /* w = w - h(i,j) * v(i) */
-	  lis_vector_axpy(-h[i+j*ss], v[i], w); 
+	  lis_vector_axpy(-h[i+j*ss], v[i], w);
+	}
+      lis_vector_nrm2(w, &nrm_after);
+
+      if( nrm_after>0.0 &&
+          nrm_after < LIS_EAI_REORTH_THRESHOLD*nrm_before )
+	{
+	  for (i=0;i<=j;i++)
+	    {
+	      lis_vector_dot(v[i], w, &correction);
+	      h[i+j*ss] += correction;
+	      lis_vector_axpy(-correction, v[i], w);
+	    }
+	  lis_vector_nrm2(w, &nrm_after);
 	}
 
-      /* h(j+1,j) = ||w||_2 */
-      lis_vector_nrm2(w, (LIS_REAL *)&h[j+1+j*ss]);
-
-      if( !lis_esolver_is_finite_scalar(h[j+1+j*ss]) )
+      if( !lis_esolver_is_finite_scalar((LIS_SCALAR)nrm_after) )
         {
           LIS_SETERR(LIS_BREAKDOWN,
                   "non-finite Arnoldi Hessenberg norm\n");
@@ -253,6 +270,15 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
           LIS_DEBUG_FUNC_OUT;
           return LIS_BREAKDOWN;
         }
+
+      /*
+       * H is ss-by-ss.  The final subdiagonal entry h(ss,ss-1)
+       * lies outside that matrix and no next Arnoldi vector is
+       * required after the final column.
+       */
+      if( j==ss-1 ) break;
+
+      h[j+1+j*ss] = nrm_after;
 
       /* convergence check / happy breakdown */
       if (fabs(h[j+1+j*ss])<tol) break;
@@ -270,7 +296,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
           return LIS_BREAKDOWN;
         }
 
-      /* v(j+1) = w / h(j,j-1) */
+      /* v(j+1) = w / h(j+1,j) */
       lis_vector_scale(1/h[j+1+j*ss],w);
       lis_vector_copy(w,v[j+1]);
       
@@ -558,8 +584,9 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
   double time,time0;  
   LIS_INT i,j;
   LIS_INT output, nigesolver;
-  LIS_REAL nrm2,resid0,cert_resid;
+  LIS_REAL nrm2,resid0,cert_resid,nrm_before,nrm_after;
   LIS_VECTOR *v,w,y;
+  LIS_SCALAR correction;
   LIS_SCALAR *h,*hq,*hr,evalue,evalue0;
   LIS_SOLVER solver;
   LIS_PRECON precon;
@@ -653,19 +680,34 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
       lis_solver_get_iter(solver, &iter2);
       lis_vector_copy(y, w);
       
-      /* reorthogonalization */
+      /*
+       * Modified Gram-Schmidt orthogonalization of B^-1*A*v(j).
+       * Apply one selective refinement pass when the first pass
+       * suffers substantial norm loss.
+       */
+      lis_vector_nrm2(w, &nrm_before);
       for (i=0;i<=j;i++)
 	{
 	  /* h(i,j) = <v(i), w> */
 	  lis_vector_dot(v[i], w, &h[i+j*ss]);
 	  /* w = w - h(i,j) * v(i) */
-	  lis_vector_axpy(-h[i+j*ss], v[i], w); 
+	  lis_vector_axpy(-h[i+j*ss], v[i], w);
+	}
+      lis_vector_nrm2(w, &nrm_after);
+
+      if( nrm_after>0.0 &&
+          nrm_after < LIS_EAI_REORTH_THRESHOLD*nrm_before )
+	{
+	  for (i=0;i<=j;i++)
+	    {
+	      lis_vector_dot(v[i], w, &correction);
+	      h[i+j*ss] += correction;
+	      lis_vector_axpy(-correction, v[i], w);
+	    }
+	  lis_vector_nrm2(w, &nrm_after);
 	}
 
-      /* h(j+1,j) = ||w||_2 */
-      lis_vector_nrm2(w, (LIS_REAL *)&h[j+1+j*ss]);
-
-      if( !lis_esolver_is_finite_scalar(h[j+1+j*ss]) )
+      if( !lis_esolver_is_finite_scalar((LIS_SCALAR)nrm_after) )
         {
           LIS_SETERR(LIS_BREAKDOWN,
                   "non-finite generalized Arnoldi Hessenberg norm\n");
@@ -678,6 +720,14 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
           LIS_DEBUG_FUNC_OUT;
           return LIS_BREAKDOWN;
         }
+
+      /*
+       * The final subdiagonal entry is outside the ss-by-ss
+       * Hessenberg matrix and no v(ss) is required.
+       */
+      if( j==ss-1 ) break;
+
+      h[j+1+j*ss] = nrm_after;
 
       /* convergence check / happy breakdown */
       if (fabs(h[j+1+j*ss])<tol) break;
@@ -696,7 +746,7 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
           return LIS_BREAKDOWN;
         }
 
-      /* v(j+1) = w / h(j,j-1) */
+      /* v(j+1) = w / h(j+1,j) */
       lis_vector_scale(1/h[j+1+j*ss],w);
       lis_vector_copy(w,v[j+1]);
       

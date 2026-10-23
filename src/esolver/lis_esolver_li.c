@@ -232,11 +232,15 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
       /* r = r - alpha(j) * v(j) */
       lis_vector_axpy(-t[(j-1)*ss+j-1], v[j], r); 
 
-      /* reorthogonalization */
-      for (k=1;k<j;k++)
-	{ 
-	  lis_vector_dot(v[j], v[k], &dot); 
-	  lis_vector_axpy(-dot, v[k], v[j]);
+      /*
+       * Reorthogonalize the residual that generates v(j+1).
+       * Include the current vector as well to remove round-off
+       * left after the alpha(j) recurrence update.
+       */
+      for (k=1;k<=j;k++)
+	{
+	  lis_vector_dot(v[k], r, &dot);
+	  lis_vector_axpy(-dot, v[k], r);
 	}
 
       /* beta(j) = ||r||_2 */
@@ -435,7 +439,19 @@ LIS_INT lis_egli_malloc_work(LIS_ESOLVER esolver)
 
 	ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
 
-	worklen = NWORK + ss;
+	/*
+	 * The untransformed generalized Lanczos recurrence keeps both
+	 * w_j = B*v_j and v_j for full reorthogonalization.  They must
+	 * not alias.  The transformed path uses one Lanczos basis.
+	 */
+	if( esolver->transform==LIS_EIGEN_TRANSFORM_AUTO )
+	{
+		worklen = NWORK + 2*ss;
+	}
+	else
+	{
+		worklen = NWORK + ss;
+	}
 	work    = (LIS_VECTOR *)lis_malloc( worklen*sizeof(LIS_VECTOR),"lis_egli_malloc_work::work" );
 	if( work==NULL )
 	{
@@ -1756,8 +1772,8 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
   B = esolver->B;
   q = esolver->work[0];  
   r = esolver->work[1];
-  w = &esolver->work[2];  
-  v = &esolver->work[3];
+  w = &esolver->work[2];
+  v = &esolver->work[2+ss];
   lis_vector_set_all(0.0,w[0]);  
   lis_vector_set_all(0.0,v[0]);
   lis_vector_set_all(1.0,q);
@@ -1827,11 +1843,15 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
       /* r = r - alpha(j) * w(j) */
       lis_vector_axpy(-t[(j-1)*ss+j-1], w[j], r); 
 
-      /* reorthogonalization */
-      for (k=1;k<j;k++)
-	{ 
-	  lis_vector_dot(v[j], v[k], &dot); 
-	  lis_vector_axpy(-dot, v[k], v[j]);
+      /*
+       * Reorthogonalize the dual residual.  With w(k)=B*v(k),
+       * subtracting <v(k),r>*w(k) makes q=B^-1*r orthogonal
+       * to the existing basis in the B inner product.
+       */
+      for (k=1;k<=j;k++)
+	{
+	  lis_vector_dot(v[k], r, &dot);
+	  lis_vector_axpy(-dot, w[k], r);
 	}
 
       /* solve B * q = r */
