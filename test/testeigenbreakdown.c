@@ -4,9 +4,11 @@
 #include "lis_config_win.h"
 #endif
 
-#include "lis.h"
 #include <stdio.h>
 #include <math.h>
+
+#include "lis.h"
+#include "lis_esolver.h"
 
 
 static LIS_INT
@@ -1600,6 +1602,106 @@ cleanup:
 }
 
 
+
+
+static LIS_INT
+test_inverse_shift_recovery_exhaustion(void)
+{
+    LIS_INT err;
+    LIS_MATRIX A;
+    LIS_SCALAR shift;
+    LIS_SCALAR delta;
+
+    A = NULL;
+    shift = 1.0;
+
+    /*
+     * Construct one exact singular mode for each bounded recovery
+     * shift: sigma, sigma+delta and sigma-delta.  With an all-ones
+     * right-hand side every trial is inconsistent in at least one
+     * component, so the finite recovery sequence must exhaust and
+     * propagate a breakdown rather than looping or reporting success.
+     */
+    delta = lis_esolver_shift_perturbation(shift);
+
+    if( delta==0.0 )
+    {
+        printf(
+            "Inverse recovery exhaustion: zero perturbation\n");
+        return LIS_FAILS;
+    }
+
+    err = create_diagonal_matrix3(
+        &A,
+        shift,
+        shift+delta,
+        shift-delta);
+    if( err )
+        goto cleanup;
+
+    err = check_standard_breakdown(
+        "Inverse bounded-shift recovery exhaustion",
+        "-e ii -shift 1.0 -emaxiter 2 -etol 1.0e-12",
+        A,
+        1.0);
+
+cleanup:
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
+static LIS_INT
+test_generalized_subspace_gpi_retry_exhaustion(void)
+{
+    LIS_INT err;
+    LIS_MATRIX A;
+    LIS_MATRIX B;
+
+    A = NULL;
+    B = NULL;
+
+    /*
+     * The GPI normalization uses A and is well-defined for A=I.
+     * The subsequent B^-1*w solve is deliberately inconsistent:
+     * B=diag(1,0) while w has a nonzero second component.
+     *
+     * This reaches the GPI same-operator retry/rebuild path without
+     * introducing a spectral-shift perturbation.
+     */
+    err = create_diagonal_matrix(
+        &A,
+        1.0,
+        1.0);
+    if( err )
+        goto cleanup;
+
+    err = create_diagonal_matrix(
+        &B,
+        1.0,
+        0.0);
+    if( err )
+        goto cleanup;
+
+    err = check_generalized_breakdown(
+        "Generalized Subspace/GPI retry exhaustion",
+        "-e gsi -ige gpi -ss 1 -emaxiter 2 -etol 1.0e-12",
+        A,
+        B);
+
+cleanup:
+    if( B )
+        lis_matrix_destroy(B);
+
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
 static LIS_INT
 test_arnoldi_happy_breakdown(void)
 {
@@ -1816,6 +1918,24 @@ main(
     {
         printf(
             "LIS_EIGEN_RECOVERY GLI_BUCKLING FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_inverse_shift_recovery_exhaustion();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_RECOVERY EXHAUSTION FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_generalized_subspace_gpi_retry_exhaustion();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_RECOVERY GSUBSPACE_GPI_RETRY FAILED\n");
         lis_finalize();
         return 1;
     }

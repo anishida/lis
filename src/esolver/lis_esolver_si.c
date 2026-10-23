@@ -138,7 +138,8 @@ lis_esi_solve_with_retry(
         LIS_VECTOR b,
         LIS_VECTOR x,
         LIS_SOLVER solver,
-        LIS_PRECON *precon)
+        LIS_PRECON *precon,
+        LIS_REAL acceptance_tol)
 {
         LIS_INT err,status;
 
@@ -164,8 +165,14 @@ lis_esi_solve_with_retry(
 
         lis_vector_set_all(0.0,x);
 
-        return lis_esolver_inner_solve_attempt(
-                A,b,x,solver,*precon);
+        status =
+                lis_esolver_inner_solve_attempt(
+                        A,b,x,solver,*precon);
+
+        return lis_esolver_inner_solve_certify(
+                A,b,x,solver,
+                status,
+                acceptance_tol);
 }
 
 
@@ -212,6 +219,12 @@ lis_esi_solve_with_recovery(
         status =
                 lis_esolver_inner_solve_attempt(
                         A,b,x,solver,*precon);
+
+                status =
+                        lis_esolver_inner_solve_certify(
+                                A,b,x,solver,
+                                status,
+                                acceptance_tol);
         if( status==LIS_SUCCESS )
         {
                 return LIS_SUCCESS;
@@ -335,6 +348,12 @@ lis_egsi_solve_with_recovery(
         status =
                 lis_esolver_inner_solve_attempt(
                         A,b,x,solver,*precon);
+
+                status =
+                        lis_esolver_inner_solve_certify(
+                                A,b,x,solver,
+                                status,
+                                acceptance_tol);
         if( status==LIS_SUCCESS )
         {
                 return LIS_SUCCESS;
@@ -478,6 +497,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   lis_vector_scale(1.0/nrm2,r);
 
   if ( esolver->ishift != 0.0 ) oshift = ishift;
+  solve_shift = oshift;
   if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, oshift);  
 
   if( output )
@@ -888,6 +908,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   lis_vector_scale(1.0/nrm2,y);
 
   if ( esolver->ishift != 0.0 ) oshift = ishift;
+  solve_shift = oshift;
   if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, oshift);
 
   if( output )
@@ -1027,7 +1048,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 
 	      /* y = B^-1 * w */
 	      err = lis_esi_solve_with_retry(
-	              B, w, y, solver, &precon);
+	              B, w, y, solver, &precon,tol);
 	      if( err )
 		{
 		  esolver->retcode = err;

@@ -40,6 +40,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <math.h>
+#include <float.h>
 #include <ctype.h>
 #ifdef _OPENMP
 	#include <omp.h>
@@ -333,9 +334,26 @@ LIS_SCALAR lis_esolver_shift_perturbation(
 
         scale = magnitude>1.0 ? magnitude : 1.0;
 
+#if defined(_LONG__DOUBLE)
+#ifdef HAVE_QUADMATH_H
         step =
-                (LIS_REAL)1.490116119384765625e-8 *
+                (LIS_REAL)(sqrtq)(FLT128_EPSILON) *
                 scale;
+#else
+        step =
+                (LIS_REAL)(sqrtl)(LDBL_EPSILON) *
+                scale;
+#endif
+#else
+        /*
+         * Use the real sqrt function explicitly.  In complex builds
+         * lis.h maps the sqrt macro to csqrt, while the perturbation
+         * scale is always a real quantity.
+         */
+        step =
+                (LIS_REAL)(sqrt)(DBL_EPSILON) *
+                scale;
+#endif
 
 #ifdef _COMPLEX
         if( magnitude>0.0 )
@@ -386,6 +404,14 @@ LIS_INT lis_esolver_rebuild_precon(
                 solver,precon);
         if( err )
         {
+                /*
+                 * lis_precon_create() destroys a partially created
+                 * preconditioner on failure but does not clear the
+                 * caller pointer.  Do not expose a dangling handle
+                 * to recovery callers or their cleanup paths.
+                 */
+                *precon = NULL;
+                solver->precon = NULL;
                 solver->retcode = err;
                 return err;
         }

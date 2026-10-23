@@ -163,6 +163,12 @@ lis_eii_solve_with_recovery(
 
         status = lis_esolver_inner_solve_attempt(
                 A,b,x,solver,*precon);
+
+        status =
+                lis_esolver_inner_solve_certify(
+                        A,b,x,solver,
+                        status,
+                        acceptance_tol);
         if( status==LIS_SUCCESS )
         {
                 return LIS_SUCCESS;
@@ -285,6 +291,12 @@ lis_egii_solve_with_recovery(
 
         status = lis_esolver_inner_solve_attempt(
                 base_operator,b,x,solver,*precon);
+
+        status =
+                lis_esolver_inner_solve_certify(
+                        base_operator,b,x,solver,
+                        status,
+                        acceptance_tol);
         if( status==LIS_SUCCESS )
         {
                 return LIS_SUCCESS;
@@ -436,6 +448,7 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
   q = esolver->work[1];
 
   if ( esolver->ishift != 0.0 ) oshift = ishift;
+  solve_shift = oshift;
   if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, oshift);
 
   if( output )
@@ -764,6 +777,7 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
   q = esolver->work[2];
 
   if ( esolver->ishift != 0.0 ) oshift = ishift;
+  solve_shift = oshift;
 
   if( output )
     {

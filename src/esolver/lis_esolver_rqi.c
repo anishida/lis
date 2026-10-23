@@ -181,7 +181,7 @@ lis_erqi_solve_with_recovery(
                         lis_esolver_inner_solve_attempt(
                                 A,b,x,solver,*precon);
 
-                if( attempt>=2 )
+                if( attempt>=1 )
                 {
                         status =
                                 lis_esolver_inner_solve_certify(
@@ -283,7 +283,7 @@ lis_egrqi_solve_with_recovery(
                         lis_esolver_inner_solve_attempt(
                                 A,b,x,solver,*precon);
 
-                if( attempt>=2 )
+                if( attempt>=1 )
                 {
                         status =
                                 lis_esolver_inner_solve_certify(

@@ -783,6 +783,12 @@ lis_egli_first_solve_with_recovery(
         status =
                 lis_esolver_inner_solve_attempt(
                         *S,b,x,solver,*precon);
+
+                status =
+                        lis_esolver_inner_solve_certify(
+                                *S,b,x,solver,
+                                status,
+                                acceptance_tol);
         if( status==LIS_SUCCESS )
         {
                 return LIS_SUCCESS;
