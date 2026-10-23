@@ -213,3 +213,175 @@ LIS_INT lis_eigen_projected_solve(
 	return LIS_SUCCESS;
 #endif
 }
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_eigen_block_gram"
+LIS_INT lis_eigen_block_gram(
+    LIS_INT nx,
+    LIS_VECTOR X[],
+    LIS_INT ny,
+    LIS_VECTOR Y[],
+    LIS_SCALAR *gram)
+{
+    LIS_INT i,j,err;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if( nx<=0 || ny<=0 ||
+        X==NULL || Y==NULL ||
+        gram==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid block Gram arguments\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+    for(i=0;i<nx;i++)
+    {
+        if( X[i]==NULL )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "null left block vector\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+    for(j=0;j<ny;j++)
+    {
+        if( Y[j]==NULL )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "null right block vector\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+    for(i=0;i<nx;i++)
+    {
+        for(j=0;j<ny;j++)
+        {
+            err = lis_vector_dot(
+                X[i],
+                Y[j],
+                &gram[i*ny+j]);
+
+            if( err )
+            {
+                return err;
+            }
+        }
+    }
+
+    LIS_DEBUG_FUNC_OUT;
+
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_eigen_block_bgram"
+LIS_INT lis_eigen_block_bgram(
+    LIS_MATRIX B,
+    LIS_INT nx,
+    LIS_VECTOR X[],
+    LIS_INT ny,
+    LIS_VECTOR Y[],
+    LIS_VECTOR BY[],
+    LIS_SCALAR *gram)
+{
+    LIS_INT i,j,err;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if( nx<=0 || ny<=0 ||
+        X==NULL || Y==NULL ||
+        gram==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid block B-Gram arguments\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+    if( B==NULL )
+    {
+        return lis_eigen_block_gram(
+            nx,
+            X,
+            ny,
+            Y,
+            gram);
+    }
+
+    if( BY==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "missing B-Gram work vectors\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+    for(i=0;i<nx;i++)
+    {
+        if( X[i]==NULL )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "null left block vector\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+    for(j=0;j<ny;j++)
+    {
+        if( Y[j]==NULL || BY[j]==NULL )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "null right or B-work block vector\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+    err = lis_matvec_block(
+        B,
+        ny,
+        Y,
+        BY);
+
+    if( err )
+    {
+        return err;
+    }
+
+    for(i=0;i<nx;i++)
+    {
+        for(j=0;j<ny;j++)
+        {
+            err = lis_vector_dot(
+                X[i],
+                BY[j],
+                &gram[i*ny+j]);
+
+            if( err )
+            {
+                return err;
+            }
+        }
+    }
+
+    LIS_DEBUG_FUNC_OUT;
+
+    return LIS_SUCCESS;
+}
