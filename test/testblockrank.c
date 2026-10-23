@@ -1720,6 +1720,847 @@ check_rectangular_coupling(
 
 
 static int
+check_rank_one_compatibility(
+    LIS_MATRIX B,
+    LIS_VECTOR W[],
+    LIS_VECTOR BW[],
+    LIS_VECTOR Q[],
+    LIS_VECTOR BQ[])
+{
+    LIS_SCALAR gram[1];
+    LIS_SCALAR eval[1];
+    LIS_SCALAR evec[1];
+    LIS_SCALAR transform[1];
+    LIS_SCALAR coupling[1];
+
+    LIS_SCALAR coeff[1];
+    LIS_SCALAR work[1];
+
+    LIS_SCALAR scalar_dot;
+    LIS_SCALAR block_dot;
+
+    LIS_SCALAR value[3];
+    LIS_SCALAR reference[3];
+
+    LIS_REAL nrm2;
+
+    LIS_INT active_rank;
+    LIS_INT err;
+    LIS_INT i;
+
+
+    /*
+     * 1x1 projected eigensystem.
+     */
+    gram[0] = 7.0;
+    eval[0] = 0.0;
+    evec[0] = 0.0;
+
+    err = lis_eigen_projected_solve(
+        1,
+        gram,
+        eval,
+        evec,
+        NULL,
+        NULL);
+
+    if( err )
+    {
+        printf(
+            "FAIL: rank-1 projected solve returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+    if( scalar_error(
+            eval[0],
+            7.0)>TEST_TOL ||
+        scalar_error(
+            evec[0],
+            1.0)>TEST_TOL )
+    {
+        printf(
+            "FAIL: rank-1 projected eigensystem\n");
+
+        return 1;
+    }
+
+
+    /*
+     * Standard 1x1 Gram must match scalar lis_vector_dot.
+     */
+#ifndef _COMPLEX
+
+    err = set_vector3(
+        Q[0],
+        1.0,
+        2.0,
+        -1.0);
+
+    if( err )
+        return 1;
+
+    err = set_vector3(
+        W[0],
+        3.0,
+        -2.0,
+        4.0);
+
+#else
+
+    err = set_vector3(
+        Q[0],
+        1.0 + 1.0*I,
+        2.0 - 0.5*I,
+        -1.0*I);
+
+    if( err )
+        return 1;
+
+    err = set_vector3(
+        W[0],
+        3.0 - 2.0*I,
+        -2.0 + 1.0*I,
+        4.0 + 0.5*I);
+
+#endif
+
+    if( err )
+        return 1;
+
+    err = lis_vector_dot(
+        Q[0],
+        W[0],
+        &scalar_dot);
+
+    if( err )
+        return 1;
+
+    err = lis_eigen_block_gram(
+        1,
+        Q,
+        1,
+        W,
+        gram);
+
+    if( err )
+    {
+        printf(
+            "FAIL: rank-1 Gram returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+    block_dot = gram[0];
+
+    if( scalar_error(
+            block_dot,
+            scalar_dot)>TEST_TOL )
+    {
+        printf(
+            "FAIL: rank-1 Gram differs from scalar dot\n");
+
+        return 1;
+    }
+
+
+    /*
+     * 1x1 B-Gram must match q^H(Bw).
+     */
+    err = lis_matvec(
+        B,
+        W[0],
+        BW[0]);
+
+    if( err )
+        return 1;
+
+    err = lis_vector_dot(
+        Q[0],
+        BW[0],
+        &scalar_dot);
+
+    if( err )
+        return 1;
+
+    err = lis_eigen_block_bgram(
+        B,
+        1,
+        Q,
+        1,
+        W,
+        BW,
+        gram);
+
+    if( err )
+    {
+        printf(
+            "FAIL: rank-1 B-Gram returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+    if( scalar_error(
+            gram[0],
+            scalar_dot)>TEST_TOL )
+    {
+        printf(
+            "FAIL: rank-1 B-Gram differs from scalar B-inner product\n");
+
+        return 1;
+    }
+
+
+    /*
+     * Standard one-vector orthogonalization.
+     */
+    err = set_vector3(
+        Q[0],
+        1.0,
+        0.0,
+        0.0);
+
+    if( err )
+        return 1;
+
+
+#ifndef _COMPLEX
+
+    err = set_vector3(
+        W[0],
+        2.0,
+        3.0,
+        -4.0);
+
+    if( err )
+        return 1;
+
+    scalar_dot = 2.0;
+
+#else
+
+    err = set_vector3(
+        W[0],
+        2.0 + 1.0*I,
+        3.0 - 2.0*I,
+        -4.0 + 0.5*I);
+
+    if( err )
+        return 1;
+
+    scalar_dot = 2.0 + 1.0*I;
+
+#endif
+
+
+    coeff[0] = 0.0;
+    work[0] = 0.0;
+
+    err = lis_eigen_block_orthogonalize(
+        1,
+        Q,
+        1,
+        W,
+        1,
+        coeff,
+        work);
+
+    if( err )
+    {
+        printf(
+            "FAIL: rank-1 orthogonalization returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+    if( scalar_error(
+            coeff[0],
+            scalar_dot)>TEST_TOL )
+    {
+        printf(
+            "FAIL: rank-1 orthogonalization coefficient\n");
+
+        return 1;
+    }
+
+    if( read_vector3(
+            W[0],
+            value) )
+    {
+        return 1;
+    }
+
+
+#ifndef _COMPLEX
+
+    if( scalar_error(
+            value[0],
+            0.0)>TEST_TOL ||
+        scalar_error(
+            value[1],
+            3.0)>TEST_TOL ||
+        scalar_error(
+            value[2],
+            -4.0)>TEST_TOL )
+    {
+        printf(
+            "FAIL: rank-1 standard orthogonalization result\n");
+
+        return 1;
+    }
+
+#else
+
+    if( scalar_error(
+            value[0],
+            0.0)>TEST_TOL ||
+        scalar_error(
+            value[1],
+            3.0 - 2.0*I)>TEST_TOL ||
+        scalar_error(
+            value[2],
+            -4.0 + 0.5*I)>TEST_TOL )
+    {
+        printf(
+            "FAIL: rank-1 COMPLEX orthogonalization result\n");
+
+        return 1;
+    }
+
+#endif
+
+
+    /*
+     * One-vector B-orthogonalization.
+     *
+     * B = diag(2,3,5), so q=e0/sqrt(2) is B-normalized.
+     */
+    err = set_vector3(
+        Q[0],
+        1.0/sqrt(2.0),
+        0.0,
+        0.0);
+
+    if( err )
+        return 1;
+
+
+#ifndef _COMPLEX
+
+    err = set_vector3(
+        W[0],
+        2.0,
+        3.0,
+        -4.0);
+
+    if( err )
+        return 1;
+
+    scalar_dot =
+        2.0*sqrt(2.0);
+
+#else
+
+    err = set_vector3(
+        W[0],
+        2.0 + 1.0*I,
+        3.0 - 2.0*I,
+        -4.0 + 0.5*I);
+
+    if( err )
+        return 1;
+
+    scalar_dot =
+        sqrt(2.0) *
+        (2.0 + 1.0*I);
+
+#endif
+
+
+    coeff[0] = 0.0;
+    work[0] = 0.0;
+
+    err = lis_eigen_block_borthogonalize(
+        B,
+        1,
+        Q,
+        1,
+        W,
+        BW,
+        1,
+        coeff,
+        work);
+
+    if( err )
+    {
+        printf(
+            "FAIL: rank-1 B-orthogonalization returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+    if( scalar_error(
+            coeff[0],
+            scalar_dot)>TEST_TOL )
+    {
+        printf(
+            "FAIL: rank-1 B-orthogonalization coefficient\n");
+
+        return 1;
+    }
+
+    if( read_vector3(
+            W[0],
+            value) )
+    {
+        return 1;
+    }
+
+    if( scalar_error(
+            value[0],
+            0.0)>TEST_TOL )
+    {
+        printf(
+            "FAIL: rank-1 B-orthogonalization first component\n");
+
+        return 1;
+    }
+
+    err = lis_vector_dot(
+        Q[0],
+        BW[0],
+        &scalar_dot);
+
+    if( err )
+        return 1;
+
+    if( scalar_error(
+            scalar_dot,
+            0.0)>TEST_TOL )
+    {
+        printf(
+            "FAIL: rank-1 B-orthogonalization final B projection\n");
+
+        return 1;
+    }
+
+
+    /*
+     * Standard rank-one deflation.
+     */
+#ifndef _COMPLEX
+
+    err = set_vector3(
+        W[0],
+        3.0,
+        4.0,
+        0.0);
+
+#else
+
+    err = set_vector3(
+        W[0],
+        3.0 + 4.0*I,
+        0.0,
+        0.0);
+
+#endif
+
+    if( err )
+        return 1;
+
+    if( read_vector3(
+            W[0],
+            reference) )
+    {
+        return 1;
+    }
+
+    active_rank = -1;
+
+    err = lis_eigen_block_rank_deflate(
+        1,
+        1,
+        W,
+        Q,
+        RANK_TOL,
+        &active_rank,
+        gram,
+        eval,
+        evec,
+        transform);
+
+    if( err )
+    {
+        printf(
+            "FAIL: rank-1 deflation returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+    if( active_rank!=1 )
+    {
+        printf(
+            "FAIL: rank-1 active_rank=%d expected 1\n",
+            (int)active_rank);
+
+        return 1;
+    }
+
+    err = lis_vector_nrm2(
+        Q[0],
+        &nrm2);
+
+    if( err )
+        return 1;
+
+    if( fabs(nrm2-1.0)>TEST_TOL )
+    {
+        printf(
+            "FAIL: rank-1 normalized basis norm %.17e\n",
+            (double)nrm2);
+
+        return 1;
+    }
+
+
+    /*
+     * For nominal_rank=active_rank=1, the rectangular coupling
+     * is one scalar and Q*C must reconstruct the original vector.
+     */
+    err = lis_eigen_block_rectangular_coupling(
+        1,
+        active_rank,
+        eval,
+        evec,
+        coupling);
+
+    if( err )
+    {
+        printf(
+            "FAIL: rank-1 rectangular coupling returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+    err = lis_eigen_block_linear_combination(
+        1,
+        Q,
+        1,
+        &Q[1],
+        coupling,
+        1);
+
+    if( err )
+    {
+        printf(
+            "FAIL: rank-1 candidate reconstruction returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+    if( read_vector3(
+            Q[1],
+            value) )
+    {
+        return 1;
+    }
+
+    for(i=0;i<3;i++)
+    {
+        if( scalar_error(
+                value[i],
+                reference[i])>TEST_TOL )
+        {
+            printf(
+                "FAIL: rank-1 candidate reconstruction component %d\n",
+                (int)i);
+
+            return 1;
+        }
+    }
+
+
+    /*
+     * Zero one-vector candidate must reveal active_rank=0.
+     */
+    err = set_vector3(
+        W[0],
+        0.0,
+        0.0,
+        0.0);
+
+    if( err )
+        return 1;
+
+    active_rank = -1;
+
+    err = lis_eigen_block_rank_deflate(
+        1,
+        1,
+        W,
+        Q,
+        RANK_TOL,
+        &active_rank,
+        gram,
+        eval,
+        evec,
+        transform);
+
+    if( err )
+    {
+        printf(
+            "FAIL: zero rank-1 deflation returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+    if( active_rank!=0 )
+    {
+        printf(
+            "FAIL: zero rank-1 active_rank=%d expected 0\n",
+            (int)active_rank);
+
+        return 1;
+    }
+
+    if( check_zero_vector(
+            "rank-1 zero Q",
+            Q[0],
+            TEST_TOL) )
+    {
+        return 1;
+    }
+
+
+    /*
+     * B-metric rank-one deflation.
+     *
+     * W=2*e0 gives W^H B W = 8 and therefore
+     * Q=e0/sqrt(2), with Q^H B Q = 1.
+     */
+    err = set_vector3(
+        W[0],
+        2.0,
+        0.0,
+        0.0);
+
+    if( err )
+        return 1;
+
+    if( read_vector3(
+            W[0],
+            reference) )
+    {
+        return 1;
+    }
+
+    active_rank = -1;
+
+    err = lis_eigen_block_brank_deflate(
+        B,
+        1,
+        1,
+        W,
+        BW,
+        Q,
+        BQ,
+        RANK_TOL,
+        &active_rank,
+        gram,
+        eval,
+        evec,
+        transform);
+
+    if( err )
+    {
+        printf(
+            "FAIL: rank-1 B-deflation returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+    if( active_rank!=1 )
+    {
+        printf(
+            "FAIL: rank-1 B active_rank=%d expected 1\n",
+            (int)active_rank);
+
+        return 1;
+    }
+
+    err = lis_vector_dot(
+        Q[0],
+        BQ[0],
+        &scalar_dot);
+
+    if( err )
+        return 1;
+
+    if( scalar_error(
+            scalar_dot,
+            1.0)>TEST_TOL )
+    {
+        printf(
+            "FAIL: rank-1 B-normalization\n");
+
+        return 1;
+    }
+
+
+    /*
+     * The same scalar coupling must reconstruct the B-metric
+     * candidate from the normalized basis.
+     */
+    err = lis_eigen_block_rectangular_coupling(
+        1,
+        active_rank,
+        eval,
+        evec,
+        coupling);
+
+    if( err )
+    {
+        printf(
+            "FAIL: rank-1 B coupling returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+    err = lis_eigen_block_linear_combination(
+        1,
+        Q,
+        1,
+        &Q[1],
+        coupling,
+        1);
+
+    if( err )
+    {
+        printf(
+            "FAIL: rank-1 B reconstruction returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+    if( read_vector3(
+            Q[1],
+            value) )
+    {
+        return 1;
+    }
+
+    for(i=0;i<3;i++)
+    {
+        if( scalar_error(
+                value[i],
+                reference[i])>TEST_TOL )
+        {
+            printf(
+                "FAIL: rank-1 B reconstruction component %d\n",
+                (int)i);
+
+            return 1;
+        }
+    }
+
+
+    /*
+     * Scalar Ritz reconstruction must reduce to vector scaling.
+     */
+    err = set_vector3(
+        Q[0],
+        1.0,
+        -2.0,
+        0.5);
+
+    if( err )
+        return 1;
+
+
+#ifndef _COMPLEX
+
+    coeff[0] = 2.5;
+
+    reference[0] = 2.5;
+    reference[1] = -5.0;
+    reference[2] = 1.25;
+
+#else
+
+    coeff[0] = 2.0 - 1.0*I;
+
+    reference[0] =
+        2.0 - 1.0*I;
+
+    reference[1] =
+        -4.0 + 2.0*I;
+
+    reference[2] =
+        1.0 - 0.5*I;
+
+#endif
+
+
+    err = lis_eigen_ritz_reconstruct(
+        1,
+        Q,
+        1,
+        coeff,
+        1,
+        &Q[1]);
+
+    if( err )
+    {
+        printf(
+            "FAIL: rank-1 Ritz reconstruction returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+    if( read_vector3(
+            Q[1],
+            value) )
+    {
+        return 1;
+    }
+
+    for(i=0;i<3;i++)
+    {
+        if( scalar_error(
+                value[i],
+                reference[i])>TEST_TOL )
+        {
+            printf(
+                "FAIL: rank-1 Ritz reconstruction component %d\n",
+                (int)i);
+
+            return 1;
+        }
+    }
+
+
+    printf(
+        "PASS: common block scalar/rank-1 compatibility\n");
+
+    return 0;
+}
+
+
+static int
 check_argument_guards(
     LIS_VECTOR W[],
     LIS_VECTOR Q[])
@@ -1946,6 +2787,17 @@ main(
         failed =
             check_rectangular_coupling(
                 W,
+                Q,
+                BQ);
+    }
+
+    if( !failed )
+    {
+        failed =
+            check_rank_one_compatibility(
+                B,
+                W,
+                BW,
                 Q,
                 BQ);
     }
