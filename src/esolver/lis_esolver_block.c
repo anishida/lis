@@ -823,3 +823,784 @@ LIS_INT lis_eigen_block_borthogonalize(
 
     return LIS_SUCCESS;
 }
+
+static LIS_REAL
+lis_eigen_block_scalar_real(
+    LIS_SCALAR value)
+{
+#ifdef _COMPLEX
+    return (LIS_REAL)creal(value);
+#else
+    return (LIS_REAL)value;
+#endif
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_eigen_block_linear_combination"
+LIS_INT lis_eigen_block_linear_combination(
+    LIS_INT nx,
+    LIS_VECTOR X[],
+    LIS_INT ny,
+    LIS_VECTOR Y[],
+    LIS_SCALAR *coeff,
+    LIS_INT ldcoeff)
+{
+    LIS_INT i,j,k,err;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if( nx<=0 || ny<=0 ||
+        X==NULL || Y==NULL ||
+        coeff==NULL ||
+        ldcoeff<ny )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid block linear-combination arguments\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+    for(i=0;i<nx;i++)
+    {
+        if( X[i]==NULL )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "null block linear-combination input vector\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+    for(j=0;j<ny;j++)
+    {
+        if( Y[j]==NULL )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "null block linear-combination output vector\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+
+        for(k=0;k<nx;k++)
+        {
+            if( Y[j]==X[k] )
+            {
+                LIS_SETERR(
+                    LIS_ERR_ILL_ARG,
+                    "block linear combination requires "
+                    "out-of-place output vectors\n");
+
+                return LIS_ERR_ILL_ARG;
+            }
+        }
+
+        for(k=0;k<j;k++)
+        {
+            if( Y[j]==Y[k] )
+            {
+                LIS_SETERR(
+                    LIS_ERR_ILL_ARG,
+                    "block linear combination requires "
+                    "distinct output vectors\n");
+
+                return LIS_ERR_ILL_ARG;
+            }
+        }
+    }
+
+    for(j=0;j<ny;j++)
+    {
+        err = lis_vector_copy(
+            X[0],
+            Y[j]);
+
+        if( err )
+        {
+            return err;
+        }
+
+        err = lis_vector_scale(
+            coeff[j],
+            Y[j]);
+
+        if( err )
+        {
+            return err;
+        }
+
+        for(i=1;i<nx;i++)
+        {
+            err = lis_vector_axpy(
+                coeff[i*ldcoeff+j],
+                X[i],
+                Y[j]);
+
+            if( err )
+            {
+                return err;
+            }
+        }
+    }
+
+    LIS_DEBUG_FUNC_OUT;
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+lis_eigen_block_rank_transform(
+    LIS_INT n,
+    LIS_REAL rank_tol,
+    LIS_SCALAR *gram,
+    LIS_SCALAR *eval,
+    LIS_SCALAR *evec,
+    LIS_SCALAR *transform,
+    LIS_INT *active_rank)
+{
+    LIS_INT i,j,k,best;
+    LIS_INT niter;
+    LIS_INT err;
+    LIS_INT rank;
+
+    LIS_REAL error;
+    LIS_REAL best_value;
+    LIS_REAL value;
+    LIS_REAL lambda_max;
+    LIS_REAL threshold;
+    LIS_REAL inverse_root;
+
+    LIS_SCALAR swap;
+
+    if( n<=0 ||
+        !isfinite((double)rank_tol) ||
+        rank_tol<0.0 ||
+        rank_tol>=1.0 ||
+        gram==NULL ||
+        eval==NULL ||
+        evec==NULL ||
+        transform==NULL ||
+        active_rank==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid block rank-transform arguments\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *active_rank = 0;
+
+    niter = 0;
+    error = 0.0;
+
+    err = lis_eigen_projected_solve(
+        n,
+        gram,
+        eval,
+        evec,
+        &niter,
+        &error);
+
+    if( err )
+    {
+        return err;
+    }
+
+    /*
+     * Sort the Hermitian Gram eigenpairs in descending order.
+     *
+     * Keeping the retained eigenpairs at the front gives the
+     * following stages a deterministic active subspace layout.
+     */
+    for(i=0;i<n-1;i++)
+    {
+        best = i;
+
+        best_value =
+            lis_eigen_block_scalar_real(
+                eval[i]);
+
+        if( !isfinite((double)best_value) )
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "non-finite block Gram eigenvalue\n");
+
+            return LIS_BREAKDOWN;
+        }
+
+        for(j=i+1;j<n;j++)
+        {
+            value =
+                lis_eigen_block_scalar_real(
+                    eval[j]);
+
+            if( !isfinite((double)value) )
+            {
+                LIS_SETERR(
+                    LIS_BREAKDOWN,
+                    "non-finite block Gram eigenvalue\n");
+
+                return LIS_BREAKDOWN;
+            }
+
+            if( value>best_value )
+            {
+                best = j;
+                best_value = value;
+            }
+        }
+
+        if( best!=i )
+        {
+            swap = eval[i];
+            eval[i] = eval[best];
+            eval[best] = swap;
+
+            for(k=0;k<n;k++)
+            {
+                swap =
+                    evec[k*n+i];
+
+                evec[k*n+i] =
+                    evec[k*n+best];
+
+                evec[k*n+best] =
+                    swap;
+            }
+        }
+    }
+
+    value =
+        lis_eigen_block_scalar_real(
+            eval[n-1]);
+
+    if( !isfinite((double)value) )
+    {
+        LIS_SETERR(
+            LIS_BREAKDOWN,
+            "non-finite block Gram eigenvalue\n");
+
+        return LIS_BREAKDOWN;
+    }
+
+    for(i=0;i<n*n;i++)
+    {
+        transform[i] = 0.0;
+    }
+
+    lambda_max =
+        lis_eigen_block_scalar_real(
+            eval[0]);
+
+    if( !isfinite((double)lambda_max) )
+    {
+        LIS_SETERR(
+            LIS_BREAKDOWN,
+            "non-finite maximum block Gram eigenvalue\n");
+
+        return LIS_BREAKDOWN;
+    }
+
+    if( lambda_max<=0.0 )
+    {
+        *active_rank = 0;
+
+        return LIS_SUCCESS;
+    }
+
+    threshold =
+        rank_tol*lambda_max;
+
+    if( !isfinite((double)threshold) )
+    {
+        LIS_SETERR(
+            LIS_BREAKDOWN,
+            "block rank threshold overflowed\n");
+
+        return LIS_BREAKDOWN;
+    }
+
+    rank = 0;
+
+    for(j=0;j<n;j++)
+    {
+        value =
+            lis_eigen_block_scalar_real(
+                eval[j]);
+
+        if( !isfinite((double)value) )
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "non-finite block Gram eigenvalue\n");
+
+            return LIS_BREAKDOWN;
+        }
+
+        if( value>threshold &&
+            value>0.0 )
+        {
+            rank++;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    for(j=0;j<rank;j++)
+    {
+        value =
+            lis_eigen_block_scalar_real(
+                eval[j]);
+
+        inverse_root =
+            1.0/sqrt(value);
+
+        if( !isfinite((double)inverse_root) )
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "block rank normalization overflowed\n");
+
+            return LIS_BREAKDOWN;
+        }
+
+        for(i=0;i<n;i++)
+        {
+            transform[i*n+j] =
+                evec[i*n+j] *
+                inverse_root;
+        }
+    }
+
+    *active_rank = rank;
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+lis_eigen_block_zero_outputs(
+    LIS_INT capacity,
+    LIS_INT start,
+    LIS_VECTOR source,
+    LIS_VECTOR Y[])
+{
+    LIS_INT j,err;
+
+    if( capacity<0 ||
+        start<0 ||
+        start>capacity ||
+        source==NULL ||
+        Y==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid block zero-output arguments\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+    for(j=start;j<capacity;j++)
+    {
+        if( Y[j]==NULL )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "null inactive block output vector\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+
+        err = lis_vector_copy(
+            source,
+            Y[j]);
+
+        if( err )
+        {
+            return err;
+        }
+
+        err = lis_vector_scale(
+            0.0,
+            Y[j]);
+
+        if( err )
+        {
+            return err;
+        }
+    }
+
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_eigen_block_rank_deflate"
+LIS_INT lis_eigen_block_rank_deflate(
+    LIS_INT capacity,
+    LIS_INT nominal_rank,
+    LIS_VECTOR W[],
+    LIS_VECTOR Q[],
+    LIS_REAL rank_tol,
+    LIS_INT *active_rank,
+    LIS_SCALAR *gram,
+    LIS_SCALAR *eval,
+    LIS_SCALAR *evec,
+    LIS_SCALAR *transform)
+{
+    LIS_INT i,j,err;
+    LIS_INT rank;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if( capacity<=0 ||
+        nominal_rank<=0 ||
+        nominal_rank>capacity ||
+        W==NULL ||
+        Q==NULL ||
+        active_rank==NULL ||
+        gram==NULL ||
+        eval==NULL ||
+        evec==NULL ||
+        transform==NULL ||
+        !isfinite((double)rank_tol) ||
+        rank_tol<0.0 ||
+        rank_tol>=1.0 )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid block rank-deflation arguments\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *active_rank = 0;
+
+    for(i=0;i<nominal_rank;i++)
+    {
+        if( W[i]==NULL )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "null rank-deflation candidate vector\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+    for(j=0;j<capacity;j++)
+    {
+        if( Q[j]==NULL )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "null rank-deflation output vector\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+
+        for(i=0;i<nominal_rank;i++)
+        {
+            if( Q[j]==W[i] )
+            {
+                LIS_SETERR(
+                    LIS_ERR_ILL_ARG,
+                    "block rank deflation requires "
+                    "out-of-place output vectors\n");
+
+                return LIS_ERR_ILL_ARG;
+            }
+        }
+    }
+
+    err = lis_eigen_block_gram(
+        nominal_rank,
+        W,
+        nominal_rank,
+        W,
+        gram);
+
+    if( err )
+    {
+        return err;
+    }
+
+    err = lis_eigen_block_rank_transform(
+        nominal_rank,
+        rank_tol,
+        gram,
+        eval,
+        evec,
+        transform,
+        &rank);
+
+    if( err )
+    {
+        return err;
+    }
+
+    if( rank>0 )
+    {
+        err =
+            lis_eigen_block_linear_combination(
+                nominal_rank,
+                W,
+                rank,
+                Q,
+                transform,
+                nominal_rank);
+
+        if( err )
+        {
+            return err;
+        }
+    }
+
+    err = lis_eigen_block_zero_outputs(
+        capacity,
+        rank,
+        W[0],
+        Q);
+
+    if( err )
+    {
+        return err;
+    }
+
+    *active_rank = rank;
+
+    LIS_DEBUG_FUNC_OUT;
+
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_eigen_block_brank_deflate"
+LIS_INT lis_eigen_block_brank_deflate(
+    LIS_MATRIX B,
+    LIS_INT capacity,
+    LIS_INT nominal_rank,
+    LIS_VECTOR W[],
+    LIS_VECTOR BW[],
+    LIS_VECTOR Q[],
+    LIS_VECTOR BQ[],
+    LIS_REAL rank_tol,
+    LIS_INT *active_rank,
+    LIS_SCALAR *gram,
+    LIS_SCALAR *eval,
+    LIS_SCALAR *evec,
+    LIS_SCALAR *transform)
+{
+    LIS_INT i,j,k,err;
+    LIS_INT rank;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if( B==NULL ||
+        capacity<=0 ||
+        nominal_rank<=0 ||
+        nominal_rank>capacity ||
+        W==NULL ||
+        BW==NULL ||
+        Q==NULL ||
+        BQ==NULL ||
+        active_rank==NULL ||
+        gram==NULL ||
+        eval==NULL ||
+        evec==NULL ||
+        transform==NULL ||
+        !isfinite((double)rank_tol) ||
+        rank_tol<0.0 ||
+        rank_tol>=1.0 )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid block B-rank-deflation arguments\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *active_rank = 0;
+
+    for(i=0;i<nominal_rank;i++)
+    {
+        if( W[i]==NULL ||
+            BW[i]==NULL )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "null B-rank-deflation candidate or work vector\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+
+        for(k=0;k<nominal_rank;k++)
+        {
+            if( BW[i]==W[k] )
+            {
+                LIS_SETERR(
+                    LIS_ERR_ILL_ARG,
+                    "B-rank deflation requires separate BW vectors\n");
+
+                return LIS_ERR_ILL_ARG;
+            }
+        }
+    }
+
+    for(j=0;j<capacity;j++)
+    {
+        if( Q[j]==NULL ||
+            BQ[j]==NULL )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "null B-rank-deflation output vector\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+
+        if( Q[j]==BQ[j] )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "B-rank deflation requires separate Q and BQ vectors\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+
+        for(i=0;i<nominal_rank;i++)
+        {
+            if( Q[j]==W[i] ||
+                Q[j]==BW[i] ||
+                BQ[j]==W[i] ||
+                BQ[j]==BW[i] )
+            {
+                LIS_SETERR(
+                    LIS_ERR_ILL_ARG,
+                    "B-rank deflation requires "
+                    "out-of-place output vectors\n");
+
+                return LIS_ERR_ILL_ARG;
+            }
+        }
+
+        for(k=0;k<j;k++)
+        {
+            if( Q[j]==Q[k] ||
+                BQ[j]==BQ[k] ||
+                Q[j]==BQ[k] ||
+                BQ[j]==Q[k] )
+            {
+                LIS_SETERR(
+                    LIS_ERR_ILL_ARG,
+                    "B-rank deflation requires distinct outputs\n");
+
+                return LIS_ERR_ILL_ARG;
+            }
+        }
+    }
+
+    /*
+     * This computes BW = B*W exactly once and forms W^H*BW.
+     */
+    err = lis_eigen_block_bgram(
+        B,
+        nominal_rank,
+        W,
+        nominal_rank,
+        W,
+        BW,
+        gram);
+
+    if( err )
+    {
+        return err;
+    }
+
+    err = lis_eigen_block_rank_transform(
+        nominal_rank,
+        rank_tol,
+        gram,
+        eval,
+        evec,
+        transform,
+        &rank);
+
+    if( err )
+    {
+        return err;
+    }
+
+    if( rank>0 )
+    {
+        err =
+            lis_eigen_block_linear_combination(
+                nominal_rank,
+                W,
+                rank,
+                Q,
+                transform,
+                nominal_rank);
+
+        if( err )
+        {
+            return err;
+        }
+
+        /*
+         * BQ = BW * U_r * Lambda_r^(-1/2)
+         *
+         * Reusing BW avoids an additional B*Q block matvec.
+         */
+        err =
+            lis_eigen_block_linear_combination(
+                nominal_rank,
+                BW,
+                rank,
+                BQ,
+                transform,
+                nominal_rank);
+
+        if( err )
+        {
+            return err;
+        }
+    }
+
+    err = lis_eigen_block_zero_outputs(
+        capacity,
+        rank,
+        W[0],
+        Q);
+
+    if( err )
+    {
+        return err;
+    }
+
+    err = lis_eigen_block_zero_outputs(
+        capacity,
+        rank,
+        BW[0],
+        BQ);
+
+    if( err )
+    {
+        return err;
+    }
+
+    *active_rank = rank;
+
+    LIS_DEBUG_FUNC_OUT;
+
+    return LIS_SUCCESS;
+}

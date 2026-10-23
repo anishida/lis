@@ -126,6 +126,39 @@ extern LIS_INT lis_eigen_block_borthogonalize(
         LIS_INT passes,
         LIS_SCALAR *coeff,
         LIS_SCALAR *work);
+
+extern LIS_INT lis_eigen_block_linear_combination(
+        LIS_INT nx,
+        LIS_VECTOR X[],
+        LIS_INT ny,
+        LIS_VECTOR Y[],
+        LIS_SCALAR *coeff,
+        LIS_INT ldcoeff);
+extern LIS_INT lis_eigen_block_rank_deflate(
+        LIS_INT capacity,
+        LIS_INT nominal_rank,
+        LIS_VECTOR W[],
+        LIS_VECTOR Q[],
+        LIS_REAL rank_tol,
+        LIS_INT *active_rank,
+        LIS_SCALAR *gram,
+        LIS_SCALAR *eval,
+        LIS_SCALAR *evec,
+        LIS_SCALAR *transform);
+extern LIS_INT lis_eigen_block_brank_deflate(
+        LIS_MATRIX B,
+        LIS_INT capacity,
+        LIS_INT nominal_rank,
+        LIS_VECTOR W[],
+        LIS_VECTOR BW[],
+        LIS_VECTOR Q[],
+        LIS_VECTOR BQ[],
+        LIS_REAL rank_tol,
+        LIS_INT *active_rank,
+        LIS_SCALAR *gram,
+        LIS_SCALAR *eval,
+        LIS_SCALAR *evec,
+        LIS_SCALAR *transform);
 	extern LIS_INT lis_esolver_work_destroy(LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_option2(char* arg1, char *arg2, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_option_esolver(char *argv, LIS_ESOLVER esolver);
