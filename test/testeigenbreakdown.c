@@ -2237,6 +2237,600 @@ cleanup:
 }
 
 
+
+
+#define LIS_EIGEN_LOCK_N 8
+#define LIS_EIGEN_LOCK_SS 3
+#define LIS_EIGEN_LOCK_TOL 1.0e-6
+#define LIS_EIGEN_LOCK_OVERLAP_TOL 1.0e-10
+#define LIS_EIGEN_LOCK_EVALUE_TOL 1.0e-5
+
+
+static const LIS_REAL lis_eigen_lock_power_expected[
+    LIS_EIGEN_LOCK_SS] = {
+        2.00,
+        1.80,
+        1.60
+    };
+
+static const LIS_REAL lis_eigen_lock_inverse_expected[
+    LIS_EIGEN_LOCK_SS] = {
+        0.50,
+        0.60,
+        0.70
+    };
+
+
+static LIS_INT
+locking_evalue_sequence(
+    const char *name,
+    LIS_ESOLVER esolver,
+    const LIS_REAL *expected)
+{
+    LIS_INT i;
+    LIS_REAL error;
+
+    for(i=0;i<LIS_EIGEN_LOCK_SS;i++)
+    {
+        error = eigen_scalar_magnitude(
+            esolver->evalue[i] -
+            (LIS_SCALAR)expected[i]);
+
+        if( !isfinite((double)error) ||
+            error>LIS_EIGEN_LOCK_EVALUE_TOL )
+        {
+            printf(
+                "%s: eigenvalue[%d] error %.17e, expected %.17e\n",
+                name,
+                (int)i,
+                (double)error,
+                (double)expected[i]);
+            return LIS_FAILS;
+        }
+    }
+
+    printf(
+        "PASS: %s eigenvalue sequence\n",
+        name);
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+create_locking_matrix(
+    LIS_MATRIX *A)
+{
+    static const LIS_REAL diag[LIS_EIGEN_LOCK_N] = {
+        0.50,
+        0.60,
+        0.70,
+        1.00,
+        1.30,
+        1.60,
+        1.80,
+        2.00
+    };
+
+    LIS_INT err;
+    LIS_INT i;
+
+    *A = NULL;
+
+    err = lis_matrix_create(
+        LIS_COMM_WORLD,
+        A);
+    if( err )
+        return err;
+
+    err = lis_matrix_set_size(
+        *A,
+        0,
+        LIS_EIGEN_LOCK_N);
+    if( err )
+        return err;
+
+    for(i=0;i<LIS_EIGEN_LOCK_N;i++)
+    {
+        err = lis_matrix_set_value(
+            LIS_INS_VALUE,
+            i,
+            i,
+            diag[i],
+            *A);
+        if( err )
+            return err;
+    }
+
+    return lis_matrix_assemble(*A);
+}
+
+
+static LIS_INT
+create_locking_identity(
+    LIS_MATRIX *B)
+{
+    LIS_INT err;
+    LIS_INT i;
+
+    *B = NULL;
+
+    err = lis_matrix_create(
+        LIS_COMM_WORLD,
+        B);
+    if( err )
+        return err;
+
+    err = lis_matrix_set_size(
+        *B,
+        0,
+        LIS_EIGEN_LOCK_N);
+    if( err )
+        return err;
+
+    for(i=0;i<LIS_EIGEN_LOCK_N;i++)
+    {
+        err = lis_matrix_set_value(
+            LIS_INS_VALUE,
+            i,
+            i,
+            1.0,
+            *B);
+        if( err )
+            return err;
+    }
+
+    return lis_matrix_assemble(*B);
+}
+
+
+static LIS_INT
+locking_euclidean_overlap(
+    LIS_ESOLVER esolver,
+    LIS_REAL *max_overlap)
+{
+    LIS_INT err;
+    LIS_INT i,j;
+    LIS_REAL ni,nj;
+    LIS_REAL value;
+    LIS_SCALAR dot;
+
+    *max_overlap = 0.0;
+
+    for(i=0;i<LIS_EIGEN_LOCK_SS;i++)
+    {
+        err = lis_vector_nrm2(
+            esolver->evector[i],
+            &ni);
+        if( err )
+            return err;
+
+        if( !(ni>0.0) )
+            return LIS_BREAKDOWN;
+
+        for(j=0;j<i;j++)
+        {
+            err = lis_vector_nrm2(
+                esolver->evector[j],
+                &nj);
+            if( err )
+                return err;
+
+            if( !(nj>0.0) )
+                return LIS_BREAKDOWN;
+
+            err = lis_vector_dot(
+                esolver->evector[j],
+                esolver->evector[i],
+                &dot);
+            if( err )
+                return err;
+
+            value =
+                eigen_scalar_magnitude(dot) /
+                (ni*nj);
+
+            if( value>*max_overlap )
+                *max_overlap = value;
+        }
+    }
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+locking_b_overlap(
+    LIS_MATRIX B,
+    LIS_ESOLVER esolver,
+    LIS_REAL *max_overlap)
+{
+    LIS_INT err;
+    LIS_INT i,j;
+    LIS_REAL value;
+    LIS_SCALAR numerator;
+    LIS_SCALAR di,dj;
+    LIS_VECTOR Bi;
+    LIS_VECTOR Bj;
+
+    Bi = NULL;
+    Bj = NULL;
+    *max_overlap = 0.0;
+
+    err = lis_vector_duplicate(
+        B,
+        &Bi);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_duplicate(
+        B,
+        &Bj);
+    if( err )
+        goto cleanup;
+
+    for(i=0;i<LIS_EIGEN_LOCK_SS;i++)
+    {
+        err = lis_matvec(
+            B,
+            esolver->evector[i],
+            Bi);
+        if( err )
+            goto cleanup;
+
+        err = lis_vector_dot(
+            esolver->evector[i],
+            Bi,
+            &di);
+        if( err )
+            goto cleanup;
+
+        if( !lis_esolver_is_valid_denominator(di) )
+        {
+            err = LIS_BREAKDOWN;
+            goto cleanup;
+        }
+
+        for(j=0;j<i;j++)
+        {
+            err = lis_matvec(
+                B,
+                esolver->evector[j],
+                Bj);
+            if( err )
+                goto cleanup;
+
+            err = lis_vector_dot(
+                esolver->evector[j],
+                Bj,
+                &dj);
+            if( err )
+                goto cleanup;
+
+            if( !lis_esolver_is_valid_denominator(dj) )
+            {
+                err = LIS_BREAKDOWN;
+                goto cleanup;
+            }
+
+            err = lis_vector_dot(
+                esolver->evector[j],
+                Bi,
+                &numerator);
+            if( err )
+                goto cleanup;
+
+            value =
+                eigen_scalar_magnitude(numerator) /
+                sqrt(
+                    eigen_scalar_magnitude(di) *
+                    eigen_scalar_magnitude(dj));
+
+            if( value>*max_overlap )
+                *max_overlap = value;
+        }
+    }
+
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( Bj )
+        lis_vector_destroy(Bj);
+    if( Bi )
+        lis_vector_destroy(Bi);
+
+    return err;
+}
+
+
+static LIS_INT
+check_locked_standard_subspace(
+    const char *name,
+    const char *inner,
+    const LIS_REAL *expected,
+    LIS_MATRIX A)
+{
+    LIS_INT err;
+    LIS_INT api;
+    LIS_INT status;
+    LIS_REAL overlap;
+    LIS_VECTOR x;
+    LIS_ESOLVER esolver;
+    LIS_SCALAR evalue;
+    char options[256];
+
+    x = NULL;
+    esolver = NULL;
+    overlap = 0.0;
+
+    err = lis_vector_duplicate(A,&x);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_set_all(1.0,x);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_create(&esolver);
+    if( err )
+        goto cleanup;
+
+    snprintf(
+        options,
+        sizeof(options),
+        "-e si -ie %s -ss %d "
+        "-emaxiter 600 -etol %.17e",
+        inner,
+        LIS_EIGEN_LOCK_SS,
+        (double)LIS_EIGEN_LOCK_TOL);
+
+    err = lis_esolver_set_option(
+        options,
+        esolver);
+    if( err )
+        goto cleanup;
+
+    api = lis_esolve(
+        A,x,&evalue,esolver);
+    if( api!=LIS_SUCCESS )
+    {
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = lis_esolver_get_status(
+        esolver,&status);
+    if( err )
+        goto cleanup;
+
+    if( status!=LIS_SUCCESS )
+    {
+        printf(
+            "%s: status %d, expected LIS_SUCCESS\n",
+            name,(int)status);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = locking_euclidean_overlap(
+        esolver,&overlap);
+    if( err )
+        goto cleanup;
+
+    if( !isfinite((double)overlap) ||
+        overlap>LIS_EIGEN_LOCK_OVERLAP_TOL )
+    {
+        printf(
+            "%s: overlap %.17e, expected <= %.17e\n",
+            name,
+            (double)overlap,
+            (double)LIS_EIGEN_LOCK_OVERLAP_TOL);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = locking_evalue_sequence(
+        name,
+        esolver,
+        expected);
+    if( err )
+        goto cleanup;
+
+    printf(
+        "PASS: %s locking overlap %.6e\n",
+        name,
+        (double)overlap);
+
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( esolver )
+        lis_esolver_destroy(esolver);
+    if( x )
+        lis_vector_destroy(x);
+
+    return err;
+}
+
+
+static LIS_INT
+check_locked_generalized_subspace(
+    const char *name,
+    const char *inner,
+    const LIS_REAL *expected,
+    LIS_MATRIX A,
+    LIS_MATRIX B)
+{
+    LIS_INT err;
+    LIS_INT api;
+    LIS_INT status;
+    LIS_REAL overlap;
+    LIS_VECTOR x;
+    LIS_ESOLVER esolver;
+    LIS_SCALAR evalue;
+    char options[256];
+
+    x = NULL;
+    esolver = NULL;
+    overlap = 0.0;
+
+    err = lis_vector_duplicate(A,&x);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_set_all(1.0,x);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_create(&esolver);
+    if( err )
+        goto cleanup;
+
+    snprintf(
+        options,
+        sizeof(options),
+        "-e gsi -ige %s -ss %d "
+        "-emaxiter 600 -etol %.17e",
+        inner,
+        LIS_EIGEN_LOCK_SS,
+        (double)LIS_EIGEN_LOCK_TOL);
+
+    err = lis_esolver_set_option(
+        options,
+        esolver);
+    if( err )
+        goto cleanup;
+
+    api = lis_gesolve(
+        A,B,x,&evalue,esolver);
+    if( api!=LIS_SUCCESS )
+    {
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = lis_esolver_get_status(
+        esolver,&status);
+    if( err )
+        goto cleanup;
+
+    if( status!=LIS_SUCCESS )
+    {
+        printf(
+            "%s: status %d, expected LIS_SUCCESS\n",
+            name,(int)status);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = locking_b_overlap(
+        B,esolver,&overlap);
+    if( err )
+        goto cleanup;
+
+    if( !isfinite((double)overlap) ||
+        overlap>LIS_EIGEN_LOCK_OVERLAP_TOL )
+    {
+        printf(
+            "%s: B-overlap %.17e, expected <= %.17e\n",
+            name,
+            (double)overlap,
+            (double)LIS_EIGEN_LOCK_OVERLAP_TOL);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = locking_evalue_sequence(
+        name,
+        esolver,
+        expected);
+    if( err )
+        goto cleanup;
+
+    printf(
+        "PASS: %s B-locking overlap %.6e\n",
+        name,
+        (double)overlap);
+
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( esolver )
+        lis_esolver_destroy(esolver);
+    if( x )
+        lis_vector_destroy(x);
+
+    return err;
+}
+
+
+static LIS_INT
+test_subspace_locked_modes(void)
+{
+    LIS_INT err;
+    LIS_MATRIX A;
+    LIS_MATRIX B;
+
+    A = NULL;
+    B = NULL;
+
+    err = create_locking_matrix(&A);
+    if( err )
+        goto cleanup;
+
+    err = create_locking_identity(&B);
+    if( err )
+        goto cleanup;
+
+    err = check_locked_standard_subspace(
+        "Subspace/PI",
+        "pi",
+        lis_eigen_lock_power_expected,
+        A);
+    if( err )
+        goto cleanup;
+
+    err = check_locked_standard_subspace(
+        "Subspace/II",
+        "ii",
+        lis_eigen_lock_inverse_expected,
+        A);
+    if( err )
+        goto cleanup;
+
+    err = check_locked_generalized_subspace(
+        "Generalized Subspace/GPI",
+        "gpi",
+        lis_eigen_lock_power_expected,
+        A,
+        B);
+    if( err )
+        goto cleanup;
+
+    err = check_locked_generalized_subspace(
+        "Generalized Subspace/GII",
+        "gii",
+        lis_eigen_lock_inverse_expected,
+        A,
+        B);
+    if( err )
+        goto cleanup;
+
+    printf(
+        "PASS: Subspace locked-mode regressions\n");
+
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( B )
+        lis_matrix_destroy(B);
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
 static LIS_INT
 test_standard_lanczos_orthogonality(void)
 {
@@ -2685,6 +3279,15 @@ main(
     {
         printf(
             "LIS_EIGEN_RECOVERY GSUBSPACE_GPI_RETRY FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_subspace_locked_modes();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_LOCKING SUBSPACE FAILED\n");
         lis_finalize();
         return 1;
     }

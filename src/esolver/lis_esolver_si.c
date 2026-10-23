@@ -433,6 +433,355 @@ lis_egsi_solve_with_recovery(
 }
 
 
+/*
+ * Remove components along already converged vectors.  The locked
+ * vectors are not assumed to have unit Euclidean norm.
+ */
+static LIS_INT
+lis_esi_project_locked(
+        LIS_VECTOR candidate,
+        LIS_VECTOR *v,
+        LIS_INT locked)
+{
+        LIS_INT k,err;
+        LIS_SCALAR numerator,denominator,alpha;
+
+        for(k=1;k<=locked;k++)
+        {
+                err = lis_vector_dot(
+                        v[k],candidate,&numerator);
+                if( err )
+                {
+                        return err;
+                }
+
+                err = lis_vector_dot(
+                        v[k],v[k],&denominator);
+                if( err )
+                {
+                        return err;
+                }
+
+                if( !lis_esolver_is_valid_denominator(denominator) )
+                {
+                        return LIS_BREAKDOWN;
+                }
+
+                alpha = numerator/denominator;
+
+                err = lis_vector_axpy(
+                        -alpha,v[k],candidate);
+                if( err )
+                {
+                        return err;
+                }
+        }
+
+        return LIS_SUCCESS;
+}
+
+
+/*
+ * Generalized symmetric eigenvectors are locked in the B inner
+ * product.  Bcandidate is updated together with candidate so one
+ * matrix-vector product for the active vector is sufficient.
+ */
+static LIS_INT
+lis_egsi_project_locked(
+        LIS_MATRIX B,
+        LIS_VECTOR candidate,
+        LIS_VECTOR *v,
+        LIS_INT locked,
+        LIS_VECTOR Bcandidate,
+        LIS_VECTOR Blocked)
+{
+        LIS_INT k,err;
+        LIS_SCALAR numerator,denominator,alpha;
+
+        if( locked<=0 )
+        {
+                return LIS_SUCCESS;
+        }
+
+        err = lis_matvec(
+                B,candidate,Bcandidate);
+        if( err )
+        {
+                return err;
+        }
+
+        for(k=1;k<=locked;k++)
+        {
+                err = lis_matvec(
+                        B,v[k],Blocked);
+                if( err )
+                {
+                        return err;
+                }
+
+                err = lis_vector_dot(
+                        v[k],Bcandidate,&numerator);
+                if( err )
+                {
+                        return err;
+                }
+
+                err = lis_vector_dot(
+                        v[k],Blocked,&denominator);
+                if( err )
+                {
+                        return err;
+                }
+
+                if( !lis_esolver_is_valid_denominator(denominator) )
+                {
+                        return LIS_BREAKDOWN;
+                }
+
+                alpha = numerator/denominator;
+
+                err = lis_vector_axpy(
+                        -alpha,v[k],candidate);
+                if( err )
+                {
+                        return err;
+                }
+
+                err = lis_vector_axpy(
+                        -alpha,Blocked,Bcandidate);
+                if( err )
+                {
+                        return err;
+                }
+        }
+
+        return LIS_SUCCESS;
+}
+
+
+/*
+ * Construct a global coordinate vector using LIS internal ownership
+ * ranges.  This avoids calling lis_vector_set_value() on ranks that
+ * do not own the selected global row.  Extended-precision low parts
+ * are cleared explicitly as well.
+ */
+static LIS_INT
+lis_esi_set_dense_restart_seed(
+        LIS_VECTOR candidate,
+        LIS_INT seed)
+{
+        LIS_INT i,global_index,err;
+        LIS_REAL angle;
+
+        if( candidate->gn<=0 ||
+            seed<0 ||
+            seed>=candidate->gn )
+        {
+                return LIS_ERR_ILL_ARG;
+        }
+
+        err = lis_vector_set_all(
+                0.0,candidate);
+        if( err )
+        {
+                return err;
+        }
+
+        if( candidate->precision!=LIS_PRECISION_DEFAULT &&
+            candidate->value_lo!=NULL )
+        {
+                for(i=0;i<candidate->n;i++)
+                {
+                        candidate->value_lo[i] = 0.0;
+                }
+        }
+
+        /*
+         * Use a dense deterministic family rather than a coordinate
+         * vector. A coordinate seed can itself be an exact eigenvector
+         * and can therefore steer a restarted extremal iteration toward
+         * an unrelated mode. Global-index sine seeds retain broad
+         * spectral content while remaining reproducible across ranks.
+         */
+        for(i=0;i<candidate->n;i++)
+        {
+                global_index = candidate->is+i;
+                angle =
+                        (LIS_REAL)(seed+1) *
+                        (LIS_REAL)(global_index+1);
+
+                candidate->value[i] =
+                        sin(angle);
+        }
+
+        return LIS_SUCCESS;
+}
+
+
+/*
+ * If locking annihilates the inherited starting vector, construct a
+ * deterministic independent direction instead of relying on roundoff.
+ * Dense global-index seeds make the restart reproducible in
+ * serial and distributed-memory layouts without selecting a
+ * single coordinate direction.
+ */
+static LIS_INT
+lis_esi_prepare_locked(
+        LIS_VECTOR candidate,
+        LIS_VECTOR *v,
+        LIS_INT locked)
+{
+        LIS_INT err,attempt;
+        LIS_INT global_n;
+        LIS_REAL nrm2;
+
+        err = lis_esi_project_locked(
+                candidate,v,locked);
+        if( err )
+        {
+                return err;
+        }
+
+        err = lis_vector_nrm2(
+                candidate,&nrm2);
+        if( err )
+        {
+                return err;
+        }
+
+        if( lis_esolver_is_valid_norm(nrm2) )
+        {
+                return lis_vector_scale(
+                        1.0/nrm2,candidate);
+        }
+
+        global_n = candidate->gn;
+
+        if( global_n<=0 )
+        {
+                return LIS_BREAKDOWN;
+        }
+
+        for(attempt=0;attempt<global_n;attempt++)
+        {
+                err = lis_esi_set_dense_restart_seed(
+                        candidate,attempt);
+                if( err )
+                {
+                        return err;
+                }
+
+                err = lis_esi_project_locked(
+                        candidate,v,locked);
+                if( err )
+                {
+                        return err;
+                }
+
+                err = lis_vector_nrm2(
+                        candidate,&nrm2);
+                if( err )
+                {
+                        return err;
+                }
+
+                if( lis_esolver_is_valid_norm(nrm2) )
+                {
+                        return lis_vector_scale(
+                                1.0/nrm2,candidate);
+                }
+        }
+
+        LIS_SETERR(
+                LIS_BREAKDOWN,
+                "unable to construct independent Subspace restart vector\n");
+        return LIS_BREAKDOWN;
+}
+
+
+/*
+ * Generalized Subspace uses the same deterministic restart policy,
+ * followed by B-orthogonal projection against the locked modes.
+ */
+static LIS_INT
+lis_egsi_prepare_locked(
+        LIS_MATRIX B,
+        LIS_VECTOR candidate,
+        LIS_VECTOR *v,
+        LIS_INT locked,
+        LIS_VECTOR Bcandidate,
+        LIS_VECTOR Blocked)
+{
+        LIS_INT err,attempt;
+        LIS_INT global_n;
+        LIS_REAL nrm2;
+
+        err = lis_egsi_project_locked(
+                B,candidate,v,locked,
+                Bcandidate,Blocked);
+        if( err )
+        {
+                return err;
+        }
+
+        err = lis_vector_nrm2(
+                candidate,&nrm2);
+        if( err )
+        {
+                return err;
+        }
+
+        if( lis_esolver_is_valid_norm(nrm2) )
+        {
+                return lis_vector_scale(
+                        1.0/nrm2,candidate);
+        }
+
+        global_n = candidate->gn;
+
+        if( global_n<=0 )
+        {
+                return LIS_BREAKDOWN;
+        }
+
+        for(attempt=0;attempt<global_n;attempt++)
+        {
+                err = lis_esi_set_dense_restart_seed(
+                        candidate,attempt);
+                if( err )
+                {
+                        return err;
+                }
+
+                err = lis_egsi_project_locked(
+                        B,candidate,v,locked,
+                        Bcandidate,Blocked);
+                if( err )
+                {
+                        return err;
+                }
+
+                err = lis_vector_nrm2(
+                        candidate,&nrm2);
+                if( err )
+                {
+                        return err;
+                }
+
+                if( lis_esolver_is_valid_norm(nrm2) )
+                {
+                        return lis_vector_scale(
+                                1.0/nrm2,candidate);
+                }
+        }
+
+        LIS_SETERR(
+                LIS_BREAKDOWN,
+                "unable to construct independent generalized Subspace restart vector\n");
+        return LIS_BREAKDOWN;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_esi"
 LIS_INT lis_esi(LIS_ESOLVER esolver)
@@ -481,7 +830,11 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   r = esolver->work[0];
   q = esolver->work[1];
   v = &esolver->work[2];
-  Ax = esolver->work[3];
+  /*
+   * v[1..ss] occupies work[3..ss+2].
+   * Keep certification scratch outside the basis storage.
+   */
+  Ax = esolver->work[NWORK + ss - 1];
   lis_vector_set_all(1.0,r);
   lis_vector_nrm2(r, &nrm2);
 
@@ -577,11 +930,25 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	  iter = iter+1;
 	  giter = giter+1;
 
-	  /* QR factorization V*R = Z for starting vector Z */
-	  for (k=1;k<j;k++)
+	  /*
+	   * Keep the active mode orthogonal to all converged modes.
+	   * The projection coefficient is normalized by the locked
+	   * vector norm instead of assuming a unit vector.
+	   */
+	  err = lis_esi_prepare_locked(
+	          v[j],v,j-1);
+	  if( err )
 	    {
-	      lis_vector_dot(v[j], v[k], &dot); 
-	      lis_vector_axpy(-dot, v[k], v[j]);
+	      esolver->retcode = err;
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_diagonal(A, -oshift);
+	      if( niesolver==LIS_ESOLVER_II )
+	        {
+	          lis_precon_destroy(precon);
+	          lis_solver_destroy(solver);
+	        }
+	      LIS_DEBUG_FUNC_OUT;
+	      return err;
 	    }
 
 	  /* kernel */
@@ -624,6 +991,26 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	      esolver->itime += solver->itime;
 	      esolver->p_c_time += solver->p_c_time;
 	      esolver->p_i_time += solver->p_i_time;
+	    }
+
+	  /*
+	   * The operator can reintroduce components along converged
+	   * modes.  Remove them before the Rayleigh/residual update.
+	   */
+	  err = lis_esi_project_locked(
+	          r,v,j-1);
+	  if( err )
+	    {
+	      esolver->retcode = err;
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_diagonal(A, -oshift);
+	      if( niesolver==LIS_ESOLVER_II )
+	        {
+	          lis_precon_destroy(precon);
+	          lis_solver_destroy(solver);
+	        }
+	      LIS_DEBUG_FUNC_OUT;
+	      return err;
 	    }
 
 	  /* Z = V*R */
@@ -892,7 +1279,11 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   w = esolver->work[1];
   q = esolver->work[2];
   v = &esolver->work[3];
-  Ax = esolver->work[4];
+  /*
+   * v[1..ss] occupies work[4..ss+3].
+   * The final allocated work vector is dedicated scratch.
+   */
+  Ax = esolver->work[NWORK + ss - 1];
   lis_vector_set_all(1.0,y);
   lis_vector_nrm2(y,&nrm2);
 
@@ -997,11 +1388,21 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	  iter = iter+1;
 	  giter = giter+1;
 
-	  /* QR factorization V * R = Z for starting vector Z */
-	  for (k=1;k<j;k++)
+	  /*
+	   * Lock previously converged generalized modes using the
+	   * natural B inner product.
+	   */
+	  err = lis_egsi_prepare_locked(
+	          B,v[j],v,j-1,q,Ax);
+	  if( err )
 	    {
-	      lis_vector_dot(v[j], v[k], &dot);
-	      lis_vector_axpy(-dot, v[k], v[j]);
+	      esolver->retcode = err;
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_matrix(A, B, -oshift);
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      LIS_DEBUG_FUNC_OUT;
+	      return err;
 	    }
 
 	  /* kernel */
@@ -1128,6 +1529,23 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	      esolver->itime += solver->itime;
 	      esolver->p_c_time += solver->p_c_time;
 	      esolver->p_i_time += solver->p_i_time;
+	    }
+
+	  /*
+	   * Reapply B-orthogonal locking after the transformed
+	   * operator, before accepting the mode update.
+	   */
+	  err = lis_egsi_project_locked(
+	          B,y,v,j-1,q,Ax);
+	  if( err )
+	    {
+	      esolver->retcode = err;
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_matrix(A, B, -oshift);
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      LIS_DEBUG_FUNC_OUT;
+	      return err;
 	    }
 
 	  /* theta = <w,y> */
