@@ -46,6 +46,18 @@ scalar_real(
 }
 
 
+static LIS_SCALAR
+scalar_conjugate(
+    LIS_SCALAR value)
+{
+#ifdef _COMPLEX
+    return conj(value);
+#else
+    return value;
+#endif
+}
+
+
 static LIS_INT
 set_vector3(
     LIS_VECTOR v,
@@ -994,6 +1006,381 @@ check_b_rank(
 
 
 static int
+check_rectangular_coupling(
+    LIS_VECTOR W[],
+    LIS_VECTOR Q[],
+    LIS_VECTOR R[])
+{
+    LIS_SCALAR gram[NOMINAL*NOMINAL];
+    LIS_SCALAR gram_reference[NOMINAL*NOMINAL];
+
+    LIS_SCALAR eval[NOMINAL];
+    LIS_SCALAR evec[NOMINAL*NOMINAL];
+    LIS_SCALAR transform[NOMINAL*NOMINAL];
+
+    LIS_SCALAR coupling[NOMINAL*NOMINAL];
+
+    LIS_SCALAR original_value[3];
+    LIS_SCALAR rebuilt_value[3];
+
+    LIS_SCALAR product;
+
+    LIS_INT active_rank;
+    LIS_INT err;
+
+    LIS_INT i,j,k;
+
+
+#ifndef _COMPLEX
+
+    err = set_vector3(
+        W[0],
+        1.0,
+        0.0,
+        0.0);
+
+    if( err )
+        return 1;
+
+    err = set_vector3(
+        W[1],
+        0.0,
+        1.0,
+        0.0);
+
+    if( err )
+        return 1;
+
+    err = set_vector3(
+        W[2],
+        1.0,
+        2.0,
+        0.0);
+
+#else
+
+    err = set_vector3(
+        W[0],
+        1.0,
+        0.0,
+        0.0);
+
+    if( err )
+        return 1;
+
+    err = set_vector3(
+        W[1],
+        0.0,
+        1.0,
+        0.0);
+
+    if( err )
+        return 1;
+
+    err = set_vector3(
+        W[2],
+        1.0 + 1.0*I,
+        2.0 - 1.0*I,
+        0.0);
+
+#endif
+
+    if( err )
+        return 1;
+
+
+    err = lis_eigen_block_gram(
+        NOMINAL,
+        W,
+        NOMINAL,
+        W,
+        gram_reference);
+
+    if( err )
+    {
+        printf(
+            "FAIL: coupling reference Gram returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+
+    active_rank = -1;
+
+    err = lis_eigen_block_rank_deflate(
+        CAPACITY,
+        NOMINAL,
+        W,
+        Q,
+        RANK_TOL,
+        &active_rank,
+        gram,
+        eval,
+        evec,
+        transform);
+
+    if( err )
+    {
+        printf(
+            "FAIL: coupling rank deflation returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+
+    if( active_rank!=2 )
+    {
+        printf(
+            "FAIL: coupling active_rank=%d expected 2\n",
+            (int)active_rank);
+
+        return 1;
+    }
+
+
+    err = lis_eigen_block_rectangular_coupling(
+        NOMINAL,
+        active_rank,
+        eval,
+        evec,
+        coupling);
+
+    if( err )
+    {
+        printf(
+            "FAIL: rectangular coupling returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+
+    /*
+     * Inactive rows must remain deterministic zero storage.
+     */
+    for(j=active_rank;j<NOMINAL;j++)
+    {
+        for(i=0;i<NOMINAL;i++)
+        {
+            if( scalar_error(
+                    coupling[j*NOMINAL+i],
+                    0.0)>TEST_TOL )
+            {
+                printf(
+                    "FAIL: inactive coupling row is not zero\n");
+
+                return 1;
+            }
+        }
+    }
+
+
+    /*
+     * C^H C must reproduce the original Gram matrix:
+     *
+     *     C = Lambda_r^(1/2) U_r^H
+     *
+     *     C^H C = U_r Lambda_r U_r^H
+     */
+    for(i=0;i<NOMINAL;i++)
+    {
+        for(j=0;j<NOMINAL;j++)
+        {
+            product = 0.0;
+
+            for(k=0;k<active_rank;k++)
+            {
+                product +=
+                    scalar_conjugate(
+                        coupling[k*NOMINAL+i]) *
+                    coupling[k*NOMINAL+j];
+            }
+
+            if( scalar_error(
+                    product,
+                    gram_reference[i*NOMINAL+j]) >
+                TEST_TOL )
+            {
+                printf(
+                    "FAIL: coupling Gram factorization "
+                    "[%d,%d] error %.17e\n",
+                    (int)i,
+                    (int)j,
+                    (double)scalar_error(
+                        product,
+                        gram_reference[i*NOMINAL+j]));
+
+                return 1;
+            }
+        }
+    }
+
+
+    /*
+     * Reconstruct every original candidate:
+     *
+     *     W = Q C
+     */
+    err = lis_eigen_block_linear_combination(
+        active_rank,
+        Q,
+        NOMINAL,
+        R,
+        coupling,
+        NOMINAL);
+
+    if( err )
+    {
+        printf(
+            "FAIL: coupling reconstruction returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+
+    for(j=0;j<NOMINAL;j++)
+    {
+        if( read_vector3(
+                W[j],
+                original_value) ||
+            read_vector3(
+                R[j],
+                rebuilt_value) )
+        {
+            return 1;
+        }
+
+        for(i=0;i<3;i++)
+        {
+            if( scalar_error(
+                    original_value[i],
+                    rebuilt_value[i]) >
+                TEST_TOL )
+            {
+                printf(
+                    "FAIL: candidate reconstruction "
+                    "%d component %d error %.17e\n",
+                    (int)j,
+                    (int)i,
+                    (double)scalar_error(
+                        original_value[i],
+                        rebuilt_value[i]));
+
+                return 1;
+            }
+        }
+    }
+
+
+    /*
+     * Zero-rank blocks must return a zero rectangular coupling.
+     */
+    for(i=0;i<NOMINAL;i++)
+    {
+        err = set_vector3(
+            W[i],
+            0.0,
+            0.0,
+            0.0);
+
+        if( err )
+            return 1;
+    }
+
+
+    active_rank = -1;
+
+    err = lis_eigen_block_rank_deflate(
+        CAPACITY,
+        NOMINAL,
+        W,
+        Q,
+        RANK_TOL,
+        &active_rank,
+        gram,
+        eval,
+        evec,
+        transform);
+
+    if( err )
+    {
+        printf(
+            "FAIL: zero-rank coupling deflation returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+
+    if( active_rank!=0 )
+    {
+        printf(
+            "FAIL: zero coupling active_rank=%d expected 0\n",
+            (int)active_rank);
+
+        return 1;
+    }
+
+
+    err = lis_eigen_block_rectangular_coupling(
+        NOMINAL,
+        active_rank,
+        eval,
+        evec,
+        coupling);
+
+    if( err )
+    {
+        printf(
+            "FAIL: zero-rank rectangular coupling returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+
+    for(i=0;i<NOMINAL*NOMINAL;i++)
+    {
+        if( scalar_error(
+                coupling[i],
+                0.0)>TEST_TOL )
+        {
+            printf(
+                "FAIL: zero-rank coupling storage is not zero\n");
+
+            return 1;
+        }
+    }
+
+
+    /*
+     * Argument guard.
+     */
+    err = lis_eigen_block_rectangular_coupling(
+        NOMINAL,
+        NOMINAL+1,
+        eval,
+        evec,
+        coupling);
+
+    if( err!=LIS_ERR_ILL_ARG )
+    {
+        printf(
+            "FAIL: rectangular coupling rank guard returned %d\n",
+            (int)err);
+
+        return 1;
+    }
+
+
+    return 0;
+}
+
+
+static int
 check_argument_guards(
     LIS_VECTOR W[],
     LIS_VECTOR Q[])
@@ -1203,6 +1590,15 @@ main(
                 B,
                 W,
                 BW,
+                Q,
+                BQ);
+    }
+
+    if( !failed )
+    {
+        failed =
+            check_rectangular_coupling(
+                W,
                 Q,
                 BQ);
     }

@@ -1604,3 +1604,112 @@ LIS_INT lis_eigen_block_brank_deflate(
 
     return LIS_SUCCESS;
 }
+
+static LIS_SCALAR
+lis_eigen_block_scalar_conjugate(
+    LIS_SCALAR value)
+{
+#ifdef _COMPLEX
+    return conj(value);
+#else
+    return value;
+#endif
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_eigen_block_rectangular_coupling"
+LIS_INT lis_eigen_block_rectangular_coupling(
+    LIS_INT nominal_rank,
+    LIS_INT active_rank,
+    LIS_SCALAR *eval,
+    LIS_SCALAR *evec,
+    LIS_SCALAR *coupling)
+{
+    LIS_INT i,j;
+
+    LIS_REAL value;
+    LIS_REAL root;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if( nominal_rank<=0 ||
+        active_rank<0 ||
+        active_rank>nominal_rank ||
+        eval==NULL ||
+        evec==NULL ||
+        coupling==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid rectangular coupling arguments\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+    /*
+     * The output storage is nominal_rank by nominal_rank.
+     *
+     * Only the first active_rank rows are active.  Keeping the
+     * remaining rows zero gives callers deterministic storage while
+     * the logical matrix remains active_rank by nominal_rank.
+     *
+     * For retained Gram eigenpairs:
+     *
+     *     Q = W U_r Lambda_r^(-1/2)
+     *
+     * this helper builds:
+     *
+     *     C = Lambda_r^(1/2) U_r^H
+     *
+     * so that:
+     *
+     *     W = Q C
+     *
+     * on the retained candidate subspace.
+     */
+    for(i=0;i<nominal_rank*nominal_rank;i++)
+    {
+        coupling[i] = 0.0;
+    }
+
+    for(j=0;j<active_rank;j++)
+    {
+        value =
+            lis_eigen_block_scalar_real(
+                eval[j]);
+
+        if( !isfinite((double)value) ||
+            value<=0.0 )
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "invalid retained block Gram eigenvalue\n");
+
+            return LIS_BREAKDOWN;
+        }
+
+        root = sqrt(value);
+
+        if( !isfinite((double)root) )
+        {
+            LIS_SETERR(
+                LIS_BREAKDOWN,
+                "rectangular coupling normalization overflowed\n");
+
+            return LIS_BREAKDOWN;
+        }
+
+        for(i=0;i<nominal_rank;i++)
+        {
+            coupling[j*nominal_rank+i] =
+                root *
+                lis_eigen_block_scalar_conjugate(
+                    evec[i*nominal_rank+j]);
+        }
+    }
+
+    LIS_DEBUG_FUNC_OUT;
+
+    return LIS_SUCCESS;
+}
