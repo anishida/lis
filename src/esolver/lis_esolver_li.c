@@ -4186,11 +4186,60 @@ cleanup:
 }
 
 
+/*
+ * Generalized Block Lanczos dispatch boundary.
+ *
+ * F1 introduces the internal block entry point only.  The numerical
+ * generalized block recurrence is added in later stages so that scalar
+ * generalized Lanczos remains unchanged while block requests have a
+ * dedicated, auditable path.
+ *
+ * Transformed generalized block modes are intentionally rejected here.
+ * In particular, a future buckling block path must preserve the existing
+ * transformed-operator semantics rather than treating the geometric
+ * stiffness matrix as a positive-definite block metric.
+ */
+#undef __FUNC__
+#define __FUNC__ "lis_egli_block"
+LIS_INT lis_egli_block(LIS_ESOLVER esolver)
+{
+    LIS_DEBUG_FUNC_IN;
+
+    if( esolver==NULL ||
+        esolver->block_size<=1 )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos dispatch arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    if( esolver->transform!=LIS_EIGEN_TRANSFORM_AUTO )
+    {
+        LIS_SETERR(
+            LIS_ERR_NOT_IMPLEMENTED,
+            "transformed generalized Block Lanczos is not implemented yet\n");
+        return LIS_ERR_NOT_IMPLEMENTED;
+    }
+
+    LIS_SETERR(
+        LIS_ERR_NOT_IMPLEMENTED,
+        "generalized Block Lanczos recurrence is not implemented yet\n");
+
+    return LIS_ERR_NOT_IMPLEMENTED;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_egli"
 LIS_INT lis_egli(LIS_ESOLVER esolver)
 {
   LIS_Comm comm;
+
+  if( esolver->block_size>1 )
+    {
+      return lis_egli_block(esolver);
+    }
 
   if( esolver->transform != LIS_EIGEN_TRANSFORM_AUTO )
     {
