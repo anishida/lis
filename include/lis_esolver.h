@@ -93,6 +93,14 @@ extern LIS_INT lis_eigen_projected_solve(
         LIS_INT *niter,
         LIS_REAL *error);
 
+extern LIS_INT lis_eigen_general_complex_solve(
+        LIS_INT n,
+        LIS_SCALAR *a,
+        LIS_SCALAR *eval,
+        LIS_SCALAR *evec,
+        LIS_INT *niter,
+        LIS_REAL *error);
+
 extern LIS_INT lis_eigen_block_gram(
         LIS_INT nx,
         LIS_VECTOR X[],

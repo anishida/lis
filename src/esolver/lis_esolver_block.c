@@ -33,6 +33,7 @@
 #endif
 
 #include <math.h>
+#include <string.h>
 
 #ifdef _COMPLEX
 #include <complex.h>
@@ -1769,4 +1770,1096 @@ LIS_INT lis_eigen_ritz_reconstruct(
     LIS_DEBUG_FUNC_OUT;
 
     return LIS_SUCCESS;
+}
+
+
+/*
+ * General complex dense eigensystem support.
+ *
+ * This path is intentionally separate from
+ * lis_eigen_projected_solve(), whose contract is symmetric /
+ * Hermitian.
+ *
+ * The general-complex path is used for small non-Hermitian
+ * projected problems such as harmonic Ritz extraction.
+ *
+ * No LAPACK or external dense eigensolver is required.
+ *
+ * Storage follows the native general-complex kernel convention:
+ *
+ *     a[i + j*n]
+ *
+ * is matrix element (i,j), and right eigenvectors are returned
+ * column-wise with the same leading dimension.
+ */
+#ifdef _COMPLEX
+
+static LIS_REAL
+zabs1(
+    LIS_SCALAR z)
+{
+    return (LIS_REAL)cabs(z);
+}
+
+
+static void
+identity(
+    LIS_INT n,
+    LIS_SCALAR *q)
+{
+    LIS_INT i,j;
+
+    for(j=0;j<n;j++)
+    {
+        for(i=0;i<n;i++)
+        {
+            q[i+j*n] =
+                (i==j)
+                ? 1.0
+                : 0.0;
+        }
+    }
+}
+
+
+static void
+matmul(
+    LIS_INT n,
+    const LIS_SCALAR *a,
+    const LIS_SCALAR *b,
+    LIS_SCALAR *c)
+{
+    LIS_INT i,j,k;
+
+    for(j=0;j<n;j++)
+    {
+        for(i=0;i<n;i++)
+        {
+            LIS_SCALAR s = 0.0;
+
+            for(k=0;k<n;k++)
+            {
+                s +=
+                    a[i+k*n]
+                    *b[k+j*n];
+            }
+
+            c[i+j*n] = s;
+        }
+    }
+}
+
+
+static LIS_REAL
+subdiag_norm(
+    LIS_INT n,
+    const LIS_SCALAR *a)
+{
+    LIS_INT i,j;
+    LIS_REAL s = 0.0;
+
+    for(j=0;j<n;j++)
+    {
+        for(i=j+1;i<n;i++)
+        {
+            LIS_REAL v =
+                zabs1(
+                    a[i+j*n]);
+
+            s += v*v;
+        }
+    }
+
+    return sqrt(s);
+}
+
+
+/*
+ * Build a unitary Householder vector for x.
+ *
+ * The reflector is
+ *
+ *     H = I - tau v v^H
+ *
+ * with v[0] = 1.
+ */
+static LIS_INT
+householder(
+    LIS_INT n,
+    const LIS_SCALAR *x,
+    LIS_SCALAR *v,
+    LIS_REAL *tau)
+{
+    LIS_INT i;
+
+    LIS_REAL sigma;
+    LIS_REAL x0abs;
+    LIS_REAL norm;
+
+    LIS_SCALAR alpha;
+    LIS_SCALAR beta;
+    LIS_SCALAR denom;
+
+    if( n<=0 )
+        return LIS_ERR_ILL_ARG;
+
+    sigma = 0.0;
+
+    for(i=1;i<n;i++)
+    {
+        LIS_REAL a =
+            zabs1(x[i]);
+
+        sigma += a*a;
+    }
+
+    x0abs =
+        zabs1(x[0]);
+
+    if( sigma==0.0 )
+    {
+        v[0] = 1.0;
+
+        for(i=1;i<n;i++)
+            v[i] = 0.0;
+
+        *tau = 0.0;
+
+        return LIS_SUCCESS;
+    }
+
+    norm =
+        sqrt(
+            x0abs*x0abs
+            +sigma);
+
+    if( x0abs==0.0 )
+    {
+        alpha = 1.0;
+    }
+    else
+    {
+        alpha =
+            x[0]/x0abs;
+    }
+
+    beta =
+        -alpha*norm;
+
+    denom =
+        x[0]-beta;
+
+    if( zabs1(denom)==0.0 )
+        return LIS_BREAKDOWN;
+
+    v[0] = 1.0;
+
+    for(i=1;i<n;i++)
+    {
+        v[i] =
+            x[i]/denom;
+    }
+
+    {
+        LIS_REAL vv = 1.0;
+
+        for(i=1;i<n;i++)
+        {
+            LIS_REAL a =
+                zabs1(v[i]);
+
+            vv += a*a;
+        }
+
+        *tau =
+            2.0/vv;
+    }
+
+    return LIS_SUCCESS;
+}
+
+
+/*
+ * QR factorization using unitary complex Householder reflectors.
+ *
+ * A = Q R
+ */
+static LIS_INT
+complex_householder_qr(
+    LIS_INT n,
+    const LIS_SCALAR *a,
+    LIS_SCALAR *q,
+    LIS_SCALAR *r)
+{
+    LIS_INT i,j,k,m;
+    LIS_INT err;
+
+    LIS_SCALAR *x;
+    LIS_SCALAR *v;
+
+    LIS_REAL tau;
+
+    x =
+        (LIS_SCALAR *)malloc(
+            (size_t)n*sizeof(*x));
+
+    v =
+        (LIS_SCALAR *)malloc(
+            (size_t)n*sizeof(*v));
+
+    if( x==NULL || v==NULL )
+    {
+        free(x);
+        free(v);
+        return LIS_OUT_OF_MEMORY;
+    }
+
+    memcpy(
+        r,
+        a,
+        (size_t)n*n*sizeof(*r));
+
+    identity(n,q);
+
+    for(k=0;k<n;k++)
+    {
+        LIS_INT row;
+
+        m = n-k;
+
+        for(i=0;i<m;i++)
+        {
+            x[i] =
+                r[(k+i)+k*n];
+        }
+
+        err =
+            householder(
+                m,
+                x,
+                v,
+                &tau);
+
+        if( err )
+        {
+            free(x);
+            free(v);
+            return err;
+        }
+
+        if( tau==0.0 )
+            continue;
+
+        /*
+         * R <- H R
+         */
+        for(j=k;j<n;j++)
+        {
+            LIS_SCALAR dot = 0.0;
+
+            for(i=0;i<m;i++)
+            {
+                dot +=
+                    conj(v[i])
+                    *r[(k+i)+j*n];
+            }
+
+            dot *= tau;
+
+            for(i=0;i<m;i++)
+            {
+                r[(k+i)+j*n] -=
+                    v[i]*dot;
+            }
+        }
+
+        /*
+         * Q <- Q H
+         *
+         * H is Hermitian and unitary.
+         */
+        for(row=0;row<n;row++)
+        {
+            LIS_SCALAR dot = 0.0;
+
+            for(i=0;i<m;i++)
+            {
+                dot +=
+                    q[row+(k+i)*n]
+                    *v[i];
+            }
+
+            dot *= tau;
+
+            for(i=0;i<m;i++)
+            {
+                q[row+(k+i)*n] -=
+                    dot*conj(v[i]);
+            }
+        }
+    }
+
+    free(x);
+    free(v);
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_SCALAR
+wilkinson_shift_complex(
+    LIS_INT n,
+    const LIS_SCALAR *a)
+{
+    LIS_SCALAR aa;
+    LIS_SCALAR bb;
+    LIS_SCALAR cc;
+    LIS_SCALAR dd;
+
+    LIS_SCALAR tr;
+    LIS_SCALAR det;
+    LIS_SCALAR disc;
+
+    LIS_SCALAR l1;
+    LIS_SCALAR l2;
+
+    if( n<2 )
+        return a[0];
+
+    aa =
+        a[(n-2)+(n-2)*n];
+
+    bb =
+        a[(n-2)+(n-1)*n];
+
+    cc =
+        a[(n-1)+(n-2)*n];
+
+    dd =
+        a[(n-1)+(n-1)*n];
+
+    tr =
+        aa+dd;
+
+    det =
+        aa*dd-bb*cc;
+
+    disc =
+        csqrt(
+            tr*tr
+            -4.0*det);
+
+    l1 =
+        0.5*(tr+disc);
+
+    l2 =
+        0.5*(tr-disc);
+
+    if(
+        zabs1(l1-dd)
+        <
+        zabs1(l2-dd) )
+    {
+        return l1;
+    }
+
+    return l2;
+}
+
+
+static LIS_INT
+complex_shifted_qr_schur(
+    LIS_INT n,
+    LIS_SCALAR *a,
+    LIS_SCALAR *z,
+    LIS_INT maxiter,
+    LIS_INT *niter,
+    LIS_REAL *final_resid)
+{
+    LIS_INT i,j,iter;
+    LIS_INT err;
+
+    LIS_REAL scale;
+    LIS_REAL resid;
+    LIS_REAL tol;
+
+    LIS_SCALAR mu;
+
+    LIS_SCALAR *work;
+    LIS_SCALAR *q;
+    LIS_SCALAR *r;
+    LIS_SCALAR *rq;
+    LIS_SCALAR *znew;
+
+    if(
+        n<=0 ||
+        a==NULL ||
+        z==NULL )
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+    work =
+        (LIS_SCALAR *)malloc(
+            (size_t)n*n*sizeof(*work));
+
+    q =
+        (LIS_SCALAR *)malloc(
+            (size_t)n*n*sizeof(*q));
+
+    r =
+        (LIS_SCALAR *)malloc(
+            (size_t)n*n*sizeof(*r));
+
+    rq =
+        (LIS_SCALAR *)malloc(
+            (size_t)n*n*sizeof(*rq));
+
+    znew =
+        (LIS_SCALAR *)malloc(
+            (size_t)n*n*sizeof(*znew));
+
+    if(
+        work==NULL ||
+        q==NULL ||
+        r==NULL ||
+        rq==NULL ||
+        znew==NULL )
+    {
+        free(work);
+        free(q);
+        free(r);
+        free(rq);
+        free(znew);
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+    identity(n,z);
+
+    scale = 1.0;
+
+    for(i=0;i<n*n;i++)
+    {
+        LIS_REAL v =
+            zabs1(a[i]);
+
+        if( v>scale )
+            scale = v;
+    }
+
+    tol =
+        1.0e-12*scale;
+
+    resid =
+        subdiag_norm(
+            n,
+            a);
+
+    for(iter=0;iter<maxiter;iter++)
+    {
+        /*
+         * Deflate all sufficiently small subdiagonal entries.
+         */
+        for(i=1;i<n;i++)
+        {
+            LIS_REAL local_scale =
+                1.0
+                +zabs1(a[(i-1)+(i-1)*n])
+                +zabs1(a[i+i*n]);
+
+            if(
+                zabs1(a[i+(i-1)*n])
+                <=
+                1.0e-12*local_scale )
+            {
+                a[i+(i-1)*n] = 0.0;
+            }
+        }
+
+        resid =
+            subdiag_norm(
+                n,
+                a);
+
+        if( resid<=tol )
+            break;
+
+        mu =
+            wilkinson_shift_complex(
+                n,
+                a);
+
+        memcpy(
+            work,
+            a,
+            (size_t)n*n*sizeof(*work));
+
+        for(i=0;i<n;i++)
+        {
+            work[i+i*n] -=
+                mu;
+        }
+
+        err =
+            complex_householder_qr(
+                n,
+                work,
+                q,
+                r);
+
+        if( err )
+        {
+            free(work);
+            free(q);
+            free(r);
+            free(rq);
+            free(znew);
+
+            return err;
+        }
+
+        matmul(
+            n,
+            r,
+            q,
+            rq);
+
+        for(j=0;j<n;j++)
+        {
+            for(i=0;i<n;i++)
+            {
+                a[i+j*n] =
+                    rq[i+j*n];
+            }
+        }
+
+        for(i=0;i<n;i++)
+        {
+            a[i+i*n] +=
+                mu;
+        }
+
+        matmul(
+            n,
+            z,
+            q,
+            znew);
+
+        memcpy(
+            z,
+            znew,
+            (size_t)n*n*sizeof(*z));
+    }
+
+    if( niter )
+        *niter = iter;
+
+    if( final_resid )
+        *final_resid = resid;
+
+    free(work);
+    free(q);
+    free(r);
+    free(rq);
+    free(znew);
+
+    if( resid>tol )
+        return LIS_MAXITER;
+
+    return LIS_SUCCESS;
+}
+
+
+
+static LIS_REAL
+matrix_frobenius_norm(
+    LIS_INT n,
+    const LIS_SCALAR *a)
+{
+    LIS_INT i;
+    LIS_REAL sum = 0.0;
+
+    for(i=0;i<n*n;i++)
+    {
+        LIS_REAL v =
+            zabs1(a[i]);
+
+        sum += v*v;
+    }
+
+    return sqrt(sum);
+}
+
+
+static LIS_REAL
+vector_norm2_local(
+    LIS_INT n,
+    const LIS_SCALAR *x)
+{
+    LIS_INT i;
+    LIS_REAL sum = 0.0;
+
+    for(i=0;i<n;i++)
+    {
+        LIS_REAL v =
+            zabs1(x[i]);
+
+        sum += v*v;
+    }
+
+    return sqrt(sum);
+}
+
+
+/*
+ * Compute one right eigenvector of an upper triangular
+ * complex Schur matrix.
+ *
+ * For lambda = T[k,k], choose y[k] = 1 and solve
+ *
+ *     (T - lambda I)y = 0
+ *
+ * upward through rows 0..k-1.
+ */
+static LIS_INT
+triangular_right_eigenvector(
+    LIS_INT n,
+    const LIS_SCALAR *t,
+    LIS_INT k,
+    LIS_SCALAR *y)
+{
+    LIS_INT i,j;
+
+    LIS_SCALAR lambda;
+
+    if(
+        n<=0 ||
+        t==NULL ||
+        y==NULL ||
+        k<0 ||
+        k>=n )
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+    for(i=0;i<n;i++)
+        y[i] = 0.0;
+
+    lambda =
+        t[k+k*n];
+
+    y[k] = 1.0;
+
+    for(i=k-1;i>=0;i--)
+    {
+        LIS_SCALAR sum = 0.0;
+        LIS_SCALAR denom;
+
+        LIS_REAL amag;
+        LIS_REAL floor;
+
+        for(j=i+1;j<=k;j++)
+        {
+            sum +=
+                t[i+j*n]
+                *y[j];
+        }
+
+        denom =
+            t[i+i*n]
+            -lambda;
+
+        amag =
+            zabs1(denom);
+
+        floor =
+            1.0e-14*
+            (
+                1.0
+                +zabs1(t[i+i*n])
+                +zabs1(lambda)
+            );
+
+        /*
+         * Avoid an uncontrolled division by a nearly zero
+         * diagonal difference.  The final eigenpair residual
+         * decides whether the regularized vector is acceptable.
+         */
+        if( amag<floor )
+        {
+            if( amag>0.0 )
+            {
+                denom *=
+                    floor/amag;
+            }
+            else
+            {
+                denom = floor;
+            }
+        }
+
+        y[i] =
+            -sum/denom;
+
+        /*
+         * Local overflow protection for highly non-normal
+         * triangular systems.
+         */
+        if( zabs1(y[i])>1.0e100 )
+        {
+            for(j=i;j<=k;j++)
+                y[j] *= 1.0e-100;
+        }
+    }
+
+    {
+        LIS_REAL norm =
+            vector_norm2_local(
+                n,
+                y);
+
+        if( norm<=0.0 )
+            return LIS_BREAKDOWN;
+
+        for(i=0;i<n;i++)
+            y[i] /= norm;
+    }
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_REAL
+right_eigenpair_residual(
+    LIS_INT n,
+    const LIS_SCALAR *a,
+    const LIS_SCALAR *v,
+    LIS_SCALAR lambda)
+{
+    LIS_INT i,j;
+
+    LIS_REAL nr = 0.0;
+    LIS_REAL nv;
+    LIS_REAL na;
+    LIS_REAL denom;
+
+    for(i=0;i<n;i++)
+    {
+        LIS_SCALAR r =
+            -lambda*v[i];
+
+        for(j=0;j<n;j++)
+        {
+            r +=
+                a[i+j*n]
+                *v[j];
+        }
+
+        {
+            LIS_REAL x =
+                zabs1(r);
+
+            nr += x*x;
+        }
+    }
+
+    nr = sqrt(nr);
+
+    nv =
+        vector_norm2_local(
+            n,
+            v);
+
+    na =
+        matrix_frobenius_norm(
+            n,
+            a);
+
+    denom =
+        (
+            na
+            +zabs1(lambda)
+        )*nv;
+
+    if( denom<1.0e-30 )
+        denom = 1.0;
+
+    return nr/denom;
+}
+
+
+static LIS_INT
+schur_right_eigensystem(
+    LIS_INT n,
+    const LIS_SCALAR *a0,
+    const LIS_SCALAR *t,
+    const LIS_SCALAR *q,
+    LIS_SCALAR *eval,
+    LIS_SCALAR *evec,
+    LIS_REAL *max_resid)
+{
+    LIS_INT i,j,k;
+    LIS_INT err;
+
+    LIS_REAL worst = 0.0;
+
+    LIS_SCALAR *y;
+    LIS_SCALAR *v;
+
+    y =
+        (LIS_SCALAR *)malloc(
+            (size_t)n*sizeof(*y));
+
+    v =
+        (LIS_SCALAR *)malloc(
+            (size_t)n*sizeof(*v));
+
+    if( y==NULL || v==NULL )
+    {
+        free(y);
+        free(v);
+        return LIS_OUT_OF_MEMORY;
+    }
+
+    for(k=0;k<n;k++)
+    {
+        LIS_REAL resid;
+        LIS_REAL norm;
+
+        eval[k] =
+            t[k+k*n];
+
+        err =
+            triangular_right_eigenvector(
+                n,
+                t,
+                k,
+                y);
+
+        if( err )
+        {
+            free(y);
+            free(v);
+            return err;
+        }
+
+        /*
+         * v = Q y
+         */
+        for(i=0;i<n;i++)
+        {
+            LIS_SCALAR sum = 0.0;
+
+            for(j=0;j<n;j++)
+            {
+                sum +=
+                    q[i+j*n]
+                    *y[j];
+            }
+
+            v[i] = sum;
+        }
+
+        norm =
+            vector_norm2_local(
+                n,
+                v);
+
+        if( norm<=0.0 )
+        {
+            free(y);
+            free(v);
+            return LIS_BREAKDOWN;
+        }
+
+        for(i=0;i<n;i++)
+        {
+            v[i] /= norm;
+            evec[i+k*n] = v[i];
+        }
+
+        resid =
+            right_eigenpair_residual(
+                n,
+                a0,
+                v,
+                eval[k]);
+
+        if( resid>worst )
+            worst = resid;
+
+    }
+
+    free(y);
+    free(v);
+
+    if( max_resid )
+        *max_resid = worst;
+
+    return LIS_SUCCESS;
+}
+
+
+#endif
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_eigen_general_complex_solve"
+LIS_INT
+lis_eigen_general_complex_solve(
+    LIS_INT n,
+    LIS_SCALAR *a,
+    LIS_SCALAR *eval,
+    LIS_SCALAR *evec,
+    LIS_INT *niter,
+    LIS_REAL *error)
+{
+#ifndef _COMPLEX
+
+    LIS_DEBUG_FUNC_IN;
+
+    if( n<=0 ||
+        a==NULL ||
+        eval==NULL ||
+        evec==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid general complex eigensystem arguments\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+    if( niter )
+        *niter = 0;
+
+    if( error )
+        *error = 0.0;
+
+    LIS_SETERR(
+        LIS_ERR_NOT_IMPLEMENTED,
+        "general complex dense eigensystem requires complex arithmetic\n");
+
+    LIS_DEBUG_FUNC_OUT;
+
+    return LIS_ERR_NOT_IMPLEMENTED;
+
+#else
+
+    LIS_INT i;
+    LIS_INT err;
+    LIS_INT iter;
+
+    LIS_REAL lower;
+    LIS_REAL residual;
+
+    LIS_SCALAR *original;
+    LIS_SCALAR *q;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if( n<=0 ||
+        a==NULL ||
+        eval==NULL ||
+        evec==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid general complex eigensystem arguments\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+    iter = 0;
+    lower = 0.0;
+    residual = 0.0;
+
+    if( niter )
+        *niter = 0;
+
+    if( error )
+        *error = 0.0;
+
+    original =
+        (LIS_SCALAR *)lis_malloc(
+            n*n*sizeof(LIS_SCALAR),
+            "lis_eigen_general_complex_solve::original");
+
+    q =
+        (LIS_SCALAR *)lis_malloc(
+            n*n*sizeof(LIS_SCALAR),
+            "lis_eigen_general_complex_solve::q");
+
+    if( original==NULL ||
+        q==NULL )
+    {
+        if( q )
+            lis_free(q);
+
+        if( original )
+            lis_free(original);
+
+        LIS_SETERR_MEM(
+            n*n*sizeof(LIS_SCALAR));
+
+        return LIS_OUT_OF_MEMORY;
+    }
+
+    for(i=0;i<n*n;i++)
+        original[i] = a[i];
+
+    err =
+        complex_shifted_qr_schur(
+            n,
+            a,
+            q,
+            20000,
+            &iter,
+            &lower);
+
+    if( err )
+    {
+        lis_free(q);
+        lis_free(original);
+
+        if( niter )
+            *niter = iter;
+
+        if( error )
+            *error = lower;
+
+        return err;
+    }
+
+    err =
+        schur_right_eigensystem(
+            n,
+            original,
+            a,
+            q,
+            eval,
+            evec,
+            &residual);
+
+    lis_free(q);
+    lis_free(original);
+
+    if( niter )
+        *niter = iter;
+
+    if( error )
+        *error =
+            residual>lower
+                ? residual
+                : lower;
+
+    if( err )
+        return err;
+
+    LIS_DEBUG_FUNC_OUT;
+
+    return LIS_SUCCESS;
+
+#endif
 }
