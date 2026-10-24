@@ -106,10 +106,10 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libesolver_la_LIBADD =
-am_libesolver_la_OBJECTS = lis_esolver.lo lis_esolver_ai.lo \
-	lis_esolver_cg.lo lis_esolver_ii.lo lis_esolver_li.lo \
-	lis_esolver_pi.lo lis_esolver_rqi.lo lis_esolver_feast.lo \
-	lis_esolver_si.lo
+am_libesolver_la_OBJECTS = lis_esolver.lo lis_esolver_block.lo \
+	lis_esolver_ai.lo lis_esolver_cg.lo lis_esolver_ii.lo \
+	lis_esolver_li.lo lis_esolver_pi.lo lis_esolver_rqi.lo \
+	lis_esolver_feast.lo lis_esolver_si.lo
 libesolver_la_OBJECTS = $(am_libesolver_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -131,7 +131,9 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/include
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/lis_esolver.Plo \
-	./$(DEPDIR)/lis_esolver_ai.Plo ./$(DEPDIR)/lis_esolver_cg.Plo \
+	./$(DEPDIR)/lis_esolver_ai.Plo \
+	./$(DEPDIR)/lis_esolver_block.Plo \
+	./$(DEPDIR)/lis_esolver_cg.Plo \
 	./$(DEPDIR)/lis_esolver_feast.Plo \
 	./$(DEPDIR)/lis_esolver_ii.Plo ./$(DEPDIR)/lis_esolver_li.Plo \
 	./$(DEPDIR)/lis_esolver_pi.Plo ./$(DEPDIR)/lis_esolver_rqi.Plo \
@@ -332,6 +334,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LTLIBRARIES = libesolver.la
 libesolver_la_SOURCES = lis_esolver.c \
+lis_esolver_block.c \
 lis_esolver_ai.c \
 lis_esolver_cg.c \
 lis_esolver_ii.c \
@@ -411,6 +414,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_ai.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_block.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_cg.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_feast.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_ii.Plo@am__quote@ # am--include-marker
@@ -580,6 +584,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 distclean: distclean-am
 	-rm -f ./$(DEPDIR)/lis_esolver.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_ai.Plo
+	-rm -f ./$(DEPDIR)/lis_esolver_block.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_cg.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_feast.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_ii.Plo
@@ -634,6 +639,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/lis_esolver.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_ai.Plo
+	-rm -f ./$(DEPDIR)/lis_esolver_block.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_cg.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_feast.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_ii.Plo

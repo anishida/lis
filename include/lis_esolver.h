@@ -81,6 +81,99 @@ extern LIS_INT lis_esolver_generalized_residual(
         LIS_VECTOR Bx,
         LIS_VECTOR r,
         LIS_REAL *resid);
+
+/*
+ * Shared internal block eigensolver helpers.
+ */
+extern LIS_INT lis_eigen_projected_solve(
+        LIS_INT n,
+        LIS_SCALAR *a,
+        LIS_SCALAR *eval,
+        LIS_SCALAR *evec,
+        LIS_INT *niter,
+        LIS_REAL *error);
+
+extern LIS_INT lis_eigen_block_gram(
+        LIS_INT nx,
+        LIS_VECTOR X[],
+        LIS_INT ny,
+        LIS_VECTOR Y[],
+        LIS_SCALAR *gram);
+extern LIS_INT lis_eigen_block_bgram(
+        LIS_MATRIX B,
+        LIS_INT nx,
+        LIS_VECTOR X[],
+        LIS_INT ny,
+        LIS_VECTOR Y[],
+        LIS_VECTOR BY[],
+        LIS_SCALAR *gram);
+
+extern LIS_INT lis_eigen_block_orthogonalize(
+        LIS_INT nq,
+        LIS_VECTOR Q[],
+        LIS_INT nw,
+        LIS_VECTOR W[],
+        LIS_INT passes,
+        LIS_SCALAR *coeff,
+        LIS_SCALAR *work);
+extern LIS_INT lis_eigen_block_borthogonalize(
+        LIS_MATRIX B,
+        LIS_INT nq,
+        LIS_VECTOR Q[],
+        LIS_INT nw,
+        LIS_VECTOR W[],
+        LIS_VECTOR BW[],
+        LIS_INT passes,
+        LIS_SCALAR *coeff,
+        LIS_SCALAR *work);
+
+extern LIS_INT lis_eigen_block_linear_combination(
+        LIS_INT nx,
+        LIS_VECTOR X[],
+        LIS_INT ny,
+        LIS_VECTOR Y[],
+        LIS_SCALAR *coeff,
+        LIS_INT ldcoeff);
+extern LIS_INT lis_eigen_block_rank_deflate(
+        LIS_INT capacity,
+        LIS_INT nominal_rank,
+        LIS_VECTOR W[],
+        LIS_VECTOR Q[],
+        LIS_REAL rank_tol,
+        LIS_INT *active_rank,
+        LIS_SCALAR *gram,
+        LIS_SCALAR *eval,
+        LIS_SCALAR *evec,
+        LIS_SCALAR *transform);
+extern LIS_INT lis_eigen_block_brank_deflate(
+        LIS_MATRIX B,
+        LIS_INT capacity,
+        LIS_INT nominal_rank,
+        LIS_VECTOR W[],
+        LIS_VECTOR BW[],
+        LIS_VECTOR Q[],
+        LIS_VECTOR BQ[],
+        LIS_REAL rank_tol,
+        LIS_INT *active_rank,
+        LIS_SCALAR *gram,
+        LIS_SCALAR *eval,
+        LIS_SCALAR *evec,
+        LIS_SCALAR *transform);
+
+extern LIS_INT lis_eigen_block_rectangular_coupling(
+        LIS_INT nominal_rank,
+        LIS_INT active_rank,
+        LIS_SCALAR *eval,
+        LIS_SCALAR *evec,
+        LIS_SCALAR *coupling);
+
+extern LIS_INT lis_eigen_ritz_reconstruct(
+        LIS_INT basis_rank,
+        LIS_VECTOR basis[],
+        LIS_INT nritz,
+        LIS_SCALAR *coeff,
+        LIS_INT ldcoeff,
+        LIS_VECTOR ritz[]);
 	extern LIS_INT lis_esolver_work_destroy(LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_option2(char* arg1, char *arg2, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_option_esolver(char *argv, LIS_ESOLVER esolver);
