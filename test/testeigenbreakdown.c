@@ -1702,6 +1702,1689 @@ cleanup:
 }
 
 
+
+
+#define LIS_EIGEN_ORTHO_N 30
+#define LIS_EIGEN_ORTHO_SS 20
+#define LIS_EIGEN_ORTHO_TOL 1.0e-8
+
+
+static LIS_REAL
+eigen_scalar_magnitude(
+    LIS_SCALAR value)
+{
+#ifdef _COMPLEX
+    return cabs(value);
+#else
+    return fabs(value);
+#endif
+}
+
+
+static LIS_INT
+create_eigen_orthogonality_matrix(
+    LIS_MATRIX *A)
+{
+    LIS_INT err;
+    LIS_INT i;
+    LIS_SCALAR value;
+    const LIS_SCALAR ratio =
+        (LIS_SCALAR)1.6102620275609394;
+
+    *A = NULL;
+
+    err = lis_matrix_create(
+        LIS_COMM_WORLD,
+        A);
+    if( err )
+        return err;
+
+    err = lis_matrix_set_size(
+        *A,
+        0,
+        LIS_EIGEN_ORTHO_N);
+    if( err )
+        return err;
+
+    value = 1.0;
+
+    for(i=0;i<LIS_EIGEN_ORTHO_N;i++)
+    {
+        err = lis_matrix_set_value(
+            LIS_INS_VALUE,
+            i,
+            i,
+            value,
+            *A);
+        if( err )
+            return err;
+
+        value *= ratio;
+    }
+
+    return lis_matrix_assemble(*A);
+}
+
+
+static LIS_INT
+create_eigen_identity_matrix(
+    LIS_MATRIX *B)
+{
+    LIS_INT err;
+    LIS_INT i;
+
+    *B = NULL;
+
+    err = lis_matrix_create(
+        LIS_COMM_WORLD,
+        B);
+    if( err )
+        return err;
+
+    err = lis_matrix_set_size(
+        *B,
+        0,
+        LIS_EIGEN_ORTHO_N);
+    if( err )
+        return err;
+
+    for(i=0;i<LIS_EIGEN_ORTHO_N;i++)
+    {
+        err = lis_matrix_set_value(
+            LIS_INS_VALUE,
+            i,
+            i,
+            1.0,
+            *B);
+        if( err )
+            return err;
+    }
+
+    return lis_matrix_assemble(*B);
+}
+
+
+static LIS_INT
+standard_lanczos_basis_defect(
+    LIS_ESOLVER esolver,
+    LIS_REAL *defect)
+{
+    LIS_INT err;
+    LIS_INT i,j;
+    LIS_SCALAR dot;
+    LIS_REAL current;
+    LIS_VECTOR *v;
+
+    if( esolver==NULL ||
+        esolver->work==NULL ||
+        esolver->worklen<
+            LIS_EIGEN_ORTHO_SS+2 )
+        return LIS_FAILS;
+
+    v = &esolver->work[1];
+    *defect = 0.0;
+
+    for(i=1;i<LIS_EIGEN_ORTHO_SS;i++)
+    {
+        err = lis_vector_dot(
+            v[i],
+            v[i],
+            &dot);
+        if( err )
+            return err;
+
+        current =
+            eigen_scalar_magnitude(
+                dot-1.0);
+
+        if( current>*defect )
+            *defect = current;
+
+        for(j=1;j<i;j++)
+        {
+            err = lis_vector_dot(
+                v[j],
+                v[i],
+                &dot);
+            if( err )
+                return err;
+
+            current =
+                eigen_scalar_magnitude(dot);
+
+            if( current>*defect )
+                *defect = current;
+        }
+    }
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+generalized_lanczos_basis_defect(
+    LIS_ESOLVER esolver,
+    LIS_REAL *defect)
+{
+    LIS_INT err;
+    LIS_INT i,j;
+    LIS_SCALAR dot;
+    LIS_SCALAR target;
+    LIS_REAL current;
+    LIS_VECTOR *w;
+    LIS_VECTOR *v;
+
+    if( esolver==NULL ||
+        esolver->work==NULL ||
+        esolver->worklen<
+            4+2*LIS_EIGEN_ORTHO_SS )
+        return LIS_FAILS;
+
+    w = &esolver->work[2];
+    v = &esolver->work[
+        2+LIS_EIGEN_ORTHO_SS];
+
+    *defect = 0.0;
+
+    for(i=1;i<LIS_EIGEN_ORTHO_SS;i++)
+    {
+        for(j=1;j<LIS_EIGEN_ORTHO_SS;j++)
+        {
+            err = lis_vector_dot(
+                v[i],
+                w[j],
+                &dot);
+            if( err )
+                return err;
+
+            target =
+                i==j ? 1.0 : 0.0;
+
+            current =
+                eigen_scalar_magnitude(
+                    dot-target);
+
+            if( current>*defect )
+                *defect = current;
+        }
+    }
+
+    return LIS_SUCCESS;
+}
+
+
+
+
+#define LIS_EIGEN_ARNOLDI_ORTHO_TOL 1.0e-8
+
+
+static LIS_INT
+create_arnoldi_orthogonality_matrix(
+    LIS_MATRIX *A)
+{
+    LIS_INT err;
+    LIS_INT i;
+    LIS_SCALAR value;
+    const LIS_SCALAR ratio =
+        (LIS_SCALAR)1.05;
+
+    *A = NULL;
+
+    err = lis_matrix_create(
+        LIS_COMM_WORLD,
+        A);
+    if( err )
+        return err;
+
+    err = lis_matrix_set_size(
+        *A,
+        0,
+        LIS_EIGEN_ORTHO_N);
+    if( err )
+        return err;
+
+    value = 1.0;
+
+    for(i=0;i<LIS_EIGEN_ORTHO_N;i++)
+    {
+        err = lis_matrix_set_value(
+            LIS_INS_VALUE,
+            i,
+            i,
+            value,
+            *A);
+        if( err )
+            return err;
+
+        value *= ratio;
+    }
+
+    return lis_matrix_assemble(*A);
+}
+
+
+static LIS_INT
+arnoldi_basis_defect(
+    LIS_VECTOR *v,
+    LIS_INT count,
+    LIS_REAL *defect)
+{
+    LIS_INT err;
+    LIS_INT i,j;
+    LIS_SCALAR dot;
+    LIS_REAL current;
+
+    *defect = 0.0;
+
+    for(i=0;i<count;i++)
+    {
+        err = lis_vector_dot(
+            v[i],
+            v[i],
+            &dot);
+        if( err )
+            return err;
+
+        current =
+            eigen_scalar_magnitude(
+                dot-1.0);
+
+        if( current>*defect )
+            *defect = current;
+
+        for(j=0;j<i;j++)
+        {
+            err = lis_vector_dot(
+                v[j],
+                v[i],
+                &dot);
+            if( err )
+                return err;
+
+            current =
+                eigen_scalar_magnitude(dot);
+
+            if( current>*defect )
+                *defect = current;
+        }
+    }
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+test_standard_arnoldi_orthogonality(void)
+{
+    LIS_INT err;
+    LIS_INT api;
+    LIS_MATRIX A;
+    LIS_VECTOR x;
+    LIS_ESOLVER esolver;
+    LIS_SCALAR evalue;
+    LIS_REAL defect;
+    LIS_VECTOR *v;
+
+    A = NULL;
+    x = NULL;
+    esolver = NULL;
+    defect = 0.0;
+
+    err = create_arnoldi_orthogonality_matrix(
+        &A);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_duplicate(
+        A,
+        &x);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_create(
+        &esolver);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_set_option(
+        "-e ai -ss 20 -emaxiter 4 "
+        "-etol 1.0e-12",
+        esolver);
+    if( err )
+        goto cleanup;
+
+    esolver->options[
+        LIS_EOPTIONS_RVAL] = 1;
+
+    api = lis_esolve(
+        A,
+        x,
+        &evalue,
+        esolver);
+
+    if( api!=LIS_SUCCESS )
+    {
+        printf(
+            "Standard Arnoldi orthogonality: "
+            "API return %d\n",
+            (int)api);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    if( esolver->work==NULL ||
+        esolver->worklen<
+            LIS_EIGEN_ORTHO_SS+2 )
+    {
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    v = &esolver->work[1];
+
+    err = arnoldi_basis_defect(
+        v,
+        LIS_EIGEN_ORTHO_SS,
+        &defect);
+    if( err )
+        goto cleanup;
+
+    if( !isfinite((double)defect) ||
+        defect>LIS_EIGEN_ARNOLDI_ORTHO_TOL )
+    {
+        printf(
+            "Standard Arnoldi orthogonality "
+            "defect %.17e, expected <= %.17e\n",
+            (double)defect,
+            (double)LIS_EIGEN_ARNOLDI_ORTHO_TOL);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    printf(
+        "PASS: Standard Arnoldi "
+        "orthogonality defect %.6e\n",
+        (double)defect);
+
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( esolver )
+        lis_esolver_destroy(esolver);
+    if( x )
+        lis_vector_destroy(x);
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
+static LIS_INT
+test_generalized_arnoldi_orthogonality(void)
+{
+    LIS_INT err;
+    LIS_INT api;
+    LIS_MATRIX A;
+    LIS_MATRIX B;
+    LIS_VECTOR x;
+    LIS_ESOLVER esolver;
+    LIS_SCALAR evalue;
+    LIS_REAL defect;
+    LIS_VECTOR *v;
+
+    A = NULL;
+    B = NULL;
+    x = NULL;
+    esolver = NULL;
+    defect = 0.0;
+
+    err = create_arnoldi_orthogonality_matrix(
+        &A);
+    if( err )
+        goto cleanup;
+
+    err = create_eigen_identity_matrix(
+        &B);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_duplicate(
+        A,
+        &x);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_create(
+        &esolver);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_set_option(
+        "-e gai -ss 20 -emaxiter 4 "
+        "-etol 1.0e-12",
+        esolver);
+    if( err )
+        goto cleanup;
+
+    esolver->options[
+        LIS_EOPTIONS_RVAL] = 1;
+
+    api = lis_gesolve(
+        A,
+        B,
+        x,
+        &evalue,
+        esolver);
+
+    if( api!=LIS_SUCCESS )
+    {
+        printf(
+            "Generalized Arnoldi orthogonality: "
+            "API return %d\n",
+            (int)api);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    if( esolver->work==NULL ||
+        esolver->worklen<
+            LIS_EIGEN_ORTHO_SS+3 )
+    {
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    v = &esolver->work[2];
+
+    err = arnoldi_basis_defect(
+        v,
+        LIS_EIGEN_ORTHO_SS,
+        &defect);
+    if( err )
+        goto cleanup;
+
+    if( !isfinite((double)defect) ||
+        defect>LIS_EIGEN_ARNOLDI_ORTHO_TOL )
+    {
+        printf(
+            "Generalized Arnoldi orthogonality "
+            "defect %.17e, expected <= %.17e\n",
+            (double)defect,
+            (double)LIS_EIGEN_ARNOLDI_ORTHO_TOL);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    printf(
+        "PASS: Generalized Arnoldi "
+        "orthogonality defect %.6e\n",
+        (double)defect);
+
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( esolver )
+        lis_esolver_destroy(esolver);
+    if( x )
+        lis_vector_destroy(x);
+    if( B )
+        lis_matrix_destroy(B);
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
+
+
+#define LIS_EIGEN_LOCK_N 8
+#define LIS_EIGEN_LOCK_SS 3
+#define LIS_EIGEN_LOCK_TOL 1.0e-6
+#define LIS_EIGEN_LOCK_OVERLAP_TOL 1.0e-10
+#define LIS_EIGEN_LOCK_EVALUE_TOL 1.0e-5
+
+
+static const LIS_REAL lis_eigen_lock_power_expected[
+    LIS_EIGEN_LOCK_SS] = {
+        2.00,
+        1.80,
+        1.60
+    };
+
+static const LIS_REAL lis_eigen_lock_inverse_expected[
+    LIS_EIGEN_LOCK_SS] = {
+        0.50,
+        0.60,
+        0.70
+    };
+
+
+static LIS_INT
+locking_evalue_sequence(
+    const char *name,
+    LIS_ESOLVER esolver,
+    const LIS_REAL *expected)
+{
+    LIS_INT i;
+    LIS_REAL error;
+
+    for(i=0;i<LIS_EIGEN_LOCK_SS;i++)
+    {
+        error = eigen_scalar_magnitude(
+            esolver->evalue[i] -
+            (LIS_SCALAR)expected[i]);
+
+        if( !isfinite((double)error) ||
+            error>LIS_EIGEN_LOCK_EVALUE_TOL )
+        {
+            printf(
+                "%s: eigenvalue[%d] error %.17e, expected %.17e\n",
+                name,
+                (int)i,
+                (double)error,
+                (double)expected[i]);
+            return LIS_FAILS;
+        }
+    }
+
+    printf(
+        "PASS: %s eigenvalue sequence\n",
+        name);
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+create_locking_matrix(
+    LIS_MATRIX *A)
+{
+    static const LIS_REAL diag[LIS_EIGEN_LOCK_N] = {
+        0.50,
+        0.60,
+        0.70,
+        1.00,
+        1.30,
+        1.60,
+        1.80,
+        2.00
+    };
+
+    LIS_INT err;
+    LIS_INT i;
+
+    *A = NULL;
+
+    err = lis_matrix_create(
+        LIS_COMM_WORLD,
+        A);
+    if( err )
+        return err;
+
+    err = lis_matrix_set_size(
+        *A,
+        0,
+        LIS_EIGEN_LOCK_N);
+    if( err )
+        return err;
+
+    for(i=0;i<LIS_EIGEN_LOCK_N;i++)
+    {
+        err = lis_matrix_set_value(
+            LIS_INS_VALUE,
+            i,
+            i,
+            diag[i],
+            *A);
+        if( err )
+            return err;
+    }
+
+    return lis_matrix_assemble(*A);
+}
+
+
+static LIS_INT
+create_locking_identity(
+    LIS_MATRIX *B)
+{
+    LIS_INT err;
+    LIS_INT i;
+
+    *B = NULL;
+
+    err = lis_matrix_create(
+        LIS_COMM_WORLD,
+        B);
+    if( err )
+        return err;
+
+    err = lis_matrix_set_size(
+        *B,
+        0,
+        LIS_EIGEN_LOCK_N);
+    if( err )
+        return err;
+
+    for(i=0;i<LIS_EIGEN_LOCK_N;i++)
+    {
+        err = lis_matrix_set_value(
+            LIS_INS_VALUE,
+            i,
+            i,
+            1.0,
+            *B);
+        if( err )
+            return err;
+    }
+
+    return lis_matrix_assemble(*B);
+}
+
+
+static LIS_INT
+locking_euclidean_overlap(
+    LIS_ESOLVER esolver,
+    LIS_REAL *max_overlap)
+{
+    LIS_INT err;
+    LIS_INT i,j;
+    LIS_REAL ni,nj;
+    LIS_REAL value;
+    LIS_SCALAR dot;
+
+    *max_overlap = 0.0;
+
+    for(i=0;i<LIS_EIGEN_LOCK_SS;i++)
+    {
+        err = lis_vector_nrm2(
+            esolver->evector[i],
+            &ni);
+        if( err )
+            return err;
+
+        if( !(ni>0.0) )
+            return LIS_BREAKDOWN;
+
+        for(j=0;j<i;j++)
+        {
+            err = lis_vector_nrm2(
+                esolver->evector[j],
+                &nj);
+            if( err )
+                return err;
+
+            if( !(nj>0.0) )
+                return LIS_BREAKDOWN;
+
+            err = lis_vector_dot(
+                esolver->evector[j],
+                esolver->evector[i],
+                &dot);
+            if( err )
+                return err;
+
+            value =
+                eigen_scalar_magnitude(dot) /
+                (ni*nj);
+
+            if( value>*max_overlap )
+                *max_overlap = value;
+        }
+    }
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+locking_b_overlap(
+    LIS_MATRIX B,
+    LIS_ESOLVER esolver,
+    LIS_REAL *max_overlap)
+{
+    LIS_INT err;
+    LIS_INT i,j;
+    LIS_REAL value;
+    LIS_SCALAR numerator;
+    LIS_SCALAR di,dj;
+    LIS_VECTOR Bi;
+    LIS_VECTOR Bj;
+
+    Bi = NULL;
+    Bj = NULL;
+    *max_overlap = 0.0;
+
+    err = lis_vector_duplicate(
+        B,
+        &Bi);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_duplicate(
+        B,
+        &Bj);
+    if( err )
+        goto cleanup;
+
+    for(i=0;i<LIS_EIGEN_LOCK_SS;i++)
+    {
+        err = lis_matvec(
+            B,
+            esolver->evector[i],
+            Bi);
+        if( err )
+            goto cleanup;
+
+        err = lis_vector_dot(
+            esolver->evector[i],
+            Bi,
+            &di);
+        if( err )
+            goto cleanup;
+
+        if( !lis_esolver_is_valid_denominator(di) )
+        {
+            err = LIS_BREAKDOWN;
+            goto cleanup;
+        }
+
+        for(j=0;j<i;j++)
+        {
+            err = lis_matvec(
+                B,
+                esolver->evector[j],
+                Bj);
+            if( err )
+                goto cleanup;
+
+            err = lis_vector_dot(
+                esolver->evector[j],
+                Bj,
+                &dj);
+            if( err )
+                goto cleanup;
+
+            if( !lis_esolver_is_valid_denominator(dj) )
+            {
+                err = LIS_BREAKDOWN;
+                goto cleanup;
+            }
+
+            err = lis_vector_dot(
+                esolver->evector[j],
+                Bi,
+                &numerator);
+            if( err )
+                goto cleanup;
+
+            value =
+                eigen_scalar_magnitude(numerator) /
+                sqrt(
+                    eigen_scalar_magnitude(di) *
+                    eigen_scalar_magnitude(dj));
+
+            if( value>*max_overlap )
+                *max_overlap = value;
+        }
+    }
+
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( Bj )
+        lis_vector_destroy(Bj);
+    if( Bi )
+        lis_vector_destroy(Bi);
+
+    return err;
+}
+
+
+static LIS_INT
+check_locked_standard_subspace(
+    const char *name,
+    const char *inner,
+    const LIS_REAL *expected,
+    LIS_MATRIX A)
+{
+    LIS_INT err;
+    LIS_INT api;
+    LIS_INT status;
+    LIS_REAL overlap;
+    LIS_VECTOR x;
+    LIS_ESOLVER esolver;
+    LIS_SCALAR evalue;
+    char options[256];
+
+    x = NULL;
+    esolver = NULL;
+    overlap = 0.0;
+
+    err = lis_vector_duplicate(A,&x);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_set_all(1.0,x);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_create(&esolver);
+    if( err )
+        goto cleanup;
+
+    snprintf(
+        options,
+        sizeof(options),
+        "-e si -ie %s -ss %d "
+        "-emaxiter 600 -etol %.17e",
+        inner,
+        LIS_EIGEN_LOCK_SS,
+        (double)LIS_EIGEN_LOCK_TOL);
+
+    err = lis_esolver_set_option(
+        options,
+        esolver);
+    if( err )
+        goto cleanup;
+
+    api = lis_esolve(
+        A,x,&evalue,esolver);
+    if( api!=LIS_SUCCESS )
+    {
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = lis_esolver_get_status(
+        esolver,&status);
+    if( err )
+        goto cleanup;
+
+    if( status!=LIS_SUCCESS )
+    {
+        printf(
+            "%s: status %d, expected LIS_SUCCESS\n",
+            name,(int)status);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = locking_euclidean_overlap(
+        esolver,&overlap);
+    if( err )
+        goto cleanup;
+
+    if( !isfinite((double)overlap) ||
+        overlap>LIS_EIGEN_LOCK_OVERLAP_TOL )
+    {
+        printf(
+            "%s: overlap %.17e, expected <= %.17e\n",
+            name,
+            (double)overlap,
+            (double)LIS_EIGEN_LOCK_OVERLAP_TOL);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = locking_evalue_sequence(
+        name,
+        esolver,
+        expected);
+    if( err )
+        goto cleanup;
+
+    printf(
+        "PASS: %s locking overlap %.6e\n",
+        name,
+        (double)overlap);
+
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( esolver )
+        lis_esolver_destroy(esolver);
+    if( x )
+        lis_vector_destroy(x);
+
+    return err;
+}
+
+
+static LIS_INT
+check_locked_generalized_subspace(
+    const char *name,
+    const char *inner,
+    const LIS_REAL *expected,
+    LIS_MATRIX A,
+    LIS_MATRIX B)
+{
+    LIS_INT err;
+    LIS_INT api;
+    LIS_INT status;
+    LIS_REAL overlap;
+    LIS_VECTOR x;
+    LIS_ESOLVER esolver;
+    LIS_SCALAR evalue;
+    char options[256];
+
+    x = NULL;
+    esolver = NULL;
+    overlap = 0.0;
+
+    err = lis_vector_duplicate(A,&x);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_set_all(1.0,x);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_create(&esolver);
+    if( err )
+        goto cleanup;
+
+    snprintf(
+        options,
+        sizeof(options),
+        "-e gsi -ige %s -ss %d "
+        "-emaxiter 600 -etol %.17e",
+        inner,
+        LIS_EIGEN_LOCK_SS,
+        (double)LIS_EIGEN_LOCK_TOL);
+
+    err = lis_esolver_set_option(
+        options,
+        esolver);
+    if( err )
+        goto cleanup;
+
+    api = lis_gesolve(
+        A,B,x,&evalue,esolver);
+    if( api!=LIS_SUCCESS )
+    {
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = lis_esolver_get_status(
+        esolver,&status);
+    if( err )
+        goto cleanup;
+
+    if( status!=LIS_SUCCESS )
+    {
+        printf(
+            "%s: status %d, expected LIS_SUCCESS\n",
+            name,(int)status);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = locking_b_overlap(
+        B,esolver,&overlap);
+    if( err )
+        goto cleanup;
+
+    if( !isfinite((double)overlap) ||
+        overlap>LIS_EIGEN_LOCK_OVERLAP_TOL )
+    {
+        printf(
+            "%s: B-overlap %.17e, expected <= %.17e\n",
+            name,
+            (double)overlap,
+            (double)LIS_EIGEN_LOCK_OVERLAP_TOL);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = locking_evalue_sequence(
+        name,
+        esolver,
+        expected);
+    if( err )
+        goto cleanup;
+
+    printf(
+        "PASS: %s B-locking overlap %.6e\n",
+        name,
+        (double)overlap);
+
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( esolver )
+        lis_esolver_destroy(esolver);
+    if( x )
+        lis_vector_destroy(x);
+
+    return err;
+}
+
+
+static LIS_INT
+test_subspace_locked_modes(void)
+{
+    LIS_INT err;
+    LIS_MATRIX A;
+    LIS_MATRIX B;
+
+    A = NULL;
+    B = NULL;
+
+    err = create_locking_matrix(&A);
+    if( err )
+        goto cleanup;
+
+    err = create_locking_identity(&B);
+    if( err )
+        goto cleanup;
+
+    err = check_locked_standard_subspace(
+        "Subspace/PI",
+        "pi",
+        lis_eigen_lock_power_expected,
+        A);
+    if( err )
+        goto cleanup;
+
+    err = check_locked_standard_subspace(
+        "Subspace/II",
+        "ii",
+        lis_eigen_lock_inverse_expected,
+        A);
+    if( err )
+        goto cleanup;
+
+    err = check_locked_generalized_subspace(
+        "Generalized Subspace/GPI",
+        "gpi",
+        lis_eigen_lock_power_expected,
+        A,
+        B);
+    if( err )
+        goto cleanup;
+
+    err = check_locked_generalized_subspace(
+        "Generalized Subspace/GII",
+        "gii",
+        lis_eigen_lock_inverse_expected,
+        A,
+        B);
+    if( err )
+        goto cleanup;
+
+    printf(
+        "PASS: Subspace locked-mode regressions\n");
+
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( B )
+        lis_matrix_destroy(B);
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
+static LIS_INT
+test_standard_lanczos_orthogonality(void)
+{
+    LIS_INT err;
+    LIS_INT api;
+    LIS_MATRIX A;
+    LIS_VECTOR x;
+    LIS_ESOLVER esolver;
+    LIS_SCALAR evalue;
+    LIS_REAL defect;
+
+    A = NULL;
+    x = NULL;
+    esolver = NULL;
+    evalue = 0.0;
+    defect = 0.0;
+
+    err = create_eigen_orthogonality_matrix(
+        &A);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_duplicate(
+        A,
+        &x);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_set_all(
+        1.0,
+        x);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_create(
+        &esolver);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_set_option(
+        "-e li -ss 20 -emaxiter 4 "
+        "-etol 1.0e-12",
+        esolver);
+    if( err )
+        goto cleanup;
+
+    esolver->options[
+        LIS_EOPTIONS_RVAL] = 1;
+
+    api = lis_esolve(
+        A,
+        x,
+        &evalue,
+        esolver);
+
+    if( api!=LIS_SUCCESS )
+    {
+        printf(
+            "Standard Lanczos orthogonality: "
+            "API return %d\n",
+            (int)api);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = standard_lanczos_basis_defect(
+        esolver,
+        &defect);
+    if( err )
+        goto cleanup;
+
+    if( !isfinite((double)defect) ||
+        defect>LIS_EIGEN_ORTHO_TOL )
+    {
+        printf(
+            "Standard Lanczos orthogonality "
+            "defect %.17e, expected <= %.17e\n",
+            (double)defect,
+            (double)LIS_EIGEN_ORTHO_TOL);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    printf(
+        "PASS: Standard Lanczos "
+        "orthogonality defect %.6e\n",
+        (double)defect);
+
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( esolver )
+        lis_esolver_destroy(esolver);
+    if( x )
+        lis_vector_destroy(x);
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
+static LIS_INT
+test_generalized_lanczos_orthogonality(void)
+{
+    LIS_INT err;
+    LIS_INT api;
+    LIS_MATRIX A;
+    LIS_MATRIX B;
+    LIS_VECTOR x;
+    LIS_ESOLVER esolver;
+    LIS_SCALAR evalue;
+    LIS_REAL defect;
+
+    A = NULL;
+    B = NULL;
+    x = NULL;
+    esolver = NULL;
+    evalue = 0.0;
+    defect = 0.0;
+
+    err = create_eigen_orthogonality_matrix(
+        &A);
+    if( err )
+        goto cleanup;
+
+    err = create_eigen_identity_matrix(
+        &B);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_duplicate(
+        A,
+        &x);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_set_all(
+        1.0,
+        x);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_create(
+        &esolver);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_set_option(
+        "-e gli -ss 20 -emaxiter 4 "
+        "-etol 1.0e-12",
+        esolver);
+    if( err )
+        goto cleanup;
+
+    esolver->options[
+        LIS_EOPTIONS_RVAL] = 1;
+
+    api = lis_gesolve(
+        A,
+        B,
+        x,
+        &evalue,
+        esolver);
+
+    if( api!=LIS_SUCCESS )
+    {
+        printf(
+            "Generalized Lanczos orthogonality: "
+            "API return %d\n",
+            (int)api);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = generalized_lanczos_basis_defect(
+        esolver,
+        &defect);
+    if( err )
+        goto cleanup;
+
+    if( !isfinite((double)defect) ||
+        defect>LIS_EIGEN_ORTHO_TOL )
+    {
+        printf(
+            "Generalized Lanczos B-orthogonality "
+            "defect %.17e, expected <= %.17e\n",
+            (double)defect,
+            (double)LIS_EIGEN_ORTHO_TOL);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    printf(
+        "PASS: Generalized Lanczos "
+        "B-orthogonality defect %.6e\n",
+        (double)defect);
+
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( esolver )
+        lis_esolver_destroy(esolver);
+    if( x )
+        lis_vector_destroy(x);
+    if( B )
+        lis_matrix_destroy(B);
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
+
+
+static LIS_INT
+test_lanczos_clustered_basis_stability(void)
+{
+    LIS_INT err;
+    LIS_INT api;
+    LIS_MATRIX A;
+    LIS_MATRIX B;
+    LIS_VECTOR x;
+    LIS_ESOLVER esolver;
+    LIS_SCALAR evalue;
+    LIS_REAL standard_defect;
+    LIS_REAL generalized_defect;
+
+    A = NULL;
+    B = NULL;
+    x = NULL;
+    esolver = NULL;
+    evalue = 0.0;
+    standard_defect = 0.0;
+    generalized_defect = 0.0;
+
+    /*
+     * Reuse the geometric 1.05 spectrum used by the Arnoldi stress
+     * regression.  This stresses basis independence while preserving
+     * the single-vector Lanczos contract.
+     */
+    err = create_arnoldi_orthogonality_matrix(
+        &A);
+    if( err )
+        goto cleanup;
+
+    err = create_eigen_identity_matrix(
+        &B);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_duplicate(
+        A,
+        &x);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_set_all(
+        1.0,
+        x);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_create(
+        &esolver);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_set_option(
+        "-e li -ss 20 -emaxiter 4 "
+        "-etol 1.0e-12",
+        esolver);
+    if( err )
+        goto cleanup;
+
+    esolver->options[
+        LIS_EOPTIONS_RVAL] = 1;
+
+    api = lis_esolve(
+        A,
+        x,
+        &evalue,
+        esolver);
+
+    if( api!=LIS_SUCCESS )
+    {
+        printf(
+            "Clustered standard Lanczos basis: "
+            "API return %d\n",
+            (int)api);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = standard_lanczos_basis_defect(
+        esolver,
+        &standard_defect);
+    if( err )
+        goto cleanup;
+
+    if( !isfinite((double)standard_defect) ||
+        standard_defect>LIS_EIGEN_ORTHO_TOL )
+    {
+        printf(
+            "Clustered standard Lanczos basis defect "
+            "%.17e, expected <= %.17e\n",
+            (double)standard_defect,
+            (double)LIS_EIGEN_ORTHO_TOL);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    lis_esolver_destroy(esolver);
+    esolver = NULL;
+
+    err = lis_vector_set_all(
+        1.0,
+        x);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_create(
+        &esolver);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_set_option(
+        "-e gli -ss 20 -emaxiter 4 "
+        "-etol 1.0e-12",
+        esolver);
+    if( err )
+        goto cleanup;
+
+    esolver->options[
+        LIS_EOPTIONS_RVAL] = 1;
+
+    api = lis_gesolve(
+        A,
+        B,
+        x,
+        &evalue,
+        esolver);
+
+    if( api!=LIS_SUCCESS )
+    {
+        printf(
+            "Clustered generalized Lanczos basis: "
+            "API return %d\n",
+            (int)api);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = generalized_lanczos_basis_defect(
+        esolver,
+        &generalized_defect);
+    if( err )
+        goto cleanup;
+
+    if( !isfinite((double)generalized_defect) ||
+        generalized_defect>LIS_EIGEN_ORTHO_TOL )
+    {
+        printf(
+            "Clustered generalized Lanczos B-basis defect "
+            "%.17e, expected <= %.17e\n",
+            (double)generalized_defect,
+            (double)LIS_EIGEN_ORTHO_TOL);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    printf(
+        "PASS: Lanczos clustered basis stability "
+        "standard %.6e generalized %.6e\n",
+        (double)standard_defect,
+        (double)generalized_defect);
+
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( esolver )
+        lis_esolver_destroy(esolver);
+    if( x )
+        lis_vector_destroy(x);
+    if( B )
+        lis_matrix_destroy(B);
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
+static LIS_INT
+test_transformed_generalized_lanczos_clustered_spectrum(void)
+{
+    LIS_INT err;
+    LIS_INT api;
+    LIS_INT i;
+    LIS_MATRIX A;
+    LIS_MATRIX B;
+    LIS_VECTOR x;
+    LIS_ESOLVER esolver;
+    LIS_SCALAR evalue;
+    LIS_REAL error;
+    const LIS_REAL expected[3] = {
+        1.0,
+        1.05,
+        1.1025
+    };
+
+    A = NULL;
+    B = NULL;
+    x = NULL;
+    esolver = NULL;
+    evalue = 0.0;
+
+    err = create_arnoldi_orthogonality_matrix(
+        &A);
+    if( err )
+        goto cleanup;
+
+    err = create_eigen_identity_matrix(
+        &B);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_duplicate(
+        A,
+        &x);
+    if( err )
+        goto cleanup;
+
+    err = lis_vector_set_all(
+        1.0,
+        x);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_create(
+        &esolver);
+    if( err )
+        goto cleanup;
+
+    err = lis_esolver_set_option(
+        "-e gli -ss 20 -emaxiter 20 "
+        "-etol 1.0e-10",
+        esolver);
+    if( err )
+        goto cleanup;
+
+    /*
+     * Explicitly exercise lis_egli_transformed().
+     * A zero spectral shift is nonsingular for this positive
+     * diagonal spectrum and targets the smallest eigenvalues.
+     */
+    esolver->transform =
+        LIS_EIGEN_TRANSFORM_SHIFT_INVERT;
+    esolver->nev = 3;
+    esolver->options[
+        LIS_EOPTIONS_RVAL] = 1;
+
+    api = lis_gesolve(
+        A,
+        B,
+        x,
+        &evalue,
+        esolver);
+
+    if( api!=LIS_SUCCESS )
+    {
+        printf(
+            "Transformed generalized Lanczos clustered spectrum: "
+            "API return %d\n",
+            (int)api);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    if( esolver->retcode!=LIS_SUCCESS )
+    {
+        printf(
+            "Transformed generalized Lanczos clustered spectrum: "
+            "status %d, expected LIS_SUCCESS\n",
+            (int)esolver->retcode);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    for(i=0;i<3;i++)
+    {
+        if( !lis_esolver_is_finite_scalar(
+                esolver->evalue[i]) )
+        {
+            printf(
+                "Transformed generalized Lanczos clustered spectrum: "
+                "non-finite eigenvalue[%d]\n",
+                (int)i);
+            err = LIS_FAILS;
+            goto cleanup;
+        }
+
+        error = eigen_scalar_magnitude(
+            esolver->evalue[i] -
+            (LIS_SCALAR)expected[i]);
+
+        if( !isfinite((double)error) ||
+            error>1.0e-6 )
+        {
+            printf(
+                "Transformed generalized Lanczos clustered spectrum: "
+                "eigenvalue[%d] error %.17e, expected <= %.17e\n",
+                (int)i,
+                (double)error,
+                1.0e-6);
+            err = LIS_FAILS;
+            goto cleanup;
+        }
+
+        if( !isfinite((double)esolver->resid[i]) ||
+            esolver->resid[i]>1.0e-8 )
+        {
+            printf(
+                "Transformed generalized Lanczos clustered spectrum: "
+                "residual[%d] %.17e, expected <= %.17e\n",
+                (int)i,
+                (double)esolver->resid[i],
+                1.0e-8);
+            err = LIS_FAILS;
+            goto cleanup;
+        }
+    }
+
+    printf(
+        "PASS: Transformed generalized Lanczos "
+        "clustered spectrum\n");
+
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( esolver )
+        lis_esolver_destroy(esolver);
+    if( x )
+        lis_vector_destroy(x);
+    if( B )
+        lis_matrix_destroy(B);
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
 static LIS_INT
 test_arnoldi_happy_breakdown(void)
 {
@@ -1936,6 +3619,73 @@ main(
     {
         printf(
             "LIS_EIGEN_RECOVERY GSUBSPACE_GPI_RETRY FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_subspace_locked_modes();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_LOCKING SUBSPACE FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_standard_lanczos_orthogonality();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_ORTHOGONALITY LANCZOS FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_generalized_lanczos_orthogonality();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_ORTHOGONALITY "
+            "GENERALIZED LANCZOS FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_lanczos_clustered_basis_stability();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_ORTHOGONALITY "
+            "CLUSTERED LANCZOS BASIS FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_transformed_generalized_lanczos_clustered_spectrum();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_DIAGNOSTIC "
+            "TRANSFORMED GENERALIZED LANCZOS FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_standard_arnoldi_orthogonality();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_ORTHOGONALITY ARNOLDI FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    err = test_generalized_arnoldi_orthogonality();
+    if( err )
+    {
+        printf(
+            "LIS_EIGEN_ORTHOGONALITY "
+            "GENERALIZED ARNOLDI FAILED\n");
         lis_finalize();
         return 1;
     }
