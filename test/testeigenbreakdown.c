@@ -7746,6 +7746,65 @@ check_generalized_block_lanczos_structural_regressions(void)
     if( err )
         goto cleanup;
 
+    lis_matrix_destroy(M);
+    M = NULL;
+
+    lis_matrix_destroy(K);
+    K = NULL;
+
+    /*
+     * Common-scale invariance of rigid-body residual certification.
+     *
+     * Scale both matrices by the same factor:
+     *
+     *     K' = 1e6 K
+     *     M' = 1e6 M
+     *
+     * The generalized spectrum and shift remain 0,0,5,10 and 1,
+     * while the transformed operator
+     *
+     *     (K' - sigma M')^-1 M'
+     *
+     * is exactly the same as for the unscaled pair. This isolates
+     * physical residual scaling from block-recurrence scaling.
+     */
+    err = block_lanczos_test_diag4(
+        &K,
+        0.0,
+        0.0,
+        5.0e6,
+        1.0e7);
+
+    if( err )
+        goto cleanup;
+
+    err = block_lanczos_test_diag4(
+        &M,
+        1.0e6,
+        2.0e6,
+        1.0e6,
+        1.0e6);
+
+    if( err )
+        goto cleanup;
+
+    expected[0] = 0.0;
+    expected[1] = 0.0;
+    expected[2] = 5.0;
+    expected[3] = 10.0;
+
+    err = block_lanczos_test_generalized_case(
+        "common-scaled rigid-body shift-invert",
+        K,
+        M,
+        M,
+        LIS_EIGEN_TRANSFORM_SHIFT_INVERT,
+        (LIS_REAL)1.0,
+        expected);
+
+    if( err )
+        goto cleanup;
+
     printf(
         "PASS: generalized Block Lanczos structural regressions\n");
 
