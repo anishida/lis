@@ -7015,6 +7015,268 @@ block_lanczos_test_values(
 }
 
 
+
+/*
+ * Validate orthonormality in the positive metric used by the
+ * generalized/transformed Block Lanczos recurrence.
+ *
+ * Shift-invert uses B as the metric. Buckling uses A/K and never
+ * treats the possibly indefinite geometric matrix as a positive
+ * metric.
+ */
+static LIS_INT
+block_lanczos_test_metric_orthogonality(
+    LIS_ESOLVER esolver,
+    LIS_MATRIX metric,
+    LIS_INT count,
+    LIS_REAL tol,
+    const char *label)
+{
+    LIS_INT err;
+    LIS_INT i,j;
+    LIS_VECTOR metric_x;
+    LIS_SCALAR dot;
+    LIS_SCALAR expected;
+    LIS_REAL defect;
+    LIS_REAL max_defect;
+
+    metric_x = NULL;
+    max_defect = 0.0;
+
+    if( esolver==NULL ||
+        metric==NULL ||
+        count<1 ||
+        esolver->evector==NULL )
+    {
+        return LIS_ERR_ILL_ARG;
+    }
+
+    err = lis_vector_duplicate(
+        metric,
+        &metric_x);
+
+    if( err )
+        return err;
+
+    for(j=0;j<count;j++)
+    {
+        if( esolver->evector[j]==NULL )
+        {
+            printf(
+                "FAIL: generalized Block Lanczos %s "
+                "missing Ritz vector %D\n",
+                label,
+                j);
+
+            err = LIS_FAILS;
+            goto cleanup;
+        }
+
+        err = lis_matvec(
+            metric,
+            esolver->evector[j],
+            metric_x);
+
+        if( err )
+            goto cleanup;
+
+        for(i=0;i<count;i++)
+        {
+            err = lis_vector_dot(
+                esolver->evector[i],
+                metric_x,
+                &dot);
+
+            if( err )
+                goto cleanup;
+
+            expected =
+                i==j ? 1.0 : 0.0;
+
+#ifdef _COMPLEX
+            defect =
+                (LIS_REAL)cabs(
+                    dot-expected);
+#else
+            defect =
+                (LIS_REAL)fabs(
+                    (double)(dot-expected));
+#endif
+
+            if( defect>max_defect )
+                max_defect = defect;
+        }
+    }
+
+    if( max_defect>tol )
+    {
+        printf(
+            "FAIL: generalized Block Lanczos %s "
+            "metric orthogonality defect=%e tol=%e\n",
+            label,
+            (double)max_defect,
+            (double)tol);
+
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    printf(
+        "PASS: generalized Block Lanczos %s "
+        "metric orthogonality max_defect=%e\n",
+        label,
+        (double)max_defect);
+
+    err = LIS_SUCCESS;
+
+cleanup:
+
+    if( metric_x )
+        lis_vector_destroy(metric_x);
+
+    return err;
+}
+
+
+/*
+ * Run one complete real generalized/transformed Block Lanczos
+ * regression and verify successful public execution, the complete
+ * four-mode spectrum, physical residuals, and orthonormality in the
+ * positive recurrence metric.
+ */
+static LIS_INT
+block_lanczos_test_generalized_case(
+    const char *label,
+    LIS_MATRIX A,
+    LIS_MATRIX B,
+    LIS_MATRIX metric,
+    LIS_INT transform,
+    LIS_REAL shift,
+    const LIS_REAL expected[4])
+{
+    LIS_INT err;
+    LIS_INT api;
+    LIS_INT status;
+    LIS_INT i;
+    LIS_VECTOR x;
+    LIS_ESOLVER esolver;
+    LIS_SCALAR evalue;
+    LIS_REAL max_resid;
+
+    x = NULL;
+    esolver = NULL;
+    evalue = 0.0;
+    max_resid = 0.0;
+
+    err = block_lanczos_test_setup(
+        A,
+        transform,
+        shift,
+        0,
+        &esolver,
+        &x);
+
+    if( err )
+        goto cleanup;
+
+    api = lis_gesolve(
+        A,
+        B,
+        x,
+        &evalue,
+        esolver);
+
+    err = lis_esolver_get_status(
+        esolver,
+        &status);
+
+    if( err )
+        goto cleanup;
+
+    if( api!=LIS_SUCCESS ||
+        status!=LIS_SUCCESS ||
+        esolver->nev!=4 )
+    {
+        printf(
+            "FAIL: generalized Block Lanczos %s "
+            "api=%d status=%d nev=%d\n",
+            label,
+            (int)api,
+            (int)status,
+            (int)esolver->nev);
+
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = block_lanczos_test_values(
+        esolver,
+        expected,
+        (LIS_REAL)1.0e-8);
+
+    if( err )
+        goto cleanup;
+
+    for(i=0;i<4;i++)
+    {
+        if( esolver->evector[i]==NULL )
+        {
+            printf(
+                "FAIL: generalized Block Lanczos %s "
+                "missing physical Ritz vector %D\n",
+                label,
+                i);
+
+            err = LIS_FAILS;
+            goto cleanup;
+        }
+
+        if( esolver->resid[i]>max_resid )
+            max_resid = esolver->resid[i];
+    }
+
+    if( max_resid>(LIS_REAL)1.0e-8 )
+    {
+        printf(
+            "FAIL: generalized Block Lanczos %s "
+            "residual=%e\n",
+            label,
+            (double)max_resid);
+
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    err = block_lanczos_test_metric_orthogonality(
+        esolver,
+        metric,
+        4,
+        (LIS_REAL)1.0e-8,
+        label);
+
+    if( err )
+        goto cleanup;
+
+    printf(
+        "PASS: generalized Block Lanczos %s "
+        "residual=%e\n",
+        label,
+        (double)max_resid);
+
+    err = LIS_SUCCESS;
+
+cleanup:
+
+    if( esolver )
+        lis_esolver_destroy(esolver);
+
+    if( x )
+        lis_vector_destroy(x);
+
+    return err;
+}
+
+
 static LIS_INT
 check_generalized_block_lanczos_regression(void)
 {
@@ -7300,6 +7562,199 @@ cleanup:
 
     if( x )
         lis_vector_destroy(x);
+
+    if( KG )
+        lis_matrix_destroy(KG);
+
+    if( K )
+        lis_matrix_destroy(K);
+
+    if( B )
+        lis_matrix_destroy(B);
+
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
+
+/*
+ * Structural regressions motivated by generalized structural
+ * eigenproblems:
+ *
+ * 1. repeated generalized shift-invert modes,
+ * 2. repeated buckling modes with an indefinite second matrix,
+ * 3. rigid-body zero modes with singular stiffness under a safe
+ *    nonzero shift.
+ */
+static LIS_INT
+check_generalized_block_lanczos_structural_regressions(void)
+{
+    LIS_INT err;
+    LIS_MATRIX A;
+    LIS_MATRIX B;
+    LIS_MATRIX K;
+    LIS_MATRIX KG;
+    LIS_MATRIX M;
+    LIS_REAL expected[4];
+
+    A = NULL;
+    B = NULL;
+    K = NULL;
+    KG = NULL;
+    M = NULL;
+
+    /*
+     * A = diag(2,4,15,20), B = diag(1,2,3,4)
+     * gives generalized eigenvalues 2,2,5,5.
+     */
+    err = block_lanczos_test_diag4(
+        &A,
+        2.0,
+        4.0,
+        15.0,
+        20.0);
+
+    if( err )
+        goto cleanup;
+
+    err = block_lanczos_test_diag4(
+        &B,
+        1.0,
+        2.0,
+        3.0,
+        4.0);
+
+    if( err )
+        goto cleanup;
+
+    expected[0] = 2.0;
+    expected[1] = 2.0;
+    expected[2] = 5.0;
+    expected[3] = 5.0;
+
+    err = block_lanczos_test_generalized_case(
+        "repeated shift-invert",
+        A,
+        B,
+        B,
+        LIS_EIGEN_TRANSFORM_SHIFT_INVERT,
+        (LIS_REAL)3.2,
+        expected);
+
+    if( err )
+        goto cleanup;
+
+    lis_matrix_destroy(B);
+    B = NULL;
+
+    lis_matrix_destroy(A);
+    A = NULL;
+
+    /*
+     * K = diag(10,20,40,60), KG = diag(1,2,-2,-3)
+     * gives buckling eigenvalues 10,10,-20,-20.
+     *
+     * KG is deliberately indefinite. K is the positive metric.
+     */
+    err = block_lanczos_test_diag4(
+        &K,
+        10.0,
+        20.0,
+        40.0,
+        60.0);
+
+    if( err )
+        goto cleanup;
+
+    err = block_lanczos_test_diag4(
+        &KG,
+        1.0,
+        2.0,
+        -2.0,
+        -3.0);
+
+    if( err )
+        goto cleanup;
+
+    expected[0] = 10.0;
+    expected[1] = 10.0;
+    expected[2] = -20.0;
+    expected[3] = -20.0;
+
+    err = block_lanczos_test_generalized_case(
+        "repeated buckling",
+        K,
+        KG,
+        K,
+        LIS_EIGEN_TRANSFORM_BUCKLING,
+        (LIS_REAL)2.0,
+        expected);
+
+    if( err )
+        goto cleanup;
+
+    lis_matrix_destroy(KG);
+    KG = NULL;
+
+    lis_matrix_destroy(K);
+    K = NULL;
+
+    /*
+     * K = diag(0,0,5,10), M = diag(1,2,1,1)
+     * gives two rigid-body zero modes followed by 5 and 10.
+     *
+     * sigma=1 keeps K-sigma*M nonsingular while verifying that
+     * physical zero modes survive the transformed block path.
+     */
+    err = block_lanczos_test_diag4(
+        &K,
+        0.0,
+        0.0,
+        5.0,
+        10.0);
+
+    if( err )
+        goto cleanup;
+
+    err = block_lanczos_test_diag4(
+        &M,
+        1.0,
+        2.0,
+        1.0,
+        1.0);
+
+    if( err )
+        goto cleanup;
+
+    expected[0] = 0.0;
+    expected[1] = 0.0;
+    expected[2] = 5.0;
+    expected[3] = 10.0;
+
+    err = block_lanczos_test_generalized_case(
+        "rigid-body shift-invert",
+        K,
+        M,
+        M,
+        LIS_EIGEN_TRANSFORM_SHIFT_INVERT,
+        (LIS_REAL)1.0,
+        expected);
+
+    if( err )
+        goto cleanup;
+
+    printf(
+        "PASS: generalized Block Lanczos structural regressions\n");
+
+    err = LIS_SUCCESS;
+
+cleanup:
+
+    if( M )
+        lis_matrix_destroy(M);
 
     if( KG )
         lis_matrix_destroy(KG);
@@ -7694,6 +8149,15 @@ main(
         lis_finalize();
         return 1;
     }
+
+    if( check_generalized_block_lanczos_structural_regressions()!=LIS_SUCCESS )
+    {
+        printf(
+            "LIS_EIGEN_BLOCK_LANCZOS_STRUCTURAL_REGRESSION FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
 
     printf(
         "LIS_EIGEN_BREAKDOWN PASSED\n");
