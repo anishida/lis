@@ -252,6 +252,26 @@ extern LIS_INT lis_eigen_ritz_reconstruct(
 	extern LIS_INT lis_eli_quad(LIS_ESOLVER esolver);
 	extern LIS_INT lis_eli_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_eli_malloc_work(LIS_ESOLVER esolver);
+	extern LIS_INT lis_lanczos_block_initial_raw(
+		LIS_INT block_size,
+		LIS_INT block_rank,
+		LIS_VECTOR W[]);
+
+	extern LIS_INT lis_lanczos_block_projected_set_alpha(
+		LIS_INT ld,
+		LIS_SCALAR *t,
+		LIS_INT offset,
+		LIS_INT rank,
+		const LIS_SCALAR *alpha);
+
+	extern LIS_INT lis_lanczos_block_projected_set_beta(
+		LIS_INT ld,
+		LIS_SCALAR *t,
+		LIS_INT previous_offset,
+		LIS_INT previous_rank,
+		LIS_INT next_offset,
+		LIS_INT next_rank,
+		const LIS_SCALAR *beta);
 
 /**********************/
 /* Arnoldi Iteration  */

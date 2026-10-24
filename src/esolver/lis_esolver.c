@@ -600,6 +600,7 @@ LIS_INT lis_esolver_init(LIS_ESOLVER esolver)
 	esolver->ishift     = 0;
 	esolver->transform  = LIS_EIGEN_TRANSFORM_AUTO;
 	esolver->nev        = 0;
+	esolver->block_size = 1;
 	esolver->tol        = 0;
 	esolver->eprecision = LIS_PRECISION_DOUBLE;
 
@@ -631,6 +632,23 @@ static LIS_INT lis_esolver_result_count(
 
         ss = esolver->options[
                 LIS_EOPTIONS_SUBSPACE];
+
+        /*
+         * Block Lanczos may terminate with fewer active basis
+         * vectors than the nominal subspace dimension after
+         * numerical rank deflation or happy breakdown.
+         * Expose only the active reconstructed Ritz results.
+         */
+        if( esolver->options[
+                    LIS_EOPTIONS_ESOLVER]
+                ==LIS_ESOLVER_LI &&
+            esolver->block_size>1 &&
+            esolver->nev>0 &&
+            esolver->nev<=ss )
+        {
+                return esolver->nev;
+        }
+
 
         if( esolver->options[
                     LIS_EOPTIONS_ESOLVER]
@@ -915,6 +933,35 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 		LIS_SETERR2(LIS_ERR_ILL_ARG,"Parameter LIS_EOPTIONS_ESOLVER is %D (Set between 1 to %D)\n",nesolver, LIS_ESOLVER_LEN);
 		return LIS_ERR_ILL_ARG;
 	}
+	/*
+	 * Block eigensolver mode is introduced incrementally.
+	 *
+	 * The current foundation reserves block_size > 1 for the
+	 * standard Lanczos driver.  Other eigensolvers retain their
+	 * existing scalar behavior and reject an explicit block request.
+	 */
+	if( esolver->block_size>1 &&
+	    nesolver!=LIS_ESOLVER_LI )
+	{
+		LIS_SETERR(
+			LIS_ERR_NOT_IMPLEMENTED,
+			"block eigensolver mode is currently implemented "
+			"only for standard Lanczos\n");
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
+	if( esolver->block_size>1 &&
+	    esolver->block_size>ss )
+	{
+		LIS_SETERR2(
+			LIS_ERR_ILL_ARG,
+			"Parameter -eblock is %D "
+			"(Set less than or equal to subspace size %D)\n",
+			esolver->block_size,
+			ss);
+		return LIS_ERR_ILL_ARG;
+	}
+
 	if( B!=NULL &&
 	    (A->matrix_type==LIS_MATRIX_USER || B->matrix_type==LIS_MATRIX_USER) &&
 	    nesolver==LIS_ESOLVER_GRQI )
@@ -1305,6 +1352,32 @@ LIS_INT lis_esolver_set_option2(char* arg1, char *arg2, LIS_ESOLVER esolver)
 	LIS_DEBUG_FUNC_IN;
 
 	err = 0;
+
+	/*
+	 * Block size is kept outside LIS_EOPTIONS_* so existing public
+	 * eigensolver option and parameter indices remain unchanged.
+	 *
+	 * A value of one preserves the historical scalar eigensolver
+	 * behavior.  Values greater than one are currently reserved for
+	 * the standard Block Lanczos path.
+	 */
+	if( strcmp(arg1,"-eblock")==0 )
+	{
+		esolver->block_size = atoi(arg2);
+
+		if( esolver->block_size<1 )
+		{
+			LIS_SETERR(
+				LIS_ERR_ILL_ARG,
+				"Parameter -eblock must be at least 1\n");
+			esolver->retcode = LIS_ERR_ILL_ARG;
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_ERR_ILL_ARG;
+		}
+
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
 
 	/*
 	 * Spectral transformations are kept outside LIS_EOPTIONS_* so
