@@ -4568,6 +4568,350 @@ lis_egli_block_first_recurrence(
 }
 
 
+/*
+ * Convert the first B-orthogonal generalized Lanczos residual block
+ * into the next numerical basis block and its rectangular coupling.
+ *
+ * candidate[] / dual_candidate[] enter as Z / BZ from F4.
+ * The common B-rank-deflation kernel builds Q1/BQ1 and the common
+ * rectangular-coupling helper builds:
+ *
+ *     Beta1 = Lambda_r^(1/2) U_r^H
+ *
+ * with logical dimensions next_rank x previous_rank.
+ *
+ * If the remaining linear basis capacity is smaller than the
+ * previous block rank, temporary full-width Q/BQ output blocks are
+ * used and only the leading retained directions are copied back.
+ */
+static LIS_INT
+lis_egli_block_first_next_block(
+    LIS_ESOLVER esolver,
+    LIS_INT ss,
+    LIS_INT previous_rank,
+    LIS_INT next_offset,
+    LIS_VECTOR basis[],
+    LIS_VECTOR dual_basis[],
+    LIS_VECTOR candidate[],
+    LIS_VECTOR dual_candidate[],
+    LIS_SCALAR *t,
+    LIS_SCALAR *gram,
+    LIS_SCALAR *evec,
+    LIS_SCALAR *transform,
+    LIS_INT *next_rank)
+{
+    LIS_INT i,j,err;
+    LIS_INT remaining;
+    LIS_INT full_next_rank;
+    LIS_INT retained_rank;
+    LIS_REAL rank_tol;
+    LIS_REAL tol;
+    LIS_REAL residual_norm;
+    LIS_REAL residual_max;
+    LIS_SCALAR bnorm2;
+    LIS_SCALAR *eval;
+    LIS_VECTOR *next_q;
+    LIS_VECTOR *next_bq;
+    LIS_VECTOR *partial_q;
+    LIS_VECTOR *partial_bq;
+
+    if( esolver==NULL ||
+        esolver->B==NULL ||
+        ss<1 ||
+        previous_rank<1 ||
+        next_offset<0 ||
+        next_offset>ss ||
+        basis==NULL ||
+        dual_basis==NULL ||
+        candidate==NULL ||
+        dual_candidate==NULL ||
+        t==NULL ||
+        gram==NULL ||
+        evec==NULL ||
+        transform==NULL ||
+        next_rank==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos next-block arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *next_rank = 0;
+
+    remaining = ss - next_offset;
+
+    if( remaining<=0 )
+        return LIS_SUCCESS;
+
+    /*
+     * Apply an absolute happy-breakdown test before the relative
+     * B-rank-revealing normalization.
+     *
+     * For the generalized residual Z with cached BZ:
+     *
+     *     ||Z_j||_B = sqrt( | Z_j^H B Z_j | )
+     *
+     * A residual block already below the eigensolver tolerance must
+     * terminate the Lanczos chain instead of being normalized into
+     * artificial directions by a purely relative rank test.
+     */
+    tol =
+        esolver->params[
+            LIS_EPARAMS_RESID -
+            LIS_EOPTIONS_LEN];
+
+    residual_max = 0.0;
+
+    for(i=0;i<previous_rank;i++)
+    {
+        err = lis_vector_dot(
+            candidate[i],
+            dual_candidate[i],
+            &bnorm2);
+
+        if( err )
+            return err;
+
+#ifdef _COMPLEX
+        residual_norm =
+            sqrt(
+                fabs(
+                    (double)creal(bnorm2)));
+#else
+        residual_norm =
+            sqrt(
+                fabs(
+                    (double)bnorm2));
+#endif
+
+        if( residual_norm>residual_max )
+            residual_max = residual_norm;
+    }
+
+    if( residual_max<=tol )
+    {
+        for(i=0;i<remaining;i++)
+        {
+            err = lis_vector_set_all(
+                0.0,
+                basis[next_offset+i]);
+
+            if( err )
+                return err;
+
+            err = lis_vector_set_all(
+                0.0,
+                dual_basis[next_offset+i]);
+
+            if( err )
+                return err;
+        }
+
+        *next_rank = 0;
+        return LIS_SUCCESS;
+    }
+
+    rank_tol = (LIS_REAL)1.0e-12;
+
+    eval = NULL;
+    next_q = NULL;
+    next_bq = NULL;
+    partial_q = NULL;
+    partial_bq = NULL;
+
+    eval = (LIS_SCALAR *)lis_malloc(
+        previous_rank*sizeof(LIS_SCALAR),
+        "lis_egli_block_first_next_block::eval");
+
+    if( eval==NULL )
+    {
+        LIS_SETERR_MEM(
+            previous_rank*sizeof(LIS_SCALAR));
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+    if( remaining>=previous_rank )
+    {
+        next_q = &basis[next_offset];
+        next_bq = &dual_basis[next_offset];
+    }
+    else
+    {
+        partial_q = (LIS_VECTOR *)lis_malloc(
+            previous_rank*sizeof(LIS_VECTOR),
+            "lis_egli_block_first_next_block::partial_q");
+
+        partial_bq = (LIS_VECTOR *)lis_malloc(
+            previous_rank*sizeof(LIS_VECTOR),
+            "lis_egli_block_first_next_block::partial_bq");
+
+        if( partial_q==NULL ||
+            partial_bq==NULL )
+        {
+            if( partial_bq ) lis_free(partial_bq);
+            if( partial_q ) lis_free(partial_q);
+            lis_free(eval);
+
+            LIS_SETERR_MEM(
+                2*previous_rank*sizeof(LIS_VECTOR));
+            return LIS_ERR_OUT_OF_MEMORY;
+        }
+
+        for(i=0;i<previous_rank;i++)
+        {
+            partial_q[i] = NULL;
+            partial_bq[i] = NULL;
+        }
+
+        for(i=0;i<previous_rank;i++)
+        {
+            if( esolver->eprecision==
+                LIS_PRECISION_DEFAULT )
+            {
+                err = lis_vector_duplicate(
+                    esolver->A,
+                    &partial_q[i]);
+
+                if( err )
+                    goto cleanup;
+
+                err = lis_vector_duplicate(
+                    esolver->A,
+                    &partial_bq[i]);
+            }
+            else
+            {
+                err = lis_vector_duplicateex(
+                    LIS_PRECISION_QUAD,
+                    esolver->A,
+                    &partial_q[i]);
+
+                if( err )
+                    goto cleanup;
+
+                err = lis_vector_duplicateex(
+                    LIS_PRECISION_QUAD,
+                    esolver->A,
+                    &partial_bq[i]);
+            }
+
+            if( err )
+                goto cleanup;
+        }
+
+        next_q = partial_q;
+        next_bq = partial_bq;
+    }
+
+    full_next_rank = 0;
+
+    err = lis_eigen_block_brank_deflate(
+        esolver->B,
+        previous_rank,
+        previous_rank,
+        candidate,
+        dual_candidate,
+        next_q,
+        next_bq,
+        rank_tol,
+        &full_next_rank,
+        gram,
+        eval,
+        evec,
+        transform);
+
+    if( err )
+        goto cleanup;
+
+    retained_rank = full_next_rank;
+
+    if( retained_rank>remaining )
+        retained_rank = remaining;
+
+    if( partial_q!=NULL )
+    {
+        for(i=0;i<retained_rank;i++)
+        {
+            err = lis_vector_copy(
+                partial_q[i],
+                basis[next_offset+i]);
+
+            if( err )
+                goto cleanup;
+
+            err = lis_vector_copy(
+                partial_bq[i],
+                dual_basis[next_offset+i]);
+
+            if( err )
+                goto cleanup;
+        }
+    }
+
+    if( retained_rank>0 )
+    {
+        /*
+         * transform[] is no longer needed after B-rank deflation,
+         * so reuse it for the rectangular Beta1 coupling.
+         */
+        err = lis_eigen_block_rectangular_coupling(
+            previous_rank,
+            retained_rank,
+            eval,
+            evec,
+            transform);
+
+        if( err )
+            goto cleanup;
+
+        err = lis_lanczos_block_projected_set_beta(
+            ss,
+            t,
+            0,
+            previous_rank,
+            next_offset,
+            retained_rank,
+            transform);
+
+        if( err )
+            goto cleanup;
+    }
+
+    *next_rank = retained_rank;
+    err = LIS_SUCCESS;
+
+cleanup:
+
+    if( partial_q!=NULL )
+    {
+        for(j=0;j<previous_rank;j++)
+        {
+            if( partial_q[j] )
+                lis_vector_destroy(partial_q[j]);
+        }
+
+        lis_free(partial_q);
+    }
+
+    if( partial_bq!=NULL )
+    {
+        for(j=0;j<previous_rank;j++)
+        {
+            if( partial_bq[j] )
+                lis_vector_destroy(partial_bq[j]);
+        }
+
+        lis_free(partial_bq);
+    }
+
+    if( eval )
+        lis_free(eval);
+
+    return err;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_egli_block"
 LIS_INT lis_egli_block(LIS_ESOLVER esolver)
@@ -4578,6 +4922,8 @@ LIS_INT lis_egli_block(LIS_ESOLVER esolver)
     LIS_INT block_count;
     LIS_INT nominal_rank;
     LIS_INT active_rank;
+    LIS_INT next_rank;
+    LIS_INT next_offset;
     LIS_INT expected_worklen;
     LIS_INT *block_offset;
     LIS_INT *block_rank;
@@ -4848,9 +5194,43 @@ LIS_INT lis_egli_block(LIS_ESOLVER esolver)
     if( err )
         goto f4_cleanup;
 
+    next_offset = active_rank;
+    next_rank = 0;
+
+    err = lis_egli_block_first_next_block(
+        esolver,
+        ss,
+        active_rank,
+        next_offset,
+        basis,
+        dual_basis,
+        candidate,
+        dual_candidate,
+        t,
+        coeff,
+        gram_work,
+        alpha,
+        &next_rank);
+
+    if( err )
+        goto f4_cleanup;
+
+    if( next_rank>0 )
+    {
+        block_offset[1] = next_offset;
+        block_rank[1] = next_rank;
+    }
+
+    /*
+     * F5 completes the validated two-block bootstrap:
+     *
+     *     Q0 -> Alpha0 -> Z0 -> Q1/BQ1 -> Beta1
+     *
+     * F6 will continue the variable-rank generalized recurrence.
+     */
     LIS_SETERR(
         LIS_ERR_NOT_IMPLEMENTED,
-        "generalized Block Lanczos next block is not implemented yet\n");
+        "generalized Block Lanczos continuation is not implemented yet\n");
 
     err = LIS_ERR_NOT_IMPLEMENTED;
 
