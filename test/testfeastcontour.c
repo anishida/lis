@@ -2235,6 +2235,709 @@ fail:
 }
 
 
+#define CERT_TEST_RANK 4
+
+
+static int set_certification_unit_vector(
+        LIS_VECTOR v,
+        LIS_INT index)
+{
+        LIS_INT err;
+
+        err = lis_vector_set_all(
+                0.0,
+                v);
+
+        if( err )
+                return err;
+
+        err = lis_vector_set_value(
+                LIS_INS_VALUE,
+                index,
+                1.0,
+                v);
+
+        if( err )
+                return err;
+
+        return LIS_SUCCESS;
+}
+
+
+static int check_certified_interval_pair(
+        const char *name,
+        LIS_SCALAR value[],
+        LIS_INT selected_index[],
+        LIS_INT selected_count,
+        LIS_REAL residual[],
+        LIS_REAL trace,
+        LIS_REAL trace_error,
+        LIS_REAL max_residual,
+        LIS_INT converged,
+        LIS_INT expect_converged)
+{
+        LIS_REAL first;
+        LIS_REAL second;
+        LIS_REAL low;
+        LIS_REAL high;
+
+        if( selected_count!=2 )
+        {
+                fprintf(
+                        stderr,
+                        "FAIL: %s selected_count=%d expected 2\n",
+                        name,
+                        (int)selected_count);
+
+                return 1;
+        }
+
+        if( selected_index[0]<0 ||
+            selected_index[0]>=CERT_TEST_RANK ||
+            selected_index[1]<0 ||
+            selected_index[1]>=CERT_TEST_RANK )
+        {
+                fprintf(
+                        stderr,
+                        "FAIL: %s invalid selected index\n",
+                        name);
+
+                return 1;
+        }
+
+        first =
+                projector_scalar_real(
+                        value[
+                                selected_index[0]]);
+
+        second =
+                projector_scalar_real(
+                        value[
+                                selected_index[1]]);
+
+        if( first<second )
+        {
+                low = first;
+                high = second;
+        }
+        else
+        {
+                low = second;
+                high = first;
+        }
+
+        if( fabs((double)(low-2.0))>1.0e-12 ||
+            fabs((double)(high-4.0))>1.0e-12 )
+        {
+                fprintf(
+                        stderr,
+                        "FAIL: %s selected values %.17g %.17g "
+                        "expected 2 and 4\n",
+                        name,
+                        (double)low,
+                        (double)high);
+
+                return 1;
+        }
+
+        if( residual[0]>1.0e-12 ||
+            residual[1]>1.0e-12 ||
+            max_residual>1.0e-12 )
+        {
+                fprintf(
+                        stderr,
+                        "FAIL: %s residual certification "
+                        "%.17g %.17g max %.17g\n",
+                        name,
+                        (double)residual[0],
+                        (double)residual[1],
+                        (double)max_residual);
+
+                return 1;
+        }
+
+        if( fabs((double)(trace-6.0))>1.0e-12 )
+        {
+                fprintf(
+                        stderr,
+                        "FAIL: %s trace %.17g expected 6\n",
+                        name,
+                        (double)trace);
+
+                return 1;
+        }
+
+        if( !isfinite((double)trace_error) )
+        {
+                fprintf(
+                        stderr,
+                        "FAIL: %s non-finite trace error\n",
+                        name);
+
+                return 1;
+        }
+
+        if( converged!=expect_converged )
+        {
+                fprintf(
+                        stderr,
+                        "FAIL: %s converged=%d expected %d\n",
+                        name,
+                        (int)converged,
+                        (int)expect_converged);
+
+                return 1;
+        }
+
+        return 0;
+}
+
+
+static int run_ritz_certification_case(
+        const char *name,
+        LIS_MATRIX A,
+        LIS_MATRIX B)
+{
+        LIS_VECTOR vectors[CERT_TEST_RANK];
+
+        LIS_SCALAR values[CERT_TEST_RANK];
+
+#ifdef _COMPLEX
+        LIS_SCALAR bad_values[CERT_TEST_RANK];
+#endif
+
+        LIS_INT selected_index[CERT_TEST_RANK];
+        LIS_REAL residual[CERT_TEST_RANK];
+
+        LIS_INT selected_count;
+        LIS_INT converged;
+
+        LIS_REAL trace;
+        LIS_REAL trace_error;
+        LIS_REAL max_residual;
+
+        LIS_INT i;
+        LIS_INT err;
+
+        for(i=0;i<CERT_TEST_RANK;i++)
+        {
+                vectors[i] = NULL;
+                selected_index[i] = -1;
+                residual[i] = 0.0;
+        }
+
+        values[0] = (LIS_SCALAR)1.0;
+        values[1] = (LIS_SCALAR)2.0;
+        values[2] = (LIS_SCALAR)4.0;
+        values[3] = (LIS_SCALAR)7.0;
+
+        for(i=0;i<CERT_TEST_RANK;i++)
+        {
+                err = lis_vector_duplicate(
+                        A,
+                        &vectors[i]);
+
+                if( err ) goto fail;
+
+                err = set_certification_unit_vector(
+                        vectors[i],
+                        i);
+
+                if( err ) goto fail;
+        }
+
+        /*
+         * First pass:
+         * interval and physical residuals are valid, but there is
+         * no previous trace, so FEAST must not report convergence.
+         */
+        selected_count = -1;
+        converged = LIS_TRUE;
+        trace = -1.0;
+        trace_error = -1.0;
+        max_residual = -1.0;
+
+        err = lis_efeast_certify_ritz_pairs(
+                A,
+                B,
+                (LIS_REAL)1.5,
+                (LIS_REAL)4.5,
+                (LIS_REAL)1.0e-12,
+                CERT_TEST_RANK,
+                values,
+                vectors,
+                -1,
+                0.0,
+                selected_index,
+                residual,
+                &selected_count,
+                &trace,
+                &trace_error,
+                &max_residual,
+                &converged);
+
+        if( err )
+        {
+                fprintf(
+                        stderr,
+                        "FAIL: %s first certification returned %d\n",
+                        name,
+                        (int)err);
+
+                goto fail;
+        }
+
+        if( check_certified_interval_pair(
+                    name,
+                    values,
+                    selected_index,
+                    selected_count,
+                    residual,
+                    trace,
+                    trace_error,
+                    max_residual,
+                    converged,
+                    LIS_FALSE) )
+        {
+                goto fail;
+        }
+
+        /*
+         * Second identical pass:
+         * stable count + stable trace + certified residuals.
+         */
+        err = lis_efeast_certify_ritz_pairs(
+                A,
+                B,
+                (LIS_REAL)1.5,
+                (LIS_REAL)4.5,
+                (LIS_REAL)1.0e-12,
+                CERT_TEST_RANK,
+                values,
+                vectors,
+                2,
+                (LIS_REAL)6.0,
+                selected_index,
+                residual,
+                &selected_count,
+                &trace,
+                &trace_error,
+                &max_residual,
+                &converged);
+
+        if( err )
+        {
+                fprintf(
+                        stderr,
+                        "FAIL: %s second certification returned %d\n",
+                        name,
+                        (int)err);
+
+                goto fail;
+        }
+
+        if( check_certified_interval_pair(
+                    name,
+                    values,
+                    selected_index,
+                    selected_count,
+                    residual,
+                    trace,
+                    trace_error,
+                    max_residual,
+                    converged,
+                    LIS_TRUE) )
+        {
+                goto fail;
+        }
+
+        if( trace_error>1.0e-12 )
+        {
+                fprintf(
+                        stderr,
+                        "FAIL: %s stable trace error %.17g\n",
+                        name,
+                        (double)trace_error);
+
+                goto fail;
+        }
+
+        /*
+         * A trace change must keep the outer FEAST iteration open.
+         */
+        err = lis_efeast_certify_ritz_pairs(
+                A,
+                B,
+                (LIS_REAL)1.5,
+                (LIS_REAL)4.5,
+                (LIS_REAL)1.0e-12,
+                CERT_TEST_RANK,
+                values,
+                vectors,
+                2,
+                (LIS_REAL)5.0,
+                selected_index,
+                residual,
+                &selected_count,
+                &trace,
+                &trace_error,
+                &max_residual,
+                &converged);
+
+        if( err ) goto fail;
+
+        if( converged!=LIS_FALSE ||
+            trace_error<=1.0e-12 )
+        {
+                fprintf(
+                        stderr,
+                        "FAIL: %s trace-change convergence gate\n",
+                        name);
+
+                goto fail;
+        }
+
+        /*
+         * A count change must also keep the iteration open even
+         * when the trace itself is unchanged.
+         */
+        err = lis_efeast_certify_ritz_pairs(
+                A,
+                B,
+                (LIS_REAL)1.5,
+                (LIS_REAL)4.5,
+                (LIS_REAL)1.0e-12,
+                CERT_TEST_RANK,
+                values,
+                vectors,
+                1,
+                (LIS_REAL)6.0,
+                selected_index,
+                residual,
+                &selected_count,
+                &trace,
+                &trace_error,
+                &max_residual,
+                &converged);
+
+        if( err ) goto fail;
+
+        if( converged!=LIS_FALSE )
+        {
+                fprintf(
+                        stderr,
+                        "FAIL: %s count-change convergence gate\n",
+                        name);
+
+                goto fail;
+        }
+
+        /*
+         * Closed interval convention:
+         * lambda=2 and lambda=4 remain selected at the boundaries.
+         */
+        err = lis_efeast_certify_ritz_pairs(
+                A,
+                B,
+                (LIS_REAL)2.0,
+                (LIS_REAL)4.0,
+                (LIS_REAL)1.0e-12,
+                CERT_TEST_RANK,
+                values,
+                vectors,
+                2,
+                (LIS_REAL)6.0,
+                selected_index,
+                residual,
+                &selected_count,
+                &trace,
+                &trace_error,
+                &max_residual,
+                &converged);
+
+        if( err ) goto fail;
+
+        if( check_certified_interval_pair(
+                    name,
+                    values,
+                    selected_index,
+                    selected_count,
+                    residual,
+                    trace,
+                    trace_error,
+                    max_residual,
+                    converged,
+                    LIS_TRUE) )
+        {
+                fprintf(
+                        stderr,
+                        "FAIL: %s closed interval contract\n",
+                        name);
+
+                goto fail;
+        }
+
+        /*
+         * Empty interval is a valid FEAST result.  The first empty
+         * pass cannot converge, but a second stable empty pass can.
+         */
+        err = lis_efeast_certify_ritz_pairs(
+                A,
+                B,
+                (LIS_REAL)4.5,
+                (LIS_REAL)6.0,
+                (LIS_REAL)1.0e-12,
+                CERT_TEST_RANK,
+                values,
+                vectors,
+                -1,
+                0.0,
+                selected_index,
+                residual,
+                &selected_count,
+                &trace,
+                &trace_error,
+                &max_residual,
+                &converged);
+
+        if( err ) goto fail;
+
+        if( selected_count!=0 ||
+            trace!=0.0 ||
+            max_residual!=0.0 ||
+            converged!=LIS_FALSE )
+        {
+                fprintf(
+                        stderr,
+                        "FAIL: %s first empty interval pass\n",
+                        name);
+
+                goto fail;
+        }
+
+        err = lis_efeast_certify_ritz_pairs(
+                A,
+                B,
+                (LIS_REAL)4.5,
+                (LIS_REAL)6.0,
+                (LIS_REAL)1.0e-12,
+                CERT_TEST_RANK,
+                values,
+                vectors,
+                0,
+                0.0,
+                selected_index,
+                residual,
+                &selected_count,
+                &trace,
+                &trace_error,
+                &max_residual,
+                &converged);
+
+        if( err ) goto fail;
+
+        if( selected_count!=0 ||
+            trace!=0.0 ||
+            trace_error!=0.0 ||
+            max_residual!=0.0 ||
+            converged!=LIS_TRUE )
+        {
+                fprintf(
+                        stderr,
+                        "FAIL: %s stable empty interval pass\n",
+                        name);
+
+                goto fail;
+        }
+
+#ifdef _COMPLEX
+
+        /*
+         * Hermitian FEAST must not silently accept a materially
+         * non-real Ritz value.
+         */
+        for(i=0;i<CERT_TEST_RANK;i++)
+        {
+                bad_values[i] =
+                        values[i];
+        }
+
+        bad_values[1] +=
+                (LIS_SCALAR)(
+                        1.0e-6
+                        *
+                        _Complex_I);
+
+        err = lis_efeast_certify_ritz_pairs(
+                A,
+                B,
+                (LIS_REAL)1.5,
+                (LIS_REAL)4.5,
+                (LIS_REAL)1.0e-12,
+                CERT_TEST_RANK,
+                bad_values,
+                vectors,
+                -1,
+                0.0,
+                selected_index,
+                residual,
+                &selected_count,
+                &trace,
+                &trace_error,
+                &max_residual,
+                &converged);
+
+        if( err!=LIS_BREAKDOWN )
+        {
+                fprintf(
+                        stderr,
+                        "FAIL: %s complex non-real Ritz gate "
+                        "returned %d expected %d\n",
+                        name,
+                        (int)err,
+                        (int)LIS_BREAKDOWN);
+
+                goto fail;
+        }
+
+#endif
+
+        printf(
+                "PASS: %s FEAST interval/residual/trace certification\n",
+                name);
+
+        for(i=0;i<CERT_TEST_RANK;i++)
+        {
+                if( vectors[i]!=NULL )
+                {
+                        lis_vector_destroy(
+                                vectors[i]);
+                }
+        }
+
+        return 0;
+
+fail:
+
+        for(i=0;i<CERT_TEST_RANK;i++)
+        {
+                if( vectors[i]!=NULL )
+                {
+                        lis_vector_destroy(
+                                vectors[i]);
+                }
+        }
+
+        return 1;
+}
+
+
+static int test_ritz_certification(void)
+{
+        const LIS_REAL standard_a[PROJECTOR_TEST_N] = {
+                (LIS_REAL)1.0,
+                (LIS_REAL)2.0,
+                (LIS_REAL)4.0,
+                (LIS_REAL)7.0
+        };
+
+        const LIS_REAL generalized_a[PROJECTOR_TEST_N] = {
+                (LIS_REAL)1.0,
+                (LIS_REAL)4.0,
+                (LIS_REAL)12.0,
+                (LIS_REAL)28.0
+        };
+
+        const LIS_REAL generalized_b[PROJECTOR_TEST_N] = {
+                (LIS_REAL)1.0,
+                (LIS_REAL)2.0,
+                (LIS_REAL)3.0,
+                (LIS_REAL)4.0
+        };
+
+        LIS_MATRIX A_standard;
+        LIS_MATRIX A_generalized;
+        LIS_MATRIX B_generalized;
+
+        LIS_INT err;
+
+        A_standard = NULL;
+        A_generalized = NULL;
+        B_generalized = NULL;
+
+        err = create_projector_diagonal(
+                standard_a,
+                &A_standard);
+
+        if( err ) goto fail;
+
+        err = create_projector_diagonal(
+                generalized_a,
+                &A_generalized);
+
+        if( err ) goto fail;
+
+        err = create_projector_diagonal(
+                generalized_b,
+                &B_generalized);
+
+        if( err ) goto fail;
+
+        if( run_ritz_certification_case(
+                    "standard",
+                    A_standard,
+                    NULL) )
+        {
+                goto fail;
+        }
+
+        if( run_ritz_certification_case(
+                    "generalized",
+                    A_generalized,
+                    B_generalized) )
+        {
+                goto fail;
+        }
+
+        lis_matrix_destroy(
+                B_generalized);
+
+        lis_matrix_destroy(
+                A_generalized);
+
+        lis_matrix_destroy(
+                A_standard);
+
+        printf(
+                "PASS: native FEAST interval/residual/trace "
+                "certification standard/generalized\n");
+
+        return 0;
+
+fail:
+
+        if( B_generalized!=NULL )
+        {
+                lis_matrix_destroy(
+                        B_generalized);
+        }
+
+        if( A_generalized!=NULL )
+        {
+                lis_matrix_destroy(
+                        A_generalized);
+        }
+
+        if( A_standard!=NULL )
+        {
+                lis_matrix_destroy(
+                        A_standard);
+        }
+
+        return 1;
+}
+
+
 int main(
         int argc,
         char **argv)
@@ -2279,6 +2982,11 @@ int main(
         }
 
         if( test_projected_rayleigh_ritz() )
+        {
+                goto fail;
+        }
+
+        if( test_ritz_certification() )
         {
                 goto fail;
         }

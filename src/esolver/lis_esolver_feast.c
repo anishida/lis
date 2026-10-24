@@ -2322,6 +2322,439 @@ cleanup:
 }
 
 
+/*
+ * Select and certify FEAST Ritz pairs inside the requested real
+ * spectral interval.
+ *
+ * Native FEAST targets a Hermitian spectrum.  In a complex build
+ * the projected eigensystem is therefore expected to return real
+ * Ritz values up to the eigensolver tolerance.
+ *
+ * Interval membership is inclusive:
+ *
+ *     emin <= lambda <= emax.
+ *
+ * Physical residual certification reuses the common LIS
+ * eigensolver backward-error helpers.
+ *
+ * The outer FEAST convergence test requires:
+ *
+ *   1. the selected eigenvalue count to remain stable,
+ *   2. the relative trace change to satisfy tol,
+ *   3. every selected Ritz pair to satisfy the same tol.
+ *
+ * A first iteration has previous_count < 0 and can never report
+ * convergence because no previous trace exists.
+ */
+#undef __FUNC__
+#define __FUNC__ "lis_efeast_certify_ritz_pairs"
+
+LIS_INT lis_efeast_certify_ritz_pairs(
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_REAL emin,
+        LIS_REAL emax,
+        LIS_REAL tol,
+        LIS_INT active_rank,
+        LIS_SCALAR ritz_value[],
+        LIS_VECTOR ritz_vector[],
+        LIS_INT previous_count,
+        LIS_REAL previous_trace,
+        LIS_INT selected_index[],
+        LIS_REAL residual[],
+        LIS_INT *selected_count,
+        LIS_REAL *trace,
+        LIS_REAL *trace_error,
+        LIS_REAL *max_residual,
+        LIS_INT *converged)
+{
+        LIS_VECTOR Ax;
+        LIS_VECTOR Bx;
+        LIS_VECTOR r;
+
+        LIS_REAL lambda_real;
+        LIS_REAL lambda_imag;
+        LIS_REAL imag_limit;
+
+        LIS_REAL pair_residual;
+        LIS_REAL local_trace;
+        LIS_REAL local_trace_error;
+        LIS_REAL local_max_residual;
+        LIS_REAL trace_scale;
+
+        LIS_INT count;
+        LIS_INT i;
+        LIS_INT j;
+        LIS_INT err;
+
+        LIS_DEBUG_FUNC_IN;
+
+        Ax = NULL;
+        Bx = NULL;
+        r = NULL;
+
+        if( selected_count!=NULL )
+        {
+                *selected_count = 0;
+        }
+
+        if( trace!=NULL )
+        {
+                *trace = 0.0;
+        }
+
+        if( trace_error!=NULL )
+        {
+                *trace_error = 0.0;
+        }
+
+        if( max_residual!=NULL )
+        {
+                *max_residual = 0.0;
+        }
+
+        if( converged!=NULL )
+        {
+                *converged = LIS_FALSE;
+        }
+
+        if( A==NULL ||
+            !(emin<emax) ||
+            !(tol>0.0) ||
+            !isfinite((double)emin) ||
+            !isfinite((double)emax) ||
+            !isfinite((double)tol) ||
+            active_rank<=0 ||
+            ritz_value==NULL ||
+            ritz_vector==NULL ||
+            selected_index==NULL ||
+            residual==NULL ||
+            selected_count==NULL ||
+            trace==NULL ||
+            trace_error==NULL ||
+            max_residual==NULL ||
+            converged==NULL ||
+            previous_count < -1 )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "FEAST Ritz certification received invalid arguments\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( previous_count>=0 &&
+            !isfinite((double)previous_trace) )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "FEAST previous trace must be finite\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        for(i=0;i<active_rank;i++)
+        {
+                selected_index[i] = -1;
+                residual[i] = 0.0;
+
+                if( ritz_vector[i]==NULL ||
+                    !lis_efeast_shifted_vector_compatible(
+                            A,
+                            ritz_vector[i]) )
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "FEAST Ritz certification contains "
+                                "an incompatible Ritz vector\n");
+
+                        LIS_DEBUG_FUNC_OUT;
+                        return LIS_ERR_ILL_ARG;
+                }
+
+                if( B!=NULL &&
+                    !lis_efeast_shifted_vector_compatible(
+                            B,
+                            ritz_vector[i]) )
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "FEAST generalized Ritz certification "
+                                "contains an incompatible B layout\n");
+
+                        LIS_DEBUG_FUNC_OUT;
+                        return LIS_ERR_ILL_ARG;
+                }
+        }
+
+        err = lis_vector_duplicate(
+                A,
+                &Ax);
+
+        if( err ) goto cleanup;
+
+        err = lis_vector_duplicate(
+                A,
+                &r);
+
+        if( err ) goto cleanup;
+
+        if( B!=NULL )
+        {
+                err = lis_vector_duplicate(
+                        A,
+                        &Bx);
+
+                if( err ) goto cleanup;
+        }
+
+        count = 0;
+        local_trace = 0.0;
+        local_trace_error = 0.0;
+        local_max_residual = 0.0;
+
+        for(i=0;i<active_rank;i++)
+        {
+#ifdef _COMPLEX
+
+                lambda_real =
+                        (LIS_REAL)creal(
+                                ritz_value[i]);
+
+                lambda_imag =
+                        (LIS_REAL)cimag(
+                                ritz_value[i]);
+
+                if( !isfinite((double)lambda_real) ||
+                    !isfinite((double)lambda_imag) )
+                {
+                        LIS_SETERR(
+                                LIS_BREAKDOWN,
+                                "FEAST Ritz certification received "
+                                "a non-finite complex Ritz value\n");
+
+                        err = LIS_BREAKDOWN;
+                        goto cleanup;
+                }
+
+                /*
+                 * A Hermitian FEAST problem has a real spectrum.
+                 * Scale the imaginary acceptance threshold with
+                 * both the eigensolver tolerance and eigenvalue
+                 * magnitude.
+                 */
+                imag_limit =
+                        tol
+                        *
+                        (
+                                (LIS_REAL)1.0
+                                +
+                                fabs(
+                                        (double)lambda_real)
+                        );
+
+                if( fabs((double)lambda_imag) >
+                    (double)imag_limit )
+                {
+                        LIS_SETERR(
+                                LIS_BREAKDOWN,
+                                "FEAST Hermitian Ritz value has "
+                                "a non-negligible imaginary part\n");
+
+                        err = LIS_BREAKDOWN;
+                        goto cleanup;
+                }
+
+#else
+
+                lambda_real =
+                        (LIS_REAL)ritz_value[i];
+
+                if( !isfinite((double)lambda_real) )
+                {
+                        LIS_SETERR(
+                                LIS_BREAKDOWN,
+                                "FEAST Ritz certification received "
+                                "a non-finite Ritz value\n");
+
+                        err = LIS_BREAKDOWN;
+                        goto cleanup;
+                }
+
+#endif
+
+                /*
+                 * Closed FEAST search interval.
+                 */
+                if( lambda_real<emin ||
+                    lambda_real>emax )
+                {
+                        continue;
+                }
+
+                if( B==NULL )
+                {
+                        err = lis_esolver_standard_residual(
+                                A,
+                                ritz_vector[i],
+                                ritz_value[i],
+                                Ax,
+                                r,
+                                &pair_residual);
+                }
+                else
+                {
+                        err = lis_esolver_generalized_residual(
+                                A,
+                                B,
+                                ritz_vector[i],
+                                ritz_value[i],
+                                Ax,
+                                Bx,
+                                r,
+                                &pair_residual);
+                }
+
+                if( err ) goto cleanup;
+
+                if( !isfinite((double)pair_residual) )
+                {
+                        LIS_SETERR(
+                                LIS_BREAKDOWN,
+                                "FEAST Ritz certification produced "
+                                "a non-finite physical residual\n");
+
+                        err = LIS_BREAKDOWN;
+                        goto cleanup;
+                }
+
+                selected_index[count] = i;
+                residual[count] = pair_residual;
+
+                local_trace +=
+                        lambda_real;
+
+                if( pair_residual >
+                    local_max_residual )
+                {
+                        local_max_residual =
+                                pair_residual;
+                }
+
+                count++;
+        }
+
+        if( !isfinite((double)local_trace) ||
+            !isfinite((double)local_max_residual) )
+        {
+                LIS_SETERR(
+                        LIS_BREAKDOWN,
+                        "FEAST Ritz certification produced "
+                        "non-finite convergence data\n");
+
+                err = LIS_BREAKDOWN;
+                goto cleanup;
+        }
+
+        /*
+         * Relative trace change:
+         *
+         * |tr_k-tr_(k-1)| /
+         * max(1, |tr_k|, |tr_(k-1)|).
+         */
+        if( previous_count>=0 )
+        {
+                trace_scale = 1.0;
+
+                if( fabs((double)local_trace) >
+                    (double)trace_scale )
+                {
+                        trace_scale =
+                                fabs(
+                                        (double)local_trace);
+                }
+
+                if( fabs((double)previous_trace) >
+                    (double)trace_scale )
+                {
+                        trace_scale =
+                                fabs(
+                                        (double)previous_trace);
+                }
+
+                local_trace_error =
+                        fabs(
+                                (double)(
+                                        local_trace
+                                        -
+                                        previous_trace))
+                        /
+                        trace_scale;
+
+                if( !isfinite(
+                            (double)local_trace_error) )
+                {
+                        LIS_SETERR(
+                                LIS_BREAKDOWN,
+                                "FEAST trace convergence metric "
+                                "is non-finite\n");
+
+                        err = LIS_BREAKDOWN;
+                        goto cleanup;
+                }
+        }
+
+        *selected_count = count;
+        *trace = local_trace;
+        *trace_error = local_trace_error;
+        *max_residual = local_max_residual;
+
+        /*
+         * The first FEAST pass cannot converge because no previous
+         * trace exists.  Afterwards require a stable count, trace
+         * convergence and physical residual certification.
+         */
+        if( previous_count>=0 &&
+            previous_count==count &&
+            local_trace_error<=tol &&
+            local_max_residual<=tol )
+        {
+                *converged = LIS_TRUE;
+        }
+        else
+        {
+                *converged = LIS_FALSE;
+        }
+
+        err = LIS_SUCCESS;
+
+cleanup:
+
+        if( Bx!=NULL )
+        {
+                lis_vector_destroy(
+                        Bx);
+        }
+
+        if( r!=NULL )
+        {
+                lis_vector_destroy(
+                        r);
+        }
+
+        if( Ax!=NULL )
+        {
+                lis_vector_destroy(
+                        Ax);
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+        return err;
+}
+
+
 static LIS_INT lis_efeast_parse_real(
         const char *text,
         LIS_REAL *value)

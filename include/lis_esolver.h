@@ -442,6 +442,25 @@ extern LIS_INT lis_eigen_ritz_reconstruct(
 		LIS_INT *projected_niter,
 		LIS_REAL *projected_error);
 
+	extern LIS_INT lis_efeast_certify_ritz_pairs(
+		LIS_MATRIX A,
+		LIS_MATRIX B,
+		LIS_REAL emin,
+		LIS_REAL emax,
+		LIS_REAL tol,
+		LIS_INT active_rank,
+		LIS_SCALAR ritz_value[],
+		LIS_VECTOR ritz_vector[],
+		LIS_INT previous_count,
+		LIS_REAL previous_trace,
+		LIS_INT selected_index[],
+		LIS_REAL residual[],
+		LIS_INT *selected_count,
+		LIS_REAL *trace,
+		LIS_REAL *trace_error,
+		LIS_REAL *max_residual,
+		LIS_INT *converged);
+
 #ifdef __cplusplus
 }
 #endif
