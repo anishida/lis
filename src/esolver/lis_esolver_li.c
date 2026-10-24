@@ -4585,9 +4585,10 @@ lis_egli_block_first_recurrence(
  * used and only the leading retained directions are copied back.
  */
 static LIS_INT
-lis_egli_block_first_next_block(
+lis_egli_block_next_block(
     LIS_ESOLVER esolver,
     LIS_INT ss,
+    LIS_INT previous_offset,
     LIS_INT previous_rank,
     LIS_INT next_offset,
     LIS_VECTOR basis[],
@@ -4618,7 +4619,9 @@ lis_egli_block_first_next_block(
     if( esolver==NULL ||
         esolver->B==NULL ||
         ss<1 ||
+        previous_offset<0 ||
         previous_rank<1 ||
+        previous_offset+previous_rank>ss ||
         next_offset<0 ||
         next_offset>ss ||
         basis==NULL ||
@@ -4868,7 +4871,7 @@ lis_egli_block_first_next_block(
         err = lis_lanczos_block_projected_set_beta(
             ss,
             t,
-            0,
+            previous_offset,
             previous_rank,
             next_offset,
             retained_rank,
@@ -4912,6 +4915,313 @@ cleanup:
 }
 
 
+/*
+ * Continue the untransformed generalized Block Lanczos recurrence
+ * after the validated Q0 -> Q1 bootstrap.
+ *
+ * For each active block j >= 1:
+ *
+ *     Y_j = A Q_j
+ *     R_j = Y_j - B Q_(j-1) Beta_j^H
+ *     Alpha_j = Q_j^H R_j
+ *     R_j -= B Q_j Alpha_j
+ *     B Z_(j+1) = R_j
+ *
+ * One full B-orthogonalization pass removes remaining round-off
+ * projections against Q0..Qj. The shared next-block helper then
+ * performs B-rank deflation and constructs Beta_(j+1).
+ *
+ * block_rank[] and block_offset[] always describe the numerical,
+ * variable-rank basis rather than the nominal storage partition.
+ */
+static LIS_INT
+lis_egli_block_continue_recurrence(
+    LIS_ESOLVER esolver,
+    LIS_INT ss,
+    LIS_INT block_size,
+    LIS_VECTOR basis[],
+    LIS_VECTOR dual_basis[],
+    LIS_VECTOR candidate[],
+    LIS_VECTOR dual_candidate[],
+    LIS_SOLVER solver,
+    LIS_PRECON precon,
+    LIS_SCALAR *t,
+    LIS_INT block_offset[],
+    LIS_INT block_rank[],
+    LIS_INT *basis_count_io,
+    LIS_INT *active_block_count_io,
+    LIS_SCALAR *alpha,
+    LIS_SCALAR *coeff,
+    LIS_SCALAR *gram_work)
+{
+    LIS_INT i,j,err;
+    LIS_INT current_block;
+    LIS_INT previous_offset;
+    LIS_INT previous_rank;
+    LIS_INT current_offset;
+    LIS_INT current_rank;
+    LIS_INT next_offset;
+    LIS_INT next_rank;
+    LIS_INT basis_count;
+    LIS_INT active_block_count;
+
+    if( esolver==NULL ||
+        esolver->A==NULL ||
+        esolver->B==NULL ||
+        ss<1 ||
+        block_size<1 ||
+        basis==NULL ||
+        dual_basis==NULL ||
+        candidate==NULL ||
+        dual_candidate==NULL ||
+        solver==NULL ||
+        precon==NULL ||
+        t==NULL ||
+        block_offset==NULL ||
+        block_rank==NULL ||
+        basis_count_io==NULL ||
+        active_block_count_io==NULL ||
+        alpha==NULL ||
+        coeff==NULL ||
+        gram_work==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos continuation arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    basis_count = *basis_count_io;
+    active_block_count = *active_block_count_io;
+
+    if( basis_count<1 ||
+        basis_count>ss ||
+        active_block_count<1 ||
+        active_block_count>ss )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos continuation state\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    current_block = 1;
+
+    while( current_block<active_block_count )
+    {
+        previous_offset =
+            block_offset[current_block-1];
+
+        previous_rank =
+            block_rank[current_block-1];
+
+        current_offset =
+            block_offset[current_block];
+
+        current_rank =
+            block_rank[current_block];
+
+        if( previous_offset<0 ||
+            previous_rank<1 ||
+            current_offset<0 ||
+            current_rank<1 ||
+            previous_offset+previous_rank>basis_count ||
+            current_offset+current_rank>basis_count ||
+            current_rank>block_size )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "invalid numerical generalized Block Lanczos layout\n");
+            return LIS_ERR_ILL_ARG;
+        }
+
+        /*
+         * dual_candidate = A*Q_j.
+         */
+        err = lis_matvec_block(
+            esolver->A,
+            current_rank,
+            &basis[current_offset],
+            dual_candidate);
+
+        if( err )
+            return err;
+
+        /*
+         * Remove the previous rectangular coupling in the dual
+         * recurrence:
+         *
+         *     R_j = A Q_j - B Q_(j-1) Beta_j^H
+         *
+         * set_beta() stores Beta_j^H in T[previous,current].
+         */
+        for(j=0;j<current_rank;j++)
+        {
+            for(i=0;i<previous_rank;i++)
+            {
+                err = lis_vector_axpy(
+                    -t[
+                        (previous_offset+i)*ss+
+                        (current_offset+j)
+                    ],
+                    dual_basis[
+                        previous_offset+i],
+                    dual_candidate[j]);
+
+                if( err )
+                    return err;
+            }
+        }
+
+        /*
+         * Alpha_j = Q_j^H R_j = Q_j^H A Q_j.
+         */
+        err = lis_eigen_block_gram(
+            current_rank,
+            &basis[current_offset],
+            current_rank,
+            dual_candidate,
+            alpha);
+
+        if( err )
+            return err;
+
+        err = lis_lanczos_block_projected_set_alpha(
+            ss,
+            t,
+            current_offset,
+            current_rank,
+            alpha);
+
+        if( err )
+            return err;
+
+        /*
+         * Once the linear basis capacity is full, Alpha_j completes
+         * the final active diagonal block. No next residual is needed.
+         */
+        if( basis_count>=ss )
+            break;
+
+        /*
+         * Complete the dual residual:
+         *
+         *     R_j -= B Q_j Alpha_j.
+         */
+        for(j=0;j<current_rank;j++)
+        {
+            for(i=0;i<current_rank;i++)
+            {
+                err = lis_vector_axpy(
+                    -alpha[i*current_rank+j],
+                    dual_basis[
+                        current_offset+i],
+                    dual_candidate[j]);
+
+                if( err )
+                    return err;
+            }
+        }
+
+        /*
+         * Convert the dual residual to a primal candidate:
+         *
+         *     B Z_(j+1) = R_j.
+         */
+        for(j=0;j<current_rank;j++)
+        {
+            err = lis_vector_set_all(
+                0.0,
+                candidate[j]);
+
+            if( err )
+                return err;
+
+            err = lis_solve_kernel(
+                esolver->B,
+                dual_candidate[j],
+                candidate[j],
+                solver,
+                precon);
+
+            if( err )
+                return err;
+        }
+
+        /*
+         * Full B-orthogonalization against every active basis vector.
+         * The dense coeff/work arrays have ss*block_size capacity.
+         * dual_candidate is synchronized to B*candidate on return.
+         */
+        err = lis_eigen_block_borthogonalize(
+            esolver->B,
+            basis_count,
+            basis,
+            current_rank,
+            candidate,
+            dual_candidate,
+            1,
+            coeff,
+            gram_work);
+
+        if( err )
+            return err;
+
+        next_offset = basis_count;
+        next_rank = 0;
+
+        err = lis_egli_block_next_block(
+            esolver,
+            ss,
+            current_offset,
+            current_rank,
+            next_offset,
+            basis,
+            dual_basis,
+            candidate,
+            dual_candidate,
+            t,
+            coeff,
+            gram_work,
+            alpha,
+            &next_rank);
+
+        if( err )
+            return err;
+
+        /*
+         * Rank zero is a valid invariant-subspace closure.
+         */
+        if( next_rank==0 )
+            break;
+
+        if( active_block_count>=ss )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "generalized Block Lanczos metadata overflow\n");
+            return LIS_ERR_ILL_ARG;
+        }
+
+        block_offset[active_block_count] =
+            next_offset;
+
+        block_rank[active_block_count] =
+            next_rank;
+
+        basis_count += next_rank;
+        active_block_count++;
+
+        current_block++;
+    }
+
+    *basis_count_io = basis_count;
+    *active_block_count_io = active_block_count;
+
+    return LIS_SUCCESS;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_egli_block"
 LIS_INT lis_egli_block(LIS_ESOLVER esolver)
@@ -4924,6 +5234,8 @@ LIS_INT lis_egli_block(LIS_ESOLVER esolver)
     LIS_INT active_rank;
     LIS_INT next_rank;
     LIS_INT next_offset;
+    LIS_INT basis_count;
+    LIS_INT active_block_count;
     LIS_INT expected_worklen;
     LIS_INT *block_offset;
     LIS_INT *block_rank;
@@ -5106,6 +5418,8 @@ LIS_INT lis_egli_block(LIS_ESOLVER esolver)
      */
     block_rank[0] = active_rank;
     block_offset[0] = 0;
+    basis_count = active_rank;
+    active_block_count = 1;
 
     for(i=1;i<ss;i++)
     {
@@ -5129,11 +5443,11 @@ LIS_INT lis_egli_block(LIS_ESOLVER esolver)
         "lis_egli_block::alpha");
 
     coeff = (LIS_SCALAR *)lis_malloc(
-        block_size*block_size*sizeof(LIS_SCALAR),
+        ss*block_size*sizeof(LIS_SCALAR),
         "lis_egli_block::coeff");
 
     gram_work = (LIS_SCALAR *)lis_malloc(
-        block_size*block_size*sizeof(LIS_SCALAR),
+        ss*block_size*sizeof(LIS_SCALAR),
         "lis_egli_block::gram_work");
 
     if( t==NULL ||
@@ -5197,9 +5511,10 @@ LIS_INT lis_egli_block(LIS_ESOLVER esolver)
     next_offset = active_rank;
     next_rank = 0;
 
-    err = lis_egli_block_first_next_block(
+    err = lis_egli_block_next_block(
         esolver,
         ss,
+        block_offset[0],
         active_rank,
         next_offset,
         basis,
@@ -5219,18 +5534,44 @@ LIS_INT lis_egli_block(LIS_ESOLVER esolver)
     {
         block_offset[1] = next_offset;
         block_rank[1] = next_rank;
+        basis_count += next_rank;
+        active_block_count++;
     }
 
     /*
-     * F5 completes the validated two-block bootstrap:
-     *
-     *     Q0 -> Alpha0 -> Z0 -> Q1/BQ1 -> Beta1
-     *
-     * F6 will continue the variable-rank generalized recurrence.
+     * F6 continues from the validated Q0 -> Q1 bootstrap through
+     * every numerical variable-rank block that fits in -ss.
+     */
+    err = lis_egli_block_continue_recurrence(
+        esolver,
+        ss,
+        block_size,
+        basis,
+        dual_basis,
+        candidate,
+        dual_candidate,
+        solver,
+        precon,
+        t,
+        block_offset,
+        block_rank,
+        &basis_count,
+        &active_block_count,
+        alpha,
+        coeff,
+        gram_work);
+
+    if( err )
+        goto f4_cleanup;
+
+    /*
+     * F6 completes the untransformed generalized recurrence.
+     * F7 will solve the active projected eigensystem and expose Ritz
+     * values/vectors with generalized residual certification.
      */
     LIS_SETERR(
         LIS_ERR_NOT_IMPLEMENTED,
-        "generalized Block Lanczos continuation is not implemented yet\n");
+        "generalized Block Lanczos projected solve is not implemented yet\n");
 
     err = LIS_ERR_NOT_IMPLEMENTED;
 
