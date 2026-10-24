@@ -1953,6 +1953,375 @@ cleanup:
 }
 
 
+/*
+ * Compute the Rayleigh-Ritz eigensystem on an already normalized
+ * FEAST filtered basis.
+ *
+ * For a standard problem Q is Euclidean-orthonormal.
+ *
+ * For a generalized problem F3-4 supplies a B-orthonormal basis:
+ *
+ *     Q^H B Q = I.
+ *
+ * Therefore both cases reduce to the ordinary projected Hermitian
+ * eigensystem
+ *
+ *     H C = C Lambda,
+ *
+ * where
+ *
+ *     H = Q^H A Q.
+ *
+ * The physical Ritz vectors are reconstructed as
+ *
+ *     X = Q C.
+ *
+ * No projected B matrix is required here.
+ */
+#undef __FUNC__
+#define __FUNC__ "lis_efeast_projected_rayleigh_ritz"
+
+LIS_INT lis_efeast_projected_rayleigh_ritz(
+        LIS_MATRIX A,
+        LIS_INT active_rank,
+        LIS_VECTOR Q[],
+        LIS_SCALAR ritz_value[],
+        LIS_VECTOR ritz_vector[],
+        LIS_INT *projected_niter,
+        LIS_REAL *projected_error)
+{
+        LIS_VECTOR *AQ;
+
+        LIS_SCALAR *projected;
+        LIS_SCALAR *coeff;
+
+        LIS_SCALAR value;
+
+        size_t vector_bytes;
+        size_t square_count;
+        size_t square_bytes;
+
+        LIS_INT i;
+        LIS_INT j;
+        LIS_INT k;
+        LIS_INT err;
+
+        LIS_DEBUG_FUNC_IN;
+
+        AQ = NULL;
+
+        projected = NULL;
+        coeff = NULL;
+
+        if( projected_niter!=NULL )
+        {
+                *projected_niter = 0;
+        }
+
+        if( projected_error!=NULL )
+        {
+                *projected_error = 0.0;
+        }
+
+        if( A==NULL ||
+            active_rank<=0 ||
+            Q==NULL ||
+            ritz_value==NULL ||
+            ritz_vector==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "FEAST projected Rayleigh-Ritz received "
+                        "invalid arguments\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        for(i=0;i<active_rank;i++)
+        {
+                if( Q[i]==NULL ||
+                    ritz_vector[i]==NULL ||
+                    !lis_efeast_shifted_vector_compatible(
+                            A,
+                            Q[i]) ||
+                    !lis_efeast_shifted_vector_compatible(
+                            A,
+                            ritz_vector[i]) )
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "FEAST projected Rayleigh-Ritz contains "
+                                "an incompatible vector\n");
+
+                        LIS_DEBUG_FUNC_OUT;
+                        return LIS_ERR_ILL_ARG;
+                }
+
+                for(j=0;j<active_rank;j++)
+                {
+                        if( ritz_vector[i]==Q[j] )
+                        {
+                                LIS_SETERR(
+                                        LIS_ERR_ILL_ARG,
+                                        "FEAST Ritz reconstruction requires "
+                                        "out-of-place vectors\n");
+
+                                LIS_DEBUG_FUNC_OUT;
+                                return LIS_ERR_ILL_ARG;
+                        }
+                }
+
+                for(j=0;j<i;j++)
+                {
+                        if( ritz_vector[i]==ritz_vector[j] )
+                        {
+                                LIS_SETERR(
+                                        LIS_ERR_ILL_ARG,
+                                        "FEAST Ritz vectors must be distinct\n");
+
+                                LIS_DEBUG_FUNC_OUT;
+                                return LIS_ERR_ILL_ARG;
+                        }
+                }
+        }
+
+        vector_bytes =
+                (size_t)active_rank
+                *
+                sizeof(LIS_VECTOR);
+
+        square_count =
+                (size_t)active_rank
+                *
+                (size_t)active_rank;
+
+        square_bytes =
+                square_count
+                *
+                sizeof(LIS_SCALAR);
+
+        AQ = (LIS_VECTOR *)lis_malloc(
+                vector_bytes,
+                "lis_efeast_projected_rayleigh_ritz::AQ");
+
+        if( AQ==NULL )
+        {
+                LIS_SETERR_MEM(
+                        vector_bytes);
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_OUT_OF_MEMORY;
+        }
+
+        memset(
+                AQ,
+                0,
+                vector_bytes);
+
+        projected = (LIS_SCALAR *)lis_malloc(
+                square_bytes,
+                "lis_efeast_projected_rayleigh_ritz::projected");
+
+        if( projected==NULL )
+        {
+                err = LIS_OUT_OF_MEMORY;
+
+                LIS_SETERR_MEM(
+                        square_bytes);
+
+                goto cleanup;
+        }
+
+        coeff = (LIS_SCALAR *)lis_malloc(
+                square_bytes,
+                "lis_efeast_projected_rayleigh_ritz::coeff");
+
+        if( coeff==NULL )
+        {
+                err = LIS_OUT_OF_MEMORY;
+
+                LIS_SETERR_MEM(
+                        square_bytes);
+
+                goto cleanup;
+        }
+
+        for(i=0;i<active_rank;i++)
+        {
+                err = lis_vector_duplicate(
+                        A,
+                        &AQ[i]);
+
+                if( err ) goto cleanup;
+        }
+
+        /*
+         * Use the block matvec path when the matrix supplies one.
+         * Ordinary matrix formats retain the scalar fallback.
+         */
+        err = lis_matvec_block(
+                A,
+                active_rank,
+                Q,
+                AQ);
+
+        if( err ) goto cleanup;
+
+        /*
+         * H = Q^H A Q.
+         */
+        err = lis_eigen_block_gram(
+                active_rank,
+                Q,
+                active_rank,
+                AQ,
+                projected);
+
+        if( err ) goto cleanup;
+
+        /*
+         * Remove only roundoff-level non-Hermitian skew introduced
+         * by distributed or threaded dot-product reductions.
+         *
+         * The projected eigensolver intentionally accepts a
+         * symmetric/Hermitian matrix, so enforce that contract
+         * explicitly before entering the dense solve.
+         */
+        for(i=0;i<active_rank;i++)
+        {
+#ifdef _COMPLEX
+
+                projected[i*active_rank+i] =
+                        (LIS_SCALAR)creal(
+                                projected[i*active_rank+i]);
+
+#endif
+
+                for(j=i+1;j<active_rank;j++)
+                {
+#ifdef _COMPLEX
+
+                        value =
+                                (LIS_SCALAR)0.5
+                                *
+                                (
+                                        projected[i*active_rank+j]
+                                        +
+                                        conj(
+                                                projected[
+                                                        j*active_rank+i])
+                                );
+
+                        projected[i*active_rank+j] =
+                                value;
+
+                        projected[j*active_rank+i] =
+                                conj(
+                                        value);
+
+#else
+
+                        value =
+                                (LIS_SCALAR)0.5
+                                *
+                                (
+                                        projected[i*active_rank+j]
+                                        +
+                                        projected[j*active_rank+i]
+                                );
+
+                        projected[i*active_rank+j] =
+                                value;
+
+                        projected[j*active_rank+i] =
+                                value;
+
+#endif
+                }
+        }
+
+        /*
+         * The common dense helper overwrites the projected matrix
+         * and returns projected eigenvectors as columns of coeff.
+         */
+        err = lis_eigen_projected_solve(
+                active_rank,
+                projected,
+                ritz_value,
+                coeff,
+                projected_niter,
+                projected_error);
+
+        if( err ) goto cleanup;
+
+        /*
+         * ritz_vector[j] =
+         *
+         *     sum_i Q[i] * coeff[i*active_rank+j].
+         */
+        err = lis_eigen_ritz_reconstruct(
+                active_rank,
+                Q,
+                active_rank,
+                coeff,
+                active_rank,
+                ritz_vector);
+
+        if( err ) goto cleanup;
+
+        /*
+         * Reject non-finite projected eigenvalues before returning
+         * them to the outer FEAST iteration.
+         */
+        for(k=0;k<active_rank;k++)
+        {
+#ifdef _COMPLEX
+
+                if( !isfinite((double)creal(ritz_value[k])) ||
+                    !isfinite((double)cimag(ritz_value[k])) )
+
+#else
+
+                if( !isfinite((double)ritz_value[k]) )
+
+#endif
+                {
+                        LIS_SETERR(
+                                LIS_BREAKDOWN,
+                                "FEAST projected Rayleigh-Ritz produced "
+                                "a non-finite eigenvalue\n");
+
+                        err = LIS_BREAKDOWN;
+                        goto cleanup;
+                }
+        }
+
+        err = LIS_SUCCESS;
+
+cleanup:
+
+        lis_efeast_vector_block_destroy(
+                active_rank,
+                AQ);
+
+        if( coeff!=NULL )
+        {
+                lis_free(
+                        coeff);
+        }
+
+        if( projected!=NULL )
+        {
+                lis_free(
+                        projected);
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+        return err;
+}
+
+
 static LIS_INT lis_efeast_parse_real(
         const char *text,
         LIS_REAL *value)

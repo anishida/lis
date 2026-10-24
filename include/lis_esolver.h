@@ -433,6 +433,15 @@ extern LIS_INT lis_eigen_ritz_reconstruct(
 		LIS_INT *active_rank,
 		LIS_SOLVER solver);
 
+	extern LIS_INT lis_efeast_projected_rayleigh_ritz(
+		LIS_MATRIX A,
+		LIS_INT active_rank,
+		LIS_VECTOR Q[],
+		LIS_SCALAR ritz_value[],
+		LIS_VECTOR ritz_vector[],
+		LIS_INT *projected_niter,
+		LIS_REAL *projected_error);
+
 #ifdef __cplusplus
 }
 #endif
