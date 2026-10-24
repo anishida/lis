@@ -643,6 +643,214 @@ static LIS_INT lis_egli_projected_jacobi(
 }
 
 
+static LIS_INT
+lis_egli_solve_with_retry(
+        LIS_MATRIX S,
+        LIS_VECTOR b,
+        LIS_VECTOR x,
+        LIS_SOLVER solver,
+        LIS_PRECON *precon,
+        LIS_REAL acceptance_tol)
+{
+        LIS_INT err,status;
+
+        status =
+                lis_esolver_inner_solve_attempt(
+                        S,b,x,solver,*precon);
+        if( status==LIS_SUCCESS )
+        {
+                return LIS_SUCCESS;
+        }
+
+        if( !lis_esolver_inner_solve_retryable(status) )
+        {
+                return status;
+        }
+
+        err = lis_esolver_rebuild_precon(
+                S,solver,precon);
+        if( err )
+        {
+                return err;
+        }
+
+        lis_vector_set_all(0.0,x);
+
+        status =
+                lis_esolver_inner_solve_attempt(
+                        S,b,x,solver,*precon);
+
+        return lis_esolver_inner_solve_certify(
+                S,b,x,solver,
+                status,
+                acceptance_tol);
+}
+
+
+static LIS_INT
+lis_egli_replace_shifted_operator(
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_SCALAR shift,
+        LIS_SOLVER solver,
+        LIS_PRECON *precon,
+        LIS_MATRIX *S,
+        LIS_MATRIX *Sop)
+{
+        LIS_INT err;
+        LIS_MATRIX trial_operator;
+
+        trial_operator = NULL;
+
+        err = lis_matrix_create_operator(
+                1.0,A,-shift,B,
+                &trial_operator);
+        if( err )
+        {
+                return err;
+        }
+
+        err = lis_esolver_rebuild_precon(
+                trial_operator,
+                solver,
+                precon);
+        if( err )
+        {
+                /*
+                 * The rebuild helper has detached work/preconditioner
+                 * state tied to the previous operator.  Keep solver->A
+                 * valid for cleanup before discarding the failed trial.
+                 */
+                solver->A = *S;
+                lis_matrix_destroy(trial_operator);
+                return err;
+        }
+
+        if( *Sop )
+        {
+                lis_matrix_destroy(*Sop);
+        }
+
+        *Sop = trial_operator;
+        *S = trial_operator;
+
+        return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+lis_egli_first_solve_with_recovery(
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_VECTOR b,
+        LIS_VECTOR x,
+        LIS_SOLVER solver,
+        LIS_PRECON *precon,
+        LIS_MATRIX *S,
+        LIS_MATRIX *Sop,
+        LIS_SCALAR requested_shift,
+        LIS_REAL acceptance_tol,
+        LIS_SCALAR *active_shift)
+{
+        LIS_INT err,status,attempt;
+        LIS_SCALAR perturbation;
+        LIS_SCALAR trial_shift;
+
+        *active_shift = requested_shift;
+
+        status =
+                lis_esolver_inner_solve_attempt(
+                        *S,b,x,solver,*precon);
+        if( status==LIS_SUCCESS )
+        {
+                return LIS_SUCCESS;
+        }
+
+        if( !lis_esolver_inner_solve_retryable(status) )
+        {
+                return status;
+        }
+
+        err = lis_esolver_rebuild_precon(
+                *S,solver,precon);
+        if( err )
+        {
+                return err;
+        }
+
+        lis_vector_set_all(0.0,x);
+
+        status =
+                lis_esolver_inner_solve_attempt(
+                        *S,b,x,solver,*precon);
+
+                status =
+                        lis_esolver_inner_solve_certify(
+                                *S,b,x,solver,
+                                status,
+                                acceptance_tol);
+        if( status==LIS_SUCCESS )
+        {
+                return LIS_SUCCESS;
+        }
+
+        if( !lis_esolver_inner_solve_retryable(status) )
+        {
+                return status;
+        }
+
+        perturbation =
+                lis_esolver_shift_perturbation(
+                        requested_shift);
+        if( perturbation==0.0 )
+        {
+                return status;
+        }
+
+        for(attempt=0;attempt<2;attempt++)
+        {
+                trial_shift =
+                        attempt==0 ?
+                        requested_shift+perturbation :
+                        requested_shift-perturbation;
+
+                err = lis_egli_replace_shifted_operator(
+                        A,B,trial_shift,
+                        solver,precon,
+                        S,Sop);
+                if( err )
+                {
+                        return err;
+                }
+
+                lis_vector_set_all(0.0,x);
+
+                status =
+                        lis_esolver_inner_solve_attempt(
+                                *S,b,x,solver,*precon);
+
+                status =
+                        lis_esolver_inner_solve_certify(
+                                *S,b,x,solver,
+                                status,
+                                acceptance_tol);
+
+                if( status==LIS_SUCCESS )
+                {
+                        *active_shift = trial_shift;
+                        return LIS_SUCCESS;
+                }
+
+                if( !lis_esolver_inner_solve_retryable(status) )
+                {
+                        return status;
+                }
+        }
+
+        return status;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_egli_transformed"
 static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
@@ -654,7 +862,7 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 	LIS_PRECON precon;
 	LIS_ESOLVER esolver2;
 	LIS_SCALAR *t,*tq,*tr;
-	LIS_SCALAR oshift,ishift;
+	LIS_SCALAR oshift,ishift,active_shift;
 	LIS_SCALAR alpha,dot,tmp,nu;
 	LIS_SCALAR evalue,evalue0;
 	LIS_REAL beta,beta_prev,mag,maxmag;
@@ -711,6 +919,8 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 	{
 		oshift = ishift;
 	}
+
+	active_shift = oshift;
 
 	if( ss<1 )
 	{
@@ -909,9 +1119,22 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 
 		/*
 		 * q = (A-sigma B)^-1 M v_j
+		 *
+		 * Only the first transformed solve may adopt a bounded
+		 * perturbed shift.  Once the Lanczos basis is started, all
+		 * remaining solves use the same transformed operator.
 		 */
-		err = lis_solve_kernel(
-			S,r,q,solver,precon);
+		if( j==1 )
+		{
+			err = lis_egli_first_solve_with_recovery(
+				A,B,r,q,solver,&precon,
+				&S,&Sop,oshift,tol,&active_shift);
+		}
+		else
+		{
+			err = lis_egli_solve_with_retry(
+				S,r,q,solver,&precon,tol);
+		}
 
 		if( err ) goto cleanup;
 
@@ -1094,7 +1317,7 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 			}
 
 			esolver->evalue[i] =
-				oshift+1.0/nu;
+				active_shift+1.0/nu;
 		}
 		else
 		{
@@ -1114,7 +1337,7 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 			}
 
 			esolver->evalue[i] =
-				oshift*nu/(nu-1.0);
+				active_shift*nu/(nu-1.0);
 		}
 
 		esolver->iter[i] = ss;

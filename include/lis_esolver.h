@@ -44,6 +44,27 @@ extern LIS_INT lis_esolver_is_valid_denominator(
         LIS_SCALAR value);
 extern LIS_INT lis_esolver_is_valid_norm(
         LIS_REAL value);
+extern LIS_INT lis_esolver_inner_solve_attempt(
+        LIS_MATRIX A,
+        LIS_VECTOR b,
+        LIS_VECTOR x,
+        LIS_SOLVER solver,
+        LIS_PRECON precon);
+extern LIS_INT lis_esolver_inner_solve_retryable(
+        LIS_INT status);
+extern LIS_INT lis_esolver_inner_solve_certify(
+        LIS_MATRIX A,
+        LIS_VECTOR b,
+        LIS_VECTOR x,
+        LIS_SOLVER solver,
+        LIS_INT status,
+        LIS_REAL tolerance);
+extern LIS_SCALAR lis_esolver_shift_perturbation(
+        LIS_SCALAR shift);
+extern LIS_INT lis_esolver_rebuild_precon(
+        LIS_MATRIX A,
+        LIS_SOLVER solver,
+        LIS_PRECON *precon);
 extern LIS_INT lis_esolver_standard_residual(
         LIS_MATRIX A,
         LIS_VECTOR x,
