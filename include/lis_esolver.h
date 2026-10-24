@@ -233,6 +233,45 @@ extern LIS_INT lis_esolver_generalized_residual(
 	extern LIS_INT lis_egai_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_egai_malloc_work(LIS_ESOLVER esolver);
 
+/**********************/
+/* Native FEAST       */
+/**********************/
+
+	extern LIS_INT lis_efeast(LIS_ESOLVER esolver);
+	extern LIS_INT lis_efeast_check_params(LIS_ESOLVER esolver);
+	extern LIS_INT lis_efeast_malloc_work(LIS_ESOLVER esolver);
+	extern LIS_INT lis_efeast_set_option(
+		char *arg1,
+		char *arg2,
+		LIS_ESOLVER esolver);
+
+	extern LIS_INT lis_efeast_gauss_legendre(
+		LIS_INT n,
+		LIS_REAL *x,
+		LIS_REAL *w);
+
+	extern LIS_INT lis_efeast_contour_gauss(
+		LIS_REAL emin,
+		LIS_REAL emax,
+		LIS_INT n,
+		LIS_REAL ratio,
+		LIS_REAL *z_real,
+		LIS_REAL *z_imag,
+		LIS_REAL *w_real,
+		LIS_REAL *w_imag);
+
+	extern LIS_INT lis_efeast_shifted_matvec_split(
+		LIS_MATRIX A,
+		LIS_MATRIX B,
+		LIS_REAL z_real,
+		LIS_REAL z_imag,
+		LIS_VECTOR x_real,
+		LIS_VECTOR x_imag,
+		LIS_VECTOR y_real,
+		LIS_VECTOR y_imag,
+		LIS_VECTOR work_real,
+		LIS_VECTOR work_imag);
+
 #ifdef __cplusplus
 }
 #endif
