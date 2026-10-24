@@ -4361,6 +4361,213 @@ cleanup:
 }
 
 
+/*
+ * Create the metric solver used by untransformed generalized
+ * Block Lanczos for B^{-1} applications.
+ *
+ * Keep the scalar generalized Lanczos contract: BiCG with no
+ * preconditioner. The same solver/preconditioner pair is reused
+ * across all columns of the block.
+ */
+static LIS_INT
+lis_egli_block_create_metric_solver(
+    LIS_ESOLVER esolver,
+    LIS_SOLVER *solver,
+    LIS_PRECON *precon)
+{
+    LIS_INT err;
+
+    if( esolver==NULL ||
+        esolver->B==NULL ||
+        solver==NULL ||
+        precon==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos metric-solver arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *solver = NULL;
+    *precon = NULL;
+
+    err = lis_solver_create(
+        solver);
+
+    if( err )
+        return err;
+
+    lis_solver_set_option(
+        "-i bicg -p none",
+        *solver);
+
+    err = lis_solver_set_optionC(
+        *solver);
+
+    if( err )
+    {
+        lis_solver_destroy(*solver);
+        *solver = NULL;
+        return err;
+    }
+
+    (*solver)->A = esolver->B;
+
+    err = lis_precon_create(
+        *solver,
+        precon);
+
+    if( err )
+    {
+        lis_solver_destroy(*solver);
+        *solver = NULL;
+        *precon = NULL;
+        return err;
+    }
+
+    return LIS_SUCCESS;
+}
+
+
+/*
+ * Perform the first generalized Block Lanczos recurrence.
+ *
+ * For Q^H B Q = I and cached BQ:
+ *
+ *     Y     = A Q
+ *     Alpha = Q^H Y
+ *     R     = Y - BQ Alpha
+ *     B Z   = R
+ *
+ * One B-orthogonalization pass removes the round-off projection
+ * remaining after the explicit Alpha subtraction and synchronizes BZ.
+ *
+ * On return:
+ *
+ *     candidate[]      = Z
+ *     dual_candidate[] = B Z
+ *
+ * F5 will rank-deflate Z into Q1/BQ1 and build Beta1.
+ */
+static LIS_INT
+lis_egli_block_first_recurrence(
+    LIS_ESOLVER esolver,
+    LIS_INT active_rank,
+    LIS_VECTOR basis[],
+    LIS_VECTOR dual_basis[],
+    LIS_VECTOR candidate[],
+    LIS_VECTOR dual_candidate[],
+    LIS_SOLVER solver,
+    LIS_PRECON precon,
+    LIS_SCALAR *alpha,
+    LIS_SCALAR *coeff,
+    LIS_SCALAR *gram_work)
+{
+    LIS_INT i,j,err;
+
+    if( esolver==NULL ||
+        esolver->A==NULL ||
+        esolver->B==NULL ||
+        active_rank<1 ||
+        basis==NULL ||
+        dual_basis==NULL ||
+        candidate==NULL ||
+        dual_candidate==NULL ||
+        solver==NULL ||
+        precon==NULL ||
+        alpha==NULL ||
+        coeff==NULL ||
+        gram_work==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos first-recurrence arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    /*
+     * dual_candidate temporarily stores Y = A*Q.
+     */
+    err = lis_matvec_block(
+        esolver->A,
+        active_rank,
+        basis,
+        dual_candidate);
+
+    if( err )
+        return err;
+
+    err = lis_eigen_block_gram(
+        active_rank,
+        basis,
+        active_rank,
+        dual_candidate,
+        alpha);
+
+    if( err )
+        return err;
+
+    /*
+     * dual_candidate becomes R = A*Q - BQ*Alpha.
+     */
+    for(j=0;j<active_rank;j++)
+    {
+        for(i=0;i<active_rank;i++)
+        {
+            err = lis_vector_axpy(
+                -alpha[i*active_rank+j],
+                dual_basis[i],
+                dual_candidate[j]);
+
+            if( err )
+                return err;
+        }
+    }
+
+    /*
+     * Solve B*Z = R column by column.
+     */
+    for(j=0;j<active_rank;j++)
+    {
+        err = lis_vector_set_all(
+            0.0,
+            candidate[j]);
+
+        if( err )
+            return err;
+
+        err = lis_solve_kernel(
+            esolver->B,
+            dual_candidate[j],
+            candidate[j],
+            solver,
+            precon);
+
+        if( err )
+            return err;
+    }
+
+    /*
+     * Remove the remaining B-projection and synchronize BZ.
+     */
+    err = lis_eigen_block_borthogonalize(
+        esolver->B,
+        active_rank,
+        basis,
+        active_rank,
+        candidate,
+        dual_candidate,
+        1,
+        coeff,
+        gram_work);
+
+    if( err )
+        return err;
+
+    return LIS_SUCCESS;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_egli_block"
 LIS_INT lis_egli_block(LIS_ESOLVER esolver)
@@ -4378,6 +4585,12 @@ LIS_INT lis_egli_block(LIS_ESOLVER esolver)
     LIS_VECTOR *dual_basis;
     LIS_VECTOR *candidate;
     LIS_VECTOR *dual_candidate;
+    LIS_SCALAR *t;
+    LIS_SCALAR *alpha;
+    LIS_SCALAR *coeff;
+    LIS_SCALAR *gram_work;
+    LIS_SOLVER solver;
+    LIS_PRECON precon;
 
     LIS_DEBUG_FUNC_IN;
 
@@ -4554,18 +4767,126 @@ LIS_INT lis_egli_block(LIS_ESOLVER esolver)
         block_offset[i] = -1;
     }
 
+    t = NULL;
+    alpha = NULL;
+    coeff = NULL;
+    gram_work = NULL;
+    solver = NULL;
+    precon = NULL;
+
+    t = (LIS_SCALAR *)lis_malloc(
+        ss*ss*sizeof(LIS_SCALAR),
+        "lis_egli_block::t");
+
+    alpha = (LIS_SCALAR *)lis_malloc(
+        block_size*block_size*sizeof(LIS_SCALAR),
+        "lis_egli_block::alpha");
+
+    coeff = (LIS_SCALAR *)lis_malloc(
+        block_size*block_size*sizeof(LIS_SCALAR),
+        "lis_egli_block::coeff");
+
+    gram_work = (LIS_SCALAR *)lis_malloc(
+        block_size*block_size*sizeof(LIS_SCALAR),
+        "lis_egli_block::gram_work");
+
+    if( t==NULL ||
+        alpha==NULL ||
+        coeff==NULL ||
+        gram_work==NULL )
+    {
+        if( gram_work ) lis_free(gram_work);
+        if( coeff ) lis_free(coeff);
+        if( alpha ) lis_free(alpha);
+        if( t ) lis_free(t);
+
+        lis_free(block_rank);
+        lis_free(block_offset);
+
+        LIS_SETERR_MEM(
+            ss*ss*sizeof(LIS_SCALAR));
+
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+    for(i=0;i<ss*ss;i++)
+    {
+        t[i] = 0.0;
+    }
+
+    err = lis_egli_block_create_metric_solver(
+        esolver,
+        &solver,
+        &precon);
+
+    if( err )
+        goto f4_cleanup;
+
+    err = lis_egli_block_first_recurrence(
+        esolver,
+        active_rank,
+        basis,
+        dual_basis,
+        candidate,
+        dual_candidate,
+        solver,
+        precon,
+        alpha,
+        coeff,
+        gram_work);
+
+    if( err )
+        goto f4_cleanup;
+
+    err = lis_lanczos_block_projected_set_alpha(
+        ss,
+        t,
+        block_offset[0],
+        active_rank,
+        alpha);
+
+    if( err )
+        goto f4_cleanup;
+
+    LIS_SETERR(
+        LIS_ERR_NOT_IMPLEMENTED,
+        "generalized Block Lanczos next block is not implemented yet\n");
+
+    err = LIS_ERR_NOT_IMPLEMENTED;
+
+f4_cleanup:
+
+    if( solver )
+    {
+        lis_solver_work_destroy(solver);
+    }
+
+    if( precon )
+    {
+        lis_precon_destroy(precon);
+    }
+
+    if( solver )
+    {
+        lis_solver_destroy(solver);
+    }
+
+    if( gram_work )
+        lis_free(gram_work);
+
+    if( coeff )
+        lis_free(coeff);
+
+    if( alpha )
+        lis_free(alpha);
+
+    if( t )
+        lis_free(t);
+
     lis_free(block_rank);
     lis_free(block_offset);
 
-    /*
-     * F3 owns the first B-orthonormal basis block only.
-     * F4 will apply A, build Alpha0, and form the next residual block.
-     */
-    LIS_SETERR(
-        LIS_ERR_NOT_IMPLEMENTED,
-        "generalized Block Lanczos recurrence is not implemented yet\n");
-
-    return LIS_ERR_NOT_IMPLEMENTED;
+    return err;
 }
 
 #undef __FUNC__
