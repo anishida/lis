@@ -950,17 +950,19 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	/*
 	 * Block eigensolver mode is introduced incrementally.
 	 *
-	 * The current foundation reserves block_size > 1 for the
-	 * standard Lanczos driver.  Other eigensolvers retain their
-	 * existing scalar behavior and reject an explicit block request.
+	 * Standard Lanczos has a complete block path.  Generalized
+	 * Lanczos owns the next block-dispatch boundary and rejects
+	 * incomplete numerical stages inside lis_egli_block().
+	 * Other eigensolvers retain their scalar behavior.
 	 */
 	if( esolver->block_size>1 &&
-	    nesolver!=LIS_ESOLVER_LI )
+	    nesolver!=LIS_ESOLVER_LI &&
+	    nesolver!=LIS_ESOLVER_GLI )
 	{
 		LIS_SETERR(
 			LIS_ERR_NOT_IMPLEMENTED,
-			"block eigensolver mode is currently implemented "
-			"only for standard Lanczos\n");
+			"block eigensolver mode is currently available "
+			"only for standard or generalized Lanczos\n");
 		return LIS_ERR_NOT_IMPLEMENTED;
 	}
 

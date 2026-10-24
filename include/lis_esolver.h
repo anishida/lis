@@ -252,6 +252,14 @@ extern LIS_INT lis_eigen_ritz_reconstruct(
 	extern LIS_INT lis_eli_quad(LIS_ESOLVER esolver);
 	extern LIS_INT lis_eli_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_eli_malloc_work(LIS_ESOLVER esolver);
+
+	extern LIS_INT lis_lanczos_block_layout(
+		LIS_INT ss,
+		LIS_INT block_size,
+		LIS_INT *block_count,
+		LIS_INT **block_offset,
+		LIS_INT **block_rank);
+
 	extern LIS_INT lis_lanczos_block_initial_raw(
 		LIS_INT block_size,
 		LIS_INT block_rank,
@@ -335,6 +343,7 @@ extern LIS_INT lis_eigen_ritz_reconstruct(
 /**********************************/
 
 	extern LIS_INT lis_egli(LIS_ESOLVER esolver);
+	extern LIS_INT lis_egli_block(LIS_ESOLVER esolver);
 	extern LIS_INT lis_egli_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_egli_malloc_work(LIS_ESOLVER esolver);
 

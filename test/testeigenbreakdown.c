@@ -6847,6 +6847,476 @@ test_block_lanczos_rval_false_boundary(void)
 
 
 
+
+/*
+ * Regression coverage for generalized and transformed Block Lanczos.
+ *
+ * Small diagonal systems keep the expected generalized spectra exact
+ * while exercising physical shift-invert results, recovered exact-pole
+ * solves, and buckling with an indefinite second matrix.
+ */
+static LIS_INT
+block_lanczos_test_diag4(
+    LIS_MATRIX *A,
+    LIS_SCALAR d0,
+    LIS_SCALAR d1,
+    LIS_SCALAR d2,
+    LIS_SCALAR d3)
+{
+    LIS_INT err,i;
+    LIS_SCALAR d[4];
+
+    d[0] = d0;
+    d[1] = d1;
+    d[2] = d2;
+    d[3] = d3;
+
+    *A = NULL;
+
+    err = lis_matrix_create(
+        LIS_COMM_WORLD,
+        A);
+
+    if( err )
+        return err;
+
+    err = lis_matrix_set_size(
+        *A,
+        0,
+        4);
+
+    if( err )
+        return err;
+
+    for(i=0;i<4;i++)
+    {
+        err = lis_matrix_set_value(
+            LIS_INS_VALUE,
+            i,
+            i,
+            d[i],
+            *A);
+
+        if( err )
+            return err;
+    }
+
+    return lis_matrix_assemble(*A);
+}
+
+
+static LIS_INT
+block_lanczos_test_setup(
+    LIS_MATRIX A,
+    LIS_INT transform,
+    LIS_REAL shift,
+    LIS_INT rval,
+    LIS_ESOLVER *esolver,
+    LIS_VECTOR *x)
+{
+    LIS_INT err;
+
+    *esolver = NULL;
+    *x = NULL;
+
+    err = lis_vector_duplicate(
+        A,
+        x);
+
+    if( err )
+        return err;
+
+    err = lis_vector_set_all(
+        1.0,
+        *x);
+
+    if( err )
+        return err;
+
+    err = lis_esolver_create(
+        esolver);
+
+    if( err )
+        return err;
+
+    (*esolver)->options[
+        LIS_EOPTIONS_ESOLVER] =
+        LIS_ESOLVER_GLI;
+
+    (*esolver)->options[
+        LIS_EOPTIONS_SUBSPACE] =
+        4;
+
+    (*esolver)->options[
+        LIS_EOPTIONS_RVAL] =
+        rval;
+
+    (*esolver)->block_size =
+        2;
+
+    (*esolver)->transform =
+        transform;
+
+    (*esolver)->params[
+        LIS_EPARAMS_SHIFT -
+        LIS_EOPTIONS_LEN] =
+        shift;
+
+    (*esolver)->params[
+        LIS_EPARAMS_RESID -
+        LIS_EOPTIONS_LEN] =
+        1.0e-10;
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_REAL
+block_lanczos_test_real(
+    LIS_SCALAR value)
+{
+#ifdef _COMPLEX
+    return (LIS_REAL)creal(value);
+#else
+    return (LIS_REAL)value;
+#endif
+}
+
+
+static LIS_INT
+block_lanczos_test_values(
+    LIS_ESOLVER esolver,
+    const LIS_REAL expected[4],
+    LIS_REAL tol)
+{
+    LIS_INT i;
+    LIS_REAL actual;
+
+    for(i=0;i<4;i++)
+    {
+        actual =
+            block_lanczos_test_real(
+                esolver->evalue[i]);
+
+        if( fabs((double)(actual-expected[i])) >
+            tol )
+        {
+            printf(
+                "FAIL: generalized Block Lanczos value i=%D actual=%e expected=%e\n",
+                i,
+                (double)actual,
+                (double)expected[i]);
+
+            return LIS_FAILS;
+        }
+    }
+
+    return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+check_generalized_block_lanczos_regression(void)
+{
+    LIS_INT err,api,status,i;
+    LIS_MATRIX A,B,K,KG;
+    LIS_VECTOR x;
+    LIS_ESOLVER esolver;
+    LIS_SCALAR evalue;
+    LIS_REAL expected[4];
+    LIS_REAL max_resid;
+
+    A = NULL;
+    B = NULL;
+    K = NULL;
+    KG = NULL;
+    x = NULL;
+    esolver = NULL;
+    evalue = 0.0;
+
+    err = block_lanczos_test_diag4(
+        &A,
+        2.0,
+        6.0,
+        15.0,
+        28.0);
+
+    if( err )
+        goto cleanup;
+
+    err = block_lanczos_test_diag4(
+        &B,
+        1.0,
+        2.0,
+        3.0,
+        4.0);
+
+    if( err )
+        goto cleanup;
+
+    /*
+     * Generalized eigenvalues are 2, 3, 5, 7.
+     * With sigma=4.2, decreasing |1/(lambda-sigma)| gives
+     * 5, 3, 2, 7.
+     */
+    err = block_lanczos_test_setup(
+        A,
+        LIS_EIGEN_TRANSFORM_SHIFT_INVERT,
+        4.2,
+        0,
+        &esolver,
+        &x);
+
+    if( err )
+        goto cleanup;
+
+    api = lis_gesolve(
+        A,
+        B,
+        x,
+        &evalue,
+        esolver);
+
+    err = lis_esolver_get_status(
+        esolver,
+        &status);
+
+    if( err )
+        goto cleanup;
+
+    if( api!=LIS_SUCCESS ||
+        status!=LIS_SUCCESS ||
+        esolver->nev!=4 )
+    {
+        printf(
+            "FAIL: generalized Block Lanczos shift-invert api=%D status=%D nev=%D\n",
+            api,
+            status,
+            esolver->nev);
+
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    expected[0] = 5.0;
+    expected[1] = 3.0;
+    expected[2] = 2.0;
+    expected[3] = 7.0;
+
+    err = block_lanczos_test_values(
+        esolver,
+        expected,
+        1.0e-8);
+
+    if( err )
+        goto cleanup;
+
+    max_resid = 0.0;
+
+    for(i=0;i<4;i++)
+    {
+        if( esolver->evector[i]==NULL )
+        {
+            printf(
+                "FAIL: generalized Block Lanczos missing physical Ritz vector %D\n",
+                i);
+
+            err = LIS_FAILS;
+            goto cleanup;
+        }
+
+        if( esolver->resid[i]>max_resid )
+            max_resid = esolver->resid[i];
+    }
+
+    if( max_resid>1.0e-8 )
+    {
+        printf(
+            "FAIL: generalized Block Lanczos shift-invert residual=%e\n",
+            (double)max_resid);
+
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    lis_esolver_destroy(esolver);
+    esolver = NULL;
+    lis_vector_destroy(x);
+    x = NULL;
+
+    /*
+     * The shift is an exact generalized eigenvalue. The block recovery
+     * path must recover the shifted operator and complete successfully.
+     */
+    err = block_lanczos_test_setup(
+        A,
+        LIS_EIGEN_TRANSFORM_SHIFT_INVERT,
+        3.0,
+        1,
+        &esolver,
+        &x);
+
+    if( err )
+        goto cleanup;
+
+    api = lis_gesolve(
+        A,
+        B,
+        x,
+        &evalue,
+        esolver);
+
+    err = lis_esolver_get_status(
+        esolver,
+        &status);
+
+    if( err )
+        goto cleanup;
+
+    if( api!=LIS_SUCCESS ||
+        status!=LIS_SUCCESS ||
+        esolver->nev!=4 )
+    {
+        printf(
+            "FAIL: generalized Block Lanczos exact-pole recovery api=%D status=%D nev=%D\n",
+            api,
+            status,
+            esolver->nev);
+
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    lis_esolver_destroy(esolver);
+    esolver = NULL;
+    lis_vector_destroy(x);
+    x = NULL;
+
+    err = block_lanczos_test_diag4(
+        &K,
+        10.0,
+        20.0,
+        30.0,
+        40.0);
+
+    if( err )
+        goto cleanup;
+
+    err = block_lanczos_test_diag4(
+        &KG,
+        1.0,
+        -1.0,
+        2.0,
+        -3.0);
+
+    if( err )
+        goto cleanup;
+
+    /*
+     * Buckling generalized eigenvalues are
+     * 10, -20, 15, -40/3. With sigma=2, decreasing transformed
+     * magnitude gives 10, 15, -20, -40/3.
+     */
+    err = block_lanczos_test_setup(
+        K,
+        LIS_EIGEN_TRANSFORM_BUCKLING,
+        2.0,
+        0,
+        &esolver,
+        &x);
+
+    if( err )
+        goto cleanup;
+
+    api = lis_gesolve(
+        K,
+        KG,
+        x,
+        &evalue,
+        esolver);
+
+    err = lis_esolver_get_status(
+        esolver,
+        &status);
+
+    if( err )
+        goto cleanup;
+
+    if( api!=LIS_SUCCESS ||
+        status!=LIS_SUCCESS ||
+        esolver->nev!=4 )
+    {
+        printf(
+            "FAIL: generalized Block Lanczos buckling api=%D status=%D nev=%D\n",
+            api,
+            status,
+            esolver->nev);
+
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    expected[0] = 10.0;
+    expected[1] = 15.0;
+    expected[2] = -20.0;
+    expected[3] = -40.0/3.0;
+
+    err = block_lanczos_test_values(
+        esolver,
+        expected,
+        1.0e-8);
+
+    if( err )
+        goto cleanup;
+
+    max_resid = 0.0;
+
+    for(i=0;i<4;i++)
+    {
+        if( esolver->resid[i]>max_resid )
+            max_resid = esolver->resid[i];
+    }
+
+    if( max_resid>1.0e-8 )
+    {
+        printf(
+            "FAIL: generalized Block Lanczos buckling residual=%e\n",
+            (double)max_resid);
+
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    printf(
+        "PASS: generalized/transformed Block Lanczos regression residual=%e\n",
+        (double)max_resid);
+
+    err = LIS_SUCCESS;
+
+cleanup:
+
+    if( esolver )
+        lis_esolver_destroy(esolver);
+
+    if( x )
+        lis_vector_destroy(x);
+
+    if( KG )
+        lis_matrix_destroy(KG);
+
+    if( K )
+        lis_matrix_destroy(K);
+
+    if( B )
+        lis_matrix_destroy(B);
+
+    if( A )
+        lis_matrix_destroy(A);
+
+    return err;
+}
+
+
 int
 main(
     int argc,
@@ -7214,6 +7684,13 @@ main(
     {
         printf(
             "LIS_EIGEN_BREAKDOWN ARNOLDI FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
+    if( check_generalized_block_lanczos_regression()!=LIS_SUCCESS )
+    {
+        printf("LIS_EIGEN_BLOCK_LANCZOS_REGRESSION FAILED\n");
         lis_finalize();
         return 1;
     }
