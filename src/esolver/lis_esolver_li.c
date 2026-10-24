@@ -5222,6 +5222,313 @@ lis_egli_block_continue_recurrence(
 }
 
 
+/*
+ * Solve the active generalized Block Lanczos projected problem and
+ * expose physical Ritz results through the existing eigensolver API.
+ *
+ * The projected matrix T is already expressed in a B-orthonormal
+ * basis, so the reduced problem is an ordinary symmetric eigensystem.
+ * The common projected solver and Ritz-reconstruction helpers are
+ * reused without introducing a new ordering or selection policy.
+ *
+ * -rval true:
+ *     return the raw projected Ritz values only.
+ *
+ * -rval false:
+ *     reconstruct physical Ritz vectors, copy the first Ritz vector
+ *     to the public output vector, and certify every pair with the
+ *     existing generalized residual helper.
+ */
+static LIS_INT
+lis_egli_block_project_results(
+    LIS_ESOLVER esolver,
+    LIS_INT ss,
+    LIS_INT basis_count,
+    LIS_VECTOR basis[],
+    LIS_SCALAR *t,
+    LIS_VECTOR scratch_Ax,
+    LIS_VECTOR scratch_Bx,
+    LIS_VECTOR scratch_r)
+{
+    LIS_INT i,j,err;
+    LIS_INT projected_dim;
+    LIS_INT projected_niter;
+    LIS_INT allocated_vectors;
+    LIS_INT final_status;
+    LIS_REAL projected_error;
+    LIS_REAL cert_resid;
+    LIS_REAL cert_tol;
+    LIS_SCALAR *projected_matrix;
+    LIS_SCALAR *projected_eval;
+    LIS_SCALAR *projected_evec;
+
+    if( esolver==NULL ||
+        esolver->A==NULL ||
+        esolver->B==NULL ||
+        ss<1 ||
+        basis_count<1 ||
+        basis_count>ss ||
+        basis==NULL ||
+        t==NULL ||
+        scratch_Ax==NULL ||
+        scratch_Bx==NULL ||
+        scratch_r==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos result arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    projected_dim = basis_count;
+    projected_niter = 0;
+    projected_error = 0.0;
+    allocated_vectors = 0;
+    final_status = LIS_SUCCESS;
+
+    cert_tol =
+        esolver->params[
+            LIS_EPARAMS_RESID -
+            LIS_EOPTIONS_LEN];
+
+    projected_matrix = NULL;
+    projected_eval = NULL;
+    projected_evec = NULL;
+
+    /*
+     * Keep public result count equal to the numerical active basis
+     * dimension after rank deflation or happy breakdown.
+     */
+    esolver->nev = projected_dim;
+
+    projected_matrix =
+        (LIS_SCALAR *)lis_malloc(
+            projected_dim*projected_dim*
+            sizeof(LIS_SCALAR),
+            "lis_egli_block_project_results::matrix");
+
+    projected_eval =
+        (LIS_SCALAR *)lis_malloc(
+            projected_dim*sizeof(LIS_SCALAR),
+            "lis_egli_block_project_results::eval");
+
+    projected_evec =
+        (LIS_SCALAR *)lis_malloc(
+            projected_dim*projected_dim*
+            sizeof(LIS_SCALAR),
+            "lis_egli_block_project_results::evec");
+
+    if( projected_matrix==NULL ||
+        projected_eval==NULL ||
+        projected_evec==NULL )
+    {
+        if( projected_evec ) lis_free(projected_evec);
+        if( projected_eval ) lis_free(projected_eval);
+        if( projected_matrix ) lis_free(projected_matrix);
+
+        LIS_SETERR_MEM(
+            projected_dim*projected_dim*
+            sizeof(LIS_SCALAR));
+
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+    /*
+     * T has physical leading dimension ss. The common projected
+     * eigensolver modifies its matrix argument, so compact-copy only
+     * the active numerical basis block.
+     */
+    for(i=0;i<projected_dim;i++)
+    {
+        for(j=0;j<projected_dim;j++)
+        {
+            projected_matrix[
+                i*projected_dim+j
+            ] =
+                t[i*ss+j];
+        }
+    }
+
+    err = lis_eigen_projected_solve(
+        projected_dim,
+        projected_matrix,
+        projected_eval,
+        projected_evec,
+        &projected_niter,
+        &projected_error);
+
+    if( err )
+        goto fail;
+
+    /*
+     * Preserve the common projected ordering exactly.
+     */
+    for(i=0;i<projected_dim;i++)
+    {
+        esolver->evalue[i] =
+            projected_eval[i];
+    }
+
+    if( esolver->options[LIS_EOPTIONS_OUTPUT] )
+    {
+        lis_printf(
+            LIS_COMM_WORLD,
+            "Generalized Block Lanczos projected dimension : %D\n",
+            projected_dim);
+
+        lis_printf(
+            LIS_COMM_WORLD,
+            "projected eigensolver iterations              : %D\n",
+            projected_niter);
+
+        lis_printf(
+            LIS_COMM_WORLD,
+            "projected eigensolver error                   : %e\n",
+            (double)projected_error);
+    }
+
+    /*
+     * Raw Ritz mode ends here. Physical reconstruction is not needed.
+     */
+    if( esolver->options[LIS_EOPTIONS_RVAL] )
+    {
+        esolver->retcode = LIS_SUCCESS;
+
+        lis_free(projected_evec);
+        lis_free(projected_eval);
+        lis_free(projected_matrix);
+
+        return LIS_SUCCESS;
+    }
+
+    if( esolver->evector==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "generalized Block Lanczos eigenvector storage is unavailable\n");
+
+        err = LIS_ERR_ILL_ARG;
+        goto fail;
+    }
+
+    for(i=0;i<projected_dim;i++)
+    {
+        if( esolver->evector[i]!=NULL )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "generalized Block Lanczos eigenvector slot is already in use\n");
+
+            err = LIS_ERR_ILL_ARG;
+            goto fail;
+        }
+
+        if( esolver->eprecision==
+            LIS_PRECISION_DEFAULT )
+        {
+            err = lis_vector_duplicate(
+                esolver->A,
+                &esolver->evector[i]);
+        }
+        else
+        {
+            err = lis_vector_duplicateex(
+                LIS_PRECISION_QUAD,
+                esolver->A,
+                &esolver->evector[i]);
+        }
+
+        if( err )
+            goto fail;
+
+        allocated_vectors++;
+    }
+
+    err = lis_eigen_ritz_reconstruct(
+        projected_dim,
+        basis,
+        projected_dim,
+        projected_evec,
+        projected_dim,
+        esolver->evector);
+
+    if( err )
+        goto fail;
+
+    err = lis_vector_copy(
+        esolver->evector[0],
+        esolver->x);
+
+    if( err )
+        goto fail;
+
+    /*
+     * Certify physical generalized Ritz pairs with:
+     *
+     *     ||A*x - lambda*B*x||
+     *
+     * using the common normalized generalized residual contract.
+     */
+    for(i=0;i<projected_dim;i++)
+    {
+        err = lis_esolver_generalized_residual(
+            esolver->A,
+            esolver->B,
+            esolver->evector[i],
+            esolver->evalue[i],
+            scratch_Ax,
+            scratch_Bx,
+            scratch_r,
+            &cert_resid);
+
+        if( err )
+            goto fail;
+
+        esolver->resid[i] =
+            cert_resid;
+
+        if( cert_resid>cert_tol &&
+            final_status==LIS_SUCCESS )
+        {
+            final_status = LIS_MAXITER;
+        }
+    }
+
+    esolver->retcode =
+        final_status;
+
+    lis_free(projected_evec);
+    lis_free(projected_eval);
+    lis_free(projected_matrix);
+
+    return final_status;
+
+fail:
+
+    for(i=0;i<allocated_vectors;i++)
+    {
+        if( esolver->evector[i]!=NULL )
+        {
+            lis_vector_destroy(
+                esolver->evector[i]);
+
+            esolver->evector[i] = NULL;
+        }
+    }
+
+    if( projected_evec )
+        lis_free(projected_evec);
+
+    if( projected_eval )
+        lis_free(projected_eval);
+
+    if( projected_matrix )
+        lis_free(projected_matrix);
+
+    return err;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_egli_block"
 LIS_INT lis_egli_block(LIS_ESOLVER esolver)
@@ -5565,15 +5872,20 @@ LIS_INT lis_egli_block(LIS_ESOLVER esolver)
         goto f4_cleanup;
 
     /*
-     * F6 completes the untransformed generalized recurrence.
-     * F7 will solve the active projected eigensystem and expose Ritz
-     * values/vectors with generalized residual certification.
+     * F7 closes the untransformed generalized Block Lanczos path:
+     * compact projected solve, Ritz reconstruction, public result
+     * count, output-vector consistency, and generalized residual
+     * certification.
      */
-    LIS_SETERR(
-        LIS_ERR_NOT_IMPLEMENTED,
-        "generalized Block Lanczos projected solve is not implemented yet\n");
-
-    err = LIS_ERR_NOT_IMPLEMENTED;
+    err = lis_egli_block_project_results(
+        esolver,
+        ss,
+        basis_count,
+        basis,
+        t,
+        esolver->work[0],
+        esolver->work[1],
+        esolver->work[2]);
 
 f4_cleanup:
 
