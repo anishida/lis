@@ -60,6 +60,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#ifdef _COMPLEX
+#include <complex.h>
+#endif
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -611,6 +614,8 @@ static LIS_INT lis_gcrodr_refresh_recycle(LIS_SOLVER solver)
  * residual is formed, so no additional large persistent allocation is
  * required.
  */
+static LIS_REAL lis_gcrodr_abs2_scalar(LIS_SCALAR value);
+
 static LIS_INT lis_gcrodr_assess_refresh_recycle(
     LIS_SOLVER solver, LIS_VECTOR *scratch_z, LIS_VECTOR *scratch_c)
 {
@@ -659,7 +664,7 @@ static LIS_INT lis_gcrodr_assess_refresh_recycle(
             for(j=0;j<oldk;j++)
             {
                 lis_vector_dot(solver->recycle_c[j],scratch_c[i],&alpha);
-                proj2 += (LIS_REAL)(fabs(alpha)*fabs(alpha));
+                proj2 += lis_gcrodr_abs2_scalar(alpha);
             }
             if( proj2<0.0 ) proj2 = 0.0;
             qi = sqrt(proj2)/nrm;
@@ -769,14 +774,103 @@ lis_gcrodr_dense_finite(
 }
 
 
+
+
+static LIS_SCALAR
+lis_gcrodr_conj_scalar(
+    LIS_SCALAR value)
+{
+#ifdef _COMPLEX
+    return conj(value);
+#else
+    return value;
+#endif
+}
+
+
+static LIS_REAL
+lis_gcrodr_abs2_scalar(
+    LIS_SCALAR value)
+{
+#ifdef _COMPLEX
+    LIS_REAL magnitude =
+        cabs(value);
+
+    return
+        magnitude*magnitude;
+#else
+    return
+        (LIS_REAL)
+        (value*value);
+#endif
+}
+
+
+#ifdef _COMPLEX
+static void
+lis_gcrodr_sort_complex_eigenpairs(
+    LIS_INT n,
+    LIS_SCALAR *eval,
+    LIS_SCALAR *evec)
+{
+    LIS_INT i,j,k;
+
+    LIS_REAL best;
+    LIS_REAL score;
+
+    LIS_SCALAR tmp;
+
+
+    for(i=0;i<n-1;i++)
+    {
+        k = i;
+        best = cabs(eval[i]);
+
+        for(j=i+1;j<n;j++)
+        {
+            score =
+                cabs(eval[j]);
+
+            if( score>best )
+            {
+                best = score;
+                k = j;
+            }
+        }
+
+
+        if( k==i )
+            continue;
+
+
+        tmp = eval[i];
+        eval[i] = eval[k];
+        eval[k] = tmp;
+
+
+        for(j=0;j<n;j++)
+        {
+            tmp =
+                evec[j+i*n];
+
+            evec[j+i*n] =
+                evec[j+k*n];
+
+            evec[j+k*n] =
+                tmp;
+        }
+    }
+}
+#endif
+
 /* harmonic Ritz update                                                   */
 /* ---------------------------------------------------------------------- */
-#ifndef _COMPLEX
+
 
 static LIS_INT lis_gcrodr_build_vector(LIS_SOLVER solver,
                                        LIS_VECTOR *v, LIS_INT jdim,
                                        LIS_INT oldk,
-                                       const LIS_REAL *coef,
+                                       const LIS_SCALAR *coef,
                                        LIS_VECTOR out)
 {
     LIS_INT i;
@@ -801,8 +895,10 @@ static LIS_INT lis_gcrodr_update_recycle(LIS_SOLVER solver,
     LIS_INT i,j,l,r,c,err,qriter,neig,nsel,eidx;
     LIS_REAL qrerr;
     LIS_SCALAR *G,*F,*AP,*BP,*T,*TQR,*QW,*RW,*AINV;
+#ifndef _COMPLEX
     LIS_GCRODR_EIG *eig;
     LIS_REAL *vr,*vi;
+#endif
     LIS_VECTOR *newu;
 
     kmax = _min(solver->recycle_target_dim, solver->options[LIS_OPTIONS_RESTART]-1);
@@ -823,15 +919,20 @@ static LIS_INT lis_gcrodr_update_recycle(LIS_SOLVER solver,
     QW   = (LIS_SCALAR *)lis_malloc((size_t)p*p*sizeof(LIS_SCALAR),"gcrodr::QW");
     RW   = (LIS_SCALAR *)lis_malloc((size_t)p*p*sizeof(LIS_SCALAR),"gcrodr::RW");
     AINV = (LIS_SCALAR *)lis_malloc((size_t)p*p*sizeof(LIS_SCALAR),"gcrodr::AINV");
+#ifndef _COMPLEX
     eig  = (LIS_GCRODR_EIG *)lis_malloc((size_t)p*sizeof(*eig),"gcrodr::eig");
     vr   = (LIS_REAL *)lis_malloc((size_t)p*sizeof(LIS_REAL),"gcrodr::vr");
     vi   = (LIS_REAL *)lis_malloc((size_t)p*sizeof(LIS_REAL),"gcrodr::vi");
+#endif
     newu = (LIS_VECTOR *)lis_malloc((size_t)knew*sizeof(LIS_VECTOR),"gcrodr::newu");
     if( newu!=NULL )
         for(i=0;i<knew;i++) newu[i]=NULL;
 
     if( G==NULL || F==NULL || AP==NULL || BP==NULL || T==NULL || TQR==NULL ||
-        QW==NULL || RW==NULL || AINV==NULL || eig==NULL || vr==NULL || vi==NULL ||
+        QW==NULL || RW==NULL || AINV==NULL ||
+#ifndef _COMPLEX
+        eig==NULL || vr==NULL || vi==NULL ||
+#endif
         newu==NULL )
     {
         err = LIS_ERR_OUT_OF_MEMORY;
@@ -863,7 +964,7 @@ static LIS_INT lis_gcrodr_update_recycle(LIS_SOLVER solver,
     }
     for(c=0;c<jdim;c++) F[(oldk+c)+(oldk+c)*q] = 1.0;
 
-    /* AP=G^T G, BP=G^T F. */
+    /* AP=G^H G, BP=G^H F. */
     for(c=0;c<p;c++)
     {
         for(r=0;r<p;r++)
@@ -871,8 +972,15 @@ static LIS_INT lis_gcrodr_update_recycle(LIS_SOLVER solver,
             LIS_SCALAR ag=0.0,bg=0.0;
             for(l=0;l<q;l++)
             {
-                ag += G[l+r*q]*G[l+c*q];
-                bg += G[l+r*q]*F[l+c*q];
+                ag +=
+                    lis_gcrodr_conj_scalar(
+                        G[l+r*q])
+                    *G[l+c*q];
+
+                bg +=
+                    lis_gcrodr_conj_scalar(
+                        G[l+r*q])
+                    *F[l+c*q];
             }
             AP[r+c*p] = ag;
             BP[r+c*p] = bg;
@@ -905,7 +1013,7 @@ static LIS_INT lis_gcrodr_update_recycle(LIS_SOLVER solver,
         goto reject;
     }
 
-    /* T = (G^T G)^-1 (G^T F), eig(T)=1/theta_harmonic. */
+    /* T = (G^H G)^-1 (G^H F), eig(T)=1/theta_harmonic. */
     for(c=0;c<p;c++)
     {
         for(r=0;r<p;r++)
@@ -924,6 +1032,46 @@ static LIS_INT lis_gcrodr_update_recycle(LIS_SOLVER solver,
         goto reject;
     }
 
+#ifdef _COMPLEX
+    memcpy(TQR,T,(size_t)p*p*sizeof(LIS_SCALAR));
+
+    qriter = 0;
+    qrerr = 0.0;
+
+    err =
+        lis_eigen_general_complex_solve(
+            p,
+            TQR,
+            RW,
+            QW,
+            &qriter,
+            &qrerr);
+
+    if( err==LIS_ERR_OUT_OF_MEMORY )
+        goto cleanup;
+
+    if( err )
+        goto reject;
+
+
+    if(
+        !lis_gcrodr_dense_finite(
+            p,
+            QW) )
+    {
+        goto reject;
+    }
+
+
+    lis_gcrodr_sort_complex_eigenpairs(
+        p,
+        RW,
+        QW);
+
+    neig = p;
+
+
+#else
     memcpy(TQR,T,(size_t)p*p*sizeof(LIS_SCALAR));
     /*
      * Harmonic recycle extraction is optional.  Bound the
@@ -950,12 +1098,43 @@ static LIS_INT lis_gcrodr_update_recycle(LIS_SOLVER solver,
     err = lis_gcrodr_extract_eigs(p,TQR,eig,&neig);
     if( err ) goto reject;
 
+#endif
+
     for(i=0;i<knew;i++)
     {
         err = lis_vector_duplicate(solver->A,&newu[i]);
         if( err ) goto cleanup;
     }
 
+#ifdef _COMPLEX
+    nsel = 0;
+
+    for(
+        eidx=0;
+        eidx<neig && nsel<knew;
+        eidx++ )
+    {
+        err =
+            lis_gcrodr_build_vector(
+                solver,
+                v,
+                jdim,
+                oldk,
+                &QW[eidx*p],
+                newu[nsel]);
+
+        if( err==LIS_ERR_OUT_OF_MEMORY )
+            goto cleanup;
+
+        if( err )
+            continue;
+
+
+        nsel++;
+    }
+
+
+#else
     nsel = 0;
     for(eidx=0;eidx<neig && nsel<knew;eidx++)
     {
@@ -979,6 +1158,8 @@ static LIS_INT lis_gcrodr_update_recycle(LIS_SOLVER solver,
             nsel++;
         }
     }
+
+#endif
 
     if( nsel<=0 ) goto reject;
 
@@ -1017,11 +1198,11 @@ cleanup:
     lis_free(newu);
     lis_free(G); lis_free(F); lis_free(AP); lis_free(BP); lis_free(T);
     lis_free(TQR); lis_free(QW); lis_free(RW); lis_free(AINV);
+#ifndef _COMPLEX
     lis_free(eig); lis_free(vr); lis_free(vi);
+#endif
     return err;
 }
-
-#endif /* !_COMPLEX */
 
 /* ---------------------------------------------------------------------- */
 /* public solver hooks                                                    */
@@ -1062,11 +1243,6 @@ LIS_INT lis_gcrodr_check_params(LIS_SOLVER solver)
         return LIS_ERR_ILL_ARG;
     }
 
-#ifdef _COMPLEX
-    LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-               "GCRO-DR currently supports real scalar builds only\n");
-    return LIS_ERR_NOT_IMPLEMENTED;
-#endif
     if( solver->options[LIS_OPTIONS_PRECISION]!=LIS_PRECISION_DOUBLE )
     {
         LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
@@ -1131,16 +1307,25 @@ LIS_INT lis_gcrodr_malloc_work(LIS_SOLVER solver)
 #define __FUNC__ "lis_gcrodr"
 LIS_INT lis_gcrodr(LIS_SOLVER solver)
 {
-#ifdef _COMPLEX
-    (void)solver;
-    return LIS_ERR_NOT_IMPLEMENTED;
-#else
     LIS_Comm comm;
     LIS_MATRIX A;
     LIS_VECTOR b,x,s,*z,*v,wtmp;
     LIS_SCALAR *h,*hraw,*bcoef;
-    LIS_SCALAR aa,bb,rr,a2,b2,t,alpha,gamma;
+    LIS_SCALAR aa,bb,rr,t,alpha,gamma;
     LIS_REAL bnrm,nrm2,tol,min_nrm2,rnorm,wnorm;
+#ifdef _COMPLEX
+    LIS_REAL aa_abs;
+    LIS_REAL bb_abs;
+    LIS_REAL givens_scale;
+    LIS_REAL givens_a;
+    LIS_REAL givens_b;
+    LIS_REAL givens_norm;
+    LIS_SCALAR givens_alpha;
+    LIS_SCALAR givens_c;
+    LIS_SCALAR givens_s;
+#else
+    LIS_SCALAR a2,b2;
+#endif
     LIS_INT err,iter,maxiter,output,maxiter_noimp,noimp_count;
     LIS_INT i,j,k,m,kmax,kcur,cycle_steps,jdim,ii,i1,jj,hld,cs,sn,pass;
     LIS_INT lucky,candidate;
@@ -1207,7 +1392,7 @@ LIS_INT lis_gcrodr(LIS_SOLVER solver)
 
     if( solver->recycle_valid && solver->recycle_dim>0 )
     {
-        /* x <- x + ZU C^T r, r <- (I-CC^T)r */
+        /* x <- x + ZU C^H r, r <- (I-CC^H)r */
         for(i=0;i<solver->recycle_dim;i++)
         {
             lis_vector_dot(solver->recycle_c[i],v[0],&alpha);
@@ -1297,8 +1482,21 @@ LIS_INT lis_gcrodr(LIS_SOLVER solver)
             {
                 jj = k-1;
                 t = h[jj+j*hld];
-                aa = h[jj+cs]*t + h[jj+sn]*h[k+j*hld];
-                bb = -h[jj+sn]*t + h[jj+cs]*h[k+j*hld];
+                aa =
+                    h[jj+cs]*t
+                    +h[jj+sn]*h[k+j*hld];
+
+#ifdef _COMPLEX
+                bb =
+                    -conj(
+                        h[jj+sn])
+                    *t
+                    +h[jj+cs]*h[k+j*hld];
+#else
+                bb =
+                    -h[jj+sn]*t
+                    +h[jj+cs]*h[k+j*hld];
+#endif
                 h[jj+j*hld] = aa;
                 h[k+j*hld] = bb;
             }
@@ -1307,9 +1505,86 @@ LIS_INT lis_gcrodr(LIS_SOLVER solver)
             i1 = j+1;
             aa = h[ii+j*hld];
             bb = h[i1+j*hld];
+#ifdef _COMPLEX
+            /*
+             * Stable unitary complex Givens rotation.
+             *
+             * [ c        s ] [a] = [r]
+             * [-conj(s) c ] [b]   [0]
+             *
+             * c is real and nonnegative.
+             */
+            aa_abs =
+                cabs(aa);
+
+            bb_abs =
+                cabs(bb);
+
+            givens_scale =
+                (aa_abs>bb_abs)
+                ? aa_abs
+                : bb_abs;
+
+
+            if( givens_scale==0.0 )
+            {
+                rr = 0.0;
+
+                givens_c = 1.0;
+                givens_s = 0.0;
+            }
+            else
+            {
+                givens_a =
+                    aa_abs
+                    /givens_scale;
+
+                givens_b =
+                    bb_abs
+                    /givens_scale;
+
+                givens_norm =
+                    givens_scale
+                    *sqrt(
+                        givens_a*givens_a
+                        +
+                        givens_b*givens_b);
+
+
+                rr =
+                    (LIS_SCALAR)
+                    givens_norm;
+
+
+                if( aa_abs==0.0 )
+                {
+                    givens_c = 0.0;
+
+                    givens_s =
+                        conj(bb)
+                        /bb_abs;
+                }
+                else
+                {
+                    givens_alpha =
+                        aa
+                        /aa_abs;
+
+                    givens_c =
+                        aa_abs
+                        /givens_norm;
+
+                    givens_s =
+                        givens_alpha
+                        *conj(bb)
+                        /givens_norm;
+                }
+            }
+#else
             a2 = aa*aa;
             b2 = bb*bb;
             rr = sqrt(a2+b2);
+#endif
             if( rr==0.0 || rr!=rr )
             {
                 if( lucky )
@@ -1320,13 +1595,58 @@ LIS_INT lis_gcrodr(LIS_SOLVER solver)
                 err = LIS_BREAKDOWN;
                 goto fail;
             }
-            h[ii+cs] = aa/rr;
-            h[ii+sn] = bb/rr;
-            s->value[i1] = -h[ii+sn]*s->value[ii];
-            s->value[ii] =  h[ii+cs]*s->value[ii];
-            h[ii+j*hld] = h[ii+cs]*h[ii+j*hld] + h[ii+sn]*h[i1+j*hld];
+#ifdef _COMPLEX
+            h[ii+cs] =
+                givens_c;
 
-            nrm2 = fabs(s->value[i1])*bnrm;
+            h[ii+sn] =
+                givens_s;
+
+
+            s->value[i1] =
+                -conj(
+                    h[ii+sn])
+                *s->value[ii];
+#else
+            h[ii+cs] =
+                aa/rr;
+
+            h[ii+sn] =
+                bb/rr;
+
+
+            s->value[i1] =
+                -h[ii+sn]
+                *s->value[ii];
+#endif
+
+
+            s->value[ii] =
+                h[ii+cs]
+                *s->value[ii];
+
+
+            h[ii+j*hld] =
+                h[ii+cs]*h[ii+j*hld]
+                +h[ii+sn]*h[i1+j*hld];
+
+
+#ifdef _COMPLEX
+            h[i1+j*hld] =
+                0.0;
+#endif
+
+#ifdef _COMPLEX
+            nrm2 =
+                cabs(
+                    s->value[i1])
+                *bnrm;
+#else
+            nrm2 =
+                fabs(
+                    s->value[i1])
+                *bnrm;
+#endif
             if( output )
             {
                 if( output & LIS_PRINT_MEM ) solver->rhistory[iter] = nrm2;
@@ -1467,7 +1787,6 @@ done:
     lis_free(bcoef);
     LIS_DEBUG_FUNC_OUT;
     return err;
-#endif
 }
 
 #undef GCRODR_NWORK

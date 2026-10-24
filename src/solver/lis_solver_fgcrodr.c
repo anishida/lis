@@ -20,6 +20,10 @@
 
 #include "lislib.h"
 
+#ifdef _COMPLEX
+#include <complex.h>
+#endif
+
 
 #define FGCRODR_DEFAULT_RECYCLE_DIM      ((LIS_INT)8)
 #define FGCRODR_DEFAULT_KEEP_QUALITY     ((LIS_REAL)0.90)
@@ -706,32 +710,7 @@ lis_fgcrodr_check_params(
     state = solver->fgcrodr_state;
 
 
-#ifdef _COMPLEX
-    /*
-     * The current recycling implementation uses a real small-dense
-     * harmonic Ritz eigensystem.  In particular, its projected
-     * algebra is formed and interpreted as the real
-     *
-     *     G^T G y = theta G^T F y
-     *
-     * problem.
-     *
-     * A complex recycling core requires Hermitian projected products
-     * and a complex small eigensystem.  Do not silently run the real
-     * harmonic path for complex scalars.
-     *
-     * k=0 remains the existing FGMRES reference path.
-     */
-    if( state->target_dim>0 )
-    {
-        LIS_SETERR(
-            LIS_ERR_NOT_IMPLEMENTED,
-            "complex FGCRO-DR recycling core is not implemented yet; "
-            "use -fgcrodr_k 0 for the FGMRES reference path\n");
-
-        return LIS_ERR_NOT_IMPLEMENTED;
-    }
-#endif
+/* Complex recycling is supported by the native harmonic core. */
 
 
     if(
@@ -776,6 +755,8 @@ lis_fgcrodr_check_params(
 
     return LIS_SUCCESS;
 }
+
+
 
 
 #undef __FUNC__
@@ -1669,7 +1650,7 @@ lis_fgcrodr_build_harmonic_vector(
     LIS_VECTOR *v,
     LIS_VECTOR *z,
     LIS_INT jdim,
-    const LIS_REAL *coef,
+    const LIS_SCALAR *coef,
     LIS_VECTOR wout,
     LIS_VECTOR zout)
 {
@@ -1740,6 +1721,83 @@ lis_fgcrodr_build_harmonic_vector(
     return LIS_SUCCESS;
 }
 
+
+
+
+static LIS_SCALAR
+lis_fgcrodr_conj_scalar(
+    LIS_SCALAR value)
+{
+#ifdef _COMPLEX
+    return conj(value);
+#else
+    return value;
+#endif
+}
+
+#ifdef _COMPLEX
+#ifdef _COMPLEX
+static void
+lis_fgcrodr_sort_complex_eigenpairs(
+    LIS_INT n,
+    LIS_SCALAR *eval,
+    LIS_SCALAR *evec)
+{
+    LIS_INT i;
+    LIS_INT j;
+    LIS_INT k;
+
+    LIS_REAL best;
+    LIS_REAL score;
+
+    LIS_SCALAR tmp;
+
+
+    for(i=0;i<n-1;i++)
+    {
+        k = i;
+        best = cabs(eval[i]);
+
+        for(j=i+1;j<n;j++)
+        {
+            score = cabs(eval[j]);
+
+            if( score>best )
+            {
+                best = score;
+                k = j;
+            }
+        }
+
+        if( k==i )
+            continue;
+
+
+        tmp = eval[i];
+        eval[i] = eval[k];
+        eval[k] = tmp;
+
+
+        for(j=0;j<n;j++)
+        {
+            tmp =
+                evec[
+                    j+i*n];
+
+            evec[
+                j+i*n] =
+                evec[
+                    j+k*n];
+
+            evec[
+                j+k*n] =
+                tmp;
+        }
+    }
+}
+#endif
+
+#endif
 
 static LIS_INT
 lis_fgcrodr_install_recycle(
@@ -2081,14 +2139,16 @@ lis_fgcrodr_try_harmonic_build(
             for(l=0;l<qsmall;l++)
             {
                 ag +=
-                    G[
-                        l+r*qsmall]
+                    lis_fgcrodr_conj_scalar(
+                        G[
+                            l+r*qsmall])
                     *G[
                         l+c*qsmall];
 
                 bg +=
-                    G[
-                        l+r*qsmall]
+                    lis_fgcrodr_conj_scalar(
+                        G[
+                            l+r*qsmall])
                     *F[
                         l+c*qsmall];
             }
@@ -2192,6 +2252,67 @@ lis_fgcrodr_try_harmonic_build(
     }
 
 
+#ifdef _COMPLEX
+    memcpy(
+        TQR,
+        T,
+        (size_t)psmall
+        *(size_t)psmall
+        *sizeof(LIS_SCALAR));
+
+
+    /*
+     * General complex harmonic eigensystem.
+     *
+     * T is non-Hermitian in general.  Use the shared native
+     * general-complex eigencore and keep failure of this optional
+     * recycle enhancement nonfatal.
+     */
+    qriter = 0;
+    qrerr = 0.0;
+
+    err =
+        lis_eigen_general_complex_solve(
+            psmall,
+            TQR,
+            RW,
+            QW,
+            &qriter,
+            &qrerr);
+
+    if( err )
+    {
+        if( err==LIS_ERR_OUT_OF_MEMORY )
+            goto cleanup;
+
+        err = LIS_SUCCESS;
+        goto cleanup;
+    }
+
+
+    if(
+        !lis_fgcrodr_dense_finite(
+            psmall,
+            TQR)
+        ||
+        !lis_fgcrodr_dense_finite(
+            psmall,
+            QW) )
+    {
+        err = LIS_SUCCESS;
+        goto cleanup;
+    }
+
+
+    lis_fgcrodr_sort_complex_eigenpairs(
+        psmall,
+        RW,
+        QW);
+
+    neig = psmall;
+
+
+#else
     memcpy(
         TQR,
         T,
@@ -2247,6 +2368,8 @@ lis_fgcrodr_try_harmonic_build(
     }
 
 
+#endif
+
     for(i=0;i<target;i++)
     {
         err =
@@ -2268,6 +2391,39 @@ lis_fgcrodr_try_harmonic_build(
     }
 
 
+#ifdef _COMPLEX
+    nsel = 0;
+
+
+    for(
+        eidx=0;
+        eidx<neig && nsel<target;
+        eidx++ )
+    {
+        err =
+            lis_fgcrodr_build_harmonic_vector(
+                v,
+                z,
+                jdim,
+                &QW[eidx*psmall],
+                neww[nsel],
+                newz[nsel]);
+
+        if( err )
+        {
+            if( err==LIS_ERR_OUT_OF_MEMORY )
+                goto cleanup;
+
+            err = LIS_SUCCESS;
+            continue;
+        }
+
+
+        nsel++;
+    }
+
+
+#else
     nsel =
         0;
 
@@ -2394,6 +2550,8 @@ lis_fgcrodr_try_harmonic_build(
     }
 
 
+#endif
+
     /*
      * Require a complete requested space at this stage.
      *
@@ -2481,7 +2639,6 @@ cleanup:
 
     return err;
 }
-
 
 #undef __FUNC__
 #define __FUNC__ "lis_fgcrodr_install_recycle"
@@ -2813,7 +2970,7 @@ lis_fgcrodr_build_augmented_vector(
     LIS_VECTOR *z,
     LIS_INT jdim,
     LIS_INT oldk,
-    const LIS_REAL *coef,
+    const LIS_SCALAR *coef,
     LIS_VECTOR wout,
     LIS_VECTOR zout)
 {
@@ -2912,7 +3069,6 @@ lis_fgcrodr_build_augmented_vector(
 
     return LIS_SUCCESS;
 }
-
 
 /*
  * Atomically replace an existing recycle space.
@@ -3611,14 +3767,16 @@ lis_fgcrodr_try_harmonic_update(
             for(l=0;l<qsmall;l++)
             {
                 ag +=
-                    G[
-                        l+r*qsmall]
+                    lis_fgcrodr_conj_scalar(
+                        G[
+                            l+r*qsmall])
                     *G[
                         l+c*qsmall];
 
                 bg +=
-                    G[
-                        l+r*qsmall]
+                    lis_fgcrodr_conj_scalar(
+                        G[
+                            l+r*qsmall])
                     *F[
                         l+c*qsmall];
             }
@@ -3720,6 +3878,67 @@ lis_fgcrodr_try_harmonic_update(
     }
 
 
+#ifdef _COMPLEX
+    memcpy(
+        TQR,
+        T,
+        (size_t)psmall
+        *(size_t)psmall
+        *sizeof(LIS_SCALAR));
+
+
+    /*
+     * General complex harmonic eigensystem.
+     *
+     * T is non-Hermitian in general.  Use the shared native
+     * general-complex eigencore and keep failure of this optional
+     * recycle enhancement nonfatal.
+     */
+    qriter = 0;
+    qrerr = 0.0;
+
+    err =
+        lis_eigen_general_complex_solve(
+            psmall,
+            TQR,
+            RW,
+            QW,
+            &qriter,
+            &qrerr);
+
+    if( err )
+    {
+        if( err==LIS_ERR_OUT_OF_MEMORY )
+            goto cleanup;
+
+        err = LIS_SUCCESS;
+        goto cleanup;
+    }
+
+
+    if(
+        !lis_fgcrodr_dense_finite(
+            psmall,
+            TQR)
+        ||
+        !lis_fgcrodr_dense_finite(
+            psmall,
+            QW) )
+    {
+        err = LIS_SUCCESS;
+        goto cleanup;
+    }
+
+
+    lis_fgcrodr_sort_complex_eigenpairs(
+        psmall,
+        RW,
+        QW);
+
+    neig = psmall;
+
+
+#else
     memcpy(
         TQR,
         T,
@@ -3775,6 +3994,8 @@ lis_fgcrodr_try_harmonic_update(
     }
 
 
+#endif
+
     for(i=0;i<target;i++)
     {
         err =
@@ -3796,6 +4017,41 @@ lis_fgcrodr_try_harmonic_update(
     }
 
 
+#ifdef _COMPLEX
+    nsel = 0;
+
+
+    for(
+        eidx=0;
+        eidx<neig && nsel<target;
+        eidx++ )
+    {
+        err =
+            lis_fgcrodr_build_augmented_vector(
+                state,
+                v,
+                z,
+                jdim,
+                oldk,
+                &QW[eidx*psmall],
+                neww[nsel],
+                newz[nsel]);
+
+        if( err )
+        {
+            if( err==LIS_ERR_OUT_OF_MEMORY )
+                goto cleanup;
+
+            err = LIS_SUCCESS;
+            continue;
+        }
+
+
+        nsel++;
+    }
+
+
+#else
     nsel = 0;
 
 
@@ -3926,6 +4182,8 @@ lis_fgcrodr_try_harmonic_update(
     }
 
 
+#endif
+
     /*
      * Do not replace a healthy persistent recycle space by a
      * partially filled harmonic selection.
@@ -4011,7 +4269,6 @@ cleanup:
     return err;
 }
 
-
 #undef __FUNC__
 #define __FUNC__ "lis_fgcrodr_build_recycle"
 static LIS_INT
@@ -4055,6 +4312,7 @@ lis_fgcrodr_build_recycle(
         state->valid &&
         state->dim>0 )
     {
+
         return
             lis_fgcrodr_try_harmonic_update(
                 solver,
@@ -4065,6 +4323,7 @@ lis_fgcrodr_build_recycle(
                 hld,
                 bcoef,
                 bld);
+
     }
 
 
@@ -4073,6 +4332,7 @@ lis_fgcrodr_build_recycle(
      *
      * preferred Stage-2D harmonic BUILD.
      */
+
     err =
         lis_fgcrodr_try_harmonic_build(
             solver,
@@ -4081,6 +4341,7 @@ lis_fgcrodr_build_recycle(
             jdim,
             hraw,
             hld);
+
 
     if( err )
         return err;
@@ -4109,9 +4370,6 @@ lis_fgcrodr_build_recycle(
             z,
             jdim);
 }
-
-
-
 
 LIS_INT
 lis_fgcrodr_get_lifecycle_state(
@@ -4885,8 +5143,16 @@ lis_fgcrodr_flexible_core(
     LIS_SCALAR rr;
 
 #ifdef _COMPLEX
-    LIS_SCALAR a2;
-    LIS_SCALAR b2;
+    LIS_REAL aa_abs;
+    LIS_REAL bb_abs;
+    LIS_REAL givens_scale;
+    LIS_REAL givens_a;
+    LIS_REAL givens_b;
+    LIS_REAL givens_norm;
+
+    LIS_SCALAR givens_alpha;
+    LIS_SCALAR givens_c;
+    LIS_SCALAR givens_s;
 #else
     LIS_REAL aa_abs;
     LIS_REAL bb_abs;
@@ -5399,8 +5665,15 @@ lis_fgcrodr_flexible_core(
                     h[jj+sn]
                     *h[k+iih];
 
+#ifdef _COMPLEX
+                bb =
+                    -conj(
+                        h[jj+sn])
+                    *t;
+#else
                 bb =
                     -h[jj+sn]*t;
+#endif
 
                 bb +=
                     h[jj+cs]
@@ -5420,14 +5693,67 @@ lis_fgcrodr_flexible_core(
 
 #ifdef _COMPLEX
             /*
-             * Complex recycling is rejected before this core is
-             * entered.  Keep the existing expression here so the
-             * complex build remains source-compatible.
+             * Stable unitary complex Givens rotation.
              */
-            a2 = aa*aa;
-            b2 = bb*bb;
+            aa_abs = cabs(aa);
+            bb_abs = cabs(bb);
 
-            rr = sqrt(a2+b2);
+            givens_scale =
+                (aa_abs>bb_abs)
+                ? aa_abs
+                : bb_abs;
+
+            if( givens_scale==0.0 )
+            {
+                rr = 0.0;
+                givens_c = 1.0;
+                givens_s = 0.0;
+            }
+            else
+            {
+                givens_a =
+                    aa_abs
+                    /givens_scale;
+
+                givens_b =
+                    bb_abs
+                    /givens_scale;
+
+                givens_norm =
+                    givens_scale
+                    *sqrt(
+                        givens_a*givens_a
+                        +
+                        givens_b*givens_b);
+
+                rr =
+                    (LIS_SCALAR)
+                    givens_norm;
+
+                if( aa_abs==0.0 )
+                {
+                    givens_c = 0.0;
+
+                    givens_s =
+                        conj(bb)
+                        /bb_abs;
+                }
+                else
+                {
+                    givens_alpha =
+                        aa
+                        /aa_abs;
+
+                    givens_c =
+                        aa_abs
+                        /givens_norm;
+
+                    givens_s =
+                        givens_alpha
+                        *conj(bb)
+                        /givens_norm;
+                }
+            }
 #else
             /*
              * Scale the Euclidean norm before squaring.
@@ -5508,16 +5834,31 @@ lis_fgcrodr_flexible_core(
             }
 
 
+            #ifdef _COMPLEX
+            h[ii+cs] =
+                givens_c;
+
+            h[ii+sn] =
+                givens_s;
+#else
             h[ii+cs] =
                 aa/rr;
 
             h[ii+sn] =
                 bb/rr;
+#endif
 
 
+            #ifdef _COMPLEX
+            s->value[i1] =
+                -conj(
+                    h[ii+sn])
+                *s->value[ii];
+#else
             s->value[i1] =
                 -h[ii+sn]
                 *s->value[ii];
+#endif
 
             s->value[ii] =
                 h[ii+cs]
@@ -5533,6 +5874,11 @@ lis_fgcrodr_flexible_core(
                 *h[i1+iih];
 
             h[ii+iih] = aa;
+
+#ifdef _COMPLEX
+            h[i1+iih] =
+                0.0;
+#endif
 
 
             /* ------------------------------------------------ */
@@ -6083,6 +6429,8 @@ lis_fgcrodr_flexible_core(
 
     return LIS_MAXITER;
 }
+
+
 
 
 #undef __FUNC__

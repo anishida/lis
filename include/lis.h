@@ -1072,6 +1072,15 @@ struct LIS_ESOLVER_STRUCT
         LIS_VECTOR x,xx,d; 
         LIS_SCALAR *evalue;
         LIS_VECTOR *evector;
+
+        /*
+         * Number of evector[] slots whose non-NULL entries are
+         * owned by this eigensolver instance.
+         *
+         * This metadata belongs to the result array itself and is
+         * independent of later -e or -ss option changes.
+         */
+        LIS_INT evector_owned_count;
 	LIS_REAL *resid;
 	LIS_VECTOR *work;
 	LIS_REAL *rhistory;
@@ -1103,6 +1112,7 @@ struct LIS_ESOLVER_STRUCT
         LIS_REAL feast_emax;
         LIS_REAL feast_ratio;
         LIS_INT feast_points;
+        LIS_INT feast_solver;
         LIS_INT feast_interval_mask;
         LIS_INT block_size;
 };
