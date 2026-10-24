@@ -6029,7 +6029,7 @@ lis_egli_block_transformed_next_block(
  * transformed semantics and avoids using an indefinite buckling
  * matrix as the positive rank-deflation metric.
  *
- * F8A intentionally stops after the transformed recurrence. F8B will
+ * The transformed recurrence is followed by projected-result processing that will
  * solve the active projected problem, sort by decreasing |nu|, map
  * transformed Ritz values back to lambda, and reconstruct/certify
  * physical generalized Ritz vectors.
@@ -7065,7 +7065,7 @@ lis_egli_block_transformed(
     }
 
     /*
-     * F8B closes the transformed result path.
+     * Complete the transformed result path.
      */
     err =
         lis_egli_block_transformed_project_results(
