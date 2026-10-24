@@ -93,6 +93,14 @@ extern LIS_INT lis_eigen_projected_solve(
         LIS_INT *niter,
         LIS_REAL *error);
 
+extern LIS_INT lis_eigen_general_complex_solve(
+        LIS_INT n,
+        LIS_SCALAR *a,
+        LIS_SCALAR *eval,
+        LIS_SCALAR *evec,
+        LIS_INT *niter,
+        LIS_REAL *error);
+
 extern LIS_INT lis_eigen_block_gram(
         LIS_INT nx,
         LIS_VECTOR X[],
@@ -393,6 +401,73 @@ extern LIS_INT lis_eigen_ritz_reconstruct(
 		LIS_VECTOR y_imag,
 		LIS_VECTOR work_real,
 		LIS_VECTOR work_imag);
+
+	extern LIS_INT lis_efeast_shifted_solve_split(
+		LIS_MATRIX A,
+		LIS_MATRIX B,
+		LIS_REAL z_real,
+		LIS_REAL z_imag,
+		LIS_VECTOR rhs_real,
+		LIS_VECTOR rhs_imag,
+		LIS_VECTOR x_real,
+		LIS_VECTOR x_imag,
+		LIS_SOLVER solver);
+
+	extern LIS_INT lis_efeast_projector_apply_split(
+		LIS_MATRIX A,
+		LIS_MATRIX B,
+		LIS_REAL emin,
+		LIS_REAL emax,
+		LIS_REAL ratio,
+		LIS_INT npoints,
+		LIS_VECTOR x_real,
+		LIS_VECTOR x_imag,
+		LIS_VECTOR q_real,
+		LIS_VECTOR q_imag,
+		LIS_SOLVER solver);
+
+	extern LIS_INT lis_efeast_filtered_block_basis(
+		LIS_MATRIX A,
+		LIS_MATRIX B,
+		LIS_REAL emin,
+		LIS_REAL emax,
+		LIS_REAL ratio,
+		LIS_INT npoints,
+		LIS_INT block_size,
+		LIS_VECTOR X[],
+		LIS_VECTOR Q[],
+		LIS_VECTOR BQ[],
+		LIS_REAL rank_tol,
+		LIS_INT *active_rank,
+		LIS_SOLVER solver);
+
+	extern LIS_INT lis_efeast_projected_rayleigh_ritz(
+		LIS_MATRIX A,
+		LIS_INT active_rank,
+		LIS_VECTOR Q[],
+		LIS_SCALAR ritz_value[],
+		LIS_VECTOR ritz_vector[],
+		LIS_INT *projected_niter,
+		LIS_REAL *projected_error);
+
+	extern LIS_INT lis_efeast_certify_ritz_pairs(
+		LIS_MATRIX A,
+		LIS_MATRIX B,
+		LIS_REAL emin,
+		LIS_REAL emax,
+		LIS_REAL tol,
+		LIS_INT active_rank,
+		LIS_SCALAR ritz_value[],
+		LIS_VECTOR ritz_vector[],
+		LIS_INT previous_count,
+		LIS_REAL previous_trace,
+		LIS_INT selected_index[],
+		LIS_REAL residual[],
+		LIS_INT *selected_count,
+		LIS_REAL *trace,
+		LIS_REAL *trace_error,
+		LIS_REAL *max_residual,
+		LIS_INT *converged);
 
 #ifdef __cplusplus
 }

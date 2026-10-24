@@ -509,6 +509,352 @@ static int run_shift_case(
 }
 
 
+static int check_vector_match(
+        const char *name,
+        LIS_VECTOR actual,
+        LIS_VECTOR expected,
+        LIS_REAL tol)
+{
+        LIS_SCALAR actual_value;
+        LIS_SCALAR expected_value;
+
+        LIS_REAL actual_real;
+        LIS_REAL actual_imag;
+        LIS_REAL expected_real;
+        LIS_REAL expected_imag;
+
+        LIS_INT i;
+        LIS_INT err;
+
+        for(i=0;i<TEST_N;i++)
+        {
+                err = lis_vector_get_value(
+                        actual,
+                        i,
+                        &actual_value);
+
+                if( err )
+                {
+                        fprintf(
+                                stderr,
+                                "FAIL: %s actual get value %d returned %d\n",
+                                name,
+                                (int)i,
+                                (int)err);
+
+                        return 1;
+                }
+
+                err = lis_vector_get_value(
+                        expected,
+                        i,
+                        &expected_value);
+
+                if( err )
+                {
+                        fprintf(
+                                stderr,
+                                "FAIL: %s expected get value %d returned %d\n",
+                                name,
+                                (int)i,
+                                (int)err);
+
+                        return 1;
+                }
+
+                actual_real =
+                        scalar_real_part(
+                                actual_value);
+
+                actual_imag =
+                        scalar_imag_part(
+                                actual_value);
+
+                expected_real =
+                        scalar_real_part(
+                                expected_value);
+
+                expected_imag =
+                        scalar_imag_part(
+                                expected_value);
+
+                if( !close_real(
+                            actual_real,
+                            expected_real,
+                            tol) ||
+                    !close_real(
+                            actual_imag,
+                            expected_imag,
+                            tol) )
+                {
+                        fprintf(
+                                stderr,
+                                "FAIL: %s[%d] = "
+                                "(%.17g, %.17g), expected "
+                                "(%.17g, %.17g)\n",
+                                name,
+                                (int)i,
+                                (double)actual_real,
+                                (double)actual_imag,
+                                (double)expected_real,
+                                (double)expected_imag);
+
+                        return 1;
+                }
+        }
+
+        return 0;
+}
+
+
+static int run_shift_solve_case(
+        const char *name,
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_VECTOR exact_real,
+        LIS_VECTOR exact_imag,
+        LIS_VECTOR rhs_real,
+        LIS_VECTOR rhs_imag,
+        LIS_VECTOR work_real,
+        LIS_VECTOR work_imag)
+{
+        LIS_VECTOR solve_real;
+        LIS_VECTOR solve_imag;
+
+        LIS_SOLVER solver;
+
+        LIS_INT iter;
+        LIS_INT err;
+
+        LIS_REAL residual;
+
+        solve_real = NULL;
+        solve_imag = NULL;
+
+        solver = NULL;
+
+        iter = 0;
+        residual = 0.0;
+
+        /*
+         * Build an exact RHS from the known split-complex solution.
+         */
+        err = lis_efeast_shifted_matvec_split(
+                A,
+                B,
+                (LIS_REAL)2.0,
+                (LIS_REAL)0.75,
+                exact_real,
+                exact_imag,
+                rhs_real,
+                rhs_imag,
+                work_real,
+                work_imag);
+
+        if( err )
+        {
+                fprintf(
+                        stderr,
+                        "FAIL: %s RHS construction returned %d\n",
+                        name,
+                        (int)err);
+
+                return 1;
+        }
+
+        err = lis_vector_duplicate(
+                A,
+                &solve_real);
+
+        if( err ) goto fail;
+
+        err = lis_vector_duplicate(
+                A,
+                &solve_imag);
+
+        if( err ) goto fail;
+
+        err = lis_vector_set_all(
+                (LIS_SCALAR)0.0,
+                solve_real);
+
+        if( err ) goto fail;
+
+        err = lis_vector_set_all(
+                (LIS_SCALAR)0.0,
+                solve_imag);
+
+        if( err ) goto fail;
+
+        err = lis_solver_create(
+                &solver);
+
+        if( err ) goto fail;
+
+        /*
+         * The F3-2 bridge is deliberately matrix-free.
+         * Use a nonsymmetric Krylov method that requires matvec only.
+         */
+        solver->options[
+                LIS_OPTIONS_SOLVER] =
+                LIS_SOLVER_GMRES;
+
+        solver->options[
+                LIS_OPTIONS_PRECON] =
+                LIS_PRECON_TYPE_NONE;
+
+        solver->options[
+                LIS_OPTIONS_SCALE] =
+                LIS_SCALE_NONE;
+
+        solver->options[
+                LIS_OPTIONS_STORAGE] =
+                0;
+
+        solver->options[
+                LIS_OPTIONS_USE_AT] =
+                LIS_FALSE;
+
+        solver->options[
+                LIS_OPTIONS_PRECISION] =
+                LIS_PRECISION_DOUBLE;
+
+        solver->options[
+                LIS_OPTIONS_MAXITER] =
+                200;
+
+        solver->options[
+                LIS_OPTIONS_RESTART] =
+                12;
+
+        solver->options[
+                LIS_OPTIONS_INITGUESS_ZEROS] =
+                LIS_TRUE;
+
+        solver->params[
+                LIS_PARAMS_RESID
+                -
+                LIS_OPTIONS_LEN] =
+                (LIS_SCALAR)1.0e-12;
+
+        err = lis_efeast_shifted_solve_split(
+                A,
+                B,
+                (LIS_REAL)2.0,
+                (LIS_REAL)0.75,
+                rhs_real,
+                rhs_imag,
+                solve_real,
+                solve_imag,
+                solver);
+
+        if( err )
+        {
+                fprintf(
+                        stderr,
+                        "FAIL: %s shifted solve returned %d\n",
+                        name,
+                        (int)err);
+
+                goto fail;
+        }
+
+        err = lis_solver_get_iter(
+                solver,
+                &iter);
+
+        if( err ) goto fail;
+
+        err = lis_solver_get_residualnorm(
+                solver,
+                &residual);
+
+        if( err ) goto fail;
+
+        if( iter<=0 ||
+            !isfinite((double)residual) ||
+            residual>(LIS_REAL)1.0e-9 )
+        {
+                fprintf(
+                        stderr,
+                        "FAIL: %s solve diagnostics "
+                        "iter=%d residual=%.17g\n",
+                        name,
+                        (int)iter,
+                        (double)residual);
+
+                goto fail;
+        }
+
+        if( check_vector_match(
+                    "solve_real",
+                    solve_real,
+                    exact_real,
+                    (LIS_REAL)2.0e-9) )
+        {
+                goto fail;
+        }
+
+        if( check_vector_match(
+                    "solve_imag",
+                    solve_imag,
+                    exact_imag,
+                    (LIS_REAL)2.0e-9) )
+        {
+                goto fail;
+        }
+
+        printf(
+                "PASS: %s shifted solve "
+                "iter=%d residual=%.6e\n",
+                name,
+                (int)iter,
+                (double)residual);
+
+        if( solver!=NULL )
+        {
+                lis_solver_destroy(
+                        solver);
+        }
+
+        if( solve_imag!=NULL )
+        {
+                lis_vector_destroy(
+                        solve_imag);
+        }
+
+        if( solve_real!=NULL )
+        {
+                lis_vector_destroy(
+                        solve_real);
+        }
+
+        return 0;
+
+fail:
+
+        if( solver!=NULL )
+        {
+                lis_solver_destroy(
+                        solver);
+        }
+
+        if( solve_imag!=NULL )
+        {
+                lis_vector_destroy(
+                        solve_imag);
+        }
+
+        if( solve_real!=NULL )
+        {
+                lis_vector_destroy(
+                        solve_real);
+        }
+
+        return 1;
+}
+
+
 int main(
         int argc,
         char **argv)
@@ -959,6 +1305,104 @@ int main(
         }
 
         /*
+         * F3-2 shifted linear solves.
+         *
+         * The exact solution is the existing x_real/x_imag pair.
+         * RHS vectors are generated through the F2 shifted matvec,
+         * then recovered through the matrix-free real 2N bridge.
+         */
+
+        if( run_shift_solve_case(
+                    "CSR+CSR",
+                    A,
+                    B,
+                    x_real,
+                    x_imag,
+                    y_real,
+                    y_imag,
+                    work_real,
+                    work_imag) )
+        {
+                failed = 1;
+                goto cleanup;
+        }
+
+        if( run_shift_solve_case(
+                    "USER+USER",
+                    user_a,
+                    user_b,
+                    x_real,
+                    x_imag,
+                    y_real,
+                    y_imag,
+                    work_real,
+                    work_imag) )
+        {
+                failed = 1;
+                goto cleanup;
+        }
+
+        if( run_shift_solve_case(
+                    "OPERATOR+OPERATOR",
+                    operator_a,
+                    operator_b,
+                    x_real,
+                    x_imag,
+                    y_real,
+                    y_imag,
+                    work_real,
+                    work_imag) )
+        {
+                failed = 1;
+                goto cleanup;
+        }
+
+        if( run_shift_solve_case(
+                    "CSR standard",
+                    A,
+                    NULL,
+                    x_real,
+                    x_imag,
+                    y_real,
+                    y_imag,
+                    work_real,
+                    work_imag) )
+        {
+                failed = 1;
+                goto cleanup;
+        }
+
+        if( run_shift_solve_case(
+                    "USER standard",
+                    user_a,
+                    NULL,
+                    x_real,
+                    x_imag,
+                    y_real,
+                    y_imag,
+                    work_real,
+                    work_imag) )
+        {
+                failed = 1;
+                goto cleanup;
+        }
+
+        if( run_shift_solve_case(
+                    "OPERATOR standard",
+                    operator_a,
+                    NULL,
+                    x_real,
+                    x_imag,
+                    y_real,
+                    y_imag,
+                    work_real,
+                    work_imag) )
+        {
+                failed = 1;
+                goto cleanup;
+        }
+
+        /*
          * The FEAST shifted path must not materialize or convert
          * USER/OPERATOR matrices to CSR as a side effect.
          */
@@ -1065,7 +1509,7 @@ cleanup:
         }
 
         printf(
-                "PASS: native FEAST split shifted operator "
+                "PASS: native FEAST split shifted operator/solve "
                 "CSR/USER/OPERATOR\n");
 
         return 0;
