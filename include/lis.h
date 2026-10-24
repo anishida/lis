@@ -1090,9 +1090,9 @@ struct LIS_ESOLVER_STRUCT
         LIS_SCALAR ishift;
         LIS_INT transform;
         LIS_INT nev;
-        LIS_INT block_size;
 	LIS_REAL nrm2;
         LIS_REAL tol;
+        LIS_INT block_size;
 };
 typedef struct LIS_ESOLVER_STRUCT *LIS_ESOLVER;
 
