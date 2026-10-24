@@ -38,6 +38,7 @@
         #include <malloc.h>
 #endif
 #include <math.h>
+#include <float.h>
 #include <string.h>
 #include <stdarg.h>
 #ifdef USE_SSE2
@@ -6067,6 +6068,13 @@ lis_egli_block_transformed_project_results(
     LIS_REAL cert_tol;
     LIS_REAL mag;
     LIS_REAL maxmag;
+    LIS_REAL spectral_scale;
+    LIS_REAL zero_threshold;
+    LIS_REAL lmag;
+    LIS_REAL anrm;
+    LIS_REAL bnrm;
+    LIS_REAL rnrm;
+    LIS_REAL denom;
     LIS_SCALAR nu;
     LIS_SCALAR tmp;
     LIS_SCALAR *projected_matrix;
@@ -6295,6 +6303,38 @@ lis_egli_block_transformed_project_results(
             0.0;
     }
 
+    /*
+     * Relative residual scaling degenerates for a physical zero mode:
+     *
+     *     ||A x|| + |lambda| ||B x|| -> 0
+     *
+     * even when the reconstructed nullspace vector is correct. Keep
+     * historical certification for ordinary eigenvalues and use a
+     * physical Ritz-value scale only for numerically zero lambda.
+     */
+#ifdef _COMPLEX
+    spectral_scale = cabs(active_shift);
+#else
+    spectral_scale = fabs(active_shift);
+#endif
+
+    for(i=0;i<projected_dim;i++)
+    {
+#ifdef _COMPLEX
+        mag = cabs(esolver->evalue[i]);
+#else
+        mag = fabs(esolver->evalue[i]);
+#endif
+
+        if( mag>spectral_scale )
+            spectral_scale = mag;
+    }
+
+    zero_threshold =
+        100.0*DBL_EPSILON*
+        (spectral_scale>0.0 ?
+            spectral_scale : 1.0);
+
     if( esolver->options[
         LIS_EOPTIONS_OUTPUT] )
     {
@@ -6405,6 +6445,80 @@ lis_egli_block_transformed_project_results(
 
         if( err )
             goto fail;
+
+#ifdef _COMPLEX
+        lmag = cabs(esolver->evalue[i]);
+#else
+        lmag = fabs(esolver->evalue[i]);
+#endif
+
+        if( spectral_scale>0.0 &&
+            lmag<=zero_threshold )
+        {
+            /*
+             * The common helper has already formed scratch_Ax,
+             * scratch_Bx and scratch_r. Reuse them; zero-mode
+             * certification needs no extra matrix-vector products.
+             */
+            err = lis_vector_nrm2(
+                scratch_Ax,
+                &anrm);
+
+            if( err )
+                goto fail;
+
+            err = lis_vector_nrm2(
+                scratch_Bx,
+                &bnrm);
+
+            if( err )
+                goto fail;
+
+            err = lis_vector_nrm2(
+                scratch_r,
+                &rnrm);
+
+            if( err )
+                goto fail;
+
+            denom =
+                anrm +
+                spectral_scale*bnrm;
+
+            if( !isfinite((double)anrm) ||
+                !isfinite((double)bnrm) ||
+                !isfinite((double)rnrm) ||
+                !isfinite((double)denom) )
+            {
+                LIS_SETERR(
+                    LIS_BREAKDOWN,
+                    "non-finite zero-mode Block Lanczos certification data\n");
+
+                err = LIS_BREAKDOWN;
+                goto fail;
+            }
+
+            if( denom>0.0 )
+            {
+                cert_resid =
+                    rnrm/denom;
+            }
+            else
+            {
+                cert_resid =
+                    rnrm;
+            }
+
+            if( !isfinite((double)cert_resid) )
+            {
+                LIS_SETERR(
+                    LIS_BREAKDOWN,
+                    "non-finite zero-mode Block Lanczos certification residual\n");
+
+                err = LIS_BREAKDOWN;
+                goto fail;
+            }
+        }
 
         esolver->resid[i] =
             cert_resid;
