@@ -6034,6 +6034,423 @@ lis_egli_block_transformed_next_block(
  * transformed Ritz values back to lambda, and reconstruct/certify
  * physical generalized Ritz vectors.
  */
+/*
+ * Close the transformed generalized Block Lanczos result path.
+ *
+ * Projected eigenpairs are ordered by decreasing |nu| exactly as in
+ * scalar transformed GLI, then mapped back with the actual recovered
+ * active shift. Physical vectors use the established block result
+ * contract: common Ritz reconstruction plus generalized residual
+ * certification, without a separate refinement loop.
+ */
+static LIS_INT
+lis_egli_block_transformed_project_results(
+    LIS_ESOLVER esolver,
+    LIS_INT transform_mode,
+    LIS_INT ss,
+    LIS_INT basis_count,
+    LIS_VECTOR basis[],
+    LIS_SCALAR *t,
+    LIS_SCALAR active_shift,
+    LIS_VECTOR scratch_Ax,
+    LIS_VECTOR scratch_Bx,
+    LIS_VECTOR scratch_r)
+{
+    LIS_INT i,j,k,err;
+    LIS_INT imax;
+    LIS_INT projected_dim;
+    LIS_INT projected_niter;
+    LIS_INT allocated_vectors;
+    LIS_INT final_status;
+    LIS_REAL projected_error;
+    LIS_REAL cert_resid;
+    LIS_REAL cert_tol;
+    LIS_REAL mag;
+    LIS_REAL maxmag;
+    LIS_SCALAR nu;
+    LIS_SCALAR tmp;
+    LIS_SCALAR *projected_matrix;
+    LIS_SCALAR *projected_eval;
+    LIS_SCALAR *projected_evec;
+
+    if( esolver==NULL ||
+        esolver->A==NULL ||
+        esolver->B==NULL ||
+        ss<1 ||
+        basis_count<1 ||
+        basis_count>ss ||
+        basis==NULL ||
+        t==NULL ||
+        scratch_Ax==NULL ||
+        scratch_Bx==NULL ||
+        scratch_r==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid transformed generalized Block Lanczos result arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    if( transform_mode!=
+            LIS_EIGEN_TRANSFORM_SHIFT_INVERT &&
+        transform_mode!=
+            LIS_EIGEN_TRANSFORM_BUCKLING )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid transformed generalized Block Lanczos result transform\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    projected_dim = basis_count;
+    projected_niter = 0;
+    projected_error = 0.0;
+    allocated_vectors = 0;
+    final_status = LIS_SUCCESS;
+
+    cert_tol =
+        esolver->params[
+            LIS_EPARAMS_RESID -
+            LIS_EOPTIONS_LEN];
+
+    projected_matrix = NULL;
+    projected_eval = NULL;
+    projected_evec = NULL;
+
+    esolver->nev =
+        projected_dim;
+
+    projected_matrix =
+        (LIS_SCALAR *)lis_malloc(
+            projected_dim*projected_dim*
+            sizeof(LIS_SCALAR),
+            "lis_egli_block_transformed_project_results::matrix");
+
+    projected_eval =
+        (LIS_SCALAR *)lis_malloc(
+            projected_dim*sizeof(LIS_SCALAR),
+            "lis_egli_block_transformed_project_results::eval");
+
+    projected_evec =
+        (LIS_SCALAR *)lis_malloc(
+            projected_dim*projected_dim*
+            sizeof(LIS_SCALAR),
+            "lis_egli_block_transformed_project_results::evec");
+
+    if( projected_matrix==NULL ||
+        projected_eval==NULL ||
+        projected_evec==NULL )
+    {
+        if( projected_evec )
+            lis_free(projected_evec);
+        if( projected_eval )
+            lis_free(projected_eval);
+        if( projected_matrix )
+            lis_free(projected_matrix);
+
+        LIS_SETERR_MEM(
+            projected_dim*projected_dim*
+            sizeof(LIS_SCALAR));
+
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+    for(i=0;i<projected_dim;i++)
+    {
+        for(j=0;j<projected_dim;j++)
+        {
+            projected_matrix[
+                i*projected_dim+j
+            ] =
+                t[i*ss+j];
+        }
+    }
+
+    err = lis_eigen_projected_solve(
+        projected_dim,
+        projected_matrix,
+        projected_eval,
+        projected_evec,
+        &projected_niter,
+        &projected_error);
+
+    if( err )
+        goto fail;
+
+    /*
+     * Scalar transformed GLI ordering: decreasing |nu|.
+     */
+    for(i=0;i<projected_dim-1;i++)
+    {
+        imax = i;
+
+#ifdef _COMPLEX
+        maxmag = cabs(projected_eval[i]);
+#else
+        maxmag = fabs(projected_eval[i]);
+#endif
+
+        for(j=i+1;j<projected_dim;j++)
+        {
+#ifdef _COMPLEX
+            mag = cabs(projected_eval[j]);
+#else
+            mag = fabs(projected_eval[j]);
+#endif
+
+            if( mag>maxmag )
+            {
+                maxmag = mag;
+                imax = j;
+            }
+        }
+
+        if( imax!=i )
+        {
+            tmp = projected_eval[i];
+            projected_eval[i] =
+                projected_eval[imax];
+            projected_eval[imax] =
+                tmp;
+
+            for(k=0;k<projected_dim;k++)
+            {
+                tmp =
+                    projected_evec[
+                        k*projected_dim+i];
+
+                projected_evec[
+                    k*projected_dim+i
+                ] =
+                    projected_evec[
+                        k*projected_dim+imax];
+
+                projected_evec[
+                    k*projected_dim+imax
+                ] =
+                    tmp;
+            }
+        }
+    }
+
+    /*
+     * Inverse map with the actual active recovered shift.
+     */
+    for(i=0;i<projected_dim;i++)
+    {
+        nu = projected_eval[i];
+
+        if( transform_mode==
+            LIS_EIGEN_TRANSFORM_SHIFT_INVERT )
+        {
+#ifdef _COMPLEX
+            mag = cabs(nu);
+#else
+            mag = fabs(nu);
+#endif
+
+            if( !isfinite((double)mag) ||
+                mag<=1.0e-30 )
+            {
+                LIS_SETERR(
+                    LIS_BREAKDOWN,
+                    "zero transformed Block Lanczos shift-invert Ritz value\n");
+
+                err = LIS_BREAKDOWN;
+                goto fail;
+            }
+
+            esolver->evalue[i] =
+                active_shift +
+                1.0/nu;
+        }
+        else
+        {
+#ifdef _COMPLEX
+            mag = cabs(nu-1.0);
+#else
+            mag = fabs(nu-1.0);
+#endif
+
+            if( !isfinite((double)mag) ||
+                mag<=1.0e-30 )
+            {
+                LIS_SETERR(
+                    LIS_BREAKDOWN,
+                    "transformed Block Lanczos buckling Ritz value is too close to one\n");
+
+                err = LIS_BREAKDOWN;
+                goto fail;
+            }
+
+            esolver->evalue[i] =
+                active_shift*nu/
+                (nu-1.0);
+        }
+
+        esolver->iter[i] =
+            projected_dim;
+
+        esolver->resid[i] =
+            0.0;
+    }
+
+    if( esolver->options[
+        LIS_EOPTIONS_OUTPUT] )
+    {
+        lis_printf(
+            LIS_COMM_WORLD,
+            "Transformed generalized Block Lanczos projected dimension : %D\n",
+            projected_dim);
+
+        lis_printf(
+            LIS_COMM_WORLD,
+            "projected eigensolver iterations                          : %D\n",
+            projected_niter);
+
+        lis_printf(
+            LIS_COMM_WORLD,
+            "projected eigensolver error                               : %e\n",
+            (double)projected_error);
+    }
+
+    /*
+     * -rval returns mapped physical Ritz values without vectors.
+     */
+    if( esolver->options[
+        LIS_EOPTIONS_RVAL] )
+    {
+        esolver->retcode =
+            LIS_SUCCESS;
+
+        lis_free(projected_evec);
+        lis_free(projected_eval);
+        lis_free(projected_matrix);
+
+        return LIS_SUCCESS;
+    }
+
+    if( esolver->evector==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "transformed generalized Block Lanczos eigenvector storage is unavailable\n");
+
+        err = LIS_ERR_ILL_ARG;
+        goto fail;
+    }
+
+    for(i=0;i<projected_dim;i++)
+    {
+        if( esolver->evector[i]!=NULL )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "transformed generalized Block Lanczos eigenvector slot is already in use\n");
+
+            err = LIS_ERR_ILL_ARG;
+            goto fail;
+        }
+
+        if( esolver->eprecision==
+            LIS_PRECISION_DEFAULT )
+        {
+            err = lis_vector_duplicate(
+                esolver->A,
+                &esolver->evector[i]);
+        }
+        else
+        {
+            err = lis_vector_duplicateex(
+                LIS_PRECISION_QUAD,
+                esolver->A,
+                &esolver->evector[i]);
+        }
+
+        if( err )
+            goto fail;
+
+        allocated_vectors++;
+    }
+
+    err = lis_eigen_ritz_reconstruct(
+        projected_dim,
+        basis,
+        projected_dim,
+        projected_evec,
+        projected_dim,
+        esolver->evector);
+
+    if( err )
+        goto fail;
+
+    err = lis_vector_copy(
+        esolver->evector[0],
+        esolver->x);
+
+    if( err )
+        goto fail;
+
+    for(i=0;i<projected_dim;i++)
+    {
+        err = lis_esolver_generalized_residual(
+            esolver->A,
+            esolver->B,
+            esolver->evector[i],
+            esolver->evalue[i],
+            scratch_Ax,
+            scratch_Bx,
+            scratch_r,
+            &cert_resid);
+
+        if( err )
+            goto fail;
+
+        esolver->resid[i] =
+            cert_resid;
+
+        if( cert_resid>cert_tol &&
+            final_status==LIS_SUCCESS )
+        {
+            final_status =
+                LIS_MAXITER;
+        }
+    }
+
+    esolver->retcode =
+        final_status;
+
+    lis_free(projected_evec);
+    lis_free(projected_eval);
+    lis_free(projected_matrix);
+
+    return final_status;
+
+fail:
+
+    for(i=0;i<allocated_vectors;i++)
+    {
+        if( esolver->evector[i]!=NULL )
+        {
+            lis_vector_destroy(
+                esolver->evector[i]);
+
+            esolver->evector[i] =
+                NULL;
+        }
+    }
+
+    if( projected_evec )
+        lis_free(projected_evec);
+    if( projected_eval )
+        lis_free(projected_eval);
+    if( projected_matrix )
+        lis_free(projected_matrix);
+
+    return err;
+}
+
+
 static LIS_INT
 lis_egli_block_transformed(
     LIS_ESOLVER esolver)
@@ -6647,11 +7064,21 @@ lis_egli_block_transformed(
             (double)active_shift);
     }
 
-    LIS_SETERR(
-        LIS_ERR_NOT_IMPLEMENTED,
-        "transformed generalized Block Lanczos projected results are not implemented yet\n");
-
-    err = LIS_ERR_NOT_IMPLEMENTED;
+    /*
+     * F8B closes the transformed result path.
+     */
+    err =
+        lis_egli_block_transformed_project_results(
+            esolver,
+            transform_mode,
+            ss,
+            basis_count,
+            basis,
+            t,
+            active_shift,
+            esolver->work[0],
+            esolver->work[1],
+            esolver->work[2]);
 
 cleanup:
 
