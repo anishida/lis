@@ -3243,6 +3243,10 @@ lis_egli_first_solve_with_recovery(
         LIS_SCALAR *active_shift)
 {
         LIS_INT err,status,attempt;
+        LIS_REAL shift_magnitude;
+        LIS_REAL shift_scale;
+        LIS_REAL perturbation_magnitude;
+        LIS_REAL tolerance_factor;
         LIS_SCALAR perturbation;
         LIS_SCALAR trial_shift;
 
@@ -3295,6 +3299,72 @@ lis_egli_first_solve_with_recovery(
         if( perturbation==0.0 )
         {
                 return status;
+        }
+
+        /*
+         * The historical sqrt(epsilon)-scaled perturbation is enough
+         * to escape an exact pole at ordinary eigensolver tolerances,
+         * but it can leave the shifted operator too ill-conditioned
+         * for a tighter requested inner-solve tolerance.
+         *
+         * Let
+         *
+         *     base_relative = |delta| / max(|sigma|,1)
+         *
+         * which is approximately sqrt(machine epsilon).  A first-order
+         * solve-error model gives a useful tolerance-aware scale factor:
+         *
+         *     base_relative / acceptance_tol.
+         *
+         * Never make the perturbation smaller than the historical step.
+         * Cap the enlargement at 1000 base steps so recovery remains a
+         * small local shift rather than changing the spectral target.
+         * In real double precision this bounds the relative displacement
+         * to roughly 1.5e-5.
+         */
+#ifdef _COMPLEX
+        shift_magnitude =
+                cabs(requested_shift);
+
+        perturbation_magnitude =
+                cabs(perturbation);
+#else
+        shift_magnitude =
+                fabs(requested_shift);
+
+        perturbation_magnitude =
+                fabs(perturbation);
+#endif
+
+        shift_scale =
+                shift_magnitude>1.0 ?
+                shift_magnitude :
+                1.0;
+
+        tolerance_factor = 1.0;
+
+        if( isfinite((double)acceptance_tol) &&
+            acceptance_tol>0.0 &&
+            isfinite((double)perturbation_magnitude) &&
+            perturbation_magnitude>0.0 &&
+            isfinite((double)shift_scale) &&
+            shift_scale>0.0 )
+        {
+                tolerance_factor =
+                        (perturbation_magnitude/shift_scale) /
+                        acceptance_tol;
+
+                if( tolerance_factor<1.0 )
+                {
+                        tolerance_factor = 1.0;
+                }
+                else if( tolerance_factor>1000.0 )
+                {
+                        tolerance_factor = 1000.0;
+                }
+
+                perturbation *=
+                        tolerance_factor;
         }
 
         for(attempt=0;attempt<2;attempt++)
