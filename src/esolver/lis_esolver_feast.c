@@ -565,6 +565,544 @@ LIS_INT lis_efeast_shifted_matvec_split(
 }
 
 
+/*
+ * Matrix-free real 2N representation of the split-complex
+ * shifted FEAST system.
+ *
+ * For
+ *
+ *     C = z B - A
+ *
+ * with z = z_real + i*z_imag, the split system is
+ *
+ *     [ z_real B - A   -z_imag B ] [ x_real ] = [ rhs_real ]
+ *     [ z_imag B        z_real B-A ] [ x_imag ]   [ rhs_imag ]
+ *
+ * The original A and B matrices are retained without conversion.
+ * Every shell matvec delegates to lis_efeast_shifted_matvec_split().
+ */
+typedef struct
+{
+        LIS_MATRIX A;
+        LIS_MATRIX B;
+
+        LIS_REAL z_real;
+        LIS_REAL z_imag;
+
+        LIS_INT n;
+
+        LIS_VECTOR x_real;
+        LIS_VECTOR x_imag;
+
+        LIS_VECTOR y_real;
+        LIS_VECTOR y_imag;
+
+        LIS_VECTOR work_real;
+        LIS_VECTOR work_imag;
+} LIS_EFEAST_SHIFTED_SOLVE_CONTEXT;
+
+
+static void lis_efeast_shifted_solve_context_destroy(
+        LIS_EFEAST_SHIFTED_SOLVE_CONTEXT *ctx)
+{
+        if( ctx==NULL )
+        {
+                return;
+        }
+
+        if( ctx->work_imag!=NULL )
+        {
+                lis_vector_destroy(
+                        ctx->work_imag);
+        }
+
+        if( ctx->work_real!=NULL )
+        {
+                lis_vector_destroy(
+                        ctx->work_real);
+        }
+
+        if( ctx->y_imag!=NULL )
+        {
+                lis_vector_destroy(
+                        ctx->y_imag);
+        }
+
+        if( ctx->y_real!=NULL )
+        {
+                lis_vector_destroy(
+                        ctx->y_real);
+        }
+
+        if( ctx->x_imag!=NULL )
+        {
+                lis_vector_destroy(
+                        ctx->x_imag);
+        }
+
+        if( ctx->x_real!=NULL )
+        {
+                lis_vector_destroy(
+                        ctx->x_real);
+        }
+
+        memset(
+                ctx,
+                0,
+                sizeof(*ctx));
+}
+
+
+static LIS_INT lis_efeast_shifted_solve_context_create(
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_REAL z_real,
+        LIS_REAL z_imag,
+        LIS_EFEAST_SHIFTED_SOLVE_CONTEXT *ctx)
+{
+        LIS_INT err;
+
+        if( A==NULL ||
+            ctx==NULL )
+        {
+                return LIS_ERR_ILL_ARG;
+        }
+
+        memset(
+                ctx,
+                0,
+                sizeof(*ctx));
+
+        ctx->A = A;
+        ctx->B = B;
+
+        ctx->z_real = z_real;
+        ctx->z_imag = z_imag;
+
+        ctx->n = A->n;
+
+        err = lis_vector_duplicate(
+                A,
+                &ctx->x_real);
+
+        if( err ) goto fail;
+
+        err = lis_vector_duplicate(
+                A,
+                &ctx->x_imag);
+
+        if( err ) goto fail;
+
+        err = lis_vector_duplicate(
+                A,
+                &ctx->y_real);
+
+        if( err ) goto fail;
+
+        err = lis_vector_duplicate(
+                A,
+                &ctx->y_imag);
+
+        if( err ) goto fail;
+
+        err = lis_vector_duplicate(
+                A,
+                &ctx->work_real);
+
+        if( err ) goto fail;
+
+        err = lis_vector_duplicate(
+                A,
+                &ctx->work_imag);
+
+        if( err ) goto fail;
+
+        return LIS_SUCCESS;
+
+fail:
+
+        lis_efeast_shifted_solve_context_destroy(
+                ctx);
+
+        return err;
+}
+
+
+static LIS_INT lis_efeast_shifted_solve_matvec(
+        void *user_data,
+        const LIS_SCALAR *x,
+        LIS_SCALAR *y)
+{
+        LIS_EFEAST_SHIFTED_SOLVE_CONTEXT *ctx;
+
+        LIS_INT i;
+        LIS_INT err;
+
+        ctx =
+                (LIS_EFEAST_SHIFTED_SOLVE_CONTEXT *)
+                user_data;
+
+        if( ctx==NULL ||
+            ctx->A==NULL ||
+            ctx->n<=0 ||
+            x==NULL ||
+            y==NULL )
+        {
+                return LIS_ERR_ILL_ARG;
+        }
+
+        for(i=0;i<ctx->n;i++)
+        {
+                ctx->x_real->value[i] =
+                        x[i];
+
+                ctx->x_imag->value[i] =
+                        x[ctx->n+i];
+        }
+
+        err = lis_efeast_shifted_matvec_split(
+                ctx->A,
+                ctx->B,
+                ctx->z_real,
+                ctx->z_imag,
+                ctx->x_real,
+                ctx->x_imag,
+                ctx->y_real,
+                ctx->y_imag,
+                ctx->work_real,
+                ctx->work_imag);
+
+        if( err )
+        {
+                return err;
+        }
+
+        for(i=0;i<ctx->n;i++)
+        {
+                y[i] =
+                        ctx->y_real->value[i];
+
+                y[ctx->n+i] =
+                        ctx->y_imag->value[i];
+        }
+
+        return LIS_SUCCESS;
+}
+
+
+static LIS_INT lis_efeast_shifted_vector_compatible(
+        LIS_MATRIX A,
+        LIS_VECTOR v)
+{
+        if( A==NULL ||
+            v==NULL )
+        {
+                return LIS_FALSE;
+        }
+
+        if( v->label!=LIS_LABEL_VECTOR )
+        {
+                return LIS_FALSE;
+        }
+
+        if( v->precision!=LIS_PRECISION_DEFAULT )
+        {
+                return LIS_FALSE;
+        }
+
+        if( v->n!=A->n ||
+            v->gn!=A->gn ||
+            v->my_rank!=A->my_rank ||
+            v->nprocs!=A->nprocs )
+        {
+                return LIS_FALSE;
+        }
+
+        return LIS_TRUE;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_efeast_shifted_solve_split"
+
+LIS_INT lis_efeast_shifted_solve_split(
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_REAL z_real,
+        LIS_REAL z_imag,
+        LIS_VECTOR rhs_real,
+        LIS_VECTOR rhs_imag,
+        LIS_VECTOR x_real,
+        LIS_VECTOR x_imag,
+        LIS_SOLVER solver)
+{
+        LIS_EFEAST_SHIFTED_SOLVE_CONTEXT ctx;
+
+        LIS_MATRIX shifted;
+
+        LIS_VECTOR packed_rhs;
+        LIS_VECTOR packed_x;
+
+        LIS_INT nsolver;
+        LIS_INT i;
+        LIS_INT err;
+        LIS_INT solve_err;
+
+        LIS_DEBUG_FUNC_IN;
+
+        memset(
+                &ctx,
+                0,
+                sizeof(ctx));
+
+        shifted = NULL;
+
+        packed_rhs = NULL;
+        packed_x = NULL;
+
+        if( A==NULL ||
+            rhs_real==NULL ||
+            rhs_imag==NULL ||
+            x_real==NULL ||
+            x_imag==NULL ||
+            solver==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "FEAST shifted solve received an undefined argument\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( A->n<=0 ||
+            A->gn<=0 )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "FEAST shifted solve requires a non-empty matrix\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( !isfinite((double)z_real) ||
+            !isfinite((double)z_imag) )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "FEAST shifted solve requires a finite complex shift\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( B!=NULL &&
+            (B->n!=A->n ||
+             B->gn!=A->gn ||
+             B->my_rank!=A->my_rank ||
+             B->nprocs!=A->nprocs) )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "FEAST shifted solve requires compatible A and B layouts\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( !lis_efeast_shifted_vector_compatible(
+                    A,
+                    rhs_real) ||
+            !lis_efeast_shifted_vector_compatible(
+                    A,
+                    rhs_imag) ||
+            !lis_efeast_shifted_vector_compatible(
+                    A,
+                    x_real) ||
+            !lis_efeast_shifted_vector_compatible(
+                    A,
+                    x_imag) )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "FEAST shifted solve requires compatible split vectors\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        /*
+         * Stage F3-2 intentionally uses the matrix-free path only.
+         *
+         * No preconditioner, scaling, transpose operator or requested
+         * storage conversion may force materialization of the 2N shell.
+         */
+        if( solver->options[LIS_OPTIONS_PRECON]
+                    != LIS_PRECON_TYPE_NONE ||
+            solver->options[LIS_OPTIONS_SCALE]
+                    != LIS_SCALE_NONE ||
+            solver->options[LIS_OPTIONS_USE_AT]
+                    != LIS_FALSE ||
+            solver->options[LIS_OPTIONS_STORAGE]
+                    != 0 ||
+            solver->options[LIS_OPTIONS_PRECISION]
+                    != LIS_PRECISION_DOUBLE )
+        {
+                LIS_SETERR(
+                        LIS_ERR_NOT_IMPLEMENTED,
+                        "FEAST shifted shell solve requires "
+                        "double precision, no scaling, no preconditioner "
+                        "and no storage conversion\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_NOT_IMPLEMENTED;
+        }
+
+        nsolver =
+                solver->options[
+                        LIS_OPTIONS_SOLVER];
+
+        if( nsolver!=LIS_SOLVER_GMRES &&
+            nsolver!=LIS_SOLVER_FGMRES &&
+            nsolver!=LIS_SOLVER_GCRODR &&
+            nsolver!=LIS_SOLVER_FGCRODR )
+        {
+                LIS_SETERR(
+                        LIS_ERR_NOT_IMPLEMENTED,
+                        "FEAST shifted shell solve requires "
+                        "GMRES, FGMRES, GCRO-DR or FGCRO-DR\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_NOT_IMPLEMENTED;
+        }
+
+        err =
+                lis_efeast_shifted_solve_context_create(
+                        A,
+                        B,
+                        z_real,
+                        z_imag,
+                        &ctx);
+
+        if( err )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return err;
+        }
+
+        err = lis_matrix_create(
+                A->comm,
+                &shifted);
+
+        if( err ) goto cleanup;
+
+        err = lis_matrix_set_size(
+                shifted,
+                2*A->n,
+                2*A->gn);
+
+        if( err ) goto cleanup;
+
+        err = lis_matrix_set_user(
+                shifted,
+                &ctx,
+                lis_efeast_shifted_solve_matvec,
+                NULL);
+
+        if( err ) goto cleanup;
+
+        err = lis_vector_duplicate(
+                shifted,
+                &packed_rhs);
+
+        if( err ) goto cleanup;
+
+        err = lis_vector_duplicate(
+                shifted,
+                &packed_x);
+
+        if( err ) goto cleanup;
+
+        for(i=0;i<A->n;i++)
+        {
+                packed_rhs->value[i] =
+                        rhs_real->value[i];
+
+                packed_rhs->value[A->n+i] =
+                        rhs_imag->value[i];
+
+                packed_x->value[i] =
+                        x_real->value[i];
+
+                packed_x->value[A->n+i] =
+                        x_imag->value[i];
+        }
+
+        solve_err = lis_solve(
+                shifted,
+                packed_rhs,
+                packed_x,
+                solver);
+
+        /*
+         * lis_solve() keeps diagnostics and reusable work in solver,
+         * but the temporary FEAST shell and packed vectors are owned
+         * by this call. Remove borrowed pointers before destruction.
+         */
+        solver->A = NULL;
+        solver->Ah = NULL;
+        solver->b = NULL;
+        solver->x = NULL;
+        solver->xx = NULL;
+        solver->d = NULL;
+        solver->setup = LIS_FALSE;
+
+        if( solve_err )
+        {
+                err = solve_err;
+                goto cleanup;
+        }
+
+        for(i=0;i<A->n;i++)
+        {
+                x_real->value[i] =
+                        packed_x->value[i];
+
+                x_imag->value[i] =
+                        packed_x->value[A->n+i];
+        }
+
+        err = LIS_SUCCESS;
+
+cleanup:
+
+        if( packed_x!=NULL )
+        {
+                lis_vector_destroy(
+                        packed_x);
+        }
+
+        if( packed_rhs!=NULL )
+        {
+                lis_vector_destroy(
+                        packed_rhs);
+        }
+
+        if( shifted!=NULL )
+        {
+                lis_matrix_destroy(
+                        shifted);
+        }
+
+        lis_efeast_shifted_solve_context_destroy(
+                &ctx);
+
+        LIS_DEBUG_FUNC_OUT;
+        return err;
+}
+
+
 static LIS_INT lis_efeast_parse_real(
         const char *text,
         LIS_REAL *value)

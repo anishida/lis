@@ -394,6 +394,17 @@ extern LIS_INT lis_eigen_ritz_reconstruct(
 		LIS_VECTOR work_real,
 		LIS_VECTOR work_imag);
 
+	extern LIS_INT lis_efeast_shifted_solve_split(
+		LIS_MATRIX A,
+		LIS_MATRIX B,
+		LIS_REAL z_real,
+		LIS_REAL z_imag,
+		LIS_VECTOR rhs_real,
+		LIS_VECTOR rhs_imag,
+		LIS_VECTOR x_real,
+		LIS_VECTOR x_imag,
+		LIS_SOLVER solver);
+
 #ifdef __cplusplus
 }
 #endif
