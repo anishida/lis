@@ -232,7 +232,7 @@ lis_lanczos_reorthogonalize_dual_residual(
  * rank-revealing orthogonalization is supplied by the shared block
  * eigensolver layer.
  */
-static LIS_INT
+LIS_INT
 lis_lanczos_block_layout(
     LIS_INT ss,
     LIS_INT block_size,
@@ -3082,7 +3082,17 @@ LIS_INT lis_egli_malloc_work(LIS_ESOLVER esolver)
 	 */
 	if( esolver->transform==LIS_EIGEN_TRANSFORM_AUTO )
 	{
-		worklen = NWORK + 2*ss;
+		if( esolver->block_size>1 )
+		{
+			worklen =
+				NWORK +
+				2*ss +
+				2*esolver->block_size;
+		}
+		else
+		{
+			worklen = NWORK + 2*ss;
+		}
 	}
 	else
 	{
@@ -4203,7 +4213,22 @@ cleanup:
 #define __FUNC__ "lis_egli_block"
 LIS_INT lis_egli_block(LIS_ESOLVER esolver)
 {
+    LIS_INT i,err;
+    LIS_INT ss;
+    LIS_INT block_size;
+    LIS_INT block_count;
+    LIS_INT expected_worklen;
+    LIS_INT *block_offset;
+    LIS_INT *block_rank;
+    LIS_VECTOR *basis;
+    LIS_VECTOR *dual_basis;
+    LIS_VECTOR *candidate;
+    LIS_VECTOR *dual_candidate;
+
     LIS_DEBUG_FUNC_IN;
+
+    block_offset = NULL;
+    block_rank = NULL;
 
     if( esolver==NULL ||
         esolver->block_size<=1 )
@@ -4222,13 +4247,139 @@ LIS_INT lis_egli_block(LIS_ESOLVER esolver)
         return LIS_ERR_NOT_IMPLEMENTED;
     }
 
+    ss =
+        esolver->options[
+            LIS_EOPTIONS_SUBSPACE];
+
+    block_size = esolver->block_size;
+
+    if( ss<1 ||
+        block_size>ss )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos workspace dimensions\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    /*
+     * F2 generalized Block Lanczos work layout:
+     *
+     *   work[0..NWORK-1]
+     *       scalar-compatible scratch vectors
+     *
+     *   work[NWORK .. NWORK+ss-1]
+     *       primal Lanczos basis Q
+     *
+     *   work[NWORK+ss .. NWORK+2*ss-1]
+     *       cached dual basis B*Q
+     *
+     *   next block_size vectors
+     *       candidate block W
+     *
+     *   final block_size vectors
+     *       synchronized B*W candidate block
+     *
+     * The extra block storage is O(block_size*n), while the two
+     * full basis spans are already required by scalar generalized
+     * Lanczos for the untransformed B-inner-product recurrence.
+     */
+    expected_worklen =
+        NWORK +
+        2*ss +
+        2*block_size;
+
+    if( esolver->work==NULL ||
+        esolver->worklen!=expected_worklen )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos work layout\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    basis =
+        &esolver->work[NWORK];
+
+    dual_basis =
+        &esolver->work[NWORK+ss];
+
+    candidate =
+        &esolver->work[NWORK+2*ss];
+
+    dual_candidate =
+        &esolver->work[
+            NWORK+2*ss+block_size];
+
+    for(i=0;i<ss;i++)
+    {
+        if( basis[i]==NULL ||
+            dual_basis[i]==NULL ||
+            basis[i]==dual_basis[i] )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "invalid generalized Block Lanczos basis workspace\n");
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+    for(i=0;i<block_size;i++)
+    {
+        if( candidate[i]==NULL ||
+            dual_candidate[i]==NULL ||
+            candidate[i]==dual_candidate[i] )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "invalid generalized Block Lanczos candidate workspace\n");
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+    /*
+     * Reuse the standard Block Lanczos nominal partition.
+     * Numerical B-rank deflation will update the active ranks in F3.
+     */
+    err = lis_lanczos_block_layout(
+        ss,
+        block_size,
+        &block_count,
+        &block_offset,
+        &block_rank);
+
+    if( err )
+    {
+        return err;
+    }
+
+    if( block_count<1 ||
+        block_offset[0]!=0 ||
+        block_rank[0]<1 ||
+        block_rank[0]>block_size )
+    {
+        lis_free(block_rank);
+        lis_free(block_offset);
+
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos nominal layout\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    lis_free(block_rank);
+    lis_free(block_offset);
+
+    /*
+     * F2 establishes storage and logical block layout only.
+     * F3 will initialize and B-rank-deflate the first block.
+     */
     LIS_SETERR(
         LIS_ERR_NOT_IMPLEMENTED,
         "generalized Block Lanczos recurrence is not implemented yet\n");
 
     return LIS_ERR_NOT_IMPLEMENTED;
 }
-
 
 #undef __FUNC__
 #define __FUNC__ "lis_egli"
