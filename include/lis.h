@@ -1093,7 +1093,6 @@ struct LIS_ESOLVER_STRUCT
         LIS_INT nev;
 	LIS_REAL nrm2;
         LIS_REAL tol;
-
         /*
          * Native FEAST configuration.
          *
@@ -1105,6 +1104,7 @@ struct LIS_ESOLVER_STRUCT
         LIS_REAL feast_ratio;
         LIS_INT feast_points;
         LIS_INT feast_interval_mask;
+        LIS_INT block_size;
 };
 typedef struct LIS_ESOLVER_STRUCT *LIS_ESOLVER;
 
