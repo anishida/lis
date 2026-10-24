@@ -1103,6 +1103,370 @@ cleanup:
 }
 
 
+/*
+ * Apply the FEAST spectral projector to one split-complex vector.
+ *
+ * The generalized projector is
+ *
+ *     Q = (1 / (2*pi*i)) integral
+ *             (z B - A)^(-1) B X dz .
+ *
+ * For the standard problem, B is NULL and the right-hand side is X.
+ *
+ * lis_efeast_contour_gauss() provides quadrature points and weights
+ * for the upper half contour.  This routine evaluates both the upper
+ * point z and the conjugate lower point explicitly.  Consequently the
+ * implementation does not require a real matrix, a real right-hand
+ * side, or the relation
+ *
+ *     Y(conj(z)) = conj(Y(z)).
+ *
+ * If
+ *
+ *     w = wr + i*wi
+ *     Y = Yr + i*Yi,
+ *
+ * then
+ *
+ *     Re(wY) = wr*Yr - wi*Yi
+ *     Im(wY) = wi*Yr + wr*Yi.
+ *
+ * The lower contour uses conj(w).
+ */
+#undef __FUNC__
+#define __FUNC__ "lis_efeast_projector_apply_split"
+
+LIS_INT lis_efeast_projector_apply_split(
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_REAL emin,
+        LIS_REAL emax,
+        LIS_REAL ratio,
+        LIS_INT npoints,
+        LIS_VECTOR x_real,
+        LIS_VECTOR x_imag,
+        LIS_VECTOR q_real,
+        LIS_VECTOR q_imag,
+        LIS_SOLVER solver)
+{
+        LIS_REAL z_real[1024];
+        LIS_REAL z_imag[1024];
+        LIS_REAL w_real[1024];
+        LIS_REAL w_imag[1024];
+
+        LIS_VECTOR rhs_real;
+        LIS_VECTOR rhs_imag;
+
+        LIS_VECTOR y_real;
+        LIS_VECTOR y_imag;
+
+        LIS_INT i;
+        LIS_INT err;
+
+        LIS_DEBUG_FUNC_IN;
+
+        rhs_real = NULL;
+        rhs_imag = NULL;
+
+        y_real = NULL;
+        y_imag = NULL;
+
+        if( A==NULL ||
+            x_real==NULL ||
+            x_imag==NULL ||
+            q_real==NULL ||
+            q_imag==NULL ||
+            solver==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "FEAST projector received an undefined argument\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( !lis_efeast_shifted_vector_compatible(
+                    A,
+                    x_real) ||
+            !lis_efeast_shifted_vector_compatible(
+                    A,
+                    x_imag) ||
+            !lis_efeast_shifted_vector_compatible(
+                    A,
+                    q_real) ||
+            !lis_efeast_shifted_vector_compatible(
+                    A,
+                    q_imag) )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "FEAST projector requires compatible split vectors\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( B!=NULL &&
+            (B->n!=A->n ||
+             B->gn!=A->gn ||
+             B->my_rank!=A->my_rank ||
+             B->nprocs!=A->nprocs) )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "FEAST projector requires compatible A and B layouts\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        err = lis_efeast_contour_gauss(
+                emin,
+                emax,
+                npoints,
+                ratio,
+                z_real,
+                z_imag,
+                w_real,
+                w_imag);
+
+        if( err )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return err;
+        }
+
+        err = lis_vector_duplicate(
+                A,
+                &rhs_real);
+
+        if( err ) goto cleanup;
+
+        err = lis_vector_duplicate(
+                A,
+                &rhs_imag);
+
+        if( err ) goto cleanup;
+
+        err = lis_vector_duplicate(
+                A,
+                &y_real);
+
+        if( err ) goto cleanup;
+
+        err = lis_vector_duplicate(
+                A,
+                &y_imag);
+
+        if( err ) goto cleanup;
+
+        /*
+         * The generalized FEAST projector acts on B*X.
+         */
+        if( B!=NULL )
+        {
+                err = lis_matvec(
+                        B,
+                        x_real,
+                        rhs_real);
+
+                if( err ) goto cleanup;
+
+                err = lis_matvec(
+                        B,
+                        x_imag,
+                        rhs_imag);
+
+                if( err ) goto cleanup;
+        }
+        else
+        {
+                err = lis_vector_copy(
+                        x_real,
+                        rhs_real);
+
+                if( err ) goto cleanup;
+
+                err = lis_vector_copy(
+                        x_imag,
+                        rhs_imag);
+
+                if( err ) goto cleanup;
+        }
+
+        /*
+         * The RHS has now been snapshotted, so output vectors may
+         * safely alias the input vectors.
+         */
+        err = lis_vector_set_all(
+                (LIS_SCALAR)0.0,
+                q_real);
+
+        if( err ) goto cleanup;
+
+        err = lis_vector_set_all(
+                (LIS_SCALAR)0.0,
+                q_imag);
+
+        if( err ) goto cleanup;
+
+        for(i=0;i<npoints;i++)
+        {
+                /*
+                 * Upper half:
+                 *
+                 *     w * Y(z)
+                 */
+                err = lis_vector_set_all(
+                        (LIS_SCALAR)0.0,
+                        y_real);
+
+                if( err ) goto cleanup;
+
+                err = lis_vector_set_all(
+                        (LIS_SCALAR)0.0,
+                        y_imag);
+
+                if( err ) goto cleanup;
+
+                err = lis_efeast_shifted_solve_split(
+                        A,
+                        B,
+                        z_real[i],
+                        z_imag[i],
+                        rhs_real,
+                        rhs_imag,
+                        y_real,
+                        y_imag,
+                        solver);
+
+                if( err ) goto cleanup;
+
+                err = lis_vector_axpy(
+                        (LIS_SCALAR)w_real[i],
+                        y_real,
+                        q_real);
+
+                if( err ) goto cleanup;
+
+                err = lis_vector_axpy(
+                        (LIS_SCALAR)(-w_imag[i]),
+                        y_imag,
+                        q_real);
+
+                if( err ) goto cleanup;
+
+                err = lis_vector_axpy(
+                        (LIS_SCALAR)w_imag[i],
+                        y_real,
+                        q_imag);
+
+                if( err ) goto cleanup;
+
+                err = lis_vector_axpy(
+                        (LIS_SCALAR)w_real[i],
+                        y_imag,
+                        q_imag);
+
+                if( err ) goto cleanup;
+
+                /*
+                 * Lower half:
+                 *
+                 *     conj(w) * Y(conj(z))
+                 *
+                 * Evaluate the solve explicitly instead of deriving it
+                 * by conjugation.  This keeps the projector valid for
+                 * complex A, B and X.
+                 */
+                err = lis_vector_set_all(
+                        (LIS_SCALAR)0.0,
+                        y_real);
+
+                if( err ) goto cleanup;
+
+                err = lis_vector_set_all(
+                        (LIS_SCALAR)0.0,
+                        y_imag);
+
+                if( err ) goto cleanup;
+
+                err = lis_efeast_shifted_solve_split(
+                        A,
+                        B,
+                        z_real[i],
+                        -z_imag[i],
+                        rhs_real,
+                        rhs_imag,
+                        y_real,
+                        y_imag,
+                        solver);
+
+                if( err ) goto cleanup;
+
+                err = lis_vector_axpy(
+                        (LIS_SCALAR)w_real[i],
+                        y_real,
+                        q_real);
+
+                if( err ) goto cleanup;
+
+                err = lis_vector_axpy(
+                        (LIS_SCALAR)w_imag[i],
+                        y_imag,
+                        q_real);
+
+                if( err ) goto cleanup;
+
+                err = lis_vector_axpy(
+                        (LIS_SCALAR)(-w_imag[i]),
+                        y_real,
+                        q_imag);
+
+                if( err ) goto cleanup;
+
+                err = lis_vector_axpy(
+                        (LIS_SCALAR)w_real[i],
+                        y_imag,
+                        q_imag);
+
+                if( err ) goto cleanup;
+        }
+
+        err = LIS_SUCCESS;
+
+cleanup:
+
+        if( y_imag!=NULL )
+        {
+                lis_vector_destroy(
+                        y_imag);
+        }
+
+        if( y_real!=NULL )
+        {
+                lis_vector_destroy(
+                        y_real);
+        }
+
+        if( rhs_imag!=NULL )
+        {
+                lis_vector_destroy(
+                        rhs_imag);
+        }
+
+        if( rhs_real!=NULL )
+        {
+                lis_vector_destroy(
+                        rhs_real);
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+        return err;
+}
+
+
 static LIS_INT lis_efeast_parse_real(
         const char *text,
         LIS_REAL *value)

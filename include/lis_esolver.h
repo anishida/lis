@@ -405,6 +405,19 @@ extern LIS_INT lis_eigen_ritz_reconstruct(
 		LIS_VECTOR x_imag,
 		LIS_SOLVER solver);
 
+	extern LIS_INT lis_efeast_projector_apply_split(
+		LIS_MATRIX A,
+		LIS_MATRIX B,
+		LIS_REAL emin,
+		LIS_REAL emax,
+		LIS_REAL ratio,
+		LIS_INT npoints,
+		LIS_VECTOR x_real,
+		LIS_VECTOR x_imag,
+		LIS_VECTOR q_real,
+		LIS_VECTOR q_imag,
+		LIS_SOLVER solver);
+
 #ifdef __cplusplus
 }
 #endif

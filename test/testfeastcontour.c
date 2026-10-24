@@ -305,6 +305,550 @@ static int test_contour_symmetry(void)
 }
 
 
+#define PROJECTOR_TEST_N 4
+
+
+static LIS_REAL projector_scalar_real(
+        LIS_SCALAR value)
+{
+#ifdef _COMPLEX
+        return (LIS_REAL)creal(value);
+#else
+        return (LIS_REAL)value;
+#endif
+}
+
+
+static LIS_REAL projector_scalar_imag(
+        LIS_SCALAR value)
+{
+#ifdef _COMPLEX
+        return (LIS_REAL)cimag(value);
+#else
+        (void)value;
+        return (LIS_REAL)0.0;
+#endif
+}
+
+
+static LIS_INT create_projector_diagonal(
+        const LIS_REAL diagonal[PROJECTOR_TEST_N],
+        LIS_MATRIX *matrix)
+{
+        LIS_MATRIX A;
+
+        LIS_INT i;
+        LIS_INT err;
+
+        A = NULL;
+
+        err = lis_matrix_create(
+                LIS_COMM_WORLD,
+                &A);
+
+        if( err ) goto fail;
+
+        err = lis_matrix_set_size(
+                A,
+                0,
+                PROJECTOR_TEST_N);
+
+        if( err ) goto fail;
+
+        for(i=0;i<PROJECTOR_TEST_N;i++)
+        {
+                err = lis_matrix_set_value(
+                        LIS_INS_VALUE,
+                        i,
+                        i,
+                        (LIS_SCALAR)diagonal[i],
+                        A);
+
+                if( err ) goto fail;
+        }
+
+        err = lis_matrix_assemble(
+                A);
+
+        if( err ) goto fail;
+
+        *matrix = A;
+
+        return LIS_SUCCESS;
+
+fail:
+
+        if( A!=NULL )
+        {
+                lis_matrix_destroy(
+                        A);
+        }
+
+        return err;
+}
+
+
+static LIS_INT set_projector_vector(
+        LIS_VECTOR vector,
+        const LIS_REAL values[PROJECTOR_TEST_N])
+{
+        LIS_INT i;
+        LIS_INT err;
+
+        for(i=0;i<PROJECTOR_TEST_N;i++)
+        {
+                err = lis_vector_set_value(
+                        LIS_INS_VALUE,
+                        i,
+                        (LIS_SCALAR)values[i],
+                        vector);
+
+                if( err )
+                {
+                        return err;
+                }
+        }
+
+        return LIS_SUCCESS;
+}
+
+
+static int check_projector_vector(
+        const char *name,
+        LIS_VECTOR vector,
+        const LIS_REAL expected[PROJECTOR_TEST_N],
+        LIS_REAL tol)
+{
+        LIS_SCALAR value;
+
+        LIS_REAL actual_real;
+        LIS_REAL actual_imag;
+
+        LIS_INT i;
+        LIS_INT err;
+
+        for(i=0;i<PROJECTOR_TEST_N;i++)
+        {
+                err = lis_vector_get_value(
+                        vector,
+                        i,
+                        &value);
+
+                if( err )
+                {
+                        fprintf(
+                                stderr,
+                                "FAIL: %s get value %d returned %d\n",
+                                name,
+                                (int)i,
+                                (int)err);
+
+                        return 1;
+                }
+
+                actual_real =
+                        projector_scalar_real(
+                                value);
+
+                actual_imag =
+                        projector_scalar_imag(
+                                value);
+
+                if( !close_real(
+                            actual_real,
+                            expected[i],
+                            tol) ||
+                    fabs(actual_imag) >
+                            tol*((LIS_REAL)1.0+
+                                 fabs(expected[i])) )
+                {
+                        fprintf(
+                                stderr,
+                                "FAIL: %s[%d] = "
+                                "(%.17g, %.17g), expected %.17g\n",
+                                name,
+                                (int)i,
+                                (double)actual_real,
+                                (double)actual_imag,
+                                (double)expected[i]);
+
+                        return 1;
+                }
+        }
+
+        return 0;
+}
+
+
+static int run_projector_case(
+        const char *name,
+        LIS_MATRIX A,
+        LIS_MATRIX B)
+{
+        const LIS_REAL input_real[PROJECTOR_TEST_N] = {
+                (LIS_REAL)1.0,
+                (LIS_REAL)2.0,
+                (LIS_REAL)3.0,
+                (LIS_REAL)4.0
+        };
+
+        const LIS_REAL input_imag[PROJECTOR_TEST_N] = {
+                (LIS_REAL)-0.5,
+                (LIS_REAL)1.0,
+                (LIS_REAL)-2.0,
+                (LIS_REAL)0.25
+        };
+
+        const LIS_REAL expected_real[PROJECTOR_TEST_N] = {
+                (LIS_REAL)0.0,
+                (LIS_REAL)2.0,
+                (LIS_REAL)3.0,
+                (LIS_REAL)0.0
+        };
+
+        const LIS_REAL expected_imag[PROJECTOR_TEST_N] = {
+                (LIS_REAL)0.0,
+                (LIS_REAL)1.0,
+                (LIS_REAL)-2.0,
+                (LIS_REAL)0.0
+        };
+
+        LIS_VECTOR x_real;
+        LIS_VECTOR x_imag;
+
+        LIS_VECTOR q_real;
+        LIS_VECTOR q_imag;
+
+        LIS_SOLVER solver;
+
+        LIS_INT err;
+
+        x_real = NULL;
+        x_imag = NULL;
+
+        q_real = NULL;
+        q_imag = NULL;
+
+        solver = NULL;
+
+        err = lis_vector_duplicate(
+                A,
+                &x_real);
+
+        if( err ) goto fail;
+
+        err = lis_vector_duplicate(
+                A,
+                &x_imag);
+
+        if( err ) goto fail;
+
+        err = lis_vector_duplicate(
+                A,
+                &q_real);
+
+        if( err ) goto fail;
+
+        err = lis_vector_duplicate(
+                A,
+                &q_imag);
+
+        if( err ) goto fail;
+
+        err = set_projector_vector(
+                x_real,
+                input_real);
+
+        if( err ) goto fail;
+
+        err = set_projector_vector(
+                x_imag,
+                input_imag);
+
+        if( err ) goto fail;
+
+        err = lis_solver_create(
+                &solver);
+
+        if( err ) goto fail;
+
+        solver->options[
+                LIS_OPTIONS_SOLVER] =
+                LIS_SOLVER_GMRES;
+
+        solver->options[
+                LIS_OPTIONS_PRECON] =
+                LIS_PRECON_TYPE_NONE;
+
+        solver->options[
+                LIS_OPTIONS_SCALE] =
+                LIS_SCALE_NONE;
+
+        solver->options[
+                LIS_OPTIONS_STORAGE] =
+                0;
+
+        solver->options[
+                LIS_OPTIONS_USE_AT] =
+                LIS_FALSE;
+
+        solver->options[
+                LIS_OPTIONS_PRECISION] =
+                LIS_PRECISION_DOUBLE;
+
+        solver->options[
+                LIS_OPTIONS_MAXITER] =
+                200;
+
+        solver->options[
+                LIS_OPTIONS_RESTART] =
+                16;
+
+        solver->options[
+                LIS_OPTIONS_INITGUESS_ZEROS] =
+                LIS_TRUE;
+
+        solver->params[
+                LIS_PARAMS_RESID
+                -
+                LIS_OPTIONS_LEN] =
+                (LIS_SCALAR)1.0e-13;
+
+        /*
+         * Eigenvalues are 1, 2, 4 and 7.
+         *
+         * The contour [1.5,4.5] therefore selects exactly
+         * eigenvalues 2 and 4.
+         *
+         * Thirty-two upper-half Gauss points make the projector
+         * error comfortably smaller than the regression tolerance.
+         */
+        err = lis_efeast_projector_apply_split(
+                A,
+                B,
+                (LIS_REAL)1.5,
+                (LIS_REAL)4.5,
+                (LIS_REAL)0.30,
+                32,
+                x_real,
+                x_imag,
+                q_real,
+                q_imag,
+                solver);
+
+        if( err )
+        {
+                fprintf(
+                        stderr,
+                        "FAIL: %s projector returned %d\n",
+                        name,
+                        (int)err);
+
+                goto fail;
+        }
+
+        if( check_projector_vector(
+                    "projector real",
+                    q_real,
+                    expected_real,
+                    (LIS_REAL)5.0e-6) )
+        {
+                goto fail;
+        }
+
+        if( check_projector_vector(
+                    "projector imag",
+                    q_imag,
+                    expected_imag,
+                    (LIS_REAL)5.0e-6) )
+        {
+                goto fail;
+        }
+
+        printf(
+                "PASS: %s spectral projector\n",
+                name);
+
+        if( solver!=NULL )
+        {
+                lis_solver_destroy(
+                        solver);
+        }
+
+        if( q_imag!=NULL )
+        {
+                lis_vector_destroy(
+                        q_imag);
+        }
+
+        if( q_real!=NULL )
+        {
+                lis_vector_destroy(
+                        q_real);
+        }
+
+        if( x_imag!=NULL )
+        {
+                lis_vector_destroy(
+                        x_imag);
+        }
+
+        if( x_real!=NULL )
+        {
+                lis_vector_destroy(
+                        x_real);
+        }
+
+        return 0;
+
+fail:
+
+        if( solver!=NULL )
+        {
+                lis_solver_destroy(
+                        solver);
+        }
+
+        if( q_imag!=NULL )
+        {
+                lis_vector_destroy(
+                        q_imag);
+        }
+
+        if( q_real!=NULL )
+        {
+                lis_vector_destroy(
+                        q_real);
+        }
+
+        if( x_imag!=NULL )
+        {
+                lis_vector_destroy(
+                        x_imag);
+        }
+
+        if( x_real!=NULL )
+        {
+                lis_vector_destroy(
+                        x_real);
+        }
+
+        return 1;
+}
+
+
+static int test_spectral_projector(void)
+{
+        const LIS_REAL standard_a[PROJECTOR_TEST_N] = {
+                (LIS_REAL)1.0,
+                (LIS_REAL)2.0,
+                (LIS_REAL)4.0,
+                (LIS_REAL)7.0
+        };
+
+        /*
+         * Generalized A x = lambda B x with the same eigenvalues:
+         *
+         * A = diag(1,4,12,28)
+         * B = diag(1,2,3,4)
+         */
+        const LIS_REAL generalized_a[PROJECTOR_TEST_N] = {
+                (LIS_REAL)1.0,
+                (LIS_REAL)4.0,
+                (LIS_REAL)12.0,
+                (LIS_REAL)28.0
+        };
+
+        const LIS_REAL generalized_b[PROJECTOR_TEST_N] = {
+                (LIS_REAL)1.0,
+                (LIS_REAL)2.0,
+                (LIS_REAL)3.0,
+                (LIS_REAL)4.0
+        };
+
+        LIS_MATRIX A_standard;
+        LIS_MATRIX A_generalized;
+        LIS_MATRIX B_generalized;
+
+        LIS_INT err;
+
+        A_standard = NULL;
+        A_generalized = NULL;
+        B_generalized = NULL;
+
+        err = create_projector_diagonal(
+                standard_a,
+                &A_standard);
+
+        if( err ) goto fail;
+
+        err = create_projector_diagonal(
+                generalized_a,
+                &A_generalized);
+
+        if( err ) goto fail;
+
+        err = create_projector_diagonal(
+                generalized_b,
+                &B_generalized);
+
+        if( err ) goto fail;
+
+        if( run_projector_case(
+                    "standard",
+                    A_standard,
+                    NULL) )
+        {
+                goto fail;
+        }
+
+        if( run_projector_case(
+                    "generalized",
+                    A_generalized,
+                    B_generalized) )
+        {
+                goto fail;
+        }
+
+        lis_matrix_destroy(
+                B_generalized);
+
+        lis_matrix_destroy(
+                A_generalized);
+
+        lis_matrix_destroy(
+                A_standard);
+
+        printf(
+                "PASS: native FEAST spectral projector "
+                "standard/generalized\n");
+
+        return 0;
+
+fail:
+
+        if( B_generalized!=NULL )
+        {
+                lis_matrix_destroy(
+                        B_generalized);
+        }
+
+        if( A_generalized!=NULL )
+        {
+                lis_matrix_destroy(
+                        A_generalized);
+        }
+
+        if( A_standard!=NULL )
+        {
+                lis_matrix_destroy(
+                        A_standard);
+        }
+
+        return 1;
+}
+
+
 int main(
         int argc,
         char **argv)
@@ -334,6 +878,11 @@ int main(
         }
 
         if( test_contour_symmetry() )
+        {
+                goto fail;
+        }
+
+        if( test_spectral_projector() )
         {
                 goto fail;
         }
