@@ -2678,6 +2678,72 @@ static int run_ritz_certification_case(
         }
 
         /*
+         * A mathematically exact endpoint may be returned a few ulps
+         * outside the requested interval after projected arithmetic.
+         * Preserve the closed-interval contract for roundoff-sized
+         * excursions without using the outer FEAST tolerance as an
+         * interval expansion.
+         */
+        values[1] =
+                (LIS_SCALAR)(
+                        (LIS_REAL)2.0
+                        -
+                        (LIS_REAL)1.0e-14);
+
+        values[2] =
+                (LIS_SCALAR)(
+                        (LIS_REAL)4.0
+                        +
+                        (LIS_REAL)1.0e-14);
+
+        err = lis_efeast_certify_ritz_pairs(
+                A,
+                B,
+                (LIS_REAL)2.0,
+                (LIS_REAL)4.0,
+                (LIS_REAL)1.0e-12,
+                CERT_TEST_RANK,
+                values,
+                vectors,
+                2,
+                (LIS_REAL)6.0,
+                selected_index,
+                residual,
+                &selected_count,
+                &trace,
+                &trace_error,
+                &max_residual,
+                &converged);
+
+        if( err ) goto fail;
+
+        if( check_certified_interval_pair(
+                    name,
+                    values,
+                    selected_index,
+                    selected_count,
+                    residual,
+                    trace,
+                    trace_error,
+                    max_residual,
+                    converged,
+                    LIS_TRUE) )
+        {
+                fprintf(
+                        stderr,
+                        "FAIL: %s roundoff-closed interval contract\n",
+                        name);
+
+                goto fail;
+        }
+
+        values[1] =
+                (LIS_SCALAR)2.0;
+
+        values[2] =
+                (LIS_SCALAR)4.0;
+
+        /*
          * Empty interval is a valid FEAST result.  The first empty
          * pass cannot converge, but a second stable empty pass can.
          */

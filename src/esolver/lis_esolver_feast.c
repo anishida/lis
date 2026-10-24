@@ -40,6 +40,18 @@
 
 #include "lislib.h"
 
+static LIS_REAL
+lis_feast_real_abs(
+    LIS_REAL value)
+{
+    return
+        value < (LIS_REAL)0.0
+        ? -value
+        : value;
+}
+
+
+
 /*
  * Native FEAST eigensolver foundation.
  *
@@ -2376,6 +2388,9 @@ LIS_INT lis_efeast_certify_ritz_pairs(
         LIS_REAL lambda_imag;
         LIS_REAL imag_limit;
 
+        LIS_REAL interval_scale;
+        LIS_REAL interval_slack;
+
         LIS_REAL pair_residual;
         LIS_REAL local_trace;
         LIS_REAL local_trace_error;
@@ -2586,10 +2601,51 @@ LIS_INT lis_efeast_certify_ritz_pairs(
 #endif
 
                 /*
-                 * Closed FEAST search interval.
+                 * Numerically closed FEAST search interval.
+                 *
+                 * A Ritz value representing an exact endpoint can
+                 * land a few floating-point ulps outside [emin,emax],
+                 * especially after a generalized Rayleigh-Ritz
+                 * projection.  Accept only machine-roundoff drift;
+                 * do not reuse the outer eigensolver tolerance here,
+                 * because that would numerically widen the requested
+                 * spectral interval.
                  */
-                if( lambda_real<emin ||
-                    lambda_real>emax )
+                interval_scale = 1.0;
+
+                if( lis_feast_real_abs((LIS_REAL)emin) >
+                    (double)interval_scale )
+                {
+                        interval_scale =
+                                (LIS_REAL)lis_feast_real_abs((LIS_REAL)emin);
+                }
+
+                if( lis_feast_real_abs((LIS_REAL)emax) >
+                    (double)interval_scale )
+                {
+                        interval_scale =
+                                (LIS_REAL)lis_feast_real_abs((LIS_REAL)emax);
+                }
+
+                if( lis_feast_real_abs((LIS_REAL)lambda_real) >
+                    (double)interval_scale )
+                {
+                        interval_scale =
+                                (LIS_REAL)lis_feast_real_abs((LIS_REAL)lambda_real);
+                }
+
+                interval_slack =
+                        (LIS_REAL)(
+                                64.0
+                                *
+                                DBL_EPSILON)
+                        *
+                        interval_scale;
+
+                if( lambda_real <
+                        emin-interval_slack ||
+                    lambda_real >
+                        emax+interval_slack )
                 {
                         continue;
                 }
@@ -2917,6 +2973,46 @@ LIS_INT lis_efeast_set_option(
                 return LIS_SUCCESS;
         }
 
+        if( strcmp(arg1,"-feast_solver")==0 )
+        {
+                if( strcmp(arg2,"gmres")==0 )
+                {
+                        esolver->feast_solver =
+                                LIS_SOLVER_GMRES;
+                }
+                else if( strcmp(arg2,"fgmres")==0 )
+                {
+                        esolver->feast_solver =
+                                LIS_SOLVER_FGMRES;
+                }
+                else if( strcmp(arg2,"gcrodr")==0 )
+                {
+                        esolver->feast_solver =
+                                LIS_SOLVER_GCRODR;
+                }
+                else if( strcmp(arg2,"fgcrodr")==0 )
+                {
+                        esolver->feast_solver =
+                                LIS_SOLVER_FGCRODR;
+                }
+                else
+                {
+                        LIS_SETERR1(
+                                LIS_ERR_ILL_ARG,
+                                "Parameter -feast_solver must be one of "
+                                "gmres, fgmres, gcrodr or fgcrodr "
+                                "(got %s)\n",
+                                arg2);
+
+                        LIS_DEBUG_FUNC_OUT;
+                        return LIS_ERR_ILL_ARG;
+                }
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_SUCCESS;
+        }
+
+
         LIS_SETERR1(
                 LIS_ERR_ILL_ARG,
                 "Unknown native FEAST option %s\n",
@@ -3001,7 +3097,316 @@ LIS_INT lis_efeast_check_params(
                 return LIS_ERR_ILL_ARG;
         }
 
+        if( esolver->feast_solver!=LIS_SOLVER_GMRES &&
+            esolver->feast_solver!=LIS_SOLVER_FGMRES &&
+            esolver->feast_solver!=LIS_SOLVER_GCRODR &&
+            esolver->feast_solver!=LIS_SOLVER_FGCRODR )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "Native FEAST -feast_solver must select "
+                        "GMRES, FGMRES, GCRO-DR or FGCRO-DR\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+
         LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+
+/*
+ * Persistent native FEAST workspace layout.
+ *
+ *   work[0*ss .. 1*ss-1] : X
+ *   work[1*ss .. 2*ss-1] : Q
+ *   work[2*ss .. 3*ss-1] : BQ
+ *   work[3*ss .. 4*ss-1] : Ritz vectors
+ *
+ * BQ is allocated for both standard and generalized problems so
+ * that the workspace layout remains invariant.  Standard FEAST
+ * simply does not pass the BQ block to the filtered-basis helper.
+ */
+#define LIS_EFEAST_WORK_BLOCKS 4
+
+
+/*
+ * Build a deterministic starting block without introducing global
+ * random-number state.
+ *
+ * X[0] is the generic eigensolver initial vector.  lis_gesolve()
+ * has already replaced esolver->x with its private initial vector
+ * before lis_efeast() is entered.
+ *
+ * Additional directions are deterministic dense vectors derived
+ * from global row numbers.  This gives partition-independent input
+ * in distributed layouts and avoids a canonical-basis bias toward
+ * the first matrix rows.
+ */
+static LIS_INT lis_efeast_seed_subspace(
+        LIS_ESOLVER esolver,
+        LIS_INT ss,
+        LIS_VECTOR X[])
+{
+        LIS_REAL norm;
+        LIS_REAL real_value;
+        LIS_REAL imag_value;
+
+        LIS_INT is;
+        LIS_INT ie;
+        LIS_INT local_n;
+        LIS_INT global_index;
+
+        LIS_INT i;
+        LIS_INT j;
+        LIS_INT err;
+
+        if( esolver==NULL ||
+            esolver->x==NULL ||
+            ss<=0 ||
+            X==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "Native FEAST initial subspace received "
+                        "invalid arguments\n");
+
+                return LIS_ERR_ILL_ARG;
+        }
+
+        err = lis_vector_copy(
+                esolver->x,
+                X[0]);
+
+        if( err )
+                return err;
+
+        norm = 0.0;
+
+        err = lis_vector_nrm2(
+                X[0],
+                &norm);
+
+        if( err )
+                return err;
+
+        /*
+         * A user supplied zero vector must not make the complete
+         * starting FEAST block rank deficient before filtering.
+         */
+        if( !isfinite((double)norm) ||
+            norm<=0.0 )
+        {
+                err = lis_vector_set_all(
+                        1.0,
+                        X[0]);
+
+                if( err )
+                        return err;
+        }
+
+        for(j=1;j<ss;j++)
+        {
+                err = lis_vector_set_all(
+                        0.0,
+                        X[j]);
+
+                if( err )
+                        return err;
+
+                err = lis_vector_get_range(
+                        X[j],
+                        &is,
+                        &ie);
+
+                if( err )
+                        return err;
+
+                local_n = ie-is;
+
+                for(i=0;i<local_n;i++)
+                {
+                        global_index =
+                                is+i;
+
+                        real_value =
+                                (LIS_REAL)(
+                                        sin(
+                                                0.7548776662466927
+                                                *
+                                                (double)(j+1)
+                                                *
+                                                (double)(global_index+1))
+                                        +
+                                        cos(
+                                                0.5698402909980532
+                                                *
+                                                (double)(j+2)
+                                                *
+                                                (double)(global_index+1))
+                                );
+
+#ifdef _COMPLEX
+
+                        imag_value =
+                                (LIS_REAL)(
+                                        0.5
+                                        *
+                                        sin(
+                                                0.4385790211510036
+                                                *
+                                                (double)(j+3)
+                                                *
+                                                (double)(global_index+1))
+                                );
+
+                        X[j]->value[i] =
+                                (LIS_SCALAR)(
+                                        real_value
+                                        +
+                                        imag_value
+                                        *
+                                        I);
+
+#else
+
+                        X[j]->value[i] =
+                                (LIS_SCALAR)real_value;
+
+#endif
+                }
+
+                norm = 0.0;
+
+                err = lis_vector_nrm2(
+                        X[j],
+                        &norm);
+
+                if( err )
+                        return err;
+
+                if( !isfinite((double)norm) ||
+                    norm<=0.0 )
+                {
+                        LIS_SETERR(
+                                LIS_BREAKDOWN,
+                                "Native FEAST deterministic starting "
+                                "direction is degenerate\n");
+
+                        return LIS_BREAKDOWN;
+                }
+        }
+
+        return LIS_SUCCESS;
+}
+
+
+/*
+ * The F3 shifted-system bridge has a deliberately narrow solver
+ * contract.  Keep the outer eigensolver independent from those
+ * internal linear-solver details by constructing one private GMRES
+ * instance here and reusing it for the complete contour iteration.
+ */
+static LIS_INT lis_efeast_create_shifted_solver(
+        LIS_REAL outer_tol,
+        LIS_INT nsolver,
+        LIS_SOLVER *solver_out)
+{
+        LIS_SOLVER solver;
+
+        LIS_REAL inner_tol;
+
+        LIS_INT err;
+
+        if( solver_out==NULL ||
+            !isfinite((double)outer_tol) ||
+            outer_tol<=0.0 )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "Native FEAST shifted solver received "
+                        "invalid arguments\n");
+
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( nsolver!=LIS_SOLVER_GMRES &&
+            nsolver!=LIS_SOLVER_FGMRES &&
+            nsolver!=LIS_SOLVER_GCRODR &&
+            nsolver!=LIS_SOLVER_FGCRODR )
+        {
+                LIS_SETERR1(
+                        LIS_ERR_ILL_ARG,
+                        "Native FEAST shifted solver type %D is not supported\n",
+                        nsolver);
+
+                return LIS_ERR_ILL_ARG;
+        }
+
+        *solver_out = NULL;
+        solver = NULL;
+
+        err = lis_solver_create(
+                &solver);
+
+        if( err )
+                return err;
+
+        solver->options[
+                LIS_OPTIONS_SOLVER] =
+                nsolver;
+
+        solver->options[
+                LIS_OPTIONS_PRECON] =
+                LIS_PRECON_TYPE_NONE;
+
+        solver->options[
+                LIS_OPTIONS_SCALE] =
+                LIS_SCALE_NONE;
+
+        solver->options[
+                LIS_OPTIONS_STORAGE] =
+                0;
+
+        solver->options[
+                LIS_OPTIONS_USE_AT] =
+                LIS_FALSE;
+
+        solver->options[
+                LIS_OPTIONS_PRECISION] =
+                LIS_PRECISION_DOUBLE;
+
+        solver->options[
+                LIS_OPTIONS_INITGUESS_ZEROS] =
+                LIS_TRUE;
+
+        /*
+         * Make shifted-system solves tighter than the requested
+         * outer FEAST certification while retaining a practical
+         * floor for double precision.
+         */
+        inner_tol =
+                outer_tol
+                *
+                (LIS_REAL)0.1;
+
+        if( inner_tol <
+            (LIS_REAL)1.0e-14 )
+        {
+                inner_tol =
+                        (LIS_REAL)1.0e-14;
+        }
+
+        solver->params[
+                LIS_PARAMS_RESID
+                -
+                LIS_OPTIONS_LEN] =
+                (LIS_SCALAR)inner_tol;
+
+        *solver_out = solver;
+
         return LIS_SUCCESS;
 }
 
@@ -3012,10 +3417,118 @@ LIS_INT lis_efeast_check_params(
 LIS_INT lis_efeast_malloc_work(
         LIS_ESOLVER esolver)
 {
+        LIS_VECTOR *work;
+
+        size_t bytes;
+
+        LIS_INT ss;
+        LIS_INT worklen;
+        LIS_INT i;
+        LIS_INT err;
+
         LIS_DEBUG_FUNC_IN;
 
-        esolver->work = NULL;
-        esolver->worklen = 0;
+        if( esolver==NULL ||
+            esolver->A==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "Native FEAST workspace requires "
+                        "an attached matrix\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        ss = esolver->options[
+                LIS_EOPTIONS_SUBSPACE];
+
+        if( ss<=0 ||
+            ss>esolver->A->gn )
+        {
+                LIS_SETERR2(
+                        LIS_ERR_ILL_ARG,
+                        "Native FEAST subspace size %D exceeds "
+                        "the valid matrix range 1..%D\n",
+                        ss,
+                        esolver->A->gn);
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        /*
+         * Support repeated solves with the same LIS_ESOLVER object.
+         */
+        if( esolver->work!=NULL )
+        {
+                err = lis_esolver_work_destroy(
+                        esolver);
+
+                if( err )
+                {
+                        LIS_DEBUG_FUNC_OUT;
+                        return err;
+                }
+        }
+
+        worklen =
+                LIS_EFEAST_WORK_BLOCKS
+                *
+                ss;
+
+        bytes =
+                (size_t)worklen
+                *
+                sizeof(LIS_VECTOR);
+
+        work = (LIS_VECTOR *)lis_malloc(
+                bytes,
+                "lis_efeast_malloc_work::work");
+
+        if( work==NULL )
+        {
+                LIS_SETERR_MEM(
+                        bytes);
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_OUT_OF_MEMORY;
+        }
+
+        memset(
+                work,
+                0,
+                bytes);
+
+        for(i=0;i<worklen;i++)
+        {
+                err = lis_vector_duplicate(
+                        esolver->A,
+                        &work[i]);
+
+                if( err )
+                {
+                        while(i>0)
+                        {
+                                i--;
+
+                                lis_vector_destroy(
+                                        work[i]);
+                        }
+
+                        lis_free(
+                                work);
+
+                        LIS_DEBUG_FUNC_OUT;
+                        return err;
+                }
+        }
+
+        esolver->work =
+                work;
+
+        esolver->worklen =
+                worklen;
 
         LIS_DEBUG_FUNC_OUT;
         return LIS_SUCCESS;
@@ -3028,36 +3541,656 @@ LIS_INT lis_efeast_malloc_work(
 LIS_INT lis_efeast(
         LIS_ESOLVER esolver)
 {
+        LIS_MATRIX A;
+        LIS_MATRIX B;
+
+        LIS_VECTOR *X;
+        LIS_VECTOR *Q;
+        LIS_VECTOR *BQ;
+        LIS_VECTOR *Ritz;
+
+        LIS_SOLVER shifted_solver;
+
+        LIS_SCALAR *ritz_value;
+
+        LIS_INT *selected_index;
+
+        LIS_REAL *selected_residual;
+
+        LIS_REAL tol;
+        LIS_REAL rank_tol;
+
+        LIS_REAL previous_trace;
+        LIS_REAL trace;
+        LIS_REAL trace_error;
+        LIS_REAL max_residual;
+        LIS_REAL history_value;
+
+        LIS_REAL projected_error;
+
+        LIS_INT ss;
+        LIS_INT emaxiter;
+
+        LIS_INT previous_count;
+        LIS_INT selected_count;
+        LIS_INT active_rank;
+
+        LIS_INT projected_niter;
+        LIS_INT converged;
+
+        LIS_INT first;
+        LIS_INT iter;
+        LIS_INT i;
         LIS_INT err;
+
+        size_t scalar_bytes;
+        size_t integer_bytes;
+        size_t real_bytes;
 
         LIS_DEBUG_FUNC_IN;
 
-        err = lis_efeast_check_params(esolver);
+        shifted_solver = NULL;
+
+        ritz_value = NULL;
+        selected_index = NULL;
+        selected_residual = NULL;
+
+        err = lis_efeast_check_params(
+                esolver);
 
         if( err )
         {
-                esolver->retcode = err;
+                if( esolver!=NULL )
+                {
+                        /*
+                         * A failed FEAST invocation does not publish
+                         * certified public eigenpairs.
+                         */
+                        esolver->nev =
+                                0;
+
+                        esolver->retcode =
+                                err;
+                }
+
                 LIS_DEBUG_FUNC_OUT;
                 return err;
         }
 
-#ifndef _COMPLEX
+        A = esolver->A;
+        B = esolver->B;
+
+        ss = esolver->options[
+                LIS_EOPTIONS_SUBSPACE];
+
+        emaxiter = esolver->options[
+                LIS_EOPTIONS_MAXITER];
+
+        tol = esolver->params[
+                LIS_EPARAMS_RESID
+                -
+                LIS_EOPTIONS_LEN];
+
+        if( A==NULL ||
+            esolver->x==NULL ||
+            esolver->evalue==NULL ||
+            esolver->resid==NULL ||
+            esolver->iter==NULL ||
+            esolver->iter2==NULL ||
+            esolver->rhistory==NULL ||
+            esolver->evector==NULL ||
+            esolver->work==NULL ||
+            esolver->worklen
+                !=LIS_EFEAST_WORK_BLOCKS*ss )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "Native FEAST generic eigensolver state "
+                        "is incomplete\n");
+
+                err = LIS_ERR_ILL_ARG;
+                goto cleanup;
+        }
+
+        if( ss<=0 ||
+            ss>A->gn ||
+            emaxiter<=0 ||
+            !isfinite((double)tol) ||
+            tol<=0.0 )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "Native FEAST outer-loop configuration "
+                        "is invalid\n");
+
+                err = LIS_ERR_ILL_ARG;
+                goto cleanup;
+        }
+
+        if( B!=NULL &&
+            (B->n!=A->n ||
+             B->gn!=A->gn) )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "Native FEAST generalized matrices "
+                        "have incompatible dimensions\n");
+
+                err = LIS_ERR_ILL_ARG;
+                goto cleanup;
+        }
+
+        /*
+         * Persistent vector blocks owned by esolver->work.
+         */
+        X =
+                esolver->work;
+
+        Q =
+                esolver->work
+                +
+                ss;
+
+        BQ =
+                esolver->work
+                +
+                2*ss;
+
+        Ritz =
+                esolver->work
+                +
+                3*ss;
+
+        scalar_bytes =
+                (size_t)ss
+                *
+                sizeof(LIS_SCALAR);
+
+        integer_bytes =
+                (size_t)ss
+                *
+                sizeof(LIS_INT);
+
+        real_bytes =
+                (size_t)ss
+                *
+                sizeof(LIS_REAL);
+
+        ritz_value =
+                (LIS_SCALAR *)lis_malloc(
+                        scalar_bytes,
+                        "lis_efeast::ritz_value");
+
+        if( ritz_value==NULL )
+        {
+                LIS_SETERR_MEM(
+                        scalar_bytes);
+
+                err = LIS_OUT_OF_MEMORY;
+                goto cleanup;
+        }
+
+        selected_index =
+                (LIS_INT *)lis_malloc(
+                        integer_bytes,
+                        "lis_efeast::selected_index");
+
+        if( selected_index==NULL )
+        {
+                LIS_SETERR_MEM(
+                        integer_bytes);
+
+                err = LIS_OUT_OF_MEMORY;
+                goto cleanup;
+        }
+
+        selected_residual =
+                (LIS_REAL *)lis_malloc(
+                        real_bytes,
+                        "lis_efeast::selected_residual");
+
+        if( selected_residual==NULL )
+        {
+                LIS_SETERR_MEM(
+                        real_bytes);
+
+                err = LIS_OUT_OF_MEMORY;
+                goto cleanup;
+        }
+
+        memset(
+                ritz_value,
+                0,
+                scalar_bytes);
+
+        memset(
+                selected_index,
+                0,
+                integer_bytes);
+
+        memset(
+                selected_residual,
+                0,
+                real_bytes);
+
+        /*
+         * Clear scalar result storage before the outer iteration.
+         * evector[] is allocated and zero-initialized by the generic
+         * lis_gesolve() entry path.  Native FEAST creates only the
+         * final certified eigenvectors after convergence.
+         */
+        for(i=0;i<ss+2;i++)
+        {
+                esolver->evalue[i] =
+                        0.0;
+
+                esolver->resid[i] =
+                        0.0;
+
+                esolver->iter[i] =
+                        0;
+
+                esolver->iter2[i] =
+                        0;
+        }
+
+        esolver->nev = 0;
+        esolver->tol = tol;
+
+        esolver->rhistory[0] =
+                1.0;
+
+        err = lis_efeast_seed_subspace(
+                esolver,
+                ss,
+                X);
+
+        if( err )
+                goto cleanup;
+
+        err = lis_efeast_create_shifted_solver(
+                tol,
+                esolver->feast_solver,
+                &shifted_solver);
+
+        if( err )
+                goto cleanup;
+
+        previous_count = -1;
+        previous_trace = 0.0;
+
+        /*
+         * Rank filtering and the projected eigensystem have their
+         * own numerical roles.  Keep the rank threshold independent
+         * from the outer residual/trace convergence tolerance.
+         *
+         * 1e-8 is the threshold validated by F3-4.
+         */
+        rank_tol =
+                (LIS_REAL)1.0e-8;
+
+        err = LIS_MAXITER;
+
+        for(iter=1;
+            iter<=emaxiter;
+            iter++)
+        {
+                active_rank = 0;
+
+                projected_niter = 0;
+                projected_error = 0.0;
+
+                selected_count = 0;
+                trace = 0.0;
+                trace_error = 0.0;
+                max_residual = 0.0;
+                converged = LIS_FALSE;
+
+                memset(
+                        ritz_value,
+                        0,
+                        scalar_bytes);
+
+                memset(
+                        selected_index,
+                        0,
+                        integer_bytes);
+
+                memset(
+                        selected_residual,
+                        0,
+                        real_bytes);
+
+                /*
+                 * X
+                 *  -> contour filtering
+                 *  -> rank-revealing normalized Q.
+                 */
+                err = lis_efeast_filtered_block_basis(
+                        A,
+                        B,
+                        esolver->feast_emin,
+                        esolver->feast_emax,
+                        esolver->feast_ratio,
+                        esolver->feast_points,
+                        ss,
+                        X,
+                        Q,
+                        B!=NULL ? BQ : NULL,
+                        rank_tol,
+                        &active_rank,
+                        shifted_solver);
+
+                if( err )
+                        goto cleanup;
+
+                if( active_rank>0 )
+                {
+                        /*
+                         * Q
+                         *  -> projected Hermitian eigensystem
+                         *  -> physical Ritz vectors.
+                         */
+                        err =
+                                lis_efeast_projected_rayleigh_ritz(
+                                        A,
+                                        active_rank,
+                                        Q,
+                                        ritz_value,
+                                        Ritz,
+                                        &projected_niter,
+                                        &projected_error);
+
+                        if( err )
+                                goto cleanup;
+
+                        /*
+                         * Select the requested interval, certify the
+                         * physical Ritz pairs and evaluate the outer
+                         * FEAST convergence state.
+                         */
+                        err =
+                                lis_efeast_certify_ritz_pairs(
+                                        A,
+                                        B,
+                                        esolver->feast_emin,
+                                        esolver->feast_emax,
+                                        tol,
+                                        active_rank,
+                                        ritz_value,
+                                        Ritz,
+                                        previous_count,
+                                        previous_trace,
+                                        selected_index,
+                                        selected_residual,
+                                        &selected_count,
+                                        &trace,
+                                        &trace_error,
+                                        &max_residual,
+                                        &converged);
+
+                        if( err )
+                                goto cleanup;
+                }
+                else
+                {
+                        /*
+                         * A completely filtered-out subspace is a
+                         * legal empty FEAST interval.  Match the F3-6
+                         * stable-empty convergence contract without
+                         * calling its active-rank API with rank zero.
+                         */
+                        selected_count = 0;
+                        trace = 0.0;
+                        max_residual = 0.0;
+
+                        if( previous_count>=0 )
+                        {
+                                trace_error =
+                                        lis_feast_real_abs((LIS_REAL)previous_trace);
+
+                                if( trace_error<=tol &&
+                                    previous_count==0 )
+                                {
+                                        converged =
+                                                LIS_TRUE;
+                                }
+                        }
+                }
+
+                history_value =
+                        trace_error;
+
+                if( max_residual >
+                    history_value )
+                {
+                        history_value =
+                                max_residual;
+                }
+
+                esolver->rhistory[iter] =
+                        history_value;
+
+                /*
+                 * Once the outer FEAST convergence contract is
+                 * satisfied, compact every selected Ritz pair into
+                 * the generic LIS eigensolver result arrays.
+                 *
+                 * selected_residual[] follows selected_index[] in
+                 * exactly the same order established by the F3-6
+                 * certification helper.
+                 */
+                if( converged )
+                {
+                        for(i=0;
+                            i<selected_count;
+                            i++)
+                        {
+                                first =
+                                        selected_index[i];
+
+                                if( first<0 ||
+                                    first>=active_rank )
+                                {
+                                        LIS_SETERR(
+                                                LIS_BREAKDOWN,
+                                                "Native FEAST selected "
+                                                "an invalid Ritz index\n");
+
+                                        err = LIS_BREAKDOWN;
+                                        goto cleanup;
+                                }
+
+                                esolver->evalue[i] =
+                                        ritz_value[first];
+
+                                esolver->resid[i] =
+                                        selected_residual[i];
+
+                                esolver->iter[i] =
+                                        iter;
+
+                                esolver->iter2[i] =
+                                        projected_niter;
+
+                                err = lis_vector_duplicate(
+                                        A,
+                                        &esolver->evector[i]);
+
+                                if( err )
+                                        goto cleanup;
+
+                                err = lis_vector_copy(
+                                        Ritz[first],
+                                        esolver->evector[i]);
+
+                                if( err )
+                                        goto cleanup;
+                        }
+
+                        /*
+                         * Preserve the existing scalar lis_esolve()
+                         * / lis_gesolve() compatibility contract:
+                         * x and evalue[0] represent the first stored
+                         * FEAST result.
+                         */
+                        if( selected_count>0 )
+                        {
+                                err = lis_vector_copy(
+                                        esolver->evector[0],
+                                        esolver->x);
+
+                                if( err )
+                                        goto cleanup;
+                        }
+                        else
+                        {
+                                err = lis_vector_set_all(
+                                        0.0,
+                                        esolver->x);
+
+                                if( err )
+                                        goto cleanup;
+                        }
+
+                        /*
+                         * Publish the result count only after every
+                         * certified eigenpair has been compacted and
+                         * the scalar compatibility result has been
+                         * updated successfully.
+                         *
+                         * Until this point nev remains zero, so
+                         * MAXITER and partial-compaction failures never
+                         * advertise an incomplete public result set.
+                         */
+                        esolver->nev =
+                                selected_count;
+
+                        err = LIS_SUCCESS;
+                        goto cleanup;
+                }
+
+                /*
+                 * Keep first-pair diagnostics meaningful when the
+                 * outer iteration has not converged yet or reaches
+                 * LIS_MAXITER.
+                 */
+                if( selected_count>0 )
+                {
+                        first =
+                                selected_index[0];
+
+                        if( first<0 ||
+                            first>=active_rank )
+                        {
+                                LIS_SETERR(
+                                        LIS_BREAKDOWN,
+                                        "Native FEAST selected an "
+                                        "invalid Ritz index\n");
+
+                                err = LIS_BREAKDOWN;
+                                goto cleanup;
+                        }
+
+                        esolver->evalue[0] =
+                                ritz_value[first];
+
+                        esolver->resid[0] =
+                                selected_residual[0];
+
+                        err = lis_vector_copy(
+                                Ritz[first],
+                                esolver->x);
+
+                        if( err )
+                                goto cleanup;
+                }
+                else
+                {
+                        esolver->evalue[0] =
+                                0.0;
+
+                        esolver->resid[0] =
+                                0.0;
+                }
+
+                esolver->iter[0] =
+                        iter;
+
+                esolver->iter2[0] =
+                        projected_niter;
+
+                /*
+                 * FEAST subspace iteration:
+                 *
+                 * use the complete active Ritz subspace for the next
+                 * contour projection.  Tail seed directions remain
+                 * unchanged when rank deflation reduces the block.
+                 */
+                for(i=0;i<active_rank;i++)
+                {
+                        err = lis_vector_copy(
+                                Ritz[i],
+                                X[i]);
+
+                        if( err )
+                                goto cleanup;
+                }
+
+                previous_count =
+                        selected_count;
+
+                previous_trace =
+                        trace;
+        }
 
         LIS_SETERR(
-                LIS_ERR_NOT_IMPLEMENTED,
-                "Native FEAST requires complex shifted systems; "
-                "the real-build bridge is not implemented yet\n");
+                LIS_MAXITER,
+                "Native FEAST reached the maximum "
+                "number of outer iterations\n");
 
-#else
+        err = LIS_MAXITER;
 
-        LIS_SETERR(
-                LIS_ERR_NOT_IMPLEMENTED,
-                "Native FEAST contour projector is not implemented in stage F0\n");
+cleanup:
 
-#endif
+        if( err!=LIS_SUCCESS )
+        {
+                /*
+                 * Scalar diagnostics may describe the last Ritz
+                 * approximation, but failed solves expose no certified
+                 * public multi-result set.
+                 */
+                esolver->nev =
+                        0;
+        }
 
-        esolver->retcode = LIS_ERR_NOT_IMPLEMENTED;
+        if( shifted_solver!=NULL )
+        {
+                lis_solver_destroy(
+                        shifted_solver);
+        }
+
+        if( selected_residual!=NULL )
+        {
+                lis_free(
+                        selected_residual);
+        }
+
+        if( selected_index!=NULL )
+        {
+                lis_free(
+                        selected_index);
+        }
+
+        if( ritz_value!=NULL )
+        {
+                lis_free(
+                        ritz_value);
+        }
+
+        esolver->retcode =
+                err;
 
         LIS_DEBUG_FUNC_OUT;
-        return LIS_ERR_NOT_IMPLEMENTED;
+        return err;
 }
