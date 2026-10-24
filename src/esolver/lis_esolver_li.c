@@ -4209,6 +4209,158 @@ cleanup:
  * transformed-operator semantics rather than treating the geometric
  * stiffness matrix as a positive-definite block metric.
  */
+/*
+ * Build the first generalized Block Lanczos basis in the B metric.
+ *
+ * The deterministic raw block is shared with standard Block Lanczos.
+ * The common B-rank-deflation helper computes:
+ *
+ *     BW = B*W
+ *     G  = W^H*BW
+ *     Q  = W U_r Lambda_r^(-1/2)
+ *     BQ = BW U_r Lambda_r^(-1/2)
+ *
+ * so the retained columns satisfy Q^H*BQ = I without an additional
+ * B*Q block matvec.
+ *
+ * This helper is only for the untransformed generalized problem where
+ * B is the positive-definite metric. The buckling transform must not
+ * use the geometric stiffness matrix through this contract.
+ */
+static LIS_INT
+lis_egli_block_initial_basis(
+    LIS_ESOLVER esolver,
+    LIS_INT nominal_rank,
+    LIS_VECTOR basis[],
+    LIS_VECTOR dual_basis[],
+    LIS_VECTOR candidate[],
+    LIS_VECTOR dual_candidate[],
+    LIS_INT *active_rank)
+{
+    LIS_INT err;
+    LIS_INT block_size;
+    LIS_REAL rank_tol;
+    LIS_SCALAR *gram;
+    LIS_SCALAR *eval;
+    LIS_SCALAR *evec;
+    LIS_SCALAR *transform;
+
+    if( esolver==NULL ||
+        esolver->B==NULL ||
+        nominal_rank<1 ||
+        basis==NULL ||
+        dual_basis==NULL ||
+        candidate==NULL ||
+        dual_candidate==NULL ||
+        active_rank==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos initial-basis arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    block_size = esolver->block_size;
+
+    if( block_size<1 ||
+        nominal_rank>block_size )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos initial rank\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *active_rank = 0;
+
+    rank_tol = (LIS_REAL)1.0e-12;
+
+    gram = NULL;
+    eval = NULL;
+    evec = NULL;
+    transform = NULL;
+
+    gram = (LIS_SCALAR *)lis_malloc(
+        block_size*block_size*sizeof(LIS_SCALAR),
+        "lis_egli_block_initial_basis::gram");
+
+    eval = (LIS_SCALAR *)lis_malloc(
+        block_size*sizeof(LIS_SCALAR),
+        "lis_egli_block_initial_basis::eval");
+
+    evec = (LIS_SCALAR *)lis_malloc(
+        block_size*block_size*sizeof(LIS_SCALAR),
+        "lis_egli_block_initial_basis::evec");
+
+    transform = (LIS_SCALAR *)lis_malloc(
+        block_size*block_size*sizeof(LIS_SCALAR),
+        "lis_egli_block_initial_basis::transform");
+
+    if( gram==NULL ||
+        eval==NULL ||
+        evec==NULL ||
+        transform==NULL )
+    {
+        if( transform ) lis_free(transform);
+        if( evec ) lis_free(evec);
+        if( eval ) lis_free(eval);
+        if( gram ) lis_free(gram);
+
+        LIS_SETERR_MEM(
+            block_size*block_size*sizeof(LIS_SCALAR));
+
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+    err = lis_lanczos_block_initial_raw(
+        block_size,
+        nominal_rank,
+        candidate);
+
+    if( err )
+        goto cleanup;
+
+    err = lis_eigen_block_brank_deflate(
+        esolver->B,
+        block_size,
+        nominal_rank,
+        candidate,
+        dual_candidate,
+        basis,
+        dual_basis,
+        rank_tol,
+        active_rank,
+        gram,
+        eval,
+        evec,
+        transform);
+
+    if( err )
+        goto cleanup;
+
+    if( *active_rank==0 )
+    {
+        LIS_SETERR(
+            LIS_BREAKDOWN,
+            "generalized Block Lanczos initial block has zero B-rank\n");
+
+        err = LIS_BREAKDOWN;
+        goto cleanup;
+    }
+
+    err = LIS_SUCCESS;
+
+cleanup:
+
+    lis_free(transform);
+    lis_free(evec);
+    lis_free(eval);
+    lis_free(gram);
+
+    return err;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_egli_block"
 LIS_INT lis_egli_block(LIS_ESOLVER esolver)
@@ -4217,6 +4369,8 @@ LIS_INT lis_egli_block(LIS_ESOLVER esolver)
     LIS_INT ss;
     LIS_INT block_size;
     LIS_INT block_count;
+    LIS_INT nominal_rank;
+    LIS_INT active_rank;
     LIS_INT expected_worklen;
     LIS_INT *block_offset;
     LIS_INT *block_rank;
@@ -4367,12 +4521,45 @@ LIS_INT lis_egli_block(LIS_ESOLVER esolver)
         return LIS_ERR_ILL_ARG;
     }
 
+    nominal_rank = block_rank[0];
+    active_rank = 0;
+
+    err = lis_egli_block_initial_basis(
+        esolver,
+        nominal_rank,
+        basis,
+        dual_basis,
+        candidate,
+        dual_candidate,
+        &active_rank);
+
+    if( err )
+    {
+        lis_free(block_rank);
+        lis_free(block_offset);
+        return err;
+    }
+
+    /*
+     * The nominal first block now becomes a numerical B-orthonormal
+     * block. Keep the dynamic-rank metadata convention established
+     * by standard Block Lanczos: only built blocks remain active.
+     */
+    block_rank[0] = active_rank;
+    block_offset[0] = 0;
+
+    for(i=1;i<ss;i++)
+    {
+        block_rank[i] = 0;
+        block_offset[i] = -1;
+    }
+
     lis_free(block_rank);
     lis_free(block_offset);
 
     /*
-     * F2 establishes storage and logical block layout only.
-     * F3 will initialize and B-rank-deflate the first block.
+     * F3 owns the first B-orthonormal basis block only.
+     * F4 will apply A, build Alpha0, and form the next residual block.
      */
     LIS_SETERR(
         LIS_ERR_NOT_IMPLEMENTED,
