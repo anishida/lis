@@ -418,6 +418,21 @@ extern LIS_INT lis_eigen_ritz_reconstruct(
 		LIS_VECTOR q_imag,
 		LIS_SOLVER solver);
 
+	extern LIS_INT lis_efeast_filtered_block_basis(
+		LIS_MATRIX A,
+		LIS_MATRIX B,
+		LIS_REAL emin,
+		LIS_REAL emax,
+		LIS_REAL ratio,
+		LIS_INT npoints,
+		LIS_INT block_size,
+		LIS_VECTOR X[],
+		LIS_VECTOR Q[],
+		LIS_VECTOR BQ[],
+		LIS_REAL rank_tol,
+		LIS_INT *active_rank,
+		LIS_SOLVER solver);
+
 #ifdef __cplusplus
 }
 #endif

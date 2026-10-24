@@ -1467,6 +1467,492 @@ cleanup:
 }
 
 
+/*
+ * Destroy an internally owned FEAST vector block.
+ */
+static void lis_efeast_vector_block_destroy(
+        LIS_INT count,
+        LIS_VECTOR block[])
+{
+        LIS_INT i;
+
+        if( block==NULL )
+        {
+                return;
+        }
+
+        for(i=0;i<count;i++)
+        {
+                if( block[i]!=NULL )
+                {
+                        lis_vector_destroy(
+                                block[i]);
+                }
+        }
+
+        lis_free(
+                block);
+}
+
+
+/*
+ * Build a rank-revealing filtered FEAST block basis.
+ *
+ * Each input vector is independently passed through the contour
+ * spectral projector.  The resulting raw block W is then compressed
+ * and normalized by the common block rank-deflation core.
+ *
+ * Standard problem:
+ *
+ *     X -> P X -> W -> rank_deflate -> Q
+ *
+ * Generalized problem:
+ *
+ *     X -> P_B X -> W -> B-rank_deflate -> Q, BQ
+ *
+ * The rank-deflation helpers already perform normalization through
+ * the Gram eigensystem.  No second Gram-Schmidt pass is required.
+ *
+ * In a complex build the split projector result is reconstructed as
+ *
+ *     W = q_real + i*q_imag.
+ *
+ * In a real build the full contour is conjugate symmetric and the
+ * physical filtered basis is q_real.
+ */
+#undef __FUNC__
+#define __FUNC__ "lis_efeast_filtered_block_basis"
+
+LIS_INT lis_efeast_filtered_block_basis(
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_REAL emin,
+        LIS_REAL emax,
+        LIS_REAL ratio,
+        LIS_INT npoints,
+        LIS_INT block_size,
+        LIS_VECTOR X[],
+        LIS_VECTOR Q[],
+        LIS_VECTOR BQ[],
+        LIS_REAL rank_tol,
+        LIS_INT *active_rank,
+        LIS_SOLVER solver)
+{
+        LIS_VECTOR *W;
+        LIS_VECTOR *BW;
+
+        LIS_VECTOR zero_imag;
+        LIS_VECTOR q_real;
+        LIS_VECTOR q_imag;
+
+        LIS_SCALAR *gram;
+        LIS_SCALAR *eval;
+        LIS_SCALAR *evec;
+        LIS_SCALAR *transform;
+
+        size_t vector_bytes;
+        size_t square_count;
+        size_t square_bytes;
+        size_t eval_bytes;
+
+        LIS_INT i;
+        LIS_INT err;
+
+        LIS_DEBUG_FUNC_IN;
+
+        W = NULL;
+        BW = NULL;
+
+        zero_imag = NULL;
+        q_real = NULL;
+        q_imag = NULL;
+
+        gram = NULL;
+        eval = NULL;
+        evec = NULL;
+        transform = NULL;
+
+        if( active_rank!=NULL )
+        {
+                *active_rank = 0;
+        }
+
+        if( A==NULL ||
+            block_size<=0 ||
+            X==NULL ||
+            Q==NULL ||
+            active_rank==NULL ||
+            solver==NULL ||
+            !isfinite((double)rank_tol) ||
+            rank_tol<0.0 ||
+            rank_tol>=1.0 )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "FEAST filtered block received invalid arguments\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( B!=NULL && BQ==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "Generalized FEAST filtered block requires BQ outputs\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( B==NULL && BQ!=NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "Standard FEAST filtered block requires BQ to be NULL\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( B!=NULL &&
+            (B->n!=A->n ||
+             B->gn!=A->gn ||
+             B->my_rank!=A->my_rank ||
+             B->nprocs!=A->nprocs) )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "FEAST filtered block requires compatible A and B layouts\n");
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_ERR_ILL_ARG;
+        }
+
+        for(i=0;i<block_size;i++)
+        {
+                if( X[i]==NULL ||
+                    Q[i]==NULL ||
+                    !lis_efeast_shifted_vector_compatible(
+                            A,
+                            X[i]) ||
+                    !lis_efeast_shifted_vector_compatible(
+                            A,
+                            Q[i]) )
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "FEAST filtered block contains an incompatible vector\n");
+
+                        LIS_DEBUG_FUNC_OUT;
+                        return LIS_ERR_ILL_ARG;
+                }
+
+                if( B!=NULL &&
+                    (BQ[i]==NULL ||
+                     !lis_efeast_shifted_vector_compatible(
+                            A,
+                            BQ[i])) )
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "FEAST filtered block contains an incompatible BQ vector\n");
+
+                        LIS_DEBUG_FUNC_OUT;
+                        return LIS_ERR_ILL_ARG;
+                }
+        }
+
+        vector_bytes =
+                (size_t)block_size
+                *
+                sizeof(LIS_VECTOR);
+
+        square_count =
+                (size_t)block_size
+                *
+                (size_t)block_size;
+
+        square_bytes =
+                square_count
+                *
+                sizeof(LIS_SCALAR);
+
+        eval_bytes =
+                (size_t)block_size
+                *
+                sizeof(LIS_SCALAR);
+
+        W = (LIS_VECTOR *)lis_malloc(
+                vector_bytes,
+                "lis_efeast_filtered_block_basis::W");
+
+        if( W==NULL )
+        {
+                LIS_SETERR_MEM(
+                        vector_bytes);
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_OUT_OF_MEMORY;
+        }
+
+        memset(
+                W,
+                0,
+                vector_bytes);
+
+        if( B!=NULL )
+        {
+                BW = (LIS_VECTOR *)lis_malloc(
+                        vector_bytes,
+                        "lis_efeast_filtered_block_basis::BW");
+
+                if( BW==NULL )
+                {
+                        lis_free(
+                                W);
+
+                        LIS_SETERR_MEM(
+                                vector_bytes);
+
+                        LIS_DEBUG_FUNC_OUT;
+                        return LIS_OUT_OF_MEMORY;
+                }
+
+                memset(
+                        BW,
+                        0,
+                        vector_bytes);
+        }
+
+        gram = (LIS_SCALAR *)lis_malloc(
+                square_bytes,
+                "lis_efeast_filtered_block_basis::gram");
+
+        if( gram==NULL )
+        {
+                err = LIS_OUT_OF_MEMORY;
+                LIS_SETERR_MEM(
+                        square_bytes);
+                goto cleanup;
+        }
+
+        eval = (LIS_SCALAR *)lis_malloc(
+                eval_bytes,
+                "lis_efeast_filtered_block_basis::eval");
+
+        if( eval==NULL )
+        {
+                err = LIS_OUT_OF_MEMORY;
+                LIS_SETERR_MEM(
+                        eval_bytes);
+                goto cleanup;
+        }
+
+        evec = (LIS_SCALAR *)lis_malloc(
+                square_bytes,
+                "lis_efeast_filtered_block_basis::evec");
+
+        if( evec==NULL )
+        {
+                err = LIS_OUT_OF_MEMORY;
+                LIS_SETERR_MEM(
+                        square_bytes);
+                goto cleanup;
+        }
+
+        transform = (LIS_SCALAR *)lis_malloc(
+                square_bytes,
+                "lis_efeast_filtered_block_basis::transform");
+
+        if( transform==NULL )
+        {
+                err = LIS_OUT_OF_MEMORY;
+                LIS_SETERR_MEM(
+                        square_bytes);
+                goto cleanup;
+        }
+
+        err = lis_vector_duplicate(
+                A,
+                &zero_imag);
+
+        if( err ) goto cleanup;
+
+        err = lis_vector_duplicate(
+                A,
+                &q_real);
+
+        if( err ) goto cleanup;
+
+        err = lis_vector_duplicate(
+                A,
+                &q_imag);
+
+        if( err ) goto cleanup;
+
+        err = lis_vector_set_all(
+                (LIS_SCALAR)0.0,
+                zero_imag);
+
+        if( err ) goto cleanup;
+
+        for(i=0;i<block_size;i++)
+        {
+                err = lis_vector_duplicate(
+                        A,
+                        &W[i]);
+
+                if( err ) goto cleanup;
+
+                if( B!=NULL )
+                {
+                        err = lis_vector_duplicate(
+                                A,
+                                &BW[i]);
+
+                        if( err ) goto cleanup;
+                }
+        }
+
+        /*
+         * Filter each candidate independently.
+         *
+         * x_imag=0 is sufficient even for a complex X because the
+         * split representation is linear:
+         *
+         *     X = X + i*0.
+         */
+        for(i=0;i<block_size;i++)
+        {
+                err = lis_efeast_projector_apply_split(
+                        A,
+                        B,
+                        emin,
+                        emax,
+                        ratio,
+                        npoints,
+                        X[i],
+                        zero_imag,
+                        q_real,
+                        q_imag,
+                        solver);
+
+                if( err ) goto cleanup;
+
+                err = lis_vector_copy(
+                        q_real,
+                        W[i]);
+
+                if( err ) goto cleanup;
+
+#ifdef _COMPLEX
+
+                err = lis_vector_axpy(
+                        (LIS_SCALAR)(1.0*I),
+                        q_imag,
+                        W[i]);
+
+                if( err ) goto cleanup;
+
+#endif
+        }
+
+        /*
+         * Rank deflation is also the normalization step.
+         *
+         * The generalized helper additionally returns BQ and reuses
+         * BW internally, avoiding a separate post-normalization B*Q.
+         */
+        if( B!=NULL )
+        {
+                err = lis_eigen_block_brank_deflate(
+                        B,
+                        block_size,
+                        block_size,
+                        W,
+                        BW,
+                        Q,
+                        BQ,
+                        rank_tol,
+                        active_rank,
+                        gram,
+                        eval,
+                        evec,
+                        transform);
+        }
+        else
+        {
+                err = lis_eigen_block_rank_deflate(
+                        block_size,
+                        block_size,
+                        W,
+                        Q,
+                        rank_tol,
+                        active_rank,
+                        gram,
+                        eval,
+                        evec,
+                        transform);
+        }
+
+cleanup:
+
+        if( q_imag!=NULL )
+        {
+                lis_vector_destroy(
+                        q_imag);
+        }
+
+        if( q_real!=NULL )
+        {
+                lis_vector_destroy(
+                        q_real);
+        }
+
+        if( zero_imag!=NULL )
+        {
+                lis_vector_destroy(
+                        zero_imag);
+        }
+
+        lis_efeast_vector_block_destroy(
+                block_size,
+                BW);
+
+        lis_efeast_vector_block_destroy(
+                block_size,
+                W);
+
+        if( transform!=NULL )
+        {
+                lis_free(
+                        transform);
+        }
+
+        if( evec!=NULL )
+        {
+                lis_free(
+                        evec);
+        }
+
+        if( eval!=NULL )
+        {
+                lis_free(
+                        eval);
+        }
+
+        if( gram!=NULL )
+        {
+                lis_free(
+                        gram);
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+        return err;
+}
+
+
 static LIS_INT lis_efeast_parse_real(
         const char *text,
         LIS_REAL *value)
