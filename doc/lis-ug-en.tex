@@ -329,6 +329,7 @@ CR\cite{suetomi} \\
 Subspace\cite{rutishauser} \\
 Lanczos\cite{lanczos2} \\
 Arnoldi\cite{arnoldi} \\
+FEAST \\
 \hline         
 \end{tabular}
 \hfil}
@@ -2278,10 +2279,39 @@ that \verb=-emaxiter= defaults to $1,000$.
  \verb=-ss [1]= & The size of the subspace \\
  Generalized Arnoldi               & \verb=-e {gai|16}=      &
  \verb=-ss [1]= & The size of the subspace \\  
+
+ Native FEAST                      & \verb=-e {feast|17}=    &
+ \verb=-ss [1]= & The size of the search subspace \\
+                                   &                         &
+ \verb=-feast_emin= & The lower bound of the target interval \\
+                                   &                         &
+ \verb=-feast_emax= & The upper bound of the target interval \\
+                                   &                         &
+ \verb=-feast_ratio [0.30]= & The contour ellipse aspect ratio \\
+                                   &                         &
+ \verb=-feast_points [8]= & The number of contour quadrature points \\
+                                   &                         &
+ \verb=-feast_solver [gmres]= & The inner linear solver \\
 \hline         
 \end{tabular}
 \end{center}
 \end{minipage}
+
+\paragraph{Native FEAST eigensolver}
+The native FEAST eigensolver computes eigenpairs inside the real interval
+specified by \verb|-feast_emin| and \verb|-feast_emax|.  Both interval
+bounds are required and must satisfy
+\verb|-feast_emin < -feast_emax|.  The subspace dimension is selected by
+\verb|-ss|.  The contour integration uses
+\verb|-feast_points| quadrature points and the positive ellipse aspect
+ratio \verb|-feast_ratio|.
+
+The shifted linear systems may be solved with
+\verb|-feast_solver gmres|, \verb|fgmres|, \verb|gcrodr|, or
+\verb|fgcrodr|.  GMRES is used by default.  Native FEAST is available
+for standard and generalized eigenvalue problems and supports both real
+and complex scalar builds.
+
 \\ \\
 \begin{minipage}[t]{\textwidth}
 \begin{center}
@@ -6916,6 +6946,19 @@ that \verb=-emaxiter= defaults to $1,000$.
  \verb=-ss [1]= & The size of the subspace \\
  Generalized Arnoldi               & \verb=-e {gai|16}=      &
  \verb=-ss [1]= & The size of the subspace \\  
+
+ Native FEAST                      & \verb=-e {feast|17}=    &
+ \verb=-ss [1]= & The size of the search subspace \\
+                                   &                         &
+ \verb=-feast_emin= & The lower bound of the target interval \\
+                                   &                         &
+ \verb=-feast_emax= & The upper bound of the target interval \\
+                                   &                         &
+ \verb=-feast_ratio [0.30]= & The contour ellipse aspect ratio \\
+                                   &                         &
+ \verb=-feast_points [8]= & The number of contour quadrature points \\
+                                   &                         &
+ \verb=-feast_solver [gmres]= & The inner linear solver \\
 \hline         
 \end{tabular}
 \end{center}
