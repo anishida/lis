@@ -2194,6 +2194,158 @@ LIS_INT lis_solver_set_matrix(LIS_MATRIX A, LIS_SOLVER solver)
 	return LIS_SUCCESS;
 }
 
+
+static LIS_INT
+lis_solver_check_user_hybrid_inner_solver(
+	LIS_MATRIX A,
+	LIS_INT nsolver)
+{
+	if( nsolver<1 || nsolver>LIS_SOLVER_LEN )
+	{
+		LIS_SETERR(
+			LIS_ERR_ILL_ARG,
+			"invalid Hybrid inner solver\n");
+
+		return LIS_ERR_ILL_ARG;
+	}
+
+	/*
+	 * Stationary solver implementations require explicit matrix
+	 * storage and cannot operate on the USER shell directly.
+	 */
+	if( nsolver==LIS_SOLVER_JACOBI ||
+		nsolver==LIS_SOLVER_GS ||
+		nsolver==LIS_SOLVER_SOR )
+	{
+		LIS_SETERR(
+			LIS_ERR_NOT_IMPLEMENTED,
+			"Hybrid inner Jacobi/GS/SOR solver requires explicit matrix storage\n");
+
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
+	/*
+	 * Krylov methods using A^H require the USER adjoint callback.
+	 */
+	if( (nsolver==LIS_SOLVER_BICG ||
+		 nsolver==LIS_SOLVER_BICR ||
+		 nsolver==LIS_SOLVER_CRS ||
+		 nsolver==LIS_SOLVER_BICRSTAB ||
+		 nsolver==LIS_SOLVER_GPBICR ||
+		 nsolver==LIS_SOLVER_BICRSAFE) &&
+		A->user_matvech==NULL )
+	{
+		LIS_SETERR(
+			LIS_ERR_NOT_IMPLEMENTED,
+			"Hybrid inner solver requires the user transpose/Hermitian matvec callback\n");
+
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
+	return LIS_SUCCESS;
+}
+
+static LIS_INT
+lis_solver_check_user_hybrid_inner_precon(
+	LIS_INT nsolver,
+	LIS_INT precon_type,
+	LIS_INT capabilities)
+{
+	LIS_PRECON_REGISTER *reg;
+
+	switch( precon_type )
+	{
+	case LIS_PRECON_TYPE_NONE:
+	case LIS_PRECON_TYPE_MFAMG:
+		return LIS_SUCCESS;
+
+	case LIS_PRECON_TYPE_JACOBI:
+		if( !(capabilities & LIS_MATRIX_CAP_DIAGONAL) )
+		{
+			LIS_SETERR(
+				LIS_ERR_NOT_IMPLEMENTED,
+				"Hybrid inner Jacobi preconditioner requires matrix diagonal access\n");
+
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
+
+		return LIS_SUCCESS;
+
+	case LIS_PRECON_TYPE_ILU:
+	case LIS_PRECON_TYPE_IS:
+	case LIS_PRECON_TYPE_SAI:
+	case LIS_PRECON_TYPE_SAAMG:
+	case LIS_PRECON_TYPE_ILUC:
+	case LIS_PRECON_TYPE_ILUT:
+		if( !(capabilities & LIS_MATRIX_CAP_ROW_ACCESS) )
+		{
+			LIS_SETERR(
+				LIS_ERR_NOT_IMPLEMENTED,
+				"Hybrid inner preconditioner requires matrix row access\n");
+
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
+
+		return LIS_SUCCESS;
+
+	case LIS_PRECON_TYPE_HYBRID:
+		LIS_SETERR(
+			LIS_ERR_ILL_ARG,
+			"recursive Hybrid preconditioner is not supported\n");
+
+		return LIS_ERR_ILL_ARG;
+
+	default:
+		break;
+	}
+
+	if( precon_type<LIS_PRECON_TYPE_USERDEF )
+	{
+		LIS_SETERR(
+			LIS_ERR_NOT_IMPLEMENTED,
+			"selected Hybrid inner preconditioner is unavailable for LIS_MATRIX_USER\n");
+
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
+	if( precon_register_top==NULL ||
+		precon_type>=precon_register_type )
+	{
+		LIS_SETERR(
+			LIS_ERR_ILL_ARG,
+			"invalid registered Hybrid inner preconditioner type\n");
+
+		return LIS_ERR_ILL_ARG;
+	}
+
+	reg = &precon_register_top[
+		precon_type-LIS_PRECON_TYPE_USERDEF];
+
+	if( reg->pcreate==NULL ||
+		reg->psolve==NULL )
+	{
+		LIS_SETERR(
+			LIS_ERR_NOT_IMPLEMENTED,
+			"registered Hybrid inner preconditioner requires pcreate and psolve callbacks\n");
+
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
+	if( (nsolver==LIS_SOLVER_BICG ||
+		 nsolver==LIS_SOLVER_BICR) &&
+		reg->psolveh==NULL )
+	{
+		LIS_SETERR(
+			LIS_ERR_NOT_IMPLEMENTED,
+			"Hybrid inner solver requires the registered psolveh callback\n");
+
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
+	return LIS_SUCCESS;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_solver_check_user_matrix"
 static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
@@ -2337,6 +2489,27 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
 						"selected built-in preconditioner requires matrix row access\n");
 					return LIS_ERR_NOT_IMPLEMENTED;
 				}
+				break;
+
+			case LIS_PRECON_TYPE_HYBRID:
+				err =
+					lis_solver_check_user_hybrid_inner_solver(
+						A,
+						solver->options[
+							LIS_OPTIONS_PSOLVER]);
+
+				if( err ) return err;
+
+				err =
+					lis_solver_check_user_hybrid_inner_precon(
+						solver->options[
+							LIS_OPTIONS_PSOLVER],
+						solver->options[
+							LIS_OPTIONS_PPRECON],
+						capabilities);
+
+				if( err ) return err;
+
 				break;
 
 			default:
