@@ -357,6 +357,120 @@ cleanup:
 
 
 static int
+run_inner_maxiter_soft_status(
+    LIS_MATRIX A,
+    LIS_VECTOR b,
+    LIS_VECTOR x)
+{
+    LIS_SOLVER solver = NULL;
+    LIS_PRECON precon = NULL;
+    LIS_SOLVER inner = NULL;
+    LIS_INT err;
+    LIS_REAL nrm2 = 0.0;
+    int failed = 0;
+
+    err = lis_solver_create(&solver);
+    if( err ) return 1;
+
+    /*
+     * Deliberately force the Hybrid-owned GMRES to stop after one
+     * iteration at an effectively unreachable tolerance.
+     *
+     * The inner solver must report LIS_MAXITER, while Hybrid itself
+     * must return LIS_SUCCESS and expose the best available iterate.
+     */
+    err = lis_solver_set_option(
+        "-i fgmres -p hybrid "
+        "-hybrid_i gmres -hybrid_p jacobi "
+        "-hybrid_maxiter 1 -hybrid_restart 1 "
+        "-hybrid_tol 1.0e-30 "
+        "-restart 8 -maxiter 20 -tol 1.0e-8 "
+        "-scale none -print none",
+        solver);
+    if( err )
+    {
+        fprintf(stderr,
+                "Hybrid soft-MAXITER option setup failed: %d\n",
+                (int)err);
+        failed = 1;
+        goto cleanup;
+    }
+
+    solver->A = A;
+
+    err = lis_precon_create(solver,&precon);
+    if( err )
+    {
+        fprintf(stderr,
+                "Hybrid soft-MAXITER preconditioner create failed: %d\n",
+                (int)err);
+        failed = 1;
+        goto cleanup;
+    }
+
+    solver->precon = precon;
+    inner = precon->solver;
+
+    if( inner==NULL )
+    {
+        fprintf(stderr,
+                "Hybrid soft-MAXITER inner solver is NULL\n");
+        failed = 1;
+        goto cleanup;
+    }
+
+    lis_vector_set_all((LIS_SCALAR)0.0,x);
+
+    err = lis_psolve(solver,b,x);
+
+    if( err!=LIS_SUCCESS )
+    {
+        fprintf(stderr,
+                "Hybrid soft-MAXITER returned %d, expected LIS_SUCCESS\n",
+                (int)err);
+        failed = 1;
+        goto cleanup;
+    }
+
+    if( inner->retcode!=LIS_MAXITER )
+    {
+        fprintf(stderr,
+                "Hybrid inner retcode=%d, expected LIS_MAXITER\n",
+                (int)inner->retcode);
+        failed = 1;
+        goto cleanup;
+    }
+
+    err = lis_vector_nrm2(x,&nrm2);
+    if( err || !(nrm2>0.0) || nrm2!=nrm2 )
+    {
+        fprintf(stderr,
+                "Hybrid soft-MAXITER produced invalid iterate norm=%e err=%d\n",
+                (double)nrm2,
+                (int)err);
+        failed = 1;
+        goto cleanup;
+    }
+
+    printf(
+        "PASS Hybrid inner LIS_MAXITER is a usable truncated "
+        "preconditioner application; norm=%e\n",
+        (double)nrm2);
+
+cleanup:
+    if( precon )
+    {
+        lis_precon_destroy(precon);
+        precon = NULL;
+        if( solver ) solver->precon = NULL;
+    }
+    if( solver ) lis_solver_destroy(solver);
+
+    return failed;
+}
+
+
+static int
 run_adjoint_rejection(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x)
 {
     LIS_SOLVER solver = NULL;
@@ -492,6 +606,14 @@ int main(int argc, char **argv)
      */
     failed |= run_nested_inner_gcrodr_mfamg_success(
         A,b,exact,x);
+
+    if( failed ) goto cleanup;
+
+    /*
+     * Hybrid must distinguish a usable inner iteration cap from
+     * genuine solver/preconditioner failures.
+     */
+    failed |= run_inner_maxiter_soft_status(A,b,x);
     if( failed ) goto cleanup;
 
     failed |= run_outer_fgcrodr_hybrid_mfamg_success(

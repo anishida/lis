@@ -338,7 +338,16 @@ LIS_INT lis_psolve_hybrid(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 	}
 
 	err = lis_solver_execute[nsolver](solver2);
-	if( err )
+	/*
+	 * Hybrid is an iterative preconditioner.  Reaching the configured
+	 * inner iteration cap is therefore a usable truncated application,
+	 * not a fatal preconditioner failure: the inner Krylov solver has
+	 * already updated solver2->x with its best available iterate.
+	 *
+	 * Preserve fail-closed behavior for real failures such as BREAKDOWN,
+	 * invalid configuration, allocation errors and NOT_IMPLEMENTED.
+	 */
+	if( err && err!=LIS_MAXITER )
 	{
 		LIS_DEBUG_FUNC_OUT;
 		return err;
