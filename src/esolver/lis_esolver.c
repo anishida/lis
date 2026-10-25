@@ -373,6 +373,81 @@ LIS_SCALAR lis_esolver_shift_perturbation(
         return (LIS_SCALAR)step;
 }
 
+/*
+ * Materialize alpha*A + beta*B only for factorizing
+ * preconditioner construction.
+ *
+ * The iterative solver keeps LIS_MATRIX_OPERATOR for matrix-vector
+ * products. The initial implementation is intentionally conservative:
+ * serial CSR operands with identical sparsity are required.
+ */
+static LIS_INT
+lis_esolver_operator_pc_matrix_csr(
+        LIS_MATRIX op,
+        LIS_MATRIX *P)
+{
+        LIS_MATRIX A,B,C;
+        LIS_INT i,j,err;
+
+        if( op==NULL || P==NULL )
+                return LIS_ERR_ILL_ARG;
+
+        *P = NULL;
+
+        if( op->matrix_type!=LIS_MATRIX_OPERATOR ||
+            op->operator_A==NULL ||
+            op->operator_B==NULL )
+                return LIS_ERR_NOT_IMPLEMENTED;
+
+        A = op->operator_A;
+        B = op->operator_B;
+
+        if( A->matrix_type!=LIS_MATRIX_CSR ||
+            B->matrix_type!=LIS_MATRIX_CSR ||
+            A->nprocs!=1 || B->nprocs!=1 ||
+            A->n!=A->gn || B->n!=B->gn ||
+            A->n!=B->n || A->gn!=B->gn ||
+            A->nnz!=B->nnz ||
+            A->ptr==NULL || B->ptr==NULL ||
+            A->index==NULL || B->index==NULL ||
+            A->value==NULL || B->value==NULL )
+                return LIS_ERR_NOT_IMPLEMENTED;
+
+        for(i=0;i<=A->n;i++)
+                if( A->ptr[i]!=B->ptr[i] )
+                        return LIS_ERR_NOT_IMPLEMENTED;
+
+        for(j=0;j<A->nnz;j++)
+                if( A->index[j]!=B->index[j] )
+                        return LIS_ERR_NOT_IMPLEMENTED;
+
+        C = NULL;
+        err = lis_matrix_duplicate(A,&C);
+        if( err ) return err;
+
+        lis_matrix_set_type(C,LIS_MATRIX_CSR);
+        err = lis_matrix_convert(A,C);
+        if( err )
+        {
+                lis_matrix_destroy(C);
+                return err;
+        }
+
+        if( C->value==NULL || C->nnz!=A->nnz )
+        {
+                lis_matrix_destroy(C);
+                return LIS_ERR_ILL_ARG;
+        }
+
+        for(j=0;j<C->nnz;j++)
+                C->value[j] =
+                        op->operator_alpha * A->value[j] +
+                        op->operator_beta  * B->value[j];
+
+        *P = C;
+        return LIS_SUCCESS;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_esolver_rebuild_precon"
 LIS_INT lis_esolver_rebuild_precon(
@@ -381,43 +456,60 @@ LIS_INT lis_esolver_rebuild_precon(
         LIS_PRECON *precon)
 {
         LIS_INT err;
+        LIS_INT precon_type;
+        LIS_MATRIX pc_matrix;
+        LIS_MATRIX build_matrix;
 
         LIS_DEBUG_FUNC_IN;
 
-        if( A==NULL || solver==NULL ||
-            precon==NULL )
+        if( A==NULL || solver==NULL || precon==NULL )
         {
-                LIS_SETERR(LIS_ERR_ILL_ARG,
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
                         "invalid eigensolver preconditioner rebuild arguments\n");
                 return LIS_ERR_ILL_ARG;
         }
 
         if( *precon )
         {
-                if( solver->precon==*precon )
-                {
-                        solver->precon = NULL;
-                }
-
+                if( solver->precon==*precon ) solver->precon = NULL;
                 lis_precon_destroy(*precon);
                 *precon = NULL;
         }
 
         lis_solver_work_destroy(solver);
-
         solver->A = A;
         solver->retcode = LIS_SUCCESS;
 
-        err = lis_precon_create(
-                solver,precon);
+        precon_type = solver->options[LIS_OPTIONS_PRECON];
+        pc_matrix = NULL;
+        build_matrix = A;
+
+        if( A->matrix_type==LIS_MATRIX_OPERATOR &&
+            (precon_type==LIS_PRECON_TYPE_ILU ||
+             precon_type==LIS_PRECON_TYPE_ILUT) )
+        {
+                err = lis_esolver_operator_pc_matrix_csr(A,&pc_matrix);
+                if( err )
+                {
+                        solver->retcode = err;
+                        return err;
+                }
+                build_matrix = pc_matrix;
+        }
+
+        solver->A = build_matrix;
+        err = lis_precon_create(solver,precon);
+        solver->A = A;
+
+        if( pc_matrix )
+        {
+                lis_matrix_destroy(pc_matrix);
+                pc_matrix = NULL;
+        }
+
         if( err )
         {
-                /*
-                 * lis_precon_create() destroys a partially created
-                 * preconditioner on failure but does not clear the
-                 * caller pointer.  Do not expose a dangling handle
-                 * to recovery callers or their cleanup paths.
-                 */
                 *precon = NULL;
                 solver->precon = NULL;
                 solver->retcode = err;
@@ -611,6 +703,9 @@ LIS_INT lis_esolver_init(LIS_ESOLVER esolver)
 	esolver->transform  = LIS_EIGEN_TRANSFORM_AUTO;
 	esolver->nev        = 0;
 	esolver->block_size = 1;
+	esolver->linear_options = NULL;
+	esolver->refine_linear_options = NULL;
+	esolver->refine_gap_fraction = 0.01;
 	esolver->tol        = 0;
 	esolver->eprecision = LIS_PRECISION_DOUBLE;
 
@@ -772,12 +867,138 @@ LIS_INT lis_esolver_destroy(LIS_ESOLVER esolver)
                         esolver->evector = NULL;
                         esolver->evector_owned_count = 0;
                 }
+
+                if( esolver->linear_options )
+                {
+                        lis_free(esolver->linear_options);
+                        esolver->linear_options = NULL;
+                }
+
+                if( esolver->refine_linear_options )
+                {
+                        lis_free(esolver->refine_linear_options);
+                        esolver->refine_linear_options = NULL;
+                }
+
 		lis_free(esolver);
 	}
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 }
+
+static LIS_INT
+lis_esolver_replace_option_string(
+        char **slot,
+        const char *text)
+{
+        char *copy;
+        size_t length;
+
+        if( slot==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "invalid eigensolver option-string target\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( *slot )
+        {
+                lis_free(*slot);
+                *slot = NULL;
+        }
+
+        if( text==NULL || text[0]=='\0' )
+        {
+                return LIS_SUCCESS;
+        }
+
+        length = strlen(text);
+        copy = (char *)lis_malloc(
+                (length+1)*sizeof(char),
+                "lis_esolver_replace_option_string::copy");
+
+        if( copy==NULL )
+        {
+                LIS_SETERR_MEM((length+1)*sizeof(char));
+                return LIS_OUT_OF_MEMORY;
+        }
+
+        memcpy(copy,text,length+1);
+        *slot = copy;
+        return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_set_linear_options"
+LIS_INT lis_esolver_set_linear_options(
+        const char *text,
+        LIS_ESOLVER esolver)
+{
+        LIS_DEBUG_FUNC_IN;
+
+        if( esolver==NULL )
+        {
+                LIS_SETERR(LIS_ERR_ILL_ARG,"eigensolver is undefined\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+        return lis_esolver_replace_option_string(
+                &esolver->linear_options,text);
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_set_refine_linear_options"
+LIS_INT lis_esolver_set_refine_linear_options(
+        const char *text,
+        LIS_ESOLVER esolver)
+{
+        LIS_DEBUG_FUNC_IN;
+
+        if( esolver==NULL )
+        {
+                LIS_SETERR(LIS_ERR_ILL_ARG,"eigensolver is undefined\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+        return lis_esolver_replace_option_string(
+                &esolver->refine_linear_options,text);
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_set_refine_gap_fraction"
+LIS_INT lis_esolver_set_refine_gap_fraction(
+        LIS_REAL fraction,
+        LIS_ESOLVER esolver)
+{
+        LIS_DEBUG_FUNC_IN;
+
+        if( esolver==NULL )
+        {
+                LIS_SETERR(LIS_ERR_ILL_ARG,"eigensolver is undefined\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( !isfinite((double)fraction) ||
+            fraction<=0.0 || fraction>=0.5 )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "eigensolver refine gap fraction must be in (0,0.5)\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        esolver->refine_gap_fraction = fraction;
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
 
 #undef __FUNC__
 #define __FUNC__ "lis_esolve"

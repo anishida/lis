@@ -1115,6 +1115,25 @@ struct LIS_ESOLVER_STRUCT
         LIS_INT feast_solver;
         LIS_INT feast_interval_mask;
         LIS_INT block_size;
+
+        /*
+         * Optional linear-solver configuration for eigensolver
+         * internal shifted systems.
+         *
+         * linear_options applies to linear solves owned by the
+         * current eigensolver. refine_linear_options applies to the
+         * nested eigensolver used to refine projected Ritz pairs.
+         * Both strings are owned by the eigensolver.
+         */
+        char *linear_options;
+        char *refine_linear_options;
+
+        /*
+         * Fraction of the nearest distinct Ritz spacing used to move
+         * a refinement shift away from the Ritz pole. 0.01 preserves
+         * the established default behavior.
+         */
+        LIS_REAL refine_gap_fraction;
 };
 typedef struct LIS_ESOLVER_STRUCT *LIS_ESOLVER;
 
@@ -1449,6 +1468,9 @@ extern "C"
 	extern LIS_INT lis_iesolver_destroy(LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_option(char *text, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_optionC(LIS_ESOLVER esolver);
+	extern LIS_INT lis_esolver_set_linear_options(const char *text, LIS_ESOLVER esolver);
+	extern LIS_INT lis_esolver_set_refine_linear_options(const char *text, LIS_ESOLVER esolver);
+	extern LIS_INT lis_esolver_set_refine_gap_fraction(LIS_REAL fraction, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver);
 	extern LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver);  
 	extern LIS_INT lis_esolver_get_iter(LIS_ESOLVER esolver, LIS_INT *iter);

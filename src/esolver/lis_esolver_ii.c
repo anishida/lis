@@ -806,6 +806,17 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
 
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
+
+  if( esolver->linear_options && esolver->linear_options[0] )
+    {
+      err = lis_solver_set_option(esolver->linear_options,solver);
+      if( err )
+        {
+          lis_solver_destroy(solver);
+          if( Aop ) lis_matrix_destroy(Aop);
+          return err;
+        }
+    }
   err = lis_solver_set_optionC(solver);
   CHKERR(err);
   lis_solver_get_solver(solver, &nsol);
@@ -830,8 +841,9 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
     }
 
   /* create preconditioner */
-  solver->A = A;
-  err = lis_precon_create(solver, &precon);
+    precon = NULL;
+  err = lis_esolver_rebuild_precon(
+      A,solver,&precon);
   if( err )
     {
       lis_solver_work_destroy(solver);
