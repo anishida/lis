@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis ユーザガイド}\\
-バージョン 2.1.19
+バージョン 2.1.20
 \end{flushleft}
 
 \vspace*{2cm}
@@ -826,7 +826,7 @@ A = \left(
 
 ディレクトリ{\tt lis-(\$VERSION)/test}において\\
  \verb+      > mpiexec -n m test8f+\\
- と入力すると, Newton-Raphson法を用いて非線形偏微分方程式を解く.
+ と入力すると, Newton-Raphson法を用いて非線型偏微分方程式を解く.
 Newton-Raphson法において, 前処理行列はソルバと切り離して更新される（\ref{subsec:psd}節を参照のこと）.
 
 \subsubsection{etest1}
@@ -1818,7 +1818,7 @@ Matrix Market形式による外部ファイル{\tt matvec.mtx}の記述例を以
 \noindent
 {\bf 残差の監視とカスタム収束判定}
 
-アプリケーションは、コマンドラインオプションを変更することなく、線形ソルバに C 言語のコールバック関数を追加できる。残差モニタは以下の関数で登録する。
+アプリケーションは、コマンドラインオプションを変更することなく、線型ソルバに C 言語のコールバック関数を追加できる。残差モニタは以下の関数で登録する。
 
 \begin{verbatim}
 LIS_INT lis_solver_set_monitor(
@@ -1846,7 +1846,7 @@ LIS_SOLVER_RESIDUAL_PROJECTED
 LIS_SOLVER_RESIDUAL_TRUE
 \end{verbatim}
 
-\verb|LIS_SOLVER_RESIDUAL_PROJECTED| はクリロフ部分空間に射影された残差の推定値を表し、\verb|LIS_SOLVER_RESIDUAL_TRUE| は元の線形方程式から明示的に計算された真の残差を表す。リスタート型 GMRES 法ソルバは、射影残差を使って収束候補を形成し、ソルバレベルで成功（収束）とする前に、真の残差による判定を行う。
+\verb|LIS_SOLVER_RESIDUAL_PROJECTED| はクリロフ部分空間に射影された残差の推定値を表し、\verb|LIS_SOLVER_RESIDUAL_TRUE| は元の線型方程式から明示的に計算された真の残差を表す。リスタート型 GMRES 法ソルバは、射影残差を使って収束候補を形成し、ソルバレベルで成功（収束）とする前に、真の残差による判定を行う。
 
 精度切り替え型 GMRES の場合、倍精度への切り替え閾値がモニタに報告されるが、これはアルゴリズム上の精度切り替え基準のまま維持される。カスタム収束は最終的な収束フェーズを制御するものであり、倍精度から4倍精度への切り替え閾値を再定義することはない。
 
@@ -2100,6 +2100,18 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
  Generalized Subspace   & \verb=-e {gsi|14}=       &    \verb=-ss [1]= & 部分空間の大きさ \\
  Generalized Lanczos    & \verb=-e {gli|15}=       &    \verb=-ss [1]= & 部分空間の大きさ \\ 
  Generalized Arnoldi    & \verb=-e {gai|16}=       &    \verb=-ss [1]= & 部分空間の大きさ \\ 
+ Native FEAST                      & \verb=-e {feast|17}=    &
+ \verb=-ss [1]= & 探索部分空間の大きさ \\
+                                   &                         &
+ \verb=-feast_emin= & ターゲット区間の下限 \\
+                                   &                         &
+ \verb=-feast_emax= & ターゲット区間の上限 \\
+                                   &                         &
+ \verb=-feast_ratio [0.30]= & 楕円積分経路のアスペクト比 \\
+                                   &                         &
+ \verb=-feast_points [8]= & 積分経路上のサンプリング点数 \\
+                                   &                         &
+ \verb=-feast_solver [gmres]= & 内部線型方程式解法 \\
 \hline         
 \end{tabular}
 \end{center}
@@ -2333,7 +2345,7 @@ A =
 \label{subsec:psd}
 前節では, 前処理行列はlis\_solveが呼び出されるたびに更新されていた. 
 本節では, 前処理とソルバを分離し, 前処理行列をソルバと切り離して更新する
-方法について述べる．この方法は, 非線形偏微分方程式を含むある種の問題に対して
+方法について述べる．この方法は, 非線型偏微分方程式を含むある種の問題に対して
 極めて有効である. 実際, Newton-Raphson法では反復法が用いられ, 各反復での
 線型方程式の解をもとに解ベクトルが逐次的に求められる. この機能を実現する
 ためには, 以下の関数を実装する必要がある.  
@@ -2490,8 +2502,8 @@ A =
 \item \texttt{callback}: 対角成分を計算し、ベクトル \texttt{d} に格納するユーザ定義の関数ポインタ
 \end{itemize}
 
-\subsubsection{線形結合行列演算子 (\texttt{LIS\_MATRIX\_OPERATOR})}
-この演算子は、元の行列を変更することなく、2つの行列の線形結合 $C = \alpha A + \beta B$ を表す。演算子行列に対して、対角成分は以下のように自動的かつ再帰的に評価される：
+\subsubsection{線型結合行列演算子 (\texttt{LIS\_MATRIX\_OPERATOR})}
+この演算子は、元の行列を変更することなく、2つの行列の線型結合 $C = \alpha A + \beta B$ を表す。演算子行列に対して、対角成分は以下のように自動的かつ再帰的に評価される：
 \[\mathrm{diag}(\alpha A + \beta B) = \alpha \cdot \mathrm{diag}(A) + \beta \cdot \mathrm{diag}(B)\]
 
 \subsubsection{行列演算子を用いたシフト付き一般化固有値ソルバ}シフト付き一般化固有値問題 $(A - \sigma B)x = \lambda Bx$ に対して、一般化べき乗法（GPI）、一般化逆べき乗法（GII）、および一般化共役残差法（GCR）ソルバは、\texttt{LIS\_MATRIX\_OPERATOR} を利用して $A - \sigma B$ に対する一時的な演算子を動的に生成する。これは元の行列が元の状態のまま残ることを保証し、ユーザ定義のカスタム行列（\texttt{LIS\_MATRIX\_USER}）に対する完全なサポートを可能にする。シフト付き \texttt{LIS\_MATRIX\_USER} は、Lanczos 法のような他の手法に対しては依然として非対応のままである。
@@ -2512,6 +2524,10 @@ MPI環境においては、現時点ではCSR行列が必須である。また�
 オプション \verb=-mfamg_block_size= は、局所平滑化のブロックサイズを制御する。デフォルト値の 1 は、従来の重み付きヤコビ平滑化を維持する。2 から 16 までの値は、連続するローカルな未知数を用いたブロックヤコビ法を有効にする。ブロックがプロセス境界をまたぐことはなく、最後のローカルブロックに含まれる未知数の数は、要求されたブロックサイズよりも少なくなることがある。
 利用可能な各対角ブロックに対しては、ピボッティングを伴う行列分解が行われる。ブロックが数値的に特異である場合、そのスカラ対角成分が利用可能であれば、MFAMGはそのブロックに対して重み付きヤコビ補正へと切り替える。
 既存のMFAMG数値更新パスが階層構造を再利用する場合、分解されたブロックの行列は更新された行列の値に基づいて再計算される。
+
+\subsubsection{ネイティブ FEAST 固有値ソルバ}
+ネイティブ FEAST 固有値ソルバは、\verb|-feast_emin| および \verb|-feast_emax| で指定された実数区間の内部にある固有対を計算する。区間の両端の境界値はどちらも必須であり、\verb|-feast_emin < -feast_emax| を満たす必要がある。部分空間の次元は \verb|-ss| で選択する。周回積分には、\verb|-feast_points| で指定された数値積分点と、\verb|-feast_ratio| で指定された正の楕円アスペクト比が使用される。
+シフト付き線型方程式の解法には、\verb|-feast_solver| オプションとして \verb|gmres|、\verb|fgmres|、\verb|gcrodr|、または \verb|fgcrodr| を指定できる。デフォルトでは GMRES が使用される。ネイティブ FEAST は標準および一般化固有値問題の両方で利用可能であり、実数スカラビルドと複素数スカラビルドの双方をサポートしている。
 
 \newpage
 \subsection{実行ファイルの生成}
@@ -6579,7 +6595,18 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
  Generalized CR         & \verb=-e {gcr|13}=       &    \verb=-i [bicg]= & 線型方程式解法 \\
  Generalized Subspace   & \verb=-e {gsi|14}=       &    \verb=-ss [1]= & 部分空間の大きさ \\
  Generalized Lanczos    & \verb=-e {gli|15}=       &    \verb=-ss [1]= & 部分空間の大きさ \\ 
- Generalized Arnoldi    & \verb=-e {gai|16}=       &    \verb=-ss [1]= & 部分空間の大きさ \\ 
+ Generalized Arnoldi    & \verb=-e {gai|16}=       &    \verb=-ss [1]= & 部分空間の大きさ \\
+ \verb=-ss [1]= & 探索部分空間の大きさ \\
+                                   &                         &
+ \verb=-feast_emin= & ターゲット区間の下限 \\
+                                   &                         &
+ \verb=-feast_emax= & ターゲット区間の上限 \\
+                                   &                         &
+ \verb=-feast_ratio [0.30]= & 楕円積分経路のアスペクト比 \\
+                                   &                         &
+ \verb=-feast_points [8]= & 積分経路上のサンプリング点数 \\
+                                   &                         &
+ \verb=-feast_solver [gmres]= & 内部線型方程式解法 \\
 \hline         
 \end{tabular}
 \end{center}
