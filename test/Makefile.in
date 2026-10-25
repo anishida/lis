@@ -1418,9 +1418,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign test/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu test/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign test/Makefile
+	  $(AUTOMAKE) --gnu test/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -1819,7 +1819,7 @@ testhalfstorage$(EXEEXT): $(testhalfstorage_OBJECTS) $(testhalfstorage_DEPENDENC
 	@rm -f testhalfstorage$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testhalfstorage_OBJECTS) $(testhalfstorage_LDADD) $(LIBS)
 
-testhybridnested$(EXEEXT): $(testhybridnested_OBJECTS) $(testhybridnested_DEPENDENCIES) $(EXTRA_testhybridnested_DEPENDENCIES)
+testhybridnested$(EXEEXT): $(testhybridnested_OBJECTS) $(testhybridnested_DEPENDENCIES) $(EXTRA_testhybridnested_DEPENDENCIES) 
 	@rm -f testhybridnested$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testhybridnested_OBJECTS) $(testhybridnested_LDADD) $(LIBS)
 
