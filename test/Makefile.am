@@ -16,7 +16,7 @@ test_PROGRAMS = etest1 etest2 etest3 etest4 etest5 etest5b etest6 etest7 getest1
         spmvtest4 spmvtest5 test1 test2 test2b test3 test3b test3c \
         test4 test5 test6 test7 testuser testuserrow testuserprecon testmatvecblock \
         testcapabilities getestuser testoperator getestoperator testdiagonal \
-        testpreconlifecycle testjacobiuser testpreconpsd testpreconreuse testeigenbreakdown testrqirestore \
+        testpreconlifecycle testhybridnested testjacobiuser testpreconpsd testpreconreuse testeigenbreakdown testrqirestore \
         testrhistoryerror testrepeatedsystems testpreconpolicy testgmreswork \
         testsolvermonitor testsolvercallbackpaths testsolvercallbackcert testworkcompat \
         testworkreuse testprebuiltuser testshellscale testsymmdiagguard testilupivot \
@@ -103,6 +103,7 @@ getestuser_SOURCES = getestuser.c
 testoperator_SOURCES = testoperator.c
 testdiagonal_SOURCES = testdiagonal.c
 testpreconlifecycle_SOURCES = testpreconlifecycle.c
+testhybridnested_SOURCES = testhybridnested.c
 testjacobiuser_SOURCES = testjacobiuser.c
 testpreconpsd_SOURCES = testpreconpsd.c
 testpreconreuse_SOURCES = testpreconreuse.c
@@ -113,7 +114,6 @@ testblockgram_SOURCES = testblockgram.c
 testblockorthogonal_SOURCES = testblockorthogonal.c
 testblockrank_SOURCES = testblockrank.c
 testrqirestore_SOURCES = testrqirestore.c
-testrhistoryerror_SOURCES = testrhistoryerror.c
 testrepeatedsystems_SOURCES = testrepeatedsystems.c
 testpreconpolicy_SOURCES = testpreconpolicy.c
 testgmreswork_SOURCES = testgmreswork.c
@@ -200,7 +200,7 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
 TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
-        testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
+        testpreconlifecycle$(EXEEXT) testhybridnested$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
         testpreconreuse$(EXEEXT) testprojectedeigen$(EXEEXT) testprojectedhermitian$(EXEEXT) testblockgram$(EXEEXT) testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
         testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
         testsolvermonitor$(EXEEXT) testsolvercallbackpaths$(EXEEXT) \

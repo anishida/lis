@@ -4396,9 +4396,21 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 			return err;
 		}
 	}
-	/* Build coarse state from the final effective operator. */
+	/*
+	 * Build the generic two-level coarse correction only when the
+	 * selected preconditioner does not already own the near-nullspace
+	 * hierarchy.
+	 *
+	 * MFAMG consumes the near-nullspace directly.  The same rule applies
+	 * when MFAMG is nested one level below Hybrid; stacking the generic
+	 * outer correction on top of the inner MFAMG hierarchy would apply
+	 * the same coarse context twice.
+	 */
 	if( solver->near_nullspace_dim>0 &&
-        precon_type!=LIS_PRECON_TYPE_MFAMG )
+	    precon_type!=LIS_PRECON_TYPE_MFAMG &&
+	    !(precon_type==LIS_PRECON_TYPE_HYBRID &&
+	      solver->options[LIS_OPTIONS_PPRECON]==
+	          LIS_PRECON_TYPE_MFAMG) )
 	{
 	        err =
 	                lis_solver_near_nullspace_coarse_setup(
