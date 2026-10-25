@@ -38,6 +38,7 @@
         #include <malloc.h>
 #endif
 #include <math.h>
+#include <float.h>
 #include <string.h>
 #include <stdarg.h>
 #ifdef USE_SSE2
@@ -144,6 +145,2633 @@ LIS_INT lis_eli_malloc_work(LIS_ESOLVER esolver)
 	return LIS_SUCCESS;
 }
 
+/*
+ * Orthogonalize one Lanczos residual against an active basis span.
+ * Keeping the active range explicit separates basis length from the
+ * requested Ritz count and allows the operation to be reused by
+ * multi-vector recurrences.
+ */
+static LIS_INT
+lis_lanczos_reorthogonalize_residual(
+    LIS_VECTOR *basis,
+    LIS_INT first,
+    LIS_INT last,
+    LIS_VECTOR residual)
+{
+    LIS_INT err,k;
+    LIS_SCALAR dot;
+
+    for(k=first;k<=last;k++)
+    {
+        err = lis_vector_dot(
+            basis[k],
+            residual,
+            &dot);
+        if( err )
+            return err;
+
+        err = lis_vector_axpy(
+            -dot,
+            basis[k],
+            residual);
+        if( err )
+            return err;
+    }
+
+    return LIS_SUCCESS;
+}
+
+
+/*
+ * Orthogonalize the generalized Lanczos dual residual.
+ *
+ * With dual_basis[k] = B*basis[k], subtracting
+ * <basis[k],residual>*dual_basis[k] makes B^-1*residual
+ * orthogonal to the active basis in the B inner product.
+ */
+static LIS_INT
+lis_lanczos_reorthogonalize_dual_residual(
+    LIS_VECTOR *basis,
+    LIS_VECTOR *dual_basis,
+    LIS_INT first,
+    LIS_INT last,
+    LIS_VECTOR residual)
+{
+    LIS_INT err,k;
+    LIS_SCALAR dot;
+
+    for(k=first;k<=last;k++)
+    {
+        err = lis_vector_dot(
+            basis[k],
+            residual,
+            &dot);
+        if( err )
+            return err;
+
+        err = lis_vector_axpy(
+            -dot,
+            dual_basis[k],
+            residual);
+        if( err )
+            return err;
+    }
+
+    return LIS_SUCCESS;
+}
+
+
+/*
+ * Build the logical block layout over the existing linear Lanczos
+ * basis storage.
+ *
+ * The subspace size remains the maximum total basis dimension.
+ * A final block may therefore have fewer columns than block_size.
+ *
+ * Rank reduction caused by numerical deflation is intentionally not
+ * handled here.  This foundation records only the nominal layout;
+ * rank-revealing orthogonalization is supplied by the shared block
+ * eigensolver layer.
+ */
+LIS_INT
+lis_lanczos_block_layout(
+    LIS_INT ss,
+    LIS_INT block_size,
+    LIS_INT *block_count,
+    LIS_INT **block_offset,
+    LIS_INT **block_rank)
+{
+    LIS_INT i;
+    LIS_INT count;
+    LIS_INT offset;
+    LIS_INT rank;
+    LIS_INT *offsets;
+    LIS_INT *ranks;
+
+    if( ss<1 || block_size<1 ||
+        block_count==NULL ||
+        block_offset==NULL ||
+        block_rank==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid Block Lanczos layout arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    if( block_size>ss )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "Block Lanczos block size exceeds subspace size\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    count = (ss + block_size - 1) / block_size;
+
+    offsets = (LIS_INT *)lis_malloc(
+        ss*sizeof(LIS_INT),
+        "lis_lanczos_block_layout::offsets");
+
+    if( offsets==NULL )
+    {
+        LIS_SETERR_MEM(
+            ss*sizeof(LIS_INT));
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+    ranks = (LIS_INT *)lis_malloc(
+        ss*sizeof(LIS_INT),
+        "lis_lanczos_block_layout::ranks");
+
+    if( ranks==NULL )
+    {
+        lis_free(offsets);
+
+        LIS_SETERR_MEM(
+            ss*sizeof(LIS_INT));
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+    /*
+     * Numerical rank deflation can create more blocks than the
+     * nominal ceil(ss/block_size) partition.  Reserve metadata for
+     * the maximum possible case: ss rank-one blocks.
+     */
+    for(i=0;i<ss;i++)
+    {
+        offsets[i] = -1;
+        ranks[i] = 0;
+    }
+
+    offset = 0;
+
+    for(i=0;i<count;i++)
+    {
+        rank = block_size;
+
+        if( offset + rank > ss )
+        {
+            rank = ss - offset;
+        }
+
+        offsets[i] = offset;
+        ranks[i] = rank;
+
+        offset += rank;
+    }
+
+    if( offset!=ss )
+    {
+        lis_free(ranks);
+        lis_free(offsets);
+
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid Block Lanczos basis layout\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *block_count = count;
+    *block_offset = offsets;
+    *block_rank = ranks;
+
+    return LIS_SUCCESS;
+}
+
+
+/*
+ * Build the deterministic raw initial block used by Block Lanczos.
+ *
+ * Global row g belongs to column j when
+ *
+ *     g mod block_size == j.
+ *
+ * The raw block is intentionally not normalized here.  Numerical
+ * rank detection, deflation, compaction, and normalization belong
+ * to the shared block eigensolver layer.
+ */
+#undef __FUNC__
+#define __FUNC__ "lis_lanczos_block_initial_raw"
+LIS_INT
+lis_lanczos_block_initial_raw(
+    LIS_INT block_size,
+    LIS_INT block_rank,
+    LIS_VECTOR W[])
+{
+    LIS_INT err;
+    LIS_INT i,j;
+    LIS_INT is,ie;
+    LIS_INT index;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if( block_size<1 ||
+        block_rank<1 ||
+        block_rank>block_size ||
+        W==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid Block Lanczos initial block arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    for(j=0;j<block_rank;j++)
+    {
+        if( W[j]==NULL )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "null Block Lanczos initial block vector\n");
+            return LIS_ERR_ILL_ARG;
+        }
+
+        err = lis_vector_set_all(
+            0.0,
+            W[j]);
+
+        if( err )
+        {
+            return err;
+        }
+
+        err = lis_vector_get_range(
+            W[j],
+            &is,
+            &ie);
+
+        if( err )
+        {
+            return err;
+        }
+
+        for(i=is;i<ie;i++)
+        {
+            if( (i % block_size)==j )
+            {
+                index = i + W[j]->origin;
+
+                err = lis_vector_set_value(
+                    LIS_INS_VALUE,
+                    index,
+                    1.0,
+                    W[j]);
+
+                if( err )
+                {
+                    return err;
+                }
+            }
+        }
+    }
+
+    LIS_DEBUG_FUNC_OUT;
+
+    return LIS_SUCCESS;
+}
+
+
+
+/*
+ * Insert one diagonal Alpha block into the dense projected matrix.
+ *
+ * The projected matrix uses the full Lanczos subspace capacity as
+ * its leading dimension.  Active block offsets and ranks determine
+ * the actual occupied entries.
+ */
+#undef __FUNC__
+#define __FUNC__ "lis_lanczos_block_projected_set_alpha"
+LIS_INT
+lis_lanczos_block_projected_set_alpha(
+    LIS_INT ld,
+    LIS_SCALAR *t,
+    LIS_INT offset,
+    LIS_INT rank,
+    const LIS_SCALAR *alpha)
+{
+    LIS_INT i,j;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if( ld<1 ||
+        t==NULL ||
+        alpha==NULL ||
+        offset<0 ||
+        rank<1 ||
+        offset+rank>ld )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid Block Lanczos Alpha placement arguments\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+    for(i=0;i<rank;i++)
+    {
+        for(j=0;j<rank;j++)
+        {
+            t[
+                (offset+i)*ld+
+                (offset+j)
+            ] =
+                alpha[i*rank+j];
+        }
+    }
+
+    LIS_DEBUG_FUNC_OUT;
+
+    return LIS_SUCCESS;
+}
+
+
+/*
+ * Insert one rectangular Beta block and its Hermitian transpose
+ * into the dense projected matrix.
+ *
+ * beta has row-major dimensions:
+ *
+ *     next_rank x previous_rank
+ *
+ * and represents the lower off-diagonal block
+ *
+ *     T(next, previous) = Beta.
+ *
+ * The matching upper block is Beta^H.
+ */
+#undef __FUNC__
+#define __FUNC__ "lis_lanczos_block_projected_set_beta"
+LIS_INT
+lis_lanczos_block_projected_set_beta(
+    LIS_INT ld,
+    LIS_SCALAR *t,
+    LIS_INT previous_offset,
+    LIS_INT previous_rank,
+    LIS_INT next_offset,
+    LIS_INT next_rank,
+    const LIS_SCALAR *beta)
+{
+    LIS_INT i,j;
+    LIS_SCALAR value;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if( ld<1 ||
+        t==NULL ||
+        beta==NULL ||
+        previous_offset<0 ||
+        next_offset<0 ||
+        previous_rank<1 ||
+        next_rank<1 ||
+        previous_offset+previous_rank>ld ||
+        next_offset+next_rank>ld )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid Block Lanczos Beta placement arguments\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+    for(i=0;i<next_rank;i++)
+    {
+        for(j=0;j<previous_rank;j++)
+        {
+            value =
+                beta[
+                    i*previous_rank+j
+                ];
+
+            t[
+                (next_offset+i)*ld+
+                (previous_offset+j)
+            ] = value;
+
+#ifdef _COMPLEX
+            t[
+                (previous_offset+j)*ld+
+                (next_offset+i)
+            ] = conj(value);
+#else
+            t[
+                (previous_offset+j)*ld+
+                (next_offset+i)
+            ] = value;
+#endif
+        }
+    }
+
+    LIS_DEBUG_FUNC_OUT;
+
+    return LIS_SUCCESS;
+}
+
+
+/*
+ * Initial Block Lanczos driver.
+ *
+ * BL0-BL2 establish:
+ *   - block-size semantics,
+ *   - scalar/block dispatch,
+ *   - linear basis capacity,
+ *   - nominal block offsets and ranks.
+ *
+ * The block recurrence is deliberately not approximated here.
+ * BL3/BL4 will connect Alpha/Beta block recurrence after the shared
+ * block orthogonalization and rank-deflation contract is available.
+ */
+/*
+ * Apply the scalar Lanczos happy-breakdown tolerance to a block
+ * residual.
+ *
+ * Scalar Lanczos stops when beta = ||r||_2 < tol.
+ * For a block residual, require every active residual column to
+ * satisfy the same tolerance:
+ *
+ *     max_j ||W_j||_2 < tol.
+ *
+ * When this occurs, snap the round-off residual block to exact
+ * zero. The existing common rank-deflation path then reports
+ * active_rank == 0 and terminates without inventing directions
+ * from relative rank tests on a near-zero Gram matrix.
+ */
+static LIS_INT
+lis_lanczos_block_apply_breakdown_tol(
+    LIS_INT width,
+    LIS_VECTOR W[],
+    LIS_REAL tol,
+    LIS_REAL *max_norm)
+{
+    LIS_INT err;
+    LIS_INT i;
+    LIS_REAL nrm;
+    LIS_REAL maximum;
+
+    if( width<1 ||
+        W==NULL ||
+        max_norm==NULL ||
+        !isfinite((double)tol) ||
+        tol<0.0 )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid Block Lanczos breakdown tolerance arguments\n");
+
+        return LIS_ERR_ILL_ARG;
+    }
+
+    maximum = 0.0;
+
+    for(i=0;i<width;i++)
+    {
+        if( W[i]==NULL )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "null Block Lanczos residual vector\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+
+        err = lis_vector_nrm2(
+            W[i],
+            &nrm);
+
+        if( err )
+        {
+            return err;
+        }
+
+        if( nrm>maximum )
+        {
+            maximum = nrm;
+        }
+    }
+
+    *max_norm = maximum;
+
+    if( maximum<tol )
+    {
+        for(i=0;i<width;i++)
+        {
+            err = lis_vector_set_all(
+                0.0,
+                W[i]);
+
+            if( err )
+            {
+                return err;
+            }
+        }
+    }
+
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_eli_block"
+static LIS_INT
+lis_eli_block(LIS_ESOLVER esolver)
+{
+    LIS_INT err;
+    LIS_INT final_status;
+    LIS_REAL cert_resid,cert_tol;
+    LIS_INT i,j;
+    LIS_INT ss;
+    LIS_INT block_size;
+    LIS_INT block_count;
+    LIS_INT active_block_count;
+    LIS_INT basis_count;
+    LIS_INT nominal_rank;
+    LIS_INT active_rank;
+    LIS_INT current_block;
+    LIS_INT previous_offset;
+    LIS_INT previous_rank;
+    LIS_INT current_offset;
+    LIS_INT current_rank;
+    LIS_INT full_next_rank;
+    LIS_INT next_rank;
+    LIS_INT next_offset;
+    LIS_INT remaining;
+    LIS_REAL rank_tol;
+    LIS_REAL tol;
+    LIS_REAL residual_max;
+    LIS_INT *block_offset;
+    LIS_INT *block_rank;
+    LIS_SCALAR *t;
+    LIS_SCALAR *coeff;
+    LIS_SCALAR *gram_work;
+    LIS_SCALAR *small;
+    LIS_SCALAR *eval;
+    LIS_VECTOR *candidate;
+    LIS_VECTOR *partial_q;
+    LIS_VECTOR *next_output;
+
+    ss = esolver->options[
+        LIS_EOPTIONS_SUBSPACE];
+
+    block_size = esolver->block_size;
+
+    final_status = LIS_SUCCESS;
+    cert_tol = esolver->params[
+        LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN];
+
+    block_count = 0;
+    active_block_count = 0;
+    basis_count = 0;
+    nominal_rank = 0;
+    active_rank = 0;
+    current_block = 0;
+    previous_offset = 0;
+    previous_rank = 0;
+    current_offset = 0;
+    current_rank = 0;
+    full_next_rank = 0;
+    next_rank = 0;
+    next_offset = 0;
+    remaining = 0;
+    rank_tol = (LIS_REAL)1.0e-12;
+
+    tol = esolver->params[
+        LIS_EPARAMS_RESID-LIS_EOPTIONS_LEN];
+
+    residual_max = 0.0;
+    block_offset = NULL;
+    block_rank = NULL;
+    t = NULL;
+    coeff = NULL;
+    gram_work = NULL;
+    small = NULL;
+    eval = NULL;
+    candidate = NULL;
+    partial_q = NULL;
+    next_output = NULL;
+
+    err = lis_lanczos_block_layout(
+        ss,
+        block_size,
+        &block_count,
+        &block_offset,
+        &block_rank);
+
+    if( err )
+        return err;
+
+    /*
+     * BL2 intentionally reuses the existing linear basis capacity.
+     * No additional vector workspace is needed merely to describe
+     * the block partition.
+     */
+    if( esolver->work==NULL ||
+        esolver->worklen < NWORK + ss )
+    {
+        lis_free(block_rank);
+        lis_free(block_offset);
+
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "insufficient Block Lanczos workspace\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    /*
+     * Validate the nominal storage layout before numerical rank
+     * deflation.  The actual block ranks and offsets become dynamic
+     * once C4 constructs the first active basis block.
+     */
+    for(i=0;i<block_count;i++)
+    {
+        if( block_offset[i]!=basis_count ||
+            block_rank[i]<1 ||
+            block_rank[i]>block_size ||
+            block_offset[i]+block_rank[i]>ss )
+        {
+            lis_free(block_rank);
+            lis_free(block_offset);
+
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "invalid Block Lanczos block layout\n");
+            return LIS_ERR_ILL_ARG;
+        }
+
+        basis_count += block_rank[i];
+    }
+
+    if( basis_count!=ss )
+    {
+        lis_free(block_rank);
+        lis_free(block_offset);
+
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "Block Lanczos basis layout does not cover subspace\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    nominal_rank = block_rank[0];
+
+    /*
+     * BL4-B1 gives the block path ownership of one dense projected
+     * matrix over the full Lanczos subspace capacity.  Alpha and
+     * rectangular Beta blocks will be inserted into this matrix by
+     * the BL4-B0 placement helpers once the numerical recurrence is
+     * connected.
+     */
+    t = (LIS_SCALAR *)lis_malloc(
+        ss*ss*sizeof(LIS_SCALAR),
+        "lis_eli_block::t");
+
+    if( t==NULL )
+    {
+        lis_free(block_rank);
+        lis_free(block_offset);
+
+        LIS_SETERR_MEM(
+            ss*ss*sizeof(LIS_SCALAR));
+
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+    for(i=0;i<ss*ss;i++)
+    {
+        t[i] = 0.0;
+    }
+
+    /*
+     * BL4-B3 reserves capacities for the future variable-rank
+     * recurrence.  Runtime kernels will use actual active ranks;
+     * these allocations only define upper bounds.
+     *
+     * C3 requires coeff and work to be distinct nq-by-nw arrays.
+     * Their worst-case Block Lanczos capacity is
+     *
+     *     ss x block_size.
+     *
+     * The small square buffer is reserved for current-block
+     * quantities such as Alpha and the future C4 normalization
+     * factor.
+     */
+    coeff = (LIS_SCALAR *)lis_malloc(
+        ss*block_size*sizeof(LIS_SCALAR),
+        "lis_eli_block::coeff");
+
+    if( coeff==NULL )
+    {
+        lis_free(t);
+        lis_free(block_rank);
+        lis_free(block_offset);
+
+        LIS_SETERR_MEM(
+            ss*block_size*sizeof(LIS_SCALAR));
+
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+    gram_work = (LIS_SCALAR *)lis_malloc(
+        ss*block_size*sizeof(LIS_SCALAR),
+        "lis_eli_block::gram_work");
+
+    if( gram_work==NULL )
+    {
+        lis_free(coeff);
+        lis_free(t);
+        lis_free(block_rank);
+        lis_free(block_offset);
+
+        LIS_SETERR_MEM(
+            ss*block_size*sizeof(LIS_SCALAR));
+
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+    small = (LIS_SCALAR *)lis_malloc(
+        block_size*block_size*sizeof(LIS_SCALAR),
+        "lis_eli_block::small");
+
+    if( small==NULL )
+    {
+        lis_free(gram_work);
+        lis_free(coeff);
+        lis_free(t);
+        lis_free(block_rank);
+        lis_free(block_offset);
+
+        LIS_SETERR_MEM(
+            block_size*block_size*sizeof(LIS_SCALAR));
+
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+    candidate = (LIS_VECTOR *)lis_malloc(
+        block_size*sizeof(LIS_VECTOR),
+        "lis_eli_block::candidate");
+
+    if( candidate==NULL )
+    {
+        lis_free(small);
+        lis_free(gram_work);
+        lis_free(coeff);
+        lis_free(t);
+        lis_free(block_rank);
+        lis_free(block_offset);
+
+        LIS_SETERR_MEM(
+            block_size*sizeof(LIS_VECTOR));
+
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+    for(i=0;i<block_size;i++)
+    {
+        candidate[i] = NULL;
+    }
+
+    for(i=0;i<block_size;i++)
+    {
+        if( esolver->eprecision==LIS_PRECISION_DEFAULT )
+        {
+            err = lis_vector_duplicate(
+                esolver->A,
+                &candidate[i]);
+        }
+        else
+        {
+            err = lis_vector_duplicateex(
+                LIS_PRECISION_QUAD,
+                esolver->A,
+                &candidate[i]);
+        }
+
+        if( err )
+        {
+            LIS_INT j;
+
+            for(j=0;j<i;j++)
+            {
+                lis_vector_destroy(
+                    candidate[j]);
+            }
+
+            lis_free(candidate);
+            lis_free(small);
+            lis_free(gram_work);
+            lis_free(coeff);
+            lis_free(t);
+            lis_free(block_rank);
+            lis_free(block_offset);
+
+            return err;
+        }
+    }
+
+    /*
+     * C4 rank-revealing normalization requires one eigenvalue array
+     * in addition to the three dense block-size square workspaces.
+     */
+    eval = (LIS_SCALAR *)lis_malloc(
+        block_size*sizeof(LIS_SCALAR),
+        "lis_eli_block::eval");
+
+    if( eval==NULL )
+    {
+        for(i=0;i<block_size;i++)
+        {
+            lis_vector_destroy(
+                candidate[i]);
+        }
+
+        lis_free(candidate);
+        lis_free(small);
+        lis_free(gram_work);
+        lis_free(coeff);
+        lis_free(t);
+        lis_free(block_rank);
+        lis_free(block_offset);
+
+        LIS_SETERR_MEM(
+            block_size*sizeof(LIS_SCALAR));
+
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+    /*
+     * Build the deterministic raw candidate block out of place.
+     * C4 owns numerical rank detection, compaction, and
+     * normalization into the persistent Lanczos basis.
+     */
+    err = lis_lanczos_block_initial_raw(
+        block_size,
+        nominal_rank,
+        candidate);
+
+    if( err )
+    {
+        for(i=0;i<block_size;i++)
+        {
+            lis_vector_destroy(
+                candidate[i]);
+        }
+
+        lis_free(eval);
+        lis_free(candidate);
+        lis_free(small);
+        lis_free(gram_work);
+        lis_free(coeff);
+        lis_free(t);
+        lis_free(block_rank);
+        lis_free(block_offset);
+
+        return err;
+    }
+
+    err = lis_eigen_block_rank_deflate(
+        block_size,
+        nominal_rank,
+        candidate,
+        &esolver->work[NWORK],
+        rank_tol,
+        &active_rank,
+        coeff,
+        eval,
+        gram_work,
+        small);
+
+    if( err )
+    {
+        for(i=0;i<block_size;i++)
+        {
+            lis_vector_destroy(
+                candidate[i]);
+        }
+
+        lis_free(eval);
+        lis_free(candidate);
+        lis_free(small);
+        lis_free(gram_work);
+        lis_free(coeff);
+        lis_free(t);
+        lis_free(block_rank);
+        lis_free(block_offset);
+
+        return err;
+    }
+
+    if( active_rank==0 )
+    {
+        for(i=0;i<block_size;i++)
+        {
+            lis_vector_destroy(
+                candidate[i]);
+        }
+
+        lis_free(eval);
+        lis_free(candidate);
+        lis_free(small);
+        lis_free(gram_work);
+        lis_free(coeff);
+        lis_free(t);
+        lis_free(block_rank);
+        lis_free(block_offset);
+
+        LIS_SETERR(
+            LIS_BREAKDOWN,
+            "Block Lanczos initial block has zero numerical rank\n");
+
+        esolver->retcode = LIS_BREAKDOWN;
+
+        return LIS_BREAKDOWN;
+    }
+
+    /*
+     * From this point block_rank/block_offset describe the numerical
+     * basis rather than the nominal storage partition.
+     */
+    block_rank[0] = active_rank;
+    block_offset[0] = 0;
+    basis_count = active_rank;
+    active_block_count = 1;
+
+    /*
+     * The metadata arrays have ss-entry numerical capacity.
+     * All blocks after Q0 remain unbuilt until recurrence creates
+     * them, regardless of the original nominal block count.
+     */
+    for(i=1;i<ss;i++)
+    {
+        block_rank[i] = 0;
+        block_offset[i] = -1;
+    }
+
+    /*
+     * First numerical Block Lanczos projection:
+     *
+     *     Y0     = A Q0
+     *     Alpha0 = Q0^H Y0
+     *
+     * candidate[] is no longer needed for the raw initial block,
+     * so it becomes the transient A*Q0 block.  The C4 transform in
+     * small[] is also complete, allowing the same dense workspace
+     * to hold Alpha0.
+     */
+    err = lis_matvec_block(
+        esolver->A,
+        active_rank,
+        &esolver->work[NWORK],
+        candidate);
+
+    if( err )
+    {
+        for(i=0;i<block_size;i++)
+        {
+            lis_vector_destroy(
+                candidate[i]);
+        }
+
+        lis_free(eval);
+        lis_free(candidate);
+        lis_free(small);
+        lis_free(gram_work);
+        lis_free(coeff);
+        lis_free(t);
+        lis_free(block_rank);
+        lis_free(block_offset);
+
+        return err;
+    }
+
+    err = lis_eigen_block_gram(
+        active_rank,
+        &esolver->work[NWORK],
+        active_rank,
+        candidate,
+        small);
+
+    if( err )
+    {
+        for(i=0;i<block_size;i++)
+        {
+            lis_vector_destroy(
+                candidate[i]);
+        }
+
+        lis_free(eval);
+        lis_free(candidate);
+        lis_free(small);
+        lis_free(gram_work);
+        lis_free(coeff);
+        lis_free(t);
+        lis_free(block_rank);
+        lis_free(block_offset);
+
+        return err;
+    }
+
+    err =
+        lis_lanczos_block_projected_set_alpha(
+            ss,
+            t,
+            block_offset[0],
+            active_rank,
+            small);
+
+    if( err )
+    {
+        for(i=0;i<block_size;i++)
+        {
+            lis_vector_destroy(
+                candidate[i]);
+        }
+
+        lis_free(eval);
+        lis_free(candidate);
+        lis_free(small);
+        lis_free(gram_work);
+        lis_free(coeff);
+        lis_free(t);
+        lis_free(block_rank);
+        lis_free(block_offset);
+
+        return err;
+    }
+
+    /*
+     * First Block Lanczos residual:
+     *
+     *     W1 = A*Q0 - Q0*Alpha0
+     *
+     * candidate[] currently owns A*Q0 and small[] owns Alpha0.
+     * Alpha0 uses row-major indexing:
+     *
+     *     Alpha0(i,j) = small[i*active_rank+j]
+     *
+     * so candidate[j] receives the j-th residual column.
+     */
+    for(j=0;j<active_rank;j++)
+    {
+        for(i=0;i<active_rank;i++)
+        {
+            err = lis_vector_axpy(
+                -small[i*active_rank+j],
+                esolver->work[NWORK+i],
+                candidate[j]);
+
+            if( err )
+            {
+                for(i=0;i<block_size;i++)
+                {
+                    lis_vector_destroy(
+                        candidate[i]);
+                }
+
+                lis_free(eval);
+                lis_free(candidate);
+                lis_free(small);
+                lis_free(gram_work);
+                lis_free(coeff);
+                lis_free(t);
+                lis_free(block_rank);
+                lis_free(block_offset);
+
+                return err;
+            }
+        }
+    }
+
+    /*
+     * Remove the round-off projection left after the Alpha0
+     * recurrence update.
+     *
+     * The explicit Alpha0 subtraction above is the first projection.
+     * One C3 pass therefore provides the full reorthogonalization
+     * pass used by the scalar Lanczos path.
+     *
+     * coeff[] records the removed round-off projection for inspection,
+     * but Alpha0/T remains the projection computed in BL4-D.
+     */
+    err = lis_eigen_block_orthogonalize(
+        active_rank,
+        &esolver->work[NWORK],
+        active_rank,
+        candidate,
+        1,
+        coeff,
+        gram_work);
+
+    if( err )
+    {
+        for(i=0;i<block_size;i++)
+        {
+            lis_vector_destroy(
+                candidate[i]);
+        }
+
+        lis_free(eval);
+        lis_free(candidate);
+        lis_free(small);
+        lis_free(gram_work);
+        lis_free(coeff);
+        lis_free(t);
+        lis_free(block_rank);
+        lis_free(block_offset);
+
+        return err;
+    }
+
+    /*
+     * First complete two-block Lanczos transition.
+     *
+     * candidate[] contains the orthogonalized W1 from BL4-E.
+     *
+     * C4 requires:
+     *
+     *     nominal_rank <= capacity
+     *
+     * so rank deflation always receives capacity=previous_rank.
+     *
+     * If the remaining linear basis capacity is smaller than
+     * previous_rank, use a temporary full-width output block and
+     * retain only the directions that fit in the final partial block.
+     */
+    /*
+     * Scalar-compatible happy breakdown for the first residual
+     * block. C4 remains responsible for relative rank reduction
+     * whenever the residual block is not absolutely negligible.
+     */
+    err =
+        lis_lanczos_block_apply_breakdown_tol(
+            active_rank,
+            candidate,
+            tol,
+            &residual_max);
+
+    if( err )
+    {
+        for(i=0;i<block_size;i++)
+        {
+            lis_vector_destroy(
+                candidate[i]);
+        }
+
+        lis_free(eval);
+        lis_free(candidate);
+        lis_free(small);
+        lis_free(gram_work);
+        lis_free(coeff);
+        lis_free(t);
+        lis_free(block_rank);
+        lis_free(block_offset);
+
+        return err;
+    }
+
+    previous_rank = block_rank[0];
+    next_offset = basis_count;
+    remaining = ss - basis_count;
+
+    full_next_rank = 0;
+    next_rank = 0;
+    partial_q = NULL;
+    next_output = NULL;
+
+    if( remaining>0 )
+    {
+        if( remaining>=previous_rank )
+        {
+            next_output =
+                &esolver->work[NWORK+next_offset];
+        }
+        else
+        {
+            partial_q =
+                (LIS_VECTOR *)lis_malloc(
+                    previous_rank*sizeof(LIS_VECTOR),
+                    "lis_eli_block::partial_q");
+
+            if( partial_q==NULL )
+            {
+                for(i=0;i<block_size;i++)
+                {
+                    lis_vector_destroy(
+                        candidate[i]);
+                }
+
+                lis_free(eval);
+                lis_free(candidate);
+                lis_free(small);
+                lis_free(gram_work);
+                lis_free(coeff);
+                lis_free(t);
+                lis_free(block_rank);
+                lis_free(block_offset);
+
+                LIS_SETERR_MEM(
+                    previous_rank*sizeof(LIS_VECTOR));
+
+                return LIS_ERR_OUT_OF_MEMORY;
+            }
+
+            for(i=0;i<previous_rank;i++)
+            {
+                partial_q[i] = NULL;
+            }
+
+            for(i=0;i<previous_rank;i++)
+            {
+                if( esolver->eprecision==
+                    LIS_PRECISION_DEFAULT )
+                {
+                    err = lis_vector_duplicate(
+                        esolver->A,
+                        &partial_q[i]);
+                }
+                else
+                {
+                    err = lis_vector_duplicateex(
+                        LIS_PRECISION_QUAD,
+                        esolver->A,
+                        &partial_q[i]);
+                }
+
+                if( err )
+                {
+                    for(j=0;j<previous_rank;j++)
+                    {
+                        if( partial_q[j]!=NULL )
+                        {
+                            lis_vector_destroy(
+                                partial_q[j]);
+                        }
+                    }
+
+                    lis_free(partial_q);
+
+                    for(j=0;j<block_size;j++)
+                    {
+                        lis_vector_destroy(
+                            candidate[j]);
+                    }
+
+                    lis_free(eval);
+                    lis_free(candidate);
+                    lis_free(small);
+                    lis_free(gram_work);
+                    lis_free(coeff);
+                    lis_free(t);
+                    lis_free(block_rank);
+                    lis_free(block_offset);
+
+                    return err;
+                }
+            }
+
+            next_output = partial_q;
+        }
+
+        err = lis_eigen_block_rank_deflate(
+            previous_rank,
+            previous_rank,
+            candidate,
+            next_output,
+            rank_tol,
+            &full_next_rank,
+            coeff,
+            eval,
+            gram_work,
+            small);
+
+        if( err )
+        {
+            if( partial_q!=NULL )
+            {
+                for(i=0;i<previous_rank;i++)
+                {
+                    lis_vector_destroy(
+                        partial_q[i]);
+                }
+
+                lis_free(partial_q);
+            }
+
+            for(i=0;i<block_size;i++)
+            {
+                lis_vector_destroy(
+                    candidate[i]);
+            }
+
+            lis_free(eval);
+            lis_free(candidate);
+            lis_free(small);
+            lis_free(gram_work);
+            lis_free(coeff);
+            lis_free(t);
+            lis_free(block_rank);
+            lis_free(block_offset);
+
+            return err;
+        }
+
+        next_rank = full_next_rank;
+
+        if( next_rank>remaining )
+        {
+            next_rank = remaining;
+        }
+
+        /*
+         * For the final partial block the C4 output was intentionally
+         * built in temporary full-width storage.  Copy only the
+         * retained directions that still fit in the linear basis.
+         */
+        if( partial_q!=NULL )
+        {
+            for(i=0;i<next_rank;i++)
+            {
+                err = lis_vector_copy(
+                    partial_q[i],
+                    esolver->work[
+                        NWORK+next_offset+i]);
+
+                if( err )
+                {
+                    for(j=0;j<previous_rank;j++)
+                    {
+                        lis_vector_destroy(
+                            partial_q[j]);
+                    }
+
+                    lis_free(partial_q);
+
+                    for(j=0;j<block_size;j++)
+                    {
+                        lis_vector_destroy(
+                            candidate[j]);
+                    }
+
+                    lis_free(eval);
+                    lis_free(candidate);
+                    lis_free(small);
+                    lis_free(gram_work);
+                    lis_free(coeff);
+                    lis_free(t);
+                    lis_free(block_rank);
+                    lis_free(block_offset);
+
+                    return err;
+                }
+            }
+
+            for(i=0;i<previous_rank;i++)
+            {
+                lis_vector_destroy(
+                    partial_q[i]);
+            }
+
+            lis_free(partial_q);
+            partial_q = NULL;
+            next_output = NULL;
+        }
+
+        /*
+         * active_rank==0 after W1 rank deflation is a valid Lanczos
+         * happy breakdown.  In that case there is no Q1/Beta1 block.
+         */
+        if( next_rank>0 )
+        {
+            /*
+             * C4 stores the coupling as:
+             *
+             *     Beta1 = Lambda^(1/2) U^H
+             *
+             * with logical dimensions:
+             *
+             *     next_rank x previous_rank.
+             *
+             * small[] no longer needs the rank-transform data, so it
+             * is reused for this rectangular coupling.
+             */
+            err =
+                lis_eigen_block_rectangular_coupling(
+                    previous_rank,
+                    next_rank,
+                    eval,
+                    gram_work,
+                    small);
+
+            if( err )
+            {
+                for(i=0;i<block_size;i++)
+                {
+                    lis_vector_destroy(
+                        candidate[i]);
+                }
+
+                lis_free(eval);
+                lis_free(candidate);
+                lis_free(small);
+                lis_free(gram_work);
+                lis_free(coeff);
+                lis_free(t);
+                lis_free(block_rank);
+                lis_free(block_offset);
+
+                return err;
+            }
+
+            err =
+                lis_lanczos_block_projected_set_beta(
+                    ss,
+                    t,
+                    block_offset[0],
+                    previous_rank,
+                    next_offset,
+                    next_rank,
+                    small);
+
+            if( err )
+            {
+                for(i=0;i<block_size;i++)
+                {
+                    lis_vector_destroy(
+                        candidate[i]);
+                }
+
+                lis_free(eval);
+                lis_free(candidate);
+                lis_free(small);
+                lis_free(gram_work);
+                lis_free(coeff);
+                lis_free(t);
+                lis_free(block_rank);
+                lis_free(block_offset);
+
+                return err;
+            }
+
+            block_offset[active_block_count] =
+                next_offset;
+
+            block_rank[active_block_count] =
+                next_rank;
+
+            basis_count += next_rank;
+            active_block_count++;
+        }
+    }
+
+    /*
+     * General variable-rank Block Lanczos recurrence.
+     *
+     * BL4-F remains the validated bootstrap:
+     *
+     *     Q0 -> Alpha0 -> W1 -> Q1 -> Beta1
+     *
+     * Continue from numerical block Q1.  For j >= 1:
+     *
+     *     W = A*Qj - Q(j-1)*Beta_j^H
+     *     Alpha_j = Qj^H*W
+     *     W -= Qj*Alpha_j
+     *     full reorthogonalization
+     *     W -> Q(j+1), Beta_(j+1)
+     *
+     * block_rank[] and block_offset[] describe the numerical,
+     * rank-deflated basis.
+     */
+    current_block = 1;
+
+    while( current_block<active_block_count )
+    {
+        previous_offset =
+            block_offset[current_block-1];
+
+        previous_rank =
+            block_rank[current_block-1];
+
+        current_offset =
+            block_offset[current_block];
+
+        current_rank =
+            block_rank[current_block];
+
+        if( previous_offset<0 ||
+            previous_rank<1 ||
+            current_offset<0 ||
+            current_rank<1 ||
+            previous_offset+previous_rank>basis_count ||
+            current_offset+current_rank>basis_count )
+        {
+            for(i=0;i<block_size;i++)
+            {
+                lis_vector_destroy(
+                    candidate[i]);
+            }
+
+            lis_free(eval);
+            lis_free(candidate);
+            lis_free(small);
+            lis_free(gram_work);
+            lis_free(coeff);
+            lis_free(t);
+            lis_free(block_rank);
+            lis_free(block_offset);
+
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "invalid numerical Block Lanczos recurrence layout\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+
+        /*
+         * Y_j = A * Q_j
+         */
+        err = lis_matvec_block(
+            esolver->A,
+            current_rank,
+            &esolver->work[
+                NWORK+current_offset],
+            candidate);
+
+        if( err )
+        {
+            for(i=0;i<block_size;i++)
+            {
+                lis_vector_destroy(
+                    candidate[i]);
+            }
+
+            lis_free(eval);
+            lis_free(candidate);
+            lis_free(small);
+            lis_free(gram_work);
+            lis_free(coeff);
+            lis_free(t);
+            lis_free(block_rank);
+            lis_free(block_offset);
+
+            return err;
+        }
+
+        /*
+         * Remove the previous block coupling:
+         *
+         *     Y_j -= Q_(j-1) * Beta_j^H
+         *
+         * set_beta() already stored Beta_j^H in the upper
+         * projected block T[previous,current].  Reading that
+         * block directly therefore preserves the correct
+         * conjugation in complex arithmetic.
+         */
+        for(j=0;j<current_rank;j++)
+        {
+            for(i=0;i<previous_rank;i++)
+            {
+                err = lis_vector_axpy(
+                    -t[
+                        (previous_offset+i)*ss+
+                        (current_offset+j)
+                    ],
+                    esolver->work[
+                        NWORK+previous_offset+i],
+                    candidate[j]);
+
+                if( err )
+                {
+                    for(i=0;i<block_size;i++)
+                    {
+                        lis_vector_destroy(
+                            candidate[i]);
+                    }
+
+                    lis_free(eval);
+                    lis_free(candidate);
+                    lis_free(small);
+                    lis_free(gram_work);
+                    lis_free(coeff);
+                    lis_free(t);
+                    lis_free(block_rank);
+                    lis_free(block_offset);
+
+                    return err;
+                }
+            }
+        }
+
+        /*
+         * Alpha_j = Q_j^H * Y_j
+         */
+        err = lis_eigen_block_gram(
+            current_rank,
+            &esolver->work[
+                NWORK+current_offset],
+            current_rank,
+            candidate,
+            small);
+
+        if( err )
+        {
+            for(i=0;i<block_size;i++)
+            {
+                lis_vector_destroy(
+                    candidate[i]);
+            }
+
+            lis_free(eval);
+            lis_free(candidate);
+            lis_free(small);
+            lis_free(gram_work);
+            lis_free(coeff);
+            lis_free(t);
+            lis_free(block_rank);
+            lis_free(block_offset);
+
+            return err;
+        }
+
+        err =
+            lis_lanczos_block_projected_set_alpha(
+                ss,
+                t,
+                current_offset,
+                current_rank,
+                small);
+
+        if( err )
+        {
+            for(i=0;i<block_size;i++)
+            {
+                lis_vector_destroy(
+                    candidate[i]);
+            }
+
+            lis_free(eval);
+            lis_free(candidate);
+            lis_free(small);
+            lis_free(gram_work);
+            lis_free(coeff);
+            lis_free(t);
+            lis_free(block_rank);
+            lis_free(block_offset);
+
+            return err;
+        }
+
+        /*
+         * A basis-capacity stop still requires the diagonal block
+         * Alpha_j of the final active block. Once Alpha_j is stored,
+         * the projected matrix is complete and no residual or
+         * Q_(j+1) construction is required.
+         */
+        if( basis_count>=ss )
+        {
+            break;
+        }
+
+        /*
+         * W_(j+1) = Y_j - Q_j*Alpha_j
+         */
+        for(j=0;j<current_rank;j++)
+        {
+            for(i=0;i<current_rank;i++)
+            {
+                err = lis_vector_axpy(
+                    -small[
+                        i*current_rank+j],
+                    esolver->work[
+                        NWORK+current_offset+i],
+                    candidate[j]);
+
+                if( err )
+                {
+                    for(i=0;i<block_size;i++)
+                    {
+                        lis_vector_destroy(
+                            candidate[i]);
+                    }
+
+                    lis_free(eval);
+                    lis_free(candidate);
+                    lis_free(small);
+                    lis_free(gram_work);
+                    lis_free(coeff);
+                    lis_free(t);
+                    lis_free(block_rank);
+                    lis_free(block_offset);
+
+                    return err;
+                }
+            }
+        }
+
+        /*
+         * The recurrence has explicitly removed the previous
+         * coupling and Alpha_j projections.  One C3 pass removes
+         * the remaining round-off projection against the entire
+         * active basis Q0..Qj.
+         *
+         * As in the scalar Lanczos path, this correction is not
+         * added back to the already stored projected coefficients.
+         */
+        err = lis_eigen_block_orthogonalize(
+            basis_count,
+            &esolver->work[NWORK],
+            current_rank,
+            candidate,
+            1,
+            coeff,
+            gram_work);
+
+        if( err )
+        {
+            for(i=0;i<block_size;i++)
+            {
+                lis_vector_destroy(
+                    candidate[i]);
+            }
+
+            lis_free(eval);
+            lis_free(candidate);
+            lis_free(small);
+            lis_free(gram_work);
+            lis_free(coeff);
+            lis_free(t);
+            lis_free(block_rank);
+            lis_free(block_offset);
+
+            return err;
+        }
+
+        /*
+         * Apply the same absolute happy-breakdown criterion after
+         * full-basis reorthogonalization. Relative C4 rank
+         * deflation is used only when a non-negligible residual
+         * block remains.
+         */
+        err =
+            lis_lanczos_block_apply_breakdown_tol(
+                current_rank,
+                candidate,
+                tol,
+                &residual_max);
+
+        if( err )
+        {
+            for(i=0;i<block_size;i++)
+            {
+                lis_vector_destroy(
+                    candidate[i]);
+            }
+
+            lis_free(eval);
+            lis_free(candidate);
+            lis_free(small);
+            lis_free(gram_work);
+            lis_free(coeff);
+            lis_free(t);
+            lis_free(block_rank);
+            lis_free(block_offset);
+
+            return err;
+        }
+
+        next_offset = basis_count;
+        remaining = ss - basis_count;
+
+        full_next_rank = 0;
+        next_rank = 0;
+
+        partial_q = NULL;
+        next_output = NULL;
+
+        /*
+         * basis_count<ss is part of the loop condition, so
+         * remaining is positive here.
+         *
+         * C4 requires capacity >= nominal_rank.  The nominal
+         * residual width is current_rank.  For a final partial
+         * block, first build the full rank-deflated block in
+         * temporary storage and copy only the directions that fit.
+         */
+        if( remaining>=current_rank )
+        {
+            next_output =
+                &esolver->work[
+                    NWORK+next_offset];
+        }
+        else
+        {
+            partial_q =
+                (LIS_VECTOR *)lis_malloc(
+                    current_rank*sizeof(LIS_VECTOR),
+                    "lis_eli_block::general_partial_q");
+
+            if( partial_q==NULL )
+            {
+                for(i=0;i<block_size;i++)
+                {
+                    lis_vector_destroy(
+                        candidate[i]);
+                }
+
+                lis_free(eval);
+                lis_free(candidate);
+                lis_free(small);
+                lis_free(gram_work);
+                lis_free(coeff);
+                lis_free(t);
+                lis_free(block_rank);
+                lis_free(block_offset);
+
+                LIS_SETERR_MEM(
+                    current_rank*sizeof(LIS_VECTOR));
+
+                return LIS_ERR_OUT_OF_MEMORY;
+            }
+
+            for(i=0;i<current_rank;i++)
+            {
+                partial_q[i] = NULL;
+            }
+
+            for(i=0;i<current_rank;i++)
+            {
+                if( esolver->eprecision==
+                    LIS_PRECISION_DEFAULT )
+                {
+                    err = lis_vector_duplicate(
+                        esolver->A,
+                        &partial_q[i]);
+                }
+                else
+                {
+                    err = lis_vector_duplicateex(
+                        LIS_PRECISION_QUAD,
+                        esolver->A,
+                        &partial_q[i]);
+                }
+
+                if( err )
+                {
+                    for(j=0;j<current_rank;j++)
+                    {
+                        if( partial_q[j]!=NULL )
+                        {
+                            lis_vector_destroy(
+                                partial_q[j]);
+                        }
+                    }
+
+                    lis_free(partial_q);
+
+                    for(j=0;j<block_size;j++)
+                    {
+                        lis_vector_destroy(
+                            candidate[j]);
+                    }
+
+                    lis_free(eval);
+                    lis_free(candidate);
+                    lis_free(small);
+                    lis_free(gram_work);
+                    lis_free(coeff);
+                    lis_free(t);
+                    lis_free(block_rank);
+                    lis_free(block_offset);
+
+                    return err;
+                }
+            }
+
+            next_output = partial_q;
+        }
+
+        err = lis_eigen_block_rank_deflate(
+            current_rank,
+            current_rank,
+            candidate,
+            next_output,
+            rank_tol,
+            &full_next_rank,
+            coeff,
+            eval,
+            gram_work,
+            small);
+
+        if( err )
+        {
+            if( partial_q!=NULL )
+            {
+                for(i=0;i<current_rank;i++)
+                {
+                    lis_vector_destroy(
+                        partial_q[i]);
+                }
+
+                lis_free(partial_q);
+            }
+
+            for(i=0;i<block_size;i++)
+            {
+                lis_vector_destroy(
+                    candidate[i]);
+            }
+
+            lis_free(eval);
+            lis_free(candidate);
+            lis_free(small);
+            lis_free(gram_work);
+            lis_free(coeff);
+            lis_free(t);
+            lis_free(block_rank);
+            lis_free(block_offset);
+
+            return err;
+        }
+
+        next_rank = full_next_rank;
+
+        if( next_rank>remaining )
+        {
+            next_rank = remaining;
+        }
+
+        if( partial_q!=NULL )
+        {
+            for(i=0;i<next_rank;i++)
+            {
+                err = lis_vector_copy(
+                    partial_q[i],
+                    esolver->work[
+                        NWORK+next_offset+i]);
+
+                if( err )
+                {
+                    for(j=0;j<current_rank;j++)
+                    {
+                        lis_vector_destroy(
+                            partial_q[j]);
+                    }
+
+                    lis_free(partial_q);
+
+                    for(j=0;j<block_size;j++)
+                    {
+                        lis_vector_destroy(
+                            candidate[j]);
+                    }
+
+                    lis_free(eval);
+                    lis_free(candidate);
+                    lis_free(small);
+                    lis_free(gram_work);
+                    lis_free(coeff);
+                    lis_free(t);
+                    lis_free(block_rank);
+                    lis_free(block_offset);
+
+                    return err;
+                }
+            }
+
+            for(i=0;i<current_rank;i++)
+            {
+                lis_vector_destroy(
+                    partial_q[i]);
+            }
+
+            lis_free(partial_q);
+
+            partial_q = NULL;
+            next_output = NULL;
+        }
+
+        /*
+         * Zero numerical rank is a valid invariant-subspace
+         * termination.  Keep the actual projected dimension equal
+         * to basis_count and leave the loop without creating a
+         * zero-rank metadata block.
+         */
+        if( next_rank==0 )
+        {
+            break;
+        }
+
+        /*
+         * Beta_(j+1) has logical dimensions:
+         *
+         *     next_rank x current_rank
+         */
+        err =
+            lis_eigen_block_rectangular_coupling(
+                current_rank,
+                next_rank,
+                eval,
+                gram_work,
+                small);
+
+        if( err )
+        {
+            for(i=0;i<block_size;i++)
+            {
+                lis_vector_destroy(
+                    candidate[i]);
+            }
+
+            lis_free(eval);
+            lis_free(candidate);
+            lis_free(small);
+            lis_free(gram_work);
+            lis_free(coeff);
+            lis_free(t);
+            lis_free(block_rank);
+            lis_free(block_offset);
+
+            return err;
+        }
+
+        err =
+            lis_lanczos_block_projected_set_beta(
+                ss,
+                t,
+                current_offset,
+                current_rank,
+                next_offset,
+                next_rank,
+                small);
+
+        if( err )
+        {
+            for(i=0;i<block_size;i++)
+            {
+                lis_vector_destroy(
+                    candidate[i]);
+            }
+
+            lis_free(eval);
+            lis_free(candidate);
+            lis_free(small);
+            lis_free(gram_work);
+            lis_free(coeff);
+            lis_free(t);
+            lis_free(block_rank);
+            lis_free(block_offset);
+
+            return err;
+        }
+
+        if( active_block_count>=ss )
+        {
+            for(i=0;i<block_size;i++)
+            {
+                lis_vector_destroy(
+                    candidate[i]);
+            }
+
+            lis_free(eval);
+            lis_free(candidate);
+            lis_free(small);
+            lis_free(gram_work);
+            lis_free(coeff);
+            lis_free(t);
+            lis_free(block_rank);
+            lis_free(block_offset);
+
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "Block Lanczos numerical block metadata overflow\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+
+        block_offset[active_block_count] =
+            next_offset;
+
+        block_rank[active_block_count] =
+            next_rank;
+
+        basis_count += next_rank;
+        active_block_count++;
+
+        current_block++;
+    }
+
+    if( esolver->options[LIS_EOPTIONS_OUTPUT] )
+    {
+        lis_printf(
+            LIS_COMM_WORLD,
+            "Block Lanczos block size     : %D\n",
+            block_size);
+
+        lis_printf(
+            LIS_COMM_WORLD,
+            "Block Lanczos block count    : %D\n",
+            block_count);
+
+        lis_printf(
+            LIS_COMM_WORLD,
+            "Block Lanczos active blocks  : %D\n",
+            active_block_count);
+
+        lis_printf(
+            LIS_COMM_WORLD,
+            "Block Lanczos basis capacity : %D\n",
+            basis_count);
+    }
+
+    /*
+     * Solve the active projected eigensystem.
+     *
+     * T keeps its physical ss-by-ss stride, while basis_count is
+     * the numerical projected dimension after rank deflation or
+     * happy breakdown.  The common projected solver modifies its
+     * matrix argument in place, so copy only the active leading
+     * block into compact storage.
+     *
+     * No Ritz ordering or selection policy is applied here.
+     */
+    {
+        LIS_INT projected_dim;
+        LIS_INT projected_niter;
+        LIS_INT pi,pj;
+        LIS_REAL projected_error;
+        LIS_SCALAR *projected_matrix;
+        LIS_SCALAR *projected_eval;
+        LIS_SCALAR *projected_evec;
+
+        projected_dim = basis_count;
+        projected_niter = 0;
+        projected_error = 0.0;
+
+        projected_matrix = NULL;
+        projected_eval = NULL;
+        projected_evec = NULL;
+
+        if( projected_dim<1 ||
+            projected_dim>ss )
+        {
+            for(i=0;i<block_size;i++)
+            {
+                lis_vector_destroy(
+                    candidate[i]);
+            }
+
+            lis_free(eval);
+            lis_free(candidate);
+            lis_free(small);
+            lis_free(gram_work);
+            lis_free(coeff);
+            lis_free(t);
+            lis_free(block_rank);
+            lis_free(block_offset);
+
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "invalid Block Lanczos projected dimension\n");
+
+            return LIS_ERR_ILL_ARG;
+        }
+
+        /*
+         * The active projected dimension is the number of
+         * physically available Ritz results. Keep it separate
+         * from the nominal -ss capacity so public result getters
+         * do not expose inactive slots after rank deflation.
+         */
+        esolver->nev = projected_dim;
+
+        projected_matrix =
+            (LIS_SCALAR *)lis_malloc(
+                projected_dim*projected_dim*
+                sizeof(LIS_SCALAR),
+                "lis_eli_block::projected_matrix");
+
+        if( projected_matrix==NULL )
+        {
+            for(i=0;i<block_size;i++)
+            {
+                lis_vector_destroy(
+                    candidate[i]);
+            }
+
+            lis_free(eval);
+            lis_free(candidate);
+            lis_free(small);
+            lis_free(gram_work);
+            lis_free(coeff);
+            lis_free(t);
+            lis_free(block_rank);
+            lis_free(block_offset);
+
+            LIS_SETERR_MEM(
+                projected_dim*projected_dim*
+                sizeof(LIS_SCALAR));
+
+            return LIS_ERR_OUT_OF_MEMORY;
+        }
+
+        projected_eval =
+            (LIS_SCALAR *)lis_malloc(
+                projected_dim*sizeof(LIS_SCALAR),
+                "lis_eli_block::projected_eval");
+
+        if( projected_eval==NULL )
+        {
+            lis_free(projected_matrix);
+
+            for(i=0;i<block_size;i++)
+            {
+                lis_vector_destroy(
+                    candidate[i]);
+            }
+
+            lis_free(eval);
+            lis_free(candidate);
+            lis_free(small);
+            lis_free(gram_work);
+            lis_free(coeff);
+            lis_free(t);
+            lis_free(block_rank);
+            lis_free(block_offset);
+
+            LIS_SETERR_MEM(
+                projected_dim*sizeof(LIS_SCALAR));
+
+            return LIS_ERR_OUT_OF_MEMORY;
+        }
+
+        projected_evec =
+            (LIS_SCALAR *)lis_malloc(
+                projected_dim*projected_dim*
+                sizeof(LIS_SCALAR),
+                "lis_eli_block::projected_evec");
+
+        if( projected_evec==NULL )
+        {
+            lis_free(projected_eval);
+            lis_free(projected_matrix);
+
+            for(i=0;i<block_size;i++)
+            {
+                lis_vector_destroy(
+                    candidate[i]);
+            }
+
+            lis_free(eval);
+            lis_free(candidate);
+            lis_free(small);
+            lis_free(gram_work);
+            lis_free(coeff);
+            lis_free(t);
+            lis_free(block_rank);
+            lis_free(block_offset);
+
+            LIS_SETERR_MEM(
+                projected_dim*projected_dim*
+                sizeof(LIS_SCALAR));
+
+            return LIS_ERR_OUT_OF_MEMORY;
+        }
+
+        for(pi=0;pi<projected_dim;pi++)
+        {
+            for(pj=0;pj<projected_dim;pj++)
+            {
+                projected_matrix[
+                    pi*projected_dim+pj
+                ] =
+                    t[
+                        pi*ss+pj
+                    ];
+            }
+        }
+
+        err = lis_eigen_projected_solve(
+            projected_dim,
+            projected_matrix,
+            projected_eval,
+            projected_evec,
+            &projected_niter,
+            &projected_error);
+
+        if( err )
+        {
+            lis_free(projected_evec);
+            lis_free(projected_eval);
+            lis_free(projected_matrix);
+
+            for(i=0;i<block_size;i++)
+            {
+                lis_vector_destroy(
+                    candidate[i]);
+            }
+
+            lis_free(eval);
+            lis_free(candidate);
+            lis_free(small);
+            lis_free(gram_work);
+            lis_free(coeff);
+            lis_free(t);
+            lis_free(block_rank);
+            lis_free(block_offset);
+
+            return err;
+        }
+
+        /*
+         * Preserve the unsorted common projected eigensystem.
+         * BL5 does not impose a Ritz ordering policy.
+         */
+        for(pi=0;pi<projected_dim;pi++)
+        {
+            esolver->evalue[pi] =
+                projected_eval[pi];
+        }
+
+        if( esolver->options[LIS_EOPTIONS_OUTPUT] )
+        {
+            lis_printf(
+                LIS_COMM_WORLD,
+                "Block Lanczos projected dimension : %D\n",
+                projected_dim);
+
+            lis_printf(
+                LIS_COMM_WORLD,
+                "projected eigensolver iterations  : %D\n",
+                projected_niter);
+
+            lis_printf(
+                LIS_COMM_WORLD,
+                "projected eigensolver error       : %e\n",
+                (double)projected_error);
+        }
+
+        /*
+         * BL7 reconstruct physical Ritz vectors only when the
+         * caller requested eigenvectors. The common helper uses
+         * the active Lanczos basis directly.
+         */
+        if( !esolver->options[LIS_EOPTIONS_RVAL] )
+        {
+            if( esolver->evector==NULL )
+            {
+                lis_free(projected_evec);
+                lis_free(projected_eval);
+                lis_free(projected_matrix);
+
+                for(i=0;i<block_size;i++)
+                    lis_vector_destroy(candidate[i]);
+
+                lis_free(eval);
+                lis_free(candidate);
+                lis_free(small);
+                lis_free(gram_work);
+                lis_free(coeff);
+                lis_free(t);
+                lis_free(block_rank);
+                lis_free(block_offset);
+
+                LIS_SETERR(
+                    LIS_ERR_ILL_ARG,
+                    "Block Lanczos eigenvector storage is unavailable\n");
+
+                return LIS_ERR_ILL_ARG;
+            }
+
+            for(pi=0;pi<projected_dim;pi++)
+            {
+                if( esolver->evector[pi]!=NULL )
+                {
+                    for(pj=0;pj<pi;pj++)
+                    {
+                        lis_vector_destroy(esolver->evector[pj]);
+                        esolver->evector[pj] = NULL;
+                    }
+
+                    lis_free(projected_evec);
+                    lis_free(projected_eval);
+                    lis_free(projected_matrix);
+
+                    for(i=0;i<block_size;i++)
+                        lis_vector_destroy(candidate[i]);
+
+                    lis_free(eval);
+                    lis_free(candidate);
+                    lis_free(small);
+                    lis_free(gram_work);
+                    lis_free(coeff);
+                    lis_free(t);
+                    lis_free(block_rank);
+                    lis_free(block_offset);
+
+                    LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "Block Lanczos eigenvector slot is already in use\n");
+
+                    return LIS_ERR_ILL_ARG;
+                }
+
+                if( esolver->eprecision==LIS_PRECISION_DEFAULT )
+                {
+                    err = lis_vector_duplicate(
+                        esolver->A,
+                        &esolver->evector[pi]);
+                }
+                else
+                {
+                    err = lis_vector_duplicateex(
+                        LIS_PRECISION_QUAD,
+                        esolver->A,
+                        &esolver->evector[pi]);
+                }
+
+                if( err )
+                {
+                    for(pj=0;pj<pi;pj++)
+                    {
+                        lis_vector_destroy(esolver->evector[pj]);
+                        esolver->evector[pj] = NULL;
+                    }
+
+                    lis_free(projected_evec);
+                    lis_free(projected_eval);
+                    lis_free(projected_matrix);
+
+                    for(i=0;i<block_size;i++)
+                        lis_vector_destroy(candidate[i]);
+
+                    lis_free(eval);
+                    lis_free(candidate);
+                    lis_free(small);
+                    lis_free(gram_work);
+                    lis_free(coeff);
+                    lis_free(t);
+                    lis_free(block_rank);
+                    lis_free(block_offset);
+
+                    return err;
+                }
+            }
+
+            err = lis_eigen_ritz_reconstruct(
+                projected_dim,
+                &esolver->work[NWORK],
+                projected_dim,
+                projected_evec,
+                projected_dim,
+                esolver->evector);
+
+            if( err )
+            {
+                for(pi=0;pi<projected_dim;pi++)
+                {
+                    lis_vector_destroy(esolver->evector[pi]);
+                    esolver->evector[pi] = NULL;
+                }
+
+                lis_free(projected_evec);
+                lis_free(projected_eval);
+                lis_free(projected_matrix);
+
+                for(i=0;i<block_size;i++)
+                    lis_vector_destroy(candidate[i]);
+
+                lis_free(eval);
+                lis_free(candidate);
+                lis_free(small);
+                lis_free(gram_work);
+                lis_free(coeff);
+                lis_free(t);
+                lis_free(block_rank);
+                lis_free(block_offset);
+
+                return err;
+            }
+
+            err = lis_vector_copy(
+                esolver->evector[0],
+                esolver->x);
+
+            if( err )
+            {
+                for(pi=0;pi<projected_dim;pi++)
+                {
+                    lis_vector_destroy(esolver->evector[pi]);
+                    esolver->evector[pi] = NULL;
+                }
+
+                lis_free(projected_evec);
+                lis_free(projected_eval);
+                lis_free(projected_matrix);
+
+                for(i=0;i<block_size;i++)
+                    lis_vector_destroy(candidate[i]);
+
+                lis_free(eval);
+                lis_free(candidate);
+                lis_free(small);
+                lis_free(gram_work);
+                lis_free(coeff);
+                lis_free(t);
+                lis_free(block_rank);
+                lis_free(block_offset);
+
+                return err;
+            }
+
+            /*
+             * BL8 certify reconstructed Ritz pairs with the same
+             * normalized standard residual used by scalar Lanczos.
+             * candidate[0] and candidate[1] are no longer needed by
+             * the completed recurrence and provide two live scratch
+             * vectors because Block Lanczos requires block_size > 1.
+             */
+            for(pi=0;pi<projected_dim;pi++)
+            {
+                err = lis_esolver_standard_residual(
+                    esolver->A,
+                    esolver->evector[pi],
+                    esolver->evalue[pi],
+                    candidate[0],
+                    candidate[1],
+                    &cert_resid);
+
+                if( err )
+                {
+                    for(pj=0;pj<projected_dim;pj++)
+                    {
+                        lis_vector_destroy(esolver->evector[pj]);
+                        esolver->evector[pj] = NULL;
+                    }
+
+                    lis_free(projected_evec);
+                    lis_free(projected_eval);
+                    lis_free(projected_matrix);
+
+                    for(i=0;i<block_size;i++)
+                        lis_vector_destroy(candidate[i]);
+
+                    lis_free(eval);
+                    lis_free(candidate);
+                    lis_free(small);
+                    lis_free(gram_work);
+                    lis_free(coeff);
+                    lis_free(t);
+                    lis_free(block_rank);
+                    lis_free(block_offset);
+
+                    return err;
+                }
+
+                esolver->resid[pi] = cert_resid;
+
+                if( cert_resid>cert_tol &&
+                    final_status==LIS_SUCCESS )
+                {
+                    final_status = LIS_MAXITER;
+                }
+            }
+
+        }
+
+        lis_free(projected_evec);
+        lis_free(projected_eval);
+        lis_free(projected_matrix);
+        }
+
+for(i=0;i<block_size;i++)
+    {
+        lis_vector_destroy(
+            candidate[i]);
+    }
+
+    lis_free(eval);
+    lis_free(candidate);
+    lis_free(small);
+    lis_free(gram_work);
+    lis_free(coeff);
+    lis_free(t);
+    lis_free(block_rank);
+    lis_free(block_offset);
+
+    /*
+     * Match scalar Lanczos raw-Ritz behavior.
+     * Preserve the common projected eigensolver ordering exactly:
+     * no explicit sort, reorder, or -m selection is applied here.
+     * With -rval true, raw Ritz values are the completed result.
+     */
+    if( esolver->options[LIS_EOPTIONS_RVAL] )
+    {
+        return LIS_SUCCESS;
+    }
+
+/* Physical Ritz vectors are available for -rval false. */
+esolver->retcode = final_status;
+    return final_status;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_eli"
 LIS_INT lis_eli(LIS_ESOLVER esolver)
@@ -157,7 +2785,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   double time,time0;    
   LIS_INT i,j,k;
   LIS_INT output, niesolver;
-  LIS_REAL nrm2,resid0;
+  LIS_REAL nrm2,resid0,cert_resid;
   LIS_SCALAR dot;
   LIS_VECTOR *v,r;
   LIS_SCALAR *t,*tq,*tr,evalue,evalue0;
@@ -165,9 +2793,16 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   LIS_ESOLVER esolver2;
   char esolvername[128],solvername[128],preconname[128];
   LIS_INT nsol,precon_type;
-  LIS_INT rval;
+  LIS_INT rval,final_status;
 
   LIS_DEBUG_FUNC_IN;
+
+  if( esolver->block_size>1 )
+    {
+      err = lis_eli_block(esolver);
+      LIS_DEBUG_FUNC_OUT;
+      return err;
+    }
 
   comm = LIS_COMM_WORLD;
 
@@ -232,12 +2867,18 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
       /* r = r - alpha(j) * v(j) */
       lis_vector_axpy(-t[(j-1)*ss+j-1], v[j], r); 
 
-      /* reorthogonalization */
-      for (k=1;k<j;k++)
-	{ 
-	  lis_vector_dot(v[j], v[k], &dot); 
-	  lis_vector_axpy(-dot, v[k], v[j]);
-	}
+      /*
+       * Reorthogonalize the residual that generates v(j+1).
+       * Include the current vector as well to remove round-off
+       * left after the alpha(j) recurrence update.
+       */
+      err = lis_lanczos_reorthogonalize_residual(
+          v,
+          1,
+          j,
+          r);
+      if( err )
+          return err;
 
       /* beta(j) = ||r||_2 */
       lis_vector_nrm2(r, (LIS_REAL *)&t[(j-1)*ss+j]);
@@ -295,6 +2936,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   esolver2->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN] = tol; 
 
   /* compute refined eigenpairs */
+  final_status = LIS_SUCCESS;
   for (i=0;i<ss;i++)
     {
       lis_vector_duplicate(A, &esolver->evector[i]); 
@@ -302,14 +2944,32 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
       lis_esolve(A, esolver->evector[i], &evalue, esolver2);
       lis_esolver_work_destroy(esolver2); 
       esolver->evalue[i] = evalue;
-      esolver->iter[i] = esolver2->iter[0];      
-      esolver->resid[i] = esolver2->resid[0];
+      esolver->iter[i] = esolver2->iter[0];
+
+      err = lis_esolver_standard_residual(
+              A, esolver->evector[i], esolver->evalue[i],
+              r, v[0], &cert_resid);
+      if( err )
+        {
+          esolver->retcode = err;
+          lis_esolver_destroy(esolver2);
+          lis_free(t);
+          lis_free(tq);
+          lis_free(tr);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return err;
+        }
+
+      esolver->resid[i] = cert_resid;
+      if( cert_resid>tol && final_status==LIS_SUCCESS )
+        final_status = LIS_MAXITER;
 
       if (i==0) 
 	{
 	  evalue0 = esolver->evalue[0];
 	  iter0 = esolver2->iter[0];
-	  resid0 = esolver2->resid[0];
+	  resid0 = esolver->resid[0];
 	  if( output & LIS_EPRINT_MEM ) 
 	    {
 	      for (ic=0;ic<iter0+1;ic++)
@@ -334,7 +2994,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
 #endif
 	  lis_printf(comm,"Lanczos: elapsed time         = %e sec.\n", esolver2->time);	  	  
 	  lis_printf(comm,"Lanczos: number of iterations = %D\n",esolver2->iter[0]);
-	  lis_printf(comm,"Lanczos: relative residual    = %e\n\n",(double)esolver2->resid[0]);
+	  lis_printf(comm,"Lanczos: relative residual    = %e\n\n",(double)esolver->resid[i]);
 	}
     }
   esolver->evalue[0] = evalue0; 
@@ -352,7 +3012,8 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   lis_solver_destroy(solver);
 
   LIS_DEBUG_FUNC_OUT;
-  return LIS_SUCCESS;
+  esolver->retcode = final_status;
+  return final_status;
 }
 
 /***************************************
@@ -415,7 +3076,29 @@ LIS_INT lis_egli_malloc_work(LIS_ESOLVER esolver)
 
 	ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
 
-	worklen = NWORK + ss;
+	/*
+	 * The untransformed generalized Lanczos recurrence keeps both
+	 * w_j = B*v_j and v_j for full reorthogonalization.  They must
+	 * not alias.  The transformed path uses one Lanczos basis.
+	 */
+	if( esolver->transform==LIS_EIGEN_TRANSFORM_AUTO )
+	{
+		if( esolver->block_size>1 )
+		{
+			worklen =
+				NWORK +
+				2*ss +
+				2*esolver->block_size;
+		}
+		else
+		{
+			worklen = NWORK + 2*ss;
+		}
+	}
+	else
+	{
+		worklen = NWORK + ss;
+	}
 	work    = (LIS_VECTOR *)lis_malloc( worklen*sizeof(LIS_VECTOR),"lis_egli_malloc_work::work" );
 	if( work==NULL )
 	{
@@ -451,232 +3134,281 @@ LIS_INT lis_egli_malloc_work(LIS_ESOLVER esolver)
 	return LIS_SUCCESS;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_egli_projected_jacobi"
-static LIS_INT lis_egli_projected_jacobi(
-	LIS_INT n,
-	LIS_SCALAR *a,
-	LIS_SCALAR *eval,
-	LIS_SCALAR *evec,
-	LIS_INT *niter,
-	LIS_REAL *error)
+static LIS_INT
+lis_egli_solve_with_retry(
+        LIS_MATRIX S,
+        LIS_VECTOR b,
+        LIS_VECTOR x,
+        LIS_SOLVER solver,
+        LIS_PRECON *precon,
+        LIS_REAL acceptance_tol)
 {
-#ifdef _COMPLEX
-	LIS_SETERR(
-		LIS_ERR_NOT_IMPLEMENTED,
-		"transformed generalized Lanczos projected "
-		"eigenvectors are not yet implemented for complex arithmetic\n");
-	return LIS_ERR_NOT_IMPLEMENTED;
-#else
-	LIS_INT i,j,p,q,sweep;
-	LIS_INT max_sweeps;
-	LIS_REAL app,aqq,apq;
-	LIS_REAL akp,akq;
-	LIS_REAL vip,viq;
-	LIS_REAL tau,t,c,s;
-	LIS_REAL off,maxoff,scale,threshold;
+        LIS_INT err,status;
 
-	LIS_DEBUG_FUNC_IN;
+        status =
+                lis_esolver_inner_solve_attempt(
+                        S,b,x,solver,*precon);
+        if( status==LIS_SUCCESS )
+        {
+                return LIS_SUCCESS;
+        }
 
-	if( n<=0 || a==NULL || eval==NULL || evec==NULL )
-	{
-		LIS_SETERR(
-			LIS_ERR_ILL_ARG,
-			"invalid projected eigensystem arguments\n");
-		return LIS_ERR_ILL_ARG;
-	}
+        if( !lis_esolver_inner_solve_retryable(status) )
+        {
+                return status;
+        }
 
-	for(i=0;i<n*n;i++)
-	{
-		evec[i] = 0.0;
-	}
+        err = lis_esolver_rebuild_precon(
+                S,solver,precon);
+        if( err )
+        {
+                return err;
+        }
 
-	for(i=0;i<n;i++)
-	{
-		evec[i*n+i] = 1.0;
-	}
+        lis_vector_set_all(0.0,x);
 
-	scale = 0.0;
-	for(i=0;i<n;i++)
-	{
-		if( fabs(a[i*n+i]) > scale )
-		{
-			scale = fabs(a[i*n+i]);
-		}
-	}
+        status =
+                lis_esolver_inner_solve_attempt(
+                        S,b,x,solver,*precon);
 
-	if( scale < 1.0 )
-	{
-		scale = 1.0;
-	}
-
-	threshold = 1.0e-14*scale;
-	max_sweeps = 50;
-
-	maxoff = 0.0;
-
-	for(sweep=0;sweep<max_sweeps;sweep++)
-	{
-		maxoff = 0.0;
-
-		for(p=0;p<n-1;p++)
-		{
-			for(q=p+1;q<n;q++)
-			{
-				apq = a[p*n+q];
-				off = fabs(apq);
-
-				if( off > maxoff )
-				{
-					maxoff = off;
-				}
-
-				if( off <= threshold )
-				{
-					continue;
-				}
-
-				app = a[p*n+p];
-				aqq = a[q*n+q];
-
-				tau = (aqq-app)/(2.0*apq);
-
-				if( tau>=0.0 )
-				{
-					t = 1.0/
-						(tau+sqrt(1.0+tau*tau));
-				}
-				else
-				{
-					t = -1.0/
-						(-tau+sqrt(1.0+tau*tau));
-				}
-
-				c = 1.0/sqrt(1.0+t*t);
-				s = t*c;
-
-				for(j=0;j<n;j++)
-				{
-					if( j==p || j==q )
-					{
-						continue;
-					}
-
-					akp = a[j*n+p];
-					akq = a[j*n+q];
-
-					a[j*n+p] = c*akp-s*akq;
-					a[p*n+j] = a[j*n+p];
-
-					a[j*n+q] = s*akp+c*akq;
-					a[q*n+j] = a[j*n+q];
-				}
-
-				a[p*n+p] = app-t*apq;
-				a[q*n+q] = aqq+t*apq;
-				a[p*n+q] = 0.0;
-				a[q*n+p] = 0.0;
-
-				for(j=0;j<n;j++)
-				{
-					vip = evec[j*n+p];
-					viq = evec[j*n+q];
-
-					evec[j*n+p] = c*vip-s*viq;
-					evec[j*n+q] = s*vip+c*viq;
-				}
-			}
-		}
-
-		if( maxoff <= threshold )
-		{
-			break;
-		}
-	}
-
-	for(i=0;i<n;i++)
-	{
-		eval[i] = a[i*n+i];
-	}
-
-	if( niter )
-	{
-		*niter = sweep+1;
-	}
-
-	if( error )
-	{
-		*error = maxoff;
-	}
-
-	if( maxoff > threshold )
-	{
-		LIS_SETERR(
-			LIS_MAXITER,
-			"projected Jacobi eigensolver did not converge\n");
-		return LIS_MAXITER;
-	}
-
-	LIS_DEBUG_FUNC_OUT;
-	return LIS_SUCCESS;
-#endif
+        return lis_esolver_inner_solve_certify(
+                S,b,x,solver,
+                status,
+                acceptance_tol);
 }
 
 
-#undef __FUNC__
-#define __FUNC__ "lis_egli_true_residual"
-static LIS_INT lis_egli_true_residual(
-	LIS_MATRIX A,
-	LIS_MATRIX B,
-	LIS_VECTOR x,
-	LIS_SCALAR lambda,
-	LIS_VECTOR Ax,
-	LIS_VECTOR Bx,
-	LIS_VECTOR r,
-	LIS_REAL *resid)
+static LIS_INT
+lis_egli_replace_shifted_operator(
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_SCALAR shift,
+        LIS_SOLVER solver,
+        LIS_PRECON *precon,
+        LIS_MATRIX *S,
+        LIS_MATRIX *Sop)
 {
-	LIS_INT err;
-	LIS_REAL anrm,bnrm,rnrm,denom;
-	LIS_REAL lmag;
+        LIS_INT err;
+        LIS_MATRIX trial_operator;
 
-	LIS_DEBUG_FUNC_IN;
+        trial_operator = NULL;
 
-	err = lis_matvec(A,x,Ax);
-	if( err ) return err;
+        err = lis_matrix_create_operator(
+                1.0,A,-shift,B,
+                &trial_operator);
+        if( err )
+        {
+                return err;
+        }
 
-	err = lis_matvec(B,x,Bx);
-	if( err ) return err;
+        err = lis_esolver_rebuild_precon(
+                trial_operator,
+                solver,
+                precon);
+        if( err )
+        {
+                /*
+                 * The rebuild helper has detached work/preconditioner
+                 * state tied to the previous operator.  Keep solver->A
+                 * valid for cleanup before discarding the failed trial.
+                 */
+                solver->A = *S;
+                lis_matrix_destroy(trial_operator);
+                return err;
+        }
 
-	err = lis_vector_nrm2(Ax,&anrm);
-	if( err ) return err;
+        if( *Sop )
+        {
+                lis_matrix_destroy(*Sop);
+        }
 
-	err = lis_vector_nrm2(Bx,&bnrm);
-	if( err ) return err;
+        *Sop = trial_operator;
+        *S = trial_operator;
 
-	lis_vector_axpyz(-lambda,Bx,Ax,r);
+        return LIS_SUCCESS;
+}
 
-	err = lis_vector_nrm2(r,&rnrm);
-	if( err ) return err;
 
+static LIS_INT
+lis_egli_first_solve_with_recovery(
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_VECTOR b,
+        LIS_VECTOR x,
+        LIS_SOLVER solver,
+        LIS_PRECON *precon,
+        LIS_MATRIX *S,
+        LIS_MATRIX *Sop,
+        LIS_SCALAR requested_shift,
+        LIS_REAL acceptance_tol,
+        LIS_SCALAR *active_shift)
+{
+        LIS_INT err,status,attempt;
+        LIS_REAL shift_magnitude;
+        LIS_REAL shift_scale;
+        LIS_REAL perturbation_magnitude;
+        LIS_REAL tolerance_factor;
+        LIS_SCALAR perturbation;
+        LIS_SCALAR trial_shift;
+
+        *active_shift = requested_shift;
+
+        status =
+                lis_esolver_inner_solve_attempt(
+                        *S,b,x,solver,*precon);
+        if( status==LIS_SUCCESS )
+        {
+                return LIS_SUCCESS;
+        }
+
+        if( !lis_esolver_inner_solve_retryable(status) )
+        {
+                return status;
+        }
+
+        err = lis_esolver_rebuild_precon(
+                *S,solver,precon);
+        if( err )
+        {
+                return err;
+        }
+
+        lis_vector_set_all(0.0,x);
+
+        status =
+                lis_esolver_inner_solve_attempt(
+                        *S,b,x,solver,*precon);
+
+                status =
+                        lis_esolver_inner_solve_certify(
+                                *S,b,x,solver,
+                                status,
+                                acceptance_tol);
+        if( status==LIS_SUCCESS )
+        {
+                return LIS_SUCCESS;
+        }
+
+        if( !lis_esolver_inner_solve_retryable(status) )
+        {
+                return status;
+        }
+
+        perturbation =
+                lis_esolver_shift_perturbation(
+                        requested_shift);
+        if( perturbation==0.0 )
+        {
+                return status;
+        }
+
+        /*
+         * The historical sqrt(epsilon)-scaled perturbation is enough
+         * to escape an exact pole at ordinary eigensolver tolerances,
+         * but it can leave the shifted operator too ill-conditioned
+         * for a tighter requested inner-solve tolerance.
+         *
+         * Let
+         *
+         *     base_relative = |delta| / max(|sigma|,1)
+         *
+         * which is approximately sqrt(machine epsilon).  A first-order
+         * solve-error model gives a useful tolerance-aware scale factor:
+         *
+         *     base_relative / acceptance_tol.
+         *
+         * Never make the perturbation smaller than the historical step.
+         * Cap the enlargement at 1000 base steps so recovery remains a
+         * small local shift rather than changing the spectral target.
+         * In real double precision this bounds the relative displacement
+         * to roughly 1.5e-5.
+         */
 #ifdef _COMPLEX
-	lmag = cabs(lambda);
+        shift_magnitude =
+                cabs(requested_shift);
+
+        perturbation_magnitude =
+                cabs(perturbation);
 #else
-	lmag = fabs(lambda);
+        shift_magnitude =
+                fabs(requested_shift);
+
+        perturbation_magnitude =
+                fabs(perturbation);
 #endif
 
-	denom = anrm+lmag*bnrm;
+        shift_scale =
+                shift_magnitude>1.0 ?
+                shift_magnitude :
+                1.0;
 
-	if( denom>0.0 )
-	{
-		*resid = rnrm/denom;
-	}
-	else
-	{
-		*resid = rnrm;
-	}
+        tolerance_factor = 1.0;
 
-	LIS_DEBUG_FUNC_OUT;
-	return LIS_SUCCESS;
+        if( isfinite((double)acceptance_tol) &&
+            acceptance_tol>0.0 &&
+            isfinite((double)perturbation_magnitude) &&
+            perturbation_magnitude>0.0 &&
+            isfinite((double)shift_scale) &&
+            shift_scale>0.0 )
+        {
+                tolerance_factor =
+                        (perturbation_magnitude/shift_scale) /
+                        acceptance_tol;
+
+                if( tolerance_factor<1.0 )
+                {
+                        tolerance_factor = 1.0;
+                }
+                else if( tolerance_factor>1000.0 )
+                {
+                        tolerance_factor = 1000.0;
+                }
+
+                perturbation *=
+                        tolerance_factor;
+        }
+
+        for(attempt=0;attempt<2;attempt++)
+        {
+                trial_shift =
+                        attempt==0 ?
+                        requested_shift+perturbation :
+                        requested_shift-perturbation;
+
+                err = lis_egli_replace_shifted_operator(
+                        A,B,trial_shift,
+                        solver,precon,
+                        S,Sop);
+                if( err )
+                {
+                        return err;
+                }
+
+                lis_vector_set_all(0.0,x);
+
+                status =
+                        lis_esolver_inner_solve_attempt(
+                                *S,b,x,solver,*precon);
+
+                status =
+                        lis_esolver_inner_solve_certify(
+                                *S,b,x,solver,
+                                status,
+                                acceptance_tol);
+
+                if( status==LIS_SUCCESS )
+                {
+                        *active_shift = trial_shift;
+                        return LIS_SUCCESS;
+                }
+
+                if( !lis_esolver_inner_solve_retryable(status) )
+                {
+                        return status;
+                }
+        }
+
+        return status;
 }
 
 
@@ -691,7 +3423,7 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 	LIS_PRECON precon;
 	LIS_ESOLVER esolver2;
 	LIS_SCALAR *t,*tq,*tr;
-	LIS_SCALAR oshift,ishift;
+	LIS_SCALAR oshift,ishift,active_shift;
 	LIS_SCALAR alpha,dot,tmp,nu;
 	LIS_SCALAR evalue,evalue0;
 	LIS_REAL beta,beta_prev,mag,maxmag;
@@ -748,6 +3480,8 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 	{
 		oshift = ishift;
 	}
+
+	active_shift = oshift;
 
 	if( ss<1 )
 	{
@@ -946,9 +3680,22 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 
 		/*
 		 * q = (A-sigma B)^-1 M v_j
+		 *
+		 * Only the first transformed solve may adopt a bounded
+		 * perturbed shift.  Once the Lanczos basis is started, all
+		 * remaining solves use the same transformed operator.
 		 */
-		err = lis_solve_kernel(
-			S,r,q,solver,precon);
+		if( j==1 )
+		{
+			err = lis_egli_first_solve_with_recovery(
+				A,B,r,q,solver,&precon,
+				&S,&Sop,oshift,tol,&active_shift);
+		}
+		else
+		{
+			err = lis_egli_solve_with_retry(
+				S,r,q,solver,&precon,tol);
+		}
 
 		if( err ) goto cleanup;
 
@@ -1050,7 +3797,7 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 		tq[i] = t[i];
 	}
 
-	err = lis_egli_projected_jacobi(
+	err = lis_eigen_projected_solve(
 		ss,
 		tq,
 		esolver->evalue,
@@ -1131,7 +3878,7 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 			}
 
 			esolver->evalue[i] =
-				oshift+1.0/nu;
+				active_shift+1.0/nu;
 		}
 		else
 		{
@@ -1151,7 +3898,7 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 			}
 
 			esolver->evalue[i] =
-				oshift*nu/(nu-1.0);
+				active_shift*nu/(nu-1.0);
 		}
 
 		esolver->iter[i] = ss;
@@ -1264,17 +4011,15 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 
 		if( err ) goto cleanup;
 
-		lis_vector_set_all(
-			0.0,
-			esolver->evector[i]);
+		err = lis_eigen_ritz_reconstruct(
+			ss,
+			&v[1],
+			1,
+			&tr[i],
+			ss,
+			&esolver->evector[i]);
 
-		for(k=0;k<ss;k++)
-		{
-			lis_vector_axpy(
-				tr[k*ss+i],
-				v[k+1],
-				esolver->evector[i]);
-		}
+		if( err ) goto cleanup;
 
 		err = lis_vector_nrm2(
 			esolver->evector[i],
@@ -1287,7 +4032,7 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 		{
 			LIS_SETERR(
 				LIS_BREAKDOWN,
-				"invalid transformed Ritz vector norm\n");
+				"invalid transformed generalized Lanczos Ritz vector norm\n");
 			err = LIS_BREAKDOWN;
 			goto cleanup;
 		}
@@ -1296,7 +4041,7 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 			1.0/nrm2,
 			esolver->evector[i]);
 
-		err = lis_egli_true_residual(
+		err = lis_esolver_generalized_residual(
 			A,
 			B,
 			esolver->evector[i],
@@ -1384,7 +4129,7 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 			esolver->iter[i] =
 				esolver2->iter[0];
 
-			err = lis_egli_true_residual(
+			err = lis_esolver_generalized_residual(
 				A,
 				B,
 				esolver->evector[i],
@@ -1522,11 +4267,3399 @@ cleanup:
 }
 
 
+/*
+ * Generalized Block Lanczos dispatch boundary.
+ *
+ * F1 introduces the internal block entry point only.  The numerical
+ * generalized block recurrence is added in later stages so that scalar
+ * generalized Lanczos remains unchanged while block requests have a
+ * dedicated, auditable path.
+ *
+ * Transformed generalized block modes are intentionally rejected here.
+ * In particular, a future buckling block path must preserve the existing
+ * transformed-operator semantics rather than treating the geometric
+ * stiffness matrix as a positive-definite block metric.
+ */
+/*
+ * Build the first generalized Block Lanczos basis in the B metric.
+ *
+ * The deterministic raw block is shared with standard Block Lanczos.
+ * The common B-rank-deflation helper computes:
+ *
+ *     BW = B*W
+ *     G  = W^H*BW
+ *     Q  = W U_r Lambda_r^(-1/2)
+ *     BQ = BW U_r Lambda_r^(-1/2)
+ *
+ * so the retained columns satisfy Q^H*BQ = I without an additional
+ * B*Q block matvec.
+ *
+ * This helper is only for the untransformed generalized problem where
+ * B is the positive-definite metric. The buckling transform must not
+ * use the geometric stiffness matrix through this contract.
+ */
+static LIS_INT
+lis_egli_block_initial_basis(
+    LIS_ESOLVER esolver,
+    LIS_INT nominal_rank,
+    LIS_VECTOR basis[],
+    LIS_VECTOR dual_basis[],
+    LIS_VECTOR candidate[],
+    LIS_VECTOR dual_candidate[],
+    LIS_INT *active_rank)
+{
+    LIS_INT err;
+    LIS_INT block_size;
+    LIS_REAL rank_tol;
+    LIS_SCALAR *gram;
+    LIS_SCALAR *eval;
+    LIS_SCALAR *evec;
+    LIS_SCALAR *transform;
+
+    if( esolver==NULL ||
+        esolver->B==NULL ||
+        nominal_rank<1 ||
+        basis==NULL ||
+        dual_basis==NULL ||
+        candidate==NULL ||
+        dual_candidate==NULL ||
+        active_rank==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos initial-basis arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    block_size = esolver->block_size;
+
+    if( block_size<1 ||
+        nominal_rank>block_size )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos initial rank\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *active_rank = 0;
+
+    rank_tol = (LIS_REAL)1.0e-12;
+
+    gram = NULL;
+    eval = NULL;
+    evec = NULL;
+    transform = NULL;
+
+    gram = (LIS_SCALAR *)lis_malloc(
+        block_size*block_size*sizeof(LIS_SCALAR),
+        "lis_egli_block_initial_basis::gram");
+
+    eval = (LIS_SCALAR *)lis_malloc(
+        block_size*sizeof(LIS_SCALAR),
+        "lis_egli_block_initial_basis::eval");
+
+    evec = (LIS_SCALAR *)lis_malloc(
+        block_size*block_size*sizeof(LIS_SCALAR),
+        "lis_egli_block_initial_basis::evec");
+
+    transform = (LIS_SCALAR *)lis_malloc(
+        block_size*block_size*sizeof(LIS_SCALAR),
+        "lis_egli_block_initial_basis::transform");
+
+    if( gram==NULL ||
+        eval==NULL ||
+        evec==NULL ||
+        transform==NULL )
+    {
+        if( transform ) lis_free(transform);
+        if( evec ) lis_free(evec);
+        if( eval ) lis_free(eval);
+        if( gram ) lis_free(gram);
+
+        LIS_SETERR_MEM(
+            block_size*block_size*sizeof(LIS_SCALAR));
+
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+    err = lis_lanczos_block_initial_raw(
+        block_size,
+        nominal_rank,
+        candidate);
+
+    if( err )
+        goto cleanup;
+
+    err = lis_eigen_block_brank_deflate(
+        esolver->B,
+        block_size,
+        nominal_rank,
+        candidate,
+        dual_candidate,
+        basis,
+        dual_basis,
+        rank_tol,
+        active_rank,
+        gram,
+        eval,
+        evec,
+        transform);
+
+    if( err )
+        goto cleanup;
+
+    if( *active_rank==0 )
+    {
+        LIS_SETERR(
+            LIS_BREAKDOWN,
+            "generalized Block Lanczos initial block has zero B-rank\n");
+
+        err = LIS_BREAKDOWN;
+        goto cleanup;
+    }
+
+    err = LIS_SUCCESS;
+
+cleanup:
+
+    lis_free(transform);
+    lis_free(evec);
+    lis_free(eval);
+    lis_free(gram);
+
+    return err;
+}
+
+
+/*
+ * Create the metric solver used by untransformed generalized
+ * Block Lanczos for B^{-1} applications.
+ *
+ * Keep the scalar generalized Lanczos contract: BiCG with no
+ * preconditioner. The same solver/preconditioner pair is reused
+ * across all columns of the block.
+ */
+static LIS_INT
+lis_egli_block_create_metric_solver(
+    LIS_ESOLVER esolver,
+    LIS_SOLVER *solver,
+    LIS_PRECON *precon)
+{
+    LIS_INT err;
+
+    if( esolver==NULL ||
+        esolver->B==NULL ||
+        solver==NULL ||
+        precon==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos metric-solver arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *solver = NULL;
+    *precon = NULL;
+
+    err = lis_solver_create(
+        solver);
+
+    if( err )
+        return err;
+
+    lis_solver_set_option(
+        "-i bicg -p none",
+        *solver);
+
+    err = lis_solver_set_optionC(
+        *solver);
+
+    if( err )
+    {
+        lis_solver_destroy(*solver);
+        *solver = NULL;
+        return err;
+    }
+
+    (*solver)->A = esolver->B;
+
+    err = lis_precon_create(
+        *solver,
+        precon);
+
+    if( err )
+    {
+        lis_solver_destroy(*solver);
+        *solver = NULL;
+        *precon = NULL;
+        return err;
+    }
+
+    return LIS_SUCCESS;
+}
+
+
+/*
+ * Perform the first generalized Block Lanczos recurrence.
+ *
+ * For Q^H B Q = I and cached BQ:
+ *
+ *     Y     = A Q
+ *     Alpha = Q^H Y
+ *     R     = Y - BQ Alpha
+ *     B Z   = R
+ *
+ * One B-orthogonalization pass removes the round-off projection
+ * remaining after the explicit Alpha subtraction and synchronizes BZ.
+ *
+ * On return:
+ *
+ *     candidate[]      = Z
+ *     dual_candidate[] = B Z
+ *
+ * F5 will rank-deflate Z into Q1/BQ1 and build Beta1.
+ */
+static LIS_INT
+lis_egli_block_first_recurrence(
+    LIS_ESOLVER esolver,
+    LIS_INT active_rank,
+    LIS_VECTOR basis[],
+    LIS_VECTOR dual_basis[],
+    LIS_VECTOR candidate[],
+    LIS_VECTOR dual_candidate[],
+    LIS_SOLVER solver,
+    LIS_PRECON precon,
+    LIS_SCALAR *alpha,
+    LIS_SCALAR *coeff,
+    LIS_SCALAR *gram_work)
+{
+    LIS_INT i,j,err;
+
+    if( esolver==NULL ||
+        esolver->A==NULL ||
+        esolver->B==NULL ||
+        active_rank<1 ||
+        basis==NULL ||
+        dual_basis==NULL ||
+        candidate==NULL ||
+        dual_candidate==NULL ||
+        solver==NULL ||
+        precon==NULL ||
+        alpha==NULL ||
+        coeff==NULL ||
+        gram_work==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos first-recurrence arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    /*
+     * dual_candidate temporarily stores Y = A*Q.
+     */
+    err = lis_matvec_block(
+        esolver->A,
+        active_rank,
+        basis,
+        dual_candidate);
+
+    if( err )
+        return err;
+
+    err = lis_eigen_block_gram(
+        active_rank,
+        basis,
+        active_rank,
+        dual_candidate,
+        alpha);
+
+    if( err )
+        return err;
+
+    /*
+     * dual_candidate becomes R = A*Q - BQ*Alpha.
+     */
+    for(j=0;j<active_rank;j++)
+    {
+        for(i=0;i<active_rank;i++)
+        {
+            err = lis_vector_axpy(
+                -alpha[i*active_rank+j],
+                dual_basis[i],
+                dual_candidate[j]);
+
+            if( err )
+                return err;
+        }
+    }
+
+    /*
+     * Solve B*Z = R column by column.
+     */
+    for(j=0;j<active_rank;j++)
+    {
+        err = lis_vector_set_all(
+            0.0,
+            candidate[j]);
+
+        if( err )
+            return err;
+
+        err = lis_solve_kernel(
+            esolver->B,
+            dual_candidate[j],
+            candidate[j],
+            solver,
+            precon);
+
+        if( err )
+            return err;
+    }
+
+    /*
+     * Remove the remaining B-projection and synchronize BZ.
+     */
+    err = lis_eigen_block_borthogonalize(
+        esolver->B,
+        active_rank,
+        basis,
+        active_rank,
+        candidate,
+        dual_candidate,
+        1,
+        coeff,
+        gram_work);
+
+    if( err )
+        return err;
+
+    return LIS_SUCCESS;
+}
+
+
+/*
+ * Convert the first B-orthogonal generalized Lanczos residual block
+ * into the next numerical basis block and its rectangular coupling.
+ *
+ * candidate[] / dual_candidate[] enter as Z / BZ from F4.
+ * The common B-rank-deflation kernel builds Q1/BQ1 and the common
+ * rectangular-coupling helper builds:
+ *
+ *     Beta1 = Lambda_r^(1/2) U_r^H
+ *
+ * with logical dimensions next_rank x previous_rank.
+ *
+ * If the remaining linear basis capacity is smaller than the
+ * previous block rank, temporary full-width Q/BQ output blocks are
+ * used and only the leading retained directions are copied back.
+ */
+static LIS_INT
+lis_egli_block_next_block(
+    LIS_ESOLVER esolver,
+    LIS_INT ss,
+    LIS_INT previous_offset,
+    LIS_INT previous_rank,
+    LIS_INT next_offset,
+    LIS_VECTOR basis[],
+    LIS_VECTOR dual_basis[],
+    LIS_VECTOR candidate[],
+    LIS_VECTOR dual_candidate[],
+    LIS_SCALAR *t,
+    LIS_SCALAR *gram,
+    LIS_SCALAR *evec,
+    LIS_SCALAR *transform,
+    LIS_INT *next_rank)
+{
+    LIS_INT i,j,err;
+    LIS_INT remaining;
+    LIS_INT full_next_rank;
+    LIS_INT retained_rank;
+    LIS_REAL rank_tol;
+    LIS_REAL tol;
+    LIS_REAL residual_norm;
+    LIS_REAL residual_max;
+    LIS_SCALAR bnorm2;
+    LIS_SCALAR *eval;
+    LIS_VECTOR *next_q;
+    LIS_VECTOR *next_bq;
+    LIS_VECTOR *partial_q;
+    LIS_VECTOR *partial_bq;
+
+    if( esolver==NULL ||
+        esolver->B==NULL ||
+        ss<1 ||
+        previous_offset<0 ||
+        previous_rank<1 ||
+        previous_offset+previous_rank>ss ||
+        next_offset<0 ||
+        next_offset>ss ||
+        basis==NULL ||
+        dual_basis==NULL ||
+        candidate==NULL ||
+        dual_candidate==NULL ||
+        t==NULL ||
+        gram==NULL ||
+        evec==NULL ||
+        transform==NULL ||
+        next_rank==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos next-block arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *next_rank = 0;
+
+    remaining = ss - next_offset;
+
+    if( remaining<=0 )
+        return LIS_SUCCESS;
+
+    /*
+     * Apply an absolute happy-breakdown test before the relative
+     * B-rank-revealing normalization.
+     *
+     * For the generalized residual Z with cached BZ:
+     *
+     *     ||Z_j||_B = sqrt( | Z_j^H B Z_j | )
+     *
+     * A residual block already below the eigensolver tolerance must
+     * terminate the Lanczos chain instead of being normalized into
+     * artificial directions by a purely relative rank test.
+     */
+    tol =
+        esolver->params[
+            LIS_EPARAMS_RESID -
+            LIS_EOPTIONS_LEN];
+
+    residual_max = 0.0;
+
+    for(i=0;i<previous_rank;i++)
+    {
+        err = lis_vector_dot(
+            candidate[i],
+            dual_candidate[i],
+            &bnorm2);
+
+        if( err )
+            return err;
+
+#ifdef _COMPLEX
+        residual_norm =
+            sqrt(
+                fabs(
+                    (double)creal(bnorm2)));
+#else
+        residual_norm =
+            sqrt(
+                fabs(
+                    (double)bnorm2));
+#endif
+
+        if( residual_norm>residual_max )
+            residual_max = residual_norm;
+    }
+
+    if( residual_max<=tol )
+    {
+        for(i=0;i<remaining;i++)
+        {
+            err = lis_vector_set_all(
+                0.0,
+                basis[next_offset+i]);
+
+            if( err )
+                return err;
+
+            err = lis_vector_set_all(
+                0.0,
+                dual_basis[next_offset+i]);
+
+            if( err )
+                return err;
+        }
+
+        *next_rank = 0;
+        return LIS_SUCCESS;
+    }
+
+    rank_tol = (LIS_REAL)1.0e-12;
+
+    eval = NULL;
+    next_q = NULL;
+    next_bq = NULL;
+    partial_q = NULL;
+    partial_bq = NULL;
+
+    eval = (LIS_SCALAR *)lis_malloc(
+        previous_rank*sizeof(LIS_SCALAR),
+        "lis_egli_block_first_next_block::eval");
+
+    if( eval==NULL )
+    {
+        LIS_SETERR_MEM(
+            previous_rank*sizeof(LIS_SCALAR));
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+    if( remaining>=previous_rank )
+    {
+        next_q = &basis[next_offset];
+        next_bq = &dual_basis[next_offset];
+    }
+    else
+    {
+        partial_q = (LIS_VECTOR *)lis_malloc(
+            previous_rank*sizeof(LIS_VECTOR),
+            "lis_egli_block_first_next_block::partial_q");
+
+        partial_bq = (LIS_VECTOR *)lis_malloc(
+            previous_rank*sizeof(LIS_VECTOR),
+            "lis_egli_block_first_next_block::partial_bq");
+
+        if( partial_q==NULL ||
+            partial_bq==NULL )
+        {
+            if( partial_bq ) lis_free(partial_bq);
+            if( partial_q ) lis_free(partial_q);
+            lis_free(eval);
+
+            LIS_SETERR_MEM(
+                2*previous_rank*sizeof(LIS_VECTOR));
+            return LIS_ERR_OUT_OF_MEMORY;
+        }
+
+        for(i=0;i<previous_rank;i++)
+        {
+            partial_q[i] = NULL;
+            partial_bq[i] = NULL;
+        }
+
+        for(i=0;i<previous_rank;i++)
+        {
+            if( esolver->eprecision==
+                LIS_PRECISION_DEFAULT )
+            {
+                err = lis_vector_duplicate(
+                    esolver->A,
+                    &partial_q[i]);
+
+                if( err )
+                    goto cleanup;
+
+                err = lis_vector_duplicate(
+                    esolver->A,
+                    &partial_bq[i]);
+            }
+            else
+            {
+                err = lis_vector_duplicateex(
+                    LIS_PRECISION_QUAD,
+                    esolver->A,
+                    &partial_q[i]);
+
+                if( err )
+                    goto cleanup;
+
+                err = lis_vector_duplicateex(
+                    LIS_PRECISION_QUAD,
+                    esolver->A,
+                    &partial_bq[i]);
+            }
+
+            if( err )
+                goto cleanup;
+        }
+
+        next_q = partial_q;
+        next_bq = partial_bq;
+    }
+
+    full_next_rank = 0;
+
+    err = lis_eigen_block_brank_deflate(
+        esolver->B,
+        previous_rank,
+        previous_rank,
+        candidate,
+        dual_candidate,
+        next_q,
+        next_bq,
+        rank_tol,
+        &full_next_rank,
+        gram,
+        eval,
+        evec,
+        transform);
+
+    if( err )
+        goto cleanup;
+
+    retained_rank = full_next_rank;
+
+    if( retained_rank>remaining )
+        retained_rank = remaining;
+
+    if( partial_q!=NULL )
+    {
+        for(i=0;i<retained_rank;i++)
+        {
+            err = lis_vector_copy(
+                partial_q[i],
+                basis[next_offset+i]);
+
+            if( err )
+                goto cleanup;
+
+            err = lis_vector_copy(
+                partial_bq[i],
+                dual_basis[next_offset+i]);
+
+            if( err )
+                goto cleanup;
+        }
+    }
+
+    if( retained_rank>0 )
+    {
+        /*
+         * transform[] is no longer needed after B-rank deflation,
+         * so reuse it for the rectangular Beta1 coupling.
+         */
+        err = lis_eigen_block_rectangular_coupling(
+            previous_rank,
+            retained_rank,
+            eval,
+            evec,
+            transform);
+
+        if( err )
+            goto cleanup;
+
+        err = lis_lanczos_block_projected_set_beta(
+            ss,
+            t,
+            previous_offset,
+            previous_rank,
+            next_offset,
+            retained_rank,
+            transform);
+
+        if( err )
+            goto cleanup;
+    }
+
+    *next_rank = retained_rank;
+    err = LIS_SUCCESS;
+
+cleanup:
+
+    if( partial_q!=NULL )
+    {
+        for(j=0;j<previous_rank;j++)
+        {
+            if( partial_q[j] )
+                lis_vector_destroy(partial_q[j]);
+        }
+
+        lis_free(partial_q);
+    }
+
+    if( partial_bq!=NULL )
+    {
+        for(j=0;j<previous_rank;j++)
+        {
+            if( partial_bq[j] )
+                lis_vector_destroy(partial_bq[j]);
+        }
+
+        lis_free(partial_bq);
+    }
+
+    if( eval )
+        lis_free(eval);
+
+    return err;
+}
+
+
+/*
+ * Continue the untransformed generalized Block Lanczos recurrence
+ * after the validated Q0 -> Q1 bootstrap.
+ *
+ * For each active block j >= 1:
+ *
+ *     Y_j = A Q_j
+ *     R_j = Y_j - B Q_(j-1) Beta_j^H
+ *     Alpha_j = Q_j^H R_j
+ *     R_j -= B Q_j Alpha_j
+ *     B Z_(j+1) = R_j
+ *
+ * One full B-orthogonalization pass removes remaining round-off
+ * projections against Q0..Qj. The shared next-block helper then
+ * performs B-rank deflation and constructs Beta_(j+1).
+ *
+ * block_rank[] and block_offset[] always describe the numerical,
+ * variable-rank basis rather than the nominal storage partition.
+ */
+static LIS_INT
+lis_egli_block_continue_recurrence(
+    LIS_ESOLVER esolver,
+    LIS_INT ss,
+    LIS_INT block_size,
+    LIS_VECTOR basis[],
+    LIS_VECTOR dual_basis[],
+    LIS_VECTOR candidate[],
+    LIS_VECTOR dual_candidate[],
+    LIS_SOLVER solver,
+    LIS_PRECON precon,
+    LIS_SCALAR *t,
+    LIS_INT block_offset[],
+    LIS_INT block_rank[],
+    LIS_INT *basis_count_io,
+    LIS_INT *active_block_count_io,
+    LIS_SCALAR *alpha,
+    LIS_SCALAR *coeff,
+    LIS_SCALAR *gram_work)
+{
+    LIS_INT i,j,err;
+    LIS_INT current_block;
+    LIS_INT previous_offset;
+    LIS_INT previous_rank;
+    LIS_INT current_offset;
+    LIS_INT current_rank;
+    LIS_INT next_offset;
+    LIS_INT next_rank;
+    LIS_INT basis_count;
+    LIS_INT active_block_count;
+
+    if( esolver==NULL ||
+        esolver->A==NULL ||
+        esolver->B==NULL ||
+        ss<1 ||
+        block_size<1 ||
+        basis==NULL ||
+        dual_basis==NULL ||
+        candidate==NULL ||
+        dual_candidate==NULL ||
+        solver==NULL ||
+        precon==NULL ||
+        t==NULL ||
+        block_offset==NULL ||
+        block_rank==NULL ||
+        basis_count_io==NULL ||
+        active_block_count_io==NULL ||
+        alpha==NULL ||
+        coeff==NULL ||
+        gram_work==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos continuation arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    basis_count = *basis_count_io;
+    active_block_count = *active_block_count_io;
+
+    if( basis_count<1 ||
+        basis_count>ss ||
+        active_block_count<1 ||
+        active_block_count>ss )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos continuation state\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    current_block = 1;
+
+    while( current_block<active_block_count )
+    {
+        previous_offset =
+            block_offset[current_block-1];
+
+        previous_rank =
+            block_rank[current_block-1];
+
+        current_offset =
+            block_offset[current_block];
+
+        current_rank =
+            block_rank[current_block];
+
+        if( previous_offset<0 ||
+            previous_rank<1 ||
+            current_offset<0 ||
+            current_rank<1 ||
+            previous_offset+previous_rank>basis_count ||
+            current_offset+current_rank>basis_count ||
+            current_rank>block_size )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "invalid numerical generalized Block Lanczos layout\n");
+            return LIS_ERR_ILL_ARG;
+        }
+
+        /*
+         * dual_candidate = A*Q_j.
+         */
+        err = lis_matvec_block(
+            esolver->A,
+            current_rank,
+            &basis[current_offset],
+            dual_candidate);
+
+        if( err )
+            return err;
+
+        /*
+         * Remove the previous rectangular coupling in the dual
+         * recurrence:
+         *
+         *     R_j = A Q_j - B Q_(j-1) Beta_j^H
+         *
+         * set_beta() stores Beta_j^H in T[previous,current].
+         */
+        for(j=0;j<current_rank;j++)
+        {
+            for(i=0;i<previous_rank;i++)
+            {
+                err = lis_vector_axpy(
+                    -t[
+                        (previous_offset+i)*ss+
+                        (current_offset+j)
+                    ],
+                    dual_basis[
+                        previous_offset+i],
+                    dual_candidate[j]);
+
+                if( err )
+                    return err;
+            }
+        }
+
+        /*
+         * Alpha_j = Q_j^H R_j = Q_j^H A Q_j.
+         */
+        err = lis_eigen_block_gram(
+            current_rank,
+            &basis[current_offset],
+            current_rank,
+            dual_candidate,
+            alpha);
+
+        if( err )
+            return err;
+
+        err = lis_lanczos_block_projected_set_alpha(
+            ss,
+            t,
+            current_offset,
+            current_rank,
+            alpha);
+
+        if( err )
+            return err;
+
+        /*
+         * Once the linear basis capacity is full, Alpha_j completes
+         * the final active diagonal block. No next residual is needed.
+         */
+        if( basis_count>=ss )
+            break;
+
+        /*
+         * Complete the dual residual:
+         *
+         *     R_j -= B Q_j Alpha_j.
+         */
+        for(j=0;j<current_rank;j++)
+        {
+            for(i=0;i<current_rank;i++)
+            {
+                err = lis_vector_axpy(
+                    -alpha[i*current_rank+j],
+                    dual_basis[
+                        current_offset+i],
+                    dual_candidate[j]);
+
+                if( err )
+                    return err;
+            }
+        }
+
+        /*
+         * Convert the dual residual to a primal candidate:
+         *
+         *     B Z_(j+1) = R_j.
+         */
+        for(j=0;j<current_rank;j++)
+        {
+            err = lis_vector_set_all(
+                0.0,
+                candidate[j]);
+
+            if( err )
+                return err;
+
+            err = lis_solve_kernel(
+                esolver->B,
+                dual_candidate[j],
+                candidate[j],
+                solver,
+                precon);
+
+            if( err )
+                return err;
+        }
+
+        /*
+         * Full B-orthogonalization against every active basis vector.
+         * The dense coeff/work arrays have ss*block_size capacity.
+         * dual_candidate is synchronized to B*candidate on return.
+         */
+        err = lis_eigen_block_borthogonalize(
+            esolver->B,
+            basis_count,
+            basis,
+            current_rank,
+            candidate,
+            dual_candidate,
+            1,
+            coeff,
+            gram_work);
+
+        if( err )
+            return err;
+
+        next_offset = basis_count;
+        next_rank = 0;
+
+        err = lis_egli_block_next_block(
+            esolver,
+            ss,
+            current_offset,
+            current_rank,
+            next_offset,
+            basis,
+            dual_basis,
+            candidate,
+            dual_candidate,
+            t,
+            coeff,
+            gram_work,
+            alpha,
+            &next_rank);
+
+        if( err )
+            return err;
+
+        /*
+         * Rank zero is a valid invariant-subspace closure.
+         */
+        if( next_rank==0 )
+            break;
+
+        if( active_block_count>=ss )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "generalized Block Lanczos metadata overflow\n");
+            return LIS_ERR_ILL_ARG;
+        }
+
+        block_offset[active_block_count] =
+            next_offset;
+
+        block_rank[active_block_count] =
+            next_rank;
+
+        basis_count += next_rank;
+        active_block_count++;
+
+        current_block++;
+    }
+
+    *basis_count_io = basis_count;
+    *active_block_count_io = active_block_count;
+
+    return LIS_SUCCESS;
+}
+
+
+/*
+ * Solve the active generalized Block Lanczos projected problem and
+ * expose physical Ritz results through the existing eigensolver API.
+ *
+ * The projected matrix T is already expressed in a B-orthonormal
+ * basis, so the reduced problem is an ordinary symmetric eigensystem.
+ * The common projected solver and Ritz-reconstruction helpers are
+ * reused without introducing a new ordering or selection policy.
+ *
+ * -rval true:
+ *     return the raw projected Ritz values only.
+ *
+ * -rval false:
+ *     reconstruct physical Ritz vectors, copy the first Ritz vector
+ *     to the public output vector, and certify every pair with the
+ *     existing generalized residual helper.
+ */
+static LIS_INT
+lis_egli_block_project_results(
+    LIS_ESOLVER esolver,
+    LIS_INT ss,
+    LIS_INT basis_count,
+    LIS_VECTOR basis[],
+    LIS_SCALAR *t,
+    LIS_VECTOR scratch_Ax,
+    LIS_VECTOR scratch_Bx,
+    LIS_VECTOR scratch_r)
+{
+    LIS_INT i,j,err;
+    LIS_INT projected_dim;
+    LIS_INT projected_niter;
+    LIS_INT allocated_vectors;
+    LIS_INT final_status;
+    LIS_REAL projected_error;
+    LIS_REAL cert_resid;
+    LIS_REAL cert_tol;
+    LIS_SCALAR *projected_matrix;
+    LIS_SCALAR *projected_eval;
+    LIS_SCALAR *projected_evec;
+
+    if( esolver==NULL ||
+        esolver->A==NULL ||
+        esolver->B==NULL ||
+        ss<1 ||
+        basis_count<1 ||
+        basis_count>ss ||
+        basis==NULL ||
+        t==NULL ||
+        scratch_Ax==NULL ||
+        scratch_Bx==NULL ||
+        scratch_r==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos result arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    projected_dim = basis_count;
+    projected_niter = 0;
+    projected_error = 0.0;
+    allocated_vectors = 0;
+    final_status = LIS_SUCCESS;
+
+    cert_tol =
+        esolver->params[
+            LIS_EPARAMS_RESID -
+            LIS_EOPTIONS_LEN];
+
+    projected_matrix = NULL;
+    projected_eval = NULL;
+    projected_evec = NULL;
+
+    /*
+     * Keep public result count equal to the numerical active basis
+     * dimension after rank deflation or happy breakdown.
+     */
+    esolver->nev = projected_dim;
+
+    projected_matrix =
+        (LIS_SCALAR *)lis_malloc(
+            projected_dim*projected_dim*
+            sizeof(LIS_SCALAR),
+            "lis_egli_block_project_results::matrix");
+
+    projected_eval =
+        (LIS_SCALAR *)lis_malloc(
+            projected_dim*sizeof(LIS_SCALAR),
+            "lis_egli_block_project_results::eval");
+
+    projected_evec =
+        (LIS_SCALAR *)lis_malloc(
+            projected_dim*projected_dim*
+            sizeof(LIS_SCALAR),
+            "lis_egli_block_project_results::evec");
+
+    if( projected_matrix==NULL ||
+        projected_eval==NULL ||
+        projected_evec==NULL )
+    {
+        if( projected_evec ) lis_free(projected_evec);
+        if( projected_eval ) lis_free(projected_eval);
+        if( projected_matrix ) lis_free(projected_matrix);
+
+        LIS_SETERR_MEM(
+            projected_dim*projected_dim*
+            sizeof(LIS_SCALAR));
+
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+    /*
+     * T has physical leading dimension ss. The common projected
+     * eigensolver modifies its matrix argument, so compact-copy only
+     * the active numerical basis block.
+     */
+    for(i=0;i<projected_dim;i++)
+    {
+        for(j=0;j<projected_dim;j++)
+        {
+            projected_matrix[
+                i*projected_dim+j
+            ] =
+                t[i*ss+j];
+        }
+    }
+
+    err = lis_eigen_projected_solve(
+        projected_dim,
+        projected_matrix,
+        projected_eval,
+        projected_evec,
+        &projected_niter,
+        &projected_error);
+
+    if( err )
+        goto fail;
+
+    /*
+     * Preserve the common projected ordering exactly.
+     */
+    for(i=0;i<projected_dim;i++)
+    {
+        esolver->evalue[i] =
+            projected_eval[i];
+    }
+
+    if( esolver->options[LIS_EOPTIONS_OUTPUT] )
+    {
+        lis_printf(
+            LIS_COMM_WORLD,
+            "Generalized Block Lanczos projected dimension : %D\n",
+            projected_dim);
+
+        lis_printf(
+            LIS_COMM_WORLD,
+            "projected eigensolver iterations              : %D\n",
+            projected_niter);
+
+        lis_printf(
+            LIS_COMM_WORLD,
+            "projected eigensolver error                   : %e\n",
+            (double)projected_error);
+    }
+
+    /*
+     * Raw Ritz mode ends here. Physical reconstruction is not needed.
+     */
+    if( esolver->options[LIS_EOPTIONS_RVAL] )
+    {
+        esolver->retcode = LIS_SUCCESS;
+
+        lis_free(projected_evec);
+        lis_free(projected_eval);
+        lis_free(projected_matrix);
+
+        return LIS_SUCCESS;
+    }
+
+    if( esolver->evector==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "generalized Block Lanczos eigenvector storage is unavailable\n");
+
+        err = LIS_ERR_ILL_ARG;
+        goto fail;
+    }
+
+    for(i=0;i<projected_dim;i++)
+    {
+        if( esolver->evector[i]!=NULL )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "generalized Block Lanczos eigenvector slot is already in use\n");
+
+            err = LIS_ERR_ILL_ARG;
+            goto fail;
+        }
+
+        if( esolver->eprecision==
+            LIS_PRECISION_DEFAULT )
+        {
+            err = lis_vector_duplicate(
+                esolver->A,
+                &esolver->evector[i]);
+        }
+        else
+        {
+            err = lis_vector_duplicateex(
+                LIS_PRECISION_QUAD,
+                esolver->A,
+                &esolver->evector[i]);
+        }
+
+        if( err )
+            goto fail;
+
+        allocated_vectors++;
+    }
+
+    err = lis_eigen_ritz_reconstruct(
+        projected_dim,
+        basis,
+        projected_dim,
+        projected_evec,
+        projected_dim,
+        esolver->evector);
+
+    if( err )
+        goto fail;
+
+    err = lis_vector_copy(
+        esolver->evector[0],
+        esolver->x);
+
+    if( err )
+        goto fail;
+
+    /*
+     * Certify physical generalized Ritz pairs with:
+     *
+     *     ||A*x - lambda*B*x||
+     *
+     * using the common normalized generalized residual contract.
+     */
+    for(i=0;i<projected_dim;i++)
+    {
+        err = lis_esolver_generalized_residual(
+            esolver->A,
+            esolver->B,
+            esolver->evector[i],
+            esolver->evalue[i],
+            scratch_Ax,
+            scratch_Bx,
+            scratch_r,
+            &cert_resid);
+
+        if( err )
+            goto fail;
+
+        esolver->resid[i] =
+            cert_resid;
+
+        if( cert_resid>cert_tol &&
+            final_status==LIS_SUCCESS )
+        {
+            final_status = LIS_MAXITER;
+        }
+    }
+
+    esolver->retcode =
+        final_status;
+
+    lis_free(projected_evec);
+    lis_free(projected_eval);
+    lis_free(projected_matrix);
+
+    return final_status;
+
+fail:
+
+    for(i=0;i<allocated_vectors;i++)
+    {
+        if( esolver->evector[i]!=NULL )
+        {
+            lis_vector_destroy(
+                esolver->evector[i]);
+
+            esolver->evector[i] = NULL;
+        }
+    }
+
+    if( projected_evec )
+        lis_free(projected_evec);
+
+    if( projected_eval )
+        lis_free(projected_eval);
+
+    if( projected_matrix )
+        lis_free(projected_matrix);
+
+    return err;
+}
+
+
+/*
+ * Allocate a temporary vector block using the eigensolver precision.
+ */
+static LIS_INT
+lis_egli_block_alloc_vectors(
+    LIS_ESOLVER esolver,
+    LIS_INT count,
+    LIS_VECTOR **vectors)
+{
+    LIS_INT i,err;
+    LIS_VECTOR *v;
+
+    if( esolver==NULL ||
+        esolver->A==NULL ||
+        count<1 ||
+        vectors==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos vector-block arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *vectors = NULL;
+
+    v = (LIS_VECTOR *)lis_malloc(
+        count*sizeof(LIS_VECTOR),
+        "lis_egli_block_alloc_vectors::vectors");
+
+    if( v==NULL )
+    {
+        LIS_SETERR_MEM(
+            count*sizeof(LIS_VECTOR));
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+    for(i=0;i<count;i++)
+        v[i] = NULL;
+
+    for(i=0;i<count;i++)
+    {
+        if( esolver->eprecision==
+            LIS_PRECISION_DEFAULT )
+        {
+            err = lis_vector_duplicate(
+                esolver->A,
+                &v[i]);
+        }
+        else
+        {
+            err = lis_vector_duplicateex(
+                LIS_PRECISION_QUAD,
+                esolver->A,
+                &v[i]);
+        }
+
+        if( err )
+        {
+            LIS_INT j;
+
+            for(j=0;j<i;j++)
+                lis_vector_destroy(v[j]);
+
+            lis_free(v);
+            return err;
+        }
+    }
+
+    *vectors = v;
+    return LIS_SUCCESS;
+}
+
+
+static void
+lis_egli_block_free_vectors(
+    LIS_INT count,
+    LIS_VECTOR *vectors)
+{
+    LIS_INT i;
+
+    if( vectors==NULL )
+        return;
+
+    for(i=0;i<count;i++)
+    {
+        if( vectors[i]!=NULL )
+            lis_vector_destroy(vectors[i]);
+    }
+
+    lis_free(vectors);
+}
+
+
+/*
+ * Apply the first transformed operator to a complete RHS block.
+ *
+ * Scalar transformed GLI permits a bounded shift perturbation only
+ * while starting the Lanczos basis. For block mode that recovery is
+ * a property of the whole first operator application, not merely
+ * its first RHS column:
+ *
+ *   1. try columns on the requested operator;
+ *   2. any column may trigger the existing scalar first-solve
+ *      recovery;
+ *   3. if that recovery changes the active shift, rerun every column
+ *      on the recovered operator so the entire block uses one shift.
+ *
+ * Later block applications use lis_egli_solve_with_retry() only and
+ * therefore cannot change the active spectral transform.
+ */
+static LIS_INT
+lis_egli_block_first_solve_with_recovery(
+    LIS_MATRIX A,
+    LIS_MATRIX B,
+    LIS_INT nrhs,
+    LIS_VECTOR rhs[],
+    LIS_VECTOR x[],
+    LIS_SOLVER solver,
+    LIS_PRECON *precon,
+    LIS_MATRIX *S,
+    LIS_MATRIX *Sop,
+    LIS_SCALAR requested_shift,
+    LIS_REAL acceptance_tol,
+    LIS_SCALAR *active_shift)
+{
+    LIS_INT i,j,err;
+    LIS_SCALAR trial_shift;
+
+    if( A==NULL ||
+        B==NULL ||
+        nrhs<1 ||
+        rhs==NULL ||
+        x==NULL ||
+        solver==NULL ||
+        precon==NULL ||
+        S==NULL ||
+        Sop==NULL ||
+        active_shift==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid transformed Block Lanczos recovery arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *active_shift = requested_shift;
+
+    for(i=0;i<nrhs;i++)
+    {
+        err = lis_vector_set_all(
+            0.0,
+            x[i]);
+
+        if( err )
+            return err;
+
+        trial_shift = requested_shift;
+
+        err = lis_egli_first_solve_with_recovery(
+            A,
+            B,
+            rhs[i],
+            x[i],
+            solver,
+            precon,
+            S,
+            Sop,
+            requested_shift,
+            acceptance_tol,
+            &trial_shift);
+
+        if( err )
+            return err;
+
+        if( trial_shift!=requested_shift )
+        {
+            /*
+             * Recovery changed S. Recompute every column so no block
+             * mixes vectors from two transformed operators.
+             */
+            *active_shift = trial_shift;
+
+            for(j=0;j<nrhs;j++)
+            {
+                err = lis_vector_set_all(
+                    0.0,
+                    x[j]);
+
+                if( err )
+                    return err;
+
+                err = lis_egli_solve_with_retry(
+                    *S,
+                    rhs[j],
+                    x[j],
+                    solver,
+                    precon,
+                    acceptance_tol);
+
+                if( err )
+                    return err;
+            }
+
+            return LIS_SUCCESS;
+        }
+    }
+
+    return LIS_SUCCESS;
+}
+
+
+/*
+ * Convert one M-orthogonal transformed residual block into the next
+ * variable-rank Lanczos basis block.
+ *
+ * M is:
+ *
+ *   B for shift-invert,
+ *   A for buckling.
+ *
+ * In particular, the geometric/buckling matrix B is never treated
+ * as a positive metric in the buckling path.
+ */
+static LIS_INT
+lis_egli_block_transformed_next_block(
+    LIS_ESOLVER esolver,
+    LIS_MATRIX M,
+    LIS_INT ss,
+    LIS_INT previous_offset,
+    LIS_INT previous_rank,
+    LIS_INT next_offset,
+    LIS_VECTOR basis[],
+    LIS_VECTOR candidate[],
+    LIS_VECTOR metric_candidate[],
+    LIS_VECTOR metric_basis[],
+    LIS_VECTOR partial_q[],
+    LIS_SCALAR *t,
+    LIS_SCALAR *gram,
+    LIS_SCALAR *eval,
+    LIS_SCALAR *evec,
+    LIS_SCALAR *transform,
+    LIS_INT *next_rank)
+{
+    LIS_INT i,err;
+    LIS_INT remaining;
+    LIS_INT full_next_rank;
+    LIS_INT retained_rank;
+    LIS_REAL tol;
+    LIS_REAL rank_tol;
+    LIS_REAL residual_norm;
+    LIS_REAL residual_max;
+    LIS_SCALAR dot;
+    LIS_VECTOR *next_q;
+
+    if( esolver==NULL ||
+        M==NULL ||
+        ss<1 ||
+        previous_offset<0 ||
+        previous_rank<1 ||
+        previous_offset+previous_rank>ss ||
+        next_offset<0 ||
+        next_offset>ss ||
+        basis==NULL ||
+        candidate==NULL ||
+        metric_candidate==NULL ||
+        metric_basis==NULL ||
+        partial_q==NULL ||
+        t==NULL ||
+        gram==NULL ||
+        eval==NULL ||
+        evec==NULL ||
+        transform==NULL ||
+        next_rank==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid transformed Block Lanczos next-block arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *next_rank = 0;
+
+    remaining = ss - next_offset;
+
+    if( remaining<=0 )
+        return LIS_SUCCESS;
+
+    tol =
+        esolver->params[
+            LIS_EPARAMS_RESID -
+            LIS_EOPTIONS_LEN];
+
+    residual_max = 0.0;
+
+    for(i=0;i<previous_rank;i++)
+    {
+        err = lis_vector_dot(
+            candidate[i],
+            metric_candidate[i],
+            &dot);
+
+        if( err )
+            return err;
+
+#ifdef _COMPLEX
+        residual_norm =
+            sqrt(
+                fabs(
+                    (double)creal(dot)));
+#else
+        residual_norm =
+            sqrt(
+                fabs(
+                    (double)dot));
+#endif
+
+        if( residual_norm>residual_max )
+            residual_max = residual_norm;
+    }
+
+    /*
+     * Absolute happy breakdown must precede the relative rank test.
+     */
+    if( residual_max<=tol )
+    {
+        for(i=0;i<remaining;i++)
+        {
+            err = lis_vector_set_all(
+                0.0,
+                basis[next_offset+i]);
+
+            if( err )
+                return err;
+        }
+
+        *next_rank = 0;
+        return LIS_SUCCESS;
+    }
+
+    rank_tol = (LIS_REAL)1.0e-12;
+
+    if( remaining>=previous_rank )
+        next_q = &basis[next_offset];
+    else
+        next_q = partial_q;
+
+    full_next_rank = 0;
+
+    err = lis_eigen_block_brank_deflate(
+        M,
+        previous_rank,
+        previous_rank,
+        candidate,
+        metric_candidate,
+        next_q,
+        metric_basis,
+        rank_tol,
+        &full_next_rank,
+        gram,
+        eval,
+        evec,
+        transform);
+
+    if( err )
+        return err;
+
+    retained_rank = full_next_rank;
+
+    if( retained_rank>remaining )
+        retained_rank = remaining;
+
+    if( next_q==partial_q )
+    {
+        for(i=0;i<retained_rank;i++)
+        {
+            err = lis_vector_copy(
+                partial_q[i],
+                basis[next_offset+i]);
+
+            if( err )
+                return err;
+        }
+    }
+
+    if( retained_rank>0 )
+    {
+        err = lis_eigen_block_rectangular_coupling(
+            previous_rank,
+            retained_rank,
+            eval,
+            evec,
+            transform);
+
+        if( err )
+            return err;
+
+        err = lis_lanczos_block_projected_set_beta(
+            ss,
+            t,
+            previous_offset,
+            previous_rank,
+            next_offset,
+            retained_rank,
+            transform);
+
+        if( err )
+            return err;
+    }
+
+    *next_rank = retained_rank;
+
+    return LIS_SUCCESS;
+}
+
+
+/*
+ * Block Lanczos recurrence for the scalar transformed GLI operator:
+ *
+ *   shift-invert:
+ *       M = B
+ *       T = (A - sigma B)^-1 B
+ *
+ *   buckling:
+ *       M = A
+ *       T = (A - sigma B)^-1 A
+ *
+ * The basis is M-orthonormal. This preserves the established scalar
+ * transformed semantics and avoids using an indefinite buckling
+ * matrix as the positive rank-deflation metric.
+ *
+ * The transformed recurrence is followed by projected-result processing that will
+ * solve the active projected problem, sort by decreasing |nu|, map
+ * transformed Ritz values back to lambda, and reconstruct/certify
+ * physical generalized Ritz vectors.
+ */
+/*
+ * Close the transformed generalized Block Lanczos result path.
+ *
+ * Projected eigenpairs are ordered by decreasing |nu| exactly as in
+ * scalar transformed GLI, then mapped back with the actual recovered
+ * active shift. Physical vectors use the established block result
+ * contract: common Ritz reconstruction plus generalized residual
+ * certification, without a separate refinement loop.
+ */
+static LIS_INT
+lis_egli_block_transformed_project_results(
+    LIS_ESOLVER esolver,
+    LIS_INT transform_mode,
+    LIS_INT ss,
+    LIS_INT basis_count,
+    LIS_VECTOR basis[],
+    LIS_SCALAR *t,
+    LIS_SCALAR active_shift,
+    LIS_VECTOR scratch_Ax,
+    LIS_VECTOR scratch_Bx,
+    LIS_VECTOR scratch_r)
+{
+    LIS_INT i,j,k,err;
+    LIS_INT imax;
+    LIS_INT projected_dim;
+    LIS_INT projected_niter;
+    LIS_INT allocated_vectors;
+    LIS_INT final_status;
+    LIS_REAL projected_error;
+    LIS_REAL cert_resid;
+    LIS_REAL cert_tol;
+    LIS_REAL mag;
+    LIS_REAL maxmag;
+    LIS_REAL spectral_scale;
+    LIS_REAL zero_threshold;
+    LIS_REAL lmag;
+    LIS_REAL anrm;
+    LIS_REAL bnrm;
+    LIS_REAL rnrm;
+    LIS_REAL denom;
+    LIS_SCALAR nu;
+    LIS_SCALAR tmp;
+    LIS_SCALAR *projected_matrix;
+    LIS_SCALAR *projected_eval;
+    LIS_SCALAR *projected_evec;
+
+    if( esolver==NULL ||
+        esolver->A==NULL ||
+        esolver->B==NULL ||
+        ss<1 ||
+        basis_count<1 ||
+        basis_count>ss ||
+        basis==NULL ||
+        t==NULL ||
+        scratch_Ax==NULL ||
+        scratch_Bx==NULL ||
+        scratch_r==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid transformed generalized Block Lanczos result arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    if( transform_mode!=
+            LIS_EIGEN_TRANSFORM_SHIFT_INVERT &&
+        transform_mode!=
+            LIS_EIGEN_TRANSFORM_BUCKLING )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid transformed generalized Block Lanczos result transform\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    projected_dim = basis_count;
+    projected_niter = 0;
+    projected_error = 0.0;
+    allocated_vectors = 0;
+    final_status = LIS_SUCCESS;
+
+    cert_tol =
+        esolver->params[
+            LIS_EPARAMS_RESID -
+            LIS_EOPTIONS_LEN];
+
+    projected_matrix = NULL;
+    projected_eval = NULL;
+    projected_evec = NULL;
+
+    esolver->nev =
+        projected_dim;
+
+    projected_matrix =
+        (LIS_SCALAR *)lis_malloc(
+            projected_dim*projected_dim*
+            sizeof(LIS_SCALAR),
+            "lis_egli_block_transformed_project_results::matrix");
+
+    projected_eval =
+        (LIS_SCALAR *)lis_malloc(
+            projected_dim*sizeof(LIS_SCALAR),
+            "lis_egli_block_transformed_project_results::eval");
+
+    projected_evec =
+        (LIS_SCALAR *)lis_malloc(
+            projected_dim*projected_dim*
+            sizeof(LIS_SCALAR),
+            "lis_egli_block_transformed_project_results::evec");
+
+    if( projected_matrix==NULL ||
+        projected_eval==NULL ||
+        projected_evec==NULL )
+    {
+        if( projected_evec )
+            lis_free(projected_evec);
+        if( projected_eval )
+            lis_free(projected_eval);
+        if( projected_matrix )
+            lis_free(projected_matrix);
+
+        LIS_SETERR_MEM(
+            projected_dim*projected_dim*
+            sizeof(LIS_SCALAR));
+
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+    for(i=0;i<projected_dim;i++)
+    {
+        for(j=0;j<projected_dim;j++)
+        {
+            projected_matrix[
+                i*projected_dim+j
+            ] =
+                t[i*ss+j];
+        }
+    }
+
+    err = lis_eigen_projected_solve(
+        projected_dim,
+        projected_matrix,
+        projected_eval,
+        projected_evec,
+        &projected_niter,
+        &projected_error);
+
+    if( err )
+        goto fail;
+
+    /*
+     * Scalar transformed GLI ordering: decreasing |nu|.
+     */
+    for(i=0;i<projected_dim-1;i++)
+    {
+        imax = i;
+
+#ifdef _COMPLEX
+        maxmag = cabs(projected_eval[i]);
+#else
+        maxmag = fabs(projected_eval[i]);
+#endif
+
+        for(j=i+1;j<projected_dim;j++)
+        {
+#ifdef _COMPLEX
+            mag = cabs(projected_eval[j]);
+#else
+            mag = fabs(projected_eval[j]);
+#endif
+
+            if( mag>maxmag )
+            {
+                maxmag = mag;
+                imax = j;
+            }
+        }
+
+        if( imax!=i )
+        {
+            tmp = projected_eval[i];
+            projected_eval[i] =
+                projected_eval[imax];
+            projected_eval[imax] =
+                tmp;
+
+            for(k=0;k<projected_dim;k++)
+            {
+                tmp =
+                    projected_evec[
+                        k*projected_dim+i];
+
+                projected_evec[
+                    k*projected_dim+i
+                ] =
+                    projected_evec[
+                        k*projected_dim+imax];
+
+                projected_evec[
+                    k*projected_dim+imax
+                ] =
+                    tmp;
+            }
+        }
+    }
+
+    /*
+     * Inverse map with the actual active recovered shift.
+     */
+    for(i=0;i<projected_dim;i++)
+    {
+        nu = projected_eval[i];
+
+        if( transform_mode==
+            LIS_EIGEN_TRANSFORM_SHIFT_INVERT )
+        {
+#ifdef _COMPLEX
+            mag = cabs(nu);
+#else
+            mag = fabs(nu);
+#endif
+
+            if( !isfinite((double)mag) ||
+                mag<=1.0e-30 )
+            {
+                LIS_SETERR(
+                    LIS_BREAKDOWN,
+                    "zero transformed Block Lanczos shift-invert Ritz value\n");
+
+                err = LIS_BREAKDOWN;
+                goto fail;
+            }
+
+            esolver->evalue[i] =
+                active_shift +
+                1.0/nu;
+        }
+        else
+        {
+#ifdef _COMPLEX
+            mag = cabs(nu-1.0);
+#else
+            mag = fabs(nu-1.0);
+#endif
+
+            if( !isfinite((double)mag) ||
+                mag<=1.0e-30 )
+            {
+                LIS_SETERR(
+                    LIS_BREAKDOWN,
+                    "transformed Block Lanczos buckling Ritz value is too close to one\n");
+
+                err = LIS_BREAKDOWN;
+                goto fail;
+            }
+
+            esolver->evalue[i] =
+                active_shift*nu/
+                (nu-1.0);
+        }
+
+        esolver->iter[i] =
+            projected_dim;
+
+        esolver->resid[i] =
+            0.0;
+    }
+
+    /*
+     * Relative residual scaling degenerates for a physical zero mode:
+     *
+     *     ||A x|| + |lambda| ||B x|| -> 0
+     *
+     * even when the reconstructed nullspace vector is correct. Keep
+     * historical certification for ordinary eigenvalues and use a
+     * physical Ritz-value scale only for numerically zero lambda.
+     */
+#ifdef _COMPLEX
+    spectral_scale = cabs(active_shift);
+#else
+    spectral_scale = fabs(active_shift);
+#endif
+
+    for(i=0;i<projected_dim;i++)
+    {
+#ifdef _COMPLEX
+        mag = cabs(esolver->evalue[i]);
+#else
+        mag = fabs(esolver->evalue[i]);
+#endif
+
+        if( mag>spectral_scale )
+            spectral_scale = mag;
+    }
+
+    zero_threshold =
+        100.0*DBL_EPSILON*
+        (spectral_scale>0.0 ?
+            spectral_scale : 1.0);
+
+    if( esolver->options[
+        LIS_EOPTIONS_OUTPUT] )
+    {
+        lis_printf(
+            LIS_COMM_WORLD,
+            "Transformed generalized Block Lanczos projected dimension : %D\n",
+            projected_dim);
+
+        lis_printf(
+            LIS_COMM_WORLD,
+            "projected eigensolver iterations                          : %D\n",
+            projected_niter);
+
+        lis_printf(
+            LIS_COMM_WORLD,
+            "projected eigensolver error                               : %e\n",
+            (double)projected_error);
+    }
+
+    /*
+     * -rval returns mapped physical Ritz values without vectors.
+     */
+    if( esolver->options[
+        LIS_EOPTIONS_RVAL] )
+    {
+        esolver->retcode =
+            LIS_SUCCESS;
+
+        lis_free(projected_evec);
+        lis_free(projected_eval);
+        lis_free(projected_matrix);
+
+        return LIS_SUCCESS;
+    }
+
+    if( esolver->evector==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "transformed generalized Block Lanczos eigenvector storage is unavailable\n");
+
+        err = LIS_ERR_ILL_ARG;
+        goto fail;
+    }
+
+    for(i=0;i<projected_dim;i++)
+    {
+        if( esolver->evector[i]!=NULL )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "transformed generalized Block Lanczos eigenvector slot is already in use\n");
+
+            err = LIS_ERR_ILL_ARG;
+            goto fail;
+        }
+
+        if( esolver->eprecision==
+            LIS_PRECISION_DEFAULT )
+        {
+            err = lis_vector_duplicate(
+                esolver->A,
+                &esolver->evector[i]);
+        }
+        else
+        {
+            err = lis_vector_duplicateex(
+                LIS_PRECISION_QUAD,
+                esolver->A,
+                &esolver->evector[i]);
+        }
+
+        if( err )
+            goto fail;
+
+        allocated_vectors++;
+    }
+
+    err = lis_eigen_ritz_reconstruct(
+        projected_dim,
+        basis,
+        projected_dim,
+        projected_evec,
+        projected_dim,
+        esolver->evector);
+
+    if( err )
+        goto fail;
+
+    err = lis_vector_copy(
+        esolver->evector[0],
+        esolver->x);
+
+    if( err )
+        goto fail;
+
+    for(i=0;i<projected_dim;i++)
+    {
+        err = lis_esolver_generalized_residual(
+            esolver->A,
+            esolver->B,
+            esolver->evector[i],
+            esolver->evalue[i],
+            scratch_Ax,
+            scratch_Bx,
+            scratch_r,
+            &cert_resid);
+
+        if( err )
+            goto fail;
+
+#ifdef _COMPLEX
+        lmag = cabs(esolver->evalue[i]);
+#else
+        lmag = fabs(esolver->evalue[i]);
+#endif
+
+        if( spectral_scale>0.0 &&
+            lmag<=zero_threshold )
+        {
+            /*
+             * The common helper has already formed scratch_Ax,
+             * scratch_Bx and scratch_r. Reuse them; zero-mode
+             * certification needs no extra matrix-vector products.
+             */
+            err = lis_vector_nrm2(
+                scratch_Ax,
+                &anrm);
+
+            if( err )
+                goto fail;
+
+            err = lis_vector_nrm2(
+                scratch_Bx,
+                &bnrm);
+
+            if( err )
+                goto fail;
+
+            err = lis_vector_nrm2(
+                scratch_r,
+                &rnrm);
+
+            if( err )
+                goto fail;
+
+            denom =
+                anrm +
+                spectral_scale*bnrm;
+
+            if( !isfinite((double)anrm) ||
+                !isfinite((double)bnrm) ||
+                !isfinite((double)rnrm) ||
+                !isfinite((double)denom) )
+            {
+                LIS_SETERR(
+                    LIS_BREAKDOWN,
+                    "non-finite zero-mode Block Lanczos certification data\n");
+
+                err = LIS_BREAKDOWN;
+                goto fail;
+            }
+
+            if( denom>0.0 )
+            {
+                cert_resid =
+                    rnrm/denom;
+            }
+            else
+            {
+                cert_resid =
+                    rnrm;
+            }
+
+            if( !isfinite((double)cert_resid) )
+            {
+                LIS_SETERR(
+                    LIS_BREAKDOWN,
+                    "non-finite zero-mode Block Lanczos certification residual\n");
+
+                err = LIS_BREAKDOWN;
+                goto fail;
+            }
+        }
+
+        esolver->resid[i] =
+            cert_resid;
+
+        if( cert_resid>cert_tol &&
+            final_status==LIS_SUCCESS )
+        {
+            final_status =
+                LIS_MAXITER;
+        }
+    }
+
+    esolver->retcode =
+        final_status;
+
+    lis_free(projected_evec);
+    lis_free(projected_eval);
+    lis_free(projected_matrix);
+
+    return final_status;
+
+fail:
+
+    for(i=0;i<allocated_vectors;i++)
+    {
+        if( esolver->evector[i]!=NULL )
+        {
+            lis_vector_destroy(
+                esolver->evector[i]);
+
+            esolver->evector[i] =
+                NULL;
+        }
+    }
+
+    if( projected_evec )
+        lis_free(projected_evec);
+    if( projected_eval )
+        lis_free(projected_eval);
+    if( projected_matrix )
+        lis_free(projected_matrix);
+
+    return err;
+}
+
+
+static LIS_INT
+lis_egli_block_transformed(
+    LIS_ESOLVER esolver)
+{
+    LIS_INT i,j,err;
+    LIS_INT transform_mode;
+    LIS_INT ss;
+    LIS_INT block_size;
+    LIS_INT nominal_block_count;
+    LIS_INT nominal_rank;
+    LIS_INT active_rank;
+    LIS_INT basis_count;
+    LIS_INT active_block_count;
+    LIS_INT current_block;
+    LIS_INT previous_offset;
+    LIS_INT previous_rank;
+    LIS_INT current_offset;
+    LIS_INT current_rank;
+    LIS_INT next_offset;
+    LIS_INT next_rank;
+
+    LIS_REAL rank_tol;
+    LIS_REAL tol;
+
+    LIS_SCALAR requested_shift;
+    LIS_SCALAR active_shift;
+
+    LIS_MATRIX A;
+    LIS_MATRIX B;
+    LIS_MATRIX M;
+    LIS_MATRIX S;
+    LIS_MATRIX Sop;
+
+    LIS_SOLVER solver;
+    LIS_PRECON precon;
+
+    LIS_VECTOR *basis;
+    LIS_VECTOR *raw;
+    LIS_VECTOR *candidate;
+    LIS_VECTOR *metric_candidate;
+    LIS_VECTOR *metric_basis;
+
+    LIS_INT *block_offset;
+    LIS_INT *block_rank;
+
+    LIS_SCALAR *t;
+    LIS_SCALAR *alpha;
+    LIS_SCALAR *coeff;
+    LIS_SCALAR *gram_work;
+    LIS_SCALAR *eval;
+    LIS_SCALAR *evec;
+    LIS_SCALAR *rank_transform;
+
+    LIS_DEBUG_FUNC_IN;
+
+#ifdef _COMPLEX
+    LIS_SETERR(
+        LIS_ERR_NOT_IMPLEMENTED,
+        "complex transformed generalized Block Lanczos is not implemented yet\n");
+
+    esolver->retcode =
+        LIS_ERR_NOT_IMPLEMENTED;
+
+    return LIS_ERR_NOT_IMPLEMENTED;
+#endif
+
+    if( esolver==NULL ||
+        esolver->A==NULL ||
+        esolver->B==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid transformed generalized Block Lanczos state\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    A = esolver->A;
+    B = esolver->B;
+
+    transform_mode =
+        esolver->transform;
+
+    if( transform_mode!=
+            LIS_EIGEN_TRANSFORM_SHIFT_INVERT &&
+        transform_mode!=
+            LIS_EIGEN_TRANSFORM_BUCKLING )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "unsupported generalized Block Lanczos spectral transform\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    ss =
+        esolver->options[
+            LIS_EOPTIONS_SUBSPACE];
+
+    block_size =
+        esolver->block_size;
+
+    tol =
+        esolver->params[
+            LIS_EPARAMS_RESID -
+            LIS_EOPTIONS_LEN];
+
+    if( ss<1 ||
+        block_size<2 ||
+        block_size>ss )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid transformed generalized Block Lanczos block layout\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    /*
+     * Scalar transformed GLI uses A as the positive metric for
+     * buckling and B otherwise.
+     */
+    if( transform_mode==
+        LIS_EIGEN_TRANSFORM_BUCKLING )
+    {
+        M = A;
+    }
+    else
+    {
+        M = B;
+    }
+
+    requested_shift =
+        esolver->ishift;
+
+    if( requested_shift==0.0 )
+    {
+        requested_shift =
+            esolver->params[
+                LIS_EPARAMS_SHIFT -
+                LIS_EOPTIONS_LEN];
+    }
+
+    active_shift =
+        requested_shift;
+
+    S = A;
+    Sop = NULL;
+    solver = NULL;
+    precon = NULL;
+
+    raw = NULL;
+    candidate = NULL;
+    metric_candidate = NULL;
+    metric_basis = NULL;
+
+    block_offset = NULL;
+    block_rank = NULL;
+
+    t = NULL;
+    alpha = NULL;
+    coeff = NULL;
+    gram_work = NULL;
+    eval = NULL;
+    evec = NULL;
+    rank_transform = NULL;
+
+    if( esolver->work==NULL ||
+        esolver->worklen<3+ss )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "transformed generalized Block Lanczos workspace is too small\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    basis =
+        &esolver->work[3];
+
+    err = lis_lanczos_block_layout(
+        ss,
+        block_size,
+        &nominal_block_count,
+        &block_offset,
+        &block_rank);
+
+    if( err )
+        goto cleanup;
+
+    nominal_rank =
+        block_rank[0];
+
+    err = lis_egli_block_alloc_vectors(
+        esolver,
+        block_size,
+        &raw);
+
+    if( err )
+        goto cleanup;
+
+    err = lis_egli_block_alloc_vectors(
+        esolver,
+        block_size,
+        &candidate);
+
+    if( err )
+        goto cleanup;
+
+    err = lis_egli_block_alloc_vectors(
+        esolver,
+        block_size,
+        &metric_candidate);
+
+    if( err )
+        goto cleanup;
+
+    err = lis_egli_block_alloc_vectors(
+        esolver,
+        block_size,
+        &metric_basis);
+
+    if( err )
+        goto cleanup;
+
+    t = (LIS_SCALAR *)lis_malloc(
+        ss*ss*sizeof(LIS_SCALAR),
+        "lis_egli_block_transformed::t");
+
+    alpha = (LIS_SCALAR *)lis_malloc(
+        block_size*block_size*sizeof(LIS_SCALAR),
+        "lis_egli_block_transformed::alpha");
+
+    coeff = (LIS_SCALAR *)lis_malloc(
+        ss*block_size*sizeof(LIS_SCALAR),
+        "lis_egli_block_transformed::coeff");
+
+    gram_work = (LIS_SCALAR *)lis_malloc(
+        ss*block_size*sizeof(LIS_SCALAR),
+        "lis_egli_block_transformed::gram_work");
+
+    eval = (LIS_SCALAR *)lis_malloc(
+        block_size*sizeof(LIS_SCALAR),
+        "lis_egli_block_transformed::eval");
+
+    evec = (LIS_SCALAR *)lis_malloc(
+        block_size*block_size*sizeof(LIS_SCALAR),
+        "lis_egli_block_transformed::evec");
+
+    rank_transform = (LIS_SCALAR *)lis_malloc(
+        block_size*block_size*sizeof(LIS_SCALAR),
+        "lis_egli_block_transformed::rank_transform");
+
+    if( t==NULL ||
+        alpha==NULL ||
+        coeff==NULL ||
+        gram_work==NULL ||
+        eval==NULL ||
+        evec==NULL ||
+        rank_transform==NULL )
+    {
+        LIS_SETERR_MEM(
+            ss*ss*sizeof(LIS_SCALAR));
+
+        err = LIS_ERR_OUT_OF_MEMORY;
+        goto cleanup;
+    }
+
+    for(i=0;i<ss*ss;i++)
+        t[i] = 0.0;
+
+    err = lis_lanczos_block_initial_raw(
+        block_size,
+        nominal_rank,
+        raw);
+
+    if( err )
+        goto cleanup;
+
+    err = lis_matvec_block(
+        M,
+        nominal_rank,
+        raw,
+        metric_candidate);
+
+    if( err )
+        goto cleanup;
+
+    rank_tol =
+        (LIS_REAL)1.0e-12;
+
+    active_rank = 0;
+
+    err = lis_eigen_block_brank_deflate(
+        M,
+        nominal_rank,
+        nominal_rank,
+        raw,
+        metric_candidate,
+        basis,
+        metric_basis,
+        rank_tol,
+        &active_rank,
+        coeff,
+        eval,
+        evec,
+        rank_transform);
+
+    if( err )
+        goto cleanup;
+
+    if( active_rank==0 )
+    {
+        LIS_SETERR(
+            LIS_BREAKDOWN,
+            "transformed generalized Block Lanczos initial block has zero rank\n");
+
+        err = LIS_BREAKDOWN;
+        goto cleanup;
+    }
+
+    block_offset[0] = 0;
+    block_rank[0] = active_rank;
+    basis_count = active_rank;
+    active_block_count = 1;
+
+    for(i=1;i<ss;i++)
+    {
+        block_offset[i] = -1;
+        block_rank[i] = 0;
+    }
+
+    if( requested_shift!=0.0 )
+    {
+        err = lis_matrix_create_operator(
+            1.0,
+            A,
+            -requested_shift,
+            B,
+            &Sop);
+
+        if( err )
+            goto cleanup;
+
+        S = Sop;
+    }
+
+    err = lis_solver_create(
+        &solver);
+
+    if( err )
+        goto cleanup;
+
+    lis_solver_set_option(
+        "-i bicg -p none",
+        solver);
+
+    err = lis_solver_set_optionC(
+        solver);
+
+    if( err )
+        goto cleanup;
+
+    solver->A = S;
+
+    err = lis_precon_create(
+        solver,
+        &precon);
+
+    if( err )
+        goto cleanup;
+
+    current_block = 0;
+
+    while( current_block<active_block_count )
+    {
+        current_offset =
+            block_offset[current_block];
+
+        current_rank =
+            block_rank[current_block];
+
+        if( current_offset<0 ||
+            current_rank<1 ||
+            current_rank>block_size ||
+            current_offset+current_rank>basis_count )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "invalid transformed generalized Block Lanczos numerical layout\n");
+
+            err = LIS_ERR_ILL_ARG;
+            goto cleanup;
+        }
+
+        err = lis_matvec_block(
+            M,
+            current_rank,
+            &basis[current_offset],
+            metric_candidate);
+
+        if( err )
+            goto cleanup;
+
+        if( current_block==0 )
+        {
+            err =
+                lis_egli_block_first_solve_with_recovery(
+                    A,
+                    B,
+                    current_rank,
+                    metric_candidate,
+                    candidate,
+                    solver,
+                    &precon,
+                    &S,
+                    &Sop,
+                    requested_shift,
+                    tol,
+                    &active_shift);
+        }
+        else
+        {
+            for(j=0;j<current_rank;j++)
+            {
+                err = lis_vector_set_all(
+                    0.0,
+                    candidate[j]);
+
+                if( err )
+                    break;
+
+                err = lis_egli_solve_with_retry(
+                    S,
+                    metric_candidate[j],
+                    candidate[j],
+                    solver,
+                    &precon,
+                    tol);
+
+                if( err )
+                    break;
+            }
+        }
+
+        if( err )
+            goto cleanup;
+
+        if( current_block>0 )
+        {
+            previous_offset =
+                block_offset[
+                    current_block-1];
+
+            previous_rank =
+                block_rank[
+                    current_block-1];
+
+            for(j=0;j<current_rank;j++)
+            {
+                for(i=0;i<previous_rank;i++)
+                {
+                    err = lis_vector_axpy(
+                        -t[
+                            (previous_offset+i)*ss+
+                            (current_offset+j)
+                        ],
+                        basis[
+                            previous_offset+i],
+                        candidate[j]);
+
+                    if( err )
+                        goto cleanup;
+                }
+            }
+        }
+
+        err = lis_eigen_block_bgram(
+            M,
+            current_rank,
+            &basis[current_offset],
+            current_rank,
+            candidate,
+            metric_candidate,
+            alpha);
+
+        if( err )
+            goto cleanup;
+
+        err = lis_lanczos_block_projected_set_alpha(
+            ss,
+            t,
+            current_offset,
+            current_rank,
+            alpha);
+
+        if( err )
+            goto cleanup;
+
+        if( basis_count>=ss )
+            break;
+
+        for(j=0;j<current_rank;j++)
+        {
+            for(i=0;i<current_rank;i++)
+            {
+                err = lis_vector_axpy(
+                    -alpha[
+                        i*current_rank+j],
+                    basis[
+                        current_offset+i],
+                    candidate[j]);
+
+                if( err )
+                    goto cleanup;
+            }
+        }
+
+        err = lis_matvec_block(
+            M,
+            current_rank,
+            candidate,
+            metric_candidate);
+
+        if( err )
+            goto cleanup;
+
+        err = lis_eigen_block_borthogonalize(
+            M,
+            basis_count,
+            basis,
+            current_rank,
+            candidate,
+            metric_candidate,
+            1,
+            coeff,
+            gram_work);
+
+        if( err )
+            goto cleanup;
+
+        next_offset =
+            basis_count;
+
+        next_rank = 0;
+
+        err =
+            lis_egli_block_transformed_next_block(
+                esolver,
+                M,
+                ss,
+                current_offset,
+                current_rank,
+                next_offset,
+                basis,
+                candidate,
+                metric_candidate,
+                metric_basis,
+                raw,
+                t,
+                coeff,
+                eval,
+                evec,
+                rank_transform,
+                &next_rank);
+
+        if( err )
+            goto cleanup;
+
+        if( next_rank==0 )
+            break;
+
+        if( active_block_count>=ss )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "transformed generalized Block Lanczos metadata overflow\n");
+
+            err = LIS_ERR_ILL_ARG;
+            goto cleanup;
+        }
+
+        block_offset[
+            active_block_count] =
+            next_offset;
+
+        block_rank[
+            active_block_count] =
+            next_rank;
+
+        basis_count += next_rank;
+        active_block_count++;
+        current_block++;
+    }
+
+    esolver->nev =
+        basis_count;
+
+    if( esolver->options[
+        LIS_EOPTIONS_OUTPUT] )
+    {
+        lis_printf(
+            LIS_COMM_WORLD,
+            "Transformed generalized Block Lanczos basis dimension : %D\n",
+            basis_count);
+
+        lis_printf(
+            LIS_COMM_WORLD,
+            "Transformed generalized Block Lanczos active blocks   : %D\n",
+            active_block_count);
+
+        lis_printf(
+            LIS_COMM_WORLD,
+            "Transformed generalized Block Lanczos active shift    : %e\n",
+            (double)active_shift);
+    }
+
+    /*
+     * Complete the transformed result path.
+     */
+    err =
+        lis_egli_block_transformed_project_results(
+            esolver,
+            transform_mode,
+            ss,
+            basis_count,
+            basis,
+            t,
+            active_shift,
+            esolver->work[0],
+            esolver->work[1],
+            esolver->work[2]);
+
+cleanup:
+
+    if( err!=LIS_SUCCESS )
+        esolver->retcode = err;
+
+    if( precon )
+        lis_precon_destroy(precon);
+
+    if( solver )
+        lis_solver_destroy(solver);
+
+    if( Sop )
+        lis_matrix_destroy(Sop);
+
+    if( rank_transform )
+        lis_free(rank_transform);
+
+    if( evec )
+        lis_free(evec);
+
+    if( eval )
+        lis_free(eval);
+
+    if( gram_work )
+        lis_free(gram_work);
+
+    if( coeff )
+        lis_free(coeff);
+
+    if( alpha )
+        lis_free(alpha);
+
+    if( t )
+        lis_free(t);
+
+    if( block_rank )
+        lis_free(block_rank);
+
+    if( block_offset )
+        lis_free(block_offset);
+
+    lis_egli_block_free_vectors(
+        block_size,
+        metric_basis);
+
+    lis_egli_block_free_vectors(
+        block_size,
+        metric_candidate);
+
+    lis_egli_block_free_vectors(
+        block_size,
+        candidate);
+
+    lis_egli_block_free_vectors(
+        block_size,
+        raw);
+
+    LIS_DEBUG_FUNC_OUT;
+
+    return err;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_egli_block"
+LIS_INT lis_egli_block(LIS_ESOLVER esolver)
+{
+    LIS_INT i,err;
+    LIS_INT ss;
+    LIS_INT block_size;
+    LIS_INT block_count;
+    LIS_INT nominal_rank;
+    LIS_INT active_rank;
+    LIS_INT next_rank;
+    LIS_INT next_offset;
+    LIS_INT basis_count;
+    LIS_INT active_block_count;
+    LIS_INT expected_worklen;
+    LIS_INT *block_offset;
+    LIS_INT *block_rank;
+    LIS_VECTOR *basis;
+    LIS_VECTOR *dual_basis;
+    LIS_VECTOR *candidate;
+    LIS_VECTOR *dual_candidate;
+    LIS_SCALAR *t;
+    LIS_SCALAR *alpha;
+    LIS_SCALAR *coeff;
+    LIS_SCALAR *gram_work;
+    LIS_SOLVER solver;
+    LIS_PRECON precon;
+
+    LIS_DEBUG_FUNC_IN;
+
+    block_offset = NULL;
+    block_rank = NULL;
+
+    if( esolver==NULL ||
+        esolver->block_size<=1 )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos dispatch arguments\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    if( esolver->transform !=
+        LIS_EIGEN_TRANSFORM_AUTO )
+    {
+        return
+            lis_egli_block_transformed(
+                esolver);
+    }
+
+    ss =
+        esolver->options[
+            LIS_EOPTIONS_SUBSPACE];
+
+    block_size = esolver->block_size;
+
+    if( ss<1 ||
+        block_size>ss )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos workspace dimensions\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    /*
+     * F2 generalized Block Lanczos work layout:
+     *
+     *   work[0..NWORK-1]
+     *       scalar-compatible scratch vectors
+     *
+     *   work[NWORK .. NWORK+ss-1]
+     *       primal Lanczos basis Q
+     *
+     *   work[NWORK+ss .. NWORK+2*ss-1]
+     *       cached dual basis B*Q
+     *
+     *   next block_size vectors
+     *       candidate block W
+     *
+     *   final block_size vectors
+     *       synchronized B*W candidate block
+     *
+     * The extra block storage is O(block_size*n), while the two
+     * full basis spans are already required by scalar generalized
+     * Lanczos for the untransformed B-inner-product recurrence.
+     */
+    expected_worklen =
+        NWORK +
+        2*ss +
+        2*block_size;
+
+    if( esolver->work==NULL ||
+        esolver->worklen!=expected_worklen )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos work layout\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    basis =
+        &esolver->work[NWORK];
+
+    dual_basis =
+        &esolver->work[NWORK+ss];
+
+    candidate =
+        &esolver->work[NWORK+2*ss];
+
+    dual_candidate =
+        &esolver->work[
+            NWORK+2*ss+block_size];
+
+    for(i=0;i<ss;i++)
+    {
+        if( basis[i]==NULL ||
+            dual_basis[i]==NULL ||
+            basis[i]==dual_basis[i] )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "invalid generalized Block Lanczos basis workspace\n");
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+    for(i=0;i<block_size;i++)
+    {
+        if( candidate[i]==NULL ||
+            dual_candidate[i]==NULL ||
+            candidate[i]==dual_candidate[i] )
+        {
+            LIS_SETERR(
+                LIS_ERR_ILL_ARG,
+                "invalid generalized Block Lanczos candidate workspace\n");
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+
+    /*
+     * Reuse the standard Block Lanczos nominal partition.
+     * Numerical B-rank deflation will update the active ranks in F3.
+     */
+    err = lis_lanczos_block_layout(
+        ss,
+        block_size,
+        &block_count,
+        &block_offset,
+        &block_rank);
+
+    if( err )
+    {
+        return err;
+    }
+
+    if( block_count<1 ||
+        block_offset[0]!=0 ||
+        block_rank[0]<1 ||
+        block_rank[0]>block_size )
+    {
+        lis_free(block_rank);
+        lis_free(block_offset);
+
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid generalized Block Lanczos nominal layout\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    nominal_rank = block_rank[0];
+    active_rank = 0;
+
+    err = lis_egli_block_initial_basis(
+        esolver,
+        nominal_rank,
+        basis,
+        dual_basis,
+        candidate,
+        dual_candidate,
+        &active_rank);
+
+    if( err )
+    {
+        lis_free(block_rank);
+        lis_free(block_offset);
+        return err;
+    }
+
+    /*
+     * The nominal first block now becomes a numerical B-orthonormal
+     * block. Keep the dynamic-rank metadata convention established
+     * by standard Block Lanczos: only built blocks remain active.
+     */
+    block_rank[0] = active_rank;
+    block_offset[0] = 0;
+    basis_count = active_rank;
+    active_block_count = 1;
+
+    for(i=1;i<ss;i++)
+    {
+        block_rank[i] = 0;
+        block_offset[i] = -1;
+    }
+
+    t = NULL;
+    alpha = NULL;
+    coeff = NULL;
+    gram_work = NULL;
+    solver = NULL;
+    precon = NULL;
+
+    t = (LIS_SCALAR *)lis_malloc(
+        ss*ss*sizeof(LIS_SCALAR),
+        "lis_egli_block::t");
+
+    alpha = (LIS_SCALAR *)lis_malloc(
+        block_size*block_size*sizeof(LIS_SCALAR),
+        "lis_egli_block::alpha");
+
+    coeff = (LIS_SCALAR *)lis_malloc(
+        ss*block_size*sizeof(LIS_SCALAR),
+        "lis_egli_block::coeff");
+
+    gram_work = (LIS_SCALAR *)lis_malloc(
+        ss*block_size*sizeof(LIS_SCALAR),
+        "lis_egli_block::gram_work");
+
+    if( t==NULL ||
+        alpha==NULL ||
+        coeff==NULL ||
+        gram_work==NULL )
+    {
+        if( gram_work ) lis_free(gram_work);
+        if( coeff ) lis_free(coeff);
+        if( alpha ) lis_free(alpha);
+        if( t ) lis_free(t);
+
+        lis_free(block_rank);
+        lis_free(block_offset);
+
+        LIS_SETERR_MEM(
+            ss*ss*sizeof(LIS_SCALAR));
+
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+    for(i=0;i<ss*ss;i++)
+    {
+        t[i] = 0.0;
+    }
+
+    err = lis_egli_block_create_metric_solver(
+        esolver,
+        &solver,
+        &precon);
+
+    if( err )
+        goto f4_cleanup;
+
+    err = lis_egli_block_first_recurrence(
+        esolver,
+        active_rank,
+        basis,
+        dual_basis,
+        candidate,
+        dual_candidate,
+        solver,
+        precon,
+        alpha,
+        coeff,
+        gram_work);
+
+    if( err )
+        goto f4_cleanup;
+
+    err = lis_lanczos_block_projected_set_alpha(
+        ss,
+        t,
+        block_offset[0],
+        active_rank,
+        alpha);
+
+    if( err )
+        goto f4_cleanup;
+
+    next_offset = active_rank;
+    next_rank = 0;
+
+    err = lis_egli_block_next_block(
+        esolver,
+        ss,
+        block_offset[0],
+        active_rank,
+        next_offset,
+        basis,
+        dual_basis,
+        candidate,
+        dual_candidate,
+        t,
+        coeff,
+        gram_work,
+        alpha,
+        &next_rank);
+
+    if( err )
+        goto f4_cleanup;
+
+    if( next_rank>0 )
+    {
+        block_offset[1] = next_offset;
+        block_rank[1] = next_rank;
+        basis_count += next_rank;
+        active_block_count++;
+    }
+
+    /*
+     * F6 continues from the validated Q0 -> Q1 bootstrap through
+     * every numerical variable-rank block that fits in -ss.
+     */
+    err = lis_egli_block_continue_recurrence(
+        esolver,
+        ss,
+        block_size,
+        basis,
+        dual_basis,
+        candidate,
+        dual_candidate,
+        solver,
+        precon,
+        t,
+        block_offset,
+        block_rank,
+        &basis_count,
+        &active_block_count,
+        alpha,
+        coeff,
+        gram_work);
+
+    if( err )
+        goto f4_cleanup;
+
+    /*
+     * F7 closes the untransformed generalized Block Lanczos path:
+     * compact projected solve, Ritz reconstruction, public result
+     * count, output-vector consistency, and generalized residual
+     * certification.
+     */
+    err = lis_egli_block_project_results(
+        esolver,
+        ss,
+        basis_count,
+        basis,
+        t,
+        esolver->work[0],
+        esolver->work[1],
+        esolver->work[2]);
+
+f4_cleanup:
+
+    if( solver )
+    {
+        lis_solver_work_destroy(solver);
+    }
+
+    if( precon )
+    {
+        lis_precon_destroy(precon);
+    }
+
+    if( solver )
+    {
+        lis_solver_destroy(solver);
+    }
+
+    if( gram_work )
+        lis_free(gram_work);
+
+    if( coeff )
+        lis_free(coeff);
+
+    if( alpha )
+        lis_free(alpha);
+
+    if( t )
+        lis_free(t);
+
+    lis_free(block_rank);
+    lis_free(block_offset);
+
+    return err;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_egli"
 LIS_INT lis_egli(LIS_ESOLVER esolver)
 {
   LIS_Comm comm;
+
+  if( esolver->block_size>1 )
+    {
+      return lis_egli_block(esolver);
+    }
 
   if( esolver->transform != LIS_EIGEN_TRANSFORM_AUTO )
     {
@@ -1570,8 +7703,8 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
   B = esolver->B;
   q = esolver->work[0];  
   r = esolver->work[1];
-  w = &esolver->work[2];  
-  v = &esolver->work[3];
+  w = &esolver->work[2];
+  v = &esolver->work[2+ss];
   lis_vector_set_all(0.0,w[0]);  
   lis_vector_set_all(0.0,v[0]);
   lis_vector_set_all(1.0,q);
@@ -1641,12 +7774,19 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
       /* r = r - alpha(j) * w(j) */
       lis_vector_axpy(-t[(j-1)*ss+j-1], w[j], r); 
 
-      /* reorthogonalization */
-      for (k=1;k<j;k++)
-	{ 
-	  lis_vector_dot(v[j], v[k], &dot); 
-	  lis_vector_axpy(-dot, v[k], v[j]);
-	}
+      /*
+       * Reorthogonalize the dual residual.  With w(k)=B*v(k),
+       * subtracting <v(k),r>*w(k) makes q=B^-1*r orthogonal
+       * to the existing basis in the B inner product.
+       */
+      err = lis_lanczos_reorthogonalize_dual_residual(
+          v,
+          w,
+          1,
+          j,
+          r);
+      if( err )
+          return err;
 
       /* solve B * q = r */
       err = lis_solve_kernel(B, r, q, solver, precon);

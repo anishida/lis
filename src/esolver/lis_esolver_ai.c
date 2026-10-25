@@ -80,6 +80,7 @@
  ***************************************/
 
 #define NWORK 2
+#define LIS_EAI_REORTH_THRESHOLD 0.717
 #undef __FUNC__
 #define __FUNC__ "lis_eai_check_params"
 LIS_INT lis_eai_check_params(LIS_ESOLVER esolver)
@@ -159,14 +160,15 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   double time,time0;    
   LIS_INT i,j;
   LIS_INT output, niesolver;
-  LIS_REAL nrm2,resid0; 
+  LIS_REAL nrm2,resid0,cert_resid,nrm_before,nrm_after;
   LIS_VECTOR *v,w;
+  LIS_SCALAR correction;
   LIS_SCALAR *h,*hq,*hr,evalue,evalue0;
   LIS_SOLVER solver;
   LIS_ESOLVER esolver2;
   char esolvername[128],solvername[128],preconname[128];
   LIS_INT nsol,precon_type;
-  LIS_INT rval;
+  LIS_INT rval,final_status;
 
   LIS_DEBUG_FUNC_IN;
 
@@ -188,6 +190,19 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   v = &esolver->work[1];
   lis_vector_set_all(1.0,v[0]);
   lis_vector_nrm2(v[0],&nrm2);
+
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid Arnoldi initial vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_free(h);
+      lis_free(hq);
+      lis_free(hr);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
+
   lis_vector_scale(1.0/nrm2,v[0]);
   
   lis_solver_create(&solver);
@@ -216,22 +231,72 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
       /* w = A * v(j) */
       lis_matvec(A, v[j], w);
 
-      /* reorthogonalization */
+      /*
+       * Modified Gram-Schmidt orthogonalization.
+       * A second pass is used only when the first pass loses a
+       * substantial fraction of the candidate-vector norm.
+       */
+      lis_vector_nrm2(w, &nrm_before);
       for (i=0;i<=j;i++)
 	{
 	  /* h(i,j) = <v(i), w> */
 	  lis_vector_dot(v[i], w, &h[i+j*ss]);
 	  /* w = w - h(i,j) * v(i) */
-	  lis_vector_axpy(-h[i+j*ss], v[i], w); 
+	  lis_vector_axpy(-h[i+j*ss], v[i], w);
+	}
+      lis_vector_nrm2(w, &nrm_after);
+
+      if( nrm_after>0.0 &&
+          nrm_after < LIS_EAI_REORTH_THRESHOLD*nrm_before )
+	{
+	  for (i=0;i<=j;i++)
+	    {
+	      lis_vector_dot(v[i], w, &correction);
+	      h[i+j*ss] += correction;
+	      lis_vector_axpy(-correction, v[i], w);
+	    }
+	  lis_vector_nrm2(w, &nrm_after);
 	}
 
-      /* h(j+1,j) = ||w||_2 */
-      lis_vector_nrm2(w, (LIS_REAL *)&h[j+1+j*ss]);
+      if( !lis_esolver_is_finite_scalar((LIS_SCALAR)nrm_after) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite Arnoldi Hessenberg norm\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_solver_destroy(solver);
+          lis_free(h);
+          lis_free(hq);
+          lis_free(hr);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
-      /* convergence check */
+      /*
+       * H is ss-by-ss.  The final subdiagonal entry h(ss,ss-1)
+       * lies outside that matrix and no next Arnoldi vector is
+       * required after the final column.
+       */
+      if( j==ss-1 ) break;
+
+      h[j+1+j*ss] = nrm_after;
+
+      /* convergence check / happy breakdown */
       if (fabs(h[j+1+j*ss])<tol) break;
 
-      /* v(j+1) = w / h(j,j-1) */
+      if( !lis_esolver_is_valid_denominator(h[j+1+j*ss]) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid Arnoldi Hessenberg denominator\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_solver_destroy(solver);
+          lis_free(h);
+          lis_free(hq);
+          lis_free(hr);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
+
+      /* v(j+1) = w / h(j+1,j) */
       lis_vector_scale(1/h[j+1+j*ss],w);
       lis_vector_copy(w,v[j+1]);
       
@@ -326,6 +391,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 
   /* compute refined (real) eigenpairs */
 
+  final_status = LIS_SUCCESS;
   for (i=0;i<ss;i++)
     {
       lis_esolver_create(&esolver2);
@@ -341,13 +407,31 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
       lis_esolver_work_destroy(esolver2); 
       esolver->evalue[i] = evalue;
       esolver->iter[i] = esolver2->iter[0];
-      esolver->resid[i] = esolver2->resid[0];
+
+      err = lis_esolver_standard_residual(
+              A, esolver->evector[i], esolver->evalue[i],
+              w, v[0], &cert_resid);
+      if( err )
+        {
+          esolver->retcode = err;
+          lis_esolver_destroy(esolver2);
+          lis_free(h);
+          lis_free(hq);
+          lis_free(hr);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return err;
+        }
+
+      esolver->resid[i] = cert_resid;
+      if( cert_resid>tol && final_status==LIS_SUCCESS )
+        final_status = LIS_MAXITER;
 
       if (i==0) 
 	{
 	  evalue0 = esolver->evalue[0];
 	  iter0 = esolver2->iter[0];
-	  resid0 = esolver2->resid[0];
+	  resid0 = esolver->resid[0];
 	  if( output & LIS_EPRINT_MEM ) 
 	    {
 	      for (ic=0;ic<iter0+1;ic++)
@@ -372,7 +456,7 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
 #endif
 	  lis_printf(comm,"Arnoldi: elapsed time         = %e sec.\n", esolver2->time);	  
 	  lis_printf(comm,"Arnoldi: number of iterations = %D\n",esolver2->iter[0]);
-	  lis_printf(comm,"Arnoldi: relative residual    = %e\n\n",(double)esolver2->resid[0]);
+	  lis_printf(comm,"Arnoldi: relative residual    = %e\n\n",(double)esolver->resid[i]);
 	}
 
       lis_esolver_destroy(esolver2); 
@@ -387,7 +471,8 @@ LIS_INT lis_eai(LIS_ESOLVER esolver)
   lis_solver_destroy(solver);
 
   LIS_DEBUG_FUNC_OUT;
-  return LIS_SUCCESS;
+  esolver->retcode = final_status;
+  return final_status;
 } 
 
 /***************************************
@@ -499,15 +584,16 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
   double time,time0;  
   LIS_INT i,j;
   LIS_INT output, nigesolver;
-  LIS_REAL nrm2,resid0; 
+  LIS_REAL nrm2,resid0,cert_resid,nrm_before,nrm_after;
   LIS_VECTOR *v,w,y;
+  LIS_SCALAR correction;
   LIS_SCALAR *h,*hq,*hr,evalue,evalue0;
   LIS_SOLVER solver;
   LIS_PRECON precon;
   LIS_ESOLVER esolver2;
   char esolvername[128],solvername[128],preconname[128];
   LIS_INT nsol,precon_type;
-  LIS_INT rval;
+  LIS_INT rval,final_status;
 
   LIS_DEBUG_FUNC_IN;
 
@@ -531,6 +617,19 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
   v = &esolver->work[2];
   lis_vector_set_all(1.0,v[0]);
   lis_vector_nrm2(v[0],&nrm2);
+
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid generalized Arnoldi initial vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_free(h);
+      lis_free(hq);
+      lis_free(hr);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
+
   lis_vector_scale(1.0/nrm2,v[0]);
   
   lis_solver_create(&solver);
@@ -581,22 +680,73 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
       lis_solver_get_iter(solver, &iter2);
       lis_vector_copy(y, w);
       
-      /* reorthogonalization */
+      /*
+       * Modified Gram-Schmidt orthogonalization of B^-1*A*v(j).
+       * Apply one selective refinement pass when the first pass
+       * suffers substantial norm loss.
+       */
+      lis_vector_nrm2(w, &nrm_before);
       for (i=0;i<=j;i++)
 	{
 	  /* h(i,j) = <v(i), w> */
 	  lis_vector_dot(v[i], w, &h[i+j*ss]);
 	  /* w = w - h(i,j) * v(i) */
-	  lis_vector_axpy(-h[i+j*ss], v[i], w); 
+	  lis_vector_axpy(-h[i+j*ss], v[i], w);
+	}
+      lis_vector_nrm2(w, &nrm_after);
+
+      if( nrm_after>0.0 &&
+          nrm_after < LIS_EAI_REORTH_THRESHOLD*nrm_before )
+	{
+	  for (i=0;i<=j;i++)
+	    {
+	      lis_vector_dot(v[i], w, &correction);
+	      h[i+j*ss] += correction;
+	      lis_vector_axpy(-correction, v[i], w);
+	    }
+	  lis_vector_nrm2(w, &nrm_after);
 	}
 
-      /* h(j+1,j) = ||w||_2 */
-      lis_vector_nrm2(w, (LIS_REAL *)&h[j+1+j*ss]);
+      if( !lis_esolver_is_finite_scalar((LIS_SCALAR)nrm_after) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite generalized Arnoldi Hessenberg norm\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          lis_free(h);
+          lis_free(hq);
+          lis_free(hr);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
-      /* convergence check */
+      /*
+       * The final subdiagonal entry is outside the ss-by-ss
+       * Hessenberg matrix and no v(ss) is required.
+       */
+      if( j==ss-1 ) break;
+
+      h[j+1+j*ss] = nrm_after;
+
+      /* convergence check / happy breakdown */
       if (fabs(h[j+1+j*ss])<tol) break;
 
-      /* v(j+1) = w / h(j,j-1) */
+      if( !lis_esolver_is_valid_denominator(h[j+1+j*ss]) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid generalized Arnoldi Hessenberg denominator\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          lis_free(h);
+          lis_free(hq);
+          lis_free(hr);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
+
+      /* v(j+1) = w / h(j+1,j) */
       lis_vector_scale(1/h[j+1+j*ss],w);
       lis_vector_copy(w,v[j+1]);
       
@@ -691,6 +841,7 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
 
   /* compute refined (real) eigenpairs */
 
+  final_status = LIS_SUCCESS;
   for (i=0;i<ss;i++)
     {
       lis_vector_duplicate(A, &esolver->evector[i]); 
@@ -699,13 +850,32 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
       lis_esolver_work_destroy(esolver2); 
       esolver->evalue[i] = evalue;
       esolver->iter[i] = esolver2->iter[0];
-      esolver->resid[i] = esolver2->resid[0];
+
+      err = lis_esolver_generalized_residual(
+              A, B, esolver->evector[i], esolver->evalue[i],
+              w, y, v[0], &cert_resid);
+      if( err )
+        {
+          esolver->retcode = err;
+          lis_esolver_destroy(esolver2);
+          lis_free(h);
+          lis_free(hq);
+          lis_free(hr);
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return err;
+        }
+
+      esolver->resid[i] = cert_resid;
+      if( cert_resid>tol && final_status==LIS_SUCCESS )
+        final_status = LIS_MAXITER;
 
       if (i==0) 
 	{
 	  evalue0 = esolver->evalue[0];
 	  iter0 = esolver2->iter[0];
-	  resid0 = esolver2->resid[0];
+	  resid0 = esolver->resid[0];
 	  if( output & LIS_EPRINT_MEM ) 
 	    {
 	      for (ic=0;ic<iter0+1;ic++)
@@ -731,7 +901,7 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
 #endif
 	  lis_printf(comm,"Generalized Arnoldi: elapsed time         = %e sec.\n", esolver2->time);	  
 	  lis_printf(comm,"Generalized Arnoldi: number of iterations = %D\n",esolver2->iter[0]);
-	  lis_printf(comm,"Generalized Arnoldi: relative residual    = %e\n\n",(double)esolver2->resid[0]);
+	  lis_printf(comm,"Generalized Arnoldi: relative residual    = %e\n\n",(double)esolver->resid[i]);
 	}
     }
 
@@ -747,6 +917,7 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
   lis_solver_destroy(solver);
 
   LIS_DEBUG_FUNC_OUT;
-  return LIS_SUCCESS;
+  esolver->retcode = final_status;
+  return final_status;
 } 
 

@@ -124,6 +124,209 @@ LIS_INT lis_erqi_malloc_work(LIS_ESOLVER esolver)
 	return LIS_SUCCESS;
 }
 
+static LIS_INT
+lis_erqi_solve_with_recovery(
+        LIS_MATRIX A,
+        LIS_VECTOR b,
+        LIS_VECTOR x,
+        LIS_SOLVER solver,
+        LIS_PRECON *precon,
+        LIS_SCALAR shift,
+        LIS_REAL acceptance_tol,
+        LIS_SCALAR *used_shift)
+{
+        LIS_INT err,status,attempt;
+        LIS_SCALAR perturbation;
+        LIS_SCALAR trial_shift;
+
+        perturbation =
+                lis_esolver_shift_perturbation(
+                        shift);
+
+        for(attempt=0;attempt<4;attempt++)
+        {
+                if( attempt<2 )
+                {
+                        trial_shift = shift;
+                }
+                else if( attempt==2 )
+                {
+                        trial_shift =
+                                shift+perturbation;
+                }
+                else
+                {
+                        trial_shift =
+                                shift-perturbation;
+                }
+
+                lis_matrix_shift_diagonal(
+                        A,trial_shift);
+
+                if( attempt>0 )
+                {
+                        err = lis_esolver_rebuild_precon(
+                                A,solver,precon);
+                        if( err )
+                        {
+                                lis_matrix_shift_diagonal(
+                                        A,-trial_shift);
+                                return err;
+                        }
+
+                        lis_vector_set_all(0.0,x);
+                }
+
+                status =
+                        lis_esolver_inner_solve_attempt(
+                                A,b,x,solver,*precon);
+
+                if( attempt>=1 )
+                {
+                        status =
+                                lis_esolver_inner_solve_certify(
+                                        A,b,x,solver,
+                                        status,
+                                        acceptance_tol);
+                }
+
+                lis_matrix_shift_diagonal(
+                        A,-trial_shift);
+
+                if( status==LIS_SUCCESS )
+                {
+                        *used_shift = trial_shift;
+
+                        if( attempt>0 )
+                        {
+                                err = lis_esolver_rebuild_precon(
+                                        A,solver,precon);
+                                if( err )
+                                {
+                                        return err;
+                                }
+                        }
+
+                        return LIS_SUCCESS;
+                }
+
+                if( !lis_esolver_inner_solve_retryable(status) )
+                {
+                        return status;
+                }
+
+                if( attempt==1 &&
+                    perturbation==0.0 )
+                {
+                        return status;
+                }
+        }
+
+        return status;
+}
+
+static LIS_INT
+lis_egrqi_solve_with_recovery(
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_VECTOR b,
+        LIS_VECTOR x,
+        LIS_SOLVER solver,
+        LIS_PRECON *precon,
+        LIS_SCALAR shift,
+        LIS_REAL acceptance_tol,
+        LIS_SCALAR *used_shift)
+{
+        LIS_INT err,status,attempt;
+        LIS_SCALAR perturbation;
+        LIS_SCALAR trial_shift;
+
+        perturbation =
+                lis_esolver_shift_perturbation(
+                        shift);
+
+        for(attempt=0;attempt<4;attempt++)
+        {
+                if( attempt<2 )
+                {
+                        trial_shift = shift;
+                }
+                else if( attempt==2 )
+                {
+                        trial_shift =
+                                shift+perturbation;
+                }
+                else
+                {
+                        trial_shift =
+                                shift-perturbation;
+                }
+
+                lis_matrix_shift_matrix(
+                        A,B,trial_shift);
+
+                if( attempt>0 )
+                {
+                        err = lis_esolver_rebuild_precon(
+                                A,solver,precon);
+                        if( err )
+                        {
+                                lis_matrix_shift_matrix(
+                                        A,B,-trial_shift);
+                                return err;
+                        }
+
+                        lis_vector_set_all(0.0,x);
+                }
+
+                status =
+                        lis_esolver_inner_solve_attempt(
+                                A,b,x,solver,*precon);
+
+                if( attempt>=1 )
+                {
+                        status =
+                                lis_esolver_inner_solve_certify(
+                                        A,b,x,solver,
+                                        status,
+                                        acceptance_tol);
+                }
+
+                lis_matrix_shift_matrix(
+                        A,B,-trial_shift);
+
+                if( status==LIS_SUCCESS )
+                {
+                        *used_shift = trial_shift;
+
+                        if( attempt>0 )
+                        {
+                                err = lis_esolver_rebuild_precon(
+                                        A,solver,precon);
+                                if( err )
+                                {
+                                        return err;
+                                }
+                        }
+
+                        return LIS_SUCCESS;
+                }
+
+                if( !lis_esolver_inner_solve_retryable(status) )
+                {
+                        return status;
+                }
+
+                if( attempt==1 &&
+                    perturbation==0.0 )
+                {
+                        return status;
+                }
+        }
+
+        return status;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_erqi"
 LIS_INT lis_erqi(LIS_ESOLVER esolver)
@@ -132,11 +335,11 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   LIS_MATRIX A;
   LIS_VECTOR v;
   LIS_SCALAR theta,dotvy;
-  LIS_SCALAR rho;
+  LIS_SCALAR rho,solve_shift;
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter2,output;
-  LIS_REAL nrm2,resid;
+  LIS_REAL nrm2,resid,cert_resid;
   LIS_VECTOR y,q;
   LIS_SOLVER solver;
   double time,itime,ptime,p_c_time,p_i_time;
@@ -185,6 +388,16 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
 
   /* v = v / ||v||_2 */
   lis_vector_nrm2(v, &nrm2);
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid Rayleigh Quotient iteration vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_precon_destroy(precon);
+      lis_solver_destroy(solver);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   lis_vector_scale(1.0/nrm2, v);
 
   /* rho = <v,A*v> / <v,v> */
@@ -197,12 +410,13 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
       iter = iter+1;
 
       /* y = (A - rho * I)^-1 * v */
-      lis_matrix_shift_diagonal(A, rho);
-      err = lis_solve_kernel(A, v, y, solver, precon);
-      lis_matrix_shift_diagonal(A, -rho);
+      solve_shift = rho;
+      err = lis_erqi_solve_with_recovery(
+              A, v, y, solver, &precon,
+              rho, tol, &solve_shift);
       if( err )
       {
-        solver->retcode = err;
+        esolver->retcode = err;
         lis_precon_destroy(precon);
         lis_solver_destroy(solver);
         return err;
@@ -211,21 +425,81 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
 
       /* theta = ||y||_2 */      
       lis_vector_nrm2(y, (LIS_REAL *)&theta);
+
+      if( !lis_esolver_is_valid_denominator(theta) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid Rayleigh Quotient iteration solve norm\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
  
       /* <v,y> */
       lis_vector_dot(v, y, &dotvy);
 
+      if( !lis_esolver_is_valid_denominator(dotvy) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid Rayleigh Quotient iteration projection\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
+
       /* rho = rho + <v,y> / theta^2 */
-      rho = rho + dotvy / (theta * theta);
+      rho = solve_shift + dotvy / (theta * theta);
+
+      if( !lis_esolver_is_finite_scalar(rho) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite Rayleigh Quotient iteration shift\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
       /* resid = ||y - <v,y> * v||_2 / <v,y> */
       lis_vector_axpyz(-dotvy,v,y,q); 
       lis_vector_nrm2(q, &resid); 
       resid = resid / fabs(dotvy);
 
+      if( !isfinite((double)resid) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite Rayleigh Quotient iteration residual\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
+
       /* v = y / theta */
       lis_vector_scale(1.0/theta, y);
       lis_vector_copy(y, v);
+
+      if( tol >= resid )
+        {
+          err = lis_esolver_standard_residual(
+                  A, v, rho, y, q, &cert_resid);
+          if( err )
+            {
+              esolver->retcode = err;
+              lis_precon_destroy(precon);
+              lis_solver_destroy(solver);
+              LIS_DEBUG_FUNC_OUT;
+              return err;
+            }
+
+          resid = cert_resid;
+        }
 
       if( output )
 	{
@@ -247,6 +521,16 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
 	  esolver->resid[0]   = resid;
 	  esolver->evalue[0]  = rho;
 	  lis_vector_nrm2(v, &nrm2);
+	  if( !lis_esolver_is_valid_norm(nrm2) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "invalid Rayleigh Quotient iteration vector norm\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
 	  lis_vector_scale(1.0/nrm2, v);
 	  lis_precon_destroy(precon);
 	  lis_solver_destroy(solver); 
@@ -262,6 +546,15 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   esolver->resid[0]   = resid;
   esolver->evalue[0]  = rho;
   lis_vector_nrm2(v, &nrm2);
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid Rayleigh Quotient iteration vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_solver_destroy(solver);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   lis_vector_scale(1.0/nrm2, v);
   lis_solver_destroy(solver); 
   LIS_DEBUG_FUNC_OUT;
@@ -354,15 +647,15 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
   LIS_MATRIX A,B;
   LIS_VECTOR v;
   LIS_SCALAR theta,eta,dotvy,dotww;
-  LIS_SCALAR rho;
+  LIS_SCALAR rho,solve_shift;
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT iter,iter2,output;
-  LIS_REAL nrm2,resid;
+  LIS_REAL nrm2,resid,cert_resid;
   LIS_VECTOR w,y,q;
   LIS_SOLVER solver;
   double time,itime,ptime,p_c_time,p_i_time;
-  LIS_INT err;
+  LIS_INT err,recovered_shift;
   LIS_PRECON precon;
   LIS_INT nsol, precon_type;
   char solvername[128], preconname[128];
@@ -409,6 +702,16 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
 
   /* v = v / ||v||_2 */
   lis_vector_nrm2(v, &nrm2);
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid generalized Rayleigh Quotient vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_precon_destroy(precon);
+      lis_solver_destroy(solver);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   lis_vector_scale(1.0/nrm2, v);
 
   /* w = B * v */
@@ -418,7 +721,29 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
   lis_matvec(A, v, y);
   lis_vector_dot(w, y, &rho);
   lis_vector_dot(w, w, &dotww);
+
+  if( !lis_esolver_is_valid_denominator(dotww) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid generalized Rayleigh Quotient denominator\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_precon_destroy(precon);
+      lis_solver_destroy(solver);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   rho = rho / dotww;
+
+  if( !lis_esolver_is_finite_scalar(rho) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "non-finite generalized Rayleigh Quotient shift\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_precon_destroy(precon);
+      lis_solver_destroy(solver);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   
   iter=0;
   while (iter<emaxiter)
@@ -426,27 +751,64 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
       iter = iter+1;
 
       /* y = (A - rho * B)^-1 * w */
-      lis_matrix_shift_matrix(A, B, rho);
-      err = lis_solve_kernel(A, w, y, solver, precon);
-      lis_matrix_shift_matrix(A, B, -rho);
+      recovered_shift = LIS_FALSE;
+      solve_shift = rho;
+      err = lis_egrqi_solve_with_recovery(
+              A, B, w, y, solver, &precon,
+              rho, tol, &solve_shift);
       if( err )
       {
-        solver->retcode = err;
+        esolver->retcode = err;
         lis_precon_destroy(precon);
         lis_solver_destroy(solver);
         return err;
       }
+      recovered_shift = solve_shift!=rho;
       lis_solver_get_iter(solver,&iter2);
 
       /* theta = <w, y> */      
       lis_vector_dot(w, y, &theta);
+
+      if( !lis_esolver_is_valid_denominator(theta) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid generalized Rayleigh Quotient projection\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
       /* w = B * y */
       lis_matvec(B, y, w);
 
       /* eta = <w, y>^1/2 */
       lis_vector_dot(w, y, &eta);
+
+      if( !lis_esolver_is_finite_scalar(eta) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite generalized Rayleigh Quotient normalization product\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
+
       eta = sqrt(eta);
+
+      if( !lis_esolver_is_valid_denominator(eta) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "invalid generalized Rayleigh Quotient normalization factor\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
       /* v = y / eta */
       lis_vector_scale(1.0/eta, y);
@@ -456,11 +818,61 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
       lis_vector_scale(1.0/eta, w);
 
       /* rho = rho + theta / eta^2 */
-      rho = rho + theta / (eta * eta);
+      rho = solve_shift + theta / (eta * eta);
+
+      if( !lis_esolver_is_finite_scalar(rho) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite generalized Rayleigh Quotient shift update\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
 
       /* resid = 1/|theta| */
-      resid = 1.0/fabs(theta);      
+      resid = 1.0/fabs(theta);
+
+      if( !isfinite((double)resid) )
+        {
+          LIS_SETERR(LIS_BREAKDOWN,
+                  "non-finite generalized Rayleigh Quotient residual\n");
+          esolver->retcode = LIS_BREAKDOWN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return LIS_BREAKDOWN;
+        }
       
+      /*
+       * The transformed GRQI estimator 1/|theta| is tied to the
+       * requested shift.  When recovery perturbs that shift, use
+       * the physical generalized eigenpair residual as the
+       * authoritative convergence measure.
+       */
+      if( recovered_shift || tol >= resid )
+        {
+          err = lis_esolver_generalized_residual(
+                  A, B, v, rho, y, q, w, &cert_resid);
+          if( err )
+            {
+              esolver->retcode = err;
+              lis_precon_destroy(precon);
+              lis_solver_destroy(solver);
+              LIS_DEBUG_FUNC_OUT;
+              return err;
+            }
+
+          resid = cert_resid;
+
+          if( tol < resid )
+            {
+              /* Restore the live B*v state before another iteration. */
+              lis_matvec(B, v, w);
+            }
+        }
+
       if( output )
 	{
 	  if( output & LIS_EPRINT_MEM ) esolver->rhistory[iter] = resid;
@@ -481,6 +893,16 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
 	  esolver->resid[0]   = resid;
 	  esolver->evalue[0]  = rho;
 	  lis_vector_nrm2(v, &nrm2);
+	  if( !lis_esolver_is_valid_norm(nrm2) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "invalid generalized Rayleigh Quotient vector norm\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
 	  lis_vector_scale(1.0/nrm2, v);
 	  lis_precon_destroy(precon);
 	  lis_solver_destroy(solver); 
@@ -496,6 +918,15 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
   esolver->resid[0]   = resid;
   esolver->evalue[0]  = rho;
   lis_vector_nrm2(v, &nrm2);
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid generalized Rayleigh Quotient vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      lis_solver_destroy(solver);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
   lis_vector_scale(1.0/nrm2, v);
   lis_solver_destroy(solver); 
   LIS_DEBUG_FUNC_OUT;

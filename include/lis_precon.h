@@ -52,6 +52,40 @@ extern "C"
 	extern LIS_INT lis_psolveh_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
 
         extern LIS_REAL lis_precon_csr_row_scale(LIS_MATRIX A, LIS_INT row);
+
+/*
+ * Internal row access used by preconditioner setup.
+ *
+ * CSR rows are exposed directly.  LIS_MATRIX_USER rows are obtained
+ * through the USER row callback and kept only in a reusable row-sized
+ * buffer.
+ */
+typedef struct
+{
+	LIS_MATRIX A;
+	LIS_INT capacity;
+	LIS_INT *index_buffer;
+	LIS_SCALAR *value_buffer;
+	const LIS_INT *index;
+	const LIS_SCALAR *value;
+	LIS_INT nnz;
+} LIS_PRECON_ROW_SOURCE;
+
+extern LIS_INT lis_precon_row_source_init(
+	LIS_MATRIX A,
+	LIS_PRECON_ROW_SOURCE *source);
+
+extern LIS_INT lis_precon_row_source_get(
+	LIS_PRECON_ROW_SOURCE *source,
+	LIS_INT local_row);
+
+extern LIS_INT lis_precon_row_source_count_nnz(
+	LIS_MATRIX A,
+	LIS_INT *nnz);
+
+extern void lis_precon_row_source_destroy(
+	LIS_PRECON_ROW_SOURCE *source);
+
         extern LIS_INT lis_precon_check_ilu_pivot_tol(LIS_MATRIX A, LIS_REAL tol);
         extern LIS_SCALAR lis_precon_regularize_ilu_pivot(LIS_SCALAR pivot, LIS_REAL row_scale, LIS_REAL tol);
 

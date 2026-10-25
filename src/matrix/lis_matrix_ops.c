@@ -124,6 +124,165 @@ LIS_INT lis_matrix_set_blocksize(LIS_MATRIX A, LIS_INT bnr, LIS_INT bnc, LIS_INT
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_matrix_convert_user2csr"
+static LIS_INT lis_matrix_convert_user2csr(
+	LIS_MATRIX Ain,
+	LIS_MATRIX Aout)
+{
+	LIS_INT err;
+	LIS_INT i,n;
+	LIS_INT row_nnz;
+	LIS_INT total_nnz;
+	LIS_INT capacity;
+	LIS_INT *ptr;
+	LIS_INT *index;
+	LIS_SCALAR *value;
+
+	LIS_DEBUG_FUNC_IN;
+
+	n = Ain->n;
+
+	ptr   = NULL;
+	index = NULL;
+	value = NULL;
+
+	ptr = (LIS_INT *)lis_malloc(
+		(n+1)*sizeof(LIS_INT),
+		"lis_matrix_convert_user2csr::ptr");
+
+	if( ptr==NULL )
+	{
+		LIS_SETERR_MEM(
+			(n+1)*sizeof(LIS_INT));
+		return LIS_OUT_OF_MEMORY;
+	}
+
+	ptr[0] = 0;
+
+	for(i=0;i<n;i++)
+	{
+		row_nnz = 0;
+
+		err = lis_matrix_get_user_row(
+			Ain,
+			i,
+			&row_nnz,
+			NULL,
+			NULL);
+
+		if( err )
+		{
+			lis_free(ptr);
+			return err;
+		}
+
+		ptr[i+1] = ptr[i] + row_nnz;
+	}
+
+	total_nnz = ptr[n];
+
+	if( total_nnz>0 )
+	{
+		index = (LIS_INT *)lis_malloc(
+			total_nnz*sizeof(LIS_INT),
+			"lis_matrix_convert_user2csr::index");
+
+		if( index==NULL )
+		{
+			LIS_SETERR_MEM(
+				total_nnz*sizeof(LIS_INT));
+			lis_free(ptr);
+			return LIS_OUT_OF_MEMORY;
+		}
+
+		value = (LIS_SCALAR *)lis_malloc(
+			total_nnz*sizeof(LIS_SCALAR),
+			"lis_matrix_convert_user2csr::value");
+
+		if( value==NULL )
+		{
+			LIS_SETERR_MEM(
+				total_nnz*sizeof(LIS_SCALAR));
+			lis_free2(2,ptr,index);
+			return LIS_OUT_OF_MEMORY;
+		}
+	}
+
+	for(i=0;i<n;i++)
+	{
+		row_nnz = ptr[i+1] - ptr[i];
+
+		if( row_nnz==0 )
+		{
+			continue;
+		}
+
+		capacity = row_nnz;
+
+		err = lis_matrix_get_user_row(
+			Ain,
+			i,
+			&capacity,
+			&index[ptr[i]],
+			&value[ptr[i]]);
+
+		if( err )
+		{
+			lis_free2(
+				3,
+				ptr,
+				index,
+				value);
+
+			return err;
+		}
+
+		if( capacity!=row_nnz )
+		{
+			lis_free2(
+				3,
+				ptr,
+				index,
+				value);
+
+			LIS_SETERR(
+				LIS_ERR_ILL_ARG,
+				"LIS_MATRIX_USER row size changed during conversion\n");
+
+			return LIS_ERR_ILL_ARG;
+		}
+	}
+
+	err = lis_matrix_set_csr(
+		total_nnz,
+		ptr,
+		index,
+		value,
+		Aout);
+
+	if( err )
+	{
+		lis_free2(
+			3,
+			ptr,
+			index,
+			value);
+
+		return err;
+	}
+
+	/*
+	 * USER row callbacks expose global column indices.
+	 * Normal matrix assembly performs the standard LIS
+	 * global-to-local mapping for distributed matrices.
+	 */
+	err = lis_matrix_assemble(Aout);
+	if( err ) return err;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+#undef __FUNC__
 #define __FUNC__ "lis_matrix_convert"
 LIS_INT lis_matrix_convert(LIS_MATRIX Ain, LIS_MATRIX Aout)
 {
@@ -236,6 +395,11 @@ LIS_INT lis_matrix_convert(LIS_MATRIX Ain, LIS_MATRIX Aout)
 			err = lis_matrix_duplicate(Ain,&Atmp);
 			if( err ) return err;
 			err = lis_matrix_convert_coo2csr(Ain,Atmp);
+			break;
+		case LIS_MATRIX_USER:
+			err = lis_matrix_duplicate(Ain,&Atmp);
+			if( err ) return err;
+			err = lis_matrix_convert_user2csr(Ain,Atmp);
 			break;
 		default:
 			LIS_SETERR_IMP;

@@ -14,18 +14,24 @@ test_SCRIPTS = defs test.sh
 test_PROGRAMS = etest1 etest2 etest3 etest4 etest5 etest5b etest6 etest7 getest1 \
         getest5 getest5b spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b \
         spmvtest4 spmvtest5 test1 test2 test2b test3 test3b test3c \
-        test4 test5 test6 test7 testuser testuserrow testmatvecblock \
+        test4 test5 test6 test7 testuser testuserrow testuserprecon testmatvecblock \
         testcapabilities getestuser testoperator getestoperator testdiagonal \
-        testpreconlifecycle testjacobiuser testpreconpsd testpreconreuse testrqirestore \
+        testpreconlifecycle testjacobiuser testpreconpsd testpreconreuse testeigenbreakdown testrqirestore \
         testrhistoryerror testrepeatedsystems testpreconpolicy testgmreswork \
         testsolvermonitor testsolvercallbackpaths testsolvercallbackcert testworkcompat \
         testworkreuse testprebuiltuser testshellscale testsymmdiagguard testilupivot \
         testparamupdate testbreakretry testchangingsystem testkrylovrobust testnearnullspace \
         testcoarsesetup testcoarseapply testgcrodroptions testgcrodrconfig testgcrodrsequence \
         testmatrixgeneration testexternalstorage testsequence testwarmstart testrecovery \
-        testthreads testfgcrodr testmfamg testmfamggalerkin testexactnullspace testhalfconfig testhalfconvert
+        testthreads testfgcrodr testmfamg testmfamggalerkin testexactnullspace testhalfconfig testhalfconvert \
+        testfeastfoundation testfeastcontour testfeastshifted \
+	testprojectedeigen testprojectedhermitian testblockgram \
+	testblockorthogonal testblockrank
 
 testgcrodroptions_SOURCES = testgcrodroptions.c
+testfeastfoundation_SOURCES = testfeastfoundation.c
+testfeastcontour_SOURCES = testfeastcontour.c
+testfeastshifted_SOURCES = testfeastshifted.c
 testgcrodrconfig_SOURCES = testgcrodrconfig.c
 testgcrodrsequence_SOURCES = testgcrodrsequence.c
 testmatrixgeneration_SOURCES = testmatrixgeneration.c
@@ -80,6 +86,7 @@ test6_SOURCES = test6.c
 test7_SOURCES = test7.c
 testuser_SOURCES = testuser.c
 testuserrow_SOURCES = testuserrow.c
+testuserprecon_SOURCES = testuserprecon.c
 testmatvecblock_SOURCES = testmatvecblock.c
 testcapabilities_SOURCES = testcapabilities.c
 testhalfconfig_SOURCES = testhalfconfig.c
@@ -99,6 +106,12 @@ testpreconlifecycle_SOURCES = testpreconlifecycle.c
 testjacobiuser_SOURCES = testjacobiuser.c
 testpreconpsd_SOURCES = testpreconpsd.c
 testpreconreuse_SOURCES = testpreconreuse.c
+testeigenbreakdown_SOURCES = testeigenbreakdown.c
+testprojectedeigen_SOURCES = testprojectedeigen.c
+testprojectedhermitian_SOURCES = testprojectedhermitian.c
+testblockgram_SOURCES = testblockgram.c
+testblockorthogonal_SOURCES = testblockorthogonal.c
+testblockrank_SOURCES = testblockrank.c
 testrqirestore_SOURCES = testrqirestore.c
 testrhistoryerror_SOURCES = testrhistoryerror.c
 testrepeatedsystems_SOURCES = testrepeatedsystems.c
@@ -186,9 +199,9 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
-TESTS = test.sh testuserrow$(EXEEXT) testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
+TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
         testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
-        testpreconreuse$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
+        testpreconreuse$(EXEEXT) testprojectedeigen$(EXEEXT) testprojectedhermitian$(EXEEXT) testblockgram$(EXEEXT) testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
         testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
         testsolvermonitor$(EXEEXT) testsolvercallbackpaths$(EXEEXT) \
         testsolvercallbackcert$(EXEEXT) testworkcompat$(EXEEXT) \

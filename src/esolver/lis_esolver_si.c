@@ -132,6 +132,656 @@ LIS_INT lis_esi_malloc_work(LIS_ESOLVER esolver)
 	return LIS_SUCCESS;
 }
 
+static LIS_INT
+lis_esi_solve_with_retry(
+        LIS_MATRIX A,
+        LIS_VECTOR b,
+        LIS_VECTOR x,
+        LIS_SOLVER solver,
+        LIS_PRECON *precon,
+        LIS_REAL acceptance_tol)
+{
+        LIS_INT err,status;
+
+        status =
+                lis_esolver_inner_solve_attempt(
+                        A,b,x,solver,*precon);
+        if( status==LIS_SUCCESS )
+        {
+                return LIS_SUCCESS;
+        }
+
+        if( !lis_esolver_inner_solve_retryable(status) )
+        {
+                return status;
+        }
+
+        err = lis_esolver_rebuild_precon(
+                A,solver,precon);
+        if( err )
+        {
+                return err;
+        }
+
+        lis_vector_set_all(0.0,x);
+
+        status =
+                lis_esolver_inner_solve_attempt(
+                        A,b,x,solver,*precon);
+
+        return lis_esolver_inner_solve_certify(
+                A,b,x,solver,
+                status,
+                acceptance_tol);
+}
+
+
+static LIS_INT
+lis_esi_solve_with_recovery(
+        LIS_MATRIX A,
+        LIS_VECTOR b,
+        LIS_VECTOR x,
+        LIS_SOLVER solver,
+        LIS_PRECON *precon,
+        LIS_SCALAR base_shift,
+        LIS_REAL acceptance_tol,
+        LIS_SCALAR *used_shift)
+{
+        LIS_INT err,status,attempt;
+        LIS_SCALAR perturbation;
+        LIS_SCALAR trial_shift;
+        LIS_SCALAR shift_change;
+
+        *used_shift = base_shift;
+
+        status =
+                lis_esolver_inner_solve_attempt(
+                        A,b,x,solver,*precon);
+        if( status==LIS_SUCCESS )
+        {
+                return LIS_SUCCESS;
+        }
+
+        if( !lis_esolver_inner_solve_retryable(status) )
+        {
+                return status;
+        }
+
+        err = lis_esolver_rebuild_precon(
+                A,solver,precon);
+        if( err )
+        {
+                return err;
+        }
+
+        lis_vector_set_all(0.0,x);
+
+        status =
+                lis_esolver_inner_solve_attempt(
+                        A,b,x,solver,*precon);
+
+                status =
+                        lis_esolver_inner_solve_certify(
+                                A,b,x,solver,
+                                status,
+                                acceptance_tol);
+        if( status==LIS_SUCCESS )
+        {
+                return LIS_SUCCESS;
+        }
+
+        if( !lis_esolver_inner_solve_retryable(status) )
+        {
+                return status;
+        }
+
+        perturbation =
+                lis_esolver_shift_perturbation(
+                        base_shift);
+        if( perturbation==0.0 )
+        {
+                return status;
+        }
+
+        for(attempt=0;attempt<2;attempt++)
+        {
+                trial_shift =
+                        attempt==0 ?
+                        base_shift+perturbation :
+                        base_shift-perturbation;
+
+                shift_change =
+                        trial_shift-base_shift;
+
+                lis_matrix_shift_diagonal(
+                        A,shift_change);
+
+                err = lis_esolver_rebuild_precon(
+                        A,solver,precon);
+                if( err )
+                {
+                        lis_matrix_shift_diagonal(
+                                A,-shift_change);
+                        return err;
+                }
+
+                lis_vector_set_all(0.0,x);
+
+                status =
+                        lis_esolver_inner_solve_attempt(
+                                A,b,x,solver,*precon);
+
+                status =
+                        lis_esolver_inner_solve_certify(
+                                A,b,x,solver,
+                                status,
+                                acceptance_tol);
+
+                lis_matrix_shift_diagonal(
+                        A,-shift_change);
+
+                if( status==LIS_SUCCESS )
+                {
+                        *used_shift = trial_shift;
+
+                        err = lis_esolver_rebuild_precon(
+                                A,solver,precon);
+                        if( err )
+                        {
+                                return err;
+                        }
+
+                        return LIS_SUCCESS;
+                }
+
+                if( !lis_esolver_inner_solve_retryable(status) )
+                {
+                        return status;
+                }
+        }
+
+        return status;
+}
+
+
+static LIS_INT
+lis_egsi_solve_with_recovery(
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_VECTOR b,
+        LIS_VECTOR x,
+        LIS_SOLVER solver,
+        LIS_PRECON *precon,
+        LIS_SCALAR base_shift,
+        LIS_REAL acceptance_tol,
+        LIS_SCALAR *used_shift)
+{
+        LIS_INT err,status,attempt;
+        LIS_SCALAR perturbation;
+        LIS_SCALAR trial_shift;
+        LIS_SCALAR shift_change;
+
+        *used_shift = base_shift;
+
+        status =
+                lis_esolver_inner_solve_attempt(
+                        A,b,x,solver,*precon);
+        if( status==LIS_SUCCESS )
+        {
+                return LIS_SUCCESS;
+        }
+
+        if( !lis_esolver_inner_solve_retryable(status) )
+        {
+                return status;
+        }
+
+        err = lis_esolver_rebuild_precon(
+                A,solver,precon);
+        if( err )
+        {
+                return err;
+        }
+
+        lis_vector_set_all(0.0,x);
+
+        status =
+                lis_esolver_inner_solve_attempt(
+                        A,b,x,solver,*precon);
+
+                status =
+                        lis_esolver_inner_solve_certify(
+                                A,b,x,solver,
+                                status,
+                                acceptance_tol);
+        if( status==LIS_SUCCESS )
+        {
+                return LIS_SUCCESS;
+        }
+
+        if( !lis_esolver_inner_solve_retryable(status) )
+        {
+                return status;
+        }
+
+        perturbation =
+                lis_esolver_shift_perturbation(
+                        base_shift);
+        if( perturbation==0.0 )
+        {
+                return status;
+        }
+
+        for(attempt=0;attempt<2;attempt++)
+        {
+                trial_shift =
+                        attempt==0 ?
+                        base_shift+perturbation :
+                        base_shift-perturbation;
+
+                shift_change =
+                        trial_shift-base_shift;
+
+                lis_matrix_shift_matrix(
+                        A,B,shift_change);
+
+                err = lis_esolver_rebuild_precon(
+                        A,solver,precon);
+                if( err )
+                {
+                        lis_matrix_shift_matrix(
+                                A,B,-shift_change);
+                        return err;
+                }
+
+                lis_vector_set_all(0.0,x);
+
+                status =
+                        lis_esolver_inner_solve_attempt(
+                                A,b,x,solver,*precon);
+
+                status =
+                        lis_esolver_inner_solve_certify(
+                                A,b,x,solver,
+                                status,
+                                acceptance_tol);
+
+                lis_matrix_shift_matrix(
+                        A,B,-shift_change);
+
+                if( status==LIS_SUCCESS )
+                {
+                        *used_shift = trial_shift;
+
+                        err = lis_esolver_rebuild_precon(
+                                A,solver,precon);
+                        if( err )
+                        {
+                                return err;
+                        }
+
+                        return LIS_SUCCESS;
+                }
+
+                if( !lis_esolver_inner_solve_retryable(status) )
+                {
+                        return status;
+                }
+        }
+
+        return status;
+}
+
+
+/*
+ * Remove components along already converged vectors.  The locked
+ * vectors are not assumed to have unit Euclidean norm.
+ */
+static LIS_INT
+lis_esi_project_locked(
+        LIS_VECTOR candidate,
+        LIS_VECTOR *v,
+        LIS_INT locked)
+{
+        LIS_INT k,err;
+        LIS_SCALAR numerator,denominator,alpha;
+
+        for(k=1;k<=locked;k++)
+        {
+                err = lis_vector_dot(
+                        v[k],candidate,&numerator);
+                if( err )
+                {
+                        return err;
+                }
+
+                err = lis_vector_dot(
+                        v[k],v[k],&denominator);
+                if( err )
+                {
+                        return err;
+                }
+
+                if( !lis_esolver_is_valid_denominator(denominator) )
+                {
+                        return LIS_BREAKDOWN;
+                }
+
+                alpha = numerator/denominator;
+
+                err = lis_vector_axpy(
+                        -alpha,v[k],candidate);
+                if( err )
+                {
+                        return err;
+                }
+        }
+
+        return LIS_SUCCESS;
+}
+
+
+/*
+ * Generalized symmetric eigenvectors are locked in the B inner
+ * product.  Bcandidate is updated together with candidate so one
+ * matrix-vector product for the active vector is sufficient.
+ */
+static LIS_INT
+lis_egsi_project_locked(
+        LIS_MATRIX B,
+        LIS_VECTOR candidate,
+        LIS_VECTOR *v,
+        LIS_INT locked,
+        LIS_VECTOR Bcandidate,
+        LIS_VECTOR Blocked)
+{
+        LIS_INT k,err;
+        LIS_SCALAR numerator,denominator,alpha;
+
+        if( locked<=0 )
+        {
+                return LIS_SUCCESS;
+        }
+
+        err = lis_matvec(
+                B,candidate,Bcandidate);
+        if( err )
+        {
+                return err;
+        }
+
+        for(k=1;k<=locked;k++)
+        {
+                err = lis_matvec(
+                        B,v[k],Blocked);
+                if( err )
+                {
+                        return err;
+                }
+
+                err = lis_vector_dot(
+                        v[k],Bcandidate,&numerator);
+                if( err )
+                {
+                        return err;
+                }
+
+                err = lis_vector_dot(
+                        v[k],Blocked,&denominator);
+                if( err )
+                {
+                        return err;
+                }
+
+                if( !lis_esolver_is_valid_denominator(denominator) )
+                {
+                        return LIS_BREAKDOWN;
+                }
+
+                alpha = numerator/denominator;
+
+                err = lis_vector_axpy(
+                        -alpha,v[k],candidate);
+                if( err )
+                {
+                        return err;
+                }
+
+                err = lis_vector_axpy(
+                        -alpha,Blocked,Bcandidate);
+                if( err )
+                {
+                        return err;
+                }
+        }
+
+        return LIS_SUCCESS;
+}
+
+
+/*
+ * Construct a global coordinate vector using LIS internal ownership
+ * ranges.  This avoids calling lis_vector_set_value() on ranks that
+ * do not own the selected global row.  Extended-precision low parts
+ * are cleared explicitly as well.
+ */
+static LIS_INT
+lis_esi_set_dense_restart_seed(
+        LIS_VECTOR candidate,
+        LIS_INT seed)
+{
+        LIS_INT i,global_index,err;
+        LIS_REAL angle;
+
+        if( candidate->gn<=0 ||
+            seed<0 ||
+            seed>=candidate->gn )
+        {
+                return LIS_ERR_ILL_ARG;
+        }
+
+        err = lis_vector_set_all(
+                0.0,candidate);
+        if( err )
+        {
+                return err;
+        }
+
+        if( candidate->precision!=LIS_PRECISION_DEFAULT &&
+            candidate->value_lo!=NULL )
+        {
+                for(i=0;i<candidate->n;i++)
+                {
+                        candidate->value_lo[i] = 0.0;
+                }
+        }
+
+        /*
+         * Use a dense deterministic family rather than a coordinate
+         * vector. A coordinate seed can itself be an exact eigenvector
+         * and can therefore steer a restarted extremal iteration toward
+         * an unrelated mode. Global-index sine seeds retain broad
+         * spectral content while remaining reproducible across ranks.
+         */
+        for(i=0;i<candidate->n;i++)
+        {
+                global_index = candidate->is+i;
+                angle =
+                        (LIS_REAL)(seed+1) *
+                        (LIS_REAL)(global_index+1);
+
+                candidate->value[i] =
+                        sin(angle);
+        }
+
+        return LIS_SUCCESS;
+}
+
+
+/*
+ * If locking annihilates the inherited starting vector, construct a
+ * deterministic independent direction instead of relying on roundoff.
+ * Dense global-index seeds make the restart reproducible in
+ * serial and distributed-memory layouts without selecting a
+ * single coordinate direction.
+ */
+static LIS_INT
+lis_esi_prepare_locked(
+        LIS_VECTOR candidate,
+        LIS_VECTOR *v,
+        LIS_INT locked)
+{
+        LIS_INT err,attempt;
+        LIS_INT global_n;
+        LIS_REAL nrm2;
+
+        err = lis_esi_project_locked(
+                candidate,v,locked);
+        if( err )
+        {
+                return err;
+        }
+
+        err = lis_vector_nrm2(
+                candidate,&nrm2);
+        if( err )
+        {
+                return err;
+        }
+
+        if( lis_esolver_is_valid_norm(nrm2) )
+        {
+                return lis_vector_scale(
+                        1.0/nrm2,candidate);
+        }
+
+        global_n = candidate->gn;
+
+        if( global_n<=0 )
+        {
+                return LIS_BREAKDOWN;
+        }
+
+        for(attempt=0;attempt<global_n;attempt++)
+        {
+                err = lis_esi_set_dense_restart_seed(
+                        candidate,attempt);
+                if( err )
+                {
+                        return err;
+                }
+
+                err = lis_esi_project_locked(
+                        candidate,v,locked);
+                if( err )
+                {
+                        return err;
+                }
+
+                err = lis_vector_nrm2(
+                        candidate,&nrm2);
+                if( err )
+                {
+                        return err;
+                }
+
+                if( lis_esolver_is_valid_norm(nrm2) )
+                {
+                        return lis_vector_scale(
+                                1.0/nrm2,candidate);
+                }
+        }
+
+        LIS_SETERR(
+                LIS_BREAKDOWN,
+                "unable to construct independent Subspace restart vector\n");
+        return LIS_BREAKDOWN;
+}
+
+
+/*
+ * Generalized Subspace uses the same deterministic restart policy,
+ * followed by B-orthogonal projection against the locked modes.
+ */
+static LIS_INT
+lis_egsi_prepare_locked(
+        LIS_MATRIX B,
+        LIS_VECTOR candidate,
+        LIS_VECTOR *v,
+        LIS_INT locked,
+        LIS_VECTOR Bcandidate,
+        LIS_VECTOR Blocked)
+{
+        LIS_INT err,attempt;
+        LIS_INT global_n;
+        LIS_REAL nrm2;
+
+        err = lis_egsi_project_locked(
+                B,candidate,v,locked,
+                Bcandidate,Blocked);
+        if( err )
+        {
+                return err;
+        }
+
+        err = lis_vector_nrm2(
+                candidate,&nrm2);
+        if( err )
+        {
+                return err;
+        }
+
+        if( lis_esolver_is_valid_norm(nrm2) )
+        {
+                return lis_vector_scale(
+                        1.0/nrm2,candidate);
+        }
+
+        global_n = candidate->gn;
+
+        if( global_n<=0 )
+        {
+                return LIS_BREAKDOWN;
+        }
+
+        for(attempt=0;attempt<global_n;attempt++)
+        {
+                err = lis_esi_set_dense_restart_seed(
+                        candidate,attempt);
+                if( err )
+                {
+                        return err;
+                }
+
+                err = lis_egsi_project_locked(
+                        B,candidate,v,locked,
+                        Bcandidate,Blocked);
+                if( err )
+                {
+                        return err;
+                }
+
+                err = lis_vector_nrm2(
+                        candidate,&nrm2);
+                if( err )
+                {
+                        return err;
+                }
+
+                if( lis_esolver_is_valid_norm(nrm2) )
+                {
+                        return lis_vector_scale(
+                                1.0/nrm2,candidate);
+                }
+        }
+
+        LIS_SETERR(
+                LIS_BREAKDOWN,
+                "unable to construct independent generalized Subspace restart vector\n");
+        return LIS_BREAKDOWN;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_esi"
 LIS_INT lis_esi(LIS_ESOLVER esolver)
@@ -140,21 +790,21 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   LIS_MATRIX A;
   LIS_VECTOR x, Ax;
   LIS_SCALAR xAx, xx;
-  LIS_SCALAR oshift, ishift;
+  LIS_SCALAR oshift, ishift, solve_shift;
   LIS_INT ss;
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT j,k;
   LIS_SCALAR theta;
   LIS_INT iter,giter,output,niesolver;
-  LIS_REAL nrm2,resid;
+  LIS_REAL nrm2,resid,cert_resid;
   LIS_SCALAR dot;
   LIS_VECTOR *v,r,q;
   LIS_SOLVER solver;
   LIS_PRECON precon;
   double time,itime,ptime,p_c_time,p_i_time;
   double etime0,etime;
-  LIS_INT err;
+  LIS_INT err,final_status;
   LIS_INT nsol, precon_type;
   char solvername[128], preconname[128], esolvername[128];
 
@@ -180,12 +830,27 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   r = esolver->work[0];
   q = esolver->work[1];
   v = &esolver->work[2];
-  Ax = esolver->work[3];
+  /*
+   * v[1..ss] occupies work[3..ss+2].
+   * Keep certification scratch outside the basis storage.
+   */
+  Ax = esolver->work[NWORK + ss - 1];
   lis_vector_set_all(1.0,r);
   lis_vector_nrm2(r, &nrm2);
+
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid Subspace initial vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
+
   lis_vector_scale(1.0/nrm2,r);
 
   if ( esolver->ishift != 0.0 ) oshift = ishift;
+  solve_shift = oshift;
   if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, oshift);  
 
   if( output )
@@ -207,7 +872,15 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
       lis_solver_create(&solver);
       lis_solver_set_option("-i bicg -p none",solver);
       err = lis_solver_set_optionC(solver);
-      CHKERR(err);
+      if( err )
+        {
+          esolver->retcode = err;
+          if ( oshift != 0.0 )
+            lis_matrix_shift_diagonal(A, -oshift);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return err;
+        }
       lis_solver_get_solver(solver, &nsol);
       lis_solver_get_precon(solver, &precon_type);
       lis_solver_get_solvername(nsol, solvername);
@@ -217,6 +890,20 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	  lis_printf(comm,"linear solver         : %s\n", solvername);
 	  lis_printf(comm,"preconditioner        : %s\n", preconname);
 	}
+
+      precon = NULL;
+      solver->A = A;
+      err = lis_precon_create(solver, &precon);
+      if( err )
+        {
+          esolver->retcode = err;
+          if ( oshift != 0.0 )
+            lis_matrix_shift_diagonal(A, -oshift);
+          lis_solver_destroy(solver);
+          LIS_DEBUG_FUNC_OUT;
+          return err;
+        }
+
       break;
 
     }
@@ -236,19 +923,6 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
       j = j+1;
       lis_vector_copy(r, v[j]);
 
-      if (niesolver==LIS_ESOLVER_II )
-	{
-	  /* create preconditioner */
-	  solver->A = A;
-	  err = lis_precon_create(solver, &precon);
-	  if( err )
-	    {
-	      lis_solver_work_destroy(solver);
-	      solver->retcode = err;
-	      return err;
-	    }
-	}
-
       ptime = 0;
       iter = 0;
       while (iter<emaxiter)
@@ -256,11 +930,25 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	  iter = iter+1;
 	  giter = giter+1;
 
-	  /* QR factorization V*R = Z for starting vector Z */
-	  for (k=1;k<j;k++)
+	  /*
+	   * Keep the active mode orthogonal to all converged modes.
+	   * The projection coefficient is normalized by the locked
+	   * vector norm instead of assuming a unit vector.
+	   */
+	  err = lis_esi_prepare_locked(
+	          v[j],v,j-1);
+	  if( err )
 	    {
-	      lis_vector_dot(v[j], v[k], &dot); 
-	      lis_vector_axpy(-dot, v[k], v[j]);
+	      esolver->retcode = err;
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_diagonal(A, -oshift);
+	      if( niesolver==LIS_ESOLVER_II )
+	        {
+	          lis_precon_destroy(precon);
+	          lis_solver_destroy(solver);
+	        }
+	      LIS_DEBUG_FUNC_OUT;
+	      return err;
 	    }
 
 	  /* kernel */
@@ -276,12 +964,18 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	    case LIS_ESOLVER_II:
 
 	      /* R = A^-1 * V */
-	      err = lis_solve_kernel(A, v[j], r, solver, precon);
+	      solve_shift = oshift;
+	      err = lis_esi_solve_with_recovery(
+	              A, v[j], r, solver, &precon,
+	              oshift, tol, &solve_shift);
 	      if( err )
 		{
-		  lis_solver_work_destroy(solver);	  
-		  solver->retcode = err;
+		  esolver->retcode = err;
+		  if ( oshift != 0.0 )
+		    lis_matrix_shift_diagonal(A, -oshift);
 		  lis_precon_destroy(precon);
+		  lis_solver_destroy(solver);
+		  LIS_DEBUG_FUNC_OUT;
 		  return err;
 		}
 
@@ -299,14 +993,74 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	      esolver->p_i_time += solver->p_i_time;
 	    }
 
+	  /*
+	   * The operator can reintroduce components along converged
+	   * modes.  Remove them before the Rayleigh/residual update.
+	   */
+	  err = lis_esi_project_locked(
+	          r,v,j-1);
+	  if( err )
+	    {
+	      esolver->retcode = err;
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_diagonal(A, -oshift);
+	      if( niesolver==LIS_ESOLVER_II )
+	        {
+	          lis_precon_destroy(precon);
+	          lis_solver_destroy(solver);
+	        }
+	      LIS_DEBUG_FUNC_OUT;
+	      return err;
+	    }
+
 	  /* Z = V*R */
 	  lis_vector_nrm2(r, &nrm2);
+
+	  if( !lis_esolver_is_valid_norm(nrm2) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "invalid Subspace iteration vector norm\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_diagonal(A, -oshift);
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
+
 	  lis_vector_dot(v[j],r,&theta);
+
+	  if( !lis_esolver_is_valid_denominator(theta) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "invalid Subspace Rayleigh denominator\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_diagonal(A, -oshift);
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
 
 	  /* resid = ||Z - V*R||_2 */
 	  lis_vector_axpyz(-theta,v[j],r,q);
 	  lis_vector_nrm2(q, &resid);
 	  resid = resid / fabs(theta);
+
+	  if( !isfinite((double)resid) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "non-finite Subspace residual\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_diagonal(A, -oshift);
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
 
 	  lis_vector_scale(1.0/nrm2,r);
 	  lis_vector_copy(r, v[j]);
@@ -332,7 +1086,7 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	  esolver->iter[j-1] = iter;
 	  break;
 	case LIS_ESOLVER_II:
-	  esolver->evalue[j-1] = 1/theta + oshift;
+	  esolver->evalue[j-1] = 1/theta + solve_shift;
 	  esolver->resid[j-1] = resid;
 	  esolver->iter[j-1] = iter;
 	  break;
@@ -355,7 +1109,29 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	}
     }
   
-  if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);  
+  if ( oshift != 0.0 ) lis_matrix_shift_diagonal(A, -oshift);
+
+  /*
+   * Certify every returned eigenpair against the physical problem.
+   * Ax and r are scratch after the subspace iterations.
+   */
+  final_status = LIS_SUCCESS;
+  for(k=0;k<ss;k++)
+    {
+      err = lis_esolver_standard_residual(
+              A, esolver->evector[k], esolver->evalue[k],
+              Ax, r, &cert_resid);
+      if( err )
+        {
+          final_status = err;
+          break;
+        }
+
+      esolver->resid[k] = cert_resid;
+      if( cert_resid>tol && final_status==LIS_SUCCESS )
+        final_status = LIS_MAXITER;
+    }
+
   lis_vector_copy(esolver->evector[0], esolver->x);
 
   switch ( niesolver )
@@ -367,7 +1143,8 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
     }
 
   LIS_DEBUG_FUNC_OUT;
-  return LIS_SUCCESS;
+  esolver->retcode = final_status;
+  return final_status;
 }
 
 /***************************************
@@ -460,21 +1237,21 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   LIS_MATRIX A, B;
   LIS_VECTOR x, Ax;
   LIS_SCALAR xAx, xx;
-  LIS_SCALAR oshift, ishift;
+  LIS_SCALAR oshift, ishift, solve_shift;
   LIS_INT ss;
   LIS_INT emaxiter;
   LIS_REAL tol;
   LIS_INT j,k;
   LIS_SCALAR theta,eta;
   LIS_INT iter,giter,output,nigesolver;
-  LIS_REAL nrm2,resid;
+  LIS_REAL nrm2,resid,cert_resid;
   LIS_SCALAR dot;
   LIS_VECTOR *v,w,y,q;
   LIS_SOLVER solver;
   LIS_PRECON precon;
   double time,itime,ptime,p_c_time,p_i_time;
   double etime0,etime;  
-  LIS_INT err;
+  LIS_INT err,final_status;
   LIS_INT nsol, precon_type;
   char solvername[128], preconname[128], esolvername[128];
 
@@ -502,12 +1279,27 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   w = esolver->work[1];
   q = esolver->work[2];
   v = &esolver->work[3];
-  Ax = esolver->work[4];
+  /*
+   * v[1..ss] occupies work[4..ss+3].
+   * The final allocated work vector is dedicated scratch.
+   */
+  Ax = esolver->work[NWORK + ss - 1];
   lis_vector_set_all(1.0,y);
   lis_vector_nrm2(y,&nrm2);
+
+  if( !lis_esolver_is_valid_norm(nrm2) )
+    {
+      LIS_SETERR(LIS_BREAKDOWN,
+              "invalid generalized Subspace initial vector norm\n");
+      esolver->retcode = LIS_BREAKDOWN;
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_BREAKDOWN;
+    }
+
   lis_vector_scale(1.0/nrm2,y);
 
   if ( esolver->ishift != 0.0 ) oshift = ishift;
+  solve_shift = oshift;
   if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, oshift);
 
   if( output )
@@ -525,7 +1317,15 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   lis_solver_create(&solver);
   lis_solver_set_option("-i bicg -p none",solver);
   err = lis_solver_set_optionC(solver);
-  CHKERR(err);
+  if( err )
+    {
+      esolver->retcode = err;
+      if ( oshift != 0.0 )
+        lis_matrix_shift_matrix(A, B, -oshift);
+      lis_solver_destroy(solver);
+      LIS_DEBUG_FUNC_OUT;
+      return err;
+    }
   lis_solver_get_solver(solver, &nsol);
   lis_solver_get_precon(solver, &precon_type);
   lis_solver_get_solvername(nsol, solvername);
@@ -534,6 +1334,36 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
     {
       lis_printf(comm,"linear solver         : %s\n", solvername);
       lis_printf(comm,"preconditioner        : %s\n", preconname);
+    }
+
+  precon = NULL;
+
+  switch ( nigesolver )
+    {
+    case LIS_ESOLVER_GII:
+      solver->A = A;
+      err = lis_precon_create(solver, &precon);
+      break;
+
+    case LIS_ESOLVER_GPI:
+      solver->A = B;
+      err = lis_precon_create(solver, &precon);
+      break;
+
+    default:
+      err = LIS_ERR_ILL_ARG;
+      break;
+    }
+
+  if( err )
+    {
+      esolver->retcode = err;
+      if ( oshift != 0.0 )
+        lis_matrix_shift_matrix(A, B, -oshift);
+      lis_precon_destroy(precon);
+      lis_solver_destroy(solver);
+      LIS_DEBUG_FUNC_OUT;
+      return err;
     }
 
   if( output ) 
@@ -551,34 +1381,6 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
       j = j+1;
       lis_vector_copy(y, v[j]);
 
-      switch ( nigesolver )
-	{
-	case LIS_ESOLVER_GII:
-	  {
-	    /* create preconditioner */
-	    solver->A = A;
-	    err = lis_precon_create(solver, &precon);
-	    if( err )
-	      {
-		lis_solver_work_destroy(solver);
-		solver->retcode = err;
-		return err;
-	      }
-	  }
-	case LIS_ESOLVER_GPI:
-	  {
-	    /* create preconditioner */
-	    solver->A = B;
-	    err = lis_precon_create(solver, &precon);
-	    if( err )
-	      {
-		lis_solver_work_destroy(solver);
-		solver->retcode = err;
-		return err;
-	      }
-	  }
-	}
-
       ptime = 0;
       iter = 0;
       while (iter<emaxiter)
@@ -586,11 +1388,21 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	  iter = iter+1;
 	  giter = giter+1;
 
-	  /* QR factorization V * R = Z for starting vector Z */
-	  for (k=1;k<j;k++)
+	  /*
+	   * Lock previously converged generalized modes using the
+	   * natural B inner product.
+	   */
+	  err = lis_egsi_prepare_locked(
+	          B,v[j],v,j-1,q,Ax);
+	  if( err )
 	    {
-	      lis_vector_dot(v[j], v[k], &dot);
-	      lis_vector_axpy(-dot, v[k], v[j]);
+	      esolver->retcode = err;
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_matrix(A, B, -oshift);
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      LIS_DEBUG_FUNC_OUT;
+	      return err;
 	    }
 
 	  /* kernel */
@@ -603,17 +1415,49 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 
 	      /* v = v / <v,w>^1/2, w = w / <v,w>^1/2 */	      
 	      lis_vector_dot(v[j], w, &eta);
+
+	      if( !lis_esolver_is_finite_scalar(eta) )
+	        {
+	          LIS_SETERR(LIS_BREAKDOWN,
+	                  "non-finite generalized Subspace normalization product\n");
+	          esolver->retcode = LIS_BREAKDOWN;
+	          if ( oshift != 0.0 )
+	            lis_matrix_shift_matrix(A, B, -oshift);
+	          lis_precon_destroy(precon);
+	          lis_solver_destroy(solver);
+	          LIS_DEBUG_FUNC_OUT;
+	          return LIS_BREAKDOWN;
+	        }
+
 	      eta = sqrt(eta);
+
+	      if( !lis_esolver_is_valid_denominator(eta) )
+	        {
+	          LIS_SETERR(LIS_BREAKDOWN,
+	                  "invalid generalized Subspace normalization factor\n");
+	          esolver->retcode = LIS_BREAKDOWN;
+	          if ( oshift != 0.0 )
+	            lis_matrix_shift_matrix(A, B, -oshift);
+	          lis_precon_destroy(precon);
+	          lis_solver_destroy(solver);
+	          LIS_DEBUG_FUNC_OUT;
+	          return LIS_BREAKDOWN;
+	        }
+
 	      lis_vector_scale(1.0/eta, v[j]);
 	      lis_vector_scale(1.0/eta, w);
 
 	      /* y = B^-1 * w */
-	      err = lis_solve_kernel(B, w, y, solver, precon);
+	      err = lis_esi_solve_with_retry(
+	              B, w, y, solver, &precon,tol);
 	      if( err )
 		{
-		  lis_solver_work_destroy(solver);	  
-		  solver->retcode = err;
+		  esolver->retcode = err;
+		  if ( oshift != 0.0 )
+		    lis_matrix_shift_matrix(A, B, -oshift);
 		  lis_precon_destroy(precon);
+		  lis_solver_destroy(solver);
+		  LIS_DEBUG_FUNC_OUT;
 		  return err;
 		}
 
@@ -626,17 +1470,51 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	      
 	      /* v = v / <v,w>^1/2, w = w / <v,w>^1/2 */
 	      lis_vector_dot(v[j], w, &eta);
+
+	      if( !lis_esolver_is_finite_scalar(eta) )
+	        {
+	          LIS_SETERR(LIS_BREAKDOWN,
+	                  "non-finite generalized Subspace normalization product\n");
+	          esolver->retcode = LIS_BREAKDOWN;
+	          if ( oshift != 0.0 )
+	            lis_matrix_shift_matrix(A, B, -oshift);
+	          lis_precon_destroy(precon);
+	          lis_solver_destroy(solver);
+	          LIS_DEBUG_FUNC_OUT;
+	          return LIS_BREAKDOWN;
+	        }
+
 	      eta = sqrt(eta);
+
+	      if( !lis_esolver_is_valid_denominator(eta) )
+	        {
+	          LIS_SETERR(LIS_BREAKDOWN,
+	                  "invalid generalized Subspace normalization factor\n");
+	          esolver->retcode = LIS_BREAKDOWN;
+	          if ( oshift != 0.0 )
+	            lis_matrix_shift_matrix(A, B, -oshift);
+	          lis_precon_destroy(precon);
+	          lis_solver_destroy(solver);
+	          LIS_DEBUG_FUNC_OUT;
+	          return LIS_BREAKDOWN;
+	        }
+
 	      lis_vector_scale(1.0/eta, v[j]);
 	      lis_vector_scale(1.0/eta, w);
 
 	      /* y = A^-1 * w */
-	      err = lis_solve_kernel(A, w, y, solver, precon);
+	      solve_shift = oshift;
+	      err = lis_egsi_solve_with_recovery(
+	              A, B, w, y, solver, &precon,
+	              oshift, tol, &solve_shift);
 	      if( err )
 		{
-		  lis_solver_work_destroy(solver);	  
-		  solver->retcode = err;
+		  esolver->retcode = err;
+		  if ( oshift != 0.0 )
+		    lis_matrix_shift_matrix(A, B, -oshift);
 		  lis_precon_destroy(precon);
+		  lis_solver_destroy(solver);
+		  LIS_DEBUG_FUNC_OUT;
 		  return err;
 		}
 	      break;
@@ -653,16 +1531,73 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	      esolver->p_i_time += solver->p_i_time;
 	    }
 
+	  /*
+	   * Reapply B-orthogonal locking after the transformed
+	   * operator, before accepting the mode update.
+	   */
+	  err = lis_egsi_project_locked(
+	          B,y,v,j-1,q,Ax);
+	  if( err )
+	    {
+	      esolver->retcode = err;
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_matrix(A, B, -oshift);
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      LIS_DEBUG_FUNC_OUT;
+	      return err;
+	    }
+
 	  /* theta = <w,y> */
 	  lis_vector_dot(w, y, &theta);
+
+	  if( !lis_esolver_is_valid_denominator(theta) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "invalid generalized Subspace Rayleigh denominator\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_matrix(A, B, -oshift);
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
 
 	  /* resid = ||y - theta * v||_2 / |theta| */
 	  lis_vector_axpyz(-theta, v[j], y, q);
 	  lis_vector_nrm2(q, &resid);
 	  resid = resid / fabs(theta);
 
+	  if( !isfinite((double)resid) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "non-finite generalized Subspace residual\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_matrix(A, B, -oshift);
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
+
 	  /* y = y / ||y||_2 */
 	  lis_vector_nrm2(y, &nrm2);
+
+	  if( !lis_esolver_is_valid_norm(nrm2) )
+	    {
+	      LIS_SETERR(LIS_BREAKDOWN,
+	              "invalid generalized Subspace iteration vector norm\n");
+	      esolver->retcode = LIS_BREAKDOWN;
+	      if ( oshift != 0.0 )
+	        lis_matrix_shift_matrix(A, B, -oshift);
+	      lis_precon_destroy(precon);
+	      lis_solver_destroy(solver);
+	      LIS_DEBUG_FUNC_OUT;
+	      return LIS_BREAKDOWN;
+	    }
+
 	  lis_vector_scale(1.0/nrm2, y);
 	  
 	  /* v = y */
@@ -689,7 +1624,7 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	  esolver->iter[j-1] = iter;
 	  break;
 	case LIS_ESOLVER_GII:
-	  esolver->evalue[j-1] = 1.0/theta + oshift;
+	  esolver->evalue[j-1] = 1.0/theta + solve_shift;
 	  esolver->resid[j-1] = resid;
 	  esolver->iter[j-1] = iter;
 	  break;
@@ -712,11 +1647,34 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	}
     }
   
-  if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, -oshift);  
+  if ( oshift != 0.0 ) lis_matrix_shift_matrix(A, B, -oshift);
+
+  /*
+   * Certify every returned generalized eigenpair after restoring
+   * the physical operator. Ax, w and y are scratch here.
+   */
+  final_status = LIS_SUCCESS;
+  for(k=0;k<ss;k++)
+    {
+      err = lis_esolver_generalized_residual(
+              A, B, esolver->evector[k], esolver->evalue[k],
+              Ax, w, y, &cert_resid);
+      if( err )
+        {
+          final_status = err;
+          break;
+        }
+
+      esolver->resid[k] = cert_resid;
+      if( cert_resid>tol && final_status==LIS_SUCCESS )
+        final_status = LIS_MAXITER;
+    }
+
   lis_vector_copy(esolver->evector[0], esolver->x);
 
   lis_precon_destroy(precon);
   lis_solver_destroy(solver);
   LIS_DEBUG_FUNC_OUT;
-  return LIS_SUCCESS;
+  esolver->retcode = final_status;
+  return final_status;
 }

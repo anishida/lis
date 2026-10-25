@@ -37,6 +37,151 @@ extern "C"
 {
 #endif
         extern LIS_ESOLVER_EXECUTE lis_esolver_execute[];
+
+extern LIS_INT lis_esolver_is_finite_scalar(
+        LIS_SCALAR value);
+extern LIS_INT lis_esolver_is_valid_denominator(
+        LIS_SCALAR value);
+extern LIS_INT lis_esolver_is_valid_norm(
+        LIS_REAL value);
+extern LIS_INT lis_esolver_inner_solve_attempt(
+        LIS_MATRIX A,
+        LIS_VECTOR b,
+        LIS_VECTOR x,
+        LIS_SOLVER solver,
+        LIS_PRECON precon);
+extern LIS_INT lis_esolver_inner_solve_retryable(
+        LIS_INT status);
+extern LIS_INT lis_esolver_inner_solve_certify(
+        LIS_MATRIX A,
+        LIS_VECTOR b,
+        LIS_VECTOR x,
+        LIS_SOLVER solver,
+        LIS_INT status,
+        LIS_REAL tolerance);
+extern LIS_SCALAR lis_esolver_shift_perturbation(
+        LIS_SCALAR shift);
+extern LIS_INT lis_esolver_rebuild_precon(
+        LIS_MATRIX A,
+        LIS_SOLVER solver,
+        LIS_PRECON *precon);
+extern LIS_INT lis_esolver_standard_residual(
+        LIS_MATRIX A,
+        LIS_VECTOR x,
+        LIS_SCALAR lambda,
+        LIS_VECTOR Ax,
+        LIS_VECTOR r,
+        LIS_REAL *resid);
+extern LIS_INT lis_esolver_generalized_residual(
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_VECTOR x,
+        LIS_SCALAR lambda,
+        LIS_VECTOR Ax,
+        LIS_VECTOR Bx,
+        LIS_VECTOR r,
+        LIS_REAL *resid);
+
+/*
+ * Shared internal block eigensolver helpers.
+ */
+extern LIS_INT lis_eigen_projected_solve(
+        LIS_INT n,
+        LIS_SCALAR *a,
+        LIS_SCALAR *eval,
+        LIS_SCALAR *evec,
+        LIS_INT *niter,
+        LIS_REAL *error);
+
+extern LIS_INT lis_eigen_general_complex_solve(
+        LIS_INT n,
+        LIS_SCALAR *a,
+        LIS_SCALAR *eval,
+        LIS_SCALAR *evec,
+        LIS_INT *niter,
+        LIS_REAL *error);
+
+extern LIS_INT lis_eigen_block_gram(
+        LIS_INT nx,
+        LIS_VECTOR X[],
+        LIS_INT ny,
+        LIS_VECTOR Y[],
+        LIS_SCALAR *gram);
+extern LIS_INT lis_eigen_block_bgram(
+        LIS_MATRIX B,
+        LIS_INT nx,
+        LIS_VECTOR X[],
+        LIS_INT ny,
+        LIS_VECTOR Y[],
+        LIS_VECTOR BY[],
+        LIS_SCALAR *gram);
+
+extern LIS_INT lis_eigen_block_orthogonalize(
+        LIS_INT nq,
+        LIS_VECTOR Q[],
+        LIS_INT nw,
+        LIS_VECTOR W[],
+        LIS_INT passes,
+        LIS_SCALAR *coeff,
+        LIS_SCALAR *work);
+extern LIS_INT lis_eigen_block_borthogonalize(
+        LIS_MATRIX B,
+        LIS_INT nq,
+        LIS_VECTOR Q[],
+        LIS_INT nw,
+        LIS_VECTOR W[],
+        LIS_VECTOR BW[],
+        LIS_INT passes,
+        LIS_SCALAR *coeff,
+        LIS_SCALAR *work);
+
+extern LIS_INT lis_eigen_block_linear_combination(
+        LIS_INT nx,
+        LIS_VECTOR X[],
+        LIS_INT ny,
+        LIS_VECTOR Y[],
+        LIS_SCALAR *coeff,
+        LIS_INT ldcoeff);
+extern LIS_INT lis_eigen_block_rank_deflate(
+        LIS_INT capacity,
+        LIS_INT nominal_rank,
+        LIS_VECTOR W[],
+        LIS_VECTOR Q[],
+        LIS_REAL rank_tol,
+        LIS_INT *active_rank,
+        LIS_SCALAR *gram,
+        LIS_SCALAR *eval,
+        LIS_SCALAR *evec,
+        LIS_SCALAR *transform);
+extern LIS_INT lis_eigen_block_brank_deflate(
+        LIS_MATRIX B,
+        LIS_INT capacity,
+        LIS_INT nominal_rank,
+        LIS_VECTOR W[],
+        LIS_VECTOR BW[],
+        LIS_VECTOR Q[],
+        LIS_VECTOR BQ[],
+        LIS_REAL rank_tol,
+        LIS_INT *active_rank,
+        LIS_SCALAR *gram,
+        LIS_SCALAR *eval,
+        LIS_SCALAR *evec,
+        LIS_SCALAR *transform);
+
+extern LIS_INT lis_eigen_block_rectangular_coupling(
+        LIS_INT nominal_rank,
+        LIS_INT active_rank,
+        LIS_SCALAR *eval,
+        LIS_SCALAR *evec,
+        LIS_SCALAR *coupling);
+
+extern LIS_INT lis_eigen_ritz_reconstruct(
+        LIS_INT basis_rank,
+        LIS_VECTOR basis[],
+        LIS_INT nritz,
+        LIS_SCALAR *coeff,
+        LIS_INT ldcoeff,
+        LIS_VECTOR ritz[]);
 	extern LIS_INT lis_esolver_work_destroy(LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_option2(char* arg1, char *arg2, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_option_esolver(char *argv, LIS_ESOLVER esolver);
@@ -116,6 +261,34 @@ extern "C"
 	extern LIS_INT lis_eli_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_eli_malloc_work(LIS_ESOLVER esolver);
 
+	extern LIS_INT lis_lanczos_block_layout(
+		LIS_INT ss,
+		LIS_INT block_size,
+		LIS_INT *block_count,
+		LIS_INT **block_offset,
+		LIS_INT **block_rank);
+
+	extern LIS_INT lis_lanczos_block_initial_raw(
+		LIS_INT block_size,
+		LIS_INT block_rank,
+		LIS_VECTOR W[]);
+
+	extern LIS_INT lis_lanczos_block_projected_set_alpha(
+		LIS_INT ld,
+		LIS_SCALAR *t,
+		LIS_INT offset,
+		LIS_INT rank,
+		const LIS_SCALAR *alpha);
+
+	extern LIS_INT lis_lanczos_block_projected_set_beta(
+		LIS_INT ld,
+		LIS_SCALAR *t,
+		LIS_INT previous_offset,
+		LIS_INT previous_rank,
+		LIS_INT next_offset,
+		LIS_INT next_rank,
+		const LIS_SCALAR *beta);
+
 /**********************/
 /* Arnoldi Iteration  */
 /**********************/
@@ -178,6 +351,7 @@ extern "C"
 /**********************************/
 
 	extern LIS_INT lis_egli(LIS_ESOLVER esolver);
+	extern LIS_INT lis_egli_block(LIS_ESOLVER esolver);
 	extern LIS_INT lis_egli_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_egli_malloc_work(LIS_ESOLVER esolver);
 
@@ -188,6 +362,112 @@ extern "C"
 	extern LIS_INT lis_egai(LIS_ESOLVER esolver);
 	extern LIS_INT lis_egai_check_params(LIS_ESOLVER esolver);
 	extern LIS_INT lis_egai_malloc_work(LIS_ESOLVER esolver);
+
+/**********************/
+/* Native FEAST       */
+/**********************/
+
+	extern LIS_INT lis_efeast(LIS_ESOLVER esolver);
+	extern LIS_INT lis_efeast_check_params(LIS_ESOLVER esolver);
+	extern LIS_INT lis_efeast_malloc_work(LIS_ESOLVER esolver);
+	extern LIS_INT lis_efeast_set_option(
+		char *arg1,
+		char *arg2,
+		LIS_ESOLVER esolver);
+
+	extern LIS_INT lis_efeast_gauss_legendre(
+		LIS_INT n,
+		LIS_REAL *x,
+		LIS_REAL *w);
+
+	extern LIS_INT lis_efeast_contour_gauss(
+		LIS_REAL emin,
+		LIS_REAL emax,
+		LIS_INT n,
+		LIS_REAL ratio,
+		LIS_REAL *z_real,
+		LIS_REAL *z_imag,
+		LIS_REAL *w_real,
+		LIS_REAL *w_imag);
+
+	extern LIS_INT lis_efeast_shifted_matvec_split(
+		LIS_MATRIX A,
+		LIS_MATRIX B,
+		LIS_REAL z_real,
+		LIS_REAL z_imag,
+		LIS_VECTOR x_real,
+		LIS_VECTOR x_imag,
+		LIS_VECTOR y_real,
+		LIS_VECTOR y_imag,
+		LIS_VECTOR work_real,
+		LIS_VECTOR work_imag);
+
+	extern LIS_INT lis_efeast_shifted_solve_split(
+		LIS_MATRIX A,
+		LIS_MATRIX B,
+		LIS_REAL z_real,
+		LIS_REAL z_imag,
+		LIS_VECTOR rhs_real,
+		LIS_VECTOR rhs_imag,
+		LIS_VECTOR x_real,
+		LIS_VECTOR x_imag,
+		LIS_SOLVER solver);
+
+	extern LIS_INT lis_efeast_projector_apply_split(
+		LIS_MATRIX A,
+		LIS_MATRIX B,
+		LIS_REAL emin,
+		LIS_REAL emax,
+		LIS_REAL ratio,
+		LIS_INT npoints,
+		LIS_VECTOR x_real,
+		LIS_VECTOR x_imag,
+		LIS_VECTOR q_real,
+		LIS_VECTOR q_imag,
+		LIS_SOLVER solver);
+
+	extern LIS_INT lis_efeast_filtered_block_basis(
+		LIS_MATRIX A,
+		LIS_MATRIX B,
+		LIS_REAL emin,
+		LIS_REAL emax,
+		LIS_REAL ratio,
+		LIS_INT npoints,
+		LIS_INT block_size,
+		LIS_VECTOR X[],
+		LIS_VECTOR Q[],
+		LIS_VECTOR BQ[],
+		LIS_REAL rank_tol,
+		LIS_INT *active_rank,
+		LIS_SOLVER solver);
+
+	extern LIS_INT lis_efeast_projected_rayleigh_ritz(
+		LIS_MATRIX A,
+		LIS_INT active_rank,
+		LIS_VECTOR Q[],
+		LIS_SCALAR ritz_value[],
+		LIS_VECTOR ritz_vector[],
+		LIS_INT *projected_niter,
+		LIS_REAL *projected_error);
+
+	extern LIS_INT lis_efeast_certify_ritz_pairs(
+		LIS_MATRIX A,
+		LIS_MATRIX B,
+		LIS_REAL emin,
+		LIS_REAL emax,
+		LIS_REAL tol,
+		LIS_INT active_rank,
+		LIS_SCALAR ritz_value[],
+		LIS_VECTOR ritz_vector[],
+		LIS_INT previous_count,
+		LIS_REAL previous_trace,
+		LIS_INT selected_index[],
+		LIS_REAL residual[],
+		LIS_INT *selected_count,
+		LIS_REAL *trace,
+		LIS_REAL *trace_error,
+		LIS_REAL *max_residual,
+		LIS_INT *converged);
 
 #ifdef __cplusplus
 }

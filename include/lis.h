@@ -33,7 +33,7 @@ extern "C" {
 #endif
 
 /**************************************/
-#define LIS_VERSION	"2.1.19"
+#define LIS_VERSION	"2.1.20"
 /**************************************/
 #include <stdio.h>
 #ifdef USE_COMPLEX
@@ -211,7 +211,7 @@ extern "C" {
 #define LIS_FGCRODR_RECYCLE_TRANSPORT 3
 #define LIS_FGCRODR_RECYCLE_REJECT 4
 
-#define LIS_ESOLVER_LEN 16
+#define LIS_ESOLVER_LEN 17
 #define LIS_ESOLVER_PI 1
 #define LIS_ESOLVER_II 2
 #define LIS_ESOLVER_RQI 3
@@ -228,6 +228,7 @@ extern "C" {
 #define LIS_ESOLVER_GSI 14
 #define LIS_ESOLVER_GLI 15
 #define LIS_ESOLVER_GAI 16
+#define LIS_ESOLVER_FEAST 17
 
 #define LIS_EIGEN_TRANSFORM_AUTO 0
 #define LIS_EIGEN_TRANSFORM_SHIFT_INVERT 1
@@ -1071,6 +1072,15 @@ struct LIS_ESOLVER_STRUCT
         LIS_VECTOR x,xx,d; 
         LIS_SCALAR *evalue;
         LIS_VECTOR *evector;
+
+        /*
+         * Number of evector[] slots whose non-NULL entries are
+         * owned by this eigensolver instance.
+         *
+         * This metadata belongs to the result array itself and is
+         * independent of later -e or -ss option changes.
+         */
+        LIS_INT evector_owned_count;
 	LIS_REAL *resid;
 	LIS_VECTOR *work;
 	LIS_REAL *rhistory;
@@ -1092,6 +1102,19 @@ struct LIS_ESOLVER_STRUCT
         LIS_INT nev;
 	LIS_REAL nrm2;
         LIS_REAL tol;
+        /*
+         * Native FEAST configuration.
+         *
+         * Kept outside LIS_EOPTIONS_* and LIS_EPARAMS_* so that
+         * existing public numeric option identifiers remain stable.
+         */
+        LIS_REAL feast_emin;
+        LIS_REAL feast_emax;
+        LIS_REAL feast_ratio;
+        LIS_INT feast_points;
+        LIS_INT feast_solver;
+        LIS_INT feast_interval_mask;
+        LIS_INT block_size;
 };
 typedef struct LIS_ESOLVER_STRUCT *LIS_ESOLVER;
 

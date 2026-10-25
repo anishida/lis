@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 2.1.19
+Version 2.1.20
 \end{flushleft}
 
 \vspace*{2cm}
@@ -329,6 +329,7 @@ CR\cite{suetomi} \\
 Subspace\cite{rutishauser} \\
 Lanczos\cite{lanczos2} \\
 Arnoldi\cite{arnoldi} \\
+FEAST \\
 \hline         
 \end{tabular}
 \hfil}
@@ -1996,7 +1997,7 @@ A custom callback does not bypass the final safety certification in
 the final true residual is non-finite or exceeds the solver tolerance.
 Callback configuration is part of the solver object and is preserved by
 \verb|lis_solver_reset_sequence|.
-
+\\ \\
 \noindent
 {\bf Specifying Options}
 
@@ -2278,6 +2279,19 @@ that \verb=-emaxiter= defaults to $1,000$.
  \verb=-ss [1]= & The size of the subspace \\
  Generalized Arnoldi               & \verb=-e {gai|16}=      &
  \verb=-ss [1]= & The size of the subspace \\  
+
+ Native FEAST                      & \verb=-e {feast|17}=    &
+ \verb=-ss [1]= & The size of the search subspace \\
+                                   &                         &
+ \verb=-feast_emin= & The lower bound of target interval \\
+                                   &                         &
+ \verb=-feast_emax= & The upper bound of target interval \\
+                                   &                         &
+ \verb=-feast_ratio [0.30]= & The contour ellipse aspect ratio \\
+                                   &                         &
+ \verb=-feast_points [8]= & The number of contour points \\
+                                   &                         &
+ \verb=-feast_solver [gmres]= & The inner linear solver \\
 \hline         
 \end{tabular}
 \end{center}
@@ -2797,6 +2811,21 @@ numerically singular, MFAMG falls back to the weighted-Jacobi correction
 for that block when its scalar diagonal entries remain usable.
 When the existing MFAMG numeric-update path reuses a hierarchy, the
 block factors are refreshed from the updated matrix values.
+
+\subsubsection{Native FEAST eigensolver}
+The native FEAST eigensolver computes eigenpairs inside the real interval
+specified by \verb|-feast_emin| and \verb|-feast_emax|.  Both interval
+bounds are required and must satisfy
+\verb|-feast_emin < -feast_emax|.  The subspace dimension is selected by
+\verb|-ss|.  The contour integration uses
+\verb|-feast_points| quadrature points and the positive ellipse aspect
+ratio \verb|-feast_ratio|.
+
+The shifted linear systems may be solved with
+\verb|-feast_solver gmres|, \verb|fgmres|, \verb|gcrodr|, or
+\verb|fgcrodr|.  GMRES is used by default.  Native FEAST is available
+for standard and generalized eigenvalue problems and supports both real
+and complex scalar builds.
 
 \newpage
 \subsection{Compiling and Linking}
@@ -6916,6 +6945,19 @@ that \verb=-emaxiter= defaults to $1,000$.
  \verb=-ss [1]= & The size of the subspace \\
  Generalized Arnoldi               & \verb=-e {gai|16}=      &
  \verb=-ss [1]= & The size of the subspace \\  
+
+ Native FEAST                      & \verb=-e {feast|17}=    &
+ \verb=-ss [1]= & The size of the search subspace \\
+                                   &                         &
+ \verb=-feast_emin= & The lower bound of target interval \\
+                                   &                         &
+ \verb=-feast_emax= & The upper bound of target interval \\
+                                   &                         &
+ \verb=-feast_ratio [0.30]= & The contour ellipse aspect ratio \\
+                                   &                         &
+ \verb=-feast_points [8]= & The number of contour points \\
+                                   &                         &
+ \verb=-feast_solver [gmres]= & The inner linear solver \\
 \hline         
 \end{tabular}
 \end{center}

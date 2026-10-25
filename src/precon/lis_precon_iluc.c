@@ -7,8 +7,8 @@
    2. Redistributions in binary form must reproduce the above copyright
       notice, this list of conditions and the following disclaimer in the
       documentation and/or other materials provided with the distribution.
-   3. Neither the name of the project nor the names of its contributors 
-      may be used to endorse or promote products derived from this software 
+   3. Neither the name of the project nor the names of its contributors
+      may be used to endorse or promote products derived from this software
       without specific prior written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE SCALABLE SOFTWARE INFRASTRUCTURE PROJECT
@@ -61,7 +61,7 @@
  * lis_psolveh
  ************************************************/
 
-#define BSR_ENABLE 0 
+#define BSR_ENABLE 0
 #undef __FUNC__
 #define __FUNC__ "lis_precon_create_iluc"
 LIS_INT lis_precon_create_iluc(LIS_SOLVER solver, LIS_PRECON precon)
@@ -106,6 +106,31 @@ LIS_INT lis_precon_create_iluc(LIS_SOLVER solver, LIS_PRECON precon)
 		lis_psolve_xxx[LIS_PRECON_TYPE_ILUC]  = lis_psolve_iluc_bsr;
 		break;
 #endif
+	case LIS_MATRIX_USER:
+		if(
+			solver->A->nprocs==1
+			&&
+			solver->A->n==solver->A->gn)
+		{
+			err =
+				lis_precon_create_iluc_csr(
+					solver,
+					precon);
+
+			if( err ) return err;
+
+			precon->is_copy = LIS_FALSE;
+
+			break;
+		}
+
+		/*
+		 * Distributed USER matrices retain the existing
+		 * explicit conversion fallback until direct local/halo
+		 * column access is available.
+		 */
+		/* fall through */
+
 	default:
 		A = solver->A;
 		err = lis_matrix_duplicate(A,&B);
@@ -132,26 +157,246 @@ LIS_INT lis_precon_create_iluc(LIS_SOLVER solver, LIS_PRECON precon)
 }
 
 
+
+#undef __FUNC__
+#define __FUNC__ "lis_precon_iluc_user_build_lower_transpose"
+static LIS_INT lis_precon_iluc_user_build_lower_transpose(
+	LIS_MATRIX A,
+	LIS_VECTOR D,
+	LIS_SCALAR gamma,
+	LIS_INT *matrix_nnz,
+	LIS_INT *lower_nnz,
+	LIS_INT **ptr_out,
+	LIS_INT **index_out,
+	LIS_SCALAR **value_out)
+{
+	LIS_INT err;
+	LIS_INT i,j,col,pos;
+	LIS_INT total,lower;
+	LIS_INT *count;
+	LIS_INT *ptr;
+	LIS_INT *index;
+	LIS_SCALAR *value;
+	LIS_PRECON_ROW_SOURCE row;
+
+	if(
+		A==NULL
+		||
+		D==NULL
+		||
+		matrix_nnz==NULL
+		||
+		lower_nnz==NULL
+		||
+		ptr_out==NULL
+		||
+		index_out==NULL
+		||
+		value_out==NULL)
+	{
+		return LIS_ERR_ILL_ARG;
+	}
+
+	*matrix_nnz = 0;
+	*lower_nnz  = 0;
+	*ptr_out    = NULL;
+	*index_out  = NULL;
+	*value_out  = NULL;
+
+	count =
+		(LIS_INT *)lis_malloc(
+			A->n*sizeof(LIS_INT),
+			"lis_precon_iluc_user_build_lower_transpose::count");
+
+	if( count==NULL )
+	{
+		LIS_SETERR_MEM(
+			A->n*sizeof(LIS_INT));
+
+		return LIS_OUT_OF_MEMORY;
+	}
+
+	memset(
+		count,
+		0,
+		A->n*sizeof(LIS_INT));
+
+	err =
+		lis_precon_row_source_init(
+			A,
+			&row);
+
+	if( err )
+	{
+		lis_free(count);
+		return err;
+	}
+
+	total = 0;
+	lower = 0;
+
+	/*
+	 * First pass:
+	 * - count the complete USER nnz for the historic lfil rule
+	 * - count the strict-lower transpose workspace
+	 * - initialize the diagonal
+	 */
+	for(i=0;i<A->n;i++)
+	{
+		err =
+			lis_precon_row_source_get(
+				&row,
+				i);
+
+		if( err )
+		{
+			lis_precon_row_source_destroy(
+				&row);
+
+			lis_free(count);
+
+			return err;
+		}
+
+		total += row.nnz;
+
+		if( total<0 )
+		{
+			lis_precon_row_source_destroy(
+				&row);
+
+			lis_free(count);
+
+			return LIS_ERR_ILL_ARG;
+		}
+
+		D->value[i] = 0.0;
+
+		for(j=0;j<row.nnz;j++)
+		{
+			col = row.index[j];
+
+			if( col<i )
+			{
+				count[col]++;
+				lower++;
+			}
+			else if( col==i )
+			{
+				D->value[i] =
+					gamma*row.value[j];
+			}
+		}
+	}
+
+	err =
+		lis_matrix_malloc_csr(
+			A->n,
+			lower,
+			&ptr,
+			&index,
+			&value);
+
+	if( err )
+	{
+		lis_precon_row_source_destroy(
+			&row);
+
+		lis_free(count);
+
+		return err;
+	}
+
+	ptr[0] = 0;
+
+	for(i=0;i<A->n;i++)
+	{
+		ptr[i+1] =
+			ptr[i]
+			+
+			count[i];
+
+		count[i] = ptr[i];
+	}
+
+	/*
+	 * Second pass builds only the transpose of the strict-lower
+	 * triangle required by the column-oriented ILUC recurrence.
+	 * This is ILUC workspace, not a full explicit matrix copy.
+	 */
+	for(i=0;i<A->n;i++)
+	{
+		err =
+			lis_precon_row_source_get(
+				&row,
+				i);
+
+		if( err )
+		{
+			lis_precon_row_source_destroy(
+				&row);
+
+			lis_free(count);
+
+			lis_free2(
+				3,
+				ptr,
+				index,
+				value);
+
+			return err;
+		}
+
+		for(j=0;j<row.nnz;j++)
+		{
+			col = row.index[j];
+
+			if( col<i )
+			{
+				pos = count[col]++;
+
+				index[pos] = i;
+				value[pos] =
+					row.value[j];
+			}
+		}
+	}
+
+	lis_precon_row_source_destroy(
+		&row);
+
+	lis_free(count);
+
+	*matrix_nnz = total;
+	*lower_nnz  = lower;
+	*ptr_out    = ptr;
+	*index_out  = index;
+	*value_out  = value;
+
+	return LIS_SUCCESS;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_precon_create_iluc_csr"
 LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 {
 #ifdef _OPENMP
-	LIS_INT	err;
+	LIS_INT err,row_err,get_err;
 	LIS_INT	i,j,k,l,ii,jj,kk,ll;
 	LIS_INT	is,ie,my_rank,nprocs;
-	LIS_INT	n,nnz,lfil,len;
+	LIS_INT n,nnz,lfil,len,matrix_nnz;
 	LIS_INT	cz,cw;
 	LIS_INT	*iw,*iw2,*wc,*wl,*iz,*zc,*zl;
 	LIS_INT	*index,*ptr;
 	LIS_SCALAR val;
-	LIS_REAL t,tol,toldd,pivot_tol;
+	LIS_REAL t,tol,toldd,pivot_tol,row_scale,rt;
 	LIS_SCALAR *z,*w,*tmp;
 	LIS_SCALAR *value;
 	LIS_SCALAR m;
 	LIS_MATRIX A;
 	LIS_MATRIX_ILU L,U;
 	LIS_VECTOR D;
+	LIS_PRECON_ROW_SOURCE *rows,*row;
 
 	LIS_DEBUG_FUNC_IN;
 
@@ -166,11 +411,16 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	    A,pivot_tol);
 	if( err ) return err;
 	m      = solver->params[LIS_PARAMS_RATE-LIS_OPTIONS_LEN];
-	lfil   = (LIS_INT)((double)A->nnz/(2.0*n))*m;
+	matrix_nnz = A->nnz;
+	lfil = (LIS_INT)((double)matrix_nnz/(2.0*n))*m;
 	nprocs = omp_get_max_threads();
 
 	L      = NULL;
 	U      = NULL;
+	ptr    = NULL;
+	index  = NULL;
+	value  = NULL;
+	rows   = NULL;
 
 
 	err = lis_matrix_ilu_create(n,1,&L);
@@ -212,11 +462,22 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		LIS_SETERR_MEM(nprocs*n*sizeof(LIS_INT));
 		return LIS_OUT_OF_MEMORY;
 	}
-	iw2  = (LIS_INT *)lis_malloc( nprocs*(n+1)*sizeof(LIS_INT), "lis_precon_create_iluc_csr::iw2" );
-	if( iw2==NULL )
+	iw2 = NULL;
+
+	if( A->matrix_type!=LIS_MATRIX_USER )
 	{
-		LIS_SETERR_MEM(nprocs*(n+1)*sizeof(LIS_INT));
-		return LIS_OUT_OF_MEMORY;
+		iw2 =
+			(LIS_INT *)lis_malloc(
+				nprocs*(n+1)*sizeof(LIS_INT),
+				"lis_precon_create_iluc_csr::iw2");
+
+		if( iw2==NULL )
+		{
+			LIS_SETERR_MEM(
+				nprocs*(n+1)*sizeof(LIS_INT));
+
+			return LIS_OUT_OF_MEMORY;
+		}
 	}
 	wc   = (LIS_INT *)lis_malloc(n*sizeof(LIS_INT),"lis_precon_create_iluc_csr::wc");
 	if( wc==NULL )
@@ -249,93 +510,216 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		return LIS_OUT_OF_MEMORY;
 	}
 
-	nnz = A->L->nnz;
-	err = lis_matrix_malloc_csr(n,nnz,&ptr,&index,&value);
-
-
-	#pragma omp parallel private(i,ii,j,jj,k,kk,l,ll,is,ie,my_rank,cz,cw,toldd,t,nnz,len)
+	if( A->matrix_type==LIS_MATRIX_USER )
 	{
-		my_rank  = omp_get_thread_num();
-		LIS_GET_ISIE(my_rank,nprocs,n,is,ie);
+		err =
+			lis_precon_iluc_user_build_lower_transpose(
+				A,
+				D,
+				(LIS_SCALAR)1.0,
+				&matrix_nnz,
+				&nnz,
+				&ptr,
+				&index,
+				&value);
 
-		
-		#pragma omp for
+		if( err )
+		{
+			return err;
+		}
+
+		lfil =
+			(LIS_INT)(
+				((double)matrix_nnz/(2.0*n))*m);
+
+		rows =
+			(LIS_PRECON_ROW_SOURCE *)lis_malloc(
+				nprocs*sizeof(LIS_PRECON_ROW_SOURCE),
+				"lis_precon_create_iluc_csr::rows");
+
+		if( rows==NULL )
+		{
+			LIS_SETERR_MEM(
+				nprocs*sizeof(LIS_PRECON_ROW_SOURCE));
+
+			lis_free2(
+				13,
+				tmp,
+				w,
+				z,
+				iw,
+				iw2,
+				wc,
+				wl,
+				iz,
+				zc,
+				zl,
+				ptr,
+				index,
+				value);
+
+			lis_matrix_ilu_destroy(L);
+			lis_matrix_ilu_destroy(U);
+			lis_vector_destroy(D);
+
+			return LIS_OUT_OF_MEMORY;
+		}
+
 		for(i=0;i<nprocs;i++)
 		{
-			memset( &iw2[i*n], 0, n*sizeof(LIS_INT) );
-		}
-		#pragma omp for
-		for(i=0;i<=n;i++)
-		{
-			ptr[i] = 0;
-		}
-		#pragma omp for
-		for(i=0;i<n;i++)
-		{
-			for(j=A->L->ptr[i];j<A->L->ptr[i+1];j++)
+			err =
+				lis_precon_row_source_init(
+					A,
+					&rows[i]);
+
+			if( err )
 			{
-				jj           = A->L->index[j];
-/*				if( jj>=is && jj<ie )*/
+				for(j=0;j<i;j++)
 				{
-					iw2[my_rank*n + jj]++;
+					lis_precon_row_source_destroy(
+						&rows[j]);
 				}
+
+				lis_free(rows);
+
+				lis_free2(
+					13,
+					tmp,
+					w,
+					z,
+					iw,
+					iw2,
+					wc,
+					wl,
+					iz,
+					zc,
+					zl,
+					ptr,
+					index,
+					value);
+
+				lis_matrix_ilu_destroy(L);
+				lis_matrix_ilu_destroy(U);
+				lis_vector_destroy(D);
+
+				return err;
 			}
 		}
-		#pragma omp for
-		for(j=0;j<n;j++)
+
+		row_err = LIS_SUCCESS;
+	}
+	else
+	{
+		nnz = A->L->nnz;
+
+		err =
+			lis_matrix_malloc_csr(
+				n,
+				nnz,
+				&ptr,
+				&index,
+				&value);
+
+		if( err )
 		{
-			k = 0;
+			return err;
+		}
+	}
+
+
+	#pragma omp parallel private(i,ii,j,jj,k,kk,l,ll,is,ie,my_rank,cz,cw,toldd,t,nnz,len,get_err,row,row_scale,rt)
+	{
+		my_rank  = omp_get_thread_num();
+		if( A->matrix_type==LIS_MATRIX_USER ) row = &rows[my_rank];
+		LIS_GET_ISIE(my_rank,nprocs,n,is,ie);
+
+
+		if( A->matrix_type!=LIS_MATRIX_USER )
+		{
+			#pragma omp for
 			for(i=0;i<nprocs;i++)
 			{
-				k += iw2[i*n+j];
+				memset( &iw2[i*n], 0, n*sizeof(LIS_INT) );
 			}
-			iw[j] = k;
-		}
-		#pragma omp single
-		for(j=0;j<n;j++)
-		{
-			ptr[j+1] = ptr[j] + iw[j];
-		}
-		#pragma omp for
-		for(j=0;j<n;j++)
-		{
-			k = ptr[j];
-			for(i=0;i<nprocs;i++)
+			#pragma omp for
+			for(i=0;i<=n;i++)
 			{
-				l = iw2[i*n+j];
-				iw2[i*n+j] = k;
-				k = l + k;
+				ptr[i] = 0;
 			}
-		}
-		#pragma omp for
-		for(i=0;i<n;i++)
-		{
-			for(j=ptr[i];j<ptr[i+1];j++)
+			#pragma omp for
+			for(i=0;i<n;i++)
 			{
-				value[j] = 0.0;
-				index[j] = 0;
-			}
-		}
-		#pragma omp for
-		for(i=0;i<n;i++)
-		{
-			for(j=A->L->ptr[i];j<A->L->ptr[i+1];j++)
-			{
-				k        = A->L->index[j];
-/*				if( k>=is && k<ie )*/
+				for(j=A->L->ptr[i];j<A->L->ptr[i+1];j++)
 				{
-					l        = iw2[my_rank*n+k];
-					value[l] = A->L->value[j];
-					index[l] = i;
-					iw2[my_rank*n+k]++;
+					jj           = A->L->index[j];
+	/*				if( jj>=is && jj<ie )*/
+					{
+						iw2[my_rank*n + jj]++;
+					}
 				}
 			}
+			#pragma omp for
+			for(j=0;j<n;j++)
+			{
+				k = 0;
+				for(i=0;i<nprocs;i++)
+				{
+					k += iw2[i*n+j];
+				}
+				iw[j] = k;
+			}
+			#pragma omp single
+			for(j=0;j<n;j++)
+			{
+				ptr[j+1] = ptr[j] + iw[j];
+			}
+			#pragma omp for
+			for(j=0;j<n;j++)
+			{
+				k = ptr[j];
+				for(i=0;i<nprocs;i++)
+				{
+					l = iw2[i*n+j];
+					iw2[i*n+j] = k;
+					k = l + k;
+				}
+			}
+			#pragma omp for
+			for(i=0;i<n;i++)
+			{
+				for(j=ptr[i];j<ptr[i+1];j++)
+				{
+					value[j] = 0.0;
+					index[j] = 0;
+				}
+			}
+			#pragma omp for
+			for(i=0;i<n;i++)
+			{
+				for(j=A->L->ptr[i];j<A->L->ptr[i+1];j++)
+				{
+					k        = A->L->index[j];
+	/*				if( k>=is && k<ie )*/
+					{
+						l        = iw2[my_rank*n+k];
+						value[l] = A->L->value[j];
+						index[l] = i;
+						iw2[my_rank*n+k]++;
+					}
+				}
+			}
+
+
 		}
-		
 
 		for(i=is;i<ie;i++)
 		{
-			D->value[i] = A->D->value[i];
+			if( A->matrix_type!=LIS_MATRIX_USER )
+			{
+				D->value[i] =
+					A->D->value[i];
+			}
+
 			zl[i]       = -1;
 			wl[i]       = -1;
 			zc[i]       = 0;
@@ -347,17 +731,73 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	{
 		cz = 0;
 		cw = 0;
-		/* z_j = a_kj (j>=k) */
-		for(j=A->U->ptr[k];j<A->U->ptr[k+1];j++)
+		/* z_j = a_kj (j>k) */
+		row_scale = 0.0;
+
+		if( A->matrix_type==LIS_MATRIX_USER )
 		{
-			jj       = A->U->index[j];
-			if( jj<is || jj>=ie ) continue;
-			#ifdef USE_MPI
-				if( jj>n-1 ) continue;
-			#endif
-			z[jj]    = A->U->value[j];
-			iz[my_rank*n+cz++] = jj;
-			zc[jj]   = 1;
+			get_err = LIS_SUCCESS;
+
+			#pragma omp critical(lis_precon_user_row_access)
+			{
+				get_err =
+					lis_precon_row_source_get(
+						row,
+						k);
+
+				if(
+					get_err
+					&&
+					row_err==LIS_SUCCESS)
+				{
+					row_err = get_err;
+				}
+			}
+
+			if( get_err )
+			{
+				break;
+			}
+
+			for(j=0;j<row->nnz;j++)
+			{
+				jj = row->index[j];
+				rt = fabs(
+					row->value[j]);
+
+				if( rt>row_scale )
+				{
+					row_scale = rt;
+				}
+
+				if( jj<=k ) continue;
+				if( jj<is || jj>=ie ) continue;
+
+				z[jj] =
+					row->value[j];
+
+				iz[my_rank*n+cz++] = jj;
+				zc[jj] = 1;
+			}
+		}
+		else
+		{
+			for(j=A->U->ptr[k];j<A->U->ptr[k+1];j++)
+			{
+				jj = A->U->index[j];
+
+				if( jj<is || jj>=ie ) continue;
+
+				#ifdef USE_MPI
+					if( jj>n-1 ) continue;
+				#endif
+
+				z[jj] =
+					A->U->value[j];
+
+				iz[my_rank*n+cz++] = jj;
+				zc[jj] = 1;
+			}
 		}
 
 		/* w_j = a_jk (j>k) */
@@ -451,7 +891,7 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		    D->value[k] =
 		        lis_precon_regularize_ilu_pivot(
 		            D->value[k],
-		            lis_precon_csr_row_scale(A,k),
+		            A->matrix_type==LIS_MATRIX_USER ? row_scale : lis_precon_csr_row_scale(A,k),
 		            pivot_tol);
 		}
 		D->value[k] = 1.0/D->value[k];
@@ -565,6 +1005,42 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	}
 	}
 
+	if( A->matrix_type==LIS_MATRIX_USER )
+	{
+		for(i=0;i<nprocs;i++)
+		{
+			lis_precon_row_source_destroy(
+				&rows[i]);
+		}
+
+		lis_free(rows);
+
+		if( row_err )
+		{
+			lis_free2(
+				13,
+				tmp,
+				w,
+				z,
+				iw,
+				iw2,
+				wc,
+				wl,
+				iz,
+				zc,
+				zl,
+				ptr,
+				index,
+				value);
+
+			lis_matrix_ilu_destroy(L);
+			lis_matrix_ilu_destroy(U);
+			lis_vector_destroy(D);
+
+			return row_err;
+		}
+	}
+
 	precon->L  = L;
 	precon->U  = U;
 	precon->D  = D;
@@ -574,20 +1050,21 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 #else
-	LIS_INT	err;
+	LIS_INT err,get_err;
 	LIS_INT	i,j,k,l,ii,jj,kk,ll;
-	LIS_INT	n,nnz,annz,lfil,len;
+	LIS_INT n,nnz,annz,lfil,len,matrix_nnz;
 	LIS_INT	cz,cw;
 	LIS_INT	*iw,*wc,*wl,*iz,*zc,*zl;
 	LIS_INT	*index,*ptr;
 	LIS_SCALAR gamma,val;
-	LIS_REAL t,tol,toldd,pivot_tol;
+	LIS_REAL t,tol,toldd,pivot_tol,row_scale,rt;
 	LIS_SCALAR *z,*w,*tmp;
 	LIS_SCALAR *value;
 	LIS_SCALAR m;
 	LIS_MATRIX A;
 	LIS_MATRIX_ILU L,U;
 	LIS_VECTOR D;
+	LIS_PRECON_ROW_SOURCE row;
 
 	LIS_DEBUG_FUNC_IN;
 
@@ -603,11 +1080,15 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	if( err ) return err;
 	m      = solver->params[LIS_PARAMS_RATE-LIS_OPTIONS_LEN];
 	gamma  = solver->params[LIS_PARAMS_GAMMA-LIS_OPTIONS_LEN];
-	annz   = 10+A->nnz / A->n;
-	lfil   = (LIS_INT)(((double)A->nnz/(2.0*n))*m);
+	matrix_nnz = A->nnz;
+	annz = 10 + matrix_nnz/A->n;
+	lfil = (LIS_INT)(((double)matrix_nnz/(2.0*n))*m);
 
 	L      = NULL;
 	U      = NULL;
+	ptr    = NULL;
+	index  = NULL;
+	value  = NULL;
 
 
 	err = lis_matrix_ilu_create(n,1,&L);
@@ -680,45 +1161,136 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		return LIS_OUT_OF_MEMORY;
 	}
 
-	lis_matrix_sort_csr(A);
-	nnz = A->L->nnz;
-	err = lis_matrix_malloc_csr(n,nnz,&ptr,&index,&value);
-
-	for(i=0;i<n;i++) iw[i] = 0;
-	for(i=0;i<n;i++)
+		if( A->matrix_type==LIS_MATRIX_USER )
 	{
-		for(j=A->L->ptr[i];j<A->L->ptr[i+1];j++)
+		err =
+			lis_precon_iluc_user_build_lower_transpose(
+				A,
+				D,
+				gamma,
+				&matrix_nnz,
+				&nnz,
+				&ptr,
+				&index,
+				&value);
+
+		if( err )
 		{
-			jj = A->L->index[j];
-			iw[jj]++;
+			return err;
+		}
+
+		annz =
+			10
+			+
+			matrix_nnz/A->n;
+
+		lfil =
+			(LIS_INT)(
+				((double)matrix_nnz/(2.0*n))*m);
+
+		err =
+			lis_precon_row_source_init(
+				A,
+				&row);
+
+		if( err )
+		{
+			lis_free2(
+				12,
+				tmp,
+				w,
+				z,
+				iw,
+				wc,
+				wl,
+				iz,
+				zc,
+				zl,
+				ptr,
+				index,
+				value);
+
+			lis_matrix_ilu_destroy(L);
+			lis_matrix_ilu_destroy(U);
+			lis_vector_destroy(D);
+
+			return err;
 		}
 	}
-	ptr[0] = 0;
-	for(i=0;i<n;i++)
+	else
 	{
-		ptr[i+1] = ptr[i] + iw[i];
-		iw[i]    = ptr[i];
-	}
-	for(i=0;i<n;i++)
-	{
-		for(j=A->L->ptr[i];j<A->L->ptr[i+1];j++)
+		lis_matrix_sort_csr(A);
+
+		nnz = A->L->nnz;
+
+		err =
+			lis_matrix_malloc_csr(
+				n,
+				nnz,
+				&ptr,
+				&index,
+				&value);
+
+		if( err )
 		{
-			k        = A->L->index[j];
-			l        = iw[k];
-			value[l] = A->L->value[j];
-			index[l] = i;
-			iw[k]++;
+			return err;
+		}
+
+		for(i=0;i<n;i++)
+		{
+			iw[i] = 0;
+		}
+
+		for(i=0;i<n;i++)
+		{
+			for(j=A->L->ptr[i];j<A->L->ptr[i+1];j++)
+			{
+				jj = A->L->index[j];
+				iw[jj]++;
+			}
+		}
+
+		ptr[0] = 0;
+
+		for(i=0;i<n;i++)
+		{
+			ptr[i+1] =
+				ptr[i]
+				+
+				iw[i];
+
+			iw[i] = ptr[i];
+		}
+
+		for(i=0;i<n;i++)
+		{
+			for(j=A->L->ptr[i];j<A->L->ptr[i+1];j++)
+			{
+				k = A->L->index[j];
+				l = iw[k];
+
+				value[l] =
+					A->L->value[j];
+
+				index[l] = i;
+				iw[k]++;
+			}
 		}
 	}
 
 
 	for(i=0;i<n;i++)
 	{
-		D->value[i] = gamma * A->D->value[i];
-		zl[i]       = -1;
-		wl[i]       = -1;
-		zc[i]       = 0;
-		wc[i]       = 0;
+		if( A->matrix_type!=LIS_MATRIX_USER )
+		{
+			D->value[i] =
+				gamma*A->D->value[i];
+		}
+
+		zl[i] = -1;
+		wl[i] = -1;
+		zc[i] = 0;
+		wc[i] = 0;
 	}
 
 
@@ -726,16 +1298,79 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	{
 		cz = 0;
 		cw = 0;
-		/* z_j = a_kj (j>=k) */
-		for(j=A->U->ptr[k];j<A->U->ptr[k+1];j++)
+		/* z_j = a_kj (j>k) */
+		row_scale = 0.0;
+
+		if( A->matrix_type==LIS_MATRIX_USER )
 		{
-			jj       = A->U->index[j];
-			#ifdef USE_MPI
-				if( jj>n-1 ) continue;
-			#endif
-			z[jj]    = A->U->value[j];
-			iz[cz++] = jj;
-			zc[jj]   = 1;
+			get_err =
+				lis_precon_row_source_get(
+					&row,
+					k);
+
+			if( get_err )
+			{
+				lis_precon_row_source_destroy(
+					&row);
+
+				lis_free2(
+					12,
+					tmp,
+					w,
+					z,
+					iw,
+					wc,
+					wl,
+					iz,
+					zc,
+					zl,
+					ptr,
+					index,
+					value);
+
+				lis_matrix_ilu_destroy(L);
+				lis_matrix_ilu_destroy(U);
+				lis_vector_destroy(D);
+
+				return get_err;
+			}
+
+			for(j=0;j<row.nnz;j++)
+			{
+				jj = row.index[j];
+				rt = fabs(
+					row.value[j]);
+
+				if( rt>row_scale )
+				{
+					row_scale = rt;
+				}
+
+				if( jj<=k ) continue;
+
+				z[jj] =
+					row.value[j];
+
+				iz[cz++] = jj;
+				zc[jj] = 1;
+			}
+		}
+		else
+		{
+			for(j=A->U->ptr[k];j<A->U->ptr[k+1];j++)
+			{
+				jj = A->U->index[j];
+
+				#ifdef USE_MPI
+					if( jj>n-1 ) continue;
+				#endif
+
+				z[jj] =
+					A->U->value[j];
+
+				iz[cz++] = jj;
+				zc[jj] = 1;
+			}
 		}
 
 		/* w_j = a_jk (j>k) */
@@ -828,7 +1463,7 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		    D->value[k] =
 		        lis_precon_regularize_ilu_pivot(
 		            D->value[k],
-		            lis_precon_csr_row_scale(A,k),
+		            A->matrix_type==LIS_MATRIX_USER ? row_scale : lis_precon_csr_row_scale(A,k),
 		            pivot_tol);
 		}
 		D->value[k] = 1.0/D->value[k];
@@ -941,6 +1576,12 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		}
 	}
 
+	if( A->matrix_type==LIS_MATRIX_USER )
+	{
+		lis_precon_row_source_destroy(
+			&row);
+	}
+
 	precon->L  = L;
 	precon->U  = U;
 	precon->D  = D;
@@ -956,7 +1597,7 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 #define __FUNC__ "lis_precon_create_iluc_bsr"
 LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 {
-	LIS_Comm comm;  
+	LIS_Comm comm;
 	LIS_INT err;
 	LIS_INT	i,j,k,l,ii,jj,kk,ll,bnr,bs;
 	LIS_INT	n,nr,nnz,bnnz,lfil,len;
@@ -1187,7 +1828,7 @@ LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 /*				t       = sqrt(t);*/
 				break;
 			}
-			if( toldd>t*1.0e-10 ) 
+			if( toldd>t*1.0e-10 )
 			{
 				memcpy(&z[bs*jj],&A->U->value[bs*j],bs*sizeof(LIS_SCALAR));
 				iz[cz++] = jj;
@@ -1230,7 +1871,7 @@ LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 /*				t       = sqrt(t);*/
 				break;
 			}
-			if( toldd>t*1.0e-10 ) 
+			if( toldd>t*1.0e-10 )
 			{
 				memcpy(&w[bs*jj],&value[bs*j],bs*sizeof(LIS_SCALAR));
 				iw[cw++] = jj;
