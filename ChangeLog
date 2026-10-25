@@ -1,3 +1,12 @@
+Version 2.1.20 October 25, 2026
+
+  - Added robust orthogonalization and subspace locking (thanks to Rafal Brzegowy).
+  - Added a self-contained FEAST foundation, numerical integration, and shift layers (thanks to Rafal Brzegowy).
+  - Added common block eigensolver infrastructure resilient to rank deficiency (thanks to Rafal Brzegowy).
+  - Added a standard Block Lanczos method (thanks to Rafal Brzegowy).
+  - Added generalized and transformed Block Lanczos methods (thanks to Rafal Brzegowy).
+  - Added a full native FEAST eigensolver (thanks to Rafal Brzegowy).
+
 Version 2.1.19 October 22, 2026
 
   - MFAMG: Optimized sparse Galerkin assembly (thanks to Rafal Brzegowy).
