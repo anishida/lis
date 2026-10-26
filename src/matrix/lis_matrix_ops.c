@@ -957,6 +957,50 @@ LIS_INT lis_matrix_psd_reset_scale(LIS_MATRIX A)
 	return LIS_SUCCESS;
 }
 
+
+static LIS_INT
+lis_matrix_get_diagonal_user_rows(
+	LIS_MATRIX A,
+	LIS_SCALAR *d)
+{
+	LIS_PRECON_ROW_SOURCE row;
+	LIS_INT err;
+	LIS_INT i,k;
+	LIS_INT global_row;
+	LIS_SCALAR diagonal;
+
+	err = lis_precon_row_source_init(A,&row);
+	if( err ) return err;
+
+	for(i=0;i<A->n;i++)
+	{
+		err = lis_precon_row_source_get(&row,i);
+		if( err )
+		{
+			lis_precon_row_source_destroy(&row);
+			return err;
+		}
+
+		global_row = A->is+i;
+		diagonal = (LIS_SCALAR)0.0;
+
+		for(k=0;k<row.nnz;k++)
+		{
+			if( row.index[k]==global_row )
+			{
+				diagonal += row.value[k];
+			}
+		}
+
+		d[i] = diagonal;
+	}
+
+	lis_precon_row_source_destroy(&row);
+
+	return LIS_SUCCESS;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_get_diagonal"
 LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR D)
@@ -1003,12 +1047,21 @@ LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR D)
 		lis_matrix_get_diagonal_vbr(A, d);
 		break;
 	case LIS_MATRIX_USER:
-	        if( A->user_get_diagonal==NULL )
+	        if( A->user_get_diagonal!=NULL )
 	        {
-	                LIS_SETERR_IMP;
+	                err = A->user_get_diagonal(A->user_data,d);
+	        }
+	        else if( A->user_get_row!=NULL )
+	        {
+	                err = lis_matrix_get_diagonal_user_rows(A,d);
+	        }
+	        else
+	        {
+	                LIS_SETERR(
+	                        LIS_ERR_NOT_IMPLEMENTED,
+	                        "user diagonal callback and row callback are not set\n");
 	                return LIS_ERR_NOT_IMPLEMENTED;
 	        }
-	        err = A->user_get_diagonal(A->user_data,d);
 	        if( err ) return err;
 	        break;
 

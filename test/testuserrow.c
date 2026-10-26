@@ -47,24 +47,6 @@ typedef struct
         LIS_SCALAR offdiag;
 } USER_ROW_CTX;
 
-static LIS_INT user_matvec(
-        void *user_data,
-        const LIS_SCALAR *x,
-        LIS_SCALAR *y)
-{
-        USER_ROW_CTX *ctx;
-        LIS_INT i;
-
-        ctx = (USER_ROW_CTX *)user_data;
-
-        for(i=0;i<ctx->n;i++)
-        {
-                scalar_copy(&y[i],&x[i]);
-        }
-
-        return LIS_SUCCESS;
-}
-
 static LIS_INT user_get_row(
         void *user_data,
         LIS_INT local_row,
@@ -330,10 +312,14 @@ int main(int argc, char *argv[])
         scalar_set_real(&ctx.diag,(LIS_REAL)2.0);
         scalar_set_real(&ctx.offdiag,(LIS_REAL)-1.0);
 
+        /*
+         * Row-only USER matrix. No explicit matvec, matvech or diagonal
+         * callbacks are installed.
+         */
         err = lis_matrix_set_user(
                 A,
                 &ctx,
-                user_matvec,
+                NULL,
                 NULL);
 
         if( err )
@@ -364,6 +350,170 @@ int main(int argc, char *argv[])
                 lis_matrix_destroy(A);
                 lis_finalize();
                 return 1;
+        }
+
+        {
+                LIS_INT capabilities;
+                LIS_INT expected;
+
+                capabilities = 0;
+
+                err = lis_matrix_get_capabilities(
+                        A,
+                        &capabilities);
+
+                if( err )
+                {
+                        lis_matrix_destroy(A);
+                        lis_finalize();
+                        return 1;
+                }
+
+                expected = LIS_MATRIX_CAP_ROW_ACCESS;
+
+                if( local_n==global_n )
+                {
+                        expected |=
+                                LIS_MATRIX_CAP_MATVEC
+                                |
+                                LIS_MATRIX_CAP_MATVECH
+                                |
+                                LIS_MATRIX_CAP_DIAGONAL;
+                }
+
+                if( capabilities!=expected )
+                {
+                        fprintf(
+                                stderr,
+                                "row-only capabilities: got=0x%x expected=0x%x\n",
+                                (unsigned int)capabilities,
+                                (unsigned int)expected);
+
+                        lis_matrix_destroy(A);
+                        lis_finalize();
+                        return 1;
+                }
+        }
+
+        if( local_n==global_n )
+        {
+                LIS_VECTOR x;
+                LIS_VECTOR y;
+                LIS_VECTOR yh;
+                LIS_VECTOR d;
+                LIS_SCALAR expected;
+                LIS_INT global_row;
+
+                x = NULL;
+                y = NULL;
+                yh = NULL;
+                d = NULL;
+
+                err = lis_vector_duplicate(A,&x);
+                if( err ) goto serial_fallback_fail;
+
+                err = lis_vector_duplicate(A,&y);
+                if( err ) goto serial_fallback_fail;
+
+                err = lis_vector_duplicate(A,&yh);
+                if( err ) goto serial_fallback_fail;
+
+                err = lis_vector_duplicate(A,&d);
+                if( err ) goto serial_fallback_fail;
+
+                for(i=0;i<local_n;i++)
+                {
+                        scalar_set_real(
+                                &x->value[i],
+                                (LIS_REAL)1.0);
+                }
+
+                err = lis_matvec(A,x,y);
+                if( err ) goto serial_fallback_fail;
+
+                err = lis_matvech(A,x,yh);
+                if( err ) goto serial_fallback_fail;
+
+                err = lis_matrix_get_diagonal(A,d);
+                if( err ) goto serial_fallback_fail;
+
+                for(i=0;i<local_n;i++)
+                {
+                        global_row = is+i;
+
+                        if( global_n==1 )
+                        {
+                                scalar_set_real(
+                                        &expected,
+                                        (LIS_REAL)2.0);
+                        }
+                        else if(
+                                global_row==0
+                                ||
+                                global_row+1==global_n)
+                        {
+                                scalar_set_real(
+                                        &expected,
+                                        (LIS_REAL)1.0);
+                        }
+                        else
+                        {
+                                scalar_set_real(
+                                        &expected,
+                                        (LIS_REAL)0.0);
+                        }
+
+                        if(
+                                !scalar_equal(&y->value[i],&expected)
+                                ||
+                                !scalar_equal(&yh->value[i],&expected))
+                        {
+                                fprintf(
+                                        stderr,
+                                        "row-derived matvec mismatch at row=%d\n",
+                                        (int)i);
+
+                                goto serial_fallback_fail;
+                        }
+
+                        scalar_set_real(
+                                &expected,
+                                (LIS_REAL)2.0);
+
+                        if(
+                                !scalar_equal(
+                                        &d->value[i],
+                                        &expected))
+                        {
+                                fprintf(
+                                        stderr,
+                                        "row-derived diagonal mismatch at row=%d\n",
+                                        (int)i);
+
+                                goto serial_fallback_fail;
+                        }
+                }
+
+                lis_vector_destroy(d);
+                lis_vector_destroy(yh);
+                lis_vector_destroy(y);
+                lis_vector_destroy(x);
+
+                goto serial_fallback_done;
+
+serial_fallback_fail:
+
+                if( d ) lis_vector_destroy(d);
+                if( yh ) lis_vector_destroy(yh);
+                if( y ) lis_vector_destroy(y);
+                if( x ) lis_vector_destroy(x);
+
+                lis_matrix_destroy(A);
+                lis_finalize();
+                return 1;
+
+serial_fallback_done:
+                ;
         }
 
         for(i=0;i<local_n;i++)

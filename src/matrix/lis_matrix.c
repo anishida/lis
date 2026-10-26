@@ -699,6 +699,22 @@ LIS_INT lis_matrix_get_capabilities(
                 {
                         *capabilities |=
                                 LIS_MATRIX_CAP_ROW_ACCESS;
+
+                        /*
+                         * USER row callbacks expose global column indices.
+                         * In serial, global and local numbering coincide,
+                         * so row access is sufficient for generic matvec,
+                         * matvech and diagonal operations.
+                         */
+                        if( A->nprocs==1 && A->n==A->gn )
+                        {
+                                *capabilities |=
+                                        LIS_MATRIX_CAP_MATVEC
+                                        |
+                                        LIS_MATRIX_CAP_MATVECH
+                                        |
+                                        LIS_MATRIX_CAP_DIAGONAL;
+                        }
                 }
 
                 break;
@@ -1364,11 +1380,12 @@ LIS_INT lis_matrix_set_user(LIS_MATRIX A, void *user_data,
 
 	err = lis_matrix_check(A,LIS_MATRIX_CHECK_SET);
 	if( err ) return err;
-	if( matvec==NULL )
-	{
-		LIS_SETERR(LIS_ERR_ILL_ARG,"LIS_MATRIX_USER requires a matvec callback\n");
-		return LIS_ERR_ILL_ARG;
-	}
+
+	/*
+	 * A USER matrix may be initialized without an explicit matvec.
+	 * A later row callback can provide generic serial operations.
+	 * Explicit callbacks keep priority when they are present.
+	 */
 	A->matrix_type  = LIS_MATRIX_USER;
 	A->status       = LIS_MATRIX_USER;
 	A->user_data    = user_data;

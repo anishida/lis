@@ -2200,6 +2200,9 @@ lis_solver_check_user_hybrid_inner_solver(
 	LIS_MATRIX A,
 	LIS_INT nsolver)
 {
+	LIS_INT capabilities;
+	LIS_INT err;
+
 	if( nsolver<1 || nsolver>LIS_SOLVER_LEN )
 	{
 		LIS_SETERR(
@@ -2227,19 +2230,29 @@ lis_solver_check_user_hybrid_inner_solver(
 	/*
 	 * Krylov methods using A^H require the USER adjoint callback.
 	 */
-	if( (nsolver==LIS_SOLVER_BICG ||
-		 nsolver==LIS_SOLVER_BICR ||
-		 nsolver==LIS_SOLVER_CRS ||
-		 nsolver==LIS_SOLVER_BICRSTAB ||
-		 nsolver==LIS_SOLVER_GPBICR ||
-		 nsolver==LIS_SOLVER_BICRSAFE) &&
-		A->user_matvech==NULL )
+	if( nsolver==LIS_SOLVER_BICG ||
+		nsolver==LIS_SOLVER_BICR ||
+		nsolver==LIS_SOLVER_CRS ||
+		nsolver==LIS_SOLVER_BICRSTAB ||
+		nsolver==LIS_SOLVER_GPBICR ||
+		nsolver==LIS_SOLVER_BICRSAFE )
 	{
-		LIS_SETERR(
-			LIS_ERR_NOT_IMPLEMENTED,
-			"Hybrid inner solver requires the user transpose/Hermitian matvec callback\n");
+		capabilities = 0;
 
-		return LIS_ERR_NOT_IMPLEMENTED;
+		err = lis_matrix_get_capabilities(
+			A,
+			&capabilities);
+
+		if( err ) return err;
+
+		if( !(capabilities & LIS_MATRIX_CAP_MATVECH) )
+		{
+			LIS_SETERR(
+				LIS_ERR_NOT_IMPLEMENTED,
+				"Hybrid inner solver requires transpose/Hermitian matvec capability\n");
+
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
 	}
 
 	return LIS_SUCCESS;
@@ -2356,9 +2369,19 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
 	if( A->matrix_type!=LIS_MATRIX_USER &&
 	    A->matrix_type!=LIS_MATRIX_OPERATOR ) return LIS_SUCCESS;
 
-	if( A->matrix_type==LIS_MATRIX_USER && A->user_matvec==NULL )
+	capabilities = 0;
+
+	err = lis_matrix_get_capabilities(
+		A,
+		&capabilities);
+
+	if( err ) return err;
+
+	if( !(capabilities & LIS_MATRIX_CAP_MATVEC) )
 	{
-		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,"LIS_MATRIX_USER has no matvec callback\n");
+		LIS_SETERR(
+			LIS_ERR_NOT_IMPLEMENTED,
+			"matrix-free matrix has no matvec capability\n");
 		return LIS_ERR_NOT_IMPLEMENTED;
 	}
 	if( solver->options[LIS_OPTIONS_PRECISION]!=LIS_PRECISION_DEFAULT )
@@ -2385,12 +2408,11 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
 	                return LIS_ERR_NOT_IMPLEMENTED;
 	        }
 
-	        if( A->matrix_type==LIS_MATRIX_USER &&
-	            A->user_get_diagonal==NULL )
+	        if( !(capabilities & LIS_MATRIX_CAP_DIAGONAL) )
 	        {
 	                LIS_SETERR(
 	                        LIS_ERR_NOT_IMPLEMENTED,
-	                        "symmetric diagonal scaling requires a matrix diagonal callback\n");
+	                        "symmetric diagonal scaling requires matrix diagonal capability\n");
 	                return LIS_ERR_NOT_IMPLEMENTED;
 	        }
 	}
@@ -2428,10 +2450,12 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
 	     nsolver==LIS_SOLVER_CRS ||
 	     nsolver==LIS_SOLVER_BICRSTAB ||
 	     nsolver==LIS_SOLVER_GPBICR ||
-	     nsolver==LIS_SOLVER_BICRSAFE) && A->matrix_type==LIS_MATRIX_USER && A->user_matvech==NULL )
+	     nsolver==LIS_SOLVER_BICRSAFE) &&
+	    !(capabilities & LIS_MATRIX_CAP_MATVECH) )
 	{
-		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-		           "selected solver requires the user transpose/Hermitian matvec callback\n");
+		LIS_SETERR(
+			LIS_ERR_NOT_IMPLEMENTED,
+			"selected solver requires transpose/Hermitian matvec capability\n");
 		return LIS_ERR_NOT_IMPLEMENTED;
 	}
 

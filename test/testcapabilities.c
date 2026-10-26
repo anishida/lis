@@ -538,7 +538,17 @@ main(
                 |
                 cap_matvech
                 |
-                cap_row);
+                cap_row
+                |
+                (
+                        U->nprocs==1
+                        &&
+                        U->n==U->gn
+                        ?
+                        cap_diagonal
+                        :
+                        0
+                ));
 
         err = lis_matrix_set_user_diagonal(
                 U,
