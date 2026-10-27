@@ -24,7 +24,7 @@ test_PROGRAMS = etest1 etest2 etest3 etest4 etest5 etest5b etest6 etest7 getest1
         testcoarsesetup testcoarseapply testgcrodroptions testgcrodrconfig testgcrodrsequence \
         testmatrixgeneration testexternalstorage testsequence testwarmstart testrecovery \
         testthreads testfgcrodr testmfamg testmfamggalerkin testexactnullspace testhalfconfig testhalfconvert \
-        testfeastfoundation testfeastcontour testfeastshifted \
+        testfeastfoundation testfeastcontour testfeastshifted testnullspacecandidates \
 	testprojectedeigen testprojectedhermitian testblockgram \
 	testblockorthogonal testblockrank
 
@@ -113,6 +113,7 @@ testprojectedhermitian_SOURCES = testprojectedhermitian.c
 testblockgram_SOURCES = testblockgram.c
 testblockorthogonal_SOURCES = testblockorthogonal.c
 testblockrank_SOURCES = testblockrank.c
+testnullspacecandidates_SOURCES = testnullspacecandidates.c
 testrqirestore_SOURCES = testrqirestore.c
 testrepeatedsystems_SOURCES = testrepeatedsystems.c
 testpreconpolicy_SOURCES = testpreconpolicy.c
@@ -213,7 +214,7 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) testmatvecblock$(EX
         testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testsequence$(EXEEXT) \
         testwarmstart$(EXEEXT) testrecovery$(EXEEXT) testthreads$(EXEEXT) \
         testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
-        testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT)
+        testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) testnullspacecandidates$(EXEEXT)
 
 if ENABLE_HALF_REAL_DOUBLE
 TESTS += testhalfstorage$(EXEEXT) testhalfprobe$(EXEEXT) testhalfdispatch$(EXEEXT) \

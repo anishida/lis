@@ -128,11 +128,11 @@ test_PROGRAMS = etest1$(EXEEXT) etest2$(EXEEXT) etest3$(EXEEXT) \
 	testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
 	testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) \
 	testfeastfoundation$(EXEEXT) testfeastcontour$(EXEEXT) \
-	testfeastshifted$(EXEEXT) testprojectedeigen$(EXEEXT) \
-	testprojectedhermitian$(EXEEXT) testblockgram$(EXEEXT) \
-	testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) \
-	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
-	$(am__EXEEXT_4)
+	testfeastshifted$(EXEEXT) testnullspacecandidates$(EXEEXT) \
+	testprojectedeigen$(EXEEXT) testprojectedhermitian$(EXEEXT) \
+	testblockgram$(EXEEXT) testblockorthogonal$(EXEEXT) \
+	testblockrank$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
+	$(am__EXEEXT_3) $(am__EXEEXT_4)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_3 = test2f test6f 
@@ -519,6 +519,12 @@ am_testnearnullspace_OBJECTS = testnearnullspace.$(OBJEXT)
 testnearnullspace_OBJECTS = $(am_testnearnullspace_OBJECTS)
 testnearnullspace_LDADD = $(LDADD)
 testnearnullspace_DEPENDENCIES =
+am_testnullspacecandidates_OBJECTS =  \
+	testnullspacecandidates.$(OBJEXT)
+testnullspacecandidates_OBJECTS =  \
+	$(am_testnullspacecandidates_OBJECTS)
+testnullspacecandidates_LDADD = $(LDADD)
+testnullspacecandidates_DEPENDENCIES =
 am_testoperator_OBJECTS = testoperator.$(OBJEXT)
 testoperator_OBJECTS = $(am_testoperator_OBJECTS)
 testoperator_LDADD = $(LDADD)
@@ -706,8 +712,10 @@ am__depfiles_remade = ./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
 	./$(DEPDIR)/testmatrixgeneration.Po \
 	./$(DEPDIR)/testmatvecblock.Po ./$(DEPDIR)/testmfamg.Po \
 	./$(DEPDIR)/testmfamggalerkin.Po \
-	./$(DEPDIR)/testnearnullspace.Po ./$(DEPDIR)/testoperator.Po \
-	./$(DEPDIR)/testparamupdate.Po ./$(DEPDIR)/testprebuiltuser.Po \
+	./$(DEPDIR)/testnearnullspace.Po \
+	./$(DEPDIR)/testnullspacecandidates.Po \
+	./$(DEPDIR)/testoperator.Po ./$(DEPDIR)/testparamupdate.Po \
+	./$(DEPDIR)/testprebuiltuser.Po \
 	./$(DEPDIR)/testpreconlifecycle.Po \
 	./$(DEPDIR)/testpreconpolicy.Po ./$(DEPDIR)/testpreconpsd.Po \
 	./$(DEPDIR)/testpreconreuse.Po \
@@ -795,10 +803,11 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
 	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
 	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
-	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
-	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
-	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
-	$(testpreconreuse_SOURCES) $(testprojectedeigen_SOURCES) \
+	$(testnullspacecandidates_SOURCES) $(testoperator_SOURCES) \
+	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
+	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
+	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
+	$(testprojectedeigen_SOURCES) \
 	$(testprojectedhermitian_SOURCES) $(testrecovery_SOURCES) \
 	$(testrepeatedsystems_SOURCES) testrhistoryerror.c \
 	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
@@ -846,10 +855,11 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
 	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
 	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
-	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
-	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
-	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
-	$(testpreconreuse_SOURCES) $(testprojectedeigen_SOURCES) \
+	$(testnullspacecandidates_SOURCES) $(testoperator_SOURCES) \
+	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
+	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
+	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
+	$(testprojectedeigen_SOURCES) \
 	$(testprojectedhermitian_SOURCES) $(testrecovery_SOURCES) \
 	$(testrepeatedsystems_SOURCES) testrhistoryerror.c \
 	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
@@ -1302,6 +1312,7 @@ testprojectedhermitian_SOURCES = testprojectedhermitian.c
 testblockgram_SOURCES = testblockgram.c
 testblockorthogonal_SOURCES = testblockorthogonal.c
 testblockrank_SOURCES = testblockrank.c
+testnullspacecandidates_SOURCES = testnullspacecandidates.c
 testrqirestore_SOURCES = testrqirestore.c
 testrepeatedsystems_SOURCES = testrepeatedsystems.c
 testpreconpolicy_SOURCES = testpreconpolicy.c
@@ -1402,7 +1413,7 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
 	testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
 	testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) \
-	$(am__append_5)
+	testnullspacecandidates$(EXEEXT) $(am__append_5)
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
 all: all-am
@@ -1418,9 +1429,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu test/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign test/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu test/Makefile
+	  $(AUTOMAKE) --foreign test/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -1855,6 +1866,10 @@ testnearnullspace$(EXEEXT): $(testnearnullspace_OBJECTS) $(testnearnullspace_DEP
 	@rm -f testnearnullspace$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testnearnullspace_OBJECTS) $(testnearnullspace_LDADD) $(LIBS)
 
+testnullspacecandidates$(EXEEXT): $(testnullspacecandidates_OBJECTS) $(testnullspacecandidates_DEPENDENCIES) $(EXTRA_testnullspacecandidates_DEPENDENCIES) 
+	@rm -f testnullspacecandidates$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testnullspacecandidates_OBJECTS) $(testnullspacecandidates_LDADD) $(LIBS)
+
 testoperator$(EXEEXT): $(testoperator_OBJECTS) $(testoperator_DEPENDENCIES) $(EXTRA_testoperator_DEPENDENCIES) 
 	@rm -f testoperator$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testoperator_OBJECTS) $(testoperator_LDADD) $(LIBS)
@@ -2067,6 +2082,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamggalerkin.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testnearnullspace.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testnullspacecandidates.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoperator.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testparamupdate.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testprebuiltuser.Po@am__quote@ # am--include-marker
@@ -2750,6 +2766,13 @@ testhalfconvert.log: testhalfconvert$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testnullspacecandidates.log: testnullspacecandidates$(EXEEXT)
+	@p='testnullspacecandidates$(EXEEXT)'; \
+	b='testnullspacecandidates'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 testhalfstorage.log: testhalfstorage$(EXEEXT)
 	@p='testhalfstorage$(EXEEXT)'; \
 	b='testhalfstorage'; \
@@ -2953,6 +2976,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testmfamg.Po
 	-rm -f ./$(DEPDIR)/testmfamggalerkin.Po
 	-rm -f ./$(DEPDIR)/testnearnullspace.Po
+	-rm -f ./$(DEPDIR)/testnullspacecandidates.Po
 	-rm -f ./$(DEPDIR)/testoperator.Po
 	-rm -f ./$(DEPDIR)/testparamupdate.Po
 	-rm -f ./$(DEPDIR)/testprebuiltuser.Po
@@ -3092,6 +3116,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testmfamg.Po
 	-rm -f ./$(DEPDIR)/testmfamggalerkin.Po
 	-rm -f ./$(DEPDIR)/testnearnullspace.Po
+	-rm -f ./$(DEPDIR)/testnullspacecandidates.Po
 	-rm -f ./$(DEPDIR)/testoperator.Po
 	-rm -f ./$(DEPDIR)/testparamupdate.Po
 	-rm -f ./$(DEPDIR)/testprebuiltuser.Po

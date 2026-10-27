@@ -1,5 +1,6 @@
 noinst_LTLIBRARIES = libsolver.la
 libsolver_la_SOURCES = lis_solver.c lis_solver_nearnullspace.c \
+lis_solver_nullspace_candidates.c lis_solver_nullspace_query.c \
 lis_solver_bicg.c \
 lis_solver_bicgsafe.c \
 lis_solver_bicgstab.c \
@@ -16,7 +17,7 @@ lis_solver_jacobi.c \
 lis_solver_minres.c \
 lis_solver_orthomin.c \
 lis_solver_qmr.c \
-lis_solver_sor.c       
+lis_solver_sor.c      
 
 
 AM_CFLAGS = -I$(top_srcdir)/include
@@ -29,6 +30,5 @@ LTPPF77COMPILE = $(LIBTOOL) --mode=compile --tag=F77 $(F77) $(AMDEFS) $(DEFS) \
 	$(AM_FFLAGS) $(FFLAGS)
 COMPILE = $(CC) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) \
-	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
 	$(AM_CFLAGS) $(CFLAGS)
