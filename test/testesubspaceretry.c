@@ -12,6 +12,7 @@ int main(int argc, char *argv[])
     LIS_SCALAR lambda=0.0;
     LIS_INT err,i,status;
     LIS_INT retries,min_ss,attempts,final_ss;
+    LIS_INT original_ss;
     LIS_REAL growth;
     const LIS_INT n=12;
 
@@ -40,9 +41,16 @@ int main(int argc, char *argv[])
 
     err=lis_esolver_set_option("-e gli -nev 2 -ss 3 -emaxiter 1 -etol 1.0e-30 -eprint none",esolver);
     if(err) goto fail;
+    original_ss=esolver->options[LIS_EOPTIONS_SUBSPACE];
     err=lis_gesolve(A,B,x,&lambda,esolver); if(err) goto fail;
     err=lis_esolver_get_status(esolver,&status); if(err) goto fail;
     err=lis_esolver_get_subspace_retry(esolver,NULL,NULL,NULL,&attempts,&final_ss); if(err) goto fail;
+    if(esolver->options[LIS_EOPTIONS_SUBSPACE]!=original_ss)
+    {
+        fprintf(stderr,"retry changed configured subspace: got=%d expected=%d\n",
+                (int)esolver->options[LIS_EOPTIONS_SUBSPACE],(int)original_ss);
+        goto fail;
+    }
 
     if(status==LIS_MAXITER && (attempts<1 || final_ss<6))
     {
@@ -57,6 +65,18 @@ int main(int argc, char *argv[])
 
     if(lis_esolver_set_subspace_retry(esolver,-1,(LIS_REAL)2.0,0)!=LIS_ERR_ILL_ARG) goto fail;
     if(lis_esolver_set_subspace_retry(esolver,1,(LIS_REAL)1.0,0)!=LIS_ERR_ILL_ARG) goto fail;
+
+    err=lis_esolver_set_option("-ess_retry 3 -ess_retry_growth 3.5 -ess_retry_min 5",esolver);
+    if(err) goto fail;
+    err=lis_esolver_get_subspace_retry(esolver,&retries,&growth,&min_ss,NULL,NULL);
+    if(err || retries!=3 || growth!=(LIS_REAL)3.5 || min_ss!=5) goto fail;
+
+    /* Saturating growth must never cast an out-of-range floating value. */
+    err=lis_esolver_set_subspace_retry(esolver,1,(LIS_REAL)1.0e300,0);
+    if(err) goto fail;
+    err=lis_vector_set_all((LIS_SCALAR)1.0,x); if(err) goto fail;
+    err=lis_gesolve(A,B,x,&lambda,esolver); if(err) goto fail;
+    if(esolver->options[LIS_EOPTIONS_SUBSPACE]!=original_ss) goto fail;
 
     lis_esolver_destroy(esolver);
     lis_vector_destroy(x);

@@ -1673,7 +1673,12 @@ LIS_INT lis_gesolve(
         LIS_ESOLVER esolver)
 {
         LIS_INT err,current_ss,next_ss,nesolver,attempt;
+        LIS_INT original_ss,result;
         LIS_REAL grown;
+        double total_time;
+#ifdef USE_MPI
+        LIS_INT local_status,status_min,status_max;
+#endif
 
         LIS_DEBUG_FUNC_IN;
 
@@ -1683,58 +1688,108 @@ LIS_INT lis_gesolve(
                 return LIS_ERR_ILL_ARG;
         }
 
+        original_ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
+        result = LIS_SUCCESS;
+        total_time = 0.0;
         esolver->subspace_retry_attempts = 0;
-        esolver->subspace_retry_final_size =
-                esolver->options[LIS_EOPTIONS_SUBSPACE];
+        esolver->subspace_retry_final_size = original_ss;
 
         for(attempt=0;;attempt++)
         {
                 err = lis_gesolve_once(A,B,x,evalue0,esolver);
                 if( err )
                 {
-                        LIS_DEBUG_FUNC_OUT;
-                        return err;
+                        result = err;
+                        break;
                 }
 
+                total_time += esolver->time;
                 current_ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
                 esolver->subspace_retry_final_size = current_ss;
+
+#ifdef USE_MPI
+                /*
+                 * Every rank must make the same retry decision.  A divergent
+                 * eigensolver status would otherwise split the communicator
+                 * between retry and return paths.
+                 */
+                local_status = esolver->retcode;
+                err = MPI_Allreduce(&local_status,&status_min,1,LIS_MPI_INT,MPI_MIN,A->comm);
+                if( err==MPI_SUCCESS )
+                        err = MPI_Allreduce(&local_status,&status_max,1,LIS_MPI_INT,MPI_MAX,A->comm);
+                if( err!=MPI_SUCCESS || status_min!=status_max )
+                {
+                        LIS_SETERR(LIS_ERR_ILL_ARG,
+                                "inconsistent eigensolver retry status across MPI ranks\n");
+                        result = LIS_ERR_ILL_ARG;
+                        break;
+                }
+#endif
 
                 if( esolver->retcode!=LIS_MAXITER ||
                     attempt>=esolver->subspace_retry_max ||
                     A==NULL || current_ss>=A->gn )
                 {
-                        LIS_DEBUG_FUNC_OUT;
-                        return LIS_SUCCESS;
+                        break;
                 }
 
                 nesolver = esolver->options[LIS_EOPTIONS_ESOLVER];
                 if( !lis_esolver_subspace_retry_supported(nesolver) )
                 {
-                        LIS_DEBUG_FUNC_OUT;
-                        return LIS_SUCCESS;
+                        break;
                 }
 
                 grown = (LIS_REAL)current_ss * esolver->subspace_retry_growth;
                 if( !isfinite((double)grown) )
                 {
-                        LIS_DEBUG_FUNC_OUT;
-                        return LIS_SUCCESS;
+                        /* An infinite growth request simply saturates at n. */
+                        next_ss = A->gn;
+                }
+                else if( grown>=(LIS_REAL)A->gn )
+                {
+                        /* Bound in floating point before converting to LIS_INT. */
+                        next_ss = A->gn;
+                }
+                else
+                {
+                        next_ss = (LIS_INT)ceil((double)grown);
                 }
 
-                next_ss = (LIS_INT)ceil((double)grown);
-                if( next_ss<esolver->subspace_retry_min ) next_ss = esolver->subspace_retry_min;
-                if( next_ss<=current_ss ) next_ss = current_ss+1;
-                if( next_ss>A->gn ) next_ss = A->gn;
+                if( esolver->subspace_retry_min>A->gn )
+                        next_ss = A->gn;
+                else if( next_ss<esolver->subspace_retry_min )
+                        next_ss = esolver->subspace_retry_min;
+
                 if( next_ss<=current_ss )
                 {
-                        LIS_DEBUG_FUNC_OUT;
-                        return LIS_SUCCESS;
+                        if( current_ss>=A->gn ) break;
+                        next_ss = current_ss+1;
                 }
+
+                if( next_ss>A->gn ) next_ss = A->gn;
+                if( next_ss<=current_ss ) break;
 
                 lis_esolver_work_destroy(esolver);
                 esolver->options[LIS_EOPTIONS_SUBSPACE] = next_ss;
                 esolver->subspace_retry_attempts++;
+
+                /*
+                 * x intentionally keeps the result of the previous attempt.
+                 * The enlarged-subspace retry therefore uses a warm start.
+                 */
         }
+
+        /*
+         * The retry policy is per-call.  Preserve the user's configured
+         * subspace for the next lis_gesolve() while keeping the actual final
+         * size in subspace_retry_final_size.  iter[] and resid[] describe the
+         * final attempt; time covers the complete retry sequence.
+         */
+        esolver->options[LIS_EOPTIONS_SUBSPACE] = original_ss;
+        esolver->time = total_time;
+
+        LIS_DEBUG_FUNC_OUT;
+        return result;
 }
 
 #undef __FUNC__
@@ -1825,6 +1880,38 @@ LIS_INT lis_esolver_set_option2(char* arg1, char *arg2, LIS_ESOLVER esolver)
                 LIS_DEBUG_FUNC_OUT;
                 return err;
         }
+
+	/*
+	 * Adaptive subspace retry options are kept outside LIS_EOPTIONS_* so
+	 * existing public numeric option identifiers remain stable.
+	 */
+	if( strcmp(arg1,"-ess_retry")==0 )
+	{
+		LIS_INT value = (LIS_INT)atoi(arg2);
+		err = lis_esolver_set_subspace_retry(
+			esolver,value,esolver->subspace_retry_growth,
+			esolver->subspace_retry_min);
+		LIS_DEBUG_FUNC_OUT;
+		return err;
+	}
+	if( strcmp(arg1,"-ess_retry_growth")==0 )
+	{
+		LIS_REAL value = (LIS_REAL)atof(arg2);
+		err = lis_esolver_set_subspace_retry(
+			esolver,esolver->subspace_retry_max,value,
+			esolver->subspace_retry_min);
+		LIS_DEBUG_FUNC_OUT;
+		return err;
+	}
+	if( strcmp(arg1,"-ess_retry_min")==0 )
+	{
+		LIS_INT value = (LIS_INT)atoi(arg2);
+		err = lis_esolver_set_subspace_retry(
+			esolver,esolver->subspace_retry_max,
+			esolver->subspace_retry_growth,value);
+		LIS_DEBUG_FUNC_OUT;
+		return err;
+	}
 
 	/*
 	 * Block size is kept outside LIS_EOPTIONS_* so existing public

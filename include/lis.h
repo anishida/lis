@@ -1135,7 +1135,12 @@ struct LIS_ESOLVER_STRUCT
          */
         LIS_REAL refine_gap_fraction;
 
-        /* Optional retry policy for subspace-based eigensolvers. */
+        /*
+         * Optional retry policy for subspace-based eigensolvers.
+         * The configured subspace is restored after lis_gesolve().
+         * Retries warm-start from the previous attempt. iter/resid describe
+         * the final attempt, while time covers the complete retry sequence.
+         */
         LIS_INT subspace_retry_max;
         LIS_REAL subspace_retry_growth;
         LIS_INT subspace_retry_min;
