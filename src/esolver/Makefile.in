@@ -106,10 +106,10 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libesolver_la_LIBADD =
-am_libesolver_la_OBJECTS = lis_esolver.lo lis_esolver_block.lo \
-	lis_esolver_ai.lo lis_esolver_cg.lo lis_esolver_ii.lo \
-	lis_esolver_li.lo lis_esolver_pi.lo lis_esolver_rqi.lo \
-	lis_esolver_feast.lo lis_esolver_si.lo
+am_libesolver_la_OBJECTS = lis_esolver.lo lis_esolver_selection.lo \
+	lis_esolver_block.lo lis_esolver_ai.lo lis_esolver_cg.lo \
+	lis_esolver_ii.lo lis_esolver_li.lo lis_esolver_pi.lo \
+	lis_esolver_rqi.lo lis_esolver_feast.lo lis_esolver_si.lo
 libesolver_la_OBJECTS = $(am_libesolver_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -137,6 +137,7 @@ am__depfiles_remade = ./$(DEPDIR)/lis_esolver.Plo \
 	./$(DEPDIR)/lis_esolver_feast.Plo \
 	./$(DEPDIR)/lis_esolver_ii.Plo ./$(DEPDIR)/lis_esolver_li.Plo \
 	./$(DEPDIR)/lis_esolver_pi.Plo ./$(DEPDIR)/lis_esolver_rqi.Plo \
+	./$(DEPDIR)/lis_esolver_selection.Plo \
 	./$(DEPDIR)/lis_esolver_si.Plo
 am__mv = mv -f
 AM_V_CC = $(am__v_CC_@AM_V@)
@@ -334,6 +335,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LTLIBRARIES = libesolver.la
 libesolver_la_SOURCES = lis_esolver.c \
+lis_esolver_selection.c \
 lis_esolver_block.c \
 lis_esolver_ai.c \
 lis_esolver_cg.c \
@@ -373,9 +375,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/esolver/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/esolver/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu src/esolver/Makefile
+	  $(AUTOMAKE) --foreign src/esolver/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -421,6 +423,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_li.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_pi.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_rqi.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_selection.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_si.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -591,6 +594,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/lis_esolver_li.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_pi.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_rqi.Plo
+	-rm -f ./$(DEPDIR)/lis_esolver_selection.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_si.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -646,6 +650,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/lis_esolver_li.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_pi.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_rqi.Plo
+	-rm -f ./$(DEPDIR)/lis_esolver_selection.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_si.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
