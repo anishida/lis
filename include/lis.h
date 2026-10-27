@@ -1291,6 +1291,13 @@ extern "C"
 	extern LIS_INT lis_matrix_psd_set_value(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);  
 	extern LIS_INT lis_matrix_malloc(LIS_MATRIX A, LIS_INT nnz_row, LIS_INT nnz[]);
 	extern LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR d);
+	/*
+	 * Exact infinity norm max_i sum_j |a_ij| for explicit matrices and
+	 * row-backed USER matrices. Duplicate column entries in one row are
+	 * algebraically combined before taking the absolute value.
+	 * LIS_MATRIX_OPERATOR returns LIS_ERR_NOT_IMPLEMENTED.
+	 */
+	extern LIS_INT lis_matrix_get_inf_norm(LIS_MATRIX A, LIS_REAL *value);
 	extern LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR D, LIS_INT action);
 /*NEH support for extended "solve_kernel" workflow*/
 	extern LIS_INT lis_matrix_psd_reset_scale(LIS_MATRIX A);
