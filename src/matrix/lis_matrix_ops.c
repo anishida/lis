@@ -948,6 +948,96 @@ LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR D, LIS_INT actio
 	return LIS_SUCCESS;
 }
 
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_get_inf_norm"
+LIS_INT lis_matrix_get_inf_norm(LIS_MATRIX A, LIS_REAL *value)
+{
+	LIS_MATRIX C;
+	LIS_PRECON_ROW_SOURCE row;
+	LIS_INT err;
+	LIS_INT i,k;
+	LIS_REAL local_max,global_max,row_sum;
+
+	LIS_DEBUG_FUNC_IN;
+
+	if( A==NULL || value==NULL )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"invalid matrix infinity-norm arguments\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	err = lis_matrix_check(A,LIS_MATRIX_CHECK_ALL);
+	if( err ) return err;
+
+	/*
+	 * CSR and row-backed USER matrices can be traversed directly.
+	 * Other explicit storage formats use LIS' existing conversion path.
+	 * Matrix operators do not expose entries, so their exact row-sum norm
+	 * cannot in general be reconstructed from matvec alone.
+	 */
+	if( A->matrix_type!=LIS_MATRIX_CSR && A->matrix_type!=LIS_MATRIX_USER )
+	{
+		if( A->matrix_type==LIS_MATRIX_OPERATOR )
+		{
+			LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+				"exact infinity norm requires explicit or row-backed matrix entries\n");
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
+
+		C = NULL;
+		err = lis_matrix_duplicate(A,&C);
+		if( err ) return err;
+
+		err = lis_matrix_set_type(C,LIS_MATRIX_CSR);
+		if( !err ) err = lis_matrix_convert(A,C);
+		if( !err ) err = lis_matrix_get_inf_norm(C,value);
+
+		lis_matrix_destroy(C);
+		return err;
+	}
+
+	err = lis_precon_row_source_init(A,&row);
+	if( err ) return err;
+
+	local_max = (LIS_REAL)0.0;
+	for(i=0;i<A->n;i++)
+	{
+		err = lis_precon_row_source_get(&row,i);
+		if( err )
+		{
+			lis_precon_row_source_destroy(&row);
+			return err;
+		}
+
+		row_sum = (LIS_REAL)0.0;
+		for(k=0;k<row.nnz;k++)
+		{
+			row_sum += (LIS_REAL)fabs(row.value[k]);
+		}
+
+		if( row_sum>local_max ) local_max = row_sum;
+	}
+
+	lis_precon_row_source_destroy(&row);
+
+#ifdef USE_MPI
+	err = MPI_Allreduce(
+		&local_max,&global_max,1,LIS_MPI_REAL,MPI_MAX,A->comm);
+	if( err!=MPI_SUCCESS )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"MPI_Allreduce failed for matrix infinity norm\n");
+		return LIS_ERR_ILL_ARG;
+	}
+#else
+	global_max = local_max;
+#endif
+
+	*value = global_max;
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+
 /*NEH support for extended "solve_kernel" workflow*/
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_psd_reset_scale"

@@ -437,6 +437,28 @@ int main(int argc, char *argv[])
                 err = lis_matrix_get_diagonal(A,d);
                 if( err ) goto serial_fallback_fail;
 
+                {
+                        LIS_REAL inf_norm;
+                        LIS_REAL expected_norm;
+
+                        inf_norm = (LIS_REAL)0.0;
+                        err = lis_matrix_get_inf_norm(A,&inf_norm);
+                        if( err ) goto serial_fallback_fail;
+
+                        expected_norm =
+                                global_n<=1 ? (LIS_REAL)2.0 :
+                                global_n==2 ? (LIS_REAL)3.0 :
+                                              (LIS_REAL)4.0;
+
+                        if( fabs((double)(inf_norm-expected_norm))>1.0e-12 )
+                        {
+                                fprintf(stderr,
+                                        "row-derived infinity norm mismatch: got=%.17g expected=%.17g\n",
+                                        (double)inf_norm,(double)expected_norm);
+                                goto serial_fallback_fail;
+                        }
+                }
+
                 for(i=0;i<local_n;i++)
                 {
                         global_row = is+i;
