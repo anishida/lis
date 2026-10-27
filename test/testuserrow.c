@@ -164,6 +164,39 @@ static LIS_INT user_get_bad_row(
         return LIS_SUCCESS;
 }
 
+static LIS_INT user_get_duplicate_row(
+        void *user_data,
+        LIS_INT local_row,
+        LIS_INT *nnz,
+        LIS_INT *cols,
+        LIS_SCALAR *vals)
+{
+        LIS_INT required;
+        (void)user_data;
+
+        if( nnz==NULL || local_row<0 || local_row>=2 ) return LIS_ERR_ILL_ARG;
+        required = local_row==0 ? 3 : 1;
+        if( cols==NULL && vals==NULL )
+        {
+                *nnz = required;
+                return LIS_SUCCESS;
+        }
+        if( cols==NULL || vals==NULL || *nnz<required ) return LIS_ERR_ILL_ARG;
+
+        if( local_row==0 )
+        {
+                cols[0]=0; scalar_set_real(&vals[0],(LIS_REAL)2.0);
+                cols[1]=0; scalar_set_real(&vals[1],(LIS_REAL)-1.0);
+                cols[2]=1; scalar_set_real(&vals[2],(LIS_REAL)3.0);
+        }
+        else
+        {
+                cols[0]=1; scalar_set_real(&vals[0],(LIS_REAL)1.0);
+        }
+        *nnz = required;
+        return LIS_SUCCESS;
+}
+
 static int check_row(
         LIS_MATRIX A,
         USER_ROW_CTX *ctx,
@@ -660,6 +693,72 @@ serial_fallback_done:
                 lis_matrix_destroy(A);
                 lis_finalize();
                 return 1;
+        }
+
+        /* Infinity-norm regressions independent of the row-access API checks. */
+        {
+                LIS_MATRIX U=NULL,C=NULL,D=NULL,O=NULL;
+                LIS_REAL norm;
+                LIS_INT row_start,row_end,r,c;
+
+                if( local_n==global_n )
+                {
+                        err = lis_matrix_create(LIS_COMM_WORLD,&U); if( err ) goto norm_fail;
+                        err = lis_matrix_set_size(U,0,2); if( err ) goto norm_fail;
+                        err = lis_matrix_set_user(U,NULL,NULL,NULL); if( err ) goto norm_fail;
+                        err = lis_matrix_set_user_row(U,user_get_duplicate_row); if( err ) goto norm_fail;
+                        norm = (LIS_REAL)0.0;
+                        err = lis_matrix_get_inf_norm(U,&norm); if( err ) goto norm_fail;
+                        if( fabs((double)(norm-(LIS_REAL)4.0))>1.0e-12 )
+                        {
+                                fprintf(stderr,"duplicate USER norm mismatch: %.17g\n",(double)norm);
+                                goto norm_fail;
+                        }
+                        lis_matrix_destroy(U); U=NULL;
+                }
+
+                err = lis_matrix_create(LIS_COMM_WORLD,&C); if( err ) goto norm_fail;
+                err = lis_matrix_set_size(C,0,4); if( err ) goto norm_fail;
+                lis_matrix_get_range(C,&row_start,&row_end);
+                for(r=row_start;r<row_end;r++)
+                {
+                        err = lis_matrix_set_value(LIS_INS_VALUE,r,r,(LIS_SCALAR)2.0,C); if( err ) goto norm_fail;
+                        if(r>0){ err=lis_matrix_set_value(LIS_INS_VALUE,r,r-1,(LIS_SCALAR)-1.0,C); if(err) goto norm_fail; }
+                        if(r+1<4){ err=lis_matrix_set_value(LIS_INS_VALUE,r,r+1,(LIS_SCALAR)-1.0,C); if(err) goto norm_fail; }
+                }
+                err = lis_matrix_set_type(C,LIS_MATRIX_CSR); if( err ) goto norm_fail;
+                err = lis_matrix_assemble(C); if( err ) goto norm_fail;
+                norm=(LIS_REAL)0.0;
+                err=lis_matrix_get_inf_norm(C,&norm); if(err) goto norm_fail;
+                if(fabs((double)(norm-(LIS_REAL)4.0))>1.0e-12) goto norm_fail;
+
+                err=lis_matrix_duplicate(C,&D); if(err) goto norm_fail;
+                err=lis_matrix_set_type(D,LIS_MATRIX_CSC); if(err) goto norm_fail;
+                err=lis_matrix_convert(C,D); if(err) goto norm_fail;
+                norm=(LIS_REAL)0.0;
+                err=lis_matrix_get_inf_norm(D,&norm); if(err) goto norm_fail;
+                if(fabs((double)(norm-(LIS_REAL)4.0))>1.0e-12) goto norm_fail;
+
+                err=lis_matrix_create_operator((LIS_SCALAR)1.0,C,(LIS_SCALAR)0.0,C,&O); if(err) goto norm_fail;
+                norm=(LIS_REAL)0.0;
+                err=lis_matrix_get_inf_norm(O,&norm);
+                if(err!=LIS_ERR_NOT_IMPLEMENTED) goto norm_fail;
+
+                lis_matrix_destroy(O);
+                lis_matrix_destroy(D);
+                lis_matrix_destroy(C);
+                goto norm_done;
+
+norm_fail:
+                if(O) lis_matrix_destroy(O);
+                if(D) lis_matrix_destroy(D);
+                if(C) lis_matrix_destroy(C);
+                if(U) lis_matrix_destroy(U);
+                lis_matrix_destroy(A);
+                lis_finalize();
+                return 1;
+norm_done:
+                ;
         }
 
         lis_matrix_destroy(A);
