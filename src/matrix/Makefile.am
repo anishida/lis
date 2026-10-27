@@ -9,6 +9,7 @@ lis_matrix_dia.c \
 lis_matrix_diag.c \
 lis_matrix_dns.c \
 lis_matrix_ell.c \
+lis_matrix_graph.c \
 lis_matrix_ilu.c \
 lis_matrix_jad.c \
 lis_matrix_mpi.c \
