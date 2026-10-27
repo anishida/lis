@@ -45,6 +45,7 @@ typedef struct
         LIS_INT is;
         LIS_SCALAR diag;
         LIS_SCALAR offdiag;
+        LIS_INT saw_parallel;
 } USER_ROW_CTX;
 
 static LIS_INT user_get_row(
@@ -61,6 +62,14 @@ static LIS_INT user_get_row(
         LIS_INT k;
 
         ctx = (USER_ROW_CTX *)user_data;
+
+#ifdef _OPENMP
+        if( omp_in_parallel() && omp_get_num_threads()>1 )
+        {
+#pragma omp atomic write
+                ctx->saw_parallel = 1;
+        }
+#endif
 
         if( nnz==NULL )
         {
@@ -311,6 +320,7 @@ int main(int argc, char *argv[])
         ctx.is      = is;
         scalar_set_real(&ctx.diag,(LIS_REAL)2.0);
         scalar_set_real(&ctx.offdiag,(LIS_REAL)-1.0);
+        ctx.saw_parallel = 0;
 
         /*
          * Row-only USER matrix. No explicit matvec, matvech or diagonal
@@ -352,6 +362,15 @@ int main(int argc, char *argv[])
                 return 1;
         }
 
+        err = lis_matrix_set_user_row_thread_safe(A,LIS_TRUE);
+
+        if( err )
+        {
+                lis_matrix_destroy(A);
+                lis_finalize();
+                return 1;
+        }
+
         {
                 LIS_INT capabilities;
                 LIS_INT expected;
@@ -369,7 +388,8 @@ int main(int argc, char *argv[])
                         return 1;
                 }
 
-                expected = LIS_MATRIX_CAP_ROW_ACCESS;
+                expected = LIS_MATRIX_CAP_ROW_ACCESS |
+                           LIS_MATRIX_CAP_ROW_THREAD_SAFE;
 
                 if( local_n==global_n )
                 {
@@ -428,8 +448,16 @@ int main(int argc, char *argv[])
                                 (LIS_REAL)1.0);
                 }
 
+                ctx.saw_parallel = 0;
                 err = lis_matvec(A,x,y);
                 if( err ) goto serial_fallback_fail;
+#ifdef _OPENMP
+                if( omp_get_max_threads()>1 && !ctx.saw_parallel )
+                {
+                        fprintf(stderr,"thread-safe USER matvec did not use the OpenMP row path\n");
+                        goto serial_fallback_fail;
+                }
+#endif
 
                 err = lis_matvech(A,x,yh);
                 if( err ) goto serial_fallback_fail;

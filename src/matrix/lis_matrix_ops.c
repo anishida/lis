@@ -963,43 +963,77 @@ lis_matrix_get_diagonal_user_rows(
 	LIS_MATRIX A,
 	LIS_SCALAR *d)
 {
-	LIS_PRECON_ROW_SOURCE row;
-	LIS_INT err;
-	LIS_INT i,k;
-	LIS_INT global_row;
-	LIS_SCALAR diagonal;
-
-	err = lis_precon_row_source_init(A,&row);
-	if( err ) return err;
-
-	for(i=0;i<A->n;i++)
+#ifdef _OPENMP
+	if( A->user_get_row_thread_safe && omp_get_max_threads()>1 )
 	{
-		err = lis_precon_row_source_get(&row,i);
-		if( err )
-		{
-			lis_precon_row_source_destroy(&row);
-			return err;
-		}
+		LIS_INT parallel_err = LIS_SUCCESS;
 
-		global_row = A->is+i;
-		diagonal = (LIS_SCALAR)0.0;
-
-		for(k=0;k<row.nnz;k++)
+#pragma omp parallel
 		{
-			if( row.index[k]==global_row )
+			LIS_PRECON_ROW_SOURCE row;
+			LIS_INT local_err;
+			LIS_INT i,k;
+
+			local_err = lis_precon_row_source_init(A,&row);
+			if( local_err )
 			{
-				diagonal += row.value[k];
+#pragma omp critical(lis_user_diag_error)
+				{
+					if( parallel_err==LIS_SUCCESS ) parallel_err = local_err;
+				}
+			}
+			else
+			{
+#pragma omp for schedule(static)
+				for(i=0;i<A->n;i++)
+				{
+					LIS_INT global_row = A->is+i;
+					LIS_SCALAR diagonal = (LIS_SCALAR)0.0;
+					local_err = lis_precon_row_source_get(&row,i);
+					if( local_err )
+					{
+#pragma omp critical(lis_user_diag_error)
+						{
+							if( parallel_err==LIS_SUCCESS ) parallel_err = local_err;
+						}
+						continue;
+					}
+					for(k=0;k<row.nnz;k++)
+						if( row.index[k]==global_row ) diagonal += row.value[k];
+					d[i] = diagonal;
+				}
+				lis_precon_row_source_destroy(&row);
 			}
 		}
-
-		d[i] = diagonal;
+		return parallel_err;
 	}
+#endif
 
-	lis_precon_row_source_destroy(&row);
+	{
+		LIS_PRECON_ROW_SOURCE row;
+		LIS_INT err;
+		LIS_INT i,k;
 
-	return LIS_SUCCESS;
+		err = lis_precon_row_source_init(A,&row);
+		if( err ) return err;
+		for(i=0;i<A->n;i++)
+		{
+			LIS_INT global_row = A->is+i;
+			LIS_SCALAR diagonal = (LIS_SCALAR)0.0;
+			err = lis_precon_row_source_get(&row,i);
+			if( err )
+			{
+				lis_precon_row_source_destroy(&row);
+				return err;
+			}
+			for(k=0;k<row.nnz;k++)
+				if( row.index[k]==global_row ) diagonal += row.value[k];
+			d[i] = diagonal;
+		}
+		lis_precon_row_source_destroy(&row);
+		return LIS_SUCCESS;
+	}
 }
-
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_get_diagonal"

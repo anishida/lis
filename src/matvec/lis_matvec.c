@@ -67,41 +67,75 @@ lis_matvec_user_rows(
 	const LIS_SCALAR *x,
 	LIS_SCALAR *y)
 {
-	LIS_PRECON_ROW_SOURCE row;
-	LIS_INT err;
-	LIS_INT i,k;
-	LIS_SCALAR sum;
-
-	err = lis_precon_row_source_init(A,&row);
-	if( err ) return err;
-
-	for(i=0;i<A->n;i++)
+#ifdef _OPENMP
+	if( A->user_get_row_thread_safe && omp_get_max_threads()>1 )
 	{
-		err = lis_precon_row_source_get(&row,i);
-		if( err )
+		LIS_INT parallel_err = LIS_SUCCESS;
+
+#pragma omp parallel
 		{
-			lis_precon_row_source_destroy(&row);
-			return err;
+			LIS_PRECON_ROW_SOURCE row;
+			LIS_INT local_err;
+			LIS_INT i,k;
+
+			local_err = lis_precon_row_source_init(A,&row);
+			if( local_err )
+			{
+#pragma omp critical(lis_user_row_error)
+				{
+					if( parallel_err==LIS_SUCCESS ) parallel_err = local_err;
+				}
+			}
+			else
+			{
+#pragma omp for schedule(static)
+				for(i=0;i<A->n;i++)
+				{
+					LIS_SCALAR sum = (LIS_SCALAR)0.0;
+					local_err = lis_precon_row_source_get(&row,i);
+					if( local_err )
+					{
+#pragma omp critical(lis_user_row_error)
+						{
+							if( parallel_err==LIS_SUCCESS ) parallel_err = local_err;
+						}
+						continue;
+					}
+					for(k=0;k<row.nnz;k++)
+						sum += row.value[k] * x[row.index[k]];
+					y[i] = sum;
+				}
+				lis_precon_row_source_destroy(&row);
+			}
 		}
-
-		sum = (LIS_SCALAR)0.0;
-
-		for(k=0;k<row.nnz;k++)
-		{
-			sum +=
-				row.value[k]
-				*
-				x[row.index[k]];
-		}
-
-		y[i] = sum;
+		return parallel_err;
 	}
+#endif
 
-	lis_precon_row_source_destroy(&row);
+	{
+		LIS_PRECON_ROW_SOURCE row;
+		LIS_INT err;
+		LIS_INT i,k;
+		LIS_SCALAR sum;
 
-	return LIS_SUCCESS;
+		err = lis_precon_row_source_init(A,&row);
+		if( err ) return err;
+		for(i=0;i<A->n;i++)
+		{
+			err = lis_precon_row_source_get(&row,i);
+			if( err )
+			{
+				lis_precon_row_source_destroy(&row);
+				return err;
+			}
+			sum = (LIS_SCALAR)0.0;
+			for(k=0;k<row.nnz;k++) sum += row.value[k] * x[row.index[k]];
+			y[i] = sum;
+		}
+		lis_precon_row_source_destroy(&row);
+		return LIS_SUCCESS;
+	}
 }
-
 
 static LIS_INT
 lis_matvech_user_rows(
