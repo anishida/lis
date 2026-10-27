@@ -16,7 +16,7 @@ test_PROGRAMS = testesubspaceretry etest1 etest2 etest3 etest4 etest5 etest5b et
         spmvtest4 spmvtest5 test1 test2 test2b test3 test3b test3c \
         test4 test5 test6 test7 testuser testuserrow testuserprecon testmatvecblock \
         testcapabilities testsolvercapabilities testsolveroptionreplace \
-	testompelastic testmatrixgraph testcomponentnullspace getestuser testoperator getestoperator testdiagonal \
+	testompelastic testmatrixgraph testcomponentnullspace testnullspacelift getestuser testoperator getestoperator testdiagonal \
         testpreconlifecycle testhybridnested testjacobiuser testpreconpsd testpreconreuse testeigenbreakdown testrqirestore \
         testrhistoryerror testrepeatedsystems testpreconpolicy testgmreswork \
         testsolvermonitor testsolvercallbackpaths testsolvercallbackcert testworkcompat \
@@ -95,6 +95,7 @@ testsolveroptionreplace_SOURCES = testsolveroptionreplace.c
 testompelastic_SOURCES = testompelastic.c
 testmatrixgraph_SOURCES = testmatrixgraph.c
 testcomponentnullspace_SOURCES = testcomponentnullspace.c
+testnullspacelift_SOURCES = testnullspacelift.c
 testhalfconfig_SOURCES = testhalfconfig.c
 testhalfconvert_SOURCES = testhalfconvert.c
 testhalfstorage_SOURCES = testhalfstorage.c
@@ -210,7 +211,7 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
 
 TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) testsolvercapabilities$(EXEEXT) \
 	testsolveroptionreplace$(EXEEXT) testompelastic$(EXEEXT) \
-	testmatrixgraph$(EXEEXT) testcomponentnullspace$(EXEEXT) \
+	testmatrixgraph$(EXEEXT) testcomponentnullspace$(EXEEXT) testnullspacelift$(EXEEXT) \
         testpreconlifecycle$(EXEEXT) testhybridnested$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
         testpreconreuse$(EXEEXT) testesubspaceretry$(EXEEXT) testprojectedeigen$(EXEEXT) testprojectedhermitian$(EXEEXT) testblockgram$(EXEEXT) testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
         testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
