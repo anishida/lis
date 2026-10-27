@@ -1481,10 +1481,11 @@ LIS_INT lis_matrix_set_user_row(
         }
 
         A->user_get_row = get_row;
-        if( get_row==NULL )
-        {
-                A->user_get_row_thread_safe = LIS_FALSE;
-        }
+        /*
+         * Thread safety belongs to the currently installed callback.
+         * Replacing the callback always requires a new explicit opt-in.
+         */
+        A->user_get_row_thread_safe = LIS_FALSE;
 
         LIS_DEBUG_FUNC_OUT;
         return LIS_SUCCESS;

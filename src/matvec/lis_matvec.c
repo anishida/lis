@@ -76,9 +76,11 @@ lis_matvec_user_rows(
 		{
 			LIS_PRECON_ROW_SOURCE row;
 			LIS_INT local_err;
+			LIS_INT row_ready;
 			LIS_INT i,k;
 
 			local_err = lis_precon_row_source_init(A,&row);
+			row_ready = (local_err==LIS_SUCCESS);
 			if( local_err )
 			{
 #pragma omp critical(lis_user_row_error)
@@ -86,27 +88,27 @@ lis_matvec_user_rows(
 					if( parallel_err==LIS_SUCCESS ) parallel_err = local_err;
 				}
 			}
-			else
-			{
+
+			/* Every thread in the team must encounter this worksharing region. */
 #pragma omp for schedule(static)
-				for(i=0;i<A->n;i++)
+			for(i=0;i<A->n;i++)
+			{
+				LIS_SCALAR sum = (LIS_SCALAR)0.0;
+				if( !row_ready ) continue;
+				local_err = lis_precon_row_source_get(&row,i);
+				if( local_err )
 				{
-					LIS_SCALAR sum = (LIS_SCALAR)0.0;
-					local_err = lis_precon_row_source_get(&row,i);
-					if( local_err )
-					{
 #pragma omp critical(lis_user_row_error)
-						{
-							if( parallel_err==LIS_SUCCESS ) parallel_err = local_err;
-						}
-						continue;
+					{
+						if( parallel_err==LIS_SUCCESS ) parallel_err = local_err;
 					}
-					for(k=0;k<row.nnz;k++)
-						sum += row.value[k] * x[row.index[k]];
-					y[i] = sum;
+					continue;
 				}
-				lis_precon_row_source_destroy(&row);
+				for(k=0;k<row.nnz;k++)
+					sum += row.value[k] * x[row.index[k]];
+				y[i] = sum;
 			}
+			if( row_ready ) lis_precon_row_source_destroy(&row);
 		}
 		return parallel_err;
 	}

@@ -371,6 +371,33 @@ int main(int argc, char *argv[])
                 return 1;
         }
 
+        /* Replacing the callback must clear the previous thread-safety opt-in. */
+        err = lis_matrix_set_user_row(A,user_get_row);
+        if( err )
+        {
+                lis_matrix_destroy(A);
+                lis_finalize();
+                return 1;
+        }
+        {
+                LIS_INT capabilities = 0;
+                err = lis_matrix_get_capabilities(A,&capabilities);
+                if( err || (capabilities & LIS_MATRIX_CAP_ROW_THREAD_SAFE) )
+                {
+                        fprintf(stderr,"replacement USER row callback inherited thread-safe flag\n");
+                        lis_matrix_destroy(A);
+                        lis_finalize();
+                        return 1;
+                }
+        }
+        err = lis_matrix_set_user_row_thread_safe(A,LIS_TRUE);
+        if( err )
+        {
+                lis_matrix_destroy(A);
+                lis_finalize();
+                return 1;
+        }
+
         {
                 LIS_INT capabilities;
                 LIS_INT expected;
@@ -448,6 +475,21 @@ int main(int argc, char *argv[])
                                 (LIS_REAL)1.0);
                 }
 
+                err = lis_matrix_set_user_row_thread_safe(A,LIS_FALSE);
+                if( err ) goto serial_fallback_fail;
+                ctx.saw_parallel = 0;
+                err = lis_matvec(A,x,y);
+                if( err ) goto serial_fallback_fail;
+#ifdef _OPENMP
+                if( ctx.saw_parallel )
+                {
+                        fprintf(stderr,"non-thread-safe USER row callback entered OpenMP row path\n");
+                        goto serial_fallback_fail;
+                }
+#endif
+
+                err = lis_matrix_set_user_row_thread_safe(A,LIS_TRUE);
+                if( err ) goto serial_fallback_fail;
                 ctx.saw_parallel = 0;
                 err = lis_matvec(A,x,y);
                 if( err ) goto serial_fallback_fail;

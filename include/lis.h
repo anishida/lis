@@ -1253,6 +1253,11 @@ extern "C"
 	extern LIS_INT lis_matrix_set_user_row(
 	                                   LIS_MATRIX A,
 	                                   LIS_MATRIX_USER_GET_ROW get_row);
+	/*
+	 * Mark the currently installed USER row callback as safe for concurrent
+	 * invocations. lis_matrix_set_user_row() always clears this opt-in, so a
+	 * replacement callback must be marked thread-safe explicitly again.
+	 */
 	extern LIS_INT lis_matrix_set_user_row_thread_safe(
 	                                   LIS_MATRIX A,
 	                                   LIS_INT thread_safe);
