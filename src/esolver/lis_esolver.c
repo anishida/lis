@@ -706,6 +706,11 @@ LIS_INT lis_esolver_init(LIS_ESOLVER esolver)
 	esolver->linear_options = NULL;
 	esolver->refine_linear_options = NULL;
 	esolver->refine_gap_fraction = 0.01;
+	esolver->subspace_retry_max = 0;
+	esolver->subspace_retry_growth = 2.0;
+	esolver->subspace_retry_min = 0;
+	esolver->subspace_retry_attempts = 0;
+	esolver->subspace_retry_final_size = 0;
 	esolver->tol        = 0;
 	esolver->eprecision = LIS_PRECISION_DOUBLE;
 
@@ -1000,6 +1005,75 @@ LIS_INT lis_esolver_set_refine_gap_fraction(
 }
 
 
+
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_set_subspace_retry"
+LIS_INT lis_esolver_set_subspace_retry(
+        LIS_ESOLVER esolver,
+        LIS_INT max_retries,
+        LIS_REAL growth_factor,
+        LIS_INT min_subspace)
+{
+        LIS_DEBUG_FUNC_IN;
+
+        if( esolver==NULL || max_retries<0 || min_subspace<0 ||
+            !isfinite((double)growth_factor) || growth_factor<=1.0 )
+        {
+                LIS_SETERR(LIS_ERR_ILL_ARG,
+                        "invalid eigensolver subspace retry policy\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        esolver->subspace_retry_max = max_retries;
+        esolver->subspace_retry_growth = growth_factor;
+        esolver->subspace_retry_min = min_subspace;
+        esolver->subspace_retry_attempts = 0;
+        esolver->subspace_retry_final_size =
+                esolver->options[LIS_EOPTIONS_SUBSPACE];
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_get_subspace_retry"
+LIS_INT lis_esolver_get_subspace_retry(
+        LIS_ESOLVER esolver,
+        LIS_INT *max_retries,
+        LIS_REAL *growth_factor,
+        LIS_INT *min_subspace,
+        LIS_INT *attempts,
+        LIS_INT *final_subspace)
+{
+        LIS_DEBUG_FUNC_IN;
+
+        if( esolver==NULL )
+        {
+                LIS_SETERR(LIS_ERR_ILL_ARG,"eigensolver is undefined\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( max_retries ) *max_retries = esolver->subspace_retry_max;
+        if( growth_factor ) *growth_factor = esolver->subspace_retry_growth;
+        if( min_subspace ) *min_subspace = esolver->subspace_retry_min;
+        if( attempts ) *attempts = esolver->subspace_retry_attempts;
+        if( final_subspace ) *final_subspace = esolver->subspace_retry_final_size;
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+static LIS_INT
+lis_esolver_subspace_retry_supported(LIS_INT nesolver)
+{
+        return nesolver==LIS_ESOLVER_SI ||
+               nesolver==LIS_ESOLVER_LI ||
+               nesolver==LIS_ESOLVER_AI ||
+               nesolver==LIS_ESOLVER_GSI ||
+               nesolver==LIS_ESOLVER_GLI ||
+               nesolver==LIS_ESOLVER_GAI;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_esolve"
 LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver)
@@ -1023,8 +1097,8 @@ LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER 
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_gesolve"
-LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver)
+#define __FUNC__ "lis_gesolve_once"
+static LIS_INT lis_gesolve_once(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver)
 {
 	LIS_Comm comm;   
 	LIS_INT	nesolver,niesolver,nigesolver,emaxiter; 
@@ -1587,6 +1661,80 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_gesolve"
+LIS_INT lis_gesolve(
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_VECTOR x,
+        LIS_SCALAR *evalue0,
+        LIS_ESOLVER esolver)
+{
+        LIS_INT err,current_ss,next_ss,nesolver,attempt;
+        LIS_REAL grown;
+
+        LIS_DEBUG_FUNC_IN;
+
+        if( esolver==NULL )
+        {
+                LIS_SETERR(LIS_ERR_ILL_ARG,"eigensolver is undefined\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        esolver->subspace_retry_attempts = 0;
+        esolver->subspace_retry_final_size =
+                esolver->options[LIS_EOPTIONS_SUBSPACE];
+
+        for(attempt=0;;attempt++)
+        {
+                err = lis_gesolve_once(A,B,x,evalue0,esolver);
+                if( err )
+                {
+                        LIS_DEBUG_FUNC_OUT;
+                        return err;
+                }
+
+                current_ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
+                esolver->subspace_retry_final_size = current_ss;
+
+                if( esolver->retcode!=LIS_MAXITER ||
+                    attempt>=esolver->subspace_retry_max ||
+                    A==NULL || current_ss>=A->gn )
+                {
+                        LIS_DEBUG_FUNC_OUT;
+                        return LIS_SUCCESS;
+                }
+
+                nesolver = esolver->options[LIS_EOPTIONS_ESOLVER];
+                if( !lis_esolver_subspace_retry_supported(nesolver) )
+                {
+                        LIS_DEBUG_FUNC_OUT;
+                        return LIS_SUCCESS;
+                }
+
+                grown = (LIS_REAL)current_ss * esolver->subspace_retry_growth;
+                if( !isfinite((double)grown) )
+                {
+                        LIS_DEBUG_FUNC_OUT;
+                        return LIS_SUCCESS;
+                }
+
+                next_ss = (LIS_INT)ceil((double)grown);
+                if( next_ss<esolver->subspace_retry_min ) next_ss = esolver->subspace_retry_min;
+                if( next_ss<=current_ss ) next_ss = current_ss+1;
+                if( next_ss>A->gn ) next_ss = A->gn;
+                if( next_ss<=current_ss )
+                {
+                        LIS_DEBUG_FUNC_OUT;
+                        return LIS_SUCCESS;
+                }
+
+                lis_esolver_work_destroy(esolver);
+                esolver->options[LIS_EOPTIONS_SUBSPACE] = next_ss;
+                esolver->subspace_retry_attempts++;
+        }
 }
 
 #undef __FUNC__
