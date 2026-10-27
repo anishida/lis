@@ -37,6 +37,14 @@ typedef struct LIS_NULLSPACE_CANDIDATE_DIAGNOSTICS_STRUCT
 }
 LIS_NULLSPACE_CANDIDATE_DIAGNOSTICS;
 
+typedef struct LIS_COMPONENT_NULLSPACE_DIAGNOSTICS_STRUCT
+{
+    LIS_INT component_count;
+    LIS_INT localized_candidate_count;
+    LIS_NULLSPACE_CANDIDATE_DIAGNOSTICS classifier;
+}
+LIS_COMPONENT_NULLSPACE_DIAGNOSTICS;
+
 /*
  * Classify application-provided candidate vectors into exact and near
  * nullspace directions.
@@ -71,6 +79,28 @@ LIS_INT lis_solver_classify_nullspace_candidates(
     LIS_REAL near_tolerance,
     LIS_INT flags,
     LIS_NULLSPACE_CANDIDATE_DIAGNOSTICS *diagnostics);
+
+/*
+ * Split global candidates over weakly connected matrix components and pass
+ * the resulting nonzero component-local candidates through the generic
+ * classifier above.  This is useful when applications know a small global
+ * candidate basis but disconnected matrix components must receive independent
+ * nullspace directions.
+ *
+ * The initial implementation is intentionally serial, matching
+ * lis_matrix_connected_components().
+ */
+LIS_INT lis_solver_classify_component_nullspace_candidates(
+    LIS_MATRIX A,
+    LIS_SOLVER solver,
+    LIS_INT nvec,
+    LIS_VECTOR candidates[],
+    LIS_REAL graph_drop_tolerance,
+    LIS_REAL operator_scale,
+    LIS_REAL exact_tolerance,
+    LIS_REAL near_tolerance,
+    LIS_INT flags,
+    LIS_COMPONENT_NULLSPACE_DIAGNOSTICS *diagnostics);
 
 /* Return the dimension of the exact right-nullspace currently bound. */
 LIS_INT lis_solver_get_nullspace_dim(
