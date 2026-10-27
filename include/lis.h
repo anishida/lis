@@ -1136,6 +1136,18 @@ struct LIS_ESOLVER_STRUCT
          * the established default behavior.
          */
         LIS_REAL refine_gap_fraction;
+
+        /*
+         * Optional retry policy for subspace-based eigensolvers.
+         * The configured subspace is restored after lis_gesolve().
+         * Retries warm-start from the previous attempt. iter/resid describe
+         * the final attempt, while time covers the complete retry sequence.
+         */
+        LIS_INT subspace_retry_max;
+        LIS_REAL subspace_retry_growth;
+        LIS_INT subspace_retry_min;
+        LIS_INT subspace_retry_attempts;
+        LIS_INT subspace_retry_final_size;
 };
 typedef struct LIS_ESOLVER_STRUCT *LIS_ESOLVER;
 
@@ -1476,6 +1488,18 @@ extern "C"
 	extern LIS_INT lis_esolver_create(LIS_ESOLVER *esolver);
 	extern LIS_INT lis_esolver_destroy(LIS_ESOLVER esolver);
 	extern LIS_INT lis_iesolver_destroy(LIS_ESOLVER esolver);
+	extern LIS_INT lis_esolver_set_subspace_retry(
+	                                   LIS_ESOLVER esolver,
+	                                   LIS_INT max_retries,
+	                                   LIS_REAL growth_factor,
+	                                   LIS_INT min_subspace);
+	extern LIS_INT lis_esolver_get_subspace_retry(
+	                                   LIS_ESOLVER esolver,
+	                                   LIS_INT *max_retries,
+	                                   LIS_REAL *growth_factor,
+	                                   LIS_INT *min_subspace,
+	                                   LIS_INT *attempts,
+	                                   LIS_INT *final_subspace);
 	extern LIS_INT lis_esolver_set_option(char *text, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_optionC(LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_linear_options(const char *text, LIS_ESOLVER esolver);

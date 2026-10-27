@@ -11,7 +11,7 @@ test_DATA = testmat.mtx testmat2.mtx testmat3.mtx testmat4.mtx testmat0.mtx test
 
 test_SCRIPTS = defs test.sh
 
-test_PROGRAMS = etest1 etest2 etest3 etest4 etest5 etest5b etest6 etest7 getest1 \
+test_PROGRAMS = testesubspaceretry etest1 etest2 etest3 etest4 etest5 etest5b etest6 etest7 getest1 \
         getest5 getest5b spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b \
         spmvtest4 spmvtest5 test1 test2 test2b test3 test3b test3c \
         test4 test5 test6 test7 testuser testuserrow testuserprecon testmatvecblock \
@@ -108,6 +108,7 @@ testjacobiuser_SOURCES = testjacobiuser.c
 testpreconpsd_SOURCES = testpreconpsd.c
 testpreconreuse_SOURCES = testpreconreuse.c
 testeigenbreakdown_SOURCES = testeigenbreakdown.c
+testesubspaceretry_SOURCES = testesubspaceretry.c
 testprojectedeigen_SOURCES = testprojectedeigen.c
 testprojectedhermitian_SOURCES = testprojectedhermitian.c
 testblockgram_SOURCES = testblockgram.c
@@ -203,7 +204,7 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
 
 TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
         testpreconlifecycle$(EXEEXT) testhybridnested$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
-        testpreconreuse$(EXEEXT) testprojectedeigen$(EXEEXT) testprojectedhermitian$(EXEEXT) testblockgram$(EXEEXT) testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
+        testpreconreuse$(EXEEXT) testesubspaceretry$(EXEEXT) testprojectedeigen$(EXEEXT) testprojectedhermitian$(EXEEXT) testblockgram$(EXEEXT) testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
         testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
         testsolvermonitor$(EXEEXT) testsolvercallbackpaths$(EXEEXT) \
         testsolvercallbackcert$(EXEEXT) testworkcompat$(EXEEXT) \
