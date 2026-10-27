@@ -104,15 +104,16 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	test3c$(EXEEXT) test4$(EXEEXT) test5$(EXEEXT) test6$(EXEEXT) \
 	test7$(EXEEXT) testuser$(EXEEXT) testuserrow$(EXEEXT) \
 	testuserprecon$(EXEEXT) testmatvecblock$(EXEEXT) \
-	testcapabilities$(EXEEXT) getestuser$(EXEEXT) \
-	testoperator$(EXEEXT) getestoperator$(EXEEXT) \
-	testdiagonal$(EXEEXT) testpreconlifecycle$(EXEEXT) \
-	testhybridnested$(EXEEXT) testjacobiuser$(EXEEXT) \
-	testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) \
-	testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) \
-	testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) \
-	testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
-	testsolvermonitor$(EXEEXT) testsolvercallbackpaths$(EXEEXT) \
+	testcapabilities$(EXEEXT) testsolvercapabilities$(EXEEXT) \
+	getestuser$(EXEEXT) testoperator$(EXEEXT) \
+	getestoperator$(EXEEXT) testdiagonal$(EXEEXT) \
+	testpreconlifecycle$(EXEEXT) testhybridnested$(EXEEXT) \
+	testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
+	testpreconreuse$(EXEEXT) testeigenbreakdown$(EXEEXT) \
+	testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
+	testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) \
+	testgmreswork$(EXEEXT) testsolvermonitor$(EXEEXT) \
+	testsolvercallbackpaths$(EXEEXT) \
 	testsolvercallbackcert$(EXEEXT) testworkcompat$(EXEEXT) \
 	testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) \
 	testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) \
@@ -604,6 +605,10 @@ testsolvercallbackpaths_OBJECTS =  \
 	$(am_testsolvercallbackpaths_OBJECTS)
 testsolvercallbackpaths_LDADD = $(LDADD)
 testsolvercallbackpaths_DEPENDENCIES =
+am_testsolvercapabilities_OBJECTS = testsolvercapabilities.$(OBJEXT)
+testsolvercapabilities_OBJECTS = $(am_testsolvercapabilities_OBJECTS)
+testsolvercapabilities_LDADD = $(LDADD)
+testsolvercapabilities_DEPENDENCIES =
 am_testsolvermonitor_OBJECTS = testsolvermonitor.$(OBJEXT)
 testsolvermonitor_OBJECTS = $(am_testsolvermonitor_OBJECTS)
 testsolvermonitor_LDADD = $(LDADD)
@@ -737,6 +742,7 @@ am__depfiles_remade = ./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
 	./$(DEPDIR)/testsequence.Po ./$(DEPDIR)/testshellscale.Po \
 	./$(DEPDIR)/testsolvercallbackcert.Po \
 	./$(DEPDIR)/testsolvercallbackpaths.Po \
+	./$(DEPDIR)/testsolvercapabilities.Po \
 	./$(DEPDIR)/testsolvermonitor.Po \
 	./$(DEPDIR)/testsymmdiagguard.Po ./$(DEPDIR)/testthreads.Po \
 	./$(DEPDIR)/testuser.Po ./$(DEPDIR)/testuserprecon.Po \
@@ -825,11 +831,11 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
 	$(testshellscale_SOURCES) $(testsolvercallbackcert_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
-	$(testsolvermonitor_SOURCES) $(testsymmdiagguard_SOURCES) \
-	$(testthreads_SOURCES) $(testuser_SOURCES) \
-	$(testuserprecon_SOURCES) $(testuserrow_SOURCES) \
-	$(testwarmstart_SOURCES) $(testworkcompat_SOURCES) \
-	$(testworkreuse_SOURCES)
+	$(testsolvercapabilities_SOURCES) $(testsolvermonitor_SOURCES) \
+	$(testsymmdiagguard_SOURCES) $(testthreads_SOURCES) \
+	$(testuser_SOURCES) $(testuserprecon_SOURCES) \
+	$(testuserrow_SOURCES) $(testwarmstart_SOURCES) \
+	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
 DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
 	$(etest3_SOURCES) $(etest4_SOURCES) \
@@ -878,11 +884,11 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
 	$(testshellscale_SOURCES) $(testsolvercallbackcert_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
-	$(testsolvermonitor_SOURCES) $(testsymmdiagguard_SOURCES) \
-	$(testthreads_SOURCES) $(testuser_SOURCES) \
-	$(testuserprecon_SOURCES) $(testuserrow_SOURCES) \
-	$(testwarmstart_SOURCES) $(testworkcompat_SOURCES) \
-	$(testworkreuse_SOURCES)
+	$(testsolvercapabilities_SOURCES) $(testsolvermonitor_SOURCES) \
+	$(testsymmdiagguard_SOURCES) $(testthreads_SOURCES) \
+	$(testuser_SOURCES) $(testuserprecon_SOURCES) \
+	$(testuserrow_SOURCES) $(testwarmstart_SOURCES) \
+	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -1301,6 +1307,7 @@ testuserrow_SOURCES = testuserrow.c
 testuserprecon_SOURCES = testuserprecon.c
 testmatvecblock_SOURCES = testmatvecblock.c
 testcapabilities_SOURCES = testcapabilities.c
+testsolvercapabilities_SOURCES = testsolvercapabilities.c
 testhalfconfig_SOURCES = testhalfconfig.c
 testhalfconvert_SOURCES = testhalfconvert.c
 testhalfstorage_SOURCES = testhalfstorage.c
@@ -1405,16 +1412,16 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
 
 TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
-	testpreconlifecycle$(EXEEXT) testhybridnested$(EXEEXT) \
-	testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
-	testpreconreuse$(EXEEXT) testesubspaceretry$(EXEEXT) \
-	testprojectedeigen$(EXEEXT) testprojectedhermitian$(EXEEXT) \
-	testblockgram$(EXEEXT) testblockorthogonal$(EXEEXT) \
-	testblockrank$(EXEEXT) testeigenbreakdown$(EXEEXT) \
-	testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
-	testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) \
-	testgmreswork$(EXEEXT) testsolvermonitor$(EXEEXT) \
-	testsolvercallbackpaths$(EXEEXT) \
+	testsolvercapabilities$(EXEEXT) testpreconlifecycle$(EXEEXT) \
+	testhybridnested$(EXEEXT) testjacobiuser$(EXEEXT) \
+	testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) \
+	testesubspaceretry$(EXEEXT) testprojectedeigen$(EXEEXT) \
+	testprojectedhermitian$(EXEEXT) testblockgram$(EXEEXT) \
+	testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) \
+	testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) \
+	testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) \
+	testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
+	testsolvermonitor$(EXEEXT) testsolvercallbackpaths$(EXEEXT) \
 	testsolvercallbackcert$(EXEEXT) testworkcompat$(EXEEXT) \
 	testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) \
 	testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) \
@@ -1963,6 +1970,10 @@ testsolvercallbackpaths$(EXEEXT): $(testsolvercallbackpaths_OBJECTS) $(testsolve
 	@rm -f testsolvercallbackpaths$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testsolvercallbackpaths_OBJECTS) $(testsolvercallbackpaths_LDADD) $(LIBS)
 
+testsolvercapabilities$(EXEEXT): $(testsolvercapabilities_OBJECTS) $(testsolvercapabilities_DEPENDENCIES) $(EXTRA_testsolvercapabilities_DEPENDENCIES) 
+	@rm -f testsolvercapabilities$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testsolvercapabilities_OBJECTS) $(testsolvercapabilities_LDADD) $(LIBS)
+
 testsolvermonitor$(EXEEXT): $(testsolvermonitor_OBJECTS) $(testsolvermonitor_DEPENDENCIES) $(EXTRA_testsolvermonitor_DEPENDENCIES) 
 	@rm -f testsolvermonitor$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testsolvermonitor_OBJECTS) $(testsolvermonitor_LDADD) $(LIBS)
@@ -2127,6 +2138,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testshellscale.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsolvercallbackcert.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsolvercallbackpaths.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsolvercapabilities.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsolvermonitor.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsymmdiagguard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testthreads.Po@am__quote@ # am--include-marker
@@ -2460,6 +2472,13 @@ testmatvecblock.log: testmatvecblock$(EXEEXT)
 testcapabilities.log: testcapabilities$(EXEEXT)
 	@p='testcapabilities$(EXEEXT)'; \
 	b='testcapabilities'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testsolvercapabilities.log: testsolvercapabilities$(EXEEXT)
+	@p='testsolvercapabilities$(EXEEXT)'; \
+	b='testsolvercapabilities'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -3037,6 +3056,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testshellscale.Po
 	-rm -f ./$(DEPDIR)/testsolvercallbackcert.Po
 	-rm -f ./$(DEPDIR)/testsolvercallbackpaths.Po
+	-rm -f ./$(DEPDIR)/testsolvercapabilities.Po
 	-rm -f ./$(DEPDIR)/testsolvermonitor.Po
 	-rm -f ./$(DEPDIR)/testsymmdiagguard.Po
 	-rm -f ./$(DEPDIR)/testthreads.Po
@@ -3179,6 +3199,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testshellscale.Po
 	-rm -f ./$(DEPDIR)/testsolvercallbackcert.Po
 	-rm -f ./$(DEPDIR)/testsolvercallbackpaths.Po
+	-rm -f ./$(DEPDIR)/testsolvercapabilities.Po
 	-rm -f ./$(DEPDIR)/testsolvermonitor.Po
 	-rm -f ./$(DEPDIR)/testsymmdiagguard.Po
 	-rm -f ./$(DEPDIR)/testthreads.Po
