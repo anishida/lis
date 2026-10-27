@@ -27,6 +27,16 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 
+#ifdef HAVE_CONFIG_H
+#include "lis_config.h"
+#else
+#ifdef HAVE_CONFIG_WIN_H
+#include "lis_config_win.h"
+#endif
+#endif
+
+#include <math.h>
+
 #ifdef __cplusplus
 #undef HAVE_COMPLEX_H
 extern "C" {
