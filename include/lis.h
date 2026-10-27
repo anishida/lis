@@ -334,6 +334,7 @@ extern "C" {
 #define LIS_MATRIX_CAP_MATVECH     0x02
 #define LIS_MATRIX_CAP_DIAGONAL    0x04
 #define LIS_MATRIX_CAP_ROW_ACCESS  0x08
+#define LIS_MATRIX_CAP_ROW_THREAD_SAFE 0x10
 #define LIS_MATRIX_DECIDING_SIZE -(LIS_MATRIX_RCO+1)
 #define LIS_MATRIX_NULL -(LIS_MATRIX_RCO+2)
 
@@ -797,6 +798,7 @@ struct LIS_MATRIX_STRUCT
 	LIS_MATRIX_USER_MATVEC_BLOCK user_matvech_block;
 	LIS_MATRIX_USER_GET_DIAGONAL user_get_diagonal;
 	LIS_MATRIX_USER_GET_ROW user_get_row;
+	LIS_INT user_get_row_thread_safe;
 
 	/* Non-owning linear-combination operator: alpha*A + beta*B. */
 	struct LIS_MATRIX_STRUCT *operator_A;
@@ -1251,6 +1253,14 @@ extern "C"
 	extern LIS_INT lis_matrix_set_user_row(
 	                                   LIS_MATRIX A,
 	                                   LIS_MATRIX_USER_GET_ROW get_row);
+	/*
+	 * Mark the currently installed USER row callback as safe for concurrent
+	 * invocations. lis_matrix_set_user_row() always clears this opt-in, so a
+	 * replacement callback must be marked thread-safe explicitly again.
+	 */
+	extern LIS_INT lis_matrix_set_user_row_thread_safe(
+	                                   LIS_MATRIX A,
+	                                   LIS_INT thread_safe);
 	extern LIS_INT lis_matrix_get_user_row(
 	                                   LIS_MATRIX A,
 	                                   LIS_INT local_row,
