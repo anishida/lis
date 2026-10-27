@@ -1,5 +1,6 @@
 #include "lis.h"
 #include <stdio.h>
+#include <math.h>
 
 static void scalar_set_real(
         LIS_SCALAR *x,
