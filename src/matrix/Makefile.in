@@ -106,13 +106,13 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libmatrix_la_LIBADD =
-am_libmatrix_la_OBJECTS = lis_matrix.lo lis_matrix_bsc.lo \
-	lis_matrix_bsr.lo lis_matrix_csc.lo lis_matrix_coo.lo \
-	lis_matrix_csr.lo lis_matrix_dia.lo lis_matrix_diag.lo \
-	lis_matrix_dns.lo lis_matrix_ell.lo lis_matrix_graph.lo \
-	lis_matrix_ilu.lo lis_matrix_jad.lo lis_matrix_mpi.lo \
-	lis_matrix_msr.lo lis_matrix_ops.lo lis_matrix_rco.lo \
-	lis_matrix_vbr.lo
+am_libmatrix_la_OBJECTS = lis_matrix.lo lis_matrix_split_view.lo \
+	lis_matrix_bsc.lo lis_matrix_bsr.lo lis_matrix_csc.lo \
+	lis_matrix_coo.lo lis_matrix_csr.lo lis_matrix_dia.lo \
+	lis_matrix_diag.lo lis_matrix_dns.lo lis_matrix_ell.lo \
+	lis_matrix_graph.lo lis_matrix_ilu.lo lis_matrix_jad.lo \
+	lis_matrix_mpi.lo lis_matrix_msr.lo lis_matrix_ops.lo \
+	lis_matrix_rco.lo lis_matrix_vbr.lo
 libmatrix_la_OBJECTS = $(am_libmatrix_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -143,6 +143,7 @@ am__depfiles_remade = ./$(DEPDIR)/lis_matrix.Plo \
 	./$(DEPDIR)/lis_matrix_ilu.Plo ./$(DEPDIR)/lis_matrix_jad.Plo \
 	./$(DEPDIR)/lis_matrix_mpi.Plo ./$(DEPDIR)/lis_matrix_msr.Plo \
 	./$(DEPDIR)/lis_matrix_ops.Plo ./$(DEPDIR)/lis_matrix_rco.Plo \
+	./$(DEPDIR)/lis_matrix_split_view.Plo \
 	./$(DEPDIR)/lis_matrix_vbr.Plo
 am__mv = mv -f
 AM_V_CC = $(am__v_CC_@AM_V@)
@@ -340,6 +341,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LTLIBRARIES = libmatrix.la
 libmatrix_la_SOURCES = lis_matrix.c \
+lis_matrix_split_view.c \
 lis_matrix_bsc.c \
 lis_matrix_bsr.c \
 lis_matrix_csc.c \
@@ -443,6 +445,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_matrix_msr.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_matrix_ops.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_matrix_rco.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_matrix_split_view.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_matrix_vbr.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -621,6 +624,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/lis_matrix_msr.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix_ops.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix_rco.Plo
+	-rm -f ./$(DEPDIR)/lis_matrix_split_view.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix_vbr.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -684,6 +688,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/lis_matrix_msr.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix_ops.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix_rco.Plo
+	-rm -f ./$(DEPDIR)/lis_matrix_split_view.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix_vbr.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic

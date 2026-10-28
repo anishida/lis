@@ -1,7 +1,7 @@
 nobase_include_HEADERS = lis_config.h lis.h lisf.h \
 	lis_nullspace_candidates.h lis_esolver_selection.h \
 	lis_solver_capabilities.h lis_solver_options.h \
-	lis_omp_capacity.h lis_matrix_graph.h
+	lis_omp_capacity.h lis_matrix_graph.h lis_matrix_split_view.h
 
 EXTRA_DIST = lis_config_win.h \
 	lis_esolver.h \
