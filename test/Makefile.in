@@ -108,15 +108,15 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testsolvercapabilities$(EXEEXT) \
 	testsolveroptionreplace$(EXEEXT) testompelastic$(EXEEXT) \
 	testmatrixgraph$(EXEEXT) testcomponentnullspace$(EXEEXT) \
-	getestuser$(EXEEXT) testoperator$(EXEEXT) \
-	getestoperator$(EXEEXT) testdiagonal$(EXEEXT) \
-	testpreconlifecycle$(EXEEXT) testhybridnested$(EXEEXT) \
-	testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
-	testpreconreuse$(EXEEXT) testeigenbreakdown$(EXEEXT) \
-	testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
-	testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) \
-	testgmreswork$(EXEEXT) testsolvermonitor$(EXEEXT) \
-	testsolvercallbackpaths$(EXEEXT) \
+	testnullspacelift$(EXEEXT) getestuser$(EXEEXT) \
+	testoperator$(EXEEXT) getestoperator$(EXEEXT) \
+	testdiagonal$(EXEEXT) testpreconlifecycle$(EXEEXT) \
+	testhybridnested$(EXEEXT) testjacobiuser$(EXEEXT) \
+	testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) \
+	testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) \
+	testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) \
+	testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
+	testsolvermonitor$(EXEEXT) testsolvercallbackpaths$(EXEEXT) \
 	testsolvercallbackcert$(EXEEXT) testworkcompat$(EXEEXT) \
 	testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) \
 	testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) \
@@ -546,6 +546,10 @@ testnullspacecandidates_OBJECTS =  \
 	$(am_testnullspacecandidates_OBJECTS)
 testnullspacecandidates_LDADD = $(LDADD)
 testnullspacecandidates_DEPENDENCIES =
+am_testnullspacelift_OBJECTS = testnullspacelift.$(OBJEXT)
+testnullspacelift_OBJECTS = $(am_testnullspacelift_OBJECTS)
+testnullspacelift_LDADD = $(LDADD)
+testnullspacelift_DEPENDENCIES =
 am_testompelastic_OBJECTS = testompelastic.$(OBJEXT)
 testompelastic_OBJECTS = $(am_testompelastic_OBJECTS)
 testompelastic_LDADD = $(LDADD)
@@ -756,8 +760,9 @@ am__depfiles_remade = ./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
 	./$(DEPDIR)/testmfamg.Po ./$(DEPDIR)/testmfamggalerkin.Po \
 	./$(DEPDIR)/testnearnullspace.Po \
 	./$(DEPDIR)/testnullspacecandidates.Po \
-	./$(DEPDIR)/testompelastic.Po ./$(DEPDIR)/testoperator.Po \
-	./$(DEPDIR)/testparamupdate.Po ./$(DEPDIR)/testprebuiltuser.Po \
+	./$(DEPDIR)/testnullspacelift.Po ./$(DEPDIR)/testompelastic.Po \
+	./$(DEPDIR)/testoperator.Po ./$(DEPDIR)/testparamupdate.Po \
+	./$(DEPDIR)/testprebuiltuser.Po \
 	./$(DEPDIR)/testpreconlifecycle.Po \
 	./$(DEPDIR)/testpreconpolicy.Po ./$(DEPDIR)/testpreconpsd.Po \
 	./$(DEPDIR)/testpreconreuse.Po \
@@ -850,7 +855,8 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
 	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
-	$(testnullspacecandidates_SOURCES) $(testompelastic_SOURCES) \
+	$(testnullspacecandidates_SOURCES) \
+	$(testnullspacelift_SOURCES) $(testompelastic_SOURCES) \
 	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
 	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
 	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
@@ -906,7 +912,8 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
 	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
-	$(testnullspacecandidates_SOURCES) $(testompelastic_SOURCES) \
+	$(testnullspacecandidates_SOURCES) \
+	$(testnullspacelift_SOURCES) $(testompelastic_SOURCES) \
 	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
 	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
 	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
@@ -1347,6 +1354,7 @@ testsolveroptionreplace_SOURCES = testsolveroptionreplace.c
 testompelastic_SOURCES = testompelastic.c
 testmatrixgraph_SOURCES = testmatrixgraph.c
 testcomponentnullspace_SOURCES = testcomponentnullspace.c
+testnullspacelift_SOURCES = testnullspacelift.c
 testhalfconfig_SOURCES = testhalfconfig.c
 testhalfconvert_SOURCES = testhalfconvert.c
 testhalfstorage_SOURCES = testhalfstorage.c
@@ -1454,16 +1462,16 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	testvectornrm2mpi$(EXEEXT) testsolvercapabilities$(EXEEXT) \
 	testsolveroptionreplace$(EXEEXT) testompelastic$(EXEEXT) \
 	testmatrixgraph$(EXEEXT) testcomponentnullspace$(EXEEXT) \
-	testpreconlifecycle$(EXEEXT) testhybridnested$(EXEEXT) \
-	testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
-	testpreconreuse$(EXEEXT) testesubspaceretry$(EXEEXT) \
-	testprojectedeigen$(EXEEXT) testprojectedhermitian$(EXEEXT) \
-	testblockgram$(EXEEXT) testblockorthogonal$(EXEEXT) \
-	testblockrank$(EXEEXT) testeigenbreakdown$(EXEEXT) \
-	testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
-	testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) \
-	testgmreswork$(EXEEXT) testsolvermonitor$(EXEEXT) \
-	testsolvercallbackpaths$(EXEEXT) \
+	testnullspacelift$(EXEEXT) testpreconlifecycle$(EXEEXT) \
+	testhybridnested$(EXEEXT) testjacobiuser$(EXEEXT) \
+	testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) \
+	testesubspaceretry$(EXEEXT) testprojectedeigen$(EXEEXT) \
+	testprojectedhermitian$(EXEEXT) testblockgram$(EXEEXT) \
+	testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) \
+	testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) \
+	testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) \
+	testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
+	testsolvermonitor$(EXEEXT) testsolvercallbackpaths$(EXEEXT) \
 	testsolvercallbackcert$(EXEEXT) testworkcompat$(EXEEXT) \
 	testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) \
 	testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) \
@@ -1952,6 +1960,10 @@ testnullspacecandidates$(EXEEXT): $(testnullspacecandidates_OBJECTS) $(testnulls
 	@rm -f testnullspacecandidates$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testnullspacecandidates_OBJECTS) $(testnullspacecandidates_LDADD) $(LIBS)
 
+testnullspacelift$(EXEEXT): $(testnullspacelift_OBJECTS) $(testnullspacelift_DEPENDENCIES) $(EXTRA_testnullspacelift_DEPENDENCIES) 
+	@rm -f testnullspacelift$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testnullspacelift_OBJECTS) $(testnullspacelift_LDADD) $(LIBS)
+
 testompelastic$(EXEEXT): $(testompelastic_OBJECTS) $(testompelastic_DEPENDENCIES) $(EXTRA_testompelastic_DEPENDENCIES) 
 	@rm -f testompelastic$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testompelastic_OBJECTS) $(testompelastic_LDADD) $(LIBS)
@@ -2185,6 +2197,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamggalerkin.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testnearnullspace.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testnullspacecandidates.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testnullspacelift.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testompelastic.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoperator.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testparamupdate.Po@am__quote@ # am--include-marker
@@ -2581,6 +2594,13 @@ testmatrixgraph.log: testmatrixgraph$(EXEEXT)
 testcomponentnullspace.log: testcomponentnullspace$(EXEEXT)
 	@p='testcomponentnullspace$(EXEEXT)'; \
 	b='testcomponentnullspace'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testnullspacelift.log: testnullspacelift$(EXEEXT)
+	@p='testnullspacelift$(EXEEXT)'; \
+	b='testnullspacelift'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -3143,6 +3163,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testmfamggalerkin.Po
 	-rm -f ./$(DEPDIR)/testnearnullspace.Po
 	-rm -f ./$(DEPDIR)/testnullspacecandidates.Po
+	-rm -f ./$(DEPDIR)/testnullspacelift.Po
 	-rm -f ./$(DEPDIR)/testompelastic.Po
 	-rm -f ./$(DEPDIR)/testoperator.Po
 	-rm -f ./$(DEPDIR)/testparamupdate.Po
@@ -3291,6 +3312,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testmfamggalerkin.Po
 	-rm -f ./$(DEPDIR)/testnearnullspace.Po
 	-rm -f ./$(DEPDIR)/testnullspacecandidates.Po
+	-rm -f ./$(DEPDIR)/testnullspacelift.Po
 	-rm -f ./$(DEPDIR)/testompelastic.Po
 	-rm -f ./$(DEPDIR)/testoperator.Po
 	-rm -f ./$(DEPDIR)/testparamupdate.Po

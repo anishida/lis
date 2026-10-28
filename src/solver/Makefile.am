@@ -1,6 +1,7 @@
 noinst_LTLIBRARIES = libsolver.la
 libsolver_la_SOURCES = lis_solver.c lis_solver_nearnullspace.c \
-lis_solver_nullspace_candidates.c lis_solver_component_nullspace.c lis_solver_nullspace_query.c \
+lis_solver_nullspace_candidates.c lis_solver_component_nullspace.c \
+lis_solver_nullspace_lift.c lis_solver_nullspace_query.c \
 lis_solver_capabilities.c lis_solver_options.c \
 lis_solver_bicg.c \
 lis_solver_bicgsafe.c \
