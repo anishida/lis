@@ -1,10 +1,10 @@
-#include "lis.h"
-#include "lis_nullspace_lift.h"
 #include <math.h>
 #include <stdio.h>
 #ifdef _COMPLEX
 #include <complex.h>
 #endif
+#include "lis.h"
+#include "lis_nullspace_lift.h"
 
 #define Q0_INDEX0 0
 #define Q0_INDEX1 2
