@@ -106,15 +106,16 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testuserprecon$(EXEEXT) testmatvecblock$(EXEEXT) \
 	testcapabilities$(EXEEXT) testsolvercapabilities$(EXEEXT) \
 	testsolveroptionreplace$(EXEEXT) testompelastic$(EXEEXT) \
-	testmatrixgraph$(EXEEXT) getestuser$(EXEEXT) \
-	testoperator$(EXEEXT) getestoperator$(EXEEXT) \
-	testdiagonal$(EXEEXT) testpreconlifecycle$(EXEEXT) \
-	testhybridnested$(EXEEXT) testjacobiuser$(EXEEXT) \
-	testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) \
-	testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) \
-	testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) \
-	testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
-	testsolvermonitor$(EXEEXT) testsolvercallbackpaths$(EXEEXT) \
+	testmatrixgraph$(EXEEXT) testcomponentnullspace$(EXEEXT) \
+	getestuser$(EXEEXT) testoperator$(EXEEXT) \
+	getestoperator$(EXEEXT) testdiagonal$(EXEEXT) \
+	testpreconlifecycle$(EXEEXT) testhybridnested$(EXEEXT) \
+	testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
+	testpreconreuse$(EXEEXT) testeigenbreakdown$(EXEEXT) \
+	testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
+	testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) \
+	testgmreswork$(EXEEXT) testsolvermonitor$(EXEEXT) \
+	testsolvercallbackpaths$(EXEEXT) \
 	testsolvercallbackcert$(EXEEXT) testworkcompat$(EXEEXT) \
 	testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) \
 	testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) \
@@ -406,6 +407,10 @@ am_testcoarsesetup_OBJECTS = testcoarsesetup.$(OBJEXT)
 testcoarsesetup_OBJECTS = $(am_testcoarsesetup_OBJECTS)
 testcoarsesetup_LDADD = $(LDADD)
 testcoarsesetup_DEPENDENCIES =
+am_testcomponentnullspace_OBJECTS = testcomponentnullspace.$(OBJEXT)
+testcomponentnullspace_OBJECTS = $(am_testcomponentnullspace_OBJECTS)
+testcomponentnullspace_LDADD = $(LDADD)
+testcomponentnullspace_DEPENDENCIES =
 am_testdiagonal_OBJECTS = testdiagonal.$(OBJEXT)
 testdiagonal_OBJECTS = $(am_testdiagonal_OBJECTS)
 testdiagonal_LDADD = $(LDADD)
@@ -722,6 +727,7 @@ am__depfiles_remade = ./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
 	./$(DEPDIR)/testcapabilities.Po \
 	./$(DEPDIR)/testchangingsystem.Po \
 	./$(DEPDIR)/testcoarseapply.Po ./$(DEPDIR)/testcoarsesetup.Po \
+	./$(DEPDIR)/testcomponentnullspace.Po \
 	./$(DEPDIR)/testdiagonal.Po ./$(DEPDIR)/testeigenbreakdown.Po \
 	./$(DEPDIR)/testesolverselection.Po \
 	./$(DEPDIR)/testesubspaceretry.Po \
@@ -821,23 +827,23 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testblockorthogonal_SOURCES) $(testblockrank_SOURCES) \
 	$(testbreakretry_SOURCES) $(testcapabilities_SOURCES) \
 	$(testchangingsystem_SOURCES) $(testcoarseapply_SOURCES) \
-	$(testcoarsesetup_SOURCES) $(testdiagonal_SOURCES) \
-	$(testeigenbreakdown_SOURCES) $(testesolverselection_SOURCES) \
-	$(testesubspaceretry_SOURCES) testexactnullspace.c \
-	$(testexternalstorage_SOURCES) $(testfeastcontour_SOURCES) \
-	$(testfeastfoundation_SOURCES) $(testfeastshifted_SOURCES) \
-	$(testfgcrodr_SOURCES) $(testgcrodrconfig_SOURCES) \
-	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
-	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
-	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
-	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
-	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
-	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
-	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
-	$(testmatrixgraph_SOURCES) $(testmatvecblock_SOURCES) \
-	$(testmfamg_SOURCES) $(testmfamggalerkin_SOURCES) \
-	$(testnearnullspace_SOURCES) \
+	$(testcoarsesetup_SOURCES) $(testcomponentnullspace_SOURCES) \
+	$(testdiagonal_SOURCES) $(testeigenbreakdown_SOURCES) \
+	$(testesolverselection_SOURCES) $(testesubspaceretry_SOURCES) \
+	testexactnullspace.c $(testexternalstorage_SOURCES) \
+	$(testfeastcontour_SOURCES) $(testfeastfoundation_SOURCES) \
+	$(testfeastshifted_SOURCES) $(testfgcrodr_SOURCES) \
+	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
+	$(testgcrodrsequence_SOURCES) $(testgmreswork_SOURCES) \
+	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
+	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
+	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
+	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
+	$(testhybridnested_SOURCES) $(testilupivot_SOURCES) \
+	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
+	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
+	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
+	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
 	$(testnullspacecandidates_SOURCES) $(testompelastic_SOURCES) \
 	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
 	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
@@ -876,23 +882,23 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testblockorthogonal_SOURCES) $(testblockrank_SOURCES) \
 	$(testbreakretry_SOURCES) $(testcapabilities_SOURCES) \
 	$(testchangingsystem_SOURCES) $(testcoarseapply_SOURCES) \
-	$(testcoarsesetup_SOURCES) $(testdiagonal_SOURCES) \
-	$(testeigenbreakdown_SOURCES) $(testesolverselection_SOURCES) \
-	$(testesubspaceretry_SOURCES) testexactnullspace.c \
-	$(testexternalstorage_SOURCES) $(testfeastcontour_SOURCES) \
-	$(testfeastfoundation_SOURCES) $(testfeastshifted_SOURCES) \
-	$(testfgcrodr_SOURCES) $(testgcrodrconfig_SOURCES) \
-	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
-	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
-	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
-	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
-	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
-	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
-	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
-	$(testmatrixgraph_SOURCES) $(testmatvecblock_SOURCES) \
-	$(testmfamg_SOURCES) $(testmfamggalerkin_SOURCES) \
-	$(testnearnullspace_SOURCES) \
+	$(testcoarsesetup_SOURCES) $(testcomponentnullspace_SOURCES) \
+	$(testdiagonal_SOURCES) $(testeigenbreakdown_SOURCES) \
+	$(testesolverselection_SOURCES) $(testesubspaceretry_SOURCES) \
+	testexactnullspace.c $(testexternalstorage_SOURCES) \
+	$(testfeastcontour_SOURCES) $(testfeastfoundation_SOURCES) \
+	$(testfeastshifted_SOURCES) $(testfgcrodr_SOURCES) \
+	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
+	$(testgcrodrsequence_SOURCES) $(testgmreswork_SOURCES) \
+	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
+	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
+	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
+	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
+	$(testhybridnested_SOURCES) $(testilupivot_SOURCES) \
+	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
+	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
+	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
+	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
 	$(testnullspacecandidates_SOURCES) $(testompelastic_SOURCES) \
 	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
 	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
@@ -1331,6 +1337,7 @@ testsolvercapabilities_SOURCES = testsolvercapabilities.c
 testsolveroptionreplace_SOURCES = testsolveroptionreplace.c
 testompelastic_SOURCES = testompelastic.c
 testmatrixgraph_SOURCES = testmatrixgraph.c
+testcomponentnullspace_SOURCES = testcomponentnullspace.c
 testhalfconfig_SOURCES = testhalfconfig.c
 testhalfconvert_SOURCES = testhalfconvert.c
 testhalfstorage_SOURCES = testhalfstorage.c
@@ -1437,16 +1444,17 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
 	testsolvercapabilities$(EXEEXT) \
 	testsolveroptionreplace$(EXEEXT) testompelastic$(EXEEXT) \
-	testmatrixgraph$(EXEEXT) testpreconlifecycle$(EXEEXT) \
-	testhybridnested$(EXEEXT) testjacobiuser$(EXEEXT) \
-	testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) \
-	testesubspaceretry$(EXEEXT) testprojectedeigen$(EXEEXT) \
-	testprojectedhermitian$(EXEEXT) testblockgram$(EXEEXT) \
-	testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) \
-	testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) \
-	testrhistoryerror$(EXEEXT) testrepeatedsystems$(EXEEXT) \
-	testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
-	testsolvermonitor$(EXEEXT) testsolvercallbackpaths$(EXEEXT) \
+	testmatrixgraph$(EXEEXT) testcomponentnullspace$(EXEEXT) \
+	testpreconlifecycle$(EXEEXT) testhybridnested$(EXEEXT) \
+	testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
+	testpreconreuse$(EXEEXT) testesubspaceretry$(EXEEXT) \
+	testprojectedeigen$(EXEEXT) testprojectedhermitian$(EXEEXT) \
+	testblockgram$(EXEEXT) testblockorthogonal$(EXEEXT) \
+	testblockrank$(EXEEXT) testeigenbreakdown$(EXEEXT) \
+	testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
+	testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) \
+	testgmreswork$(EXEEXT) testsolvermonitor$(EXEEXT) \
+	testsolvercallbackpaths$(EXEEXT) \
 	testsolvercallbackcert$(EXEEXT) testworkcompat$(EXEEXT) \
 	testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) \
 	testshellscale$(EXEEXT) testsymmdiagguard$(EXEEXT) \
@@ -1799,6 +1807,10 @@ testcoarsesetup$(EXEEXT): $(testcoarsesetup_OBJECTS) $(testcoarsesetup_DEPENDENC
 	@rm -f testcoarsesetup$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testcoarsesetup_OBJECTS) $(testcoarsesetup_LDADD) $(LIBS)
 
+testcomponentnullspace$(EXEEXT): $(testcomponentnullspace_OBJECTS) $(testcomponentnullspace_DEPENDENCIES) $(EXTRA_testcomponentnullspace_DEPENDENCIES) 
+	@rm -f testcomponentnullspace$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testcomponentnullspace_OBJECTS) $(testcomponentnullspace_LDADD) $(LIBS)
+
 testdiagonal$(EXEEXT): $(testdiagonal_OBJECTS) $(testdiagonal_DEPENDENCIES) $(EXTRA_testdiagonal_DEPENDENCIES) 
 	@rm -f testdiagonal$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testdiagonal_OBJECTS) $(testdiagonal_LDADD) $(LIBS)
@@ -2126,6 +2138,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testchangingsystem.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testcoarseapply.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testcoarsesetup.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testcomponentnullspace.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testdiagonal.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testeigenbreakdown.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testesolverselection.Po@am__quote@ # am--include-marker
@@ -2540,6 +2553,13 @@ testompelastic.log: testompelastic$(EXEEXT)
 testmatrixgraph.log: testmatrixgraph$(EXEEXT)
 	@p='testmatrixgraph$(EXEEXT)'; \
 	b='testmatrixgraph'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testcomponentnullspace.log: testcomponentnullspace$(EXEEXT)
+	@p='testcomponentnullspace$(EXEEXT)'; \
+	b='testcomponentnullspace'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -3068,6 +3088,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testchangingsystem.Po
 	-rm -f ./$(DEPDIR)/testcoarseapply.Po
 	-rm -f ./$(DEPDIR)/testcoarsesetup.Po
+	-rm -f ./$(DEPDIR)/testcomponentnullspace.Po
 	-rm -f ./$(DEPDIR)/testdiagonal.Po
 	-rm -f ./$(DEPDIR)/testeigenbreakdown.Po
 	-rm -f ./$(DEPDIR)/testesolverselection.Po
@@ -3214,6 +3235,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testchangingsystem.Po
 	-rm -f ./$(DEPDIR)/testcoarseapply.Po
 	-rm -f ./$(DEPDIR)/testcoarsesetup.Po
+	-rm -f ./$(DEPDIR)/testcomponentnullspace.Po
 	-rm -f ./$(DEPDIR)/testdiagonal.Po
 	-rm -f ./$(DEPDIR)/testeigenbreakdown.Po
 	-rm -f ./$(DEPDIR)/testesolverselection.Po
