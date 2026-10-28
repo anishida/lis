@@ -2056,7 +2056,7 @@ testuserrow$(EXEEXT): $(testuserrow_OBJECTS) $(testuserrow_DEPENDENCIES) $(EXTRA
 	@rm -f testuserrow$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testuserrow_OBJECTS) $(testuserrow_LDADD) $(LIBS)
 
-testvectornrm2mpi$(EXEEXT): $(testvectornrm2mpi_OBJECTS) $(testvectornrm2mpi_DEPENDENCIES) $(EXTRA_testvectornrm2mpi_DEPENDENCIES)
+testvectornrm2mpi$(EXEEXT): $(testvectornrm2mpi_OBJECTS) $(testvectornrm2mpi_DEPENDENCIES) $(EXTRA_testvectornrm2mpi_DEPENDENCIES) 
 	@rm -f testvectornrm2mpi$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testvectornrm2mpi_OBJECTS) $(testvectornrm2mpi_LDADD) $(LIBS)
 
