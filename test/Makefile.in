@@ -105,7 +105,8 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	test7$(EXEEXT) testuser$(EXEEXT) testuserrow$(EXEEXT) \
 	testuserprecon$(EXEEXT) testmatvecblock$(EXEEXT) \
 	testcapabilities$(EXEEXT) testsolvercapabilities$(EXEEXT) \
-	testsolveroptionreplace$(EXEEXT) getestuser$(EXEEXT) \
+	testsolveroptionreplace$(EXEEXT) testompelastic$(EXEEXT) \
+	testmatrixgraph$(EXEEXT) getestuser$(EXEEXT) \
 	testoperator$(EXEEXT) getestoperator$(EXEEXT) \
 	testdiagonal$(EXEEXT) testpreconlifecycle$(EXEEXT) \
 	testhybridnested$(EXEEXT) testjacobiuser$(EXEEXT) \
@@ -513,6 +514,10 @@ am_testmatrixgeneration_OBJECTS = testmatrixgeneration.$(OBJEXT)
 testmatrixgeneration_OBJECTS = $(am_testmatrixgeneration_OBJECTS)
 testmatrixgeneration_LDADD = $(LDADD)
 testmatrixgeneration_DEPENDENCIES =
+am_testmatrixgraph_OBJECTS = testmatrixgraph.$(OBJEXT)
+testmatrixgraph_OBJECTS = $(am_testmatrixgraph_OBJECTS)
+testmatrixgraph_LDADD = $(LDADD)
+testmatrixgraph_DEPENDENCIES =
 am_testmatvecblock_OBJECTS = testmatvecblock.$(OBJEXT)
 testmatvecblock_OBJECTS = $(am_testmatvecblock_OBJECTS)
 testmatvecblock_LDADD = $(LDADD)
@@ -535,6 +540,10 @@ testnullspacecandidates_OBJECTS =  \
 	$(am_testnullspacecandidates_OBJECTS)
 testnullspacecandidates_LDADD = $(LDADD)
 testnullspacecandidates_DEPENDENCIES =
+am_testompelastic_OBJECTS = testompelastic.$(OBJEXT)
+testompelastic_OBJECTS = $(am_testompelastic_OBJECTS)
+testompelastic_LDADD = $(LDADD)
+testompelastic_DEPENDENCIES =
 am_testoperator_OBJECTS = testoperator.$(OBJEXT)
 testoperator_OBJECTS = $(am_testoperator_OBJECTS)
 testoperator_LDADD = $(LDADD)
@@ -732,12 +741,12 @@ am__depfiles_remade = ./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
 	./$(DEPDIR)/testhybridnested.Po ./$(DEPDIR)/testilupivot.Po \
 	./$(DEPDIR)/testjacobiuser.Po ./$(DEPDIR)/testkrylovrobust.Po \
 	./$(DEPDIR)/testmatrixgeneration.Po \
-	./$(DEPDIR)/testmatvecblock.Po ./$(DEPDIR)/testmfamg.Po \
-	./$(DEPDIR)/testmfamggalerkin.Po \
+	./$(DEPDIR)/testmatrixgraph.Po ./$(DEPDIR)/testmatvecblock.Po \
+	./$(DEPDIR)/testmfamg.Po ./$(DEPDIR)/testmfamggalerkin.Po \
 	./$(DEPDIR)/testnearnullspace.Po \
 	./$(DEPDIR)/testnullspacecandidates.Po \
-	./$(DEPDIR)/testoperator.Po ./$(DEPDIR)/testparamupdate.Po \
-	./$(DEPDIR)/testprebuiltuser.Po \
+	./$(DEPDIR)/testompelastic.Po ./$(DEPDIR)/testoperator.Po \
+	./$(DEPDIR)/testparamupdate.Po ./$(DEPDIR)/testprebuiltuser.Po \
 	./$(DEPDIR)/testpreconlifecycle.Po \
 	./$(DEPDIR)/testpreconpolicy.Po ./$(DEPDIR)/testpreconpsd.Po \
 	./$(DEPDIR)/testpreconreuse.Po \
@@ -826,13 +835,14 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
 	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
 	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
-	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
-	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
-	$(testnullspacecandidates_SOURCES) $(testoperator_SOURCES) \
-	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
-	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
-	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
-	$(testprojectedeigen_SOURCES) \
+	$(testmatrixgraph_SOURCES) $(testmatvecblock_SOURCES) \
+	$(testmfamg_SOURCES) $(testmfamggalerkin_SOURCES) \
+	$(testnearnullspace_SOURCES) \
+	$(testnullspacecandidates_SOURCES) $(testompelastic_SOURCES) \
+	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
+	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
+	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
+	$(testpreconreuse_SOURCES) $(testprojectedeigen_SOURCES) \
 	$(testprojectedhermitian_SOURCES) $(testrecovery_SOURCES) \
 	$(testrepeatedsystems_SOURCES) testrhistoryerror.c \
 	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
@@ -880,13 +890,14 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
 	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
 	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
-	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
-	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
-	$(testnullspacecandidates_SOURCES) $(testoperator_SOURCES) \
-	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
-	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
-	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
-	$(testprojectedeigen_SOURCES) \
+	$(testmatrixgraph_SOURCES) $(testmatvecblock_SOURCES) \
+	$(testmfamg_SOURCES) $(testmfamggalerkin_SOURCES) \
+	$(testnearnullspace_SOURCES) \
+	$(testnullspacecandidates_SOURCES) $(testompelastic_SOURCES) \
+	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
+	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
+	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
+	$(testpreconreuse_SOURCES) $(testprojectedeigen_SOURCES) \
 	$(testprojectedhermitian_SOURCES) $(testrecovery_SOURCES) \
 	$(testrepeatedsystems_SOURCES) testrhistoryerror.c \
 	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
@@ -1318,6 +1329,8 @@ testmatvecblock_SOURCES = testmatvecblock.c
 testcapabilities_SOURCES = testcapabilities.c
 testsolvercapabilities_SOURCES = testsolvercapabilities.c
 testsolveroptionreplace_SOURCES = testsolveroptionreplace.c
+testompelastic_SOURCES = testompelastic.c
+testmatrixgraph_SOURCES = testmatrixgraph.c
 testhalfconfig_SOURCES = testhalfconfig.c
 testhalfconvert_SOURCES = testhalfconvert.c
 testhalfstorage_SOURCES = testhalfstorage.c
@@ -1423,7 +1436,8 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
 TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
 	testsolvercapabilities$(EXEEXT) \
-	testsolveroptionreplace$(EXEEXT) testpreconlifecycle$(EXEEXT) \
+	testsolveroptionreplace$(EXEEXT) testompelastic$(EXEEXT) \
+	testmatrixgraph$(EXEEXT) testpreconlifecycle$(EXEEXT) \
 	testhybridnested$(EXEEXT) testjacobiuser$(EXEEXT) \
 	testpreconpsd$(EXEEXT) testpreconreuse$(EXEEXT) \
 	testesubspaceretry$(EXEEXT) testprojectedeigen$(EXEEXT) \
@@ -1893,6 +1907,10 @@ testmatrixgeneration$(EXEEXT): $(testmatrixgeneration_OBJECTS) $(testmatrixgener
 	@rm -f testmatrixgeneration$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmatrixgeneration_OBJECTS) $(testmatrixgeneration_LDADD) $(LIBS)
 
+testmatrixgraph$(EXEEXT): $(testmatrixgraph_OBJECTS) $(testmatrixgraph_DEPENDENCIES) $(EXTRA_testmatrixgraph_DEPENDENCIES) 
+	@rm -f testmatrixgraph$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testmatrixgraph_OBJECTS) $(testmatrixgraph_LDADD) $(LIBS)
+
 testmatvecblock$(EXEEXT): $(testmatvecblock_OBJECTS) $(testmatvecblock_DEPENDENCIES) $(EXTRA_testmatvecblock_DEPENDENCIES) 
 	@rm -f testmatvecblock$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmatvecblock_OBJECTS) $(testmatvecblock_LDADD) $(LIBS)
@@ -1912,6 +1930,10 @@ testnearnullspace$(EXEEXT): $(testnearnullspace_OBJECTS) $(testnearnullspace_DEP
 testnullspacecandidates$(EXEEXT): $(testnullspacecandidates_OBJECTS) $(testnullspacecandidates_DEPENDENCIES) $(EXTRA_testnullspacecandidates_DEPENDENCIES) 
 	@rm -f testnullspacecandidates$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testnullspacecandidates_OBJECTS) $(testnullspacecandidates_LDADD) $(LIBS)
+
+testompelastic$(EXEEXT): $(testompelastic_OBJECTS) $(testompelastic_DEPENDENCIES) $(EXTRA_testompelastic_DEPENDENCIES) 
+	@rm -f testompelastic$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testompelastic_OBJECTS) $(testompelastic_LDADD) $(LIBS)
 
 testoperator$(EXEEXT): $(testoperator_OBJECTS) $(testoperator_DEPENDENCIES) $(EXTRA_testoperator_DEPENDENCIES) 
 	@rm -f testoperator$(EXEEXT)
@@ -2131,11 +2153,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testjacobiuser.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testkrylovrobust.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixgeneration.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixgraph.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatvecblock.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamggalerkin.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testnearnullspace.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testnullspacecandidates.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testompelastic.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoperator.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testparamupdate.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testprebuiltuser.Po@am__quote@ # am--include-marker
@@ -2502,6 +2526,20 @@ testsolvercapabilities.log: testsolvercapabilities$(EXEEXT)
 testsolveroptionreplace.log: testsolveroptionreplace$(EXEEXT)
 	@p='testsolveroptionreplace$(EXEEXT)'; \
 	b='testsolveroptionreplace'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testompelastic.log: testompelastic$(EXEEXT)
+	@p='testompelastic$(EXEEXT)'; \
+	b='testompelastic'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testmatrixgraph.log: testmatrixgraph$(EXEEXT)
+	@p='testmatrixgraph$(EXEEXT)'; \
+	b='testmatrixgraph'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -3057,11 +3095,13 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testjacobiuser.Po
 	-rm -f ./$(DEPDIR)/testkrylovrobust.Po
 	-rm -f ./$(DEPDIR)/testmatrixgeneration.Po
+	-rm -f ./$(DEPDIR)/testmatrixgraph.Po
 	-rm -f ./$(DEPDIR)/testmatvecblock.Po
 	-rm -f ./$(DEPDIR)/testmfamg.Po
 	-rm -f ./$(DEPDIR)/testmfamggalerkin.Po
 	-rm -f ./$(DEPDIR)/testnearnullspace.Po
 	-rm -f ./$(DEPDIR)/testnullspacecandidates.Po
+	-rm -f ./$(DEPDIR)/testompelastic.Po
 	-rm -f ./$(DEPDIR)/testoperator.Po
 	-rm -f ./$(DEPDIR)/testparamupdate.Po
 	-rm -f ./$(DEPDIR)/testprebuiltuser.Po
@@ -3201,11 +3241,13 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testjacobiuser.Po
 	-rm -f ./$(DEPDIR)/testkrylovrobust.Po
 	-rm -f ./$(DEPDIR)/testmatrixgeneration.Po
+	-rm -f ./$(DEPDIR)/testmatrixgraph.Po
 	-rm -f ./$(DEPDIR)/testmatvecblock.Po
 	-rm -f ./$(DEPDIR)/testmfamg.Po
 	-rm -f ./$(DEPDIR)/testmfamggalerkin.Po
 	-rm -f ./$(DEPDIR)/testnearnullspace.Po
 	-rm -f ./$(DEPDIR)/testnullspacecandidates.Po
+	-rm -f ./$(DEPDIR)/testompelastic.Po
 	-rm -f ./$(DEPDIR)/testoperator.Po
 	-rm -f ./$(DEPDIR)/testparamupdate.Po
 	-rm -f ./$(DEPDIR)/testprebuiltuser.Po

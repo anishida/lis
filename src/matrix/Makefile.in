@@ -109,9 +109,10 @@ libmatrix_la_LIBADD =
 am_libmatrix_la_OBJECTS = lis_matrix.lo lis_matrix_bsc.lo \
 	lis_matrix_bsr.lo lis_matrix_csc.lo lis_matrix_coo.lo \
 	lis_matrix_csr.lo lis_matrix_dia.lo lis_matrix_diag.lo \
-	lis_matrix_dns.lo lis_matrix_ell.lo lis_matrix_ilu.lo \
-	lis_matrix_jad.lo lis_matrix_mpi.lo lis_matrix_msr.lo \
-	lis_matrix_ops.lo lis_matrix_rco.lo lis_matrix_vbr.lo
+	lis_matrix_dns.lo lis_matrix_ell.lo lis_matrix_graph.lo \
+	lis_matrix_ilu.lo lis_matrix_jad.lo lis_matrix_mpi.lo \
+	lis_matrix_msr.lo lis_matrix_ops.lo lis_matrix_rco.lo \
+	lis_matrix_vbr.lo
 libmatrix_la_OBJECTS = $(am_libmatrix_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -137,10 +138,12 @@ am__depfiles_remade = ./$(DEPDIR)/lis_matrix.Plo \
 	./$(DEPDIR)/lis_matrix_coo.Plo ./$(DEPDIR)/lis_matrix_csc.Plo \
 	./$(DEPDIR)/lis_matrix_csr.Plo ./$(DEPDIR)/lis_matrix_dia.Plo \
 	./$(DEPDIR)/lis_matrix_diag.Plo ./$(DEPDIR)/lis_matrix_dns.Plo \
-	./$(DEPDIR)/lis_matrix_ell.Plo ./$(DEPDIR)/lis_matrix_ilu.Plo \
-	./$(DEPDIR)/lis_matrix_jad.Plo ./$(DEPDIR)/lis_matrix_mpi.Plo \
-	./$(DEPDIR)/lis_matrix_msr.Plo ./$(DEPDIR)/lis_matrix_ops.Plo \
-	./$(DEPDIR)/lis_matrix_rco.Plo ./$(DEPDIR)/lis_matrix_vbr.Plo
+	./$(DEPDIR)/lis_matrix_ell.Plo \
+	./$(DEPDIR)/lis_matrix_graph.Plo \
+	./$(DEPDIR)/lis_matrix_ilu.Plo ./$(DEPDIR)/lis_matrix_jad.Plo \
+	./$(DEPDIR)/lis_matrix_mpi.Plo ./$(DEPDIR)/lis_matrix_msr.Plo \
+	./$(DEPDIR)/lis_matrix_ops.Plo ./$(DEPDIR)/lis_matrix_rco.Plo \
+	./$(DEPDIR)/lis_matrix_vbr.Plo
 am__mv = mv -f
 AM_V_CC = $(am__v_CC_@AM_V@)
 am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
@@ -346,6 +349,7 @@ lis_matrix_dia.c \
 lis_matrix_diag.c \
 lis_matrix_dns.c \
 lis_matrix_ell.c \
+lis_matrix_graph.c \
 lis_matrix_ilu.c \
 lis_matrix_jad.c \
 lis_matrix_mpi.c \
@@ -432,6 +436,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_matrix_diag.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_matrix_dns.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_matrix_ell.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_matrix_graph.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_matrix_ilu.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_matrix_jad.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_matrix_mpi.Plo@am__quote@ # am--include-marker
@@ -609,6 +614,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/lis_matrix_diag.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix_dns.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix_ell.Plo
+	-rm -f ./$(DEPDIR)/lis_matrix_graph.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix_ilu.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix_jad.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix_mpi.Plo
@@ -671,6 +677,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/lis_matrix_diag.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix_dns.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix_ell.Plo
+	-rm -f ./$(DEPDIR)/lis_matrix_graph.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix_ilu.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix_jad.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix_mpi.Plo
