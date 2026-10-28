@@ -15,7 +15,7 @@ test_PROGRAMS = testesubspaceretry etest1 etest2 etest3 etest4 etest5 etest5b et
         getest5 getest5b spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b \
         spmvtest4 spmvtest5 test1 test2 test2b test3 test3b test3c \
         test4 test5 test6 test7 testuser testuserrow testuserprecon testmatvecblock \
-        testcapabilities testsolvercapabilities testsolveroptionreplace \
+        testcapabilities testvectornrm2mpi testsolvercapabilities testsolveroptionreplace \
 	testompelastic testmatrixgraph testcomponentnullspace getestuser testoperator getestoperator testdiagonal \
         testpreconlifecycle testhybridnested testjacobiuser testpreconpsd testpreconreuse testeigenbreakdown testrqirestore \
         testrhistoryerror testrepeatedsystems testpreconpolicy testgmreswork \
@@ -90,6 +90,7 @@ testuserrow_SOURCES = testuserrow.c
 testuserprecon_SOURCES = testuserprecon.c
 testmatvecblock_SOURCES = testmatvecblock.c
 testcapabilities_SOURCES = testcapabilities.c
+testvectornrm2mpi_SOURCES = testvectornrm2mpi.c
 testsolvercapabilities_SOURCES = testsolvercapabilities.c
 testsolveroptionreplace_SOURCES = testsolveroptionreplace.c
 testompelastic_SOURCES = testompelastic.c
@@ -208,7 +209,7 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
-TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) testsolvercapabilities$(EXEEXT) \
+TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) testvectornrm2mpi$(EXEEXT) testsolvercapabilities$(EXEEXT) \
 	testsolveroptionreplace$(EXEEXT) testompelastic$(EXEEXT) \
 	testmatrixgraph$(EXEEXT) testcomponentnullspace$(EXEEXT) \
         testpreconlifecycle$(EXEEXT) testhybridnested$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \

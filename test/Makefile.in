@@ -104,7 +104,8 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	test3c$(EXEEXT) test4$(EXEEXT) test5$(EXEEXT) test6$(EXEEXT) \
 	test7$(EXEEXT) testuser$(EXEEXT) testuserrow$(EXEEXT) \
 	testuserprecon$(EXEEXT) testmatvecblock$(EXEEXT) \
-	testcapabilities$(EXEEXT) testsolvercapabilities$(EXEEXT) \
+	testcapabilities$(EXEEXT) testvectornrm2mpi$(EXEEXT) \
+	testsolvercapabilities$(EXEEXT) \
 	testsolveroptionreplace$(EXEEXT) testompelastic$(EXEEXT) \
 	testmatrixgraph$(EXEEXT) testcomponentnullspace$(EXEEXT) \
 	getestuser$(EXEEXT) testoperator$(EXEEXT) \
@@ -653,6 +654,10 @@ am_testuserrow_OBJECTS = testuserrow.$(OBJEXT)
 testuserrow_OBJECTS = $(am_testuserrow_OBJECTS)
 testuserrow_LDADD = $(LDADD)
 testuserrow_DEPENDENCIES =
+am_testvectornrm2mpi_OBJECTS = testvectornrm2mpi.$(OBJEXT)
+testvectornrm2mpi_OBJECTS = $(am_testvectornrm2mpi_OBJECTS)
+testvectornrm2mpi_LDADD = $(LDADD)
+testvectornrm2mpi_DEPENDENCIES =
 am_testwarmstart_OBJECTS = testwarmstart.$(OBJEXT)
 testwarmstart_OBJECTS = $(am_testwarmstart_OBJECTS)
 testwarmstart_LDADD = $(LDADD)
@@ -768,8 +773,9 @@ am__depfiles_remade = ./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
 	./$(DEPDIR)/testsolveroptionreplace.Po \
 	./$(DEPDIR)/testsymmdiagguard.Po ./$(DEPDIR)/testthreads.Po \
 	./$(DEPDIR)/testuser.Po ./$(DEPDIR)/testuserprecon.Po \
-	./$(DEPDIR)/testuserrow.Po ./$(DEPDIR)/testwarmstart.Po \
-	./$(DEPDIR)/testworkcompat.Po ./$(DEPDIR)/testworkreuse.Po
+	./$(DEPDIR)/testuserrow.Po ./$(DEPDIR)/testvectornrm2mpi.Po \
+	./$(DEPDIR)/testwarmstart.Po ./$(DEPDIR)/testworkcompat.Po \
+	./$(DEPDIR)/testworkreuse.Po
 am__mv = mv -f
 AM_V_PPF77 = $(am__v_PPF77_@AM_V@)
 am__v_PPF77_ = $(am__v_PPF77_@AM_DEFAULT_V@)
@@ -858,8 +864,9 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testsolveroptionreplace_SOURCES) \
 	$(testsymmdiagguard_SOURCES) $(testthreads_SOURCES) \
 	$(testuser_SOURCES) $(testuserprecon_SOURCES) \
-	$(testuserrow_SOURCES) $(testwarmstart_SOURCES) \
-	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
+	$(testuserrow_SOURCES) $(testvectornrm2mpi_SOURCES) \
+	$(testwarmstart_SOURCES) $(testworkcompat_SOURCES) \
+	$(testworkreuse_SOURCES)
 DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
 	$(etest3_SOURCES) $(etest4_SOURCES) \
@@ -913,8 +920,9 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testsolveroptionreplace_SOURCES) \
 	$(testsymmdiagguard_SOURCES) $(testthreads_SOURCES) \
 	$(testuser_SOURCES) $(testuserprecon_SOURCES) \
-	$(testuserrow_SOURCES) $(testwarmstart_SOURCES) \
-	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
+	$(testuserrow_SOURCES) $(testvectornrm2mpi_SOURCES) \
+	$(testwarmstart_SOURCES) $(testworkcompat_SOURCES) \
+	$(testworkreuse_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -1333,6 +1341,7 @@ testuserrow_SOURCES = testuserrow.c
 testuserprecon_SOURCES = testuserprecon.c
 testmatvecblock_SOURCES = testmatvecblock.c
 testcapabilities_SOURCES = testcapabilities.c
+testvectornrm2mpi_SOURCES = testvectornrm2mpi.c
 testsolvercapabilities_SOURCES = testsolvercapabilities.c
 testsolveroptionreplace_SOURCES = testsolveroptionreplace.c
 testompelastic_SOURCES = testompelastic.c
@@ -1442,7 +1451,7 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
 
 TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
-	testsolvercapabilities$(EXEEXT) \
+	testvectornrm2mpi$(EXEEXT) testsolvercapabilities$(EXEEXT) \
 	testsolveroptionreplace$(EXEEXT) testompelastic$(EXEEXT) \
 	testmatrixgraph$(EXEEXT) testcomponentnullspace$(EXEEXT) \
 	testpreconlifecycle$(EXEEXT) testhybridnested$(EXEEXT) \
@@ -2047,6 +2056,10 @@ testuserrow$(EXEEXT): $(testuserrow_OBJECTS) $(testuserrow_DEPENDENCIES) $(EXTRA
 	@rm -f testuserrow$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testuserrow_OBJECTS) $(testuserrow_LDADD) $(LIBS)
 
+testvectornrm2mpi$(EXEEXT): $(testvectornrm2mpi_OBJECTS) $(testvectornrm2mpi_DEPENDENCIES) $(EXTRA_testvectornrm2mpi_DEPENDENCIES)
+	@rm -f testvectornrm2mpi$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testvectornrm2mpi_OBJECTS) $(testvectornrm2mpi_LDADD) $(LIBS)
+
 testwarmstart$(EXEEXT): $(testwarmstart_OBJECTS) $(testwarmstart_DEPENDENCIES) $(EXTRA_testwarmstart_DEPENDENCIES) 
 	@rm -f testwarmstart$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testwarmstart_OBJECTS) $(testwarmstart_LDADD) $(LIBS)
@@ -2198,6 +2211,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuser.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuserprecon.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuserrow.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testvectornrm2mpi.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testwarmstart.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testworkcompat.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testworkreuse.Po@am__quote@ # am--include-marker
@@ -2525,6 +2539,13 @@ testmatvecblock.log: testmatvecblock$(EXEEXT)
 testcapabilities.log: testcapabilities$(EXEEXT)
 	@p='testcapabilities$(EXEEXT)'; \
 	b='testcapabilities'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testvectornrm2mpi.log: testvectornrm2mpi$(EXEEXT)
+	@p='testvectornrm2mpi$(EXEEXT)'; \
+	b='testvectornrm2mpi'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -3148,6 +3169,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testuser.Po
 	-rm -f ./$(DEPDIR)/testuserprecon.Po
 	-rm -f ./$(DEPDIR)/testuserrow.Po
+	-rm -f ./$(DEPDIR)/testvectornrm2mpi.Po
 	-rm -f ./$(DEPDIR)/testwarmstart.Po
 	-rm -f ./$(DEPDIR)/testworkcompat.Po
 	-rm -f ./$(DEPDIR)/testworkreuse.Po
@@ -3295,6 +3317,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testuser.Po
 	-rm -f ./$(DEPDIR)/testuserprecon.Po
 	-rm -f ./$(DEPDIR)/testuserrow.Po
+	-rm -f ./$(DEPDIR)/testvectornrm2mpi.Po
 	-rm -f ./$(DEPDIR)/testwarmstart.Po
 	-rm -f ./$(DEPDIR)/testworkcompat.Po
 	-rm -f ./$(DEPDIR)/testworkreuse.Po
