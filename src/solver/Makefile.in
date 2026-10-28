@@ -108,7 +108,7 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 libsolver_la_LIBADD =
 am_libsolver_la_OBJECTS = lis_solver.lo lis_solver_nearnullspace.lo \
 	lis_solver_nullspace_candidates.lo \
-	lis_solver_component_nullspace.lo \
+	lis_solver_component_nullspace.lo lis_solver_nullspace_lift.lo \
 	lis_solver_nullspace_query.lo lis_solver_capabilities.lo \
 	lis_solver_options.lo lis_solver_bicg.lo \
 	lis_solver_bicgsafe.lo lis_solver_bicgstab.lo \
@@ -154,6 +154,7 @@ am__depfiles_remade = ./$(DEPDIR)/lis_solver.Plo \
 	./$(DEPDIR)/lis_solver_minres.Plo \
 	./$(DEPDIR)/lis_solver_nearnullspace.Plo \
 	./$(DEPDIR)/lis_solver_nullspace_candidates.Plo \
+	./$(DEPDIR)/lis_solver_nullspace_lift.Plo \
 	./$(DEPDIR)/lis_solver_nullspace_query.Plo \
 	./$(DEPDIR)/lis_solver_options.Plo \
 	./$(DEPDIR)/lis_solver_orthomin.Plo \
@@ -354,7 +355,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LTLIBRARIES = libsolver.la
 libsolver_la_SOURCES = lis_solver.c lis_solver_nearnullspace.c \
-lis_solver_nullspace_candidates.c lis_solver_component_nullspace.c lis_solver_nullspace_query.c \
+lis_solver_nullspace_candidates.c lis_solver_component_nullspace.c lis_solver_nullspace_lift.c lis_solver_nullspace_query.c \
 lis_solver_capabilities.c lis_solver_options.c \
 lis_solver_bicg.c \
 lis_solver_bicgsafe.c \
@@ -644,6 +645,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/lis_solver_minres.Plo
 	-rm -f ./$(DEPDIR)/lis_solver_nearnullspace.Plo
 	-rm -f ./$(DEPDIR)/lis_solver_nullspace_candidates.Plo
+	-rm -f ./$(DEPDIR)/lis_solver_nullspace_lift.Plo
 	-rm -f ./$(DEPDIR)/lis_solver_nullspace_query.Plo
 	-rm -f ./$(DEPDIR)/lis_solver_options.Plo
 	-rm -f ./$(DEPDIR)/lis_solver_orthomin.Plo
@@ -713,6 +715,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/lis_solver_minres.Plo
 	-rm -f ./$(DEPDIR)/lis_solver_nearnullspace.Plo
 	-rm -f ./$(DEPDIR)/lis_solver_nullspace_candidates.Plo
+	-rm -f ./$(DEPDIR)/lis_solver_nullspace_lift.Plo
 	-rm -f ./$(DEPDIR)/lis_solver_nullspace_query.Plo
 	-rm -f ./$(DEPDIR)/lis_solver_options.Plo
 	-rm -f ./$(DEPDIR)/lis_solver_orthomin.Plo
