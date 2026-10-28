@@ -93,3 +93,99 @@ lis_solver_set_option_replace(
     LIS_DEBUG_FUNC_OUT;
     return LIS_SUCCESS;
 }
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_option_replace_if_changed"
+LIS_INT
+lis_solver_set_option_replace_if_changed(
+    const char *text,
+    LIS_SOLVER solver,
+    LIS_INT *changed)
+{
+    LIS_SOLVER fresh;
+    LIS_INT err;
+    LIS_INT i;
+    LIS_INT different;
+    char *copy;
+    size_t len;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if(changed)
+        *changed = LIS_FALSE;
+
+    if(solver==NULL || text==NULL)
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,"solver or option text is NULL\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    fresh = NULL;
+    copy = NULL;
+    different = LIS_FALSE;
+
+    err = lis_solver_create(&fresh);
+    if(err)
+        return err;
+
+    len = strlen(text);
+    copy = (char *)lis_malloc(
+        len+1,
+        "lis_solver_set_option_replace_if_changed::copy");
+    if(copy==NULL)
+    {
+        lis_solver_destroy(fresh);
+        LIS_SETERR_MEM(len+1);
+        return LIS_ERR_OUT_OF_MEMORY;
+    }
+
+    memcpy(copy,text,len+1);
+
+    err = lis_solver_set_option(copy,fresh);
+    lis_free(copy);
+    if(err)
+    {
+        lis_solver_destroy(fresh);
+        return err;
+    }
+
+    for(i=0;i<LIS_OPTIONS_LEN;i++)
+    {
+        if(solver->options[i]!=fresh->options[i])
+        {
+            different = LIS_TRUE;
+            break;
+        }
+    }
+
+    if(!different)
+    {
+        for(i=0;i<LIS_PARAMS_LEN;i++)
+        {
+            if(solver->params[i]!=fresh->params[i])
+            {
+                different = LIS_TRUE;
+                break;
+            }
+        }
+    }
+
+    lis_solver_destroy(fresh);
+
+    if(!different)
+    {
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+    }
+
+    err = lis_solver_set_option_replace(text,solver);
+    if(err)
+        return err;
+
+    if(changed)
+        *changed = LIS_TRUE;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}

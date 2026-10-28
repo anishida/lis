@@ -26,6 +26,16 @@ extern LIS_INT lis_solver_set_option_replace(
     const char *text,
     LIS_SOLVER solver);
 
+/*
+ * Replace the complete text-configurable solver profile only when
+ * its effective options or parameters differ from the active profile.
+ * An equivalent replacement preserves reusable solver state.
+ */
+extern LIS_INT lis_solver_set_option_replace_if_changed(
+    const char *text,
+    LIS_SOLVER solver,
+    LIS_INT *changed);
+
 #ifdef __cplusplus
 }
 #endif

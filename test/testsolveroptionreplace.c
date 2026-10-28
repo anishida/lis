@@ -75,7 +75,8 @@ int main(int argc, char **argv)
     LIS_VECTOR x = NULL;
     LIS_VECTOR q = NULL;
     LIS_VECTOR basis[1];
-    LIS_INT err,method,precon,policy,age,threads,half_mode,status;
+    LIS_PRECON saved_precon = NULL;
+    LIS_INT err,method,precon,policy,age,threads,half_mode,status,changed;
     int monitor_cookie = 11;
     int convergence_cookie = 22;
     int failed = 0;
@@ -130,6 +131,32 @@ int main(int argc, char **argv)
             fprintf(stderr,
                 "failed to create persistent sequence state: err=%d status=%d precon=%p\n",
                 (int)err,(int)status,(void *)solver->sequence_precon);
+            failed = 1;
+        }
+    }
+
+    /*
+     * Reapplying an equivalent complete profile must be a no-op.
+     * Use a different textual ordering to verify comparison of the
+     * parsed effective profile rather than the original string.
+     */
+    if(!failed)
+    {
+        saved_precon = solver->sequence_precon;
+        solver->recycle_valid = LIS_TRUE;
+        changed = -1;
+
+        err = lis_solver_set_option_replace_if_changed(
+            "-p ilu -restart 12 -tol 1e-7 -maxiter 77 -i fgmres",
+            solver,
+            &changed);
+
+        if(err || changed!=LIS_FALSE ||
+           solver->sequence_precon!=saved_precon ||
+           solver->recycle_valid!=LIS_TRUE)
+        {
+            fprintf(stderr,
+                "equivalent replacement invalidated reusable state\n");
             failed = 1;
         }
     }
@@ -221,6 +248,42 @@ int main(int argc, char **argv)
     {
         fprintf(stderr,"failed replacement modified active solver/application state\n");
         failed = 1;
+    }
+
+    /* A genuinely different effective profile must report a change. */
+    if(!failed)
+    {
+        changed = -1;
+        err = lis_solver_set_option_replace_if_changed(
+            "-i cg -p none -maxiter 123",
+            solver,
+            &changed);
+
+        if(err || changed!=LIS_TRUE ||
+           solver->options[LIS_OPTIONS_MAXITER]!=123)
+        {
+            fprintf(stderr,
+                "changed replacement was not reported correctly\n");
+            failed = 1;
+        }
+    }
+
+    /* Invalid input must report no completed change. */
+    if(!failed)
+    {
+        changed = -1;
+        err = lis_solver_set_option_replace_if_changed(
+            "-i this_solver_still_does_not_exist",
+            solver,
+            &changed);
+
+        if(err==LIS_SUCCESS || changed!=LIS_FALSE ||
+           solver->options[LIS_OPTIONS_MAXITER]!=123)
+        {
+            fprintf(stderr,
+                "invalid conditional replacement changed active profile\n");
+            failed = 1;
+        }
     }
 
     if(x) lis_vector_destroy(x);
