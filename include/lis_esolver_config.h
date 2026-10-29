@@ -1,4 +1,16 @@
-/* Generic typed eigensolver configuration helpers. */
+/* Generic typed eigensolver configuration helpers.
+ *
+ * Setters validate the complete active configuration before publication.
+ * Their order matters for dependent options: to leave block Lanczos, first
+ * set block_size=1, then change eigensolver type; to enter block Lanczos,
+ * set the Lanczos type and adequate subspace before increasing block_size.
+ * Reduce mode/block_size/nev constraints before shrinking the subspace.
+ *
+ * Type/subspace/block/transform settings may invalidate work vectors, while
+ * scalar setters preserve work. Previously computed eigenpairs and result
+ * arrays should be treated as results of the prior solve, not as results
+ * corresponding to a newly configured solver; run a new solve after changes.
+ */
 #ifndef LIS_ESOLVER_CONFIG_H
 #define LIS_ESOLVER_CONFIG_H
 

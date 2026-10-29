@@ -127,6 +127,33 @@ int main(int argc, char *argv[])
        real_shift!=(LIS_REAL)2.5 || imaginary_shift!=(LIS_REAL)0.0)
         return fail("failed update changed active configuration",LIS_BREAKDOWN);
 
+    /* Dependent setters require an order that preserves valid intermediate states. */
+    err = lis_esolver_set_block_size(esolver,1);
+    if(err) return fail("decrease block before changing type",err);
+    err = lis_esolver_set_type(esolver,LIS_ESOLVER_CG);
+    if(err) return fail("change type after reducing block",err);
+    err = lis_esolver_set_type(esolver,LIS_ESOLVER_LI);
+    if(err) return fail("restore Lanczos type",err);
+    err = lis_esolver_set_block_size(esolver,2);
+    if(err) return fail("restore block size",err);
+
+    /* Non-finite tolerances and shifts must not affect published values. */
+    err = lis_esolver_set_tolerance(esolver,(LIS_REAL)NAN);
+    if(err==LIS_SUCCESS)
+        return fail("non-finite tolerance accepted",LIS_BREAKDOWN);
+    err = lis_esolver_set_tolerance(esolver,(LIS_REAL)INFINITY);
+    if(err==LIS_SUCCESS)
+        return fail("infinite tolerance accepted",LIS_BREAKDOWN);
+    err = lis_esolver_set_shift(esolver,(LIS_REAL)INFINITY,(LIS_REAL)0.0);
+    if(err==LIS_SUCCESS)
+        return fail("infinite shift accepted",LIS_BREAKDOWN);
+
+    lis_esolver_get_tolerance(esolver,&tolerance);
+    lis_esolver_get_shift(esolver,&real_shift,&imaginary_shift);
+    if(tolerance!=(LIS_REAL)1.0e-9 ||
+       real_shift!=(LIS_REAL)2.5 || imaginary_shift!=(LIS_REAL)0.0)
+        return fail("non-finite update changed state",LIS_BREAKDOWN);
+
     /* Existing converged-pair selection remains unchanged. */
     esolver->nev = 4;
 
