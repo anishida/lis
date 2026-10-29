@@ -312,6 +312,10 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->time      = 0;
 	solver->itime     = 0;
 	solver->ptime     = 0;
+	/* Initialize every diagnostic exposed by lis_solver_get_report(). */
+	solver->p_c_time  = 0;
+	solver->p_i_time  = 0;
+	solver->retcode   = LIS_SUCCESS;
 	solver->precision = LIS_PRECISION_DOUBLE;
 
 	solver->options[LIS_OPTIONS_SOLVER]               = LIS_SOLVER_BICG;
