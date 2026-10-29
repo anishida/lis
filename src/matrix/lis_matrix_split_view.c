@@ -86,7 +86,7 @@ lis_matrix_split_view_value(
 
 /*
  * Native row kernels avoid the generic USER-row scratch path.  The expanded
- * row metadata is immutable after construction, so each output row is
+ * row metadata is immutable between structure rebinds, so each output row is
  * independent and can be evaluated safely in parallel.
  */
 static LIS_INT
@@ -506,6 +506,67 @@ lis_matrix_split_triangular_view_set_values(
     view->upper=upper_values;
 
     return lis_matrix_mark_values_changed(view->A);
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_split_triangular_view_rebind"
+LIS_INT
+lis_matrix_split_triangular_view_rebind(
+    LIS_MATRIX_SPLIT_TRIANGULAR_VIEW view,
+    LIS_INT nnz,
+    const LIS_INT ptr[],
+    const LIS_INT index[],
+    const LIS_SCALAR diag[],
+    const LIS_SCALAR lower_values[],
+    const LIS_SCALAR upper_values[],
+    LIS_INT origin)
+{
+    struct LIS_MATRIX_SPLIT_TRIANGULAR_VIEW_STRUCT candidate;
+    LIS_INT err;
+
+    if(view==NULL || view->A==NULL || nnz<0 || ptr==NULL || diag==NULL ||
+       (nnz>0 && (index==NULL || lower_values==NULL)))
+        return LIS_ERR_ILL_ARG;
+
+    memset(&candidate,0,sizeof(candidate));
+    candidate.n=view->n;
+    candidate.nnz=nnz;
+    candidate.symmetric=upper_values==NULL;
+    candidate.diag=diag;
+    candidate.lower=lower_values;
+    candidate.upper=upper_values;
+
+    err=lis_matrix_split_view_build_rows(&candidate,ptr,index,origin);
+    if(err) goto fail;
+
+    /*
+     * Publish the structural generation before swapping storage.  After the
+     * candidate metadata has been built successfully the remaining swap is
+     * allocation-free and cannot fail.
+     */
+    err=lis_matrix_mark_structure_changed(view->A);
+    if(err) goto fail;
+
+    lis_free(view->row_src);
+    lis_free(view->row_col);
+    lis_free(view->row_ptr);
+
+    view->nnz=candidate.nnz;
+    view->symmetric=candidate.symmetric;
+    view->diag=candidate.diag;
+    view->lower=candidate.lower;
+    view->upper=candidate.upper;
+    view->row_ptr=candidate.row_ptr;
+    view->row_col=candidate.row_col;
+    view->row_src=candidate.row_src;
+
+    return LIS_SUCCESS;
+
+fail:
+    lis_free(candidate.row_src);
+    lis_free(candidate.row_col);
+    lis_free(candidate.row_ptr);
+    return err;
 }
 
 void

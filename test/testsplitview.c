@@ -148,6 +148,72 @@ done:
     return rc;
 }
 
+static int run_structure_rebind(void)
+{
+    const LIS_INT ptr0[4]={0,1,2,2};
+    const LIS_INT index0[2]={1,2};
+    const LIS_SCALAR diag0[3]={(LIS_SCALAR)4.0,(LIS_SCALAR)5.0,(LIS_SCALAR)6.0};
+    const LIS_SCALAR lower0[2]={(LIS_SCALAR)-1.0,(LIS_SCALAR)-2.0};
+    const LIS_SCALAR upper0[2]={(LIS_SCALAR)-3.0,(LIS_SCALAR)-4.0};
+
+    /* Rebind to one symmetric entry in column 1, using one-based storage. */
+    const LIS_INT ptr1[4]={1,1,2,2};
+    const LIS_INT index1[1]={3};
+    const LIS_SCALAR diag1[3]={(LIS_SCALAR)2.0,(LIS_SCALAR)3.0,(LIS_SCALAR)4.0};
+    const LIS_SCALAR lower1[1]={(LIS_SCALAR)5.0};
+
+    /* Invalid strict-lower structure used to verify transactional rollback. */
+    const LIS_INT bad_ptr[4]={0,1,1,1};
+    const LIS_INT bad_index[1]={0};
+
+    LIS_MATRIX A=NULL;
+    LIS_MATRIX_SPLIT_TRIANGULAR_VIEW view=NULL;
+    LIS_VECTOR x=NULL,y=NULL;
+    LIS_UNSIGNED_INT s0=0,v0=0,s1=0,v1=0,s2=0,v2=0;
+    LIS_INT err;
+    int rc=1;
+
+    err=lis_matrix_create_split_triangular_view(
+        LIS_COMM_WORLD,3,2,ptr0,index0,diag0,lower0,upper0,0,&A,&view);
+    if(err) goto done;
+    err=lis_vector_duplicate(A,&x); if(err) goto done;
+    err=lis_vector_duplicate(A,&y); if(err) goto done;
+    if(set_x123(x)) goto done;
+
+    err=lis_matrix_get_generation(A,&s0,&v0); if(err) goto done;
+
+    err=lis_matrix_split_triangular_view_rebind(
+        view,1,ptr1,index1,diag1,lower1,NULL,1);
+    if(err) goto done;
+
+    err=lis_matrix_get_generation(A,&s1,&v1); if(err) goto done;
+    if(s1!=s0+1 || v1!=v0+1) goto done;
+
+    err=lis_matvec(A,x,y); if(err) goto done;
+    if(check_y(y,2.0,21.0,22.0)) goto done;
+    err=lis_matvech(A,x,y); if(err) goto done;
+    if(check_y(y,2.0,21.0,22.0)) goto done;
+
+    err=lis_matrix_split_triangular_view_rebind(
+        view,1,bad_ptr,bad_index,diag0,lower0,NULL,0);
+    if(err==LIS_SUCCESS) goto done;
+
+    err=lis_matrix_get_generation(A,&s2,&v2); if(err) goto done;
+    if(s2!=s1 || v2!=v1) goto done;
+
+    /* Failed rebind must leave the previous matrix fully usable. */
+    err=lis_matvec(A,x,y); if(err) goto done;
+    if(check_y(y,2.0,21.0,22.0)) goto done;
+
+    rc=0;
+done:
+    if(y) lis_vector_destroy(y);
+    if(x) lis_vector_destroy(x);
+    if(A) lis_matrix_destroy(A);
+    lis_matrix_split_triangular_view_destroy(view);
+    return rc;
+}
+
 #ifdef _COMPLEX
 static int run_complex_adjoint(void)
 {
@@ -221,6 +287,7 @@ int main(int argc,char **argv)
 
     if(run_symmetric_origin1()) goto done;
     if(run_nonsymmetric_origin0()) goto done;
+    if(run_structure_rebind()) goto done;
 #ifdef _COMPLEX
     if(run_complex_adjoint()) goto done;
 #endif
