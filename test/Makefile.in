@@ -126,9 +126,10 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testcoarsesetup$(EXEEXT) testcoarseapply$(EXEEXT) \
 	testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) \
 	testgcrodrsequence$(EXEEXT) testmatrixgeneration$(EXEEXT) \
-	testexternalstorage$(EXEEXT) testsequence$(EXEEXT) \
-	testwarmstart$(EXEEXT) testrecovery$(EXEEXT) \
-	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
+	testexternalstorage$(EXEEXT) testsplitview$(EXEEXT) \
+	testsequence$(EXEEXT) testwarmstart$(EXEEXT) \
+	testrecovery$(EXEEXT) testthreads$(EXEEXT) \
+	testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
 	testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
 	testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) \
 	testfeastfoundation$(EXEEXT) testfeastcontour$(EXEEXT) \
@@ -638,6 +639,10 @@ testsolveroptionreplace_OBJECTS =  \
 	$(am_testsolveroptionreplace_OBJECTS)
 testsolveroptionreplace_LDADD = $(LDADD)
 testsolveroptionreplace_DEPENDENCIES =
+am_testsplitview_OBJECTS = testsplitview.$(OBJEXT)
+testsplitview_OBJECTS = $(am_testsplitview_OBJECTS)
+testsplitview_LDADD = $(LDADD)
+testsplitview_DEPENDENCIES =
 am_testsymmdiagguard_OBJECTS = testsymmdiagguard.$(OBJEXT)
 testsymmdiagguard_OBJECTS = $(am_testsymmdiagguard_OBJECTS)
 testsymmdiagguard_LDADD = $(LDADD)
@@ -776,11 +781,11 @@ am__depfiles_remade = ./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
 	./$(DEPDIR)/testsolvercapabilities.Po \
 	./$(DEPDIR)/testsolvermonitor.Po \
 	./$(DEPDIR)/testsolveroptionreplace.Po \
-	./$(DEPDIR)/testsymmdiagguard.Po ./$(DEPDIR)/testthreads.Po \
-	./$(DEPDIR)/testuser.Po ./$(DEPDIR)/testuserprecon.Po \
-	./$(DEPDIR)/testuserrow.Po ./$(DEPDIR)/testvectornrm2mpi.Po \
-	./$(DEPDIR)/testwarmstart.Po ./$(DEPDIR)/testworkcompat.Po \
-	./$(DEPDIR)/testworkreuse.Po
+	./$(DEPDIR)/testsplitview.Po ./$(DEPDIR)/testsymmdiagguard.Po \
+	./$(DEPDIR)/testthreads.Po ./$(DEPDIR)/testuser.Po \
+	./$(DEPDIR)/testuserprecon.Po ./$(DEPDIR)/testuserrow.Po \
+	./$(DEPDIR)/testvectornrm2mpi.Po ./$(DEPDIR)/testwarmstart.Po \
+	./$(DEPDIR)/testworkcompat.Po ./$(DEPDIR)/testworkreuse.Po
 am__mv = mv -f
 AM_V_PPF77 = $(am__v_PPF77_@AM_V@)
 am__v_PPF77_ = $(am__v_PPF77_@AM_DEFAULT_V@)
@@ -867,7 +872,7 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testshellscale_SOURCES) $(testsolvercallbackcert_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
 	$(testsolvercapabilities_SOURCES) $(testsolvermonitor_SOURCES) \
-	$(testsolveroptionreplace_SOURCES) \
+	$(testsolveroptionreplace_SOURCES) $(testsplitview_SOURCES) \
 	$(testsymmdiagguard_SOURCES) $(testthreads_SOURCES) \
 	$(testuser_SOURCES) $(testuserprecon_SOURCES) \
 	$(testuserrow_SOURCES) $(testvectornrm2mpi_SOURCES) \
@@ -924,7 +929,7 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testshellscale_SOURCES) $(testsolvercallbackcert_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
 	$(testsolvercapabilities_SOURCES) $(testsolvermonitor_SOURCES) \
-	$(testsolveroptionreplace_SOURCES) \
+	$(testsolveroptionreplace_SOURCES) $(testsplitview_SOURCES) \
 	$(testsymmdiagguard_SOURCES) $(testthreads_SOURCES) \
 	$(testuser_SOURCES) $(testuserprecon_SOURCES) \
 	$(testuserrow_SOURCES) $(testvectornrm2mpi_SOURCES) \
@@ -1311,6 +1316,7 @@ testgcrodrconfig_SOURCES = testgcrodrconfig.c
 testgcrodrsequence_SOURCES = testgcrodrsequence.c
 testmatrixgeneration_SOURCES = testmatrixgeneration.c
 testexternalstorage_SOURCES = testexternalstorage.c
+testsplitview_SOURCES = testsplitview.c
 testsequence_SOURCES = testsequence.c
 testwarmstart_SOURCES = testwarmstart.c
 testrecovery_SOURCES = testrecovery.c
@@ -1481,9 +1487,10 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	testcoarsesetup$(EXEEXT) testcoarseapply$(EXEEXT) \
 	testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) \
 	testgcrodrsequence$(EXEEXT) testmatrixgeneration$(EXEEXT) \
-	testexternalstorage$(EXEEXT) testsequence$(EXEEXT) \
-	testwarmstart$(EXEEXT) testrecovery$(EXEEXT) \
-	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
+	testexternalstorage$(EXEEXT) testsplitview$(EXEEXT) \
+	testsequence$(EXEEXT) testwarmstart$(EXEEXT) \
+	testrecovery$(EXEEXT) testthreads$(EXEEXT) \
+	testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
 	testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
 	testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) \
 	testnullspacecandidates$(EXEEXT) testesolverselection$(EXEEXT) \
@@ -2048,6 +2055,10 @@ testsolveroptionreplace$(EXEEXT): $(testsolveroptionreplace_OBJECTS) $(testsolve
 	@rm -f testsolveroptionreplace$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testsolveroptionreplace_OBJECTS) $(testsolveroptionreplace_LDADD) $(LIBS)
 
+testsplitview$(EXEEXT): $(testsplitview_OBJECTS) $(testsplitview_DEPENDENCIES) $(EXTRA_testsplitview_DEPENDENCIES) 
+	@rm -f testsplitview$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testsplitview_OBJECTS) $(testsplitview_LDADD) $(LIBS)
+
 testsymmdiagguard$(EXEEXT): $(testsymmdiagguard_OBJECTS) $(testsymmdiagguard_DEPENDENCIES) $(EXTRA_testsymmdiagguard_DEPENDENCIES) 
 	@rm -f testsymmdiagguard$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testsymmdiagguard_OBJECTS) $(testsymmdiagguard_LDADD) $(LIBS)
@@ -2219,6 +2230,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsolvercapabilities.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsolvermonitor.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsolveroptionreplace.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsplitview.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsymmdiagguard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testthreads.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuser.Po@am__quote@ # am--include-marker
@@ -2871,6 +2883,13 @@ testexternalstorage.log: testexternalstorage$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testsplitview.log: testsplitview$(EXEEXT)
+	@p='testsplitview$(EXEEXT)'; \
+	b='testsplitview'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 testsequence.log: testsequence$(EXEEXT)
 	@p='testsequence$(EXEEXT)'; \
 	b='testsequence'; \
@@ -3185,6 +3204,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testsolvercapabilities.Po
 	-rm -f ./$(DEPDIR)/testsolvermonitor.Po
 	-rm -f ./$(DEPDIR)/testsolveroptionreplace.Po
+	-rm -f ./$(DEPDIR)/testsplitview.Po
 	-rm -f ./$(DEPDIR)/testsymmdiagguard.Po
 	-rm -f ./$(DEPDIR)/testthreads.Po
 	-rm -f ./$(DEPDIR)/testuser.Po
@@ -3334,6 +3354,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testsolvercapabilities.Po
 	-rm -f ./$(DEPDIR)/testsolvermonitor.Po
 	-rm -f ./$(DEPDIR)/testsolveroptionreplace.Po
+	-rm -f ./$(DEPDIR)/testsplitview.Po
 	-rm -f ./$(DEPDIR)/testsymmdiagguard.Po
 	-rm -f ./$(DEPDIR)/testthreads.Po
 	-rm -f ./$(DEPDIR)/testuser.Po

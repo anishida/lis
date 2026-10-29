@@ -1,5 +1,6 @@
 noinst_LTLIBRARIES = libmatrix.la
 libmatrix_la_SOURCES = lis_matrix.c \
+lis_matrix_split_view.c \
 lis_matrix_bsc.c \
 lis_matrix_bsr.c \
 lis_matrix_csc.c \

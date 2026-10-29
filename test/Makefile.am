@@ -23,7 +23,7 @@ test_PROGRAMS = testesubspaceretry etest1 etest2 etest3 etest4 etest5 etest5b et
         testworkreuse testprebuiltuser testshellscale testsymmdiagguard testilupivot \
         testparamupdate testbreakretry testchangingsystem testkrylovrobust testnearnullspace \
         testcoarsesetup testcoarseapply testgcrodroptions testgcrodrconfig testgcrodrsequence \
-        testmatrixgeneration testexternalstorage testsequence testwarmstart testrecovery \
+        testmatrixgeneration testexternalstorage testsplitview testsequence testwarmstart testrecovery \
         testthreads testfgcrodr testmfamg testmfamggalerkin testexactnullspace testhalfconfig testhalfconvert \
         testfeastfoundation testfeastcontour testfeastshifted testnullspacecandidates testesolverselection \
 	testprojectedeigen testprojectedhermitian testblockgram \
@@ -37,6 +37,7 @@ testgcrodrconfig_SOURCES = testgcrodrconfig.c
 testgcrodrsequence_SOURCES = testgcrodrsequence.c
 testmatrixgeneration_SOURCES = testmatrixgeneration.c
 testexternalstorage_SOURCES = testexternalstorage.c
+testsplitview_SOURCES = testsplitview.c
 testsequence_SOURCES = testsequence.c
 testwarmstart_SOURCES = testwarmstart.c
 testrecovery_SOURCES = testrecovery.c
@@ -223,7 +224,7 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) testmatvecblock$(EX
         testbreakretry$(EXEEXT) testchangingsystem$(EXEEXT) testkrylovrobust$(EXEEXT) \
         testnearnullspace$(EXEEXT) testcoarsesetup$(EXEEXT) testcoarseapply$(EXEEXT) \
         testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) testgcrodrsequence$(EXEEXT) \
-        testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testsequence$(EXEEXT) \
+        testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testsplitview$(EXEEXT) testsequence$(EXEEXT) \
         testwarmstart$(EXEEXT) testrecovery$(EXEEXT) testthreads$(EXEEXT) \
         testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
         testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) testnullspacecandidates$(EXEEXT) testesolverselection$(EXEEXT)
