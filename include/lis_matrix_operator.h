@@ -22,7 +22,12 @@ LIS_INT lis_matrix_operator_set_coefficients(
  * operator while preserving its scalar coefficients. The replacement
  * operands must use the same external row distribution as C. A new operator
  * work vector is prepared before the active operands are changed. On success
- * the matrix structure generation is advanced.
+ * the matrix structure generation is advanced. Direct and indirect operand
+ * cycles are rejected.
+ *
+ * C does NOT own A or B: both operands must remain alive for the entire
+ * period in which C may be used, including after a successful rebind.
+ * Destroy dependent operators before destroying their borrowed operands.
  */
 LIS_INT lis_matrix_operator_rebind(
     LIS_MATRIX C,
