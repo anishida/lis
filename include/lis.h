@@ -304,6 +304,10 @@ extern "C" {
 #define LIS_SEQUENCE_POLICY_MANUAL 0
 #define LIS_SEQUENCE_POLICY_AUTO 1
 
+/* Persistent preconditioner refresh policy for value-only changes. */
+#define LIS_SEQUENCE_PRECON_REFRESH_SAFE 0
+#define LIS_SEQUENCE_PRECON_REFRESH_FROZEN_PATTERN 1
+
 #define LIS_MATRIX_ASSEMBLING 0
 #define LIS_MATRIX_CSR 1
 #define LIS_MATRIX_CSC 2
@@ -1014,6 +1018,9 @@ struct LIS_SOLVER_STRUCT
 	/* Policy controlling solver-owned sequence decisions. */
 	LIS_INT sequence_policy;
 
+	/* Value-only refresh strategy for persistent preconditioners. */
+	LIS_INT sequence_precon_refresh_policy;
+
 	/* Persistent preconditioner state for related systems. */
 	LIS_PRECON sequence_precon;
 	LIS_MATRIX sequence_precon_matrix;
@@ -1465,6 +1472,8 @@ extern "C"
 	extern LIS_INT lis_solver_get_sequence_diagnostics(LIS_SOLVER solver, LIS_SEQUENCE_DIAGNOSTICS *diag);
 	extern LIS_INT lis_solver_set_sequence_policy(LIS_SOLVER solver, LIS_INT policy);
 	extern LIS_INT lis_solver_get_sequence_policy(LIS_SOLVER solver, LIS_INT *policy);
+	extern LIS_INT lis_solver_set_sequence_precon_refresh_policy(LIS_SOLVER solver, LIS_INT policy);
+	extern LIS_INT lis_solver_get_sequence_precon_refresh_policy(LIS_SOLVER solver, LIS_INT *policy);
 
 	/* Half precision preconditioner storage capability and policy. */
 	extern LIS_INT lis_half_get_capability(LIS_INT *available);

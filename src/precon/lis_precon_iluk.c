@@ -1388,6 +1388,9 @@ LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 
 				jpos = jw[col];
 
+				/* A prescribed factor pattern may omit dropped A entries. */
+				if( jpos==-1 ) continue;
+
 				if( col<i )
 				{
 					L->value[i][jpos] =
@@ -1579,6 +1582,9 @@ LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 			#endif
 
 			jpos = jw[col];
+
+			/* A prescribed factor pattern may omit dropped A entries. */
+			if( jpos==-1 ) continue;
 
 			if( col<i )
 			{

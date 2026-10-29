@@ -238,6 +238,8 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->num_threads = 0;
         solver->fgcrodr_state = NULL;
 	solver->sequence_policy = LIS_SEQUENCE_POLICY_MANUAL;
+	solver->sequence_precon_refresh_policy =
+		LIS_SEQUENCE_PRECON_REFRESH_SAFE;
 	solver->sequence_precon = NULL;
 	solver->sequence_precon_matrix = NULL;
 	solver->sequence_precon_structure_generation = 0;
@@ -2774,8 +2776,18 @@ LIS_INT lis_solver_sequence_prepare_precon(
            /*
             * Refresh only numerical preconditioner state.
             */
-           err = lis_precon_psd_update(
-                   solver,solver->sequence_precon);
+           if( solver->sequence_precon_refresh_policy==
+                   LIS_SEQUENCE_PRECON_REFRESH_FROZEN_PATTERN &&
+               precon_type==LIS_PRECON_TYPE_ILUT )
+           {
+                   err = lis_precon_update_ilut_frozen(
+                           solver,solver->sequence_precon);
+           }
+           else
+           {
+                   err = lis_precon_psd_update(
+                           solver,solver->sequence_precon);
+           }
 
            if( err==LIS_SUCCESS )
            {
@@ -3030,6 +3042,46 @@ LIS_INT lis_solver_get_precon_half(
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_sequence_precon_refresh_policy"
+LIS_INT lis_solver_set_sequence_precon_refresh_policy(
+    LIS_SOLVER solver,
+    LIS_INT policy)
+{
+    if( solver==NULL ||
+        (policy!=LIS_SEQUENCE_PRECON_REFRESH_SAFE &&
+         policy!=LIS_SEQUENCE_PRECON_REFRESH_FROZEN_PATTERN) )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid sequence preconditioner refresh policy\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    solver->sequence_precon_refresh_policy = policy;
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_get_sequence_precon_refresh_policy"
+LIS_INT lis_solver_get_sequence_precon_refresh_policy(
+    LIS_SOLVER solver,
+    LIS_INT *policy)
+{
+    if( solver==NULL || policy==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid sequence preconditioner refresh policy query\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *policy = solver->sequence_precon_refresh_policy;
+    return LIS_SUCCESS;
 }
 
 

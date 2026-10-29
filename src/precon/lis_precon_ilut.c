@@ -63,6 +63,9 @@
 
 #define EBABLE_BSR	0
 
+/* Fixed-pattern numerical refactorization is shared with ILU(k). */
+LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon);
+
 static void
 lis_precon_release_ilut_numeric_values(
 	LIS_MATRIX_ILU A)
@@ -200,6 +203,65 @@ lis_precon_refresh_half_ilut(
 		precon->U);
 
 	return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_precon_update_ilut_frozen"
+LIS_INT lis_precon_update_ilut_frozen(
+    LIS_SOLVER solver,
+    LIS_PRECON precon)
+{
+    LIS_INT err;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if( solver==NULL || precon==NULL ||
+        precon->precon_type!=LIS_PRECON_TYPE_ILUT ||
+        precon->L==NULL || precon->U==NULL || precon->D==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid frozen-pattern ILUT update state\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    /*
+     * Accepted half storage may release normal L/U numerical values.
+     * Keep the first implementation conservative: fall back to the normal
+     * sequence rebuild instead of reconstructing those arrays here.
+     */
+    if( solver->precon_half_mode!=LIS_PRECON_HALF_OFF ||
+        precon->half!=NULL )
+    {
+        return LIS_ERR_NOT_IMPLEMENTED;
+    }
+
+    if( solver->A==NULL ||
+        (solver->A->matrix_type!=LIS_MATRIX_CSR &&
+         solver->A->matrix_type!=LIS_MATRIX_USER &&
+         solver->A->matrix_type!=LIS_MATRIX_OPERATOR) )
+    {
+        return LIS_ERR_NOT_IMPLEMENTED;
+    }
+
+    if( (solver->A->matrix_type==LIS_MATRIX_USER ||
+         solver->A->matrix_type==LIS_MATRIX_OPERATOR) &&
+        (solver->A->nprocs!=1 || solver->A->n!=solver->A->gn) )
+    {
+        return LIS_ERR_NOT_IMPLEMENTED;
+    }
+
+    /*
+     * Recompute numerical factors on the existing ILUT L/U sparsity pattern.
+     * The dropped pattern is intentionally frozen; this is an opt-in
+     * preconditioner refresh policy, not the default ILUT algorithm.
+     */
+    err = lis_numerical_fact_csr(solver,precon);
+    if( err ) return err;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
 }
 
 
