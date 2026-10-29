@@ -404,11 +404,20 @@ int main(int argc,char **argv)
         failed=1; goto cleanup;
     }
 
+    /* SSOR-style D/L/U caches must be discarded after a value refresh. */
+    err=lis_matrix_split(csr);
+    if(err || !csr->is_splited)
+    {
+        fprintf(stderr,"cached CSR preconditioner split failed\n");
+        failed=1; goto cleanup;
+    }
+
     actx.scale=(LIS_REAL)2.0;
     err=lis_matrix_mark_values_changed(A);
     if(err) { failed=1; goto cleanup; }
     err=lis_matrix_materialize_csr_cached(A,&acache,&csr,&action);
     if(err || action!=LIS_MATRIX_MATERIALIZE_VALUES || csr!=previous ||
+       csr->is_splited || csr->WD!=NULL ||
        check_csr_matches_context(csr,&actx))
     {
         fprintf(stderr,"value-only cached CSR refresh failed\n");
