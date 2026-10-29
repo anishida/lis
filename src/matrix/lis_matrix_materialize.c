@@ -102,8 +102,19 @@ lis_matrix_materialize_source_stamp(
                A->operator_scale->gn!=A->gn)
                 return LIS_ERR_ILL_ARG;
 
+            /*
+             * A scale vector can be changed in place without replacing
+             * its address. Fingerprint its values to invalidate cached CSR
+             * even when the application has not marked the operator.
+             */
+            if(A->n<0 || (size_t)A->n>SIZE_MAX/sizeof(LIS_SCALAR) ||
+               (A->n>0 && A->operator_scale->value==NULL))
+                return LIS_ERR_ILL_ARG;
             hv=lis_matrix_materialize_hash_word(
                 hv,(uint64_t)(uintptr_t)A->operator_scale);
+            hv=lis_matrix_materialize_hash_bytes(
+                hv,A->operator_scale->value,
+                (size_t)A->n*sizeof(LIS_SCALAR));
         }
         else
         {

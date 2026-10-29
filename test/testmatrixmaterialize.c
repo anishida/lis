@@ -427,6 +427,19 @@ int main(int argc,char **argv)
         failed=1; goto cleanup;
     }
 
+    /* Mutating a scale vector in place must invalidate the cache. */
+    d[1]=(LIS_REAL)7.0;
+    scalar_set_real(&scalevec->value[1],d[1]);
+    err=lis_matrix_materialize_csr_cached(
+        nested,&nestedcache,&csr,&action);
+    if(err || action!=LIS_MATRIX_MATERIALIZE_VALUES || csr!=previous ||
+       check_scaled_nested_csr(
+           csr,&actx,&bctx,d,(LIS_REAL)1.0,(LIS_REAL)-1.0))
+    {
+        fprintf(stderr,"in-place operator scale change was not detected\n");
+        failed=1; goto cleanup;
+    }
+
     /* Structural change below the scaled child must force a rebuild. */
     actx.variant=0;
     err=lis_matrix_mark_structure_changed(A);
