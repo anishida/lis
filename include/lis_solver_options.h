@@ -39,6 +39,9 @@ extern LIS_INT lis_solver_set_option_replace_if_changed(
 /*
  * Typed solve-time controls.  These values are read for each solve and do not
  * change solver work dimensions or invalidate persistent preconditioner state.
+ * Tolerance must be finite and non-negative; zero is accepted to retain
+ * the underlying LIS solver-option semantics. Maximum iterations may be
+ * zero (zero permitted iterations) but cannot be negative.
  */
 extern LIS_INT lis_solver_set_tolerance(
     LIS_SOLVER solver,
@@ -56,7 +59,14 @@ extern LIS_INT lis_solver_get_maxiter(
     LIS_SOLVER solver,
     LIS_INT *maxiter);
 
-/* Compact view of the diagnostics already exposed by individual getters. */
+/*
+ * Compact snapshot of diagnostics already exposed by individual getters.
+ * Time fields intentionally use double to match lis_solver_get_timeex().
+ * Before any solve, values reflect the initialized solver state. After a
+ * failed solve, status is the most recent return status and other fields
+ * are whatever the underlying solver getters currently report; they do
+ * not assert successful convergence.
+ */
 typedef struct
 {
     LIS_INT status;

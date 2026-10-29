@@ -1,6 +1,7 @@
 #include "lis.h"
 #include "lis_solver_options.h"
 #include <stdio.h>
+#include <math.h>
 
 static void test_monitor(
     struct LIS_SOLVER_STRUCT *solver,
@@ -226,6 +227,12 @@ int main(int argc, char **argv)
     if(!failed)
     {
         err = lis_solver_set_tolerance(solver,(LIS_REAL)-1.0);
+        if(err==LIS_SUCCESS) failed = 1;
+        err = lis_solver_set_tolerance(solver,(LIS_REAL)NAN);
+        if(err==LIS_SUCCESS) failed = 1;
+        err = lis_solver_set_tolerance(solver,(LIS_REAL)INFINITY);
+        if(err==LIS_SUCCESS) failed = 1;
+        err = lis_solver_set_tolerance(solver,(LIS_REAL)-INFINITY);
         if(err==LIS_SUCCESS) failed = 1;
         err = lis_solver_set_maxiter(solver,-1);
         if(err==LIS_SUCCESS) failed = 1;

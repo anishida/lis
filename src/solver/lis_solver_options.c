@@ -9,6 +9,7 @@
 #endif
 
 #include <string.h>
+#include <math.h>
 #include "lislib.h"
 #include "lis_solver_options.h"
 
@@ -200,7 +201,7 @@ lis_solver_set_tolerance(
 {
     LIS_DEBUG_FUNC_IN;
 
-    if(solver==NULL || tolerance<0 || tolerance!=tolerance)
+    if(solver==NULL || !isfinite((double)tolerance) || tolerance<0.0)
     {
         LIS_SETERR(LIS_ERR_ILL_ARG,
             "solver is NULL or tolerance is invalid\n");
