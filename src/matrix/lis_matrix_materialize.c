@@ -453,6 +453,40 @@ lis_matrix_policy_has_row_access(
 }
 
 static LIS_INT
+lis_matrix_policy_has_matvec(
+    LIS_MATRIX A,
+    LIS_INT depth)
+{
+    if(A==NULL || depth>64)
+        return LIS_FALSE;
+
+    switch(A->matrix_type)
+    {
+    case LIS_MATRIX_CSR:
+        return LIS_TRUE;
+
+    case LIS_MATRIX_USER:
+        return A->user_matvec!=NULL ? LIS_TRUE : LIS_FALSE;
+
+    case LIS_MATRIX_OPERATOR:
+        if(A->operator_A==NULL)
+            return LIS_FALSE;
+        if(A->operator_scale!=NULL)
+            return lis_matrix_policy_has_matvec(
+                A->operator_A,depth+1);
+        if(A->operator_B==NULL)
+            return LIS_FALSE;
+        return lis_matrix_policy_has_matvec(
+                   A->operator_A,depth+1)
+            && lis_matrix_policy_has_matvec(
+                   A->operator_B,depth+1);
+
+    default:
+        return LIS_TRUE;
+    }
+}
+
+static LIS_INT
 lis_matrix_policy_direct_supported(
     LIS_MATRIX A,
     LIS_INT precon_type)
@@ -462,10 +496,9 @@ lis_matrix_policy_direct_supported(
     if(A==NULL)
         return LIS_FALSE;
 
-    if(A->matrix_type==LIS_MATRIX_USER)
-        has_matvec=A->user_matvec!=NULL;
-    else if(A->matrix_type==LIS_MATRIX_OPERATOR)
-        has_matvec=A->operator_A!=NULL;
+    if(A->matrix_type==LIS_MATRIX_USER ||
+       A->matrix_type==LIS_MATRIX_OPERATOR)
+        has_matvec=lis_matrix_policy_has_matvec(A,0);
     else
         return LIS_TRUE;
 
