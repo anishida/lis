@@ -1861,11 +1861,10 @@ main(
      * A projected FGMRES convergence candidate must be certified
      * against the explicit residual of the updated iterate.
      *
-     * The standard-precision fixture also requires the solve to
-     * continue past iteration 10, which demonstrates rejection of
-     * the intentionally false projected candidate.  Higher precision
-     * can certify the same system earlier, so iteration count is not
-     * a cross-precision correctness requirement.
+     * Correctness is determined by the explicit residual of the
+     * returned iterate rather than by a fixed iteration count.  The
+     * latter can vary with floating-point reduction order, including
+     * across OpenMP thread counts.
      */
     err =
         run_fgmres_reliable_candidate(
@@ -1882,10 +1881,6 @@ main(
         r.api!=LIS_SUCCESS
         ||
         r.status!=LIS_SUCCESS
-#if !defined(_LONG__DOUBLE) && !defined(USE_QUAD_PRECISION)
-        ||
-        r.iter<=10
-#endif
         ||
         !result_is_finite(&r)
         ||
