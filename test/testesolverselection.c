@@ -1,4 +1,4 @@
-/* Focused regression for converged eigensolver-pair selection. */
+/* Focused regression for typed eigensolver configuration and pair selection. */
 #ifdef HAVE_CONFIG_H
 #include "lis_config.h"
 #else
@@ -12,6 +12,7 @@
 #include <stdlib.h>
 
 #include "lis.h"
+#include "lis_esolver_config.h"
 #include "lis_esolver_selection.h"
 
 static int fail(const char *msg, int err)
@@ -24,6 +25,8 @@ int main(int argc, char *argv[])
 {
     LIS_ESOLVER esolver = NULL;
     LIS_ESOLVER_SELECTED_PAIR pairs[4];
+    LIS_REAL tolerance,real_shift,imaginary_shift;
+    LIS_INT type,maxiter,subspace_size,mode,block_size,transform;
     LIS_INT available = 0;
     LIS_INT err;
 
@@ -33,8 +36,98 @@ int main(int argc, char *argv[])
     err = lis_esolver_create(&esolver);
     if(err) return fail("lis_esolver_create",err);
 
-    esolver->options[LIS_EOPTIONS_ESOLVER] = LIS_ESOLVER_LI;
-    esolver->options[LIS_EOPTIONS_SUBSPACE] = 4;
+    /* Configure the common embedding controls without parsing option text. */
+    err = lis_esolver_set_type(esolver,LIS_ESOLVER_LI);
+    if(err) return fail("set type",err);
+    err = lis_esolver_set_subspace_size(esolver,4);
+    if(err) return fail("set subspace",err);
+    err = lis_esolver_set_mode(esolver,1);
+    if(err) return fail("set mode",err);
+    err = lis_esolver_set_block_size(esolver,2);
+    if(err) return fail("set block size",err);
+    err = lis_esolver_set_tolerance(esolver,(LIS_REAL)1.0e-9);
+    if(err) return fail("set tolerance",err);
+    err = lis_esolver_set_maxiter(esolver,123);
+    if(err) return fail("set maxiter",err);
+    err = lis_esolver_set_transform(
+        esolver,LIS_EIGEN_TRANSFORM_SHIFT_INVERT);
+    if(err) return fail("set transform",err);
+    err = lis_esolver_set_shift(esolver,(LIS_REAL)2.5,(LIS_REAL)0.0);
+    if(err) return fail("set shift",err);
+
+    err = lis_esolver_get_type(esolver,&type);
+    if(err) return fail("get type",err);
+    err = lis_esolver_get_subspace_size(esolver,&subspace_size);
+    if(err) return fail("get subspace",err);
+    err = lis_esolver_get_mode(esolver,&mode);
+    if(err) return fail("get mode",err);
+    err = lis_esolver_get_block_size(esolver,&block_size);
+    if(err) return fail("get block size",err);
+    err = lis_esolver_get_tolerance(esolver,&tolerance);
+    if(err) return fail("get tolerance",err);
+    err = lis_esolver_get_maxiter(esolver,&maxiter);
+    if(err) return fail("get maxiter",err);
+    err = lis_esolver_get_transform(esolver,&transform);
+    if(err) return fail("get transform",err);
+    err = lis_esolver_get_shift(esolver,&real_shift,&imaginary_shift);
+    if(err) return fail("get shift",err);
+
+    if(type!=LIS_ESOLVER_LI ||
+       subspace_size!=4 || mode!=1 || block_size!=2 ||
+       tolerance!=(LIS_REAL)1.0e-9 || maxiter!=123 ||
+       transform!=LIS_EIGEN_TRANSFORM_SHIFT_INVERT ||
+       real_shift!=(LIS_REAL)2.5 || imaginary_shift!=(LIS_REAL)0.0)
+        return fail("typed configuration round trip",LIS_BREAKDOWN);
+
+    /* Invalid typed updates must not publish partial configuration. */
+    err = lis_esolver_set_type(esolver,LIS_ESOLVER_CG);
+    if(err==LIS_SUCCESS) return fail("invalid block/type accepted",LIS_BREAKDOWN);
+    err = lis_esolver_set_tolerance(esolver,(LIS_REAL)-1.0);
+    if(err==LIS_SUCCESS) return fail("invalid tolerance accepted",LIS_BREAKDOWN);
+    err = lis_esolver_set_maxiter(esolver,0);
+    if(err==LIS_SUCCESS) return fail("invalid maxiter accepted",LIS_BREAKDOWN);
+    err = lis_esolver_set_subspace_size(esolver,1);
+    if(err==LIS_SUCCESS) return fail("invalid subspace accepted",LIS_BREAKDOWN);
+    err = lis_esolver_set_mode(esolver,4);
+    if(err==LIS_SUCCESS) return fail("invalid mode accepted",LIS_BREAKDOWN);
+    err = lis_esolver_set_block_size(esolver,5);
+    if(err==LIS_SUCCESS) return fail("invalid block size accepted",LIS_BREAKDOWN);
+    err = lis_esolver_set_transform(esolver,99);
+    if(err==LIS_SUCCESS) return fail("invalid transform accepted",LIS_BREAKDOWN);
+    err = lis_esolver_set_shift(esolver,(LIS_REAL)NAN,(LIS_REAL)0.0);
+    if(err==LIS_SUCCESS) return fail("invalid shift accepted",LIS_BREAKDOWN);
+
+#ifndef _COMPLEX
+    err = lis_esolver_set_shift(esolver,(LIS_REAL)2.5,(LIS_REAL)0.25);
+    if(err==LIS_SUCCESS)
+        return fail("imaginary shift accepted in real build",LIS_BREAKDOWN);
+#else
+    err = lis_esolver_set_shift(esolver,(LIS_REAL)2.5,(LIS_REAL)0.25);
+    if(err) return fail("complex shift",err);
+    err = lis_esolver_get_shift(esolver,&real_shift,&imaginary_shift);
+    if(err || real_shift!=(LIS_REAL)2.5 || imaginary_shift!=(LIS_REAL)0.25)
+        return fail("complex shift round trip",err ? err : LIS_BREAKDOWN);
+    err = lis_esolver_set_shift(esolver,(LIS_REAL)2.5,(LIS_REAL)0.0);
+    if(err) return fail("reset complex shift",err);
+#endif
+
+    lis_esolver_get_type(esolver,&type);
+    lis_esolver_get_subspace_size(esolver,&subspace_size);
+    lis_esolver_get_mode(esolver,&mode);
+    lis_esolver_get_block_size(esolver,&block_size);
+    lis_esolver_get_tolerance(esolver,&tolerance);
+    lis_esolver_get_maxiter(esolver,&maxiter);
+    lis_esolver_get_transform(esolver,&transform);
+    lis_esolver_get_shift(esolver,&real_shift,&imaginary_shift);
+
+    if(type!=LIS_ESOLVER_LI ||
+       subspace_size!=4 || mode!=1 || block_size!=2 ||
+       tolerance!=(LIS_REAL)1.0e-9 || maxiter!=123 ||
+       transform!=LIS_EIGEN_TRANSFORM_SHIFT_INVERT ||
+       real_shift!=(LIS_REAL)2.5 || imaginary_shift!=(LIS_REAL)0.0)
+        return fail("failed update changed active configuration",LIS_BREAKDOWN);
+
+    /* Existing converged-pair selection remains unchanged. */
     esolver->nev = 4;
 
     esolver->evalue = (LIS_SCALAR *)calloc(6,sizeof(LIS_SCALAR));
@@ -85,7 +178,7 @@ int main(int argc, char *argv[])
     if(err==LIS_SUCCESS)
         return fail("out-of-range scan error propagation",LIS_BREAKDOWN);
 
-    printf("PASS: eigensolver converged-pair selection\n");
+    printf("PASS: typed eigensolver configuration and pair selection\n");
 
     lis_esolver_destroy(esolver);
     lis_finalize();
