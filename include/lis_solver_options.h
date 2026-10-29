@@ -1,4 +1,4 @@
-/* Transactional solver option-profile helpers. */
+/* Transactional solver option-profile and runtime helpers. */
 
 #ifndef __LIS_SOLVER_OPTIONS_H__
 #define __LIS_SOLVER_OPTIONS_H__
@@ -35,6 +35,45 @@ extern LIS_INT lis_solver_set_option_replace_if_changed(
     const char *text,
     LIS_SOLVER solver,
     LIS_INT *changed);
+
+/*
+ * Typed solve-time controls.  These values are read for each solve and do not
+ * change solver work dimensions or invalidate persistent preconditioner state.
+ */
+extern LIS_INT lis_solver_set_tolerance(
+    LIS_SOLVER solver,
+    LIS_REAL tolerance);
+
+extern LIS_INT lis_solver_get_tolerance(
+    LIS_SOLVER solver,
+    LIS_REAL *tolerance);
+
+extern LIS_INT lis_solver_set_maxiter(
+    LIS_SOLVER solver,
+    LIS_INT maxiter);
+
+extern LIS_INT lis_solver_get_maxiter(
+    LIS_SOLVER solver,
+    LIS_INT *maxiter);
+
+/* Compact view of the diagnostics already exposed by individual getters. */
+typedef struct
+{
+    LIS_INT status;
+    LIS_INT iterations;
+    LIS_INT iterations_double;
+    LIS_INT iterations_quad;
+    LIS_REAL residual_norm;
+    double time;
+    double iteration_time;
+    double preconditioner_time;
+    double preconditioner_create_time;
+    double preconditioner_iteration_time;
+} LIS_SOLVE_REPORT;
+
+extern LIS_INT lis_solver_get_report(
+    LIS_SOLVER solver,
+    LIS_SOLVE_REPORT *report);
 
 #ifdef __cplusplus
 }

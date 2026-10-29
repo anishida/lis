@@ -189,3 +189,147 @@ lis_solver_set_option_replace_if_changed(
     LIS_DEBUG_FUNC_OUT;
     return LIS_SUCCESS;
 }
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_tolerance"
+LIS_INT
+lis_solver_set_tolerance(
+    LIS_SOLVER solver,
+    LIS_REAL tolerance)
+{
+    LIS_DEBUG_FUNC_IN;
+
+    if(solver==NULL || tolerance<0 || tolerance!=tolerance)
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,
+            "solver is NULL or tolerance is invalid\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    solver->params[LIS_PARAMS_RESID-LIS_OPTIONS_LEN] =
+        (LIS_SCALAR)tolerance;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_get_tolerance"
+LIS_INT
+lis_solver_get_tolerance(
+    LIS_SOLVER solver,
+    LIS_REAL *tolerance)
+{
+    LIS_DEBUG_FUNC_IN;
+
+    if(solver==NULL || tolerance==NULL)
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,
+            "solver or tolerance output is NULL\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *tolerance = (LIS_REAL)
+        solver->params[LIS_PARAMS_RESID-LIS_OPTIONS_LEN];
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_maxiter"
+LIS_INT
+lis_solver_set_maxiter(
+    LIS_SOLVER solver,
+    LIS_INT maxiter)
+{
+    LIS_DEBUG_FUNC_IN;
+
+    if(solver==NULL || maxiter<0)
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,
+            "solver is NULL or maximum iteration count is negative\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    solver->options[LIS_OPTIONS_MAXITER] = maxiter;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_get_maxiter"
+LIS_INT
+lis_solver_get_maxiter(
+    LIS_SOLVER solver,
+    LIS_INT *maxiter)
+{
+    LIS_DEBUG_FUNC_IN;
+
+    if(solver==NULL || maxiter==NULL)
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,
+            "solver or maximum-iteration output is NULL\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *maxiter = solver->options[LIS_OPTIONS_MAXITER];
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_get_report"
+LIS_INT
+lis_solver_get_report(
+    LIS_SOLVER solver,
+    LIS_SOLVE_REPORT *report)
+{
+    LIS_SOLVE_REPORT tmp;
+    LIS_INT err;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if(solver==NULL || report==NULL)
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,
+            "solver or report output is NULL\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    memset(&tmp,0,sizeof(tmp));
+
+    err = lis_solver_get_status(solver,&tmp.status);
+    if(err) return err;
+
+    err = lis_solver_get_iterex(
+        solver,
+        &tmp.iterations,
+        &tmp.iterations_double,
+        &tmp.iterations_quad);
+    if(err) return err;
+
+    err = lis_solver_get_residualnorm(solver,&tmp.residual_norm);
+    if(err) return err;
+
+    err = lis_solver_get_timeex(
+        solver,
+        &tmp.time,
+        &tmp.iteration_time,
+        &tmp.preconditioner_time,
+        &tmp.preconditioner_create_time,
+        &tmp.preconditioner_iteration_time);
+    if(err) return err;
+
+    *report = tmp;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}

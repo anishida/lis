@@ -76,7 +76,11 @@ int main(int argc, char **argv)
     LIS_VECTOR q = NULL;
     LIS_VECTOR basis[1];
     LIS_PRECON saved_precon = NULL;
+    LIS_SOLVE_REPORT report;
+    LIS_REAL tolerance,residual;
     LIS_INT err,method,precon,policy,age,threads,half_mode,status,changed;
+    LIS_INT maxiter,iter,iter_double,iter_quad;
+    double time,itime,ptime,p_c_time,p_i_time;
     int monitor_cookie = 11;
     int convergence_cookie = 22;
     int failed = 0;
@@ -135,6 +139,36 @@ int main(int argc, char **argv)
         }
     }
 
+    /* The compact report must match the existing individual diagnostics. */
+    if(!failed)
+    {
+        err = lis_solver_get_report(solver,&report);
+        if(err) failed = 1;
+    }
+    if(!failed)
+    {
+        lis_solver_get_status(solver,&status);
+        lis_solver_get_iterex(solver,&iter,&iter_double,&iter_quad);
+        lis_solver_get_residualnorm(solver,&residual);
+        lis_solver_get_timeex(
+            solver,&time,&itime,&ptime,&p_c_time,&p_i_time);
+
+        if(report.status!=status ||
+           report.iterations!=iter ||
+           report.iterations_double!=iter_double ||
+           report.iterations_quad!=iter_quad ||
+           report.residual_norm!=residual ||
+           report.time!=time ||
+           report.iteration_time!=itime ||
+           report.preconditioner_time!=ptime ||
+           report.preconditioner_create_time!=p_c_time ||
+           report.preconditioner_iteration_time!=p_i_time)
+        {
+            fprintf(stderr,"compact solve report mismatch\n");
+            failed = 1;
+        }
+    }
+
     /*
      * Reapplying an equivalent complete profile must be a no-op.
      * Use a different textual ordering to verify comparison of the
@@ -157,6 +191,50 @@ int main(int argc, char **argv)
         {
             fprintf(stderr,
                 "equivalent replacement invalidated reusable state\n");
+            failed = 1;
+        }
+    }
+
+    /* Typed solve-time controls must preserve reusable solver state. */
+    if(!failed)
+    {
+        err = lis_solver_get_tolerance(solver,&tolerance);
+        if(err || tolerance!=(LIS_REAL)1.0e-7)
+            failed = 1;
+        err = lis_solver_get_maxiter(solver,&maxiter);
+        if(err || maxiter!=77)
+            failed = 1;
+
+        err = lis_solver_set_tolerance(solver,(LIS_REAL)2.0e-7);
+        if(err) failed = 1;
+        err = lis_solver_set_maxiter(solver,88);
+        if(err) failed = 1;
+
+        lis_solver_get_tolerance(solver,&tolerance);
+        lis_solver_get_maxiter(solver,&maxiter);
+        if(tolerance!=(LIS_REAL)2.0e-7 || maxiter!=88 ||
+           solver->sequence_precon!=saved_precon ||
+           solver->recycle_valid!=LIS_TRUE)
+        {
+            fprintf(stderr,
+                "typed solve-time update mismatch or reusable state lost\n");
+            failed = 1;
+        }
+    }
+
+    /* Invalid typed updates must leave the active values unchanged. */
+    if(!failed)
+    {
+        err = lis_solver_set_tolerance(solver,(LIS_REAL)-1.0);
+        if(err==LIS_SUCCESS) failed = 1;
+        err = lis_solver_set_maxiter(solver,-1);
+        if(err==LIS_SUCCESS) failed = 1;
+
+        lis_solver_get_tolerance(solver,&tolerance);
+        lis_solver_get_maxiter(solver,&maxiter);
+        if(tolerance!=(LIS_REAL)2.0e-7 || maxiter!=88)
+        {
+            fprintf(stderr,"failed typed update changed active values\n");
             failed = 1;
         }
     }
