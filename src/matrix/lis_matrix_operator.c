@@ -71,6 +71,24 @@ lis_matrix_operator_set_coefficients(
     return lis_matrix_mark_values_changed(C);
 }
 
+/*
+ * Operator operands are borrowed. Refuse rebinds that could make C
+ * reachable from itself through nested operator expressions.
+ */
+static LIS_INT
+lis_matrix_operator_contains(
+    LIS_MATRIX tree,LIS_MATRIX target,LIS_INT depth)
+{
+    if(tree==target) return LIS_TRUE;
+    if(tree==NULL) return LIS_FALSE;
+    if(depth>=64) return LIS_TRUE; /* Reject cyclic or excessively deep trees. */
+    if(tree->matrix_type!=LIS_MATRIX_OPERATOR) return LIS_FALSE;
+    if(lis_matrix_operator_contains(tree->operator_A,target,depth+1))
+        return LIS_TRUE;
+    if(tree->operator_scale!=NULL) return LIS_FALSE;
+    return lis_matrix_operator_contains(tree->operator_B,target,depth+1);
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_operator_rebind"
 LIS_INT
@@ -90,6 +108,15 @@ lis_matrix_operator_rebind(
     {
         LIS_SETERR(LIS_ERR_ILL_ARG,
             "matrix is not a linear-combination operator\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    if(A==NULL || B==NULL ||
+       lis_matrix_operator_contains(A,C,0) ||
+       lis_matrix_operator_contains(B,C,0))
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,
+            "operator rebind would introduce a cycle or invalid operand\n");
         return LIS_ERR_ILL_ARG;
     }
 

@@ -145,6 +145,26 @@ int main(int argc,char **argv)
         failed=1; goto done;
     }
 
+    /* Self-reference and indirect cycles must be rejected transactionally. */
+    err=lis_matrix_operator_rebind(op,op,D);
+    if(err==LIS_SUCCESS)
+    {
+        fprintf(stderr,"self-referential rebind was accepted\n");
+        failed=1; goto done;
+    }
+    err=lis_matrix_operator_rebind(op,nested,D);
+    if(err==LIS_SUCCESS)
+    {
+        fprintf(stderr,"indirect cyclic rebind was accepted\n");
+        failed=1; goto done;
+    }
+    err=lis_matrix_get_generation(op,&s3,&v3);
+    if(err || s3!=s2 || v3!=v2)
+    {
+        fprintf(stderr,"cyclic rebind changed matrix generation\n");
+        failed=1; goto done;
+    }
+
     /* Incompatible dimensions must leave the active operator untouched. */
     err=lis_matrix_operator_rebind(op,E,D);
     if(err==LIS_SUCCESS)

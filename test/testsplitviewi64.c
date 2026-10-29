@@ -33,6 +33,9 @@ int main(int argc,char **argv)
     const LIS_SCALAR upper2[1]={(LIS_SCALAR)-2.0};
     const int64_t bad_ptr[4]={0,1,1,1};
     const int64_t bad_index[1]={INT64_MAX};
+    const int64_t nonmonotone_ptr[4]={0,1,0,1};
+    const int64_t wrong_end_ptr[4]={0,0,1,2};
+    const int64_t wrong_index[1]={0};
     LIS_MATRIX A=NULL;
     LIS_MATRIX_SPLIT_TRIANGULAR_VIEW view=NULL;
     LIS_VECTOR x=NULL,y=NULL;
@@ -108,6 +111,17 @@ int main(int argc,char **argv)
         fprintf(stderr,"64-bit split-view invalid rebind was accepted\n");
         failed=1;
         goto cleanup;
+    }
+
+    if(lis_matrix_split_triangular_view_rebind_i64(
+           view,1,nonmonotone_ptr,index2,diag2,lower2,upper2,0)==LIS_SUCCESS ||
+       lis_matrix_split_triangular_view_rebind_i64(
+           view,1,wrong_end_ptr,index2,diag2,lower2,upper2,0)==LIS_SUCCESS ||
+       lis_matrix_split_triangular_view_rebind_i64(
+           view,1,ptr2,wrong_index,diag2,lower2,upper2,0)==LIS_SUCCESS)
+    {
+        fprintf(stderr,"invalid 64-bit column structure was accepted\n");
+        failed=1; goto cleanup;
     }
 
     err=lis_matrix_get_generation(A,&s2,&v2);
