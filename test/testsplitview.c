@@ -15,6 +15,15 @@ static int near_value(LIS_SCALAR value,double expected)
 #endif
 }
 
+static int near_scalar(LIS_SCALAR value,LIS_SCALAR expected)
+{
+#ifdef _COMPLEX
+    return cabs(value-expected)<1.0e-12;
+#else
+    return fabs((double)(value-expected))<1.0e-12;
+#endif
+}
+
 static int set_x123(LIS_VECTOR x)
 {
     if(x==NULL || x->n!=3) return 1;
@@ -69,10 +78,14 @@ static int run_symmetric_origin1(void)
 
     err=lis_matvec(A,x,y); if(err) goto done;
     if(check_y(y,2.0,3.0,14.0)) goto done;
+    err=lis_matvech(A,x,y); if(err) goto done;
+    if(check_y(y,2.0,3.0,14.0)) goto done;
 
     err=lis_matrix_split_triangular_view_set_values(view,diag1,off1,NULL);
     if(err) goto done;
     err=lis_matvec(A,x,y); if(err) goto done;
+    if(check_y(y,4.0,8.5,19.0)) goto done;
+    err=lis_matvech(A,x,y); if(err) goto done;
     if(check_y(y,4.0,8.5,19.0)) goto done;
 
     rc=0;
@@ -111,12 +124,16 @@ static int run_nonsymmetric_origin0(void)
 
     err=lis_matvec(A,x,y); if(err) goto done;
     if(check_y(y,-2.0,-3.0,14.0)) goto done;
+    err=lis_matvech(A,x,y); if(err) goto done;
+    if(check_y(y,2.0,1.0,10.0)) goto done;
 
     err=lis_matrix_split_triangular_view_set_values(
         view,diag1,lower1,upper1);
     if(err) goto done;
     err=lis_matvec(A,x,y); if(err) goto done;
     if(check_y(y,2.0,5.5,19.0)) goto done;
+    err=lis_matvech(A,x,y); if(err) goto done;
+    if(check_y(y,4.0,7.5,17.0)) goto done;
 
     /* Symmetry mode is structural and cannot change during a value update. */
     err=lis_matrix_split_triangular_view_set_values(view,diag1,lower1,NULL);
@@ -130,6 +147,47 @@ done:
     lis_matrix_split_triangular_view_destroy(view);
     return rc;
 }
+
+#ifdef _COMPLEX
+static int run_complex_adjoint(void)
+{
+    const LIS_INT ptr[3]={0,1,1};
+    const LIS_INT index[1]={1};
+    const LIS_SCALAR diag[2]={1.0+2.0*I,2.0-1.0*I};
+    const LIS_SCALAR lower[1]={3.0+2.0*I};
+    const LIS_SCALAR upper[1]={-1.0+4.0*I};
+    LIS_MATRIX A=NULL;
+    LIS_MATRIX_SPLIT_TRIANGULAR_VIEW view=NULL;
+    LIS_VECTOR x=NULL,y=NULL;
+    LIS_SCALAR e0,e1;
+    LIS_INT err;
+    int rc=1;
+
+    err=lis_matrix_create_split_triangular_view(
+        LIS_COMM_WORLD,2,1,ptr,index,diag,lower,upper,0,&A,&view);
+    if(err) goto done;
+    err=lis_vector_duplicate(A,&x); if(err) goto done;
+    err=lis_vector_duplicate(A,&y); if(err) goto done;
+
+    x->value[0]=1.0+2.0*I;
+    x->value[1]=-2.0+1.0*I;
+
+    e0=conj(diag[0])*x->value[0]+conj(lower[0])*x->value[1];
+    e1=conj(upper[0])*x->value[0]+conj(diag[1])*x->value[1];
+
+    err=lis_matvech(A,x,y); if(err) goto done;
+    if(!near_scalar(y->value[0],e0) || !near_scalar(y->value[1],e1))
+        goto done;
+
+    rc=0;
+done:
+    if(y) lis_vector_destroy(y);
+    if(x) lis_vector_destroy(x);
+    if(A) lis_matrix_destroy(A);
+    lis_matrix_split_triangular_view_destroy(view);
+    return rc;
+}
+#endif
 
 static int reject_invalid_storage(void)
 {
@@ -163,6 +221,9 @@ int main(int argc,char **argv)
 
     if(run_symmetric_origin1()) goto done;
     if(run_nonsymmetric_origin0()) goto done;
+#ifdef _COMPLEX
+    if(run_complex_adjoint()) goto done;
+#endif
     if(reject_invalid_storage()) goto done;
 
     printf("LIS_SPLIT_TRIANGULAR_VIEW PASSED\n");
