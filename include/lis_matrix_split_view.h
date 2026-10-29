@@ -2,6 +2,7 @@
 #ifndef LIS_MATRIX_SPLIT_VIEW_H
 #define LIS_MATRIX_SPLIT_VIEW_H
 
+#include <stdint.h>
 #include "lis.h"
 
 #ifdef __cplusplus
@@ -42,6 +43,26 @@ LIS_INT lis_matrix_create_split_triangular_view(
     const LIS_SCALAR lower_values[],
     const LIS_SCALAR upper_values[],
     LIS_INT origin,
+    LIS_MATRIX *A,
+    LIS_MATRIX_SPLIT_TRIANGULAR_VIEW *view);
+
+/*
+ * Fixed-width external-index variant for embedding applications whose sparse
+ * structure uses signed 64-bit indices independently of the LIS build. The
+ * structure is range-checked and narrowed only into temporary LIS_INT arrays;
+ * those temporary arrays are released after the ordinary split-view row
+ * metadata has been built. Numerical arrays remain non-owning and zero-copy.
+ */
+LIS_INT lis_matrix_create_split_triangular_view_i64(
+    LIS_Comm comm,
+    int64_t n,
+    int64_t nnz,
+    const int64_t ptr[],
+    const int64_t index[],
+    const LIS_SCALAR diag[],
+    const LIS_SCALAR lower_values[],
+    const LIS_SCALAR upper_values[],
+    int64_t origin,
     LIS_MATRIX *A,
     LIS_MATRIX_SPLIT_TRIANGULAR_VIEW *view);
 
