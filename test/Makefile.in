@@ -127,8 +127,8 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) \
 	testgcrodrsequence$(EXEEXT) testmatrixgeneration$(EXEEXT) \
 	testexternalstorage$(EXEEXT) testmatrixmaterialize$(EXEEXT) \
-	testsplitview$(EXEEXT) testsplitviewi64$(EXEEXT) \
-	testmatrixoperatorlifecycle$(EXEEXT) \
+	testmatrixpolicysolve$(EXEEXT) testsplitview$(EXEEXT) \
+	testsplitviewi64$(EXEEXT) testmatrixoperatorlifecycle$(EXEEXT) \
 	testmatrixoperatormpi$(EXEEXT) testsequence$(EXEEXT) \
 	testwarmstart$(EXEEXT) testrecovery$(EXEEXT) \
 	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
@@ -541,6 +541,10 @@ am_testmatrixoperatormpi_OBJECTS = testmatrixoperatormpi.$(OBJEXT)
 testmatrixoperatormpi_OBJECTS = $(am_testmatrixoperatormpi_OBJECTS)
 testmatrixoperatormpi_LDADD = $(LDADD)
 testmatrixoperatormpi_DEPENDENCIES =
+am_testmatrixpolicysolve_OBJECTS = testmatrixpolicysolve.$(OBJEXT)
+testmatrixpolicysolve_OBJECTS = $(am_testmatrixpolicysolve_OBJECTS)
+testmatrixpolicysolve_LDADD = $(LDADD)
+testmatrixpolicysolve_DEPENDENCIES =
 am_testmatvecblock_OBJECTS = testmatvecblock.$(OBJEXT)
 testmatvecblock_OBJECTS = $(am_testmatvecblock_OBJECTS)
 testmatvecblock_LDADD = $(LDADD)
@@ -789,6 +793,7 @@ am__depfiles_remade = ./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
 	./$(DEPDIR)/testmatrixmaterialize.Po \
 	./$(DEPDIR)/testmatrixoperatorlifecycle.Po \
 	./$(DEPDIR)/testmatrixoperatormpi.Po \
+	./$(DEPDIR)/testmatrixpolicysolve.Po \
 	./$(DEPDIR)/testmatvecblock.Po ./$(DEPDIR)/testmfamg.Po \
 	./$(DEPDIR)/testmfamggalerkin.Po \
 	./$(DEPDIR)/testnearnullspace.Po \
@@ -890,7 +895,8 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatrixmaterialize_SOURCES) \
 	$(testmatrixoperatorlifecycle_SOURCES) \
-	$(testmatrixoperatormpi_SOURCES) $(testmatvecblock_SOURCES) \
+	$(testmatrixoperatormpi_SOURCES) \
+	$(testmatrixpolicysolve_SOURCES) $(testmatvecblock_SOURCES) \
 	$(testmfamg_SOURCES) $(testmfamggalerkin_SOURCES) \
 	$(testnearnullspace_SOURCES) \
 	$(testnullspacecandidates_SOURCES) \
@@ -951,7 +957,8 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatrixmaterialize_SOURCES) \
 	$(testmatrixoperatorlifecycle_SOURCES) \
-	$(testmatrixoperatormpi_SOURCES) $(testmatvecblock_SOURCES) \
+	$(testmatrixoperatormpi_SOURCES) \
+	$(testmatrixpolicysolve_SOURCES) $(testmatvecblock_SOURCES) \
 	$(testmfamg_SOURCES) $(testmfamggalerkin_SOURCES) \
 	$(testnearnullspace_SOURCES) \
 	$(testnullspacecandidates_SOURCES) \
@@ -1355,6 +1362,7 @@ testgcrodrsequence_SOURCES = testgcrodrsequence.c
 testmatrixgeneration_SOURCES = testmatrixgeneration.c
 testexternalstorage_SOURCES = testexternalstorage.c
 testmatrixmaterialize_SOURCES = testmatrixmaterialize.c
+testmatrixpolicysolve_SOURCES = testmatrixpolicysolve.c
 testsplitview_SOURCES = testsplitview.c
 testsplitviewi64_SOURCES = testsplitviewi64.c
 testmatrixoperatorlifecycle_SOURCES = testmatrixoperatorlifecycle.c
@@ -1531,10 +1539,11 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) \
 	testgcrodrsequence$(EXEEXT) testmatrixgeneration$(EXEEXT) \
 	testexternalstorage$(EXEEXT) testmatrixmaterialize$(EXEEXT) \
-	testsplitview$(EXEEXT) testsplitviewi64$(EXEEXT) \
-	testmatrixoperatorlifecycle$(EXEEXT) testsequence$(EXEEXT) \
-	testwarmstart$(EXEEXT) testrecovery$(EXEEXT) \
-	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
+	testmatrixpolicysolve$(EXEEXT) testsplitview$(EXEEXT) \
+	testsplitviewi64$(EXEEXT) testmatrixoperatorlifecycle$(EXEEXT) \
+	testsequence$(EXEEXT) testwarmstart$(EXEEXT) \
+	testrecovery$(EXEEXT) testthreads$(EXEEXT) \
+	testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
 	testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
 	testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) \
 	testnullspacecandidates$(EXEEXT) testesolverselection$(EXEEXT) \
@@ -2003,6 +2012,10 @@ testmatrixoperatormpi$(EXEEXT): $(testmatrixoperatormpi_OBJECTS) $(testmatrixope
 	@rm -f testmatrixoperatormpi$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmatrixoperatormpi_OBJECTS) $(testmatrixoperatormpi_LDADD) $(LIBS)
 
+testmatrixpolicysolve$(EXEEXT): $(testmatrixpolicysolve_OBJECTS) $(testmatrixpolicysolve_DEPENDENCIES) $(EXTRA_testmatrixpolicysolve_DEPENDENCIES) 
+	@rm -f testmatrixpolicysolve$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testmatrixpolicysolve_OBJECTS) $(testmatrixpolicysolve_LDADD) $(LIBS)
+
 testmatvecblock$(EXEEXT): $(testmatvecblock_OBJECTS) $(testmatvecblock_DEPENDENCIES) $(EXTRA_testmatvecblock_DEPENDENCIES) 
 	@rm -f testmatvecblock$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmatvecblock_OBJECTS) $(testmatvecblock_LDADD) $(LIBS)
@@ -2270,6 +2283,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixmaterialize.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixoperatorlifecycle.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixoperatormpi.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixpolicysolve.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatvecblock.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamggalerkin.Po@am__quote@ # am--include-marker
@@ -2966,6 +2980,13 @@ testmatrixmaterialize.log: testmatrixmaterialize$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testmatrixpolicysolve.log: testmatrixpolicysolve$(EXEEXT)
+	@p='testmatrixpolicysolve$(EXEEXT)'; \
+	b='testmatrixpolicysolve'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 testsplitview.log: testsplitview$(EXEEXT)
 	@p='testsplitview$(EXEEXT)'; \
 	b='testsplitview'; \
@@ -3277,6 +3298,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testmatrixmaterialize.Po
 	-rm -f ./$(DEPDIR)/testmatrixoperatorlifecycle.Po
 	-rm -f ./$(DEPDIR)/testmatrixoperatormpi.Po
+	-rm -f ./$(DEPDIR)/testmatrixpolicysolve.Po
 	-rm -f ./$(DEPDIR)/testmatvecblock.Po
 	-rm -f ./$(DEPDIR)/testmfamg.Po
 	-rm -f ./$(DEPDIR)/testmfamggalerkin.Po
@@ -3432,6 +3454,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testmatrixmaterialize.Po
 	-rm -f ./$(DEPDIR)/testmatrixoperatorlifecycle.Po
 	-rm -f ./$(DEPDIR)/testmatrixoperatormpi.Po
+	-rm -f ./$(DEPDIR)/testmatrixpolicysolve.Po
 	-rm -f ./$(DEPDIR)/testmatvecblock.Po
 	-rm -f ./$(DEPDIR)/testmfamg.Po
 	-rm -f ./$(DEPDIR)/testmfamggalerkin.Po
