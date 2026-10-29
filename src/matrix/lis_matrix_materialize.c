@@ -289,6 +289,27 @@ lis_matrix_materialize_refresh_values(
             csr->value[p0+k]=row.value[k];
     }
 
+    /*
+     * A solver/preconditioner may have split this cache-owned CSR matrix
+     * (for example, SSOR uses the D/L/U representation). Updating the
+     * canonical CSR values does not update those derived arrays. Discard
+     * them so subsequent matvecs and solves use the refreshed coefficients.
+     * Keep ptr/index/value and the CSR matrix object itself allocated.
+     */
+    if(csr->is_splited)
+    {
+        err=lis_matrix_DLU_destroy(csr);
+        if(err) goto done;
+        csr->is_splited=LIS_FALSE;
+    }
+    if(csr->WD!=NULL)
+    {
+        lis_matrix_diag_destroy(csr->WD);
+        csr->WD=NULL;
+    }
+    csr->use_wd=0;
+    csr->is_scaled=LIS_FALSE;
+
     err=lis_matrix_mark_values_changed(csr);
 
 done:
