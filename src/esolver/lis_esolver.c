@@ -374,12 +374,10 @@ LIS_SCALAR lis_esolver_shift_perturbation(
 }
 
 /*
- * Materialize alpha*A + beta*B only for factorizing
- * preconditioner construction.
- *
- * The iterative solver keeps LIS_MATRIX_OPERATOR for matrix-vector
- * products. The initial implementation is intentionally conservative:
- * serial CSR operands with identical sparsity are required.
+ * Materialize alpha*A + beta*B only when the operator has serial CSR
+ * operands with identical sparsity. This preserves the established fast
+ * setup path for factorizing preconditioners. Other row-capable operators
+ * fall back to the generic direct-row path.
  */
 static LIS_INT
 lis_esolver_operator_pc_matrix_csr(
@@ -395,6 +393,7 @@ lis_esolver_operator_pc_matrix_csr(
         *P = NULL;
 
         if( op->matrix_type!=LIS_MATRIX_OPERATOR ||
+            op->operator_scale!=NULL ||
             op->operator_A==NULL ||
             op->operator_B==NULL )
                 return LIS_ERR_NOT_IMPLEMENTED;
@@ -464,8 +463,7 @@ LIS_INT lis_esolver_rebuild_precon(
 
         if( A==NULL || solver==NULL || precon==NULL )
         {
-                LIS_SETERR(
-                        LIS_ERR_ILL_ARG,
+                LIS_SETERR(LIS_ERR_ILL_ARG,
                         "invalid eigensolver preconditioner rebuild arguments\n");
                 return LIS_ERR_ILL_ARG;
         }
@@ -487,15 +485,20 @@ LIS_INT lis_esolver_rebuild_precon(
 
         if( A->matrix_type==LIS_MATRIX_OPERATOR &&
             (precon_type==LIS_PRECON_TYPE_ILU ||
-             precon_type==LIS_PRECON_TYPE_ILUT) )
+             precon_type==LIS_PRECON_TYPE_ILUT ||
+             precon_type==LIS_PRECON_TYPE_ILUC) )
         {
                 err = lis_esolver_operator_pc_matrix_csr(A,&pc_matrix);
-                if( err )
+                if( err==LIS_SUCCESS )
+                {
+                        build_matrix = pc_matrix;
+                }
+                else if( err!=LIS_ERR_NOT_IMPLEMENTED )
                 {
                         solver->retcode = err;
                         return err;
                 }
-                build_matrix = pc_matrix;
+                /* NOT_IMPLEMENTED means use the generic row-backed path. */
         }
 
         solver->A = build_matrix;

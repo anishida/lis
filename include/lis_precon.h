@@ -56,11 +56,12 @@ extern "C"
 /*
  * Internal row access used by preconditioner setup.
  *
- * CSR rows are exposed directly.  LIS_MATRIX_USER rows are obtained
+ * CSR rows are exposed directly. LIS_MATRIX_USER rows are obtained
  * through the USER row callback and kept only in a reusable row-sized
- * buffer.
+ * buffer. Operator rows additionally keep reusable merge scratch so that
+ * repeated row access does not allocate/free temporary storage per row.
  */
-typedef struct
+typedef struct LIS_PRECON_ROW_SOURCE_STRUCT
 {
 	LIS_MATRIX A;
 	LIS_INT capacity;
@@ -69,6 +70,10 @@ typedef struct
 	const LIS_INT *index;
 	const LIS_SCALAR *value;
 	LIS_INT nnz;
+	struct LIS_PRECON_ROW_SOURCE_STRUCT *operator_A;
+	struct LIS_PRECON_ROW_SOURCE_STRUCT *operator_B;
+	void *operator_entries;
+	LIS_INT operator_entries_capacity;
 } LIS_PRECON_ROW_SOURCE;
 
 extern LIS_INT lis_precon_row_source_init(
@@ -84,6 +89,13 @@ extern LIS_INT lis_precon_row_source_count_nnz(
 	LIS_INT *nnz);
 
 extern void lis_precon_row_source_destroy(
+	LIS_PRECON_ROW_SOURCE *source);
+
+extern LIS_INT lis_precon_operator_row_source_init(
+	LIS_PRECON_ROW_SOURCE *source);
+extern LIS_INT lis_precon_operator_row_source_get(
+	LIS_PRECON_ROW_SOURCE *source, LIS_INT local_row);
+extern void lis_precon_operator_row_source_destroy(
 	LIS_PRECON_ROW_SOURCE *source);
 
         extern LIS_INT lis_precon_check_ilu_pivot_tol(LIS_MATRIX A, LIS_REAL tol);
@@ -170,8 +182,8 @@ extern void lis_precon_row_source_destroy(
 	extern LIS_INT lis_precon_psd_create_saamg(LIS_SOLVER solver, LIS_PRECON precon);
 /*NEH support for extended "solve_kernel" workflow*/
     extern LIS_INT lis_precon_psd_update_saamg(LIS_SOLVER solver, LIS_PRECON precon);
-	extern LIS_INT lis_psolve_saamg(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X);
-	extern LIS_INT lis_psolveh_saamg(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X);
+	extern LIS_INT lis_psolve_saamg(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
+	extern LIS_INT lis_psolveh_saamg(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
 
 /*******************/
 /* Crout ILU       */

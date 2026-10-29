@@ -2543,11 +2543,23 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
 				return LIS_ERR_NOT_IMPLEMENTED;
 			}
 		}
+		else if( A->matrix_type==LIS_MATRIX_OPERATOR &&
+		         (precon_type==LIS_PRECON_TYPE_ILU ||
+		          precon_type==LIS_PRECON_TYPE_ILUC ||
+		          precon_type==LIS_PRECON_TYPE_ILUT) )
+		{
+			/*
+			 * These factorizing preconditioners consume the generic row-source
+			 * interface.  LIS_MATRIX_OPERATOR row-source initialization
+			 * recursively validates both operands when the preconditioner is
+			 * created, so no explicit materialization is required here.
+			 */
+		}
 		else
 		{
 			LIS_SETERR(
 				LIS_ERR_NOT_IMPLEMENTED,
-				"built-in preconditioners require explicit storage unless a compatible prebuilt preconditioner is supplied\n");
+				"built-in preconditioners require explicit storage unless a compatible direct row source or prebuilt preconditioner is supplied\n");
 			return LIS_ERR_NOT_IMPLEMENTED;
 		}
 	}

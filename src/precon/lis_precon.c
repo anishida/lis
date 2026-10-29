@@ -46,6 +46,7 @@
 	#include <mpi.h>
 #endif
 #include <math.h>
+#include <limits.h>
 #include "lislib.h"
 
 /************************************************
@@ -163,6 +164,9 @@ LIS_INT lis_precon_row_source_init(
 	case LIS_MATRIX_CSR:
 		return LIS_SUCCESS;
 
+	case LIS_MATRIX_OPERATOR:
+		return lis_precon_operator_row_source_init(source);
+
 	case LIS_MATRIX_USER:
 		/*
 		 * USER callbacks expose global column indices.  In serial
@@ -202,6 +206,8 @@ void lis_precon_row_source_destroy(
 	{
 		lis_free(source->value_buffer);
 	}
+
+	lis_precon_operator_row_source_destroy(source);
 
 	memset(source,0,sizeof(*source));
 }
@@ -294,6 +300,11 @@ LIS_INT lis_precon_row_source_get(
 		return LIS_SUCCESS;
 	}
 
+
+	if( A->matrix_type==LIS_MATRIX_OPERATOR )
+	{
+		return lis_precon_operator_row_source_get(source,local_row);
+	}
 
 	if( A->matrix_type!=LIS_MATRIX_USER )
 	{
@@ -437,76 +448,20 @@ LIS_INT lis_precon_row_source_get(
 
 #undef __FUNC__
 #define __FUNC__ "lis_precon_row_source_count_nnz"
-LIS_INT lis_precon_row_source_count_nnz(
-	LIS_MATRIX A,
-	LIS_INT *nnz)
+LIS_INT lis_precon_row_source_count_nnz(LIS_MATRIX A,LIS_INT *nnz)
 {
-	LIS_INT err;
-	LIS_INT i;
-	LIS_INT row_nnz;
-	LIS_INT total;
-
-	if( A==NULL || nnz==NULL )
-	{
-		return LIS_ERR_ILL_ARG;
+	LIS_PRECON_ROW_SOURCE source;
+	LIS_INT err,i,total=0;
+	if(A==NULL || nnz==NULL) return LIS_ERR_ILL_ARG;
+	if(A->matrix_type==LIS_MATRIX_CSR){ if(A->nnz<0) return LIS_ERR_ILL_ARG; *nnz=A->nnz; return LIS_SUCCESS; }
+	err=lis_precon_row_source_init(A,&source); if(err) return err;
+	for(i=0;i<A->n;i++){
+		err=lis_precon_row_source_get(&source,i); if(err) break;
+		if(source.nnz<0 || total>INT_MAX-source.nnz){ err=LIS_ERR_ILL_ARG; break; }
+		total+=source.nnz;
 	}
-
-	if( A->matrix_type==LIS_MATRIX_CSR )
-	{
-		if( A->nnz<0 )
-		{
-			return LIS_ERR_ILL_ARG;
-		}
-
-		*nnz = A->nnz;
-
-		return LIS_SUCCESS;
-	}
-
-	if( A->matrix_type!=LIS_MATRIX_USER )
-	{
-		return LIS_ERR_NOT_IMPLEMENTED;
-	}
-
-	if( A->nprocs!=1 || A->n!=A->gn )
-	{
-		return LIS_ERR_NOT_IMPLEMENTED;
-	}
-
-	total = 0;
-
-	for(i=0;i<A->n;i++)
-	{
-		row_nnz = 0;
-
-		err = lis_matrix_get_user_row(
-			A,
-			i,
-			&row_nnz,
-			NULL,
-			NULL);
-
-		if( err )
-		{
-			return err;
-		}
-
-		if( row_nnz<0 )
-		{
-			return LIS_ERR_ILL_ARG;
-		}
-
-		total += row_nnz;
-
-		if( total<0 )
-		{
-			return LIS_ERR_ILL_ARG;
-		}
-	}
-
-	*nnz = total;
-
-	return LIS_SUCCESS;
+	lis_precon_row_source_destroy(&source);
+	if(err) return err; *nnz=total; return LIS_SUCCESS;
 }
 
 
@@ -589,7 +544,8 @@ LIS_INT lis_precon_check_ilu_pivot_tol(
 	 * USER matrices have no explicit CSR storage.  Validate their
 	 * row scale directly through the row-access capability.
 	 */
-	if( A->matrix_type==LIS_MATRIX_USER )
+	if( A->matrix_type==LIS_MATRIX_USER ||
+	    A->matrix_type==LIS_MATRIX_OPERATOR )
 	{
 		err = lis_precon_row_source_init(
 			A,

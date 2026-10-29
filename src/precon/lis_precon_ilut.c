@@ -228,6 +228,7 @@ LIS_INT lis_precon_create_ilut(LIS_SOLVER solver, LIS_PRECON precon)
 
 		break;
 
+	case LIS_MATRIX_OPERATOR:
 	case LIS_MATRIX_USER:
 		if(
 			solver->A->nprocs==1
@@ -442,7 +443,7 @@ LIS_INT lis_precon_create_ilut_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		{
 			get_err = LIS_SUCCESS;
 
-			if( A->matrix_type==LIS_MATRIX_USER )
+			if( (A->matrix_type==LIS_MATRIX_USER || A->matrix_type==LIS_MATRIX_OPERATOR) )
 			{
 				/*
 				 * USER row callbacks are serialized until the

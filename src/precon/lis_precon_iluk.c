@@ -383,6 +383,7 @@ LIS_INT lis_precon_create_iluk(LIS_SOLVER solver, LIS_PRECON precon)
 		lis_psolve_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolve_iluk_vbr;
 /*		lis_psolveh_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolveh_iluk_vbr;*/
 		break;
+	case LIS_MATRIX_OPERATOR:
 	case LIS_MATRIX_USER:
 		if(
 			solver->A->nprocs==1
@@ -495,6 +496,7 @@ LIS_INT lis_precon_psd_create_iluk(LIS_SOLVER solver, LIS_PRECON precon)
 /*        break;*/
         err = LIS_ERR_NOT_IMPLEMENTED;
 		return err;
+	case LIS_MATRIX_OPERATOR:
 	case LIS_MATRIX_USER:
 		if(
 			solver->A->nprocs==1
@@ -574,6 +576,7 @@ LIS_INT lis_precon_psd_update_iluk(LIS_SOLVER solver, LIS_PRECON precon)
 
 		if( err ) return err;
 		break;
+	case LIS_MATRIX_OPERATOR:
 	case LIS_MATRIX_USER:
 		if(
 			solver->A->nprocs==1
@@ -766,7 +769,7 @@ LIS_INT lis_symbolic_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 
 			get_err = LIS_SUCCESS;
 
-			if( A->matrix_type==LIS_MATRIX_USER )
+			if( (A->matrix_type==LIS_MATRIX_USER || A->matrix_type==LIS_MATRIX_OPERATOR) )
 			{
 				#pragma omp critical(lis_precon_user_row_access)
 				{
@@ -1316,7 +1319,7 @@ LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 
 			get_err = LIS_SUCCESS;
 
-			if( A->matrix_type==LIS_MATRIX_USER )
+			if( (A->matrix_type==LIS_MATRIX_USER || A->matrix_type==LIS_MATRIX_OPERATOR) )
 			{
 				#pragma omp critical(lis_precon_user_row_access)
 				{
