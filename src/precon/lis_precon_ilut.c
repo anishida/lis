@@ -63,6 +63,8 @@
 
 #define EBABLE_BSR	0
 
+#include <math.h>
+
 /* Fixed-pattern numerical refactorization is shared with ILU(k). */
 LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon);
 
@@ -212,7 +214,8 @@ LIS_INT lis_precon_update_ilut_frozen(
     LIS_SOLVER solver,
     LIS_PRECON precon)
 {
-    LIS_INT err;
+    LIS_INT err,i;
+    LIS_REAL pivot_magnitude;
 
     LIS_DEBUG_FUNC_IN;
 
@@ -259,6 +262,23 @@ LIS_INT lis_precon_update_ilut_frozen(
      */
     err = lis_numerical_fact_csr(solver,precon);
     if( err ) return err;
+
+    /*
+     * D stores reciprocals of factor diagonal pivots.
+     * Reject zero and non-finite values before exposing refreshed
+     * factors to the solver. A failure triggers a full rebuild.
+     */
+    for(i=0;i<precon->D->n;i++)
+    {
+        pivot_magnitude=(LIS_REAL)fabs(precon->D->value[i]);
+        if(!(pivot_magnitude>0.0 &&
+             pivot_magnitude<LIS_SCALAR_MAX))
+        {
+            LIS_SETERR(LIS_ERR_ILL_ARG,
+                "frozen ILUT numerical update produced an invalid pivot\n");
+            return LIS_ERR_ILL_ARG;
+        }
+    }
 
     LIS_DEBUG_FUNC_OUT;
     return LIS_SUCCESS;

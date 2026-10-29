@@ -4,6 +4,7 @@
 
 #include "lis.h"
 #include "lis_matrix_operator.h"
+#include "lis_precon.h"
 #include <stdio.h>
 
 static LIS_INT build_matrix(
@@ -255,7 +256,43 @@ int main(int argc,char **argv)
         goto cleanup;
     }
 
-    printf("STAGE8J_FROZEN_ILUT PASSED\n");
+    /* Unsupported half-storage refresh must not mutate the cache. */
+    solver->precon_half_mode=LIS_PRECON_HALF_ON;
+    err=lis_precon_update_ilut_frozen(solver,solver->sequence_precon);
+    solver->precon_half_mode=LIS_PRECON_HALF_OFF;
+    if(err!=LIS_ERR_NOT_IMPLEMENTED ||
+       solver->sequence_precon!=precon_before)
+    {
+        fprintf(stderr,"half-storage frozen refresh was not rejected\n");
+        failed=1;
+        goto cleanup;
+    }
+
+    /* Zero diagonal in the updated operator must reject frozen factors. */
+    err=lis_matrix_operator_set_coefficients(
+        C,(LIS_SCALAR)1.0,(LIS_SCALAR)-5.0);
+    if(err) { failed=1; goto cleanup; }
+    err=lis_precon_update_ilut_frozen(solver,solver->sequence_precon);
+    if(err==LIS_SUCCESS)
+    {
+        fprintf(stderr,"invalid frozen ILUT pivot was accepted\n");
+        failed=1;
+        goto cleanup;
+    }
+
+    err=lis_matrix_operator_set_coefficients(
+        C,(LIS_SCALAR)1.0,(LIS_SCALAR)-0.35);
+    if(err) { failed=1; goto cleanup; }
+    /* A structural-generation change must force a complete rebuild. */
+    err=lis_matrix_mark_structure_changed(C);
+    if(err) { failed=1; goto cleanup; }
+    if(solve_and_check(C,solver,xtrue,b,x,"structure-change"))
+    {
+        failed=1;
+        goto cleanup;
+    }
+
+    printf("FROZEN_PATTERN_ILUT PASSED\n");
 
 cleanup:
     if(solver) lis_solver_destroy(solver);

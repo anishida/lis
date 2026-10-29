@@ -2686,6 +2686,7 @@ LIS_INT lis_solver_sequence_prepare_precon(
 {
 	LIS_INT err;
 	LIS_INT precon_type;
+	LIS_INT frozen_update;
 	LIS_UNSIGNED_INT structure_generation;
 	LIS_UNSIGNED_INT value_generation;
 
@@ -2776,9 +2777,11 @@ LIS_INT lis_solver_sequence_prepare_precon(
            /*
             * Refresh only numerical preconditioner state.
             */
-           if( solver->sequence_precon_refresh_policy==
+           frozen_update =
+               solver->sequence_precon_refresh_policy==
                    LIS_SEQUENCE_PRECON_REFRESH_FROZEN_PATTERN &&
-               precon_type==LIS_PRECON_TYPE_ILUT )
+               precon_type==LIS_PRECON_TYPE_ILUT;
+           if( frozen_update )
            {
                    err = lis_precon_update_ilut_frozen(
                            solver,solver->sequence_precon);
@@ -2814,10 +2817,16 @@ LIS_INT lis_solver_sequence_prepare_precon(
            }
 
            /*
-            * lis_precon_psd_update() destroys the preconditioner on
-            * failure.  Clear cached references before falling back to
-            * a full create.
+            * The PSD updater destroys its object on failure. In contrast,
+            * a failed frozen numerical refresh leaves the old object alive.
+            * Release that object exactly once before recreating factors.
             */
+           if( frozen_update )
+           {
+                   LIS_INT destroy_err =
+                       lis_solver_sequence_precon_destroy(solver);
+                   if( destroy_err ) return destroy_err;
+           }
            solver->sequence_precon = NULL;
            solver->precon = NULL;
            solver->sequence_precon_matrix = NULL;
