@@ -142,6 +142,41 @@ int main(int argc,char **argv)
         goto cleanup;
     }
 
+    /* Null upper values select the documented symmetric representation. */
+    err=lis_matrix_split_triangular_view_rebind_i64(
+        view,1,ptr2,index2,diag2,lower2,NULL,0);
+    if(err || lis_matvec(A,x,y) ||
+       !near_value(y->value[0],2.0) ||
+       !near_value(y->value[1],21.0) ||
+       !near_value(y->value[2],22.0))
+    {
+        fprintf(stderr,"symmetric 64-bit rebind with NULL upper values failed\n");
+        failed=1; goto cleanup;
+    }
+
+    /* Reject invalid API inputs without changing the active factor view. */
+    if(lis_matrix_split_triangular_view_rebind_i64(
+           view,-1,ptr2,index2,diag2,lower2,NULL,0)==LIS_SUCCESS ||
+       lis_matrix_split_triangular_view_rebind_i64(
+           view,1,NULL,index2,diag2,lower2,NULL,0)==LIS_SUCCESS ||
+       lis_matrix_split_triangular_view_rebind_i64(
+           view,1,ptr2,NULL,diag2,lower2,NULL,0)==LIS_SUCCESS ||
+       lis_matrix_split_triangular_view_rebind_i64(
+           view,1,ptr2,index2,NULL,lower2,NULL,0)==LIS_SUCCESS ||
+       lis_matrix_split_triangular_view_rebind_i64(
+           view,1,ptr2,index2,diag2,lower2,NULL,2)==LIS_SUCCESS)
+    {
+        fprintf(stderr,"invalid 64-bit API arguments were accepted\n");
+        failed=1; goto cleanup;
+    }
+    if(lis_matvec(A,x,y) ||
+       !near_value(y->value[1],21.0) ||
+       !near_value(y->value[2],22.0))
+    {
+        fprintf(stderr,"invalid 64-bit rebind damaged active view\n");
+        failed=1; goto cleanup;
+    }
+
     if(sizeof(LIS_INT)<sizeof(int64_t))
     {
         const int64_t dummy_ptr[1]={0};
