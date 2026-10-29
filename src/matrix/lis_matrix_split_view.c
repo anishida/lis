@@ -84,6 +84,110 @@ lis_matrix_split_view_value(
     return LIS_SUCCESS;
 }
 
+/*
+ * Native row kernels avoid the generic USER-row scratch path.  The expanded
+ * row metadata is immutable after construction, so each output row is
+ * independent and can be evaluated safely in parallel.
+ */
+static LIS_INT
+lis_matrix_split_view_matvec(
+    void *user_data,
+    const LIS_SCALAR *x,
+    LIS_SCALAR *y)
+{
+    LIS_MATRIX_SPLIT_TRIANGULAR_VIEW view;
+    LIS_INT i,p;
+
+    view=(LIS_MATRIX_SPLIT_TRIANGULAR_VIEW)user_data;
+    if(view==NULL || x==NULL || y==NULL || view->diag==NULL ||
+       (view->nnz>0 && view->lower==NULL))
+        return LIS_ERR_ILL_ARG;
+
+#ifdef _OPENMP
+#pragma omp parallel for private(p) schedule(static)
+#endif
+    for(i=0;i<view->n;i++)
+    {
+        LIS_SCALAR sum=(LIS_SCALAR)0.0;
+
+        for(p=view->row_ptr[i];p<view->row_ptr[i+1];p++)
+        {
+            LIS_INT src=view->row_src[p];
+            LIS_SCALAR value;
+
+            if(src<0)
+            {
+                value=view->diag[-src-1];
+            }
+            else if(src<=view->nnz)
+            {
+                value=view->lower[src-1];
+            }
+            else
+            {
+                LIS_INT k=src-view->nnz-1;
+                value=view->symmetric ? view->lower[k] : view->upper[k];
+            }
+
+            sum+=value*x[view->row_col[p]];
+        }
+
+        y[i]=sum;
+    }
+
+    return LIS_SUCCESS;
+}
+
+static LIS_INT
+lis_matrix_split_view_matvech(
+    void *user_data,
+    const LIS_SCALAR *x,
+    LIS_SCALAR *y)
+{
+    LIS_MATRIX_SPLIT_TRIANGULAR_VIEW view;
+    LIS_INT i,p;
+
+    view=(LIS_MATRIX_SPLIT_TRIANGULAR_VIEW)user_data;
+    if(view==NULL || x==NULL || y==NULL || view->diag==NULL ||
+       (view->nnz>0 && view->lower==NULL))
+        return LIS_ERR_ILL_ARG;
+
+#ifdef _OPENMP
+#pragma omp parallel for private(p) schedule(static)
+#endif
+    for(i=0;i<view->n;i++)
+    {
+        LIS_SCALAR sum=(LIS_SCALAR)0.0;
+
+        for(p=view->row_ptr[i];p<view->row_ptr[i+1];p++)
+        {
+            LIS_INT src=view->row_src[p];
+            LIS_SCALAR value;
+
+            if(src<0)
+            {
+                value=conj(view->diag[-src-1]);
+            }
+            else if(src<=view->nnz)
+            {
+                LIS_INT k=src-1;
+                value=conj(view->symmetric ? view->lower[k] : view->upper[k]);
+            }
+            else
+            {
+                LIS_INT k=src-view->nnz-1;
+                value=conj(view->lower[k]);
+            }
+
+            sum+=value*x[view->row_col[p]];
+        }
+
+        y[i]=sum;
+    }
+
+    return LIS_SUCCESS;
+}
+
 static LIS_INT
 lis_matrix_split_view_get_row(
     void *user_data,
@@ -356,7 +460,8 @@ lis_matrix_create_split_triangular_view(
         goto fail;
     }
 
-    err=lis_matrix_set_user(M,view,NULL,NULL);
+    err=lis_matrix_set_user(
+        M,view,lis_matrix_split_view_matvec,lis_matrix_split_view_matvech);
     if(err) goto fail;
     err=lis_matrix_set_user_row(M,lis_matrix_split_view_get_row);
     if(err) goto fail;
