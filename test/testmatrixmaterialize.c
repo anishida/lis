@@ -292,11 +292,23 @@ int main(int argc,char **argv)
         failed=1; goto cleanup;
     }
 
+    /*
+     * Preconditioners such as SSOR create a derived D/L/U representation.
+     * A value refresh must discard it while preserving the CSR allocation.
+     */
+    err=lis_matrix_split(csr);
+    if(err || !csr->is_splited)
+    {
+        fprintf(stderr,"cached CSR preconditioner split failed\n");
+        failed=1; goto cleanup;
+    }
+
     actx.scale=(LIS_REAL)2.0;
     err=lis_matrix_mark_values_changed(A);
     if(err) { failed=1; goto cleanup; }
     err=lis_matrix_materialize_csr_cached(A,&acache,&csr,&action);
     if(err || action!=LIS_MATRIX_MATERIALIZE_VALUES || csr!=previous ||
+       csr->is_splited || csr->WD!=NULL ||
        check_csr_matches_context(csr,&actx))
     {
         fprintf(stderr,"value-only cached CSR refresh failed\n");
@@ -412,6 +424,19 @@ int main(int argc,char **argv)
            csr,&actx,&bctx,d,(LIS_REAL)1.0,(LIS_REAL)-1.0))
     {
         fprintf(stderr,"scaled operator cache refresh failed\n");
+        failed=1; goto cleanup;
+    }
+
+    /* Mutating a scale vector in place must invalidate the cache. */
+    d[1]=(LIS_REAL)7.0;
+    scalar_set_real(&scalevec->value[1],d[1]);
+    err=lis_matrix_materialize_csr_cached(
+        nested,&nestedcache,&csr,&action);
+    if(err || action!=LIS_MATRIX_MATERIALIZE_VALUES || csr!=previous ||
+       check_scaled_nested_csr(
+           csr,&actx,&bctx,d,(LIS_REAL)1.0,(LIS_REAL)-1.0))
+    {
+        fprintf(stderr,"in-place operator scale change was not detected\n");
         failed=1; goto cleanup;
     }
 
