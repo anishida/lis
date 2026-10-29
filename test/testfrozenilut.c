@@ -5,6 +5,7 @@
 #include "lis.h"
 #include "lis_matrix_operator.h"
 #include "lis_precon.h"
+#include "lis_solver.h"
 #include <stdio.h>
 
 static LIS_INT build_matrix(
@@ -280,9 +281,34 @@ int main(int argc,char **argv)
         goto cleanup;
     }
 
+    /*
+     * Exercise the actual sequence fallback, not just the low-level pivot
+     * guard: an invalid frozen refactorization must destroy its old factors
+     * and perform a fresh, usable preconditioner build.
+     */
+    {
+        LIS_PRECON rebuilt=NULL;
+        err=lis_solver_sequence_prepare_precon(C,solver,&rebuilt);
+        if(err || rebuilt==NULL || rebuilt!=solver->sequence_precon ||
+           rebuilt->L==NULL || rebuilt->U==NULL || rebuilt->D==NULL)
+        {
+            fprintf(stderr,
+                "frozen ILUT failure did not fall back to a complete build (%d)\n",
+                (int)err);
+            failed=1;
+            goto cleanup;
+        }
+    }
+
     err=lis_matrix_operator_set_coefficients(
         C,(LIS_SCALAR)1.0,(LIS_SCALAR)-0.35);
     if(err) { failed=1; goto cleanup; }
+    if(solve_and_check(C,solver,xtrue,b,x,"after-fallback"))
+    {
+        fprintf(stderr,"recovered preconditioner failed the next solve\n");
+        failed=1;
+        goto cleanup;
+    }
     /* A structural-generation change must force a complete rebuild. */
     err=lis_matrix_mark_structure_changed(C);
     if(err) { failed=1; goto cleanup; }
