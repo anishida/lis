@@ -54,6 +54,24 @@ LIS_INT lis_matrix_split_triangular_view_set_values(
     const LIS_SCALAR lower_values[],
     const LIS_SCALAR upper_values[]);
 
+/*
+ * Atomically replace the strictly-lower structure and all external numerical
+ * array pointers while keeping the matrix size n unchanged. nnz and the
+ * symmetric/nonsymmetric storage mode may change. New row metadata is built
+ * and validated before the active view is modified. On success the associated
+ * matrix structure generation is advanced; on validation/allocation failure
+ * the previous view remains usable and unchanged.
+ */
+LIS_INT lis_matrix_split_triangular_view_rebind(
+    LIS_MATRIX_SPLIT_TRIANGULAR_VIEW view,
+    LIS_INT nnz,
+    const LIS_INT ptr[],
+    const LIS_INT index[],
+    const LIS_SCALAR diag[],
+    const LIS_SCALAR lower_values[],
+    const LIS_SCALAR upper_values[],
+    LIS_INT origin);
+
 void lis_matrix_split_triangular_view_destroy(
     LIS_MATRIX_SPLIT_TRIANGULAR_VIEW view);
 
