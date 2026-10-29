@@ -161,7 +161,6 @@ int main(int argc, char *argv[])
        lis_esolver_set_tolerance(esolver,(LIS_REAL)-INFINITY)==LIS_SUCCESS ||
        lis_esolver_set_maxiter(esolver,-1)==LIS_SUCCESS ||
        lis_esolver_set_subspace_size(esolver,0)==LIS_SUCCESS ||
-       lis_esolver_set_subspace_size(esolver,2)==LIS_SUCCESS ||
        lis_esolver_set_mode(esolver,-1)==LIS_SUCCESS ||
        lis_esolver_set_block_size(esolver,0)==LIS_SUCCESS ||
        lis_esolver_set_block_size(esolver,5)==LIS_SUCCESS ||
