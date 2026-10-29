@@ -295,6 +295,84 @@ check_scaled_nested_csr(
 }
 
 
+static LIS_INT
+test_get_diagonal(void *user_data,LIS_SCALAR *diag)
+{
+    TEST_ROW_CTX *ctx=(TEST_ROW_CTX *)user_data;
+    LIS_INT i;
+    if(ctx==NULL || diag==NULL) return LIS_ERR_ILL_ARG;
+    for(i=0;i<3;i++)
+        scalar_set_real(&diag[i],(LIS_REAL)2.0*ctx->scale);
+    return LIS_SUCCESS;
+}
+
+static int
+test_policy_selection(LIS_MATRIX A,const char *option,LIS_INT direct)
+{
+    LIS_SOLVER solver=NULL;
+    LIS_MATRIX_CSR_CACHE cache=NULL;
+    LIS_MATRIX selected=NULL;
+    LIS_INT policy=-1,action=-99,err;
+    int failed=1;
+    err=lis_solver_create(&solver);
+    if(err) goto done;
+    err=lis_solver_set_option((char *)option,solver);
+    if(err) goto done;
+    err=lis_matrix_prepare_solver_matrix(
+        A,solver,&cache,&selected,&policy,&action);
+    if(err) goto done;
+    if(direct)
+    {
+        if(selected!=A || policy!=LIS_MATRIX_POLICY_DIRECT ||
+           action!=LIS_MATRIX_POLICY_ACTION_DIRECT) goto done;
+    }
+    else
+    {
+        if(selected==NULL || selected==A ||
+           selected->matrix_type!=LIS_MATRIX_CSR ||
+           policy!=LIS_MATRIX_POLICY_CACHED_CSR ||
+           action!=LIS_MATRIX_MATERIALIZE_REBUILD) goto done;
+    }
+    failed=0;
+done:
+    if(failed)
+        fprintf(stderr,"matrix policy selection failed: %s direct=%d err=%d\\n",
+                option,(int)direct,(int)err);
+    lis_matrix_csr_cache_destroy(cache);
+    if(solver) lis_solver_destroy(solver);
+    return failed;
+}
+
+static int
+test_auto_policy_capabilities(LIS_MATRIX A)
+{
+    LIS_MATRIX_USER_MATVEC saved_matvec=A->user_matvec;
+    LIS_INT err;
+    int failed=1;
+    if(test_policy_selection(A,"-i gmres -p none",LIS_TRUE) ||
+       test_policy_selection(A,"-i gmres -p ilu",LIS_TRUE) ||
+       test_policy_selection(A,"-i gmres -p iluc",LIS_TRUE) ||
+       test_policy_selection(A,"-i gmres -p ilut",LIS_TRUE) ||
+       test_policy_selection(A,"-i gmres -p ssor",LIS_FALSE) ||
+       test_policy_selection(A,"-i gmres -p jacobi",LIS_FALSE))
+        goto done;
+    err=lis_matrix_set_user_diagonal(A,test_get_diagonal);
+    if(err) goto done;
+    if(test_policy_selection(A,"-i gmres -p jacobi",LIS_TRUE))
+        goto done;
+
+    /* No matvec: even a diagonal callback must not enable direct access. */
+    A->user_matvec=NULL;
+    if(test_policy_selection(A,"-i gmres -p jacobi",LIS_FALSE) ||
+       test_policy_selection(A,"-i gmres -p none",LIS_FALSE))
+        goto done;
+    A->user_matvec=saved_matvec;
+    failed=0;
+done:
+    A->user_matvec=saved_matvec;
+    return failed;
+}
+
 static int
 test_auto_matrix_policy(LIS_MATRIX A)
 {
@@ -550,7 +628,8 @@ int main(int argc,char **argv)
         failed=1; goto cleanup;
     }
 
-    if(test_auto_matrix_policy(A))
+    if(test_auto_matrix_policy(A) ||
+       test_auto_policy_capabilities(A))
     {
         failed=1;
         goto cleanup;

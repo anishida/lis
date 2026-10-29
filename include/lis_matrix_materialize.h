@@ -57,6 +57,15 @@ LIS_INT lis_matrix_materialize_csr_cached(
  *
  * The function does not change solver configuration and does not call
  * lis_solve(); the caller must use the returned selected matrix.
+ *
+ * This is an advanced, opt-in helper declared in this separate header,
+ * not an implicit part of lis_solve(). Neither the source nor the
+ * returned selected matrix should be destroyed by the helper's caller.
+ * For CACHED_CSR, the cache owns the matrix and may replace its pointer
+ * on a subsequent structural update; no borrowed pointer may be retained
+ * beyond a successful rebuild or explicit cache destruction.
+ * On failed materialization, selected remains NULL and errors propagate.
+ * The cached materialization fallback is currently serial-only.
  */
 LIS_INT lis_matrix_prepare_solver_matrix(
     LIS_MATRIX source,
