@@ -93,6 +93,17 @@ LIS_INT lis_matrix_split_triangular_view_rebind(
     const LIS_SCALAR upper_values[],
     LIS_INT origin);
 
+/* Checked signed-64-bit structure variant of the transactional rebind. */
+LIS_INT lis_matrix_split_triangular_view_rebind_i64(
+    LIS_MATRIX_SPLIT_TRIANGULAR_VIEW view,
+    int64_t nnz,
+    const int64_t ptr[],
+    const int64_t index[],
+    const LIS_SCALAR diag[],
+    const LIS_SCALAR lower_values[],
+    const LIS_SCALAR upper_values[],
+    int64_t origin);
+
 void lis_matrix_split_triangular_view_destroy(
     LIS_MATRIX_SPLIT_TRIANGULAR_VIEW view);
 

@@ -23,7 +23,7 @@ test_PROGRAMS = testesubspaceretry etest1 etest2 etest3 etest4 etest5 etest5b et
         testworkreuse testprebuiltuser testshellscale testsymmdiagguard testilupivot \
         testparamupdate testbreakretry testchangingsystem testkrylovrobust testnearnullspace \
         testcoarsesetup testcoarseapply testgcrodroptions testgcrodrconfig testgcrodrsequence \
-        testmatrixgeneration testexternalstorage testmatrixmaterialize testsplitview testsplitviewi64 testsequence testwarmstart testrecovery \
+        testmatrixgeneration testexternalstorage testmatrixmaterialize testsplitview testsplitviewi64 testmatrixoperatorlifecycle testsequence testwarmstart testrecovery \
         testthreads testfgcrodr testmfamg testmfamggalerkin testexactnullspace testhalfconfig testhalfconvert \
         testfeastfoundation testfeastcontour testfeastshifted testnullspacecandidates testesolverselection \
 	testprojectedeigen testprojectedhermitian testblockgram \
@@ -40,6 +40,7 @@ testexternalstorage_SOURCES = testexternalstorage.c
 testmatrixmaterialize_SOURCES = testmatrixmaterialize.c
 testsplitview_SOURCES = testsplitview.c
 testsplitviewi64_SOURCES = testsplitviewi64.c
+testmatrixoperatorlifecycle_SOURCES = testmatrixoperatorlifecycle.c
 testsequence_SOURCES = testsequence.c
 testwarmstart_SOURCES = testwarmstart.c
 testrecovery_SOURCES = testrecovery.c
@@ -226,7 +227,7 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) testmatvecblock$(EX
         testbreakretry$(EXEEXT) testchangingsystem$(EXEEXT) testkrylovrobust$(EXEEXT) \
         testnearnullspace$(EXEEXT) testcoarsesetup$(EXEEXT) testcoarseapply$(EXEEXT) \
         testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) testgcrodrsequence$(EXEEXT) \
-        testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testmatrixmaterialize$(EXEEXT) testsplitview$(EXEEXT) testsplitviewi64$(EXEEXT) testsequence$(EXEEXT) \
+        testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testmatrixmaterialize$(EXEEXT) testsplitview$(EXEEXT) testsplitviewi64$(EXEEXT) testmatrixoperatorlifecycle$(EXEEXT) testsequence$(EXEEXT) \
         testwarmstart$(EXEEXT) testrecovery$(EXEEXT) testthreads$(EXEEXT) \
         testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
         testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) testnullspacecandidates$(EXEEXT) testesolverselection$(EXEEXT)

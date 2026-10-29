@@ -1,5 +1,7 @@
 #include "lis.h"
+#include "lis_matrix.h"
 #include "lis_matrix_materialize.h"
+#include "lis_matrix_operator.h"
 #include <stdio.h>
 
 typedef struct
@@ -163,12 +165,108 @@ check_operator_values(LIS_MATRIX A,LIS_REAL scale)
     return check_csr_matches_context(A,&expected);
 }
 
+static int
+test_context_entry(
+    const TEST_ROW_CTX *ctx,
+    LIS_INT row,
+    LIS_INT col,
+    LIS_REAL *value)
+{
+    LIS_REAL s;
+
+    if(ctx==NULL || value==NULL || row<0 || row>=3 || col<0 || col>=3)
+        return 0;
+
+    s=ctx->scale;
+    if(row==0)
+    {
+        if(col==0) { *value=(LIS_REAL)2.0*s; return 1; }
+        if(col==1) { *value=(LIS_REAL)-1.0*s; return 1; }
+        if(col==2 && ctx->variant!=0)
+        {
+            *value=(LIS_REAL)0.5*s;
+            return 1;
+        }
+        return 0;
+    }
+
+    if(row==1)
+    {
+        if(col==0) { *value=(LIS_REAL)-1.0*s; return 1; }
+        if(col==1) { *value=(LIS_REAL)2.0*s; return 1; }
+        if(col==2) { *value=(LIS_REAL)-1.0*s; return 1; }
+        return 0;
+    }
+
+    if(col==0 && ctx->variant!=0)
+    {
+        *value=(LIS_REAL)0.5*s;
+        return 1;
+    }
+    if(col==1) { *value=(LIS_REAL)-1.0*s; return 1; }
+    if(col==2) { *value=(LIS_REAL)2.0*s; return 1; }
+    return 0;
+}
+
+static int
+check_scaled_nested_csr(
+    LIS_MATRIX csr,
+    const TEST_ROW_CTX *actx,
+    const TEST_ROW_CTX *bctx,
+    const LIS_REAL d[3],
+    LIS_REAL alpha,
+    LIS_REAL beta)
+{
+    LIS_INT row,col,p,end;
+
+    if(csr==NULL || csr->matrix_type!=LIS_MATRIX_CSR)
+        return 1;
+
+    for(row=0;row<3;row++)
+    {
+        p=csr->ptr[row];
+        end=csr->ptr[row+1];
+
+        for(col=0;col<3;col++)
+        {
+            LIS_REAL av=(LIS_REAL)0.0;
+            LIS_REAL bv=(LIS_REAL)0.0;
+            LIS_REAL expected=(LIS_REAL)0.0;
+            int have_a=test_context_entry(actx,row,col,&av);
+            int have_b=test_context_entry(bctx,row,col,&bv);
+
+            if(!have_a && !have_b)
+                continue;
+
+            if(p>=end || csr->index[p]!=col)
+                return 1;
+
+            if(have_a)
+                expected+=alpha*d[row]*av*d[col];
+            if(have_b)
+                expected+=beta*bv;
+
+            if(!scalar_equal_real(&csr->value[p],expected))
+                return 1;
+            p++;
+        }
+
+        if(p!=end)
+            return 1;
+    }
+
+    return 0;
+}
+
 int main(int argc,char **argv)
 {
     TEST_ROW_CTX actx={0,(LIS_REAL)1.0};
     TEST_ROW_CTX bctx={1,(LIS_REAL)1.0};
-    LIS_MATRIX A=NULL,B=NULL,op=NULL,csr=NULL,previous=NULL;
-    LIS_MATRIX_CSR_CACHE acache=NULL,opcache=NULL;
+    LIS_REAL d[3]={(LIS_REAL)2.0,(LIS_REAL)3.0,(LIS_REAL)4.0};
+    LIS_MATRIX A=NULL,B=NULL,op=NULL,scaled=NULL,nested=NULL;
+    LIS_MATRIX csr=NULL,previous=NULL;
+    LIS_MATRIX_CSR_CACHE acache=NULL,opcache=NULL,nestedcache=NULL;
+    LIS_VECTOR scalevec=NULL;
     LIS_INT action=-1,err;
     int failed=0;
 
@@ -254,9 +352,90 @@ int main(int argc,char **argv)
         failed=1; goto cleanup;
     }
 
+    /* Build D*A*D inside another linear combination. */
+    err=lis_vector_duplicate(A,&scalevec); if(err) { failed=1; goto cleanup; }
+    scalar_set_real(&scalevec->value[0],d[0]);
+    scalar_set_real(&scalevec->value[1],d[1]);
+    scalar_set_real(&scalevec->value[2],d[2]);
+    err=lis_matrix_create_scaled_operator(A,scalevec,&scaled);
+    if(err) { failed=1; goto cleanup; }
+    err=lis_matrix_create_operator(
+        (LIS_SCALAR)0.5,scaled,(LIS_SCALAR)2.0,B,&nested);
+    if(err) { failed=1; goto cleanup; }
+
+    err=lis_matrix_materialize_csr_cached(
+        nested,&nestedcache,&csr,&action);
+    if(err || action!=LIS_MATRIX_MATERIALIZE_REBUILD ||
+       check_scaled_nested_csr(
+           csr,&actx,&bctx,d,(LIS_REAL)0.5,(LIS_REAL)2.0))
+    {
+        fprintf(stderr,"scaled nested operator materialization failed\n");
+        failed=1; goto cleanup;
+    }
+    previous=csr;
+
+    /* A grandchild value generation must refresh values without reallocating. */
+    actx.scale=(LIS_REAL)3.0;
+    err=lis_matrix_mark_values_changed(A);
+    if(err) { failed=1; goto cleanup; }
+    err=lis_matrix_materialize_csr_cached(
+        nested,&nestedcache,&csr,&action);
+    if(err || action!=LIS_MATRIX_MATERIALIZE_VALUES || csr!=previous ||
+       check_scaled_nested_csr(
+           csr,&actx,&bctx,d,(LIS_REAL)0.5,(LIS_REAL)2.0))
+    {
+        fprintf(stderr,"nested grandchild value refresh failed\n");
+        failed=1; goto cleanup;
+    }
+
+    err=lis_matrix_operator_set_coefficients(
+        nested,(LIS_SCALAR)1.0,(LIS_SCALAR)-1.0);
+    if(err) { failed=1; goto cleanup; }
+    err=lis_matrix_materialize_csr_cached(
+        nested,&nestedcache,&csr,&action);
+    if(err || action!=LIS_MATRIX_MATERIALIZE_VALUES || csr!=previous ||
+       check_scaled_nested_csr(
+           csr,&actx,&bctx,d,(LIS_REAL)1.0,(LIS_REAL)-1.0))
+    {
+        fprintf(stderr,"operator coefficient cache refresh failed\n");
+        failed=1; goto cleanup;
+    }
+
+    d[1]=(LIS_REAL)5.0;
+    scalar_set_real(&scalevec->value[1],d[1]);
+    err=lis_matrix_mark_values_changed(scaled);
+    if(err) { failed=1; goto cleanup; }
+    err=lis_matrix_materialize_csr_cached(
+        nested,&nestedcache,&csr,&action);
+    if(err || action!=LIS_MATRIX_MATERIALIZE_VALUES || csr!=previous ||
+       check_scaled_nested_csr(
+           csr,&actx,&bctx,d,(LIS_REAL)1.0,(LIS_REAL)-1.0))
+    {
+        fprintf(stderr,"scaled operator cache refresh failed\n");
+        failed=1; goto cleanup;
+    }
+
+    /* Structural change below the scaled child must force a rebuild. */
+    actx.variant=0;
+    err=lis_matrix_mark_structure_changed(A);
+    if(err) { failed=1; goto cleanup; }
+    err=lis_matrix_materialize_csr_cached(
+        nested,&nestedcache,&csr,&action);
+    if(err || action!=LIS_MATRIX_MATERIALIZE_REBUILD || csr==previous ||
+       check_scaled_nested_csr(
+           csr,&actx,&bctx,d,(LIS_REAL)1.0,(LIS_REAL)-1.0))
+    {
+        fprintf(stderr,"scaled nested structural rebuild failed\n");
+        failed=1; goto cleanup;
+    }
+
     printf("LIS_MATRIX_MATERIALIZE_CACHE PASSED\n");
 
 cleanup:
+    if(nested) lis_matrix_destroy(nested);
+    if(scaled) lis_matrix_destroy(scaled);
+    if(scalevec) lis_vector_destroy(scalevec);
+    lis_matrix_csr_cache_destroy(nestedcache);
     lis_matrix_csr_cache_destroy(opcache);
     lis_matrix_csr_cache_destroy(acache);
     if(op) lis_matrix_destroy(op);

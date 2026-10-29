@@ -87,31 +87,40 @@ lis_matrix_materialize_source_stamp(
     {
         uint64_t as,avs,bs,bvs;
 
-        if(A->operator_scale!=NULL)
-        {
-            LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-                "cached CSR materialization does not support scaled operators\n");
-            return LIS_ERR_NOT_IMPLEMENTED;
-        }
-        if(A->operator_A==NULL || A->operator_B==NULL)
+        if(A->operator_A==NULL)
             return LIS_ERR_ILL_ARG;
 
         err=lis_matrix_materialize_source_stamp(
             A->operator_A,&as,&avs,depth+1);
         if(err) return err;
-        err=lis_matrix_materialize_source_stamp(
-            A->operator_B,&bs,&bvs,depth+1);
-        if(err) return err;
-
         hs=lis_matrix_materialize_hash_word(hs,as);
-        hs=lis_matrix_materialize_hash_word(hs,bs);
-
         hv=lis_matrix_materialize_hash_word(hv,avs);
-        hv=lis_matrix_materialize_hash_word(hv,bvs);
-        hv=lis_matrix_materialize_hash_bytes(
-            hv,&A->operator_alpha,sizeof(A->operator_alpha));
-        hv=lis_matrix_materialize_hash_bytes(
-            hv,&A->operator_beta,sizeof(A->operator_beta));
+
+        if(A->operator_scale!=NULL)
+        {
+            if(A->operator_B!=NULL || A->operator_scale->n!=A->n ||
+               A->operator_scale->gn!=A->gn)
+                return LIS_ERR_ILL_ARG;
+
+            hv=lis_matrix_materialize_hash_word(
+                hv,(uint64_t)(uintptr_t)A->operator_scale);
+        }
+        else
+        {
+            if(A->operator_B==NULL)
+                return LIS_ERR_ILL_ARG;
+
+            err=lis_matrix_materialize_source_stamp(
+                A->operator_B,&bs,&bvs,depth+1);
+            if(err) return err;
+
+            hs=lis_matrix_materialize_hash_word(hs,bs);
+            hv=lis_matrix_materialize_hash_word(hv,bvs);
+            hv=lis_matrix_materialize_hash_bytes(
+                hv,&A->operator_alpha,sizeof(A->operator_alpha));
+            hv=lis_matrix_materialize_hash_bytes(
+                hv,&A->operator_beta,sizeof(A->operator_beta));
+        }
     }
 
     *structure_stamp=hs;

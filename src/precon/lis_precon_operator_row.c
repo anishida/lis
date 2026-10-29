@@ -138,36 +138,48 @@ lis_precon_operator_row_source_init(
         return LIS_ERR_ILL_ARG;
 
     A=source->A;
-    if(A->matrix_type!=LIS_MATRIX_OPERATOR ||
-       A->operator_scale!=NULL ||
-       A->operator_A==NULL || A->operator_B==NULL)
+    if(A->matrix_type!=LIS_MATRIX_OPERATOR || A->operator_A==NULL)
         return LIS_ERR_NOT_IMPLEMENTED;
-
     if(A->nprocs!=1 || A->n!=A->gn ||
-       A->operator_A->n!=A->n || A->operator_B->n!=A->n ||
-       A->operator_A->gn!=A->gn || A->operator_B->gn!=A->gn)
+       A->operator_A->n!=A->n || A->operator_A->gn!=A->gn)
         return LIS_ERR_NOT_IMPLEMENTED;
 
     source->operator_A=(LIS_PRECON_ROW_SOURCE *)lis_malloc(
         sizeof(LIS_PRECON_ROW_SOURCE),
         "lis_precon_operator_row_source_init::A");
+    if(source->operator_A==NULL)
+        return LIS_OUT_OF_MEMORY;
+    memset(source->operator_A,0,sizeof(*source->operator_A));
+    err=lis_precon_row_source_init(A->operator_A,source->operator_A);
+    if(err) goto fail;
+
+    if(A->operator_scale!=NULL)
+    {
+        if(A->operator_B!=NULL || A->operator_scale->n!=A->n ||
+           A->operator_scale->gn!=A->gn || A->operator_scale->value==NULL)
+        {
+            err=LIS_ERR_ILL_ARG;
+            goto fail;
+        }
+        return LIS_SUCCESS;
+    }
+
+    if(A->operator_B==NULL || A->operator_B->n!=A->n ||
+       A->operator_B->gn!=A->gn)
+    {
+        err=LIS_ERR_NOT_IMPLEMENTED;
+        goto fail;
+    }
+
     source->operator_B=(LIS_PRECON_ROW_SOURCE *)lis_malloc(
         sizeof(LIS_PRECON_ROW_SOURCE),
         "lis_precon_operator_row_source_init::B");
-    if(source->operator_A==NULL || source->operator_B==NULL)
+    if(source->operator_B==NULL)
     {
-        lis_free(source->operator_A);
-        lis_free(source->operator_B);
-        source->operator_A=NULL;
-        source->operator_B=NULL;
-        return LIS_OUT_OF_MEMORY;
+        err=LIS_OUT_OF_MEMORY;
+        goto fail;
     }
-
-    memset(source->operator_A,0,sizeof(*source->operator_A));
     memset(source->operator_B,0,sizeof(*source->operator_B));
-
-    err=lis_precon_row_source_init(A->operator_A,source->operator_A);
-    if(err) goto fail;
     err=lis_precon_row_source_init(A->operator_B,source->operator_B);
     if(err) goto fail;
 
@@ -214,13 +226,44 @@ lis_precon_operator_row_source_get(
     LIS_MATRIX A;
     LIS_INT na,nb,total,k,j,out,err;
 
-    if(source==NULL || source->A==NULL ||
-       source->operator_A==NULL || source->operator_B==NULL)
+    if(source==NULL || source->A==NULL || source->operator_A==NULL)
         return LIS_ERR_ILL_ARG;
 
     A=source->A;
     err=lis_precon_row_source_get(source->operator_A,local_row);
     if(err) return err;
+
+    if(A->operator_scale!=NULL)
+    {
+        LIS_SCALAR left;
+
+        na=source->operator_A->nnz;
+        if(na<0 || local_row<0 || local_row>=A->n ||
+           A->operator_scale->value==NULL)
+            return LIS_ERR_ILL_ARG;
+
+        err=lis_precon_operator_reserve(source,na);
+        if(err) return err;
+
+        left=A->operator_scale->value[local_row];
+        for(k=0;k<na;k++)
+        {
+            LIS_INT col=source->operator_A->index[k];
+            if(col<0 || col>=A->n)
+                return LIS_ERR_ILL_ARG;
+            source->index_buffer[k]=col;
+            source->value_buffer[k]=left*source->operator_A->value[k]*
+                                    A->operator_scale->value[col];
+        }
+
+        source->index=source->index_buffer;
+        source->value=source->value_buffer;
+        source->nnz=na;
+        return LIS_SUCCESS;
+    }
+
+    if(source->operator_B==NULL)
+        return LIS_ERR_ILL_ARG;
     err=lis_precon_row_source_get(source->operator_B,local_row);
     if(err) return err;
 
