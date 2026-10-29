@@ -98,6 +98,42 @@ test_get_row(
     return LIS_SUCCESS;
 }
 
+
+static LIS_INT
+materialize_test_matvec(
+    void *user_data,
+    const LIS_SCALAR *x,
+    LIS_SCALAR *y)
+{
+    LIS_INT i,k,nnz,err,cols[3];
+    LIS_SCALAR vals[3];
+    TEST_ROW_CTX *ctx=(TEST_ROW_CTX *)user_data;
+
+    if(ctx==NULL || x==NULL || y==NULL)
+        return LIS_ERR_ILL_ARG;
+
+    for(i=0;i<3;i++)
+    {
+        nnz=3;
+        err=test_get_row(ctx,i,&nnz,cols,vals);
+        if(err) return err;
+        y[i]=(LIS_SCALAR)0.0;
+        for(k=0;k<nnz;k++)
+            y[i]+=vals[k]*x[cols[k]];
+    }
+    return LIS_SUCCESS;
+}
+
+static LIS_INT
+materialize_test_matvech(
+    void *user_data,
+    const LIS_SCALAR *x,
+    LIS_SCALAR *y)
+{
+    /* The test matrix has real-valued entries in real and complex builds. */
+    return materialize_test_matvec(user_data,x,y);
+}
+
 static LIS_INT
 create_user_matrix(TEST_ROW_CTX *ctx,LIS_MATRIX *A)
 {
@@ -108,7 +144,7 @@ create_user_matrix(TEST_ROW_CTX *ctx,LIS_MATRIX *A)
     if(err) return err;
     err=lis_matrix_set_size(*A,0,3);
     if(err) goto fail;
-    err=lis_matrix_set_user(*A,ctx,NULL,NULL);
+    err=lis_matrix_set_user(*A,ctx,materialize_test_matvec,materialize_test_matvech);
     if(err) goto fail;
     err=lis_matrix_set_user_row(*A,test_get_row);
     if(err) goto fail;
@@ -256,6 +292,82 @@ check_scaled_nested_csr(
     }
 
     return 0;
+}
+
+
+static int
+test_auto_matrix_policy(LIS_MATRIX A)
+{
+    LIS_SOLVER direct_solver=NULL,cached_solver=NULL;
+    LIS_MATRIX_CSR_CACHE cache=NULL;
+    LIS_MATRIX selected=NULL,first=NULL;
+    LIS_INT policy=-1,action=-99,err;
+    int failed=0;
+
+    err=lis_solver_create(&direct_solver);
+    if(err) { failed=1; goto done; }
+    err=lis_solver_set_option("-i gmres -p ilut",direct_solver);
+    if(err) { failed=1; goto done; }
+
+    err=lis_matrix_prepare_solver_matrix(
+        A,direct_solver,&cache,&selected,&policy,&action);
+    if(err || selected!=A || policy!=LIS_MATRIX_POLICY_DIRECT ||
+       action!=LIS_MATRIX_POLICY_ACTION_DIRECT)
+    {
+        fprintf(stderr,"AUTO policy did not retain a row-backed USER matrix for ILUT\n");
+        failed=1; goto done;
+    }
+
+    err=lis_solver_create(&cached_solver);
+    if(err) { failed=1; goto done; }
+    err=lis_solver_set_option("-i gmres -p ssor",cached_solver);
+    if(err) { failed=1; goto done; }
+
+    err=lis_matrix_prepare_solver_matrix(
+        A,cached_solver,&cache,&selected,&policy,&action);
+    if(err || selected==A || selected==NULL ||
+       selected->matrix_type!=LIS_MATRIX_CSR ||
+       policy!=LIS_MATRIX_POLICY_CACHED_CSR ||
+       action!=LIS_MATRIX_MATERIALIZE_REBUILD)
+    {
+        fprintf(stderr,"AUTO policy did not materialize CSR for SSOR\n");
+        failed=1; goto done;
+    }
+    first=selected;
+
+    err=lis_matrix_prepare_solver_matrix(
+        A,cached_solver,&cache,&selected,&policy,&action);
+    if(err || selected!=first || action!=LIS_MATRIX_MATERIALIZE_REUSE)
+    {
+        fprintf(stderr,"AUTO policy did not reuse unchanged CSR\n");
+        failed=1; goto done;
+    }
+
+    err=lis_matrix_mark_values_changed(A);
+    if(err) { failed=1; goto done; }
+    err=lis_matrix_prepare_solver_matrix(
+        A,cached_solver,&cache,&selected,&policy,&action);
+    if(err || selected!=first || action!=LIS_MATRIX_MATERIALIZE_VALUES)
+    {
+        fprintf(stderr,"AUTO policy did not refresh CSR values in place\n");
+        failed=1; goto done;
+    }
+
+    err=lis_matrix_mark_structure_changed(A);
+    if(err) { failed=1; goto done; }
+    err=lis_matrix_prepare_solver_matrix(
+        A,cached_solver,&cache,&selected,&policy,&action);
+    if(err || selected==first || action!=LIS_MATRIX_MATERIALIZE_REBUILD)
+    {
+        fprintf(stderr,"AUTO policy did not rebuild CSR after structure generation change\n");
+        failed=1; goto done;
+    }
+
+done:
+    lis_matrix_csr_cache_destroy(cache);
+    if(cached_solver) lis_solver_destroy(cached_solver);
+    if(direct_solver) lis_solver_destroy(direct_solver);
+    return failed;
 }
 
 int main(int argc,char **argv)
@@ -427,6 +539,12 @@ int main(int argc,char **argv)
     {
         fprintf(stderr,"scaled nested structural rebuild failed\n");
         failed=1; goto cleanup;
+    }
+
+    if(test_auto_matrix_policy(A))
+    {
+        failed=1;
+        goto cleanup;
     }
 
     printf("LIS_MATRIX_MATERIALIZE_CACHE PASSED\n");

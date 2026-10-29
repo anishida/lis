@@ -16,6 +16,7 @@
 
 #include "lislib.h"
 #include "lis_matrix_materialize.h"
+#include "lis_solver_capabilities.h"
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_materialize_csr_cached"
@@ -406,4 +407,146 @@ lis_matrix_csr_cache_destroy(
         lis_matrix_destroy(cache->csr);
     memset(cache,0,sizeof(*cache));
     lis_free(cache);
+}
+
+
+/*
+ * Check whether every leaf of a USER/operator expression exposes row data
+ * usable by the existing row-backed preconditioner path. This is a
+ * capability query only; it does not fetch or copy matrix values.
+ */
+static LIS_INT
+lis_matrix_policy_has_row_access(
+    LIS_MATRIX A,
+    LIS_INT depth)
+{
+    if(A==NULL || depth>64)
+        return LIS_FALSE;
+
+    if(A->nprocs!=1 || A->n!=A->gn)
+        return LIS_FALSE;
+
+    switch(A->matrix_type)
+    {
+    case LIS_MATRIX_CSR:
+        return A->ptr!=NULL ? LIS_TRUE : LIS_FALSE;
+
+    case LIS_MATRIX_USER:
+        return A->user_get_row!=NULL ? LIS_TRUE : LIS_FALSE;
+
+    case LIS_MATRIX_OPERATOR:
+        if(A->operator_A==NULL)
+            return LIS_FALSE;
+        if(A->operator_scale!=NULL)
+            return lis_matrix_policy_has_row_access(
+                A->operator_A,depth+1);
+        if(A->operator_B==NULL)
+            return LIS_FALSE;
+        return lis_matrix_policy_has_row_access(
+                   A->operator_A,depth+1)
+            && lis_matrix_policy_has_row_access(
+                   A->operator_B,depth+1);
+
+    default:
+        return LIS_FALSE;
+    }
+}
+
+static LIS_INT
+lis_matrix_policy_direct_supported(
+    LIS_MATRIX A,
+    LIS_INT precon_type)
+{
+    LIS_INT has_matvec;
+
+    if(A==NULL)
+        return LIS_FALSE;
+
+    if(A->matrix_type==LIS_MATRIX_USER)
+        has_matvec=A->user_matvec!=NULL;
+    else if(A->matrix_type==LIS_MATRIX_OPERATOR)
+        has_matvec=A->operator_A!=NULL;
+    else
+        return LIS_TRUE;
+
+    if(!has_matvec)
+        return LIS_FALSE;
+
+    if(precon_type==LIS_PRECON_TYPE_NONE)
+        return LIS_TRUE;
+
+    if(precon_type==LIS_PRECON_TYPE_JACOBI)
+    {
+        return A->matrix_type==LIS_MATRIX_USER
+            && A->user_get_diagonal!=NULL
+            ? LIS_TRUE : LIS_FALSE;
+    }
+
+    if(precon_type==LIS_PRECON_TYPE_ILU ||
+       precon_type==LIS_PRECON_TYPE_ILUC ||
+       precon_type==LIS_PRECON_TYPE_ILUT)
+    {
+        return lis_matrix_policy_has_row_access(A,0);
+    }
+
+    return LIS_FALSE;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_prepare_solver_matrix"
+LIS_INT
+lis_matrix_prepare_solver_matrix(
+    LIS_MATRIX source,
+    LIS_SOLVER solver,
+    LIS_MATRIX_CSR_CACHE *cache,
+    LIS_MATRIX *selected,
+    LIS_INT *policy,
+    LIS_INT *action)
+{
+    LIS_INT precon_type,nested,err;
+
+    LIS_DEBUG_FUNC_IN;
+
+    if(source==NULL || solver==NULL || selected==NULL || policy==NULL)
+        return LIS_ERR_ILL_ARG;
+
+    *selected=NULL;
+    *policy=LIS_MATRIX_POLICY_DIRECT;
+    if(action) *action=LIS_MATRIX_POLICY_ACTION_DIRECT;
+
+    /*
+     * This policy is deliberately limited to external USER matrices and
+     * linear-combination operators. All other formats retain LIS's existing
+     * solver/preconditioner conversion behavior.
+     */
+    if(source->matrix_type!=LIS_MATRIX_USER &&
+       source->matrix_type!=LIS_MATRIX_OPERATOR)
+    {
+        *selected=source;
+        return LIS_SUCCESS;
+    }
+
+    err=lis_solver_get_effective_preconditioner(
+        solver,&precon_type,&nested);
+    if(err) return err;
+
+    if(lis_matrix_policy_direct_supported(source,precon_type))
+    {
+        *selected=source;
+        return LIS_SUCCESS;
+    }
+
+    if(cache==NULL)
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,
+            "automatic matrix policy requires a CSR cache for fallback\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    err=lis_matrix_materialize_csr_cached(
+        source,cache,selected,action);
+    if(err) return err;
+
+    *policy=LIS_MATRIX_POLICY_CACHED_CSR;
+    return LIS_SUCCESS;
 }
