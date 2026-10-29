@@ -106,11 +106,11 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libprecon_la_LIBADD =
-am_libprecon_la_OBJECTS = lis_precon.lo lis_precon_ads.lo \
-	lis_precon_hybrid.lo lis_precon_iluc.lo lis_precon_iluk.lo \
-	lis_precon_ilut.lo lis_precon_is.lo lis_precon_jacobi.lo \
-	lis_precon_mfamg.lo lis_precon_saamg.lo lis_precon_sainv.lo \
-	lis_precon_ssor.lo
+am_libprecon_la_OBJECTS = lis_precon.lo lis_precon_operator_row.lo \
+	lis_precon_ads.lo lis_precon_hybrid.lo lis_precon_iluc.lo \
+	lis_precon_iluk.lo lis_precon_ilut.lo lis_precon_is.lo \
+	lis_precon_jacobi.lo lis_precon_mfamg.lo lis_precon_saamg.lo \
+	lis_precon_sainv.lo lis_precon_ssor.lo
 libprecon_la_OBJECTS = $(am_libprecon_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -139,6 +139,7 @@ am__depfiles_remade = ./$(DEPDIR)/lis_precon.Plo \
 	./$(DEPDIR)/lis_precon_ilut.Plo ./$(DEPDIR)/lis_precon_is.Plo \
 	./$(DEPDIR)/lis_precon_jacobi.Plo \
 	./$(DEPDIR)/lis_precon_mfamg.Plo \
+	./$(DEPDIR)/lis_precon_operator_row.Plo \
 	./$(DEPDIR)/lis_precon_saamg.Plo \
 	./$(DEPDIR)/lis_precon_sainv.Plo \
 	./$(DEPDIR)/lis_precon_ssor.Plo
@@ -338,6 +339,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LTLIBRARIES = libprecon.la
 libprecon_la_SOURCES = lis_precon.c \
+lis_precon_operator_row.c \
 lis_precon_ads.c \
 lis_precon_hybrid.c \
 lis_precon_iluc.c \
@@ -427,6 +429,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precon_is.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precon_jacobi.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precon_mfamg.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precon_operator_row.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precon_saamg.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precon_sainv.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precon_ssor.Plo@am__quote@ # am--include-marker
@@ -599,6 +602,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/lis_precon_is.Plo
 	-rm -f ./$(DEPDIR)/lis_precon_jacobi.Plo
 	-rm -f ./$(DEPDIR)/lis_precon_mfamg.Plo
+	-rm -f ./$(DEPDIR)/lis_precon_operator_row.Plo
 	-rm -f ./$(DEPDIR)/lis_precon_saamg.Plo
 	-rm -f ./$(DEPDIR)/lis_precon_sainv.Plo
 	-rm -f ./$(DEPDIR)/lis_precon_ssor.Plo
@@ -656,6 +660,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/lis_precon_is.Plo
 	-rm -f ./$(DEPDIR)/lis_precon_jacobi.Plo
 	-rm -f ./$(DEPDIR)/lis_precon_mfamg.Plo
+	-rm -f ./$(DEPDIR)/lis_precon_operator_row.Plo
 	-rm -f ./$(DEPDIR)/lis_precon_saamg.Plo
 	-rm -f ./$(DEPDIR)/lis_precon_sainv.Plo
 	-rm -f ./$(DEPDIR)/lis_precon_ssor.Plo

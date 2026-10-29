@@ -105,7 +105,7 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	test7$(EXEEXT) testuser$(EXEEXT) testuserrow$(EXEEXT) \
 	testuserprecon$(EXEEXT) testmatvecblock$(EXEEXT) \
 	testcapabilities$(EXEEXT) testvectornrm2mpi$(EXEEXT) \
-	testsolvercapabilities$(EXEEXT) \
+	testoperatorrowprecon$(EXEEXT) testsolvercapabilities$(EXEEXT) \
 	testsolveroptionreplace$(EXEEXT) testompelastic$(EXEEXT) \
 	testmatrixgraph$(EXEEXT) testcomponentnullspace$(EXEEXT) \
 	testnullspacelift$(EXEEXT) getestuser$(EXEEXT) \
@@ -559,6 +559,10 @@ am_testoperator_OBJECTS = testoperator.$(OBJEXT)
 testoperator_OBJECTS = $(am_testoperator_OBJECTS)
 testoperator_LDADD = $(LDADD)
 testoperator_DEPENDENCIES =
+am_testoperatorrowprecon_OBJECTS = testoperatorrowprecon.$(OBJEXT)
+testoperatorrowprecon_OBJECTS = $(am_testoperatorrowprecon_OBJECTS)
+testoperatorrowprecon_LDADD = $(LDADD)
+testoperatorrowprecon_DEPENDENCIES =
 am_testparamupdate_OBJECTS = testparamupdate.$(OBJEXT)
 testparamupdate_OBJECTS = $(am_testparamupdate_OBJECTS)
 testparamupdate_LDADD = $(LDADD)
@@ -766,8 +770,9 @@ am__depfiles_remade = ./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
 	./$(DEPDIR)/testnearnullspace.Po \
 	./$(DEPDIR)/testnullspacecandidates.Po \
 	./$(DEPDIR)/testnullspacelift.Po ./$(DEPDIR)/testompelastic.Po \
-	./$(DEPDIR)/testoperator.Po ./$(DEPDIR)/testparamupdate.Po \
-	./$(DEPDIR)/testprebuiltuser.Po \
+	./$(DEPDIR)/testoperator.Po \
+	./$(DEPDIR)/testoperatorrowprecon.Po \
+	./$(DEPDIR)/testparamupdate.Po ./$(DEPDIR)/testprebuiltuser.Po \
 	./$(DEPDIR)/testpreconlifecycle.Po \
 	./$(DEPDIR)/testpreconpolicy.Po ./$(DEPDIR)/testpreconpsd.Po \
 	./$(DEPDIR)/testpreconreuse.Po \
@@ -862,10 +867,11 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
 	$(testnullspacecandidates_SOURCES) \
 	$(testnullspacelift_SOURCES) $(testompelastic_SOURCES) \
-	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
-	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
-	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
-	$(testpreconreuse_SOURCES) $(testprojectedeigen_SOURCES) \
+	$(testoperator_SOURCES) $(testoperatorrowprecon_SOURCES) \
+	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
+	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
+	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
+	$(testprojectedeigen_SOURCES) \
 	$(testprojectedhermitian_SOURCES) $(testrecovery_SOURCES) \
 	$(testrepeatedsystems_SOURCES) testrhistoryerror.c \
 	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
@@ -919,10 +925,11 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
 	$(testnullspacecandidates_SOURCES) \
 	$(testnullspacelift_SOURCES) $(testompelastic_SOURCES) \
-	$(testoperator_SOURCES) $(testparamupdate_SOURCES) \
-	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
-	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
-	$(testpreconreuse_SOURCES) $(testprojectedeigen_SOURCES) \
+	$(testoperator_SOURCES) $(testoperatorrowprecon_SOURCES) \
+	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
+	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
+	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
+	$(testprojectedeigen_SOURCES) \
 	$(testprojectedhermitian_SOURCES) $(testrecovery_SOURCES) \
 	$(testrepeatedsystems_SOURCES) testrhistoryerror.c \
 	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
@@ -1355,6 +1362,7 @@ testuserprecon_SOURCES = testuserprecon.c
 testmatvecblock_SOURCES = testmatvecblock.c
 testcapabilities_SOURCES = testcapabilities.c
 testvectornrm2mpi_SOURCES = testvectornrm2mpi.c
+testoperatorrowprecon_SOURCES = testoperatorrowprecon.c
 testsolvercapabilities_SOURCES = testsolvercapabilities.c
 testsolveroptionreplace_SOURCES = testsolveroptionreplace.c
 testompelastic_SOURCES = testompelastic.c
@@ -1433,8 +1441,7 @@ LTPPF77COMPILE = $(LIBTOOL) --mode=compile --tag=F77 $(F77) $(AMDEFS) $(DEFS) \
 COMPILE = $(CC) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 
-LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) \
-	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
 	$(AM_CFLAGS) $(CFLAGS)
 
 @ENABLE_FORTRAN_FALSE@@ENABLE_SAAMG_FALSE@LINK = $(LIBTOOL) --mode=link $(CC) $(AM_LDFLAGS) $(LDFLAGS) -o $@ $(LIBS)
@@ -1465,7 +1472,8 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
 
 TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
-	testvectornrm2mpi$(EXEEXT) testsolvercapabilities$(EXEEXT) \
+	testvectornrm2mpi$(EXEEXT) testoperatorrowprecon$(EXEEXT) \
+	testsolvercapabilities$(EXEEXT) \
 	testsolveroptionreplace$(EXEEXT) testompelastic$(EXEEXT) \
 	testmatrixgraph$(EXEEXT) testcomponentnullspace$(EXEEXT) \
 	testnullspacelift$(EXEEXT) testpreconlifecycle$(EXEEXT) \
@@ -1979,6 +1987,10 @@ testoperator$(EXEEXT): $(testoperator_OBJECTS) $(testoperator_DEPENDENCIES) $(EX
 	@rm -f testoperator$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testoperator_OBJECTS) $(testoperator_LDADD) $(LIBS)
 
+testoperatorrowprecon$(EXEEXT): $(testoperatorrowprecon_OBJECTS) $(testoperatorrowprecon_DEPENDENCIES) $(EXTRA_testoperatorrowprecon_DEPENDENCIES) 
+	@rm -f testoperatorrowprecon$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testoperatorrowprecon_OBJECTS) $(testoperatorrowprecon_LDADD) $(LIBS)
+
 testparamupdate$(EXEEXT): $(testparamupdate_OBJECTS) $(testparamupdate_DEPENDENCIES) $(EXTRA_testparamupdate_DEPENDENCIES) 
 	@rm -f testparamupdate$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testparamupdate_OBJECTS) $(testparamupdate_LDADD) $(LIBS)
@@ -2211,6 +2223,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testnullspacelift.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testompelastic.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoperator.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoperatorrowprecon.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testparamupdate.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testprebuiltuser.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testpreconlifecycle.Po@am__quote@ # am--include-marker
@@ -2571,6 +2584,13 @@ testcapabilities.log: testcapabilities$(EXEEXT)
 testvectornrm2mpi.log: testvectornrm2mpi$(EXEEXT)
 	@p='testvectornrm2mpi$(EXEEXT)'; \
 	b='testvectornrm2mpi'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testoperatorrowprecon.log: testoperatorrowprecon$(EXEEXT)
+	@p='testoperatorrowprecon$(EXEEXT)'; \
+	b='testoperatorrowprecon'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -3185,6 +3205,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testnullspacelift.Po
 	-rm -f ./$(DEPDIR)/testompelastic.Po
 	-rm -f ./$(DEPDIR)/testoperator.Po
+	-rm -f ./$(DEPDIR)/testoperatorrowprecon.Po
 	-rm -f ./$(DEPDIR)/testparamupdate.Po
 	-rm -f ./$(DEPDIR)/testprebuiltuser.Po
 	-rm -f ./$(DEPDIR)/testpreconlifecycle.Po
@@ -3335,6 +3356,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testnullspacelift.Po
 	-rm -f ./$(DEPDIR)/testompelastic.Po
 	-rm -f ./$(DEPDIR)/testoperator.Po
+	-rm -f ./$(DEPDIR)/testoperatorrowprecon.Po
 	-rm -f ./$(DEPDIR)/testparamupdate.Po
 	-rm -f ./$(DEPDIR)/testprebuiltuser.Po
 	-rm -f ./$(DEPDIR)/testpreconlifecycle.Po
