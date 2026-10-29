@@ -2,6 +2,7 @@
 #include "lis_solver_options.h"
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 
 static void test_monitor(
     struct LIS_SOLVER_STRUCT *solver,
@@ -100,8 +101,66 @@ static int check_report_snapshot(
     return 0;
 }
 
+/* Isolate the typed API from legacy text-option parsing for leak checks.
+ * The full regression is still run separately without suppressing failures.
+ */
+static int test_typed_api_isolated(int argc,char **argv)
+{
+    LIS_SOLVER solver=NULL;
+    LIS_MATRIX A=NULL;
+    LIS_VECTOR b=NULL,x=NULL;
+    LIS_REAL tol;
+    LIS_INT maxiter,err;
+    int failed=0;
+
+    argc=1; /* --typed-only is a test harness flag, not a LIS option. */
+    err=lis_initialize(&argc,&argv);
+    if(err) return 1;
+    err=lis_solver_create(&solver);
+    if(err){failed=1;goto done;}
+    if(check_report_snapshot(solver,LIS_SUCCESS,"typed-only-before-solve"))
+        failed=1;
+    if(lis_solver_set_tolerance(solver,(LIS_REAL)1.0e-8) ||
+       lis_solver_set_maxiter(solver,15))
+        failed=1;
+    if(lis_solver_set_tolerance(solver,(LIS_REAL)0.0) ||
+       lis_solver_set_maxiter(solver,0) ||
+       lis_solver_get_tolerance(solver,&tol) ||
+       lis_solver_get_maxiter(solver,&maxiter) ||
+       tol!=(LIS_REAL)0.0 || maxiter!=0)
+        failed=1;
+    if(lis_solver_set_tolerance(solver,(LIS_REAL)NAN)==LIS_SUCCESS ||
+       lis_solver_set_tolerance(solver,(LIS_REAL)INFINITY)==LIS_SUCCESS ||
+       lis_solver_set_maxiter(solver,-1)==LIS_SUCCESS ||
+       lis_solver_get_tolerance(solver,&tol) ||
+       lis_solver_get_maxiter(solver,&maxiter) ||
+       tol!=(LIS_REAL)0.0 || maxiter!=0)
+        failed=1;
+    if(!failed && build_diagonal_problem(&A,&b,&x))
+        failed=1;
+    if(!failed)
+    {
+        solver->options[LIS_OPTIONS_SOLVER]=0;
+        err=lis_solve(A,b,x,solver);
+        if(err==LIS_SUCCESS ||
+           check_report_snapshot(solver,err,"typed-only-after-failure"))
+            failed=1;
+    }
+done:
+    if(x)lis_vector_destroy(x);
+    if(b)lis_vector_destroy(b);
+    if(A)lis_matrix_destroy(A);
+    if(solver)lis_solver_destroy(solver);
+    lis_finalize();
+    printf("SOLVER_TYPED_API_ISOLATED %s\n",failed?"FAILED":"PASSED");
+    return failed;
+}
+
 int main(int argc, char **argv)
 {
+    if(argc>1 && strcmp(argv[1],"--typed-only")==0)
+        return test_typed_api_isolated(argc,argv);
+
     LIS_SOLVER solver = NULL;
     LIS_SOLVER failing_solver = NULL;
     LIS_MATRIX A = NULL;
