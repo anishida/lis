@@ -154,6 +154,51 @@ int main(int argc, char *argv[])
        real_shift!=(LIS_REAL)2.5 || imaginary_shift!=(LIS_REAL)0.0)
         return fail("non-finite update changed state",LIS_BREAKDOWN);
 
+    /* Cover every boundary of the typed setters and reject partial state. */
+    if(lis_esolver_set_type(esolver,0)==LIS_SUCCESS ||
+       lis_esolver_set_type(esolver,LIS_ESOLVER_LEN+1)==LIS_SUCCESS ||
+       lis_esolver_set_tolerance(esolver,(LIS_REAL)0.0)==LIS_SUCCESS ||
+       lis_esolver_set_tolerance(esolver,(LIS_REAL)-INFINITY)==LIS_SUCCESS ||
+       lis_esolver_set_maxiter(esolver,-1)==LIS_SUCCESS ||
+       lis_esolver_set_subspace_size(esolver,0)==LIS_SUCCESS ||
+       lis_esolver_set_subspace_size(esolver,2)==LIS_SUCCESS ||
+       lis_esolver_set_mode(esolver,-1)==LIS_SUCCESS ||
+       lis_esolver_set_block_size(esolver,0)==LIS_SUCCESS ||
+       lis_esolver_set_block_size(esolver,5)==LIS_SUCCESS ||
+       lis_esolver_set_transform(esolver,-1)==LIS_SUCCESS ||
+       lis_esolver_set_shift(esolver,(LIS_REAL)-INFINITY,(LIS_REAL)0.0)==LIS_SUCCESS ||
+       lis_esolver_set_shift(esolver,(LIS_REAL)2.5,(LIS_REAL)INFINITY)==LIS_SUCCESS ||
+       lis_esolver_set_shift(esolver,(LIS_REAL)2.5,(LIS_REAL)NAN)==LIS_SUCCESS)
+        return fail("additional invalid configuration accepted",LIS_BREAKDOWN);
+
+    /* Null outputs and objects must be rejected, not dereferenced. */
+    if(lis_esolver_get_type(esolver,NULL)==LIS_SUCCESS ||
+       lis_esolver_get_tolerance(esolver,NULL)==LIS_SUCCESS ||
+       lis_esolver_get_maxiter(esolver,NULL)==LIS_SUCCESS ||
+       lis_esolver_get_subspace_size(esolver,NULL)==LIS_SUCCESS ||
+       lis_esolver_get_mode(esolver,NULL)==LIS_SUCCESS ||
+       lis_esolver_get_block_size(esolver,NULL)==LIS_SUCCESS ||
+       lis_esolver_get_transform(esolver,NULL)==LIS_SUCCESS ||
+       lis_esolver_get_shift(esolver,NULL,&imaginary_shift)==LIS_SUCCESS ||
+       lis_esolver_get_shift(esolver,&real_shift,NULL)==LIS_SUCCESS ||
+       lis_esolver_get_type(NULL,&type)==LIS_SUCCESS)
+        return fail("invalid getter arguments accepted",LIS_BREAKDOWN);
+
+    /* Verify rollback also for every additional rejected update. */
+    if(lis_esolver_get_type(esolver,&type) ||
+       lis_esolver_get_subspace_size(esolver,&subspace_size) ||
+       lis_esolver_get_mode(esolver,&mode) ||
+       lis_esolver_get_block_size(esolver,&block_size) ||
+       lis_esolver_get_tolerance(esolver,&tolerance) ||
+       lis_esolver_get_maxiter(esolver,&maxiter) ||
+       lis_esolver_get_transform(esolver,&transform) ||
+       lis_esolver_get_shift(esolver,&real_shift,&imaginary_shift) ||
+       type!=LIS_ESOLVER_LI || subspace_size!=4 || mode!=1 ||
+       block_size!=2 || tolerance!=(LIS_REAL)1.0e-9 ||
+       maxiter!=123 || transform!=LIS_EIGEN_TRANSFORM_SHIFT_INVERT ||
+       real_shift!=(LIS_REAL)2.5 || imaginary_shift!=(LIS_REAL)0.0)
+        return fail("extended invalid updates modified configuration",LIS_BREAKDOWN);
+
     /* Existing converged-pair selection remains unchanged. */
     esolver->nev = 4;
 
@@ -171,6 +216,28 @@ int main(int argc, char *argv[])
     esolver->resid[1] = (LIS_REAL)1.0e-8;
     esolver->resid[2] = (LIS_REAL)1.0e-3;
     esolver->resid[3] = (LIS_REAL)1.0e-9;
+
+    /*
+     * Scalar controls after results exist must not modify stored eigenpair
+     * arrays. These results remain from the previous configuration/solve,
+     * not newly computed pairs for the updated tolerances or transforms.
+     */
+    {
+        LIS_SCALAR *old_values=esolver->evalue;
+        LIS_REAL *old_residuals=esolver->resid;
+        LIS_INT old_nev=esolver->nev;
+        err=lis_esolver_set_tolerance(esolver,(LIS_REAL)2.0e-9);
+        if(err)return fail("post-result tolerance update",err);
+        err=lis_esolver_set_transform(esolver,LIS_EIGEN_TRANSFORM_AUTO);
+        if(err)return fail("post-result transform update",err);
+        err=lis_esolver_set_shift(esolver,(LIS_REAL)1.5,(LIS_REAL)0.0);
+        if(err)return fail("post-result shift update",err);
+        if(esolver->evalue!=old_values || esolver->resid!=old_residuals ||
+           esolver->nev!=old_nev ||
+           esolver->evalue[0]!=(LIS_SCALAR)3.0 ||
+           esolver->resid[3]!=(LIS_REAL)1.0e-9)
+            return fail("post-result configuration mutated saved results",LIS_BREAKDOWN);
+    }
 
     err = lis_esolver_select_converged_pairs(
         esolver,4,2,(LIS_REAL)1.0e-6,
