@@ -126,10 +126,10 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testcoarsesetup$(EXEEXT) testcoarseapply$(EXEEXT) \
 	testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) \
 	testgcrodrsequence$(EXEEXT) testmatrixgeneration$(EXEEXT) \
-	testexternalstorage$(EXEEXT) testsplitview$(EXEEXT) \
-	testsequence$(EXEEXT) testwarmstart$(EXEEXT) \
-	testrecovery$(EXEEXT) testthreads$(EXEEXT) \
-	testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
+	testexternalstorage$(EXEEXT) testmatrixmaterialize$(EXEEXT) \
+	testsplitview$(EXEEXT) testsequence$(EXEEXT) \
+	testwarmstart$(EXEEXT) testrecovery$(EXEEXT) \
+	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
 	testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
 	testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) \
 	testfeastfoundation$(EXEEXT) testfeastcontour$(EXEEXT) \
@@ -525,6 +525,10 @@ am_testmatrixgraph_OBJECTS = testmatrixgraph.$(OBJEXT)
 testmatrixgraph_OBJECTS = $(am_testmatrixgraph_OBJECTS)
 testmatrixgraph_LDADD = $(LDADD)
 testmatrixgraph_DEPENDENCIES =
+am_testmatrixmaterialize_OBJECTS = testmatrixmaterialize.$(OBJEXT)
+testmatrixmaterialize_OBJECTS = $(am_testmatrixmaterialize_OBJECTS)
+testmatrixmaterialize_LDADD = $(LDADD)
+testmatrixmaterialize_DEPENDENCIES =
 am_testmatvecblock_OBJECTS = testmatvecblock.$(OBJEXT)
 testmatvecblock_OBJECTS = $(am_testmatvecblock_OBJECTS)
 testmatvecblock_LDADD = $(LDADD)
@@ -765,8 +769,10 @@ am__depfiles_remade = ./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
 	./$(DEPDIR)/testhybridnested.Po ./$(DEPDIR)/testilupivot.Po \
 	./$(DEPDIR)/testjacobiuser.Po ./$(DEPDIR)/testkrylovrobust.Po \
 	./$(DEPDIR)/testmatrixgeneration.Po \
-	./$(DEPDIR)/testmatrixgraph.Po ./$(DEPDIR)/testmatvecblock.Po \
-	./$(DEPDIR)/testmfamg.Po ./$(DEPDIR)/testmfamggalerkin.Po \
+	./$(DEPDIR)/testmatrixgraph.Po \
+	./$(DEPDIR)/testmatrixmaterialize.Po \
+	./$(DEPDIR)/testmatvecblock.Po ./$(DEPDIR)/testmfamg.Po \
+	./$(DEPDIR)/testmfamggalerkin.Po \
 	./$(DEPDIR)/testnearnullspace.Po \
 	./$(DEPDIR)/testnullspacecandidates.Po \
 	./$(DEPDIR)/testnullspacelift.Po ./$(DEPDIR)/testompelastic.Po \
@@ -863,8 +869,9 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testhybridnested_SOURCES) $(testilupivot_SOURCES) \
 	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
-	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
-	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
+	$(testmatrixmaterialize_SOURCES) $(testmatvecblock_SOURCES) \
+	$(testmfamg_SOURCES) $(testmfamggalerkin_SOURCES) \
+	$(testnearnullspace_SOURCES) \
 	$(testnullspacecandidates_SOURCES) \
 	$(testnullspacelift_SOURCES) $(testompelastic_SOURCES) \
 	$(testoperator_SOURCES) $(testoperatorrowprecon_SOURCES) \
@@ -921,8 +928,9 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testhybridnested_SOURCES) $(testilupivot_SOURCES) \
 	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
-	$(testmatvecblock_SOURCES) $(testmfamg_SOURCES) \
-	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
+	$(testmatrixmaterialize_SOURCES) $(testmatvecblock_SOURCES) \
+	$(testmfamg_SOURCES) $(testmfamggalerkin_SOURCES) \
+	$(testnearnullspace_SOURCES) \
 	$(testnullspacecandidates_SOURCES) \
 	$(testnullspacelift_SOURCES) $(testompelastic_SOURCES) \
 	$(testoperator_SOURCES) $(testoperatorrowprecon_SOURCES) \
@@ -1323,6 +1331,7 @@ testgcrodrconfig_SOURCES = testgcrodrconfig.c
 testgcrodrsequence_SOURCES = testgcrodrsequence.c
 testmatrixgeneration_SOURCES = testmatrixgeneration.c
 testexternalstorage_SOURCES = testexternalstorage.c
+testmatrixmaterialize_SOURCES = testmatrixmaterialize.c
 testsplitview_SOURCES = testsplitview.c
 testsequence_SOURCES = testsequence.c
 testwarmstart_SOURCES = testwarmstart.c
@@ -1495,10 +1504,10 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	testcoarsesetup$(EXEEXT) testcoarseapply$(EXEEXT) \
 	testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) \
 	testgcrodrsequence$(EXEEXT) testmatrixgeneration$(EXEEXT) \
-	testexternalstorage$(EXEEXT) testsplitview$(EXEEXT) \
-	testsequence$(EXEEXT) testwarmstart$(EXEEXT) \
-	testrecovery$(EXEEXT) testthreads$(EXEEXT) \
-	testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
+	testexternalstorage$(EXEEXT) testmatrixmaterialize$(EXEEXT) \
+	testsplitview$(EXEEXT) testsequence$(EXEEXT) \
+	testwarmstart$(EXEEXT) testrecovery$(EXEEXT) \
+	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
 	testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
 	testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) \
 	testnullspacecandidates$(EXEEXT) testesolverselection$(EXEEXT) \
@@ -1955,6 +1964,10 @@ testmatrixgraph$(EXEEXT): $(testmatrixgraph_OBJECTS) $(testmatrixgraph_DEPENDENC
 	@rm -f testmatrixgraph$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmatrixgraph_OBJECTS) $(testmatrixgraph_LDADD) $(LIBS)
 
+testmatrixmaterialize$(EXEEXT): $(testmatrixmaterialize_OBJECTS) $(testmatrixmaterialize_DEPENDENCIES) $(EXTRA_testmatrixmaterialize_DEPENDENCIES) 
+	@rm -f testmatrixmaterialize$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testmatrixmaterialize_OBJECTS) $(testmatrixmaterialize_LDADD) $(LIBS)
+
 testmatvecblock$(EXEEXT): $(testmatvecblock_OBJECTS) $(testmatvecblock_DEPENDENCIES) $(EXTRA_testmatvecblock_DEPENDENCIES) 
 	@rm -f testmatvecblock$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmatvecblock_OBJECTS) $(testmatvecblock_LDADD) $(LIBS)
@@ -2215,6 +2228,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testkrylovrobust.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixgeneration.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixgraph.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixmaterialize.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatvecblock.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamggalerkin.Po@am__quote@ # am--include-marker
@@ -2903,6 +2917,13 @@ testexternalstorage.log: testexternalstorage$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testmatrixmaterialize.log: testmatrixmaterialize$(EXEEXT)
+	@p='testmatrixmaterialize$(EXEEXT)'; \
+	b='testmatrixmaterialize'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 testsplitview.log: testsplitview$(EXEEXT)
 	@p='testsplitview$(EXEEXT)'; \
 	b='testsplitview'; \
@@ -3197,6 +3218,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testkrylovrobust.Po
 	-rm -f ./$(DEPDIR)/testmatrixgeneration.Po
 	-rm -f ./$(DEPDIR)/testmatrixgraph.Po
+	-rm -f ./$(DEPDIR)/testmatrixmaterialize.Po
 	-rm -f ./$(DEPDIR)/testmatvecblock.Po
 	-rm -f ./$(DEPDIR)/testmfamg.Po
 	-rm -f ./$(DEPDIR)/testmfamggalerkin.Po
@@ -3348,6 +3370,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testkrylovrobust.Po
 	-rm -f ./$(DEPDIR)/testmatrixgeneration.Po
 	-rm -f ./$(DEPDIR)/testmatrixgraph.Po
+	-rm -f ./$(DEPDIR)/testmatrixmaterialize.Po
 	-rm -f ./$(DEPDIR)/testmatvecblock.Po
 	-rm -f ./$(DEPDIR)/testmfamg.Po
 	-rm -f ./$(DEPDIR)/testmfamggalerkin.Po
