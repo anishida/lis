@@ -12,6 +12,12 @@ extern "C" {
 typedef struct LIS_MATRIX_SPLIT_TRIANGULAR_VIEW_STRUCT
     *LIS_MATRIX_SPLIT_TRIANGULAR_VIEW;
 
+typedef struct LIS_MATRIX_SPLIT_TRIANGULAR_TOPOLOGY_STRUCT
+    *LIS_MATRIX_SPLIT_TRIANGULAR_TOPOLOGY;
+
+typedef struct LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW_STRUCT
+    *LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW;
+
 /*
  * Create a serial LIS_MATRIX_USER view over split triangular storage.
  *
@@ -65,6 +71,59 @@ LIS_INT lis_matrix_create_split_triangular_view_i64(
     int64_t origin,
     LIS_MATRIX *A,
     LIS_MATRIX_SPLIT_TRIANGULAR_VIEW *view);
+
+/*
+ * Build immutable expanded-row metadata once and share it between multiple
+ * split-triangular matrices that have the same sparse structure.
+ *
+ * The topology stores only LIS-owned integer row metadata. The input ptr/index
+ * arrays are validated during construction and are not retained afterwards.
+ * Topologies are reference-counted: every shared view retains one reference,
+ * so the caller may destroy its own topology handle immediately after all
+ * desired views have been created.
+ */
+LIS_INT lis_matrix_create_split_triangular_topology(
+    LIS_INT n,
+    LIS_INT nnz,
+    const LIS_INT ptr[],
+    const LIS_INT index[],
+    LIS_INT origin,
+    LIS_MATRIX_SPLIT_TRIANGULAR_TOPOLOGY *topology);
+
+LIS_INT lis_matrix_create_split_triangular_topology_i64(
+    int64_t n,
+    int64_t nnz,
+    const int64_t ptr[],
+    const int64_t index[],
+    int64_t origin,
+    LIS_MATRIX_SPLIT_TRIANGULAR_TOPOLOGY *topology);
+
+/*
+ * Create a serial LIS_MATRIX_USER backed by an existing immutable topology.
+ * Numerical arrays remain non-owning and may differ between views that share
+ * the same topology. upper_values==NULL selects symmetric mirrored storage.
+ */
+LIS_INT lis_matrix_create_split_triangular_shared_view(
+    LIS_Comm comm,
+    LIS_MATRIX_SPLIT_TRIANGULAR_TOPOLOGY topology,
+    const LIS_SCALAR diag[],
+    const LIS_SCALAR lower_values[],
+    const LIS_SCALAR upper_values[],
+    LIS_MATRIX *A,
+    LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW *view);
+
+/* Replace only the numerical pointers of a shared-topology view. */
+LIS_INT lis_matrix_split_triangular_shared_view_set_values(
+    LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW view,
+    const LIS_SCALAR diag[],
+    const LIS_SCALAR lower_values[],
+    const LIS_SCALAR upper_values[]);
+
+void lis_matrix_split_triangular_shared_view_destroy(
+    LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW view);
+
+void lis_matrix_split_triangular_topology_destroy(
+    LIS_MATRIX_SPLIT_TRIANGULAR_TOPOLOGY topology);
 
 /* Replace only the non-owning numerical array pointers and publish a value
  * generation change to the associated LIS matrix. Symmetric/nonsymmetric mode
