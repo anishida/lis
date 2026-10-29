@@ -68,9 +68,42 @@ static int build_diagonal_problem(
     return 0;
 }
 
+static int check_report_snapshot(
+    LIS_SOLVER solver,LIS_INT expected_status,const char *stage)
+{
+    LIS_SOLVE_REPORT snapshot;
+    LIS_REAL residual;
+    LIS_INT status,iter,iter_double,iter_quad;
+    double time,itime,ptime,p_c_time,p_i_time;
+    LIS_INT err;
+
+    err=lis_solver_get_report(solver,&snapshot);
+    if(err) return 1;
+    if(lis_solver_get_status(solver,&status) ||
+       lis_solver_get_iterex(solver,&iter,&iter_double,&iter_quad) ||
+       lis_solver_get_residualnorm(solver,&residual) ||
+       lis_solver_get_timeex(solver,&time,&itime,&ptime,&p_c_time,&p_i_time))
+        return 1;
+    if(snapshot.status!=expected_status || snapshot.status!=status ||
+       snapshot.iterations!=iter ||
+       snapshot.iterations_double!=iter_double ||
+       snapshot.iterations_quad!=iter_quad ||
+       snapshot.residual_norm!=residual ||
+       snapshot.time!=time || snapshot.iteration_time!=itime ||
+       snapshot.preconditioner_time!=ptime ||
+       snapshot.preconditioner_create_time!=p_c_time ||
+       snapshot.preconditioner_iteration_time!=p_i_time)
+    {
+        fprintf(stderr,"report snapshot mismatch: %s\n",stage);
+        return 1;
+    }
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     LIS_SOLVER solver = NULL;
+    LIS_SOLVER failing_solver = NULL;
     LIS_MATRIX A = NULL;
     LIS_VECTOR b = NULL;
     LIS_VECTOR x = NULL;
@@ -91,6 +124,13 @@ int main(int argc, char **argv)
 
     err = lis_solver_create(&solver);
     if(err) { lis_finalize(); return 1; }
+
+    /* Report is a getter snapshot, including before the first solve. */
+    if(check_report_snapshot(solver,LIS_SUCCESS,"before-first-solve"))
+        failed=1;
+    if(lis_solver_get_report(NULL,&report)==LIS_SUCCESS ||
+       lis_solver_get_report(solver,NULL)==LIS_SUCCESS)
+        failed=1;
 
     err = lis_solver_set_sequence_policy(solver,LIS_SEQUENCE_POLICY_AUTO);
     if(err) failed = 1;
@@ -123,6 +163,26 @@ int main(int argc, char **argv)
      * diagonal regression matrix and therefore must not alter this solve.
      */
     if(!failed) failed |= build_diagonal_problem(&A,&b,&x);
+    if(!failed)
+    {
+        err=lis_solver_create(&failing_solver);
+        if(err) failed=1;
+    }
+    if(!failed)
+    {
+        /* Force a rejected solver type through the normal solve path.
+         * The report must describe the failed attempt, not imply success. */
+        failing_solver->options[LIS_OPTIONS_SOLVER]=0;
+        err=lis_solve(A,b,x,failing_solver);
+        if(err==LIS_SUCCESS ||
+           check_report_snapshot(failing_solver,err,"after-failed-solve"))
+        {
+            fprintf(stderr,"failed-solve report mismatch\n");
+            failed=1;
+        }
+        lis_solver_destroy(failing_solver);
+        failing_solver=NULL;
+    }
     if(!failed)
     {
         err = lis_solve_sequence(A,b,x,solver);
@@ -221,6 +281,25 @@ int main(int argc, char **argv)
                 "typed solve-time update mismatch or reusable state lost\n");
             failed = 1;
         }
+    }
+
+    /* Zero retains LIS option semantics; neither setter destroys state. */
+    if(!failed)
+    {
+        err=lis_solver_set_tolerance(solver,(LIS_REAL)0.0);
+        if(err) failed=1;
+        err=lis_solver_set_maxiter(solver,0);
+        if(err) failed=1;
+        lis_solver_get_tolerance(solver,&tolerance);
+        lis_solver_get_maxiter(solver,&maxiter);
+        if(tolerance!=(LIS_REAL)0.0 || maxiter!=0 ||
+           solver->sequence_precon!=saved_precon ||
+           solver->recycle_valid!=LIS_TRUE)
+            failed=1;
+        err=lis_solver_set_tolerance(solver,(LIS_REAL)2.0e-7);
+        if(err) failed=1;
+        err=lis_solver_set_maxiter(solver,88);
+        if(err) failed=1;
     }
 
     /* Invalid typed updates must leave the active values unchanged. */
@@ -375,6 +454,7 @@ int main(int argc, char **argv)
     if(b) lis_vector_destroy(b);
     if(A) lis_matrix_destroy(A);
     if(q) lis_vector_destroy(q);
+    if(failing_solver) lis_solver_destroy(failing_solver);
     lis_solver_destroy(solver);
     lis_finalize();
 
