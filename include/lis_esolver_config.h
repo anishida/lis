@@ -48,6 +48,24 @@ LIS_INT lis_esolver_get_subspace_size(
     LIS_ESOLVER esolver,
     LIS_INT *subspace_size);
 
+/*
+ * Requested eigenpair count (-nev): 0 retains the historical default of
+ * using the configured subspace size; a positive count must fit the current
+ * subspace. Set subspace_size first when increasing both values.
+ *
+ * The existing esolver->nev field also holds the number of published results
+ * in some eigensolver algorithms. get_requested_nev() reads that field and
+ * therefore reports the configured request BEFORE a solve; after a solve it
+ * may instead report the number of resulting eigenpairs. Call the setter
+ * again before a subsequent solve if the original requested count is needed.
+ */
+LIS_INT lis_esolver_set_requested_nev(
+    LIS_ESOLVER esolver,
+    LIS_INT requested_nev);
+LIS_INT lis_esolver_get_requested_nev(
+    LIS_ESOLVER esolver,
+    LIS_INT *requested_nev);
+
 LIS_INT lis_esolver_set_mode(
     LIS_ESOLVER esolver,
     LIS_INT mode);

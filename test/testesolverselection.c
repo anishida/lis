@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
     LIS_ESOLVER esolver = NULL;
     LIS_ESOLVER_SELECTED_PAIR pairs[4];
     LIS_REAL tolerance,real_shift,imaginary_shift;
-    LIS_INT type,maxiter,subspace_size,mode,block_size,transform;
+    LIS_INT type,maxiter,subspace_size,mode,block_size,transform,requested_nev;
     LIS_INT available = 0;
     LIS_INT err;
 
@@ -35,12 +35,17 @@ int main(int argc, char *argv[])
 
     err = lis_esolver_create(&esolver);
     if(err) return fail("lis_esolver_create",err);
+    err = lis_esolver_get_requested_nev(esolver,&requested_nev);
+    if(err || requested_nev!=0)
+        return fail("default requested nev",err ? err : LIS_BREAKDOWN);
 
     /* Configure the common embedding controls without parsing option text. */
     err = lis_esolver_set_type(esolver,LIS_ESOLVER_LI);
     if(err) return fail("set type",err);
     err = lis_esolver_set_subspace_size(esolver,4);
     if(err) return fail("set subspace",err);
+    err = lis_esolver_set_requested_nev(esolver,3);
+    if(err) return fail("set requested nev",err);
     err = lis_esolver_set_mode(esolver,1);
     if(err) return fail("set mode",err);
     err = lis_esolver_set_block_size(esolver,2);
@@ -59,6 +64,8 @@ int main(int argc, char *argv[])
     if(err) return fail("get type",err);
     err = lis_esolver_get_subspace_size(esolver,&subspace_size);
     if(err) return fail("get subspace",err);
+    err = lis_esolver_get_requested_nev(esolver,&requested_nev);
+    if(err) return fail("get requested nev",err);
     err = lis_esolver_get_mode(esolver,&mode);
     if(err) return fail("get mode",err);
     err = lis_esolver_get_block_size(esolver,&block_size);
@@ -73,7 +80,7 @@ int main(int argc, char *argv[])
     if(err) return fail("get shift",err);
 
     if(type!=LIS_ESOLVER_LI ||
-       subspace_size!=4 || mode!=1 || block_size!=2 ||
+       subspace_size!=4 || requested_nev!=3 || mode!=1 || block_size!=2 ||
        tolerance!=(LIS_REAL)1.0e-9 || maxiter!=123 ||
        transform!=LIS_EIGEN_TRANSFORM_SHIFT_INVERT ||
        real_shift!=(LIS_REAL)2.5 || imaginary_shift!=(LIS_REAL)0.0)
@@ -88,6 +95,10 @@ int main(int argc, char *argv[])
     if(err==LIS_SUCCESS) return fail("invalid maxiter accepted",LIS_BREAKDOWN);
     err = lis_esolver_set_subspace_size(esolver,1);
     if(err==LIS_SUCCESS) return fail("invalid subspace accepted",LIS_BREAKDOWN);
+    err = lis_esolver_set_requested_nev(esolver,-1);
+    if(err==LIS_SUCCESS) return fail("negative requested nev accepted",LIS_BREAKDOWN);
+    err = lis_esolver_set_requested_nev(esolver,5);
+    if(err==LIS_SUCCESS) return fail("oversized requested nev accepted",LIS_BREAKDOWN);
     err = lis_esolver_set_mode(esolver,4);
     if(err==LIS_SUCCESS) return fail("invalid mode accepted",LIS_BREAKDOWN);
     err = lis_esolver_set_block_size(esolver,5);
@@ -113,6 +124,7 @@ int main(int argc, char *argv[])
 
     lis_esolver_get_type(esolver,&type);
     lis_esolver_get_subspace_size(esolver,&subspace_size);
+    lis_esolver_get_requested_nev(esolver,&requested_nev);
     lis_esolver_get_mode(esolver,&mode);
     lis_esolver_get_block_size(esolver,&block_size);
     lis_esolver_get_tolerance(esolver,&tolerance);
@@ -121,7 +133,7 @@ int main(int argc, char *argv[])
     lis_esolver_get_shift(esolver,&real_shift,&imaginary_shift);
 
     if(type!=LIS_ESOLVER_LI ||
-       subspace_size!=4 || mode!=1 || block_size!=2 ||
+       subspace_size!=4 || requested_nev!=3 || mode!=1 || block_size!=2 ||
        tolerance!=(LIS_REAL)1.0e-9 || maxiter!=123 ||
        transform!=LIS_EIGEN_TRANSFORM_SHIFT_INVERT ||
        real_shift!=(LIS_REAL)2.5 || imaginary_shift!=(LIS_REAL)0.0)
@@ -161,6 +173,8 @@ int main(int argc, char *argv[])
        lis_esolver_set_tolerance(esolver,(LIS_REAL)-INFINITY)==LIS_SUCCESS ||
        lis_esolver_set_maxiter(esolver,-1)==LIS_SUCCESS ||
        lis_esolver_set_subspace_size(esolver,0)==LIS_SUCCESS ||
+       lis_esolver_set_requested_nev(esolver,-5)==LIS_SUCCESS ||
+       lis_esolver_set_requested_nev(esolver,6)==LIS_SUCCESS ||
        lis_esolver_set_mode(esolver,-1)==LIS_SUCCESS ||
        lis_esolver_set_block_size(esolver,0)==LIS_SUCCESS ||
        lis_esolver_set_block_size(esolver,5)==LIS_SUCCESS ||
@@ -175,6 +189,9 @@ int main(int argc, char *argv[])
        lis_esolver_get_tolerance(esolver,NULL)==LIS_SUCCESS ||
        lis_esolver_get_maxiter(esolver,NULL)==LIS_SUCCESS ||
        lis_esolver_get_subspace_size(esolver,NULL)==LIS_SUCCESS ||
+       lis_esolver_get_requested_nev(esolver,NULL)==LIS_SUCCESS ||
+       lis_esolver_set_requested_nev(NULL,1)==LIS_SUCCESS ||
+       lis_esolver_get_requested_nev(NULL,&requested_nev)==LIS_SUCCESS ||
        lis_esolver_get_mode(esolver,NULL)==LIS_SUCCESS ||
        lis_esolver_get_block_size(esolver,NULL)==LIS_SUCCESS ||
        lis_esolver_get_transform(esolver,NULL)==LIS_SUCCESS ||
@@ -186,20 +203,35 @@ int main(int argc, char *argv[])
     /* Verify rollback also for every additional rejected update. */
     if(lis_esolver_get_type(esolver,&type) ||
        lis_esolver_get_subspace_size(esolver,&subspace_size) ||
+       lis_esolver_get_requested_nev(esolver,&requested_nev) ||
        lis_esolver_get_mode(esolver,&mode) ||
        lis_esolver_get_block_size(esolver,&block_size) ||
        lis_esolver_get_tolerance(esolver,&tolerance) ||
        lis_esolver_get_maxiter(esolver,&maxiter) ||
        lis_esolver_get_transform(esolver,&transform) ||
        lis_esolver_get_shift(esolver,&real_shift,&imaginary_shift) ||
-       type!=LIS_ESOLVER_LI || subspace_size!=4 || mode!=1 ||
+       type!=LIS_ESOLVER_LI || subspace_size!=4 || requested_nev!=3 || mode!=1 ||
        block_size!=2 || tolerance!=(LIS_REAL)1.0e-9 ||
        maxiter!=123 || transform!=LIS_EIGEN_TRANSFORM_SHIFT_INVERT ||
        real_shift!=(LIS_REAL)2.5 || imaginary_shift!=(LIS_REAL)0.0)
         return fail("extended invalid updates modified configuration",LIS_BREAKDOWN);
 
+    /* Zero retains the legacy nev==subspace default. */
+    if(lis_esolver_set_requested_nev(esolver,4))
+        return fail("set maximum requested nev",LIS_BREAKDOWN);
+    if(lis_esolver_set_subspace_size(esolver,3)==LIS_SUCCESS)
+        return fail("shrink subspace below nev",LIS_BREAKDOWN);
+    if(lis_esolver_get_requested_nev(esolver,&requested_nev) ||
+       requested_nev!=4)
+        return fail("invalid shrink changed nev",LIS_BREAKDOWN);
+    if(lis_esolver_set_requested_nev(esolver,0) ||
+       lis_esolver_get_requested_nev(esolver,&requested_nev) ||
+       requested_nev!=0)
+        return fail("requested nev zero default",LIS_BREAKDOWN);
+    if(lis_esolver_set_requested_nev(esolver,4))
+        return fail("restore requested nev",LIS_BREAKDOWN);
+
     /* Existing converged-pair selection remains unchanged. */
-    esolver->nev = 4;
 
     esolver->evalue = (LIS_SCALAR *)calloc(6,sizeof(LIS_SCALAR));
     esolver->resid = (LIS_REAL *)calloc(6,sizeof(LIS_REAL));

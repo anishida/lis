@@ -273,6 +273,74 @@ lis_esolver_get_subspace_size(
     return LIS_SUCCESS;
 }
 
+/*
+ * -nev shares the existing esolver->nev slot with the result count of some
+ * eigensolver algorithms. This setter configures the requested count before
+ * the next solve, without changing any public LIS_EOPTIONS_* identifiers.
+ */
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_set_requested_nev"
+LIS_INT
+lis_esolver_set_requested_nev(
+    LIS_ESOLVER esolver,
+    LIS_INT requested_nev)
+{
+    LIS_INT err;
+
+    LIS_DEBUG_FUNC_IN;
+
+    err = lis_esolver_config_check(esolver);
+    if(err) return err;
+
+    if(requested_nev<0 ||
+       requested_nev>esolver->options[LIS_EOPTIONS_SUBSPACE])
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,
+            "requested eigenpair count must be zero or fit the subspace\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    if(esolver->nev==requested_nev)
+    {
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+    }
+
+    err = lis_esolver_config_reset_work(esolver);
+    if(err) return err;
+
+    esolver->nev = requested_nev;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_get_requested_nev"
+LIS_INT
+lis_esolver_get_requested_nev(
+    LIS_ESOLVER esolver,
+    LIS_INT *requested_nev)
+{
+    LIS_INT err;
+
+    LIS_DEBUG_FUNC_IN;
+
+    err = lis_esolver_config_check(esolver);
+    if(err) return err;
+    if(requested_nev==NULL)
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,
+            "requested eigenpair count output is NULL\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *requested_nev = esolver->nev;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_esolver_set_mode"
 LIS_INT
