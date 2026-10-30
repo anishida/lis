@@ -345,6 +345,65 @@ lis_matrix_split_triangular_topology_destroy(
         lis_matrix_split_topology_free(topology);
 }
 
+/*
+ * Accessors share the same encoded src mapping. The checked row callback
+ * validates the index before using them; matvec consumes validated topology.
+ */
+static inline LIS_SCALAR
+lis_matrix_split_shared_native_value(
+    LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW view,
+    LIS_INT src,
+    LIS_INT transposed)
+{
+    LIS_SCALAR value;
+    LIS_INT k;
+
+    if(src<0)
+        value=view->diag[-(src+1)];
+    else if(src<=view->topology->nnz)
+    {
+        k=src-1;
+        value=(transposed && !view->symmetric) ?
+            view->upper[k] : view->lower[k];
+    }
+    else
+    {
+        k=src-view->topology->nnz-1;
+        value=(transposed || view->symmetric) ?
+            view->lower[k] : view->upper[k];
+    }
+
+    return transposed ? conj(value) : value;
+}
+
+static inline LIS_SCALAR
+lis_matrix_split_shared_real64_value(
+    LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW view,
+    LIS_INT src,
+    LIS_INT transposed)
+{
+    LIS_INT k;
+    double value;
+
+    if(src<0)
+        value=view->diag64[-(src+1)];
+    else if(src<=view->topology->nnz)
+    {
+        k=src-1;
+        value=(transposed && !view->symmetric) ?
+            view->upper64[k] : view->lower64[k];
+    }
+    else
+    {
+        k=src-view->topology->nnz-1;
+        value=(transposed || view->symmetric) ?
+            view->lower64[k] : view->upper64[k];
+    }
+
+    /* A real64 value has no imaginary component to conjugate. */
+    return (LIS_SCALAR)value;
+}
+
 static LIS_INT
 lis_matrix_split_shared_value(
     LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW view,
@@ -352,75 +411,95 @@ lis_matrix_split_shared_value(
     LIS_SCALAR *value)
 {
     LIS_MATRIX_SPLIT_TRIANGULAR_TOPOLOGY topology;
-    uintmax_t offset;
 
     if(view==NULL || value==NULL || view->topology==NULL)
         return LIS_ERR_ILL_ARG;
 
     topology=view->topology;
-
-    /* Values remain owned by the caller and are converted on read only. */
-    if(view->real64)
-    {
-        if(src<0)
-        {
-            if(src==INT_MIN || -src-1>=topology->n || view->diag64==NULL)
-                return LIS_ERR_ILL_ARG;
-            *value=(LIS_SCALAR)view->diag64[-src-1];
-        }
-        else if(src>0 && src<=topology->nnz)
-        {
-            if(view->lower64==NULL) return LIS_ERR_ILL_ARG;
-            *value=(LIS_SCALAR)view->lower64[src-1];
-        }
-        else if(src>topology->nnz && src<=2*topology->nnz)
-        {
-            LIS_INT k=src-topology->nnz-1;
-            const double *array=view->symmetric ?
-                view->lower64 : view->upper64;
-            if(array==NULL) return LIS_ERR_ILL_ARG;
-            *value=(LIS_SCALAR)array[k];
-        }
-        else return LIS_ERR_ILL_ARG;
-        return LIS_SUCCESS;
-    }
-
     if(src<0)
     {
-        LIS_INT i=-src-1;
-        if(i<0 || i>=topology->n || view->diag==NULL)
+        /* -(src+1) is safe even for the minimum signed LIS_INT. */
+        if(-(src+1)>=topology->n)
             return LIS_ERR_ILL_ARG;
-        *value=view->diag[i];
-        return LIS_SUCCESS;
     }
-
-    if(src<=0)
+    else if(src==0 ||
+            (uintmax_t)(src-1)>=2u*(uintmax_t)topology->nnz)
         return LIS_ERR_ILL_ARG;
 
-    offset=(uintmax_t)(src-1);
-    if(offset<(uintmax_t)topology->nnz)
+    if(view->real64)
     {
-        if(view->lower==NULL)
+        if(view->diag64==NULL ||
+           (topology->nnz>0 && view->lower64==NULL) ||
+           (!view->symmetric && topology->nnz>0 && view->upper64==NULL))
             return LIS_ERR_ILL_ARG;
-        *value=view->lower[(size_t)offset];
-        return LIS_SUCCESS;
-    }
-
-    offset-=(uintmax_t)topology->nnz;
-    if(offset>=(uintmax_t)topology->nnz)
-        return LIS_ERR_ILL_ARG;
-
-    if(view->symmetric)
-    {
-        if(view->lower==NULL)
-            return LIS_ERR_ILL_ARG;
-        *value=view->lower[(size_t)offset];
+        *value=lis_matrix_split_shared_real64_value(view,src,LIS_FALSE);
     }
     else
     {
-        if(view->upper==NULL)
+        if(view->diag==NULL ||
+           (topology->nnz>0 && view->lower==NULL) ||
+           (!view->symmetric && topology->nnz>0 && view->upper==NULL))
             return LIS_ERR_ILL_ARG;
-        *value=view->upper[(size_t)offset];
+        *value=lis_matrix_split_shared_native_value(view,src,LIS_FALSE);
+    }
+
+    return LIS_SUCCESS;
+}
+
+/* Select native or real64 storage outside the hot row loops. */
+static LIS_INT
+lis_matrix_split_shared_matvec_impl(
+    void *user_data,
+    const LIS_SCALAR *x,
+    LIS_SCALAR *y,
+    LIS_INT transposed)
+{
+    LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW view;
+    LIS_MATRIX_SPLIT_TRIANGULAR_TOPOLOGY topology;
+    LIS_INT i,p;
+
+    view=(LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW)user_data;
+    if(view==NULL || x==NULL || y==NULL || view->topology==NULL ||
+       (view->real64 ? view->diag64==NULL : view->diag==NULL) ||
+       (view->topology->nnz>0 &&
+        (view->real64 ? view->lower64==NULL : view->lower==NULL)))
+        return LIS_ERR_ILL_ARG;
+
+    topology=view->topology;
+
+    if(view->real64)
+    {
+#ifdef _OPENMP
+#pragma omp parallel for private(p) schedule(static)
+#endif
+        for(i=0;i<topology->n;i++)
+        {
+            LIS_SCALAR sum=(LIS_SCALAR)0.0;
+            for(p=topology->row_ptr[i];p<topology->row_ptr[i+1];p++)
+            {
+                LIS_INT src=topology->row_src[p];
+                sum+=lis_matrix_split_shared_real64_value(
+                    view,src,transposed)*x[topology->row_col[p]];
+            }
+            y[i]=sum;
+        }
+    }
+    else
+    {
+#ifdef _OPENMP
+#pragma omp parallel for private(p) schedule(static)
+#endif
+        for(i=0;i<topology->n;i++)
+        {
+            LIS_SCALAR sum=(LIS_SCALAR)0.0;
+            for(p=topology->row_ptr[i];p<topology->row_ptr[i+1];p++)
+            {
+                LIS_INT src=topology->row_src[p];
+                sum+=lis_matrix_split_shared_native_value(
+                    view,src,transposed)*x[topology->row_col[p]];
+            }
+            y[i]=sum;
+        }
     }
 
     return LIS_SUCCESS;
@@ -432,64 +511,8 @@ lis_matrix_split_shared_matvec(
     const LIS_SCALAR *x,
     LIS_SCALAR *y)
 {
-    LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW view;
-    LIS_MATRIX_SPLIT_TRIANGULAR_TOPOLOGY topology;
-    LIS_INT i,p;
-
-    view=(LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW)user_data;
-    if(view==NULL || x==NULL || y==NULL || view->topology==NULL ||
-       (view->real64 ? view->diag64==NULL : view->diag==NULL) ||
-       (view->topology->nnz>0 &&
-        (view->real64 ? view->lower64==NULL : view->lower==NULL)))
-        return LIS_ERR_ILL_ARG;
-
-    topology=view->topology;
-
-#ifdef _OPENMP
-#pragma omp parallel for private(p) schedule(static)
-#endif
-    for(i=0;i<topology->n;i++)
-    {
-        LIS_SCALAR sum=(LIS_SCALAR)0.0;
-
-        for(p=topology->row_ptr[i];p<topology->row_ptr[i+1];p++)
-        {
-            LIS_INT src=topology->row_src[p];
-            LIS_SCALAR value;
-
-            if(view->real64)
-            {
-                if(src<0) value=(LIS_SCALAR)view->diag64[-src-1];
-                else if(src<=topology->nnz)
-                    value=(LIS_SCALAR)view->lower64[src-1];
-                else
-                {
-                    LIS_INT k=src-topology->nnz-1;
-                    value=(LIS_SCALAR)(view->symmetric ?
-                        view->lower64[k] : view->upper64[k]);
-                }
-            }
-            else if(src<0)
-            {
-                value=view->diag[-src-1];
-            }
-            else if(src<=topology->nnz)
-            {
-                value=view->lower[src-1];
-            }
-            else
-            {
-                LIS_INT k=src-topology->nnz-1;
-                value=view->symmetric ? view->lower[k] : view->upper[k];
-            }
-
-            sum+=value*x[topology->row_col[p]];
-        }
-
-        y[i]=sum;
-    }
-
-    return LIS_SUCCESS;
+    return lis_matrix_split_shared_matvec_impl(
+        user_data,x,y,LIS_FALSE);
 }
 
 static LIS_INT
@@ -498,65 +521,8 @@ lis_matrix_split_shared_matvech(
     const LIS_SCALAR *x,
     LIS_SCALAR *y)
 {
-    LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW view;
-    LIS_MATRIX_SPLIT_TRIANGULAR_TOPOLOGY topology;
-    LIS_INT i,p;
-
-    view=(LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW)user_data;
-    if(view==NULL || x==NULL || y==NULL || view->topology==NULL ||
-       (view->real64 ? view->diag64==NULL : view->diag==NULL) ||
-       (view->topology->nnz>0 &&
-        (view->real64 ? view->lower64==NULL : view->lower==NULL)))
-        return LIS_ERR_ILL_ARG;
-
-    topology=view->topology;
-
-#ifdef _OPENMP
-#pragma omp parallel for private(p) schedule(static)
-#endif
-    for(i=0;i<topology->n;i++)
-    {
-        LIS_SCALAR sum=(LIS_SCALAR)0.0;
-
-        for(p=topology->row_ptr[i];p<topology->row_ptr[i+1];p++)
-        {
-            LIS_INT src=topology->row_src[p];
-            LIS_SCALAR value;
-
-            if(view->real64)
-            {
-                if(src<0) value=(LIS_SCALAR)view->diag64[-src-1];
-                else if(src<=topology->nnz)
-                {
-                    LIS_INT k=src-1;
-                    value=(LIS_SCALAR)(view->symmetric ?
-                        view->lower64[k] : view->upper64[k]);
-                }
-                else value=(LIS_SCALAR)view->lower64[src-topology->nnz-1];
-            }
-            else if(src<0)
-            {
-                value=conj(view->diag[-src-1]);
-            }
-            else if(src<=topology->nnz)
-            {
-                LIS_INT k=src-1;
-                value=conj(view->symmetric ?
-                    view->lower[k] : view->upper[k]);
-            }
-            else
-            {
-                LIS_INT k=src-topology->nnz-1;
-                value=conj(view->lower[k]);
-            }
-
-            sum+=value*x[topology->row_col[p]];
-        }
-
-        y[i]=sum;
-    }
-
-    return LIS_SUCCESS;
+    return lis_matrix_split_shared_matvec_impl(
+        user_data,x,y,LIS_TRUE);
 }
 
 static LIS_INT

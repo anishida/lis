@@ -130,6 +130,8 @@ void lis_matrix_split_triangular_shared_view_destroy(
  * Values are converted only on row/diagonal/matvec reads. The imaginary
  * component is zero for complex LIS. In wider-precision configurations the
  * source remains IEEE double precision; importing does not create precision.
+ * If LIS_SCALAR has a narrower range or precision than double, conversion can
+ * round values or overflow to the target representation; no range check is made.
  *
  * Arrays belong to the caller, must outlive all use of the view, and must
  * not be modified while an LIS operation is active. For updates in place,

@@ -147,6 +147,24 @@ int main(int argc,char **argv)
     if(lis_matrix_split_triangular_shared_view_set_values_real64(
            native_view,diag,lower,upper)==LIS_SUCCESS)goto done;
 
+#ifdef _COMPLEX
+    /* Native complex values must be conjugated by matvech, not by matvec. */
+    {
+        LIS_SCALAR complex_diag[3]={
+            (LIS_SCALAR)4+(LIS_SCALAR)I,(LIS_SCALAR)5,(LIS_SCALAR)6};
+        if(lis_matrix_split_triangular_shared_view_set_values(
+               native_view,complex_diag,typed_lower,typed_upper))goto done;
+        if(lis_matvec(native,x,y) ||
+           cabs(y->value[0]-((LIS_SCALAR)42+(LIS_SCALAR)I))>1.0e-11)
+            goto done;
+        if(lis_matvech(native,x,y) ||
+           cabs(y->value[0]-((LIS_SCALAR)12-(LIS_SCALAR)I))>1.0e-11)
+            goto done;
+        if(lis_matrix_split_triangular_shared_view_set_values(
+               native_view,typed_diag,typed_lower,typed_upper))goto done;
+    }
+#endif
+
     failed=0;
 done:
     if(failed)fprintf(stderr,"real64 shared view regression failed (err=%d)\n",(int)err);
