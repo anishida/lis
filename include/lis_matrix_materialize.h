@@ -96,9 +96,10 @@ void lis_matrix_csr_cache_destroy(
  * The source matrix and RHS/solution vectors are borrowed, never destroyed
  * by the session. They must remain valid while in use. The caller must mark
  * source structure/value changes using the existing generation API; this is
- * also required for nested operator operands. On changes that can replace or
- * refresh a cached CSR matrix, the session releases persistent solver state
- * BEFORE touching that cache, preventing stale preconditioner references.
+ * also required for nested operator operands. Each call determines the matrix
+ * policy before materialization and releases incompatible persistent state
+ * BEFORE any cache mutation. The session tracks cache rebuild epochs rather
+ * than CSR pointer identity, which can be recycled by an allocator.
  * Unchanged inputs can retain persistent solver/preconditioner state.
  *
  * A session is not thread-safe: do not use, configure or destroy it
@@ -107,8 +108,11 @@ void lis_matrix_csr_cache_destroy(
  * reset() drops both reusable solver state and the CSR cache, while keeping
  * solver options and the AUTO sequence policy.
  *
- * The policy/action outputs in solve() are optional. The session does not
- * imply any change to ordinary lis_solve() or lis_solve_sequence() behavior.
+ * The policy/action outputs in solve() are optional. They are written only
+ * after a successful solve, and retain their previous values on any error.
+ * MPI-enabled one-rank operation is tested; this API does not add distributed
+ * cached CSR support or guarantee collective synchronization across ranks.
+ * The session does not change lis_solve() or lis_solve_sequence() behavior.
  */
 typedef struct LIS_MATRIX_AUTO_SESSION_STRUCT *LIS_MATRIX_AUTO_SESSION;
 
