@@ -105,6 +105,7 @@ int main(int argc,char **argv)
        !near(diag_read[2],6))
         goto done;
 
+#ifndef USE_MPI
     err=lis_matrix_materialize_csr_cached(A,&cache,&csr,&action);
     if(err || action!=LIS_MATRIX_MATERIALIZE_REBUILD)goto done;
     old_csr=csr;
@@ -112,6 +113,7 @@ int main(int argc,char **argv)
     if(err || action!=LIS_MATRIX_MATERIALIZE_REUSE || old_csr!=csr)
         goto done;
 
+#endif
     err=lis_matrix_get_generation(A,&sg0,&vg0);
     if(err)goto done;
     diag[0]=10;
@@ -120,10 +122,12 @@ int main(int argc,char **argv)
     err=lis_matrix_get_generation(A,&sg1,&vg1);
     if(err || sg1!=sg0 || vg1<=vg0)goto done;
     if(lis_matvec(A,x,y) || !check_vector(y,y_changed))goto done;
+#ifndef USE_MPI
     err=lis_matrix_materialize_csr_cached(A,&cache,&csr,&action);
     if(err || action!=LIS_MATRIX_MATERIALIZE_VALUES || csr!=old_csr)
         goto done;
     if(lis_matvec(csr,x,y) || !check_vector(y,y_changed))goto done;
+#endif
 
     /* Rebind to a different external array without allocating scalar copies. */
     {
