@@ -1223,6 +1223,24 @@ extern "C"
 	extern LIS_INT lis_vector_set_external(LIS_VECTOR vec, LIS_SCALAR *value);
 /*NEH support for extended "solve_kernel" workflow*/
 	extern LIS_INT lis_vector_psd_reset_scale(LIS_VECTOR vec); 
+/*
+ * Strided application real64 transfers for default-precision local vectors.
+ * Import/export validate input before modifying the destination. REJECT_LOSS
+ * refuses nonreal complex values or nonrepresentable outputs.
+ * NULL src/dst is permitted for zero-length vectors and valid stride/policy.
+ * Nonfinite input, including ignored imaginary parts under ALLOW_LOSS,
+ * is rejected rather than exporting potentially divergent solver values.
+ * The transfer remains serial to preserve validate-before-write behavior.
+ * This PR provides C-only APIs; Fortran wrappers are not included.
+ */
+#define LIS_VECTOR_REAL64_REJECT_LOSS 0
+#define LIS_VECTOR_REAL64_ALLOW_LOSS  1
+extern LIS_INT lis_vector_import_real64(
+    LIS_VECTOR vector,const double *src,LIS_INT length,LIS_INT stride);
+extern LIS_INT lis_vector_export_real64(
+    LIS_VECTOR vector,double *dst,LIS_INT length,LIS_INT stride,
+    LIS_INT loss_policy);
+
 	extern LIS_INT lis_vector_destroy(LIS_VECTOR vec);
 	extern LIS_INT lis_vector_duplicate(void *vin, LIS_VECTOR *vout);
 	extern LIS_INT lis_vector_get_size(LIS_VECTOR v, LIS_INT *local_n, LIS_INT *global_n);
