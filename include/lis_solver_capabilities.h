@@ -40,6 +40,25 @@ extern LIS_INT lis_solver_get_effective_capabilities(
     LIS_SOLVER solver,
     LIS_INT *capabilities);
 
+/*
+ * Generic preflight for exact and near-nullspace settings.  The returned
+ * bitmask is zero when the current solver profile is compatible.
+ * Query-only: neither nullspace vectors nor numerical values are changed.
+ * An application may report the conflicting settings before a large setup.
+ */
+#define LIS_NULLSPACE_CONFIG_EXACT_SOLVER     0x01
+#define LIS_NULLSPACE_CONFIG_EXACT_SCALE      0x02
+#define LIS_NULLSPACE_CONFIG_EXACT_PRECISION  0x04
+/* Unsupported outer solver / effective preconditioner combination.
+ * The current solve kernel checks the top-level preconditioner type;
+ * nested Hybrid+MFAMG is not treated as direct MFAMG here. */
+#define LIS_NULLSPACE_CONFIG_NEAR_COMBINATION 0x08
+#define LIS_NULLSPACE_CONFIG_NEAR_PRECISION   0x10
+
+extern LIS_INT lis_solver_check_nullspace_configuration(
+    LIS_SOLVER solver,
+    LIS_INT *issues);
+
 #ifdef __cplusplus
 }
 #endif
