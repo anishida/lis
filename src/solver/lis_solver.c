@@ -238,6 +238,8 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->num_threads = 0;
         solver->fgcrodr_state = NULL;
 	solver->sequence_policy = LIS_SEQUENCE_POLICY_MANUAL;
+	solver->sequence_precon_refresh_policy =
+		LIS_SEQUENCE_PRECON_REFRESH_SAFE;
 	solver->sequence_precon = NULL;
 	solver->sequence_precon_matrix = NULL;
 	solver->sequence_precon_structure_generation = 0;
@@ -2688,6 +2690,7 @@ LIS_INT lis_solver_sequence_prepare_precon(
 {
 	LIS_INT err;
 	LIS_INT precon_type;
+	LIS_INT frozen_update;
 	LIS_UNSIGNED_INT structure_generation;
 	LIS_UNSIGNED_INT value_generation;
 
@@ -2778,8 +2781,20 @@ LIS_INT lis_solver_sequence_prepare_precon(
            /*
             * Refresh only numerical preconditioner state.
             */
-           err = lis_precon_psd_update(
-                   solver,solver->sequence_precon);
+           frozen_update =
+               solver->sequence_precon_refresh_policy==
+                   LIS_SEQUENCE_PRECON_REFRESH_FROZEN_PATTERN &&
+               precon_type==LIS_PRECON_TYPE_ILUT;
+           if( frozen_update )
+           {
+                   err = lis_precon_update_ilut_frozen(
+                           solver,solver->sequence_precon);
+           }
+           else
+           {
+                   err = lis_precon_psd_update(
+                           solver,solver->sequence_precon);
+           }
 
            if( err==LIS_SUCCESS )
            {
@@ -2806,10 +2821,16 @@ LIS_INT lis_solver_sequence_prepare_precon(
            }
 
            /*
-            * lis_precon_psd_update() destroys the preconditioner on
-            * failure.  Clear cached references before falling back to
-            * a full create.
+            * The PSD updater destroys its object on failure. In contrast,
+            * a failed frozen numerical refresh leaves the old object alive.
+            * Release that object exactly once before recreating factors.
             */
+           if( frozen_update )
+           {
+                   LIS_INT destroy_err =
+                       lis_solver_sequence_precon_destroy(solver);
+                   if( destroy_err ) return destroy_err;
+           }
            solver->sequence_precon = NULL;
            solver->precon = NULL;
            solver->sequence_precon_matrix = NULL;
@@ -3034,6 +3055,46 @@ LIS_INT lis_solver_get_precon_half(
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_sequence_precon_refresh_policy"
+LIS_INT lis_solver_set_sequence_precon_refresh_policy(
+    LIS_SOLVER solver,
+    LIS_INT policy)
+{
+    if( solver==NULL ||
+        (policy!=LIS_SEQUENCE_PRECON_REFRESH_SAFE &&
+         policy!=LIS_SEQUENCE_PRECON_REFRESH_FROZEN_PATTERN) )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid sequence preconditioner refresh policy\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    solver->sequence_precon_refresh_policy = policy;
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_get_sequence_precon_refresh_policy"
+LIS_INT lis_solver_get_sequence_precon_refresh_policy(
+    LIS_SOLVER solver,
+    LIS_INT *policy)
+{
+    if( solver==NULL || policy==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid sequence preconditioner refresh policy query\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *policy = solver->sequence_precon_refresh_policy;
+    return LIS_SUCCESS;
 }
 
 

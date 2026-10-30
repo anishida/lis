@@ -127,7 +127,8 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) \
 	testgcrodrsequence$(EXEEXT) testmatrixgeneration$(EXEEXT) \
 	testexternalstorage$(EXEEXT) testmatrixmaterialize$(EXEEXT) \
-	testmatrixpolicysolve$(EXEEXT) testsplitview$(EXEEXT) \
+	testmatrixpolicysolve$(EXEEXT) testfrozenilut$(EXEEXT) \
+	benchfrozenilut$(EXEEXT) testsplitview$(EXEEXT) \
 	testsplitviewi64$(EXEEXT) testmatrixoperatorlifecycle$(EXEEXT) \
 	testmatrixoperatormpi$(EXEEXT) testsequence$(EXEEXT) \
 	testwarmstart$(EXEEXT) testrecovery$(EXEEXT) \
@@ -187,14 +188,18 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(testdir)" \
 @ENABLE_F90_TRUE@am__EXEEXT_3 = test2f$(EXEEXT) test6f$(EXEEXT)
 @ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__EXEEXT_4 = test8f$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(test_PROGRAMS)
-am_esolve_OBJECTS = etest5.$(OBJEXT)
-esolve_OBJECTS = $(am_esolve_OBJECTS)
-esolve_LDADD = $(LDADD)
-esolve_DEPENDENCIES =
+am_benchfrozenilut_OBJECTS = benchfrozenilut.$(OBJEXT)
+benchfrozenilut_OBJECTS = $(am_benchfrozenilut_OBJECTS)
+benchfrozenilut_LDADD = $(LDADD)
+benchfrozenilut_DEPENDENCIES =
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+am_esolve_OBJECTS = etest5.$(OBJEXT)
+esolve_OBJECTS = $(am_esolve_OBJECTS)
+esolve_LDADD = $(LDADD)
+esolve_DEPENDENCIES =
 am_esolver_OBJECTS = etest5b.$(OBJEXT)
 esolver_OBJECTS = $(am_esolver_OBJECTS)
 esolver_LDADD = $(LDADD)
@@ -455,6 +460,10 @@ am_testfgcrodr_OBJECTS = testfgcrodr.$(OBJEXT)
 testfgcrodr_OBJECTS = $(am_testfgcrodr_OBJECTS)
 testfgcrodr_LDADD = $(LDADD)
 testfgcrodr_DEPENDENCIES =
+am_testfrozenilut_OBJECTS = testfrozenilut.$(OBJEXT)
+testfrozenilut_OBJECTS = $(am_testfrozenilut_OBJECTS)
+testfrozenilut_LDADD = $(LDADD)
+testfrozenilut_DEPENDENCIES =
 am_testgcrodrconfig_OBJECTS = testgcrodrconfig.$(OBJEXT)
 testgcrodrconfig_OBJECTS = $(am_testgcrodrconfig_OBJECTS)
 testgcrodrconfig_LDADD = $(LDADD)
@@ -749,7 +758,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/include
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
+am__depfiles_remade = ./$(DEPDIR)/benchfrozenilut.Po \
+	./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
 	./$(DEPDIR)/etest3.Po ./$(DEPDIR)/etest4.Po \
 	./$(DEPDIR)/etest5.Po ./$(DEPDIR)/etest5b.Po \
 	./$(DEPDIR)/etest6.Po ./$(DEPDIR)/etest7.Po \
@@ -778,7 +788,7 @@ am__depfiles_remade = ./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
 	./$(DEPDIR)/testfeastcontour.Po \
 	./$(DEPDIR)/testfeastfoundation.Po \
 	./$(DEPDIR)/testfeastshifted.Po ./$(DEPDIR)/testfgcrodr.Po \
-	./$(DEPDIR)/testgcrodrconfig.Po \
+	./$(DEPDIR)/testfrozenilut.Po ./$(DEPDIR)/testgcrodrconfig.Po \
 	./$(DEPDIR)/testgcrodroptions.Po \
 	./$(DEPDIR)/testgcrodrsequence.Po ./$(DEPDIR)/testgmreswork.Po \
 	./$(DEPDIR)/testhalfconfig.Po ./$(DEPDIR)/testhalfconvert.Po \
@@ -858,15 +868,16 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
-	$(etest1f_SOURCES) $(etest2_SOURCES) $(etest3_SOURCES) \
-	$(etest4_SOURCES) $(etest4f_SOURCES) $(etest5_SOURCES) \
-	$(etest5b_SOURCES) $(etest6_SOURCES) $(etest7_SOURCES) \
-	$(gesolve_SOURCES) $(gesolver_SOURCES) $(getest1_SOURCES) \
-	$(getest5_SOURCES) $(getest5b_SOURCES) \
-	$(getestoperator_SOURCES) $(getestuser_SOURCES) \
-	$(hpcg_kernel_SOURCES) $(hpcg_spmvtest_SOURCES) \
-	$(lsolve_SOURCES) $(spmvtest1_SOURCES) $(spmvtest2_SOURCES) \
+SOURCES = $(benchfrozenilut_SOURCES) $(esolve_SOURCES) \
+	$(esolver_SOURCES) $(etest1_SOURCES) $(etest1f_SOURCES) \
+	$(etest2_SOURCES) $(etest3_SOURCES) $(etest4_SOURCES) \
+	$(etest4f_SOURCES) $(etest5_SOURCES) $(etest5b_SOURCES) \
+	$(etest6_SOURCES) $(etest7_SOURCES) $(gesolve_SOURCES) \
+	$(gesolver_SOURCES) $(getest1_SOURCES) $(getest5_SOURCES) \
+	$(getest5b_SOURCES) $(getestoperator_SOURCES) \
+	$(getestuser_SOURCES) $(hpcg_kernel_SOURCES) \
+	$(hpcg_spmvtest_SOURCES) $(lsolve_SOURCES) \
+	$(spmvtest1_SOURCES) $(spmvtest2_SOURCES) \
 	$(spmvtest2b_SOURCES) $(spmvtest3_SOURCES) \
 	$(spmvtest3b_SOURCES) $(spmvtest4_SOURCES) \
 	$(spmvtest5_SOURCES) $(test1_SOURCES) $(test1f_SOURCES) \
@@ -884,16 +895,16 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	testexactnullspace.c $(testexternalstorage_SOURCES) \
 	$(testfeastcontour_SOURCES) $(testfeastfoundation_SOURCES) \
 	$(testfeastshifted_SOURCES) $(testfgcrodr_SOURCES) \
-	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
-	$(testgcrodrsequence_SOURCES) $(testgmreswork_SOURCES) \
-	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
-	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
-	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
-	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
-	$(testhybridnested_SOURCES) $(testilupivot_SOURCES) \
-	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
-	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
-	$(testmatrixmaterialize_SOURCES) \
+	$(testfrozenilut_SOURCES) $(testgcrodrconfig_SOURCES) \
+	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
+	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
+	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
+	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
+	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
+	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
+	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
+	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
+	$(testmatrixgraph_SOURCES) $(testmatrixmaterialize_SOURCES) \
 	$(testmatrixoperatorlifecycle_SOURCES) \
 	$(testmatrixoperatormpi_SOURCES) \
 	$(testmatrixpolicysolve_SOURCES) $(testmatvecblock_SOURCES) \
@@ -918,7 +929,8 @@ SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(testuserprecon_SOURCES) $(testuserrow_SOURCES) \
 	$(testvectornrm2mpi_SOURCES) $(testwarmstart_SOURCES) \
 	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
-DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
+DIST_SOURCES = $(benchfrozenilut_SOURCES) $(esolve_SOURCES) \
+	$(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
 	$(etest3_SOURCES) $(etest4_SOURCES) \
 	$(am__etest4f_SOURCES_DIST) $(etest5_SOURCES) \
@@ -946,16 +958,16 @@ DIST_SOURCES = $(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	testexactnullspace.c $(testexternalstorage_SOURCES) \
 	$(testfeastcontour_SOURCES) $(testfeastfoundation_SOURCES) \
 	$(testfeastshifted_SOURCES) $(testfgcrodr_SOURCES) \
-	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
-	$(testgcrodrsequence_SOURCES) $(testgmreswork_SOURCES) \
-	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
-	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
-	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
-	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
-	$(testhybridnested_SOURCES) $(testilupivot_SOURCES) \
-	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
-	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
-	$(testmatrixmaterialize_SOURCES) \
+	$(testfrozenilut_SOURCES) $(testgcrodrconfig_SOURCES) \
+	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
+	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
+	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
+	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
+	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
+	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
+	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
+	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
+	$(testmatrixgraph_SOURCES) $(testmatrixmaterialize_SOURCES) \
 	$(testmatrixoperatorlifecycle_SOURCES) \
 	$(testmatrixoperatormpi_SOURCES) \
 	$(testmatrixpolicysolve_SOURCES) $(testmatvecblock_SOURCES) \
@@ -1363,6 +1375,8 @@ testmatrixgeneration_SOURCES = testmatrixgeneration.c
 testexternalstorage_SOURCES = testexternalstorage.c
 testmatrixmaterialize_SOURCES = testmatrixmaterialize.c
 testmatrixpolicysolve_SOURCES = testmatrixpolicysolve.c
+testfrozenilut_SOURCES = testfrozenilut.c
+benchfrozenilut_SOURCES = benchfrozenilut.c
 testsplitview_SOURCES = testsplitview.c
 testsplitviewi64_SOURCES = testsplitviewi64.c
 testmatrixoperatorlifecycle_SOURCES = testmatrixoperatorlifecycle.c
@@ -1539,11 +1553,15 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) \
 	testgcrodrsequence$(EXEEXT) testmatrixgeneration$(EXEEXT) \
 	testexternalstorage$(EXEEXT) testmatrixmaterialize$(EXEEXT) \
-	testmatrixpolicysolve$(EXEEXT) testsplitview$(EXEEXT) \
-	testsplitviewi64$(EXEEXT) testmatrixoperatorlifecycle$(EXEEXT) \
-	testsequence$(EXEEXT) testwarmstart$(EXEEXT) \
-	testrecovery$(EXEEXT) testthreads$(EXEEXT) \
-	testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
+	testmatrixpolicysolve$(EXEEXT) testfrozenilut$(EXEEXT) \
+	testsplitview$(EXEEXT) testsplitviewi64$(EXEEXT) \
+	testmatrixoperatorlifecycle$(EXEEXT) testsequence$(EXEEXT) \
+	testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) \
+	testmatrixmaterialize$(EXEEXT) testfrozenilut$(EXEEXT) \
+	testsplitview$(EXEEXT) testsplitviewi64$(EXEEXT) \
+	testmatrixoperatorlifecycle$(EXEEXT) testsequence$(EXEEXT) \
+	testwarmstart$(EXEEXT) testrecovery$(EXEEXT) \
+	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
 	testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
 	testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) \
 	testnullspacecandidates$(EXEEXT) testesolverselection$(EXEEXT) \
@@ -1671,6 +1689,10 @@ uninstall-testPROGRAMS:
 clean-testPROGRAMS:
 	$(am__rm_f) $(test_PROGRAMS)
 	test -z "$(EXEEXT)" || $(am__rm_f) $(test_PROGRAMS:$(EXEEXT)=)
+
+benchfrozenilut$(EXEEXT): $(benchfrozenilut_OBJECTS) $(benchfrozenilut_DEPENDENCIES) $(EXTRA_benchfrozenilut_DEPENDENCIES) 
+	@rm -f benchfrozenilut$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(benchfrozenilut_OBJECTS) $(benchfrozenilut_LDADD) $(LIBS)
 
 esolve$(EXEEXT): $(esolve_OBJECTS) $(esolve_DEPENDENCIES) $(EXTRA_esolve_DEPENDENCIES) 
 	@rm -f esolve$(EXEEXT)
@@ -1927,6 +1949,10 @@ testfeastshifted$(EXEEXT): $(testfeastshifted_OBJECTS) $(testfeastshifted_DEPEND
 testfgcrodr$(EXEEXT): $(testfgcrodr_OBJECTS) $(testfgcrodr_DEPENDENCIES) $(EXTRA_testfgcrodr_DEPENDENCIES) 
 	@rm -f testfgcrodr$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testfgcrodr_OBJECTS) $(testfgcrodr_LDADD) $(LIBS)
+
+testfrozenilut$(EXEEXT): $(testfrozenilut_OBJECTS) $(testfrozenilut_DEPENDENCIES) $(EXTRA_testfrozenilut_DEPENDENCIES) 
+	@rm -f testfrozenilut$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testfrozenilut_OBJECTS) $(testfrozenilut_LDADD) $(LIBS)
 
 testgcrodrconfig$(EXEEXT): $(testgcrodrconfig_OBJECTS) $(testgcrodrconfig_DEPENDENCIES) $(EXTRA_testgcrodrconfig_DEPENDENCIES) 
 	@rm -f testgcrodrconfig$(EXEEXT)
@@ -2213,6 +2239,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/benchfrozenilut.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/etest1.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/etest2.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/etest3.Po@am__quote@ # am--include-marker
@@ -2262,6 +2289,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfeastfoundation.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfeastshifted.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodr.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfrozenilut.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testgcrodrconfig.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testgcrodroptions.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testgcrodrsequence.Po@am__quote@ # am--include-marker
@@ -2987,6 +3015,13 @@ testmatrixpolicysolve.log: testmatrixpolicysolve$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testfrozenilut.log: testfrozenilut$(EXEEXT)
+	@p='testfrozenilut$(EXEEXT)'; \
+	b='testfrozenilut'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 testsplitview.log: testsplitview$(EXEEXT)
 	@p='testsplitview$(EXEEXT)'; \
 	b='testsplitview'; \
@@ -3228,6 +3263,7 @@ clean-am: clean-binPROGRAMS clean-generic clean-libtool \
 	clean-testPROGRAMS mostlyclean-am
 
 distclean: distclean-am
+	-rm -f ./$(DEPDIR)/benchfrozenilut.Po
 	-rm -f ./$(DEPDIR)/etest1.Po
 	-rm -f ./$(DEPDIR)/etest2.Po
 	-rm -f ./$(DEPDIR)/etest3.Po
@@ -3277,6 +3313,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testfeastfoundation.Po
 	-rm -f ./$(DEPDIR)/testfeastshifted.Po
 	-rm -f ./$(DEPDIR)/testfgcrodr.Po
+	-rm -f ./$(DEPDIR)/testfrozenilut.Po
 	-rm -f ./$(DEPDIR)/testgcrodrconfig.Po
 	-rm -f ./$(DEPDIR)/testgcrodroptions.Po
 	-rm -f ./$(DEPDIR)/testgcrodrsequence.Po
@@ -3384,6 +3421,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
+	-rm -f ./$(DEPDIR)/benchfrozenilut.Po
 	-rm -f ./$(DEPDIR)/etest1.Po
 	-rm -f ./$(DEPDIR)/etest2.Po
 	-rm -f ./$(DEPDIR)/etest3.Po
@@ -3433,6 +3471,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testfeastfoundation.Po
 	-rm -f ./$(DEPDIR)/testfeastshifted.Po
 	-rm -f ./$(DEPDIR)/testfgcrodr.Po
+	-rm -f ./$(DEPDIR)/testfrozenilut.Po
 	-rm -f ./$(DEPDIR)/testgcrodrconfig.Po
 	-rm -f ./$(DEPDIR)/testgcrodroptions.Po
 	-rm -f ./$(DEPDIR)/testgcrodrsequence.Po

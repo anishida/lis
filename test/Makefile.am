@@ -23,7 +23,7 @@ test_PROGRAMS = testesubspaceretry etest1 etest2 etest3 etest4 etest5 etest5b et
         testworkreuse testprebuiltuser testshellscale testsymmdiagguard testilupivot \
         testparamupdate testbreakretry testchangingsystem testkrylovrobust testnearnullspace \
         testcoarsesetup testcoarseapply testgcrodroptions testgcrodrconfig testgcrodrsequence \
-        testmatrixgeneration testexternalstorage testmatrixmaterialize testmatrixpolicysolve testsplitview testsplitviewi64 testmatrixoperatorlifecycle testmatrixoperatormpi testsequence testwarmstart testrecovery \
+        testmatrixgeneration testexternalstorage testmatrixmaterialize testmatrixpolicysolve testfrozenilut benchfrozenilut testsplitview testsplitviewi64 testmatrixoperatorlifecycle testmatrixoperatormpi testsequence testwarmstart testrecovery \
         testthreads testfgcrodr testmfamg testmfamggalerkin testexactnullspace testhalfconfig testhalfconvert \
         testfeastfoundation testfeastcontour testfeastshifted testnullspacecandidates testesolverselection \
 	testprojectedeigen testprojectedhermitian testblockgram \
@@ -39,6 +39,8 @@ testmatrixgeneration_SOURCES = testmatrixgeneration.c
 testexternalstorage_SOURCES = testexternalstorage.c
 testmatrixmaterialize_SOURCES = testmatrixmaterialize.c
 testmatrixpolicysolve_SOURCES = testmatrixpolicysolve.c
+testfrozenilut_SOURCES = testfrozenilut.c
+benchfrozenilut_SOURCES = benchfrozenilut.c
 testsplitview_SOURCES = testsplitview.c
 testsplitviewi64_SOURCES = testsplitviewi64.c
 testmatrixoperatorlifecycle_SOURCES = testmatrixoperatorlifecycle.c
@@ -229,7 +231,8 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) testmatvecblock$(EX
         testbreakretry$(EXEEXT) testchangingsystem$(EXEEXT) testkrylovrobust$(EXEEXT) \
         testnearnullspace$(EXEEXT) testcoarsesetup$(EXEEXT) testcoarseapply$(EXEEXT) \
         testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) testgcrodrsequence$(EXEEXT) \
-        testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testmatrixmaterialize$(EXEEXT) testmatrixpolicysolve$(EXEEXT) testsplitview$(EXEEXT) testsplitviewi64$(EXEEXT) testmatrixoperatorlifecycle$(EXEEXT) testsequence$(EXEEXT) \
+        testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testmatrixmaterialize$(EXEEXT) testmatrixpolicysolve$(EXEEXT) testfrozenilut$(EXEEXT) testsplitview$(EXEEXT) testsplitviewi64$(EXEEXT) testmatrixoperatorlifecycle$(EXEEXT) testsequence$(EXEEXT) \
+        testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testmatrixmaterialize$(EXEEXT) testfrozenilut$(EXEEXT) testsplitview$(EXEEXT) testsplitviewi64$(EXEEXT) testmatrixoperatorlifecycle$(EXEEXT) testsequence$(EXEEXT) \
         testwarmstart$(EXEEXT) testrecovery$(EXEEXT) testthreads$(EXEEXT) \
         testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
         testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) testnullspacecandidates$(EXEEXT) testesolverselection$(EXEEXT)
