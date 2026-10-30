@@ -38,6 +38,8 @@ struct LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW_STRUCT
     const LIS_SCALAR *diag;
     const LIS_SCALAR *lower;
     const LIS_SCALAR *upper;
+    LIS_INT real64;
+    const double *diag64, *lower64, *upper64;
 };
 
 static LIS_INT
@@ -343,6 +345,65 @@ lis_matrix_split_triangular_topology_destroy(
         lis_matrix_split_topology_free(topology);
 }
 
+/*
+ * Accessors share the same encoded src mapping. The checked row callback
+ * validates the index before using them; matvec consumes validated topology.
+ */
+static inline LIS_SCALAR
+lis_matrix_split_shared_native_value(
+    LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW view,
+    LIS_INT src,
+    LIS_INT transposed)
+{
+    LIS_SCALAR value;
+    LIS_INT k;
+
+    if(src<0)
+        value=view->diag[-(src+1)];
+    else if(src<=view->topology->nnz)
+    {
+        k=src-1;
+        value=(transposed && !view->symmetric) ?
+            view->upper[k] : view->lower[k];
+    }
+    else
+    {
+        k=src-view->topology->nnz-1;
+        value=(transposed || view->symmetric) ?
+            view->lower[k] : view->upper[k];
+    }
+
+    return transposed ? conj(value) : value;
+}
+
+static inline LIS_SCALAR
+lis_matrix_split_shared_real64_value(
+    LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW view,
+    LIS_INT src,
+    LIS_INT transposed)
+{
+    LIS_INT k;
+    double value;
+
+    if(src<0)
+        value=view->diag64[-(src+1)];
+    else if(src<=view->topology->nnz)
+    {
+        k=src-1;
+        value=(transposed && !view->symmetric) ?
+            view->upper64[k] : view->lower64[k];
+    }
+    else
+    {
+        k=src-view->topology->nnz-1;
+        value=(transposed || view->symmetric) ?
+            view->lower64[k] : view->upper64[k];
+    }
+
+    /* A real64 value has no imaginary component to conjugate. */
+    return (LIS_SCALAR)value;
+}
+
 static LIS_INT
 lis_matrix_split_shared_value(
     LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW view,
@@ -350,49 +411,95 @@ lis_matrix_split_shared_value(
     LIS_SCALAR *value)
 {
     LIS_MATRIX_SPLIT_TRIANGULAR_TOPOLOGY topology;
-    uintmax_t offset;
 
     if(view==NULL || value==NULL || view->topology==NULL)
         return LIS_ERR_ILL_ARG;
 
     topology=view->topology;
-
     if(src<0)
     {
-        LIS_INT i=-src-1;
-        if(i<0 || i>=topology->n || view->diag==NULL)
+        /* -(src+1) is safe even for the minimum signed LIS_INT. */
+        if(-(src+1)>=topology->n)
             return LIS_ERR_ILL_ARG;
-        *value=view->diag[i];
-        return LIS_SUCCESS;
     }
-
-    if(src<=0)
+    else if(src==0 ||
+            (uintmax_t)(src-1)>=2u*(uintmax_t)topology->nnz)
         return LIS_ERR_ILL_ARG;
 
-    offset=(uintmax_t)(src-1);
-    if(offset<(uintmax_t)topology->nnz)
+    if(view->real64)
     {
-        if(view->lower==NULL)
+        if(view->diag64==NULL ||
+           (topology->nnz>0 && view->lower64==NULL) ||
+           (!view->symmetric && topology->nnz>0 && view->upper64==NULL))
             return LIS_ERR_ILL_ARG;
-        *value=view->lower[(size_t)offset];
-        return LIS_SUCCESS;
-    }
-
-    offset-=(uintmax_t)topology->nnz;
-    if(offset>=(uintmax_t)topology->nnz)
-        return LIS_ERR_ILL_ARG;
-
-    if(view->symmetric)
-    {
-        if(view->lower==NULL)
-            return LIS_ERR_ILL_ARG;
-        *value=view->lower[(size_t)offset];
+        *value=lis_matrix_split_shared_real64_value(view,src,LIS_FALSE);
     }
     else
     {
-        if(view->upper==NULL)
+        if(view->diag==NULL ||
+           (topology->nnz>0 && view->lower==NULL) ||
+           (!view->symmetric && topology->nnz>0 && view->upper==NULL))
             return LIS_ERR_ILL_ARG;
-        *value=view->upper[(size_t)offset];
+        *value=lis_matrix_split_shared_native_value(view,src,LIS_FALSE);
+    }
+
+    return LIS_SUCCESS;
+}
+
+/* Select native or real64 storage outside the hot row loops. */
+static LIS_INT
+lis_matrix_split_shared_matvec_impl(
+    void *user_data,
+    const LIS_SCALAR *x,
+    LIS_SCALAR *y,
+    LIS_INT transposed)
+{
+    LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW view;
+    LIS_MATRIX_SPLIT_TRIANGULAR_TOPOLOGY topology;
+    LIS_INT i,p;
+
+    view=(LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW)user_data;
+    if(view==NULL || x==NULL || y==NULL || view->topology==NULL ||
+       (view->real64 ? view->diag64==NULL : view->diag==NULL) ||
+       (view->topology->nnz>0 &&
+        (view->real64 ? view->lower64==NULL : view->lower==NULL)))
+        return LIS_ERR_ILL_ARG;
+
+    topology=view->topology;
+
+    if(view->real64)
+    {
+#ifdef _OPENMP
+#pragma omp parallel for private(p) schedule(static)
+#endif
+        for(i=0;i<topology->n;i++)
+        {
+            LIS_SCALAR sum=(LIS_SCALAR)0.0;
+            for(p=topology->row_ptr[i];p<topology->row_ptr[i+1];p++)
+            {
+                LIS_INT src=topology->row_src[p];
+                sum+=lis_matrix_split_shared_real64_value(
+                    view,src,transposed)*x[topology->row_col[p]];
+            }
+            y[i]=sum;
+        }
+    }
+    else
+    {
+#ifdef _OPENMP
+#pragma omp parallel for private(p) schedule(static)
+#endif
+        for(i=0;i<topology->n;i++)
+        {
+            LIS_SCALAR sum=(LIS_SCALAR)0.0;
+            for(p=topology->row_ptr[i];p<topology->row_ptr[i+1];p++)
+            {
+                LIS_INT src=topology->row_src[p];
+                sum+=lis_matrix_split_shared_native_value(
+                    view,src,transposed)*x[topology->row_col[p]];
+            }
+            y[i]=sum;
+        }
     }
 
     return LIS_SUCCESS;
@@ -404,51 +511,8 @@ lis_matrix_split_shared_matvec(
     const LIS_SCALAR *x,
     LIS_SCALAR *y)
 {
-    LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW view;
-    LIS_MATRIX_SPLIT_TRIANGULAR_TOPOLOGY topology;
-    LIS_INT i,p;
-
-    view=(LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW)user_data;
-    if(view==NULL || x==NULL || y==NULL || view->topology==NULL ||
-       view->diag==NULL ||
-       (view->topology->nnz>0 && view->lower==NULL))
-        return LIS_ERR_ILL_ARG;
-
-    topology=view->topology;
-
-#ifdef _OPENMP
-#pragma omp parallel for private(p) schedule(static)
-#endif
-    for(i=0;i<topology->n;i++)
-    {
-        LIS_SCALAR sum=(LIS_SCALAR)0.0;
-
-        for(p=topology->row_ptr[i];p<topology->row_ptr[i+1];p++)
-        {
-            LIS_INT src=topology->row_src[p];
-            LIS_SCALAR value;
-
-            if(src<0)
-            {
-                value=view->diag[-src-1];
-            }
-            else if(src<=topology->nnz)
-            {
-                value=view->lower[src-1];
-            }
-            else
-            {
-                LIS_INT k=src-topology->nnz-1;
-                value=view->symmetric ? view->lower[k] : view->upper[k];
-            }
-
-            sum+=value*x[topology->row_col[p]];
-        }
-
-        y[i]=sum;
-    }
-
-    return LIS_SUCCESS;
+    return lis_matrix_split_shared_matvec_impl(
+        user_data,x,y,LIS_FALSE);
 }
 
 static LIS_INT
@@ -457,53 +521,8 @@ lis_matrix_split_shared_matvech(
     const LIS_SCALAR *x,
     LIS_SCALAR *y)
 {
-    LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW view;
-    LIS_MATRIX_SPLIT_TRIANGULAR_TOPOLOGY topology;
-    LIS_INT i,p;
-
-    view=(LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW)user_data;
-    if(view==NULL || x==NULL || y==NULL || view->topology==NULL ||
-       view->diag==NULL ||
-       (view->topology->nnz>0 && view->lower==NULL))
-        return LIS_ERR_ILL_ARG;
-
-    topology=view->topology;
-
-#ifdef _OPENMP
-#pragma omp parallel for private(p) schedule(static)
-#endif
-    for(i=0;i<topology->n;i++)
-    {
-        LIS_SCALAR sum=(LIS_SCALAR)0.0;
-
-        for(p=topology->row_ptr[i];p<topology->row_ptr[i+1];p++)
-        {
-            LIS_INT src=topology->row_src[p];
-            LIS_SCALAR value;
-
-            if(src<0)
-            {
-                value=conj(view->diag[-src-1]);
-            }
-            else if(src<=topology->nnz)
-            {
-                LIS_INT k=src-1;
-                value=conj(view->symmetric ?
-                    view->lower[k] : view->upper[k]);
-            }
-            else
-            {
-                LIS_INT k=src-topology->nnz-1;
-                value=conj(view->lower[k]);
-            }
-
-            sum+=value*x[topology->row_col[p]];
-        }
-
-        y[i]=sum;
-    }
-
-    return LIS_SUCCESS;
+    return lis_matrix_split_shared_matvec_impl(
+        user_data,x,y,LIS_TRUE);
 }
 
 static LIS_INT
@@ -572,24 +591,27 @@ lis_matrix_split_shared_get_diagonal(
 
     view=(LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW)user_data;
     if(view==NULL || view->topology==NULL ||
-       diag==NULL || view->diag==NULL)
+       diag==NULL ||
+       (view->real64 ? view->diag64==NULL : view->diag==NULL))
         return LIS_ERR_ILL_ARG;
 
     for(i=0;i<view->topology->n;i++)
-        diag[i]=view->diag[i];
+        diag[i]=view->real64 ?
+            (LIS_SCALAR)view->diag64[i] : view->diag[i];
 
     return LIS_SUCCESS;
 }
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_create_split_triangular_shared_view"
-LIS_INT
-lis_matrix_create_split_triangular_shared_view(
+static LIS_INT
+lis_matrix_create_split_triangular_shared_view_impl(
     LIS_Comm comm,
     LIS_MATRIX_SPLIT_TRIANGULAR_TOPOLOGY topology,
-    const LIS_SCALAR diag[],
-    const LIS_SCALAR lower_values[],
-    const LIS_SCALAR upper_values[],
+    const void *diag,
+    const void *lower_values,
+    const void *upper_values,
+    LIS_INT real64,
     LIS_MATRIX *A,
     LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW *view_out)
 {
@@ -617,9 +639,19 @@ lis_matrix_create_split_triangular_shared_view(
 
     view->topology=topology;
     view->symmetric=upper_values==NULL;
-    view->diag=diag;
-    view->lower=lower_values;
-    view->upper=upper_values;
+    view->real64=real64;
+    if(real64)
+    {
+        view->diag64=(const double *)diag;
+        view->lower64=(const double *)lower_values;
+        view->upper64=(const double *)upper_values;
+    }
+    else
+    {
+        view->diag=(const LIS_SCALAR *)diag;
+        view->lower=(const LIS_SCALAR *)lower_values;
+        view->upper=(const LIS_SCALAR *)upper_values;
+    }
 
     err=lis_matrix_create(comm,&M);
     if(err) goto fail;
@@ -658,17 +690,46 @@ fail:
     return err;
 }
 
-#undef __FUNC__
-#define __FUNC__ "lis_matrix_split_triangular_shared_view_set_values"
 LIS_INT
-lis_matrix_split_triangular_shared_view_set_values(
-    LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW view,
+lis_matrix_create_split_triangular_shared_view(
+    LIS_Comm comm,
+    LIS_MATRIX_SPLIT_TRIANGULAR_TOPOLOGY topology,
     const LIS_SCALAR diag[],
     const LIS_SCALAR lower_values[],
-    const LIS_SCALAR upper_values[])
+    const LIS_SCALAR upper_values[],
+    LIS_MATRIX *A,
+    LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW *view_out)
+{
+    return lis_matrix_create_split_triangular_shared_view_impl(
+        comm,topology,diag,lower_values,upper_values,LIS_FALSE,A,view_out);
+}
+
+LIS_INT
+lis_matrix_create_split_triangular_shared_view_real64(
+    LIS_Comm comm,
+    LIS_MATRIX_SPLIT_TRIANGULAR_TOPOLOGY topology,
+    const double diag[],
+    const double lower_values[],
+    const double upper_values[],
+    LIS_MATRIX *A,
+    LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW *view_out)
+{
+    return lis_matrix_create_split_triangular_shared_view_impl(
+        comm,topology,diag,lower_values,upper_values,LIS_TRUE,A,view_out);
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_split_triangular_shared_view_set_values"
+static LIS_INT
+lis_matrix_split_triangular_shared_view_set_values_impl(
+    LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW view,
+    const void *diag,
+    const void *lower_values,
+    const void *upper_values,
+    LIS_INT real64)
 {
     if(view==NULL || view->A==NULL || view->topology==NULL ||
-       diag==NULL ||
+       view->real64!=real64 || diag==NULL ||
        (view->topology->nnz>0 && lower_values==NULL))
         return LIS_ERR_ILL_ARG;
 
@@ -679,11 +740,42 @@ lis_matrix_split_triangular_shared_view_set_values(
         return LIS_ERR_ILL_ARG;
     }
 
-    view->diag=diag;
-    view->lower=lower_values;
-    view->upper=upper_values;
+    if(real64)
+    {
+        view->diag64=(const double *)diag;
+        view->lower64=(const double *)lower_values;
+        view->upper64=(const double *)upper_values;
+    }
+    else
+    {
+        view->diag=(const LIS_SCALAR *)diag;
+        view->lower=(const LIS_SCALAR *)lower_values;
+        view->upper=(const LIS_SCALAR *)upper_values;
+    }
 
     return lis_matrix_mark_values_changed(view->A);
+}
+
+LIS_INT
+lis_matrix_split_triangular_shared_view_set_values(
+    LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW view,
+    const LIS_SCALAR diag[],
+    const LIS_SCALAR lower_values[],
+    const LIS_SCALAR upper_values[])
+{
+    return lis_matrix_split_triangular_shared_view_set_values_impl(
+        view,diag,lower_values,upper_values,LIS_FALSE);
+}
+
+LIS_INT
+lis_matrix_split_triangular_shared_view_set_values_real64(
+    LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW view,
+    const double diag[],
+    const double lower_values[],
+    const double upper_values[])
+{
+    return lis_matrix_split_triangular_shared_view_set_values_impl(
+        view,diag,lower_values,upper_values,LIS_TRUE);
 }
 
 void

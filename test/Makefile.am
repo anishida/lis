@@ -23,7 +23,7 @@ test_PROGRAMS = testesubspaceretry etest1 etest2 etest3 etest4 etest5 etest5b et
         testworkreuse testprebuiltuser testshellscale testsymmdiagguard testilupivot \
         testparamupdate testbreakretry testchangingsystem testkrylovrobust testnearnullspace \
         testcoarsesetup testcoarseapply testgcrodroptions testgcrodrconfig testgcrodrsequence \
-        testmatrixgeneration testexternalstorage testmatrixmaterialize testmatrixmaterializeomp testmatrixpolicysolve testfrozenilut benchfrozenilut testsplitview testsplitviewi64 testmatrixoperatorlifecycle testmatrixoperatormpi testsequence testwarmstart testrecovery \
+        testmatrixgeneration testexternalstorage testmatrixmaterialize testmatrixmaterializeomp testmatrixpolicysolve testfrozenilut benchfrozenilut testsplitview testsplitviewi64 testsplitviewreal64 testmatrixoperatorlifecycle testmatrixoperatormpi testsequence testwarmstart testrecovery \
         testthreads testfgcrodr testmfamg testmfamggalerkin testexactnullspace testhalfconfig testhalfconvert \
         testfeastfoundation testfeastcontour testfeastshifted testnullspacecandidates testesolverselection \
 	testprojectedeigen testprojectedhermitian testblockgram \
@@ -44,6 +44,7 @@ testfrozenilut_SOURCES = testfrozenilut.c
 benchfrozenilut_SOURCES = benchfrozenilut.c
 testsplitview_SOURCES = testsplitview.c
 testsplitviewi64_SOURCES = testsplitviewi64.c
+testsplitviewreal64_SOURCES = testsplitviewreal64.c
 testmatrixoperatorlifecycle_SOURCES = testmatrixoperatorlifecycle.c
 testmatrixoperatormpi_SOURCES = testmatrixoperatormpi.c
 testsequence_SOURCES = testsequence.c

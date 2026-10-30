@@ -130,7 +130,8 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testmatrixmaterializeomp$(EXEEXT) \
 	testmatrixpolicysolve$(EXEEXT) testfrozenilut$(EXEEXT) \
 	benchfrozenilut$(EXEEXT) testsplitview$(EXEEXT) \
-	testsplitviewi64$(EXEEXT) testmatrixoperatorlifecycle$(EXEEXT) \
+	testsplitviewi64$(EXEEXT) testsplitviewreal64$(EXEEXT) \
+	testmatrixoperatorlifecycle$(EXEEXT) \
 	testmatrixoperatormpi$(EXEEXT) testsequence$(EXEEXT) \
 	testwarmstart$(EXEEXT) testrecovery$(EXEEXT) \
 	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
@@ -687,6 +688,10 @@ am_testsplitviewi64_OBJECTS = testsplitviewi64.$(OBJEXT)
 testsplitviewi64_OBJECTS = $(am_testsplitviewi64_OBJECTS)
 testsplitviewi64_LDADD = $(LDADD)
 testsplitviewi64_DEPENDENCIES =
+am_testsplitviewreal64_OBJECTS = testsplitviewreal64.$(OBJEXT)
+testsplitviewreal64_OBJECTS = $(am_testsplitviewreal64_OBJECTS)
+testsplitviewreal64_LDADD = $(LDADD)
+testsplitviewreal64_DEPENDENCIES =
 am_testsymmdiagguard_OBJECTS = testsymmdiagguard.$(OBJEXT)
 testsymmdiagguard_OBJECTS = $(am_testsymmdiagguard_OBJECTS)
 testsymmdiagguard_LDADD = $(LDADD)
@@ -834,6 +839,7 @@ am__depfiles_remade = ./$(DEPDIR)/benchfrozenilut.Po \
 	./$(DEPDIR)/testsolvermonitor.Po \
 	./$(DEPDIR)/testsolveroptionreplace.Po \
 	./$(DEPDIR)/testsplitview.Po ./$(DEPDIR)/testsplitviewi64.Po \
+	./$(DEPDIR)/testsplitviewreal64.Po \
 	./$(DEPDIR)/testsymmdiagguard.Po ./$(DEPDIR)/testthreads.Po \
 	./$(DEPDIR)/testuser.Po ./$(DEPDIR)/testuserprecon.Po \
 	./$(DEPDIR)/testuserrow.Po ./$(DEPDIR)/testvectornrm2mpi.Po \
@@ -933,11 +939,12 @@ SOURCES = $(benchfrozenilut_SOURCES) $(esolve_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
 	$(testsolvercapabilities_SOURCES) $(testsolvermonitor_SOURCES) \
 	$(testsolveroptionreplace_SOURCES) $(testsplitview_SOURCES) \
-	$(testsplitviewi64_SOURCES) $(testsymmdiagguard_SOURCES) \
-	$(testthreads_SOURCES) $(testuser_SOURCES) \
-	$(testuserprecon_SOURCES) $(testuserrow_SOURCES) \
-	$(testvectornrm2mpi_SOURCES) $(testwarmstart_SOURCES) \
-	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
+	$(testsplitviewi64_SOURCES) $(testsplitviewreal64_SOURCES) \
+	$(testsymmdiagguard_SOURCES) $(testthreads_SOURCES) \
+	$(testuser_SOURCES) $(testuserprecon_SOURCES) \
+	$(testuserrow_SOURCES) $(testvectornrm2mpi_SOURCES) \
+	$(testwarmstart_SOURCES) $(testworkcompat_SOURCES) \
+	$(testworkreuse_SOURCES)
 DIST_SOURCES = $(benchfrozenilut_SOURCES) $(esolve_SOURCES) \
 	$(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
@@ -997,11 +1004,12 @@ DIST_SOURCES = $(benchfrozenilut_SOURCES) $(esolve_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
 	$(testsolvercapabilities_SOURCES) $(testsolvermonitor_SOURCES) \
 	$(testsolveroptionreplace_SOURCES) $(testsplitview_SOURCES) \
-	$(testsplitviewi64_SOURCES) $(testsymmdiagguard_SOURCES) \
-	$(testthreads_SOURCES) $(testuser_SOURCES) \
-	$(testuserprecon_SOURCES) $(testuserrow_SOURCES) \
-	$(testvectornrm2mpi_SOURCES) $(testwarmstart_SOURCES) \
-	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
+	$(testsplitviewi64_SOURCES) $(testsplitviewreal64_SOURCES) \
+	$(testsymmdiagguard_SOURCES) $(testthreads_SOURCES) \
+	$(testuser_SOURCES) $(testuserprecon_SOURCES) \
+	$(testuserrow_SOURCES) $(testvectornrm2mpi_SOURCES) \
+	$(testwarmstart_SOURCES) $(testworkcompat_SOURCES) \
+	$(testworkreuse_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -1390,6 +1398,7 @@ testfrozenilut_SOURCES = testfrozenilut.c
 benchfrozenilut_SOURCES = benchfrozenilut.c
 testsplitview_SOURCES = testsplitview.c
 testsplitviewi64_SOURCES = testsplitviewi64.c
+testsplitviewreal64_SOURCES = testsplitviewreal64.c
 testmatrixoperatorlifecycle_SOURCES = testmatrixoperatorlifecycle.c
 testmatrixoperatormpi_SOURCES = testmatrixoperatormpi.c
 testsequence_SOURCES = testsequence.c
@@ -2177,6 +2186,10 @@ testsplitviewi64$(EXEEXT): $(testsplitviewi64_OBJECTS) $(testsplitviewi64_DEPEND
 	@rm -f testsplitviewi64$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testsplitviewi64_OBJECTS) $(testsplitviewi64_LDADD) $(LIBS)
 
+testsplitviewreal64$(EXEEXT): $(testsplitviewreal64_OBJECTS) $(testsplitviewreal64_DEPENDENCIES) $(EXTRA_testsplitviewreal64_DEPENDENCIES) 
+	@rm -f testsplitviewreal64$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testsplitviewreal64_OBJECTS) $(testsplitviewreal64_LDADD) $(LIBS)
+
 testsymmdiagguard$(EXEEXT): $(testsymmdiagguard_OBJECTS) $(testsymmdiagguard_DEPENDENCIES) $(EXTRA_testsymmdiagguard_DEPENDENCIES) 
 	@rm -f testsymmdiagguard$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testsymmdiagguard_OBJECTS) $(testsymmdiagguard_LDADD) $(LIBS)
@@ -2358,6 +2371,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsolveroptionreplace.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsplitview.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsplitviewi64.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsplitviewreal64.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsymmdiagguard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testthreads.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuser.Po@am__quote@ # am--include-marker
@@ -3383,6 +3397,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testsolveroptionreplace.Po
 	-rm -f ./$(DEPDIR)/testsplitview.Po
 	-rm -f ./$(DEPDIR)/testsplitviewi64.Po
+	-rm -f ./$(DEPDIR)/testsplitviewreal64.Po
 	-rm -f ./$(DEPDIR)/testsymmdiagguard.Po
 	-rm -f ./$(DEPDIR)/testthreads.Po
 	-rm -f ./$(DEPDIR)/testuser.Po
@@ -3542,6 +3557,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testsolveroptionreplace.Po
 	-rm -f ./$(DEPDIR)/testsplitview.Po
 	-rm -f ./$(DEPDIR)/testsplitviewi64.Po
+	-rm -f ./$(DEPDIR)/testsplitviewreal64.Po
 	-rm -f ./$(DEPDIR)/testsymmdiagguard.Po
 	-rm -f ./$(DEPDIR)/testthreads.Po
 	-rm -f ./$(DEPDIR)/testuser.Po

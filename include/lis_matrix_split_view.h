@@ -122,6 +122,39 @@ LIS_INT lis_matrix_split_triangular_shared_view_set_values(
 void lis_matrix_split_triangular_shared_view_destroy(
     LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW view);
 
+/*
+ * Borrow external real64 numerical storage without allocating a LIS_SCALAR
+ * copy. The same immutable topology (including an i64-imported topology)
+ * can back multiple real64 and native LIS_SCALAR matrices.
+ *
+ * Values are converted only on row/diagonal/matvec reads. The imaginary
+ * component is zero for complex LIS. In wider-precision configurations the
+ * source remains IEEE double precision; importing does not create precision.
+ * If LIS_SCALAR has a narrower range or precision than double, conversion can
+ * round values or overflow to the target representation; no range check is made.
+ *
+ * Arrays belong to the caller, must outlive all use of the view, and must
+ * not be modified while an LIS operation is active. For updates in place,
+ * call set_values_real64 even when the addresses do not change, so generation
+ * and CSR caches are invalidated. Symmetric/asymmetric mode is immutable,
+ * and real64 and native LIS_SCALAR setters cannot be mixed.
+ * Destroy LIS_MATRIX before destroying the returned view.
+ */
+LIS_INT lis_matrix_create_split_triangular_shared_view_real64(
+    LIS_Comm comm,
+    LIS_MATRIX_SPLIT_TRIANGULAR_TOPOLOGY topology,
+    const double diag[],
+    const double lower_values[],
+    const double upper_values[],
+    LIS_MATRIX *A,
+    LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW *view);
+
+LIS_INT lis_matrix_split_triangular_shared_view_set_values_real64(
+    LIS_MATRIX_SPLIT_TRIANGULAR_SHARED_VIEW view,
+    const double diag[],
+    const double lower_values[],
+    const double upper_values[]);
+
 void lis_matrix_split_triangular_topology_destroy(
     LIS_MATRIX_SPLIT_TRIANGULAR_TOPOLOGY topology);
 
