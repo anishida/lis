@@ -100,7 +100,7 @@ int main(int argc,char **argv)
         goto done;
     err=lis_matrix_get_user_row(A,1,&count,NULL,NULL);
     if(err || count!=3)goto done;
-    err=lis_matrix_get_user_diagonal(A,diag_read);
+    err=A->user_get_diagonal(A->user_data,diag_read);
     if(err || !near(diag_read[0],4) || !near(diag_read[1],5) ||
        !near(diag_read[2],6))
         goto done;
