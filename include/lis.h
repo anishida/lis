@@ -1119,6 +1119,13 @@ struct LIS_ESOLVER_STRUCT
         LIS_SCALAR ishift;
         LIS_INT transform;
         LIS_INT nev;
+        /*
+         * Stable requested eigenpair count, configured by the typed setter
+         * or -nev.  nev remains the legacy execution/result field.
+         * The active flag preserves direct writes to nev by older callers.
+         */
+        LIS_INT requested_nev;
+        LIS_INT requested_nev_active;
 	LIS_REAL nrm2;
         LIS_REAL tol;
         /*

@@ -226,7 +226,10 @@ lis_esolver_set_subspace_size(
     if(subspace_size<1 ||
        esolver->options[LIS_EOPTIONS_MODE]>=subspace_size ||
        esolver->block_size>subspace_size ||
-       (esolver->nev>0 && esolver->nev>subspace_size))
+       (((esolver->requested_nev_active ?
+           esolver->requested_nev : esolver->nev)>0) &&
+        (esolver->requested_nev_active ?
+           esolver->requested_nev : esolver->nev)>subspace_size))
     {
         LIS_SETERR(LIS_ERR_ILL_ARG,
             "invalid eigensolver subspace size for active configuration\n");
@@ -268,6 +271,77 @@ lis_esolver_get_subspace_size(
     }
 
     *subspace_size = esolver->options[LIS_EOPTIONS_SUBSPACE];
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+/*
+ * Keep the requested count separate from the execution/result count in nev.
+ * The solve entry restores the request before each attempt; legacy callers
+ * that write nev directly remain supported until a typed/text request is set.
+ */
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_set_requested_nev"
+LIS_INT
+lis_esolver_set_requested_nev(
+    LIS_ESOLVER esolver,
+    LIS_INT requested_nev)
+{
+    LIS_INT err;
+
+    LIS_DEBUG_FUNC_IN;
+
+    err = lis_esolver_config_check(esolver);
+    if(err) return err;
+
+    if(requested_nev<0 ||
+       requested_nev>esolver->options[LIS_EOPTIONS_SUBSPACE])
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,
+            "requested eigenpair count must be zero or fit the subspace\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    if(esolver->requested_nev_active &&
+       esolver->requested_nev==requested_nev)
+    {
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+    }
+
+    err = lis_esolver_config_reset_work(esolver);
+    if(err) return err;
+
+    esolver->requested_nev = requested_nev;
+    esolver->requested_nev_active = LIS_TRUE;
+    esolver->nev = requested_nev;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_get_requested_nev"
+LIS_INT
+lis_esolver_get_requested_nev(
+    LIS_ESOLVER esolver,
+    LIS_INT *requested_nev)
+{
+    LIS_INT err;
+
+    LIS_DEBUG_FUNC_IN;
+
+    err = lis_esolver_config_check(esolver);
+    if(err) return err;
+    if(requested_nev==NULL)
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,
+            "requested eigenpair count output is NULL\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *requested_nev = esolver->requested_nev;
 
     LIS_DEBUG_FUNC_OUT;
     return LIS_SUCCESS;

@@ -705,6 +705,8 @@ LIS_INT lis_esolver_init(LIS_ESOLVER esolver)
 	esolver->ishift     = 0;
 	esolver->transform  = LIS_EIGEN_TRANSFORM_AUTO;
 	esolver->nev        = 0;
+	esolver->requested_nev = 0;
+	esolver->requested_nev_active = LIS_FALSE;
 	esolver->block_size = 1;
 	esolver->linear_options = NULL;
 	esolver->refine_linear_options = NULL;
@@ -1601,6 +1603,24 @@ static LIS_INT lis_gesolve_once(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SC
 	esolver->p_c_time = 0;
 	esolver->p_i_time = 0;
 
+	/*
+         * A subsequent solve on the same eigensolver replaces its scratch
+         * vectors. Release the previous work array before allocating a new
+         * one; otherwise repeated solves leak the old work vectors.
+         */
+        if(esolver->work!=NULL)
+        {
+                err=lis_esolver_work_destroy(esolver);
+                if(err)
+                {
+                        esolver->x=NULL;
+                        esolver->xx=NULL;
+                        lis_vector_destroy(xx);
+                        esolver->retcode=err;
+                        return err;
+                }
+        }
+
 	/* create work vector */
 	err = lis_esolver_malloc_work[nesolver](esolver);
 	if( err )
@@ -1699,6 +1719,26 @@ LIS_INT lis_gesolve(
 
         for(attempt=0;;attempt++)
         {
+                /*
+                 * Some solvers write their result count to nev. Restore the
+                 * stable typed/text request before EVERY attempt, including
+                 * retries and later lis_gesolve() invocations.
+                 * Legacy direct nev writes remain valid when no explicit
+                 * request was set through the public option APIs.
+                 */
+                if(esolver->requested_nev_active)
+                {
+                        if(esolver->requested_nev<0 ||
+                           esolver->requested_nev>
+                               esolver->options[LIS_EOPTIONS_SUBSPACE])
+                        {
+                                LIS_SETERR(LIS_ERR_ILL_ARG,
+                                    "requested eigenpair count exceeds subspace\n");
+                                result=LIS_ERR_ILL_ARG;
+                                break;
+                        }
+                        esolver->nev=esolver->requested_nev;
+                }
                 err = lis_gesolve_once(A,B,x,evalue0,esolver);
                 if( err )
                 {
@@ -1953,9 +1993,9 @@ LIS_INT lis_esolver_set_option2(char* arg1, char *arg2, LIS_ESOLVER esolver)
 	 */
 	if( strcmp(arg1,"-nev")==0 )
 	{
-		esolver->nev = atoi(arg2);
+		LIS_INT parsed_nev = (LIS_INT)atoi(arg2);
 
-		if( esolver->nev<0 )
+		if( parsed_nev<0 )
 		{
 			LIS_SETERR(
 				LIS_ERR_ILL_ARG,
@@ -1964,6 +2004,15 @@ LIS_INT lis_esolver_set_option2(char* arg1, char *arg2, LIS_ESOLVER esolver)
 			LIS_DEBUG_FUNC_OUT;
 			return LIS_ERR_ILL_ARG;
 		}
+
+                /*
+                 * Historical text options may specify -nev before -ss.
+                 * Preserve that ordering and validate the final relation
+                 * at solve time; the typed setter validates immediately.
+                 */
+                esolver->requested_nev=parsed_nev;
+                esolver->requested_nev_active=LIS_TRUE;
+                esolver->nev=parsed_nev;
 
 		LIS_DEBUG_FUNC_OUT;
 		return LIS_SUCCESS;
