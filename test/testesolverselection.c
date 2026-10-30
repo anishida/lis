@@ -353,7 +353,8 @@ static int requested_nev_end_to_end(void)
     }
 
     /* Text and typed APIs must update the same stable request. */
-    err=lis_esolver_set_option2("-nev","2",e);if(err)goto done;
+    char opt_nev[]="-nev 2";
+    err=lis_esolver_set_option(opt_nev,e); if(err)goto done;
     err=lis_esolver_get_requested_nev(e,&requested);
     if(err || requested!=2)goto done;
     err=lis_vector_set_all((LIS_SCALAR)1,x);if(err)goto done;
@@ -369,7 +370,8 @@ static int requested_nev_end_to_end(void)
     err=lis_esolver_set_subspace_size(e,4);if(err)goto done;
 
     /* The text path allows -nev before -ss, then validates before solving. */
-    err=lis_esolver_set_option2("-nev","5",e);if(err)goto done;
+    char opt_nev2[]="-nev 5";
+    err=lis_esolver_set_option(opt_nev2,e);if(err)goto done;
     err=lis_esolve(A,x,&value,e);
     if(err!=LIS_ERR_ILL_ARG)goto done;
     err=lis_esolver_get_requested_nev(e,&requested);
