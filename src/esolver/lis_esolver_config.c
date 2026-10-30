@@ -226,7 +226,10 @@ lis_esolver_set_subspace_size(
     if(subspace_size<1 ||
        esolver->options[LIS_EOPTIONS_MODE]>=subspace_size ||
        esolver->block_size>subspace_size ||
-       (esolver->nev>0 && esolver->nev>subspace_size))
+       (((esolver->requested_nev_active ?
+           esolver->requested_nev : esolver->nev)>0) &&
+        (esolver->requested_nev_active ?
+           esolver->requested_nev : esolver->nev)>subspace_size))
     {
         LIS_SETERR(LIS_ERR_ILL_ARG,
             "invalid eigensolver subspace size for active configuration\n");
@@ -274,9 +277,9 @@ lis_esolver_get_subspace_size(
 }
 
 /*
- * -nev shares the existing esolver->nev slot with the result count of some
- * eigensolver algorithms. This setter configures the requested count before
- * the next solve, without changing any public LIS_EOPTIONS_* identifiers.
+ * Keep the requested count separate from the execution/result count in nev.
+ * The solve entry restores the request before each attempt; legacy callers
+ * that write nev directly remain supported until a typed/text request is set.
  */
 #undef __FUNC__
 #define __FUNC__ "lis_esolver_set_requested_nev"
@@ -300,7 +303,8 @@ lis_esolver_set_requested_nev(
         return LIS_ERR_ILL_ARG;
     }
 
-    if(esolver->nev==requested_nev)
+    if(esolver->requested_nev_active &&
+       esolver->requested_nev==requested_nev)
     {
         LIS_DEBUG_FUNC_OUT;
         return LIS_SUCCESS;
@@ -309,6 +313,8 @@ lis_esolver_set_requested_nev(
     err = lis_esolver_config_reset_work(esolver);
     if(err) return err;
 
+    esolver->requested_nev = requested_nev;
+    esolver->requested_nev_active = LIS_TRUE;
     esolver->nev = requested_nev;
 
     LIS_DEBUG_FUNC_OUT;
@@ -335,7 +341,7 @@ lis_esolver_get_requested_nev(
         return LIS_ERR_ILL_ARG;
     }
 
-    *requested_nev = esolver->nev;
+    *requested_nev = esolver->requested_nev;
 
     LIS_DEBUG_FUNC_OUT;
     return LIS_SUCCESS;
