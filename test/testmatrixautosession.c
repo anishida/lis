@@ -189,15 +189,16 @@ int main(int argc,char **argv)
      * The old cache stays allocated and may be REUSEd when switching back.
      */
     {
-        char direct_options[]="-i gmres -p ilut -restart 10 -tol 1e-11 -maxiter 80 -scale none";
-        err=lis_solver_set_option_replace(direct_options,solver);if(err)goto done;
+        char direct_options[]="-p ilut";
+        /* Incremental option change deliberately does NOT explicitly reset. */
+        err=lis_solver_set_option(direct_options,solver);if(err)goto done;
     }
     if(test_solve(session,solver,A,b,x,truth,
           LIS_MATRIX_POLICY_DIRECT,LIS_MATRIX_POLICY_ACTION_DIRECT,
           "options-csr-to-direct"))goto done;
     {
-        char csr_options[]="-i gmres -p ssor -restart 10 -tol 1e-11 -maxiter 80 -scale none";
-        err=lis_solver_set_option_replace(csr_options,solver);if(err)goto done;
+        char csr_options[]="-p ssor";
+        err=lis_solver_set_option(csr_options,solver);if(err)goto done;
     }
     if(test_solve(session,solver,A,b,x,truth,
           LIS_MATRIX_POLICY_CACHED_CSR,LIS_MATRIX_MATERIALIZE_REUSE,
