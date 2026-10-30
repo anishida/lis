@@ -32,6 +32,7 @@ int main(int argc,char **argv)
     double diag[3]={4,5,6};
     double lower[3]={1,2,3};
     double upper[3]={7,8,9};
+    double diag2[3]={5,5,6};
     const LIS_SCALAR typed_diag[3]={
         (LIS_SCALAR)4,(LIS_SCALAR)5,(LIS_SCALAR)6};
     const LIS_SCALAR typed_lower[3]={
@@ -131,12 +132,11 @@ int main(int argc,char **argv)
 
     /* Rebind to a different external array without allocating scalar copies. */
     {
-        const double d2[3]={5,5,6};
         if(lis_matrix_split_triangular_shared_view_set_values_real64(
-               view,d2,lower,upper))goto done;
+               view,diag2,lower,upper))goto done;
         if(lis_matvec(A,x,y) || !check_vector(y,y_restored))goto done;
         if(lis_matrix_split_triangular_shared_view_set_values_real64(
-               view,d2,lower,NULL)==LIS_SUCCESS)goto done;
+               view,diag2,lower,NULL)==LIS_SUCCESS)goto done;
         if(lis_matrix_split_triangular_shared_view_set_values(
                view,typed_diag,typed_lower,typed_upper)==LIS_SUCCESS)
             goto done;

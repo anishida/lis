@@ -638,7 +638,7 @@ lis_matrix_split_shared_get_diagonal(
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_create_split_triangular_shared_view"
-LIS_INT
+static LIS_INT
 lis_matrix_create_split_triangular_shared_view_impl(
     LIS_Comm comm,
     LIS_MATRIX_SPLIT_TRIANGULAR_TOPOLOGY topology,
