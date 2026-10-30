@@ -21,6 +21,8 @@ static int fail(const char *msg, int err)
     return 1;
 }
 
+static int requested_nev_end_to_end(void);
+
 int main(int argc, char *argv[])
 {
     LIS_ESOLVER esolver = NULL;
@@ -306,6 +308,71 @@ int main(int argc, char *argv[])
     printf("PASS: typed eigensolver configuration and pair selection\n");
 
     lis_esolver_destroy(esolver);
+    if(requested_nev_end_to_end()) return 1;
     lis_finalize();
     return 0;
+}
+
+/*
+ * End-to-end: Block Lanczos publishes the active Ritz count to nev, which
+ * differs from the stable requested count. Test repeated solves and -nev.
+ */
+static int requested_nev_end_to_end(void)
+{
+    LIS_MATRIX A=NULL;
+    LIS_VECTOR x=NULL;
+    LIS_ESOLVER e=NULL;
+    LIS_SCALAR value=0;
+    LIS_INT err=0,i,status,requested;
+    int bad=1;
+
+    err=lis_matrix_create(LIS_COMM_WORLD,&A);if(err)goto done;
+    err=lis_matrix_set_size(A,0,4);if(err)goto done;
+    for(i=0;i<4;i++)
+    {
+        err=lis_matrix_set_value(LIS_INS_VALUE,i,i,(LIS_SCALAR)(i+1),A);
+        if(err)goto done;
+    }
+    err=lis_matrix_assemble(A);if(err)goto done;
+    err=lis_vector_duplicate(A,&x);if(err)goto done;
+    err=lis_esolver_create(&e);if(err)goto done;
+    err=lis_esolver_set_type(e,LIS_ESOLVER_LI);if(err)goto done;
+    err=lis_esolver_set_subspace_size(e,4);if(err)goto done;
+    err=lis_esolver_set_block_size(e,2);if(err)goto done;
+    err=lis_esolver_set_requested_nev(e,3);if(err)goto done;
+    e->options[LIS_EOPTIONS_RVAL]=LIS_TRUE;
+
+    for(i=0;i<2;i++)
+    {
+        err=lis_vector_set_all((LIS_SCALAR)1,x);if(err)goto done;
+        err=lis_esolve(A,x,&value,e);if(err)goto done;
+        err=lis_esolver_get_status(e,&status);if(err)goto done;
+        err=lis_esolver_get_requested_nev(e,&requested);if(err)goto done;
+        if(status!=LIS_SUCCESS || requested!=3 || e->nev!=4)
+            goto done;
+    }
+
+    /* Text and typed APIs must update the same stable request. */
+    err=lis_esolver_set_option2("-nev","2",e);if(err)goto done;
+    err=lis_esolver_get_requested_nev(e,&requested);
+    if(err || requested!=2)goto done;
+    err=lis_vector_set_all((LIS_SCALAR)1,x);if(err)goto done;
+    err=lis_esolve(A,x,&value,e);if(err)goto done;
+    err=lis_esolver_get_requested_nev(e,&requested);
+    if(err || requested!=2 || e->nev!=4)goto done;
+
+    /* The text path allows -nev before -ss, then validates before solving. */
+    err=lis_esolver_set_option2("-nev","5",e);if(err)goto done;
+    err=lis_esolve(A,x,&value,e);
+    if(err!=LIS_ERR_ILL_ARG)goto done;
+    err=lis_esolver_get_requested_nev(e,&requested);
+    if(err || requested!=5)goto done;
+
+    bad=0;
+done:
+    if(bad)fprintf(stderr,"FAIL: requested nev end-to-end (%d)\\n",(int)err);
+    if(e)lis_esolver_destroy(e);
+    if(x)lis_vector_destroy(x);
+    if(A)lis_matrix_destroy(A);
+    return bad;
 }
