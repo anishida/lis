@@ -29,7 +29,10 @@ jobs:
           mkdir build && cd build
           ../configure CC=${{ matrix.cc }} ${{ matrix.opts }}
           make -j2
-          make -C test testesolverselection testfeastfoundation testfeastshifted
+          # Enforce declared prototypes: this test previously called an internal
+          # function with no prototype from the public LIS headers.
+          make -C test testesolverselection CFLAGS="-O2 -Werror=implicit-function-declaration"
+          make -C test testfeastfoundation testfeastshifted
       - name: Run eigensolver regressions
         env:
           OMP_NUM_THREADS: '4'
