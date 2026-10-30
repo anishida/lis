@@ -142,8 +142,8 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testesolverselection$(EXEEXT) testprojectedeigen$(EXEEXT) \
 	testprojectedhermitian$(EXEEXT) testblockgram$(EXEEXT) \
 	testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) \
-	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
-	$(am__EXEEXT_4)
+	testmatrixautosession$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
+	$(am__EXEEXT_3) $(am__EXEEXT_4)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_3 = test2f test6f 
@@ -530,6 +530,10 @@ am_testkrylovrobust_OBJECTS = testkrylovrobust.$(OBJEXT)
 testkrylovrobust_OBJECTS = $(am_testkrylovrobust_OBJECTS)
 testkrylovrobust_LDADD = $(LDADD)
 testkrylovrobust_DEPENDENCIES =
+am_testmatrixautosession_OBJECTS = testmatrixautosession.$(OBJEXT)
+testmatrixautosession_OBJECTS = $(am_testmatrixautosession_OBJECTS)
+testmatrixautosession_LDADD = $(LDADD)
+testmatrixautosession_DEPENDENCIES =
 am_testmatrixgeneration_OBJECTS = testmatrixgeneration.$(OBJEXT)
 testmatrixgeneration_OBJECTS = $(am_testmatrixgeneration_OBJECTS)
 testmatrixgeneration_LDADD = $(LDADD)
@@ -810,6 +814,7 @@ am__depfiles_remade = ./$(DEPDIR)/benchfrozenilut.Po \
 	./$(DEPDIR)/testhalfprobe.Po ./$(DEPDIR)/testhalfstorage.Po \
 	./$(DEPDIR)/testhybridnested.Po ./$(DEPDIR)/testilupivot.Po \
 	./$(DEPDIR)/testjacobiuser.Po ./$(DEPDIR)/testkrylovrobust.Po \
+	./$(DEPDIR)/testmatrixautosession.Po \
 	./$(DEPDIR)/testmatrixgeneration.Po \
 	./$(DEPDIR)/testmatrixgraph.Po \
 	./$(DEPDIR)/testmatrixmaterialize.Po \
@@ -917,8 +922,9 @@ SOURCES = $(benchfrozenilut_SOURCES) $(esolve_SOURCES) \
 	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
 	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
 	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
-	$(testmatrixgraph_SOURCES) $(testmatrixmaterialize_SOURCES) \
+	$(testkrylovrobust_SOURCES) $(testmatrixautosession_SOURCES) \
+	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
+	$(testmatrixmaterialize_SOURCES) \
 	$(testmatrixmaterializeomp_SOURCES) \
 	$(testmatrixoperatorlifecycle_SOURCES) \
 	$(testmatrixoperatormpi_SOURCES) \
@@ -982,8 +988,9 @@ DIST_SOURCES = $(benchfrozenilut_SOURCES) $(esolve_SOURCES) \
 	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
 	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
 	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
-	$(testmatrixgraph_SOURCES) $(testmatrixmaterialize_SOURCES) \
+	$(testkrylovrobust_SOURCES) $(testmatrixautosession_SOURCES) \
+	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
+	$(testmatrixmaterialize_SOURCES) \
 	$(testmatrixmaterializeomp_SOURCES) \
 	$(testmatrixoperatorlifecycle_SOURCES) \
 	$(testmatrixoperatormpi_SOURCES) \
@@ -1394,6 +1401,7 @@ testexternalstorage_SOURCES = testexternalstorage.c
 testmatrixmaterialize_SOURCES = testmatrixmaterialize.c
 testmatrixmaterializeomp_SOURCES = testmatrixmaterializeomp.c
 testmatrixpolicysolve_SOURCES = testmatrixpolicysolve.c
+testmatrixautosession_SOURCES = testmatrixautosession.c
 testfrozenilut_SOURCES = testfrozenilut.c
 benchfrozenilut_SOURCES = benchfrozenilut.c
 testsplitview_SOURCES = testsplitview.c
@@ -2038,6 +2046,10 @@ testkrylovrobust$(EXEEXT): $(testkrylovrobust_OBJECTS) $(testkrylovrobust_DEPEND
 	@rm -f testkrylovrobust$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testkrylovrobust_OBJECTS) $(testkrylovrobust_LDADD) $(LIBS)
 
+testmatrixautosession$(EXEEXT): $(testmatrixautosession_OBJECTS) $(testmatrixautosession_DEPENDENCIES) $(EXTRA_testmatrixautosession_DEPENDENCIES) 
+	@rm -f testmatrixautosession$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testmatrixautosession_OBJECTS) $(testmatrixautosession_LDADD) $(LIBS)
+
 testmatrixgeneration$(EXEEXT): $(testmatrixgeneration_OBJECTS) $(testmatrixgeneration_DEPENDENCIES) $(EXTRA_testmatrixgeneration_DEPENDENCIES) 
 	@rm -f testmatrixgeneration$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmatrixgeneration_OBJECTS) $(testmatrixgeneration_LDADD) $(LIBS)
@@ -2334,6 +2346,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testilupivot.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testjacobiuser.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testkrylovrobust.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixautosession.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixgeneration.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixgraph.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixmaterialize.Po@am__quote@ # am--include-marker
@@ -3360,6 +3373,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testilupivot.Po
 	-rm -f ./$(DEPDIR)/testjacobiuser.Po
 	-rm -f ./$(DEPDIR)/testkrylovrobust.Po
+	-rm -f ./$(DEPDIR)/testmatrixautosession.Po
 	-rm -f ./$(DEPDIR)/testmatrixgeneration.Po
 	-rm -f ./$(DEPDIR)/testmatrixgraph.Po
 	-rm -f ./$(DEPDIR)/testmatrixmaterialize.Po
@@ -3520,6 +3534,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testilupivot.Po
 	-rm -f ./$(DEPDIR)/testjacobiuser.Po
 	-rm -f ./$(DEPDIR)/testkrylovrobust.Po
+	-rm -f ./$(DEPDIR)/testmatrixautosession.Po
 	-rm -f ./$(DEPDIR)/testmatrixgeneration.Po
 	-rm -f ./$(DEPDIR)/testmatrixgraph.Po
 	-rm -f ./$(DEPDIR)/testmatrixmaterialize.Po
