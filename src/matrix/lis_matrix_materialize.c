@@ -12,7 +12,11 @@
 #endif
 
 #include <stdint.h>
+#include <limits.h>
 #include <string.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 #include "lislib.h"
 #include "lis_matrix_materialize.h"
@@ -140,6 +144,209 @@ lis_matrix_materialize_source_stamp(
     return LIS_SUCCESS;
 }
 
+
+/*
+ * Concurrent row reads are only legal when every USER leaf opts in.
+ * Each OpenMP worker owns a separate LIS_PRECON_ROW_SOURCE and its scratch.
+ * The fallback remains serial for unsafe callbacks and small problems.
+ */
+static LIS_INT
+lis_matrix_materialize_rows_parallel_safe(LIS_MATRIX A,LIS_INT depth)
+{
+    if(A==NULL || depth>64 || A->nprocs!=1 || A->n!=A->gn)
+        return LIS_FALSE;
+
+    switch(A->matrix_type)
+    {
+    case LIS_MATRIX_CSR:
+        return LIS_TRUE;
+    case LIS_MATRIX_USER:
+        return A->user_get_row!=NULL &&
+               A->user_get_row_thread_safe==LIS_TRUE;
+    case LIS_MATRIX_OPERATOR:
+        if(A->operator_A==NULL ||
+           !lis_matrix_materialize_rows_parallel_safe(A->operator_A,depth+1))
+            return LIS_FALSE;
+        if(A->operator_scale!=NULL)
+            return A->operator_B==NULL &&
+                   A->operator_scale->value!=NULL;
+        return lis_matrix_materialize_rows_parallel_safe(
+            A->operator_B,depth+1);
+    default:
+        return LIS_FALSE;
+    }
+}
+
+static LIS_INT
+lis_matrix_materialize_use_parallel_rows(LIS_MATRIX A)
+{
+#ifdef _OPENMP
+    return A!=NULL && A->n>=256 && omp_get_max_threads()>1 &&
+           !omp_in_parallel() &&
+           lis_matrix_materialize_rows_parallel_safe(A,0);
+#else
+    (void)A;
+    return LIS_FALSE;
+#endif
+}
+
+#ifdef _OPENMP
+/*
+ * mode=0: count entries per row; mode=1: fill CSR; mode=2: update values.
+ * For fills/updates, row bounds must match the counted/verified structure.
+ */
+static LIS_INT
+lis_matrix_materialize_parallel_rows(
+    LIS_MATRIX A,
+    LIS_INT mode,
+    LIS_INT *counts,
+    const LIS_INT *ptr,
+    LIS_INT *index,
+    LIS_SCALAR *value)
+{
+    LIS_INT error=LIS_SUCCESS;
+
+    #pragma omp parallel
+    {
+        LIS_PRECON_ROW_SOURCE row;
+        LIS_INT i,local_error,ready;
+        local_error=lis_precon_row_source_init(A,&row);
+        ready=(local_error==LIS_SUCCESS);
+
+        #pragma omp for schedule(static)
+        for(i=0;i<A->n;i++)
+        {
+            LIS_INT k;
+            if(local_error!=LIS_SUCCESS)
+                continue;
+
+            local_error=lis_precon_row_source_get(&row,i);
+            if(local_error!=LIS_SUCCESS)
+                continue;
+            if(row.nnz<0)
+            {
+                local_error=LIS_ERR_ILL_ARG;
+                continue;
+            }
+            if(mode==0)
+            {
+                counts[i]=row.nnz;
+                continue;
+            }
+            if(ptr==NULL || row.nnz!=ptr[i+1]-ptr[i])
+            {
+                local_error=LIS_ERR_ILL_ARG;
+                continue;
+            }
+            if(row.nnz>0 &&
+               (row.index==NULL || row.value==NULL || value==NULL ||
+                (mode==1 && index==NULL)))
+            {
+                local_error=LIS_ERR_ILL_ARG;
+                continue;
+            }
+            if(mode==1)
+            {
+                for(k=0;k<row.nnz;k++)
+                {
+                    index[ptr[i]+k]=row.index[k];
+                    value[ptr[i]+k]=row.value[k];
+                }
+            }
+            else
+            {
+                for(k=0;k<row.nnz;k++)
+                    value[ptr[i]+k]=row.value[k];
+            }
+        }
+
+        if(ready)
+            lis_precon_row_source_destroy(&row);
+
+        if(local_error!=LIS_SUCCESS)
+        {
+            #pragma omp critical(lis_materialize_parallel_error)
+            {
+                if(error==LIS_SUCCESS)
+                    error=local_error;
+            }
+        }
+    }
+    return error;
+}
+
+static LIS_INT
+lis_matrix_materialize_build_csr_parallel(
+    LIS_MATRIX source,
+    LIS_MATRIX *csr_out)
+{
+    LIS_MATRIX B=NULL;
+    LIS_INT *counts=NULL,*ptr=NULL,*index=NULL;
+    LIS_SCALAR *value=NULL;
+    LIS_INT i,nnz=0,err;
+    LIS_INT attached=LIS_FALSE;
+    uintmax_t max_nnz=sizeof(LIS_INT)==4 ?
+        (uintmax_t)INT_MAX : (uintmax_t)LLONG_MAX;
+
+    if((uintmax_t)source->n>(uintmax_t)SIZE_MAX/sizeof(LIS_INT))
+        return LIS_ERR_ILL_ARG;
+
+    counts=(LIS_INT *)lis_malloc(
+        (size_t)source->n*sizeof(LIS_INT),
+        "lis_matrix_materialize_build_csr_parallel::counts");
+    if(counts==NULL)
+        return LIS_OUT_OF_MEMORY;
+
+    err=lis_matrix_materialize_parallel_rows(
+        source,0,counts,NULL,NULL,NULL);
+    if(err) goto fail;
+
+    for(i=0;i<source->n;i++)
+    {
+        if(counts[i]<0 || (uintmax_t)counts[i]>max_nnz-(uintmax_t)nnz)
+        {
+            err=LIS_ERR_ILL_ARG;
+            goto fail;
+        }
+        nnz+=counts[i];
+    }
+
+    err=lis_matrix_duplicate(source,&B);
+    if(err) goto fail;
+    err=lis_matrix_malloc_csr(source->n,nnz,&ptr,&index,&value);
+    if(err) goto fail;
+
+    ptr[0]=0;
+    for(i=0;i<source->n;i++)
+        ptr[i+1]=ptr[i]+counts[i];
+
+    err=lis_matrix_materialize_parallel_rows(
+        source,1,NULL,ptr,index,value);
+    if(err) goto fail;
+
+    err=lis_matrix_set_csr(nnz,ptr,index,value,B);
+    if(err) goto fail;
+    attached=LIS_TRUE;
+    err=lis_matrix_assemble(B);
+    if(err) goto fail;
+
+    *csr_out=B;
+    lis_free(counts);
+    return LIS_SUCCESS;
+
+fail:
+    if(B) lis_matrix_destroy(B);
+    if(ptr!=NULL && !attached)
+    {
+        lis_free(ptr);
+        lis_free(index);
+        lis_free(value);
+    }
+    lis_free(counts);
+    return err;
+}
+#endif
+
 static LIS_INT
 lis_matrix_materialize_build_csr(
     LIS_MATRIX source,
@@ -164,6 +371,11 @@ lis_matrix_materialize_build_csr(
             "cached CSR materialization is serial-only\n");
         return LIS_ERR_NOT_IMPLEMENTED;
     }
+
+#ifdef _OPENMP
+    if(lis_matrix_materialize_use_parallel_rows(source))
+        return lis_matrix_materialize_build_csr_parallel(source,csr_out);
+#endif
 
     err=lis_precon_row_source_count_nnz(source,&nnz);
     if(err) return err;
@@ -288,17 +500,29 @@ lis_matrix_materialize_refresh_values(
     LIS_PRECON_ROW_SOURCE row;
     LIS_INT i,k,p0,err;
 
-    err=lis_precon_row_source_init(source,&row);
-    if(err) return err;
-
-    for(i=0;i<source->n;i++)
+#ifdef _OPENMP
+    if(lis_matrix_materialize_use_parallel_rows(source))
     {
-        err=lis_precon_row_source_get(&row,i);
-        if(err) goto done;
+        err=lis_matrix_materialize_parallel_rows(
+            source,2,NULL,csr->ptr,NULL,csr->value);
+        if(err) return err;
+    }
+    else
+#endif
+    {
+        err=lis_precon_row_source_init(source,&row);
+        if(err) return err;
 
-        p0=csr->ptr[i];
-        for(k=0;k<row.nnz;k++)
-            csr->value[p0+k]=row.value[k];
+        for(i=0;i<source->n;i++)
+        {
+            err=lis_precon_row_source_get(&row,i);
+            if(err) goto done;
+
+            p0=csr->ptr[i];
+            for(k=0;k<row.nnz;k++)
+                csr->value[p0+k]=row.value[k];
+        }
+        lis_precon_row_source_destroy(&row);
     }
 
     /*
@@ -325,7 +549,6 @@ lis_matrix_materialize_refresh_values(
     err=lis_matrix_mark_values_changed(csr);
 
 done:
-    lis_precon_row_source_destroy(&row);
     return err;
 }
 
