@@ -32,6 +32,8 @@ struct LIS_MATRIX_CSR_CACHE_STRUCT
     uint64_t structure_stamp;
     uint64_t value_stamp;
     LIS_INT valid;
+    /* Monotonic CSR object revision; refresh of values is not a rebuild. */
+    uint64_t epoch;
 };
 
 #define LIS_MATERIALIZE_HASH_OFFSET UINT64_C(1469598103934665603)
@@ -611,6 +613,7 @@ lis_matrix_materialize_csr_cached(
         cache->structure_stamp=structure_stamp;
         cache->value_stamp=value_stamp;
         cache->valid=LIS_TRUE;
+        cache->epoch=1;
         *cache_io=cache;
         *csr=fresh;
         return LIS_SUCCESS;
@@ -661,6 +664,7 @@ lis_matrix_materialize_csr_cached(
     cache->structure_stamp=structure_stamp;
     cache->value_stamp=value_stamp;
     cache->valid=LIS_TRUE;
+    cache->epoch++;
 
     *csr=fresh;
     if(action) *action=LIS_MATRIX_MATERIALIZE_REBUILD;
@@ -796,6 +800,35 @@ lis_matrix_policy_direct_supported(
     return LIS_FALSE;
 }
 
+/*
+ * Keep the decision separate from materialization: callers that own
+ * persistent preconditioners can reset them before CSR storage is touched.
+ */
+static LIS_INT
+lis_matrix_choose_solver_policy(
+    LIS_MATRIX source,
+    LIS_SOLVER solver,
+    LIS_INT *policy)
+{
+    LIS_INT precon_type,nested,err;
+
+    if(source==NULL || solver==NULL || policy==NULL)
+        return LIS_ERR_ILL_ARG;
+
+    *policy=LIS_MATRIX_POLICY_DIRECT;
+    if(source->matrix_type!=LIS_MATRIX_USER &&
+       source->matrix_type!=LIS_MATRIX_OPERATOR)
+        return LIS_SUCCESS;
+
+    err=lis_solver_get_effective_preconditioner(
+        solver,&precon_type,&nested);
+    if(err) return err;
+
+    if(!lis_matrix_policy_direct_supported(source,precon_type))
+        *policy=LIS_MATRIX_POLICY_CACHED_CSR;
+    return LIS_SUCCESS;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_prepare_solver_matrix"
 LIS_INT
@@ -807,7 +840,7 @@ lis_matrix_prepare_solver_matrix(
     LIS_INT *policy,
     LIS_INT *action)
 {
-    LIS_INT precon_type,nested,err;
+    LIS_INT chosen,err;
 
     LIS_DEBUG_FUNC_IN;
 
@@ -818,23 +851,10 @@ lis_matrix_prepare_solver_matrix(
     *policy=LIS_MATRIX_POLICY_DIRECT;
     if(action) *action=LIS_MATRIX_POLICY_ACTION_DIRECT;
 
-    /*
-     * This policy is deliberately limited to external USER matrices and
-     * linear-combination operators. All other formats retain LIS's existing
-     * solver/preconditioner conversion behavior.
-     */
-    if(source->matrix_type!=LIS_MATRIX_USER &&
-       source->matrix_type!=LIS_MATRIX_OPERATOR)
-    {
-        *selected=source;
-        return LIS_SUCCESS;
-    }
-
-    err=lis_solver_get_effective_preconditioner(
-        solver,&precon_type,&nested);
+    err=lis_matrix_choose_solver_policy(source,solver,&chosen);
     if(err) return err;
 
-    if(lis_matrix_policy_direct_supported(source,precon_type))
+    if(chosen==LIS_MATRIX_POLICY_DIRECT)
     {
         *selected=source;
         return LIS_SUCCESS;
@@ -855,7 +875,6 @@ lis_matrix_prepare_solver_matrix(
     return LIS_SUCCESS;
 }
 
-
 /*
  * Own the solver and the optional materialized CSR as one lifetime unit.
  * selected is borrowed: it aliases source on DIRECT and cache->csr on CSR.
@@ -864,7 +883,12 @@ struct LIS_MATRIX_AUTO_SESSION_STRUCT
 {
     LIS_SOLVER solver;
     LIS_MATRIX_CSR_CACHE cache;
-    LIS_MATRIX selected;
+    LIS_MATRIX source; /* borrowed; never dereferenced after its lifetime */
+    uint64_t structure_stamp;
+    uint64_t value_stamp;
+    uint64_t selected_csr_epoch;
+    LIS_INT selected_policy;
+    LIS_INT has_selection;
 };
 
 #undef __FUNC__
@@ -925,70 +949,101 @@ lis_matrix_auto_session_solve(
     LIS_INT *action)
 {
     LIS_MATRIX selected=NULL;
-    LIS_INT chosen_policy=LIS_MATRIX_POLICY_DIRECT;
-    LIS_INT chosen_action=LIS_MATRIX_POLICY_ACTION_DIRECT;
-    LIS_INT err;
+    uint64_t structure_stamp,value_stamp;
+    LIS_INT desired_policy,chosen_policy,chosen_action,err,reset_err;
+    LIS_INT must_reset=LIS_FALSE;
 
     if(session==NULL || session->solver==NULL ||
        source==NULL || b==NULL || x==NULL)
         return LIS_ERR_ILL_ARG;
 
-    if(policy) *policy=chosen_policy;
-    if(action) *action=chosen_action;
+    /* The outputs are committed only after a successful solve. */
+    err=lis_matrix_choose_solver_policy(
+        source,session->solver,&desired_policy);
+    if(err) return err;
 
-    /*
-     * A cached CSR may be updated in place or DESTROYED by the following
-     * policy call. An existing sequence preconditioner may still reference
-     * that CSR (or its split D/L/U buffers), so release the solver state
-     * before any cache mutation, including a failed prior refresh.
-     *
-     * Inspect the same effective nested-source stamps as the CSR cache;
-     * a value-only update must reset the solver too, since refresh may
-     * invalidate arrays referenced by the old preconditioner.
-     */
-    if(session->cache!=NULL &&
-       session->selected==session->cache->csr)
+    err=lis_matrix_materialize_source_stamp(
+        source,&structure_stamp,&value_stamp,0);
+    if(err) return err;
+
+    if(session->has_selection)
     {
-        uint64_t structure_stamp,value_stamp;
-        err=lis_matrix_materialize_source_stamp(
-            source,&structure_stamp,&value_stamp,0);
-        if(err) return err;
+        must_reset=
+            session->source!=source ||
+            session->selected_policy!=desired_policy ||
+            session->structure_stamp!=structure_stamp ||
+            session->value_stamp!=value_stamp;
 
-        if(!session->cache->valid ||
-           session->cache->source!=source ||
-           session->cache->structure_stamp!=structure_stamp ||
-           session->cache->value_stamp!=value_stamp)
+        if(!must_reset &&
+           session->selected_policy==LIS_MATRIX_POLICY_CACHED_CSR)
         {
-            err=lis_solver_reset_sequence(session->solver);
-            if(err) return err;
-            session->selected=NULL;
+            must_reset=session->cache==NULL ||
+                !session->cache->valid ||
+                session->cache->source!=source ||
+                session->selected_csr_epoch!=session->cache->epoch;
         }
     }
 
-    err=lis_matrix_prepare_solver_matrix(
-        source,session->solver,&session->cache,&selected,
-        &chosen_policy,&chosen_action);
-    if(err)
-    {
-        /* A failure may follow partial value refresh: force a fresh CSR. */
-        if(session->cache) session->cache->valid=LIS_FALSE;
-        return err;
-    }
-
     /*
-     * DIRECT <-> CSR selection or source identity changed. Retain
-     * persistent state only when the actual solver matrix is unchanged.
+     * The cache's next prepare may mutate values or free its old CSR.
+     * Reset FIRST, using the policy decision and the effective nested
+     * source stamps rather than a potentially recycled CSR address.
      */
-    if(session->selected!=NULL && session->selected!=selected)
+    if(must_reset)
     {
         err=lis_solver_reset_sequence(session->solver);
         if(err) return err;
+        session->has_selection=LIS_FALSE;
+        session->source=NULL;
     }
 
-    session->selected=selected;
+    chosen_policy=LIS_MATRIX_POLICY_DIRECT;
+    chosen_action=LIS_MATRIX_POLICY_ACTION_DIRECT;
+    err=lis_matrix_prepare_solver_matrix(
+        source,session->solver,&session->cache,&selected,
+        &chosen_policy,&chosen_action);
+    if(err) goto fail;
+
+    /* A cache rebuild is a new object, even if malloc recycles an address. */
+    if(session->has_selection &&
+       chosen_policy==LIS_MATRIX_POLICY_CACHED_CSR &&
+       (session->cache==NULL ||
+        session->cache->epoch!=session->selected_csr_epoch ||
+        chosen_action!=LIS_MATRIX_MATERIALIZE_REUSE))
+    {
+        err=lis_solver_reset_sequence(session->solver);
+        if(err) goto fail;
+        session->has_selection=LIS_FALSE;
+    }
+
+    err=lis_solve_sequence(selected,b,x,session->solver);
+    if(err) goto fail;
+
+    session->source=source;
+    session->selected_policy=chosen_policy;
+    session->selected_csr_epoch=
+        chosen_policy==LIS_MATRIX_POLICY_CACHED_CSR ?
+            session->cache->epoch : 0;
+    session->structure_stamp=structure_stamp;
+    session->value_stamp=value_stamp;
+    session->has_selection=LIS_TRUE;
+
     if(policy) *policy=chosen_policy;
     if(action) *action=chosen_action;
-    return lis_solve_sequence(selected,b,x,session->solver);
+    return LIS_SUCCESS;
+
+fail:
+    /*
+     * A failed refresh can leave CSR values partially updated. Release
+     * persistent state before marking the cache unusable; the next attempt
+     * must rebuild from the source.
+     */
+    reset_err=lis_solver_reset_sequence(session->solver);
+    if(session->cache) session->cache->valid=LIS_FALSE;
+    session->has_selection=LIS_FALSE;
+    session->source=NULL;
+    if(reset_err) return reset_err;
+    return err;
 }
 
 #undef __FUNC__
@@ -1007,7 +1062,9 @@ lis_matrix_auto_session_reset(LIS_MATRIX_AUTO_SESSION session)
 
     lis_matrix_csr_cache_destroy(session->cache);
     session->cache=NULL;
-    session->selected=NULL;
+    session->source=NULL;
+    session->has_selection=LIS_FALSE;
+    session->selected_csr_epoch=0;
     return LIS_SUCCESS;
 }
 
