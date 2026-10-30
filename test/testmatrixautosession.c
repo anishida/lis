@@ -12,6 +12,8 @@ typedef struct {
     LIS_REAL scale;
     LIS_INT dense;
     LIS_INT failed_row;
+    LIS_SOLVER observed_solver;
+    LIS_INT assert_reset_before_row;
 } TEST_CONTEXT;
 
 static LIS_INT
@@ -23,6 +25,16 @@ test_row(void *data,LIS_INT row,LIS_INT *nnz,LIS_INT *cols,LIS_SCALAR *vals)
 
     if(ctx==NULL || nnz==NULL || row<0 || row>=3)
         return LIS_ERR_ILL_ARG;
+    if(ctx->assert_reset_before_row)
+    {
+        if(ctx->observed_solver==NULL ||
+           ctx->observed_solver->sequence_precon!=NULL)
+        {
+            fprintf(stderr,"row callback saw stale preconditioner before CSR refresh\n");
+            return LIS_ERR_ILL_ARG;
+        }
+        ctx->assert_reset_before_row=LIS_FALSE;
+    }
     if(ctx->failed_row==row)
         return LIS_ERR_ILL_ARG;
     if((cols==NULL)!=(vals==NULL))
@@ -132,7 +144,7 @@ test_solve(LIS_MATRIX_AUTO_SESSION session,LIS_SOLVER solver,
 
 int main(int argc,char **argv)
 {
-    TEST_CONTEXT ctx={1.0,0,-1},ctx2={2.0,0,-1};
+    TEST_CONTEXT ctx={1.0,0,-1,NULL,0},ctx2={2.0,0,-1,NULL,0};
     const LIS_SCALAR truth[3]={
         (LIS_SCALAR)1,(LIS_SCALAR)-2,(LIS_SCALAR)3};
     LIS_MATRIX A=NULL,B=NULL;
@@ -152,6 +164,8 @@ int main(int argc,char **argv)
     err=lis_vector_duplicate(A,&b);if(err)goto done;
     err=lis_matrix_auto_session_create(&session);if(err)goto done;
     err=lis_matrix_auto_session_get_solver(session,&solver);if(err)goto done;
+    ctx.observed_solver=solver;
+    ctx2.observed_solver=solver;
     err=lis_solver_get_sequence_policy(solver,&sequence_policy);
     if(err || sequence_policy!=LIS_SEQUENCE_POLICY_AUTO)goto done;
 
@@ -216,23 +230,29 @@ int main(int argc,char **argv)
     ctx.scale=(LIS_REAL)1.5;
     err=lis_matrix_mark_values_changed(A);if(err)goto done;
     err=test_matvec(&ctx,truth,b->value);if(err)goto done;
+    ctx.assert_reset_before_row=LIS_TRUE;
     if(test_solve(session,solver,A,b,x,truth,
           LIS_MATRIX_POLICY_CACHED_CSR,LIS_MATRIX_MATERIALIZE_VALUES,
           "csr-refresh"))goto done;
+    if(ctx.assert_reset_before_row)goto done;
 
     ctx.dense=1;
     err=lis_matrix_mark_structure_changed(A);if(err)goto done;
     err=test_matvec(&ctx,truth,b->value);if(err)goto done;
+    ctx.assert_reset_before_row=LIS_TRUE;
     if(test_solve(session,solver,A,b,x,truth,
           LIS_MATRIX_POLICY_CACHED_CSR,LIS_MATRIX_MATERIALIZE_REBUILD,
           "csr-structural-rebuild"))goto done;
+    if(ctx.assert_reset_before_row)goto done;
 
     /* Switching sources must release old sequence references before
        replacing the cache-owned CSR. */
     err=test_matvec(&ctx2,truth,b->value);if(err)goto done;
+    ctx2.assert_reset_before_row=LIS_TRUE;
     if(test_solve(session,solver,B,b,x,truth,
           LIS_MATRIX_POLICY_CACHED_CSR,LIS_MATRIX_MATERIALIZE_REBUILD,
           "csr-source-switch"))goto done;
+    if(ctx2.assert_reset_before_row)goto done;
 
     err=lis_matrix_auto_session_reset(session);if(err)goto done;
     err=test_matvec(&ctx,truth,b->value);if(err)goto done;
