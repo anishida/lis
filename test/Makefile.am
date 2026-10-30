@@ -23,11 +23,14 @@ test_PROGRAMS = testesubspaceretry etest1 etest2 etest3 etest4 etest5 etest5b et
         testworkreuse testprebuiltuser testshellscale testsymmdiagguard testilupivot \
         testparamupdate testbreakretry testchangingsystem testkrylovrobust testnearnullspace \
         testcoarsesetup testcoarseapply testgcrodroptions testgcrodrconfig testgcrodrsequence \
-        testmatrixgeneration testexternalstorage testmatrixmaterialize testmatrixmaterializeomp testmatrixpolicysolve testmatrixautosession testfrozenilut benchfrozenilut testsplitview testsplitviewi64 testmatrixoperatorlifecycle testmatrixoperatormpi testsequence testwarmstart testrecovery \
+        testmatrixgeneration testexternalstorage testmatrixmaterialize testmatrixmaterializeomp testmatrixpolicysolve testfrozenilut benchfrozenilut testsplitview testsplitviewi64 testmatrixoperatorlifecycle testmatrixoperatormpi testsequence testwarmstart testrecovery \
         testthreads testfgcrodr testmfamg testmfamggalerkin testexactnullspace testhalfconfig testhalfconvert \
         testfeastfoundation testfeastcontour testfeastshifted testnullspacecandidates testesolverselection \
 	testprojectedeigen testprojectedhermitian testblockgram \
 	testblockorthogonal testblockrank
+
+# Keep optional session tests separate from the long test_PROGRAMS list.
+test_PROGRAMS += testmatrixautosession
 
 testgcrodroptions_SOURCES = testgcrodroptions.c
 testfeastfoundation_SOURCES = testfeastfoundation.c
