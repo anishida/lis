@@ -1,0 +1,63 @@
+name: PR158 stable requested-nev validation
+on:
+  push:
+    branches: [feature/typed-esolver-requested-nev]
+jobs:
+  builds:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {name: real-serial, opts: "", cc: cc}
+          - {name: real-openmp, opts: "--enable-omp", cc: cc}
+          - {name: complex-serial, opts: "--enable-complex", cc: cc}
+          - {name: complex-openmp, opts: "--enable-complex --enable-omp", cc: cc}
+          - {name: real-longdouble, opts: "--enable-longdouble", cc: cc}
+          - {name: complex-longdouble, opts: "--enable-complex --enable-longdouble", cc: cc}
+          - {name: mpi-one-rank, opts: "--enable-mpi", cc: mpicc}
+    name: ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin gfortran openmpi-bin libopenmpi-dev
+      - name: Build library and eigensolver tests
+        run: |
+          autoreconf -fiv
+          mkdir build && cd build
+          ../configure CC=${{ matrix.cc }} ${{ matrix.opts }}
+          make -j2
+          make -C test testesolverselection testfeastfoundation testfeastshifted
+      - name: Run eigensolver regressions
+        env:
+          OMP_NUM_THREADS: '4'
+          OMP_DYNAMIC: 'FALSE'
+        run: |
+          cd build
+          ./test/testesolverselection
+          ./test/testfeastfoundation
+          ./test/testfeastshifted
+  sanitizers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin gfortran
+      - name: ASan/UBSan with leak detection
+        env:
+          ASAN_OPTIONS: 'detect_leaks=1:halt_on_error=1'
+          UBSAN_OPTIONS: 'halt_on_error=1:print_stacktrace=1'
+          OMP_NUM_THREADS: '4'
+          OMP_DYNAMIC: 'FALSE'
+        run: |
+          autoreconf -fiv
+          mkdir build && cd build
+          CFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer" LDFLAGS="-fsanitize=address,undefined" ../configure --enable-omp
+          make -j2
+          # Isolate typed API leak checks from an existing FEAST parser leak.
+          make -C test testesolverselection
+          ./test/testesolverselection
