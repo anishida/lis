@@ -84,6 +84,55 @@ LIS_INT lis_matrix_prepare_solver_matrix(
 void lis_matrix_csr_cache_destroy(
     LIS_MATRIX_CSR_CACHE cache);
 
+/*
+ * Optional, owned AUTO matrix/sequence session.
+ *
+ * The session owns a LIS_SOLVER and (when needed) a CSR materialization cache.
+ * It chooses DIRECT or CACHED_CSR using lis_matrix_prepare_solver_matrix()
+ * and calls lis_solve_sequence() on the selected matrix. Its solver uses
+ * LIS_SEQUENCE_POLICY_AUTO by default; callers configure it through the
+ * borrowed solver handle returned by get_solver().
+ *
+ * The source matrix and RHS/solution vectors are borrowed, never destroyed
+ * by the session. They must remain valid while in use. The caller must mark
+ * source structure/value changes using the existing generation API; this is
+ * also required for nested operator operands. On changes that can replace or
+ * refresh a cached CSR matrix, the session releases persistent solver state
+ * BEFORE touching that cache, preventing stale preconditioner references.
+ * Unchanged inputs can retain persistent solver/preconditioner state.
+ *
+ * A session is not thread-safe: do not use, configure or destroy it
+ * concurrently. Destroy it (or reset it) before destroying a source matrix
+ * used by the session. The borrowed solver must not be destroyed separately.
+ * reset() drops both reusable solver state and the CSR cache, while keeping
+ * solver options and the AUTO sequence policy.
+ *
+ * The policy/action outputs in solve() are optional. The session does not
+ * imply any change to ordinary lis_solve() or lis_solve_sequence() behavior.
+ */
+typedef struct LIS_MATRIX_AUTO_SESSION_STRUCT *LIS_MATRIX_AUTO_SESSION;
+
+LIS_INT lis_matrix_auto_session_create(
+    LIS_MATRIX_AUTO_SESSION *session);
+
+LIS_INT lis_matrix_auto_session_get_solver(
+    LIS_MATRIX_AUTO_SESSION session,
+    LIS_SOLVER *solver);
+
+LIS_INT lis_matrix_auto_session_solve(
+    LIS_MATRIX_AUTO_SESSION session,
+    LIS_MATRIX source,
+    LIS_VECTOR b,
+    LIS_VECTOR x,
+    LIS_INT *policy,
+    LIS_INT *action);
+
+LIS_INT lis_matrix_auto_session_reset(
+    LIS_MATRIX_AUTO_SESSION session);
+
+void lis_matrix_auto_session_destroy(
+    LIS_MATRIX_AUTO_SESSION session);
+
 #ifdef __cplusplus
 }
 #endif

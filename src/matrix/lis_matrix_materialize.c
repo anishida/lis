@@ -854,3 +854,175 @@ lis_matrix_prepare_solver_matrix(
     *policy=LIS_MATRIX_POLICY_CACHED_CSR;
     return LIS_SUCCESS;
 }
+
+
+/*
+ * Own the solver and the optional materialized CSR as one lifetime unit.
+ * selected is borrowed: it aliases source on DIRECT and cache->csr on CSR.
+ */
+struct LIS_MATRIX_AUTO_SESSION_STRUCT
+{
+    LIS_SOLVER solver;
+    LIS_MATRIX_CSR_CACHE cache;
+    LIS_MATRIX selected;
+};
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_auto_session_create"
+LIS_INT
+lis_matrix_auto_session_create(LIS_MATRIX_AUTO_SESSION *session_out)
+{
+    LIS_MATRIX_AUTO_SESSION session;
+    LIS_INT err;
+
+    if(session_out==NULL)
+        return LIS_ERR_ILL_ARG;
+    *session_out=NULL;
+
+    session=(LIS_MATRIX_AUTO_SESSION)lis_malloc(
+        sizeof(*session),"lis_matrix_auto_session_create::session");
+    if(session==NULL)
+        return LIS_OUT_OF_MEMORY;
+    memset(session,0,sizeof(*session));
+
+    err=lis_solver_create(&session->solver);
+    if(err) goto fail;
+    err=lis_solver_set_sequence_policy(
+        session->solver,LIS_SEQUENCE_POLICY_AUTO);
+    if(err) goto fail;
+
+    *session_out=session;
+    return LIS_SUCCESS;
+
+fail:
+    if(session->solver) lis_solver_destroy(session->solver);
+    lis_free(session);
+    return err;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_auto_session_get_solver"
+LIS_INT
+lis_matrix_auto_session_get_solver(
+    LIS_MATRIX_AUTO_SESSION session,
+    LIS_SOLVER *solver)
+{
+    if(session==NULL || solver==NULL || session->solver==NULL)
+        return LIS_ERR_ILL_ARG;
+    *solver=session->solver;
+    return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_auto_session_solve"
+LIS_INT
+lis_matrix_auto_session_solve(
+    LIS_MATRIX_AUTO_SESSION session,
+    LIS_MATRIX source,
+    LIS_VECTOR b,
+    LIS_VECTOR x,
+    LIS_INT *policy,
+    LIS_INT *action)
+{
+    LIS_MATRIX selected=NULL;
+    LIS_INT chosen_policy=LIS_MATRIX_POLICY_DIRECT;
+    LIS_INT chosen_action=LIS_MATRIX_POLICY_ACTION_DIRECT;
+    LIS_INT err;
+
+    if(session==NULL || session->solver==NULL ||
+       source==NULL || b==NULL || x==NULL)
+        return LIS_ERR_ILL_ARG;
+
+    if(policy) *policy=chosen_policy;
+    if(action) *action=chosen_action;
+
+    /*
+     * A cached CSR may be updated in place or DESTROYED by the following
+     * policy call. An existing sequence preconditioner may still reference
+     * that CSR (or its split D/L/U buffers), so release the solver state
+     * before any cache mutation, including a failed prior refresh.
+     *
+     * Inspect the same effective nested-source stamps as the CSR cache;
+     * a value-only update must reset the solver too, since refresh may
+     * invalidate arrays referenced by the old preconditioner.
+     */
+    if(session->cache!=NULL &&
+       session->selected==session->cache->csr)
+    {
+        uint64_t structure_stamp,value_stamp;
+        err=lis_matrix_materialize_source_stamp(
+            source,&structure_stamp,&value_stamp,0);
+        if(err) return err;
+
+        if(!session->cache->valid ||
+           session->cache->source!=source ||
+           session->cache->structure_stamp!=structure_stamp ||
+           session->cache->value_stamp!=value_stamp)
+        {
+            err=lis_solver_reset_sequence(session->solver);
+            if(err) return err;
+            session->selected=NULL;
+        }
+    }
+
+    err=lis_matrix_prepare_solver_matrix(
+        source,session->solver,&session->cache,&selected,
+        &chosen_policy,&chosen_action);
+    if(err)
+    {
+        /* A failure may follow partial value refresh: force a fresh CSR. */
+        if(session->cache) session->cache->valid=LIS_FALSE;
+        return err;
+    }
+
+    /*
+     * DIRECT <-> CSR selection or source identity changed. Retain
+     * persistent state only when the actual solver matrix is unchanged.
+     */
+    if(session->selected!=NULL && session->selected!=selected)
+    {
+        err=lis_solver_reset_sequence(session->solver);
+        if(err) return err;
+    }
+
+    session->selected=selected;
+    if(policy) *policy=chosen_policy;
+    if(action) *action=chosen_action;
+    return lis_solve_sequence(selected,b,x,session->solver);
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_auto_session_reset"
+LIS_INT
+lis_matrix_auto_session_reset(LIS_MATRIX_AUTO_SESSION session)
+{
+    LIS_INT err;
+
+    if(session==NULL || session->solver==NULL)
+        return LIS_ERR_ILL_ARG;
+
+    /* The preconditioner may reference the cached CSR: destroy it first. */
+    err=lis_solver_reset_sequence(session->solver);
+    if(err) return err;
+
+    lis_matrix_csr_cache_destroy(session->cache);
+    session->cache=NULL;
+    session->selected=NULL;
+    return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_auto_session_destroy"
+void
+lis_matrix_auto_session_destroy(LIS_MATRIX_AUTO_SESSION session)
+{
+    if(session==NULL)
+        return;
+
+    /* Always destroy solver/preconditioner state before cache-owned CSR. */
+    if(session->solver)
+        lis_solver_destroy(session->solver);
+    lis_matrix_csr_cache_destroy(session->cache);
+    memset(session,0,sizeof(*session));
+    lis_free(session);
+}
