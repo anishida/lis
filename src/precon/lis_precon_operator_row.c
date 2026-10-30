@@ -62,7 +62,7 @@ lis_precon_operator_reserve(
 
     if(needed>0)
     {
-        new_index=(LIS_INT *)lis_malloc(
+        new_index=(LIS_INT *)lis_precon_row_source_alloc(source,
             needed*sizeof(LIS_INT),
             "lis_precon_operator_reserve::index");
         if(new_index==NULL)
@@ -71,19 +71,19 @@ lis_precon_operator_reserve(
             return LIS_OUT_OF_MEMORY;
         }
 
-        new_value=(LIS_SCALAR *)lis_malloc(
+        new_value=(LIS_SCALAR *)lis_precon_row_source_alloc(source,
             needed*sizeof(LIS_SCALAR),
             "lis_precon_operator_reserve::value");
         if(new_value==NULL)
         {
-            lis_free(new_index);
+            lis_precon_row_source_release(source,new_index);
             LIS_SETERR_MEM(needed*sizeof(LIS_SCALAR));
             return LIS_OUT_OF_MEMORY;
         }
     }
 
-    lis_free(source->index_buffer);
-    lis_free(source->value_buffer);
+    lis_precon_row_source_release(source,source->index_buffer);
+    lis_precon_row_source_release(source,source->value_buffer);
     source->index_buffer=new_index;
     source->value_buffer=new_value;
     source->capacity=needed;
@@ -111,7 +111,7 @@ lis_precon_operator_entries_reserve(
 
     if(needed>0)
     {
-        new_entries=(LIS_PRECON_OPERATOR_ENTRY *)lis_malloc(
+        new_entries=(LIS_PRECON_OPERATOR_ENTRY *)lis_precon_row_source_alloc(source,
             needed*sizeof(*new_entries),
             "lis_precon_operator_entries_reserve::entries");
         if(new_entries==NULL)
@@ -121,7 +121,7 @@ lis_precon_operator_entries_reserve(
         }
     }
 
-    lis_free(source->operator_entries);
+    lis_precon_row_source_release(source,source->operator_entries);
     source->operator_entries=new_entries;
     source->operator_entries_capacity=needed;
     return LIS_SUCCESS;
@@ -144,13 +144,13 @@ lis_precon_operator_row_source_init(
        A->operator_A->n!=A->n || A->operator_A->gn!=A->gn)
         return LIS_ERR_NOT_IMPLEMENTED;
 
-    source->operator_A=(LIS_PRECON_ROW_SOURCE *)lis_malloc(
+    source->operator_A=(LIS_PRECON_ROW_SOURCE *)lis_precon_row_source_alloc(source,
         sizeof(LIS_PRECON_ROW_SOURCE),
         "lis_precon_operator_row_source_init::A");
     if(source->operator_A==NULL)
         return LIS_OUT_OF_MEMORY;
     memset(source->operator_A,0,sizeof(*source->operator_A));
-    err=lis_precon_row_source_init(A->operator_A,source->operator_A);
+    err=lis_precon_row_source_init_mode(A->operator_A,source->operator_A,source->raw_scratch);
     if(err) goto fail;
 
     if(A->operator_scale!=NULL)
@@ -171,7 +171,7 @@ lis_precon_operator_row_source_init(
         goto fail;
     }
 
-    source->operator_B=(LIS_PRECON_ROW_SOURCE *)lis_malloc(
+    source->operator_B=(LIS_PRECON_ROW_SOURCE *)lis_precon_row_source_alloc(source,
         sizeof(LIS_PRECON_ROW_SOURCE),
         "lis_precon_operator_row_source_init::B");
     if(source->operator_B==NULL)
@@ -180,7 +180,7 @@ lis_precon_operator_row_source_init(
         goto fail;
     }
     memset(source->operator_B,0,sizeof(*source->operator_B));
-    err=lis_precon_row_source_init(A->operator_B,source->operator_B);
+    err=lis_precon_row_source_init_mode(A->operator_B,source->operator_B,source->raw_scratch);
     if(err) goto fail;
 
     return LIS_SUCCESS;
@@ -200,17 +200,17 @@ lis_precon_operator_row_source_destroy(
     if(source->operator_A)
     {
         lis_precon_row_source_destroy(source->operator_A);
-        lis_free(source->operator_A);
+        lis_precon_row_source_release(source,source->operator_A);
         source->operator_A=NULL;
     }
     if(source->operator_B)
     {
         lis_precon_row_source_destroy(source->operator_B);
-        lis_free(source->operator_B);
+        lis_precon_row_source_release(source,source->operator_B);
         source->operator_B=NULL;
     }
 
-    lis_free(source->operator_entries);
+    lis_precon_row_source_release(source,source->operator_entries);
     source->operator_entries=NULL;
     source->operator_entries_capacity=0;
 }

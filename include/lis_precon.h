@@ -26,6 +26,7 @@
 
 
 #ifndef __LIS_PRECON_H__
+#include <stddef.h>
 #define __LIS_PRECON_H__
 
 
@@ -64,6 +65,7 @@ extern "C"
 typedef struct LIS_PRECON_ROW_SOURCE_STRUCT
 {
 	LIS_MATRIX A;
+	LIS_INT raw_scratch; /* private libc allocation, never LIS registry */
 	LIS_INT capacity;
 	LIS_INT *index_buffer;
 	LIS_SCALAR *value_buffer;
@@ -79,6 +81,16 @@ typedef struct LIS_PRECON_ROW_SOURCE_STRUCT
 extern LIS_INT lis_precon_row_source_init(
 	LIS_MATRIX A,
 	LIS_PRECON_ROW_SOURCE *source);
+
+/* Worker-local scratch must bypass the process-global LIS allocation table.
+ * The ordinary row-source ABI and allocator remain unchanged.
+ */
+extern LIS_INT lis_precon_row_source_init_mode(
+    LIS_MATRIX A,LIS_PRECON_ROW_SOURCE *source,LIS_INT raw_scratch);
+extern void *lis_precon_row_source_alloc(
+    LIS_PRECON_ROW_SOURCE *source,size_t bytes,char *tag);
+extern void lis_precon_row_source_release(
+    LIS_PRECON_ROW_SOURCE *source,void *ptr);
 
 extern LIS_INT lis_precon_row_source_get(
 	LIS_PRECON_ROW_SOURCE *source,

@@ -147,9 +147,9 @@ LIS_INT	precon_register_type = LIS_PRECON_TYPE_USERDEF;
 
 #undef __FUNC__
 #define __FUNC__ "lis_precon_row_source_init"
-LIS_INT lis_precon_row_source_init(
+LIS_INT lis_precon_row_source_init_mode(
 	LIS_MATRIX A,
-	LIS_PRECON_ROW_SOURCE *source)
+	LIS_PRECON_ROW_SOURCE *source,LIS_INT raw_scratch)
 {
 	if( A==NULL || source==NULL )
 	{
@@ -158,6 +158,7 @@ LIS_INT lis_precon_row_source_init(
 
 	memset(source,0,sizeof(*source));
 	source->A = A;
+	source->raw_scratch=raw_scratch;
 
 	switch( A->matrix_type )
 	{
@@ -187,6 +188,25 @@ LIS_INT lis_precon_row_source_init(
 }
 
 
+void *lis_precon_row_source_alloc(
+    LIS_PRECON_ROW_SOURCE *source,size_t bytes,char *tag)
+{
+    return source->raw_scratch ? malloc(bytes) : lis_malloc(bytes,tag);
+}
+
+void lis_precon_row_source_release(
+    LIS_PRECON_ROW_SOURCE *source,void *ptr)
+{
+    if(source->raw_scratch) free(ptr);
+    else lis_free(ptr);
+}
+
+LIS_INT lis_precon_row_source_init(
+    LIS_MATRIX A,LIS_PRECON_ROW_SOURCE *source)
+{
+    return lis_precon_row_source_init_mode(A,source,LIS_FALSE);
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_precon_row_source_destroy"
 void lis_precon_row_source_destroy(
@@ -199,12 +219,12 @@ void lis_precon_row_source_destroy(
 
 	if( source->index_buffer!=NULL )
 	{
-		lis_free(source->index_buffer);
+		lis_precon_row_source_release(source,source->index_buffer);
 	}
 
 	if( source->value_buffer!=NULL )
 	{
-		lis_free(source->value_buffer);
+		lis_precon_row_source_release(source,source->value_buffer);
 	}
 
 	lis_precon_operator_row_source_destroy(source);
@@ -352,7 +372,7 @@ LIS_INT lis_precon_row_source_get(
 		if( needed>0 )
 		{
 			new_index =
-				(LIS_INT *)lis_malloc(
+				(LIS_INT *)lis_precon_row_source_alloc(source,
 					needed*sizeof(LIS_INT),
 					"lis_precon_row_source_get::index");
 
@@ -365,13 +385,13 @@ LIS_INT lis_precon_row_source_get(
 			}
 
 			new_value =
-				(LIS_SCALAR *)lis_malloc(
+				(LIS_SCALAR *)lis_precon_row_source_alloc(source,
 					needed*sizeof(LIS_SCALAR),
 					"lis_precon_row_source_get::value");
 
 			if( new_value==NULL )
 			{
-				lis_free(new_index);
+				lis_precon_row_source_release(source,new_index);
 
 				LIS_SETERR_MEM(
 					needed*sizeof(LIS_SCALAR));
@@ -382,12 +402,12 @@ LIS_INT lis_precon_row_source_get(
 
 		if( source->index_buffer!=NULL )
 		{
-			lis_free(source->index_buffer);
+			lis_precon_row_source_release(source,source->index_buffer);
 		}
 
 		if( source->value_buffer!=NULL )
 		{
-			lis_free(source->value_buffer);
+			lis_precon_row_source_release(source,source->value_buffer);
 		}
 
 		source->index_buffer = new_index;

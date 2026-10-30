@@ -154,6 +154,7 @@ lis_matrix_materialize_source_stamp(
  * USER matrices in MPI builds need not have a communication table.
  * Allocate an independent cache-owned CSR target with the same distribution.
  */
+#ifdef USE_MPI
 static LIS_INT
 lis_matrix_materialize_create_target(LIS_MATRIX source,LIS_MATRIX *out)
 {
@@ -169,6 +170,7 @@ lis_matrix_materialize_create_target(LIS_MATRIX source,LIS_MATRIX *out)
     }
     return err;
 }
+#endif
 
 #ifdef _OPENMP
 static LIS_INT
@@ -201,14 +203,14 @@ lis_matrix_materialize_rows_parallel_safe(LIS_MATRIX A,LIS_INT depth)
 static LIS_INT
 lis_matrix_materialize_use_parallel_rows(LIS_MATRIX A)
 {
-    return A!=NULL && A->n>=256 && omp_get_max_threads()>1 &&
+    return A!=NULL && A->n>=1024 && omp_get_max_threads()>1 &&
            !omp_in_parallel() &&
            lis_matrix_materialize_rows_parallel_safe(A,0);
 }
 
 /*
- * mode=0: count entries per row; mode=1: fill CSR; mode=2: update values.
- * For fills/updates, row bounds must match the counted/verified structure.
+ * mode=0: count entries per row; mode=1: fill CSR.
+ * On fill, row bounds must match the counted structure.
  */
 static LIS_INT
 lis_matrix_materialize_parallel_rows(
@@ -225,7 +227,7 @@ lis_matrix_materialize_parallel_rows(
     {
         LIS_PRECON_ROW_SOURCE row;
         LIS_INT i,local_error,ready;
-        local_error=lis_precon_row_source_init(A,&row);
+        local_error=lis_precon_row_source_init_mode(A,&row,LIS_TRUE);
         ready=(local_error==LIS_SUCCESS);
 
         #pragma omp for schedule(static)
@@ -254,24 +256,15 @@ lis_matrix_materialize_parallel_rows(
                 continue;
             }
             if(row.nnz>0 &&
-               (row.index==NULL || row.value==NULL || value==NULL ||
-                (mode==1 && index==NULL)))
+               (row.index==NULL || row.value==NULL || value==NULL || index==NULL))
             {
                 local_error=LIS_ERR_ILL_ARG;
                 continue;
             }
-            if(mode==1)
+            for(k=0;k<row.nnz;k++)
             {
-                for(k=0;k<row.nnz;k++)
-                {
-                    index[ptr[i]+k]=row.index[k];
-                    value[ptr[i]+k]=row.value[k];
-                }
-            }
-            else
-            {
-                for(k=0;k<row.nnz;k++)
-                    value[ptr[i]+k]=row.value[k];
+                index[ptr[i]+k]=row.index[k];
+                value[ptr[i]+k]=row.value[k];
             }
         }
 
@@ -326,7 +319,12 @@ lis_matrix_materialize_build_csr_parallel(
         nnz+=counts[i];
     }
 
+#ifdef USE_MPI
     err=lis_matrix_materialize_create_target(source,&B);
+#else
+    /* Retain existing duplicate semantics in non-MPI builds. */
+    err=lis_matrix_duplicate(source,&B);
+#endif
     if(err) goto fail;
     err=lis_matrix_malloc_csr(source->n,nnz,&ptr,&index,&value);
     if(err) goto fail;
@@ -395,7 +393,12 @@ lis_matrix_materialize_build_csr(
     err=lis_precon_row_source_count_nnz(source,&nnz);
     if(err) return err;
 
+#ifdef USE_MPI
     err=lis_matrix_materialize_create_target(source,&B);
+#else
+    /* Retain existing duplicate semantics in non-MPI builds. */
+    err=lis_matrix_duplicate(source,&B);
+#endif
     if(err) goto fail;
 
     err=lis_matrix_malloc_csr(source->n,nnz,&ptr,&index,&value);
@@ -515,31 +518,22 @@ lis_matrix_materialize_refresh_values(
     LIS_PRECON_ROW_SOURCE row;
     LIS_INT i,k,p0,err;
 
-#ifdef _OPENMP
-    if(lis_matrix_materialize_use_parallel_rows(source))
+    /*
+     * Refresh stays serial: the preceding full structural verification is
+     * serial too, and benchmarks did not show a consistent OpenMP benefit.
+     */
+    err=lis_precon_row_source_init(source,&row);
+    if(err) return err;
+    for(i=0;i<source->n;i++)
     {
-        err=lis_matrix_materialize_parallel_rows(
-            source,2,NULL,csr->ptr,NULL,csr->value);
-        if(err) return err;
+        err=lis_precon_row_source_get(&row,i);
+        if(err) break;
+        p0=csr->ptr[i];
+        for(k=0;k<row.nnz;k++)
+            csr->value[p0+k]=row.value[k];
     }
-    else
-#endif
-    {
-        err=lis_precon_row_source_init(source,&row);
-        if(err) return err;
-
-        for(i=0;i<source->n;i++)
-        {
-            err=lis_precon_row_source_get(&row,i);
-            if(err) break;
-
-            p0=csr->ptr[i];
-            for(k=0;k<row.nnz;k++)
-                csr->value[p0+k]=row.value[k];
-        }
-        lis_precon_row_source_destroy(&row);
-        if(err) return err;
-    }
+    lis_precon_row_source_destroy(&row);
+    if(err) return err;
 
     /*
      * A solver/preconditioner may have split this cache-owned CSR matrix

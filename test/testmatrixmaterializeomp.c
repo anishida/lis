@@ -8,7 +8,7 @@
 #include <omp.h>
 #endif
 
-#define NROWS 768
+#define NROWS 2048
 #define TRACK_THREADS 256
 
 typedef struct {
