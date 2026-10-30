@@ -183,6 +183,35 @@ int main(int argc,char **argv)
         goto done;
     }
 
+    /*
+     * A change to solver options alone must switch CACHED_CSR -> DIRECT
+     * before the persistent state is reused; no source generation changes.
+     * The old cache stays allocated and may be REUSEd when switching back.
+     */
+    {
+        char direct_options[]="-i gmres -p ilut -restart 10 -tol 1e-11 -maxiter 80 -scale none";
+        err=lis_solver_set_option_replace(direct_options,solver);if(err)goto done;
+    }
+    if(test_solve(session,solver,A,b,x,truth,
+          LIS_MATRIX_POLICY_DIRECT,LIS_MATRIX_POLICY_ACTION_DIRECT,
+          "options-csr-to-direct"))goto done;
+    {
+        char csr_options[]="-i gmres -p ssor -restart 10 -tol 1e-11 -maxiter 80 -scale none";
+        err=lis_solver_set_option_replace(csr_options,solver);if(err)goto done;
+    }
+    if(test_solve(session,solver,A,b,x,truth,
+          LIS_MATRIX_POLICY_CACHED_CSR,LIS_MATRIX_MATERIALIZE_REUSE,
+          "options-direct-to-csr"))goto done;
+
+    /* Failure leaves policy/action unchanged, even with invalid inputs. */
+    policy=1234;action=5678;
+    err=lis_matrix_auto_session_solve(session,NULL,b,x,&policy,&action);
+    if(err==LIS_SUCCESS || policy!=1234 || action!=5678)
+    {
+        fprintf(stderr,"AUTO_SESSION modified outputs on invalid arguments\n");
+        goto done;
+    }
+
     ctx.scale=(LIS_REAL)1.5;
     err=lis_matrix_mark_values_changed(A);if(err)goto done;
     err=test_matvec(&ctx,truth,b->value);if(err)goto done;
@@ -215,11 +244,12 @@ int main(int argc,char **argv)
     ctx.scale=(LIS_REAL)2.0;
     err=lis_matrix_mark_values_changed(A);if(err)goto done;
     ctx.failed_row=1;
+    policy=4321;action=8765;
     err=lis_matrix_auto_session_solve(
         session,A,b,x,&policy,&action);
-    if(err==LIS_SUCCESS)
+    if(err==LIS_SUCCESS || policy!=4321 || action!=8765)
     {
-        fprintf(stderr,"failed callback unexpectedly succeeded\n");
+        fprintf(stderr,"failed callback or incorrect error outputs\n");
         goto done;
     }
     ctx.failed_row=-1;
@@ -227,6 +257,24 @@ int main(int argc,char **argv)
     if(test_solve(session,solver,A,b,x,truth,
           LIS_MATRIX_POLICY_CACHED_CSR,LIS_MATRIX_MATERIALIZE_REBUILD,
           "failure-recovery"))goto done;
+
+    /*
+     * Repeated structure rebuilds exercise cache identity changes.
+     * No pointer equality, including malloc address reuse, may cause REUSE.
+     */
+    {
+        LIS_INT k;
+        for(k=0;k<12;k++)
+        {
+            ctx.dense=k%2;
+            err=lis_matrix_mark_structure_changed(A);if(err)goto done;
+            err=test_matvec(&ctx,truth,b->value);if(err)goto done;
+            if(test_solve(session,solver,A,b,x,truth,
+                  LIS_MATRIX_POLICY_CACHED_CSR,
+                  LIS_MATRIX_MATERIALIZE_REBUILD,
+                  "csr-epoch-rebuild"))goto done;
+        }
+    }
 
     {
         char options[]="-i gmres -p ilut -restart 10 -tol 1e-11 -maxiter 80 -scale none";
