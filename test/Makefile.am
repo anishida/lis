@@ -29,6 +29,9 @@ test_PROGRAMS = testesubspaceretry etest1 etest2 etest3 etest4 etest5 etest5b et
 	testprojectedeigen testprojectedhermitian testblockgram \
 	testblockorthogonal testblockrank
 
+# Keep optional session tests separate from the long test_PROGRAMS list.
+test_PROGRAMS += testmatrixautosession
+
 testgcrodroptions_SOURCES = testgcrodroptions.c
 testfeastfoundation_SOURCES = testfeastfoundation.c
 testfeastcontour_SOURCES = testfeastcontour.c
@@ -40,6 +43,7 @@ testexternalstorage_SOURCES = testexternalstorage.c
 testmatrixmaterialize_SOURCES = testmatrixmaterialize.c
 testmatrixmaterializeomp_SOURCES = testmatrixmaterializeomp.c
 testmatrixpolicysolve_SOURCES = testmatrixpolicysolve.c
+testmatrixautosession_SOURCES = testmatrixautosession.c
 testfrozenilut_SOURCES = testfrozenilut.c
 benchfrozenilut_SOURCES = benchfrozenilut.c
 testsplitview_SOURCES = testsplitview.c
