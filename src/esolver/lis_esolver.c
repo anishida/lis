@@ -1603,6 +1603,24 @@ static LIS_INT lis_gesolve_once(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SC
 	esolver->p_c_time = 0;
 	esolver->p_i_time = 0;
 
+	/*
+         * A subsequent solve on the same eigensolver replaces its scratch
+         * vectors. Release the previous work array before allocating a new
+         * one; otherwise repeated solves leak the old work vectors.
+         */
+        if(esolver->work!=NULL)
+        {
+                err=lis_esolver_work_destroy(esolver);
+                if(err)
+                {
+                        esolver->x=NULL;
+                        esolver->xx=NULL;
+                        lis_vector_destroy(xx);
+                        esolver->retcode=err;
+                        return err;
+                }
+        }
+
 	/* create work vector */
 	err = lis_esolver_malloc_work[nesolver](esolver);
 	if( err )
