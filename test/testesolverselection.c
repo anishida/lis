@@ -361,6 +361,13 @@ static int requested_nev_end_to_end(void)
     err=lis_esolver_get_requested_nev(e,&requested);
     if(err || requested!=2 || e->nev!=4)goto done;
 
+    /* Subspace validation must use the REQUEST (2), not the most recent
+       output count (4), and must allow a valid smaller subspace. */
+    err=lis_esolver_set_subspace_size(e,3);if(err)goto done;
+    err=lis_esolver_get_requested_nev(e,&requested);
+    if(err || requested!=2)goto done;
+    err=lis_esolver_set_subspace_size(e,4);if(err)goto done;
+
     /* The text path allows -nev before -ss, then validates before solving. */
     err=lis_esolver_set_option2("-nev","5",e);if(err)goto done;
     err=lis_esolve(A,x,&value,e);
