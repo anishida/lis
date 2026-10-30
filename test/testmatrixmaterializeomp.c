@@ -191,7 +191,7 @@ int main(int argc,char **argv)
     if(err==LIS_SUCCESS || csr!=NULL)goto done;
     a.failed_row=-1;
     err=lis_matrix_materialize_csr_cached(A,&ca,&csr,&action);
-    if(err || action!=LIS_MATRIX_MATERIALIZE_REBUILD ||
+    if(err || action!=LIS_MATRIX_MATERIALIZE_VALUES ||
        check_csr(csr,(LIS_REAL)2.0))goto done;
 
     err=lis_matrix_materialize_csr_cached(U,&cu,&csr,&action);

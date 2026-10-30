@@ -281,7 +281,7 @@ void *rpl_malloc( size_t n )
 }
 */
 
-void *lis_malloc( size_t size, char *tag )
+static void *lis_malloc_unlocked( size_t size, char *tag )
 {
 	union {
 		void *ptr;
@@ -316,7 +316,7 @@ void *lis_malloc( size_t size, char *tag )
   return addr.ptr;
 }
 
-void *lis_calloc( size_t size, char *tag )
+static void *lis_calloc_unlocked( size_t size, char *tag )
 {
   union {
     void *ptr;
@@ -352,7 +352,7 @@ void *lis_calloc( size_t size, char *tag )
   return addr.ptr;
 }
 
-void *lis_realloc( void *p, size_t size )
+static void *lis_realloc_unlocked( void *p, size_t size )
 {
 	union {
 		void *ptr;
@@ -386,7 +386,7 @@ void *lis_realloc( void *p, size_t size )
 	return address;
 }
 
-void lis_free(void *p)
+static void lis_free_unlocked(void *p)
 {
   malloc_address *ma;
 
@@ -410,6 +410,51 @@ void lis_free(void *p)
   return;
 }
 
+void *lis_malloc(size_t size,char *tag)
+{
+    void *p;
+#ifdef _OPENMP
+    #pragma omp critical(lis_memory_registry)
+#endif
+    {
+        p=lis_malloc_unlocked(size,tag);
+    }
+    return p;
+}
+
+void *lis_calloc(size_t size,char *tag)
+{
+    void *p;
+#ifdef _OPENMP
+    #pragma omp critical(lis_memory_registry)
+#endif
+    {
+        p=lis_calloc_unlocked(size,tag);
+    }
+    return p;
+}
+
+void *lis_realloc(void *p,size_t size)
+{
+    void *next;
+#ifdef _OPENMP
+    #pragma omp critical(lis_memory_registry)
+#endif
+    {
+        next=lis_realloc_unlocked(p,size);
+    }
+    return next;
+}
+
+void lis_free(void *p)
+{
+#ifdef _OPENMP
+    #pragma omp critical(lis_memory_registry)
+#endif
+    {
+        lis_free_unlocked(p);
+    }
+}
 void lis_free_mat(LIS_MATRIX A)
 {
 	malloc_address *ma;
