@@ -326,6 +326,9 @@ lis_matrix_materialize_build_csr_parallel(
     err=lis_matrix_duplicate(source,&B);
 #endif
     if(err) goto fail;
+
+    /* The cache owns these CSR buffers even if the source does not own its data. */
+    B->is_destroy=LIS_TRUE;
     err=lis_matrix_malloc_csr(source->n,nnz,&ptr,&index,&value);
     if(err) goto fail;
 
@@ -400,6 +403,9 @@ lis_matrix_materialize_build_csr(
     err=lis_matrix_duplicate(source,&B);
 #endif
     if(err) goto fail;
+
+    /* The cache owns these CSR buffers even if the source does not own its data. */
+    B->is_destroy=LIS_TRUE;
 
     err=lis_matrix_malloc_csr(source->n,nnz,&ptr,&index,&value);
     if(err) goto fail;

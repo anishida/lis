@@ -148,7 +148,7 @@ int main(int argc,char **argv)
     CONTEXT a,b,unsafe;
     LIS_MATRIX A=NULL,B=NULL,U=NULL,op=NULL,csr=NULL,prior=NULL;
     LIS_MATRIX_CSR_CACHE ca=NULL,cb=NULL,cu=NULL;
-    LIS_INT action,err;
+    LIS_INT action,err,owned;
     int failed=1;
     memset(&a,0,sizeof(a));memset(&b,0,sizeof(b));
     memset(&unsafe,0,sizeof(unsafe));
@@ -163,6 +163,10 @@ int main(int argc,char **argv)
     err=make_user(&b,LIS_TRUE,&B);if(err)goto done;
     err=make_user(&unsafe,LIS_FALSE,&U);if(err)goto done;
 
+    /* A USER source may not own its data; the cached CSR must own its copy. */
+    err=lis_matrix_set_destroyflag(A,LIS_FALSE);if(err)goto done;
+    err=lis_matrix_set_destroyflag(U,LIS_FALSE);if(err)goto done;
+
     /* First-pass callback failure must leave no partially built cache. */
     a.failed_row=14;
     err=lis_matrix_materialize_csr_cached(A,&ca,&csr,&action);
@@ -172,6 +176,12 @@ int main(int argc,char **argv)
     err=lis_matrix_materialize_csr_cached(A,&ca,&csr,&action);
     if(err || action!=LIS_MATRIX_MATERIALIZE_REBUILD ||
        check_csr(csr,(LIS_REAL)1.0))goto done;
+    err=lis_matrix_get_destroyflag(csr,&owned);
+    if(err || owned!=LIS_TRUE)
+    {
+        fprintf(stderr,"cached CSR did not retain ownership of its buffers\n");
+        goto done;
+    }
 #ifdef _OPENMP
     if(omp_get_max_threads()>1 && !omp_get_dynamic() &&
        thread_count(&a)<2)
@@ -200,11 +210,29 @@ int main(int argc,char **argv)
     if(err || action!=LIS_MATRIX_MATERIALIZE_VALUES ||
        check_csr(csr,(LIS_REAL)2.0))goto done;
 
+    /* Structural invalidation rebuilds cache-owned CSR, not a borrowed buffer. */
+    err=lis_matrix_mark_structure_changed(A);if(err)goto done;
+    err=lis_matrix_materialize_csr_cached(A,&ca,&csr,&action);
+    if(err || action!=LIS_MATRIX_MATERIALIZE_REBUILD ||
+       check_csr(csr,(LIS_REAL)2.0))goto done;
+    err=lis_matrix_get_destroyflag(csr,&owned);
+    if(err || owned!=LIS_TRUE)
+    {
+        fprintf(stderr,"rebuilt CSR did not own its buffers\n");
+        goto done;
+    }
+
     err=lis_matrix_materialize_csr_cached(U,&cu,&csr,&action);
     if(err || check_csr(csr,(LIS_REAL)1.0) ||
        thread_count(&unsafe)!=1)
     {
         fprintf(stderr,"unsafe callback did not use serial fallback\n");
+        goto done;
+    }
+    err=lis_matrix_get_destroyflag(csr,&owned);
+    if(err || owned!=LIS_TRUE)
+    {
+        fprintf(stderr,"serial fallback CSR did not own its buffers\n");
         goto done;
     }
     err=lis_matrix_create_operator((LIS_SCALAR)1.0,A,
