@@ -455,7 +455,7 @@ void lis_free(void *p)
         lis_free_unlocked(p);
     }
 }
-void lis_free_mat(LIS_MATRIX A)
+static void lis_free_mat_unlocked(LIS_MATRIX A)
 {
 	malloc_address *ma;
 	malloc_address *ma_bak;
@@ -509,6 +509,16 @@ void lis_free_mat(LIS_MATRIX A)
 	return;
 }
 
+void lis_free_mat(LIS_MATRIX A)
+{
+#ifdef _OPENMP
+    #pragma omp critical(lis_memory_registry)
+#endif
+    {
+        lis_free_mat_unlocked(A);
+    }
+}
+
 void lis_free2(LIS_INT n, ...)
 {
 	va_list vvlist;
@@ -555,7 +565,7 @@ void lis_free_all()
 	return;
 }
 
-LIS_INT lis_is_malloc( void *p )
+static LIS_INT lis_is_malloc_unlocked( void *p )
 {
 	if( lis_malloc_address_find(p)!=NULL )
 	{
@@ -563,4 +573,16 @@ LIS_INT lis_is_malloc( void *p )
 	}
 
 	return LIS_FALSE;
+}
+
+LIS_INT lis_is_malloc(void *p)
+{
+    LIS_INT present;
+#ifdef _OPENMP
+    #pragma omp critical(lis_memory_registry)
+#endif
+    {
+        present=lis_is_malloc_unlocked(p);
+    }
+    return present;
 }
