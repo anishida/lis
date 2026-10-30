@@ -30,7 +30,12 @@ typedef struct LIS_MATRIX_CSR_CACHE_STRUCT *LIS_MATRIX_CSR_CACHE;
  *
  * The returned CSR pointer is borrowed from cache and remains valid until the
  * next successful rebuild or lis_matrix_csr_cache_destroy(). The initial
- * implementation is serial and requires row-accessible source matrices.
+ * implementation requires a single-process row distribution. On OpenMP
+ * builds, sufficiently large USER/OPERATOR matrices are materialized using
+ * independent per-thread row sources only when every USER leaf has explicitly
+ * opted in to concurrent row callback access. Other callbacks and smaller
+ * inputs retain the serial path. No matrix values or callback state may be
+ * mutated concurrently with materialization.
  */
 LIS_INT lis_matrix_materialize_csr_cached(
     LIS_MATRIX source,
