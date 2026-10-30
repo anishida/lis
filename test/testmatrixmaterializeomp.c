@@ -163,6 +163,12 @@ int main(int argc,char **argv)
     err=make_user(&b,LIS_TRUE,&B);if(err)goto done;
     err=make_user(&unsafe,LIS_FALSE,&U);if(err)goto done;
 
+    /* First-pass callback failure must leave no partially built cache. */
+    a.failed_row=14;
+    err=lis_matrix_materialize_csr_cached(A,&ca,&csr,&action);
+    if(err==LIS_SUCCESS || csr!=NULL || ca!=NULL)goto done;
+    a.failed_row=-1;
+
     err=lis_matrix_materialize_csr_cached(A,&ca,&csr,&action);
     if(err || action!=LIS_MATRIX_MATERIALIZE_REBUILD ||
        check_csr(csr,(LIS_REAL)1.0))goto done;

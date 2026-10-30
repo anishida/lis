@@ -150,6 +150,26 @@ lis_matrix_materialize_source_stamp(
  * Each OpenMP worker owns a separate LIS_PRECON_ROW_SOURCE and its scratch.
  * The fallback remains serial for unsafe callbacks and small problems.
  */
+/*
+ * USER matrices in MPI builds need not have a communication table.
+ * Allocate an independent cache-owned CSR target with the same distribution.
+ */
+static LIS_INT
+lis_matrix_materialize_create_target(LIS_MATRIX source,LIS_MATRIX *out)
+{
+    LIS_INT err;
+    *out=NULL;
+    err=lis_matrix_create(source->comm,out);
+    if(err) return err;
+    err=lis_matrix_set_size(*out,source->n,source->gn);
+    if(err)
+    {
+        lis_matrix_destroy(*out);
+        *out=NULL;
+    }
+    return err;
+}
+
 #ifdef _OPENMP
 static LIS_INT
 lis_matrix_materialize_rows_parallel_safe(LIS_MATRIX A,LIS_INT depth)
@@ -306,7 +326,7 @@ lis_matrix_materialize_build_csr_parallel(
         nnz+=counts[i];
     }
 
-    err=lis_matrix_duplicate(source,&B);
+    err=lis_matrix_materialize_create_target(source,&B);
     if(err) goto fail;
     err=lis_matrix_malloc_csr(source->n,nnz,&ptr,&index,&value);
     if(err) goto fail;
@@ -375,7 +395,7 @@ lis_matrix_materialize_build_csr(
     err=lis_precon_row_source_count_nnz(source,&nnz);
     if(err) return err;
 
-    err=lis_matrix_duplicate(source,&B);
+    err=lis_matrix_materialize_create_target(source,&B);
     if(err) goto fail;
 
     err=lis_matrix_malloc_csr(source->n,nnz,&ptr,&index,&value);
