@@ -150,6 +150,7 @@ lis_matrix_materialize_source_stamp(
  * Each OpenMP worker owns a separate LIS_PRECON_ROW_SOURCE and its scratch.
  * The fallback remains serial for unsafe callbacks and small problems.
  */
+#ifdef _OPENMP
 static LIS_INT
 lis_matrix_materialize_rows_parallel_safe(LIS_MATRIX A,LIS_INT depth)
 {
@@ -180,17 +181,11 @@ lis_matrix_materialize_rows_parallel_safe(LIS_MATRIX A,LIS_INT depth)
 static LIS_INT
 lis_matrix_materialize_use_parallel_rows(LIS_MATRIX A)
 {
-#ifdef _OPENMP
     return A!=NULL && A->n>=256 && omp_get_max_threads()>1 &&
            !omp_in_parallel() &&
            lis_matrix_materialize_rows_parallel_safe(A,0);
-#else
-    (void)A;
-    return LIS_FALSE;
-#endif
 }
 
-#ifdef _OPENMP
 /*
  * mode=0: count entries per row; mode=1: fill CSR; mode=2: update values.
  * For fills/updates, row bounds must match the counted/verified structure.
@@ -516,13 +511,14 @@ lis_matrix_materialize_refresh_values(
         for(i=0;i<source->n;i++)
         {
             err=lis_precon_row_source_get(&row,i);
-            if(err) goto done;
+            if(err) break;
 
             p0=csr->ptr[i];
             for(k=0;k<row.nnz;k++)
                 csr->value[p0+k]=row.value[k];
         }
         lis_precon_row_source_destroy(&row);
+        if(err) return err;
     }
 
     /*
