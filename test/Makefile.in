@@ -127,6 +127,7 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) \
 	testgcrodrsequence$(EXEEXT) testmatrixgeneration$(EXEEXT) \
 	testexternalstorage$(EXEEXT) testmatrixmaterialize$(EXEEXT) \
+	testmatrixmaterializeomp$(EXEEXT) \
 	testmatrixpolicysolve$(EXEEXT) testfrozenilut$(EXEEXT) \
 	benchfrozenilut$(EXEEXT) testsplitview$(EXEEXT) \
 	testsplitviewi64$(EXEEXT) testmatrixoperatorlifecycle$(EXEEXT) \
@@ -540,6 +541,12 @@ am_testmatrixmaterialize_OBJECTS = testmatrixmaterialize.$(OBJEXT)
 testmatrixmaterialize_OBJECTS = $(am_testmatrixmaterialize_OBJECTS)
 testmatrixmaterialize_LDADD = $(LDADD)
 testmatrixmaterialize_DEPENDENCIES =
+am_testmatrixmaterializeomp_OBJECTS =  \
+	testmatrixmaterializeomp.$(OBJEXT)
+testmatrixmaterializeomp_OBJECTS =  \
+	$(am_testmatrixmaterializeomp_OBJECTS)
+testmatrixmaterializeomp_LDADD = $(LDADD)
+testmatrixmaterializeomp_DEPENDENCIES =
 am_testmatrixoperatorlifecycle_OBJECTS =  \
 	testmatrixoperatorlifecycle.$(OBJEXT)
 testmatrixoperatorlifecycle_OBJECTS =  \
@@ -801,6 +808,7 @@ am__depfiles_remade = ./$(DEPDIR)/benchfrozenilut.Po \
 	./$(DEPDIR)/testmatrixgeneration.Po \
 	./$(DEPDIR)/testmatrixgraph.Po \
 	./$(DEPDIR)/testmatrixmaterialize.Po \
+	./$(DEPDIR)/testmatrixmaterializeomp.Po \
 	./$(DEPDIR)/testmatrixoperatorlifecycle.Po \
 	./$(DEPDIR)/testmatrixoperatormpi.Po \
 	./$(DEPDIR)/testmatrixpolicysolve.Po \
@@ -905,6 +913,7 @@ SOURCES = $(benchfrozenilut_SOURCES) $(esolve_SOURCES) \
 	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
 	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
 	$(testmatrixgraph_SOURCES) $(testmatrixmaterialize_SOURCES) \
+	$(testmatrixmaterializeomp_SOURCES) \
 	$(testmatrixoperatorlifecycle_SOURCES) \
 	$(testmatrixoperatormpi_SOURCES) \
 	$(testmatrixpolicysolve_SOURCES) $(testmatvecblock_SOURCES) \
@@ -968,6 +977,7 @@ DIST_SOURCES = $(benchfrozenilut_SOURCES) $(esolve_SOURCES) \
 	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
 	$(testkrylovrobust_SOURCES) $(testmatrixgeneration_SOURCES) \
 	$(testmatrixgraph_SOURCES) $(testmatrixmaterialize_SOURCES) \
+	$(testmatrixmaterializeomp_SOURCES) \
 	$(testmatrixoperatorlifecycle_SOURCES) \
 	$(testmatrixoperatormpi_SOURCES) \
 	$(testmatrixpolicysolve_SOURCES) $(testmatvecblock_SOURCES) \
@@ -1374,6 +1384,7 @@ testgcrodrsequence_SOURCES = testgcrodrsequence.c
 testmatrixgeneration_SOURCES = testmatrixgeneration.c
 testexternalstorage_SOURCES = testexternalstorage.c
 testmatrixmaterialize_SOURCES = testmatrixmaterialize.c
+testmatrixmaterializeomp_SOURCES = testmatrixmaterializeomp.c
 testmatrixpolicysolve_SOURCES = testmatrixpolicysolve.c
 testfrozenilut_SOURCES = testfrozenilut.c
 benchfrozenilut_SOURCES = benchfrozenilut.c
@@ -2030,6 +2041,10 @@ testmatrixmaterialize$(EXEEXT): $(testmatrixmaterialize_OBJECTS) $(testmatrixmat
 	@rm -f testmatrixmaterialize$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmatrixmaterialize_OBJECTS) $(testmatrixmaterialize_LDADD) $(LIBS)
 
+testmatrixmaterializeomp$(EXEEXT): $(testmatrixmaterializeomp_OBJECTS) $(testmatrixmaterializeomp_DEPENDENCIES) $(EXTRA_testmatrixmaterializeomp_DEPENDENCIES) 
+	@rm -f testmatrixmaterializeomp$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testmatrixmaterializeomp_OBJECTS) $(testmatrixmaterializeomp_LDADD) $(LIBS)
+
 testmatrixoperatorlifecycle$(EXEEXT): $(testmatrixoperatorlifecycle_OBJECTS) $(testmatrixoperatorlifecycle_DEPENDENCIES) $(EXTRA_testmatrixoperatorlifecycle_DEPENDENCIES) 
 	@rm -f testmatrixoperatorlifecycle$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmatrixoperatorlifecycle_OBJECTS) $(testmatrixoperatorlifecycle_LDADD) $(LIBS)
@@ -2309,6 +2324,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixgeneration.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixgraph.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixmaterialize.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixmaterializeomp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixoperatorlifecycle.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixoperatormpi.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixpolicysolve.Po@am__quote@ # am--include-marker
@@ -3333,6 +3349,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testmatrixgeneration.Po
 	-rm -f ./$(DEPDIR)/testmatrixgraph.Po
 	-rm -f ./$(DEPDIR)/testmatrixmaterialize.Po
+	-rm -f ./$(DEPDIR)/testmatrixmaterializeomp.Po
 	-rm -f ./$(DEPDIR)/testmatrixoperatorlifecycle.Po
 	-rm -f ./$(DEPDIR)/testmatrixoperatormpi.Po
 	-rm -f ./$(DEPDIR)/testmatrixpolicysolve.Po
@@ -3491,6 +3508,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testmatrixgeneration.Po
 	-rm -f ./$(DEPDIR)/testmatrixgraph.Po
 	-rm -f ./$(DEPDIR)/testmatrixmaterialize.Po
+	-rm -f ./$(DEPDIR)/testmatrixmaterializeomp.Po
 	-rm -f ./$(DEPDIR)/testmatrixoperatorlifecycle.Po
 	-rm -f ./$(DEPDIR)/testmatrixoperatormpi.Po
 	-rm -f ./$(DEPDIR)/testmatrixpolicysolve.Po
