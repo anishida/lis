@@ -290,13 +290,23 @@ void *lis_malloc( size_t size, char *tag )
 	malloc_address *ma;
 	LIS_INT sz;
 
+	/* Leave enough room for alignment without wrapping size_t. */
+	if( size>((size_t)-1)-16 )
+	{
+		return NULL;
+	}
 	addr.ptr = malloc(size + 16);
+	if( addr.ptr==NULL )
+	{
+		return NULL;
+	}
 	ma = (malloc_address *)malloc(sizeof(malloc_address));
+	if( ma==NULL )
+	{
+		free(addr.ptr);
+		return NULL;
+	}
 	lis_malloc_address_hash_prepare();
-	ma->next = &malloc_address_top;
-	ma->prev = malloc_address_top.prev;
-	ma->prev->next = ma;
-	ma->next->prev = ma;
 	ma->hash_next = NULL;
 	ma->real_address = addr.ptr;
 	ma->size = size;
@@ -307,9 +317,20 @@ void *lis_malloc( size_t size, char *tag )
 	#ifdef USE_MALLOC_TAG
 		sz = (LIS_INT)strlen(tag);
 		ma->tag = (char *)malloc(sz+1);
+		if( ma->tag==NULL )
+		{
+			free(ma->real_address);
+			free(ma);
+			return NULL;
+		}
 		strcpy(ma->tag,tag);
 	#endif
  
+	ma->next = &malloc_address_top;
+	ma->prev = malloc_address_top.prev;
+	ma->prev->next = ma;
+	ma->next->prev = ma;
+
   lis_malloc_address_hash_insert(ma);
   malloc_address_count++;
 
@@ -325,13 +346,23 @@ void *lis_calloc( size_t size, char *tag )
   malloc_address *ma;
   LIS_INT sz;
 
+	/* Leave enough room for alignment without wrapping size_t. */
+	if( size>((size_t)-1)-16 )
+	{
+		return NULL;
+	}
 	addr.ptr = malloc(size + 16);
+	if( addr.ptr==NULL )
+	{
+		return NULL;
+	}
 	ma = (malloc_address *)malloc(sizeof(malloc_address));
+	if( ma==NULL )
+	{
+		free(addr.ptr);
+		return NULL;
+	}
 	lis_malloc_address_hash_prepare();
-	ma->next = &malloc_address_top;
-	ma->prev = malloc_address_top.prev;
-	ma->prev->next = ma;
-	ma->next->prev = ma;
 	ma->hash_next = NULL;
 	ma->real_address = addr.ptr;
 	ma->size = size;
@@ -343,8 +374,19 @@ void *lis_calloc( size_t size, char *tag )
 	#ifdef USE_MALLOC_TAG
 		sz = (LIS_INT)strlen(tag);
 		ma->tag = (char *)malloc(sz+1);
+		if( ma->tag==NULL )
+		{
+			free(ma->real_address);
+			free(ma);
+			return NULL;
+		}
 		strcpy(ma->tag,tag);
 	#endif
+
+	ma->next = &malloc_address_top;
+	ma->prev = malloc_address_top.prev;
+	ma->prev->next = ma;
+	ma->next->prev = ma;
 
   lis_malloc_address_hash_insert(ma);
   malloc_address_count++;
@@ -365,8 +407,17 @@ void *lis_realloc( void *p, size_t size )
 	ma = lis_malloc_address_find(p);
 	if( ma!=NULL )
 	{
+		/* A failed realloc must leave p and its tracking entry intact. */
+		if( size>((size_t)-1)-16 )
+		{
+			return NULL;
+		}
 		old_size       = ma->size;
 		addr.ptr       = malloc(size + 16);
+		if( addr.ptr==NULL )
+		{
+			return NULL;
+		}
 		real_address   = addr.ptr;
 		addr.l        += 0xf;
 		addr.l        &= ~0xf;
