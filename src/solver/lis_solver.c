@@ -4179,6 +4179,22 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	}
 	#endif
 	#ifdef USE_QUAD_PRECISION
+		/*
+		 * The double-double arithmetic kernels operate on real hi/lo
+		 * components.  A complex LIS_SCALAR is not a complex
+		 * double-double value; running these kernels drops imaginary
+		 * components and can silently produce incorrect results.
+		 */
+		#ifdef _COMPLEX
+		if( precision==LIS_PRECISION_QUAD ||
+		    precision==LIS_PRECISION_SWITCH )
+		{
+			LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+			           "Complex quad/switch precision is not supported\n");
+			solver->retcode = LIS_ERR_NOT_IMPLEMENTED;
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
+		#endif
 		if( precision==LIS_PRECISION_QUAD && lis_solver_execute_quad[nsolver]==NULL )
 		{
 			LIS_SETERR1(LIS_ERR_NOT_IMPLEMENTED,"Quad precision solver %s is not implemented\n",lis_solvername[nsolver]);
