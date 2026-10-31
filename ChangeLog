@@ -1,3 +1,23 @@
+Version 2.1.21 October 31, 2026
+
+  - Treated inner LIS_MAXITER as a usable truncated preconditioner application in Hybrid nested KSP/PC (thanks to Rafal Brzegowy).
+  - Added public APIs for configuring internal linear solves and refinement choices inside transformed generalized eigensolvers (thanks to Rafal Brzegowy).
+  - Added generic serial matrix kernels for LIS_MATRIX_USER matrices that provide row access (thanks to Rafal Brzegowy).
+  - Added a small public helper to select, filter, and order converged eigensolver results (thanks to Rafal Brzegowy).
+  - Fixed the sizing of the global OpenMP temporary scalar buffer used by Lis vector reductions (thanks to Rafal Brzegowy).
+  - Extended the generic row-backed LIS_MATRIX_USER fallback kernels with OpenMP parallel execution (thanks to Rafal Brzegowy).
+  - Added a generic adaptive subspace retry policy for Lis eigensolvers (thanks to Rafal Brzegowy).
+  - Added a generic matrix infinity-norm operation supporting row-backed matrix representations (thanks to Rafal Brzegowy).
+  - Added generic public queries for the effective solver and preconditioner configuration (thanks to Rafal Brzegowy).
+  - Added a generic API (lis_solver_set_option_replace) for transactionally replacing the complete solver option profile (thanks to Rafal Brzegowy).
+  - Added generic support for increasing Lis OpenMP scratch capacity after initialization (thanks to Rafal Brzegowy).
+  - Added a generic matrix graph operation to compute weakly connected components (thanks to Rafal Brzegowy).
+  - Fixed complex-build portability in the public Lis header and corrected lis_vector_nrm2() for complex MPI builds (thanks to Rafal Brzegowy).
+  - Introduced an opt-in frozen-pattern ILUT numerical refresh policy for persistent sequences of linear solves (thanks to Rafal Brzegowy).
+  - Added a typed runtime API for stable solver and eigensolver controls, including requested eigenpair counts (thanks to Rafal Brzegowy).
+  - Introduced a managed AUTO matrix/sequence session API and caller-owned CSR materialization paths (thanks to Rafal Brzegowy).
+  - Added checked strided real64 vector import/export APIs and fixed-width int64_t split-triangular view support (thanks to Rafal Brzegowy).
+
 Version 2.1.20 October 25, 2026
 
   - Added robust orthogonalization and subspace locking (thanks to Rafal Brzegowy).

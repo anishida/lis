@@ -43,7 +43,7 @@ extern "C" {
 #endif
 
 /**************************************/
-#define LIS_VERSION	"2.1.20"
+#define LIS_VERSION	"2.1.21"
 /**************************************/
 #include <stdio.h>
 #ifdef USE_COMPLEX
