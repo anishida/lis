@@ -1,0 +1,144 @@
+/* Generic cached CSR materialization for row-backed matrices. */
+#ifndef LIS_MATRIX_MATERIALIZE_H
+#define LIS_MATRIX_MATERIALIZE_H
+
+#include "lis.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define LIS_MATRIX_MATERIALIZE_REUSE   0
+#define LIS_MATRIX_MATERIALIZE_VALUES  1
+#define LIS_MATRIX_MATERIALIZE_REBUILD 2
+
+#define LIS_MATRIX_POLICY_DIRECT       0
+#define LIS_MATRIX_POLICY_CACHED_CSR   1
+#define LIS_MATRIX_POLICY_ACTION_DIRECT (-1)
+
+typedef struct LIS_MATRIX_CSR_CACHE_STRUCT *LIS_MATRIX_CSR_CACHE;
+
+/*
+ * Return a cache-owned CSR materialization of source.
+ *
+ * The first call builds the CSR. Subsequent calls reuse it when the source
+ * identity and effective structure/value generations are unchanged. A pure
+ * value change refreshes the existing CSR allocation; a structural change
+ * rebuilds it transactionally. Nested LIS_MATRIX_OPERATOR operands are
+ * included in the generation stamp, so operand updates are observed even
+ * when the top-level operator object itself is unchanged.
+ *
+ * The returned CSR pointer is borrowed from cache and remains valid until the
+ * next successful rebuild or lis_matrix_csr_cache_destroy(). The initial
+ * implementation requires a single-process row distribution. On OpenMP
+ * builds, sufficiently large USER/OPERATOR matrices are built using
+ * independent per-thread row sources only when every USER leaf has explicitly
+ * opted in to concurrent row callback access. Refresh stays serial after a
+ * full index-by-index pattern check. Other callbacks and smaller inputs keep
+ * the serial path. No matrix values or callback state may be mutated while
+ * materialization is in progress.
+ */
+LIS_INT lis_matrix_materialize_csr_cached(
+    LIS_MATRIX source,
+    LIS_MATRIX_CSR_CACHE *cache,
+    LIS_MATRIX *csr,
+    LIS_INT *action);
+
+
+/*
+ * Select the matrix representation for a configured solver.
+ *
+ * This policy is applied to LIS_MATRIX_USER and LIS_MATRIX_OPERATOR sources.
+ * Native CSR and other explicit formats are returned unchanged so existing
+ * LIS format/conversion behavior is preserved.
+ *
+ * USER/OPERATOR matrices are passed through directly when the configured
+ * preconditioner can consume their available callbacks. Otherwise, a cached
+ * CSR view is selected. The cache tracks source generations and reports
+ * REUSE, VALUES, or REBUILD through action.
+ *
+ * selected is borrowed. For DIRECT it aliases source; for CACHED_CSR it is
+ * owned by cache and remains valid until a successful rebuild or cache
+ * destruction. action is LIS_MATRIX_POLICY_ACTION_DIRECT for the direct path.
+ *
+ * The function does not change solver configuration and does not call
+ * lis_solve(); the caller must use the returned selected matrix.
+ *
+ * This is an advanced, opt-in helper declared in this separate header,
+ * not an implicit part of lis_solve(). Neither the source nor the
+ * returned selected matrix should be destroyed by the helper's caller.
+ * For CACHED_CSR, the cache owns the matrix and may replace its pointer
+ * on a subsequent structural update; no borrowed pointer may be retained
+ * beyond a successful rebuild or explicit cache destruction.
+ * On failed materialization, selected remains NULL and errors propagate.
+ * The cached materialization fallback is currently serial-only.
+ */
+LIS_INT lis_matrix_prepare_solver_matrix(
+    LIS_MATRIX source,
+    LIS_SOLVER solver,
+    LIS_MATRIX_CSR_CACHE *cache,
+    LIS_MATRIX *selected,
+    LIS_INT *policy,
+    LIS_INT *action);
+
+void lis_matrix_csr_cache_destroy(
+    LIS_MATRIX_CSR_CACHE cache);
+
+/*
+ * Optional, owned AUTO matrix/sequence session.
+ *
+ * The session owns a LIS_SOLVER and (when needed) a CSR materialization cache.
+ * It chooses DIRECT or CACHED_CSR using lis_matrix_prepare_solver_matrix()
+ * and calls lis_solve_sequence() on the selected matrix. Its solver uses
+ * LIS_SEQUENCE_POLICY_AUTO by default; callers configure it through the
+ * borrowed solver handle returned by get_solver().
+ *
+ * The source matrix and RHS/solution vectors are borrowed, never destroyed
+ * by the session. They must remain valid while in use. The caller must mark
+ * source structure/value changes using the existing generation API; this is
+ * also required for nested operator operands. Each call determines the matrix
+ * policy before materialization and releases incompatible persistent state
+ * BEFORE any cache mutation. The session tracks cache rebuild epochs rather
+ * than CSR pointer identity, which can be recycled by an allocator.
+ * Unchanged inputs can retain persistent solver/preconditioner state.
+ *
+ * A session is not thread-safe: do not use, configure or destroy it
+ * concurrently. Destroy it (or reset it) before destroying a source matrix
+ * used by the session. The borrowed solver must not be destroyed separately.
+ * reset() drops both reusable solver state and the CSR cache, while keeping
+ * solver options and the AUTO sequence policy.
+ *
+ * The policy/action outputs in solve() are optional. They are written only
+ * after a successful solve, and retain their previous values on any error.
+ * MPI-enabled one-rank operation is tested; this API does not add distributed
+ * cached CSR support or guarantee collective synchronization across ranks.
+ * The session does not change lis_solve() or lis_solve_sequence() behavior.
+ */
+typedef struct LIS_MATRIX_AUTO_SESSION_STRUCT *LIS_MATRIX_AUTO_SESSION;
+
+LIS_INT lis_matrix_auto_session_create(
+    LIS_MATRIX_AUTO_SESSION *session);
+
+LIS_INT lis_matrix_auto_session_get_solver(
+    LIS_MATRIX_AUTO_SESSION session,
+    LIS_SOLVER *solver);
+
+LIS_INT lis_matrix_auto_session_solve(
+    LIS_MATRIX_AUTO_SESSION session,
+    LIS_MATRIX source,
+    LIS_VECTOR b,
+    LIS_VECTOR x,
+    LIS_INT *policy,
+    LIS_INT *action);
+
+LIS_INT lis_matrix_auto_session_reset(
+    LIS_MATRIX_AUTO_SESSION session);
+
+void lis_matrix_auto_session_destroy(
+    LIS_MATRIX_AUTO_SESSION session);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

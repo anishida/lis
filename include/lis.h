@@ -27,13 +27,23 @@
 #ifndef __LIS_H__
 #define __LIS_H__
 
+#ifdef HAVE_CONFIG_H
+#include "lis_config.h"
+#else
+#ifdef HAVE_CONFIG_WIN_H
+#include "lis_config_win.h"
+#endif
+#endif
+
+#include <math.h>
+
 #ifdef __cplusplus
 #undef HAVE_COMPLEX_H
 extern "C" {
 #endif
 
 /**************************************/
-#define LIS_VERSION	"2.1.20"
+#define LIS_VERSION	"2.1.21"
 /**************************************/
 #include <stdio.h>
 #ifdef USE_COMPLEX
@@ -294,6 +304,10 @@ extern "C" {
 #define LIS_SEQUENCE_POLICY_MANUAL 0
 #define LIS_SEQUENCE_POLICY_AUTO 1
 
+/* Persistent preconditioner refresh policy for value-only changes. */
+#define LIS_SEQUENCE_PRECON_REFRESH_SAFE 0
+#define LIS_SEQUENCE_PRECON_REFRESH_FROZEN_PATTERN 1
+
 #define LIS_MATRIX_ASSEMBLING 0
 #define LIS_MATRIX_CSR 1
 #define LIS_MATRIX_CSC 2
@@ -334,6 +348,7 @@ extern "C" {
 #define LIS_MATRIX_CAP_MATVECH     0x02
 #define LIS_MATRIX_CAP_DIAGONAL    0x04
 #define LIS_MATRIX_CAP_ROW_ACCESS  0x08
+#define LIS_MATRIX_CAP_ROW_THREAD_SAFE 0x10
 #define LIS_MATRIX_DECIDING_SIZE -(LIS_MATRIX_RCO+1)
 #define LIS_MATRIX_NULL -(LIS_MATRIX_RCO+2)
 
@@ -797,6 +812,7 @@ struct LIS_MATRIX_STRUCT
 	LIS_MATRIX_USER_MATVEC_BLOCK user_matvech_block;
 	LIS_MATRIX_USER_GET_DIAGONAL user_get_diagonal;
 	LIS_MATRIX_USER_GET_ROW user_get_row;
+	LIS_INT user_get_row_thread_safe;
 
 	/* Non-owning linear-combination operator: alpha*A + beta*B. */
 	struct LIS_MATRIX_STRUCT *operator_A;
@@ -1002,6 +1018,9 @@ struct LIS_SOLVER_STRUCT
 	/* Policy controlling solver-owned sequence decisions. */
 	LIS_INT sequence_policy;
 
+	/* Value-only refresh strategy for persistent preconditioners. */
+	LIS_INT sequence_precon_refresh_policy;
+
 	/* Persistent preconditioner state for related systems. */
 	LIS_PRECON sequence_precon;
 	LIS_MATRIX sequence_precon_matrix;
@@ -1100,6 +1119,13 @@ struct LIS_ESOLVER_STRUCT
         LIS_SCALAR ishift;
         LIS_INT transform;
         LIS_INT nev;
+        /*
+         * Stable requested eigenpair count, configured by the typed setter
+         * or -nev.  nev remains the legacy execution/result field.
+         * The active flag preserves direct writes to nev by older callers.
+         */
+        LIS_INT requested_nev;
+        LIS_INT requested_nev_active;
 	LIS_REAL nrm2;
         LIS_REAL tol;
         /*
@@ -1115,6 +1141,37 @@ struct LIS_ESOLVER_STRUCT
         LIS_INT feast_solver;
         LIS_INT feast_interval_mask;
         LIS_INT block_size;
+
+        /*
+         * Optional linear-solver configuration for eigensolver
+         * internal shifted systems.
+         *
+         * linear_options applies to linear solves owned by the
+         * current eigensolver. refine_linear_options applies to the
+         * nested eigensolver used to refine projected Ritz pairs.
+         * Both strings are owned by the eigensolver.
+         */
+        char *linear_options;
+        char *refine_linear_options;
+
+        /*
+         * Fraction of the nearest distinct Ritz spacing used to move
+         * a refinement shift away from the Ritz pole. 0.01 preserves
+         * the established default behavior.
+         */
+        LIS_REAL refine_gap_fraction;
+
+        /*
+         * Optional retry policy for subspace-based eigensolvers.
+         * The configured subspace is restored after lis_gesolve().
+         * Retries warm-start from the previous attempt. iter/resid describe
+         * the final attempt, while time covers the complete retry sequence.
+         */
+        LIS_INT subspace_retry_max;
+        LIS_REAL subspace_retry_growth;
+        LIS_INT subspace_retry_min;
+        LIS_INT subspace_retry_attempts;
+        LIS_INT subspace_retry_final_size;
 };
 typedef struct LIS_ESOLVER_STRUCT *LIS_ESOLVER;
 
@@ -1232,6 +1289,14 @@ extern "C"
 	extern LIS_INT lis_matrix_set_user_row(
 	                                   LIS_MATRIX A,
 	                                   LIS_MATRIX_USER_GET_ROW get_row);
+	/*
+	 * Mark the currently installed USER row callback as safe for concurrent
+	 * invocations. lis_matrix_set_user_row() always clears this opt-in, so a
+	 * replacement callback must be marked thread-safe explicitly again.
+	 */
+	extern LIS_INT lis_matrix_set_user_row_thread_safe(
+	                                   LIS_MATRIX A,
+	                                   LIS_INT thread_safe);
 	extern LIS_INT lis_matrix_get_user_row(
 	                                   LIS_MATRIX A,
 	                                   LIS_INT local_row,
@@ -1250,6 +1315,13 @@ extern "C"
 	extern LIS_INT lis_matrix_psd_set_value(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);  
 	extern LIS_INT lis_matrix_malloc(LIS_MATRIX A, LIS_INT nnz_row, LIS_INT nnz[]);
 	extern LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR d);
+	/*
+	 * Exact infinity norm max_i sum_j |a_ij| for explicit matrices and
+	 * row-backed USER matrices. Duplicate column entries in one row are
+	 * algebraically combined before taking the absolute value.
+	 * LIS_MATRIX_OPERATOR returns LIS_ERR_NOT_IMPLEMENTED.
+	 */
+	extern LIS_INT lis_matrix_get_inf_norm(LIS_MATRIX A, LIS_REAL *value);
 	extern LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR D, LIS_INT action);
 /*NEH support for extended "solve_kernel" workflow*/
 	extern LIS_INT lis_matrix_psd_reset_scale(LIS_MATRIX A);
@@ -1407,6 +1479,8 @@ extern "C"
 	extern LIS_INT lis_solver_get_sequence_diagnostics(LIS_SOLVER solver, LIS_SEQUENCE_DIAGNOSTICS *diag);
 	extern LIS_INT lis_solver_set_sequence_policy(LIS_SOLVER solver, LIS_INT policy);
 	extern LIS_INT lis_solver_get_sequence_policy(LIS_SOLVER solver, LIS_INT *policy);
+	extern LIS_INT lis_solver_set_sequence_precon_refresh_policy(LIS_SOLVER solver, LIS_INT policy);
+	extern LIS_INT lis_solver_get_sequence_precon_refresh_policy(LIS_SOLVER solver, LIS_INT *policy);
 
 	/* Half precision preconditioner storage capability and policy. */
 	extern LIS_INT lis_half_get_capability(LIS_INT *available);
@@ -1447,8 +1521,23 @@ extern "C"
 	extern LIS_INT lis_esolver_create(LIS_ESOLVER *esolver);
 	extern LIS_INT lis_esolver_destroy(LIS_ESOLVER esolver);
 	extern LIS_INT lis_iesolver_destroy(LIS_ESOLVER esolver);
+	extern LIS_INT lis_esolver_set_subspace_retry(
+	                                   LIS_ESOLVER esolver,
+	                                   LIS_INT max_retries,
+	                                   LIS_REAL growth_factor,
+	                                   LIS_INT min_subspace);
+	extern LIS_INT lis_esolver_get_subspace_retry(
+	                                   LIS_ESOLVER esolver,
+	                                   LIS_INT *max_retries,
+	                                   LIS_REAL *growth_factor,
+	                                   LIS_INT *min_subspace,
+	                                   LIS_INT *attempts,
+	                                   LIS_INT *final_subspace);
 	extern LIS_INT lis_esolver_set_option(char *text, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_optionC(LIS_ESOLVER esolver);
+	extern LIS_INT lis_esolver_set_linear_options(const char *text, LIS_ESOLVER esolver);
+	extern LIS_INT lis_esolver_set_refine_linear_options(const char *text, LIS_ESOLVER esolver);
+	extern LIS_INT lis_esolver_set_refine_gap_fraction(LIS_REAL fraction, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver);
 	extern LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver);  
 	extern LIS_INT lis_esolver_get_iter(LIS_ESOLVER esolver, LIS_INT *iter);

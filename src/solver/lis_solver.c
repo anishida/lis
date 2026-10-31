@@ -238,6 +238,8 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->num_threads = 0;
         solver->fgcrodr_state = NULL;
 	solver->sequence_policy = LIS_SEQUENCE_POLICY_MANUAL;
+	solver->sequence_precon_refresh_policy =
+		LIS_SEQUENCE_PRECON_REFRESH_SAFE;
 	solver->sequence_precon = NULL;
 	solver->sequence_precon_matrix = NULL;
 	solver->sequence_precon_structure_generation = 0;
@@ -312,6 +314,10 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->time      = 0;
 	solver->itime     = 0;
 	solver->ptime     = 0;
+	/* Initialize every diagnostic exposed by lis_solver_get_report(). */
+	solver->p_c_time  = 0;
+	solver->p_i_time  = 0;
+	solver->retcode   = LIS_SUCCESS;
 	solver->precision = LIS_PRECISION_DOUBLE;
 
 	solver->options[LIS_OPTIONS_SOLVER]               = LIS_SOLVER_BICG;
@@ -2194,6 +2200,171 @@ LIS_INT lis_solver_set_matrix(LIS_MATRIX A, LIS_SOLVER solver)
 	return LIS_SUCCESS;
 }
 
+
+static LIS_INT
+lis_solver_check_user_hybrid_inner_solver(
+	LIS_MATRIX A,
+	LIS_INT nsolver)
+{
+	LIS_INT capabilities;
+	LIS_INT err;
+
+	if( nsolver<1 || nsolver>LIS_SOLVER_LEN )
+	{
+		LIS_SETERR(
+			LIS_ERR_ILL_ARG,
+			"invalid Hybrid inner solver\n");
+
+		return LIS_ERR_ILL_ARG;
+	}
+
+	/*
+	 * Stationary solver implementations require explicit matrix
+	 * storage and cannot operate on the USER shell directly.
+	 */
+	if( nsolver==LIS_SOLVER_JACOBI ||
+		nsolver==LIS_SOLVER_GS ||
+		nsolver==LIS_SOLVER_SOR )
+	{
+		LIS_SETERR(
+			LIS_ERR_NOT_IMPLEMENTED,
+			"Hybrid inner Jacobi/GS/SOR solver requires explicit matrix storage\n");
+
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
+	/*
+	 * Krylov methods using A^H require the USER adjoint callback.
+	 */
+	if( nsolver==LIS_SOLVER_BICG ||
+		nsolver==LIS_SOLVER_BICR ||
+		nsolver==LIS_SOLVER_CRS ||
+		nsolver==LIS_SOLVER_BICRSTAB ||
+		nsolver==LIS_SOLVER_GPBICR ||
+		nsolver==LIS_SOLVER_BICRSAFE )
+	{
+		capabilities = 0;
+
+		err = lis_matrix_get_capabilities(
+			A,
+			&capabilities);
+
+		if( err ) return err;
+
+		if( !(capabilities & LIS_MATRIX_CAP_MATVECH) )
+		{
+			LIS_SETERR(
+				LIS_ERR_NOT_IMPLEMENTED,
+				"Hybrid inner solver requires transpose/Hermitian matvec capability\n");
+
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
+	}
+
+	return LIS_SUCCESS;
+}
+
+static LIS_INT
+lis_solver_check_user_hybrid_inner_precon(
+	LIS_INT nsolver,
+	LIS_INT precon_type,
+	LIS_INT capabilities)
+{
+	LIS_PRECON_REGISTER *reg;
+
+	switch( precon_type )
+	{
+	case LIS_PRECON_TYPE_NONE:
+	case LIS_PRECON_TYPE_MFAMG:
+		return LIS_SUCCESS;
+
+	case LIS_PRECON_TYPE_JACOBI:
+		if( !(capabilities & LIS_MATRIX_CAP_DIAGONAL) )
+		{
+			LIS_SETERR(
+				LIS_ERR_NOT_IMPLEMENTED,
+				"Hybrid inner Jacobi preconditioner requires matrix diagonal access\n");
+
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
+
+		return LIS_SUCCESS;
+
+	case LIS_PRECON_TYPE_ILU:
+	case LIS_PRECON_TYPE_IS:
+	case LIS_PRECON_TYPE_SAI:
+	case LIS_PRECON_TYPE_SAAMG:
+	case LIS_PRECON_TYPE_ILUC:
+	case LIS_PRECON_TYPE_ILUT:
+		if( !(capabilities & LIS_MATRIX_CAP_ROW_ACCESS) )
+		{
+			LIS_SETERR(
+				LIS_ERR_NOT_IMPLEMENTED,
+				"Hybrid inner preconditioner requires matrix row access\n");
+
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
+
+		return LIS_SUCCESS;
+
+	case LIS_PRECON_TYPE_HYBRID:
+		LIS_SETERR(
+			LIS_ERR_ILL_ARG,
+			"recursive Hybrid preconditioner is not supported\n");
+
+		return LIS_ERR_ILL_ARG;
+
+	default:
+		break;
+	}
+
+	if( precon_type<LIS_PRECON_TYPE_USERDEF )
+	{
+		LIS_SETERR(
+			LIS_ERR_NOT_IMPLEMENTED,
+			"selected Hybrid inner preconditioner is unavailable for LIS_MATRIX_USER\n");
+
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
+	if( precon_register_top==NULL ||
+		precon_type>=precon_register_type )
+	{
+		LIS_SETERR(
+			LIS_ERR_ILL_ARG,
+			"invalid registered Hybrid inner preconditioner type\n");
+
+		return LIS_ERR_ILL_ARG;
+	}
+
+	reg = &precon_register_top[
+		precon_type-LIS_PRECON_TYPE_USERDEF];
+
+	if( reg->pcreate==NULL ||
+		reg->psolve==NULL )
+	{
+		LIS_SETERR(
+			LIS_ERR_NOT_IMPLEMENTED,
+			"registered Hybrid inner preconditioner requires pcreate and psolve callbacks\n");
+
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
+	if( (nsolver==LIS_SOLVER_BICG ||
+		 nsolver==LIS_SOLVER_BICR) &&
+		reg->psolveh==NULL )
+	{
+		LIS_SETERR(
+			LIS_ERR_NOT_IMPLEMENTED,
+			"Hybrid inner solver requires the registered psolveh callback\n");
+
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
+	return LIS_SUCCESS;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_solver_check_user_matrix"
 static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
@@ -2204,9 +2375,19 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
 	if( A->matrix_type!=LIS_MATRIX_USER &&
 	    A->matrix_type!=LIS_MATRIX_OPERATOR ) return LIS_SUCCESS;
 
-	if( A->matrix_type==LIS_MATRIX_USER && A->user_matvec==NULL )
+	capabilities = 0;
+
+	err = lis_matrix_get_capabilities(
+		A,
+		&capabilities);
+
+	if( err ) return err;
+
+	if( !(capabilities & LIS_MATRIX_CAP_MATVEC) )
 	{
-		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,"LIS_MATRIX_USER has no matvec callback\n");
+		LIS_SETERR(
+			LIS_ERR_NOT_IMPLEMENTED,
+			"matrix-free matrix has no matvec capability\n");
 		return LIS_ERR_NOT_IMPLEMENTED;
 	}
 	if( solver->options[LIS_OPTIONS_PRECISION]!=LIS_PRECISION_DEFAULT )
@@ -2233,12 +2414,11 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
 	                return LIS_ERR_NOT_IMPLEMENTED;
 	        }
 
-	        if( A->matrix_type==LIS_MATRIX_USER &&
-	            A->user_get_diagonal==NULL )
+	        if( !(capabilities & LIS_MATRIX_CAP_DIAGONAL) )
 	        {
 	                LIS_SETERR(
 	                        LIS_ERR_NOT_IMPLEMENTED,
-	                        "symmetric diagonal scaling requires a matrix diagonal callback\n");
+	                        "symmetric diagonal scaling requires matrix diagonal capability\n");
 	                return LIS_ERR_NOT_IMPLEMENTED;
 	        }
 	}
@@ -2276,10 +2456,12 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
 	     nsolver==LIS_SOLVER_CRS ||
 	     nsolver==LIS_SOLVER_BICRSTAB ||
 	     nsolver==LIS_SOLVER_GPBICR ||
-	     nsolver==LIS_SOLVER_BICRSAFE) && A->matrix_type==LIS_MATRIX_USER && A->user_matvech==NULL )
+	     nsolver==LIS_SOLVER_BICRSAFE) &&
+	    !(capabilities & LIS_MATRIX_CAP_MATVECH) )
 	{
-		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-		           "selected solver requires the user transpose/Hermitian matvec callback\n");
+		LIS_SETERR(
+			LIS_ERR_NOT_IMPLEMENTED,
+			"selected solver requires transpose/Hermitian matvec capability\n");
 		return LIS_ERR_NOT_IMPLEMENTED;
 	}
 
@@ -2339,6 +2521,27 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
 				}
 				break;
 
+			case LIS_PRECON_TYPE_HYBRID:
+				err =
+					lis_solver_check_user_hybrid_inner_solver(
+						A,
+						solver->options[
+							LIS_OPTIONS_PSOLVER]);
+
+				if( err ) return err;
+
+				err =
+					lis_solver_check_user_hybrid_inner_precon(
+						solver->options[
+							LIS_OPTIONS_PSOLVER],
+						solver->options[
+							LIS_OPTIONS_PPRECON],
+						capabilities);
+
+				if( err ) return err;
+
+				break;
+
 			default:
 				LIS_SETERR(
 					LIS_ERR_NOT_IMPLEMENTED,
@@ -2346,11 +2549,23 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
 				return LIS_ERR_NOT_IMPLEMENTED;
 			}
 		}
+		else if( A->matrix_type==LIS_MATRIX_OPERATOR &&
+		         (precon_type==LIS_PRECON_TYPE_ILU ||
+		          precon_type==LIS_PRECON_TYPE_ILUC ||
+		          precon_type==LIS_PRECON_TYPE_ILUT) )
+		{
+			/*
+			 * These factorizing preconditioners consume the generic row-source
+			 * interface.  LIS_MATRIX_OPERATOR row-source initialization
+			 * recursively validates both operands when the preconditioner is
+			 * created, so no explicit materialization is required here.
+			 */
+		}
 		else
 		{
 			LIS_SETERR(
 				LIS_ERR_NOT_IMPLEMENTED,
-				"built-in preconditioners require explicit storage unless a compatible prebuilt preconditioner is supplied\n");
+				"built-in preconditioners require explicit storage unless a compatible direct row source or prebuilt preconditioner is supplied\n");
 			return LIS_ERR_NOT_IMPLEMENTED;
 		}
 	}
@@ -2475,6 +2690,7 @@ LIS_INT lis_solver_sequence_prepare_precon(
 {
 	LIS_INT err;
 	LIS_INT precon_type;
+	LIS_INT frozen_update;
 	LIS_UNSIGNED_INT structure_generation;
 	LIS_UNSIGNED_INT value_generation;
 
@@ -2565,8 +2781,20 @@ LIS_INT lis_solver_sequence_prepare_precon(
            /*
             * Refresh only numerical preconditioner state.
             */
-           err = lis_precon_psd_update(
-                   solver,solver->sequence_precon);
+           frozen_update =
+               solver->sequence_precon_refresh_policy==
+                   LIS_SEQUENCE_PRECON_REFRESH_FROZEN_PATTERN &&
+               precon_type==LIS_PRECON_TYPE_ILUT;
+           if( frozen_update )
+           {
+                   err = lis_precon_update_ilut_frozen(
+                           solver,solver->sequence_precon);
+           }
+           else
+           {
+                   err = lis_precon_psd_update(
+                           solver,solver->sequence_precon);
+           }
 
            if( err==LIS_SUCCESS )
            {
@@ -2593,10 +2821,16 @@ LIS_INT lis_solver_sequence_prepare_precon(
            }
 
            /*
-            * lis_precon_psd_update() destroys the preconditioner on
-            * failure.  Clear cached references before falling back to
-            * a full create.
+            * The PSD updater destroys its object on failure. In contrast,
+            * a failed frozen numerical refresh leaves the old object alive.
+            * Release that object exactly once before recreating factors.
             */
+           if( frozen_update )
+           {
+                   LIS_INT destroy_err =
+                       lis_solver_sequence_precon_destroy(solver);
+                   if( destroy_err ) return destroy_err;
+           }
            solver->sequence_precon = NULL;
            solver->precon = NULL;
            solver->sequence_precon_matrix = NULL;
@@ -2821,6 +3055,46 @@ LIS_INT lis_solver_get_precon_half(
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_sequence_precon_refresh_policy"
+LIS_INT lis_solver_set_sequence_precon_refresh_policy(
+    LIS_SOLVER solver,
+    LIS_INT policy)
+{
+    if( solver==NULL ||
+        (policy!=LIS_SEQUENCE_PRECON_REFRESH_SAFE &&
+         policy!=LIS_SEQUENCE_PRECON_REFRESH_FROZEN_PATTERN) )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid sequence preconditioner refresh policy\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    solver->sequence_precon_refresh_policy = policy;
+    return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_get_sequence_precon_refresh_policy"
+LIS_INT lis_solver_get_sequence_precon_refresh_policy(
+    LIS_SOLVER solver,
+    LIS_INT *policy)
+{
+    if( solver==NULL || policy==NULL )
+    {
+        LIS_SETERR(
+            LIS_ERR_ILL_ARG,
+            "invalid sequence preconditioner refresh policy query\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *policy = solver->sequence_precon_refresh_policy;
+    return LIS_SUCCESS;
 }
 
 
@@ -4396,9 +4670,21 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 			return err;
 		}
 	}
-	/* Build coarse state from the final effective operator. */
+	/*
+	 * Build the generic two-level coarse correction only when the
+	 * selected preconditioner does not already own the near-nullspace
+	 * hierarchy.
+	 *
+	 * MFAMG consumes the near-nullspace directly.  The same rule applies
+	 * when MFAMG is nested one level below Hybrid; stacking the generic
+	 * outer correction on top of the inner MFAMG hierarchy would apply
+	 * the same coarse context twice.
+	 */
 	if( solver->near_nullspace_dim>0 &&
-        precon_type!=LIS_PRECON_TYPE_MFAMG )
+	    precon_type!=LIS_PRECON_TYPE_MFAMG &&
+	    !(precon_type==LIS_PRECON_TYPE_HYBRID &&
+	      solver->options[LIS_OPTIONS_PPRECON]==
+	          LIS_PRECON_TYPE_MFAMG) )
 	{
 	        err =
 	                lis_solver_near_nullspace_coarse_setup(

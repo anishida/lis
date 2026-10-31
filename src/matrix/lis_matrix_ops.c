@@ -948,6 +948,203 @@ LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR D, LIS_INT actio
 	return LIS_SUCCESS;
 }
 
+#ifdef USE_MPI
+static LIS_INT lis_matrix_inf_norm_sync_error(LIS_MATRIX A,LIS_INT local_err)
+{
+        LIS_INT failed,any_failed,local_code,global_code;
+        int mpi_err;
+
+        failed = (local_err!=LIS_SUCCESS);
+        any_failed = 0;
+        local_code = failed ? local_err : LIS_SUCCESS;
+        global_code = LIS_SUCCESS;
+
+        mpi_err = MPI_Allreduce(&failed,&any_failed,1,LIS_MPI_INT,MPI_MAX,A->comm);
+        if( mpi_err!=MPI_SUCCESS ) return LIS_ERR_ILL_ARG;
+        if( !any_failed ) return LIS_SUCCESS;
+
+        mpi_err = MPI_Allreduce(&local_code,&global_code,1,LIS_MPI_INT,MPI_MAX,A->comm);
+        if( mpi_err!=MPI_SUCCESS || global_code==LIS_SUCCESS ) return LIS_ERR_ILL_ARG;
+        return global_code;
+}
+#else
+static LIS_INT lis_matrix_inf_norm_sync_error(LIS_MATRIX A,LIS_INT local_err)
+{
+        (void)A;
+        return local_err;
+}
+#endif
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_get_inf_norm"
+LIS_INT lis_matrix_get_inf_norm(LIS_MATRIX A, LIS_REAL *value)
+{
+	LIS_MATRIX C;
+	LIS_PRECON_ROW_SOURCE row;
+	LIS_INT err;
+	LIS_INT local_err;
+	LIS_INT i,j,k;
+	LIS_REAL local_max,global_max,row_sum;
+
+	LIS_DEBUG_FUNC_IN;
+
+	if( A==NULL || value==NULL )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"invalid matrix infinity-norm arguments\n");
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_ERR_ILL_ARG;
+	}
+
+	err = lis_matrix_check(A,LIS_MATRIX_CHECK_ALL);
+	err = lis_matrix_inf_norm_sync_error(A,err);
+	if( err )
+	{
+		LIS_DEBUG_FUNC_OUT;
+		return err;
+	}
+
+	/*
+	 * CSR and row-backed USER matrices can be traversed directly.
+	 * Other explicit storage formats use LIS' existing conversion path.
+	 * Matrix operators do not expose entries, so their exact row-sum norm
+	 * cannot in general be reconstructed from matvec alone.
+	 */
+	if( A->matrix_type!=LIS_MATRIX_CSR && A->matrix_type!=LIS_MATRIX_USER )
+	{
+		if( A->matrix_type==LIS_MATRIX_OPERATOR )
+		{
+			LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+				"exact infinity norm requires explicit or row-backed matrix entries\n");
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
+
+		C = NULL;
+		err = lis_matrix_duplicate(A,&C);
+		err = lis_matrix_inf_norm_sync_error(A,err);
+		if( err )
+		{
+			if( C ) lis_matrix_destroy(C);
+			LIS_DEBUG_FUNC_OUT;
+			return err;
+		}
+
+		err = lis_matrix_set_type(C,LIS_MATRIX_CSR);
+		err = lis_matrix_inf_norm_sync_error(A,err);
+		if( !err )
+		{
+			err = lis_matrix_convert(A,C);
+			err = lis_matrix_inf_norm_sync_error(A,err);
+		}
+		if( !err ) err = lis_matrix_get_inf_norm(C,value);
+
+		lis_matrix_destroy(C);
+		LIS_DEBUG_FUNC_OUT;
+		return err;
+	}
+
+	err = lis_precon_row_source_init(A,&row);
+	err = lis_matrix_inf_norm_sync_error(A,err);
+	if( err )
+	{
+		LIS_DEBUG_FUNC_OUT;
+		return err;
+	}
+
+	local_err = LIS_SUCCESS;
+	local_max = (LIS_REAL)0.0;
+	for(i=0;i<A->n;i++)
+	{
+		err = lis_precon_row_source_get(&row,i);
+		if( err )
+		{
+			local_err = err;
+			break;
+		}
+
+		row_sum = (LIS_REAL)0.0;
+		for(k=0;k<row.nnz;k++)
+		{
+			LIS_SCALAR combined;
+			LIS_INT duplicate;
+
+			/*
+			 * A row callback may expose duplicate column indices.  Matrix
+			 * semantics add those entries, so the exact row-sum norm must
+			 * take abs(sum_j duplicates) rather than sum(abs(each entry)).
+			 */
+			duplicate = LIS_FALSE;
+			for(j=0;j<k;j++)
+			{
+				if( row.index[j]==row.index[k] )
+				{
+					duplicate = LIS_TRUE;
+					break;
+				}
+			}
+			if( duplicate ) continue;
+
+			combined = row.value[k];
+			for(j=k+1;j<row.nnz;j++)
+				if( row.index[j]==row.index[k] ) combined += row.value[j];
+			row_sum += (LIS_REAL)fabs(combined);
+		}
+
+		if( row_sum>local_max ) local_max = row_sum;
+	}
+
+	lis_precon_row_source_destroy(&row);
+
+#ifdef USE_MPI
+	/* Keep all ranks on the same collective path even after a local row error. */
+	{
+		LIS_INT failed = (local_err!=LIS_SUCCESS);
+		LIS_INT any_failed = 0;
+		LIS_INT local_code = failed ? local_err : LIS_SUCCESS;
+		LIS_INT global_code = LIS_SUCCESS;
+
+		err = MPI_Allreduce(&failed,&any_failed,1,LIS_MPI_INT,MPI_MAX,A->comm);
+		if( err!=MPI_SUCCESS )
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,"MPI_Allreduce failed for matrix infinity norm status\n");
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_ERR_ILL_ARG;
+		}
+		if( any_failed )
+		{
+			err = MPI_Allreduce(&local_code,&global_code,1,LIS_MPI_INT,MPI_MAX,A->comm);
+			if( err!=MPI_SUCCESS || global_code==LIS_SUCCESS ) global_code = LIS_ERR_ILL_ARG;
+			LIS_DEBUG_FUNC_OUT;
+			return global_code;
+		}
+	}
+#else
+	if( local_err!=LIS_SUCCESS )
+	{
+		LIS_DEBUG_FUNC_OUT;
+		return local_err;
+	}
+#endif
+
+#ifdef USE_MPI
+	err = MPI_Allreduce(
+		&local_max,&global_max,1,LIS_MPI_REAL,MPI_MAX,A->comm);
+	if( err!=MPI_SUCCESS )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"MPI_Allreduce failed for matrix infinity norm\n");
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_ERR_ILL_ARG;
+	}
+#else
+	global_max = local_max;
+#endif
+
+	*value = global_max;
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+
 /*NEH support for extended "solve_kernel" workflow*/
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_psd_reset_scale"
@@ -955,6 +1152,86 @@ LIS_INT lis_matrix_psd_reset_scale(LIS_MATRIX A)
 {
 	A->is_scaled=LIS_FALSE;
 	return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+lis_matrix_get_diagonal_user_rows(
+	LIS_MATRIX A,
+	LIS_SCALAR *d)
+{
+#ifdef _OPENMP
+	if( A->user_get_row_thread_safe && omp_get_max_threads()>1 )
+	{
+		LIS_INT parallel_err = LIS_SUCCESS;
+
+#pragma omp parallel
+		{
+			LIS_PRECON_ROW_SOURCE row;
+			LIS_INT local_err;
+			LIS_INT row_ready;
+			LIS_INT i,k;
+
+			local_err = lis_precon_row_source_init(A,&row);
+			row_ready = (local_err==LIS_SUCCESS);
+			if( local_err )
+			{
+#pragma omp critical(lis_user_diag_error)
+				{
+					if( parallel_err==LIS_SUCCESS ) parallel_err = local_err;
+				}
+			}
+
+			/* Every thread in the team must encounter this worksharing region. */
+#pragma omp for schedule(static)
+			for(i=0;i<A->n;i++)
+			{
+				LIS_INT global_row = A->is+i;
+				LIS_SCALAR diagonal = (LIS_SCALAR)0.0;
+				if( !row_ready ) continue;
+				local_err = lis_precon_row_source_get(&row,i);
+				if( local_err )
+				{
+#pragma omp critical(lis_user_diag_error)
+					{
+						if( parallel_err==LIS_SUCCESS ) parallel_err = local_err;
+					}
+					continue;
+				}
+				for(k=0;k<row.nnz;k++)
+					if( row.index[k]==global_row ) diagonal += row.value[k];
+				d[i] = diagonal;
+			}
+			if( row_ready ) lis_precon_row_source_destroy(&row);
+		}
+		return parallel_err;
+	}
+#endif
+
+	{
+		LIS_PRECON_ROW_SOURCE row;
+		LIS_INT err;
+		LIS_INT i,k;
+
+		err = lis_precon_row_source_init(A,&row);
+		if( err ) return err;
+		for(i=0;i<A->n;i++)
+		{
+			LIS_INT global_row = A->is+i;
+			LIS_SCALAR diagonal = (LIS_SCALAR)0.0;
+			err = lis_precon_row_source_get(&row,i);
+			if( err )
+			{
+				lis_precon_row_source_destroy(&row);
+				return err;
+			}
+			for(k=0;k<row.nnz;k++)
+				if( row.index[k]==global_row ) diagonal += row.value[k];
+			d[i] = diagonal;
+		}
+		lis_precon_row_source_destroy(&row);
+		return LIS_SUCCESS;
+	}
 }
 
 #undef __FUNC__
@@ -1003,12 +1280,21 @@ LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR D)
 		lis_matrix_get_diagonal_vbr(A, d);
 		break;
 	case LIS_MATRIX_USER:
-	        if( A->user_get_diagonal==NULL )
+	        if( A->user_get_diagonal!=NULL )
 	        {
-	                LIS_SETERR_IMP;
+	                err = A->user_get_diagonal(A->user_data,d);
+	        }
+	        else if( A->user_get_row!=NULL )
+	        {
+	                err = lis_matrix_get_diagonal_user_rows(A,d);
+	        }
+	        else
+	        {
+	                LIS_SETERR(
+	                        LIS_ERR_NOT_IMPLEMENTED,
+	                        "user diagonal callback and row callback are not set\n");
 	                return LIS_ERR_NOT_IMPLEMENTED;
 	        }
-	        err = A->user_get_diagonal(A->user_data,d);
 	        if( err ) return err;
 	        break;
 

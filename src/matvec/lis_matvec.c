@@ -50,6 +50,137 @@
 LIS_MATVEC_FUNC LIS_MATVEC  = lis_matvec;
 LIS_MATVEC_FUNC LIS_MATVECH = lis_matvech;
 
+
+/*
+ * Generic serial USER kernels backed by LIS_MATRIX_USER_GET_ROW.
+ *
+ * Explicit application callbacks remain the fast path.  These helpers
+ * let applications exposing complete rows avoid duplicating basic
+ * matrix-vector kernels.
+ *
+ * LIS_PRECON_ROW_SOURCE owns only a reusable maximum-row-sized buffer;
+ * it never materializes storage proportional to total matrix nnz.
+ */
+static LIS_INT
+lis_matvec_user_rows(
+	LIS_MATRIX A,
+	const LIS_SCALAR *x,
+	LIS_SCALAR *y)
+{
+#ifdef _OPENMP
+	if( A->user_get_row_thread_safe && omp_get_max_threads()>1 )
+	{
+		LIS_INT parallel_err = LIS_SUCCESS;
+
+#pragma omp parallel
+		{
+			LIS_PRECON_ROW_SOURCE row;
+			LIS_INT local_err;
+			LIS_INT row_ready;
+			LIS_INT i,k;
+
+			local_err = lis_precon_row_source_init(A,&row);
+			row_ready = (local_err==LIS_SUCCESS);
+			if( local_err )
+			{
+#pragma omp critical(lis_user_row_error)
+				{
+					if( parallel_err==LIS_SUCCESS ) parallel_err = local_err;
+				}
+			}
+
+			/* Every thread in the team must encounter this worksharing region. */
+#pragma omp for schedule(static)
+			for(i=0;i<A->n;i++)
+			{
+				LIS_SCALAR sum = (LIS_SCALAR)0.0;
+				if( !row_ready ) continue;
+				local_err = lis_precon_row_source_get(&row,i);
+				if( local_err )
+				{
+#pragma omp critical(lis_user_row_error)
+					{
+						if( parallel_err==LIS_SUCCESS ) parallel_err = local_err;
+					}
+					continue;
+				}
+				for(k=0;k<row.nnz;k++)
+					sum += row.value[k] * x[row.index[k]];
+				y[i] = sum;
+			}
+			if( row_ready ) lis_precon_row_source_destroy(&row);
+		}
+		return parallel_err;
+	}
+#endif
+
+	{
+		LIS_PRECON_ROW_SOURCE row;
+		LIS_INT err;
+		LIS_INT i,k;
+		LIS_SCALAR sum;
+
+		err = lis_precon_row_source_init(A,&row);
+		if( err ) return err;
+		for(i=0;i<A->n;i++)
+		{
+			err = lis_precon_row_source_get(&row,i);
+			if( err )
+			{
+				lis_precon_row_source_destroy(&row);
+				return err;
+			}
+			sum = (LIS_SCALAR)0.0;
+			for(k=0;k<row.nnz;k++) sum += row.value[k] * x[row.index[k]];
+			y[i] = sum;
+		}
+		lis_precon_row_source_destroy(&row);
+		return LIS_SUCCESS;
+	}
+}
+
+static LIS_INT
+lis_matvech_user_rows(
+	LIS_MATRIX A,
+	const LIS_SCALAR *x,
+	LIS_SCALAR *y)
+{
+	LIS_PRECON_ROW_SOURCE row;
+	LIS_INT err;
+	LIS_INT i,k;
+
+	err = lis_precon_row_source_init(A,&row);
+	if( err ) return err;
+
+	for(i=0;i<A->n;i++)
+	{
+		y[i] = (LIS_SCALAR)0.0;
+	}
+
+	for(i=0;i<A->n;i++)
+	{
+		err = lis_precon_row_source_get(&row,i);
+		if( err )
+		{
+			lis_precon_row_source_destroy(&row);
+			return err;
+		}
+
+		for(k=0;k<row.nnz;k++)
+		{
+			y[row.index[k]] +=
+				conj(row.value[k])
+				*
+				x[i];
+		}
+	}
+
+	lis_precon_row_source_destroy(&row);
+
+	return LIS_SUCCESS;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_matvec"
 LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
@@ -212,12 +343,21 @@ LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			lis_matvec_coo(A, x, y);
 			break;
 		case LIS_MATRIX_USER:
-			if( A->user_matvec==NULL )
+			if( A->user_matvec!=NULL )
 			{
-				LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,"user matvec callback is not set\n");
+				err = A->user_matvec(A->user_data,x,y);
+			}
+			else if( A->user_get_row!=NULL )
+			{
+				err = lis_matvec_user_rows(A,x,y);
+			}
+			else
+			{
+				LIS_SETERR(
+					LIS_ERR_NOT_IMPLEMENTED,
+					"user matvec callback and row callback are not set\n");
 				return LIS_ERR_NOT_IMPLEMENTED;
 			}
-			err = A->user_matvec(A->user_data,x,y);
 			if( err ) return err;
 			break;
 		default:
@@ -457,13 +597,21 @@ LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			#endif
 			break;
 		case LIS_MATRIX_USER:
-			if( A->user_matvech==NULL )
+			if( A->user_matvech!=NULL )
 			{
-				LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-				           "user transpose/Hermitian matvec callback is not set\n");
+				err = A->user_matvech(A->user_data,x,y);
+			}
+			else if( A->user_get_row!=NULL )
+			{
+				err = lis_matvech_user_rows(A,x,y);
+			}
+			else
+			{
+				LIS_SETERR(
+					LIS_ERR_NOT_IMPLEMENTED,
+					"user transpose/Hermitian matvec callback and row callback are not set\n");
 				return LIS_ERR_NOT_IMPLEMENTED;
 			}
-			err = A->user_matvech(A->user_data,x,y);
 			if( err ) return err;
 			break;
 		default:

@@ -107,9 +107,9 @@ CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libsystem_la_LIBADD =
 am_libsystem_la_OBJECTS = lis_error.lo lis_hash.lo lis_init.lo \
-	lis_input.lo lis_input_hb.lo lis_input_mm.lo lis_memory.lo \
-	lis_output.lo lis_output_mm.lo lis_sort.lo lis_time.lo \
-	mt19937ar.lo
+	lis_omp_capacity.lo lis_input.lo lis_input_hb.lo \
+	lis_input_mm.lo lis_memory.lo lis_output.lo lis_output_mm.lo \
+	lis_sort.lo lis_time.lo mt19937ar.lo
 libsystem_la_OBJECTS = $(am_libsystem_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -134,9 +134,9 @@ am__depfiles_remade = ./$(DEPDIR)/lis_error.Plo \
 	./$(DEPDIR)/lis_hash.Plo ./$(DEPDIR)/lis_init.Plo \
 	./$(DEPDIR)/lis_input.Plo ./$(DEPDIR)/lis_input_hb.Plo \
 	./$(DEPDIR)/lis_input_mm.Plo ./$(DEPDIR)/lis_memory.Plo \
-	./$(DEPDIR)/lis_output.Plo ./$(DEPDIR)/lis_output_mm.Plo \
-	./$(DEPDIR)/lis_sort.Plo ./$(DEPDIR)/lis_time.Plo \
-	./$(DEPDIR)/mt19937ar.Plo
+	./$(DEPDIR)/lis_omp_capacity.Plo ./$(DEPDIR)/lis_output.Plo \
+	./$(DEPDIR)/lis_output_mm.Plo ./$(DEPDIR)/lis_sort.Plo \
+	./$(DEPDIR)/lis_time.Plo ./$(DEPDIR)/mt19937ar.Plo
 am__mv = mv -f
 AM_V_CC = $(am__v_CC_@AM_V@)
 am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
@@ -335,6 +335,7 @@ noinst_LTLIBRARIES = libsystem.la
 libsystem_la_SOURCES = lis_error.c \
 lis_hash.c \
 lis_init.c \
+lis_omp_capacity.c \
 lis_input.c \
 lis_input_hb.c \
 lis_input_mm.c \
@@ -420,6 +421,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_input_hb.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_input_mm.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_memory.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_omp_capacity.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_output.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_output_mm.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_sort.Plo@am__quote@ # am--include-marker
@@ -592,6 +594,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/lis_input_hb.Plo
 	-rm -f ./$(DEPDIR)/lis_input_mm.Plo
 	-rm -f ./$(DEPDIR)/lis_memory.Plo
+	-rm -f ./$(DEPDIR)/lis_omp_capacity.Plo
 	-rm -f ./$(DEPDIR)/lis_output.Plo
 	-rm -f ./$(DEPDIR)/lis_output_mm.Plo
 	-rm -f ./$(DEPDIR)/lis_sort.Plo
@@ -649,6 +652,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/lis_input_hb.Plo
 	-rm -f ./$(DEPDIR)/lis_input_mm.Plo
 	-rm -f ./$(DEPDIR)/lis_memory.Plo
+	-rm -f ./$(DEPDIR)/lis_omp_capacity.Plo
 	-rm -f ./$(DEPDIR)/lis_output.Plo
 	-rm -f ./$(DEPDIR)/lis_output_mm.Plo
 	-rm -f ./$(DEPDIR)/lis_sort.Plo

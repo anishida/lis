@@ -373,6 +373,80 @@ LIS_SCALAR lis_esolver_shift_perturbation(
         return (LIS_SCALAR)step;
 }
 
+/*
+ * Materialize alpha*A + beta*B only when the operator has serial CSR
+ * operands with identical sparsity. This preserves the established fast
+ * setup path for factorizing preconditioners. Other row-capable operators
+ * fall back to the generic direct-row path.
+ */
+static LIS_INT
+lis_esolver_operator_pc_matrix_csr(
+        LIS_MATRIX op,
+        LIS_MATRIX *P)
+{
+        LIS_MATRIX A,B,C;
+        LIS_INT i,j,err;
+
+        if( op==NULL || P==NULL )
+                return LIS_ERR_ILL_ARG;
+
+        *P = NULL;
+
+        if( op->matrix_type!=LIS_MATRIX_OPERATOR ||
+            op->operator_scale!=NULL ||
+            op->operator_A==NULL ||
+            op->operator_B==NULL )
+                return LIS_ERR_NOT_IMPLEMENTED;
+
+        A = op->operator_A;
+        B = op->operator_B;
+
+        if( A->matrix_type!=LIS_MATRIX_CSR ||
+            B->matrix_type!=LIS_MATRIX_CSR ||
+            A->nprocs!=1 || B->nprocs!=1 ||
+            A->n!=A->gn || B->n!=B->gn ||
+            A->n!=B->n || A->gn!=B->gn ||
+            A->nnz!=B->nnz ||
+            A->ptr==NULL || B->ptr==NULL ||
+            A->index==NULL || B->index==NULL ||
+            A->value==NULL || B->value==NULL )
+                return LIS_ERR_NOT_IMPLEMENTED;
+
+        for(i=0;i<=A->n;i++)
+                if( A->ptr[i]!=B->ptr[i] )
+                        return LIS_ERR_NOT_IMPLEMENTED;
+
+        for(j=0;j<A->nnz;j++)
+                if( A->index[j]!=B->index[j] )
+                        return LIS_ERR_NOT_IMPLEMENTED;
+
+        C = NULL;
+        err = lis_matrix_duplicate(A,&C);
+        if( err ) return err;
+
+        lis_matrix_set_type(C,LIS_MATRIX_CSR);
+        err = lis_matrix_convert(A,C);
+        if( err )
+        {
+                lis_matrix_destroy(C);
+                return err;
+        }
+
+        if( C->value==NULL || C->nnz!=A->nnz )
+        {
+                lis_matrix_destroy(C);
+                return LIS_ERR_ILL_ARG;
+        }
+
+        for(j=0;j<C->nnz;j++)
+                C->value[j] =
+                        op->operator_alpha * A->value[j] +
+                        op->operator_beta  * B->value[j];
+
+        *P = C;
+        return LIS_SUCCESS;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_esolver_rebuild_precon"
 LIS_INT lis_esolver_rebuild_precon(
@@ -381,11 +455,13 @@ LIS_INT lis_esolver_rebuild_precon(
         LIS_PRECON *precon)
 {
         LIS_INT err;
+        LIS_INT precon_type;
+        LIS_MATRIX pc_matrix;
+        LIS_MATRIX build_matrix;
 
         LIS_DEBUG_FUNC_IN;
 
-        if( A==NULL || solver==NULL ||
-            precon==NULL )
+        if( A==NULL || solver==NULL || precon==NULL )
         {
                 LIS_SETERR(LIS_ERR_ILL_ARG,
                         "invalid eigensolver preconditioner rebuild arguments\n");
@@ -394,30 +470,49 @@ LIS_INT lis_esolver_rebuild_precon(
 
         if( *precon )
         {
-                if( solver->precon==*precon )
-                {
-                        solver->precon = NULL;
-                }
-
+                if( solver->precon==*precon ) solver->precon = NULL;
                 lis_precon_destroy(*precon);
                 *precon = NULL;
         }
 
         lis_solver_work_destroy(solver);
-
         solver->A = A;
         solver->retcode = LIS_SUCCESS;
 
-        err = lis_precon_create(
-                solver,precon);
+        precon_type = solver->options[LIS_OPTIONS_PRECON];
+        pc_matrix = NULL;
+        build_matrix = A;
+
+        if( A->matrix_type==LIS_MATRIX_OPERATOR &&
+            (precon_type==LIS_PRECON_TYPE_ILU ||
+             precon_type==LIS_PRECON_TYPE_ILUT ||
+             precon_type==LIS_PRECON_TYPE_ILUC) )
+        {
+                err = lis_esolver_operator_pc_matrix_csr(A,&pc_matrix);
+                if( err==LIS_SUCCESS )
+                {
+                        build_matrix = pc_matrix;
+                }
+                else if( err!=LIS_ERR_NOT_IMPLEMENTED )
+                {
+                        solver->retcode = err;
+                        return err;
+                }
+                /* NOT_IMPLEMENTED means use the generic row-backed path. */
+        }
+
+        solver->A = build_matrix;
+        err = lis_precon_create(solver,precon);
+        solver->A = A;
+
+        if( pc_matrix )
+        {
+                lis_matrix_destroy(pc_matrix);
+                pc_matrix = NULL;
+        }
+
         if( err )
         {
-                /*
-                 * lis_precon_create() destroys a partially created
-                 * preconditioner on failure but does not clear the
-                 * caller pointer.  Do not expose a dangling handle
-                 * to recovery callers or their cleanup paths.
-                 */
                 *precon = NULL;
                 solver->precon = NULL;
                 solver->retcode = err;
@@ -610,7 +705,17 @@ LIS_INT lis_esolver_init(LIS_ESOLVER esolver)
 	esolver->ishift     = 0;
 	esolver->transform  = LIS_EIGEN_TRANSFORM_AUTO;
 	esolver->nev        = 0;
+	esolver->requested_nev = 0;
+	esolver->requested_nev_active = LIS_FALSE;
 	esolver->block_size = 1;
+	esolver->linear_options = NULL;
+	esolver->refine_linear_options = NULL;
+	esolver->refine_gap_fraction = 0.01;
+	esolver->subspace_retry_max = 0;
+	esolver->subspace_retry_growth = 2.0;
+	esolver->subspace_retry_min = 0;
+	esolver->subspace_retry_attempts = 0;
+	esolver->subspace_retry_final_size = 0;
 	esolver->tol        = 0;
 	esolver->eprecision = LIS_PRECISION_DOUBLE;
 
@@ -772,11 +877,206 @@ LIS_INT lis_esolver_destroy(LIS_ESOLVER esolver)
                         esolver->evector = NULL;
                         esolver->evector_owned_count = 0;
                 }
+
+                if( esolver->linear_options )
+                {
+                        lis_free(esolver->linear_options);
+                        esolver->linear_options = NULL;
+                }
+
+                if( esolver->refine_linear_options )
+                {
+                        lis_free(esolver->refine_linear_options);
+                        esolver->refine_linear_options = NULL;
+                }
+
 		lis_free(esolver);
 	}
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+}
+
+static LIS_INT
+lis_esolver_replace_option_string(
+        char **slot,
+        const char *text)
+{
+        char *copy;
+        size_t length;
+
+        if( slot==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "invalid eigensolver option-string target\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( *slot )
+        {
+                lis_free(*slot);
+                *slot = NULL;
+        }
+
+        if( text==NULL || text[0]=='\0' )
+        {
+                return LIS_SUCCESS;
+        }
+
+        length = strlen(text);
+        copy = (char *)lis_malloc(
+                (length+1)*sizeof(char),
+                "lis_esolver_replace_option_string::copy");
+
+        if( copy==NULL )
+        {
+                LIS_SETERR_MEM((length+1)*sizeof(char));
+                return LIS_OUT_OF_MEMORY;
+        }
+
+        memcpy(copy,text,length+1);
+        *slot = copy;
+        return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_set_linear_options"
+LIS_INT lis_esolver_set_linear_options(
+        const char *text,
+        LIS_ESOLVER esolver)
+{
+        LIS_DEBUG_FUNC_IN;
+
+        if( esolver==NULL )
+        {
+                LIS_SETERR(LIS_ERR_ILL_ARG,"eigensolver is undefined\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+        return lis_esolver_replace_option_string(
+                &esolver->linear_options,text);
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_set_refine_linear_options"
+LIS_INT lis_esolver_set_refine_linear_options(
+        const char *text,
+        LIS_ESOLVER esolver)
+{
+        LIS_DEBUG_FUNC_IN;
+
+        if( esolver==NULL )
+        {
+                LIS_SETERR(LIS_ERR_ILL_ARG,"eigensolver is undefined\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+        return lis_esolver_replace_option_string(
+                &esolver->refine_linear_options,text);
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_set_refine_gap_fraction"
+LIS_INT lis_esolver_set_refine_gap_fraction(
+        LIS_REAL fraction,
+        LIS_ESOLVER esolver)
+{
+        LIS_DEBUG_FUNC_IN;
+
+        if( esolver==NULL )
+        {
+                LIS_SETERR(LIS_ERR_ILL_ARG,"eigensolver is undefined\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( !isfinite((double)fraction) ||
+            fraction<=0.0 || fraction>=0.5 )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "eigensolver refine gap fraction must be in (0,0.5)\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        esolver->refine_gap_fraction = fraction;
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_set_subspace_retry"
+LIS_INT lis_esolver_set_subspace_retry(
+        LIS_ESOLVER esolver,
+        LIS_INT max_retries,
+        LIS_REAL growth_factor,
+        LIS_INT min_subspace)
+{
+        LIS_DEBUG_FUNC_IN;
+
+        if( esolver==NULL || max_retries<0 || min_subspace<0 ||
+            !isfinite((double)growth_factor) || growth_factor<=1.0 )
+        {
+                LIS_SETERR(LIS_ERR_ILL_ARG,
+                        "invalid eigensolver subspace retry policy\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        esolver->subspace_retry_max = max_retries;
+        esolver->subspace_retry_growth = growth_factor;
+        esolver->subspace_retry_min = min_subspace;
+        esolver->subspace_retry_attempts = 0;
+        esolver->subspace_retry_final_size =
+                esolver->options[LIS_EOPTIONS_SUBSPACE];
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_esolver_get_subspace_retry"
+LIS_INT lis_esolver_get_subspace_retry(
+        LIS_ESOLVER esolver,
+        LIS_INT *max_retries,
+        LIS_REAL *growth_factor,
+        LIS_INT *min_subspace,
+        LIS_INT *attempts,
+        LIS_INT *final_subspace)
+{
+        LIS_DEBUG_FUNC_IN;
+
+        if( esolver==NULL )
+        {
+                LIS_SETERR(LIS_ERR_ILL_ARG,"eigensolver is undefined\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( max_retries ) *max_retries = esolver->subspace_retry_max;
+        if( growth_factor ) *growth_factor = esolver->subspace_retry_growth;
+        if( min_subspace ) *min_subspace = esolver->subspace_retry_min;
+        if( attempts ) *attempts = esolver->subspace_retry_attempts;
+        if( final_subspace ) *final_subspace = esolver->subspace_retry_final_size;
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+static LIS_INT
+lis_esolver_subspace_retry_supported(LIS_INT nesolver)
+{
+        return nesolver==LIS_ESOLVER_SI ||
+               nesolver==LIS_ESOLVER_LI ||
+               nesolver==LIS_ESOLVER_AI ||
+               nesolver==LIS_ESOLVER_GSI ||
+               nesolver==LIS_ESOLVER_GLI ||
+               nesolver==LIS_ESOLVER_GAI;
 }
 
 #undef __FUNC__
@@ -802,8 +1102,8 @@ LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER 
 }
 
 #undef __FUNC__
-#define __FUNC__ "lis_gesolve"
-LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver)
+#define __FUNC__ "lis_gesolve_once"
+static LIS_INT lis_gesolve_once(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver)
 {
 	LIS_Comm comm;   
 	LIS_INT	nesolver,niesolver,nigesolver,emaxiter; 
@@ -1303,6 +1603,24 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 	esolver->p_c_time = 0;
 	esolver->p_i_time = 0;
 
+	/*
+         * A subsequent solve on the same eigensolver replaces its scratch
+         * vectors. Release the previous work array before allocating a new
+         * one; otherwise repeated solves leak the old work vectors.
+         */
+        if(esolver->work!=NULL)
+        {
+                err=lis_esolver_work_destroy(esolver);
+                if(err)
+                {
+                        esolver->x=NULL;
+                        esolver->xx=NULL;
+                        lis_vector_destroy(xx);
+                        esolver->retcode=err;
+                        return err;
+                }
+        }
+
 	/* create work vector */
 	err = lis_esolver_malloc_work[nesolver](esolver);
 	if( err )
@@ -1366,6 +1684,155 @@ LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_gesolve"
+LIS_INT lis_gesolve(
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_VECTOR x,
+        LIS_SCALAR *evalue0,
+        LIS_ESOLVER esolver)
+{
+        LIS_INT err,current_ss,next_ss,nesolver,attempt;
+        LIS_INT original_ss,result;
+        LIS_REAL grown;
+        double total_time;
+#ifdef USE_MPI
+        LIS_INT local_status,status_min,status_max;
+#endif
+
+        LIS_DEBUG_FUNC_IN;
+
+        if( esolver==NULL )
+        {
+                LIS_SETERR(LIS_ERR_ILL_ARG,"eigensolver is undefined\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        original_ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
+        result = LIS_SUCCESS;
+        total_time = 0.0;
+        esolver->subspace_retry_attempts = 0;
+        esolver->subspace_retry_final_size = original_ss;
+
+        for(attempt=0;;attempt++)
+        {
+                /*
+                 * Some solvers write their result count to nev. Restore the
+                 * stable typed/text request before EVERY attempt, including
+                 * retries and later lis_gesolve() invocations.
+                 * Legacy direct nev writes remain valid when no explicit
+                 * request was set through the public option APIs.
+                 */
+                if(esolver->requested_nev_active)
+                {
+                        if(esolver->requested_nev<0 ||
+                           esolver->requested_nev>
+                               esolver->options[LIS_EOPTIONS_SUBSPACE])
+                        {
+                                LIS_SETERR(LIS_ERR_ILL_ARG,
+                                    "requested eigenpair count exceeds subspace\n");
+                                result=LIS_ERR_ILL_ARG;
+                                break;
+                        }
+                        esolver->nev=esolver->requested_nev;
+                }
+                err = lis_gesolve_once(A,B,x,evalue0,esolver);
+                if( err )
+                {
+                        result = err;
+                        break;
+                }
+
+                total_time += esolver->time;
+                current_ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
+                esolver->subspace_retry_final_size = current_ss;
+
+#ifdef USE_MPI
+                /*
+                 * Every rank must make the same retry decision.  A divergent
+                 * eigensolver status would otherwise split the communicator
+                 * between retry and return paths.
+                 */
+                local_status = esolver->retcode;
+                err = MPI_Allreduce(&local_status,&status_min,1,LIS_MPI_INT,MPI_MIN,A->comm);
+                if( err==MPI_SUCCESS )
+                        err = MPI_Allreduce(&local_status,&status_max,1,LIS_MPI_INT,MPI_MAX,A->comm);
+                if( err!=MPI_SUCCESS || status_min!=status_max )
+                {
+                        LIS_SETERR(LIS_ERR_ILL_ARG,
+                                "inconsistent eigensolver retry status across MPI ranks\n");
+                        result = LIS_ERR_ILL_ARG;
+                        break;
+                }
+#endif
+
+                if( esolver->retcode!=LIS_MAXITER ||
+                    attempt>=esolver->subspace_retry_max ||
+                    A==NULL || current_ss>=A->gn )
+                {
+                        break;
+                }
+
+                nesolver = esolver->options[LIS_EOPTIONS_ESOLVER];
+                if( !lis_esolver_subspace_retry_supported(nesolver) )
+                {
+                        break;
+                }
+
+                grown = (LIS_REAL)current_ss * esolver->subspace_retry_growth;
+                if( !isfinite((double)grown) )
+                {
+                        /* An infinite growth request simply saturates at n. */
+                        next_ss = A->gn;
+                }
+                else if( grown>=(LIS_REAL)A->gn )
+                {
+                        /* Bound in floating point before converting to LIS_INT. */
+                        next_ss = A->gn;
+                }
+                else
+                {
+                        next_ss = (LIS_INT)ceil((double)grown);
+                }
+
+                if( esolver->subspace_retry_min>A->gn )
+                        next_ss = A->gn;
+                else if( next_ss<esolver->subspace_retry_min )
+                        next_ss = esolver->subspace_retry_min;
+
+                if( next_ss<=current_ss )
+                {
+                        if( current_ss>=A->gn ) break;
+                        next_ss = current_ss+1;
+                }
+
+                if( next_ss>A->gn ) next_ss = A->gn;
+                if( next_ss<=current_ss ) break;
+
+                lis_esolver_work_destroy(esolver);
+                esolver->options[LIS_EOPTIONS_SUBSPACE] = next_ss;
+                esolver->subspace_retry_attempts++;
+
+                /*
+                 * x intentionally keeps the result of the previous attempt.
+                 * The enlarged-subspace retry therefore uses a warm start.
+                 */
+        }
+
+        /*
+         * The retry policy is per-call.  Preserve the user's configured
+         * subspace for the next lis_gesolve() while keeping the actual final
+         * size in subspace_retry_final_size.  iter[] and resid[] describe the
+         * final attempt; time covers the complete retry sequence.
+         */
+        esolver->options[LIS_EOPTIONS_SUBSPACE] = original_ss;
+        esolver->time = total_time;
+
+        LIS_DEBUG_FUNC_OUT;
+        return result;
 }
 
 #undef __FUNC__
@@ -1458,6 +1925,38 @@ LIS_INT lis_esolver_set_option2(char* arg1, char *arg2, LIS_ESOLVER esolver)
         }
 
 	/*
+	 * Adaptive subspace retry options are kept outside LIS_EOPTIONS_* so
+	 * existing public numeric option identifiers remain stable.
+	 */
+	if( strcmp(arg1,"-ess_retry")==0 )
+	{
+		LIS_INT value = (LIS_INT)atoi(arg2);
+		err = lis_esolver_set_subspace_retry(
+			esolver,value,esolver->subspace_retry_growth,
+			esolver->subspace_retry_min);
+		LIS_DEBUG_FUNC_OUT;
+		return err;
+	}
+	if( strcmp(arg1,"-ess_retry_growth")==0 )
+	{
+		LIS_REAL value = (LIS_REAL)atof(arg2);
+		err = lis_esolver_set_subspace_retry(
+			esolver,esolver->subspace_retry_max,value,
+			esolver->subspace_retry_min);
+		LIS_DEBUG_FUNC_OUT;
+		return err;
+	}
+	if( strcmp(arg1,"-ess_retry_min")==0 )
+	{
+		LIS_INT value = (LIS_INT)atoi(arg2);
+		err = lis_esolver_set_subspace_retry(
+			esolver,esolver->subspace_retry_max,
+			esolver->subspace_retry_growth,value);
+		LIS_DEBUG_FUNC_OUT;
+		return err;
+	}
+
+	/*
 	 * Block size is kept outside LIS_EOPTIONS_* so existing public
 	 * eigensolver option and parameter indices remain unchanged.
 	 *
@@ -1494,9 +1993,9 @@ LIS_INT lis_esolver_set_option2(char* arg1, char *arg2, LIS_ESOLVER esolver)
 	 */
 	if( strcmp(arg1,"-nev")==0 )
 	{
-		esolver->nev = atoi(arg2);
+		LIS_INT parsed_nev = (LIS_INT)atoi(arg2);
 
-		if( esolver->nev<0 )
+		if( parsed_nev<0 )
 		{
 			LIS_SETERR(
 				LIS_ERR_ILL_ARG,
@@ -1505,6 +2004,15 @@ LIS_INT lis_esolver_set_option2(char* arg1, char *arg2, LIS_ESOLVER esolver)
 			LIS_DEBUG_FUNC_OUT;
 			return LIS_ERR_ILL_ARG;
 		}
+
+                /*
+                 * Historical text options may specify -nev before -ss.
+                 * Preserve that ordering and validate the final relation
+                 * at solve time; the typed setter validates immediately.
+                 */
+                esolver->requested_nev=parsed_nev;
+                esolver->requested_nev_active=LIS_TRUE;
+                esolver->nev=parsed_nev;
 
 		LIS_DEBUG_FUNC_OUT;
 		return LIS_SUCCESS;

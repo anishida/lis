@@ -755,6 +755,78 @@ main(
                 0,
                 1);
 
+        /*
+         * Hybrid is a composition container.  A USER matrix is valid when
+         * both its inner Krylov solver and inner preconditioner can consume
+         * the capabilities provided by the USER matrix.
+         */
+        failed += run_case(
+                "USER_HYBRID_ILUT",
+                "-i gmres -p hybrid "
+                "-hybrid_i gmres "
+                "-hybrid_p ilut "
+                "-hybrid_maxiter 50 "
+                "-hybrid_restart 20 "
+                "-hybrid_tol 1.0e-10 "
+                "-restart 20 "
+                "-scale none "
+                "-tol 1.0e-12 "
+                "-maxiter 200 "
+                "-maxiter_noimp 0 "
+                "-print none",
+                1,
+                1,
+                1,
+                1,
+                0);
+
+        /*
+         * The same composition must fail before preconditioner setup when
+         * the USER matrix does not provide row access required by ILUT.
+         */
+        failed += run_case(
+                "USER_HYBRID_ILUT_NO_ROW",
+                "-i gmres -p hybrid "
+                "-hybrid_i gmres "
+                "-hybrid_p ilut "
+                "-hybrid_maxiter 50 "
+                "-hybrid_restart 20 "
+                "-hybrid_tol 1.0e-10 "
+                "-restart 20 "
+                "-scale none "
+                "-tol 1.0e-12 "
+                "-maxiter 200 "
+                "-maxiter_noimp 0 "
+                "-print none",
+                1,
+                0,
+                0,
+                0,
+                0);
+
+        /*
+         * Validate inner solver requirements as well as inner PC
+         * requirements.  BiCG requires the USER adjoint matvec callback.
+         */
+        failed += run_case(
+                "USER_HYBRID_BICG_NO_MATVECH",
+                "-i gmres -p hybrid "
+                "-hybrid_i bicg "
+                "-hybrid_p none "
+                "-hybrid_maxiter 20 "
+                "-hybrid_tol 1.0e-10 "
+                "-restart 20 "
+                "-scale none "
+                "-tol 1.0e-12 "
+                "-maxiter 200 "
+                "-maxiter_noimp 0 "
+                "-print none",
+                0,
+                0,
+                0,
+                0,
+                0);
+
         failed += run_case(
                 "USER_ILUT_NO_ROW",
                 "-i gmres -p ilut "

@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis ユーザガイド}\\
-バージョン 2.1.20
+バージョン 2.1.21
 \end{flushleft}
 
 \vspace*{2cm}
@@ -307,6 +307,7 @@ CR\cite{suetomi} \\
 Subspace\cite{rutishauser} \\
 Lanczos\cite{lanczos2} \\
 Arnoldi\cite{arnoldi} \\
+FEAST\cite{polizzi} \\
 \hline         
 \end{tabular}
 \hfil}
@@ -2507,6 +2508,31 @@ A =
 \[\mathrm{diag}(\alpha A + \beta B) = \alpha \cdot \mathrm{diag}(A) + \beta \cdot \mathrm{diag}(B)\]
 
 \subsubsection{行列演算子を用いたシフト付き一般化固有値ソルバ}シフト付き一般化固有値問題 $(A - \sigma B)x = \lambda Bx$ に対して、一般化べき乗法（GPI）、一般化逆べき乗法（GII）、および一般化共役残差法（GCR）ソルバは、\texttt{LIS\_MATRIX\_OPERATOR} を利用して $A - \sigma B$ に対する一時的な演算子を動的に生成する。これは元の行列が元の状態のまま残ることを保証し、ユーザ定義のカスタム行列（\texttt{LIS\_MATRIX\_USER}）に対する完全なサポートを可能にする。シフト付き \texttt{LIS\_MATRIX\_USER} は、Lanczos 法のような他の手法に対しては依然として非対応のままである。
+
+\subsubsection{不完全LU分解前処理の半精度保持}
+Lisは、オプションとしてILU(k)およびILUT前処理の $L$ および $U$ 要素の値をIEEE 754 binary16（半精度浮動小数点）形式で保持することができる。この機能により、数値要素に必要となる記憶容量を削減できる。ただし、行列インデックス、対角成分の逆数、ベクトル、算術演算、残差、および収束判定は、通常のLisスカラ精度（単精度または倍精度）のまま維持される。
+
+この機能は、ビルド時に \verb|--enable-half| を指定することで有効になる。実行時のオプションは以下の通りである。
+
+\begin{verbatim}
+-precon_half {0|1|2}
+\end{verbatim}
+
+ここで、各値の意味は以下の通りである。
+
+\begin{itemize}
+\item \verb|0| は、前処理の半精度保持を無効にする。
+\item \verb|1| は、品質検証を伴うbinary16保持を有効にする。圧縮された要素が品質基準を満たさない場合、通常の数値要素へ自動的に切り替えられる。
+\item \verb|2| は、品質検証を伴わないbinary16保持を有効にする。ただし、厳格な妥当性チェックおよび有限値チェックは依然として適用され、半精度保持を安全に使用できない場合は通常の要素が維持される。
+\end{itemize}
+
+半精度保持モードは、ポリシ設定（環境に応じた切り替え）として動作する。選択されたビルドまたはスカラ構成において半精度保持が利用できない場合、Lisは通常の前処理要素を維持し、エラーを出さずに処理を継続する。
+
+ILU(k)では、PSDによる数値前処理の更新後に、半精度の数値要素が再計算される。ILUTでも、前処理が通常通り生成された場合に、同じbinary16保持および適用カーネルが使用される。
+
+品質検証のデフォルトの相対許容誤差は $5\times10^{-2}$ である。これは環境変数 \verb|LIS_HALF_PROBE_TOL| を設定することで上書きできる。
+
+サポートされているx86システムでは、Lisは実行時にbinary16要素の値をデコードするためにF16C命令セット（SIMD）を使用する場合がある。参照用および切り替え用の実装として、スカラデコーダも引き続き利用可能である。環境変数 \verb|LIS_HALF_NO_SIMD=1| を設定すると、強制的にスカラデコーダが使用される。
 
 \subsubsection{ユーザ定義行列における前処理の再利用と互換性}
 バージョン 2.1.15 より、Lis は前処理オブジェクトの所有権の明確化と、ユーザ定義行列（\texttt{LIS\_MATRIX\_USER}）を用いた繰り返し計算のサポートを強化した。これにより、互換性のある構築済み前処理が与えられている場合、従来の制限が緩和され正常に計算を実行できるようになった。
@@ -8423,6 +8449,11 @@ W. E. Arnoldi.
 \newblock The Principle of Minimized Iterations in the Solution of the Matrix Eigenvalue Problems.
 \newblock Quarterly of Applied Mathematics, Vol.~9, No.~17, pp.\ 17--29, 1951.
 
+\bibitem{polizzi}
+E. Polizzi.
+\newblock FEAST Eigenvalue Solver v4.0 User Guide.
+\newblock arXiv:2002.04807, 2020.
+  
 \bibitem{axelsson}
 O. Axelsson.
 \newblock A Survey of Preconditioned Iterative Methods for Linear

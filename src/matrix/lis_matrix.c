@@ -699,6 +699,28 @@ LIS_INT lis_matrix_get_capabilities(
                 {
                         *capabilities |=
                                 LIS_MATRIX_CAP_ROW_ACCESS;
+
+                        if( A->user_get_row_thread_safe )
+                        {
+                                *capabilities |=
+                                        LIS_MATRIX_CAP_ROW_THREAD_SAFE;
+                        }
+
+                        /*
+                         * USER row callbacks expose global column indices.
+                         * In serial, global and local numbering coincide,
+                         * so row access is sufficient for generic matvec,
+                         * matvech and diagonal operations.
+                         */
+                        if( A->nprocs==1 && A->n==A->gn )
+                        {
+                                *capabilities |=
+                                        LIS_MATRIX_CAP_MATVEC
+                                        |
+                                        LIS_MATRIX_CAP_MATVECH
+                                        |
+                                        LIS_MATRIX_CAP_DIAGONAL;
+                        }
                 }
 
                 break;
@@ -1364,11 +1386,12 @@ LIS_INT lis_matrix_set_user(LIS_MATRIX A, void *user_data,
 
 	err = lis_matrix_check(A,LIS_MATRIX_CHECK_SET);
 	if( err ) return err;
-	if( matvec==NULL )
-	{
-		LIS_SETERR(LIS_ERR_ILL_ARG,"LIS_MATRIX_USER requires a matvec callback\n");
-		return LIS_ERR_ILL_ARG;
-	}
+
+	/*
+	 * A USER matrix may be initialized without an explicit matvec.
+	 * A later row callback can provide generic serial operations.
+	 * Explicit callbacks keep priority when they are present.
+	 */
 	A->matrix_type  = LIS_MATRIX_USER;
 	A->status       = LIS_MATRIX_USER;
 	A->user_data    = user_data;
@@ -1378,6 +1401,7 @@ LIS_INT lis_matrix_set_user(LIS_MATRIX A, void *user_data,
 	A->user_matvech_block = NULL;
 	A->user_get_diagonal = NULL;
 	A->user_get_row      = NULL;
+	A->user_get_row_thread_safe = LIS_FALSE;
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
@@ -1457,6 +1481,46 @@ LIS_INT lis_matrix_set_user_row(
         }
 
         A->user_get_row = get_row;
+        /*
+         * Thread safety belongs to the currently installed callback.
+         * Replacing the callback always requires a new explicit opt-in.
+         */
+        A->user_get_row_thread_safe = LIS_FALSE;
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_set_user_row_thread_safe"
+LIS_INT lis_matrix_set_user_row_thread_safe(
+        LIS_MATRIX A, LIS_INT thread_safe)
+{
+        LIS_INT err;
+
+        LIS_DEBUG_FUNC_IN;
+
+        err = lis_matrix_check(A,LIS_MATRIX_CHECK_ALL);
+        if( err ) return err;
+
+        if( A->matrix_type!=LIS_MATRIX_USER ||
+            (thread_safe!=LIS_FALSE && thread_safe!=LIS_TRUE) )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "invalid USER row thread-safety setting\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( thread_safe && A->user_get_row==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "USER row callback must be set before marking it thread-safe\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        A->user_get_row_thread_safe = thread_safe;
 
         LIS_DEBUG_FUNC_OUT;
         return LIS_SUCCESS;

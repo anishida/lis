@@ -1,5 +1,6 @@
 noinst_LTLIBRARIES = libprecon.la
 libprecon_la_SOURCES = lis_precon.c \
+lis_precon_operator_row.c \
 lis_precon_ads.c \
 lis_precon_hybrid.c \
 lis_precon_iluc.c \

@@ -11,22 +11,26 @@ test_DATA = testmat.mtx testmat2.mtx testmat3.mtx testmat4.mtx testmat0.mtx test
 
 test_SCRIPTS = defs test.sh
 
-test_PROGRAMS = etest1 etest2 etest3 etest4 etest5 etest5b etest6 etest7 getest1 \
+test_PROGRAMS = testesubspaceretry etest1 etest2 etest3 etest4 etest5 etest5b etest6 etest7 getest1 \
         getest5 getest5b spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b \
         spmvtest4 spmvtest5 test1 test2 test2b test3 test3b test3c \
         test4 test5 test6 test7 testuser testuserrow testuserprecon testmatvecblock \
-        testcapabilities getestuser testoperator getestoperator testdiagonal \
-        testpreconlifecycle testjacobiuser testpreconpsd testpreconreuse testeigenbreakdown testrqirestore \
+        testcapabilities testvectornrm2mpi testoperatorrowprecon testsolvercapabilities testsolveroptionreplace \
+	testompelastic testmatrixgraph testcomponentnullspace testnullspacelift getestuser testoperator getestoperator testdiagonal \
+        testpreconlifecycle testhybridnested testjacobiuser testpreconpsd testpreconreuse testeigenbreakdown testrqirestore \
         testrhistoryerror testrepeatedsystems testpreconpolicy testgmreswork \
         testsolvermonitor testsolvercallbackpaths testsolvercallbackcert testworkcompat \
         testworkreuse testprebuiltuser testshellscale testsymmdiagguard testilupivot \
         testparamupdate testbreakretry testchangingsystem testkrylovrobust testnearnullspace \
         testcoarsesetup testcoarseapply testgcrodroptions testgcrodrconfig testgcrodrsequence \
-        testmatrixgeneration testexternalstorage testsequence testwarmstart testrecovery \
+        testmatrixgeneration testexternalstorage testmatrixmaterialize testmatrixmaterializeomp testmatrixpolicysolve testfrozenilut benchfrozenilut testsplitview testsplitviewi64 testsplitviewreal64 testmatrixoperatorlifecycle testmatrixoperatormpi testsequence testwarmstart testrecovery \
         testthreads testfgcrodr testmfamg testmfamggalerkin testexactnullspace testhalfconfig testhalfconvert \
-        testfeastfoundation testfeastcontour testfeastshifted \
+        testfeastfoundation testfeastcontour testfeastshifted testnullspacecandidates testesolverselection \
 	testprojectedeigen testprojectedhermitian testblockgram \
 	testblockorthogonal testblockrank
+
+# Keep optional session tests separate from the long test_PROGRAMS list.
+test_PROGRAMS += testmatrixautosession
 
 testgcrodroptions_SOURCES = testgcrodroptions.c
 testfeastfoundation_SOURCES = testfeastfoundation.c
@@ -36,6 +40,17 @@ testgcrodrconfig_SOURCES = testgcrodrconfig.c
 testgcrodrsequence_SOURCES = testgcrodrsequence.c
 testmatrixgeneration_SOURCES = testmatrixgeneration.c
 testexternalstorage_SOURCES = testexternalstorage.c
+testmatrixmaterialize_SOURCES = testmatrixmaterialize.c
+testmatrixmaterializeomp_SOURCES = testmatrixmaterializeomp.c
+testmatrixpolicysolve_SOURCES = testmatrixpolicysolve.c
+testmatrixautosession_SOURCES = testmatrixautosession.c
+testfrozenilut_SOURCES = testfrozenilut.c
+benchfrozenilut_SOURCES = benchfrozenilut.c
+testsplitview_SOURCES = testsplitview.c
+testsplitviewi64_SOURCES = testsplitviewi64.c
+testsplitviewreal64_SOURCES = testsplitviewreal64.c
+testmatrixoperatorlifecycle_SOURCES = testmatrixoperatorlifecycle.c
+testmatrixoperatormpi_SOURCES = testmatrixoperatormpi.c
 testsequence_SOURCES = testsequence.c
 testwarmstart_SOURCES = testwarmstart.c
 testrecovery_SOURCES = testrecovery.c
@@ -89,6 +104,14 @@ testuserrow_SOURCES = testuserrow.c
 testuserprecon_SOURCES = testuserprecon.c
 testmatvecblock_SOURCES = testmatvecblock.c
 testcapabilities_SOURCES = testcapabilities.c
+testvectornrm2mpi_SOURCES = testvectornrm2mpi.c
+testoperatorrowprecon_SOURCES = testoperatorrowprecon.c
+testsolvercapabilities_SOURCES = testsolvercapabilities.c
+testsolveroptionreplace_SOURCES = testsolveroptionreplace.c
+testompelastic_SOURCES = testompelastic.c
+testmatrixgraph_SOURCES = testmatrixgraph.c
+testcomponentnullspace_SOURCES = testcomponentnullspace.c
+testnullspacelift_SOURCES = testnullspacelift.c
 testhalfconfig_SOURCES = testhalfconfig.c
 testhalfconvert_SOURCES = testhalfconvert.c
 testhalfstorage_SOURCES = testhalfstorage.c
@@ -103,17 +126,20 @@ getestuser_SOURCES = getestuser.c
 testoperator_SOURCES = testoperator.c
 testdiagonal_SOURCES = testdiagonal.c
 testpreconlifecycle_SOURCES = testpreconlifecycle.c
+testhybridnested_SOURCES = testhybridnested.c
 testjacobiuser_SOURCES = testjacobiuser.c
 testpreconpsd_SOURCES = testpreconpsd.c
 testpreconreuse_SOURCES = testpreconreuse.c
 testeigenbreakdown_SOURCES = testeigenbreakdown.c
+testesubspaceretry_SOURCES = testesubspaceretry.c
 testprojectedeigen_SOURCES = testprojectedeigen.c
 testprojectedhermitian_SOURCES = testprojectedhermitian.c
 testblockgram_SOURCES = testblockgram.c
 testblockorthogonal_SOURCES = testblockorthogonal.c
 testblockrank_SOURCES = testblockrank.c
+testnullspacecandidates_SOURCES = testnullspacecandidates.c
+testesolverselection_SOURCES = testesolverselection.c
 testrqirestore_SOURCES = testrqirestore.c
-testrhistoryerror_SOURCES = testrhistoryerror.c
 testrepeatedsystems_SOURCES = testrepeatedsystems.c
 testpreconpolicy_SOURCES = testpreconpolicy.c
 testgmreswork_SOURCES = testgmreswork.c
@@ -164,8 +190,7 @@ LTPPF77COMPILE = $(LIBTOOL) --mode=compile --tag=F77 $(F77) $(AMDEFS) $(DEFS) \
 	$(AM_FFLAGS) $(FFLAGS)
 COMPILE = $(CC) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) \
-	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
 	$(AM_CFLAGS) $(CFLAGS)
 
 if ENABLE_SAAMG
@@ -199,9 +224,11 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
-TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
-        testpreconlifecycle$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
-        testpreconreuse$(EXEEXT) testprojectedeigen$(EXEEXT) testprojectedhermitian$(EXEEXT) testblockgram$(EXEEXT) testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
+TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) testvectornrm2mpi$(EXEEXT) testoperatorrowprecon$(EXEEXT) testsolvercapabilities$(EXEEXT) \
+	testsolveroptionreplace$(EXEEXT) testompelastic$(EXEEXT) \
+	testmatrixgraph$(EXEEXT) testcomponentnullspace$(EXEEXT) testnullspacelift$(EXEEXT) \
+        testpreconlifecycle$(EXEEXT) testhybridnested$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
+        testpreconreuse$(EXEEXT) testesubspaceretry$(EXEEXT) testprojectedeigen$(EXEEXT) testprojectedhermitian$(EXEEXT) testblockgram$(EXEEXT) testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
         testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
         testsolvermonitor$(EXEEXT) testsolvercallbackpaths$(EXEEXT) \
         testsolvercallbackcert$(EXEEXT) testworkcompat$(EXEEXT) \
@@ -210,10 +237,11 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) testmatvecblock$(EX
         testbreakretry$(EXEEXT) testchangingsystem$(EXEEXT) testkrylovrobust$(EXEEXT) \
         testnearnullspace$(EXEEXT) testcoarsesetup$(EXEEXT) testcoarseapply$(EXEEXT) \
         testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) testgcrodrsequence$(EXEEXT) \
-        testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testsequence$(EXEEXT) \
+        testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testmatrixmaterialize$(EXEEXT) testmatrixpolicysolve$(EXEEXT) testfrozenilut$(EXEEXT) testsplitview$(EXEEXT) testsplitviewi64$(EXEEXT) testmatrixoperatorlifecycle$(EXEEXT) testsequence$(EXEEXT) \
+        testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testmatrixmaterialize$(EXEEXT) testfrozenilut$(EXEEXT) testsplitview$(EXEEXT) testsplitviewi64$(EXEEXT) testmatrixoperatorlifecycle$(EXEEXT) testsequence$(EXEEXT) \
         testwarmstart$(EXEEXT) testrecovery$(EXEEXT) testthreads$(EXEEXT) \
         testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
-        testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT)
+        testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) testnullspacecandidates$(EXEEXT) testesolverselection$(EXEEXT)
 
 if ENABLE_HALF_REAL_DOUBLE
 TESTS += testhalfstorage$(EXEEXT) testhalfprobe$(EXEEXT) testhalfdispatch$(EXEEXT) \

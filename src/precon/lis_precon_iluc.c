@@ -106,6 +106,7 @@ LIS_INT lis_precon_create_iluc(LIS_SOLVER solver, LIS_PRECON precon)
 		lis_psolve_xxx[LIS_PRECON_TYPE_ILUC]  = lis_psolve_iluc_bsr;
 		break;
 #endif
+	case LIS_MATRIX_OPERATOR:
 	case LIS_MATRIX_USER:
 		if(
 			solver->A->nprocs==1
@@ -464,7 +465,7 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	}
 	iw2 = NULL;
 
-	if( A->matrix_type!=LIS_MATRIX_USER )
+	if( (A->matrix_type!=LIS_MATRIX_USER && A->matrix_type!=LIS_MATRIX_OPERATOR) )
 	{
 		iw2 =
 			(LIS_INT *)lis_malloc(
@@ -510,7 +511,7 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		return LIS_OUT_OF_MEMORY;
 	}
 
-	if( A->matrix_type==LIS_MATRIX_USER )
+	if( (A->matrix_type==LIS_MATRIX_USER || A->matrix_type==LIS_MATRIX_OPERATOR) )
 	{
 		err =
 			lis_precon_iluc_user_build_lower_transpose(
@@ -630,11 +631,11 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	#pragma omp parallel private(i,ii,j,jj,k,kk,l,ll,is,ie,my_rank,cz,cw,toldd,t,nnz,len,get_err,row,row_scale,rt)
 	{
 		my_rank  = omp_get_thread_num();
-		if( A->matrix_type==LIS_MATRIX_USER ) row = &rows[my_rank];
+		if( (A->matrix_type==LIS_MATRIX_USER || A->matrix_type==LIS_MATRIX_OPERATOR) ) row = &rows[my_rank];
 		LIS_GET_ISIE(my_rank,nprocs,n,is,ie);
 
 
-		if( A->matrix_type!=LIS_MATRIX_USER )
+		if( (A->matrix_type!=LIS_MATRIX_USER && A->matrix_type!=LIS_MATRIX_OPERATOR) )
 		{
 			#pragma omp for
 			for(i=0;i<nprocs;i++)
@@ -714,7 +715,7 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 
 		for(i=is;i<ie;i++)
 		{
-			if( A->matrix_type!=LIS_MATRIX_USER )
+			if( (A->matrix_type!=LIS_MATRIX_USER && A->matrix_type!=LIS_MATRIX_OPERATOR) )
 			{
 				D->value[i] =
 					A->D->value[i];
@@ -734,7 +735,7 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		/* z_j = a_kj (j>k) */
 		row_scale = 0.0;
 
-		if( A->matrix_type==LIS_MATRIX_USER )
+		if( (A->matrix_type==LIS_MATRIX_USER || A->matrix_type==LIS_MATRIX_OPERATOR) )
 		{
 			get_err = LIS_SUCCESS;
 
@@ -891,7 +892,7 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		    D->value[k] =
 		        lis_precon_regularize_ilu_pivot(
 		            D->value[k],
-		            A->matrix_type==LIS_MATRIX_USER ? row_scale : lis_precon_csr_row_scale(A,k),
+		            (A->matrix_type==LIS_MATRIX_USER || A->matrix_type==LIS_MATRIX_OPERATOR) ? row_scale : lis_precon_csr_row_scale(A,k),
 		            pivot_tol);
 		}
 		D->value[k] = 1.0/D->value[k];
@@ -1005,7 +1006,7 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	}
 	}
 
-	if( A->matrix_type==LIS_MATRIX_USER )
+	if( (A->matrix_type==LIS_MATRIX_USER || A->matrix_type==LIS_MATRIX_OPERATOR) )
 	{
 		for(i=0;i<nprocs;i++)
 		{
@@ -1161,7 +1162,7 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		return LIS_OUT_OF_MEMORY;
 	}
 
-		if( A->matrix_type==LIS_MATRIX_USER )
+		if( (A->matrix_type==LIS_MATRIX_USER || A->matrix_type==LIS_MATRIX_OPERATOR) )
 	{
 		err =
 			lis_precon_iluc_user_build_lower_transpose(
@@ -1281,7 +1282,7 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 
 	for(i=0;i<n;i++)
 	{
-		if( A->matrix_type!=LIS_MATRIX_USER )
+		if( (A->matrix_type!=LIS_MATRIX_USER && A->matrix_type!=LIS_MATRIX_OPERATOR) )
 		{
 			D->value[i] =
 				gamma*A->D->value[i];
@@ -1301,7 +1302,7 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		/* z_j = a_kj (j>k) */
 		row_scale = 0.0;
 
-		if( A->matrix_type==LIS_MATRIX_USER )
+		if( (A->matrix_type==LIS_MATRIX_USER || A->matrix_type==LIS_MATRIX_OPERATOR) )
 		{
 			get_err =
 				lis_precon_row_source_get(
@@ -1463,7 +1464,7 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		    D->value[k] =
 		        lis_precon_regularize_ilu_pivot(
 		            D->value[k],
-		            A->matrix_type==LIS_MATRIX_USER ? row_scale : lis_precon_csr_row_scale(A,k),
+		            (A->matrix_type==LIS_MATRIX_USER || A->matrix_type==LIS_MATRIX_OPERATOR) ? row_scale : lis_precon_csr_row_scale(A,k),
 		            pivot_tol);
 		}
 		D->value[k] = 1.0/D->value[k];
@@ -1576,7 +1577,7 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		}
 	}
 
-	if( A->matrix_type==LIS_MATRIX_USER )
+	if( (A->matrix_type==LIS_MATRIX_USER || A->matrix_type==LIS_MATRIX_OPERATOR) )
 	{
 		lis_precon_row_source_destroy(
 			&row);

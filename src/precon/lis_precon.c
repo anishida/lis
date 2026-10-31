@@ -46,6 +46,7 @@
 	#include <mpi.h>
 #endif
 #include <math.h>
+#include <limits.h>
 #include "lislib.h"
 
 /************************************************
@@ -146,9 +147,9 @@ LIS_INT	precon_register_type = LIS_PRECON_TYPE_USERDEF;
 
 #undef __FUNC__
 #define __FUNC__ "lis_precon_row_source_init"
-LIS_INT lis_precon_row_source_init(
+LIS_INT lis_precon_row_source_init_mode(
 	LIS_MATRIX A,
-	LIS_PRECON_ROW_SOURCE *source)
+	LIS_PRECON_ROW_SOURCE *source,LIS_INT raw_scratch)
 {
 	if( A==NULL || source==NULL )
 	{
@@ -157,11 +158,15 @@ LIS_INT lis_precon_row_source_init(
 
 	memset(source,0,sizeof(*source));
 	source->A = A;
+	source->raw_scratch=raw_scratch;
 
 	switch( A->matrix_type )
 	{
 	case LIS_MATRIX_CSR:
 		return LIS_SUCCESS;
+
+	case LIS_MATRIX_OPERATOR:
+		return lis_precon_operator_row_source_init(source);
 
 	case LIS_MATRIX_USER:
 		/*
@@ -183,6 +188,25 @@ LIS_INT lis_precon_row_source_init(
 }
 
 
+void *lis_precon_row_source_alloc(
+    LIS_PRECON_ROW_SOURCE *source,size_t bytes,char *tag)
+{
+    return source->raw_scratch ? malloc(bytes) : lis_malloc(bytes,tag);
+}
+
+void lis_precon_row_source_release(
+    LIS_PRECON_ROW_SOURCE *source,void *ptr)
+{
+    if(source->raw_scratch) free(ptr);
+    else lis_free(ptr);
+}
+
+LIS_INT lis_precon_row_source_init(
+    LIS_MATRIX A,LIS_PRECON_ROW_SOURCE *source)
+{
+    return lis_precon_row_source_init_mode(A,source,LIS_FALSE);
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_precon_row_source_destroy"
 void lis_precon_row_source_destroy(
@@ -195,13 +219,15 @@ void lis_precon_row_source_destroy(
 
 	if( source->index_buffer!=NULL )
 	{
-		lis_free(source->index_buffer);
+		lis_precon_row_source_release(source,source->index_buffer);
 	}
 
 	if( source->value_buffer!=NULL )
 	{
-		lis_free(source->value_buffer);
+		lis_precon_row_source_release(source,source->value_buffer);
 	}
+
+	lis_precon_operator_row_source_destroy(source);
 
 	memset(source,0,sizeof(*source));
 }
@@ -295,6 +321,11 @@ LIS_INT lis_precon_row_source_get(
 	}
 
 
+	if( A->matrix_type==LIS_MATRIX_OPERATOR )
+	{
+		return lis_precon_operator_row_source_get(source,local_row);
+	}
+
 	if( A->matrix_type!=LIS_MATRIX_USER )
 	{
 		return LIS_ERR_NOT_IMPLEMENTED;
@@ -341,7 +372,7 @@ LIS_INT lis_precon_row_source_get(
 		if( needed>0 )
 		{
 			new_index =
-				(LIS_INT *)lis_malloc(
+				(LIS_INT *)lis_precon_row_source_alloc(source,
 					needed*sizeof(LIS_INT),
 					"lis_precon_row_source_get::index");
 
@@ -354,13 +385,13 @@ LIS_INT lis_precon_row_source_get(
 			}
 
 			new_value =
-				(LIS_SCALAR *)lis_malloc(
+				(LIS_SCALAR *)lis_precon_row_source_alloc(source,
 					needed*sizeof(LIS_SCALAR),
 					"lis_precon_row_source_get::value");
 
 			if( new_value==NULL )
 			{
-				lis_free(new_index);
+				lis_precon_row_source_release(source,new_index);
 
 				LIS_SETERR_MEM(
 					needed*sizeof(LIS_SCALAR));
@@ -371,12 +402,12 @@ LIS_INT lis_precon_row_source_get(
 
 		if( source->index_buffer!=NULL )
 		{
-			lis_free(source->index_buffer);
+			lis_precon_row_source_release(source,source->index_buffer);
 		}
 
 		if( source->value_buffer!=NULL )
 		{
-			lis_free(source->value_buffer);
+			lis_precon_row_source_release(source,source->value_buffer);
 		}
 
 		source->index_buffer = new_index;
@@ -437,76 +468,20 @@ LIS_INT lis_precon_row_source_get(
 
 #undef __FUNC__
 #define __FUNC__ "lis_precon_row_source_count_nnz"
-LIS_INT lis_precon_row_source_count_nnz(
-	LIS_MATRIX A,
-	LIS_INT *nnz)
+LIS_INT lis_precon_row_source_count_nnz(LIS_MATRIX A,LIS_INT *nnz)
 {
-	LIS_INT err;
-	LIS_INT i;
-	LIS_INT row_nnz;
-	LIS_INT total;
-
-	if( A==NULL || nnz==NULL )
-	{
-		return LIS_ERR_ILL_ARG;
+	LIS_PRECON_ROW_SOURCE source;
+	LIS_INT err,i,total=0;
+	if(A==NULL || nnz==NULL) return LIS_ERR_ILL_ARG;
+	if(A->matrix_type==LIS_MATRIX_CSR){ if(A->nnz<0) return LIS_ERR_ILL_ARG; *nnz=A->nnz; return LIS_SUCCESS; }
+	err=lis_precon_row_source_init(A,&source); if(err) return err;
+	for(i=0;i<A->n;i++){
+		err=lis_precon_row_source_get(&source,i); if(err) break;
+		if(source.nnz<0 || total>INT_MAX-source.nnz){ err=LIS_ERR_ILL_ARG; break; }
+		total+=source.nnz;
 	}
-
-	if( A->matrix_type==LIS_MATRIX_CSR )
-	{
-		if( A->nnz<0 )
-		{
-			return LIS_ERR_ILL_ARG;
-		}
-
-		*nnz = A->nnz;
-
-		return LIS_SUCCESS;
-	}
-
-	if( A->matrix_type!=LIS_MATRIX_USER )
-	{
-		return LIS_ERR_NOT_IMPLEMENTED;
-	}
-
-	if( A->nprocs!=1 || A->n!=A->gn )
-	{
-		return LIS_ERR_NOT_IMPLEMENTED;
-	}
-
-	total = 0;
-
-	for(i=0;i<A->n;i++)
-	{
-		row_nnz = 0;
-
-		err = lis_matrix_get_user_row(
-			A,
-			i,
-			&row_nnz,
-			NULL,
-			NULL);
-
-		if( err )
-		{
-			return err;
-		}
-
-		if( row_nnz<0 )
-		{
-			return LIS_ERR_ILL_ARG;
-		}
-
-		total += row_nnz;
-
-		if( total<0 )
-		{
-			return LIS_ERR_ILL_ARG;
-		}
-	}
-
-	*nnz = total;
-
-	return LIS_SUCCESS;
+	lis_precon_row_source_destroy(&source);
+	if(err) return err; *nnz=total; return LIS_SUCCESS;
 }
 
 
@@ -589,7 +564,8 @@ LIS_INT lis_precon_check_ilu_pivot_tol(
 	 * USER matrices have no explicit CSR storage.  Validate their
 	 * row scale directly through the row-access capability.
 	 */
-	if( A->matrix_type==LIS_MATRIX_USER )
+	if( A->matrix_type==LIS_MATRIX_USER ||
+	    A->matrix_type==LIS_MATRIX_OPERATOR )
 	{
 		err = lis_precon_row_source_init(
 			A,

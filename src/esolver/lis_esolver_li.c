@@ -3418,7 +3418,7 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 {
 	LIS_Comm comm;
 	LIS_MATRIX A,B,M,S,Sop;
-	LIS_VECTOR q,r,z,*v;
+	LIS_VECTOR q,r,z,*v,refine_backup;
 	LIS_SOLVER solver;
 	LIS_PRECON precon;
 	LIS_ESOLVER esolver2;
@@ -3426,14 +3426,19 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 	LIS_SCALAR oshift,ishift,active_shift;
 	LIS_SCALAR alpha,dot,tmp,nu;
 	LIS_SCALAR evalue,evalue0;
+	LIS_SCALAR refine_ritz_evalue,refine_candidate_evalue;
+	LIS_SCALAR refine_num,refine_den;
 	LIS_REAL beta,beta_prev,mag,maxmag;
 	LIS_REAL tol,projerr;
 	LIS_REAL resid,resid0,nrm2;
+	LIS_REAL refine_ritz_resid,refine_candidate_resid;
+	LIS_REAL refine_candidate_norm;
 	LIS_INT transform,ss,nev,output,rval;
 	LIS_INT nigesolver,emaxiter;
 	LIS_INT i,j,k,imax,ic;
 	LIS_INT projiter,iter0;
 	LIS_INT err,inner_err;
+	LIS_INT refine_status,refine_iter,refine_candidate_valid;
 	LIS_INT nsol,precon_type;
 	LIS_INT final_status;
 	char solvername[128],preconname[128],esolvername[128];
@@ -3518,6 +3523,7 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 	solver = NULL;
 	precon = NULL;
 	esolver2 = NULL;
+	refine_backup = NULL;
 
 	t = NULL;
 	tq = NULL;
@@ -3563,6 +3569,12 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 	if( err ) goto cleanup;
 
 	lis_solver_set_option("-i bicg -p none",solver);
+
+	if( esolver->linear_options && esolver->linear_options[0] )
+	{
+		err = lis_solver_set_option(esolver->linear_options,solver);
+		if( err ) goto cleanup;
+	}
 
 	err = lis_solver_set_optionC(solver);
 	if( err ) goto cleanup;
@@ -3624,11 +3636,8 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 			ss);
 	}
 
-	solver->A = S;
-
-	err = lis_precon_create(
-		solver,&precon);
-
+	err = lis_esolver_rebuild_precon(
+		S,solver,&precon);
 	if( err ) goto cleanup;
 
 	q = esolver->work[0];
@@ -3971,7 +3980,30 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 	resid0 = 0.0;
 
 	err = lis_esolver_create(&esolver2);
+
+			if( esolver->refine_linear_options &&
+			    esolver->refine_linear_options[0] )
+			{
+				err = lis_esolver_set_linear_options(
+					esolver->refine_linear_options,
+					esolver2);
+				if( err ) goto cleanup;
+			}
+			else if( esolver->linear_options &&
+			         esolver->linear_options[0] )
+			{
+				err = lis_esolver_set_linear_options(
+					esolver->linear_options,
+					esolver2);
+				if( err ) goto cleanup;
+			}
 	if( err ) goto cleanup;
+
+	err = lis_vector_duplicate(
+		A,
+		&refine_backup);
+	if( err ) goto cleanup;
+
 
 	esolver2->options[LIS_EOPTIONS_ESOLVER] =
 		nigesolver;
@@ -4058,7 +4090,7 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 		 * Refine only when the physical generalized residual
 		 * is not already converged.
 		 */
-		if( resid>tol )
+if( resid>tol )
 		{
 			esolver2->ishift =
 				esolver->evalue[i];
@@ -4097,7 +4129,7 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 
 			        if( gap>0.0 )
 			        {
-			                delta = 0.01*gap;
+			                delta = esolver->refine_gap_fraction*gap;
 
 			                if( oshift<esolver->evalue[i] )
 			                        delta = -delta;
@@ -4109,6 +4141,27 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 #endif
 
 
+			/*
+			 * Transactional refinement:
+			 * lis_gesolve() wrapper return is not the eigensolver status.
+			 * Read esolver2->retcode and commit only a physically
+			 * certified refined pair.
+			 */
+			refine_ritz_evalue = esolver->evalue[i];
+			refine_ritz_resid = resid;
+			refine_candidate_evalue = refine_ritz_evalue;
+			refine_candidate_resid = refine_ritz_resid;
+			refine_candidate_valid = LIS_FALSE;
+			refine_status = LIS_SUCCESS;
+			refine_iter = 0;
+
+			err = lis_vector_copy(
+				esolver->evector[i],
+				refine_backup);
+			if( err ) goto cleanup;
+
+			evalue = refine_ritz_evalue;
+
 			inner_err = lis_gesolve(
 				A,
 				B,
@@ -4116,68 +4169,122 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 				&evalue,
 				esolver2);
 
-			if( inner_err!=LIS_SUCCESS &&
-			    inner_err!=LIS_MAXITER )
+			if( inner_err!=LIS_SUCCESS )
 			{
 				err = inner_err;
 				goto cleanup;
 			}
 
-			esolver->evalue[i] =
-				evalue;
+			refine_status = esolver2->retcode;
 
-			esolver->iter[i] =
-				esolver2->iter[0];
-
-			err = lis_esolver_generalized_residual(
-				A,
-				B,
-				esolver->evector[i],
-				esolver->evalue[i],
-				q,
-				r,
-				z,
-				&resid);
-
-			if( err ) goto cleanup;
-
-			if( inner_err==LIS_MAXITER &&
-			    resid>tol )
+			if( (refine_status==LIS_SUCCESS ||
+			     refine_status==LIS_MAXITER) &&
+			    esolver2->iter!=NULL &&
+			    esolver2->iter[0]>=0 )
 			{
-				final_status = LIS_MAXITER;
+				refine_iter = esolver2->iter[0];
 			}
 
-			if( i==0 )
+			if( refine_status!=LIS_SUCCESS &&
+			    refine_status!=LIS_MAXITER &&
+			    refine_status!=LIS_BREAKDOWN )
 			{
-				esolver->ptime +=
-					esolver2->ptime;
+				err = refine_status;
+				goto cleanup;
+			}
 
-				esolver->itime +=
-					esolver2->itime;
+			if( refine_status==LIS_SUCCESS )
+			{
+				refine_candidate_evalue = evalue;
+				refine_candidate_valid = LIS_TRUE;
+			}
+			else
+			{
+				err = lis_vector_nrm2(
+					esolver->evector[i],
+					&refine_candidate_norm);
+				if( err ) goto cleanup;
 
-				esolver->p_c_time +=
-					esolver2->p_c_time;
-
-				esolver->p_i_time +=
-					esolver2->p_i_time;
-
-				if( output & LIS_EPRINT_MEM )
+				if( isfinite((double)refine_candidate_norm) &&
+				    refine_candidate_norm>0.0 )
 				{
-					for(ic=0;
-					    ic<esolver2->iter[0]+1;
-					    ic++)
+					err = lis_vector_scale(
+						1.0/refine_candidate_norm,
+						esolver->evector[i]);
+					if( err ) goto cleanup;
+
+					err = lis_matvec(A,esolver->evector[i],q);
+					if( err ) goto cleanup;
+
+					err = lis_matvec(B,esolver->evector[i],r);
+					if( err ) goto cleanup;
+
+					err = lis_vector_dot(r,q,&refine_num);
+					if( err ) goto cleanup;
+
+					err = lis_vector_dot(r,r,&refine_den);
+					if( err ) goto cleanup;
+
+					if( lis_esolver_is_valid_denominator(refine_den) )
 					{
-						esolver->rhistory[ic] =
-							esolver2->rhistory[ic];
+						refine_candidate_evalue = refine_num/refine_den;
+						if( lis_esolver_is_finite_scalar(refine_candidate_evalue) )
+						{
+							refine_candidate_valid = LIS_TRUE;
+						}
 					}
 				}
 			}
 
-			lis_esolver_work_destroy(
-				esolver2);
-		}
+			if( refine_candidate_valid )
+			{
+				err = lis_esolver_generalized_residual(
+					A,B,
+					esolver->evector[i],
+					refine_candidate_evalue,
+					q,r,z,
+					&refine_candidate_resid);
+				if( err ) goto cleanup;
+			}
 
-		esolver->resid[i] = resid;
+			if( refine_candidate_valid &&
+			    refine_candidate_resid<=tol )
+			{
+				esolver->evalue[i] = refine_candidate_evalue;
+				esolver->iter[i] = refine_iter;
+				resid = refine_candidate_resid;
+			}
+			else
+			{
+				err = lis_vector_copy(
+					refine_backup,
+					esolver->evector[i]);
+				if( err ) goto cleanup;
+
+				esolver->evalue[i] = refine_ritz_evalue;
+				esolver->iter[i] = ss;
+				resid = refine_ritz_resid;
+				final_status = LIS_MAXITER;
+			}
+if( i==0 )
+			{
+				esolver->ptime += esolver2->ptime;
+				esolver->itime += esolver2->itime;
+				esolver->p_c_time += esolver2->p_c_time;
+				esolver->p_i_time += esolver2->p_i_time;
+
+				if( output & LIS_EPRINT_MEM )
+				{
+					for(ic=0;ic<refine_iter+1;ic++)
+					{
+						esolver->rhistory[ic] = esolver2->rhistory[ic];
+					}
+				}
+			}
+
+			lis_esolver_work_destroy(esolver2);
+		}
+esolver->resid[i] = resid;
 
 		if( resid>tol )
 		{
@@ -4227,7 +4334,7 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 		esolver->x);
 
 	esolver->time = time;
-	esolver->retcode = final_status;
+esolver->retcode = final_status;
 
 	err = final_status;
 
@@ -4241,6 +4348,12 @@ cleanup:
 	if( esolver2 )
 	{
 		lis_esolver_destroy(esolver2);
+	}
+
+	if( refine_backup )
+	{
+		lis_vector_destroy(refine_backup);
+		refine_backup = NULL;
 	}
 
 	if( precon )
