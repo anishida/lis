@@ -1250,6 +1250,7 @@ extern LIS_INT lis_vector_export_real64(
 	extern LIS_INT lis_vector_set_value(LIS_INT flag, LIS_INT i, LIS_SCALAR value, LIS_VECTOR v);
 	extern LIS_INT lis_vector_set_values(LIS_INT flag, LIS_INT count, LIS_INT index[], LIS_SCALAR value[], LIS_VECTOR v);
 	extern LIS_INT lis_vector_set_values2(LIS_INT flag, LIS_INT start, LIS_INT count, LIS_SCALAR value[], LIS_VECTOR v);
+	extern LIS_INT lis_vector_unset(LIS_VECTOR v);
 	extern LIS_INT lis_vector_print(LIS_VECTOR x);
 	extern LIS_INT lis_vector_scatter(LIS_SCALAR value[], LIS_VECTOR v);
         extern LIS_INT lis_vector_gather(LIS_VECTOR v, LIS_SCALAR value[]);

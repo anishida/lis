@@ -72,6 +72,51 @@ done:
 }
 
 /*
+ * Regression: the first LIS_ADD_VALUE after lis_vector_unset()
+ * must add to zeros, never to freshly allocated, uninitialized bytes.
+ */
+static int test_add_after_unset(void)
+{
+    LIS_VECTOR v=NULL;
+    LIS_INT err,indices[2]={1,3};
+    LIS_SCALAR values[2]={(LIS_SCALAR)4.0,(LIS_SCALAR)7.0};
+    int failed=1;
+
+    err=lis_vector_create(LIS_COMM_WORLD,&v);
+    if(err)goto done;
+    err=lis_vector_set_size(v,0,5);
+    if(err || v->n!=5)goto done;
+
+    err=lis_vector_unset(v);
+    if(err)goto done;
+    err=lis_vector_set_value(LIS_ADD_VALUE,2,(LIS_SCALAR)5.0,v);
+    if(err || v->value[0]!=(LIS_SCALAR)0.0 ||
+       v->value[1]!=(LIS_SCALAR)0.0 ||
+       v->value[2]!=(LIS_SCALAR)5.0 ||
+       v->value[3]!=(LIS_SCALAR)0.0 ||
+       v->value[4]!=(LIS_SCALAR)0.0)goto done;
+    err=lis_vector_set_value(LIS_ADD_VALUE,2,(LIS_SCALAR)3.0,v);
+    if(err || v->value[2]!=(LIS_SCALAR)8.0)goto done;
+
+    err=lis_vector_unset(v);
+    if(err)goto done;
+    err=lis_vector_set_values(LIS_ADD_VALUE,2,indices,values,v);
+    if(err || v->value[0]!=(LIS_SCALAR)0.0 ||
+       v->value[1]!=(LIS_SCALAR)4.0 ||
+       v->value[2]!=(LIS_SCALAR)0.0 ||
+       v->value[3]!=(LIS_SCALAR)7.0 ||
+       v->value[4]!=(LIS_SCALAR)0.0)goto done;
+    err=lis_vector_set_values(LIS_ADD_VALUE,2,indices,values,v);
+    if(err || v->value[1]!=(LIS_SCALAR)8.0 ||
+       v->value[3]!=(LIS_SCALAR)14.0)goto done;
+
+    failed=0;
+done:
+    if(v)lis_vector_destroy(v);
+    return failed;
+}
+
+/*
  * Validate overflow rejection and preservation of tracked allocations when
  * lis_realloc() fails.  The old size+16 calculation could wrap on SIZE_MAX.
  */
@@ -135,6 +180,11 @@ int main(int argc,char **argv)
     if(err) return 1;
     if(test_lis_allocator_failures()) {
         fprintf(stderr,"ALLOCATOR_FAILURE_PATHS=FAIL\n");
+        lis_finalize();
+        return 1;
+    }
+    if(test_add_after_unset()) {
+        fprintf(stderr,"VECTOR_ADD_AFTER_UNSET=FAIL\n");
         lis_finalize();
         return 1;
     }
