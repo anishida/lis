@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <stdint.h>
 #if defined(_COMPLEX) && defined(HAVE_COMPLEX_H)
 #include <complex.h>
 #endif
@@ -70,6 +71,57 @@ done:
     return failed;
 }
 
+/*
+ * Validate overflow rejection and preservation of tracked allocations when
+ * lis_realloc() fails.  The old size+16 calculation could wrap on SIZE_MAX.
+ */
+static int test_lis_allocator_failures(void)
+{
+    unsigned char *p=NULL, *q=NULL, *zero=NULL;
+    int failed=1;
+    int i;
+
+    p=(unsigned char *)lis_malloc(SIZE_MAX,"allocator-overflow");
+    if(p!=NULL) goto done;
+    zero=(unsigned char *)lis_calloc(SIZE_MAX,"calloc-overflow");
+    if(zero!=NULL) goto done;
+
+    p=(unsigned char *)lis_malloc(32,"allocator-realloc");
+    if(p==NULL || !lis_is_malloc(p)) goto done;
+    for(i=0;i<32;i++) p[i]=(unsigned char)(i+1);
+
+    q=(unsigned char *)lis_realloc(p,SIZE_MAX);
+    if(q!=NULL)
+    {
+        p=q;
+        goto done;
+    }
+    if(!lis_is_malloc(p)) goto done;
+    for(i=0;i<32;i++) if(p[i]!=(unsigned char)(i+1)) goto done;
+
+    q=(unsigned char *)lis_realloc(p,80);
+    if(q==NULL) goto done;
+    p=q;
+    if(!lis_is_malloc(p)) goto done;
+    for(i=0;i<32;i++) if(p[i]!=(unsigned char)(i+1)) goto done;
+
+    q=(unsigned char *)lis_realloc(p,8);
+    if(q==NULL) goto done;
+    p=q;
+    if(!lis_is_malloc(p)) goto done;
+    for(i=0;i<8;i++) if(p[i]!=(unsigned char)(i+1)) goto done;
+
+    zero=(unsigned char *)lis_calloc(48,"calloc-zero");
+    if(zero==NULL || !lis_is_malloc(zero)) goto done;
+    for(i=0;i<48;i++) if(zero[i]!=0) goto done;
+
+    failed=0;
+done:
+    if(p) lis_free(p);
+    if(zero) lis_free(zero);
+    return failed;
+}
+
 int main(int argc,char **argv)
 {
     LIS_VECTOR v=NULL;
@@ -81,6 +133,11 @@ int main(int argc,char **argv)
     int fail=1;
     err=lis_initialize(&argc,&argv);
     if(err) return 1;
+    if(test_lis_allocator_failures()) {
+        fprintf(stderr,"ALLOCATOR_FAILURE_PATHS=FAIL\n");
+        lis_finalize();
+        return 1;
+    }
     if(test_vector_set_values_indices()) {
         fprintf(stderr,"VECTOR_SET_VALUES_INDICES=FAIL\n");
         lis_finalize();
