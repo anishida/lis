@@ -79,7 +79,7 @@ lis_matvec_user_rows(
 			LIS_INT row_ready;
 			LIS_INT i,k;
 
-			local_err = lis_precon_row_source_init(A,&row);
+			local_err = lis_precon_row_source_init_mode(A,&row,LIS_TRUE);
 			row_ready = (local_err==LIS_SUCCESS);
 			if( local_err )
 			{

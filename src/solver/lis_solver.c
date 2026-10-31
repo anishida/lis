@@ -5232,6 +5232,7 @@ LIS_INT lis_solver_set_option(char *text, LIS_SOLVER solver)
 		err = lis_solver_set_option2(p->arg1,p->arg2,solver);
 		if( err )
 		  {
+		    lis_args_free(args);
 		    lis_solver_work_destroy(solver);
 		    solver->retcode = err;
 		    LIS_DEBUG_FUNC_OUT;		    

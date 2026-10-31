@@ -1878,6 +1878,7 @@ LIS_INT lis_esolver_set_option(char *text, LIS_ESOLVER esolver)
 		err = lis_esolver_set_option2(p->arg1,p->arg2,esolver);
 		if( err )
 		  {
+		    lis_args_free(args);
 		    lis_esolver_work_destroy(esolver);
 		    esolver->retcode = err;
 		    LIS_DEBUG_FUNC_OUT;

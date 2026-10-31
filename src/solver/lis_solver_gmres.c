@@ -323,6 +323,7 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 					solver->iter = iter;
 					solver->resid = nrm2;
 					solver->ptime = ptime;
+					lis_free(h);
 					LIS_DEBUG_FUNC_OUT;
 					return LIS_MAXITER;
 				}
@@ -655,6 +656,7 @@ LIS_INT lis_gmres_quad(LIS_SOLVER solver)
 					solver->iter = iter;
 					solver->resid = nrm2;
 					solver->ptime = ptime;
+					lis_free(h);
 					LIS_DEBUG_FUNC_OUT;
 					return LIS_MAXITER;
 				}
@@ -1989,6 +1991,7 @@ LIS_INT lis_fgmres_quad(LIS_SOLVER solver)
 					solver->iter = iter;
 					solver->resid = nrm2;
 					solver->ptime = ptime;
+					lis_free(h);
 					LIS_DEBUG_FUNC_OUT;
 					return LIS_MAXITER;
 				}
