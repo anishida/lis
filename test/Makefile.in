@@ -142,8 +142,9 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testesolverselection$(EXEEXT) testprojectedeigen$(EXEEXT) \
 	testprojectedhermitian$(EXEEXT) testblockgram$(EXEEXT) \
 	testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) \
-	testmatrixautosession$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
-	$(am__EXEEXT_3) $(am__EXEEXT_4)
+	testmatrixautosession$(EXEEXT) testvectorreal64$(EXEEXT) \
+	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
+	$(am__EXEEXT_4)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_3 = test2f test6f 
@@ -720,6 +721,10 @@ am_testvectornrm2mpi_OBJECTS = testvectornrm2mpi.$(OBJEXT)
 testvectornrm2mpi_OBJECTS = $(am_testvectornrm2mpi_OBJECTS)
 testvectornrm2mpi_LDADD = $(LDADD)
 testvectornrm2mpi_DEPENDENCIES =
+am_testvectorreal64_OBJECTS = testvectorreal64.$(OBJEXT)
+testvectorreal64_OBJECTS = $(am_testvectorreal64_OBJECTS)
+testvectorreal64_LDADD = $(LDADD)
+testvectorreal64_DEPENDENCIES =
 am_testwarmstart_OBJECTS = testwarmstart.$(OBJEXT)
 testwarmstart_OBJECTS = $(am_testwarmstart_OBJECTS)
 testwarmstart_LDADD = $(LDADD)
@@ -848,8 +853,8 @@ am__depfiles_remade = ./$(DEPDIR)/benchfrozenilut.Po \
 	./$(DEPDIR)/testsymmdiagguard.Po ./$(DEPDIR)/testthreads.Po \
 	./$(DEPDIR)/testuser.Po ./$(DEPDIR)/testuserprecon.Po \
 	./$(DEPDIR)/testuserrow.Po ./$(DEPDIR)/testvectornrm2mpi.Po \
-	./$(DEPDIR)/testwarmstart.Po ./$(DEPDIR)/testworkcompat.Po \
-	./$(DEPDIR)/testworkreuse.Po
+	./$(DEPDIR)/testvectorreal64.Po ./$(DEPDIR)/testwarmstart.Po \
+	./$(DEPDIR)/testworkcompat.Po ./$(DEPDIR)/testworkreuse.Po
 am__mv = mv -f
 AM_V_PPF77 = $(am__v_PPF77_@AM_V@)
 am__v_PPF77_ = $(am__v_PPF77_@AM_DEFAULT_V@)
@@ -949,8 +954,8 @@ SOURCES = $(benchfrozenilut_SOURCES) $(esolve_SOURCES) \
 	$(testsymmdiagguard_SOURCES) $(testthreads_SOURCES) \
 	$(testuser_SOURCES) $(testuserprecon_SOURCES) \
 	$(testuserrow_SOURCES) $(testvectornrm2mpi_SOURCES) \
-	$(testwarmstart_SOURCES) $(testworkcompat_SOURCES) \
-	$(testworkreuse_SOURCES)
+	$(testvectorreal64_SOURCES) $(testwarmstart_SOURCES) \
+	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
 DIST_SOURCES = $(benchfrozenilut_SOURCES) $(esolve_SOURCES) \
 	$(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
@@ -1015,8 +1020,8 @@ DIST_SOURCES = $(benchfrozenilut_SOURCES) $(esolve_SOURCES) \
 	$(testsymmdiagguard_SOURCES) $(testthreads_SOURCES) \
 	$(testuser_SOURCES) $(testuserprecon_SOURCES) \
 	$(testuserrow_SOURCES) $(testvectornrm2mpi_SOURCES) \
-	$(testwarmstart_SOURCES) $(testworkcompat_SOURCES) \
-	$(testworkreuse_SOURCES)
+	$(testvectorreal64_SOURCES) $(testwarmstart_SOURCES) \
+	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -1402,6 +1407,7 @@ testmatrixmaterialize_SOURCES = testmatrixmaterialize.c
 testmatrixmaterializeomp_SOURCES = testmatrixmaterializeomp.c
 testmatrixpolicysolve_SOURCES = testmatrixpolicysolve.c
 testmatrixautosession_SOURCES = testmatrixautosession.c
+testvectorreal64_SOURCES = testvectorreal64.c
 testfrozenilut_SOURCES = testfrozenilut.c
 benchfrozenilut_SOURCES = benchfrozenilut.c
 testsplitview_SOURCES = testsplitview.c
@@ -1555,6 +1561,8 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
+
+# Explicitly run all new regression binaries under make check.
 TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
 	testvectornrm2mpi$(EXEEXT) testoperatorrowprecon$(EXEEXT) \
@@ -1593,6 +1601,7 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
 	testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) \
 	testnullspacecandidates$(EXEEXT) testesolverselection$(EXEEXT) \
+	testmatrixautosession$(EXEEXT) testvectorreal64$(EXEEXT) \
 	$(am__append_5)
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
@@ -2226,6 +2235,10 @@ testvectornrm2mpi$(EXEEXT): $(testvectornrm2mpi_OBJECTS) $(testvectornrm2mpi_DEP
 	@rm -f testvectornrm2mpi$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testvectornrm2mpi_OBJECTS) $(testvectornrm2mpi_LDADD) $(LIBS)
 
+testvectorreal64$(EXEEXT): $(testvectorreal64_OBJECTS) $(testvectorreal64_DEPENDENCIES) $(EXTRA_testvectorreal64_DEPENDENCIES) 
+	@rm -f testvectorreal64$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testvectorreal64_OBJECTS) $(testvectorreal64_LDADD) $(LIBS)
+
 testwarmstart$(EXEEXT): $(testwarmstart_OBJECTS) $(testwarmstart_DEPENDENCIES) $(EXTRA_testwarmstart_DEPENDENCIES) 
 	@rm -f testwarmstart$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testwarmstart_OBJECTS) $(testwarmstart_LDADD) $(LIBS)
@@ -2391,6 +2404,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuserprecon.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuserrow.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testvectornrm2mpi.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testvectorreal64.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testwarmstart.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testworkcompat.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testworkreuse.Po@am__quote@ # am--include-marker
@@ -3170,6 +3184,20 @@ testesolverselection.log: testesolverselection$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testmatrixautosession.log: testmatrixautosession$(EXEEXT)
+	@p='testmatrixautosession$(EXEEXT)'; \
+	b='testmatrixautosession'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testvectorreal64.log: testvectorreal64$(EXEEXT)
+	@p='testvectorreal64$(EXEEXT)'; \
+	b='testvectorreal64'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 testhalfstorage.log: testhalfstorage$(EXEEXT)
 	@p='testhalfstorage$(EXEEXT)'; \
 	b='testhalfstorage'; \
@@ -3418,6 +3446,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testuserprecon.Po
 	-rm -f ./$(DEPDIR)/testuserrow.Po
 	-rm -f ./$(DEPDIR)/testvectornrm2mpi.Po
+	-rm -f ./$(DEPDIR)/testvectorreal64.Po
 	-rm -f ./$(DEPDIR)/testwarmstart.Po
 	-rm -f ./$(DEPDIR)/testworkcompat.Po
 	-rm -f ./$(DEPDIR)/testworkreuse.Po
@@ -3579,6 +3608,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testuserprecon.Po
 	-rm -f ./$(DEPDIR)/testuserrow.Po
 	-rm -f ./$(DEPDIR)/testvectornrm2mpi.Po
+	-rm -f ./$(DEPDIR)/testvectorreal64.Po
 	-rm -f ./$(DEPDIR)/testwarmstart.Po
 	-rm -f ./$(DEPDIR)/testworkcompat.Po
 	-rm -f ./$(DEPDIR)/testworkreuse.Po
