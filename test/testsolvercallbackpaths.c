@@ -4,6 +4,7 @@
 
 #include "lis_config.h"
 #include "lis.h"
+#include "lis_vector.h"
 
 typedef struct
 {
@@ -530,6 +531,41 @@ cleanup:
 }
 #endif
 
+#ifdef USE_QUAD_PRECISION
+/*
+ * Quad vectors own a second work buffer. Repeated unset/reuse must not
+ * orphan that allocation when lis_vector_reuse replaces the buffer.
+ */
+static int test_quad_vector_unset_reuse(void)
+{
+    LIS_VECTOR v = NULL;
+    LIS_SCALAR *old_work;
+    LIS_INT err;
+    int i, failed = 1;
+
+    err = lis_vector_createex(LIS_PRECISION_QUAD, LIS_COMM_WORLD, &v);
+    if(err) goto done;
+    err = lis_vector_set_size(v, 0, 8);
+    if(err || v->n!=8 || v->work==NULL) goto done;
+
+    for(i=0;i<4;i++)
+    {
+        old_work = v->work;
+        if(!lis_is_malloc(old_work)) goto done;
+        err = lis_vector_unset(v);
+        if(err || v->work!=NULL || lis_is_malloc(old_work)) goto done;
+        err = lis_vector_reuse(&v);
+        if(err || v==NULL || v->work==NULL ||
+           !lis_is_malloc(v->work)) goto done;
+    }
+    failed = 0;
+done:
+    if(v) lis_vector_destroy(v);
+    if(failed) fprintf(stderr, "QUAD_VECTOR_UNSET_REUSE=FAIL\n");
+    return failed;
+}
+#endif
+
 int
 main(
     int argc,
@@ -553,6 +589,10 @@ main(
 
         return 1;
     }
+
+#ifdef USE_QUAD_PRECISION
+    failed |= test_quad_vector_unset_reuse();
+#endif
 
     failed |=
         run_case(
