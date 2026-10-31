@@ -100,3 +100,52 @@ lis_solver_get_effective_capabilities(
     *capabilities = caps;
     return LIS_SUCCESS;
 }
+
+/*
+ * Configuration-only nullspace preflight, mirroring the compatibility
+ * conditions consumed by lis_solve_kernel().  Do not silently change the
+ * requested algorithm or discard any application nullspace vectors.
+ */
+#undef __FUNC__
+#define __FUNC__ "lis_solver_check_nullspace_configuration"
+LIS_INT
+lis_solver_check_nullspace_configuration(
+    LIS_SOLVER solver,
+    LIS_INT *issues)
+{
+    LIS_INT nsolver,precon_type,scale,precision,flags=0;
+
+    if(solver==NULL || issues==NULL)
+        return LIS_ERR_ILL_ARG;
+
+    nsolver=solver->options[LIS_OPTIONS_SOLVER];
+    precon_type=solver->options[LIS_OPTIONS_PRECON];
+    scale=solver->options[LIS_OPTIONS_SCALE];
+    precision=solver->options[LIS_OPTIONS_PRECISION];
+
+    if(solver->nullspace_dim>0)
+    {
+        if(nsolver!=LIS_SOLVER_GMRES &&
+           nsolver!=LIS_SOLVER_FGMRES &&
+           nsolver!=LIS_SOLVER_GCRODR &&
+           nsolver!=LIS_SOLVER_FGCRODR)
+            flags |= LIS_NULLSPACE_CONFIG_EXACT_SOLVER;
+        if(scale!=LIS_SCALE_NONE)
+            flags |= LIS_NULLSPACE_CONFIG_EXACT_SCALE;
+        if(precision!=LIS_PRECISION_DEFAULT)
+            flags |= LIS_NULLSPACE_CONFIG_EXACT_PRECISION;
+    }
+
+    if(solver->near_nullspace_dim>0)
+    {
+        if(nsolver!=LIS_SOLVER_FGMRES &&
+           nsolver!=LIS_SOLVER_FGCRODR &&
+           precon_type!=LIS_PRECON_TYPE_MFAMG)
+            flags |= LIS_NULLSPACE_CONFIG_NEAR_COMBINATION;
+        if(precision!=LIS_PRECISION_DOUBLE)
+            flags |= LIS_NULLSPACE_CONFIG_NEAR_PRECISION;
+    }
+
+    *issues=flags;
+    return LIS_SUCCESS;
+}

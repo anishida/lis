@@ -38,6 +38,17 @@ typedef struct LIS_MATRIX_CSR_CACHE_STRUCT *LIS_MATRIX_CSR_CACHE;
  * the serial path. No matrix values or callback state may be mutated while
  * materialization is in progress.
  */
+/*
+ * One-shot owned CSR materialization.  *csr is a new, caller-owned matrix
+ * with no dependency on a materialization cache.  No extra duplicate/copy
+ * step is required; destroy it with lis_matrix_destroy().
+ * Row callbacks and source values must be stable during the call.
+ * On failure *csr remains NULL.
+ */
+LIS_INT lis_matrix_materialize_csr_owned(
+    LIS_MATRIX source,
+    LIS_MATRIX *csr);
+
 LIS_INT lis_matrix_materialize_csr_cached(
     LIS_MATRIX source,
     LIS_MATRIX_CSR_CACHE *cache,

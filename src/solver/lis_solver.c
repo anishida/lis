@@ -50,6 +50,7 @@
 	#include <mpi.h>
 #endif
 #include "lislib.h"
+#include "lis_solver_capabilities.h"
 
 /************************************************
  * lis_solver_init
@@ -4237,82 +4238,68 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
      * This integration supports unscaled default-precision
      * GMRES, FGMRES, GCRO-DR and FGCRO-DR.
      */
-    if( solver->nullspace_dim>0 )
+    /*
+     * The typed preflight and solve kernel share ONE source for the
+     * solver/precision/scaling compatibility rules.  Preserve the
+     * existing error precedence and physical-basis validation here.
+     */
     {
-        if(
-            nsolver!=LIS_SOLVER_GMRES
-            &&
-            nsolver!=LIS_SOLVER_FGMRES
-            &&
-            nsolver!=LIS_SOLVER_GCRODR
-            &&
-            nsolver!=LIS_SOLVER_FGCRODR)
+        LIS_INT null_issues=0;
+        err=lis_solver_check_nullspace_configuration(solver,&null_issues);
+        if(err)
         {
-            LIS_SETERR(
-                LIS_ERR_NOT_IMPLEMENTED,
+            solver->retcode=err;
+            return err;
+        }
+        if(null_issues & LIS_NULLSPACE_CONFIG_EXACT_SOLVER)
+        {
+            LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
                 "exact nullspace deflation currently requires GMRES, FGMRES, GCRO-DR or FGCRO-DR\n");
-            solver->retcode = LIS_ERR_NOT_IMPLEMENTED;
+            solver->retcode=LIS_ERR_NOT_IMPLEMENTED;
             return LIS_ERR_NOT_IMPLEMENTED;
         }
-
-        if( scale!=LIS_SCALE_NONE )
+        if(null_issues & LIS_NULLSPACE_CONFIG_EXACT_SCALE)
         {
-            LIS_SETERR(
-                LIS_ERR_NOT_IMPLEMENTED,
+            LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
                 "exact nullspace deflation currently requires -scale none\n");
-            solver->retcode = LIS_ERR_NOT_IMPLEMENTED;
+            solver->retcode=LIS_ERR_NOT_IMPLEMENTED;
             return LIS_ERR_NOT_IMPLEMENTED;
         }
-
-        if( precision!=LIS_PRECISION_DEFAULT )
+        if(null_issues & LIS_NULLSPACE_CONFIG_EXACT_PRECISION)
         {
-            LIS_SETERR(
-                LIS_ERR_NOT_IMPLEMENTED,
+            LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
                 "exact nullspace deflation currently requires default precision\n");
-            solver->retcode = LIS_ERR_NOT_IMPLEMENTED;
+            solver->retcode=LIS_ERR_NOT_IMPLEMENTED;
             return LIS_ERR_NOT_IMPLEMENTED;
         }
-
-        if(
-            solver->nullspace==NULL
-            ||
-            solver->nullspace[0]==NULL
-            ||
-            !lis_solver_vector_compatible(
-                solver->nullspace[0],
-                x))
+        if(null_issues & LIS_NULLSPACE_CONFIG_NEAR_COMBINATION)
         {
-            LIS_SETERR(
-                LIS_ERR_ILL_ARG,
-                "exact nullspace basis is incompatible with the solution vector\n");
-            solver->retcode = LIS_ERR_ILL_ARG;
-            return LIS_ERR_ILL_ARG;
+            LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+                "near-nullspace two-level correction currently requires FGMRES, FGCRO-DR or MFAMG\n");
+            solver->retcode=LIS_ERR_NOT_IMPLEMENTED;
+            return LIS_ERR_NOT_IMPLEMENTED;
+        }
+        if(null_issues & LIS_NULLSPACE_CONFIG_NEAR_PRECISION)
+        {
+            LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+                "near-nullspace two-level correction currently requires double precision\n");
+            solver->retcode=LIS_ERR_NOT_IMPLEMENTED;
+            return LIS_ERR_NOT_IMPLEMENTED;
         }
     }
 
-   if( solver->near_nullspace_dim>0 )
-   {
-           if( nsolver!=LIS_SOLVER_FGMRES &&
-             nsolver!=LIS_SOLVER_FGCRODR &&
-             precon_type!=LIS_PRECON_TYPE_MFAMG )
-           {
-                   LIS_SETERR(
-                           LIS_ERR_NOT_IMPLEMENTED,
-                           "near-nullspace two-level correction currently requires FGMRES or FGCRO-DR\n");
-                   solver->retcode = LIS_ERR_NOT_IMPLEMENTED;
-                   return LIS_ERR_NOT_IMPLEMENTED;
-           }
-
-           if( precision!=LIS_PRECISION_DOUBLE )
-           {
-                   LIS_SETERR(
-                           LIS_ERR_NOT_IMPLEMENTED,
-                           "near-nullspace two-level correction currently requires double precision\n");
-                   solver->retcode = LIS_ERR_NOT_IMPLEMENTED;
-                   return LIS_ERR_NOT_IMPLEMENTED;
-           }
-   }
-
+    if(solver->nullspace_dim>0)
+    {
+        if(solver->nullspace==NULL ||
+           solver->nullspace[0]==NULL ||
+           !lis_solver_vector_compatible(solver->nullspace[0],x))
+        {
+            LIS_SETERR(LIS_ERR_ILL_ARG,
+                "exact nullspace basis is incompatible with the solution vector\n");
+            solver->retcode=LIS_ERR_ILL_ARG;
+            return LIS_ERR_ILL_ARG;
+        }
+    }
 
 	solver->A        = A;
 	solver->b        = b;

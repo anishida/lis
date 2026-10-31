@@ -178,6 +178,16 @@ int main(int argc,char **argv)
           LIS_MATRIX_POLICY_DIRECT,LIS_MATRIX_POLICY_ACTION_DIRECT,
           "direct-ilut"))goto done;
 
+    /* Changing values in DIRECT mode invalidates the previous sequence. */
+    ctx.scale=(LIS_REAL)1.25;
+    err=lis_matrix_mark_values_changed(A);if(err)goto done;
+    err=test_matvec(&ctx,truth,b->value);if(err)goto done;
+    ctx.assert_reset_before_row=LIS_TRUE;
+    if(test_solve(session,solver,A,b,x,truth,
+          LIS_MATRIX_POLICY_DIRECT,LIS_MATRIX_POLICY_ACTION_DIRECT,
+          "direct-value-update-reset"))goto done;
+    if(ctx.assert_reset_before_row)goto done;
+
     {
         char options[]="-i gmres -p ssor -restart 10 -tol 1e-11 -maxiter 80 -scale none";
         err=lis_solver_set_option_replace(options,solver);if(err)goto done;
