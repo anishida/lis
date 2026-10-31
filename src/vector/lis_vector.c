@@ -322,6 +322,9 @@ LIS_INT lis_vector_unset(LIS_VECTOR vec)
 	if( err ) return err;
 
 	if( vec->is_copy && !vec->value_external ) lis_free(vec->value);
+	/* Quad work is LIS-owned and reuse allocates it again. */
+	if( vec->work ) lis_free(vec->work);
+	vec->work = NULL;
 	vec->value  = NULL;
 	vec->value_lo = NULL;
 	vec->value_external = LIS_FALSE;
