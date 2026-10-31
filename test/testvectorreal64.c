@@ -6,6 +6,70 @@
 #include <complex.h>
 #endif
 
+/*
+ * Regression for #38: contiguous setters must honor the requested
+ * global start index, including LIS_ORIGIN_1 and ADD semantics.
+ */
+static int test_vector_set_values_indices(void)
+{
+    LIS_VECTOR v=NULL;
+    LIS_SCALAR in[2]={(LIS_SCALAR)11.0,(LIS_SCALAR)22.0};
+    LIS_SCALAR add[2]={(LIS_SCALAR)1.0,(LIS_SCALAR)2.0};
+    LIS_INT indices[2]={2,4};
+    LIS_INT err;
+    int failed=1;
+
+    err=lis_vector_create(LIS_COMM_WORLD,&v);
+    if(err) goto done;
+    err=lis_vector_set_size(v,0,5);
+    if(err || v->n!=5) goto done;
+    err=lis_vector_set_all((LIS_SCALAR)0.0,v);
+    if(err) goto done;
+
+    /* Zero-based insertion must write at start, not at index zero. */
+    err=lis_vector_set_values2(LIS_INS_VALUE,2,2,in,v);
+    if(err || v->value[0]!=(LIS_SCALAR)0.0 ||
+       v->value[1]!=(LIS_SCALAR)0.0 ||
+       v->value[2]!=in[0] || v->value[3]!=in[1] ||
+       v->value[4]!=(LIS_SCALAR)0.0) goto done;
+
+    err=lis_vector_set_values2(LIS_ADD_VALUE,2,2,add,v);
+    if(err || v->value[2]!=(LIS_SCALAR)12.0 ||
+       v->value[3]!=(LIS_SCALAR)24.0) goto done;
+
+    /* Reject an overlong segment without partially modifying v. */
+    err=lis_vector_set_values2(LIS_INS_VALUE,4,2,in,v);
+    if(err!=LIS_ERR_ILL_ARG ||
+       v->value[4]!=(LIS_SCALAR)0.0) goto done;
+    err=lis_vector_set_values2(LIS_INS_VALUE,1,-1,in,v);
+    if(err!=LIS_ERR_ILL_ARG) goto done;
+
+    v->origin=1;
+    /* One-based start=2 means zero-based vector position 1. */
+    err=lis_vector_set_values2(LIS_INS_VALUE,2,2,in,v);
+    if(err || v->value[0]!=(LIS_SCALAR)0.0 ||
+       v->value[1]!=in[0] || v->value[2]!=in[1] ||
+       v->value[3]!=(LIS_SCALAR)24.0) goto done;
+
+    /* Indexed ADD uses the same origin conversion as indexed INS. */
+    err=lis_vector_set_values(LIS_ADD_VALUE,2,indices,add,v);
+    if(err || v->value[1]!=(LIS_SCALAR)12.0 ||
+       v->value[2]!=(LIS_SCALAR)22.0 ||
+       v->value[3]!=(LIS_SCALAR)26.0) goto done;
+
+    /* Out-of-range one-based access must leave all values unchanged. */
+    err=lis_vector_set_values2(LIS_INS_VALUE,5,2,in,v);
+    if(err!=LIS_ERR_ILL_ARG ||
+       v->value[4]!=(LIS_SCALAR)0.0) goto done;
+    err=lis_vector_set_values2(LIS_ADD_VALUE,6,0,NULL,v);
+    if(err!=LIS_SUCCESS) goto done;
+
+    failed=0;
+done:
+    if(v) lis_vector_destroy(v);
+    return failed;
+}
+
 int main(int argc,char **argv)
 {
     LIS_VECTOR v=NULL;
@@ -17,6 +81,11 @@ int main(int argc,char **argv)
     int fail=1;
     err=lis_initialize(&argc,&argv);
     if(err) return 1;
+    if(test_vector_set_values_indices()) {
+        fprintf(stderr,"VECTOR_SET_VALUES_INDICES=FAIL\n");
+        lis_finalize();
+        return 1;
+    }
     err=lis_vector_create(LIS_COMM_WORLD,&v);
     if(err)goto done;
     err=lis_vector_set_size(v,0,3);
