@@ -1,5 +1,5 @@
 noinst_LTLIBRARIES = libesolver.la
-libesolver_la_SOURCES = lis_esolver.c \
+libesolver_la_SOURCES = lis_esolver.c lis_gesolve_matrix_session.c \
 lis_esolver_config.c \
 lis_esolver_selection.c lis_esolver_selection_copy.c \
 lis_esolver_block.c \

@@ -1584,7 +1584,48 @@ extern LIS_INT lis_vector_export_real64_tolerant(
 	extern LIS_INT lis_esolver_set_refine_linear_options(const char *text, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_refine_gap_fraction(LIS_REAL fraction, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver);
-	extern LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver);  
+	extern LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver);
+/* Generic, conservative matrix-pair generalized eigensolver session.
+ * The session owns both CSR caches and the eigensolver.  A previous
+ * eigensolver is fully retired before either cache changes. Only the
+ * cached CSR matrices may be reused; eigensolver work is rebuilt.
+ *
+ * A/B/x are owned by the caller and may remain referenced by the eigensolver
+ * after solve() returns. Keep them alive until the NEXT solve(), reset(), or
+ * destroy() has retired those references. Do not mutate them concurrently
+ * with session use. Call reset() before freeing a previously used source.
+ *
+ * USER/OPERATOR inputs with row access are materialized as CSR. Native
+ * matrices pass through unchanged. This v1 supports single-process
+ * distributions (including MPI builds with one rank).
+ *
+ * get_esolver returns a BORROWED configuration handle, invalidated by the
+ * next solve, reset, or destroy. Reacquire before changing options.
+ * Indexed result access copies into a caller-owned default-precision vector
+ * with matching local/global dimensions; no internal pointers escape.
+ * Policy outputs are committed only after a successful solve.
+ */
+typedef struct LIS_GESOLVE_MATRIX_SESSION_STRUCT *LIS_GESOLVE_MATRIX_SESSION;
+extern LIS_INT lis_gesolve_matrix_session_create(
+    LIS_GESOLVE_MATRIX_SESSION *session);
+extern LIS_INT lis_gesolve_matrix_session_get_esolver(
+    LIS_GESOLVE_MATRIX_SESSION session,LIS_ESOLVER *borrowed_esolver);
+extern LIS_INT lis_gesolve_matrix_session_solve(
+    LIS_GESOLVE_MATRIX_SESSION session,LIS_MATRIX A,LIS_MATRIX B,
+    LIS_VECTOR x,LIS_INT *policy_A,LIS_INT *policy_B);
+extern LIS_INT lis_gesolve_matrix_session_get_nev(
+    LIS_GESOLVE_MATRIX_SESSION session,LIS_INT *computed_nev);
+extern LIS_INT lis_gesolve_matrix_session_get_eigenpair(
+    LIS_GESOLVE_MATRIX_SESSION session,LIS_INT mode,
+    LIS_SCALAR *eigenvalue,LIS_VECTOR eigenvector_out);
+extern LIS_INT lis_gesolve_matrix_session_reset(
+    LIS_GESOLVE_MATRIX_SESSION session);
+extern void lis_gesolve_matrix_session_destroy(
+    LIS_GESOLVE_MATRIX_SESSION session);
+
+  
+	  
+	  
 	extern LIS_INT lis_esolver_get_iter(LIS_ESOLVER esolver, LIS_INT *iter);
 	extern LIS_INT lis_esolver_get_iterex(LIS_ESOLVER esolver, LIS_INT *iter, LIS_INT *iter_double, LIS_INT *iter_quad);
 	extern LIS_INT lis_esolver_get_time(LIS_ESOLVER esolver, double *time);
