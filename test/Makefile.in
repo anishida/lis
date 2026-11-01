@@ -143,8 +143,9 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testprojectedhermitian$(EXEEXT) testblockgram$(EXEEXT) \
 	testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) \
 	testmatrixautosession$(EXEEXT) testvectorreal64$(EXEEXT) \
-	benchautojacobirefresh$(EXEEXT) $(am__EXEEXT_1) \
-	$(am__EXEEXT_2) $(am__EXEEXT_3) $(am__EXEEXT_4)
+	benchautojacobirefresh$(EXEEXT) testabi$(EXEEXT) \
+	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
+	$(am__EXEEXT_4)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_3 = test2f test6f 
@@ -391,6 +392,10 @@ am__test8f_SOURCES_DIST = test8f.F90
 test8f_OBJECTS = $(am_test8f_OBJECTS)
 test8f_LDADD = $(LDADD)
 test8f_DEPENDENCIES =
+am_testabi_OBJECTS = testabi.$(OBJEXT)
+testabi_OBJECTS = $(am_testabi_OBJECTS)
+testabi_LDADD = $(LDADD)
+testabi_DEPENDENCIES =
 am_testblockgram_OBJECTS = testblockgram.$(OBJEXT)
 testblockgram_OBJECTS = $(am_testblockgram_OBJECTS)
 testblockgram_LDADD = $(LDADD)
@@ -799,7 +804,7 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/test3.Po ./$(DEPDIR)/test3b.Po \
 	./$(DEPDIR)/test3c.Po ./$(DEPDIR)/test4.Po \
 	./$(DEPDIR)/test5.Po ./$(DEPDIR)/test6.Po ./$(DEPDIR)/test7.Po \
-	./$(DEPDIR)/testblockgram.Po \
+	./$(DEPDIR)/testabi.Po ./$(DEPDIR)/testblockgram.Po \
 	./$(DEPDIR)/testblockorthogonal.Po \
 	./$(DEPDIR)/testblockrank.Po ./$(DEPDIR)/testbreakretry.Po \
 	./$(DEPDIR)/testcapabilities.Po \
@@ -914,25 +919,26 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(test3_SOURCES) $(test3b_SOURCES) $(test3c_SOURCES) \
 	$(test4_SOURCES) $(test4f_SOURCES) $(test5_SOURCES) \
 	$(test6_SOURCES) $(test6f_SOURCES) $(test7_SOURCES) \
-	$(test7f_SOURCES) $(test8f_SOURCES) $(testblockgram_SOURCES) \
-	$(testblockorthogonal_SOURCES) $(testblockrank_SOURCES) \
-	$(testbreakretry_SOURCES) $(testcapabilities_SOURCES) \
-	$(testchangingsystem_SOURCES) $(testcoarseapply_SOURCES) \
-	$(testcoarsesetup_SOURCES) $(testcomponentnullspace_SOURCES) \
-	$(testdiagonal_SOURCES) $(testeigenbreakdown_SOURCES) \
-	$(testesolverselection_SOURCES) $(testesubspaceretry_SOURCES) \
-	testexactnullspace.c $(testexternalstorage_SOURCES) \
-	$(testfeastcontour_SOURCES) $(testfeastfoundation_SOURCES) \
-	$(testfeastshifted_SOURCES) $(testfgcrodr_SOURCES) \
-	$(testfrozenilut_SOURCES) $(testgcrodrconfig_SOURCES) \
-	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
-	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
-	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
-	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
-	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
-	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
-	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testkrylovrobust_SOURCES) $(testmatrixautosession_SOURCES) \
+	$(test7f_SOURCES) $(test8f_SOURCES) $(testabi_SOURCES) \
+	$(testblockgram_SOURCES) $(testblockorthogonal_SOURCES) \
+	$(testblockrank_SOURCES) $(testbreakretry_SOURCES) \
+	$(testcapabilities_SOURCES) $(testchangingsystem_SOURCES) \
+	$(testcoarseapply_SOURCES) $(testcoarsesetup_SOURCES) \
+	$(testcomponentnullspace_SOURCES) $(testdiagonal_SOURCES) \
+	$(testeigenbreakdown_SOURCES) $(testesolverselection_SOURCES) \
+	$(testesubspaceretry_SOURCES) testexactnullspace.c \
+	$(testexternalstorage_SOURCES) $(testfeastcontour_SOURCES) \
+	$(testfeastfoundation_SOURCES) $(testfeastshifted_SOURCES) \
+	$(testfgcrodr_SOURCES) $(testfrozenilut_SOURCES) \
+	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
+	$(testgcrodrsequence_SOURCES) $(testgmreswork_SOURCES) \
+	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
+	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
+	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
+	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
+	$(testhybridnested_SOURCES) $(testilupivot_SOURCES) \
+	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
+	$(testmatrixautosession_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatrixmaterialize_SOURCES) \
 	$(testmatrixmaterializeomp_SOURCES) \
@@ -981,25 +987,26 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(test3c_SOURCES) $(test4_SOURCES) $(am__test4f_SOURCES_DIST) \
 	$(test5_SOURCES) $(test6_SOURCES) $(am__test6f_SOURCES_DIST) \
 	$(test7_SOURCES) $(am__test7f_SOURCES_DIST) \
-	$(am__test8f_SOURCES_DIST) $(testblockgram_SOURCES) \
-	$(testblockorthogonal_SOURCES) $(testblockrank_SOURCES) \
-	$(testbreakretry_SOURCES) $(testcapabilities_SOURCES) \
-	$(testchangingsystem_SOURCES) $(testcoarseapply_SOURCES) \
-	$(testcoarsesetup_SOURCES) $(testcomponentnullspace_SOURCES) \
-	$(testdiagonal_SOURCES) $(testeigenbreakdown_SOURCES) \
-	$(testesolverselection_SOURCES) $(testesubspaceretry_SOURCES) \
-	testexactnullspace.c $(testexternalstorage_SOURCES) \
-	$(testfeastcontour_SOURCES) $(testfeastfoundation_SOURCES) \
-	$(testfeastshifted_SOURCES) $(testfgcrodr_SOURCES) \
-	$(testfrozenilut_SOURCES) $(testgcrodrconfig_SOURCES) \
-	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
-	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
-	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
-	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
-	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
-	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
-	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testkrylovrobust_SOURCES) $(testmatrixautosession_SOURCES) \
+	$(am__test8f_SOURCES_DIST) $(testabi_SOURCES) \
+	$(testblockgram_SOURCES) $(testblockorthogonal_SOURCES) \
+	$(testblockrank_SOURCES) $(testbreakretry_SOURCES) \
+	$(testcapabilities_SOURCES) $(testchangingsystem_SOURCES) \
+	$(testcoarseapply_SOURCES) $(testcoarsesetup_SOURCES) \
+	$(testcomponentnullspace_SOURCES) $(testdiagonal_SOURCES) \
+	$(testeigenbreakdown_SOURCES) $(testesolverselection_SOURCES) \
+	$(testesubspaceretry_SOURCES) testexactnullspace.c \
+	$(testexternalstorage_SOURCES) $(testfeastcontour_SOURCES) \
+	$(testfeastfoundation_SOURCES) $(testfeastshifted_SOURCES) \
+	$(testfgcrodr_SOURCES) $(testfrozenilut_SOURCES) \
+	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
+	$(testgcrodrsequence_SOURCES) $(testgmreswork_SOURCES) \
+	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
+	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
+	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
+	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
+	$(testhybridnested_SOURCES) $(testilupivot_SOURCES) \
+	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
+	$(testmatrixautosession_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatrixmaterialize_SOURCES) \
 	$(testmatrixmaterializeomp_SOURCES) \
@@ -1401,6 +1408,7 @@ EXTRA_DIST = defs test.sh testmat.mtx testmat2.mtx testmat3.mtx testmat4.mtx tes
 testdir = ${prefix}/share/examples/lis
 test_DATA = testmat.mtx testmat2.mtx testmat3.mtx testmat4.mtx testmat0.mtx testvec0.mtx
 test_SCRIPTS = defs test.sh
+testabi_SOURCES = testabi.c
 testgcrodroptions_SOURCES = testgcrodroptions.c
 testfeastfoundation_SOURCES = testfeastfoundation.c
 testfeastcontour_SOURCES = testfeastcontour.c
@@ -1609,7 +1617,7 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) \
 	testnullspacecandidates$(EXEEXT) testesolverselection$(EXEEXT) \
 	testmatrixautosession$(EXEEXT) testvectorreal64$(EXEEXT) \
-	$(am__append_5)
+	testabi$(EXEEXT) $(am__append_5)
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
 all: all-am
@@ -1921,6 +1929,10 @@ test7f$(EXEEXT): $(test7f_OBJECTS) $(test7f_DEPENDENCIES) $(EXTRA_test7f_DEPENDE
 test8f$(EXEEXT): $(test8f_OBJECTS) $(test8f_DEPENDENCIES) $(EXTRA_test8f_DEPENDENCIES) 
 	@rm -f test8f$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(test8f_OBJECTS) $(test8f_LDADD) $(LIBS)
+
+testabi$(EXEEXT): $(testabi_OBJECTS) $(testabi_DEPENDENCIES) $(EXTRA_testabi_DEPENDENCIES) 
+	@rm -f testabi$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testabi_OBJECTS) $(testabi_LDADD) $(LIBS)
 
 testblockgram$(EXEEXT): $(testblockgram_OBJECTS) $(testblockgram_DEPENDENCIES) $(EXTRA_testblockgram_DEPENDENCIES) 
 	@rm -f testblockgram$(EXEEXT)
@@ -2335,6 +2347,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test5.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test6.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test7.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testabi.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testblockgram.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testblockorthogonal.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testblockrank.Po@am__quote@ # am--include-marker
@@ -3210,6 +3223,13 @@ testvectorreal64.log: testvectorreal64$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testabi.log: testabi$(EXEEXT)
+	@p='testabi$(EXEEXT)'; \
+	b='testabi'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 testhalfstorage.log: testhalfstorage$(EXEEXT)
 	@p='testhalfstorage$(EXEEXT)'; \
 	b='testhalfstorage'; \
@@ -3378,6 +3398,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/test5.Po
 	-rm -f ./$(DEPDIR)/test6.Po
 	-rm -f ./$(DEPDIR)/test7.Po
+	-rm -f ./$(DEPDIR)/testabi.Po
 	-rm -f ./$(DEPDIR)/testblockgram.Po
 	-rm -f ./$(DEPDIR)/testblockorthogonal.Po
 	-rm -f ./$(DEPDIR)/testblockrank.Po
@@ -3541,6 +3562,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/test5.Po
 	-rm -f ./$(DEPDIR)/test6.Po
 	-rm -f ./$(DEPDIR)/test7.Po
+	-rm -f ./$(DEPDIR)/testabi.Po
 	-rm -f ./$(DEPDIR)/testblockgram.Po
 	-rm -f ./$(DEPDIR)/testblockorthogonal.Po
 	-rm -f ./$(DEPDIR)/testblockrank.Po

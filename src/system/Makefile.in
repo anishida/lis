@@ -106,8 +106,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libsystem_la_LIBADD =
-am_libsystem_la_OBJECTS = lis_error.lo lis_hash.lo lis_init.lo \
-	lis_omp_capacity.lo lis_input.lo lis_input_hb.lo \
+am_libsystem_la_OBJECTS = lis_abi.lo lis_error.lo lis_hash.lo \
+	lis_init.lo lis_omp_capacity.lo lis_input.lo lis_input_hb.lo \
 	lis_input_mm.lo lis_memory.lo lis_output.lo lis_output_mm.lo \
 	lis_sort.lo lis_time.lo mt19937ar.lo
 libsystem_la_OBJECTS = $(am_libsystem_la_OBJECTS)
@@ -130,13 +130,14 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/include
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/lis_error.Plo \
-	./$(DEPDIR)/lis_hash.Plo ./$(DEPDIR)/lis_init.Plo \
-	./$(DEPDIR)/lis_input.Plo ./$(DEPDIR)/lis_input_hb.Plo \
-	./$(DEPDIR)/lis_input_mm.Plo ./$(DEPDIR)/lis_memory.Plo \
-	./$(DEPDIR)/lis_omp_capacity.Plo ./$(DEPDIR)/lis_output.Plo \
-	./$(DEPDIR)/lis_output_mm.Plo ./$(DEPDIR)/lis_sort.Plo \
-	./$(DEPDIR)/lis_time.Plo ./$(DEPDIR)/mt19937ar.Plo
+am__depfiles_remade = ./$(DEPDIR)/lis_abi.Plo \
+	./$(DEPDIR)/lis_error.Plo ./$(DEPDIR)/lis_hash.Plo \
+	./$(DEPDIR)/lis_init.Plo ./$(DEPDIR)/lis_input.Plo \
+	./$(DEPDIR)/lis_input_hb.Plo ./$(DEPDIR)/lis_input_mm.Plo \
+	./$(DEPDIR)/lis_memory.Plo ./$(DEPDIR)/lis_omp_capacity.Plo \
+	./$(DEPDIR)/lis_output.Plo ./$(DEPDIR)/lis_output_mm.Plo \
+	./$(DEPDIR)/lis_sort.Plo ./$(DEPDIR)/lis_time.Plo \
+	./$(DEPDIR)/mt19937ar.Plo
 am__mv = mv -f
 AM_V_CC = $(am__v_CC_@AM_V@)
 am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
@@ -332,7 +333,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LTLIBRARIES = libsystem.la
-libsystem_la_SOURCES = lis_error.c \
+libsystem_la_SOURCES = lis_abi.c \
+lis_error.c \
 lis_hash.c \
 lis_init.c \
 lis_omp_capacity.c \
@@ -414,6 +416,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_abi.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_error.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_hash.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_init.Plo@am__quote@ # am--include-marker
@@ -587,6 +590,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
+	-rm -f ./$(DEPDIR)/lis_abi.Plo
 	-rm -f ./$(DEPDIR)/lis_error.Plo
 	-rm -f ./$(DEPDIR)/lis_hash.Plo
 	-rm -f ./$(DEPDIR)/lis_init.Plo
@@ -645,6 +649,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
+	-rm -f ./$(DEPDIR)/lis_abi.Plo
 	-rm -f ./$(DEPDIR)/lis_error.Plo
 	-rm -f ./$(DEPDIR)/lis_hash.Plo
 	-rm -f ./$(DEPDIR)/lis_init.Plo

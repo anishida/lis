@@ -1,4 +1,4 @@
-nobase_include_HEADERS = lis_config.h lis.h lisf.h \
+nobase_include_HEADERS = lis_config.h lis.h lisf.h lis_abi.h \
 	lis_nullspace_candidates.h lis_nullspace_lift.h lis_esolver_selection.h \
 	lis_esolver_config.h \
 	lis_solver_capabilities.h lis_solver_options.h \
