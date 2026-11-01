@@ -143,8 +143,8 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testprojectedhermitian$(EXEEXT) testblockgram$(EXEEXT) \
 	testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) \
 	testmatrixautosession$(EXEEXT) testvectorreal64$(EXEEXT) \
-	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
-	$(am__EXEEXT_4)
+	benchautojacobirefresh$(EXEEXT) $(am__EXEEXT_1) \
+	$(am__EXEEXT_2) $(am__EXEEXT_3) $(am__EXEEXT_4)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_3 = test2f test6f 
@@ -191,14 +191,18 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(testdir)" \
 @ENABLE_F90_TRUE@am__EXEEXT_3 = test2f$(EXEEXT) test6f$(EXEEXT)
 @ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__EXEEXT_4 = test8f$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(test_PROGRAMS)
-am_benchfrozenilut_OBJECTS = benchfrozenilut.$(OBJEXT)
-benchfrozenilut_OBJECTS = $(am_benchfrozenilut_OBJECTS)
-benchfrozenilut_LDADD = $(LDADD)
-benchfrozenilut_DEPENDENCIES =
+am_benchautojacobirefresh_OBJECTS = benchautojacobirefresh.$(OBJEXT)
+benchautojacobirefresh_OBJECTS = $(am_benchautojacobirefresh_OBJECTS)
+benchautojacobirefresh_LDADD = $(LDADD)
+benchautojacobirefresh_DEPENDENCIES =
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+am_benchfrozenilut_OBJECTS = benchfrozenilut.$(OBJEXT)
+benchfrozenilut_OBJECTS = $(am_benchfrozenilut_OBJECTS)
+benchfrozenilut_LDADD = $(LDADD)
+benchfrozenilut_DEPENDENCIES =
 am_esolve_OBJECTS = etest5.$(OBJEXT)
 esolve_OBJECTS = $(am_esolve_OBJECTS)
 esolve_LDADD = $(LDADD)
@@ -779,22 +783,23 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/include
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/benchfrozenilut.Po \
-	./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
-	./$(DEPDIR)/etest3.Po ./$(DEPDIR)/etest4.Po \
-	./$(DEPDIR)/etest5.Po ./$(DEPDIR)/etest5b.Po \
-	./$(DEPDIR)/etest6.Po ./$(DEPDIR)/etest7.Po \
-	./$(DEPDIR)/getest1.Po ./$(DEPDIR)/getest5.Po \
-	./$(DEPDIR)/getest5b.Po ./$(DEPDIR)/getestoperator.Po \
-	./$(DEPDIR)/getestuser.Po ./$(DEPDIR)/spmvtest1.Po \
-	./$(DEPDIR)/spmvtest2.Po ./$(DEPDIR)/spmvtest2b.Po \
-	./$(DEPDIR)/spmvtest3.Po ./$(DEPDIR)/spmvtest3b.Po \
-	./$(DEPDIR)/spmvtest4.Po ./$(DEPDIR)/spmvtest5.Po \
-	./$(DEPDIR)/test1.Po ./$(DEPDIR)/test2.Po \
-	./$(DEPDIR)/test2b.Po ./$(DEPDIR)/test3.Po \
-	./$(DEPDIR)/test3b.Po ./$(DEPDIR)/test3c.Po \
-	./$(DEPDIR)/test4.Po ./$(DEPDIR)/test5.Po ./$(DEPDIR)/test6.Po \
-	./$(DEPDIR)/test7.Po ./$(DEPDIR)/testblockgram.Po \
+am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
+	./$(DEPDIR)/benchfrozenilut.Po ./$(DEPDIR)/etest1.Po \
+	./$(DEPDIR)/etest2.Po ./$(DEPDIR)/etest3.Po \
+	./$(DEPDIR)/etest4.Po ./$(DEPDIR)/etest5.Po \
+	./$(DEPDIR)/etest5b.Po ./$(DEPDIR)/etest6.Po \
+	./$(DEPDIR)/etest7.Po ./$(DEPDIR)/getest1.Po \
+	./$(DEPDIR)/getest5.Po ./$(DEPDIR)/getest5b.Po \
+	./$(DEPDIR)/getestoperator.Po ./$(DEPDIR)/getestuser.Po \
+	./$(DEPDIR)/spmvtest1.Po ./$(DEPDIR)/spmvtest2.Po \
+	./$(DEPDIR)/spmvtest2b.Po ./$(DEPDIR)/spmvtest3.Po \
+	./$(DEPDIR)/spmvtest3b.Po ./$(DEPDIR)/spmvtest4.Po \
+	./$(DEPDIR)/spmvtest5.Po ./$(DEPDIR)/test1.Po \
+	./$(DEPDIR)/test2.Po ./$(DEPDIR)/test2b.Po \
+	./$(DEPDIR)/test3.Po ./$(DEPDIR)/test3b.Po \
+	./$(DEPDIR)/test3c.Po ./$(DEPDIR)/test4.Po \
+	./$(DEPDIR)/test5.Po ./$(DEPDIR)/test6.Po ./$(DEPDIR)/test7.Po \
+	./$(DEPDIR)/testblockgram.Po \
 	./$(DEPDIR)/testblockorthogonal.Po \
 	./$(DEPDIR)/testblockrank.Po ./$(DEPDIR)/testbreakretry.Po \
 	./$(DEPDIR)/testcapabilities.Po \
@@ -892,16 +897,16 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(benchfrozenilut_SOURCES) $(esolve_SOURCES) \
-	$(esolver_SOURCES) $(etest1_SOURCES) $(etest1f_SOURCES) \
-	$(etest2_SOURCES) $(etest3_SOURCES) $(etest4_SOURCES) \
-	$(etest4f_SOURCES) $(etest5_SOURCES) $(etest5b_SOURCES) \
-	$(etest6_SOURCES) $(etest7_SOURCES) $(gesolve_SOURCES) \
-	$(gesolver_SOURCES) $(getest1_SOURCES) $(getest5_SOURCES) \
-	$(getest5b_SOURCES) $(getestoperator_SOURCES) \
-	$(getestuser_SOURCES) $(hpcg_kernel_SOURCES) \
-	$(hpcg_spmvtest_SOURCES) $(lsolve_SOURCES) \
-	$(spmvtest1_SOURCES) $(spmvtest2_SOURCES) \
+SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
+	$(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
+	$(etest1f_SOURCES) $(etest2_SOURCES) $(etest3_SOURCES) \
+	$(etest4_SOURCES) $(etest4f_SOURCES) $(etest5_SOURCES) \
+	$(etest5b_SOURCES) $(etest6_SOURCES) $(etest7_SOURCES) \
+	$(gesolve_SOURCES) $(gesolver_SOURCES) $(getest1_SOURCES) \
+	$(getest5_SOURCES) $(getest5b_SOURCES) \
+	$(getestoperator_SOURCES) $(getestuser_SOURCES) \
+	$(hpcg_kernel_SOURCES) $(hpcg_spmvtest_SOURCES) \
+	$(lsolve_SOURCES) $(spmvtest1_SOURCES) $(spmvtest2_SOURCES) \
 	$(spmvtest2b_SOURCES) $(spmvtest3_SOURCES) \
 	$(spmvtest3b_SOURCES) $(spmvtest4_SOURCES) \
 	$(spmvtest5_SOURCES) $(test1_SOURCES) $(test1f_SOURCES) \
@@ -956,7 +961,8 @@ SOURCES = $(benchfrozenilut_SOURCES) $(esolve_SOURCES) \
 	$(testuserrow_SOURCES) $(testvectornrm2mpi_SOURCES) \
 	$(testvectorreal64_SOURCES) $(testwarmstart_SOURCES) \
 	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
-DIST_SOURCES = $(benchfrozenilut_SOURCES) $(esolve_SOURCES) \
+DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
+	$(benchfrozenilut_SOURCES) $(esolve_SOURCES) \
 	$(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
 	$(etest3_SOURCES) $(etest4_SOURCES) \
@@ -1407,6 +1413,7 @@ testmatrixmaterialize_SOURCES = testmatrixmaterialize.c
 testmatrixmaterializeomp_SOURCES = testmatrixmaterializeomp.c
 testmatrixpolicysolve_SOURCES = testmatrixpolicysolve.c
 testmatrixautosession_SOURCES = testmatrixautosession.c
+benchautojacobirefresh_SOURCES = benchautojacobirefresh.c
 testvectorreal64_SOURCES = testvectorreal64.c
 testfrozenilut_SOURCES = testfrozenilut.c
 benchfrozenilut_SOURCES = benchfrozenilut.c
@@ -1726,6 +1733,10 @@ uninstall-testPROGRAMS:
 clean-testPROGRAMS:
 	$(am__rm_f) $(test_PROGRAMS)
 	test -z "$(EXEEXT)" || $(am__rm_f) $(test_PROGRAMS:$(EXEEXT)=)
+
+benchautojacobirefresh$(EXEEXT): $(benchautojacobirefresh_OBJECTS) $(benchautojacobirefresh_DEPENDENCIES) $(EXTRA_benchautojacobirefresh_DEPENDENCIES) 
+	@rm -f benchautojacobirefresh$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(benchautojacobirefresh_OBJECTS) $(benchautojacobirefresh_LDADD) $(LIBS)
 
 benchfrozenilut$(EXEEXT): $(benchfrozenilut_OBJECTS) $(benchfrozenilut_DEPENDENCIES) $(EXTRA_benchfrozenilut_DEPENDENCIES) 
 	@rm -f benchfrozenilut$(EXEEXT)
@@ -2292,6 +2303,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/benchautojacobirefresh.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/benchfrozenilut.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/etest1.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/etest2.Po@am__quote@ # am--include-marker
@@ -3334,6 +3346,7 @@ clean-am: clean-binPROGRAMS clean-generic clean-libtool \
 	clean-testPROGRAMS mostlyclean-am
 
 distclean: distclean-am
+	-rm -f ./$(DEPDIR)/benchautojacobirefresh.Po
 	-rm -f ./$(DEPDIR)/benchfrozenilut.Po
 	-rm -f ./$(DEPDIR)/etest1.Po
 	-rm -f ./$(DEPDIR)/etest2.Po
@@ -3496,6 +3509,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
+	-rm -f ./$(DEPDIR)/benchautojacobirefresh.Po
 	-rm -f ./$(DEPDIR)/benchfrozenilut.Po
 	-rm -f ./$(DEPDIR)/etest1.Po
 	-rm -f ./$(DEPDIR)/etest2.Po
