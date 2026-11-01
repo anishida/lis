@@ -16,7 +16,6 @@ Version 2.1.21 October 31, 2026
   - Introduced an opt-in frozen-pattern ILUT numerical refresh policy for persistent sequences of linear solves (thanks to Rafal Brzegowy).
   - Added a typed runtime API for stable solver and eigensolver controls, including requested eigenpair counts (thanks to Rafal Brzegowy).
   - Introduced a managed AUTO matrix/sequence session API and caller-owned CSR materialization paths (thanks to Rafal Brzegowy).
-  - Added checked strided real64 vector import/export APIs and fixed-width int64_t split-triangular view support (thanks to Rafal Brzegowy).
 
 Version 2.1.20 October 25, 2026
 
