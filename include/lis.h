@@ -1246,6 +1246,27 @@ extern LIS_INT lis_vector_export_real64(
     LIS_VECTOR vector,double *dst,LIS_INT length,LIS_INT stride,
     LIS_INT loss_policy);
 
+/*
+ * Atomic real64 export with bounded imaginary content. The largest
+ * imaginary magnitude must satisfy:
+ *
+ *   max(abs(imag(v))) <= absolute_imag_tolerance
+ *                        + relative_imag_tolerance*max(abs(real(v))).
+ *
+ * The first tolerance argument is absolute, the second is relative.
+ * Maxima are taken over the LOCAL vector (v->n), not across MPI ranks;
+ * no MPI collective is performed.
+ * Both tolerances must be finite and nonnegative. REJECT_LOSS still rejects
+ * every nonzero imaginary component and any real-precision loss; ALLOW_LOSS
+ * allows dropping imaginary components only within the supplied bounds.
+ * The destination is not modified on any failure, including nonfinite data.
+ * The same checked vector/stride and zero-length rules as export_real64 apply.
+ */
+extern LIS_INT lis_vector_export_real64_tolerant(
+    LIS_VECTOR vector,double *dst,LIS_INT length,LIS_INT stride,
+    LIS_INT loss_policy,LIS_REAL absolute_imag_tolerance,
+    LIS_REAL relative_imag_tolerance);
+
 	extern LIS_INT lis_vector_destroy(LIS_VECTOR vec);
 	extern LIS_INT lis_vector_duplicate(void *vin, LIS_VECTOR *vout);
 	extern LIS_INT lis_vector_get_size(LIS_VECTOR v, LIS_INT *local_n, LIS_INT *global_n);
