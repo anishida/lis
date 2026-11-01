@@ -112,6 +112,14 @@ void lis_matrix_csr_cache_destroy(
  * BEFORE any cache mutation. The session tracks cache rebuild epochs rather
  * than CSR pointer identity, which can be recycled by an allocator.
  * Unchanged inputs can retain persistent solver/preconditioner state.
+ * A value-only cached CSR change normally resets that state before any
+ * mutation of derived matrix storage. As an explicit, narrowly limited
+ * exception, selecting LIS_SEQUENCE_PRECON_REFRESH_JACOBI_NUMERIC permits
+ * a Jacobi preconditioner with independently owned diagonal storage to be
+ * refreshed in place after a verified CSR pattern match. Only default-
+ * precision GMRES/FGMRES, without nullspaces or CSR split/diagonal caches,
+ * currently qualify. Other preconditioners and structure changes retain the
+ * conservative reset-first behavior.
  *
  * A session is not thread-safe: do not use, configure or destroy it
  * concurrently. Destroy it (or reset it) before destroying a source matrix

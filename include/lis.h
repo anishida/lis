@@ -304,9 +304,14 @@ extern "C" {
 #define LIS_SEQUENCE_POLICY_MANUAL 0
 #define LIS_SEQUENCE_POLICY_AUTO 1
 
-/* Persistent preconditioner refresh policy for value-only changes. */
+/* Persistent preconditioner refresh policies for value-only changes.
+ * SAFE: conservative reset; FROZEN_PATTERN: existing ILUT numeric refresh.
+ * JACOBI_NUMERIC: separate opt-in Jacobi diagonal refresh on verified CSR.
+ * This avoids changing semantics for existing FROZEN_PATTERN users.
+ */
 #define LIS_SEQUENCE_PRECON_REFRESH_SAFE 0
 #define LIS_SEQUENCE_PRECON_REFRESH_FROZEN_PATTERN 1
+#define LIS_SEQUENCE_PRECON_REFRESH_JACOBI_NUMERIC 2
 
 #define LIS_MATRIX_ASSEMBLING 0
 #define LIS_MATRIX_CSR 1

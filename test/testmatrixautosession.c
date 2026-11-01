@@ -4,6 +4,7 @@
 #include "lis_solver_options.h"
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 #ifdef _COMPLEX
 #include <complex.h>
 #endif
@@ -14,6 +15,12 @@ typedef struct {
     LIS_INT failed_row;
     LIS_SOLVER observed_solver;
     LIS_INT assert_reset_before_row;
+    /* Induce failure only after a CSR row has actually been overwritten,
+     * not in either of the two pre-refresh pattern-validation passes. */
+    LIS_MATRIX watched_csr;
+    LIS_SCALAR watched_before;
+    LIS_INT fail_after_partial_refresh;
+    LIS_INT partial_failure_observed;
 } TEST_CONTEXT;
 
 static LIS_INT
@@ -37,6 +44,14 @@ test_row(void *data,LIS_INT row,LIS_INT *nnz,LIS_INT *cols,LIS_SCALAR *vals)
     }
     if(ctx->failed_row==row)
         return LIS_ERR_ILL_ARG;
+    if(ctx->fail_after_partial_refresh && row==1 &&
+       ctx->watched_csr!=NULL &&
+       memcmp(&ctx->watched_csr->value[0],&ctx->watched_before,
+              sizeof(LIS_SCALAR))!=0)
+    {
+        ctx->partial_failure_observed=LIS_TRUE;
+        return LIS_ERR_ILL_ARG;
+    }
     if((cols==NULL)!=(vals==NULL))
         return LIS_ERR_ILL_ARG;
 
@@ -148,11 +163,12 @@ int main(int argc,char **argv)
     const LIS_SCALAR truth[3]={
         (LIS_SCALAR)1,(LIS_SCALAR)-2,(LIS_SCALAR)3};
     LIS_MATRIX A=NULL,B=NULL;
-    LIS_MATRIX_AUTO_SESSION session=NULL;
-    LIS_SOLVER solver=NULL;
+    LIS_MATRIX_AUTO_SESSION session=NULL,jacobi_session=NULL;
+    LIS_SOLVER solver=NULL,jacobi_solver=NULL;
     LIS_VECTOR x=NULL,b=NULL;
-    LIS_PRECON saved_precon=NULL;
+    LIS_PRECON saved_precon=NULL,saved_jacobi=NULL;
     LIS_INT err,policy,action,sequence_policy;
+    LIS_SCALAR old_jacobi_diagonal;
     int failed=1;
 
     err=lis_initialize(&argc,&argv);
@@ -315,9 +331,121 @@ int main(int argc,char **argv)
           LIS_MATRIX_POLICY_DIRECT,LIS_MATRIX_POLICY_ACTION_DIRECT,
           "csr-to-direct"))goto done;
 
+    /*
+     * Opt-in value-only Jacobi refresh for cached CSR. A USER matrix with a
+     * row callback but no diagonal callback selects cached CSR for Jacobi.
+     * The preconditioner owns its diagonal; refresh must keep that object,
+     * recompute its reciprocal values, and return a correct solution.
+     */
+    err=lis_matrix_auto_session_create(&jacobi_session);if(err)goto done;
+    err=lis_matrix_auto_session_get_solver(jacobi_session,&jacobi_solver);
+    if(err)goto done;
+    {
+        char options[]="-i gmres -p jacobi -restart 10 -tol 1e-11 -maxiter 80 -scale none";
+        err=lis_solver_set_option(options,jacobi_solver);if(err)goto done;
+    }
+    err=lis_solver_set_sequence_precon_refresh_policy(
+        jacobi_solver,LIS_SEQUENCE_PRECON_REFRESH_JACOBI_NUMERIC);
+    if(err)goto done;
+
+    err=test_matvec(&ctx,truth,b->value);if(err)goto done;
+    if(test_solve(jacobi_session,jacobi_solver,A,b,x,truth,
+          LIS_MATRIX_POLICY_CACHED_CSR,LIS_MATRIX_MATERIALIZE_REBUILD,
+          "jacobi-csr-build"))goto done;
+    saved_jacobi=jacobi_solver->sequence_precon;
+    if(saved_jacobi==NULL || saved_jacobi->D==NULL)goto done;
+    old_jacobi_diagonal=saved_jacobi->D->value[0];
+
+    ctx.scale+=(LIS_REAL)0.25;
+    err=lis_matrix_mark_values_changed(A);if(err)goto done;
+    err=test_matvec(&ctx,truth,b->value);if(err)goto done;
+    if(test_solve(jacobi_session,jacobi_solver,A,b,x,truth,
+          LIS_MATRIX_POLICY_CACHED_CSR,LIS_MATRIX_MATERIALIZE_VALUES,
+          "jacobi-csr-value-refresh"))goto done;
+    if(jacobi_solver->sequence_precon!=saved_jacobi ||
+       fabs(saved_jacobi->D->value[0]-old_jacobi_diagonal)<1.0e-12)
+    {
+        fprintf(stderr,"Jacobi CSR value refresh failed to reuse/update factors\n");
+        goto done;
+    }
+
+    if(test_solve(jacobi_session,jacobi_solver,A,b,x,truth,
+          LIS_MATRIX_POLICY_CACHED_CSR,LIS_MATRIX_MATERIALIZE_REUSE,
+          "jacobi-csr-unchanged-reuse"))goto done;
+
+    /* A structural change must reset the old Jacobi before row access. */
+    ctx.observed_solver=jacobi_solver;
+    ctx.dense=!ctx.dense;
+    err=lis_matrix_mark_structure_changed(A);if(err)goto done;
+    err=test_matvec(&ctx,truth,b->value);if(err)goto done;
+    ctx.assert_reset_before_row=LIS_TRUE;
+    if(test_solve(jacobi_session,jacobi_solver,A,b,x,truth,
+          LIS_MATRIX_POLICY_CACHED_CSR,LIS_MATRIX_MATERIALIZE_REBUILD,
+          "jacobi-csr-structural-reset"))goto done;
+    if(ctx.assert_reset_before_row)goto done;
+
+    /* Even if the application incorrectly marks a structural modification
+     * as values-only, the actual pattern check must detect it, reset the
+     * persistent Jacobi and rebuild the cache before solving. */
+    ctx.dense=!ctx.dense;
+    err=lis_matrix_mark_values_changed(A);if(err)goto done;
+    err=test_matvec(&ctx,truth,b->value);if(err)goto done;
+    if(test_solve(jacobi_session,jacobi_solver,A,b,x,truth,
+          LIS_MATRIX_POLICY_CACHED_CSR,LIS_MATRIX_MATERIALIZE_REBUILD,
+          "jacobi-csr-underreported-structure"))goto done;
+
+    /* A failed row callback must drop retained state and invalidate cache. */
+    ctx.scale+=(LIS_REAL)0.5;
+    err=lis_matrix_mark_values_changed(A);if(err)goto done;
+    err=test_matvec(&ctx,truth,b->value);if(err)goto done;
+    ctx.failed_row=1;
+    policy=4321;action=8765;
+    err=lis_matrix_auto_session_solve(
+        jacobi_session,A,b,x,&policy,&action);
+    if(err==LIS_SUCCESS || policy!=4321 || action!=8765 ||
+       jacobi_solver->sequence_precon!=NULL)
+    {
+        fprintf(stderr,"Jacobi failed refresh retained unsafe state\n");
+        goto done;
+    }
+    ctx.failed_row=-1;
+    if(test_solve(jacobi_session,jacobi_solver,A,b,x,truth,
+          LIS_MATRIX_POLICY_CACHED_CSR,LIS_MATRIX_MATERIALIZE_REBUILD,
+          "jacobi-csr-failure-recovery"))goto done;
+
+    /* Verify error handling after a *partial* CSR value write.  Row 0
+     * changes in the value pass, then row 1 fails. The sole pattern check
+     * must finish before this callback failure is injected. */
+    ctx.scale+=(LIS_REAL)0.25;
+    err=lis_matrix_mark_values_changed(A);if(err)goto done;
+    err=test_matvec(&ctx,truth,b->value);if(err)goto done;
+    /* Inspect the cached CSR via the solver's published matrix pointer;
+     * LIS_MATRIX_AUTO_SESSION is intentionally opaque to applications. */
+    if(jacobi_solver->sequence_precon_matrix==NULL)goto done;
+    ctx.watched_csr=jacobi_solver->sequence_precon_matrix;
+    ctx.watched_before=ctx.watched_csr->value[0];
+    ctx.partial_failure_observed=LIS_FALSE;
+    ctx.fail_after_partial_refresh=LIS_TRUE;
+    policy=4321;action=8765;
+    err=lis_matrix_auto_session_solve(
+        jacobi_session,A,b,x,&policy,&action);
+    ctx.fail_after_partial_refresh=LIS_FALSE;
+    if(err==LIS_SUCCESS || !ctx.partial_failure_observed ||
+       policy!=4321 || action!=8765 ||
+       jacobi_solver->sequence_precon!=NULL)
+    {
+        fprintf(stderr,"Jacobi partially updated CSR was not invalidated\\n");
+        goto done;
+    }
+    ctx.watched_csr=NULL;
+    if(test_solve(jacobi_session,jacobi_solver,A,b,x,truth,
+          LIS_MATRIX_POLICY_CACHED_CSR,LIS_MATRIX_MATERIALIZE_REBUILD,
+          "jacobi-csr-partial-failure-recovery"))goto done;
+
     failed=0;
 done:
     printf("AUTO_SESSION_REGRESSION=%s\n",failed?"FAIL":"PASS");
+    lis_matrix_auto_session_destroy(jacobi_session);
     lis_matrix_auto_session_destroy(session);
     if(x)lis_vector_destroy(x);
     if(b)lis_vector_destroy(b);

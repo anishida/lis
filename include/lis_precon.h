@@ -130,6 +130,7 @@ extern void lis_precon_operator_row_source_destroy(
 /*******************/
 
 	extern LIS_INT lis_precon_create_jacobi(LIS_SOLVER solver, LIS_PRECON precon);
+	extern LIS_INT lis_precon_update_jacobi(LIS_SOLVER solver, LIS_PRECON precon);
 	extern LIS_INT lis_psolve_jacobi(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
 	extern LIS_INT lis_psolveh_jacobi(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
 	extern LIS_INT lis_precon_create_bjacobi(LIS_SOLVER solver, LIS_PRECON precon);
