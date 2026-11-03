@@ -322,6 +322,22 @@ both timings; applications should also benchmark total factorization,
 assembly, and solve time. This model is a synthetic FEM-like smoke test,
 **not** evidence of speedup on production sparse eigenproblems.
 
+The benchmark includes four comparable configurations: fixed initial
+`ncv`, fixed intermediate `ncv`, fixed `ncv=ncv_max`, and adaptive
+growth from the initial to the maximum value. **Fixed `ncv=ncv_max`
+is the essential equal-reserved-memory reference**, since adaptive mode
+allocates the maximum workspace at entry. A comparison only against
+a small fixed `ncv` cannot establish an adaptive performance advantage.
+Results must be judged by converged eigenpairs, operator work, restart
+counts, process time, and equal-memory baselines.
+
+**ABI integration blocker:** This experimental patch appends fields to
+`lis_krylov_options` and `lis_krylov_stats`. This changes the ABI
+for clients compiled against older layouts and is not safe to merge
+as-is into a binary-compatible release. A versioned or size-tagged
+configuration/diagnostics API should be designed before merging.
+Rebuilding all consumers is not sufficient to establish ABI compatibility.
+
 Run the numerical regressions with `make check`, including
 `test_krylov_adaptive`. Independent standalone runs can also be performed
 with GCC, Clang, OpenMP, and sanitizers. This change does not add a CI
