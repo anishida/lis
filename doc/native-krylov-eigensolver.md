@@ -320,7 +320,7 @@ not reclassified as a speedup. OpenMP process CPU time is not wall time.
 The precomputed tridiagonal factorization is intentionally excluded from
 both timings; applications should also benchmark total factorization,
 assembly, and solve time. This model is a synthetic FEM-like smoke test,
-**not** evidence of speedup on production CalculiX matrices.
+**not** evidence of speedup on production sparse eigenproblems.
 
 Run the numerical regressions with `make check`, including
 `test_krylov_adaptive`. Independent standalone runs can also be performed
