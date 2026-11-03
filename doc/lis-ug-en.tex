@@ -2292,6 +2292,12 @@ that \verb=-emaxiter= defaults to $1,000$.
  \verb=-feast_points [8]= & The number of contour points \\
                                    &                         &
  \verb=-feast_solver [gmres]= & The inner linear solver \\
+ Native Krylov                      & \verb=-e {krylov|18}= &
+ \verb=-ss [1]= & The result-vector capacity \\
+                                    &                        &
+ \verb=-nev [1]= & The requested eigenpairs \\
+                                    &                        &
+ \verb=-kncv [0]= & The Krylov subspace size \\
 \hline         
 \end{tabular}
 \end{center}
@@ -2793,7 +2799,7 @@ of the \emph{transformed} Ritz values.
 \item \verb|-etol t| and \verb|-emaxiter m| set the residual
 tolerance and iteration/restart limit.
 \item \verb|-kresidual_scale a| supplies an estimate of
-$\lVert A\rVert$ for residual scaling. Zero uses an
+$\| A\|$ for residual scaling. Zero uses an
 automatically sampled estimate.
 \item \verb|-kinner_tol t| enables explicit verification of
 shifted linear solves when positive, at additional cost.
@@ -2881,12 +2887,12 @@ For each reported pair the solver computes an original
 eigenproblem backward-residual indicator:
 \[
 r(\lambda,x) =
-\frac{\lVert Ax-\lambda Bx\rVert}
-{\max\left(\lVert Ax\rVert+|\lambda|\lVert Bx\rVert,\,
-s_A\lVert x\rVert\right)}.
+\frac{\| Ax-\lambda Bx\|}
+{\max\left(\| Ax\|+|\lambda|\| Bx\|,\,
+s_A\| x\|\right)}.
 \]
 Here $s_A$ is the supplied \verb|residual_scale| or a sampled
-estimate of $\lVert A\rVert$. At
+estimate of $\| A\|$. At
 \verb|LIS_KRYLOV_NO_CONVERGENCE|, the first
 \verb|stats.nreturned| approximate pairs remain available.
 \verb|stats.nconv| counts residuals meeting the tolerance;
@@ -7178,6 +7184,12 @@ that \verb=-emaxiter= defaults to $1,000$.
  \verb=-feast_points [8]= & The number of contour points \\
                                    &                         &
  \verb=-feast_solver [gmres]= & The inner linear solver \\
+ Native Krylov                      & \verb=-e {krylov|18}= &
+ \verb=-ss [1]= & The result-vector capacity \\
+                                    &                        &
+ \verb=-nev [1]= & The requested eigenpairs \\
+                                    &                        &
+ \verb=-kncv [0]= & The Krylov subspace size \\
 \hline         
 \end{tabular}
 \end{center}
