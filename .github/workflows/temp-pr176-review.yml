@@ -1,0 +1,40 @@
+name: Temporary PR176 verification
+
+on:
+  push:
+    branches: [feature/krylov-rr-threshold-20261103]
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Benchmark reference and thresholded Jacobi
+        run: |
+          set -euo pipefail
+          git show 82008406e69e938e4aa3b1a7f5616a3731912c24:src/esolver/lis_krylov.c > test/baseline_krylov.c
+          cc -std=c99 -O3 -Iinclude -DKRYLOV_SOURCE='"baseline_krylov.c"' test/bench_krylov_projected.c -lm -o baseline
+          cc -std=c99 -O3 -Iinclude test/bench_krylov_projected.c -lm -o thresholded
+          echo "BASELINE"
+          ./baseline
+          echo "THRESHOLDED"
+          ./thresholded
+          echo "BASELINE SECOND PASS"
+          ./baseline
+          echo "THRESHOLDED SECOND PASS"
+          ./thresholded
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate numerical regression under Clang and GCC
+        run: |
+          set -euo pipefail
+          for cc in gcc clang; do
+            for test in projected regression stress semidefinite; do
+              "$cc" -O2 -std=c99 -Iinclude src/esolver/lis_krylov.c "test/test_krylov_${test}.c" -lm -o ktest
+              ./ktest
+            done
+          done
