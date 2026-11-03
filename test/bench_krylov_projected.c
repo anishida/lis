@@ -12,7 +12,18 @@
 #endif
 #include KRYLOV_SOURCE
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
+
+#define KRYLOV_BENCH_TRIALS 7
+
+static int compare_times(const void *left, const void *right)
+{
+    double a = *(const double *)left;
+    double b = *(const double *)right;
+    return (a > b) - (a < b);
+}
 
 static void make_projected(int n, double *a)
 {
@@ -67,32 +78,51 @@ static int bench(int n, int repeats)
     double *a = (double *)malloc(elements*sizeof(double));
     double *q = (double *)malloc(elements*sizeof(double));
     double *eigenvalues = (double *)malloc((size_t)n*sizeof(double));
-    clock_t begin, finish;
-    double seconds;
-    int i, rc = 0;
+    double times[KRYLOV_BENCH_TRIALS];
+    int t, i, rc = 0;
 
     if (!original || !a || !q || !eigenvalues) {
         free(original); free(a); free(q); free(eigenvalues);
         return 1;
     }
     make_projected(n, original);
-    begin = clock();
-    for (i = 0; i < repeats; ++i) {
-        memcpy(a, original, elements*sizeof(double));
-        rc = diagonalize(n, a, q, eigenvalues, n);
-        if (rc) break;
+
+    /* Untimed warm-up avoids measuring cold start effects; each trial
+     * uses the same matrix and the same number of decompositions. */
+    memcpy(a, original, elements*sizeof(double));
+    rc = diagonalize(n, a, q, eigenvalues, n);
+    if (rc) goto done;
+
+    for (t = 0; t < KRYLOV_BENCH_TRIALS; ++t) {
+        clock_t begin = clock();
+        clock_t finish;
+        for (i = 0; i < repeats; ++i) {
+            memcpy(a, original, elements*sizeof(double));
+            rc = diagonalize(n, a, q, eigenvalues, n);
+            if (rc) goto done;
+        }
+        finish = clock();
+        times[t] = (double)(finish-begin) / CLOCKS_PER_SEC;
+        /* Validate every timed trial, not only its last iteration overall. */
+        rc = verify(n, original, q, eigenvalues);
+        if (rc) goto done;
     }
-    finish = clock();
-    if (!rc) rc = verify(n, original, q, eigenvalues);
-    seconds = (double)(finish-begin) / CLOCKS_PER_SEC;
-    printf("%d,%d,%.8f,%d\n", n, repeats, seconds, rc);
+    qsort(times, KRYLOV_BENCH_TRIALS, sizeof(times[0]), compare_times);
+    printf("%d,%d,%d,%.8f,%.8f,%.8f,%.6f,%d\n",
+           n, repeats, KRYLOV_BENCH_TRIALS,
+           times[KRYLOV_BENCH_TRIALS/2],
+           times[0], times[KRYLOV_BENCH_TRIALS-1],
+           1e6*times[KRYLOV_BENCH_TRIALS/2]/repeats, 0);
+done:
+    if (rc) fprintf(stderr, "FAIL n=%d repeats=%d rc=%d\n",
+                    n, repeats, rc);
     free(original); free(a); free(q); free(eigenvalues);
     return !!rc;
 }
 
 int main(void)
 {
-    puts("n,repeats,cpu_seconds,failed");
+    puts("n,repeats,trials,median_cpu_s,min_cpu_s,max_cpu_s,median_us_per_decomposition,failed");
     return bench(24, 1600) || bench(48, 480) ||
            bench(72, 120) || bench(96, 40);
 }
