@@ -15,7 +15,8 @@ typedef int (*lis_krylov_matvec)(void *ctx, int n,
 /* Symmetric standard / generalized eigenproblem A x = lambda B x.
  * All vectors are real double, local (NOT MPI distributed), length n.
  * STANDARD: B=I, Euclidean inner product, OP=A.
- * SHIFT_INVERT_B: B positive definite; OP=(A-sigma B)^-1 B; B metric.
+ * SHIFT_INVERT_B: B positive definite by default; optional PSD B.
+ *                 OP=(A-sigma B)^-1 B; B metric.
  * SHIFT_INVERT_A: A positive definite; OP=(A-sigma B)^-1 A; A metric.
  * In both shifted modes, 'solve' is an application-provided inverse
  * operation on the prepared, fixed shifted matrix. Callbacks return 0
@@ -47,6 +48,7 @@ typedef struct {
     double inner_tol;              /* 0: skip inverse-action verification */
     unsigned random_seed;          /* 0: stable default seed */
     const double *initial_vector;  /* NULL: generated deterministic start */
+    int allow_semidefinite_metric;  /* 1: opt-in PSD B, mode SHIFT_INVERT_B */
 } lis_krylov_options;
 
 typedef struct {
@@ -84,6 +86,12 @@ void lis_krylov_options_default(lis_krylov_options *options);
  *                                    residual_scale*||x||).
  * For residual_scale=0 a sampled estimate of ||A|| is used. This is a
  * backward-error indicator, not a proof of complete eigenvalue coverage.
+ *
+ * PSD metric mode requires B >= 0 (not necessarily invertible), a
+ * nonsingular shifted operator, and finite eigenpairs in the generated
+ * invariant subspace. Starting and restart directions are mapped through
+ * (A-sigma B)^-1 B; the zero metric directions are rejected. A rank
+ * smaller than nev can yield NO_CONVERGENCE with valid partial results.
  *
  * This API supports real double and SERIAL operators only. Applications
  * with MPI-distributed matrices must not pass rank-local vectors to it.

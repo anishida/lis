@@ -270,11 +270,13 @@ testfgcrodr_SOURCES = testfgcrodr.c
 testgesolvepair_SOURCES = testgesolvepair.c
 
 # Native restarted Krylov eigensolver numerical regressions.
-test_PROGRAMS += test_krylov_modes test_krylov_sparse test_krylov_regression test_krylov_lis
+test_PROGRAMS += test_krylov_modes test_krylov_sparse test_krylov_regression test_krylov_lis test_krylov_semidefinite
 test_krylov_modes_SOURCES = test_krylov_modes.c
 test_krylov_sparse_SOURCES = test_krylov_sparse.c
 
 test_krylov_regression_SOURCES = test_krylov_regression.c
 test_krylov_lis_SOURCES = test_krylov_lis.c
+test_krylov_semidefinite_SOURCES = test_krylov_semidefinite.c
 TESTS += test_krylov_modes$(EXEEXT) test_krylov_sparse$(EXEEXT) \
-         test_krylov_regression$(EXEEXT) test_krylov_lis$(EXEEXT)
+         test_krylov_regression$(EXEEXT) test_krylov_lis$(EXEEXT) \
+         test_krylov_semidefinite$(EXEEXT)

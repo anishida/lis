@@ -157,8 +157,12 @@ static int orthogonalize(struct krylov_workspace *s,
     err = apply_metric(s, x, metric_x);
     if (err) return err;
     initial = compensated_dot(s->n, x, metric_x);
-    if (!isfinite(initial) || initial < 0.0) return -2;
-    if (initial == 0.0) return 1;
+    if (!isfinite(initial)) return -2;
+    if (initial <= 0.0) {
+        if (s->options->allow_semidefinite_metric && initial == 0.0)
+            return 1;
+        return -2;
+    }
 
     /* Reorthogonalize in a stable metric. Reapply the metric after the
      * two passes: linear combinations of nearly cancelled B-images can
@@ -177,8 +181,15 @@ static int orthogonalize(struct krylov_workspace *s,
     if (err) return err;
     square = compensated_dot(s->n, x, metric_x);
     if (!isfinite(square)) return -2;
-    if (square <= initial * KRYLOV_ORTH_REJECT * KRYLOV_ORTH_REJECT)
-        return 1;
+    /* Negative round-off at a nearly null metric direction is a
+     * dependent direction, not evidence of an indefinite B matrix. */
+    if (square <= initial * KRYLOV_ORTH_REJECT * KRYLOV_ORTH_REJECT) {
+        if (square >= 0.0 ||
+            (s->options->allow_semidefinite_metric &&
+             square >= -64.0 * DBL_EPSILON * initial))
+            return 1;
+        return -2;
+    }
     {
         double inverse_norm = 1.0 / sqrt(square);
         for (i = 0; i < s->n; ++i) {
@@ -192,6 +203,31 @@ static int orthogonalize(struct krylov_workspace *s,
             return 1;
     }
     return 0;
+}
+
+static int append_vector(struct krylov_workspace *s, int count, double *x);
+
+/* For a positive-semidefinite metric B, the generalized problem has
+ * finite modes only in the nonzero part of the transformed spectrum.
+ * Start and replenishment directions in range((A-sigma B)^-1 B) so that
+ * components of ker(B) are not introduced as arbitrary Ritz directions.
+ * This still requires a nonsingular shifted operator and a nonnegative
+ * B-inner product on the generated Krylov subspace. */
+static int append_range_seed(struct krylov_workspace *s,
+                             int count, double *x)
+{
+    int err;
+    if (s->options->allow_semidefinite_metric) {
+        err = apply_metric(s, x, s->metric_x);
+        if (err) return err;
+        if (stable_norm(s->n, s->metric_x) == 0.0) return 1;
+        /* scratch has at least n elements, and does not overlap the
+         * scratch vectors used by optional inner-solve certification. */
+        err = apply_operator(s, x, s->metric_x, s->scratch);
+        if (err) return err;
+        memcpy(x, s->scratch, (size_t)s->n * sizeof(double));
+    }
+    return append_vector(s, count, x);
 }
 
 static int append_vector(struct krylov_workspace *s,
@@ -471,6 +507,10 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
          (!p->apply_b || !p->solve)) ||
         (p->transform == LIS_KRYLOV_SHIFT_INVERT_A && p->sigma == 0.0) ||
         !isfinite(p->sigma) || !isfinite(o->tol) || o->tol < 0.0 ||
+        (o->allow_semidefinite_metric != 0 &&
+         o->allow_semidefinite_metric != 1) ||
+        (o->allow_semidefinite_metric &&
+         p->transform != LIS_KRYLOV_SHIFT_INVERT_B) ||
         !isfinite(o->inner_tol) || o->inner_tol < 0.0 ||
         !isfinite(o->residual_scale) || o->residual_scale < 0.0 ||
         o->maxiter < 0)
@@ -553,11 +593,29 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
         s.norm_a = norm_a / norm_x;
     }
 
-    i = append_vector(&s, m, s.x);
-    if (i) {
-        rc = i == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
-             i == -3 ? LIS_KRYLOV_INEXACT_SOLVE : LIS_KRYLOV_BREAKDOWN;
-        goto done;
+    /* In semidefinite mode an explicit start may lie in ker(B).  Try
+     * reproducible range-projected replacement directions instead of
+     * reporting spurious breakdown or dividing by a zero metric norm. */
+    {
+        int attempt;
+        for (attempt = 0; attempt <
+             (o->allow_semidefinite_metric ? 16 : 1); ++attempt) {
+            if (attempt > 0)
+                seed_vector(s.n, s.x, seed + (unsigned)attempt);
+            i = append_range_seed(&s, m, s.x);
+            if (i == 0) break;
+            if (i < 0) {
+                rc = i == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
+                     i == -3 ? LIS_KRYLOV_INEXACT_SOLVE :
+                     LIS_KRYLOV_BREAKDOWN;
+                goto done;
+            }
+        }
+        if (i != 0) {
+            rc = o->allow_semidefinite_metric ?
+                 LIS_KRYLOV_NO_CONVERGENCE : LIS_KRYLOV_BREAKDOWN;
+            goto done;
+        }
     }
     m = 1;
 
@@ -642,7 +700,7 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
             for (trial = 0; trial < 6 && !extensions; ++trial) {
                 seed_vector(s.n, s.x,
                             seed + (unsigned)iter * 7u + (unsigned)trial + 1u);
-                i = append_vector(&s, m, s.x);
+                i = append_range_seed(&s, m, s.x);
                 if (i < 0) {
                     rc = i == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
                          i == -3 ? LIS_KRYLOV_INEXACT_SOLVE :
@@ -652,7 +710,11 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
                 if (i == 0) { ++m; ++extensions; }
             }
             if (!extensions) {
-                rc = LIS_KRYLOV_BREAKDOWN;
+                /* A semidefinite metric can have rank smaller than nev.
+                 * Preserve finite Ritz approximations and report that
+                 * the requested number of pairs was not obtained. */
+                rc = o->allow_semidefinite_metric ?
+                     LIS_KRYLOV_NO_CONVERGENCE : LIS_KRYLOV_BREAKDOWN;
                 goto done;
             }
         }
