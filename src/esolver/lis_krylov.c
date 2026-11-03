@@ -932,3 +932,50 @@ int lis_krylov_count_interval(int n, void *ctx,
     *count = neg_hi - neg_lo;
     return LIS_KRYLOV_SUCCESS;
 }
+
+/* An independently counted symmetric window with a midpoint shift.
+ * For SPD B, transformed eigenvalues inside the symmetric open interval
+ * outrank those outside by magnitude. All requested pairs must converge
+ * and lie strictly inside the window before success can be claimed. */
+int lis_krylov_solve_interval(const lis_krylov_problem *p,
+                              const lis_krylov_options *options,
+                              lis_krylov_inertia_callback inertia,
+                              double lower, double upper,
+                              double *values, double *vectors,
+                              double *residuals, lis_krylov_stats *stats,
+                              int *expected_count)
+{
+    lis_krylov_options o;
+    double center;
+    int count = 0, rc, i;
+    if (stats) memset(stats, 0, sizeof(*stats));
+    if (expected_count) *expected_count = 0;
+    if (!p || !options || !inertia || !stats || !expected_count ||
+        !values || !vectors || !residuals ||
+        p->transform != LIS_KRYLOV_SHIFT_INVERT_B ||
+        options->allow_semidefinite_metric ||
+        !isfinite(lower) || !isfinite(upper) || !(lower < upper))
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    center = lower + 0.5 * (upper - lower);
+    if (!isfinite(center) || p->sigma != center)
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    rc = lis_krylov_count_interval(p->n, p->ctx, inertia,
+                                   lower, upper, &count);
+    if (rc != LIS_KRYLOV_SUCCESS) return rc;
+    *expected_count = count;
+    if (!count) return LIS_KRYLOV_SUCCESS;
+    if (options->nev < count || count >= p->n ||
+        (options->ncv && options->ncv <= count))
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    o = *options;
+    o.nev = count;
+    o.which = "LM";
+    rc = lis_krylov_symmetric(p, &o, values, vectors, residuals, stats);
+    if (rc != LIS_KRYLOV_SUCCESS) return rc;
+    if (stats->nreturned != count || stats->nconv != count)
+        return LIS_KRYLOV_NO_CONVERGENCE;
+    for (i = 0; i < count; ++i)
+        if (!(values[i] > lower && values[i] < upper))
+            return LIS_KRYLOV_NO_CONVERGENCE;
+    return LIS_KRYLOV_SUCCESS;
+}

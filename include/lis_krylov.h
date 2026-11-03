@@ -89,6 +89,24 @@ int lis_krylov_count_interval(int n, void *ctx,
                               lis_krylov_inertia_callback inertia,
                               double lower, double upper, int *count);
 
+/* Enumerate a symmetric open interval with a user-prepared midpoint shift.
+ * Requires a symmetric generalized pencil with SPD B, an inertia callback
+ * at the nonsingular interval boundaries, and p->sigma equal to
+ * lower+0.5*(upper-lower). The caller supplies a nonsingular shifted solve
+ * at that sigma. options->nev is the output capacity; ncv must exceed the
+ * inertia count. LM shift-invert mode is used regardless of options->which.
+ * SUCCESS certifies that the number of converged, in-window pairs equals
+ * the independently supplied inertia count; otherwise returns a status
+ * (including NO_CONVERGENCE with partial results). Exact midpoint poles
+ * cannot be inverted and must be handled by the application. */
+int lis_krylov_solve_interval(const lis_krylov_problem *problem,
+                              const lis_krylov_options *options,
+                              lis_krylov_inertia_callback inertia,
+                              double lower, double upper,
+                              double *values, double *vectors,
+                              double *residuals, lis_krylov_stats *stats,
+                              int *expected_count);
+
 void lis_krylov_options_default(lis_krylov_options *options);
 
 /* Return the leading nreturned approximate eigenpairs, ordered by 'which'.

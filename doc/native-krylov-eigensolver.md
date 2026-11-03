@@ -156,10 +156,20 @@ must be nonsingular; a reported zero pivot returns
 `LIS_KRYLOV_SINGULAR_SHIFT`. Callback failures and inconsistent counts
 have explicit error codes.
 
-The eigensolver neither constructs the factorization nor uses the callback
-to enumerate the eigenvectors in the interval. Inertia counting does not
-by itself prove that Ritz extraction is complete. General semidefinite B
-and complex/Hermitian pencils are outside this helper's contract.
+The eigensolver does not construct the factorization. An optional
+`lis_krylov_solve_interval` wrapper combines the independently counted
+interval with a caller-prepared midpoint shift-invert operator and requests
+exactly that many eigenpairs. SUCCESS requires all expected eigenpairs to
+converge with true residuals and lie inside the open interval; otherwise
+NO_CONVERGENCE or a more specific error is returned. The midpoint must not
+be an eigenvalue (the shifted operator must be invertible), and the output
+capacity and search subspace must be sufficient. Boundary and midpoint
+singularities require a different shift or interval decomposition.
+
+Inertia counting does not prove completeness of arbitrary Ritz extraction;
+only the count-checked successful window result has that interpretation
+under the stated SPD and factorization assumptions. General semidefinite
+B and complex/Hermitian pencils are outside this helper's contract.
 
 ## Limitations
 
