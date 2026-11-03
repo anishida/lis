@@ -6,6 +6,42 @@ runtime dependencies are the standard C library and libm. It supports
 symmetric standard and generalized eigenproblems through arbitrary storage
 formats or user-defined matrix-vector operators.
 
+## Why an additional eigensolver?
+
+LIS already provides subspace iteration, Lanczos, Arnoldi, and FEAST
+eigensolvers. This module is an **additional explicit option**, not a
+replacement for any of them. Its intended contribution is a standalone,
+callback-driven symmetric Rayleigh–Ritz workflow with user-managed
+shifted inverse actions, thick restart, explicit original-problem
+residuals, optional positive-semidefinite metric handling, optional
+persistent locking, and a separate inertia-based interval helper.
+These features are grouped behind a new algorithm selector rather than
+silently changing the convergence and storage semantics of existing
+eigensolvers.
+
+No claim of superior speed or robustness relative to the existing LIS
+methods is made here. A controlled benchmark against those methods,
+including the application's shifted linear-solve/factorization costs,
+is still required to establish a performance advantage.
+
+## Scope of the serial implementation
+
+This is a deliberately bounded first implementation: dense Rayleigh–Ritz
+projections and callbacks operate on complete local vectors, and the
+adapter explicitly rejects distributed inputs instead of silently
+performing an incorrect rank-local eigensolve. An MPI implementation
+would require coordinated global inner products, restart operations,
+and distributed result ownership; a one-rank execution inside an
+MPI-enabled build is not distributed support.
+
+The standalone C callback interface uses `int` indices and `double`
+scalars intentionally. The LIS adapter checks dimensions before
+conversion from `LIS_INT` and rejects unsupported sizes; successful
+`--enable-longlong` builds do **not** mean this interface can address
+arbitrarily large 64-bit dimensions. The restarted method requires
+`nev < n` because `ncv > nev`; requesting the full spectrum should
+use another eigensolver.
+
 ## Two interfaces
 
 The standard LIS interface can be selected using `-e krylov` in `lis_esolve`
@@ -144,6 +180,15 @@ values, B-orthogonal invariant subspaces, and repeated restarts with
 small search subspaces. Additional large sparse performance evaluation
 is recorded separately from the implementation.
 
+An independent validation workflow was run in the contributor fork
+rather than added to this feature diff. The verified run
+https://github.com/3rav/lis/actions/runs/41603936979 reports 89/89
+`make check` tests and 8/8 focused Krylov tests in GCC long-long,
+GCC long-long with OpenMP, and Clang configurations, as well as
+standalone numerical AddressSanitizer and UndefinedBehaviorSanitizer
+checks. These are **not** upstream PR Checks, nor a substitute for the
+maintainer's platform and configuration testing.
+
 ## Inertia-based interval counting
 
 The native C callback API exposes `lis_krylov_count_interval` as an
@@ -166,10 +211,17 @@ be an eigenvalue (the shifted operator must be invertible), and the output
 capacity and search subspace must be sufficient. Boundary and midpoint
 singularities require a different shift or interval decomposition.
 
-Inertia counting does not prove completeness of arbitrary Ritz extraction;
-only the count-checked successful window result has that interpretation
-under the stated SPD and factorization assumptions. General semidefinite
-B and complex/Hermitian pencils are outside this helper's contract.
+Inertia supplies an independent **exact count only under the assumed
+symmetric pencil, SPD B, and reliable inertia factorization**. The wrapper
+checks that the number of converged, in-window approximate pairs matches
+that count. These are useful numerical consistency checks; at finite
+precision, the reported residuals and eigenvalues are approximations,
+and their agreement with the inertia count is **not a rigorous interval
+certificate**, especially for modes near interval boundaries or clusters
+narrower than the requested residual tolerance. More stringent guarantees
+would require appropriate eigenvalue-enclosure/error bounds in addition
+to inertia. General semidefinite B and complex/Hermitian pencils are
+outside this helper's contract.
 
 ## Limitations
 
