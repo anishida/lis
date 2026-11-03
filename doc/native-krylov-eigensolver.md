@@ -257,3 +257,72 @@ outside this helper's contract.
   ABI is implemented in this version.
 - No performance claim for large sparse matrices without timed benchmarks
   that include the cost of the application's inverse operation.
+
+
+## Opt-in adaptive Krylov subspace sizing
+
+The standalone, storage-independent C API offers optional adaptive growth
+of the active Krylov dimension. It is **off by default** to preserve the
+existing fixed-`ncv` behavior and its memory/runtime characteristics.
+
+~~~c
+lis_krylov_options_default(&options);
+options.nev = 4;
+options.ncv = 8;          /* initial active dimension */
+options.adaptive_ncv = 1; /* enable growth on stalled full restarts */
+options.ncv_max = 24;     /* explicit memory cap; 0 uses min(n, 2*ncv) */
+~~~
+
+At a full subspace, two consecutive restart opportunities without any
+increase in `stats.nconv` trigger growth by approximately 50%, limited by
+`ncv_max`. The algorithm **retains** its current basis and operator images;
+it does not discard Ritz vectors or invoke the application to refactor
+the shifted matrix. The workspace is allocated for the maximum capacity
+**at entry**, not resized during the solve. Thus the adaptive option
+trades predictable extra memory for fewer possible restarts; it is not
+guaranteed to improve speed. With `adaptive_ncv=0`, `ncv_max` must be 0.
+
+The following statistics make fixed/adaptive comparisons reproducible:
+
+| Field | Meaning |
+|---|---|
+| `ncv_initial`, `ncv_final` | Active search dimensions |
+| `ncv_growths` | Number of in-place growth events |
+| `basis_vectors` | Accepted basis vectors including start/reseeding |
+| `projected_solves` | Number of projected Rayleigh–Ritz eigendecompositions |
+| `op_count`, `metric_count`, `solve_count` | Existing callback work counts |
+| `restarts`, `iterations` | Existing restart/cycle counts |
+
+The full physical projection stride is the reserved maximum capacity, but
+each eigendecomposition now copies only the active projected `m × m`
+entries. Results and original-problem residuals are evaluated exactly as in
+fixed sizing. The existing standard LIS `-kncv` option remains fixed;
+these new knobs are currently exposed only through the generic C callback
+interface, not through new command-line option-parser switches.
+
+### Reproducible performance experiment
+
+An independent, single-process spring-chain benchmark compares fixed and
+adaptive sizing using the **same** symmetric tridiagonal stiffness,
+mass matrix, deterministic start, tolerance, and a factorization prepared
+once before both runs. Build and run without installing LIS:
+
+~~~sh
+cc -O3 -std=c99 -Iinclude src/esolver/lis_krylov.c \
+   test/bench_krylov_adaptive.c -lm -o bench_krylov_adaptive
+./bench_krylov_adaptive 120 4 8 24
+~~~
+
+The program reports CSV with status, converged mode count, `ncv`, growths,
+restart/solve/projection counts, elapsed **process CPU time**, and maximum
+original-problem residual. A non-converged run is recorded honestly; it is
+not reclassified as a speedup. OpenMP process CPU time is not wall time.
+The precomputed tridiagonal factorization is intentionally excluded from
+both timings; applications should also benchmark total factorization,
+assembly, and solve time. This model is a synthetic FEM-like smoke test,
+**not** evidence of speedup on production CalculiX matrices.
+
+Run all the numerical regressions with `make check`, including
+`test_krylov_adaptive`; the contributor workflow also compiles standalone
+GCC, Clang, OpenMP, and sanitizer configurations. No MPI-distributed
+support is implied.
