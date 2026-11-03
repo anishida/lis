@@ -69,8 +69,24 @@ enum {
     LIS_KRYLOV_CALLBACK_ERROR = 3,
     LIS_KRYLOV_BREAKDOWN = 4,
     LIS_KRYLOV_NO_CONVERGENCE = 5,
-    LIS_KRYLOV_INEXACT_SOLVE = 6
+    LIS_KRYLOV_INEXACT_SOLVE = 6,
+    LIS_KRYLOV_SINGULAR_SHIFT = 7
 };
+
+/* Callback returning inertia of A - shift B from a symmetric indefinite
+ * factorization: negative and (numerically) zero pivot counts.
+ * The caller guarantees symmetric A, SPD B, and valid pivoting/inertia.
+ * A nonzero callback return indicates a failed factorization/operation. */
+typedef int (*lis_krylov_inertia_callback)(void *ctx, int n, double shift,
+                                          int *negative, int *zero);
+
+/* Count eigenvalues in the open interval (lower, upper) using the inertia
+ * difference at two NONSINGULAR shifts. This does not compute eigenvectors
+ * or guarantee complete spectral extraction. No factorization is built
+ * inside LIS. Returns SINGULAR_SHIFT if a boundary has zero pivots. */
+int lis_krylov_count_interval(int n, void *ctx,
+                              lis_krylov_inertia_callback inertia,
+                              double lower, double upper, int *count);
 
 void lis_krylov_options_default(lis_krylov_options *options);
 

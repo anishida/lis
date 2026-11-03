@@ -755,3 +755,30 @@ done:
     release_workspace(&s);
     return rc;
 }
+
+/* For SPD B, Sylvester's inertia law converts symmetric indefinite
+ * factorizations of A-shift*B into an eigenvalue count. The callback owns
+ * all factorization and pivot-sign decisions; the eigensolver has no direct
+ * factorization dependency. The interval is open and its endpoints must
+ * not coincide with eigenvalues (i.e. no zero inertia pivots). */
+int lis_krylov_count_interval(int n, void *ctx,
+                              lis_krylov_inertia_callback inertia,
+                              double lower, double upper, int *count)
+{
+    int neg_lo = 0, neg_hi = 0, zero_lo = 0, zero_hi = 0;
+    if (count) *count = 0;
+    if (n <= 0 || !inertia || !count ||
+        !isfinite(lower) || !isfinite(upper) || !(lower < upper))
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    if (inertia(ctx, n, lower, &neg_lo, &zero_lo) ||
+        inertia(ctx, n, upper, &neg_hi, &zero_hi))
+        return LIS_KRYLOV_CALLBACK_ERROR;
+    if (neg_lo < 0 || neg_lo > n || neg_hi < 0 || neg_hi > n ||
+        zero_lo < 0 || zero_lo > n - neg_lo ||
+        zero_hi < 0 || zero_hi > n - neg_hi ||
+        neg_hi < neg_lo)
+        return LIS_KRYLOV_BREAKDOWN;
+    if (zero_lo || zero_hi) return LIS_KRYLOV_SINGULAR_SHIFT;
+    *count = neg_hi - neg_lo;
+    return LIS_KRYLOV_SUCCESS;
+}

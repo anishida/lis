@@ -141,6 +141,23 @@ values, B-orthogonal invariant subspaces, and repeated restarts with
 small search subspaces. Additional large sparse performance evaluation
 is recorded separately from the implementation.
 
+## Inertia-based interval counting
+
+The native C callback API exposes `lis_krylov_count_interval` as an
+**optional** interval-counting helper. For a symmetric pencil `A-lambda B`
+with **positive-definite B**, a caller-provided inertia callback reports the
+negative and zero pivot counts of `A-shift*B`, typically using a stable
+symmetric indefinite factorization. The count in the open interval
+`(lower, upper)` equals the difference in negative pivot counts. Endpoints
+must be nonsingular; a reported zero pivot returns
+`LIS_KRYLOV_SINGULAR_SHIFT`. Callback failures and inconsistent counts
+have explicit error codes.
+
+The eigensolver neither constructs the factorization nor uses the callback
+to enumerate the eigenvectors in the interval. Inertia counting does not
+by itself prove that Ritz extraction is complete. General semidefinite B
+and complex/Hermitian pencils are outside this helper's contract.
+
 ## Limitations
 
 - Native C99 real-double implementation, serial/local operators only.
