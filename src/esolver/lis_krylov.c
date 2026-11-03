@@ -412,6 +412,7 @@ static int diagonalize(int m, double *a, double *q,
     for (sweep = 0; sweep < KRYLOV_MAX_SWEEPS; ++sweep) {
         double largest = 0.0;
         double diagonal_norm = 0.0;
+        double pivot_threshold;
         for (p = 0; p < m; ++p) {
             diagonal_norm += fabs(a[(size_t)p * stride + p]);
             for (r = p + 1; r < m; ++r) {
@@ -428,19 +429,17 @@ static int diagonalize(int m, double *a, double *q,
          * sweeps use the original machine-precision cutoff so clusters
          * and near-multiple eigenvalues still receive full refinement.
          * A zero threshold from sweep 3 onward prevents stagnation. */
-        {
-            const double pivot_threshold = sweep < 3 ?
-                                           0.05 * largest : 0.0;
-            for (p = 0; p < m; ++p) {
-                for (r = p + 1; r < m; ++r) {
-                    double apr = a[(size_t)p * stride + r];
-                    double app = a[(size_t)p * stride + p];
-                    double arr = a[(size_t)r * stride + r];
-                    double tau, angle, cosine, sine;
-                    if (fabs(apr) <= pivot_threshold ||
-                        fabs(apr) <= DBL_EPSILON *
-                                     (fabs(app) + fabs(arr) + DBL_MIN))
-                        continue;
+        pivot_threshold = sweep < 3 ? 0.05 * largest : 0.0;
+        for (p = 0; p < m; ++p) {
+            for (r = p + 1; r < m; ++r) {
+                double apr = a[(size_t)p * stride + r];
+                double app = a[(size_t)p * stride + p];
+                double arr = a[(size_t)r * stride + r];
+                double tau, angle, cosine, sine;
+                if (fabs(apr) <= pivot_threshold ||
+                    fabs(apr) <= DBL_EPSILON *
+                                 (fabs(app) + fabs(arr) + DBL_MIN))
+                    continue;
                 tau = (arr - app) / (2.0 * apr);
                 angle = copysign(1.0, tau) /
                         (fabs(tau) + hypot(1.0, tau));
@@ -469,10 +468,8 @@ static int diagonalize(int m, double *a, double *q,
                     q[(size_t)i * stride + r] =
                         sine * vip + cosine * vir;
                 }
-                }
             }
         }
-    }
     if (sweep == KRYLOV_MAX_SWEEPS) return -1;
     for (i = 0; i < m; ++i)
         eigenvalues[i] = a[(size_t)i * stride + i];
