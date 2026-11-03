@@ -40,6 +40,11 @@ struct krylov_workspace {
     double *check;
     int *order;
     int *locked;
+    int nlocked;
+    double *locked_basis;
+    double *locked_metric;
+    double *locked_values;
+    double *locked_residuals;
 };
 
 static double compensated_dot(int n, const double *a, const double *b)
@@ -172,6 +177,14 @@ static int orthogonalize(struct krylov_workspace *s,
     {
         double previous_square = initial;
         for (pass = 0; pass < 3; ++pass) {
+            for (j = 0; j < s->nlocked; ++j) {
+                const double *v = s->locked_basis + (size_t)j * s->n;
+                const double *bv = s->locked_metric + (size_t)j * s->n;
+                double coefficient = compensated_dot(s->n, bv, x);
+                if (!isfinite(coefficient)) return -2;
+                for (i = 0; i < s->n; ++i)
+                    x[i] -= coefficient * v[i];
+            }
             for (j = 0; j < count; ++j) {
                 const double *v = s->basis + (size_t)j * s->n;
                 const double *bv = s->metric_basis + (size_t)j * s->n;
@@ -205,6 +218,11 @@ static int orthogonalize(struct krylov_workspace *s,
             x[i] *= inverse_norm;
             metric_x[i] *= inverse_norm;
         }
+    }
+    for (j = 0; j < s->nlocked; ++j) {
+        const double *bv = s->locked_metric + (size_t)j * s->n;
+        if (fabs(compensated_dot(s->n, bv, x)) > 1e-8)
+            return 1;
     }
     for (j = 0; j < count; ++j) {
         const double *bv = s->metric_basis + (size_t)j * s->n;
@@ -492,6 +510,10 @@ static void release_workspace(struct krylov_workspace *s)
     free(s->check);
     free(s->order);
     free(s->locked);
+    free(s->locked_basis);
+    if (s->locked_metric != s->locked_basis) free(s->locked_metric);
+    free(s->locked_values);
+    free(s->locked_residuals);
 }
 
 int lis_krylov_symmetric(const lis_krylov_problem *p,
@@ -516,6 +538,7 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
          (!p->apply_b || !p->solve)) ||
         (p->transform == LIS_KRYLOV_SHIFT_INVERT_A && p->sigma == 0.0) ||
         !isfinite(p->sigma) || !isfinite(o->tol) || o->tol < 0.0 ||
+        (o->hard_locking != 0 && o->hard_locking != 1) ||
         (o->allow_semidefinite_metric != 0 &&
          o->allow_semidefinite_metric != 1) ||
         (o->allow_semidefinite_metric &&
@@ -576,6 +599,15 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
     ALLOC(s.check, s.n, double);
     ALLOC(s.order, ncv, int);
     ALLOC(s.locked, ncv, int);
+    if (o->hard_locking) {
+        ALLOC(s.locked_basis, (size_t)nev * s.n, double);
+        if (p->transform == LIS_KRYLOV_STANDARD)
+            s.locked_metric = s.locked_basis;
+        else
+            ALLOC(s.locked_metric, (size_t)nev * s.n, double);
+        ALLOC(s.locked_values, nev, double);
+        ALLOC(s.locked_residuals, nev, double);
+    }
 #undef ALLOC
 
     if (o->initial_vector) {
@@ -638,9 +670,92 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
             goto done;
         }
         sort_ritz(m, s.eval, s.order, which);
-        stats->nreturned = 0;
-        stats->nconv = 0;
+        if (o->hard_locking && s.nlocked < nev) {
+            int captured = 0;
+            /* Freeze at most one verified pair per cycle. New directions
+             * are deflated against all frozen metric vectors. */
+            for (j = 0; j < m && j < nev - s.nlocked; ++j) {
+                int idx = s.order[j];
+                double lambda = NAN, rel = INFINITY;
+                int err = eigenpair_residual(&s, m, idx, s.eval[idx],
+                                             &lambda, &rel);
+                if (err < 0) {
+                    rc = err == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
+                         LIS_KRYLOV_BREAKDOWN;
+                    goto done;
+                }
+                if (err != 0 || rel > tol) continue;
+                err = apply_metric(&s, s.x, s.metric_x);
+                if (err) {
+                    rc = err == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
+                         LIS_KRYLOV_BREAKDOWN;
+                    goto done;
+                }
+                memcpy(s.locked_basis + (size_t)s.nlocked * s.n, s.x,
+                       (size_t)s.n * sizeof(double));
+                if (s.locked_metric != s.locked_basis)
+                    memcpy(s.locked_metric + (size_t)s.nlocked * s.n,
+                           s.metric_x, (size_t)s.n * sizeof(double));
+                s.locked_values[s.nlocked] = lambda;
+                s.locked_residuals[s.nlocked] = rel;
+                ++s.nlocked;
+                captured = 1;
+                break;
+            }
+            if (captured) {
+                int trial, ok = 0;
+                stats->nreturned = stats->nconv = s.nlocked;
+                stats->max_residual = 0.0;
+                for (j = 0; j < s.nlocked; ++j) {
+                    values[j] = s.locked_values[j];
+                    residuals[j] = s.locked_residuals[j];
+                    if (residuals[j] > stats->max_residual)
+                        stats->max_residual = residuals[j];
+                    memcpy(vectors + (size_t)j * s.n,
+                           s.locked_basis + (size_t)j * s.n,
+                           (size_t)s.n * sizeof(double));
+                }
+                if (s.nlocked == nev) {
+                    rc = LIS_KRYLOV_SUCCESS;
+                    goto done;
+                }
+                /* Purge the active Ritz subspace and restart with a new
+                 * direction orthogonal to the permanently locked set. */
+                m = previous = 0;
+                for (trial = 0; trial < 32; ++trial) {
+                    int attempt;
+                    seed_vector(s.n, s.x,
+                                seed + (unsigned)iter * 577u +
+                                (unsigned)trial + 1001u);
+                    attempt = append_range_seed(&s, 0, s.x);
+                    if (attempt < 0) {
+                        rc = attempt == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
+                             attempt == -3 ? LIS_KRYLOV_INEXACT_SOLVE :
+                             LIS_KRYLOV_BREAKDOWN;
+                        goto done;
+                    }
+                    if (attempt == 0) { m = 1; ok = 1; break; }
+                }
+                if (!ok) {
+                    rc = LIS_KRYLOV_NO_CONVERGENCE;
+                    goto done;
+                }
+                ++stats->restarts;
+                continue;
+            }
+        }
+        stats->nreturned = s.nlocked;
+        stats->nconv = s.nlocked;
         stats->max_residual = 0.0;
+        for (j = 0; j < s.nlocked; ++j) {
+            values[j] = s.locked_values[j];
+            residuals[j] = s.locked_residuals[j];
+            memcpy(vectors + (size_t)j * s.n,
+                   s.locked_basis + (size_t)j * s.n,
+                   (size_t)s.n * sizeof(double));
+            if (residuals[j] > stats->max_residual)
+                stats->max_residual = residuals[j];
+        }
         memset(s.locked, 0, (size_t)m * sizeof(int));
         for (j = 0; j < m && stats->nreturned < nev; ++j) {
             int idx = s.order[j];
@@ -696,7 +811,7 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
             continue;
         }
 
-        for (j = 0; j < old_m && j < nev && m < ncv; ++j) {
+        for (j = 0; j < old_m && j < nev - s.nlocked && m < ncv; ++j) {
             int idx = s.order[j];
             double mu = s.eval[idx];
             double norm_w, norm_v, norm_r, threshold;
@@ -748,6 +863,41 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
     rc = LIS_KRYLOV_NO_CONVERGENCE;
 
 done:
+    /* Locked pairs are accumulated across restarts. Restore the spectral
+     * ordering of the returned original eigenpairs before publishing them. */
+    if (o && o->hard_locking && s.scratch &&
+        (rc == LIS_KRYLOV_SUCCESS || rc == LIS_KRYLOV_NO_CONVERGENCE)) {
+        for (i = 1; i < stats->nreturned; ++i) {
+            for (j = i; j > 0; --j) {
+                double left = values[j], right = values[j-1];
+                double mu_left, mu_right, tmp;
+                if (p->transform == LIS_KRYLOV_STANDARD) {
+                    mu_left = left;
+                    mu_right = right;
+                } else if (p->transform == LIS_KRYLOV_SHIFT_INVERT_B) {
+                    mu_left = 1.0 / (left - p->sigma);
+                    mu_right = 1.0 / (right - p->sigma);
+                } else {
+                    mu_left = left / (left - p->sigma);
+                    mu_right = right / (right - p->sigma);
+                }
+                if (!earlier(mu_left, mu_right, which)) break;
+                tmp = values[j-1];
+                values[j-1] = values[j];
+                values[j] = tmp;
+                tmp = residuals[j-1];
+                residuals[j-1] = residuals[j];
+                residuals[j] = tmp;
+                memcpy(s.scratch, vectors + (size_t)(j-1) * s.n,
+                       (size_t)s.n * sizeof(double));
+                memcpy(vectors + (size_t)(j-1) * s.n,
+                       vectors + (size_t)j * s.n,
+                       (size_t)s.n * sizeof(double));
+                memcpy(vectors + (size_t)j * s.n, s.scratch,
+                       (size_t)s.n * sizeof(double));
+            }
+        }
+    }
     if (rc != LIS_KRYLOV_SUCCESS && rc != LIS_KRYLOV_NO_CONVERGENCE) {
         stats->nreturned = 0;
         stats->nconv = 0;
