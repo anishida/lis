@@ -322,7 +322,7 @@ both timings; applications should also benchmark total factorization,
 assembly, and solve time. This model is a synthetic FEM-like smoke test,
 **not** evidence of speedup on production CalculiX matrices.
 
-Run all the numerical regressions with `make check`, including
-`test_krylov_adaptive`; the contributor workflow also compiles standalone
-GCC, Clang, OpenMP, and sanitizer configurations. No MPI-distributed
-support is implied.
+Run the numerical regressions with `make check`, including
+`test_krylov_adaptive`. Independent standalone runs can also be performed
+with GCC, Clang, OpenMP, and sanitizers. This change does not add a CI
+workflow or MPI-distributed support.
