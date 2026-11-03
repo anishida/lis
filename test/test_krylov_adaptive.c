@@ -70,8 +70,11 @@ static int run_case(int adaptive, int ncv_max, int expected_growth)
             numerator += r*r;
             scale += ((i+1) + fabs(values[j])) * fabs(x);
         }
+        /* A NO_CONVERGENCE return legitimately exposes partial Ritz pairs.
+         * Demand a small true residual only for pairs marked converged. */
         if (fabs(norm - 1.0) > 1e-6 ||
-            sqrt(numerator) > 2e-8 * fmax(scale, 1.0) ||
+            (residuals[j] <= o.tol &&
+             sqrt(numerator) > 1e-8 * fmax(scale, 1.0)) ||
             !(residuals[j] >= 0.0) || !isfinite(residuals[j])) {
             fprintf(stderr, "FAIL adaptive=%d eigenpair %d "
                     "lambda=%.15g residual=%.3g\n",
