@@ -48,7 +48,8 @@ typedef struct {
     double inner_tol;              /* 0: skip inverse-action verification */
     unsigned random_seed;          /* 0: stable default seed */
     const double *initial_vector;  /* NULL: generated deterministic start */
-    int allow_semidefinite_metric;  /* 1: opt-in PSD B, mode SHIFT_INVERT_B */
+    int allow_semidefinite_metric; /* 1: opt-in PSD B, mode SHIFT_INVERT_B */
+    int hard_locking;              /* 1: freeze and deflate converged pairs */
 } lis_krylov_options;
 
 typedef struct {

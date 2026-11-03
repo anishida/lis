@@ -101,12 +101,18 @@ int main(int argc,char **argv)
     if(solve_check(A,B,
          "-e krylov -ss 2 -nev 2 -etol 1e-7 -emaxiter 700 -shift -0.5 -kwhich LM -eprint none",
          2.0,3.0)) goto cleanup;
+    if(solve_check(A,B,
+         "-e krylov -ss 2 -nev 2 -etol 1e-7 -emaxiter 700 -shift -0.5 -kwhich LM -khardlock 1 -eprint none",
+         2.0,3.0)) goto cleanup;
 
     /* Regression: the zero-metric degrees of freedom must not force
      * arbitrary Ritz directions into the generalized subspace. */
     for (i=8;i<N;i++) b.diagonal[i]=0.0;
     if(solve_check(A,B,
          "-e krylov -ss 2 -nev 2 -etol 1e-7 -emaxiter 700 -shift -0.5 -kwhich LM -ksemidefinite 1 -eprint none",
+         2.0,3.0)) goto cleanup;
+    if(solve_check(A,B,
+         "-e krylov -ss 2 -nev 2 -etol 1e-7 -emaxiter 700 -shift -0.5 -kwhich LM -ksemidefinite 1 -khardlock 1 -eprint none",
          2.0,3.0)) goto cleanup;
 
     rc=EXIT_SUCCESS;

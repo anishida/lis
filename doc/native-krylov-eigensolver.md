@@ -116,8 +116,11 @@ The implementation uses adaptive DGKS metric reorthogonalization, reuses
 cached metric/operator products, updates the projected matrix incrementally,
 retains Ritz vectors on restart, injects reproducible independent directions
 to resolve repeated eigenvalues, and skips expansion of already converged
-Ritz vectors. Converged pairs are not yet permanently hard locked.
-No global process state is used.
+Ritz vectors. Optional persistent hard locking (`-khardlock 1`, or
+`options.hard_locking=1`) freezes fully verified eigenpairs in a separate
+metric-orthogonal subspace and purges the active Ritz space after locking.
+Hard locking is off by default because it can require extra solves and
+additional storage proportional to `n*nev`. No global process state is used.
 
 ## Build and validation
 

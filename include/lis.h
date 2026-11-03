@@ -1183,6 +1183,7 @@ struct LIS_ESOLVER_STRUCT
         LIS_REAL krylov_residual_scale;
         LIS_REAL krylov_inner_tol;
         LIS_INT krylov_allow_semidefinite;
+        LIS_INT krylov_hard_locking;
         char krylov_which[3];
 };
 typedef struct LIS_ESOLVER_STRUCT *LIS_ESOLVER;

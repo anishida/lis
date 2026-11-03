@@ -57,7 +57,8 @@ static int solve_shifted(void *v, int n, const double *x, double *y)
     return 0;
 }
 
-static int run_case(const char *name, int repeated, int ncv, unsigned seed)
+static int run_case(const char *name, int repeated, int ncv,
+                    unsigned seed, int hard_locking)
 {
     test_context c = {{0}, 0.9, 0};
     lis_krylov_problem problem = {0};
@@ -87,6 +88,7 @@ static int run_case(const char *name, int repeated, int ncv, unsigned seed)
     options.initial_vector = start;
     options.random_seed = seed;
     options.allow_semidefinite_metric = 1;
+    options.hard_locking = hard_locking;
 
     status = lis_krylov_symmetric(&problem, &options, values, vectors,
                                   residuals, &stats);
@@ -142,8 +144,12 @@ static int run_case(const char *name, int repeated, int ncv, unsigned seed)
 
 int main(void)
 {
-    return run_case("clustered ncv=8", 0, 8, 2) ||
-           run_case("clustered ncv=12", 0, 12, 5) ||
-           run_case("multiple ncv=8", 1, 8, 1) ||
-           run_case("multiple ncv=12", 1, 12, 6);
+    return run_case("clustered ncv=8", 0, 8, 2, 0) ||
+           run_case("clustered ncv=12", 0, 12, 5, 0) ||
+           run_case("multiple ncv=8", 1, 8, 1, 0) ||
+           run_case("multiple ncv=12", 1, 12, 6, 0) ||
+           run_case("hardlock clustered ncv=8", 0, 8, 2, 1) ||
+           run_case("hardlock clustered ncv=12", 0, 12, 5, 1) ||
+           run_case("hardlock multiple ncv=8", 1, 8, 1, 1) ||
+           run_case("hardlock multiple ncv=12", 1, 12, 6, 1);
 }

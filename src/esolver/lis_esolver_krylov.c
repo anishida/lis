@@ -195,6 +195,7 @@ LIS_INT lis_ekrylov(LIS_ESOLVER esolver)
     options.which = esolver->krylov_which;
     options.initial_vector = (const double *)esolver->x->value;
     options.allow_semidefinite_metric = (int)esolver->krylov_allow_semidefinite;
+    options.hard_locking = (int)esolver->krylov_hard_locking;
 
     /* Allocate the result arrays once; callbacks do not allocate or
      * reassemble matrices in the Krylov iteration. */
