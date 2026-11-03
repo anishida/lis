@@ -95,6 +95,66 @@ static int run_case(int adaptive, int ncv_max, int expected_growth)
     return 0;
 }
 
+static int identity(void *ctx, int n, const double *x, double *y)
+{
+    int i;
+    (void)ctx;
+    if (n != N) return 1;
+    for (i = 0; i < n; ++i) y[i] = x[i];
+    return 0;
+}
+
+static int inverse(void *ctx, int n, const double *x, double *y)
+{
+    int i;
+    (void)ctx;
+    if (n != N) return 1;
+    for (i = 0; i < n; ++i) y[i] = x[i] / (double)(i+1);
+    return 0;
+}
+
+static int run_shifted_hardlock(void)
+{
+    lis_krylov_problem p = {0};
+    lis_krylov_options o;
+    lis_krylov_stats stats;
+    double values[NEV], vectors[N*NEV], residuals[NEV];
+    int rc, i;
+
+    p.n = N;
+    p.transform = LIS_KRYLOV_SHIFT_INVERT_B;
+    p.apply_a = diagonal;
+    p.apply_b = identity;
+    p.solve = inverse;
+    lis_krylov_options_default(&o);
+    o.nev = NEV;
+    o.ncv = 6;
+    o.ncv_max = 20;
+    o.adaptive_ncv = 1;
+    o.hard_locking = 1;
+    o.tol = 1e-10;
+    o.maxiter = 300;
+    rc = lis_krylov_symmetric(&p, &o, values, vectors,
+                              residuals, &stats);
+    if ((rc != LIS_KRYLOV_SUCCESS &&
+         rc != LIS_KRYLOV_NO_CONVERGENCE) ||
+        stats.op_count != stats.solve_count || stats.metric_count < 1 ||
+        stats.ncv_initial != 6 || stats.ncv_final > 20) {
+        fprintf(stderr, "FAIL shifted hardlock rc=%d solves=%d ncv=%d\n",
+                rc, stats.solve_count, stats.ncv_final);
+        return 1;
+    }
+    if (rc == LIS_KRYLOV_SUCCESS) {
+        for (i = 0; i < NEV; ++i)
+            if (fabs(values[i] - (double)(i+1)) > 1e-6 ||
+                residuals[i] > o.tol)
+                return 1;
+    }
+    printf("PASS shifted hardlock rc=%d ncv=%d growths=%d solves=%d\n",
+           rc, stats.ncv_final, stats.ncv_growths, stats.solve_count);
+    return 0;
+}
+
 int main(void)
 {
     lis_krylov_problem p = {0};
@@ -104,7 +164,8 @@ int main(void)
 
     if (run_case(0, 0, 0) ||
         run_case(1, 24, 1) ||
-        run_case(1, 6, 0))
+        run_case(1, 6, 0) ||
+        run_shifted_hardlock())
         return 1;
 
     p.n = N;
