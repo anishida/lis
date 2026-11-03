@@ -68,7 +68,8 @@ static int inverse_k(void *context, int n, const double *x, double *y)
     return 0;
 }
 
-static int measure(chain *c, int nev, int ncv, int cap, int adaptive)
+static int measure(chain *c, int nev, int ncv, int cap, int adaptive,
+                   const char *label)
 {
     lis_krylov_problem p = {0};
     lis_krylov_options o;
@@ -118,7 +119,7 @@ static int measure(chain *c, int nev, int ncv, int cap, int adaptive)
     if (c->solves != (unsigned long)s.solve_count) correct = 0;
 
     printf("%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.6f,%.3e,%d\n",
-           adaptive ? "adaptive" : "fixed", c->n, nev, rc,
+           label, c->n, nev, rc,
            s.nconv, s.ncv_initial, s.ncv_final, s.ncv_growths,
            s.iterations, s.restarts, s.op_count, s.metric_count,
            s.solve_count, s.projected_solves,
@@ -150,8 +151,15 @@ int main(int argc, char **argv)
     puts("mode,n,nev,status,nconv,ncv_initial,ncv_final,ncv_growths,"
          "iterations,restarts,op_count,metric_count,solve_count,"
          "projected_solves,cpu_seconds,max_residual,valid");
-    rc = measure(&c, nev, ncv, cap, 0);
-    rc |= measure(&c, nev, ncv, cap, 1);
+    /* Equal-memory comparison: adaptive reserves storage for cap, so a
+     * fixed-ncv=cap solve is an essential reference at that capacity. */
+    rc = measure(&c, nev, ncv, cap, 0, "fixed_initial");
+    if (cap > ncv + 1) {
+        int mid = ncv + (cap - ncv) / 2;
+        rc |= measure(&c, nev, mid, cap, 0, "fixed_mid");
+    }
+    rc |= measure(&c, nev, cap, cap, 0, "fixed_cap");
+    rc |= measure(&c, nev, ncv, cap, 1, "adaptive");
     free(c.pivot); free(c.upper); free(c.tmp);
     return rc;
 }
