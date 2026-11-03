@@ -422,15 +422,25 @@ static int diagonalize(int m, double *a, double *q,
         if (largest <= KRYLOV_JACOBI_EPS *
                        (diagonal_norm + DBL_MIN)) break;
 
-        for (p = 0; p < m; ++p) {
-            for (r = p + 1; r < m; ++r) {
-                double apr = a[(size_t)p * stride + r];
-                double app = a[(size_t)p * stride + p];
-                double arr = a[(size_t)r * stride + r];
-                double tau, angle, cosine, sine;
-                if (fabs(apr) <= DBL_EPSILON *
-                                (fabs(app) + fabs(arr) + DBL_MIN))
-                    continue;
+        /* Thresholded cyclic Jacobi: prioritize significant pivots in
+         * the first few sweeps. Skipping tiny rotations avoids needless
+         * updates of m basis and Ritz-vector entries per pair. Later
+         * sweeps use the original machine-precision cutoff so clusters
+         * and near-multiple eigenvalues still receive full refinement.
+         * A zero threshold from sweep 3 onward prevents stagnation. */
+        {
+            const double pivot_threshold = sweep < 3 ?
+                                           0.05 * largest : 0.0;
+            for (p = 0; p < m; ++p) {
+                for (r = p + 1; r < m; ++r) {
+                    double apr = a[(size_t)p * stride + r];
+                    double app = a[(size_t)p * stride + p];
+                    double arr = a[(size_t)r * stride + r];
+                    double tau, angle, cosine, sine;
+                    if (fabs(apr) <= pivot_threshold ||
+                        fabs(apr) <= DBL_EPSILON *
+                                     (fabs(app) + fabs(arr) + DBL_MIN))
+                        continue;
                 tau = (arr - app) / (2.0 * apr);
                 angle = copysign(1.0, tau) /
                         (fabs(tau) + hypot(1.0, tau));
@@ -458,6 +468,7 @@ static int diagonalize(int m, double *a, double *q,
                         cosine * vip - sine * vir;
                     q[(size_t)i * stride + r] =
                         sine * vip + cosine * vir;
+                }
                 }
             }
         }
