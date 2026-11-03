@@ -470,6 +470,7 @@ static int diagonalize(int m, double *a, double *q,
                 }
             }
         }
+    }
     if (sweep == KRYLOV_MAX_SWEEPS) return -1;
     for (i = 0; i < m; ++i)
         eigenvalues[i] = a[(size_t)i * stride + i];
