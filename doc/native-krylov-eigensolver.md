@@ -42,6 +42,31 @@ arbitrarily large 64-bit dimensions. The restarted method requires
 `nev < n` because `ncv > nev`; requesting the full spectrum should
 use another eigensolver.
 
+## OpenMP shared-memory execution
+
+When LIS is configured with `--enable-omp`, the native Krylov core
+parallelizes long compensated dot products and stable norms with fixed
+independent chunks, as well as vector scaling, metric projections,
+Ritz vector construction, and restart basis copies. Small vectors
+remain on the low-overhead serial path; builds without OpenMP retain
+the standard C99 implementation. The chunk layout and summation order
+are fixed independently of OpenMP scheduling; tiny roundoff differences
+between one and multiple threads can still occur.
+
+The number of threads is selected by the OpenMP runtime, for example
+`OMP_NUM_THREADS=4`. Matrix-vector products and shifted linear solves
+remain delegated to LIS or application callbacks, whose threading
+behavior is independent of the Krylov vector kernels. Dense projected
+eigendecomposition is intentionally serial at the modest subspace sizes
+used here. No MPI-distributed execution is provided.
+
+The `test_krylov_openmp` regression runs a 65,536-dimensional
+generalized problem with a nontrivial restart, both with and without
+persistent hard locking. OpenMP builds exercise 1, 2, 4 and 8 threads
+and check the analytic eigenvalues, original-problem residuals,
+B-metric orthogonality, and agreement with the single-thread solution.
+This validates correctness, not a guaranteed parallel speedup.
+
 ## Two interfaces
 
 The standard LIS interface can be selected using `-e krylov` in `lis_esolve`

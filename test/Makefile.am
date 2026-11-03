@@ -270,7 +270,7 @@ testfgcrodr_SOURCES = testfgcrodr.c
 testgesolvepair_SOURCES = testgesolvepair.c
 
 # Native restarted Krylov eigensolver numerical regressions.
-test_PROGRAMS += test_krylov_modes test_krylov_sparse test_krylov_regression test_krylov_lis test_krylov_semidefinite test_krylov_stress test_krylov_inertia test_krylov_window
+test_PROGRAMS += test_krylov_modes test_krylov_sparse test_krylov_regression test_krylov_lis test_krylov_semidefinite test_krylov_stress test_krylov_inertia test_krylov_window test_krylov_openmp
 test_krylov_modes_SOURCES = test_krylov_modes.c
 test_krylov_sparse_SOURCES = test_krylov_sparse.c
 
@@ -280,7 +280,9 @@ test_krylov_semidefinite_SOURCES = test_krylov_semidefinite.c
 test_krylov_stress_SOURCES = test_krylov_stress.c
 test_krylov_inertia_SOURCES = test_krylov_inertia.c
 test_krylov_window_SOURCES = test_krylov_window.c
+test_krylov_openmp_SOURCES = test_krylov_openmp.c
 TESTS += test_krylov_modes$(EXEEXT) test_krylov_sparse$(EXEEXT) \
          test_krylov_regression$(EXEEXT) test_krylov_lis$(EXEEXT) \
          test_krylov_semidefinite$(EXEEXT) test_krylov_stress$(EXEEXT) \
-         test_krylov_inertia$(EXEEXT) test_krylov_window$(EXEEXT)
+         test_krylov_inertia$(EXEEXT) test_krylov_window$(EXEEXT) \
+         test_krylov_openmp$(EXEEXT)

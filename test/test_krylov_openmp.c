@@ -102,7 +102,7 @@ static int run_case(int threads, int hard_locking, double *reference)
         const double expected = 0.25 * (i + 1);
         if (fabs(values[i] - expected) > 1e-7 ||
             residuals[i] > options.tol ||
-            (reference && fabs(values[i] - reference[i]) > 1e-8)) {
+            (threads != 1 && reference && fabs(values[i] - reference[i]) > 1e-8)) {
             fprintf(stderr, "FAIL threads=%d pair=%d value=%.17g "
                     "residual=%.3g\n", threads, i, values[i], residuals[i]);
             free(vectors);
@@ -121,12 +121,8 @@ static int run_case(int threads, int hard_locking, double *reference)
             }
         }
     }
-    if (!reference) {
-        /* Baseline results are also checked against analytical values. */
-        static double initial[NEV];
-        for (i = 0; i < NEV; ++i) initial[i] = values[i];
-        /* Caller supplies the reference on later runs. */
-    }
+    if (threads == 1 && reference)
+        for (i = 0; i < NEV; ++i) reference[i] = values[i];
     printf("PASS threads=%d hardlock=%d n=%d restarts=%d "
            "solves=%d maxres=%.3g\n",
            threads, hard_locking, N, stats.restarts,
@@ -139,10 +135,11 @@ int main(void)
 {
 #ifdef _OPENMP
     const int threads[] = {1, 2, 4, 8};
+    double ref_plain[NEV] = {0}, ref_locked[NEV] = {0};
     int i;
     for (i = 0; i < 4; ++i)
-        if (run_case(threads[i], 0, NULL) ||
-            run_case(threads[i], 1, NULL))
+        if (run_case(threads[i], 0, ref_plain) ||
+            run_case(threads[i], 1, ref_locked))
             return 1;
 #else
     if (run_case(1, 0, NULL) || run_case(1, 1, NULL)) return 1;
