@@ -149,6 +149,14 @@ LIS_INT lis_ekrylov(LIS_ESOLVER esolver)
     ctx.B = esolver->B;
     err = lis_ekrylov_check_params(esolver);
     if( err ) return err;
+    if( esolver->krylov_allow_semidefinite &&
+        (ctx.B==NULL ||
+         esolver->transform==LIS_EIGEN_TRANSFORM_BUCKLING) )
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,
+                   "semidefinite metric mode requires the generalized B metric\n");
+        return LIS_ERR_ILL_ARG;
+    }
     if( ctx.A->nprocs!=1 || ctx.A->n!=ctx.A->gn || ctx.A->gn>INT_MAX ||
         nev>=ctx.A->gn ||
         (esolver->krylov_ncv>0 && esolver->krylov_ncv>ctx.A->gn) ||
@@ -186,6 +194,7 @@ LIS_INT lis_ekrylov(LIS_ESOLVER esolver)
     options.inner_tol = (double)esolver->krylov_inner_tol;
     options.which = esolver->krylov_which;
     options.initial_vector = (const double *)esolver->x->value;
+    options.allow_semidefinite_metric = (int)esolver->krylov_allow_semidefinite;
 
     /* Allocate the result arrays once; callbacks do not allocate or
      * reassemble matrices in the Krylov iteration. */

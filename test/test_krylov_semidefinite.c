@@ -155,8 +155,8 @@ int main(void)
     if(run_psd(&s,"zero mode and PSD B",5,NULL,expected))return 1;
     s.a[0] = 1.0;
     expected[0] = s.a[0]-s.c[0]*s.c[0]/s.d[0];
-    /* Arbitrary scaling of A, B and sigma by the same constant preserves
-     * eigenvalues and eigenvectors; do not compare absolute thresholds. */
+    /* Scaling A and B by the same factor preserves generalized
+     * eigenvalues and the dimensionless shift; test numerical scaling. */
     for(i=0;i<NACTIVE;i++){
         s.a[i]*=1e9;s.d[i]*=1e9;s.c[i]*=1e9;s.b[i]*=1e9;
     }

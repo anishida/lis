@@ -722,6 +722,7 @@ LIS_INT lis_esolver_init(LIS_ESOLVER esolver)
         esolver->krylov_ncv = 0;
         esolver->krylov_residual_scale = 0.0;
         esolver->krylov_inner_tol = 0.0;
+        esolver->krylov_allow_semidefinite = 0;
         strcpy(esolver->krylov_which,"LM");
 	esolver->tol        = 0;
 	esolver->eprecision = LIS_PRECISION_DOUBLE;
@@ -1946,6 +1947,16 @@ LIS_INT lis_esolver_set_option2(char* arg1, char *arg2, LIS_ESOLVER esolver)
             if( sscanf(arg2,"%d%c",&value,&tail)!=1 || value<0 )
                 return LIS_ERR_ILL_ARG;
             esolver->krylov_ncv = value;
+            return LIS_SUCCESS;
+        }
+        if( strcmp(arg1,"-ksemidefinite")==0 )
+        {
+            int value;
+            char tail;
+            if( sscanf(arg2,"%d%c",&value,&tail)!=1 ||
+                (value!=0 && value!=1) )
+                return LIS_ERR_ILL_ARG;
+            esolver->krylov_allow_semidefinite = value;
             return LIS_SUCCESS;
         }
         if( strcmp(arg1,"-kresidual_scale")==0 ||

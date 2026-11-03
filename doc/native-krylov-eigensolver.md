@@ -30,7 +30,10 @@ status = lis_gesolve(A, B, x, &lambda0, esolver);
   Zero selects an automatically sampled estimate.
 - `-kinner_tol` (zero by default) enables explicit verification of each
   shifted inverse with two additional matrix-vector operations.
-- `-etransform shift_invert` uses the positive-definite B metric, and
+- `-ksemidefinite 1` opts in to a positive-semidefinite B metric in the
+  generalized shift-invert mode. Starting and replenishment directions
+  are mapped through `(A-sigma B)^-1 B` before orthogonalization.
+- `-etransform shift_invert` uses the positive-definite B metric by default, and
   `-etransform buckling` uses the positive-definite A metric, with nonzero
   shift required by the latter. If B is present and transform is AUTO,
   shift-invert with the B metric is used. Standard mode uses A directly.
@@ -73,8 +76,14 @@ consider enabling `options.inner_tol` to detect inaccurate solutions.
 | Transform | Inner product | Operator | Original eigenvalue |
 |---|---|---|---|
 | `STANDARD` | Euclidean | `A` | `lambda = mu` |
-| `SHIFT_INVERT_B` | `B` (positive definite) | `(A-sigma B)^-1 B` | `lambda = sigma + 1/mu` |
+| `SHIFT_INVERT_B` | `B` (positive definite, or PSD when enabled) | `(A-sigma B)^-1 B` | `lambda = sigma + 1/mu` |
 | `SHIFT_INVERT_A` | `A` (positive definite) | `(A-sigma B)^-1 A` | `lambda = sigma*mu/(mu-1)` |
+
+For PSD B, the operator `(A-sigma B)` must remain nonsingular, and
+only finite eigenpairs with nonzero B-norm are sought. The solver rejects
+null B-metric directions and may return `NO_CONVERGENCE` with partial
+results if fewer finite eigenpairs exist than requested. This mode does
+not implement a general singular-pencil eigensolver.
 
 Vectors are normalized in the **chosen metric** (I, B or A). Generalized
 operators must satisfy the corresponding symmetry and definiteness
@@ -122,6 +131,8 @@ The test suite includes analytic standard and generalized problems, shifted
 inverse transforms, indefinite B, 1e9 scaling, zero and near-zero
 values, selection `SM`/`LA`/`SA`, repeated values, non-diagonal sparse
 problems, partial convergence, callback failures and inexact solves.
+The PSD regression covers a coupled matrix with massless degrees of freedom,
+a start in `ker(B)`, a scaled pencil, and a rank-deficient B metric.
 The sparse regression uses an analytic relative eigenvalue tolerance.
 
 ## Limitations
