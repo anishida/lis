@@ -257,3 +257,39 @@ outside this helper's contract.
   ABI is implemented in this version.
 - No performance claim for large sparse matrices without timed benchmarks
   that include the cost of the application's inverse operation.
+
+## Thresholded Jacobi refinement of the projected problem
+
+The native thick-restarted Krylov solver diagonalizes a relatively small
+symmetric projected matrix during each Rayleigh–Ritz step. This implementation
+uses an internal cyclic Jacobi eigendecomposition without requiring LAPACK.
+
+For the first three Jacobi sweeps, the projection solver now ignores
+off-diagonal pivots smaller than 5% of the largest off-diagonal entry in the
+current sweep. This avoids small, low-impact rotations while the matrix is
+far from diagonal. Subsequent sweeps revert to the original machine-epsilon
+cutoff, retaining strict refinement of close or repeated eigenvalues and
+the existing convergence criterion. Eigenvalue ordering, output metrics,
+public ABI and caller callbacks remain unchanged.
+
+A standalone regression (`test_krylov_projected`) exercises a symmetric,
+orthogonally transformed matrix with known clustered and repeated
+eigenvalues, verifying the returned eigenpairs, original-problem residuals
+and orthogonality. It also exercises hard locking.
+
+A small standalone timing/accuracy experiment is available without
+installing LIS:
+
+~~~sh
+cc -O3 -std=c99 -Iinclude test/bench_krylov_projected.c \
+   -lm -o bench_krylov_projected
+./bench_krylov_projected
+~~~
+
+The benchmark directly exercises the internal Jacobi kernel at several
+projected dimensions and checks relative reconstruction residuals and
+eigenvector orthogonality. It is separate from production workload timing.
+The new threshold may reduce the number of rotations, but it can also
+change the number of sweeps; speed improvements are workload-dependent.
+No new dependencies, user-facing solver options or CI workflow files
+are introduced.
