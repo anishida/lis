@@ -93,6 +93,6 @@ static int bench(int n, int repeats)
 int main(void)
 {
     puts("n,repeats,cpu_seconds,failed");
-    return bench(24, 160) || bench(48, 48) ||
-           bench(72, 12) || bench(96, 4);
+    return bench(24, 1600) || bench(48, 480) ||
+           bench(72, 120) || bench(96, 40);
 }
