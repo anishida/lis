@@ -50,6 +50,8 @@ typedef struct {
     const double *initial_vector;  /* NULL: generated deterministic start */
     int allow_semidefinite_metric; /* 1: opt-in PSD B, mode SHIFT_INVERT_B */
     int hard_locking;              /* 1: freeze and deflate converged pairs */
+    int adaptive_ncv;              /* 1: grow Krylov space on stalled restarts */
+    int ncv_max;                   /* 0: min(n, 2*initial_ncv); else cap */
 } lis_krylov_options;
 
 typedef struct {
@@ -61,6 +63,11 @@ typedef struct {
     int metric_count;
     int solve_count;
     double max_residual;           /* worst residual among ALL returned pairs */
+    int ncv_initial;               /* initial active Krylov subspace dimension */
+    int ncv_final;                 /* final active subspace dimension */
+    int ncv_growths;               /* adaptive capacity increases */
+    int basis_vectors;             /* accepted basis vectors, including seeds */
+    int projected_solves;          /* Rayleigh-Ritz eigendecompositions */
 } lis_krylov_stats;
 
 enum {
@@ -127,6 +134,13 @@ void lis_krylov_options_default(lis_krylov_options *options);
  * invariant subspace. Starting and restart directions are mapped through
  * (A-sigma B)^-1 B; the zero metric directions are rejected. A rank
  * smaller than nev can yield NO_CONVERGENCE with valid partial results.
+ *
+ * Setting adaptive_ncv=1 enables growth of the active subspace after
+ * two full-subspace restarts without an increase in the converged pair
+ * count. ncv is the initial dimension; ncv_max limits growth (0 means
+ * min(n,2*ncv)). Workspace is reserved up front for ncv_max; adaptive
+ * growth preserves existing Ritz vectors and does not refactorize the
+ * shifted system. Explicit ncv with adaptive_ncv=0 retains fixed sizing.
  *
  * This API supports real double and SERIAL operators only. Applications
  * with MPI-distributed matrices must not pass rank-local vectors to it.
