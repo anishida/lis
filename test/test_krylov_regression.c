@@ -160,6 +160,48 @@ static int failures(void)
     return 0;
 }
 
+/* A semidefinite second operator can produce infinite generalized
+ * eigenvalues. Near the inverse-map pole, no NaN/Inf approximation
+ * may be marked as available to callers.
+ */
+static int nonrepresentable_ritz(void)
+{
+    context c = {0};
+    lis_krylov_problem p;
+    lis_krylov_options opt;
+    lis_krylov_stats stats;
+    double eigen[NEV], vectors[N * NEV], residual[NEV];
+    int i, err;
+    for (i = 0; i < N; ++i) {
+        c.a[i] = (double)(i + 2);
+        c.b[i] = 0.0;
+    }
+    c.sigma = -1.0;
+    memset(&p, 0, sizeof(p));
+    p.n = N;
+    p.transform = LIS_KRYLOV_SHIFT_INVERT_A;
+    p.sigma = c.sigma;
+    p.ctx = &c;
+    p.apply_a = matrix_a;
+    p.apply_b = matrix_b;
+    p.solve = shifted_solve;
+    lis_krylov_options_default(&opt);
+    opt.nev = 3;
+    opt.ncv = 16;
+    opt.maxiter = 20;
+    err = lis_krylov_symmetric(&p, &opt, eigen,
+                               vectors, residual, &stats);
+    if (err != LIS_KRYLOV_NO_CONVERGENCE ||
+        stats.nreturned != 0 || stats.nconv != 0) {
+        fprintf(stderr,
+                "FAIL unrepresentable Ritz mapping: rc=%d returned=%d converged=%d\n",
+                err, stats.nreturned, stats.nconv);
+        return 1;
+    }
+    printf("PASS nonrepresentable Ritz eigenvalues\n");
+    return 0;
+}
+
 int main(void)
 {
     context c = {0};
@@ -217,5 +259,6 @@ int main(void)
     if (run_case("multiplicity x4", &c, LIS_KRYLOV_STANDARD,
                  "LA", 0.0, expected, NEV, 1.0e-7)) return 1;
     if (failures()) return 1;
+    if (nonrepresentable_ritz()) return 1;
     return 0;
 }

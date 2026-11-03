@@ -341,7 +341,10 @@ static int eigenpair_residual(struct krylov_workspace *s,
         if (fabs(mu) < DBL_MIN) return 1;
         *lambda = p->sigma + 1.0 / mu;
     } else {
-        if (fabs(mu - 1.0) < DBL_EPSILON) return 1;
+        /* A Ritz pole too close to 1 cannot be mapped reliably:
+         * the corresponding generalized value may be infinite. */
+        if (fabs(mu - 1.0) <= 64.0 * DBL_EPSILON *
+                                fmax(1.0, fabs(mu))) return 1;
         *lambda = p->sigma * mu / (mu - 1.0);
     }
     if (!isfinite(*lambda)) return 1;
@@ -560,7 +563,6 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
 
     for (iter = 0; iter < maxiter; ++iter) {
         int old_m = m, extensions = 0;
-        int nreturned;
         stats->iterations = iter + 1;
         update_projected(&s, previous, m);
         memcpy(s.dense_work, s.projected, dense_size * sizeof(double));
@@ -569,11 +571,11 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
             goto done;
         }
         sort_ritz(m, s.eval, s.order, which);
-        nreturned = m < nev ? m : nev;
         stats->nreturned = 0;
         stats->nconv = 0;
         stats->max_residual = 0.0;
-        for (j = 0; j < nreturned; ++j) {
+        memset(s.locked, 0, (size_t)m * sizeof(int));
+        for (j = 0; j < m && stats->nreturned < nev; ++j) {
             int idx = s.order[j];
             double lambda = NAN, rel = INFINITY;
             int err = eigenpair_residual(&s, m, idx, s.eval[idx],
@@ -583,12 +585,15 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
                      LIS_KRYLOV_BREAKDOWN;
                 goto done;
             }
-            s.locked[j] = (err == 0 && rel <= tol);
+            /* Do not expose a nonrepresentable original eigenvalue
+             * as a valid partial result. */
+            if (err == 1) continue;
+            s.locked[j] = (rel <= tol);
             if (s.locked[j]) ++stats->nconv;
             if (rel > stats->max_residual) stats->max_residual = rel;
-            values[j] = lambda;
-            residuals[j] = rel;
-            memcpy(vectors + (size_t)j * s.n, s.x,
+            values[stats->nreturned] = lambda;
+            residuals[stats->nreturned] = rel;
+            memcpy(vectors + (size_t)stats->nreturned * s.n, s.x,
                    (size_t)s.n * sizeof(double));
             ++stats->nreturned;
         }
@@ -611,7 +616,7 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
             int idx = s.order[j];
             double mu = s.eval[idx];
             double norm_w, norm_v, norm_r, threshold;
-            if (j < nreturned && s.locked[j]) continue;
+            if (s.locked[j]) continue;
             rotate_column(&s, s.images, old_m, idx, s.x);
             rotate_column(&s, s.basis, old_m, idx, s.metric_x);
             norm_w = stable_norm(s.n, s.x);
