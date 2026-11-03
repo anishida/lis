@@ -37,6 +37,9 @@ extern "C"
 {
 #endif
         extern LIS_ESOLVER_EXECUTE lis_esolver_execute[];
+        extern LIS_INT lis_ekrylov(LIS_ESOLVER esolver);
+        extern LIS_INT lis_ekrylov_check_params(LIS_ESOLVER esolver);
+        extern LIS_INT lis_ekrylov_malloc_work(LIS_ESOLVER esolver);
 
 extern LIS_INT lis_esolver_is_finite_scalar(
         LIS_SCALAR value);

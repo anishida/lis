@@ -221,7 +221,7 @@ extern "C" {
 #define LIS_FGCRODR_RECYCLE_TRANSPORT 3
 #define LIS_FGCRODR_RECYCLE_REJECT 4
 
-#define LIS_ESOLVER_LEN 17
+#define LIS_ESOLVER_LEN 18
 #define LIS_ESOLVER_PI 1
 #define LIS_ESOLVER_II 2
 #define LIS_ESOLVER_RQI 3
@@ -239,6 +239,7 @@ extern "C" {
 #define LIS_ESOLVER_GLI 15
 #define LIS_ESOLVER_GAI 16
 #define LIS_ESOLVER_FEAST 17
+#define LIS_ESOLVER_KRYLOV 18
 
 #define LIS_EIGEN_TRANSFORM_AUTO 0
 #define LIS_EIGEN_TRANSFORM_SHIFT_INVERT 1
@@ -1177,6 +1178,11 @@ struct LIS_ESOLVER_STRUCT
         LIS_INT subspace_retry_min;
         LIS_INT subspace_retry_attempts;
         LIS_INT subspace_retry_final_size;
+        /* Native Krylov options retained outside numeric option arrays. */
+        LIS_INT krylov_ncv;
+        LIS_REAL krylov_residual_scale;
+        LIS_REAL krylov_inner_tol;
+        char krylov_which[3];
 };
 typedef struct LIS_ESOLVER_STRUCT *LIS_ESOLVER;
 
