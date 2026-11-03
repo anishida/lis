@@ -10,11 +10,18 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 /* A direction is considered linearly dependent only when double-pass
  * orthogonalization removes essentially all of its input metric norm. */
 #define KRYLOV_ORTH_REJECT 1.0e-12
 #define KRYLOV_DGKS_ETA 0.717
+/* Avoid OpenMP fork/join overhead on small vectors. Fixed chunk boundaries
+ * make multi-threaded reductions independent of thread scheduling. */
+#define KRYLOV_OMP_MIN_N 32768
+#define KRYLOV_OMP_CHUNKS 32
 #define KRYLOV_DIRECTION_REJECT (128.0 * DBL_EPSILON)
 #define KRYLOV_MAX_SWEEPS 80
 #define KRYLOV_JACOBI_EPS (16.0 * DBL_EPSILON)
@@ -49,6 +56,36 @@ struct krylov_workspace {
 
 static double compensated_dot(int n, const double *a, const double *b)
 {
+#ifdef _OPENMP
+    if (n >= KRYLOV_OMP_MIN_N && omp_get_max_threads() > 1) {
+        double partial[KRYLOV_OMP_CHUNKS];
+        double total = 0.0, correction = 0.0;
+        int chunk;
+        #pragma omp parallel for schedule(static)
+        for (chunk = 0; chunk < KRYLOV_OMP_CHUNKS; ++chunk) {
+            const int begin = (int)(((long long)n * chunk) /
+                                    KRYLOV_OMP_CHUNKS);
+            const int end = (int)(((long long)n * (chunk + 1)) /
+                                  KRYLOV_OMP_CHUNKS);
+            double sum = 0.0, correction_local = 0.0;
+            int k;
+            for (k = begin; k < end; ++k) {
+                double item = a[k] * b[k] - correction_local;
+                double next = sum + item;
+                correction_local = (next - sum) - item;
+                sum = next;
+            }
+            partial[chunk] = sum;
+        }
+        for (chunk = 0; chunk < KRYLOV_OMP_CHUNKS; ++chunk) {
+            double item = partial[chunk] - correction;
+            double next = total + item;
+            correction = (next - total) - item;
+            total = next;
+        }
+        return total;
+    }
+#endif
     double sum = 0.0;
     double compensation = 0.0;
     int i;
@@ -63,6 +100,57 @@ static double compensated_dot(int n, const double *a, const double *b)
 
 static double stable_norm(int n, const double *x)
 {
+#ifdef _OPENMP
+    if (n >= KRYLOV_OMP_MIN_N && omp_get_max_threads() > 1) {
+        double scales[KRYLOV_OMP_CHUNKS];
+        double squares[KRYLOV_OMP_CHUNKS];
+        double global_scale = 0.0, global_squares = 1.0;
+        int chunk;
+        #pragma omp parallel for schedule(static)
+        for (chunk = 0; chunk < KRYLOV_OMP_CHUNKS; ++chunk) {
+            const int begin = (int)(((long long)n * chunk) /
+                                    KRYLOV_OMP_CHUNKS);
+            const int end = (int)(((long long)n * (chunk + 1)) /
+                                  KRYLOV_OMP_CHUNKS);
+            double scale = 0.0, local_squares = 1.0;
+            int k;
+            for (k = begin; k < end; ++k) {
+                const double value = fabs(x[k]);
+                if (!isfinite(value)) {
+                    scale = INFINITY;
+                    break;
+                }
+                if (value == 0.0) continue;
+                if (scale < value) {
+                    const double ratio = scale / value;
+                    local_squares = 1.0 + local_squares * ratio * ratio;
+                    scale = value;
+                } else {
+                    const double ratio = value / scale;
+                    local_squares += ratio * ratio;
+                }
+            }
+            scales[chunk] = scale;
+            squares[chunk] = local_squares;
+        }
+        for (chunk = 0; chunk < KRYLOV_OMP_CHUNKS; ++chunk) {
+            const double scale = scales[chunk];
+            if (!isfinite(scale)) return INFINITY;
+            if (scale == 0.0) continue;
+            if (global_scale < scale) {
+                const double ratio = global_scale / scale;
+                global_squares = squares[chunk] +
+                                 global_squares * ratio * ratio;
+                global_scale = scale;
+            } else {
+                const double ratio = scale / global_scale;
+                global_squares += squares[chunk] * ratio * ratio;
+            }
+        }
+        return global_scale == 0.0 ? 0.0 :
+               global_scale * sqrt(global_squares);
+    }
+#endif
     double scale = 0.0;
     double square_sum = 1.0;
     int i;
@@ -88,6 +176,39 @@ static int all_finite(int n, const double *x)
     for (i = 0; i < n; ++i)
         if (!isfinite(x[i])) return 0;
     return 1;
+}
+
+/* Vector kernels keep the original sequential order of projections.
+ * Parallel updates finish before the next metric dot product. */
+static void vector_axpy(int n, double alpha, const double *y, double *x)
+{
+    int i;
+#ifdef _OPENMP
+    #pragma omp parallel for schedule(static) if(n >= KRYLOV_OMP_MIN_N)
+#endif
+    for (i = 0; i < n; ++i) x[i] += alpha * y[i];
+}
+
+static void vector_scale(int n, double scale, double *x)
+{
+    int i;
+#ifdef _OPENMP
+    #pragma omp parallel for schedule(static) if(n >= KRYLOV_OMP_MIN_N)
+#endif
+    for (i = 0; i < n; ++i) x[i] *= scale;
+}
+
+static void vector_scale_pair(int n, double scale,
+                              double *x, double *metric_x)
+{
+    int i;
+#ifdef _OPENMP
+    #pragma omp parallel for schedule(static) if(n >= KRYLOV_OMP_MIN_N)
+#endif
+    for (i = 0; i < n; ++i) {
+        x[i] *= scale;
+        metric_x[i] *= scale;
+    }
 }
 
 static int apply_metric(struct krylov_workspace *s,
@@ -153,12 +274,12 @@ static int orthogonalize(struct krylov_workspace *s,
                          int count, double *x, double *metric_x)
 {
     double initial, square, norm;
-    int pass, j, i, err;
+    int pass, j, err;
 
     norm = stable_norm(s->n, x);
     if (!isfinite(norm)) return -2;
     if (norm == 0.0) return 1;
-    for (i = 0; i < s->n; ++i) x[i] /= norm;
+    vector_scale(s->n, 1.0 / norm, x);
 
     err = apply_metric(s, x, metric_x);
     if (err) return err;
@@ -182,16 +303,14 @@ static int orthogonalize(struct krylov_workspace *s,
                 const double *bv = s->locked_metric + (size_t)j * s->n;
                 double coefficient = compensated_dot(s->n, bv, x);
                 if (!isfinite(coefficient)) return -2;
-                for (i = 0; i < s->n; ++i)
-                    x[i] -= coefficient * v[i];
+                vector_axpy(s->n, -coefficient, v, x);
             }
             for (j = 0; j < count; ++j) {
                 const double *v = s->basis + (size_t)j * s->n;
                 const double *bv = s->metric_basis + (size_t)j * s->n;
                 double coefficient = compensated_dot(s->n, bv, x);
                 if (!isfinite(coefficient)) return -2;
-                for (i = 0; i < s->n; ++i)
-                    x[i] -= coefficient * v[i];
+                vector_axpy(s->n, -coefficient, v, x);
             }
             err = apply_metric(s, x, metric_x);
             if (err) return err;
@@ -214,10 +333,7 @@ static int orthogonalize(struct krylov_workspace *s,
     }
     {
         double inverse_norm = 1.0 / sqrt(square);
-        for (i = 0; i < s->n; ++i) {
-            x[i] *= inverse_norm;
-            metric_x[i] *= inverse_norm;
-        }
+        vector_scale_pair(s->n, inverse_norm, x, metric_x);
     }
     for (j = 0; j < s->nlocked; ++j) {
         const double *bv = s->locked_metric + (size_t)j * s->n;
@@ -381,6 +497,20 @@ static void rotate_column(struct krylov_workspace *s,
                           int idx, double *output)
 {
     int i, j;
+#ifdef _OPENMP
+    if (s->n >= KRYLOV_OMP_MIN_N && omp_get_max_threads() > 1) {
+        #pragma omp parallel for schedule(static)
+        for (i = 0; i < s->n; ++i) {
+            double value = 0.0;
+            for (j = 0; j < m; ++j) {
+                const double coeff = s->ritz[(size_t)j * s->ncv + idx];
+                value += coeff * basis[(size_t)j * s->n + i];
+            }
+            output[i] = value;
+        }
+        return;
+    }
+#endif
     for (i = 0; i < s->n; ++i) output[i] = 0.0;
     for (j = 0; j < m; ++j) {
         double c = s->ritz[(size_t)j * s->ncv + idx];
@@ -395,8 +525,7 @@ static int eigenpair_residual(struct krylov_workspace *s,
 {
     const lis_krylov_problem *p = s->problem;
     double norm_a, norm_b, norm_r, norm_x, denom;
-    int i;
-
+ 
     rotate_column(s, s->basis, m, index, s->x);
     if (p->transform == LIS_KRYLOV_STANDARD) {
         *lambda = mu;
@@ -428,8 +557,7 @@ static int eigenpair_residual(struct krylov_workspace *s,
         norm_a / norm_x > s->norm_a)
         s->norm_a = norm_a / norm_x;
 
-    for (i = 0; i < s->n; ++i)
-        s->metric_x[i] -= *lambda * s->rhs[i];
+    vector_axpy(s->n, -*lambda, s->rhs, s->metric_x);
     norm_r = stable_norm(s->n, s->metric_x);
     denom = norm_a + fabs(*lambda) * norm_b;
     if (s->norm_a * norm_x > denom)
@@ -473,10 +601,14 @@ static void restart_basis(struct krylov_workspace *s,
         for (j = 0; j < retain; ++j)
             rotate_column(s, sets[k], m, s->order[j],
                           s->scratch + (size_t)j * s->n);
+#ifdef _OPENMP
+        #pragma omp parallel for schedule(static) \
+            if((size_t)retain * (size_t)s->n >= KRYLOV_OMP_MIN_N)
+#endif
         for (j = 0; j < retain; ++j)
-            for (i = 0; i < s->n; ++i)
-                sets[k][(size_t)j * s->n + i] =
-                    s->scratch[(size_t)j * s->n + i];
+            memcpy(sets[k] + (size_t)j * s->n,
+                   s->scratch + (size_t)j * s->n,
+                   (size_t)s->n * sizeof(double));
     }
     for (i = 0; i < retain; ++i) {
         for (j = 0; j < retain; ++j)
