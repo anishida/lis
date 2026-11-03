@@ -502,9 +502,10 @@ static void rotate_column(struct krylov_workspace *s,
         #pragma omp parallel for schedule(static)
         for (i = 0; i < s->n; ++i) {
             double value = 0.0;
-            for (j = 0; j < m; ++j) {
-                const double coeff = s->ritz[(size_t)j * s->ncv + idx];
-                value += coeff * basis[(size_t)j * s->n + i];
+            int col;
+            for (col = 0; col < m; ++col) {
+                const double coeff = s->ritz[(size_t)col * s->ncv + idx];
+                value += coeff * basis[(size_t)col * s->n + i];
             }
             output[i] = value;
         }
