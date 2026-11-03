@@ -5,6 +5,8 @@ nobase_include_HEADERS = lis_config.h lis.h lisf.h lis_abi.h \
 	lis_omp_capacity.h lis_matrix_graph.h lis_matrix_split_view.h \
 	lis_matrix_materialize.h lis_matrix_operator.h
 
+nobase_include_HEADERS += lis_krylov.h
+
 EXTRA_DIST = lis_config_win.h \
 	lis_esolver.h \
 	lis_fortran.h \
