@@ -112,10 +112,12 @@ Errors other than nonconvergence invalidate outputs (`nreturned=0`).
 Starting vectors can be supplied via `options.initial_vector` or chosen
 with `options.random_seed` for reproducible restarts.
 
-The implementation uses double-pass reorthogonalization, reuses cached
-metric/operator products, updates the projected matrix incrementally,
-retains Ritz vectors on restart and skips expansion of already converged
-Ritz vectors. No global process state is used.
+The implementation uses adaptive DGKS metric reorthogonalization, reuses
+cached metric/operator products, updates the projected matrix incrementally,
+retains Ritz vectors on restart, injects reproducible independent directions
+to resolve repeated eigenvalues, and skips expansion of already converged
+Ritz vectors. Converged pairs are not yet permanently hard locked.
+No global process state is used.
 
 ## Build and validation
 
@@ -134,6 +136,10 @@ problems, partial convergence, callback failures and inexact solves.
 The PSD regression covers a coupled matrix with massless degrees of freedom,
 a start in `ker(B)`, a scaled pencil, and a rank-deficient B metric.
 The sparse regression uses an analytic relative eigenvalue tolerance.
+The stress regression checks clustered and fourfold repeated generalized
+values, B-orthogonal invariant subspaces, and repeated restarts with
+small search subspaces. Additional large sparse performance evaluation
+is recorded separately from the implementation.
 
 ## Limitations
 

@@ -14,6 +14,7 @@
 /* A direction is considered linearly dependent only when double-pass
  * orthogonalization removes essentially all of its input metric norm. */
 #define KRYLOV_ORTH_REJECT 1.0e-12
+#define KRYLOV_DGKS_ETA 0.717
 #define KRYLOV_DIRECTION_REJECT (128.0 * DBL_EPSILON)
 #define KRYLOV_MAX_SWEEPS 80
 #define KRYLOV_JACOBI_EPS (16.0 * DBL_EPSILON)
@@ -164,31 +165,39 @@ static int orthogonalize(struct krylov_workspace *s,
         return -2;
     }
 
-    /* Reorthogonalize in a stable metric. Reapply the metric after the
-     * two passes: linear combinations of nearly cancelled B-images can
-     * otherwise amplify rounding errors and break orthogonality. */
-    for (pass = 0; pass < 2; ++pass) {
-        for (j = 0; j < count; ++j) {
-            const double *v = s->basis + (size_t)j * s->n;
-            const double *bv = s->metric_basis + (size_t)j * s->n;
-            double coefficient = compensated_dot(s->n, bv, x);
-            if (!isfinite(coefficient)) return -2;
-            for (i = 0; i < s->n; ++i)
-                x[i] -= coefficient * v[i];
+    /* DGKS selective reorthogonalization in the chosen metric.  The
+     * norm-loss test compares squared metric norms to avoid square roots.
+     * Recompute B*x after each pass; reusing a heavily cancelled metric
+     * image can give an inaccurate norm on semidefinite B. */
+    {
+        double previous_square = initial;
+        for (pass = 0; pass < 3; ++pass) {
+            for (j = 0; j < count; ++j) {
+                const double *v = s->basis + (size_t)j * s->n;
+                const double *bv = s->metric_basis + (size_t)j * s->n;
+                double coefficient = compensated_dot(s->n, bv, x);
+                if (!isfinite(coefficient)) return -2;
+                for (i = 0; i < s->n; ++i)
+                    x[i] -= coefficient * v[i];
+            }
+            err = apply_metric(s, x, metric_x);
+            if (err) return err;
+            square = compensated_dot(s->n, x, metric_x);
+            if (!isfinite(square)) return -2;
+            /* Tiny negative roundoff is dependence only for a PSD B. */
+            if (square <= initial * KRYLOV_ORTH_REJECT *
+                          KRYLOV_ORTH_REJECT) {
+                if (square >= 0.0 ||
+                    (s->options->allow_semidefinite_metric &&
+                     square >= -64.0 * DBL_EPSILON * initial))
+                    return 1;
+                return -2;
+            }
+            if (square >= KRYLOV_DGKS_ETA * KRYLOV_DGKS_ETA *
+                          previous_square)
+                break;
+            previous_square = square;
         }
-    }
-    err = apply_metric(s, x, metric_x);
-    if (err) return err;
-    square = compensated_dot(s->n, x, metric_x);
-    if (!isfinite(square)) return -2;
-    /* Negative round-off at a nearly null metric direction is a
-     * dependent direction, not evidence of an indefinite B matrix. */
-    if (square <= initial * KRYLOV_ORTH_REJECT * KRYLOV_ORTH_REJECT) {
-        if (square >= 0.0 ||
-            (s->options->allow_semidefinite_metric &&
-             square >= -64.0 * DBL_EPSILON * initial))
-            return 1;
-        return -2;
     }
     {
         double inverse_norm = 1.0 / sqrt(square);
@@ -667,6 +676,23 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
             ++stats->restarts;
             m = keep;
             previous = keep;
+            /* A degeneracy cannot be resolved by residual expansion alone
+             * when the retained subspace already approximates an invariant
+             * eigenspace. Inject a reproducible independent search direction
+             * after restarting to discover other vectors of a cluster. */
+            for (i = 0; i < 4 && m < ncv; ++i) {
+                int result;
+                seed_vector(s.n, s.x,
+                            seed + (unsigned)iter * 997u + (unsigned)i + 17u);
+                result = append_range_seed(&s, m, s.x);
+                if (result < 0) {
+                    rc = result == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
+                         result == -3 ? LIS_KRYLOV_INEXACT_SOLVE :
+                         LIS_KRYLOV_BREAKDOWN;
+                    goto done;
+                }
+                if (result == 0) { ++m; break; }
+            }
             continue;
         }
 
