@@ -270,7 +270,7 @@ testfgcrodr_SOURCES = testfgcrodr.c
 testgesolvepair_SOURCES = testgesolvepair.c
 
 # Native restarted Krylov eigensolver numerical regressions.
-test_PROGRAMS += test_krylov_modes test_krylov_sparse test_krylov_regression test_krylov_lis test_krylov_semidefinite test_krylov_stress test_krylov_inertia test_krylov_window test_krylov_openmp test_krylov_projected test_krylov_workspace test_krylov_unified test_krylov_adaptive_ex test_krylov_api_contract test_krylov_both_ends
+test_PROGRAMS += test_krylov_modes test_krylov_sparse test_krylov_regression test_krylov_lis test_krylov_semidefinite test_krylov_stress test_krylov_inertia test_krylov_window test_krylov_openmp test_krylov_projected test_krylov_workspace test_krylov_unified test_krylov_adaptive_ex test_krylov_api_contract test_krylov_both_ends test_krylov_be_lock_order
 test_krylov_modes_SOURCES = test_krylov_modes.c
 test_krylov_sparse_SOURCES = test_krylov_sparse.c
 
@@ -287,6 +287,10 @@ test_krylov_unified_SOURCES = test_krylov_unified.c
 test_krylov_adaptive_ex_SOURCES = test_krylov_adaptive_ex.c
 test_krylov_api_contract_SOURCES = test_krylov_api_contract.c
 test_krylov_both_ends_SOURCES = test_krylov_both_ends.c
+# This white-box regression includes the native solver C file once; it
+# must not link the native solver object from liblis again.
+test_krylov_be_lock_order_SOURCES = test_krylov_be_lock_order.c
+test_krylov_be_lock_order_LDADD = -lm
 TESTS += test_krylov_modes$(EXEEXT) test_krylov_sparse$(EXEEXT) \
          test_krylov_regression$(EXEEXT) test_krylov_lis$(EXEEXT) \
          test_krylov_semidefinite$(EXEEXT) test_krylov_stress$(EXEEXT) \
@@ -296,4 +300,5 @@ TESTS += test_krylov_modes$(EXEEXT) test_krylov_sparse$(EXEEXT) \
          test_krylov_unified$(EXEEXT) \
          test_krylov_adaptive_ex$(EXEEXT) \
          test_krylov_api_contract$(EXEEXT) \
-         test_krylov_both_ends$(EXEEXT)
+         test_krylov_both_ends$(EXEEXT) \
+         test_krylov_be_lock_order$(EXEEXT)
