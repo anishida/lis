@@ -93,6 +93,15 @@ scratch, so memory use **increases** when spectrum-aware retention is
 enabled. The same buffer is reused across solves; no per-restart
 allocation is introduced.
 
+When combined with the separate `BE` (BothEnds) selector, adaptive
+restarts use the **original fixed Ritz-retention boundary**. Interleaved
+high/low Ritz ordering does not have adjacent gaps that correspond to
+neighboring eigenvalues; applying a single-boundary gap heuristic to
+that ordering would be mathematically misleading. `BE:ASC` and
+`BE:DESC` use the same guarded fallback because suffixes change only
+output order. A future two-flank spectral policy requires its own
+numerical evidence and tests.
+
 The heuristic is *not* guaranteed to improve every spectrum. Compare
 to equal-capacity fixed-size solves and assess operator applications,
 restarts, convergence and peak memory. The existing strict residual
