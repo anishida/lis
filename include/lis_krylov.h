@@ -43,7 +43,11 @@ typedef struct {
     int ncv;                       /* 0: choose min(n,3*nev+8); else >nev */
     int maxiter;                   /* 0: 300 expansion/restart cycles */
     double tol;                    /* 0: 1e-10 backward residual */
-    const char *which;             /* LM (default), SM, LA, SA */
+    const char *which;             /* LM (default), SM, LA, SA, BE;
+                                    * optional :ASC/:DESC sorts output
+                                    * ORIGINAL eigenvalues independently.
+                                    * BE alternates extreme transformed
+                                    * Ritz values, high end first. */
     double residual_scale;         /* 0: estimate ||A||; >0: user norm scale */
     double inner_tol;              /* 0: skip inverse-action verification */
     unsigned random_seed;          /* 0: stable default seed */
