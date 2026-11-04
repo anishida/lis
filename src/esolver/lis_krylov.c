@@ -655,6 +655,13 @@ static int restart_keep_spectrum(const struct krylov_workspace *s,
     if (keep < nev) keep = nev;
     if (keep >= m - 1) return m - 1;
     baseline = keep;
+    /* BE (BothEnds) interleaves the high and low spectral flanks in
+     * s->order. Adjacent entries are NOT neighboring Ritz eigenvalues,
+     * so the single-boundary gap heuristic is not meaningful there.
+     * Keep the established half-space policy until a separately
+     * validated two-flank cluster policy is available. This guard
+     * makes the opt-in extension safe to combine with BE support. */
+    if (which[0] == 'B' && which[1] == 'E') return keep;
     max_extra = m / 4;
     if (max_extra < 1) max_extra = 1;
 
