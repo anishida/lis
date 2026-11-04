@@ -571,6 +571,45 @@ static void rotate_column(struct krylov_workspace *s,
     }
 }
 
+/* In standard mode s->images already stores A applied to every basis
+ * vector. A Ritz residual far above tolerance can be estimated from
+ * those images without calling the user's apply_a callback again.
+ *
+ * This is ONLY an early reject in the hard-locking probe. Reported
+ * eigenpairs, residuals, and all accepted locks still pass through the
+ * exact original-problem callback verification. For transformed
+ * operators the cheaply available residual is not a certified bound
+ * on ||A*x-lambda*B*x||, so never use it to reject candidates.
+ */
+static int standard_ritz_clearly_unconverged(
+    struct krylov_workspace *s, int m, int index, double mu, double tol)
+{
+    double norm_a, norm_x, norm_r, denom, margin;
+    /* Keep the original automatic norm-estimation side effects: an
+     * unverified candidate can increase norm_a for later candidates.
+     * Only fixed-scale calls can be screened without changing that. */
+    if (s->problem->transform != LIS_KRYLOV_STANDARD ||
+        s->options->residual_scale == 0.0) return 0;
+
+    rotate_column(s, s->basis, m, index, s->x);
+    rotate_column(s, s->images, m, index, s->metric_x);
+    norm_a = stable_norm(s->n, s->metric_x);
+    norm_x = stable_norm(s->n, s->x);
+    if (!isfinite(norm_a) || !isfinite(norm_x)) return 0;
+
+    vector_axpy(s->n, -mu, s->x, s->metric_x);
+    norm_r = stable_norm(s->n, s->metric_x);
+    denom = norm_a + fabs(mu) * norm_x;
+    if (s->norm_a * norm_x > denom) denom = s->norm_a * norm_x;
+    if (!isfinite(denom) || !isfinite(norm_r) || denom <= 0.0)
+        return 0;
+
+    /* Wide safety margin for rounding during rotation and Ritz solves.
+     * This estimate is never used as a positive convergence test. */
+    margin = fmax(128.0 * tol, 1.0e-8);
+    return norm_r > margin * denom;
+}
+
 static int eigenpair_residual(struct krylov_workspace *s,
                               int m, int index, double mu,
                               double *lambda, double *relative)
@@ -1005,8 +1044,12 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
             for (j = 0; j < m && j < nev - s.nlocked; ++j) {
                 int idx = s.order[j];
                 double lambda = NAN, rel = INFINITY;
-                int err = eigenpair_residual(&s, m, idx, s.eval[idx],
-                                             &lambda, &rel);
+                int err;
+                if (standard_ritz_clearly_unconverged(
+                        &s, m, idx, s.eval[idx], tol))
+                    continue;
+                err = eigenpair_residual(&s, m, idx, s.eval[idx],
+                                         &lambda, &rel);
                 if (err < 0) {
                     rc = err == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
                          LIS_KRYLOV_BREAKDOWN;

@@ -183,6 +183,18 @@ metric-orthogonal subspace and purges the active Ritz space after locking.
 Hard locking is off by default because it can require extra solves and
 additional storage proportional to `n*nev`. No global process state is used.
 
+For a **standard symmetric problem** with hard locking enabled and an
+explicit positive `residual_scale`, a conservative internal prefilter
+may reject a Ritz candidate whose residual reconstructed from existing
+basis/operator images is far above tolerance. The full physical residual
+is **always** checked by the application callback before locking or
+reporting convergence. Original-problem residuals reported for partial
+results are also computed normally. The prefilter is disabled for
+generalized transforms and automatic norm scaling because transformed
+Ritz residuals are not a certified original-problem convergence test.
+The extra vector rotations have a cost, so fewer operator callbacks
+do not necessarily imply faster execution for cheap matrix products.
+
 ## Build and validation
 
 ~~~sh
