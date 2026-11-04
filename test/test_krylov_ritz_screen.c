@@ -26,7 +26,7 @@ static int apply_a(void *data, int n, const double *x, double *y)
 }
 
 static int verify(const context *c, const double *v,
-                  double lambda, double reported, double tol)
+                  double lambda, double reported, double tol, double scale)
 {
     double nr=0.0, na=0.0, nx=0.0, den;
     int i;
@@ -37,7 +37,7 @@ static int verify(const context *c, const double *v,
         nx += v[i]*v[i];
     }
     den=sqrt(na)+fabs(lambda)*sqrt(nx);
-    if (4.0*sqrt(nx)>den) den=4.0*sqrt(nx);
+    if (scale*sqrt(nx)>den) den=scale*sqrt(nx);
     if (!isfinite(reported) || !isfinite(lambda) ||
         reported<0.0 || reported>1.0 ||
         sqrt(nr)>den*(8.0*reported+1e-11) ||
@@ -49,7 +49,7 @@ static int verify(const context *c, const double *v,
     return 0;
 }
 
-static int test(int long_run, int api)
+static int test(int long_run, int api, double scale)
 {
     context c;
     lis_krylov_problem p={0};
@@ -74,7 +74,7 @@ static int test(int long_run, int api)
     opt.which="LA";
     opt.random_seed=3;
     opt.hard_locking=1;
-    opt.residual_scale=4.0;
+    opt.residual_scale=scale;
 
     if(api==2) {
         rc=lis_krylov_workspace_create(&p,&opt,&ext,&workspace);
@@ -103,26 +103,32 @@ static int test(int long_run, int api)
     }
     for(i=0;i<st.nreturned;++i) {
         if(verify(&c,vectors+(size_t)i*N,
-                  values[i],residuals[i],opt.tol)) return 1;
+                  values[i],residuals[i],opt.tol,scale)) return 1;
     }
     /* Unoptimized develop: 221/1228 A callbacks for short/long.
      * Guarded prefilter: 131/804 calls. These budgets leave room for
      * compiler variation but still fail on a lost optimization. */
-    if(c.calls_a>(long_run?1000:180)) {
+    if(scale==4.0 && c.calls_a>(long_run?1000:180)) {
         fprintf(stderr,"FAIL callback budget api=%d long=%d A=%d\n",
                 api,long_run,c.calls_a);
         return 1;
     }
-    printf("PASS Ritz prefilter api=%d long=%d A=%d rc=%d nconv=%d\n",
-           api,long_run,c.calls_a,rc,st.nconv);
+    printf("PASS Ritz prefilter api=%d long=%d scale=%g A=%d rc=%d nconv=%d\n",
+           api,long_run,scale,c.calls_a,rc,st.nconv);
     return 0;
 }
 
 int main(void)
 {
-    int api,long_run;
+    int api,long_run,k;
+    const double scales[] = {4.0, 0.25, 25.0};
+    /* Verify both ordinary and widely different fixed positive scales.
+     * The prefilter must use exactly the physical residual denominator
+     * instead of assuming that residual_scale is always 4.0.
+     * Keep callback budgets for the original calibrated fixture only. */
     for(api=0;api<3;++api)
         for(long_run=0;long_run<2;++long_run)
-            if(test(long_run,api)) return 1;
+            for(k=0;k<3;++k)
+                if(test(long_run,api,scales[k])) return 1;
     return 0;
 }
