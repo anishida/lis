@@ -47,7 +47,8 @@ struct krylov_workspace {
     double *rhs;
     double *check;
     int *order;
-    int *locked;
+    int *locked;                  /* convergence flags by Ritz order */
+    signed char *verified;       /* 0 unchecked, +1 finite, -1 pole */
     int nlocked;
     double *locked_basis;
     double *locked_metric;
@@ -694,6 +695,7 @@ static void release_workspace(struct krylov_workspace *s)
     free(s->check);
     free(s->order);
     free(s->locked);
+    free(s->verified);
     free(s->locked_basis);
     if (s->locked_metric != s->locked_basis) free(s->locked_metric);
     free(s->locked_values);
@@ -795,6 +797,9 @@ static int allocate_workspace_buffers(struct krylov_workspace *s,
     ALLOC(s->order, ncv, int);
     ALLOC(s->locked, ncv, int);
     if (hard_locking) {
+        /* Only the first nev Ritz candidates are probed for locking.
+         * Keep cache validity separate from the convergence flags. */
+        ALLOC(s->verified, nev, signed char);
         ALLOC(s->locked_basis, (size_t)nev * n, double);
         if (transform == LIS_KRYLOV_STANDARD)
             s->locked_metric = s->locked_basis;
@@ -983,7 +988,8 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
     m = 1;
 
     for (iter = 0; iter < maxiter; ++iter) {
-        int old_m = m, extensions = 0;
+        int old_m = m, extensions = 0, reuse_verified = 0;
+        double norm_a_before = s.norm_a;
         stats->iterations = iter + 1;
         update_projected(&s, previous, m);
         /* Only active m-by-m projection is needed; physical stride
@@ -1000,6 +1006,7 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
         sort_ritz(m, s.eval, s.order, which);
         if (o->hard_locking && s.nlocked < nev) {
             int captured = 0;
+            memset(s.verified, 0, (size_t)nev * sizeof(*s.verified));
             /* Freeze at most one verified pair per cycle. New directions
              * are deflated against all frozen metric vectors. */
             for (j = 0; j < m && j < nev - s.nlocked; ++j) {
@@ -1011,6 +1018,19 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
                     rc = err == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
                          LIS_KRYLOV_BREAKDOWN;
                     goto done;
+                }
+                /* The current locking probe and the subsequent result
+                 * pass use identical Ritz candidates. Store verified
+                 * physical residuals and vectors in their bounded output
+                 * slots; cache metadata is separate from s.locked.
+                 * j < nev - nlocked ensures slot < nev. */
+                s.verified[j] = err == 0 ? 1 : -1;
+                if (err == 0) {
+                    int slot = s.nlocked + j;
+                    values[slot] = lambda;
+                    residuals[slot] = rel;
+                    memcpy(vectors + (size_t)slot * s.n, s.x,
+                           (size_t)s.n * sizeof(double));
                 }
                 if (err != 0 || rel > tol) continue;
                 err = apply_metric(&s, s.x, s.metric_x);
@@ -1084,6 +1104,10 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
                 ++stats->restarts;
                 continue;
             }
+            /* The original result pass uses the final sampled norm_a.
+             * Fall back if its value changed during the locking probe;
+             * otherwise cached physical residuals remain identical. */
+            reuse_verified = (s.norm_a == norm_a_before);
         }
         stats->nreturned = s.nlocked;
         stats->nconv = s.nlocked;
@@ -1101,8 +1125,20 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
         for (j = 0; j < m && stats->nreturned < nev; ++j) {
             int idx = s.order[j];
             double lambda = NAN, rel = INFINITY;
-            int err = eigenpair_residual(&s, m, idx, s.eval[idx],
+            int from_cache = reuse_verified && j < nev &&
+                             s.verified[j] != 0;
+            int cache_slot = s.nlocked + j;
+            int err;
+            if (from_cache) {
+                err = s.verified[j] < 0 ? 1 : 0;
+                if (err == 0) {
+                    lambda = values[cache_slot];
+                    rel = residuals[cache_slot];
+                }
+            } else {
+                err = eigenpair_residual(&s, m, idx, s.eval[idx],
                                          &lambda, &rel);
+            }
             if (err < 0) {
                 rc = err == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
                      LIS_KRYLOV_BREAKDOWN;
@@ -1116,8 +1152,16 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
             if (rel > stats->max_residual) stats->max_residual = rel;
             values[stats->nreturned] = lambda;
             residuals[stats->nreturned] = rel;
-            memcpy(vectors + (size_t)stats->nreturned * s.n, s.x,
-                   (size_t)s.n * sizeof(double));
+            if (from_cache) {
+                /* Skipped poles can compact the returned vector slots.
+                 * Target <= source; memmove is safe for identical slots. */
+                memmove(vectors + (size_t)stats->nreturned * s.n,
+                        vectors + (size_t)cache_slot * s.n,
+                        (size_t)s.n * sizeof(double));
+            } else {
+                memcpy(vectors + (size_t)stats->nreturned * s.n, s.x,
+                       (size_t)s.n * sizeof(double));
+            }
             ++stats->nreturned;
         }
         if (stats->nconv == nev) {
