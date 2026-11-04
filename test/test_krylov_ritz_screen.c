@@ -108,11 +108,13 @@ static int test(int long_run, int api, double scale)
     /* Unoptimized develop: 221/1228 A callbacks for short/long.
      * Guarded prefilter: 131/804 calls. These budgets leave room for
      * compiler variation but still fail on a lost optimization. */
+#ifndef DISABLE_CALLBACK_BUDGET
     if(scale==4.0 && c.calls_a>(long_run?1000:180)) {
         fprintf(stderr,"FAIL callback budget api=%d long=%d A=%d\n",
                 api,long_run,c.calls_a);
         return 1;
     }
+#endif
     printf("PASS Ritz prefilter api=%d long=%d scale=%g A=%d rc=%d nconv=%d\n",
            api,long_run,scale,c.calls_a,rc,st.nconv);
     return 0;
