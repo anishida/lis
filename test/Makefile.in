@@ -149,7 +149,8 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	test_krylov_sparse$(EXEEXT) test_krylov_regression$(EXEEXT) \
 	test_krylov_lis$(EXEEXT) test_krylov_semidefinite$(EXEEXT) \
 	test_krylov_stress$(EXEEXT) test_krylov_inertia$(EXEEXT) \
-	test_krylov_window$(EXEEXT) test_krylov_openmp$(EXEEXT)
+	test_krylov_window$(EXEEXT) test_krylov_openmp$(EXEEXT) \
+	test_krylov_projected$(EXEEXT)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_3 = test2f test6f 
@@ -412,6 +413,10 @@ am_test_krylov_openmp_OBJECTS = test_krylov_openmp.$(OBJEXT)
 test_krylov_openmp_OBJECTS = $(am_test_krylov_openmp_OBJECTS)
 test_krylov_openmp_LDADD = $(LDADD)
 test_krylov_openmp_DEPENDENCIES =
+am_test_krylov_projected_OBJECTS = test_krylov_projected.$(OBJEXT)
+test_krylov_projected_OBJECTS = $(am_test_krylov_projected_OBJECTS)
+test_krylov_projected_LDADD = $(LDADD)
+test_krylov_projected_DEPENDENCIES =
 am_test_krylov_regression_OBJECTS = test_krylov_regression.$(OBJEXT)
 test_krylov_regression_OBJECTS = $(am_test_krylov_regression_OBJECTS)
 test_krylov_regression_LDADD = $(LDADD)
@@ -854,6 +859,7 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/test_krylov_lis.Po \
 	./$(DEPDIR)/test_krylov_modes.Po \
 	./$(DEPDIR)/test_krylov_openmp.Po \
+	./$(DEPDIR)/test_krylov_projected.Po \
 	./$(DEPDIR)/test_krylov_regression.Po \
 	./$(DEPDIR)/test_krylov_semidefinite.Po \
 	./$(DEPDIR)/test_krylov_sparse.Po \
@@ -978,6 +984,7 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(test7f_SOURCES) $(test8f_SOURCES) \
 	$(test_krylov_inertia_SOURCES) $(test_krylov_lis_SOURCES) \
 	$(test_krylov_modes_SOURCES) $(test_krylov_openmp_SOURCES) \
+	$(test_krylov_projected_SOURCES) \
 	$(test_krylov_regression_SOURCES) \
 	$(test_krylov_semidefinite_SOURCES) \
 	$(test_krylov_sparse_SOURCES) $(test_krylov_stress_SOURCES) \
@@ -1051,7 +1058,7 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(test7_SOURCES) $(am__test7f_SOURCES_DIST) \
 	$(am__test8f_SOURCES_DIST) $(test_krylov_inertia_SOURCES) \
 	$(test_krylov_lis_SOURCES) $(test_krylov_modes_SOURCES) \
-	$(test_krylov_openmp_SOURCES) \
+	$(test_krylov_openmp_SOURCES) $(test_krylov_projected_SOURCES) \
 	$(test_krylov_regression_SOURCES) \
 	$(test_krylov_semidefinite_SOURCES) \
 	$(test_krylov_sparse_SOURCES) $(test_krylov_stress_SOURCES) \
@@ -1690,7 +1697,7 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	test_krylov_regression$(EXEEXT) test_krylov_lis$(EXEEXT) \
 	test_krylov_semidefinite$(EXEEXT) test_krylov_stress$(EXEEXT) \
 	test_krylov_inertia$(EXEEXT) test_krylov_window$(EXEEXT) \
-	test_krylov_openmp$(EXEEXT)
+	test_krylov_openmp$(EXEEXT) test_krylov_projected$(EXEEXT)
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
 testgesolvepair_SOURCES = testgesolvepair.c
@@ -1703,6 +1710,7 @@ test_krylov_stress_SOURCES = test_krylov_stress.c
 test_krylov_inertia_SOURCES = test_krylov_inertia.c
 test_krylov_window_SOURCES = test_krylov_window.c
 test_krylov_openmp_SOURCES = test_krylov_openmp.c
+test_krylov_projected_SOURCES = test_krylov_projected.c
 all: all-am
 
 .SUFFIXES:
@@ -2028,6 +2036,10 @@ test_krylov_modes$(EXEEXT): $(test_krylov_modes_OBJECTS) $(test_krylov_modes_DEP
 test_krylov_openmp$(EXEEXT): $(test_krylov_openmp_OBJECTS) $(test_krylov_openmp_DEPENDENCIES) $(EXTRA_test_krylov_openmp_DEPENDENCIES) 
 	@rm -f test_krylov_openmp$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test_krylov_openmp_OBJECTS) $(test_krylov_openmp_LDADD) $(LIBS)
+
+test_krylov_projected$(EXEEXT): $(test_krylov_projected_OBJECTS) $(test_krylov_projected_DEPENDENCIES) $(EXTRA_test_krylov_projected_DEPENDENCIES) 
+	@rm -f test_krylov_projected$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(test_krylov_projected_OBJECTS) $(test_krylov_projected_LDADD) $(LIBS)
 
 test_krylov_regression$(EXEEXT): $(test_krylov_regression_OBJECTS) $(test_krylov_regression_DEPENDENCIES) $(EXTRA_test_krylov_regression_DEPENDENCIES) 
 	@rm -f test_krylov_regression$(EXEEXT)
@@ -2474,6 +2486,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_lis.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_modes.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_openmp.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_projected.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_regression.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_semidefinite.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_sparse.Po@am__quote@ # am--include-marker
@@ -3475,6 +3488,13 @@ test_krylov_openmp.log: test_krylov_openmp$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test_krylov_projected.log: test_krylov_projected$(EXEEXT)
+	@p='test_krylov_projected$(EXEEXT)'; \
+	b='test_krylov_projected'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -3605,6 +3625,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/test_krylov_lis.Po
 	-rm -f ./$(DEPDIR)/test_krylov_modes.Po
 	-rm -f ./$(DEPDIR)/test_krylov_openmp.Po
+	-rm -f ./$(DEPDIR)/test_krylov_projected.Po
 	-rm -f ./$(DEPDIR)/test_krylov_regression.Po
 	-rm -f ./$(DEPDIR)/test_krylov_semidefinite.Po
 	-rm -f ./$(DEPDIR)/test_krylov_sparse.Po
@@ -3779,6 +3800,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/test_krylov_lis.Po
 	-rm -f ./$(DEPDIR)/test_krylov_modes.Po
 	-rm -f ./$(DEPDIR)/test_krylov_openmp.Po
+	-rm -f ./$(DEPDIR)/test_krylov_projected.Po
 	-rm -f ./$(DEPDIR)/test_krylov_regression.Po
 	-rm -f ./$(DEPDIR)/test_krylov_semidefinite.Po
 	-rm -f ./$(DEPDIR)/test_krylov_sparse.Po
