@@ -412,10 +412,6 @@ test_krylov_api_contract_OBJECTS =  \
 	$(am_test_krylov_api_contract_OBJECTS)
 test_krylov_api_contract_LDADD = $(LDADD)
 test_krylov_api_contract_DEPENDENCIES =
-am_test_krylov_residual_reuse_OBJECTS = test_krylov_residual_reuse.$(OBJEXT)
-test_krylov_residual_reuse_OBJECTS = $(am_test_krylov_residual_reuse_OBJECTS)
-test_krylov_residual_reuse_LDADD = $(LDADD)
-test_krylov_residual_reuse_DEPENDENCIES =
 am_test_krylov_inertia_OBJECTS = test_krylov_inertia.$(OBJEXT)
 test_krylov_inertia_OBJECTS = $(am_test_krylov_inertia_OBJECTS)
 test_krylov_inertia_LDADD = $(LDADD)
@@ -440,6 +436,12 @@ am_test_krylov_regression_OBJECTS = test_krylov_regression.$(OBJEXT)
 test_krylov_regression_OBJECTS = $(am_test_krylov_regression_OBJECTS)
 test_krylov_regression_LDADD = $(LDADD)
 test_krylov_regression_DEPENDENCIES =
+am_test_krylov_residual_reuse_OBJECTS =  \
+	test_krylov_residual_reuse.$(OBJEXT)
+test_krylov_residual_reuse_OBJECTS =  \
+	$(am_test_krylov_residual_reuse_OBJECTS)
+test_krylov_residual_reuse_LDADD = $(LDADD)
+test_krylov_residual_reuse_DEPENDENCIES =
 am_test_krylov_semidefinite_OBJECTS =  \
 	test_krylov_semidefinite.$(OBJEXT)
 test_krylov_semidefinite_OBJECTS =  \
@@ -884,13 +886,13 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/test5.Po ./$(DEPDIR)/test6.Po ./$(DEPDIR)/test7.Po \
 	./$(DEPDIR)/test_krylov_adaptive_ex.Po \
 	./$(DEPDIR)/test_krylov_api_contract.Po \
-	./$(DEPDIR)/test_krylov_residual_reuse.Po \
 	./$(DEPDIR)/test_krylov_inertia.Po \
 	./$(DEPDIR)/test_krylov_lis.Po \
 	./$(DEPDIR)/test_krylov_modes.Po \
 	./$(DEPDIR)/test_krylov_openmp.Po \
 	./$(DEPDIR)/test_krylov_projected.Po \
 	./$(DEPDIR)/test_krylov_regression.Po \
+	./$(DEPDIR)/test_krylov_residual_reuse.Po \
 	./$(DEPDIR)/test_krylov_semidefinite.Po \
 	./$(DEPDIR)/test_krylov_sparse.Po \
 	./$(DEPDIR)/test_krylov_stress.Po \
@@ -1019,8 +1021,8 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(test_krylov_inertia_SOURCES) $(test_krylov_lis_SOURCES) \
 	$(test_krylov_modes_SOURCES) $(test_krylov_openmp_SOURCES) \
 	$(test_krylov_projected_SOURCES) \
-	$(test_krylov_residual_reuse_SOURCES) \
 	$(test_krylov_regression_SOURCES) \
+	$(test_krylov_residual_reuse_SOURCES) \
 	$(test_krylov_semidefinite_SOURCES) \
 	$(test_krylov_sparse_SOURCES) $(test_krylov_stress_SOURCES) \
 	$(test_krylov_unified_SOURCES) $(test_krylov_window_SOURCES) \
@@ -1097,8 +1099,8 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(test_krylov_inertia_SOURCES) $(test_krylov_lis_SOURCES) \
 	$(test_krylov_modes_SOURCES) $(test_krylov_openmp_SOURCES) \
 	$(test_krylov_projected_SOURCES) \
-	$(test_krylov_residual_reuse_SOURCES) \
 	$(test_krylov_regression_SOURCES) \
+	$(test_krylov_residual_reuse_SOURCES) \
 	$(test_krylov_semidefinite_SOURCES) \
 	$(test_krylov_sparse_SOURCES) $(test_krylov_stress_SOURCES) \
 	$(test_krylov_unified_SOURCES) $(test_krylov_window_SOURCES) \
@@ -2098,13 +2100,13 @@ test_krylov_projected$(EXEEXT): $(test_krylov_projected_OBJECTS) $(test_krylov_p
 	@rm -f test_krylov_projected$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test_krylov_projected_OBJECTS) $(test_krylov_projected_LDADD) $(LIBS)
 
-test_krylov_residual_reuse$(EXEEXT): $(test_krylov_residual_reuse_OBJECTS) $(test_krylov_residual_reuse_DEPENDENCIES) $(EXTRA_test_krylov_residual_reuse_DEPENDENCIES) 
-	@rm -f test_krylov_residual_reuse$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_krylov_residual_reuse_OBJECTS) $(test_krylov_residual_reuse_LDADD) $(LIBS)
-
 test_krylov_regression$(EXEEXT): $(test_krylov_regression_OBJECTS) $(test_krylov_regression_DEPENDENCIES) $(EXTRA_test_krylov_regression_DEPENDENCIES) 
 	@rm -f test_krylov_regression$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test_krylov_regression_OBJECTS) $(test_krylov_regression_LDADD) $(LIBS)
+
+test_krylov_residual_reuse$(EXEEXT): $(test_krylov_residual_reuse_OBJECTS) $(test_krylov_residual_reuse_DEPENDENCIES) $(EXTRA_test_krylov_residual_reuse_DEPENDENCIES) 
+	@rm -f test_krylov_residual_reuse$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(test_krylov_residual_reuse_OBJECTS) $(test_krylov_residual_reuse_LDADD) $(LIBS)
 
 test_krylov_semidefinite$(EXEEXT): $(test_krylov_semidefinite_OBJECTS) $(test_krylov_semidefinite_DEPENDENCIES) $(EXTRA_test_krylov_semidefinite_DEPENDENCIES) 
 	@rm -f test_krylov_semidefinite$(EXEEXT)
@@ -2558,8 +2560,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_modes.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_openmp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_projected.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_residual_reuse.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_regression.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_residual_reuse.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_semidefinite.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_sparse.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_stress.Po@am__quote@ # am--include-marker
@@ -3732,13 +3734,13 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/test7.Po
 	-rm -f ./$(DEPDIR)/test_krylov_adaptive_ex.Po
 	-rm -f ./$(DEPDIR)/test_krylov_api_contract.Po
-	-rm -f ./$(DEPDIR)/test_krylov_residual_reuse.Po
 	-rm -f ./$(DEPDIR)/test_krylov_inertia.Po
 	-rm -f ./$(DEPDIR)/test_krylov_lis.Po
 	-rm -f ./$(DEPDIR)/test_krylov_modes.Po
 	-rm -f ./$(DEPDIR)/test_krylov_openmp.Po
 	-rm -f ./$(DEPDIR)/test_krylov_projected.Po
 	-rm -f ./$(DEPDIR)/test_krylov_regression.Po
+	-rm -f ./$(DEPDIR)/test_krylov_residual_reuse.Po
 	-rm -f ./$(DEPDIR)/test_krylov_semidefinite.Po
 	-rm -f ./$(DEPDIR)/test_krylov_sparse.Po
 	-rm -f ./$(DEPDIR)/test_krylov_stress.Po
@@ -3912,13 +3914,13 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/test7.Po
 	-rm -f ./$(DEPDIR)/test_krylov_adaptive_ex.Po
 	-rm -f ./$(DEPDIR)/test_krylov_api_contract.Po
-	-rm -f ./$(DEPDIR)/test_krylov_residual_reuse.Po
 	-rm -f ./$(DEPDIR)/test_krylov_inertia.Po
 	-rm -f ./$(DEPDIR)/test_krylov_lis.Po
 	-rm -f ./$(DEPDIR)/test_krylov_modes.Po
 	-rm -f ./$(DEPDIR)/test_krylov_openmp.Po
 	-rm -f ./$(DEPDIR)/test_krylov_projected.Po
 	-rm -f ./$(DEPDIR)/test_krylov_regression.Po
+	-rm -f ./$(DEPDIR)/test_krylov_residual_reuse.Po
 	-rm -f ./$(DEPDIR)/test_krylov_semidefinite.Po
 	-rm -f ./$(DEPDIR)/test_krylov_sparse.Po
 	-rm -f ./$(DEPDIR)/test_krylov_stress.Po
