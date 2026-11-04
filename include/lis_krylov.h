@@ -135,6 +135,30 @@ int lis_krylov_symmetric(const lis_krylov_problem *problem,
                          const lis_krylov_options *options,
                          double *eigenvalues, double *eigenvectors,
                          double *residuals, lis_krylov_stats *stats);
+
+/* Opt-in block-enriched restarts.
+ * Preserves the one-shot solver's numerical API and matrix-free callbacks.
+ * On restart (including after locking), insert up to restart_block_size
+ * mutually metric-orthogonal seeded search directions rather than one.
+ * The first direction uses the standard deterministic restart rule;
+ * additional independent directions use reproducible seeds. Failed
+ * orthogonalization attempts are skipped, so fewer may be accepted.
+ * All operations remain scalar callbacks: this is NOT a batched
+ * matvec/solve API or a full block Lanczos implementation.
+ *
+ * restart_block_size must be in [1, effective_ncv], where effective_ncv
+ * is options->ncv or min(n, 3*nev+8) when zero. A size of 1 is exactly
+ * equivalent to lis_krylov_symmetric(), including the seed sequence.
+ * This method may improve coverage of clustered/repeated modes but also
+ * increases operator calls and orthogonalization work.
+ */
+int lis_krylov_symmetric_block_restart(const lis_krylov_problem *problem,
+                                       const lis_krylov_options *options,
+                                       int restart_block_size,
+                                       double *eigenvalues,
+                                       double *eigenvectors,
+                                       double *residuals,
+                                       lis_krylov_stats *stats);
 #ifdef __cplusplus
 }
 #endif

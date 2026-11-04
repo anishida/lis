@@ -303,3 +303,43 @@ independent runs, and uncertainty reported. The new threshold can change
 the number of sweeps; any speedup is workload-dependent. No new
 dependencies, user-facing solver options or CI workflow files are
 introduced.
+
+## Optional block-enriched Krylov restarts
+
+A separate, opt-in entry point can add multiple independent search
+directions at every restart instead of just one:
+
+~~~c
+status = lis_krylov_symmetric_block_restart(
+    &problem, &options, 3, eigenvalues, eigenvectors, residuals, &stats);
+~~~
+
+The additional third argument, `restart_block_size`, counts the desired
+independent restart directions. It must be at least 1 and at most the
+effective `ncv`; a value of 1 follows the **exact original** one-seed
+restart sequence. The standard `lis_krylov_symmetric()` API and the LIS
+option-based adapter remain unchanged.
+
+For a size greater than 1, deterministic seed vectors are generated and
+metric-orthogonalized against both retained Ritz vectors and hard-locked
+eigenvectors. Valid directions are appended to the current basis and
+operator images. Near-dependent candidates are rejected, and fewer than
+the requested number may be accepted if the metric is rank-deficient.
+Extra directions may also replenish stagnated search spaces, including
+after locking. The same matrix-free callbacks and inverse-solve
+semantics apply as in the original solver.
+
+**Scope:** this is block-*enriched restart seeding*, not full
+block Lanczos or block Arnoldi. The operator and shifted inverse
+callbacks remain scalar; there is no batched matrix-vector or
+multi-right-hand-side API. Its purpose is to increase independent search
+directions in tightly clustered or repeated spectra, at the expense of
+additional operator calls and orthogonalization. It is not guaranteed
+to accelerate computations or improve every convergence case.
+
+The `test_krylov_block_restart` regression checks analytic clustered
+and repeated generalized spectra with a positive-semidefinite metric
+and massless directions, hard locking, metric orthogonality, original
+residuals and callback failures. It also checks that a size of 1
+reproduces the legacy solver's results and operation counts. This
+addition introduces no new external dependencies or workflow files.
