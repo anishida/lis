@@ -54,6 +54,15 @@ struct krylov_workspace {
     double *locked_residuals;
 };
 
+struct lis_krylov_workspace {
+    struct krylov_workspace buffers;
+    int n;
+    int ncv;
+    int nev;
+    int transform;
+    int hard_locking;
+};
+
 static double compensated_dot(int n, const double *a, const double *b)
 {
 #ifdef _OPENMP
@@ -658,13 +667,114 @@ static void release_workspace(struct krylov_workspace *s)
     free(s->locked_residuals);
 }
 
-int lis_krylov_symmetric(const lis_krylov_problem *p,
+
+/* All allocation is centralized so a one-shot solve and a reusable
+ * workspace use precisely the same storage and alignment assumptions. */
+static int allocate_workspace_buffers(struct krylov_workspace *s,
+                                      int n, int ncv, int nev,
+                                      int transform, int hard_locking)
+{
+    size_t basis_size, dense_size, scratch_size;
+    if (!s || n < 3 || nev < 1 || nev >= n || ncv <= nev ||
+        ncv > n || n > INT_MAX / 8 || ncv > INT_MAX / 8)
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    basis_size = (size_t)n * (size_t)ncv;
+    dense_size = (size_t)ncv * (size_t)ncv;
+    scratch_size = (size_t)n *
+                   (size_t)(nev > ncv / 2 ? nev : ncv / 2);
+    if (basis_size > SIZE_MAX / sizeof(double) ||
+        dense_size > SIZE_MAX / sizeof(double) ||
+        scratch_size > SIZE_MAX / sizeof(double))
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    s->n = n;
+    s->ncv = ncv;
+#define ALLOC(PTR, COUNT, TYPE)                                     \
+    do {                                                            \
+        (PTR) = (TYPE *)calloc((COUNT), sizeof(TYPE));              \
+        if (!(PTR)) goto failed;                                    \
+    } while (0)
+    ALLOC(s->basis, basis_size, double);
+    if (transform == LIS_KRYLOV_STANDARD)
+        s->metric_basis = s->basis;
+    else
+        ALLOC(s->metric_basis, basis_size, double);
+    ALLOC(s->images, basis_size, double);
+    ALLOC(s->projected, dense_size, double);
+    ALLOC(s->dense_work, dense_size, double);
+    ALLOC(s->ritz, dense_size, double);
+    ALLOC(s->eval, ncv, double);
+    ALLOC(s->scratch, scratch_size, double);
+    ALLOC(s->x, n, double);
+    ALLOC(s->metric_x, n, double);
+    ALLOC(s->rhs, n, double);
+    ALLOC(s->check, n, double);
+    ALLOC(s->order, ncv, int);
+    ALLOC(s->locked, ncv, int);
+    if (hard_locking) {
+        ALLOC(s->locked_basis, (size_t)nev * n, double);
+        if (transform == LIS_KRYLOV_STANDARD)
+            s->locked_metric = s->locked_basis;
+        else
+            ALLOC(s->locked_metric, (size_t)nev * n, double);
+        ALLOC(s->locked_values, nev, double);
+        ALLOC(s->locked_residuals, nev, double);
+    }
+#undef ALLOC
+    return LIS_KRYLOV_SUCCESS;
+failed:
+#undef ALLOC
+    release_workspace(s);
+    memset(s, 0, sizeof(*s));
+    return LIS_KRYLOV_NO_MEMORY;
+}
+
+int lis_krylov_workspace_create(const lis_krylov_problem *p,
+                                const lis_krylov_options *o,
+                                lis_krylov_workspace **result)
+{
+    lis_krylov_workspace *w;
+    int ncv, rc;
+    if (result) *result = NULL;
+    if (!p || !o || !result || p->n < 3 ||
+        o->nev < 1 || o->nev >= p->n || o->ncv < 0 ||
+        o->maxiter < 0 || o->hard_locking < 0 || o->hard_locking > 1 ||
+        p->transform < LIS_KRYLOV_STANDARD ||
+        p->transform > LIS_KRYLOV_SHIFT_INVERT_A)
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    ncv = o->ncv ? o->ncv :
+          (o->nev < (p->n - 8) / 3 ? 3 * o->nev + 8 : p->n);
+    if (ncv <= o->nev || ncv > p->n || p->n > INT_MAX / 8 ||
+        ncv > INT_MAX / 8)
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    w = (lis_krylov_workspace *)calloc(1, sizeof(*w));
+    if (!w) return LIS_KRYLOV_NO_MEMORY;
+    rc = allocate_workspace_buffers(&w->buffers, p->n, ncv, o->nev,
+                                    p->transform, o->hard_locking);
+    if (rc) { free(w); return rc; }
+    w->n = p->n;
+    w->ncv = ncv;
+    w->nev = o->nev;
+    w->transform = p->transform;
+    w->hard_locking = o->hard_locking;
+    *result = w;
+    return LIS_KRYLOV_SUCCESS;
+}
+
+void lis_krylov_workspace_destroy(lis_krylov_workspace *workspace)
+{
+    if (!workspace) return;
+    release_workspace(&workspace->buffers);
+    free(workspace);
+}
+
+static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
+                         const lis_krylov_problem *p,
                          const lis_krylov_options *o,
                          double *values, double *vectors, double *residuals,
                          lis_krylov_stats *stats)
 {
     struct krylov_workspace s = {0};
-    size_t basis_size, dense_size, scratch_size;
+    size_t dense_size;
     int m = 0, previous = 0, iter, ncv, nev, maxiter, rc;
     int i, j;
     double tol;
@@ -701,56 +811,25 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
           (nev < (p->n - 8) / 3 ? 3 * nev + 8 : p->n);
     if (ncv <= nev || ncv > p->n || p->n > INT_MAX / 8 ||
         ncv > INT_MAX / 8) return LIS_KRYLOV_BAD_ARGUMENT;
-    basis_size = (size_t)p->n * (size_t)ncv;
     dense_size = (size_t)ncv * (size_t)ncv;
-    scratch_size = (size_t)p->n * (size_t)
-                   (nev > ncv / 2 ? nev : ncv / 2);
-    if (basis_size > SIZE_MAX / sizeof(double) ||
-        dense_size > SIZE_MAX / sizeof(double) ||
-        scratch_size > SIZE_MAX / sizeof(double))
-        return LIS_KRYLOV_BAD_ARGUMENT;
-
-    s.n = p->n;
-    s.ncv = ncv;
+    if (reuse) {
+        if (reuse->n != p->n || reuse->ncv != ncv ||
+            reuse->nev != nev || reuse->transform != p->transform ||
+            reuse->hard_locking != o->hard_locking)
+            return LIS_KRYLOV_BAD_ARGUMENT;
+        s = reuse->buffers;
+    } else {
+        rc = allocate_workspace_buffers(&s, p->n, ncv, nev,
+                                        p->transform, o->hard_locking);
+        if (rc != LIS_KRYLOV_SUCCESS) return rc;
+    }
     s.problem = p;
     s.options = o;
     s.stats = stats;
     s.norm_a = o->residual_scale;
+    s.nlocked = 0;
     seed = o->random_seed ? o->random_seed : 1u;
     rc = LIS_KRYLOV_NO_CONVERGENCE;
-#define ALLOC(PTR, COUNT, TYPE)                                      \
-    do {                                                             \
-        (PTR) = (TYPE *)calloc((COUNT), sizeof(TYPE));               \
-        if (!(PTR)) { rc = LIS_KRYLOV_NO_MEMORY; goto done; }        \
-    } while (0)
-    ALLOC(s.basis, basis_size, double);
-    if (p->transform == LIS_KRYLOV_STANDARD) {
-        s.metric_basis = s.basis;
-    } else {
-        ALLOC(s.metric_basis, basis_size, double);
-    }
-    ALLOC(s.images, basis_size, double);
-    ALLOC(s.projected, dense_size, double);
-    ALLOC(s.dense_work, dense_size, double);
-    ALLOC(s.ritz, dense_size, double);
-    ALLOC(s.eval, ncv, double);
-    ALLOC(s.scratch, scratch_size, double);
-    ALLOC(s.x, s.n, double);
-    ALLOC(s.metric_x, s.n, double);
-    ALLOC(s.rhs, s.n, double);
-    ALLOC(s.check, s.n, double);
-    ALLOC(s.order, ncv, int);
-    ALLOC(s.locked, ncv, int);
-    if (o->hard_locking) {
-        ALLOC(s.locked_basis, (size_t)nev * s.n, double);
-        if (p->transform == LIS_KRYLOV_STANDARD)
-            s.locked_metric = s.locked_basis;
-        else
-            ALLOC(s.locked_metric, (size_t)nev * s.n, double);
-        ALLOC(s.locked_values, nev, double);
-        ALLOC(s.locked_residuals, nev, double);
-    }
-#undef ALLOC
 
     if (o->initial_vector) {
         memcpy(s.x, o->initial_vector, (size_t)s.n * sizeof(double));
@@ -1044,8 +1123,28 @@ done:
         stats->nreturned = 0;
         stats->nconv = 0;
     }
-    release_workspace(&s);
+    if (!reuse) release_workspace(&s);
     return rc;
+}
+
+int lis_krylov_symmetric(const lis_krylov_problem *p,
+                         const lis_krylov_options *o,
+                         double *values, double *vectors, double *residuals,
+                         lis_krylov_stats *stats)
+{
+    return lis_krylov_symmetric_core(NULL, p, o, values, vectors,
+                                     residuals, stats);
+}
+
+int lis_krylov_symmetric_reuse(lis_krylov_workspace *workspace,
+                               const lis_krylov_problem *p,
+                               const lis_krylov_options *o,
+                               double *values, double *vectors,
+                               double *residuals, lis_krylov_stats *stats)
+{
+    if (!workspace) return LIS_KRYLOV_BAD_ARGUMENT;
+    return lis_krylov_symmetric_core(workspace, p, o, values, vectors,
+                                     residuals, stats);
 }
 
 /* For SPD B, Sylvester's inertia law converts symmetric indefinite

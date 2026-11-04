@@ -109,6 +109,28 @@ int lis_krylov_solve_interval(const lis_krylov_problem *problem,
 
 void lis_krylov_options_default(lis_krylov_options *options);
 
+/* Opaque reusable allocation for repeated solves of equally sized problems.
+ * Matrix callbacks, context, and shift are supplied afresh at every solve.
+ * The dimension, transform, nev, ncv and hard-locking setting must match
+ * those used to create the workspace. Not thread-safe for concurrent solves.
+ * This interface does not retain matrix factorizations: the application
+ * remains responsible for preparing the inverse callback for each shift.
+ * A failed solve does not invalidate the workspace, which can be reused.
+ */
+typedef struct lis_krylov_workspace lis_krylov_workspace;
+
+int lis_krylov_workspace_create(const lis_krylov_problem *problem,
+                                const lis_krylov_options *options,
+                                lis_krylov_workspace **workspace);
+void lis_krylov_workspace_destroy(lis_krylov_workspace *workspace);
+
+int lis_krylov_symmetric_reuse(lis_krylov_workspace *workspace,
+                               const lis_krylov_problem *problem,
+                               const lis_krylov_options *options,
+                               double *eigenvalues, double *eigenvectors,
+                               double *residuals, lis_krylov_stats *stats);
+
+
 /* Return the leading nreturned approximate eigenpairs, ordered by 'which'.
  * eigenvalues[nev], eigenvectors[n*nev] (column-major), residuals[nev]
  * are caller-owned. At NO_CONVERGENCE the approximations remain available
