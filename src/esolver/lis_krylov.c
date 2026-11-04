@@ -30,6 +30,7 @@ struct krylov_workspace {
     const lis_krylov_problem *problem;
     const lis_krylov_options *options;
     lis_krylov_stats *stats;
+    lis_krylov_ext_stats *ext_stats;
     int n;
     int ncv;
     double norm_a;
@@ -52,6 +53,16 @@ struct krylov_workspace {
     double *locked_metric;
     double *locked_values;
     double *locked_residuals;
+};
+
+struct lis_krylov_workspace {
+    struct krylov_workspace buffers;
+    int n;
+    int ncv;             /* initial active subspace dimension */
+    int capacity_ncv;    /* reserved basis/projection capacity */
+    int nev;
+    int transform;
+    int hard_locking;
 };
 
 static double compensated_dot(int n, const double *a, const double *b)
@@ -383,8 +394,10 @@ static int append_vector(struct krylov_workspace *s,
     if (s->metric_basis != s->basis)
         memcpy(s->metric_basis + (size_t)count * s->n, s->metric_x,
                (size_t)s->n * sizeof(double));
-    return apply_operator(s, x, s->metric_x,
-                          s->images + (size_t)count * s->n);
+    err = apply_operator(s, x, s->metric_x,
+                         s->images + (size_t)count * s->n);
+    if (!err && s->ext_stats) ++s->ext_stats->basis_vectors;
+    return err;
 }
 
 static void seed_vector(int n, double *x, unsigned seed)
@@ -397,6 +410,35 @@ static void seed_vector(int n, double *x, unsigned seed)
         state ^= state << 5;
         x[i] = (double)(state & 0xffffu) / 32768.0 - 1.0;
     }
+}
+
+/* Extra independent directions are seeded only when explicitly
+ * requested. The original first seed stays unchanged. */
+static int append_extra_seeds(struct krylov_workspace *s, int *count,
+                              int capacity, int additional,
+                              unsigned start_seed)
+{
+    int accepted = 0, extra, trial;
+    for (extra = 0; extra < additional && *count < capacity; ++extra) {
+        int found = 0;
+        for (trial = 0; trial < 12; ++trial) {
+            int rc;
+            seed_vector(s->n, s->x, start_seed +
+                        (unsigned)extra * 41u + (unsigned)trial);
+            if (s->ext_stats) ++s->ext_stats->extra_seed_attempts;
+            rc = append_range_seed(s, *count, s->x);
+            if (rc < 0) return rc;
+            if (rc == 0) {
+                ++*count;
+                ++accepted;
+                if (s->ext_stats) ++s->ext_stats->extra_seed_accepted;
+                found = 1;
+                break;
+            }
+        }
+        if (!found) break; /* e.g. rank-deficient metric */
+    }
+    return accepted;
 }
 
 /* Dense cyclic Jacobi eigendecomposition of symmetric projected matrix.
@@ -658,20 +700,184 @@ static void release_workspace(struct krylov_workspace *s)
     free(s->locked_residuals);
 }
 
-int lis_krylov_symmetric(const lis_krylov_problem *p,
+
+/* All allocation is centralized so a one-shot solve and a reusable
+ * workspace use precisely the same storage and alignment assumptions. */
+void lis_krylov_ext_options_default(lis_krylov_ext_options *ext)
+{
+    if (!ext) return;
+    memset(ext, 0, sizeof(*ext));
+    ext->struct_size = (unsigned int)sizeof(*ext);
+    ext->version = LIS_KRYLOV_EXT_VERSION;
+    ext->restart_directions = 1;
+}
+
+void lis_krylov_ext_stats_default(lis_krylov_ext_stats *extra)
+{
+    if (!extra) return;
+    memset(extra, 0, sizeof(*extra));
+    extra->struct_size = (unsigned int)sizeof(*extra);
+    extra->version = LIS_KRYLOV_EXT_VERSION;
+}
+
+/* All extended controls are isolated from the pre-existing public
+ * option and stats layouts. The new API has an explicit version/size
+ * contract; unknown layouts fail rather than silently reading fields. */
+static int validate_extension(const lis_krylov_ext_options *ext,
+                              int n, int initial_ncv,
+                              int *storage_ncv, int *restart_directions)
+{
+    *storage_ncv = initial_ncv;
+    *restart_directions = 1;
+    if (!ext) return LIS_KRYLOV_SUCCESS;
+    if (ext->version != LIS_KRYLOV_EXT_VERSION ||
+        ext->struct_size != (unsigned int)sizeof(*ext) ||
+        (ext->adaptive_ncv != 0 && ext->adaptive_ncv != 1) ||
+        ext->ncv_max < 0 ||
+        (!ext->adaptive_ncv && ext->ncv_max != 0) ||
+        ext->restart_directions < 1 ||
+        ext->restart_directions > initial_ncv)
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    *restart_directions = ext->restart_directions;
+    if (ext->adaptive_ncv) {
+        *storage_ncv = ext->ncv_max ? ext->ncv_max :
+                      (initial_ncv < n / 2 ? 2 * initial_ncv : n);
+        if (*storage_ncv < initial_ncv || *storage_ncv > n)
+            return LIS_KRYLOV_BAD_ARGUMENT;
+    }
+    return LIS_KRYLOV_SUCCESS;
+}
+
+static int allocate_workspace_buffers(struct krylov_workspace *s,
+                                      int n, int ncv, int nev,
+                                      int transform, int hard_locking)
+{
+    size_t basis_size, dense_size, scratch_size;
+    size_t max_doubles, scratch_columns;
+    if (!s || n < 3 || nev < 1 || nev >= n || ncv <= nev ||
+        ncv > n || n > INT_MAX / 8 || ncv > INT_MAX / 8)
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    /* Bound each factor BEFORE multiplication. Checking a size_t
+     * product after it wraps cannot detect overflow on 32-bit targets.
+     * The locked basis uses nev <= ncv columns, so the basis bound
+     * below also covers its (nev * n) allocation. */
+    max_doubles = SIZE_MAX / sizeof(double);
+    scratch_columns = (size_t)(nev > ncv / 2 ? nev : ncv / 2);
+    if ((size_t)n > max_doubles / (size_t)ncv ||
+        (size_t)ncv > max_doubles / (size_t)ncv ||
+        (size_t)n > max_doubles / scratch_columns)
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    basis_size = (size_t)n * (size_t)ncv;
+    dense_size = (size_t)ncv * (size_t)ncv;
+    scratch_size = (size_t)n * scratch_columns;
+    s->n = n;
+    s->ncv = ncv;
+#define ALLOC(PTR, COUNT, TYPE)                                     \
+    do {                                                            \
+        (PTR) = (TYPE *)calloc((COUNT), sizeof(TYPE));              \
+        if (!(PTR)) goto failed;                                    \
+    } while (0)
+    ALLOC(s->basis, basis_size, double);
+    if (transform == LIS_KRYLOV_STANDARD)
+        s->metric_basis = s->basis;
+    else
+        ALLOC(s->metric_basis, basis_size, double);
+    ALLOC(s->images, basis_size, double);
+    ALLOC(s->projected, dense_size, double);
+    ALLOC(s->dense_work, dense_size, double);
+    ALLOC(s->ritz, dense_size, double);
+    ALLOC(s->eval, ncv, double);
+    ALLOC(s->scratch, scratch_size, double);
+    ALLOC(s->x, n, double);
+    ALLOC(s->metric_x, n, double);
+    ALLOC(s->rhs, n, double);
+    ALLOC(s->check, n, double);
+    ALLOC(s->order, ncv, int);
+    ALLOC(s->locked, ncv, int);
+    if (hard_locking) {
+        ALLOC(s->locked_basis, (size_t)nev * n, double);
+        if (transform == LIS_KRYLOV_STANDARD)
+            s->locked_metric = s->locked_basis;
+        else
+            ALLOC(s->locked_metric, (size_t)nev * n, double);
+        ALLOC(s->locked_values, nev, double);
+        ALLOC(s->locked_residuals, nev, double);
+    }
+#undef ALLOC
+    return LIS_KRYLOV_SUCCESS;
+failed:
+#undef ALLOC
+    release_workspace(s);
+    memset(s, 0, sizeof(*s));
+    return LIS_KRYLOV_NO_MEMORY;
+}
+
+int lis_krylov_workspace_create(const lis_krylov_problem *p,
+                                const lis_krylov_options *o,
+                                const lis_krylov_ext_options *ext,
+                                lis_krylov_workspace **result)
+{
+    lis_krylov_workspace *w;
+    int ncv, capacity, directions, rc;
+    if (result) *result = NULL;
+    if (!p || !o || !result || p->n < 3 ||
+        o->nev < 1 || o->nev >= p->n || o->ncv < 0 ||
+        o->maxiter < 0 || (o->hard_locking != 0 && o->hard_locking != 1) ||
+        p->transform < LIS_KRYLOV_STANDARD ||
+        p->transform > LIS_KRYLOV_SHIFT_INVERT_A)
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    ncv = o->ncv ? o->ncv :
+          (o->nev < (p->n - 8) / 3 ? 3 * o->nev + 8 : p->n);
+    if (ncv <= o->nev || ncv > p->n || p->n > INT_MAX / 8 ||
+        ncv > INT_MAX / 8)
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    rc = validate_extension(ext, p->n, ncv, &capacity, &directions);
+    if (rc != LIS_KRYLOV_SUCCESS) return rc;
+    w = (lis_krylov_workspace *)calloc(1, sizeof(*w));
+    if (!w) return LIS_KRYLOV_NO_MEMORY;
+    rc = allocate_workspace_buffers(&w->buffers, p->n, capacity,
+                                    o->nev, p->transform, o->hard_locking);
+    if (rc) { free(w); return rc; }
+    w->n = p->n;
+    w->ncv = ncv;
+    w->capacity_ncv = capacity;
+    w->nev = o->nev;
+    w->transform = p->transform;
+    w->hard_locking = o->hard_locking;
+    *result = w;
+    return LIS_KRYLOV_SUCCESS;
+}
+
+void lis_krylov_workspace_destroy(lis_krylov_workspace *workspace)
+{
+    if (!workspace) return;
+    release_workspace(&workspace->buffers);
+    free(workspace);
+}
+
+static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
+                         const lis_krylov_problem *p,
                          const lis_krylov_options *o,
+                         const lis_krylov_ext_options *ext,
                          double *values, double *vectors, double *residuals,
-                         lis_krylov_stats *stats)
+                         lis_krylov_stats *stats,
+                         lis_krylov_ext_stats *ext_stats)
 {
     struct krylov_workspace s = {0};
-    size_t basis_size, dense_size, scratch_size;
-    int m = 0, previous = 0, iter, ncv, nev, maxiter, rc;
+    int m = 0, previous = 0, iter, ncv, capacity, nev, maxiter, rc;
+    int restart_directions = 1, last_nconv = 0, stalled_restarts = 0;
     int i, j;
     double tol;
     unsigned seed;
     const char *which;
 
     if (stats) memset(stats, 0, sizeof(*stats));
+    if (ext_stats) {
+        if (ext_stats->struct_size != (unsigned int)sizeof(*ext_stats) ||
+            ext_stats->version != LIS_KRYLOV_EXT_VERSION)
+            return LIS_KRYLOV_BAD_ARGUMENT;
+        lis_krylov_ext_stats_default(ext_stats);
+    }
     if (!p || !o || !values || !vectors || !residuals || !stats ||
         p->n < 3 || o->nev < 1 || o->nev >= p->n || !p->apply_a ||
         p->transform < LIS_KRYLOV_STANDARD ||
@@ -701,56 +907,30 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
           (nev < (p->n - 8) / 3 ? 3 * nev + 8 : p->n);
     if (ncv <= nev || ncv > p->n || p->n > INT_MAX / 8 ||
         ncv > INT_MAX / 8) return LIS_KRYLOV_BAD_ARGUMENT;
-    basis_size = (size_t)p->n * (size_t)ncv;
-    dense_size = (size_t)ncv * (size_t)ncv;
-    scratch_size = (size_t)p->n * (size_t)
-                   (nev > ncv / 2 ? nev : ncv / 2);
-    if (basis_size > SIZE_MAX / sizeof(double) ||
-        dense_size > SIZE_MAX / sizeof(double) ||
-        scratch_size > SIZE_MAX / sizeof(double))
-        return LIS_KRYLOV_BAD_ARGUMENT;
-
-    s.n = p->n;
-    s.ncv = ncv;
+    rc = validate_extension(ext, p->n, ncv, &capacity, &restart_directions);
+    if (rc != LIS_KRYLOV_SUCCESS) return rc;
+    if (reuse) {
+        if (reuse->n != p->n || reuse->ncv != ncv ||
+            reuse->capacity_ncv != capacity ||
+            reuse->nev != nev || reuse->transform != p->transform ||
+            reuse->hard_locking != o->hard_locking)
+            return LIS_KRYLOV_BAD_ARGUMENT;
+        s = reuse->buffers;
+    } else {
+        rc = allocate_workspace_buffers(&s, p->n, capacity, nev,
+                                        p->transform, o->hard_locking);
+        if (rc != LIS_KRYLOV_SUCCESS) return rc;
+    }
+    if (ext_stats)
+        ext_stats->ncv_initial = ext_stats->ncv_final = ncv;
     s.problem = p;
     s.options = o;
     s.stats = stats;
+    s.ext_stats = ext_stats;
     s.norm_a = o->residual_scale;
+    s.nlocked = 0;
     seed = o->random_seed ? o->random_seed : 1u;
     rc = LIS_KRYLOV_NO_CONVERGENCE;
-#define ALLOC(PTR, COUNT, TYPE)                                      \
-    do {                                                             \
-        (PTR) = (TYPE *)calloc((COUNT), sizeof(TYPE));               \
-        if (!(PTR)) { rc = LIS_KRYLOV_NO_MEMORY; goto done; }        \
-    } while (0)
-    ALLOC(s.basis, basis_size, double);
-    if (p->transform == LIS_KRYLOV_STANDARD) {
-        s.metric_basis = s.basis;
-    } else {
-        ALLOC(s.metric_basis, basis_size, double);
-    }
-    ALLOC(s.images, basis_size, double);
-    ALLOC(s.projected, dense_size, double);
-    ALLOC(s.dense_work, dense_size, double);
-    ALLOC(s.ritz, dense_size, double);
-    ALLOC(s.eval, ncv, double);
-    ALLOC(s.scratch, scratch_size, double);
-    ALLOC(s.x, s.n, double);
-    ALLOC(s.metric_x, s.n, double);
-    ALLOC(s.rhs, s.n, double);
-    ALLOC(s.check, s.n, double);
-    ALLOC(s.order, ncv, int);
-    ALLOC(s.locked, ncv, int);
-    if (o->hard_locking) {
-        ALLOC(s.locked_basis, (size_t)nev * s.n, double);
-        if (p->transform == LIS_KRYLOV_STANDARD)
-            s.locked_metric = s.locked_basis;
-        else
-            ALLOC(s.locked_metric, (size_t)nev * s.n, double);
-        ALLOC(s.locked_values, nev, double);
-        ALLOC(s.locked_residuals, nev, double);
-    }
-#undef ALLOC
 
     if (o->initial_vector) {
         memcpy(s.x, o->initial_vector, (size_t)s.n * sizeof(double));
@@ -806,8 +986,14 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
         int old_m = m, extensions = 0;
         stats->iterations = iter + 1;
         update_projected(&s, previous, m);
-        memcpy(s.dense_work, s.projected, dense_size * sizeof(double));
-        if (diagonalize(m, s.dense_work, s.ritz, s.eval, ncv)) {
+        /* Only active m-by-m projection is needed; physical stride
+         * remains the reserved workspace capacity. */
+        for (i = 0; i < m; ++i)
+            memcpy(s.dense_work + (size_t)i * s.ncv,
+                   s.projected + (size_t)i * s.ncv,
+                   (size_t)m * sizeof(double));
+        if (ext_stats) ++ext_stats->projected_solves;
+        if (diagonalize(m, s.dense_work, s.ritz, s.eval, s.ncv)) {
             rc = LIS_KRYLOV_BREAKDOWN;
             goto done;
         }
@@ -864,6 +1050,8 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
                 /* Purge the active Ritz subspace and restart with a new
                  * direction orthogonal to the permanently locked set. */
                 m = previous = 0;
+                last_nconv = stats->nconv;
+                stalled_restarts = 0;
                 for (trial = 0; trial < 32; ++trial) {
                     int attempt;
                     seed_vector(s.n, s.x,
@@ -881,6 +1069,17 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
                 if (!ok) {
                     rc = LIS_KRYLOV_NO_CONVERGENCE;
                     goto done;
+                }
+                if (restart_directions > 1) {
+                    int added = append_extra_seeds(
+                        &s, &m, ncv, restart_directions - 1,
+                        seed + (unsigned)iter * 577u + 12001u);
+                    if (added < 0) {
+                        rc = added == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
+                             added == -3 ? LIS_KRYLOV_INEXACT_SOLVE :
+                             LIS_KRYLOV_BREAKDOWN;
+                        goto done;
+                    }
                 }
                 ++stats->restarts;
                 continue;
@@ -926,31 +1125,63 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
             goto done;
         }
         if (m >= ncv) {
-            int keep = m / 2;
-            if (keep < nev) keep = nev;
-            if (keep >= m) keep = m - 1;
-            restart_basis(&s, m, keep);
-            ++stats->restarts;
-            m = keep;
-            previous = keep;
-            /* A degeneracy cannot be resolved by residual expansion alone
-             * when the retained subspace already approximates an invariant
-             * eigenspace. Inject a reproducible independent search direction
-             * after restarting to discover other vectors of a cluster. */
-            for (i = 0; i < 4 && m < ncv; ++i) {
-                int result;
-                seed_vector(s.n, s.x,
-                            seed + (unsigned)iter * 997u + (unsigned)i + 17u);
-                result = append_range_seed(&s, m, s.x);
-                if (result < 0) {
-                    rc = result == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
-                         result == -3 ? LIS_KRYLOV_INEXACT_SOLVE :
-                         LIS_KRYLOV_BREAKDOWN;
-                    goto done;
+            /* Grow only after repeated full-subspace restarts without
+             * another converged pair. No Ritz basis is discarded on
+             * growth, and the reserved buffers are already large enough. */
+            if (ext && ext->adaptive_ncv && ncv < capacity) {
+                if (stats->nconv > last_nconv)
+                    stalled_restarts = 0;
+                else
+                    ++stalled_restarts;
+                last_nconv = stats->nconv;
+                if (stalled_restarts >= 2) {
+                    int increment = ncv / 2;
+                    int remaining = capacity - ncv;
+                    if (increment < 2) increment = 2;
+                    if (increment > remaining) increment = remaining;
+                    ncv += increment;
+                    if (ext_stats) {
+                        ext_stats->ncv_final = ncv;
+                        ++ext_stats->ncv_growths;
+                    }
+                    stalled_restarts = 0;
                 }
-                if (result == 0) { ++m; break; }
             }
-            continue;
+            if (m >= ncv) {
+                int keep = m / 2;
+                if (keep < nev) keep = nev;
+                if (keep >= m) keep = m - 1;
+                restart_basis(&s, m, keep);
+                ++stats->restarts;
+                m = keep;
+                previous = keep;
+                /* Original first restart direction is unmodified. */
+                for (i = 0; i < 4 && m < ncv; ++i) {
+                    int result;
+                    seed_vector(s.n, s.x,
+                                seed + (unsigned)iter * 997u + (unsigned)i + 17u);
+                    result = append_range_seed(&s, m, s.x);
+                    if (result < 0) {
+                        rc = result == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
+                             result == -3 ? LIS_KRYLOV_INEXACT_SOLVE :
+                             LIS_KRYLOV_BREAKDOWN;
+                        goto done;
+                    }
+                    if (result == 0) { ++m; break; }
+                }
+                if (restart_directions > 1) {
+                    int added = append_extra_seeds(
+                        &s, &m, ncv, restart_directions - 1,
+                        seed + (unsigned)iter * 997u + 13001u);
+                    if (added < 0) {
+                        rc = added == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
+                             added == -3 ? LIS_KRYLOV_INEXACT_SOLVE :
+                             LIS_KRYLOV_BREAKDOWN;
+                        goto done;
+                    }
+                }
+                continue;
+            }
         }
 
         for (j = 0; j < old_m && j < nev - s.nlocked && m < ncv; ++j) {
@@ -991,6 +1222,18 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
                     goto done;
                 }
                 if (i == 0) { ++m; ++extensions; }
+            }
+            if (extensions && restart_directions > 1) {
+                int added = append_extra_seeds(
+                    &s, &m, ncv, restart_directions - 1,
+                    seed + (unsigned)iter * 7u + 14001u);
+                if (added < 0) {
+                    rc = added == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
+                         added == -3 ? LIS_KRYLOV_INEXACT_SOLVE :
+                         LIS_KRYLOV_BREAKDOWN;
+                    goto done;
+                }
+                extensions += added;
             }
             if (!extensions) {
                 /* A semidefinite metric can have rank smaller than nev.
@@ -1044,8 +1287,29 @@ done:
         stats->nreturned = 0;
         stats->nconv = 0;
     }
-    release_workspace(&s);
+    if (!reuse) release_workspace(&s);
     return rc;
+}
+
+int lis_krylov_symmetric(const lis_krylov_problem *p,
+                         const lis_krylov_options *o,
+                         double *values, double *vectors, double *residuals,
+                         lis_krylov_stats *stats)
+{
+    return lis_krylov_symmetric_core(NULL, p, o, NULL, values, vectors,
+                                     residuals, stats, NULL);
+}
+
+int lis_krylov_symmetric_ex(const lis_krylov_problem *p,
+                            const lis_krylov_options *o,
+                            const lis_krylov_ext_options *ext,
+                            lis_krylov_workspace *workspace,
+                            double *values, double *vectors,
+                            double *residuals, lis_krylov_stats *stats,
+                            lis_krylov_ext_stats *ext_stats)
+{
+    return lis_krylov_symmetric_core(workspace, p, o, ext, values,
+                                     vectors, residuals, stats, ext_stats);
 }
 
 /* For SPD B, Sylvester's inertia law converts symmetric indefinite

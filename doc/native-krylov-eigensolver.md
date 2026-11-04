@@ -303,3 +303,17 @@ independent runs, and uncertainty reported. The new threshold can change
 the number of sweeps; any speedup is workload-dependent. No new
 dependencies, user-facing solver options or CI workflow files are
 introduced.
+
+## Optional extended Krylov API
+
+[The native Krylov extension guide](native-krylov-extensions.md)
+documents adaptive active subspace sizing, reusable allocation,
+optional multi-direction restart seeding, validation rules, and
+extended diagnostics.
+
+The original `lis_krylov_symmetric()` and existing public structures
+remain unchanged. Optional controls use versioned extension structures
+and a single `lis_krylov_symmetric_ex()` entry point. The workspace
+retains allocation only, not external shifted factorizations. The
+caller must prepare the inverse callback for each spectral shift.
+Extended restart seeding is not a full block Krylov algorithm.
