@@ -308,6 +308,7 @@ Subspace\cite{rutishauser} \\
 Lanczos\cite{lanczos2} \\
 Arnoldi\cite{arnoldi} \\
 FEAST\cite{polizzi} \\
+Krylov \\
 \hline         
 \end{tabular}
 \hfil}
@@ -2113,7 +2114,13 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
  \verb=-feast_points [8]= & 積分経路上のサンプリング点数 \\
                                    &                         &
  \verb=-feast_solver [gmres]= & 内部線型方程式解法 \\
-\hline         
+ Native Krylov                      & \verb=-e {krylov|18}= &
+ \verb=-ss [1]= & 結果ベクトルの容量 \\
+                                    &                        &
+ \verb=-nev [1]= & 必要な固有対 \\
+                                    &                        &
+ \verb=-kncv [0]= & クリロフ部分空間の大きさ \\
+ \hline         
 \end{tabular}
 \end{center}
 \end{minipage}
@@ -2508,6 +2515,56 @@ A =
 \[\mathrm{diag}(\alpha A + \beta B) = \alpha \cdot \mathrm{diag}(A) + \beta \cdot \mathrm{diag}(B)\]
 
 \subsubsection{行列演算子を用いたシフト付き一般化固有値ソルバ}シフト付き一般化固有値問題 $(A - \sigma B)x = \lambda Bx$ に対して、一般化べき乗法（GPI）、一般化逆べき乗法（GII）、および一般化共役残差法（GCR）ソルバは、\texttt{LIS\_MATRIX\_OPERATOR} を利用して $A - \sigma B$ に対する一時的な演算子を動的に生成する。これは元の行列が元の状態のまま残ることを保証し、ユーザ定義のカスタム行列（\texttt{LIS\_MATRIX\_USER}）に対する完全なサポートを可能にする。シフト付き \texttt{LIS\_MATRIX\_USER} は、Lanczos 法のような他の手法に対しては依然として非対応のままである。
+
+
+\subsubsection{ネイティブリスタート付きクリロフソルバ} \label{subsubsec:native-krylov}
+ネイティブ対称リスタート付きクリロフソルバは、\verb|-e krylov|（数値識別子 18）で選択される。本ソルバは、実対称標準固有値問題 $Ax=\lambda x$ および一般化固有値問題 $Ax=\lambda Bx$ の複数の固有対を、レイリー・リッツ射影、シック・リスタート、計量再直交化、および明示的な残差検証を用いて計算する。これは追加のソルバであり、既存の部分空間反復法、ランチョス法、アーノルディ法、FEAST法を置き換えるものではない。その特徴的な機能は、独立したコールバックAPI、オプションで利用可能な半正定値計量およびハードロッキング、そして慣性に基づく区間ヘルパである。他ソルバに対する性能上の優位性は主張されていない。
+
+\noindent
+{\bf 標準 Lis 固有値解法インタフェース}
+
+本手法は、\(\texttt{LIS\_MATRIX\_USER}\) を含むローカル行列を対象として、\verb|lis_esolve| および \verb|lis_gesolve| を通じて利用可能である。以下のC言語の例では、アプリケーション側で $A$、$B$、および初期ベクトル $x$ が準備されているものとする。
+\begin{verbatim}
+LIS_ESOLVER esolver;
+LIS_SCALAR lambda0;
+LIS_INT status;
+lis_esolver_create(&esolver);
+lis_esolver_set_option(
+"-e krylov -ss 4 -nev 4 -kncv 20 "
+"-kwhich LM -etol 1e-9 -emaxiter 500",
+esolver);
+status = lis_gesolve(A, B, x, &lambda0, esolver);
+/* Check status and residuals; then destroy esolver. */ \end{verbatim}
+標準問題の場合は、代わりに \verb|lis_esolve(A,x,&lambda0,esolver)| を使用する。最も関連性の高いオプションは以下の通りである。
+\begin{itemize}
+\item \verb|-ss n| は結果ベクトルの容量を指定し、\verb|-nev k| は要求する固有対の数を指定する（\(1\leq k\leq n_{\rm ss}\)、 $k<n$）。
+\item \verb|-kncv n| は内部クリロフ部分空間のサイズを選択する。これは $k$ を超える必要があり、ゼロを指定した場合は \(\min(n,3k+8)\) が選択される。
+\item \verb|-kwhich LM|、\verb|SM|、\verb|LA|、または \verb|SA| は、変換されたリッツ値の絶対値の最大／最小、または代数的な順序を選択する。
+\item \verb|-etol t| と \verb|-emaxiter m| は、残差の許容誤差と反復/再開始の制限回数を設定する。
+\item \verb|-kresidual_scale a| は、残差スケーリングのための \(\Vert{} A\Vert{}\) の見積もりを提供する。ゼロを指定した場合は、自動的にサンプリングされた見積もりが使用される。
+\item \verb|-kinner_tol t| が正の値の場合、追加のコストを伴うが、シフト付き線形方程式の解の明示的な検証を有効にする。
+\item \verb|-ksemidefinite 1| は、一般化シフト反転モードにおいて半正定値 $B$ 計量を有効にする。これはオプトインである。
+\item \verb|-khardlock 1| は、収束した固有対の永続的なロッキングと計量デフレーションを有効にし、アクティブな部分空間の消去と再初期化を行う。デフォルトはオフである。
+\item \verb|-shift sigma| と \verb|-etransform shift-invert| はシフトを設定する。座屈変換には、ゼロでないシフトと正定値 A が必要である。
+\end{itemize}
+既存のLis線形ソルバおよび前処理のオプションは、シフト付き線形計算を設定するために用いられる。前処理のセットアップはクリロフ反復間で再利用される。
+
+\noindent
+{\bf 変換及び計量再直交化}
+
+サポートされている演算、およびリッツ値 $\mu$ から物理的な固有値 $\lambda$ への写像は以下の通りである。
+\begin{itemize}
+\item 標準: $\mathcal{T}=A$。$\lambda=\mu$ であり、ユークリッド正規化を行う。
+\item 一般化シフト: $\mathcal{T}=(A-\sigma B)^{-1}B$。
+$\lambda=\sigma+1/\mu$ 
+であり、正定値 $B$ 計量（または有効化されている場合は半正定値 $B$）を用いる。
+\item 一般化座屈: $\mathcal{T}=(A-\sigma B)^{-1}A$。
+$\lambda=\sigma\mu/(\mu-1)$
+ であり、正定値 $A$ 計量を用いる。ここで $B$ は不定値であってもよい。
+\end{itemize}
+シフトされた演算子は非特異でなければならず、また逆行列の適用は十分に正確かつほぼ対称でなければならない。逆変換の極（分母がゼロになる点）に近すぎるリッツ値は、有効な物理的固有値として表現できない。
+半正定値モードでは、開始方向と補充方向は $(A-\sigma B)^{-1}B$ を通して写像される。計量がゼロとなる方向は拒絶される。このモードは $B$ ノルムがゼロでない有限の固有対を探索する。ランク落ちの計量では、部分的な収束に留まる可能性がある。任意の特異行列ペンシルはサポートされていない。
+
 
 \subsubsection{不完全LU分解前処理の半精度保持}
 Lisは、オプションとしてILU(k)およびILUT前処理の $L$ および $U$ 要素の値をIEEE 754 binary16（半精度浮動小数点）形式で保持することができる。この機能により、数値要素に必要となる記憶容量を削減できる。ただし、行列インデックス、対角成分の逆数、ベクトル、算術演算、残差、および収束判定は、通常のLisスカラ精度（単精度または倍精度）のまま維持される。
@@ -6633,6 +6690,12 @@ Additive Schwarz  & \verb=-adds true=   &  \verb=-adds_iter [1]= & 反復回数 
  \verb=-feast_points [8]= & 積分経路上のサンプリング点数 \\
                                    &                         &
  \verb=-feast_solver [gmres]= & 内部線型方程式解法 \\
+ Native Krylov                      & \verb=-e {krylov|18}= &
+ \verb=-ss [1]= & 結果ベクトルの容量 \\
+                                    &                        &
+ \verb=-nev [1]= & 必要な固有対 \\
+                                    &                        &
+ \verb=-kncv [0]= & クリロフ部分空間の大きさ \\
 \hline         
 \end{tabular}
 \end{center}

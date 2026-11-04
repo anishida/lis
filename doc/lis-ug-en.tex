@@ -330,6 +330,7 @@ Subspace\cite{rutishauser} \\
 Lanczos\cite{lanczos2} \\
 Arnoldi\cite{arnoldi} \\
 FEAST\cite{polizzi} \\
+Krylov \\
 \hline         
 \end{tabular}
 \hfil}
@@ -2845,127 +2846,7 @@ Zero-metric directions are rejected. This mode seeks
 finite eigenpairs with nonzero $B$-norm; a rank-deficient
 metric can result in partial convergence.
 Arbitrary singular matrix pencils are not supported.
-
-\noindent
-{\bf Standalone real-double callback API}
-
-The header \texttt{lis\_krylov.h} also provides a direct
-C99 interface. It accepts serial arrays of \verb|double|
-and caller-defined callbacks for applying $A$, applying $B$,
-and solving the fixed shifted system. The caller retains
-ownership of matrices, factors, and vectors.
-
-\begin{verbatim}
-lis_krylov_problem problem = {
-    .n = n,
-    .transform = LIS_KRYLOV_SHIFT_INVERT_B,
-    .sigma = sigma, .ctx = context,
-    .apply_a = apply_a, .apply_b = apply_b,
-    .solve = solve_prepared_shifted_system
-};
-lis_krylov_options opt;
-lis_krylov_stats stats;
-
-lis_krylov_options_default(&opt);
-opt.nev = nev;
-opt.ncv = ncv;
-opt.tol = 1e-9;
-int rc = lis_krylov_symmetric(&problem, &opt,
-                values, vectors, residuals, &stats);
-\end{verbatim}
-
-The arrays \verb|values| and \verb|residuals| contain up
-to \verb|nev| values; \verb|vectors| is column-major
-with space for \verb|n*nev| entries.
-The direct API uses \verb|int| indices and \verb|double|
-scalars. The Lis adapter checks dimensions before converting
-from \texttt{LIS\_INT}; builds with 64-bit \texttt{LIS\_INT}
-do not increase the callback interface's supported dimension.
-No dedicated new Fortran API is provided.
-
-For each reported pair the solver computes an original
-eigenproblem backward-residual indicator:
-\[
-r(\lambda,x) =
-\frac{\| Ax-\lambda Bx\|}
-{\max\left(\| Ax\|+|\lambda|\| Bx\|,\,
-s_A\| x\|\right)}.
-\]
-Here $s_A$ is the supplied \verb|residual_scale| or a sampled
-estimate of $\| A\|$. At
-\verb|LIS_KRYLOV_NO_CONVERGENCE|, the first
-\verb|stats.nreturned| approximate pairs remain available.
-\verb|stats.nconv| counts residuals meeting the tolerance;
-converged pairs are not necessarily first. The caller should
-inspect each \verb|residuals[i]| independently.
-Errors other than nonconvergence invalidate the outputs.
-A small residual does not prove complete spectrum coverage.
-
-Metric DGKS reorthogonalization adaptively repeats projections
-when the norm decreases significantly. Thick restarts retain
-Ritz directions and inject reproducible independent search
-directions when necessary to resolve repeated values.
-When hard locking is enabled, verified pairs are stored
-separately, while subsequent search directions are deflated
-against them; additional work and memory may be required.
-
-\noindent
-{\bf Inertia counts and extraction in an interval}
-
-The optional \verb|lis_krylov_count_interval| function
-uses a caller-provided inertia callback to count the
-generalized eigenvalues in the open interval $(a,b)$.
-For symmetric $A$ and positive-definite $B$, the count
-is the difference in the numbers of negative pivots of
-$A-aB$ and $A-bB$ from valid symmetric-indefinite
-factorizations. The endpoints must be nonsingular.
-
-The optional \verb|lis_krylov_solve_interval| wrapper
-uses that count to request the expected number of
-eigenpairs with a caller-prepared midpoint shift
-$\sigma=(a+b)/2$. It checks true residuals and that all
-reported eigenvalues lie inside $(a,b)$.
-The shifted matrix at the midpoint must be invertible.
-The wrapper reports nonconvergence when all expected
-pairs cannot be recovered. It neither creates a
-factorization nor supports semidefinite $B$.
-The inertia count is mathematically meaningful under
-the stated assumptions; agreement with approximate
-values and residuals at finite precision is \emph{not}
-a rigorous eigenvalue-enclosure certificate near
-interval boundaries.
-
-\noindent
-{\bf OpenMP, validation and limitations}
-
-With \verb|--enable-omp| the native Krylov core
-parallelizes large compensated dot products, scaled
-vector norms, DGKS updates, Ritz-vector reconstruction
-and restart copies. Small vectors and the projected
-dense eigendecomposition use serial kernels. The OpenMP
-runtime controls the thread count, for example with
-\verb|OMP_NUM_THREADS=4|. Matrix-vector operations and
-shifted solves use their backend's independent threading
-support. This is shared-memory execution with complete
-local vectors, \emph{not} distributed MPI execution.
-
-The regression suite covers standard and generalized
-eigenproblems, zero and repeated eigenvalues, scale
-changes, semidefinite metrics, locking, inertia and
-window extraction. An additional 65,536-dimensional
-OpenMP test checks one, two, four and eight threads.
-Contributor CI validation of the merged solver reported
-90/90 full Lis tests and 9/9 Krylov tests in the tested
-GCC, GCC+OpenMP and Clang configurations, with separate
-sanitizer checks. These results do not establish
-performance superiority or general large-sparse scaling.
-
-The solver supports local real-double symmetric
-problems only; complex/quad arithmetic, distributed
-MPI matrices, general singular pencils and full-spectrum
-extraction ($nev=n$) are not supported. The cost of the
-application's shifted solver or factorization must be
-included in performance assessments. For further
+For further
 implementation details see
 \verb|doc/native-krylov-eigensolver.md|.
 
