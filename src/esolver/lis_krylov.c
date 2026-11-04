@@ -701,14 +701,22 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
           (nev < (p->n - 8) / 3 ? 3 * nev + 8 : p->n);
     if (ncv <= nev || ncv > p->n || p->n > INT_MAX / 8 ||
         ncv > INT_MAX / 8) return LIS_KRYLOV_BAD_ARGUMENT;
-    basis_size = (size_t)p->n * (size_t)ncv;
-    dense_size = (size_t)ncv * (size_t)ncv;
-    scratch_size = (size_t)p->n * (size_t)
-                   (nev > ncv / 2 ? nev : ncv / 2);
-    if (basis_size > SIZE_MAX / sizeof(double) ||
-        dense_size > SIZE_MAX / sizeof(double) ||
-        scratch_size > SIZE_MAX / sizeof(double))
-        return LIS_KRYLOV_BAD_ARGUMENT;
+    /* Check each factor before multiplication. Otherwise size_t can
+     * wrap on 32-bit targets and a small or zero buffer may be
+     * allocated for a much larger basis. The locked-basis allocation
+     * is covered too, since nev <= ncv. */
+    {
+        const size_t max_doubles = SIZE_MAX / sizeof(double);
+        const size_t scratch_columns =
+            (size_t)(nev > ncv / 2 ? nev : ncv / 2);
+        if ((size_t)p->n > max_doubles / (size_t)ncv ||
+            (size_t)ncv > max_doubles / (size_t)ncv ||
+            (size_t)p->n > max_doubles / scratch_columns)
+            return LIS_KRYLOV_BAD_ARGUMENT;
+        basis_size = (size_t)p->n * (size_t)ncv;
+        dense_size = (size_t)ncv * (size_t)ncv;
+        scratch_size = (size_t)p->n * scratch_columns;
+    }
 
     s.n = p->n;
     s.ncv = ncv;
