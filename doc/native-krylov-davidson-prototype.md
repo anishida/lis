@@ -26,20 +26,32 @@ r = A x - theta x
 The original-problem physical residual, not just a projected indicator,
 determines convergence.
 
-For the first unconverged wanted Ritz pair, a diagonal Davidson correction
-approximates the solution of `(A - theta I) t = -r`:
+For the first unconverged wanted Ritz pair, a **one-step diagonally
+preconditioned approximation to the Jacobi–Davidson correction** is
+constructed. Writing `M = regularized(diag(A) - theta I)`, the direction is:
 
 ```text
-t_i = -r_i / regularized(diag(A)_i - theta)
-t <- t - x (x^T t)
+u       = M^(-1) r
+w       = M^(-1) x
+epsilon = (x^T u) / (x^T w)
+t       = -u + epsilon*w
 ```
 
-The second line is a **Jacobi–Davidson-style projection** that removes the
-component along the current Ritz vector. The prototype does **not** solve the
-full Jacobi–Davidson projected correction equation. Denominators near zero
-are clipped to a scale-dependent floor before division, and nonfinite or
-linearly dependent corrections trigger a fallback to the physical residual
-or a deterministic independent coordinate direction.
+When `x^T w` can be evaluated reliably, this enforces `x^T t = 0`
+(up to roundoff). Crucially, the inverse-preconditioned `M^(-1)x`
+direction is **not** generally parallel to `x`, so this is not the
+redundant Euclidean projection `t <- t - x*(x^T t)`. A deterministic
+unit test checks both the formula and that the resulting correction
+differs from the simply projected Davidson direction.
+
+The prototype still **does not solve the full Jacobi–Davidson projected
+correction equation**. It makes one inexpensive diagonal approximate step.
+Since `M` can be indefinite, `x^T M^(-1)x` may vanish by cancellation.
+Such cases fall back to ordinary regularized Davidson with removal of the
+component parallel to `x`; a dedicated test exercises an exactly
+cancelling diagonal. Tiny diagonal denominators are regularized, and
+nonfinite or linearly dependent directions trigger the existing fallback
+to the physical residual or a deterministic independent coordinate vector.
 
 When the basis reaches capacity, a **thick restart** retains the leading Ritz
 vectors and their cached `A V` images. It does not reapply `A` to rotated
@@ -56,8 +68,10 @@ three different initial basis sizes (3, 4, 5). Checks cover:
 - Accurate top three eigenvalues relative to independently established
   references, together with physical residuals below `2e-8`.
 - Orthonormal converged eigenvectors.
-- Finite regularized corrections and JD-style orthogonality when
-  `diag(A)_i == theta` gives an exactly zero denominator.
+- Finite regularized corrections when `diag(A)_i == theta`.
+- Verified oblique diagonal correction formula and nonredundant search
+  direction relative to an ordinary projected Davidson step.
+- Safe fall back when `x^T M^(-1)x` cancels for an indefinite diagonal.
 - Compiler and sanitizer validation.
 
 Two additional **equal-diagonal tridiagonal Toeplitz** cases (n=32 and
@@ -74,7 +88,7 @@ three matrices** for the native symmetric Krylov solver and this prototype,
 then independently recomputes `A*x - lambda*x` from the dense matrix before
 accepting either solver's output.
 
-Preliminary `apply_a` counts on n=64, nev=3, ncv=24:
+Original experimental `apply_a` counts before this correction change (n=64, nev=3, ncv=24):
 
 | Spectrum | Native Krylov | Diagonal Davidson |
 | --- | ---: | ---: |
@@ -119,6 +133,12 @@ regenerating Autotools outputs.
   error/status, cancellation, MPI or scalable sparse-matrix support.
 - No real cost-per-solve benchmark or comparison with equal starting
   subspaces. Additional tests on sparse and clustered problems are needed.
+
+The method now reports how often the oblique diagonal correction was used
+and how often it fell back to ordinary Davidson. Any claimed improvement
+must compare the old and new correction on the **same** matrices, seeds,
+tolerances, and subspace sizes, including total operator calls and
+restarts; fewer calls alone do not establish end-to-end speedups.
 
 The next engineering milestone would be a **separate, versioned opt-in
 preconditioner interface**, with explicit memory ownership, callback-error
