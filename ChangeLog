@@ -1,3 +1,12 @@
+Version 2.1.22 (November 4, 2026)
+
+  - Added a native restarted Krylov subspace eigensolver for real symmetric standard and generalized eigenvalue problems, supporting OpenMP parallelization, adaptive DGKS reorthogonalization, and hard locking (thanks to Rafal Brzegowy).
+  - Introduced generic matrix session frameworks, including a conservative generalized eigenvalue problem session and an opt-in numeric Jacobi preconditioner refresh policy for AUTO solver sessions (thanks to Rafal Brzegowy).
+  - Introduced a standalone runtime ABI descriptor API (lis_abi_get_info) and generic C APIs for nullspace preflight configuration and caller-owned independent CSR matrix materialization (thanks to Rafal Brzegowy).
+  - Added checked, strided real64 vector import/export interfaces supporting both strict validation and absolute/relative imaginary-component loss tolerances (thanks to Rafal Brzegowy).
+  - Fixed critical memory-safety issues, including an OpenMP heap-corruption race in USER row operations, an allocator integer overflow, and various memory leaks detected via AddressSanitizer (thanks to Rafal Brzegowy).
+  - Fixed vector indexing bugs, uninitialized memory reads after lis_vector_unset(), and a C/Fortran ABI mismatch affecting hidden CHARACTER length parameters under GCC LTO (thanks to Rafal Brzegowy).
+
 Version 2.1.21 October 31, 2026
 
   - Treated inner LIS_MAXITER as a usable truncated preconditioner application in Hybrid nested KSP/PC (thanks to Rafal Brzegowy).
@@ -16,7 +25,6 @@ Version 2.1.21 October 31, 2026
   - Introduced an opt-in frozen-pattern ILUT numerical refresh policy for persistent sequences of linear solves (thanks to Rafal Brzegowy).
   - Added a typed runtime API for stable solver and eigensolver controls, including requested eigenpair counts (thanks to Rafal Brzegowy).
   - Introduced a managed AUTO matrix/sequence session API and caller-owned CSR materialization paths (thanks to Rafal Brzegowy).
-  - Added checked strided real64 vector import/export APIs and fixed-width int64_t split-triangular view support (thanks to Rafal Brzegowy).
 
 Version 2.1.20 October 25, 2026
 

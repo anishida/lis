@@ -284,11 +284,11 @@ void lis_vector_gather_f(LIS_VECTOR_F *v, LIS_SCALAR *values, LIS_INT *ierr)
 
 #undef __FUNC__
 #define __FUNC__ "lis_vector_print_f"
-void lis_vector_print_f(LIS_VECTOR_F *v)
+void lis_vector_print_f(LIS_VECTOR_F *v, LIS_INT *ierr)
 {
 	LIS_DEBUG_FUNC_IN;
 
-	lis_vector_print((LIS_VECTOR)LIS_V2P(v));
+	*ierr = lis_vector_print((LIS_VECTOR)LIS_V2P(v));
 
 	LIS_DEBUG_FUNC_OUT;
 	return;

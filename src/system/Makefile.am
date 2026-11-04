@@ -1,5 +1,6 @@
 noinst_LTLIBRARIES = libsystem.la
-libsystem_la_SOURCES = lis_error.c \
+libsystem_la_SOURCES = lis_abi.c \
+lis_error.c \
 lis_hash.c \
 lis_init.c \
 lis_omp_capacity.c \

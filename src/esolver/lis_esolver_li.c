@@ -7947,7 +7947,16 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
 	}
       lis_printf(comm,"Lanczos: elapsed time         = %e sec.\n\n", time);  
     }
-  if( rval ) return LIS_SUCCESS;
+  if( rval )
+    {
+      lis_free(t);
+      lis_free(tq);
+      lis_free(tr);
+      lis_precon_destroy(precon);
+      lis_solver_destroy(solver);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_SUCCESS;
+    }
       
   if( output ) 
     {

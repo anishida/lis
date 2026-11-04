@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 2.1.21
+Version 2.1.22
 \end{flushleft}
 
 \vspace*{2cm}
@@ -330,6 +330,7 @@ Subspace\cite{rutishauser} \\
 Lanczos\cite{lanczos2} \\
 Arnoldi\cite{arnoldi} \\
 FEAST\cite{polizzi} \\
+Krylov \\
 \hline         
 \end{tabular}
 \hfil}
@@ -2292,6 +2293,12 @@ that \verb=-emaxiter= defaults to $1,000$.
  \verb=-feast_points [8]= & The number of contour points \\
                                    &                         &
  \verb=-feast_solver [gmres]= & The inner linear solver \\
+ Native Krylov                      & \verb=-e {krylov|18}= &
+ \verb=-ss [1]= & The result-vector capacity \\
+                                    &                        &
+ \verb=-nev [1]= & The requested eigenpairs \\
+                                    &                        &
+ \verb=-kncv [0]= & The Krylov subspace size \\
 \hline         
 \end{tabular}
 \end{center}
@@ -2742,6 +2749,106 @@ This operator represents the linear combination of two matrices $C = \alpha A + 
 \subsubsection{Shifted Generalized Eigenvalue Solvers with Matrix Operators}
 For shifted generalized eigenvalue problems $(A - \sigma B)x = \lambda Bx$, Generalized Power Iteration (GPI), Generalized Inverse Iteration (GII), and Generalized Conjugate Residual (GCR) solvers now utilize \texttt{LIS\_MATRIX\_OPERATOR} to dynamically create a temporary operator for $A - \sigma B$. This ensures the original matrices remain pristine and enables full support for user-defined custom matrices (\texttt{LIS\_MATRIX\_USER}). Shifted \texttt{LIS\_MATRIX\_USER} remains unsupported for other methods like Lanczos.
 
+
+\subsubsection{Native Restarted Krylov Eigensolver}
+\label{subsubsec:native-krylov}
+The native symmetric restarted Krylov solver is selected with
+\verb|-e krylov| (numeric identifier 18).  It computes several
+eigenpairs of real symmetric standard $Ax=\lambda x$ and generalized
+$Ax=\lambda Bx$ eigenproblems with Rayleigh--Ritz projection,
+thick restarting, metric reorthogonalization and explicit residual
+verification.  It is an additional solver, not a replacement for
+the existing subspace iteration, Lanczos, Arnoldi or FEAST methods.
+Its distinguishing features are a standalone callback API, optional
+semidefinite metric and hard locking, and an inertia-based interval
+helper.  No comparative performance superiority is claimed.
+
+\noindent
+{\bf Standard Lis eigensolver interface}
+
+The method is available through \verb|lis_esolve| and
+\verb|lis_gesolve| for local matrices, including
+\texttt{LIS\_MATRIX\_USER}.  In the following C example the
+application has prepared $A$, $B$ and the initial vector $x$.
+
+\begin{verbatim}
+LIS_ESOLVER esolver;
+LIS_SCALAR lambda0;
+LIS_INT status;
+
+lis_esolver_create(&esolver);
+lis_esolver_set_option(
+    "-e krylov -ss 4 -nev 4 -kncv 20 "
+    "-kwhich LM -etol 1e-9 -emaxiter 500",
+    esolver);
+status = lis_gesolve(A, B, x, &lambda0, esolver);
+/* Check status and residuals; then destroy esolver. */
+\end{verbatim}
+
+For the standard problem use
+\verb|lis_esolve(A,x,&lambda0,esolver)| instead.
+The most relevant options are:
+\begin{itemize}
+\item \verb|-ss n| specifies the result capacity and
+\verb|-nev k| the requested number of eigenpairs
+($1\leq k\leq n_{\rm ss}$, $k<n$).
+\item \verb|-kncv n| selects the internal Krylov subspace size.
+It must exceed $k$; zero chooses $\min(n,3k+8)$.
+\item \verb|-kwhich LM|, \verb|SM|, \verb|LA| or \verb|SA|
+selects largest/smallest magnitude or algebraic ordering
+of the \emph{transformed} Ritz values.
+\item \verb|-etol t| and \verb|-emaxiter m| set the residual
+tolerance and iteration/restart limit.
+\item \verb|-kresidual_scale a| supplies an estimate of
+$\| A\|$ for residual scaling. Zero uses an
+automatically sampled estimate.
+\item \verb|-kinner_tol t| enables explicit verification of
+shifted linear solves when positive, at additional cost.
+\item \verb|-ksemidefinite 1| enables a positive-semidefinite
+$B$ metric for generalized shift-invert; this is opt-in.
+\item \verb|-khardlock 1| enables persistent locking and
+metric deflation of converged pairs, with purging and
+reinitialization of the active subspace. The default is off.
+\item \verb|-shift sigma| and
+\verb|-etransform shift-invert| configure the shift.
+The \verb|buckling| transformation requires nonzero shift
+and positive-definite $A$.
+\end{itemize}
+The existing Lis linear solver and preconditioner options
+configure the shifted solve; preconditioner setup is reused
+across Krylov iterations.
+
+\noindent
+{\bf Transformations and metric normalization}
+
+The supported operations and mappings from the Ritz value
+$\mu$ to the physical eigenvalue $\lambda$ are:
+\begin{itemize}
+\item Standard: $\mathcal{T}=A$, with $\lambda=\mu$
+and Euclidean normalization.
+\item Generalized shift-invert:
+$\mathcal{T}=(A-\sigma B)^{-1}B$, with
+$\lambda=\sigma+1/\mu$ and the positive-definite
+$B$ metric (or semidefinite $B$ when enabled).
+\item Generalized buckling:
+$\mathcal{T}=(A-\sigma B)^{-1}A$, with
+$\lambda=\sigma\mu/(\mu-1)$ and the
+positive-definite $A$ metric. Here $B$ may be indefinite.
+\end{itemize}
+The shifted operator must be nonsingular and the inverse
+action must be sufficiently accurate and nearly symmetric.
+Ritz values too close to an inverse-transformation pole
+cannot be represented as valid physical eigenvalues.
+
+In the semidefinite mode, starting and replenishment
+directions are mapped through $(A-\sigma B)^{-1}B$.
+Zero-metric directions are rejected. This mode seeks
+finite eigenpairs with nonzero $B$-norm; a rank-deficient
+metric can result in partial convergence.
+Arbitrary singular matrix pencils are not supported.
+For further
+implementation details see
+\verb|doc/native-krylov-eigensolver.md|.
 
 \subsubsection{Half Precision Preconditioner Storage}
 
@@ -6958,6 +7065,12 @@ that \verb=-emaxiter= defaults to $1,000$.
  \verb=-feast_points [8]= & The number of contour points \\
                                    &                         &
  \verb=-feast_solver [gmres]= & The inner linear solver \\
+ Native Krylov                      & \verb=-e {krylov|18}= &
+ \verb=-ss [1]= & The result-vector capacity \\
+                                    &                        &
+ \verb=-nev [1]= & The requested eigenpairs \\
+                                    &                        &
+ \verb=-kncv [0]= & The Krylov subspace size \\
 \hline         
 \end{tabular}
 \end{center}

@@ -1,0 +1,347 @@
+#include "lis.h"
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include <stdint.h>
+#if defined(_COMPLEX) && defined(HAVE_COMPLEX_H)
+#include <complex.h>
+#endif
+
+/*
+ * Regression for #38: contiguous setters must honor the requested
+ * global start index, including LIS_ORIGIN_1 and ADD semantics.
+ */
+static int test_vector_set_values_indices(void)
+{
+    LIS_VECTOR v=NULL;
+    LIS_SCALAR in[2]={(LIS_SCALAR)11.0,(LIS_SCALAR)22.0};
+    LIS_SCALAR add[2]={(LIS_SCALAR)1.0,(LIS_SCALAR)2.0};
+    LIS_INT indices[2]={2,4};
+    LIS_INT err;
+    int failed=1;
+
+    err=lis_vector_create(LIS_COMM_WORLD,&v);
+    if(err) goto done;
+    err=lis_vector_set_size(v,0,5);
+    if(err || v->n!=5) goto done;
+    err=lis_vector_set_all((LIS_SCALAR)0.0,v);
+    if(err) goto done;
+
+    /* Zero-based insertion must write at start, not at index zero. */
+    err=lis_vector_set_values2(LIS_INS_VALUE,2,2,in,v);
+    if(err || v->value[0]!=(LIS_SCALAR)0.0 ||
+       v->value[1]!=(LIS_SCALAR)0.0 ||
+       v->value[2]!=in[0] || v->value[3]!=in[1] ||
+       v->value[4]!=(LIS_SCALAR)0.0) goto done;
+
+    err=lis_vector_set_values2(LIS_ADD_VALUE,2,2,add,v);
+    if(err || v->value[2]!=(LIS_SCALAR)12.0 ||
+       v->value[3]!=(LIS_SCALAR)24.0) goto done;
+
+    /* Reject an overlong segment without partially modifying v. */
+    err=lis_vector_set_values2(LIS_INS_VALUE,4,2,in,v);
+    if(err!=LIS_ERR_ILL_ARG ||
+       v->value[4]!=(LIS_SCALAR)0.0) goto done;
+    err=lis_vector_set_values2(LIS_INS_VALUE,1,-1,in,v);
+    if(err!=LIS_ERR_ILL_ARG) goto done;
+
+    v->origin=1;
+    /* One-based start=2 means zero-based vector position 1. */
+    err=lis_vector_set_values2(LIS_INS_VALUE,2,2,in,v);
+    if(err || v->value[0]!=(LIS_SCALAR)0.0 ||
+       v->value[1]!=in[0] || v->value[2]!=in[1] ||
+       v->value[3]!=(LIS_SCALAR)24.0) goto done;
+
+    /* Indexed ADD uses the same origin conversion as indexed INS. */
+    err=lis_vector_set_values(LIS_ADD_VALUE,2,indices,add,v);
+    if(err || v->value[1]!=(LIS_SCALAR)12.0 ||
+       v->value[2]!=(LIS_SCALAR)22.0 ||
+       v->value[3]!=(LIS_SCALAR)26.0) goto done;
+
+    /* Out-of-range one-based access must leave all values unchanged. */
+    err=lis_vector_set_values2(LIS_INS_VALUE,5,2,in,v);
+    if(err!=LIS_ERR_ILL_ARG ||
+       v->value[4]!=(LIS_SCALAR)0.0) goto done;
+    err=lis_vector_set_values2(LIS_ADD_VALUE,6,0,NULL,v);
+    if(err!=LIS_SUCCESS) goto done;
+
+    failed=0;
+done:
+    if(v) lis_vector_destroy(v);
+    return failed;
+}
+
+/*
+ * Regression: the first LIS_ADD_VALUE after lis_vector_unset()
+ * must add to zeros, never to freshly allocated, uninitialized bytes.
+ */
+static int test_add_after_unset(void)
+{
+    LIS_VECTOR v=NULL;
+    LIS_INT err,indices[2]={1,3};
+    LIS_SCALAR values[2]={(LIS_SCALAR)4.0,(LIS_SCALAR)7.0};
+    int failed=1;
+
+    err=lis_vector_create(LIS_COMM_WORLD,&v);
+    if(err)goto done;
+    err=lis_vector_set_size(v,0,5);
+    if(err || v->n!=5)goto done;
+
+    err=lis_vector_unset(v);
+    if(err)goto done;
+    err=lis_vector_set_value(LIS_ADD_VALUE,2,(LIS_SCALAR)5.0,v);
+    if(err || v->value[0]!=(LIS_SCALAR)0.0 ||
+       v->value[1]!=(LIS_SCALAR)0.0 ||
+       v->value[2]!=(LIS_SCALAR)5.0 ||
+       v->value[3]!=(LIS_SCALAR)0.0 ||
+       v->value[4]!=(LIS_SCALAR)0.0)goto done;
+    err=lis_vector_set_value(LIS_ADD_VALUE,2,(LIS_SCALAR)3.0,v);
+    if(err || v->value[2]!=(LIS_SCALAR)8.0)goto done;
+
+    err=lis_vector_unset(v);
+    if(err)goto done;
+    err=lis_vector_set_values(LIS_ADD_VALUE,2,indices,values,v);
+    if(err || v->value[0]!=(LIS_SCALAR)0.0 ||
+       v->value[1]!=(LIS_SCALAR)4.0 ||
+       v->value[2]!=(LIS_SCALAR)0.0 ||
+       v->value[3]!=(LIS_SCALAR)7.0 ||
+       v->value[4]!=(LIS_SCALAR)0.0)goto done;
+    err=lis_vector_set_values(LIS_ADD_VALUE,2,indices,values,v);
+    if(err || v->value[1]!=(LIS_SCALAR)8.0 ||
+       v->value[3]!=(LIS_SCALAR)14.0)goto done;
+
+    failed=0;
+done:
+    if(v)lis_vector_destroy(v);
+    return failed;
+}
+
+/*
+ * Validate overflow rejection and preservation of tracked allocations when
+ * lis_realloc() fails.  The old size+16 calculation could wrap on SIZE_MAX.
+ */
+static int test_lis_allocator_failures(void)
+{
+    unsigned char *p=NULL, *q=NULL, *zero=NULL;
+    int failed=1;
+    int i;
+
+    p=(unsigned char *)lis_malloc(SIZE_MAX,"allocator-overflow");
+    if(p!=NULL) goto done;
+    zero=(unsigned char *)lis_calloc(SIZE_MAX,"calloc-overflow");
+    if(zero!=NULL) goto done;
+
+    p=(unsigned char *)lis_malloc(32,"allocator-realloc");
+    if(p==NULL || !lis_is_malloc(p)) goto done;
+    for(i=0;i<32;i++) p[i]=(unsigned char)(i+1);
+
+    q=(unsigned char *)lis_realloc(p,SIZE_MAX);
+    if(q!=NULL)
+    {
+        p=q;
+        goto done;
+    }
+    if(!lis_is_malloc(p)) goto done;
+    for(i=0;i<32;i++) if(p[i]!=(unsigned char)(i+1)) goto done;
+
+    q=(unsigned char *)lis_realloc(p,80);
+    if(q==NULL) goto done;
+    p=q;
+    if(!lis_is_malloc(p)) goto done;
+    for(i=0;i<32;i++) if(p[i]!=(unsigned char)(i+1)) goto done;
+
+    q=(unsigned char *)lis_realloc(p,8);
+    if(q==NULL) goto done;
+    p=q;
+    if(!lis_is_malloc(p)) goto done;
+    for(i=0;i<8;i++) if(p[i]!=(unsigned char)(i+1)) goto done;
+
+    zero=(unsigned char *)lis_calloc(48,"calloc-zero");
+    if(zero==NULL || !lis_is_malloc(zero)) goto done;
+    for(i=0;i<48;i++) if(zero[i]!=0) goto done;
+
+    failed=0;
+done:
+    if(p) lis_free(p);
+    if(zero) lis_free(zero);
+    return failed;
+}
+
+int main(int argc,char **argv)
+{
+    LIS_VECTOR v=NULL;
+    LIS_INT err;
+    const double src[9]={1,99,99,-2,99,99,3.5,99,99};
+    double dst[9]={0};
+    double bad[3]={1,NAN,3};
+    double invalid[3]={7,8,9};
+    int fail=1;
+    err=lis_initialize(&argc,&argv);
+    if(err) return 1;
+    if(test_add_after_unset()) {
+        fprintf(stderr,"VECTOR_ADD_AFTER_UNSET=FAIL\n");
+        lis_finalize();
+        return 1;
+    }
+    if(test_lis_allocator_failures()) {
+        fprintf(stderr,"ALLOCATOR_FAILURE_PATHS=FAIL\n");
+        lis_finalize();
+        return 1;
+    }
+    if(test_vector_set_values_indices()) {
+        fprintf(stderr,"VECTOR_SET_VALUES_INDICES=FAIL\n");
+        lis_finalize();
+        return 1;
+    }
+    err=lis_vector_create(LIS_COMM_WORLD,&v);
+    if(err)goto done;
+    err=lis_vector_set_size(v,0,3);
+    if(err)goto done;
+    if(v->n!=3)goto done; /* single-process regression */
+    err=lis_vector_import_real64(v,src,3,3);
+    if(err)goto done;
+    err=lis_vector_export_real64(
+        v,dst,3,3,LIS_VECTOR_REAL64_REJECT_LOSS);
+    if(err || dst[0]!=1 || dst[3]!=-2 || dst[6]!=3.5)
+        goto done;
+
+    err=lis_vector_import_real64(v,bad,3,1);
+    if(err==LIS_SUCCESS)goto done;
+    err=lis_vector_export_real64(
+        v,invalid,3,1,LIS_VECTOR_REAL64_REJECT_LOSS);
+    if(err || invalid[0]!=1 || invalid[1]!=-2 || invalid[2]!=3.5)
+        goto done;
+    /* Zero-length transfers may use NULL buffers. */
+    {
+        struct LIS_VECTOR_STRUCT empty;
+        memset(&empty,0,sizeof(empty));
+        empty.precision=LIS_PRECISION_DEFAULT;
+        if(lis_vector_import_real64(&empty,NULL,0,1)!=LIS_SUCCESS ||
+           lis_vector_export_real64(&empty,NULL,0,1,
+               LIS_VECTOR_REAL64_REJECT_LOSS)!=LIS_SUCCESS)
+            goto done;
+    }
+    if(lis_vector_import_real64(v,src,2,1)==LIS_SUCCESS)
+        goto done;
+    if(lis_vector_export_real64(
+        v,dst,3,0,LIS_VECTOR_REAL64_REJECT_LOSS)==LIS_SUCCESS)
+        goto done;
+#ifdef _COMPLEX
+#if defined(HAVE_COMPLEX_H)
+    v->value[1] += (LIS_SCALAR)1.0*I;
+#else
+    v->value[1][1]=(LIS_REAL)1.0;
+#endif
+    invalid[0]=7;invalid[1]=8;invalid[2]=9;
+    if(lis_vector_export_real64(
+        v,invalid,3,1,LIS_VECTOR_REAL64_REJECT_LOSS)==LIS_SUCCESS ||
+       invalid[0]!=7 || invalid[1]!=8 || invalid[2]!=9)
+        goto done;
+    err=lis_vector_export_real64(
+        v,invalid,3,1,LIS_VECTOR_REAL64_ALLOW_LOSS);
+    if(err || invalid[1]!=-2)goto done;
+
+    /* A tolerance over the WHOLE vector rejects significant imaginary
+       amplitudes, even when ALLOW_LOSS would otherwise discard them. */
+    invalid[0]=7;invalid[1]=8;invalid[2]=9;
+    err=lis_vector_export_real64_tolerant(
+        v,invalid,3,1,LIS_VECTOR_REAL64_ALLOW_LOSS,
+        (LIS_REAL)0.0,(LIS_REAL)0.25);
+    if(err==LIS_SUCCESS || invalid[0]!=7 || invalid[1]!=8 ||
+       invalid[2]!=9)goto done;
+    err=lis_vector_export_real64_tolerant(
+        v,invalid,3,1,LIS_VECTOR_REAL64_ALLOW_LOSS,
+        (LIS_REAL)0.0,(LIS_REAL)0.30);
+    if(err || invalid[0]!=1 || invalid[1]!=-2 ||
+       invalid[2]!=3.5)goto done;
+
+    /* Absolute floor is useful for near-zero real eigenvectors. */
+    err=lis_vector_export_real64_tolerant(
+        v,invalid,3,1,LIS_VECTOR_REAL64_ALLOW_LOSS,
+        (LIS_REAL)1.0,(LIS_REAL)0.0);
+    if(err)goto done;
+
+    /* Exact relative boundary: 0.875 == 0.25*max_real(3.5). */
+#if defined(HAVE_COMPLEX_H)
+    v->value[1]=(LIS_SCALAR)(-2.0+0.875*I);
+#else
+    v->value[1][1]=(LIS_REAL)0.875;
+#endif
+    err=lis_vector_export_real64_tolerant(
+        v,invalid,3,1,LIS_VECTOR_REAL64_ALLOW_LOSS,
+        (LIS_REAL)0.0,(LIS_REAL)0.25);
+    if(err || invalid[1]!=-2)goto done;
+    invalid[0]=7;invalid[1]=8;invalid[2]=9;
+    err=lis_vector_export_real64_tolerant(
+        v,invalid,3,1,LIS_VECTOR_REAL64_ALLOW_LOSS,
+        (LIS_REAL)0.0,(LIS_REAL)0.125);
+    if(err==LIS_SUCCESS || invalid[0]!=7 || invalid[1]!=8 ||
+       invalid[2]!=9)goto done;
+#if defined(HAVE_COMPLEX_H)
+    v->value[1]=(LIS_SCALAR)(-2.0+1.0*I);
+#else
+    v->value[1][1]=(LIS_REAL)1.0;
+#endif
+    /* Absolute tolerance: accept equality, reject just below boundary. */
+    err=lis_vector_export_real64_tolerant(
+        v,invalid,3,1,LIS_VECTOR_REAL64_ALLOW_LOSS,
+        (LIS_REAL)1.0,(LIS_REAL)0.0);
+    if(err)goto done;
+    invalid[0]=7;invalid[1]=8;invalid[2]=9;
+    err=lis_vector_export_real64_tolerant(
+        v,invalid,3,1,LIS_VECTOR_REAL64_ALLOW_LOSS,
+        (LIS_REAL)0.75,(LIS_REAL)0.0);
+    if(err==LIS_SUCCESS || invalid[0]!=7 || invalid[1]!=8 ||
+       invalid[2]!=9)goto done;
+
+    invalid[0]=7;invalid[1]=8;invalid[2]=9;
+    err=lis_vector_export_real64_tolerant(
+        v,invalid,3,1,LIS_VECTOR_REAL64_REJECT_LOSS,
+        (LIS_REAL)1.0,(LIS_REAL)1.0);
+    if(err==LIS_SUCCESS || invalid[0]!=7 || invalid[1]!=8 ||
+       invalid[2]!=9)goto done;
+#endif
+    /* Nonfinite data in a later entry must not write any output. */
+#if defined(_COMPLEX) && !defined(HAVE_COMPLEX_H)
+    v->value[1][1]=(LIS_REAL)NAN;
+#else
+    v->value[1]=(LIS_SCALAR)NAN;
+#endif
+    invalid[0]=7;invalid[1]=8;invalid[2]=9;
+    err=lis_vector_export_real64_tolerant(
+        v,invalid,3,1,LIS_VECTOR_REAL64_ALLOW_LOSS,
+        (LIS_REAL)10.0,(LIS_REAL)10.0);
+    if(err==LIS_SUCCESS || invalid[0]!=7 || invalid[1]!=8 ||
+       invalid[2]!=9)goto done;
+    err=lis_vector_import_real64(v,src,3,3);
+    if(err)goto done;
+    /* Tolerance parameters and invalid layouts are checked atomically. */
+    invalid[0]=7;invalid[1]=8;invalid[2]=9;
+    if(lis_vector_export_real64_tolerant(
+        v,invalid,3,1,LIS_VECTOR_REAL64_ALLOW_LOSS,
+        (LIS_REAL)-1,(LIS_REAL)0)==LIS_SUCCESS ||
+       invalid[0]!=7 || invalid[1]!=8 || invalid[2]!=9)goto done;
+    if(lis_vector_export_real64_tolerant(
+        v,invalid,3,1,LIS_VECTOR_REAL64_ALLOW_LOSS,
+        (LIS_REAL)0,(LIS_REAL)NAN)==LIS_SUCCESS ||
+       invalid[0]!=7 || invalid[1]!=8 || invalid[2]!=9)goto done;
+    if(lis_vector_export_real64_tolerant(
+        v,invalid,3,0,LIS_VECTOR_REAL64_ALLOW_LOSS,
+        (LIS_REAL)0,(LIS_REAL)0)==LIS_SUCCESS ||
+       invalid[0]!=7 || invalid[1]!=8 || invalid[2]!=9)goto done;
+    {
+        struct LIS_VECTOR_STRUCT empty;
+        memset(&empty,0,sizeof(empty));
+        empty.precision=LIS_PRECISION_DEFAULT;
+        if(lis_vector_export_real64_tolerant(
+            &empty,NULL,0,1,LIS_VECTOR_REAL64_ALLOW_LOSS,
+            (LIS_REAL)0,(LIS_REAL)0)!=LIS_SUCCESS)
+            goto done;
+    }
+    fail=0;
+done:
+    if(v)lis_vector_destroy(v);
+    lis_finalize();
+    printf("REAL64_VECTOR_TRANSFER=%s\n",fail?"FAIL":"PASS");
+    return fail;
+}

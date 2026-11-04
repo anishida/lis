@@ -466,6 +466,30 @@ int main(int argc,char **argv)
     err=create_user_matrix(&actx,&A);
     if(err) { failed=1; goto cleanup; }
 
+    /* A one-shot owned CSR is independent of a materialization cache. */
+    {
+        LIS_MATRIX owned=NULL;
+        err=lis_matrix_materialize_csr_owned(A,&owned);
+        if(err || check_csr_matches_context(owned,&actx))
+        {
+            fprintf(stderr,"owned CSR materialization failed\n");
+            failed=1;
+        }
+        if(owned)lis_matrix_destroy(owned);
+        if(failed)goto cleanup;
+    }
+
+    /* Invalid owned input must never publish an old result pointer. */
+    {
+        LIS_MATRIX owned=A;
+        err=lis_matrix_materialize_csr_owned(NULL,&owned);
+        if(err==LIS_SUCCESS || owned!=NULL)
+        {
+            fprintf(stderr,"owned CSR invalid-input contract failed\n");
+            failed=1;goto cleanup;
+        }
+    }
+
     err=lis_matrix_materialize_csr_cached(A,&acache,&csr,&action);
     if(err || action!=LIS_MATRIX_MATERIALIZE_REBUILD ||
        check_csr_matches_context(csr,&actx))

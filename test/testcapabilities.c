@@ -1,4 +1,5 @@
 #include "lis.h"
+#include "lis_solver_capabilities.h"
 #include <stdio.h>
 
 
@@ -257,6 +258,42 @@ main(
         lis_initialize(
                 &argc,
                 &argv);
+
+        /* Typed nullspace preflight is independent of numerical setup. */
+        {
+            LIS_SOLVER check_solver=NULL;
+            LIS_INT issues=0;
+            err=lis_solver_create(&check_solver);
+            if(err){fail=1;goto cleanup;}
+            check_solver->nullspace_dim=1;
+            check_solver->options[LIS_OPTIONS_SOLVER]=LIS_SOLVER_BICG;
+            check_solver->options[LIS_OPTIONS_SCALE]=LIS_SCALE_NONE;
+            err=lis_solver_check_nullspace_configuration(
+                check_solver,&issues);
+            if(err || issues!=LIS_NULLSPACE_CONFIG_EXACT_SOLVER)
+                fail=1;
+            check_solver->options[LIS_OPTIONS_SOLVER]=LIS_SOLVER_FGCRODR;
+            err=lis_solver_check_nullspace_configuration(
+                check_solver,&issues);
+            if(err || issues!=0) fail=1;
+            check_solver->options[LIS_OPTIONS_SCALE]=LIS_SCALE_SYMM_DIAG;
+            err=lis_solver_check_nullspace_configuration(
+                check_solver,&issues);
+            if(err || issues!=LIS_NULLSPACE_CONFIG_EXACT_SCALE)
+                fail=1;
+            check_solver->options[LIS_OPTIONS_SCALE]=LIS_SCALE_NONE;
+            check_solver->nullspace_dim=0;
+            check_solver->near_nullspace_dim=1;
+            check_solver->options[LIS_OPTIONS_SOLVER]=LIS_SOLVER_BICG;
+            check_solver->options[LIS_OPTIONS_PRECON]=LIS_PRECON_TYPE_ILU;
+            err=lis_solver_check_nullspace_configuration(
+                check_solver,&issues);
+            if(err || issues!=LIS_NULLSPACE_CONFIG_NEAR_COMBINATION)
+                fail=1;
+            check_solver->near_nullspace_dim=0;
+            lis_solver_destroy(check_solver);
+            if(fail)goto cleanup;
+        }
 
 #ifdef USE_MPI
         MPI_Comm_size(

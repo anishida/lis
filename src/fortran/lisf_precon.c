@@ -62,7 +62,7 @@
 
 #undef __FUNC__
 #define __FUNC__ "lis_precon_create_f"
-void lis_precon_create_f(LIS_SOLVER_F solver, LIS_PRECON_F *precon, LIS_INT *ierr)
+void lis_precon_create_f( LIS_SOLVER_F *solver, LIS_PRECON_F *precon, LIS_INT *ierr)
 {
 	LIS_PRECON p;
 
@@ -79,7 +79,7 @@ void lis_precon_create_f(LIS_SOLVER_F solver, LIS_PRECON_F *precon, LIS_INT *ier
 /*NEH support for extended "solve_kernel" workflow*/
 #undef __FUNC__
 #define __FUNC__ "lis_precon_psd_create_f"
-void lis_precon_psd_create_f(LIS_SOLVER_F solver, LIS_PRECON_F *precon, LIS_INT *ierr)
+void lis_precon_psd_create_f( LIS_SOLVER_F *solver, LIS_PRECON_F *precon, LIS_INT *ierr)
 {
 	LIS_PRECON p;
 
@@ -96,7 +96,7 @@ void lis_precon_psd_create_f(LIS_SOLVER_F solver, LIS_PRECON_F *precon, LIS_INT 
 /*NEH support for extended "solve_kernel" workflow*/
 #undef __FUNC__
 #define __FUNC__ "lis_precon_psd_update_f"
-void lis_precon_psd_update_f(LIS_SOLVER_F solver, LIS_PRECON_F precon, LIS_INT *ierr)
+void lis_precon_psd_update_f( LIS_SOLVER_F *solver, LIS_PRECON_F *precon, LIS_INT *ierr)
 {
 	LIS_DEBUG_FUNC_IN;
 

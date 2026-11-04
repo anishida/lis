@@ -30,7 +30,9 @@ test_PROGRAMS = testesubspaceretry etest1 etest2 etest3 etest4 etest5 etest5b et
 	testblockorthogonal testblockrank
 
 # Keep optional session tests separate from the long test_PROGRAMS list.
-test_PROGRAMS += testmatrixautosession
+test_PROGRAMS += testmatrixautosession testvectorreal64 benchautojacobirefresh testabi testgesolvepair
+
+testabi_SOURCES = testabi.c
 
 testgcrodroptions_SOURCES = testgcrodroptions.c
 testfeastfoundation_SOURCES = testfeastfoundation.c
@@ -44,6 +46,8 @@ testmatrixmaterialize_SOURCES = testmatrixmaterialize.c
 testmatrixmaterializeomp_SOURCES = testmatrixmaterializeomp.c
 testmatrixpolicysolve_SOURCES = testmatrixpolicysolve.c
 testmatrixautosession_SOURCES = testmatrixautosession.c
+benchautojacobirefresh_SOURCES = benchautojacobirefresh.c
+testvectorreal64_SOURCES = testvectorreal64.c
 testfrozenilut_SOURCES = testfrozenilut.c
 benchfrozenilut_SOURCES = benchfrozenilut.c
 testsplitview_SOURCES = testsplitview.c
@@ -243,6 +247,9 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) testmatvecblock$(EX
         testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
         testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) testnullspacecandidates$(EXEEXT) testesolverselection$(EXEEXT)
 
+# Explicitly run all new regression binaries under make check.
+TESTS += testmatrixautosession$(EXEEXT) testvectorreal64$(EXEEXT) testgesolvepair$(EXEEXT) testabi$(EXEEXT)
+
 if ENABLE_HALF_REAL_DOUBLE
 TESTS += testhalfstorage$(EXEEXT) testhalfprobe$(EXEEXT) testhalfdispatch$(EXEEXT) \
          testhalfilukmemory$(EXEEXT) testhalfiluksimd$(EXEEXT) \
@@ -259,3 +266,23 @@ installcheck:
 
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
+
+testgesolvepair_SOURCES = testgesolvepair.c
+
+# Native restarted Krylov eigensolver numerical regressions.
+test_PROGRAMS += test_krylov_modes test_krylov_sparse test_krylov_regression test_krylov_lis test_krylov_semidefinite test_krylov_stress test_krylov_inertia test_krylov_window test_krylov_openmp
+test_krylov_modes_SOURCES = test_krylov_modes.c
+test_krylov_sparse_SOURCES = test_krylov_sparse.c
+
+test_krylov_regression_SOURCES = test_krylov_regression.c
+test_krylov_lis_SOURCES = test_krylov_lis.c
+test_krylov_semidefinite_SOURCES = test_krylov_semidefinite.c
+test_krylov_stress_SOURCES = test_krylov_stress.c
+test_krylov_inertia_SOURCES = test_krylov_inertia.c
+test_krylov_window_SOURCES = test_krylov_window.c
+test_krylov_openmp_SOURCES = test_krylov_openmp.c
+TESTS += test_krylov_modes$(EXEEXT) test_krylov_sparse$(EXEEXT) \
+         test_krylov_regression$(EXEEXT) test_krylov_lis$(EXEEXT) \
+         test_krylov_semidefinite$(EXEEXT) test_krylov_stress$(EXEEXT) \
+         test_krylov_inertia$(EXEEXT) test_krylov_window$(EXEEXT) \
+         test_krylov_openmp$(EXEEXT)

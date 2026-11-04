@@ -770,7 +770,7 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
       i = i + 1;
 
       /* eigenvalues on the diagonal of H */
-      if (fabs(h[i+(i-1)*ss])<tol)
+      if (i==ss || fabs(h[i+(i-1)*ss])<tol)
 	{
 	  if( output ) 
 	    {
@@ -825,7 +825,16 @@ LIS_INT lis_egai(LIS_ESOLVER esolver)
     }
   lis_printf(comm,"Generalized Arnoldi: elapsed time         = %e sec.\n\n", time);	      
 
-  if( rval ) return LIS_SUCCESS;
+  if( rval )
+    {
+      lis_free(h);
+      lis_free(hq);
+      lis_free(hr);
+      lis_precon_destroy(precon);
+      lis_solver_destroy(solver);
+      LIS_DEBUG_FUNC_OUT;
+      return LIS_SUCCESS;
+    }
       
   if( output ) 
     {

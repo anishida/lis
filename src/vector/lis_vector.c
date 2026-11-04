@@ -322,6 +322,9 @@ LIS_INT lis_vector_unset(LIS_VECTOR vec)
 	if( err ) return err;
 
 	if( vec->is_copy && !vec->value_external ) lis_free(vec->value);
+	/* Quad work is LIS-owned and reuse allocates it again. */
+	if( vec->work ) lis_free(vec->work);
+	vec->work = NULL;
 	vec->value  = NULL;
 	vec->value_lo = NULL;
 	vec->value_external = LIS_FALSE;
@@ -612,6 +615,8 @@ LIS_INT lis_vector_set_value0(LIS_INT flag, LIS_INT i, LIS_SCALAR value, LIS_VEC
 			LIS_SETERR_MEM(np*sizeof(LIS_SCALAR));
 			return LIS_OUT_OF_MEMORY;
 		}
+		/* ADD must never read uninitialized storage after vector_unset(). */
+		memset(v->value,0,np*sizeof(LIS_SCALAR));
 		v->is_copy = LIS_TRUE;
 		v->status  = LIS_VECTOR_ASSEMBLING;
 	}
@@ -660,6 +665,8 @@ LIS_INT lis_vector_set_value(LIS_INT flag, LIS_INT i, LIS_SCALAR value, LIS_VECT
 			LIS_SETERR_MEM(np*sizeof(LIS_SCALAR));
 			return LIS_OUT_OF_MEMORY;
 		}
+		/* ADD must not use uninitialized storage after vector_unset(). */
+		memset(v->value,0,np*sizeof(LIS_SCALAR));
 		v->is_copy = LIS_TRUE;
 		v->status  = LIS_VECTOR_ASSEMBLING;
 	}
@@ -694,6 +701,8 @@ LIS_INT lis_vector_set_values(LIS_INT flag, LIS_INT count, LIS_INT index[], LIS_
 			LIS_SETERR_MEM(np*sizeof(LIS_SCALAR));
 			return LIS_OUT_OF_MEMORY;
 		}
+		/* ADD must never read uninitialized storage after vector_unset(). */
+		memset(v->value,0,np*sizeof(LIS_SCALAR));
 		v->is_copy = LIS_TRUE;
 		v->status  = LIS_VECTOR_ASSEMBLING;
 	}
@@ -723,7 +732,7 @@ LIS_INT lis_vector_set_values(LIS_INT flag, LIS_INT count, LIS_INT index[], LIS_
 		for(i=0;i<count;i++)
 		{
 			ii = index[i];
-			if( v->origin ) ii++;
+			if( v->origin ) ii--;
 			if( ii<is || ii>=ie )
 			{
 				if( v->origin )
@@ -748,65 +757,59 @@ LIS_INT lis_vector_set_values(LIS_INT flag, LIS_INT count, LIS_INT index[], LIS_
 #define __FUNC__ "lis_vector_set_values2"
 LIS_INT lis_vector_set_values2(LIS_INT flag, LIS_INT start, LIS_INT count, LIS_SCALAR value[], LIS_VECTOR v)
 {
-	LIS_INT np,i,is,ie;
+	LIS_INT np,i,is,ie,offset;
 
 	LIS_DEBUG_FUNC_IN;
 
-	np  = v->np;
-	is  = v->is;
-	ie  = v->ie;
+	if( v==NULL )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"vector is NULL\n");
+		return LIS_ERR_ILL_ARG;
+	}
+	np = v->np;
+	is = v->is;
+	ie = v->ie;
+
+	/* The supplied start index is global, not an offset within value[]. */
+	if( v->origin ) start--;
+	if( count<0 || start<is || start>ie || count>ie-start ||
+	    (count>0 && value==NULL) )
+	{
+		LIS_SETERR3(LIS_ERR_ILL_ARG,
+		            "start(=%D), count(=%D) outside local vector range ending at %D\n",
+		            start,count,ie);
+		return LIS_ERR_ILL_ARG;
+	}
+	if( count==0 )
+	{
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
+
 	if(v->status==LIS_VECTOR_NULL)
 	{
-		v->value = (LIS_SCALAR *)lis_malloc( np*sizeof(LIS_SCALAR),"lis_vector_set_values::v->value" );
+		v->value = (LIS_SCALAR *)lis_malloc( np*sizeof(LIS_SCALAR),
+		                                   "lis_vector_set_values2::v->value" );
 		if( NULL==v->value )
 		{
 			LIS_SETERR_MEM(np*sizeof(LIS_SCALAR));
 			return LIS_OUT_OF_MEMORY;
 		}
+		if( flag!=LIS_INS_VALUE )
+		{
+			memset(v->value,0,np*sizeof(LIS_SCALAR));
+		}
 		v->is_copy = LIS_TRUE;
 		v->status  = LIS_VECTOR_ASSEMBLING;
 	}
+	offset = start-is;
 	if(flag==LIS_INS_VALUE)
 	{
-		for(i=0;i<count;i++)
-		{
-			start = i;
-			if( v->origin ) start--;
-			if( start<is || start>=ie )
-			{
-				if( v->origin )
-				{
-					is++;
-					ie++;
-					start++;
-					i++;
-				}
-				LIS_SETERR3(LIS_ERR_ILL_ARG, "%D is less than %D or not less than %D\n",start,is,ie);
-				return LIS_ERR_ILL_ARG;
-			}
-			v->value[start-is] = value[i];
-		}
+		for(i=0;i<count;i++) v->value[offset+i] = value[i];
 	}
 	else
 	{
-		for(i=0;i<count;i++)
-		{
-			start = i;
-			if( v->origin ) start++;
-			if( start<is || start>=ie )
-			{
-				if( v->origin )
-				{
-					is++;
-					ie++;
-					start++;
-					i++;
-				}
-				LIS_SETERR3(LIS_ERR_ILL_ARG, "%D is less than %D or not less than %D\n",start,is,ie);
-				return LIS_ERR_ILL_ARG;
-			}
-			v->value[start-is] += value[i];
-		}
+		for(i=0;i<count;i++) v->value[offset+i] += value[i];
 	}
 
 	LIS_DEBUG_FUNC_OUT;

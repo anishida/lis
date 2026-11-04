@@ -86,6 +86,27 @@ LIS_INT lis_precon_create_jacobi(LIS_SOLVER solver, LIS_PRECON precon)
     return LIS_SUCCESS;
 }
 
+/*
+ * Numeric-only Jacobi refresh.  D is owned by the preconditioner and does
+ * not alias CSR-derived D/L/U or diagonal storage.  If reading the new
+ * diagonal fails, the sequence caller discards this preconditioner.
+ */
+#undef __FUNC__
+#define __FUNC__ "lis_precon_update_jacobi"
+LIS_INT lis_precon_update_jacobi(LIS_SOLVER solver, LIS_PRECON precon)
+{
+    LIS_INT err;
+
+    if(solver==NULL || solver->A==NULL || precon==NULL ||
+       precon->precon_type!=LIS_PRECON_TYPE_JACOBI ||
+       precon->D==NULL || precon->D->n!=solver->A->n)
+        return LIS_ERR_ILL_ARG;
+
+    err=lis_matrix_get_diagonal(solver->A,precon->D);
+    if(err) return err;
+    return lis_vector_reciprocal(precon->D);
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_psolve_jacobi"
 LIS_INT lis_psolve_jacobi(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)

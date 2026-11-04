@@ -50,6 +50,7 @@
 	#include <mpi.h>
 #endif
 #include "lislib.h"
+#include "lis_solver_capabilities.h"
 
 /************************************************
  * lis_solver_init
@@ -2691,6 +2692,7 @@ LIS_INT lis_solver_sequence_prepare_precon(
 	LIS_INT err;
 	LIS_INT precon_type;
 	LIS_INT frozen_update;
+	LIS_INT jacobi_update;
 	LIS_UNSIGNED_INT structure_generation;
 	LIS_UNSIGNED_INT value_generation;
 
@@ -2785,9 +2787,18 @@ LIS_INT lis_solver_sequence_prepare_precon(
                solver->sequence_precon_refresh_policy==
                    LIS_SEQUENCE_PRECON_REFRESH_FROZEN_PATTERN &&
                precon_type==LIS_PRECON_TYPE_ILUT;
+           jacobi_update =
+               solver->sequence_precon_refresh_policy==
+                   LIS_SEQUENCE_PRECON_REFRESH_JACOBI_NUMERIC &&
+               precon_type==LIS_PRECON_TYPE_JACOBI;
            if( frozen_update )
            {
                    err = lis_precon_update_ilut_frozen(
+                           solver,solver->sequence_precon);
+           }
+           else if( jacobi_update )
+           {
+                   err = lis_precon_update_jacobi(
                            solver,solver->sequence_precon);
            }
            else
@@ -2825,7 +2836,7 @@ LIS_INT lis_solver_sequence_prepare_precon(
             * a failed frozen numerical refresh leaves the old object alive.
             * Release that object exactly once before recreating factors.
             */
-           if( frozen_update )
+           if( frozen_update || jacobi_update )
            {
                    LIS_INT destroy_err =
                        lis_solver_sequence_precon_destroy(solver);
@@ -3066,7 +3077,8 @@ LIS_INT lis_solver_set_sequence_precon_refresh_policy(
 {
     if( solver==NULL ||
         (policy!=LIS_SEQUENCE_PRECON_REFRESH_SAFE &&
-         policy!=LIS_SEQUENCE_PRECON_REFRESH_FROZEN_PATTERN) )
+         policy!=LIS_SEQUENCE_PRECON_REFRESH_FROZEN_PATTERN &&
+         policy!=LIS_SEQUENCE_PRECON_REFRESH_JACOBI_NUMERIC) )
     {
         LIS_SETERR(
             LIS_ERR_ILL_ARG,
@@ -4178,6 +4190,22 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	}
 	#endif
 	#ifdef USE_QUAD_PRECISION
+		/*
+		 * The double-double arithmetic kernels operate on real hi/lo
+		 * components.  A complex LIS_SCALAR is not a complex
+		 * double-double value; running these kernels drops imaginary
+		 * components and can silently produce incorrect results.
+		 */
+		#ifdef _COMPLEX
+		if( precision==LIS_PRECISION_QUAD ||
+		    precision==LIS_PRECISION_SWITCH )
+		{
+			LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+			           "Complex quad/switch precision is not supported\n");
+			solver->retcode = LIS_ERR_NOT_IMPLEMENTED;
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
+		#endif
 		if( precision==LIS_PRECISION_QUAD && lis_solver_execute_quad[nsolver]==NULL )
 		{
 			LIS_SETERR1(LIS_ERR_NOT_IMPLEMENTED,"Quad precision solver %s is not implemented\n",lis_solvername[nsolver]);
@@ -4237,82 +4265,68 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
      * This integration supports unscaled default-precision
      * GMRES, FGMRES, GCRO-DR and FGCRO-DR.
      */
-    if( solver->nullspace_dim>0 )
+    /*
+     * The typed preflight and solve kernel share ONE source for the
+     * solver/precision/scaling compatibility rules.  Preserve the
+     * existing error precedence and physical-basis validation here.
+     */
     {
-        if(
-            nsolver!=LIS_SOLVER_GMRES
-            &&
-            nsolver!=LIS_SOLVER_FGMRES
-            &&
-            nsolver!=LIS_SOLVER_GCRODR
-            &&
-            nsolver!=LIS_SOLVER_FGCRODR)
+        LIS_INT null_issues=0;
+        err=lis_solver_check_nullspace_configuration(solver,&null_issues);
+        if(err)
         {
-            LIS_SETERR(
-                LIS_ERR_NOT_IMPLEMENTED,
+            solver->retcode=err;
+            return err;
+        }
+        if(null_issues & LIS_NULLSPACE_CONFIG_EXACT_SOLVER)
+        {
+            LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
                 "exact nullspace deflation currently requires GMRES, FGMRES, GCRO-DR or FGCRO-DR\n");
-            solver->retcode = LIS_ERR_NOT_IMPLEMENTED;
+            solver->retcode=LIS_ERR_NOT_IMPLEMENTED;
             return LIS_ERR_NOT_IMPLEMENTED;
         }
-
-        if( scale!=LIS_SCALE_NONE )
+        if(null_issues & LIS_NULLSPACE_CONFIG_EXACT_SCALE)
         {
-            LIS_SETERR(
-                LIS_ERR_NOT_IMPLEMENTED,
+            LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
                 "exact nullspace deflation currently requires -scale none\n");
-            solver->retcode = LIS_ERR_NOT_IMPLEMENTED;
+            solver->retcode=LIS_ERR_NOT_IMPLEMENTED;
             return LIS_ERR_NOT_IMPLEMENTED;
         }
-
-        if( precision!=LIS_PRECISION_DEFAULT )
+        if(null_issues & LIS_NULLSPACE_CONFIG_EXACT_PRECISION)
         {
-            LIS_SETERR(
-                LIS_ERR_NOT_IMPLEMENTED,
+            LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
                 "exact nullspace deflation currently requires default precision\n");
-            solver->retcode = LIS_ERR_NOT_IMPLEMENTED;
+            solver->retcode=LIS_ERR_NOT_IMPLEMENTED;
             return LIS_ERR_NOT_IMPLEMENTED;
         }
-
-        if(
-            solver->nullspace==NULL
-            ||
-            solver->nullspace[0]==NULL
-            ||
-            !lis_solver_vector_compatible(
-                solver->nullspace[0],
-                x))
+        if(null_issues & LIS_NULLSPACE_CONFIG_NEAR_COMBINATION)
         {
-            LIS_SETERR(
-                LIS_ERR_ILL_ARG,
-                "exact nullspace basis is incompatible with the solution vector\n");
-            solver->retcode = LIS_ERR_ILL_ARG;
-            return LIS_ERR_ILL_ARG;
+            LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+                "near-nullspace two-level correction currently requires FGMRES, FGCRO-DR or MFAMG\n");
+            solver->retcode=LIS_ERR_NOT_IMPLEMENTED;
+            return LIS_ERR_NOT_IMPLEMENTED;
+        }
+        if(null_issues & LIS_NULLSPACE_CONFIG_NEAR_PRECISION)
+        {
+            LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+                "near-nullspace two-level correction currently requires double precision\n");
+            solver->retcode=LIS_ERR_NOT_IMPLEMENTED;
+            return LIS_ERR_NOT_IMPLEMENTED;
         }
     }
 
-   if( solver->near_nullspace_dim>0 )
-   {
-           if( nsolver!=LIS_SOLVER_FGMRES &&
-             nsolver!=LIS_SOLVER_FGCRODR &&
-             precon_type!=LIS_PRECON_TYPE_MFAMG )
-           {
-                   LIS_SETERR(
-                           LIS_ERR_NOT_IMPLEMENTED,
-                           "near-nullspace two-level correction currently requires FGMRES or FGCRO-DR\n");
-                   solver->retcode = LIS_ERR_NOT_IMPLEMENTED;
-                   return LIS_ERR_NOT_IMPLEMENTED;
-           }
-
-           if( precision!=LIS_PRECISION_DOUBLE )
-           {
-                   LIS_SETERR(
-                           LIS_ERR_NOT_IMPLEMENTED,
-                           "near-nullspace two-level correction currently requires double precision\n");
-                   solver->retcode = LIS_ERR_NOT_IMPLEMENTED;
-                   return LIS_ERR_NOT_IMPLEMENTED;
-           }
-   }
-
+    if(solver->nullspace_dim>0)
+    {
+        if(solver->nullspace==NULL ||
+           solver->nullspace[0]==NULL ||
+           !lis_solver_vector_compatible(solver->nullspace[0],x))
+        {
+            LIS_SETERR(LIS_ERR_ILL_ARG,
+                "exact nullspace basis is incompatible with the solution vector\n");
+            solver->retcode=LIS_ERR_ILL_ARG;
+            return LIS_ERR_ILL_ARG;
+        }
+    }
 
 	solver->A        = A;
 	solver->b        = b;
@@ -5245,6 +5259,7 @@ LIS_INT lis_solver_set_option(char *text, LIS_SOLVER solver)
 		err = lis_solver_set_option2(p->arg1,p->arg2,solver);
 		if( err )
 		  {
+		    lis_args_free(args);
 		    lis_solver_work_destroy(solver);
 		    solver->retcode = err;
 		    LIS_DEBUG_FUNC_OUT;		    

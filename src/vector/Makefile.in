@@ -106,8 +106,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libvector_la_LIBADD =
-am_libvector_la_OBJECTS = lis_vector.lo lis_vector_ops.lo \
-	lis_vector_opv.lo
+am_libvector_la_OBJECTS = lis_vector.lo lis_vector_real64.lo \
+	lis_vector_ops.lo lis_vector_opv.lo
 libvector_la_OBJECTS = $(am_libvector_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -129,7 +129,8 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/include
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/lis_vector.Plo \
-	./$(DEPDIR)/lis_vector_ops.Plo ./$(DEPDIR)/lis_vector_opv.Plo
+	./$(DEPDIR)/lis_vector_ops.Plo ./$(DEPDIR)/lis_vector_opv.Plo \
+	./$(DEPDIR)/lis_vector_real64.Plo
 am__mv = mv -f
 AM_V_CC = $(am__v_CC_@AM_V@)
 am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
@@ -326,6 +327,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LTLIBRARIES = libvector.la
 libvector_la_SOURCES = lis_vector.c \
+lis_vector_real64.c \
 lis_vector_ops.c \
 lis_vector_opv.c
 
@@ -400,6 +402,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_vector.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_vector_ops.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_vector_opv.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_vector_real64.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -563,6 +566,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/lis_vector.Plo
 	-rm -f ./$(DEPDIR)/lis_vector_ops.Plo
 	-rm -f ./$(DEPDIR)/lis_vector_opv.Plo
+	-rm -f ./$(DEPDIR)/lis_vector_real64.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -611,6 +615,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/lis_vector.Plo
 	-rm -f ./$(DEPDIR)/lis_vector_ops.Plo
 	-rm -f ./$(DEPDIR)/lis_vector_opv.Plo
+	-rm -f ./$(DEPDIR)/lis_vector_real64.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

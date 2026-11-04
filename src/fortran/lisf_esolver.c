@@ -90,7 +90,7 @@ void lis_esolver_destroy_f(LIS_ESOLVER_F *esolver, LIS_INT *ierr)
 
 #undef __FUNC__
 #define __FUNC__ "lis_esolve_f"
-void lis_esolve_f(LIS_MATRIX_F *A, LIS_VECTOR_F x, LIS_SCALAR *evalue0, LIS_ESOLVER_F *esolver, LIS_INT *ierr)
+void lis_esolve_f(LIS_MATRIX_F *A, LIS_VECTOR_F *x, LIS_SCALAR *evalue0, LIS_ESOLVER_F *esolver, LIS_INT *ierr)
 {
 	LIS_DEBUG_FUNC_IN;
 
@@ -103,7 +103,7 @@ void lis_esolve_f(LIS_MATRIX_F *A, LIS_VECTOR_F x, LIS_SCALAR *evalue0, LIS_ESOL
 
 #undef __FUNC__
 #define __FUNC__ "lis_gesolve_f"
-void lis_gesolve_f(LIS_MATRIX_F *A, LIS_MATRIX_F *B, LIS_VECTOR_F x, LIS_SCALAR *evalue0, LIS_ESOLVER_F *esolver, LIS_INT *ierr)
+void lis_gesolve_f(LIS_MATRIX_F *A, LIS_MATRIX_F *B, LIS_VECTOR_F *x, LIS_SCALAR *evalue0, LIS_ESOLVER_F *esolver, LIS_INT *ierr)
 {
 	LIS_DEBUG_FUNC_IN;
 
@@ -116,7 +116,7 @@ void lis_gesolve_f(LIS_MATRIX_F *A, LIS_MATRIX_F *B, LIS_VECTOR_F x, LIS_SCALAR 
 
 #undef __FUNC__
 #define __FUNC__ "lis_esolver_set_option_f"
-void lis_esolver_set_option_f(char *text, LIS_ESOLVER_F *esolver, LIS_INT *ierr, LIS_INT len)
+void lis_esolver_set_option_f(char *text, LIS_ESOLVER_F *esolver, LIS_INT *ierr, LIS_FORTRAN_CHARLEN len)
 {
 	char	buf[1024];
 	LIS_DEBUG_FUNC_IN;
@@ -132,7 +132,7 @@ void lis_esolver_set_option_f(char *text, LIS_ESOLVER_F *esolver, LIS_INT *ierr,
 
 #undef __FUNC__
 #define __FUNC__ "lis_esolver_set_optionC_f"
-void lis_esolver_set_optionC_f(LIS_ESOLVER esolver, LIS_INT *ierr)
+void lis_esolver_set_optionC_f( LIS_ESOLVER_F *esolver, LIS_INT *ierr)
 {
 	LIS_DEBUG_FUNC_IN;
 
@@ -210,7 +210,7 @@ void lis_esolver_get_residualnorm_f(LIS_ESOLVER_F *esolver, LIS_REAL *residual, 
 
 #undef __FUNC__
 #define __FUNC__ "lis_esolver_get_rhistory_f"
-void lis_esolver_get_rhistory_f(LIS_SOLVER_F *esolver, LIS_VECTOR_F v, LIS_INT *ierr)
+void lis_esolver_get_rhistory_f(LIS_SOLVER_F *esolver, LIS_VECTOR_F *v, LIS_INT *ierr)
 {
 	LIS_DEBUG_FUNC_IN;
 
@@ -223,7 +223,7 @@ void lis_esolver_get_rhistory_f(LIS_SOLVER_F *esolver, LIS_VECTOR_F v, LIS_INT *
 
 #undef __FUNC__
 #define __FUNC__ "lis_esolver_get_evalues_f"
-void lis_esolver_get_evalues_f(LIS_ESOLVER_F *esolver, LIS_VECTOR v, LIS_INT *ierr)
+void lis_esolver_get_evalues_f(LIS_ESOLVER_F *esolver, LIS_VECTOR_F *v, LIS_INT *ierr)
 {
 	LIS_DEBUG_FUNC_IN;
 
@@ -249,7 +249,7 @@ void lis_esolver_get_specific_evalue_f(LIS_ESOLVER_F *esolver, LIS_INT *mode, LI
 
 #undef __FUNC__
 #define __FUNC__ "lis_esolver_get_evectors_f"
-void lis_esolver_get_evectors_f(LIS_ESOLVER_F *esolver, LIS_MATRIX_F A, LIS_INT *ierr)
+void lis_esolver_get_evectors_f(LIS_ESOLVER_F *esolver, LIS_MATRIX_F *A, LIS_INT *ierr)
 {
 	LIS_DEBUG_FUNC_IN;
 
@@ -262,7 +262,7 @@ void lis_esolver_get_evectors_f(LIS_ESOLVER_F *esolver, LIS_MATRIX_F A, LIS_INT 
 
 #undef __FUNC__
 #define __FUNC__ "lis_esolver_get_specific_evector_f"
-void lis_esolver_get_specific_evector_f(LIS_ESOLVER_F *esolver, LIS_INT *mode, LIS_VECTOR x, LIS_INT *ierr)
+void lis_esolver_get_specific_evector_f(LIS_ESOLVER_F *esolver, LIS_INT *mode, LIS_VECTOR_F *x, LIS_INT *ierr)
 {
 	LIS_DEBUG_FUNC_IN;
 
@@ -275,7 +275,7 @@ void lis_esolver_get_specific_evector_f(LIS_ESOLVER_F *esolver, LIS_INT *mode, L
 
 #undef __FUNC__
 #define __FUNC__ "lis_esolver_get_residualnorms_f"
-void lis_esolver_get_residualnorms_f(LIS_ESOLVER_F *esolver, LIS_VECTOR v, LIS_INT *ierr)
+void lis_esolver_get_residualnorms_f(LIS_ESOLVER_F *esolver, LIS_VECTOR_F *v, LIS_INT *ierr)
 {
 	LIS_DEBUG_FUNC_IN;
 
@@ -301,7 +301,7 @@ void lis_esolver_get_specific_residualnorm_f(LIS_ESOLVER_F *esolver, LIS_INT *mo
 
 #undef __FUNC__
 #define __FUNC__ "lis_esolver_get_iters_f"
-void lis_esolver_get_iters_f(LIS_ESOLVER_F *esolver, LIS_VECTOR v, LIS_INT *ierr)
+void lis_esolver_get_iters_f(LIS_ESOLVER_F *esolver, LIS_VECTOR_F *v, LIS_INT *ierr)
 {
 	LIS_DEBUG_FUNC_IN;
 
@@ -340,7 +340,7 @@ void lis_esolver_get_esolver_f(LIS_ESOLVER_F *esolver, LIS_INT *nsol, LIS_INT *i
 
 #undef __FUNC__
 #define __FUNC__ "lis_esolver_get_esolvername_f"
-void lis_esolver_get_esolvername_f(LIS_INT *esolver, char *name, LIS_INT *ierr, LIS_INT len)
+void lis_esolver_get_esolvername_f(LIS_INT *esolver, char *name, LIS_INT *ierr, LIS_FORTRAN_CHARLEN len)
 {
 	char	buf[1024];
 	LIS_DEBUG_FUNC_IN;

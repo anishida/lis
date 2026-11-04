@@ -106,11 +106,13 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libesolver_la_LIBADD =
-am_libesolver_la_OBJECTS = lis_esolver.lo lis_esolver_config.lo \
+am_libesolver_la_OBJECTS = lis_esolver.lo \
+	lis_gesolve_matrix_session.lo lis_esolver_config.lo \
 	lis_esolver_selection.lo lis_esolver_selection_copy.lo \
 	lis_esolver_block.lo lis_esolver_ai.lo lis_esolver_cg.lo \
 	lis_esolver_ii.lo lis_esolver_li.lo lis_esolver_pi.lo \
-	lis_esolver_rqi.lo lis_esolver_feast.lo lis_esolver_si.lo
+	lis_esolver_rqi.lo lis_esolver_feast.lo lis_esolver_si.lo \
+	lis_krylov.lo lis_esolver_krylov.lo
 libesolver_la_OBJECTS = $(am_libesolver_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -137,11 +139,15 @@ am__depfiles_remade = ./$(DEPDIR)/lis_esolver.Plo \
 	./$(DEPDIR)/lis_esolver_cg.Plo \
 	./$(DEPDIR)/lis_esolver_config.Plo \
 	./$(DEPDIR)/lis_esolver_feast.Plo \
-	./$(DEPDIR)/lis_esolver_ii.Plo ./$(DEPDIR)/lis_esolver_li.Plo \
-	./$(DEPDIR)/lis_esolver_pi.Plo ./$(DEPDIR)/lis_esolver_rqi.Plo \
+	./$(DEPDIR)/lis_esolver_ii.Plo \
+	./$(DEPDIR)/lis_esolver_krylov.Plo \
+	./$(DEPDIR)/lis_esolver_li.Plo ./$(DEPDIR)/lis_esolver_pi.Plo \
+	./$(DEPDIR)/lis_esolver_rqi.Plo \
 	./$(DEPDIR)/lis_esolver_selection.Plo \
 	./$(DEPDIR)/lis_esolver_selection_copy.Plo \
-	./$(DEPDIR)/lis_esolver_si.Plo
+	./$(DEPDIR)/lis_esolver_si.Plo \
+	./$(DEPDIR)/lis_gesolve_matrix_session.Plo \
+	./$(DEPDIR)/lis_krylov.Plo
 am__mv = mv -f
 AM_V_CC = $(am__v_CC_@AM_V@)
 am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
@@ -337,19 +343,13 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LTLIBRARIES = libesolver.la
-libesolver_la_SOURCES = lis_esolver.c \
-lis_esolver_config.c \
-lis_esolver_selection.c lis_esolver_selection_copy.c \
-lis_esolver_block.c \
-lis_esolver_ai.c \
-lis_esolver_cg.c \
-lis_esolver_ii.c \
-lis_esolver_li.c \
-lis_esolver_pi.c \
-lis_esolver_rqi.c \
-lis_esolver_feast.c \
-lis_esolver_si.c	
-
+libesolver_la_SOURCES = lis_esolver.c lis_gesolve_matrix_session.c \
+	lis_esolver_config.c lis_esolver_selection.c \
+	lis_esolver_selection_copy.c lis_esolver_block.c \
+	lis_esolver_ai.c lis_esolver_cg.c lis_esolver_ii.c \
+	lis_esolver_li.c lis_esolver_pi.c lis_esolver_rqi.c \
+	lis_esolver_feast.c lis_esolver_si.c lis_krylov.c \
+	lis_esolver_krylov.c
 AM_CFLAGS = -I$(top_srcdir)/include
 CLEANFILES = *.il
 PPF77COMPILE = $(F77) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
@@ -425,12 +425,15 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_config.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_feast.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_ii.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_krylov.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_li.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_pi.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_rqi.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_selection.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_selection_copy.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_esolver_si.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_gesolve_matrix_session.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_krylov.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -598,12 +601,15 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/lis_esolver_config.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_feast.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_ii.Plo
+	-rm -f ./$(DEPDIR)/lis_esolver_krylov.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_li.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_pi.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_rqi.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_selection.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_selection_copy.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_si.Plo
+	-rm -f ./$(DEPDIR)/lis_gesolve_matrix_session.Plo
+	-rm -f ./$(DEPDIR)/lis_krylov.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -656,12 +662,15 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/lis_esolver_config.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_feast.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_ii.Plo
+	-rm -f ./$(DEPDIR)/lis_esolver_krylov.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_li.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_pi.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_rqi.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_selection.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_selection_copy.Plo
 	-rm -f ./$(DEPDIR)/lis_esolver_si.Plo
+	-rm -f ./$(DEPDIR)/lis_gesolve_matrix_session.Plo
+	-rm -f ./$(DEPDIR)/lis_krylov.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

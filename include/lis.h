@@ -43,7 +43,7 @@ extern "C" {
 #endif
 
 /**************************************/
-#define LIS_VERSION	"2.1.21"
+#define LIS_VERSION	"2.1.22"
 /**************************************/
 #include <stdio.h>
 #ifdef USE_COMPLEX
@@ -221,7 +221,7 @@ extern "C" {
 #define LIS_FGCRODR_RECYCLE_TRANSPORT 3
 #define LIS_FGCRODR_RECYCLE_REJECT 4
 
-#define LIS_ESOLVER_LEN 17
+#define LIS_ESOLVER_LEN 18
 #define LIS_ESOLVER_PI 1
 #define LIS_ESOLVER_II 2
 #define LIS_ESOLVER_RQI 3
@@ -239,6 +239,7 @@ extern "C" {
 #define LIS_ESOLVER_GLI 15
 #define LIS_ESOLVER_GAI 16
 #define LIS_ESOLVER_FEAST 17
+#define LIS_ESOLVER_KRYLOV 18
 
 #define LIS_EIGEN_TRANSFORM_AUTO 0
 #define LIS_EIGEN_TRANSFORM_SHIFT_INVERT 1
@@ -304,9 +305,14 @@ extern "C" {
 #define LIS_SEQUENCE_POLICY_MANUAL 0
 #define LIS_SEQUENCE_POLICY_AUTO 1
 
-/* Persistent preconditioner refresh policy for value-only changes. */
+/* Persistent preconditioner refresh policies for value-only changes.
+ * SAFE: conservative reset; FROZEN_PATTERN: existing ILUT numeric refresh.
+ * JACOBI_NUMERIC: separate opt-in Jacobi diagonal refresh on verified CSR.
+ * This avoids changing semantics for existing FROZEN_PATTERN users.
+ */
 #define LIS_SEQUENCE_PRECON_REFRESH_SAFE 0
 #define LIS_SEQUENCE_PRECON_REFRESH_FROZEN_PATTERN 1
+#define LIS_SEQUENCE_PRECON_REFRESH_JACOBI_NUMERIC 2
 
 #define LIS_MATRIX_ASSEMBLING 0
 #define LIS_MATRIX_CSR 1
@@ -1172,6 +1178,13 @@ struct LIS_ESOLVER_STRUCT
         LIS_INT subspace_retry_min;
         LIS_INT subspace_retry_attempts;
         LIS_INT subspace_retry_final_size;
+        /* Native Krylov options retained outside numeric option arrays. */
+        LIS_INT krylov_ncv;
+        LIS_REAL krylov_residual_scale;
+        LIS_REAL krylov_inner_tol;
+        LIS_INT krylov_allow_semidefinite;
+        LIS_INT krylov_hard_locking;
+        char krylov_which[3];
 };
 typedef struct LIS_ESOLVER_STRUCT *LIS_ESOLVER;
 
@@ -1223,6 +1236,45 @@ extern "C"
 	extern LIS_INT lis_vector_set_external(LIS_VECTOR vec, LIS_SCALAR *value);
 /*NEH support for extended "solve_kernel" workflow*/
 	extern LIS_INT lis_vector_psd_reset_scale(LIS_VECTOR vec); 
+/*
+ * Strided application real64 transfers for default-precision local vectors.
+ * Import/export validate input before modifying the destination. REJECT_LOSS
+ * refuses nonreal complex values or nonrepresentable outputs.
+ * NULL src/dst is permitted for zero-length vectors and valid stride/policy.
+ * Nonfinite input, including ignored imaginary parts under ALLOW_LOSS,
+ * is rejected rather than exporting potentially divergent solver values.
+ * The transfer remains serial to preserve validate-before-write behavior.
+ * This PR provides C-only APIs; Fortran wrappers are not included.
+ */
+#define LIS_VECTOR_REAL64_REJECT_LOSS 0
+#define LIS_VECTOR_REAL64_ALLOW_LOSS  1
+extern LIS_INT lis_vector_import_real64(
+    LIS_VECTOR vector,const double *src,LIS_INT length,LIS_INT stride);
+extern LIS_INT lis_vector_export_real64(
+    LIS_VECTOR vector,double *dst,LIS_INT length,LIS_INT stride,
+    LIS_INT loss_policy);
+
+/*
+ * Atomic real64 export with bounded imaginary content. The largest
+ * imaginary magnitude must satisfy:
+ *
+ *   max(abs(imag(v))) <= absolute_imag_tolerance
+ *                        + relative_imag_tolerance*max(abs(real(v))).
+ *
+ * The first tolerance argument is absolute, the second is relative.
+ * Maxima are taken over the LOCAL vector (v->n), not across MPI ranks;
+ * no MPI collective is performed.
+ * Both tolerances must be finite and nonnegative. REJECT_LOSS still rejects
+ * every nonzero imaginary component and any real-precision loss; ALLOW_LOSS
+ * allows dropping imaginary components only within the supplied bounds.
+ * The destination is not modified on any failure, including nonfinite data.
+ * The same checked vector/stride and zero-length rules as export_real64 apply.
+ */
+extern LIS_INT lis_vector_export_real64_tolerant(
+    LIS_VECTOR vector,double *dst,LIS_INT length,LIS_INT stride,
+    LIS_INT loss_policy,LIS_REAL absolute_imag_tolerance,
+    LIS_REAL relative_imag_tolerance);
+
 	extern LIS_INT lis_vector_destroy(LIS_VECTOR vec);
 	extern LIS_INT lis_vector_duplicate(void *vin, LIS_VECTOR *vout);
 	extern LIS_INT lis_vector_get_size(LIS_VECTOR v, LIS_INT *local_n, LIS_INT *global_n);
@@ -1232,6 +1284,7 @@ extern "C"
 	extern LIS_INT lis_vector_set_value(LIS_INT flag, LIS_INT i, LIS_SCALAR value, LIS_VECTOR v);
 	extern LIS_INT lis_vector_set_values(LIS_INT flag, LIS_INT count, LIS_INT index[], LIS_SCALAR value[], LIS_VECTOR v);
 	extern LIS_INT lis_vector_set_values2(LIS_INT flag, LIS_INT start, LIS_INT count, LIS_SCALAR value[], LIS_VECTOR v);
+	extern LIS_INT lis_vector_unset(LIS_VECTOR v);
 	extern LIS_INT lis_vector_print(LIS_VECTOR x);
 	extern LIS_INT lis_vector_scatter(LIS_SCALAR value[], LIS_VECTOR v);
         extern LIS_INT lis_vector_gather(LIS_VECTOR v, LIS_SCALAR value[]);
@@ -1539,7 +1592,48 @@ extern "C"
 	extern LIS_INT lis_esolver_set_refine_linear_options(const char *text, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_refine_gap_fraction(LIS_REAL fraction, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver);
-	extern LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver);  
+	extern LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver);
+/* Generic, conservative matrix-pair generalized eigensolver session.
+ * The session owns both CSR caches and the eigensolver.  A previous
+ * eigensolver is fully retired before either cache changes. Only the
+ * cached CSR matrices may be reused; eigensolver work is rebuilt.
+ *
+ * A/B/x are owned by the caller and may remain referenced by the eigensolver
+ * after solve() returns. Keep them alive until the NEXT solve(), reset(), or
+ * destroy() has retired those references. Do not mutate them concurrently
+ * with session use. Call reset() before freeing a previously used source.
+ *
+ * USER/OPERATOR inputs with row access are materialized as CSR. Native
+ * matrices pass through unchanged. This v1 supports single-process
+ * distributions (including MPI builds with one rank).
+ *
+ * get_esolver returns a BORROWED configuration handle, invalidated by the
+ * next solve, reset, or destroy. Reacquire before changing options.
+ * Indexed result access copies into a caller-owned default-precision vector
+ * with matching local/global dimensions; no internal pointers escape.
+ * Policy outputs are committed only after a successful solve.
+ */
+typedef struct LIS_GESOLVE_MATRIX_SESSION_STRUCT *LIS_GESOLVE_MATRIX_SESSION;
+extern LIS_INT lis_gesolve_matrix_session_create(
+    LIS_GESOLVE_MATRIX_SESSION *session);
+extern LIS_INT lis_gesolve_matrix_session_get_esolver(
+    LIS_GESOLVE_MATRIX_SESSION session,LIS_ESOLVER *borrowed_esolver);
+extern LIS_INT lis_gesolve_matrix_session_solve(
+    LIS_GESOLVE_MATRIX_SESSION session,LIS_MATRIX A,LIS_MATRIX B,
+    LIS_VECTOR x,LIS_INT *policy_A,LIS_INT *policy_B);
+extern LIS_INT lis_gesolve_matrix_session_get_nev(
+    LIS_GESOLVE_MATRIX_SESSION session,LIS_INT *computed_nev);
+extern LIS_INT lis_gesolve_matrix_session_get_eigenpair(
+    LIS_GESOLVE_MATRIX_SESSION session,LIS_INT mode,
+    LIS_SCALAR *eigenvalue,LIS_VECTOR eigenvector_out);
+extern LIS_INT lis_gesolve_matrix_session_reset(
+    LIS_GESOLVE_MATRIX_SESSION session);
+extern void lis_gesolve_matrix_session_destroy(
+    LIS_GESOLVE_MATRIX_SESSION session);
+
+  
+	  
+	  
 	extern LIS_INT lis_esolver_get_iter(LIS_ESOLVER esolver, LIS_INT *iter);
 	extern LIS_INT lis_esolver_get_iterex(LIS_ESOLVER esolver, LIS_INT *iter, LIS_INT *iter_double, LIS_INT *iter_quad);
 	extern LIS_INT lis_esolver_get_time(LIS_ESOLVER esolver, double *time);

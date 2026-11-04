@@ -4,6 +4,7 @@
 
 #include "lis_config.h"
 #include "lis.h"
+#include "lis_vector.h"
 
 typedef struct
 {
@@ -464,6 +465,107 @@ cleanup:
 }
 
 
+
+#if defined(USE_QUAD_PRECISION) && defined(_COMPLEX)
+/*
+ * Complex double-double is not implemented.  Verify that requesting it
+ * is rejected before arithmetic runs, rather than producing an invalid
+ * result or spending maxiter iterations on a broken recurrence.
+ */
+static int
+check_unsupported_complex_quad(void)
+{
+    const char *options[] = {
+        "-i gmres -p none -f quad -maxiter 40 -print none",
+        "-i gmres -p none -f switch -maxiter 40 -print none",
+        "-i cg -p none -f quad -maxiter 40 -print none"
+    };
+    LIS_MATRIX A = NULL;
+    LIS_VECTOR b = NULL, x = NULL;
+    LIS_SOLVER solver = NULL;
+    LIS_INT err, status, i;
+    int failed = 0;
+
+    err = build_matrix(&A);
+    if(err) goto fail;
+    err = lis_vector_duplicate(A,&b);
+    if(err) goto fail;
+    err = lis_vector_duplicate(A,&x);
+    if(err) goto fail;
+    lis_vector_set_all((LIS_SCALAR)1.0,b);
+
+    for(i=0;i<3;i++)
+    {
+        err = lis_solver_create(&solver);
+        if(err) goto fail;
+        err = lis_solver_set_option((char *)options[i],solver);
+        if(err) goto fail;
+        lis_vector_set_all((LIS_SCALAR)0.0,x);
+        err = lis_solve(A,b,x,solver);
+        status = -1;
+        lis_solver_get_status(solver,&status);
+        if(err!=LIS_ERR_NOT_IMPLEMENTED ||
+           status!=LIS_ERR_NOT_IMPLEMENTED)
+        {
+            fprintf(stderr,
+                    "Complex double-double was not rejected (%s): api=%d status=%d\n",
+                    options[i],(int)err,(int)status);
+            failed = 1;
+        }
+        lis_solver_destroy(solver);
+        solver = NULL;
+    }
+    goto cleanup;
+
+fail:
+    fprintf(stderr,"Complex precision rejection test setup failed: %d\n",
+            (int)err);
+    failed = 1;
+
+cleanup:
+    if(solver) lis_solver_destroy(solver);
+    if(x) lis_vector_destroy(x);
+    if(b) lis_vector_destroy(b);
+    if(A) lis_matrix_destroy(A);
+    return failed;
+}
+#endif
+
+#ifdef USE_QUAD_PRECISION
+/*
+ * Quad vectors own a second work buffer. Repeated unset/reuse must not
+ * orphan that allocation when lis_vector_reuse replaces the buffer.
+ */
+static int test_quad_vector_unset_reuse(void)
+{
+    LIS_VECTOR v = NULL;
+    LIS_SCALAR *old_work;
+    LIS_INT err;
+    int i, failed = 1;
+
+    err = lis_vector_createex(LIS_PRECISION_QUAD, LIS_COMM_WORLD, &v);
+    if(err) goto done;
+    err = lis_vector_set_size(v, 0, 8);
+    if(err || v->n!=8 || v->work==NULL) goto done;
+
+    for(i=0;i<4;i++)
+    {
+        old_work = v->work;
+        if(!lis_is_malloc(old_work)) goto done;
+        err = lis_vector_unset(v);
+        if(err || v->work!=NULL || lis_is_malloc(old_work)) goto done;
+        err = lis_vector_reuse(&v);
+        if(err || v==NULL || v->work==NULL ||
+           !lis_is_malloc(v->work)) goto done;
+    }
+    failed = 0;
+done:
+    if(v) lis_vector_destroy(v);
+    if(failed) fprintf(stderr, "QUAD_VECTOR_UNSET_REUSE=FAIL\n");
+    return failed;
+}
+#endif
+
 int
 main(
     int argc,
@@ -488,6 +590,10 @@ main(
         return 1;
     }
 
+#ifdef USE_QUAD_PRECISION
+    failed |= test_quad_vector_unset_reuse();
+#endif
+
     failed |=
         run_case(
             "GMRES",
@@ -511,6 +617,9 @@ main(
 
 #ifdef USE_QUAD_PRECISION
 
+#ifdef _COMPLEX
+    failed |= check_unsupported_complex_quad();
+#else
     failed |=
         run_case(
             "GMRES_SW",
@@ -523,6 +632,7 @@ main(
             "-maxiter 2000 "
             "-tol 1e-8 "
             "-print none");
+#endif /* !_COMPLEX */
 
 #endif
 
