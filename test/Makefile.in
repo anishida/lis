@@ -152,7 +152,8 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	test_krylov_window$(EXEEXT) test_krylov_openmp$(EXEEXT) \
 	test_krylov_projected$(EXEEXT) test_krylov_workspace$(EXEEXT) \
 	test_krylov_unified$(EXEEXT) test_krylov_adaptive_ex$(EXEEXT) \
-	test_krylov_api_contract$(EXEEXT)
+	test_krylov_api_contract$(EXEEXT) \
+	test_krylov_spectral_restart$(EXEEXT)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_3 = test2f test6f 
@@ -411,6 +412,10 @@ test_krylov_api_contract_OBJECTS =  \
 	$(am_test_krylov_api_contract_OBJECTS)
 test_krylov_api_contract_LDADD = $(LDADD)
 test_krylov_api_contract_DEPENDENCIES =
+am_test_krylov_spectral_restart_OBJECTS = test_krylov_spectral_restart.$(OBJEXT)
+test_krylov_spectral_restart_OBJECTS = $(am_test_krylov_spectral_restart_OBJECTS)
+test_krylov_spectral_restart_LDADD = $(LDADD)
+test_krylov_spectral_restart_DEPENDENCIES =
 am_test_krylov_inertia_OBJECTS = test_krylov_inertia.$(OBJEXT)
 test_krylov_inertia_OBJECTS = $(am_test_krylov_inertia_OBJECTS)
 test_krylov_inertia_LDADD = $(LDADD)
@@ -879,6 +884,7 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/test5.Po ./$(DEPDIR)/test6.Po ./$(DEPDIR)/test7.Po \
 	./$(DEPDIR)/test_krylov_adaptive_ex.Po \
 	./$(DEPDIR)/test_krylov_api_contract.Po \
+	./$(DEPDIR)/test_krylov_spectral_restart.Po \
 	./$(DEPDIR)/test_krylov_inertia.Po \
 	./$(DEPDIR)/test_krylov_lis.Po \
 	./$(DEPDIR)/test_krylov_modes.Po \
@@ -1013,6 +1019,7 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(test_krylov_inertia_SOURCES) $(test_krylov_lis_SOURCES) \
 	$(test_krylov_modes_SOURCES) $(test_krylov_openmp_SOURCES) \
 	$(test_krylov_projected_SOURCES) \
+	$(test_krylov_spectral_restart_SOURCES) \
 	$(test_krylov_regression_SOURCES) \
 	$(test_krylov_semidefinite_SOURCES) \
 	$(test_krylov_sparse_SOURCES) $(test_krylov_stress_SOURCES) \
@@ -1090,6 +1097,7 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(test_krylov_inertia_SOURCES) $(test_krylov_lis_SOURCES) \
 	$(test_krylov_modes_SOURCES) $(test_krylov_openmp_SOURCES) \
 	$(test_krylov_projected_SOURCES) \
+	$(test_krylov_spectral_restart_SOURCES) \
 	$(test_krylov_regression_SOURCES) \
 	$(test_krylov_semidefinite_SOURCES) \
 	$(test_krylov_sparse_SOURCES) $(test_krylov_stress_SOURCES) \
@@ -1732,7 +1740,8 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	test_krylov_openmp$(EXEEXT) test_krylov_projected$(EXEEXT) \
 	test_krylov_workspace$(EXEEXT) test_krylov_unified$(EXEEXT) \
 	test_krylov_adaptive_ex$(EXEEXT) \
-	test_krylov_api_contract$(EXEEXT)
+	test_krylov_api_contract$(EXEEXT) \
+	test_krylov_spectral_restart$(EXEEXT)
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
 testgesolvepair_SOURCES = testgesolvepair.c
@@ -1750,6 +1759,7 @@ test_krylov_workspace_SOURCES = test_krylov_workspace.c
 test_krylov_unified_SOURCES = test_krylov_unified.c
 test_krylov_adaptive_ex_SOURCES = test_krylov_adaptive_ex.c
 test_krylov_api_contract_SOURCES = test_krylov_api_contract.c
+test_krylov_spectral_restart_SOURCES = test_krylov_spectral_restart.c
 all: all-am
 
 .SUFFIXES:
@@ -2087,6 +2097,10 @@ test_krylov_openmp$(EXEEXT): $(test_krylov_openmp_OBJECTS) $(test_krylov_openmp_
 test_krylov_projected$(EXEEXT): $(test_krylov_projected_OBJECTS) $(test_krylov_projected_DEPENDENCIES) $(EXTRA_test_krylov_projected_DEPENDENCIES) 
 	@rm -f test_krylov_projected$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test_krylov_projected_OBJECTS) $(test_krylov_projected_LDADD) $(LIBS)
+
+test_krylov_spectral_restart$(EXEEXT): $(test_krylov_spectral_restart_OBJECTS) $(test_krylov_spectral_restart_DEPENDENCIES) $(EXTRA_test_krylov_spectral_restart_DEPENDENCIES) 
+	@rm -f test_krylov_spectral_restart$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(test_krylov_spectral_restart_OBJECTS) $(test_krylov_spectral_restart_LDADD) $(LIBS)
 
 test_krylov_regression$(EXEEXT): $(test_krylov_regression_OBJECTS) $(test_krylov_regression_DEPENDENCIES) $(EXTRA_test_krylov_regression_DEPENDENCIES) 
 	@rm -f test_krylov_regression$(EXEEXT)
@@ -2544,6 +2558,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_modes.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_openmp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_projected.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_spectral_restart.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_regression.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_semidefinite.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_sparse.Po@am__quote@ # am--include-marker
@@ -3578,6 +3593,13 @@ test_krylov_adaptive_ex.log: test_krylov_adaptive_ex$(EXEEXT)
 test_krylov_api_contract.log: test_krylov_api_contract$(EXEEXT)
 	@p='test_krylov_api_contract$(EXEEXT)'; \
 	b='test_krylov_api_contract'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$f" \
+	--log-file $b.log --trs-file $b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test_krylov_spectral_restart.log: test_krylov_spectral_restart$(EXEEXT)
+	@p='test_krylov_spectral_restart$(EXEEXT)'; \
+	b='test_krylov_spectral_restart'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -3710,6 +3732,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/test7.Po
 	-rm -f ./$(DEPDIR)/test_krylov_adaptive_ex.Po
 	-rm -f ./$(DEPDIR)/test_krylov_api_contract.Po
+	-rm -f ./$(DEPDIR)/test_krylov_spectral_restart.Po
 	-rm -f ./$(DEPDIR)/test_krylov_inertia.Po
 	-rm -f ./$(DEPDIR)/test_krylov_lis.Po
 	-rm -f ./$(DEPDIR)/test_krylov_modes.Po
@@ -3889,6 +3912,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/test7.Po
 	-rm -f ./$(DEPDIR)/test_krylov_adaptive_ex.Po
 	-rm -f ./$(DEPDIR)/test_krylov_api_contract.Po
+	-rm -f ./$(DEPDIR)/test_krylov_spectral_restart.Po
 	-rm -f ./$(DEPDIR)/test_krylov_inertia.Po
 	-rm -f ./$(DEPDIR)/test_krylov_lis.Po
 	-rm -f ./$(DEPDIR)/test_krylov_modes.Po

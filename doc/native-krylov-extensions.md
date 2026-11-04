@@ -73,6 +73,32 @@ workspace memory compared with fixed `ncv=ncv_max`; a different
 convergence trajectory may increase operator work. Equal-capacity
 fixed-`ncv` runs are essential performance baselines.
 
+### Spectrum-aware restart retention (experimental)
+
+When `ext.adaptive_ncv = 1`, the solver can retain some additional Ritz
+vectors across a full-subspace restart if the sorted Ritz values are
+tightly clustered at the usual retention boundary. This is distinct
+from increasing the active `ncv`: it avoids splitting a near-degenerate
+group of Ritz values while reserving at least one fresh direction for
+expansion. The number retained is bounded by the existing wanted count,
+the active subspace dimension and a cap of roughly three quarters of
+the reserved capacity.
+
+For `ext.adaptive_ncv = 0` or the original
+`lis_krylov_symmetric()` entry point, the pre-existing half-space
+restart policy and scratch allocation are unchanged. Adaptive
+workspaces reserve up to three quarters of the maximum `ncv` in
+temporary restart storage rather than the historical half-space
+scratch, so memory use **increases** when spectrum-aware retention is
+enabled. The same buffer is reused across solves; no per-restart
+allocation is introduced.
+
+The heuristic is *not* guaranteed to improve every spectrum. Compare
+to equal-capacity fixed-size solves and assess operator applications,
+restarts, convergence and peak memory. The existing strict residual
+acceptance rules remain unchanged. This is not an implicitly restarted
+Lanczos implementation and does not introduce QR shifts.
+
 ## Reusable allocation
 
 Use a workspace when multiple solves share a compatible solver shape:

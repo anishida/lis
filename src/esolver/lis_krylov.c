@@ -640,6 +640,54 @@ static void update_projected(struct krylov_workspace *s,
     }
 }
 
+/* Prefer to keep a Ritz cluster intact at a restart boundary.
+ * Scores use the selection scale: algebraic for LA/SA, magnitude
+ * for LM/SM. Never retain the entire space: at least one expansion
+ * direction must remain available. This is a conservative policy,
+ * bounded to m/4 extra Ritz vectors to limit projection work. */
+static int restart_keep_spectrum(const struct krylov_workspace *s,
+                                 int m, int nev, const char *which)
+{
+    int keep = m / 2, baseline, max_extra, j;
+    double first, last, typical_gap;
+    int by_magnitude = (which[1] == 'M');
+
+    if (keep < nev) keep = nev;
+    if (keep >= m - 1) return m - 1;
+    baseline = keep;
+    max_extra = m / 4;
+    if (max_extra < 1) max_extra = 1;
+
+    first = s->eval[s->order[0]];
+    last = s->eval[s->order[m - 1]];
+    if (by_magnitude) {
+        first = fabs(first);
+        last = fabs(last);
+    }
+    typical_gap = fabs(first - last) / (double)(m - 1);
+    if (!isfinite(typical_gap) || typical_gap == 0.0)
+        return keep;
+
+    /* The scratch allocation holds max(nev, ceil(3*ncv/4))
+     * columns, including for a reused or adaptive workspace. */
+    for (j = baseline; j < m - 2 && j < baseline + max_extra &&
+         j < (3 * s->ncv + 3) / 4; ++j) {
+        double left = s->eval[s->order[j - 1]];
+        double right = s->eval[s->order[j]];
+        double gap;
+        if (by_magnitude) {
+            left = fabs(left);
+            right = fabs(right);
+        }
+        gap = fabs(left - right);
+        /* Only extend through Ritz values substantially closer
+         * than the average separation across the active spectrum. */
+        if (gap > 0.25 * typical_gap) break;
+        ++keep;
+    }
+    return keep;
+}
+
 static void restart_basis(struct krylov_workspace *s,
                           int m, int retain)
 {
@@ -750,7 +798,8 @@ static int validate_extension(const lis_krylov_ext_options *ext,
 
 static int allocate_workspace_buffers(struct krylov_workspace *s,
                                       int n, int ncv, int nev,
-                                      int transform, int hard_locking)
+                                      int transform, int hard_locking,
+                                      int spectrum_aware)
 {
     size_t basis_size, dense_size, scratch_size;
     size_t max_doubles, scratch_columns;
@@ -762,7 +811,11 @@ static int allocate_workspace_buffers(struct krylov_workspace *s,
      * The locked basis uses nev <= ncv columns, so the basis bound
      * below also covers its (nev * n) allocation. */
     max_doubles = SIZE_MAX / sizeof(double);
-    scratch_columns = (size_t)(nev > ncv / 2 ? nev : ncv / 2);
+    /* Only adaptive configurations need additional Ritz restart
+     * workspace. Legacy allocations retain their original size. */
+    scratch_columns = (size_t)(spectrum_aware ?
+                               (3 * ncv + 3) / 4 : ncv / 2);
+    if (scratch_columns < (size_t)nev) scratch_columns = (size_t)nev;
     if ((size_t)n > max_doubles / (size_t)ncv ||
         (size_t)ncv > max_doubles / (size_t)ncv ||
         (size_t)n > max_doubles / scratch_columns)
@@ -836,7 +889,8 @@ int lis_krylov_workspace_create(const lis_krylov_problem *p,
     w = (lis_krylov_workspace *)calloc(1, sizeof(*w));
     if (!w) return LIS_KRYLOV_NO_MEMORY;
     rc = allocate_workspace_buffers(&w->buffers, p->n, capacity,
-                                    o->nev, p->transform, o->hard_locking);
+                                    o->nev, p->transform, o->hard_locking,
+                                    ext && ext->adaptive_ncv);
     if (rc) { free(w); return rc; }
     w->n = p->n;
     w->ncv = ncv;
@@ -918,7 +972,8 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
         s = reuse->buffers;
     } else {
         rc = allocate_workspace_buffers(&s, p->n, capacity, nev,
-                                        p->transform, o->hard_locking);
+                                        p->transform, o->hard_locking,
+                                        ext && ext->adaptive_ncv);
         if (rc != LIS_KRYLOV_SUCCESS) return rc;
     }
     if (ext_stats)
@@ -1148,8 +1203,9 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
                 }
             }
             if (m >= ncv) {
-                int keep = m / 2;
-                if (keep < nev) keep = nev;
+                int keep = ext && ext->adaptive_ncv ?
+                    restart_keep_spectrum(&s, m, nev, which) :
+                    (m / 2 < nev ? nev : m / 2);
                 if (keep >= m) keep = m - 1;
                 restart_basis(&s, m, keep);
                 ++stats->restarts;
