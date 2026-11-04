@@ -152,7 +152,8 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	test_krylov_window$(EXEEXT) test_krylov_openmp$(EXEEXT) \
 	test_krylov_projected$(EXEEXT) test_krylov_workspace$(EXEEXT) \
 	test_krylov_unified$(EXEEXT) test_krylov_adaptive_ex$(EXEEXT) \
-	test_krylov_api_contract$(EXEEXT)
+	test_krylov_api_contract$(EXEEXT) \
+	test_krylov_cayley_prototype$(EXEEXT)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_3 = test2f test6f 
@@ -411,6 +412,10 @@ test_krylov_api_contract_OBJECTS =  \
 	$(am_test_krylov_api_contract_OBJECTS)
 test_krylov_api_contract_LDADD = $(LDADD)
 test_krylov_api_contract_DEPENDENCIES =
+am_test_krylov_cayley_prototype_OBJECTS = test_krylov_cayley_prototype.$(OBJEXT)
+test_krylov_cayley_prototype_OBJECTS = $(am_test_krylov_cayley_prototype_OBJECTS)
+test_krylov_cayley_prototype_LDADD = $(LDADD)
+test_krylov_cayley_prototype_DEPENDENCIES =
 am_test_krylov_inertia_OBJECTS = test_krylov_inertia.$(OBJEXT)
 test_krylov_inertia_OBJECTS = $(am_test_krylov_inertia_OBJECTS)
 test_krylov_inertia_LDADD = $(LDADD)
@@ -879,6 +884,7 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/test5.Po ./$(DEPDIR)/test6.Po ./$(DEPDIR)/test7.Po \
 	./$(DEPDIR)/test_krylov_adaptive_ex.Po \
 	./$(DEPDIR)/test_krylov_api_contract.Po \
+	./$(DEPDIR)/test_krylov_cayley_prototype.Po \
 	./$(DEPDIR)/test_krylov_inertia.Po \
 	./$(DEPDIR)/test_krylov_lis.Po \
 	./$(DEPDIR)/test_krylov_modes.Po \
@@ -1010,6 +1016,7 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(test7f_SOURCES) $(test8f_SOURCES) \
 	$(test_krylov_adaptive_ex_SOURCES) \
 	$(test_krylov_api_contract_SOURCES) \
+	$(test_krylov_cayley_prototype_SOURCES) \
 	$(test_krylov_inertia_SOURCES) $(test_krylov_lis_SOURCES) \
 	$(test_krylov_modes_SOURCES) $(test_krylov_openmp_SOURCES) \
 	$(test_krylov_projected_SOURCES) \
@@ -1087,6 +1094,7 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(test7_SOURCES) $(am__test7f_SOURCES_DIST) \
 	$(am__test8f_SOURCES_DIST) $(test_krylov_adaptive_ex_SOURCES) \
 	$(test_krylov_api_contract_SOURCES) \
+	$(test_krylov_cayley_prototype_SOURCES) \
 	$(test_krylov_inertia_SOURCES) $(test_krylov_lis_SOURCES) \
 	$(test_krylov_modes_SOURCES) $(test_krylov_openmp_SOURCES) \
 	$(test_krylov_projected_SOURCES) \
@@ -1732,7 +1740,8 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	test_krylov_openmp$(EXEEXT) test_krylov_projected$(EXEEXT) \
 	test_krylov_workspace$(EXEEXT) test_krylov_unified$(EXEEXT) \
 	test_krylov_adaptive_ex$(EXEEXT) \
-	test_krylov_api_contract$(EXEEXT)
+	test_krylov_api_contract$(EXEEXT) \
+	test_krylov_cayley_prototype$(EXEEXT)
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
 testgesolvepair_SOURCES = testgesolvepair.c
@@ -1750,6 +1759,7 @@ test_krylov_workspace_SOURCES = test_krylov_workspace.c
 test_krylov_unified_SOURCES = test_krylov_unified.c
 test_krylov_adaptive_ex_SOURCES = test_krylov_adaptive_ex.c
 test_krylov_api_contract_SOURCES = test_krylov_api_contract.c
+test_krylov_cayley_prototype_SOURCES = test_krylov_cayley_prototype.c
 all: all-am
 
 .SUFFIXES:
@@ -2067,6 +2077,10 @@ test_krylov_adaptive_ex$(EXEEXT): $(test_krylov_adaptive_ex_OBJECTS) $(test_kryl
 test_krylov_api_contract$(EXEEXT): $(test_krylov_api_contract_OBJECTS) $(test_krylov_api_contract_DEPENDENCIES) $(EXTRA_test_krylov_api_contract_DEPENDENCIES) 
 	@rm -f test_krylov_api_contract$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test_krylov_api_contract_OBJECTS) $(test_krylov_api_contract_LDADD) $(LIBS)
+
+test_krylov_cayley_prototype$(EXEEXT): $(test_krylov_cayley_prototype_OBJECTS) $(test_krylov_cayley_prototype_DEPENDENCIES) $(EXTRA_test_krylov_cayley_prototype_DEPENDENCIES) 
+	@rm -f test_krylov_cayley_prototype$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(test_krylov_cayley_prototype_OBJECTS) $(test_krylov_cayley_prototype_LDADD) $(LIBS)
 
 test_krylov_inertia$(EXEEXT): $(test_krylov_inertia_OBJECTS) $(test_krylov_inertia_DEPENDENCIES) $(EXTRA_test_krylov_inertia_DEPENDENCIES) 
 	@rm -f test_krylov_inertia$(EXEEXT)
@@ -2539,6 +2553,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test7.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_adaptive_ex.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_api_contract.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_cayley_prototype.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_inertia.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_lis.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_modes.Po@am__quote@ # am--include-marker
@@ -3582,6 +3597,13 @@ test_krylov_api_contract.log: test_krylov_api_contract$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test_krylov_cayley_prototype.log: test_krylov_cayley_prototype$(EXEEXT)
+	@p='test_krylov_cayley_prototype$(EXEEXT)'; \
+	b='test_krylov_cayley_prototype'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -3710,6 +3732,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/test7.Po
 	-rm -f ./$(DEPDIR)/test_krylov_adaptive_ex.Po
 	-rm -f ./$(DEPDIR)/test_krylov_api_contract.Po
+	-rm -f ./$(DEPDIR)/test_krylov_cayley_prototype.Po
 	-rm -f ./$(DEPDIR)/test_krylov_inertia.Po
 	-rm -f ./$(DEPDIR)/test_krylov_lis.Po
 	-rm -f ./$(DEPDIR)/test_krylov_modes.Po
@@ -3889,6 +3912,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/test7.Po
 	-rm -f ./$(DEPDIR)/test_krylov_adaptive_ex.Po
 	-rm -f ./$(DEPDIR)/test_krylov_api_contract.Po
+	-rm -f ./$(DEPDIR)/test_krylov_cayley_prototype.Po
 	-rm -f ./$(DEPDIR)/test_krylov_inertia.Po
 	-rm -f ./$(DEPDIR)/test_krylov_lis.Po
 	-rm -f ./$(DEPDIR)/test_krylov_modes.Po
