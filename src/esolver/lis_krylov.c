@@ -527,12 +527,19 @@ static int earlier(double a, double b, const char *which)
     return a < b;
 }
 
-/* The legacy selection rules retain their exact prior ordering.
- * BothEnds interleaves high/low *transformed-operator* Ritz values,
- * starting with the high end. Hard locking already removed nlocked
- * eigenpairs, so continue at the appropriate side after deflation. */
+/* Legacy Ritz selection is unchanged. BE targets ceil(nev/2) high and
+ * floor(nev/2) low transformed-spectrum eigenpairs. Hard locking can
+ * capture a candidate from either flank, not necessarily the first one.
+ * Track actual locks per flank to avoid selecting the same end twice
+ * when the opposite extremum is difficult to converge.
+ *
+ * The existing ncv-sized work buffer contains temporary (2*index+side)
+ * entries during permutation. Afterward it holds the side indicator for
+ * each selected Ritz position: high=1, low=0. With ncv<=INT_MAX/8 this
+ * encoding cannot overflow. The subsequent result pass clears work. */
 static void sort_ritz(int m, const double *values, int *order,
-                      const char *which, int nlocked, int *work)
+                      const char *which, int high_locked, int low_locked,
+                      int nev, int *work)
 {
     int i, j;
     int both = which[0] == 'B' && which[1] == 'E';
@@ -550,9 +557,27 @@ static void sort_ritz(int m, const double *values, int *order,
     }
     if (both) {
         int lo = 0, hi = m - 1;
-        for (i = 0; i < m; ++i)
-            work[i] = ((nlocked + i) & 1) ? order[lo++] : order[hi--];
-        memcpy(order, work, (size_t)m * sizeof(*order));
+        int taken_high = 0, taken_low = 0;
+        int need_high = (nev + 1) / 2 - high_locked;
+        int need_low = nev / 2 - low_locked;
+        for (i = 0; i < m; ++i) {
+            int high;
+            if (taken_high < need_high && taken_low < need_low)
+                high = high_locked + taken_high <= low_locked + taken_low;
+            else if (taken_high < need_high)
+                high = 1;
+            else if (taken_low < need_low)
+                high = 0;
+            else
+                high = ((high_locked + low_locked + i) & 1) == 0;
+            work[i] = 2 * order[high ? hi-- : lo++] + high;
+            if (high) ++taken_high;
+            else ++taken_low;
+        }
+        for (i = 0; i < m; ++i) {
+            order[i] = work[i] / 2;
+            work[i] &= 1;
+        }
     }
 }
 
@@ -958,6 +983,7 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
     unsigned seed;
     const char *which;
     int output_sort = 0, both_ends = 0;
+    int be_high_locked = 0, be_low_locked = 0;
 
     if (stats) memset(stats, 0, sizeof(*stats));
     if (ext_stats) {
@@ -1099,7 +1125,8 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
             rc = LIS_KRYLOV_BREAKDOWN;
             goto done;
         }
-        sort_ritz(m, s.eval, s.order, which, s.nlocked, s.locked);
+        sort_ritz(m, s.eval, s.order, which,
+                  be_high_locked, be_low_locked, nev, s.locked);
         if (o->hard_locking && s.nlocked < nev) {
             int captured = 0;
             /* Freeze at most one verified pair per cycle. New directions
@@ -1129,6 +1156,10 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
                 s.locked_values[s.nlocked] = lambda;
                 s.locked_residuals[s.nlocked] = rel;
                 ++s.nlocked;
+                if (both_ends) {
+                    if (s.locked[j]) ++be_high_locked;
+                    else ++be_low_locked;
+                }
                 captured = 1;
                 break;
             }
