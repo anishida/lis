@@ -295,3 +295,8 @@ TESTS += test_krylov_modes$(EXEEXT) test_krylov_sparse$(EXEEXT) \
          test_krylov_unified$(EXEEXT) \
          test_krylov_adaptive_ex$(EXEEXT) \
          test_krylov_api_contract$(EXEEXT)
+
+# Stage 6 standalone Cayley operator + native Krylov integration regression.
+test_PROGRAMS += test_krylov_cayley_prototype
+test_krylov_cayley_prototype_SOURCES = test_krylov_cayley_prototype.c
+TESTS += test_krylov_cayley_prototype$(EXEEXT)
