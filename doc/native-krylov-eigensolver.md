@@ -257,3 +257,49 @@ outside this helper's contract.
   ABI is implemented in this version.
 - No performance claim for large sparse matrices without timed benchmarks
   that include the cost of the application's inverse operation.
+
+## Thresholded Jacobi refinement of the projected problem
+
+The native thick-restarted Krylov solver diagonalizes a relatively small
+symmetric projected matrix during each Rayleigh–Ritz step. This implementation
+uses an internal cyclic Jacobi eigendecomposition without requiring LAPACK.
+
+For the first three Jacobi sweeps, the projection solver skips
+off-diagonal pivots no larger than 5% of the **largest off-diagonal
+entry measured at the beginning of that sweep**. The 5% threshold is
+a heuristic, not an error bound or a universally optimal tuning value.
+Later sweeps revert to the original machine-epsilon pivot cutoff, and
+the stopping test remains unchanged. However, a changed rotation sequence
+can affect roundoff, eigenvector bases in degenerate eigenspaces, and
+the number of Krylov iterations. Public ABI, callbacks, and requested
+eigenvalue ordering are unchanged.
+
+A standalone regression (`test_krylov_projected`) exercises a symmetric,
+orthogonally transformed matrix with known clustered and repeated
+eigenvalues, verifying the returned eigenpairs, original-problem residuals
+and orthogonality. It also exercises hard locking.
+
+A small standalone timing/accuracy experiment is available without
+installing LIS:
+
+~~~sh
+cc -O3 -std=c99 -Iinclude test/bench_krylov_projected.c \
+   -lm -o bench_krylov_projected
+./bench_krylov_projected
+~~~
+
+The benchmark directly exercises the internal Jacobi kernel at four
+projected dimensions with **different repeat counts** (24: 1600,
+48: 480, 72: 120, 96: 40). It performs an untimed warm-up, seven timed
+trials per dimension and reports the median, minimum and maximum process
+CPU time as well as the **median microseconds per eigendecomposition**.
+Compare variants at the *same dimension*, not total times between
+different dimensions. Each trial checks the reconstruction residual and
+eigenvector orthogonality of the resulting matrix decomposition.
+
+Kernel-only results are not end-to-end Krylov timings. A baseline and an
+optimized build should be compared on the same hardware, preferably with
+independent runs, and uncertainty reported. The new threshold can change
+the number of sweeps; any speedup is workload-dependent. No new
+dependencies, user-facing solver options or CI workflow files are
+introduced.
