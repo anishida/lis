@@ -23,6 +23,7 @@ typedef struct {
     double d[CY_NMAX], pivot[CY_NMAX], upper[CY_NMAX];
 } cy_problem;
 
+#ifndef CAYLEY_ACTION_ONLY
 static double cy_norm(int n, const double *x)
 {
     int i;
@@ -30,6 +31,7 @@ static double cy_norm(int n, const double *x)
     for (i = 0; i < n; ++i) s += x[i] * x[i];
     return sqrt(s);
 }
+#endif
 
 /* Application-owned tridiagonal shifted factorization, prepared ONCE.
  * A = D T D, B = D^2, with T symmetric Toeplitz. The tested shifts
@@ -118,7 +120,7 @@ static int cy_apply_cayley(void *v, int n, const double *y, double *z)
 {
     cy_problem *p = (cy_problem *)v;
     double x[CY_NMAX], ax[CY_NMAX], bx[CY_NMAX];
-    double rhs[CY_NMAX], solved[CY_NMAX];
+    double rhs[CY_NMAX] = {0}, solved[CY_NMAX] = {0};
     int i;
     if (!p || p->fail || n != p->n) return -1;
     ++p->cayley_calls;
