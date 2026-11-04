@@ -15,6 +15,7 @@
 
 typedef struct {
     int n, m, cap, nev, calls, restarts, iterations, fallbacks;
+    int oblique_steps, oblique_fallbacks;
     double v[DV_MMAX][DV_NMAX];
     double av[DV_MMAX][DV_NMAX];
     double d[DV_NMAX];
@@ -102,29 +103,67 @@ static int dv_eigen(int m,double h[DV_MMAX][DV_MMAX],
     for(i=0;i<m;i++)values[i]=h[i][i];
     return 0;
 }
-/* Davidson diagonal preconditioner with a JD-style correction projection.
- * This is NOT a solution of the full Jacobi-Davidson correction equation.
- * Denominators are regularized before division to prevent inf/NaN
- * when a Ritz value crosses a diagonal entry. */
+/* One-step diagonal approximation to a Jacobi-Davidson correction:
+ *   M = regularized(diag(A) - theta)
+ *   t = -M^(-1)r + epsilon M^(-1)x
+ *   epsilon = (x^T M^(-1)r) / (x^T M^(-1)x).
+ * This changes the expansion direction even after orthogonalization
+ * against V; it is NOT a full JD inner solve. If the denominator is
+ * cancellation-prone for an indefinite M, use ordinary Davidson.
+ */
 static int dv_correction(int n,const double *diag,double theta,
-                         const double *x,const double *r,double *out)
+                         const double *x,const double *r,double *out,
+                         int *oblique_used)
 {
+    double inv_x[DV_NMAX],plain[DV_NMAX];
+    double scale=1.0,cutoff,norm_plain,norm,projection;
+    long double numerator=0.0L,denominator=0.0L,abs_denominator=0.0L;
     int i;
-    double scale=1.0,cutoff,projection,norm;
-    for(i=0;i<n;i++)
-        if(fabs(diag[i])>scale)scale=fabs(diag[i]);
-    cutoff=1e-6*(scale+fabs(theta));
+    if(oblique_used)*oblique_used=0;
+    if(n<1||n>DV_NMAX||!isfinite(theta))return -1;
     for(i=0;i<n;i++){
-        double denom=diag[i]-theta;
-        if(fabs(denom)<cutoff)
-            denom=copysign(cutoff,denom==0.0 ? 1.0 : denom);
-        out[i]=-r[i]/denom;
-        if(!isfinite(out[i]))return -1;
+        if(!isfinite(diag[i])||!isfinite(x[i])||!isfinite(r[i]))return -1;
+        if(fabs(diag[i])>scale)scale=fabs(diag[i]);
     }
-    projection=dv_dot(n,x,out);
-    for(i=0;i<n;i++)out[i]-=projection*x[i];
+    cutoff=1e-6*(scale+fabs(theta));
+    if(!isfinite(cutoff)||cutoff<=0.0)return -1;
+    for(i=0;i<n;i++){
+        double delta=diag[i]-theta;
+        if(fabs(delta)<cutoff)
+            delta=copysign(cutoff,delta==0.0?1.0:delta);
+        plain[i]=-r[i]/delta;
+        inv_x[i]=x[i]/delta;
+        if(!isfinite(plain[i])||!isfinite(inv_x[i]))return -1;
+        numerator+=(long double)x[i]*(long double)(-plain[i]);
+        denominator+=(long double)x[i]*(long double)inv_x[i];
+        abs_denominator+=fabsl((long double)x[i]*(long double)inv_x[i]);
+    }
+    norm_plain=dv_norm(n,plain);
+    if(!isfinite(norm_plain))return -1;
+    if(abs_denominator>0.0L &&
+       fabsl(denominator)>128.0L*DBL_EPSILON*abs_denominator){
+        double epsilon=(double)(numerator/denominator);
+        int valid=isfinite(epsilon);
+        if(valid){
+            for(i=0;i<n;i++){
+                out[i]=plain[i]+epsilon*inv_x[i];
+                if(!isfinite(out[i]))valid=0;
+            }
+        }
+        if(valid){
+            norm=dv_norm(n,out);
+            if(isfinite(norm)&&norm>1e-11*fmax(norm_plain,DBL_MIN)){
+                if(oblique_used)*oblique_used=1;
+                return 0;
+            }
+        }
+    }
+    /* Indefinite or nearly singular projected diagonal: do not divide
+     * by a cancelled x^T M^(-1)x. Standard Davidson fallback. */
+    projection=dv_dot(n,x,plain);
+    for(i=0;i<n;i++)out[i]=plain[i]-projection*x[i];
     norm=dv_norm(n,out);
-    return isfinite(norm)&&norm>DBL_MIN ? 0 : 1;
+    return isfinite(norm)&&norm>DBL_MIN?0:1;
 }
 static void dv_restart(Davidson *p,int keep,int m,
                        const int *order,const double u[DV_MMAX][DV_MMAX])
@@ -225,10 +264,12 @@ static int dv_solve(const double a[DV_NMAX][DV_NMAX],int n,int cap,
         if(t==maxit-1)break;
         if(candidate<0)return -15;
         {
-            int idx=order[candidate],ok;
+            int idx=order[candidate],ok,used_oblique=0;
             ok=dv_correction(n,p->d,eval[idx],x[candidate],
-                             residual[candidate],correction);
+                             residual[candidate],correction,&used_oblique);
             if(ok<0)return -16;
+            if(used_oblique)++p->oblique_steps;
+            else ++p->oblique_fallbacks;
             if(ok){
                 memcpy(correction,residual[candidate],
                        (size_t)n*sizeof(double));
@@ -292,9 +333,9 @@ int main(void)
             if(!p)return 2;
             dv_matrix(a,64,kind);
             status=dv_solve(a,64,cap,init,3,2e-8,220,p);
-            printf("CASE kind=%d cap=%d init=%d rc=%d ops=%d restarts=%d iter=%d fallbacks=%d",
+            printf("CASE kind=%d cap=%d init=%d rc=%d ops=%d restarts=%d iter=%d fallbacks=%d oblique=%d standard=%d",
                    kind,cap,init,status,p->calls,p->restarts,
-                   p->iterations,p->fallbacks);
+                   p->iterations,p->fallbacks,p->oblique_steps,p->oblique_fallbacks);
             for(i=0;i<3;i++)printf(" lambda%d=%.13g residual%d=%.3g",
                    i,p->result[i],i,p->residual[i]);
             puts("");
@@ -388,10 +429,53 @@ int main(void)
     {
         double diag[4]={1,1,2,3},x[4]={1,0,0,0};
         double r[4]={0,1,0.1,-0.2},z[4]={0};
-        if(dv_correction(4,diag,1.0,x,r,z)!=0||
+        if(dv_correction(4,diag,1.0,x,r,z,NULL)!=0||
            !isfinite(dv_norm(4,z))||fabs(dv_dot(4,x,z))>1e-12)
             return 3;
         puts("PASS regularized zero-diagonal denominator");
+    }
+
+    /* A true preconditioned correction differs from subtracting x(x^T t).
+     * Check the formula and a nontrivial difference after x-projection. */
+    {
+        const double q=1.0/sqrt(3.0),h=1.0/sqrt(2.0);
+        double diag[4]={2.0,3.0,5.0,7.0};
+        double x[4]={q,q,q,0.0},r[4]={h,-h,0.0,0.0};
+        double z[4]={0},simple[4]={0},difference[4]={0};
+        double numerator=0.0,denominator=0.0,epsilon,proj;
+        int used=0,j;
+        for(j=0;j<4;j++){
+            numerator+=x[j]*r[j]/(diag[j]-1.0);
+            denominator+=x[j]*x[j]/(diag[j]-1.0);
+            simple[j]=-r[j]/(diag[j]-1.0);
+        }
+        epsilon=numerator/denominator;
+        proj=dv_dot(4,x,simple);
+        if(dv_correction(4,diag,1.0,x,r,z,&used)!=0||!used)
+            return 9;
+        for(j=0;j<4;j++){
+            double expected=(-r[j]+epsilon*x[j])/(diag[j]-1.0);
+            if(fabs(z[j]-expected)>2e-13)return 10;
+            simple[j]-=proj*x[j];
+            difference[j]=z[j]-simple[j];
+        }
+        if(fabs(dv_dot(4,x,z))>2e-13||
+           dv_norm(4,difference)<0.02*dv_norm(4,z))
+            return 11;
+        puts("PASS oblique diagonal JD correction differs from projected Davidson");
+    }
+    /* For an indefinite M with x^T M^(-1)x exactly zero, use a
+     * bounded standard Davidson direction rather than divide by zero. */
+    {
+        const double q=1.0/sqrt(2.0);
+        double diag[4]={2.0,0.0,3.0,4.0};
+        double x[4]={q,q,0.0,0.0},r[4]={0.0,0.0,1.0,0.0};
+        double z[4]={0};
+        int used=1;
+        if(dv_correction(4,diag,1.0,x,r,z,&used)!=0||used||
+           !isfinite(dv_norm(4,z))||fabs(dv_dot(4,x,z))>2e-13)
+            return 12;
+        puts("PASS zero-denominator fallback for indefinite diagonal M");
     }
     printf("DAVIDSON SUMMARY %d successes %d failures\n",successful,failures);
     return failures==0&&successful==36?0:1;
