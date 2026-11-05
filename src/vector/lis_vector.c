@@ -217,7 +217,7 @@ LIS_INT lis_vector_set_size(LIS_VECTOR vec, LIS_INT local_n, LIS_INT global_n)
 		if( NULL==work )
 		{
 			LIS_SETERR_MEM(32*sizeof(LIS_SCALAR));
-			return LIS_OUT_OF_MEMORY;
+			goto allocation_failed;
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
