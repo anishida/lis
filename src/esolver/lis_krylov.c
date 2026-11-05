@@ -30,6 +30,7 @@ struct krylov_workspace {
     const lis_krylov_problem *problem;
     const lis_krylov_options *options;
     lis_krylov_stats *stats;
+    lis_krylov_ext_stats *ext_stats;
     int n;
     int ncv;
     double norm_a;
@@ -46,12 +47,23 @@ struct krylov_workspace {
     double *rhs;
     double *check;
     int *order;
-    int *locked;
+    int *locked;                  /* convergence flags by Ritz order */
+    signed char *verified;       /* 0 unchecked, +1 finite, -1 pole */
     int nlocked;
     double *locked_basis;
     double *locked_metric;
     double *locked_values;
     double *locked_residuals;
+};
+
+struct lis_krylov_workspace {
+    struct krylov_workspace buffers;
+    int n;
+    int ncv;             /* initial active subspace dimension */
+    int capacity_ncv;    /* reserved basis/projection capacity */
+    int nev;
+    int transform;
+    int hard_locking;
 };
 
 static double compensated_dot(int n, const double *a, const double *b)
@@ -383,8 +395,10 @@ static int append_vector(struct krylov_workspace *s,
     if (s->metric_basis != s->basis)
         memcpy(s->metric_basis + (size_t)count * s->n, s->metric_x,
                (size_t)s->n * sizeof(double));
-    return apply_operator(s, x, s->metric_x,
-                          s->images + (size_t)count * s->n);
+    err = apply_operator(s, x, s->metric_x,
+                         s->images + (size_t)count * s->n);
+    if (!err && s->ext_stats) ++s->ext_stats->basis_vectors;
+    return err;
 }
 
 static void seed_vector(int n, double *x, unsigned seed)
@@ -397,6 +411,35 @@ static void seed_vector(int n, double *x, unsigned seed)
         state ^= state << 5;
         x[i] = (double)(state & 0xffffu) / 32768.0 - 1.0;
     }
+}
+
+/* Extra independent directions are seeded only when explicitly
+ * requested. The original first seed stays unchanged. */
+static int append_extra_seeds(struct krylov_workspace *s, int *count,
+                              int capacity, int additional,
+                              unsigned start_seed)
+{
+    int accepted = 0, extra, trial;
+    for (extra = 0; extra < additional && *count < capacity; ++extra) {
+        int found = 0;
+        for (trial = 0; trial < 12; ++trial) {
+            int rc;
+            seed_vector(s->n, s->x, start_seed +
+                        (unsigned)extra * 41u + (unsigned)trial);
+            if (s->ext_stats) ++s->ext_stats->extra_seed_attempts;
+            rc = append_range_seed(s, *count, s->x);
+            if (rc < 0) return rc;
+            if (rc == 0) {
+                ++*count;
+                ++accepted;
+                if (s->ext_stats) ++s->ext_stats->extra_seed_accepted;
+                found = 1;
+                break;
+            }
+        }
+        if (!found) break; /* e.g. rank-deficient metric */
+    }
+    return accepted;
 }
 
 /* Dense cyclic Jacobi eigendecomposition of symmetric projected matrix.
@@ -412,6 +455,7 @@ static int diagonalize(int m, double *a, double *q,
     for (sweep = 0; sweep < KRYLOV_MAX_SWEEPS; ++sweep) {
         double largest = 0.0;
         double diagonal_norm = 0.0;
+        double pivot_threshold;
         for (p = 0; p < m; ++p) {
             diagonal_norm += fabs(a[(size_t)p * stride + p]);
             for (r = p + 1; r < m; ++r) {
@@ -422,14 +466,22 @@ static int diagonalize(int m, double *a, double *q,
         if (largest <= KRYLOV_JACOBI_EPS *
                        (diagonal_norm + DBL_MIN)) break;
 
+        /* Thresholded cyclic Jacobi: prioritize significant pivots in
+         * the first few sweeps. Skipping tiny rotations avoids needless
+         * updates of m basis and Ritz-vector entries per pair. Later
+         * sweeps use the original machine-precision cutoff so clusters
+         * and near-multiple eigenvalues still receive full refinement.
+         * A zero threshold from sweep 3 onward prevents stagnation. */
+        pivot_threshold = sweep < 3 ? 0.05 * largest : 0.0;
         for (p = 0; p < m; ++p) {
             for (r = p + 1; r < m; ++r) {
                 double apr = a[(size_t)p * stride + r];
                 double app = a[(size_t)p * stride + p];
                 double arr = a[(size_t)r * stride + r];
                 double tau, angle, cosine, sine;
-                if (fabs(apr) <= DBL_EPSILON *
-                                (fabs(app) + fabs(arr) + DBL_MIN))
+                if (fabs(apr) <= pivot_threshold ||
+                    fabs(apr) <= DBL_EPSILON *
+                                 (fabs(app) + fabs(arr) + DBL_MIN))
                     continue;
                 tau = (arr - app) / (2.0 * apr);
                 angle = copysign(1.0, tau) /
@@ -476,19 +528,131 @@ static int earlier(double a, double b, const char *which)
     return a < b;
 }
 
+/* Legacy Ritz selection is unchanged. BE targets ceil(nev/2) high and
+ * floor(nev/2) low transformed-spectrum eigenpairs. Hard locking can
+ * capture a candidate from either flank, not necessarily the first one.
+ * Track actual locks per flank to avoid selecting the same end twice
+ * when the opposite extremum is difficult to converge.
+ *
+ * The existing ncv-sized work buffer contains temporary (2*index+side)
+ * entries during permutation. Afterward it holds the side indicator for
+ * each selected Ritz position: high=1, low=0. With ncv<=INT_MAX/8 this
+ * encoding cannot overflow. The subsequent result pass clears work. */
 static void sort_ritz(int m, const double *values, int *order,
-                      const char *which)
+                      const char *which, int high_locked, int low_locked,
+                      int nev, int *work)
 {
     int i, j;
+    int both = which[0] == 'B' && which[1] == 'E';
     for (i = 0; i < m; ++i) order[i] = i;
     for (i = 1; i < m; ++i) {
         int key = order[i];
         j = i - 1;
-        while (j >= 0 && earlier(values[key], values[order[j]], which)) {
+        while (j >= 0 && (both ?
+               values[key] < values[order[j]] :
+               earlier(values[key], values[order[j]], which))) {
             order[j + 1] = order[j];
             --j;
         }
         order[j + 1] = key;
+    }
+    if (both) {
+        int lo = 0, hi = m - 1;
+        int taken_high = 0, taken_low = 0;
+        int need_high = (nev + 1) / 2 - high_locked;
+        int need_low = nev / 2 - low_locked;
+        for (i = 0; i < m; ++i) {
+            int high;
+            if (taken_high < need_high && taken_low < need_low)
+                high = high_locked + taken_high <= low_locked + taken_low;
+            else if (taken_high < need_high)
+                high = 1;
+            else if (taken_low < need_low)
+                high = 0;
+            else
+                high = ((high_locked + low_locked + i) & 1) == 0;
+            work[i] = 2 * order[high ? hi-- : lo++] + high;
+            if (high) ++taken_high;
+            else ++taken_low;
+        }
+        for (i = 0; i < m; ++i) {
+            order[i] = work[i] / 2;
+            work[i] &= 1;
+        }
+    }
+}
+
+/* Return-result sorting is deliberately independent of Ritz selection.
+ * For :ASC/:DESC compare ORIGINAL eigenvalues; BE without a suffix
+ * interleaves extreme transformed Ritz values. Only the nreturned
+ * entries are touched, so partial results and their vector/residual
+ * associations are preserved. The existing O(ncv) index arrays and
+ * n-element scratch vector avoid any extra allocation. */
+static double result_transformed_value(int transform, double sigma,
+                                       double lambda)
+{
+    if (transform == LIS_KRYLOV_STANDARD) return lambda;
+    if (transform == LIS_KRYLOV_SHIFT_INVERT_B)
+        return 1.0 / (lambda - sigma);
+    return lambda / (lambda - sigma);
+}
+
+static void reorder_results(int n, int count, int transform, double sigma,
+                            int both, int output_sort,
+                            double *values, double *residuals,
+                            double *vectors, double *scratch,
+                            int *order, int *destination)
+{
+    int i, j;
+    if (count < 2) return;
+    for (i = 0; i < count; ++i) order[i] = i;
+    for (i = 1; i < count; ++i) {
+        int key = order[i];
+        double a = output_sort ?
+            values[key] :
+            result_transformed_value(transform, sigma, values[key]);
+        j = i - 1;
+        while (j >= 0) {
+            double b = output_sort ?
+                values[order[j]] :
+                result_transformed_value(transform, sigma, values[order[j]]);
+            if (!(output_sort < 0 ? a > b : a < b)) break;
+            order[j + 1] = order[j];
+            --j;
+        }
+        order[j + 1] = key;
+    }
+    if (both && output_sort == 0) {
+        int lo = 0, hi = count - 1;
+        for (i = 0; i < count; ++i) {
+            int original = (i & 1) ? order[lo++] : order[hi--];
+            destination[original] = i;
+        }
+    } else {
+        for (i = 0; i < count; ++i)
+            destination[order[i]] = i;
+    }
+    for (i = 0; i < count; ++i) {
+        while (destination[i] != i) {
+            int target = destination[i], temp_index;
+            double temp_value;
+            temp_value = values[i];
+            values[i] = values[target];
+            values[target] = temp_value;
+            temp_value = residuals[i];
+            residuals[i] = residuals[target];
+            residuals[target] = temp_value;
+            memcpy(scratch, vectors + (size_t)i * n,
+                   (size_t)n * sizeof(*scratch));
+            memcpy(vectors + (size_t)i * n,
+                   vectors + (size_t)target * n,
+                   (size_t)n * sizeof(*scratch));
+            memcpy(vectors + (size_t)target * n, scratch,
+                   (size_t)n * sizeof(*scratch));
+            temp_index = destination[i];
+            destination[i] = destination[target];
+            destination[target] = temp_index;
+        }
     }
 }
 
@@ -643,26 +807,196 @@ static void release_workspace(struct krylov_workspace *s)
     free(s->check);
     free(s->order);
     free(s->locked);
+    free(s->verified);
     free(s->locked_basis);
     if (s->locked_metric != s->locked_basis) free(s->locked_metric);
     free(s->locked_values);
     free(s->locked_residuals);
 }
 
-int lis_krylov_symmetric(const lis_krylov_problem *p,
+
+/* All allocation is centralized so a one-shot solve and a reusable
+ * workspace use precisely the same storage and alignment assumptions. */
+void lis_krylov_ext_options_default(lis_krylov_ext_options *ext)
+{
+    if (!ext) return;
+    memset(ext, 0, sizeof(*ext));
+    ext->struct_size = (unsigned int)sizeof(*ext);
+    ext->version = LIS_KRYLOV_EXT_VERSION;
+    ext->restart_directions = 1;
+}
+
+void lis_krylov_ext_stats_default(lis_krylov_ext_stats *extra)
+{
+    if (!extra) return;
+    memset(extra, 0, sizeof(*extra));
+    extra->struct_size = (unsigned int)sizeof(*extra);
+    extra->version = LIS_KRYLOV_EXT_VERSION;
+}
+
+/* All extended controls are isolated from the pre-existing public
+ * option and stats layouts. The new API has an explicit version/size
+ * contract; unknown layouts fail rather than silently reading fields. */
+static int validate_extension(const lis_krylov_ext_options *ext,
+                              int n, int initial_ncv,
+                              int *storage_ncv, int *restart_directions)
+{
+    *storage_ncv = initial_ncv;
+    *restart_directions = 1;
+    if (!ext) return LIS_KRYLOV_SUCCESS;
+    if (ext->version != LIS_KRYLOV_EXT_VERSION ||
+        ext->struct_size != (unsigned int)sizeof(*ext) ||
+        (ext->adaptive_ncv != 0 && ext->adaptive_ncv != 1) ||
+        ext->ncv_max < 0 ||
+        (!ext->adaptive_ncv && ext->ncv_max != 0) ||
+        ext->restart_directions < 1 ||
+        ext->restart_directions > initial_ncv)
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    *restart_directions = ext->restart_directions;
+    if (ext->adaptive_ncv) {
+        *storage_ncv = ext->ncv_max ? ext->ncv_max :
+                      (initial_ncv < n / 2 ? 2 * initial_ncv : n);
+        if (*storage_ncv < initial_ncv || *storage_ncv > n)
+            return LIS_KRYLOV_BAD_ARGUMENT;
+    }
+    return LIS_KRYLOV_SUCCESS;
+}
+
+static int allocate_workspace_buffers(struct krylov_workspace *s,
+                                      int n, int ncv, int nev,
+                                      int transform, int hard_locking)
+{
+    size_t basis_size, dense_size, scratch_size;
+    size_t max_doubles, scratch_columns;
+    if (!s || n < 3 || nev < 1 || nev >= n || ncv <= nev ||
+        ncv > n || n > INT_MAX / 8 || ncv > INT_MAX / 8)
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    /* Bound each factor BEFORE multiplication. Checking a size_t
+     * product after it wraps cannot detect overflow on 32-bit targets.
+     * The locked basis uses nev <= ncv columns, so the basis bound
+     * below also covers its (nev * n) allocation. */
+    max_doubles = SIZE_MAX / sizeof(double);
+    scratch_columns = (size_t)(nev > ncv / 2 ? nev : ncv / 2);
+    if ((size_t)n > max_doubles / (size_t)ncv ||
+        (size_t)ncv > max_doubles / (size_t)ncv ||
+        (size_t)n > max_doubles / scratch_columns)
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    basis_size = (size_t)n * (size_t)ncv;
+    dense_size = (size_t)ncv * (size_t)ncv;
+    scratch_size = (size_t)n * scratch_columns;
+    s->n = n;
+    s->ncv = ncv;
+#define ALLOC(PTR, COUNT, TYPE)                                     \
+    do {                                                            \
+        (PTR) = (TYPE *)calloc((COUNT), sizeof(TYPE));              \
+        if (!(PTR)) goto failed;                                    \
+    } while (0)
+    ALLOC(s->basis, basis_size, double);
+    if (transform == LIS_KRYLOV_STANDARD)
+        s->metric_basis = s->basis;
+    else
+        ALLOC(s->metric_basis, basis_size, double);
+    ALLOC(s->images, basis_size, double);
+    ALLOC(s->projected, dense_size, double);
+    ALLOC(s->dense_work, dense_size, double);
+    ALLOC(s->ritz, dense_size, double);
+    ALLOC(s->eval, ncv, double);
+    ALLOC(s->scratch, scratch_size, double);
+    ALLOC(s->x, n, double);
+    ALLOC(s->metric_x, n, double);
+    ALLOC(s->rhs, n, double);
+    ALLOC(s->check, n, double);
+    ALLOC(s->order, ncv, int);
+    ALLOC(s->locked, ncv, int);
+    if (hard_locking) {
+        /* Only the first nev Ritz candidates are probed for locking.
+         * Keep cache validity separate from the convergence flags. */
+        ALLOC(s->verified, nev, signed char);
+        ALLOC(s->locked_basis, (size_t)nev * n, double);
+        if (transform == LIS_KRYLOV_STANDARD)
+            s->locked_metric = s->locked_basis;
+        else
+            ALLOC(s->locked_metric, (size_t)nev * n, double);
+        ALLOC(s->locked_values, nev, double);
+        ALLOC(s->locked_residuals, nev, double);
+    }
+#undef ALLOC
+    return LIS_KRYLOV_SUCCESS;
+failed:
+#undef ALLOC
+    release_workspace(s);
+    memset(s, 0, sizeof(*s));
+    return LIS_KRYLOV_NO_MEMORY;
+}
+
+int lis_krylov_workspace_create(const lis_krylov_problem *p,
+                                const lis_krylov_options *o,
+                                const lis_krylov_ext_options *ext,
+                                lis_krylov_workspace **result)
+{
+    lis_krylov_workspace *w;
+    int ncv, capacity, directions, rc;
+    if (result) *result = NULL;
+    if (!p || !o || !result || p->n < 3 ||
+        o->nev < 1 || o->nev >= p->n || o->ncv < 0 ||
+        o->maxiter < 0 || (o->hard_locking != 0 && o->hard_locking != 1) ||
+        p->transform < LIS_KRYLOV_STANDARD ||
+        p->transform > LIS_KRYLOV_SHIFT_INVERT_A)
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    ncv = o->ncv ? o->ncv :
+          (o->nev < (p->n - 8) / 3 ? 3 * o->nev + 8 : p->n);
+    if (ncv <= o->nev || ncv > p->n || p->n > INT_MAX / 8 ||
+        ncv > INT_MAX / 8)
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    rc = validate_extension(ext, p->n, ncv, &capacity, &directions);
+    if (rc != LIS_KRYLOV_SUCCESS) return rc;
+    w = (lis_krylov_workspace *)calloc(1, sizeof(*w));
+    if (!w) return LIS_KRYLOV_NO_MEMORY;
+    rc = allocate_workspace_buffers(&w->buffers, p->n, capacity,
+                                    o->nev, p->transform, o->hard_locking);
+    if (rc) { free(w); return rc; }
+    w->n = p->n;
+    w->ncv = ncv;
+    w->capacity_ncv = capacity;
+    w->nev = o->nev;
+    w->transform = p->transform;
+    w->hard_locking = o->hard_locking;
+    *result = w;
+    return LIS_KRYLOV_SUCCESS;
+}
+
+void lis_krylov_workspace_destroy(lis_krylov_workspace *workspace)
+{
+    if (!workspace) return;
+    release_workspace(&workspace->buffers);
+    free(workspace);
+}
+
+static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
+                         const lis_krylov_problem *p,
                          const lis_krylov_options *o,
+                         const lis_krylov_ext_options *ext,
                          double *values, double *vectors, double *residuals,
-                         lis_krylov_stats *stats)
+                         lis_krylov_stats *stats,
+                         lis_krylov_ext_stats *ext_stats)
 {
     struct krylov_workspace s = {0};
-    size_t basis_size, dense_size, scratch_size;
-    int m = 0, previous = 0, iter, ncv, nev, maxiter, rc;
+    int m = 0, previous = 0, iter, ncv, capacity, nev, maxiter, rc;
+    int restart_directions = 1, last_nconv = 0, stalled_restarts = 0;
     int i, j;
     double tol;
     unsigned seed;
     const char *which;
+    int output_sort = 0, both_ends = 0;
+    int be_high_locked = 0, be_low_locked = 0;
 
     if (stats) memset(stats, 0, sizeof(*stats));
+    if (ext_stats) {
+        if (ext_stats->struct_size != (unsigned int)sizeof(*ext_stats) ||
+            ext_stats->version != LIS_KRYLOV_EXT_VERSION)
+            return LIS_KRYLOV_BAD_ARGUMENT;
+        lis_krylov_ext_stats_default(ext_stats);
+    }
     if (!p || !o || !values || !vectors || !residuals || !stats ||
         p->n < 3 || o->nev < 1 || o->nev >= p->n || !p->apply_a ||
         p->transform < LIS_KRYLOV_STANDARD ||
@@ -681,9 +1015,23 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
         o->maxiter < 0)
         return LIS_KRYLOV_BAD_ARGUMENT;
     which = o->which ? o->which : "LM";
-    if (strcmp(which, "LM") && strcmp(which, "SM") &&
-        strcmp(which, "LA") && strcmp(which, "SA"))
-        return LIS_KRYLOV_BAD_ARGUMENT;
+    {
+        size_t which_len = strlen(which);
+        if ((which_len != 2 && which_len != 6 && which_len != 7) ||
+            (strncmp(which, "LM", 2) && strncmp(which, "SM", 2) &&
+             strncmp(which, "LA", 2) && strncmp(which, "SA", 2) &&
+             strncmp(which, "BE", 2)))
+            return LIS_KRYLOV_BAD_ARGUMENT;
+        if (which_len > 2) {
+            if (!strcmp(which + 2, ":ASC"))
+                output_sort = 1;
+            else if (!strcmp(which + 2, ":DESC"))
+                output_sort = -1;
+            else
+                return LIS_KRYLOV_BAD_ARGUMENT;
+        }
+        both_ends = which[0] == 'B' && which[1] == 'E';
+    }
 
     nev = o->nev;
     maxiter = o->maxiter ? o->maxiter : 300;
@@ -692,56 +1040,30 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
           (nev < (p->n - 8) / 3 ? 3 * nev + 8 : p->n);
     if (ncv <= nev || ncv > p->n || p->n > INT_MAX / 8 ||
         ncv > INT_MAX / 8) return LIS_KRYLOV_BAD_ARGUMENT;
-    basis_size = (size_t)p->n * (size_t)ncv;
-    dense_size = (size_t)ncv * (size_t)ncv;
-    scratch_size = (size_t)p->n * (size_t)
-                   (nev > ncv / 2 ? nev : ncv / 2);
-    if (basis_size > SIZE_MAX / sizeof(double) ||
-        dense_size > SIZE_MAX / sizeof(double) ||
-        scratch_size > SIZE_MAX / sizeof(double))
-        return LIS_KRYLOV_BAD_ARGUMENT;
-
-    s.n = p->n;
-    s.ncv = ncv;
+    rc = validate_extension(ext, p->n, ncv, &capacity, &restart_directions);
+    if (rc != LIS_KRYLOV_SUCCESS) return rc;
+    if (reuse) {
+        if (reuse->n != p->n || reuse->ncv != ncv ||
+            reuse->capacity_ncv != capacity ||
+            reuse->nev != nev || reuse->transform != p->transform ||
+            reuse->hard_locking != o->hard_locking)
+            return LIS_KRYLOV_BAD_ARGUMENT;
+        s = reuse->buffers;
+    } else {
+        rc = allocate_workspace_buffers(&s, p->n, capacity, nev,
+                                        p->transform, o->hard_locking);
+        if (rc != LIS_KRYLOV_SUCCESS) return rc;
+    }
+    if (ext_stats)
+        ext_stats->ncv_initial = ext_stats->ncv_final = ncv;
     s.problem = p;
     s.options = o;
     s.stats = stats;
+    s.ext_stats = ext_stats;
     s.norm_a = o->residual_scale;
+    s.nlocked = 0;
     seed = o->random_seed ? o->random_seed : 1u;
     rc = LIS_KRYLOV_NO_CONVERGENCE;
-#define ALLOC(PTR, COUNT, TYPE)                                      \
-    do {                                                             \
-        (PTR) = (TYPE *)calloc((COUNT), sizeof(TYPE));               \
-        if (!(PTR)) { rc = LIS_KRYLOV_NO_MEMORY; goto done; }        \
-    } while (0)
-    ALLOC(s.basis, basis_size, double);
-    if (p->transform == LIS_KRYLOV_STANDARD) {
-        s.metric_basis = s.basis;
-    } else {
-        ALLOC(s.metric_basis, basis_size, double);
-    }
-    ALLOC(s.images, basis_size, double);
-    ALLOC(s.projected, dense_size, double);
-    ALLOC(s.dense_work, dense_size, double);
-    ALLOC(s.ritz, dense_size, double);
-    ALLOC(s.eval, ncv, double);
-    ALLOC(s.scratch, scratch_size, double);
-    ALLOC(s.x, s.n, double);
-    ALLOC(s.metric_x, s.n, double);
-    ALLOC(s.rhs, s.n, double);
-    ALLOC(s.check, s.n, double);
-    ALLOC(s.order, ncv, int);
-    ALLOC(s.locked, ncv, int);
-    if (o->hard_locking) {
-        ALLOC(s.locked_basis, (size_t)nev * s.n, double);
-        if (p->transform == LIS_KRYLOV_STANDARD)
-            s.locked_metric = s.locked_basis;
-        else
-            ALLOC(s.locked_metric, (size_t)nev * s.n, double);
-        ALLOC(s.locked_values, nev, double);
-        ALLOC(s.locked_residuals, nev, double);
-    }
-#undef ALLOC
 
     if (o->initial_vector) {
         memcpy(s.x, o->initial_vector, (size_t)s.n * sizeof(double));
@@ -794,17 +1116,26 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
     m = 1;
 
     for (iter = 0; iter < maxiter; ++iter) {
-        int old_m = m, extensions = 0;
+        int old_m = m, extensions = 0, reuse_verified = 0;
+        double norm_a_before = s.norm_a;
         stats->iterations = iter + 1;
         update_projected(&s, previous, m);
-        memcpy(s.dense_work, s.projected, dense_size * sizeof(double));
-        if (diagonalize(m, s.dense_work, s.ritz, s.eval, ncv)) {
+        /* Only active m-by-m projection is needed; physical stride
+         * remains the reserved workspace capacity. */
+        for (i = 0; i < m; ++i)
+            memcpy(s.dense_work + (size_t)i * s.ncv,
+                   s.projected + (size_t)i * s.ncv,
+                   (size_t)m * sizeof(double));
+        if (ext_stats) ++ext_stats->projected_solves;
+        if (diagonalize(m, s.dense_work, s.ritz, s.eval, s.ncv)) {
             rc = LIS_KRYLOV_BREAKDOWN;
             goto done;
         }
-        sort_ritz(m, s.eval, s.order, which);
+        sort_ritz(m, s.eval, s.order, which,
+                  be_high_locked, be_low_locked, nev, s.locked);
         if (o->hard_locking && s.nlocked < nev) {
             int captured = 0;
+            memset(s.verified, 0, (size_t)nev * sizeof(*s.verified));
             /* Freeze at most one verified pair per cycle. New directions
              * are deflated against all frozen metric vectors. */
             for (j = 0; j < m && j < nev - s.nlocked; ++j) {
@@ -816,6 +1147,19 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
                     rc = err == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
                          LIS_KRYLOV_BREAKDOWN;
                     goto done;
+                }
+                /* The current locking probe and the subsequent result
+                 * pass use identical Ritz candidates. Store verified
+                 * physical residuals and vectors in their bounded output
+                 * slots; cache metadata is separate from s.locked.
+                 * j < nev - nlocked ensures slot < nev. */
+                s.verified[j] = err == 0 ? 1 : -1;
+                if (err == 0) {
+                    int slot = s.nlocked + j;
+                    values[slot] = lambda;
+                    residuals[slot] = rel;
+                    memcpy(vectors + (size_t)slot * s.n, s.x,
+                           (size_t)s.n * sizeof(double));
                 }
                 if (err != 0 || rel > tol) continue;
                 err = apply_metric(&s, s.x, s.metric_x);
@@ -832,6 +1176,10 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
                 s.locked_values[s.nlocked] = lambda;
                 s.locked_residuals[s.nlocked] = rel;
                 ++s.nlocked;
+                if (both_ends) {
+                    if (s.locked[j]) ++be_high_locked;
+                    else ++be_low_locked;
+                }
                 captured = 1;
                 break;
             }
@@ -855,6 +1203,8 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
                 /* Purge the active Ritz subspace and restart with a new
                  * direction orthogonal to the permanently locked set. */
                 m = previous = 0;
+                last_nconv = stats->nconv;
+                stalled_restarts = 0;
                 for (trial = 0; trial < 32; ++trial) {
                     int attempt;
                     seed_vector(s.n, s.x,
@@ -873,9 +1223,24 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
                     rc = LIS_KRYLOV_NO_CONVERGENCE;
                     goto done;
                 }
+                if (restart_directions > 1) {
+                    int added = append_extra_seeds(
+                        &s, &m, ncv, restart_directions - 1,
+                        seed + (unsigned)iter * 577u + 12001u);
+                    if (added < 0) {
+                        rc = added == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
+                             added == -3 ? LIS_KRYLOV_INEXACT_SOLVE :
+                             LIS_KRYLOV_BREAKDOWN;
+                        goto done;
+                    }
+                }
                 ++stats->restarts;
                 continue;
             }
+            /* The original result pass uses the final sampled norm_a.
+             * Fall back if its value changed during the locking probe;
+             * otherwise cached physical residuals remain identical. */
+            reuse_verified = (s.norm_a == norm_a_before);
         }
         stats->nreturned = s.nlocked;
         stats->nconv = s.nlocked;
@@ -893,8 +1258,20 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
         for (j = 0; j < m && stats->nreturned < nev; ++j) {
             int idx = s.order[j];
             double lambda = NAN, rel = INFINITY;
-            int err = eigenpair_residual(&s, m, idx, s.eval[idx],
+            int from_cache = reuse_verified && j < nev &&
+                             s.verified[j] != 0;
+            int cache_slot = s.nlocked + j;
+            int err;
+            if (from_cache) {
+                err = s.verified[j] < 0 ? 1 : 0;
+                if (err == 0) {
+                    lambda = values[cache_slot];
+                    rel = residuals[cache_slot];
+                }
+            } else {
+                err = eigenpair_residual(&s, m, idx, s.eval[idx],
                                          &lambda, &rel);
+            }
             if (err < 0) {
                 rc = err == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
                      LIS_KRYLOV_BREAKDOWN;
@@ -908,8 +1285,16 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
             if (rel > stats->max_residual) stats->max_residual = rel;
             values[stats->nreturned] = lambda;
             residuals[stats->nreturned] = rel;
-            memcpy(vectors + (size_t)stats->nreturned * s.n, s.x,
-                   (size_t)s.n * sizeof(double));
+            if (from_cache) {
+                /* Skipped poles can compact the returned vector slots.
+                 * Target <= source; memmove is safe for identical slots. */
+                memmove(vectors + (size_t)stats->nreturned * s.n,
+                        vectors + (size_t)cache_slot * s.n,
+                        (size_t)s.n * sizeof(double));
+            } else {
+                memcpy(vectors + (size_t)stats->nreturned * s.n, s.x,
+                       (size_t)s.n * sizeof(double));
+            }
             ++stats->nreturned;
         }
         if (stats->nconv == nev) {
@@ -917,31 +1302,63 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
             goto done;
         }
         if (m >= ncv) {
-            int keep = m / 2;
-            if (keep < nev) keep = nev;
-            if (keep >= m) keep = m - 1;
-            restart_basis(&s, m, keep);
-            ++stats->restarts;
-            m = keep;
-            previous = keep;
-            /* A degeneracy cannot be resolved by residual expansion alone
-             * when the retained subspace already approximates an invariant
-             * eigenspace. Inject a reproducible independent search direction
-             * after restarting to discover other vectors of a cluster. */
-            for (i = 0; i < 4 && m < ncv; ++i) {
-                int result;
-                seed_vector(s.n, s.x,
-                            seed + (unsigned)iter * 997u + (unsigned)i + 17u);
-                result = append_range_seed(&s, m, s.x);
-                if (result < 0) {
-                    rc = result == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
-                         result == -3 ? LIS_KRYLOV_INEXACT_SOLVE :
-                         LIS_KRYLOV_BREAKDOWN;
-                    goto done;
+            /* Grow only after repeated full-subspace restarts without
+             * another converged pair. No Ritz basis is discarded on
+             * growth, and the reserved buffers are already large enough. */
+            if (ext && ext->adaptive_ncv && ncv < capacity) {
+                if (stats->nconv > last_nconv)
+                    stalled_restarts = 0;
+                else
+                    ++stalled_restarts;
+                last_nconv = stats->nconv;
+                if (stalled_restarts >= 2) {
+                    int increment = ncv / 2;
+                    int remaining = capacity - ncv;
+                    if (increment < 2) increment = 2;
+                    if (increment > remaining) increment = remaining;
+                    ncv += increment;
+                    if (ext_stats) {
+                        ext_stats->ncv_final = ncv;
+                        ++ext_stats->ncv_growths;
+                    }
+                    stalled_restarts = 0;
                 }
-                if (result == 0) { ++m; break; }
             }
-            continue;
+            if (m >= ncv) {
+                int keep = m / 2;
+                if (keep < nev) keep = nev;
+                if (keep >= m) keep = m - 1;
+                restart_basis(&s, m, keep);
+                ++stats->restarts;
+                m = keep;
+                previous = keep;
+                /* Original first restart direction is unmodified. */
+                for (i = 0; i < 4 && m < ncv; ++i) {
+                    int result;
+                    seed_vector(s.n, s.x,
+                                seed + (unsigned)iter * 997u + (unsigned)i + 17u);
+                    result = append_range_seed(&s, m, s.x);
+                    if (result < 0) {
+                        rc = result == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
+                             result == -3 ? LIS_KRYLOV_INEXACT_SOLVE :
+                             LIS_KRYLOV_BREAKDOWN;
+                        goto done;
+                    }
+                    if (result == 0) { ++m; break; }
+                }
+                if (restart_directions > 1) {
+                    int added = append_extra_seeds(
+                        &s, &m, ncv, restart_directions - 1,
+                        seed + (unsigned)iter * 997u + 13001u);
+                    if (added < 0) {
+                        rc = added == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
+                             added == -3 ? LIS_KRYLOV_INEXACT_SOLVE :
+                             LIS_KRYLOV_BREAKDOWN;
+                        goto done;
+                    }
+                }
+                continue;
+            }
         }
 
         for (j = 0; j < old_m && j < nev - s.nlocked && m < ncv; ++j) {
@@ -983,6 +1400,18 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
                 }
                 if (i == 0) { ++m; ++extensions; }
             }
+            if (extensions && restart_directions > 1) {
+                int added = append_extra_seeds(
+                    &s, &m, ncv, restart_directions - 1,
+                    seed + (unsigned)iter * 7u + 14001u);
+                if (added < 0) {
+                    rc = added == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
+                         added == -3 ? LIS_KRYLOV_INEXACT_SOLVE :
+                         LIS_KRYLOV_BREAKDOWN;
+                    goto done;
+                }
+                extensions += added;
+            }
             if (!extensions) {
                 /* A semidefinite metric can have rank smaller than nev.
                  * Preserve finite Ritz approximations and report that
@@ -996,38 +1425,45 @@ int lis_krylov_symmetric(const lis_krylov_problem *p,
     rc = LIS_KRYLOV_NO_CONVERGENCE;
 
 done:
-    /* Locked pairs are accumulated across restarts. Restore the spectral
-     * ordering of the returned original eigenpairs before publishing them. */
-    if (o && o->hard_locking && s.scratch &&
+    /* The suffix sorts original eigenvalues without changing the Ritz
+     * selection or numerical stopping rules. Without a suffix, preserve
+     * all four legacy modes byte-for-byte; only BE needs interleaving. */
+    if (s.scratch &&
         (rc == LIS_KRYLOV_SUCCESS || rc == LIS_KRYLOV_NO_CONVERGENCE)) {
-        for (i = 1; i < stats->nreturned; ++i) {
-            for (j = i; j > 0; --j) {
-                double left = values[j], right = values[j-1];
-                double mu_left, mu_right, tmp;
-                if (p->transform == LIS_KRYLOV_STANDARD) {
-                    mu_left = left;
-                    mu_right = right;
-                } else if (p->transform == LIS_KRYLOV_SHIFT_INVERT_B) {
-                    mu_left = 1.0 / (left - p->sigma);
-                    mu_right = 1.0 / (right - p->sigma);
-                } else {
-                    mu_left = left / (left - p->sigma);
-                    mu_right = right / (right - p->sigma);
+        if (output_sort || both_ends) {
+            reorder_results(s.n, stats->nreturned, p->transform, p->sigma,
+                            both_ends, output_sort, values, residuals,
+                            vectors, s.scratch, s.order, s.locked);
+        } else if (o && o->hard_locking) {
+            for (i = 1; i < stats->nreturned; ++i) {
+                for (j = i; j > 0; --j) {
+                    double left = values[j], right = values[j-1];
+                    double mu_left, mu_right, tmp;
+                    if (p->transform == LIS_KRYLOV_STANDARD) {
+                        mu_left = left;
+                        mu_right = right;
+                    } else if (p->transform == LIS_KRYLOV_SHIFT_INVERT_B) {
+                        mu_left = 1.0 / (left - p->sigma);
+                        mu_right = 1.0 / (right - p->sigma);
+                    } else {
+                        mu_left = left / (left - p->sigma);
+                        mu_right = right / (right - p->sigma);
+                    }
+                    if (!earlier(mu_left, mu_right, which)) break;
+                    tmp = values[j-1];
+                    values[j-1] = values[j];
+                    values[j] = tmp;
+                    tmp = residuals[j-1];
+                    residuals[j-1] = residuals[j];
+                    residuals[j] = tmp;
+                    memcpy(s.scratch, vectors + (size_t)(j-1) * s.n,
+                           (size_t)s.n * sizeof(double));
+                    memcpy(vectors + (size_t)(j-1) * s.n,
+                           vectors + (size_t)j * s.n,
+                           (size_t)s.n * sizeof(double));
+                    memcpy(vectors + (size_t)j * s.n, s.scratch,
+                           (size_t)s.n * sizeof(double));
                 }
-                if (!earlier(mu_left, mu_right, which)) break;
-                tmp = values[j-1];
-                values[j-1] = values[j];
-                values[j] = tmp;
-                tmp = residuals[j-1];
-                residuals[j-1] = residuals[j];
-                residuals[j] = tmp;
-                memcpy(s.scratch, vectors + (size_t)(j-1) * s.n,
-                       (size_t)s.n * sizeof(double));
-                memcpy(vectors + (size_t)(j-1) * s.n,
-                       vectors + (size_t)j * s.n,
-                       (size_t)s.n * sizeof(double));
-                memcpy(vectors + (size_t)j * s.n, s.scratch,
-                       (size_t)s.n * sizeof(double));
             }
         }
     }
@@ -1035,8 +1471,29 @@ done:
         stats->nreturned = 0;
         stats->nconv = 0;
     }
-    release_workspace(&s);
+    if (!reuse) release_workspace(&s);
     return rc;
+}
+
+int lis_krylov_symmetric(const lis_krylov_problem *p,
+                         const lis_krylov_options *o,
+                         double *values, double *vectors, double *residuals,
+                         lis_krylov_stats *stats)
+{
+    return lis_krylov_symmetric_core(NULL, p, o, NULL, values, vectors,
+                                     residuals, stats, NULL);
+}
+
+int lis_krylov_symmetric_ex(const lis_krylov_problem *p,
+                            const lis_krylov_options *o,
+                            const lis_krylov_ext_options *ext,
+                            lis_krylov_workspace *workspace,
+                            double *values, double *vectors,
+                            double *residuals, lis_krylov_stats *stats,
+                            lis_krylov_ext_stats *ext_stats)
+{
+    return lis_krylov_symmetric_core(workspace, p, o, ext, values,
+                                     vectors, residuals, stats, ext_stats);
 }
 
 /* For SPD B, Sylvester's inertia law converts symmetric indefinite

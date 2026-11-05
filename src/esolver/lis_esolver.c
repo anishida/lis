@@ -1934,8 +1934,13 @@ LIS_INT lis_esolver_set_option2(char* arg1, char *arg2, LIS_ESOLVER esolver)
             second = arg2[1];
             if( first>='a' && first<='z' ) first -= 'a'-'A';
             if( second>='a' && second<='z' ) second -= 'a'-'A';
-            if( first!='L' && first!='S' ) return LIS_ERR_ILL_ARG;
-            if( second!='M' && second!='A' ) return LIS_ERR_ILL_ARG;
+            /* BE also fits the existing three-byte selector field.
+             * Output sort suffixes use the native API: the public LIS
+             * eigensolver structure must retain its old binary layout. */
+            if( !((first=='B' && second=='E') ||
+                  ((first=='L' || first=='S') &&
+                   (second=='M' || second=='A'))) )
+                return LIS_ERR_ILL_ARG;
             esolver->krylov_which[0] = first;
             esolver->krylov_which[1] = second;
             esolver->krylov_which[2] = '\0';

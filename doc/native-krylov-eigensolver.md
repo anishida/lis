@@ -85,8 +85,10 @@ status = lis_gesolve(A, B, x, &lambda0, esolver);
   the number requested (at most `-ss`).
 - `-kncv` sets the internal Krylov subspace capacity; zero selects
   `min(n, 3*nev+8)`.
-- `-kwhich` accepts `LM`, `SM`, `LA`, `SA`; ordering refers to the
-  **transformed** Ritz spectrum.
+- `-kwhich` accepts `LM`, `SM`, `LA`, `SA`, and `BE`. All modes
+  select Ritz values from the **transformed** operator spectrum. `BE`
+  alternates the largest and smallest algebraic Ritz values, starting
+  from the largest, so odd `nev` favors the upper end.
 - `-kresidual_scale` supplies an application-based estimate of `||A||`.
   Zero selects an automatically sampled estimate.
 - `-kinner_tol` (zero by default) enables explicit verification of each
@@ -257,3 +259,107 @@ outside this helper's contract.
   ABI is implemented in this version.
 - No performance claim for large sparse matrices without timed benchmarks
   that include the cost of the application's inverse operation.
+
+## Thresholded Jacobi refinement of the projected problem
+
+The native thick-restarted Krylov solver diagonalizes a relatively small
+symmetric projected matrix during each Rayleigh–Ritz step. This implementation
+uses an internal cyclic Jacobi eigendecomposition without requiring LAPACK.
+
+For the first three Jacobi sweeps, the projection solver skips
+off-diagonal pivots no larger than 5% of the **largest off-diagonal
+entry measured at the beginning of that sweep**. The 5% threshold is
+a heuristic, not an error bound or a universally optimal tuning value.
+Later sweeps revert to the original machine-epsilon pivot cutoff, and
+the stopping test remains unchanged. However, a changed rotation sequence
+can affect roundoff, eigenvector bases in degenerate eigenspaces, and
+the number of Krylov iterations. Public ABI, callbacks, and requested
+eigenvalue ordering are unchanged.
+
+A standalone regression (`test_krylov_projected`) exercises a symmetric,
+orthogonally transformed matrix with known clustered and repeated
+eigenvalues, verifying the returned eigenpairs, original-problem residuals
+and orthogonality. It also exercises hard locking.
+
+A small standalone timing/accuracy experiment is available without
+installing LIS:
+
+~~~sh
+cc -O3 -std=c99 -Iinclude test/bench_krylov_projected.c \
+   -lm -o bench_krylov_projected
+./bench_krylov_projected
+~~~
+
+The benchmark directly exercises the internal Jacobi kernel at four
+projected dimensions with **different repeat counts** (24: 1600,
+48: 480, 72: 120, 96: 40). It performs an untimed warm-up, seven timed
+trials per dimension and reports the median, minimum and maximum process
+CPU time as well as the **median microseconds per eigendecomposition**.
+Compare variants at the *same dimension*, not total times between
+different dimensions. Each trial checks the reconstruction residual and
+eigenvector orthogonality of the resulting matrix decomposition.
+
+Kernel-only results are not end-to-end Krylov timings. A baseline and an
+optimized build should be compared on the same hardware, preferably with
+independent runs, and uncertainty reported. The new threshold can change
+the number of sweeps; any speedup is workload-dependent. No new
+dependencies, user-facing solver options or CI workflow files are
+introduced.
+
+## BothEnds selection and independent output sorting
+
+The native solver now accepts `options.which = "BE"`. It interleaves
+**high/low extrema of the transformed Ritz spectrum**, starting at the
+high end; for `nev = 5`, the target ordering is
+`largest, smallest, 2nd-largest, 2nd-smallest, 3rd-largest`. Ties
+are handled deterministically, without a special ordering guarantee
+among equal Ritz values. This
+behavior is deliberately **not** defined as both ends of the original
+generalized pencil: after shift-invert or buckling transformation the
+corresponding original eigenvalues may lie near the shift instead.
+
+An independent `":ASC"` or `":DESC"` suffix can be appended to **any**
+of the five native `which` selectors, for example:
+
+~~~c
+options.which = "BE:ASC";  /* choose transformed ends, report ascending lambda */
+options.which = "LM:DESC"; /* choose largest |mu|, report descending lambda */
+~~~
+
+The suffix affects only the **published original eigenvalues** (and
+moves their residuals and eigenvectors together). It does not modify
+Ritz candidate selection, restarts, convergence tolerances or which
+values are requested. It also sorts available partial results when
+the solver returns `LIS_KRYLOV_NO_CONVERGENCE`. Omitting the suffix
+preserves the original output ordering for `LM`, `SM`, `LA` and
+`SA`. BothEnds interleaving is applied to returned results even
+after hard locking.
+
+`-kwhich BE` is supported through the existing LIS eigensolver
+command-line options without changing the existing three-character
+`krylov_which` field. **Output sort suffixes are native-API only**
+(`lis_krylov_symmetric()` or `lis_krylov_symmetric_ex()`). The
+LIS `-kwhich` option remains two characters due to the public
+eigensolver structure's fixed binary layout; `-kwhich BE:ASC` is
+therefore not a valid CLI option. No public structure layout changes
+or added dependencies are introduced.
+
+The regression `test_krylov_both_ends` validates correct selected and
+published eigenvalues, physical residuals, metric orthogonality,
+standard / B-metric shift-invert / A-metric shift-invert modes,
+hard locking, both native entry points and reusable workspaces. The
+LIS integration regression also tests `-kwhich BE`.
+
+## Optional extended Krylov API
+
+[The native Krylov extension guide](native-krylov-extensions.md)
+documents adaptive active subspace sizing, reusable allocation,
+optional multi-direction restart seeding, validation rules, and
+extended diagnostics.
+
+The original `lis_krylov_symmetric()` and existing public structures
+remain unchanged. Optional controls use versioned extension structures
+and a single `lis_krylov_symmetric_ex()` entry point. The workspace
+retains allocation only, not external shifted factorizations. The
+caller must prepare the inverse callback for each spectral shift.
+Extended restart seeding is not a full block Krylov algorithm.
