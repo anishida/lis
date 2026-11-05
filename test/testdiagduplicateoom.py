@@ -35,7 +35,11 @@ PRELUDE = r'''
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef MOCK_LONG_LONG
+typedef long long LIS_INT;
+#else
 typedef int LIS_INT;
+#endif
 typedef int LIS_Comm;
 typedef double LIS_SCALAR;
 typedef struct LIS_MATRIX_DIAG_STRUCT {
@@ -55,9 +59,9 @@ typedef struct LIS_MATRIX_STRUCT {
 #define LIS_SUCCESS 0
 #define LIS_OUT_OF_MEMORY 3
 #define LIS_MATRIX_CHECK_ALL 1
-#define LIS_MATRIX_BSR 10
-#define LIS_MATRIX_BSC 11
-#define LIS_MATRIX_VBR 12
+#define LIS_MATRIX_BSR 7
+#define LIS_MATRIX_BSC 8
+#define LIS_MATRIX_VBR 9
 #define LIS_DEBUG_FUNC_IN ((void)0)
 #define LIS_DEBUG_FUNC_OUT ((void)0)
 #define LIS_SETERR_MEM(n) ((void)(n))
@@ -199,6 +203,7 @@ int main(void)
     struct LIS_MATRIX_STRUCT matrix;
     LIS_INT sizes[3]={2,3,1};
     LIS_INT rows[4]={0,2,5,6};
+    LIS_INT ranges[2]={0,6};
     memset(&diag,0,sizeof(diag));
     memset(&matrix,0,sizeof(matrix));
     diag.nr=3;
@@ -206,21 +211,55 @@ int main(void)
     diag.n=6;
     diag.nprocs=1;
     diag.bns=sizes;
+    diag.ranges=ranges;
     matrix.nr=3;
     matrix.n=6;
     matrix.np=6;
     matrix.nprocs=1;
     matrix.row=rows;
+    matrix.ranges=ranges;
     matrix.matrix_type=LIS_MATRIX_VBR;
 
-    check_duplicate(&diag,1,6);
-    check_duplicate_matrix(&matrix,1,6);
+    check_duplicate(&diag,1,
+#ifdef USE_MPI
+        7
+#else
+        6
+#endif
+    );
+    check_duplicate_matrix(&matrix,1,
+#ifdef USE_MPI
+        7
+#else
+        6
+#endif
+    );
     diag.bns=NULL;
-    check_duplicate(&diag,0,2);
+    check_duplicate(&diag,0,
+#ifdef USE_MPI
+        3
+#else
+        2
+#endif
+    );
     matrix.matrix_type=LIS_MATRIX_BSR;
     matrix.bnr=2;
     matrix.bnc=2;
-    check_duplicate_matrix(&matrix,0,2);
+    check_duplicate_matrix(&matrix,0,
+#ifdef USE_MPI
+        3
+#else
+        2
+#endif
+    );
+    matrix.matrix_type=LIS_MATRIX_BSC;
+    check_duplicate_matrix(&matrix,0,
+#ifdef USE_MPI
+        3
+#else
+        2
+#endif
+    );
 
     puts("DIAG_DUPLICATE_OOM_TESTS_PASSED");
     return 0;
@@ -238,13 +277,17 @@ def main():
         src=Path(tmp)/"diag_oom.c"
         exe=Path(tmp)/"diag_oom"
         src.write_text(PRELUDE+bodies+TESTS,encoding="utf-8")
-        cc=[os.environ.get("CC","cc"),"-std=c99","-O0","-g",
-            "-Wall","-Wextra","-Werror","-Wno-unused-parameter",
-            "-Wno-unused-but-set-variable"]
-        if os.environ.get("LIS_DIAG_ASAN")=="1":
-            cc+=["-fsanitize=address,undefined","-fno-omit-frame-pointer"]
-        subprocess.run(cc+[str(src),"-o",str(exe)],check=True)
-        subprocess.run([str(exe)],check=True)
+        for mode,defines in (("serial32",[]),("serial64",["-DMOCK_LONG_LONG"]),
+                             ("mpi32",["-DUSE_MPI"]),
+                             ("mpi64",["-DUSE_MPI","-DMOCK_LONG_LONG"])):
+            executable=Path(tmp)/(mode+"_diag_oom")
+            cc=[os.environ.get("CC","cc"),"-std=c99","-O0","-g",
+                "-Wall","-Wextra","-Werror","-Wno-unused-parameter",
+                "-Wno-unused-but-set-variable"]+defines
+            if os.environ.get("LIS_DIAG_ASAN")=="1":
+                cc+=["-fsanitize=address,undefined","-fno-omit-frame-pointer"]
+            subprocess.run(cc+[str(src),"-o",str(executable)],check=True)
+            subprocess.run([str(executable)],check=True)
 
 
 if __name__=="__main__":
