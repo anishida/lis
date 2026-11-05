@@ -174,18 +174,22 @@ LIS_INT lis_matrix_malloc_ell(LIS_INT n, LIS_INT maxnzr, LIS_INT **index, LIS_SC
 	if( *index==NULL )
 	{
 		LIS_SETERR_MEM(n*maxnzr*sizeof(LIS_INT));
-		lis_free2(2,*index,*value);
-		return LIS_OUT_OF_MEMORY;
+		goto allocation_failed;
 	}
 	*value = (LIS_SCALAR *)lis_malloc( n*maxnzr*sizeof(LIS_SCALAR),"lis_matrix_malloc_ell::value" );
 	if( *value==NULL )
 	{
 		LIS_SETERR_MEM(n*maxnzr*sizeof(LIS_SCALAR));
-		lis_free2(2,*index,*value);
-		return LIS_OUT_OF_MEMORY;
+		goto allocation_failed;
 	}
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+
+allocation_failed:
+	lis_free2(2,*index,*value);
+	*index = NULL;
+	*value = NULL;
+	return LIS_OUT_OF_MEMORY;
 }
 
 #undef __FUNC__
