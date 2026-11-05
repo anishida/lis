@@ -4073,29 +4073,43 @@ LIS_INT lis_solver_reset_sequence(LIS_SOLVER solver)
 #define __FUNC__ "lis_solve_setup"
 LIS_INT lis_solve_setup(LIS_MATRIX A, LIS_SOLVER solver)
 {
-        LIS_INT	err;
-	LIS_PRECON precon;
-	LIS_VECTOR b,x;
+	LIS_INT err, previous_setup;
+	LIS_VECTOR b = NULL, x = NULL;
 
 	LIS_DEBUG_FUNC_IN;
 
-	lis_vector_duplicate(A,&b);
-	lis_vector_duplicate(A,&x);
+	if( A==NULL || solver==NULL )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"matrix or solver is NULL\n");
+		return LIS_ERR_ILL_ARG;
+	}
 
-	/* setup solver for preconditioning */
-	/* Do not call lis_solve_execute if solver->setup is true. 
-	   See esolver/lis_esolver_cg.c, where only preconditioner is called. */
+	previous_setup = solver->setup;
+
+	err = lis_vector_duplicate(A,&b);
+	if( err ) goto cleanup;
+
+	err = lis_vector_duplicate(A,&x);
+	if( err ) goto cleanup;
+
+	/* The setup solve creates the preconditioner but skips execution. */
 	solver->setup = LIS_TRUE;
 	err = lis_solve(A,b,x,solver);
 	if( err )
-	  {
-	    lis_solver_work_destroy(solver);
-	    solver->retcode = err;
-	    return err;
-	  }
+	{
+		lis_solver_work_destroy(solver);
+		/* Do not leave subsequent solves in setup-only mode on failure. */
+		solver->setup = previous_setup;
+	}
 
-	lis_vector_destroy(b);
+cleanup:
 	lis_vector_destroy(x);
+	lis_vector_destroy(b);
+	if( err )
+	{
+		solver->retcode = err;
+		return err;
+	}
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
