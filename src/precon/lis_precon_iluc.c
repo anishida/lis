@@ -1630,80 +1630,104 @@ LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 
 	L      = NULL;
 	U      = NULL;
+	D      = NULL;
+	tmp    = NULL;
+	w      = NULL;
+	z      = NULL;
+	iw     = NULL;
+	wc     = NULL;
+	wl     = NULL;
+	iz     = NULL;
+	zc     = NULL;
+	zl     = NULL;
+	ptr    = NULL;
+	index  = NULL;
+	value  = NULL;
 
 
 	err = lis_matrix_ilu_create(nr,bnr,&L);
 	if( err ) return err;
 	err = lis_matrix_ilu_create(nr,bnr,&U);
-	if( err ) return err;
-	err = lis_matrix_ilu_setCR(L);
-	if( err ) return err;
-	err = lis_matrix_ilu_setCR(U);
-	if( err ) return err;
-	err = lis_matrix_diag_duplicateM(A,&D);
 	if( err )
 	{
+		lis_matrix_ilu_destroy(L);
 		return err;
 	}
+	err = lis_matrix_ilu_setCR(L);
+	if( err ) goto setup_failed;
+	err = lis_matrix_ilu_setCR(U);
+	if( err ) goto setup_failed;
+	err = lis_matrix_diag_duplicateM(A,&D);
+	if( err ) goto setup_failed;
 
 	tmp   = (LIS_SCALAR *)lis_malloc(n*sizeof(LIS_SCALAR),"lis_precon_create_iluc_csr::tmp");
 	if( tmp==NULL )
 	{
 		LIS_SETERR_MEM(n*sizeof(LIS_SCALAR));
-		return LIS_OUT_OF_MEMORY;
+		err = LIS_OUT_OF_MEMORY;
+		goto setup_failed;
 	}
 	w   = (LIS_SCALAR *)lis_malloc(bs*nr*sizeof(LIS_SCALAR),"lis_precon_create_iluc_csr::w");
 	if( w==NULL )
 	{
 		LIS_SETERR_MEM(n*sizeof(LIS_SCALAR));
-		return LIS_OUT_OF_MEMORY;
+		err = LIS_OUT_OF_MEMORY;
+		goto setup_failed;
 	}
 	z   = (LIS_SCALAR *)lis_malloc(bs*nr*sizeof(LIS_SCALAR),"lis_precon_create_iluc_csr::z");
 	if( z==NULL )
 	{
 		LIS_SETERR_MEM(n*sizeof(LIS_SCALAR));
-		return LIS_OUT_OF_MEMORY;
+		err = LIS_OUT_OF_MEMORY;
+		goto setup_failed;
 	}
 
 	iw   = (LIS_INT *)lis_malloc(n*sizeof(LIS_INT),"lis_precon_create_iluc_csr::iw");
 	if( iw==NULL )
 	{
 		LIS_SETERR_MEM(n*sizeof(LIS_INT));
-		return LIS_OUT_OF_MEMORY;
+		err = LIS_OUT_OF_MEMORY;
+		goto setup_failed;
 	}
 	wc   = (LIS_INT *)lis_malloc(n*sizeof(LIS_INT),"lis_precon_create_iluc_csr::wc");
 	if( wc==NULL )
 	{
 		LIS_SETERR_MEM(n*sizeof(LIS_INT));
-		return LIS_OUT_OF_MEMORY;
+		err = LIS_OUT_OF_MEMORY;
+		goto setup_failed;
 	}
 	wl   = (LIS_INT *)lis_malloc(n*sizeof(LIS_INT),"lis_precon_create_iluc_csr::wl");
 	if( wl==NULL )
 	{
 		LIS_SETERR_MEM(n*sizeof(LIS_INT));
-		return LIS_OUT_OF_MEMORY;
+		err = LIS_OUT_OF_MEMORY;
+		goto setup_failed;
 	}
 	iz   = (LIS_INT *)lis_malloc(n*sizeof(LIS_INT),"lis_precon_create_iluc_csr::iz");
-	if( iw==NULL )
+	if( iz==NULL )
 	{
 		LIS_SETERR_MEM(n*sizeof(LIS_INT));
-		return LIS_OUT_OF_MEMORY;
+		err = LIS_OUT_OF_MEMORY;
+		goto setup_failed;
 	}
 	zc   = (LIS_INT *)lis_malloc(n*sizeof(LIS_INT),"lis_precon_create_iluc_csr::zc");
-	if( wc==NULL )
+	if( zc==NULL )
 	{
 		LIS_SETERR_MEM(n*sizeof(LIS_INT));
-		return LIS_OUT_OF_MEMORY;
+		err = LIS_OUT_OF_MEMORY;
+		goto setup_failed;
 	}
 	zl   = (LIS_INT *)lis_malloc(n*sizeof(LIS_INT),"lis_precon_create_iluc_csr::zl");
-	if( wl==NULL )
+	if( zl==NULL )
 	{
 		LIS_SETERR_MEM(n*sizeof(LIS_INT));
-		return LIS_OUT_OF_MEMORY;
+		err = LIS_OUT_OF_MEMORY;
+		goto setup_failed;
 	}
 
 	bnnz = A->L->bnnz;
 	err = lis_matrix_malloc_bsr(n,bnr,bnr,bnnz,&ptr,&index,&value);
+	if( err ) goto setup_failed;
 
 	for(i=0;i<nr;i++) iw[i] = 0;
 	for(i=0;i<nr;i++)
@@ -2643,6 +2667,14 @@ LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+
+setup_failed:
+	/* All setup allocations are owned locally until the factorization succeeds. */
+	lis_free2(12,tmp,w,z,iw,wc,wl,iz,zc,zl,ptr,index,value);
+	if( D ) lis_matrix_diag_destroy(D);
+	if( U ) lis_matrix_ilu_destroy(U);
+	if( L ) lis_matrix_ilu_destroy(L);
+	return err;
 }
 
 
