@@ -261,33 +261,39 @@ LIS_INT lis_matrix_malloc_csr(LIS_INT n, LIS_INT nnz, LIS_INT **ptr, LIS_INT **i
 {
 	LIS_DEBUG_FUNC_IN;
 
-	*ptr     = NULL;
-	*index   = NULL;
-	*value   = NULL;
+	*ptr   = NULL;
+	*index = NULL;
+	*value = NULL;
 
-	*ptr = (LIS_INT *)lis_malloc( (n+1)*sizeof(LIS_INT),"lis_matrix_malloc_csr::ptr" );
+	*ptr = (LIS_INT *)lis_malloc((n+1)*sizeof(LIS_INT),"lis_matrix_malloc_csr::ptr");
 	if( *ptr==NULL )
 	{
 		LIS_SETERR_MEM((n+1)*sizeof(LIS_INT));
-		lis_free2(3,*ptr,*index,*value);
-		return LIS_OUT_OF_MEMORY;
+		goto allocation_failed;
 	}
-	*index = (LIS_INT *)lis_malloc( nnz*sizeof(LIS_INT),"lis_matrix_malloc_csr::index" );
+	*index = (LIS_INT *)lis_malloc(nnz*sizeof(LIS_INT),"lis_matrix_malloc_csr::index");
 	if( *index==NULL )
 	{
 		LIS_SETERR_MEM(nnz*sizeof(LIS_INT));
-		lis_free2(3,*ptr,*index,*value);
-		return LIS_OUT_OF_MEMORY;
+		goto allocation_failed;
 	}
-	*value = (LIS_SCALAR *)lis_malloc( nnz*sizeof(LIS_SCALAR),"lis_matrix_malloc_csr::value" );
+	*value = (LIS_SCALAR *)lis_malloc(nnz*sizeof(LIS_SCALAR),"lis_matrix_malloc_csr::value");
 	if( *value==NULL )
 	{
 		LIS_SETERR_MEM(nnz*sizeof(LIS_SCALAR));
-		lis_free2(3,*ptr,*index,*value);
-		return LIS_OUT_OF_MEMORY;
+		goto allocation_failed;
 	}
+
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+
+allocation_failed:
+	lis_free2(3,*ptr,*index,*value);
+	/* Never publish dangling output pointers after partial failure. */
+	*ptr   = NULL;
+	*index = NULL;
+	*value = NULL;
+	return LIS_OUT_OF_MEMORY;
 }
 
 #undef __FUNC__
