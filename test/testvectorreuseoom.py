@@ -36,7 +36,7 @@ typedef struct vector {
 #define LIS_TRUE 1
 #define LIS_FALSE 0
 #define LIS_SUCCESS 0
-#define LIS_VECTOR_NULL 0
+#define LIS_VECTOR_NULL -1
 #define LIS_VECTOR_ASSEMBLED 1
 #define LIS_VECTOR_CHECK_NULL 1
 #define LIS_OUT_OF_MEMORY 3
