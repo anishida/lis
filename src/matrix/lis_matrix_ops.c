@@ -833,12 +833,15 @@ LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR D, LIS_INT actio
 #ifdef USE_MPI
 		if( A->np>D->np )
 		{
-			D->value = (LIS_SCALAR *)lis_realloc(D->value,A->np*sizeof(LIS_SCALAR));
-			if( D->value==NULL )
+			LIS_SCALAR *new_value;
+			new_value = (LIS_SCALAR *)lis_realloc(D->value,A->np*sizeof(LIS_SCALAR));
+			if( new_value==NULL )
 			{
 				LIS_SETERR_MEM(A->np*sizeof(LIS_SCALAR));
 				return LIS_OUT_OF_MEMORY;
 			}
+			/* Preserve the original vector allocation if realloc fails. */
+			D->value = new_value;
 			d = D->value;
 		}
 		lis_send_recv(A->commtable,d);
