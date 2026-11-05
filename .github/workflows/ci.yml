@@ -1,0 +1,128 @@
+name: Build and test (Linux / MSYS2 MinGW)
+
+on:
+  push:
+    branches:
+      - develop
+      - ci/linux-mingw
+  pull_request:
+    branches:
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Linux GCC (${{ matrix.mode }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: serial
+            options: ''
+          - mode: openmp
+            options: '--enable-omp'
+    env:
+      OMP_NUM_THREADS: '2'
+      OMP_DYNAMIC: 'FALSE'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Autotools and compilers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+
+      - name: Configure
+        env:
+          CONFIGURE_OPTIONS: ${{ matrix.options }}
+        run: |
+          autoreconf -fiv
+          ./configure --enable-test --disable-fortran --disable-f90 \
+            --disable-saamg --disable-mpi $CONFIGURE_OPTIONS
+
+      - name: Build
+        run: make -j2
+
+      - name: Run Automake test suite
+        run: make -j2 check
+
+      - name: Upload failed test logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.mode }}-logs
+          path: |
+            config.log
+            test/test-suite.log
+            test/*.log
+          if-no-files-found: ignore
+
+  mingw:
+    name: MSYS2 MinGW (${{ matrix.msystem }})
+    runs-on: windows-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - msystem: UCRT64
+            gcc_package: mingw-w64-ucrt-x86_64-gcc
+            options: '--enable-omp'
+          - msystem: MINGW64
+            gcc_package: mingw-w64-x86_64-gcc
+            options: ''
+    defaults:
+      run:
+        shell: msys2 {0}
+    env:
+      OMP_NUM_THREADS: '2'
+      OMP_DYNAMIC: 'FALSE'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MSYS2 and native MinGW-w64 GCC
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: true
+          install: >-
+            autoconf automake libtool make
+            ${{ matrix.gcc_package }}
+
+      - name: Configure
+        env:
+          CONFIGURE_OPTIONS: ${{ matrix.options }}
+        run: |
+          gcc -dumpmachine | grep -q 'mingw32'
+          autoreconf -fiv
+          # Static linking makes the first native Windows CI independent of
+          # the DLL export/import conventions used by downstream applications.
+          ./configure CC=gcc --enable-test --disable-shared --enable-static \
+            --disable-fortran --disable-f90 --disable-saamg --disable-mpi \
+            $CONFIGURE_OPTIONS
+
+      - name: Build
+        run: make -j2
+
+      - name: Run Automake test suite
+        run: make -j2 check
+
+      - name: Upload failed test logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mingw-${{ matrix.msystem }}-logs
+          path: |
+            config.log
+            test/test-suite.log
+            test/*.log
+          if-no-files-found: ignore
