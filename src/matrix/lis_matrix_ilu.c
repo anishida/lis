@@ -73,12 +73,17 @@ LIS_INT lis_matrix_ilu_create(LIS_INT n, LIS_INT bs, LIS_MATRIX_ILU *A)
 	if( nnz==NULL )
 	{
 		LIS_SETERR_MEM(n*sizeof(LIS_INT));
+		lis_free(*A);
+		*A = NULL;
 		return LIS_OUT_OF_MEMORY;
 	}
 	index = (LIS_INT **)lis_malloc( n*sizeof(LIS_INT *),"lis_matrix_ilu_create::index" );
 	if( index==NULL )
 	{
 		LIS_SETERR_MEM(n*sizeof(LIS_INT *));
+		lis_free(nnz);
+		lis_free(*A);
+		*A = NULL;
 		return LIS_OUT_OF_MEMORY;
 	}
 
@@ -148,6 +153,7 @@ LIS_INT lis_matrix_ilu_setVR(LIS_MATRIX_ILU A)
 	if( values==NULL )
 	{
 		LIS_SETERR_MEM(n*sizeof(LIS_SCALAR *));
+		lis_free(bsz);
 		return LIS_OUT_OF_MEMORY;
 	}
 
