@@ -67,21 +67,19 @@ jobs:
           if-no-files-found: ignore
 
   mingw:
-    name: MSYS2 MinGW (${{ matrix.msystem }})
+    name: MSYS2 UCRT64 (${{ matrix.mode }})
     runs-on: windows-latest
     timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
         include:
-          - msystem: UCRT64
-            gcc_package: mingw-w64-ucrt-x86_64-gcc
-            openmp_package: mingw-w64-ucrt-x86_64-libgomp
-            options: '--enable-omp'
-          - msystem: MINGW64
-            gcc_package: mingw-w64-x86_64-gcc
+          - mode: serial
             openmp_package: ''
             options: ''
+          - mode: openmp
+            openmp_package: mingw-w64-ucrt-x86_64-libgomp
+            options: '--enable-omp'
     defaults:
       run:
         shell: msys2 {0}
@@ -94,11 +92,11 @@ jobs:
       - name: Install MSYS2 and native MinGW-w64 GCC
         uses: msys2/setup-msys2@v2
         with:
-          msystem: ${{ matrix.msystem }}
+          msystem: UCRT64
           update: true
           install: >-
             autoconf automake libtool make
-            ${{ matrix.gcc_package }}
+            mingw-w64-ucrt-x86_64-gcc
             ${{ matrix.openmp_package }}
 
       - name: Configure
@@ -130,7 +128,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: mingw-${{ matrix.msystem }}-logs
+          name: ucrt64-${{ matrix.mode }}-logs
           path: |
             config.log
             test/test-suite.log
