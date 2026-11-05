@@ -1670,14 +1670,14 @@ LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 	w   = (LIS_SCALAR *)lis_malloc(bs*nr*sizeof(LIS_SCALAR),"lis_precon_create_iluc_csr::w");
 	if( w==NULL )
 	{
-		LIS_SETERR_MEM(n*sizeof(LIS_SCALAR));
+		LIS_SETERR_MEM(bs*nr*sizeof(LIS_SCALAR));
 		err = LIS_OUT_OF_MEMORY;
 		goto setup_failed;
 	}
 	z   = (LIS_SCALAR *)lis_malloc(bs*nr*sizeof(LIS_SCALAR),"lis_precon_create_iluc_csr::z");
 	if( z==NULL )
 	{
-		LIS_SETERR_MEM(n*sizeof(LIS_SCALAR));
+		LIS_SETERR_MEM(bs*nr*sizeof(LIS_SCALAR));
 		err = LIS_OUT_OF_MEMORY;
 		goto setup_failed;
 	}
