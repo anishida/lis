@@ -29,7 +29,11 @@ PRELUDE = r'''
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef MOCK_LONG_LONG
+typedef long long LIS_INT;
+#else
 typedef int LIS_INT;
+#endif
 typedef double LIS_SCALAR;
 typedef struct LIS_MATRIX_DIAG_STRUCT {
     LIS_INT n,bn,nr;
@@ -237,14 +241,15 @@ def main():
     func = extract(src.read_text(encoding="utf-8"))
     with TemporaryDirectory(prefix="lis-diag-set-block-") as tmp:
         c_file=Path(tmp)/"test_diag_set_block.c"
-        exe=Path(tmp)/"test_diag_set_block"
         c_file.write_text(PRELUDE+func+TESTS,encoding="utf-8")
-        flags=[os.environ.get("CC","cc"),"-std=c99","-O0","-g",
-               "-Wall","-Wextra","-Werror"]
-        if os.environ.get("LIS_DIAG_BLOCK_ASAN")=="1":
-            flags+=["-fsanitize=address,undefined","-fno-omit-frame-pointer"]
-        subprocess.run(flags+[str(c_file),"-o",str(exe)],check=True)
-        subprocess.run([str(exe)],check=True)
+        for mode,extra in (("index32", []),("index64", ["-DMOCK_LONG_LONG"])):
+            exe=Path(tmp)/("test_diag_set_block_"+mode)
+            flags=[os.environ.get("CC","cc"),"-std=c99","-O0","-g",
+                   "-Wall","-Wextra","-Werror"]+extra
+            if os.environ.get("LIS_DIAG_BLOCK_ASAN")=="1":
+                flags+=["-fsanitize=address,undefined","-fno-omit-frame-pointer"]
+            subprocess.run(flags+[str(c_file),"-o",str(exe)],check=True)
+            subprocess.run([str(exe)],check=True)
 
 
 if __name__=="__main__":
