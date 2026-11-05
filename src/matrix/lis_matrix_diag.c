@@ -552,6 +552,22 @@ LIS_INT lis_matrix_diag_set_blocksize(LIS_MATRIX_DIAG D, LIS_INT bn, LIS_INT *bn
 			LIS_SETERR_MEM(bn*bn*nr*sizeof(LIS_SCALAR));
 			return LIS_OUT_OF_MEMORY;
 		}
+		/* A successful change from variable to fixed blocks must release
+		   the old block table before changing its row count. */
+		if( D->bns )
+		{
+			if( D->v_value )
+			{
+				for(i=0;i<D->nr;i++)
+				{
+					if( D->v_value[i] ) free(D->v_value[i]);
+				}
+			}
+			lis_free(D->v_value);
+			lis_free(D->bns);
+			D->v_value = NULL;
+			D->bns = NULL;
+		}
 		lis_free(D->value);
 		D->value = diag;
 		D->nr = nr;
