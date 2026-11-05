@@ -239,7 +239,8 @@ def main():
         exe=Path(tmp)/"diag_oom"
         src.write_text(PRELUDE+bodies+TESTS,encoding="utf-8")
         cc=[os.environ.get("CC","cc"),"-std=c99","-O0","-g",
-            "-Wall","-Wextra","-Werror","-Wno-unused-parameter"]
+            "-Wall","-Wextra","-Werror","-Wno-unused-parameter",
+            "-Wno-unused-but-set-variable"]
         if os.environ.get("LIS_DIAG_ASAN")=="1":
             cc+=["-fsanitize=address,undefined","-fno-omit-frame-pointer"]
         subprocess.run(cc+[str(src),"-o",str(exe)],check=True)
