@@ -1,3 +1,7 @@
+Version 2.1.23 (November 5, 2026)
+
+  - Added unified extension API, BothEnds (-kwhich BE) selection mode, sorting suffixes (:ASC, :DESC), thresholded cyclic Jacobi sweeps, and hard-locking residual reuse for the native symmetric Krylov eigensolver (thanks to Rafal Brzegowy).
+
 Version 2.1.22 (November 4, 2026)
 
   - Added a native restarted Krylov subspace eigensolver for real symmetric standard and generalized eigenvalue problems, supporting OpenMP parallelization, adaptive DGKS reorthogonalization, and hard locking (thanks to Rafal Brzegowy).
