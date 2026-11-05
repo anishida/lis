@@ -76,9 +76,11 @@ jobs:
         include:
           - msystem: UCRT64
             gcc_package: mingw-w64-ucrt-x86_64-gcc
+            openmp_package: mingw-w64-ucrt-x86_64-libgomp
             options: '--enable-omp'
           - msystem: MINGW64
             gcc_package: mingw-w64-x86_64-gcc
+            openmp_package: ''
             options: ''
     defaults:
       run:
@@ -97,6 +99,7 @@ jobs:
           install: >-
             autoconf automake libtool make
             ${{ matrix.gcc_package }}
+            ${{ matrix.openmp_package }}
 
       - name: Configure
         env:
@@ -106,9 +109,16 @@ jobs:
           autoreconf -fiv
           # Static linking makes the first native Windows CI independent of
           # the DLL export/import conventions used by downstream applications.
+          set -o pipefail
           ./configure CC=gcc --enable-test --disable-shared --enable-static \
             --disable-fortran --disable-f90 --disable-saamg --disable-mpi \
-            $CONFIGURE_OPTIONS
+            $CONFIGURE_OPTIONS 2>&1 | tee configure-output.log
+          if [[ "$CONFIGURE_OPTIONS" == *--enable-omp* ]]; then
+            if ! grep -Eq 'Build with OpenMP library[[:space:]]+=[[:space:]]+yes' configure-output.log; then
+              echo "::error::OpenMP was requested but configure did not enable it"
+              exit 1
+            fi
+          fi
 
       - name: Build
         run: make -j2
