@@ -184,11 +184,11 @@ static void test_precision(LIS_INT precision)
             assert(v.value[i]==0.0);
             if(precision) assert(v.value_lo[i]==0.0);
         }
-        assert(live_count==(precision ? 2 : 1)
 #ifdef MOCK_MPI
-             + 1
+        assert(live_count==(precision ? 3 : 2));
+#else
+        assert(live_count==(precision ? 2 : 1));
 #endif
-        );
         cleanup(&v);
     }
 
