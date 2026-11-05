@@ -1302,15 +1302,18 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
             goto done;
         }
         if (m >= ncv) {
+            /* Track convergence progress for both the opt-in adaptive
+             * subspace and a PSD-metric restart stagnation fallback. */
+            if (stats->nconv > last_nconv)
+                stalled_restarts = 0;
+            else if (stalled_restarts < INT_MAX)
+                ++stalled_restarts;
+            last_nconv = stats->nconv;
+
             /* Grow only after repeated full-subspace restarts without
              * another converged pair. No Ritz basis is discarded on
              * growth, and the reserved buffers are already large enough. */
             if (ext && ext->adaptive_ncv && ncv < capacity) {
-                if (stats->nconv > last_nconv)
-                    stalled_restarts = 0;
-                else
-                    ++stalled_restarts;
-                last_nconv = stats->nconv;
                 if (stalled_restarts >= 2) {
                     int increment = ncv / 2;
                     int remaining = capacity - ncv;
@@ -1346,15 +1349,27 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
                     }
                     if (result == 0) { ++m; break; }
                 }
-                if (restart_directions > 1) {
-                    int added = append_extra_seeds(
-                        &s, &m, ncv, restart_directions - 1,
-                        seed + (unsigned)iter * 997u + 13001u);
-                    if (added < 0) {
-                        rc = added == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
-                             added == -3 ? LIS_KRYLOV_INEXACT_SOLVE :
-                             LIS_KRYLOV_BREAKDOWN;
-                        goto done;
+                {
+                    int extra = restart_directions - 1;
+                    /* A repeated finite eigenvalue with a semidefinite
+                     * metric may need independent restart directions when
+                     * its automatically estimated residual scale stalls.
+                     * Enrich the fixed-size subspace after no-progress
+                     * restarts; preserve explicit-scale configurations
+                     * and do not weaken the residual tolerance. */
+                    if (!extra && o->allow_semidefinite_metric &&
+                        stalled_restarts >= 1 && o->residual_scale == 0.0)
+                        extra = 1;
+                    if (extra) {
+                        int added = append_extra_seeds(
+                            &s, &m, ncv, extra,
+                            seed + (unsigned)iter * 997u + 13001u);
+                        if (added < 0) {
+                            rc = added == -1 ? LIS_KRYLOV_CALLBACK_ERROR :
+                                 added == -3 ? LIS_KRYLOV_INEXACT_SOLVE :
+                                 LIS_KRYLOV_BREAKDOWN;
+                            goto done;
+                        }
                     }
                 }
                 continue;
