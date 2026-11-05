@@ -168,8 +168,23 @@ static void test_variable_block(void)
     /* Reconfiguring an already variable-block diagonal remains a no-op. */
     assert(lis_matrix_diag_set_blocksize(&D,3,sizes)==LIS_SUCCESS);
     assert(live_count==5);
+    {
+        LIS_INT *old_bns=D.bns;
+        LIS_SCALAR **old_table=D.v_value;
+        LIS_SCALAR *old_block=D.v_value[0];
+        /* Failing to switch representations leaves every old block intact. */
+        fail_at=allocation_calls+1;
+        assert(lis_matrix_diag_set_blocksize(&D,2,NULL)==LIS_OUT_OF_MEMORY);
+        assert(D.bns==old_bns && D.v_value==old_table);
+        assert(D.v_value[0]==old_block && D.v_value[0][0]==1.0);
+        assert(D.value==NULL && D.bn==3 && D.nr==3 && live_count==5);
+        fail_at=0;
+        assert(lis_matrix_diag_set_blocksize(&D,2,NULL)==LIS_SUCCESS);
+        assert(D.bns==NULL && D.v_value==NULL);
+        assert(D.value && D.bn==2 && D.nr==3 && live_count==1);
+    }
     dispose(&D);
-    puts("variable-block: 5 failures and success passed");
+    puts("variable-block: 5 failures, success and fixed-block switch passed");
 }
 
 static void test_fixed_block(void)
