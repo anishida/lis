@@ -66,6 +66,55 @@ jobs:
             test/*.log
           if-no-files-found: ignore
 
+  linux-mpi:
+    name: Linux GCC (MPI, 2 ranks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Autotools and Open MPI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin \
+            openmpi-bin libopenmpi-dev
+
+      - name: Configure with MPI
+        run: |
+          set -o pipefail
+          command -v mpicc
+          command -v mpiexec
+          autoreconf -fiv
+          ./configure MPICC=mpicc MPIRUN=mpiexec --enable-test --enable-mpi \
+            --disable-fortran --disable-f90 --disable-saamg --disable-omp \
+            2>&1 | tee configure-output.log
+          grep -Eq 'Build with MPI library[[:space:]]+=[[:space:]]+yes' configure-output.log
+
+      - name: Build
+        run: make -j2
+
+      - name: Run Automake test suite
+        run: make -j2 check
+
+      - name: Run distributed MPI regressions (2 ranks)
+        run: |
+          mpiexec -n 2 ./test/testmatrixoperatormpi
+          mpiexec -n 2 ./test/testvectornrm2mpi
+
+      - name: Upload failed test logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-mpi-logs
+          path: |
+            config.log
+            configure-output.log
+            test/test-suite.log
+            test/*.log
+          if-no-files-found: ignore
+
   mingw:
     name: MSYS2 UCRT64 (${{ matrix.mode }})
     runs-on: windows-latest
