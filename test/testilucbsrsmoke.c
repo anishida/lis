@@ -66,6 +66,7 @@ int main(int argc, char *argv[])
     if( bsr->matrix_type!=LIS_MATRIX_BSR || bsr->bnr!=2 )
     {
         fprintf(stderr,"BSR conversion did not retain 2x2 blocks\n");
+        err = LIS_FAILS;
         goto fail;
     }
 
@@ -92,6 +93,7 @@ int main(int argc, char *argv[])
         precon->U==NULL || precon->WD==NULL )
     {
         fprintf(stderr,"BSR ILUC did not create L, U, and WD\n");
+        err = LIS_FAILS;
         goto fail;
     }
 
