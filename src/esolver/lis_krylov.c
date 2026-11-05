@@ -528,19 +528,131 @@ static int earlier(double a, double b, const char *which)
     return a < b;
 }
 
+/* Legacy Ritz selection is unchanged. BE targets ceil(nev/2) high and
+ * floor(nev/2) low transformed-spectrum eigenpairs. Hard locking can
+ * capture a candidate from either flank, not necessarily the first one.
+ * Track actual locks per flank to avoid selecting the same end twice
+ * when the opposite extremum is difficult to converge.
+ *
+ * The existing ncv-sized work buffer contains temporary (2*index+side)
+ * entries during permutation. Afterward it holds the side indicator for
+ * each selected Ritz position: high=1, low=0. With ncv<=INT_MAX/8 this
+ * encoding cannot overflow. The subsequent result pass clears work. */
 static void sort_ritz(int m, const double *values, int *order,
-                      const char *which)
+                      const char *which, int high_locked, int low_locked,
+                      int nev, int *work)
 {
     int i, j;
+    int both = which[0] == 'B' && which[1] == 'E';
     for (i = 0; i < m; ++i) order[i] = i;
     for (i = 1; i < m; ++i) {
         int key = order[i];
         j = i - 1;
-        while (j >= 0 && earlier(values[key], values[order[j]], which)) {
+        while (j >= 0 && (both ?
+               values[key] < values[order[j]] :
+               earlier(values[key], values[order[j]], which))) {
             order[j + 1] = order[j];
             --j;
         }
         order[j + 1] = key;
+    }
+    if (both) {
+        int lo = 0, hi = m - 1;
+        int taken_high = 0, taken_low = 0;
+        int need_high = (nev + 1) / 2 - high_locked;
+        int need_low = nev / 2 - low_locked;
+        for (i = 0; i < m; ++i) {
+            int high;
+            if (taken_high < need_high && taken_low < need_low)
+                high = high_locked + taken_high <= low_locked + taken_low;
+            else if (taken_high < need_high)
+                high = 1;
+            else if (taken_low < need_low)
+                high = 0;
+            else
+                high = ((high_locked + low_locked + i) & 1) == 0;
+            work[i] = 2 * order[high ? hi-- : lo++] + high;
+            if (high) ++taken_high;
+            else ++taken_low;
+        }
+        for (i = 0; i < m; ++i) {
+            order[i] = work[i] / 2;
+            work[i] &= 1;
+        }
+    }
+}
+
+/* Return-result sorting is deliberately independent of Ritz selection.
+ * For :ASC/:DESC compare ORIGINAL eigenvalues; BE without a suffix
+ * interleaves extreme transformed Ritz values. Only the nreturned
+ * entries are touched, so partial results and their vector/residual
+ * associations are preserved. The existing O(ncv) index arrays and
+ * n-element scratch vector avoid any extra allocation. */
+static double result_transformed_value(int transform, double sigma,
+                                       double lambda)
+{
+    if (transform == LIS_KRYLOV_STANDARD) return lambda;
+    if (transform == LIS_KRYLOV_SHIFT_INVERT_B)
+        return 1.0 / (lambda - sigma);
+    return lambda / (lambda - sigma);
+}
+
+static void reorder_results(int n, int count, int transform, double sigma,
+                            int both, int output_sort,
+                            double *values, double *residuals,
+                            double *vectors, double *scratch,
+                            int *order, int *destination)
+{
+    int i, j;
+    if (count < 2) return;
+    for (i = 0; i < count; ++i) order[i] = i;
+    for (i = 1; i < count; ++i) {
+        int key = order[i];
+        double a = output_sort ?
+            values[key] :
+            result_transformed_value(transform, sigma, values[key]);
+        j = i - 1;
+        while (j >= 0) {
+            double b = output_sort ?
+                values[order[j]] :
+                result_transformed_value(transform, sigma, values[order[j]]);
+            if (!(output_sort < 0 ? a > b : a < b)) break;
+            order[j + 1] = order[j];
+            --j;
+        }
+        order[j + 1] = key;
+    }
+    if (both && output_sort == 0) {
+        int lo = 0, hi = count - 1;
+        for (i = 0; i < count; ++i) {
+            int original = (i & 1) ? order[lo++] : order[hi--];
+            destination[original] = i;
+        }
+    } else {
+        for (i = 0; i < count; ++i)
+            destination[order[i]] = i;
+    }
+    for (i = 0; i < count; ++i) {
+        while (destination[i] != i) {
+            int target = destination[i], temp_index;
+            double temp_value;
+            temp_value = values[i];
+            values[i] = values[target];
+            values[target] = temp_value;
+            temp_value = residuals[i];
+            residuals[i] = residuals[target];
+            residuals[target] = temp_value;
+            memcpy(scratch, vectors + (size_t)i * n,
+                   (size_t)n * sizeof(*scratch));
+            memcpy(vectors + (size_t)i * n,
+                   vectors + (size_t)target * n,
+                   (size_t)n * sizeof(*scratch));
+            memcpy(vectors + (size_t)target * n, scratch,
+                   (size_t)n * sizeof(*scratch));
+            temp_index = destination[i];
+            destination[i] = destination[target];
+            destination[target] = temp_index;
+        }
     }
 }
 
@@ -875,6 +987,8 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
     double tol;
     unsigned seed;
     const char *which;
+    int output_sort = 0, both_ends = 0;
+    int be_high_locked = 0, be_low_locked = 0;
 
     if (stats) memset(stats, 0, sizeof(*stats));
     if (ext_stats) {
@@ -901,9 +1015,23 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
         o->maxiter < 0)
         return LIS_KRYLOV_BAD_ARGUMENT;
     which = o->which ? o->which : "LM";
-    if (strcmp(which, "LM") && strcmp(which, "SM") &&
-        strcmp(which, "LA") && strcmp(which, "SA"))
-        return LIS_KRYLOV_BAD_ARGUMENT;
+    {
+        size_t which_len = strlen(which);
+        if ((which_len != 2 && which_len != 6 && which_len != 7) ||
+            (strncmp(which, "LM", 2) && strncmp(which, "SM", 2) &&
+             strncmp(which, "LA", 2) && strncmp(which, "SA", 2) &&
+             strncmp(which, "BE", 2)))
+            return LIS_KRYLOV_BAD_ARGUMENT;
+        if (which_len > 2) {
+            if (!strcmp(which + 2, ":ASC"))
+                output_sort = 1;
+            else if (!strcmp(which + 2, ":DESC"))
+                output_sort = -1;
+            else
+                return LIS_KRYLOV_BAD_ARGUMENT;
+        }
+        both_ends = which[0] == 'B' && which[1] == 'E';
+    }
 
     nev = o->nev;
     maxiter = o->maxiter ? o->maxiter : 300;
@@ -1003,7 +1131,8 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
             rc = LIS_KRYLOV_BREAKDOWN;
             goto done;
         }
-        sort_ritz(m, s.eval, s.order, which);
+        sort_ritz(m, s.eval, s.order, which,
+                  be_high_locked, be_low_locked, nev, s.locked);
         if (o->hard_locking && s.nlocked < nev) {
             int captured = 0;
             memset(s.verified, 0, (size_t)nev * sizeof(*s.verified));
@@ -1047,6 +1176,10 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
                 s.locked_values[s.nlocked] = lambda;
                 s.locked_residuals[s.nlocked] = rel;
                 ++s.nlocked;
+                if (both_ends) {
+                    if (s.locked[j]) ++be_high_locked;
+                    else ++be_low_locked;
+                }
                 captured = 1;
                 break;
             }
@@ -1292,38 +1425,45 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
     rc = LIS_KRYLOV_NO_CONVERGENCE;
 
 done:
-    /* Locked pairs are accumulated across restarts. Restore the spectral
-     * ordering of the returned original eigenpairs before publishing them. */
-    if (o && o->hard_locking && s.scratch &&
+    /* The suffix sorts original eigenvalues without changing the Ritz
+     * selection or numerical stopping rules. Without a suffix, preserve
+     * all four legacy modes byte-for-byte; only BE needs interleaving. */
+    if (s.scratch &&
         (rc == LIS_KRYLOV_SUCCESS || rc == LIS_KRYLOV_NO_CONVERGENCE)) {
-        for (i = 1; i < stats->nreturned; ++i) {
-            for (j = i; j > 0; --j) {
-                double left = values[j], right = values[j-1];
-                double mu_left, mu_right, tmp;
-                if (p->transform == LIS_KRYLOV_STANDARD) {
-                    mu_left = left;
-                    mu_right = right;
-                } else if (p->transform == LIS_KRYLOV_SHIFT_INVERT_B) {
-                    mu_left = 1.0 / (left - p->sigma);
-                    mu_right = 1.0 / (right - p->sigma);
-                } else {
-                    mu_left = left / (left - p->sigma);
-                    mu_right = right / (right - p->sigma);
+        if (output_sort || both_ends) {
+            reorder_results(s.n, stats->nreturned, p->transform, p->sigma,
+                            both_ends, output_sort, values, residuals,
+                            vectors, s.scratch, s.order, s.locked);
+        } else if (o && o->hard_locking) {
+            for (i = 1; i < stats->nreturned; ++i) {
+                for (j = i; j > 0; --j) {
+                    double left = values[j], right = values[j-1];
+                    double mu_left, mu_right, tmp;
+                    if (p->transform == LIS_KRYLOV_STANDARD) {
+                        mu_left = left;
+                        mu_right = right;
+                    } else if (p->transform == LIS_KRYLOV_SHIFT_INVERT_B) {
+                        mu_left = 1.0 / (left - p->sigma);
+                        mu_right = 1.0 / (right - p->sigma);
+                    } else {
+                        mu_left = left / (left - p->sigma);
+                        mu_right = right / (right - p->sigma);
+                    }
+                    if (!earlier(mu_left, mu_right, which)) break;
+                    tmp = values[j-1];
+                    values[j-1] = values[j];
+                    values[j] = tmp;
+                    tmp = residuals[j-1];
+                    residuals[j-1] = residuals[j];
+                    residuals[j] = tmp;
+                    memcpy(s.scratch, vectors + (size_t)(j-1) * s.n,
+                           (size_t)s.n * sizeof(double));
+                    memcpy(vectors + (size_t)(j-1) * s.n,
+                           vectors + (size_t)j * s.n,
+                           (size_t)s.n * sizeof(double));
+                    memcpy(vectors + (size_t)j * s.n, s.scratch,
+                           (size_t)s.n * sizeof(double));
                 }
-                if (!earlier(mu_left, mu_right, which)) break;
-                tmp = values[j-1];
-                values[j-1] = values[j];
-                values[j] = tmp;
-                tmp = residuals[j-1];
-                residuals[j-1] = residuals[j];
-                residuals[j] = tmp;
-                memcpy(s.scratch, vectors + (size_t)(j-1) * s.n,
-                       (size_t)s.n * sizeof(double));
-                memcpy(vectors + (size_t)(j-1) * s.n,
-                       vectors + (size_t)j * s.n,
-                       (size_t)s.n * sizeof(double));
-                memcpy(vectors + (size_t)j * s.n, s.scratch,
-                       (size_t)s.n * sizeof(double));
             }
         }
     }

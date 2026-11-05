@@ -98,6 +98,16 @@ int main(int argc,char **argv)
     if(solve_check(A,NULL,
          "-e krylov -ss 2 -nev 2 -etol 1e-7 -emaxiter 700 -kwhich LA -eprint none",
          156.0,132.0)) goto cleanup;
+    /* The CLI selector has only three bytes of public storage, so
+     * BothEnds is supported directly without changing the ABI.
+     * Largest and smallest ORIGINAL values are also the ends in the
+     * standard (untransformed) problem. */
+    if(solve_check(A,NULL,
+         "-e krylov -ss 2 -nev 2 -etol 1e-7 -emaxiter 700 -kwhich BE -eprint none",
+         156.0,2.0)) goto cleanup;
+    if(solve_check(A,NULL,
+         "-e krylov -ss 2 -nev 2 -etol 1e-7 -emaxiter 700 -kwhich BE -khardlock 1 -eprint none",
+         156.0,2.0)) goto cleanup;
     if(solve_check(A,B,
          "-e krylov -ss 2 -nev 2 -etol 1e-7 -emaxiter 700 -shift -0.5 -kwhich LM -eprint none",
          2.0,3.0)) goto cleanup;

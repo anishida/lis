@@ -153,7 +153,9 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	test_krylov_projected$(EXEEXT) test_krylov_workspace$(EXEEXT) \
 	test_krylov_unified$(EXEEXT) test_krylov_adaptive_ex$(EXEEXT) \
 	test_krylov_api_contract$(EXEEXT) \
-	test_krylov_residual_reuse$(EXEEXT)
+	test_krylov_residual_reuse$(EXEEXT) \
+	test_krylov_both_ends$(EXEEXT) \
+	test_krylov_be_lock_order$(EXEEXT)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_3 = test2f test6f 
@@ -412,6 +414,15 @@ test_krylov_api_contract_OBJECTS =  \
 	$(am_test_krylov_api_contract_OBJECTS)
 test_krylov_api_contract_LDADD = $(LDADD)
 test_krylov_api_contract_DEPENDENCIES =
+am_test_krylov_be_lock_order_OBJECTS =  \
+	test_krylov_be_lock_order.$(OBJEXT)
+test_krylov_be_lock_order_OBJECTS =  \
+	$(am_test_krylov_be_lock_order_OBJECTS)
+test_krylov_be_lock_order_DEPENDENCIES =
+am_test_krylov_both_ends_OBJECTS = test_krylov_both_ends.$(OBJEXT)
+test_krylov_both_ends_OBJECTS = $(am_test_krylov_both_ends_OBJECTS)
+test_krylov_both_ends_LDADD = $(LDADD)
+test_krylov_both_ends_DEPENDENCIES =
 am_test_krylov_inertia_OBJECTS = test_krylov_inertia.$(OBJEXT)
 test_krylov_inertia_OBJECTS = $(am_test_krylov_inertia_OBJECTS)
 test_krylov_inertia_LDADD = $(LDADD)
@@ -886,6 +897,8 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/test5.Po ./$(DEPDIR)/test6.Po ./$(DEPDIR)/test7.Po \
 	./$(DEPDIR)/test_krylov_adaptive_ex.Po \
 	./$(DEPDIR)/test_krylov_api_contract.Po \
+	./$(DEPDIR)/test_krylov_be_lock_order.Po \
+	./$(DEPDIR)/test_krylov_both_ends.Po \
 	./$(DEPDIR)/test_krylov_inertia.Po \
 	./$(DEPDIR)/test_krylov_lis.Po \
 	./$(DEPDIR)/test_krylov_modes.Po \
@@ -1018,6 +1031,8 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(test7f_SOURCES) $(test8f_SOURCES) \
 	$(test_krylov_adaptive_ex_SOURCES) \
 	$(test_krylov_api_contract_SOURCES) \
+	$(test_krylov_be_lock_order_SOURCES) \
+	$(test_krylov_both_ends_SOURCES) \
 	$(test_krylov_inertia_SOURCES) $(test_krylov_lis_SOURCES) \
 	$(test_krylov_modes_SOURCES) $(test_krylov_openmp_SOURCES) \
 	$(test_krylov_projected_SOURCES) \
@@ -1096,6 +1111,8 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(test7_SOURCES) $(am__test7f_SOURCES_DIST) \
 	$(am__test8f_SOURCES_DIST) $(test_krylov_adaptive_ex_SOURCES) \
 	$(test_krylov_api_contract_SOURCES) \
+	$(test_krylov_be_lock_order_SOURCES) \
+	$(test_krylov_both_ends_SOURCES) \
 	$(test_krylov_inertia_SOURCES) $(test_krylov_lis_SOURCES) \
 	$(test_krylov_modes_SOURCES) $(test_krylov_openmp_SOURCES) \
 	$(test_krylov_projected_SOURCES) \
@@ -1743,7 +1760,9 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	test_krylov_workspace$(EXEEXT) test_krylov_unified$(EXEEXT) \
 	test_krylov_adaptive_ex$(EXEEXT) \
 	test_krylov_api_contract$(EXEEXT) \
-	test_krylov_residual_reuse$(EXEEXT)
+	test_krylov_residual_reuse$(EXEEXT) \
+	test_krylov_both_ends$(EXEEXT) \
+	test_krylov_be_lock_order$(EXEEXT)
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
 testgesolvepair_SOURCES = testgesolvepair.c
@@ -1762,6 +1781,11 @@ test_krylov_unified_SOURCES = test_krylov_unified.c
 test_krylov_adaptive_ex_SOURCES = test_krylov_adaptive_ex.c
 test_krylov_api_contract_SOURCES = test_krylov_api_contract.c
 test_krylov_residual_reuse_SOURCES = test_krylov_residual_reuse.c
+test_krylov_both_ends_SOURCES = test_krylov_both_ends.c
+# This white-box regression includes the native solver C file once; it
+# must not link the native solver object from liblis again.
+test_krylov_be_lock_order_SOURCES = test_krylov_be_lock_order.c
+test_krylov_be_lock_order_LDADD = -lm
 all: all-am
 
 .SUFFIXES:
@@ -2079,6 +2103,14 @@ test_krylov_adaptive_ex$(EXEEXT): $(test_krylov_adaptive_ex_OBJECTS) $(test_kryl
 test_krylov_api_contract$(EXEEXT): $(test_krylov_api_contract_OBJECTS) $(test_krylov_api_contract_DEPENDENCIES) $(EXTRA_test_krylov_api_contract_DEPENDENCIES) 
 	@rm -f test_krylov_api_contract$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test_krylov_api_contract_OBJECTS) $(test_krylov_api_contract_LDADD) $(LIBS)
+
+test_krylov_be_lock_order$(EXEEXT): $(test_krylov_be_lock_order_OBJECTS) $(test_krylov_be_lock_order_DEPENDENCIES) $(EXTRA_test_krylov_be_lock_order_DEPENDENCIES) 
+	@rm -f test_krylov_be_lock_order$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(test_krylov_be_lock_order_OBJECTS) $(test_krylov_be_lock_order_LDADD) $(LIBS)
+
+test_krylov_both_ends$(EXEEXT): $(test_krylov_both_ends_OBJECTS) $(test_krylov_both_ends_DEPENDENCIES) $(EXTRA_test_krylov_both_ends_DEPENDENCIES) 
+	@rm -f test_krylov_both_ends$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(test_krylov_both_ends_OBJECTS) $(test_krylov_both_ends_LDADD) $(LIBS)
 
 test_krylov_inertia$(EXEEXT): $(test_krylov_inertia_OBJECTS) $(test_krylov_inertia_DEPENDENCIES) $(EXTRA_test_krylov_inertia_DEPENDENCIES) 
 	@rm -f test_krylov_inertia$(EXEEXT)
@@ -2555,6 +2587,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test7.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_adaptive_ex.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_api_contract.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_be_lock_order.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_both_ends.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_inertia.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_lis.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_modes.Po@am__quote@ # am--include-marker
@@ -3606,6 +3640,20 @@ test_krylov_residual_reuse.log: test_krylov_residual_reuse$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test_krylov_both_ends.log: test_krylov_both_ends$(EXEEXT)
+	@p='test_krylov_both_ends$(EXEEXT)'; \
+	b='test_krylov_both_ends'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test_krylov_be_lock_order.log: test_krylov_be_lock_order$(EXEEXT)
+	@p='test_krylov_be_lock_order$(EXEEXT)'; \
+	b='test_krylov_be_lock_order'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -3734,6 +3782,8 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/test7.Po
 	-rm -f ./$(DEPDIR)/test_krylov_adaptive_ex.Po
 	-rm -f ./$(DEPDIR)/test_krylov_api_contract.Po
+	-rm -f ./$(DEPDIR)/test_krylov_be_lock_order.Po
+	-rm -f ./$(DEPDIR)/test_krylov_both_ends.Po
 	-rm -f ./$(DEPDIR)/test_krylov_inertia.Po
 	-rm -f ./$(DEPDIR)/test_krylov_lis.Po
 	-rm -f ./$(DEPDIR)/test_krylov_modes.Po
@@ -3914,6 +3964,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/test7.Po
 	-rm -f ./$(DEPDIR)/test_krylov_adaptive_ex.Po
 	-rm -f ./$(DEPDIR)/test_krylov_api_contract.Po
+	-rm -f ./$(DEPDIR)/test_krylov_be_lock_order.Po
+	-rm -f ./$(DEPDIR)/test_krylov_both_ends.Po
 	-rm -f ./$(DEPDIR)/test_krylov_inertia.Po
 	-rm -f ./$(DEPDIR)/test_krylov_lis.Po
 	-rm -f ./$(DEPDIR)/test_krylov_modes.Po
