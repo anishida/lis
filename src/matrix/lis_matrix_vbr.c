@@ -119,46 +119,50 @@ LIS_INT lis_matrix_malloc_vbr(LIS_INT n, LIS_INT nnz, LIS_INT nr, LIS_INT nc, LI
 	if( *row==NULL )
 	{
 		LIS_SETERR_MEM((nr+1)*sizeof(LIS_INT));
-		lis_free2(6,*row,*col,*ptr,*bptr,*bindex,*value);
-		return LIS_FAILS;
+		goto allocation_failed;
 	}
 	*col = (LIS_INT *)lis_malloc( (nc+1)*sizeof(LIS_INT),"lis_matrix_malloc_vbr::col" );
 	if( *col==NULL )
 	{
 		LIS_SETERR_MEM((nc+1)*sizeof(LIS_INT));
-		lis_free2(6,*row,*col,*ptr,*bptr,*bindex,*value);
-		return LIS_FAILS;
+		goto allocation_failed;
 	}
 	*ptr = (LIS_INT *)lis_malloc( (bnnz+1)*sizeof(LIS_INT),"lis_matrix_malloc_vbr::ptr" );
 	if( *ptr==NULL )
 	{
 		LIS_SETERR_MEM((bnnz+1)*sizeof(LIS_INT));
-		lis_free2(6,*row,*col,*ptr,*bptr,*bindex,*value);
-		return LIS_FAILS;
+		goto allocation_failed;
 	}
 	*bptr = (LIS_INT *)lis_malloc( (nr+1)*sizeof(LIS_INT),"lis_matrix_malloc_vbr::bptr" );
 	if( *bptr==NULL )
 	{
 		LIS_SETERR_MEM((nr+1)*sizeof(LIS_INT));
-		lis_free2(6,*row,*col,*ptr,*bptr,*bindex,*value);
-		return LIS_FAILS;
+		goto allocation_failed;
 	}
 	*bindex = (LIS_INT *)lis_malloc( bnnz*sizeof(LIS_INT),"lis_matrix_malloc_vbr::bindex" );
 	if( *bindex==NULL )
 	{
 		LIS_SETERR_MEM(bnnz*sizeof(LIS_INT));
-		lis_free2(6,*row,*col,*ptr,*bptr,*bindex,*value);
-		return LIS_OUT_OF_MEMORY;
+		goto allocation_failed;
 	}
 	*value = (LIS_SCALAR *)lis_malloc( nnz*sizeof(LIS_SCALAR),"lis_matrix_malloc_vbr::value" );
 	if( *value==NULL )
 	{
 		LIS_SETERR_MEM(nnz*sizeof(LIS_SCALAR));
-		lis_free2(6,*row,*col,*ptr,*bptr,*bindex,*value);
-		return LIS_OUT_OF_MEMORY;
+		goto allocation_failed;
 	}
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+
+allocation_failed:
+	lis_free2(6,*row,*col,*ptr,*bptr,*bindex,*value);
+	*row = NULL;
+	*col = NULL;
+	*ptr = NULL;
+	*bptr = NULL;
+	*bindex = NULL;
+	*value = NULL;
+	return LIS_OUT_OF_MEMORY;
 }
 
 #undef __FUNC__
