@@ -309,3 +309,8 @@ TESTS += test_krylov_modes$(EXEEXT) \
          test_krylov_residual_reuse$(EXEEXT) \
          test_krylov_both_ends$(EXEEXT) \
          test_krylov_be_lock_order$(EXEEXT)
+
+# BSR ILUC smoke test: built and executed by the native make check suite.
+test_PROGRAMS += testilucbsrsmoke
+testilucbsrsmoke_SOURCES = testilucbsrsmoke.c
+TESTS += testilucbsrsmoke$(EXEEXT)
