@@ -3,6 +3,7 @@
 #endif
 
 #include "lis.h"
+#include "lis_precon.h"
 #include <stdio.h>
 
 /*
