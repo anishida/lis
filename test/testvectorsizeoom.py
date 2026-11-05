@@ -40,7 +40,7 @@ typedef struct lis_vector {
 
 #define LIS_TRUE 1
 #define LIS_FALSE 0
-#define LIS_VECTOR_NULL 0
+#define LIS_VECTOR_NULL -1
 #define LIS_VECTOR_ASSEMBLED 1
 #define LIS_SUCCESS 0
 #define LIS_ERR_ILL_ARG 1
@@ -93,20 +93,21 @@ static LIS_INT lis_ranges_create(LIS_Comm comm, LIS_INT *local_n,
     LIS_INT *global_n, LIS_INT **ranges, LIS_INT *is, LIS_INT *ie,
     LIS_INT *nprocs, LIS_INT *my_rank)
 {
-    LIS_INT *r;
     (void)comm;
     *ranges=NULL;
-    r=(LIS_INT *)lis_malloc(2*sizeof(LIS_INT),"mock::ranges");
-    if (!r) return LIS_OUT_OF_MEMORY;
     if (*local_n==0) *local_n=*global_n;
-    if (*global_n==0) *global_n=*local_n;
+    else *global_n=*local_n;
     *is=0;
     *ie=*local_n;
     *nprocs=1;
     *my_rank=0;
-    r[0]=0;
-    r[1]=*local_n;
-    *ranges=r;
+#ifdef MOCK_MPI
+    /* Real lis_ranges_create allocates ranges only when USE_MPI is set. */
+    *ranges=(LIS_INT *)lis_malloc(2*sizeof(LIS_INT),"mock::ranges");
+    if (!*ranges) return LIS_OUT_OF_MEMORY;
+    (*ranges)[0]=0;
+    (*ranges)[1]=*local_n;
+#endif
     return LIS_SUCCESS;
 }
 '''
@@ -141,7 +142,10 @@ static void cleanup(LIS_VECTOR v)
 
 static void test_precision(LIS_INT precision)
 {
-    int failure, highest_failure = precision ? 3 : 2;
+    int failure, highest_failure = precision ? 2 : 1;
+#ifdef MOCK_MPI
+    ++highest_failure;
+#endif
     struct lis_vector v;
     LIS_INT err,i;
 
@@ -149,6 +153,7 @@ static void test_precision(LIS_INT precision)
         reset();
         memset(&v,0,sizeof(v));
         v.precision=precision;
+        v.status=LIS_VECTOR_NULL;
         fail_call=failure;
         err=lis_vector_set_size(&v,0,5);
         assert(err==LIS_OUT_OF_MEMORY);
@@ -162,7 +167,11 @@ static void test_precision(LIS_INT precision)
         assert(err==LIS_SUCCESS);
         assert(v.status==LIS_VECTOR_ASSEMBLED);
         assert(v.n==5 && v.gn==5 && v.np==5);
+#ifdef MOCK_MPI
         assert(v.ranges && v.ranges[0]==0 && v.ranges[1]==5);
+#else
+        assert(v.ranges==NULL);
+#endif
         assert(v.value && v.is_copy==LIS_TRUE);
         assert(v.value_external==LIS_FALSE);
         if(precision) {
@@ -175,13 +184,18 @@ static void test_precision(LIS_INT precision)
             assert(v.value[i]==0.0);
             if(precision) assert(v.value_lo[i]==0.0);
         }
-        assert(live_count==(precision ? 3 : 2));
+        assert(live_count==(precision ? 2 : 1)
+#ifdef MOCK_MPI
+             + 1
+#endif
+        );
         cleanup(&v);
     }
 
     reset();
     memset(&v,0,sizeof(v));
     v.precision=precision;
+    v.status=LIS_VECTOR_NULL;
     err=lis_vector_set_size(&v,-1,3);
     assert(err==LIS_ERR_ILL_ARG && calls==0);
     err=lis_vector_set_size(&v,4,3);
@@ -207,14 +221,15 @@ def main():
     body = extract_function(src.read_text(encoding="utf-8"))
     with TemporaryDirectory(prefix="lis-vector-size-oom-") as tmp:
         cfile = Path(tmp)/"vector_size_oom.c"
-        executable = Path(tmp)/"vector_size_oom"
         cfile.write_text(PRELUDE+body+TESTS,encoding="utf-8")
-        cmd = [os.environ.get("CC","cc"),"-std=c99","-O0","-g",
-               "-Wall","-Wextra","-Werror"]
-        if os.environ.get("LIS_VECTOR_ASAN") == "1":
-            cmd += ["-fsanitize=address,undefined","-fno-omit-frame-pointer"]
-        subprocess.run(cmd+[str(cfile),"-o",str(executable)],check=True)
-        subprocess.run([str(executable)],check=True)
+        for mode, extra in (("serial", []), ("mock_mpi", ["-DMOCK_MPI"])):
+            executable = Path(tmp)/("vector_size_oom_" + mode)
+            cmd = [os.environ.get("CC","cc"),"-std=c99","-O0","-g",
+                   "-Wall","-Wextra","-Werror"] + extra
+            if os.environ.get("LIS_VECTOR_ASAN") == "1":
+                cmd += ["-fsanitize=address,undefined","-fno-omit-frame-pointer"]
+            subprocess.run(cmd+[str(cfile),"-o",str(executable)],check=True)
+            subprocess.run([str(executable)],check=True)
 
 
 if __name__ == "__main__":
