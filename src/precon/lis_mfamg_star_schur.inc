@@ -47,7 +47,7 @@ lis_mfamg_star_prepare(
 {
 #ifndef _COMPLEX
     struct LIS_MFAMG_STAR_SOLVER *s=NULL;
-    LIS_INT *sizes=NULL,*core=NULL;
+    LIS_INT *sizes=NULL,*core=NULL,*degree=NULL;
     LIS_INT i,j,p,a,largest,largest_size,c,l,k,err=LIS_SUCCESS;
     LIS_REAL mag,row_max;
     size_t cl,cc;
@@ -64,7 +64,13 @@ lis_mfamg_star_prepare(
                                 "mfamg_star::sizes");
     core=(LIS_INT *)lis_malloc((size_t)A->n*sizeof(LIS_INT),
                                "mfamg_star::core");
-    if(sizes==NULL || core==NULL) { err=LIS_OUT_OF_MEMORY; goto done; }
+    degree=(LIS_INT *)lis_malloc((size_t)A->n*sizeof(LIS_INT),
+                                 "mfamg_star::degree");
+    if(sizes==NULL || core==NULL || degree==NULL)
+    {
+        err=LIS_OUT_OF_MEMORY;
+        goto done;
+    }
     memset(sizes,0,(size_t)nag*sizeof(LIS_INT));
     memset(core,0,(size_t)A->n*sizeof(LIS_INT));
     for(i=0;i<A->n;i++)
@@ -83,26 +89,68 @@ lis_mfamg_star_prepare(
     for(i=0;i<A->n;i++) if(ag[i]==largest) core[i]=1;
 
     /*
-     * Build a vertex cover of the outside graph.  This works for
-     * unsymmetric CSR too: every directed edge is inspected at its row.
+     * Greedy vertex cover of the remaining outside graph.  Count both
+     * endpoints of each live directed CSR edge and promote the vertex
+     * of highest degree.  Unlike the previous row-order rule, this
+     * promotes a high-index hub rather than all of its leaves.
+     *
+     * Retain the initial aggregate as a seed; this is a heuristic, not
+     * a minimum vertex-cover algorithm.  Stop at the prescribed limit
+     * and let the normal hierarchy handle unsupported structures.
      */
+    c=largest_size;
+    while(c<core_limit)
+    {
+        LIS_INT best=-1;
+        LIS_INT best_degree=0;
+        memset(degree,0,(size_t)A->n*sizeof(LIS_INT));
+        for(i=0;i<A->n;i++)
+        {
+            if(core[i]) continue;
+            for(p=A->ptr[i];p<A->ptr[i+1];p++)
+            {
+                j=A->index[p];
+                if(j<0 || j>=A->n)
+                {
+                    err=LIS_ERR_ILL_ARG;
+                    goto done;
+                }
+                if(j!=i && A->value[p]!=(LIS_SCALAR)0 && !core[j])
+                {
+                    degree[i]++;
+                    degree[j]++;
+                }
+            }
+        }
+        for(i=0;i<A->n;i++)
+        {
+            if(!core[i] && degree[i]>best_degree)
+            {
+                best=i;
+                best_degree=degree[i];
+            }
+        }
+        if(best<0) break; /* Outside block is diagonal. */
+        core[best]=1;
+        c++;
+    }
+    /* Recheck every directed edge, including at the core limit. */
     for(i=0;i<A->n;i++)
     {
         if(core[i]) continue;
         for(p=A->ptr[i];p<A->ptr[i+1];p++)
         {
             j=A->index[p];
-            if(j<0 || j>=A->n) { err=LIS_ERR_ILL_ARG; goto done; }
-            if(j!=i && A->value[p]!=(LIS_SCALAR)0 && !core[j])
+            if(j<0 || j>=A->n)
             {
-                core[i]=1;
-                break;
+                err=LIS_ERR_ILL_ARG;
+                goto done;
             }
+            if(j!=i && A->value[p]!=(LIS_SCALAR)0 && !core[j])
+                goto done;
         }
     }
 
-    c=0;
-    for(i=0;i<A->n;i++) if(core[i]) c++;
     l=A->n-c;
     if(c>core_limit || c<=0 || l<=c || l<=0) goto done;
     if((size_t)c>((size_t)-1)/(size_t)l ||
@@ -113,6 +161,14 @@ lis_mfamg_star_prepare(
     if(cl>((size_t)-1)/sizeof(LIS_SCALAR) ||
        cc>((size_t)-1)/sizeof(LIS_SCALAR))
     { err=LIS_OUT_OF_MEMORY; goto done; }
+
+    /*
+     * Limit dense F/G plus S/LU workspace to 64 MiB.  Exceeding the
+     * budget is not an allocation error: retain the normal hierarchy.
+     */
+    if(cl+cc>((size_t)(64U*1024U*1024U))/
+              (2*sizeof(LIS_SCALAR)))
+        goto done;
 
     s=(struct LIS_MFAMG_STAR_SOLVER *)lis_malloc(sizeof(*s),
                                                  "mfamg_star::state");
@@ -210,9 +266,15 @@ lis_mfamg_star_prepare(
     memcpy(s->lu,s->schur,cc*sizeof(LIS_SCALAR));
     err=lis_mfamg_dense_factor(c,s->lu,s->pivots);
     if(err) goto done;
+    /*
+     * lis_mfamg_dense_factor() already performs scaled partial
+     * pivoting and marks relatively small pivots by exact zero.
+     * Do not impose an unrelated absolute 1e-14 cutoff: valid
+     * matrices may have all entries far below that scale.
+     */
     for(i=0;i<c;i++)
         if(!isfinite((double)s->lu[(size_t)i*c+i]) ||
-           fabs((double)s->lu[(size_t)i*c+i])<1.0e-14)
+           s->lu[(size_t)i*c+i]==(LIS_SCALAR)0)
             goto done;
 
     *out=s;
@@ -221,6 +283,7 @@ lis_mfamg_star_prepare(
 done:
     if(sizes) lis_free(sizes);
     if(core) lis_free(core);
+    if(degree) lis_free(degree);
     lis_mfamg_star_destroy(s);
     return err;
 #else
