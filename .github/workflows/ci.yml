@@ -55,6 +55,13 @@ jobs:
       - name: Run Automake test suite
         run: make -j2 check
 
+      - name: Smoke-test opt-in MFAMG contact diagnostics
+        run: |
+          set -o pipefail
+          LIS_MFAMG_DIAG=1 ./test/testmfamg 2>&1 | tee mfamg-diagnostics.log
+          grep -q '^LIS_MFAMG_DIAG_TRANSFER ' mfamg-diagnostics.log
+          grep -q '^LIS_MFAMG_DIAG_MODE ' mfamg-diagnostics.log
+
       - name: Upload failed test logs
         if: failure()
         uses: actions/upload-artifact@v4
