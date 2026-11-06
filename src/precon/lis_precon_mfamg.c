@@ -6177,6 +6177,84 @@ lis_precon_mfamg_build_multivector_basis(
     }
 
 
+    /*
+     * Opt-in transfer diagnostics for elasticity/contact problems.
+     * These operate on already assembled local QR factors, allocate no
+     * memory, and do not change the prolongator or the solver result.
+     *
+     * Values are local to the MPI rank.  "mode" errors measure exactly
+     * ||B_m-P Bc_m||_2/||B_m||_2 on this one transfer, not a global
+     * multilevel or energy-norm error.
+     */
+    {
+        const char *diag_env=getenv("LIS_MFAMG_DIAG");
+        if(diag_env!=NULL && strcmp(diag_env,"1")==0)
+        {
+            LIS_INT size1=0,size2=0,size3to8=0,size9plus=0;
+            LIS_INT rank0=0,rank1=0,rank2=0,rank3=0,rank4plus=0;
+            LIS_REAL ratio=(LIS_REAL)coarse_n/(LIS_REAL)n;
+
+            for(a=0;a<aggregate_count;a++)
+            {
+                if(counts[a]==1) size1++;
+                else if(counts[a]==2) size2++;
+                else if(counts[a]<=8) size3to8++;
+                else size9plus++;
+
+                if(aggregate_rank[a]==0) rank0++;
+                else if(aggregate_rank[a]==1) rank1++;
+                else if(aggregate_rank[a]==2) rank2++;
+                else if(aggregate_rank[a]==3) rank3++;
+                else rank4plus++;
+            }
+
+            fprintf(stderr,
+                "LIS_MFAMG_DIAG_TRANSFER n=%d aggregates=%d coarse_n=%d "
+                "ratio=%.9e modes=%d singles=%d pairs=%d size3to8=%d "
+                "size9plus=%d rank0=%d rank1=%d rank2=%d rank3=%d "
+                "rank4plus=%d poor_coarsening=%d\n",
+                (int)n,(int)aggregate_count,(int)coarse_n,
+                (double)ratio,(int)mode_count,(int)size1,(int)size2,
+                (int)size3to8,(int)size9plus,
+                (int)rank0,(int)rank1,(int)rank2,(int)rank3,
+                (int)rank4plus,(int)(ratio>(LIS_REAL)0.9));
+
+            for(m=0;m<mode_count;m++)
+            {
+                LIS_REAL input_norm2=0.0,error_norm2=0.0;
+                LIS_REAL relerr;
+                for(i=0;i<n;i++)
+                {
+                    LIS_SCALAR projected=(LIS_SCALAR)0.0;
+                    LIS_REAL mag,diff;
+                    a=aggregate[i];
+                    for(q=0;q<aggregate_rank[a];q++)
+                    {
+                        projected+=
+                            prolong[(size_t)row_ptr[i]+(size_t)q]
+                            *
+                            coarse_basis[
+                                ((size_t)aggregate_offset[a]+(size_t)q)
+                                *(size_t)mode_count+(size_t)m];
+                    }
+                    mag=fabs(basis[m]->value[i]);
+                    diff=fabs(basis[m]->value[i]-projected);
+                    input_norm2+=mag*mag;
+                    error_norm2+=diff*diff;
+                }
+                relerr=(input_norm2>0.0)
+                    ? sqrt(error_norm2/input_norm2)
+                    : (error_norm2==0.0 ? (LIS_REAL)0.0
+                                        : (LIS_REAL)HUGE_VAL);
+                fprintf(stderr,
+                    "LIS_MFAMG_DIAG_MODE n=%d mode=%d "
+                    "input_norm2=%.9e relerr=%.9e\n",
+                    (int)n,(int)m,(double)input_norm2,(double)relerr);
+            }
+        }
+    }
+
+
     lis_free(
         work);
 
