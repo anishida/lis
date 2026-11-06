@@ -2772,6 +2772,346 @@ done:
 #endif
 }
 
+
+/*
+ * An almost singular 2x2 outside block must be rejected by the relative
+ * determinant safeguard, not just when its determinant is exactly zero.
+ * Also exercise a well-conditioned pair and a one-way (upper triangular)
+ * pair with no reverse structural entry.
+ */
+static int
+check_star_schur_pair_conditioning(void)
+{
+#ifndef _COMPLEX
+    enum { N=8 };
+    const LIS_INT ag[N]={0,0,1,2,3,4,5,6};
+    LIS_MATRIX A=NULL;
+    LIS_VECTOR b=NULL,x=NULL,exact=NULL,ax=NULL;
+    LIS_INT phase,i,j,err=LIS_SUCCESS,used=-1,core_size=-1;
+    LIS_REAL worst,e;
+    int failed=0;
+
+    for(phase=0;phase<3;phase++)
+    {
+        A=NULL; b=NULL; x=NULL; exact=NULL; ax=NULL;
+        err=lis_matrix_create(LIS_COMM_WORLD,&A);
+        if(err) goto fail;
+        err=lis_matrix_set_size(A,0,N);
+        if(err) goto fail;
+        for(i=0;i<N;i++)
+        {
+            LIS_REAL diagonal=(i<2) ? 9.0 :
+                (i==2 ? 1.0 :
+                (i==3 ? (phase==0 ? 1.0+1.0e-14 : 1.001) :
+                          4.0+0.1*i));
+            err=lis_matrix_set_value(
+                LIS_INS_VALUE,i,i,(LIS_SCALAR)diagonal,A);
+            if(err) goto fail;
+            if(i>=2)
+            {
+                j=i%2;
+                err=lis_matrix_set_value(
+                    LIS_INS_VALUE,i,j,(LIS_SCALAR)-0.003,A);
+                if(err) goto fail;
+                err=lis_matrix_set_value(
+                    LIS_INS_VALUE,j,i,(LIS_SCALAR)0.002,A);
+                if(err) goto fail;
+            }
+        }
+        err=lis_matrix_set_value(
+            LIS_INS_VALUE,2,3,
+            (LIS_SCALAR)(phase==2 ? 0.27 : 1.0),A);
+        if(err) goto fail;
+        if(phase!=2)
+        {
+            err=lis_matrix_set_value(
+                LIS_INS_VALUE,3,2,(LIS_SCALAR)1.0,A);
+            if(err) goto fail;
+        }
+        err=lis_matrix_assemble(A);
+        if(err) goto fail;
+        err=lis_vector_duplicate(A,&b);
+        if(err) goto fail;
+        err=lis_vector_duplicate(A,&x);
+        if(err) goto fail;
+        err=lis_vector_duplicate(A,&exact);
+        if(err) goto fail;
+        err=lis_vector_duplicate(A,&ax);
+        if(err) goto fail;
+        for(i=0;i<N;i++)
+            exact->value[i]=(LIS_SCALAR)(0.5+0.125*i);
+        err=lis_matvec(A,exact,b);
+        if(err) goto fail;
+        err=lis_vector_set_all((LIS_SCALAR)0.0,x);
+        if(err) goto fail;
+        used=-1; core_size=-1;
+        err=lis_precon_mfamg_star_schur_for_test(
+            A,ag,N-1,4,b,x,&used,&core_size);
+
+        if(phase==0)
+        {
+            if(err!=LIS_SUCCESS || used!=LIS_FALSE || core_size!=0)
+            {
+                fprintf(stderr,
+                    "near-singular 2x2 Schur block accepted: rc=%d used=%d core=%d\n",
+                    (int)err,(int)used,(int)core_size);
+                failed=1;
+            }
+        }
+        else
+        {
+            if(err!=LIS_SUCCESS || used!=LIS_TRUE || core_size!=2)
+            {
+                fprintf(stderr,
+                    "valid 2x2 Schur block rejected phase=%d rc=%d used=%d\n",
+                    (int)phase,(int)err,(int)used);
+                failed=1;
+            }
+            else
+            {
+                err=lis_matvec(A,x,ax);
+                if(err) goto fail;
+                worst=0.0;
+                for(i=0;i<N;i++)
+                {
+                    e=fabs((double)(ax->value[i]-b->value[i]))/
+                        (1.0+fabs((double)b->value[i]));
+                    if(e>worst) worst=e;
+                    e=fabs((double)(x->value[i]-exact->value[i]));
+                    if(e>worst) worst=e;
+                }
+                if(!isfinite((double)worst) || worst>1.0e-9)
+                {
+                    fprintf(stderr,
+                        "conditioned/directed Schur pair error phase=%d %.12e\n",
+                        (int)phase,(double)worst);
+                    failed=1;
+                }
+            }
+        }
+        lis_vector_destroy(ax); ax=NULL;
+        lis_vector_destroy(exact); exact=NULL;
+        lis_vector_destroy(x); x=NULL;
+        lis_vector_destroy(b); b=NULL;
+        lis_matrix_destroy(A); A=NULL;
+        if(failed) break;
+    }
+    goto done;
+fail:
+    fprintf(stderr,"star-Schur 2x2 conditioning setup error %d\n",(int)err);
+    failed=1;
+done:
+    if(ax) lis_vector_destroy(ax);
+    if(exact) lis_vector_destroy(exact);
+    if(x) lis_vector_destroy(x);
+    if(b) lis_vector_destroy(b);
+    if(A) lis_matrix_destroy(A);
+    if(!failed)
+        printf("MFAMG STAR SCHUR CONDITIONED/DIRECTED PAIRS TEST PASSED\n");
+    return failed;
+#else
+    return 0;
+#endif
+}
+
+/*
+ * The 8192-row eligibility bound and the 64 MiB dense-workspace limit
+ * must refuse the Schur path *before* allocating F/G and dense Schur.
+ * The input is a cheap diagonal CSR matrix; no 64 MiB workspace is needed.
+ */
+static int
+check_star_schur_size_and_budget_guards(void)
+{
+#ifndef _COMPLEX
+    LIS_MATRIX A=NULL;
+    LIS_INT *ag=NULL;
+    LIS_INT phase,n,c,nag,i,err=LIS_SUCCESS,used,core_size;
+    int failed=0;
+
+    for(phase=0;phase<2;phase++)
+    {
+        /* phase 0: row-count rejection; phase 1: dense-budget rejection. */
+        n=(phase==0) ? 8193 : 8192;
+        c=(phase==0) ? 2 : 650;
+        nag=n-c+1;
+        ag=(LIS_INT *)malloc((size_t)n*sizeof(LIS_INT));
+        if(ag==NULL) { failed=1; goto done; }
+        err=lis_matrix_create(LIS_COMM_WORLD,&A);
+        if(err) goto fail;
+        err=lis_matrix_set_size(A,0,n);
+        if(err) goto fail;
+        for(i=0;i<n;i++)
+        {
+            ag[i]=(i<c) ? 0 : i-c+1;
+            err=lis_matrix_set_value(
+                LIS_INS_VALUE,i,i,(LIS_SCALAR)2.0,A);
+            if(err) goto fail;
+        }
+        err=lis_matrix_assemble(A);
+        if(err) goto fail;
+
+        used=-1; core_size=-1;
+        /* NULL vectors are intentional: an ineligible setup must not solve. */
+        err=lis_precon_mfamg_star_schur_for_test(
+            A,ag,nag,(phase==0 ? 4 : 700),
+            NULL,NULL,&used,&core_size);
+        if(err!=LIS_SUCCESS || used!=LIS_FALSE || core_size!=0)
+        {
+            fprintf(stderr,
+                "star-Schur eligibility guard %d failed rc=%d used=%d core=%d\n",
+                (int)phase,(int)err,(int)used,(int)core_size);
+            failed=1;
+        }
+        lis_matrix_destroy(A); A=NULL;
+        free(ag); ag=NULL;
+        if(failed) break;
+    }
+    goto done;
+fail:
+    fprintf(stderr,"star-Schur eligibility matrix setup failed %d\n",
+            (int)err);
+    failed=1;
+done:
+    if(A) lis_matrix_destroy(A);
+    if(ag) free(ag);
+    if(!failed) printf("MFAMG STAR SCHUR ELIGIBILITY GUARDS TEST PASSED\n");
+    return failed;
+#else
+    return 0;
+#endif
+}
+
+/*
+ * Rebuild the same matching-shaped CSR graph with different matrix values,
+ * and use two distinct manufactured right-hand sides for each matrix.
+ * The hook reconstructs and tears down the Schur factors on each call.
+ * This tests fresh setup, NOT persistent MFAMG preconditioner reuse.
+ */
+static int
+check_star_schur_recreated_matrix_and_rhs(void)
+{
+#ifndef _COMPLEX
+    enum { N=24, C=4 };
+    LIS_MATRIX A=NULL;
+    LIS_VECTOR b=NULL,x=NULL,exact=NULL,ax=NULL;
+    LIS_INT ag[N],matrix_case,rhs_case,i,j,err=LIS_SUCCESS;
+    LIS_INT used=-1,core_size=-1;
+    LIS_REAL worst,e,scale;
+    int failed=0;
+
+    for(matrix_case=0;matrix_case<2;matrix_case++)
+    {
+        A=NULL; b=NULL; x=NULL; exact=NULL; ax=NULL;
+        err=lis_matrix_create(LIS_COMM_WORLD,&A);
+        if(err) goto fail;
+        err=lis_matrix_set_size(A,0,N);
+        if(err) goto fail;
+        for(i=0;i<N;i++)
+        {
+            ag[i]=(i<C) ? 0 : i-C+1;
+            err=lis_matrix_set_value(
+                LIS_INS_VALUE,i,i,
+                (LIS_SCALAR)(i<C ? 12.0+matrix_case :
+                                     3.5+0.03*i+0.25*matrix_case),A);
+            if(err) goto fail;
+            if(i>=C)
+            {
+                j=(i-C)%C;
+                err=lis_matrix_set_value(
+                    LIS_INS_VALUE,i,j,
+                    (LIS_SCALAR)(-0.13-0.02*matrix_case),A);
+                if(err) goto fail;
+                err=lis_matrix_set_value(
+                    LIS_INS_VALUE,j,i,
+                    (LIS_SCALAR)(-0.08+0.01*matrix_case),A);
+                if(err) goto fail;
+            }
+        }
+        /* Two independent nonsymmetric off-core pairs. */
+        for(i=C;i<C+4;i+=2)
+        {
+            err=lis_matrix_set_value(
+                LIS_INS_VALUE,i,i+1,
+                (LIS_SCALAR)(-0.21-0.01*matrix_case),A);
+            if(err) goto fail;
+            err=lis_matrix_set_value(
+                LIS_INS_VALUE,i+1,i,(LIS_SCALAR)-0.07,A);
+            if(err) goto fail;
+        }
+        err=lis_matrix_assemble(A);
+        if(err) goto fail;
+        err=lis_vector_duplicate(A,&b);
+        if(err) goto fail;
+        err=lis_vector_duplicate(A,&x);
+        if(err) goto fail;
+        err=lis_vector_duplicate(A,&exact);
+        if(err) goto fail;
+        err=lis_vector_duplicate(A,&ax);
+        if(err) goto fail;
+
+        for(rhs_case=0;rhs_case<2;rhs_case++)
+        {
+            for(i=0;i<N;i++)
+                exact->value[i]=(LIS_SCALAR)(
+                    rhs_case==0 ? (1.0+0.025*i) :
+                                  (0.125*(i%7)-0.3));
+            err=lis_matvec(A,exact,b);
+            if(err) goto fail;
+            err=lis_vector_set_all((LIS_SCALAR)0.0,x);
+            if(err) goto fail;
+            used=-1; core_size=-1;
+            err=lis_precon_mfamg_star_schur_for_test(
+                A,ag,N-C+1,8,b,x,&used,&core_size);
+            if(err!=LIS_SUCCESS || used!=LIS_TRUE || core_size!=C)
+            {
+                fprintf(stderr,
+                    "star-Schur fresh setup rejected matrix=%d rhs=%d rc=%d used=%d\n",
+                    (int)matrix_case,(int)rhs_case,(int)err,(int)used);
+                failed=1; goto done;
+            }
+            err=lis_matvec(A,x,ax);
+            if(err) goto fail;
+            worst=0.0;
+            for(i=0;i<N;i++)
+            {
+                scale=1.0+fabs((double)b->value[i]);
+                e=fabs((double)(ax->value[i]-b->value[i]))/scale;
+                if(e>worst) worst=e;
+                e=fabs((double)(x->value[i]-exact->value[i]));
+                if(e>worst) worst=e;
+            }
+            if(!isfinite((double)worst) || worst>1.0e-10)
+            {
+                fprintf(stderr,
+                    "star-Schur fresh setup error matrix=%d rhs=%d %.12e\n",
+                    (int)matrix_case,(int)rhs_case,(double)worst);
+                failed=1; goto done;
+            }
+        }
+        lis_vector_destroy(ax); ax=NULL;
+        lis_vector_destroy(exact); exact=NULL;
+        lis_vector_destroy(x); x=NULL;
+        lis_vector_destroy(b); b=NULL;
+        lis_matrix_destroy(A); A=NULL;
+    }
+    goto done;
+fail:
+    fprintf(stderr,"star-Schur fresh setup construction failed %d\n",
+            (int)err);
+    failed=1;
+done:
+    if(ax) lis_vector_destroy(ax);
+    if(exact) lis_vector_destroy(exact);
+    if(x) lis_vector_destroy(x);
+    if(b) lis_vector_destroy(b);
+    if(A) lis_matrix_destroy(A);
+    if(!failed) printf("MFAMG STAR SCHUR RECREATED MATRIX/RHS TEST PASSED\n");
+    return failed;
+#else
+    return 0;
+#endif
+}
+
 static int
 run_serial(void)
 {
@@ -2831,6 +3171,9 @@ run_serial(void)
     failed |= check_star_schur_pairs_contact_shape();
     failed |= check_star_schur_singular_pair();
     failed |= check_star_schur_nonmatching();
+    failed |= check_star_schur_pair_conditioning();
+    failed |= check_star_schur_size_and_budget_guards();
+    failed |= check_star_schur_recreated_matrix_and_rhs();
 
     lis_matrix_destroy(
         A);
