@@ -83,12 +83,16 @@ struct LIS_MFAMG_LEVEL
 };
 
 
+struct LIS_MFAMG_STAR_SOLVER;
+static void lis_mfamg_star_destroy(struct LIS_MFAMG_STAR_SOLVER *);
+
 struct LIS_MFAMG_STRUCT
 {
     LIS_INT nlevels;
     LIS_INT level_capacity;
     LIS_INT smoother_block_size;
     struct LIS_MFAMG_LEVEL *levels;
+    struct LIS_MFAMG_STAR_SOLVER *star;
 
     LIS_INT coarse_n;
 
@@ -209,6 +213,8 @@ lis_mfamg_state_free(
     if(state==NULL)
         return;
 
+
+    lis_mfamg_star_destroy(state->star);
 
     if(state->levels)
     {
@@ -3608,6 +3614,9 @@ lis_mfamg_dense_solve_values(
     return LIS_SUCCESS;
 }
 
+
+
+#include "lis_mfamg_star_schur.inc"
 
 
 static LIS_INT
@@ -8580,6 +8589,37 @@ lis_mfamg_extend_hierarchy_multivector(
             goto fail;
 
 
+        /*
+         * Opt-in exact Schur terminal solve on a small-core arrowhead.
+         * A nonmatching matrix keeps the original MFAMG hierarchy.
+         */
+        if(level_id>=2 && level->A->nprocs==1)
+        {
+            const char *star_option=getenv("LIS_MFAMG_STAR_SCHUR");
+            if(star_option!=NULL && strcmp(star_option,"1")==0)
+            {
+                struct LIS_MFAMG_STAR_SOLVER *star=NULL;
+                err=lis_mfamg_star_prepare(
+                    level->A,level->aggregate,level->nc,
+                    terminal_limit,&star);
+                if(err) goto fail;
+                if(star!=NULL)
+                {
+                    state->star=star;
+                    state->coarse_n=level->n;
+                    fprintf(stderr,
+                        "LIS_MFAMG_STAR_SCHUR depth=%d n=%d core=%d leaves=%d\n",
+                        (int)level_id,(int)level->n,
+                        (int)star->c,(int)star->l);
+                    lis_free(level->aggregate);
+                    level->aggregate=NULL;
+                    level->nc=0;
+                    break;
+                }
+            }
+        }
+
+
         if(
             level->nc<=0
             ||
@@ -9866,6 +9906,9 @@ lis_mfamg_v_cycle(
 
     if(level_id==state->nlevels-1)
     {
+        if(state->star!=NULL)
+            return lis_mfamg_star_solve(state->star,b,x);
+
         if(level->A->nprocs>1)
         {
             if(level->A->gn!=state->coarse_n)
@@ -13610,11 +13653,11 @@ lis_precon_create_mfamg(
             state->nlevels-1];
 
 
-    err =
-        lis_mfamg_prepare_terminal(
-            terminal_level->A,
-            state,
-            terminal_limit);
+    if(state->star==NULL)
+        err=lis_mfamg_prepare_terminal(
+            terminal_level->A,state,terminal_limit);
+    else
+        err=LIS_SUCCESS;
 
     if(err)
     {
