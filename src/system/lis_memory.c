@@ -281,6 +281,91 @@ void *rpl_malloc( size_t n )
 }
 */
 
+/*
+ * Opt-in, single-threaded native regression-test fault injector.
+ * Only logical LIS allocation calls are counted: bookkeeping allocations
+ * made by the memory tracker are deliberately not fault injected.
+ */
+#ifdef LIS_TEST_OOM
+typedef struct lis_test_raw_allocation {
+	struct lis_test_raw_allocation *next;
+	void *ptr;
+} lis_test_raw_allocation;
+static lis_test_raw_allocation *lis_test_raw_head;
+static size_t lis_test_raw_live;
+static size_t lis_test_oom_at;
+static size_t lis_test_oom_count;
+static int lis_test_oom_active;
+
+static int lis_test_oom_should_fail(void)
+{
+	if( !lis_test_oom_active ) return 0;
+	++lis_test_oom_count;
+	return lis_test_oom_at!=0 && lis_test_oom_count==lis_test_oom_at;
+}
+
+void lis_test_oom_begin(size_t fail_at)
+{
+	lis_test_oom_count = 0;
+	lis_test_oom_at = fail_at;
+	lis_test_oom_active = 1;
+}
+
+void lis_test_oom_end(void)
+{
+	lis_test_oom_active = 0;
+	lis_test_oom_at = 0;
+}
+
+size_t lis_test_oom_calls(void)
+{
+	return lis_test_oom_count;
+}
+
+size_t lis_test_oom_live(void)
+{
+	return malloc_address_count + lis_test_raw_live;
+}
+
+/* Raw block allocations in lis_matrix_diag.c use matching raw free. */
+void *lis_test_oom_raw_malloc(size_t size)
+{
+	lis_test_raw_allocation *entry;
+	void *p;
+	if( lis_test_oom_should_fail() ) return NULL;
+	p = malloc(size);
+	if( p==NULL ) return NULL;
+	entry = (lis_test_raw_allocation *)malloc(sizeof(*entry));
+	if( entry==NULL )
+	{
+		free(p);
+		return NULL;
+	}
+	entry->ptr = p;
+	entry->next = lis_test_raw_head;
+	lis_test_raw_head = entry;
+	++lis_test_raw_live;
+	return p;
+}
+
+void lis_test_oom_raw_free(void *p)
+{
+	lis_test_raw_allocation **entry;
+	if( p==NULL ) return;
+	entry = &lis_test_raw_head;
+	while( *entry!=NULL && (*entry)->ptr!=p )
+		entry = &(*entry)->next;
+	if( *entry!=NULL )
+	{
+		lis_test_raw_allocation *old = *entry;
+		*entry = old->next;
+		free(old);
+		--lis_test_raw_live;
+	}
+	free(p);
+}
+#endif
+
 void *lis_malloc( size_t size, char *tag )
 {
 	union {
@@ -290,6 +375,9 @@ void *lis_malloc( size_t size, char *tag )
 	malloc_address *ma;
 	LIS_INT sz;
 
+#ifdef LIS_TEST_OOM
+	if( lis_test_oom_should_fail() ) return NULL;
+#endif
 	/* Leave enough room for alignment without wrapping size_t. */
 	if( size>((size_t)-1)-16 )
 	{
@@ -346,6 +434,9 @@ void *lis_calloc( size_t size, char *tag )
   malloc_address *ma;
   LIS_INT sz;
 
+#ifdef LIS_TEST_OOM
+	if( lis_test_oom_should_fail() ) return NULL;
+#endif
 	/* Leave enough room for alignment without wrapping size_t. */
 	if( size>((size_t)-1)-16 )
 	{
@@ -404,6 +495,9 @@ void *lis_realloc( void *p, size_t size )
 	size_t old_size;
 	void *real_address,*address;
 
+#ifdef LIS_TEST_OOM
+	if( lis_test_oom_should_fail() ) return NULL;
+#endif
 	ma = lis_malloc_address_find(p);
 	if( ma!=NULL )
 	{

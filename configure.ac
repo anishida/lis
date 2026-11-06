@@ -43,6 +43,17 @@ AC_ARG_ENABLE(longdouble, AS_HELP_STRING([--enable-longdouble],[enable long doub
 AC_ARG_ENABLE(complex, AS_HELP_STRING([--enable-complex],[enable complex scalar support [[default=no]]]))
 AC_ARG_ENABLE(test, AS_HELP_STRING([--enable-test],[enable test programs [[default=yes]]]))
 
+# Opt-in allocation-failure injection for native C regression tests.
+AC_ARG_ENABLE([oom-tests],
+  [AS_HELP_STRING([--enable-oom-tests],
+    [enable native out-of-memory fault injection tests [[default=no]]])],
+  [enable_oom_tests="$enableval"], [enable_oom_tests=no])
+AS_CASE([$enable_oom_tests],
+  [yes], [AC_DEFINE([LIS_TEST_OOM], [1],
+                   [Define to enable the test-only LIS OOM injector])],
+  [no], [],
+  [AC_MSG_ERROR([--enable-oom-tests accepts yes or no])])
+
 AC_MSG_CHECKING([for a library suffix to use])
 AC_ARG_WITH(library-suffix,
 	[  --with-library-suffix=LIBSUFFIX    tag a suffix to the library names [[default=]]],
@@ -1278,6 +1289,7 @@ AM_CONDITIONAL([ENABLE_HALF_REAL_DOUBLE],
    test x"$enable_complex" != xyes])
 AM_CONDITIONAL(ENABLE_SSE2, test x$enable_sse2 = xyes)
 AM_CONDITIONAL(DISABLE_TEST, test x$enable_test = xno)
+AM_CONDITIONAL([ENABLE_OOM_TESTS], [test "x$enable_oom_tests" = "xyes"])
 AC_SUBST(enable_mpi)
 AC_SUBST(enable_omp)
 AC_SUBST(enable_saamg)

@@ -47,6 +47,15 @@
 #endif
 #include "lislib.h"
 
+/* Raw diagonal block storage is not tracked by lis_malloc/lis_free. */
+#ifdef LIS_TEST_OOM
+#define LIS_DIAG_BLOCK_MALLOC(bytes) lis_test_oom_raw_malloc(bytes)
+#define LIS_DIAG_BLOCK_FREE(ptr) lis_test_oom_raw_free(ptr)
+#else
+#define LIS_DIAG_BLOCK_MALLOC(bytes) malloc(bytes)
+#define LIS_DIAG_BLOCK_FREE(ptr) free(ptr)
+#endif
+
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_diag_init"
@@ -223,7 +232,7 @@ LIS_INT lis_matrix_diag_destroy(LIS_MATRIX_DIAG D)
 			{
 				for(i=0;i<D->nr;i++)
 				{
-					if( D->v_value[i] ) free(D->v_value[i]);
+					if( D->v_value[i] ) LIS_DIAG_BLOCK_FREE(D->v_value[i]);
 				}
 			}
 			lis_free2(2,D->bns,D->v_value);
@@ -320,7 +329,7 @@ LIS_INT lis_matrix_diag_duplicate(LIS_MATRIX_DIAG Din, LIS_MATRIX_DIAG *Dout)
 			t                 = Din->bns[i]; 
 			bnmax             = _max(bnmax,t);
 			(*Dout)->bns[i]   = t;
-			(*Dout)->v_value[i] = (LIS_SCALAR *)malloc( t*t*sizeof(LIS_SCALAR));
+			(*Dout)->v_value[i] = (LIS_SCALAR *)LIS_DIAG_BLOCK_MALLOC( t*t*sizeof(LIS_SCALAR));
 			if( (*Dout)->v_value[i]==NULL )
 			{
 				LIS_SETERR_MEM(t*t*sizeof(LIS_SCALAR));
@@ -434,7 +443,7 @@ LIS_INT lis_matrix_diag_duplicateM(LIS_MATRIX Ain, LIS_MATRIX_DIAG *Dout)
 			t                 = Ain->row[i+1] - Ain->row[i]; 
 			bnmax             = _max(bnmax,t);
 			(*Dout)->bns[i]   = t;
-			(*Dout)->v_value[i] = (LIS_SCALAR *)malloc( t*t*sizeof(LIS_SCALAR));
+			(*Dout)->v_value[i] = (LIS_SCALAR *)LIS_DIAG_BLOCK_MALLOC( t*t*sizeof(LIS_SCALAR));
 			if( (*Dout)->v_value[i]==NULL )
 			{
 				LIS_SETERR_MEM(t*t*sizeof(LIS_SCALAR));
@@ -586,7 +595,7 @@ LIS_INT lis_matrix_diag_set_blocksize(LIS_MATRIX_DIAG D, LIS_INT bn, LIS_INT *bn
 			{
 				for(i=0;i<D->nr;i++)
 				{
-					if( D->v_value[i] ) free(D->v_value[i]);
+					if( D->v_value[i] ) LIS_DIAG_BLOCK_FREE(D->v_value[i]);
 				}
 			}
 			lis_free(D->v_value);
@@ -632,7 +641,7 @@ LIS_INT lis_matrix_diag_set_blocksize(LIS_MATRIX_DIAG D, LIS_INT bn, LIS_INT *bn
 			t = bns[i];
 			bnmax = _max(bnmax,t);
 			new_bns[i] = t;
-			new_v_value[i] = (LIS_SCALAR *)malloc( t*t*sizeof(LIS_SCALAR) );
+			new_v_value[i] = (LIS_SCALAR *)LIS_DIAG_BLOCK_MALLOC( t*t*sizeof(LIS_SCALAR) );
 			if( new_v_value[i]==NULL )
 			{
 				LIS_SETERR_MEM(t*t*sizeof(LIS_SCALAR));
@@ -654,7 +663,7 @@ LIS_INT lis_matrix_diag_set_blocksize(LIS_MATRIX_DIAG D, LIS_INT bn, LIS_INT *bn
 allocation_failed:
 	for(i=0;i<bn;i++)
 	{
-		if( new_v_value[i] ) free(new_v_value[i]);
+		if( new_v_value[i] ) LIS_DIAG_BLOCK_FREE(new_v_value[i]);
 	}
 	lis_free(new_v_value);
 	lis_free(new_bns);

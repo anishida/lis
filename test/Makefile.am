@@ -314,3 +314,19 @@ TESTS += test_krylov_modes$(EXEEXT) \
 test_PROGRAMS += testilucbsrsmoke
 testilucbsrsmoke_SOURCES = testilucbsrsmoke.c
 TESTS += testilucbsrsmoke$(EXEEXT)
+
+
+# Opt-in native OOM regressions; build and run against the actual LIS library.
+if ENABLE_OOM_TESTS
+check_PROGRAMS = testoomalloc testoomilu testoomdiag testoomiluc
+TESTS += testoomalloc$(EXEEXT) testoomilu$(EXEEXT) testoomdiag$(EXEEXT) testoomiluc$(EXEEXT)
+testoomalloc_SOURCES = testoomalloc.c
+testoomilu_SOURCES = testoomilu.c
+testoomdiag_SOURCES = testoomdiag.c
+testoomiluc_SOURCES = testoomiluc.c
+if ENABLE_MPI
+check_PROGRAMS += testoommpiscale
+TESTS += testoommpiscale$(EXEEXT)
+testoommpiscale_SOURCES = testoommpiscale.c
+endif
+endif

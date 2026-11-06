@@ -69,6 +69,10 @@ extern "C"
 	extern LIS_INT lis_matrix_DLU_destroy(LIS_MATRIX Amat);
 	extern LIS_INT lis_matrix_unset(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_copy_struct(LIS_MATRIX Ain, LIS_MATRIX Aout);
+#ifdef USE_MPI
+	/* Internal resize used by MPI symmetric diagonal scaling and OOM tests. */
+	extern LIS_INT lis_matrix_scale_expand_diagonal(LIS_MATRIX A, LIS_VECTOR D);
+#endif
 	extern LIS_INT lis_matrix_convert_self(LIS_SOLVER solver);
 	extern LIS_INT lis_matrix_create_scaled_operator(
 	        LIS_MATRIX A, LIS_VECTOR scale, LIS_MATRIX *C);

@@ -812,6 +812,23 @@ LIS_INT lis_matrix_prepare_symm_diag_scaling(LIS_VECTOR D)
 }
 
 
+#ifdef USE_MPI
+/* Kept separate so the production MPI resize error path can be tested natively. */
+LIS_INT lis_matrix_scale_expand_diagonal(LIS_MATRIX A, LIS_VECTOR D)
+{
+	LIS_SCALAR *new_value;
+	if( A->np<=D->np ) return LIS_SUCCESS;
+	new_value = (LIS_SCALAR *)lis_realloc(D->value,A->np*sizeof(LIS_SCALAR));
+	if( new_value==NULL )
+	{
+		LIS_SETERR_MEM(A->np*sizeof(LIS_SCALAR));
+		return LIS_OUT_OF_MEMORY;
+	}
+	D->value = new_value;
+	return LIS_SUCCESS;
+}
+#endif
+
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_scale"
 LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR D, LIS_INT action)
@@ -831,19 +848,9 @@ LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR D, LIS_INT actio
 		err = lis_matrix_prepare_symm_diag_scaling(D);
 		if( err ) return err;
 #ifdef USE_MPI
-		if( A->np>D->np )
-		{
-			LIS_SCALAR *new_value;
-			new_value = (LIS_SCALAR *)lis_realloc(D->value,A->np*sizeof(LIS_SCALAR));
-			if( new_value==NULL )
-			{
-				LIS_SETERR_MEM(A->np*sizeof(LIS_SCALAR));
-				return LIS_OUT_OF_MEMORY;
-			}
-			/* Preserve the original vector allocation if realloc fails. */
-			D->value = new_value;
-			d = D->value;
-		}
+		err = lis_matrix_scale_expand_diagonal(A,D);
+		if( err ) return err;
+		d = D->value;
 		lis_send_recv(A->commtable,d);
 #endif
 
