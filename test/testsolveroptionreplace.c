@@ -165,12 +165,18 @@ done:
  */
 static int check_gcrodr_profile_settings(void)
 {
-    LIS_SOLVER s=NULL;
+    LIS_SOLVER s=NULL,defaults=NULL;
     LIS_INT err,changed;
     int failed=0;
 
     err=lis_solver_create(&s);
     if(err) return 1;
+    err=lis_solver_create(&defaults);
+    if(err)
+    {
+        lis_solver_destroy(s);
+        return 1;
+    }
 
     err=lis_solver_set_option_replace(
         "-i gcrodr -p none -gcrodr_keep 5 "
@@ -248,13 +254,14 @@ static int check_gcrodr_profile_settings(void)
         failed=1; goto done;
     }
 
-    /* Omitted options in a full profile restore documented defaults. */
+    /* Compare omitted options with a genuinely fresh solver, so a change
+     * in documented defaults does not make this regression obsolete. */
     changed=-1;
     err=lis_solver_set_option_replace_if_changed("-i gcrodr -p none",s,&changed);
     if(err || changed!=LIS_TRUE || s->recycle_valid!=LIS_FALSE ||
-       s->recycle_target_dim!=8 ||
-       s->recycle_keep_threshold!=(LIS_REAL)0.90 ||
-       s->recycle_reject_threshold!=(LIS_REAL)0.35)
+       s->recycle_target_dim!=defaults->recycle_target_dim ||
+       s->recycle_keep_threshold!=defaults->recycle_keep_threshold ||
+       s->recycle_reject_threshold!=defaults->recycle_reject_threshold)
     {
         fprintf(stderr,"GCRO-DR omitted defaults not restored\n");
         failed=1; goto done;
@@ -270,6 +277,7 @@ static int check_gcrodr_profile_settings(void)
     }
 
 done:
+    lis_solver_destroy(defaults);
     lis_solver_destroy(s);
     printf("GCRODR_OPTION_PROFILE %s\n",failed?"FAILED":"PASSED");
     return failed;
