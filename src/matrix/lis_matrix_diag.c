@@ -553,65 +553,112 @@ LIS_INT lis_matrix_diag_get_size(LIS_MATRIX_DIAG D, LIS_INT *local_n, LIS_INT *g
 #define __FUNC__ "lis_matrix_diag_set_blocksize"
 LIS_INT lis_matrix_diag_set_blocksize(LIS_MATRIX_DIAG D, LIS_INT bn, LIS_INT *bns)
 {
-	LIS_INT i,n,nr,bnmax,t;
-	LIS_INT err;
+	LIS_INT i,n,nr,bnmax,t,err;
 	LIS_SCALAR *diag;
+	LIS_INT *new_bns;
+	LIS_SCALAR **new_v_value;
 
 	LIS_DEBUG_FUNC_IN;
 
 	err = lis_matrix_diag_check(D,LIS_MATRIX_CHECK_NULL);
 	if( err ) return err;
+	if( bn<=0 )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"block size or block count must be positive\n");
+		return LIS_ERR_ILL_ARG;
+	}
 
 	n = D->n;
 	if( bns==NULL )
 	{
-		nr   = 1 + (n-1)/bn;
+		nr = 1 + (n-1)/bn;
 		diag = (LIS_SCALAR *)lis_malloc( bn*bn*nr*sizeof(LIS_SCALAR),"lis_matrix_diag_set_blocksize::diag" );
-		if( NULL==diag )
+		if( diag==NULL )
 		{
 			LIS_SETERR_MEM(bn*bn*nr*sizeof(LIS_SCALAR));
 			return LIS_OUT_OF_MEMORY;
 		}
+		/* A successful change from variable to fixed blocks must release
+		   the old block table before changing its row count. */
+		if( D->bns )
+		{
+			if( D->v_value )
+			{
+				for(i=0;i<D->nr;i++)
+				{
+					if( D->v_value[i] ) free(D->v_value[i]);
+				}
+			}
+			lis_free(D->v_value);
+			lis_free(D->bns);
+			D->v_value = NULL;
+			D->bns = NULL;
+		}
 		lis_free(D->value);
 		D->value = diag;
-		D->nr    = nr;
-		D->bn    = bn;
+		D->nr = nr;
+		D->bn = bn;
 	}
-	else
+	else if( D->bns==NULL )
 	{
-		if( D->bns==NULL )
+		/* Check inputs before changing any of the existing storage. */
+		for(i=0;i<bn;i++)
 		{
-			lis_free(D->value);
-			D->bns = (LIS_INT *)lis_malloc( bn*sizeof(LIS_INT),"lis_matrix_diag_duplicateM::Dout->bns" );
-			if( NULL==D->bns )
+			if( bns[i]<=0 )
 			{
-				LIS_SETERR_MEM(bn*sizeof(LIS_INT));
-				lis_matrix_diag_destroy(D);
-				D = NULL;
-				return LIS_OUT_OF_MEMORY;
+				LIS_SETERR(LIS_ERR_ILL_ARG,"variable block sizes must be positive\n");
+				return LIS_ERR_ILL_ARG;
 			}
-			D->v_value = (LIS_SCALAR **)lis_malloc( bn*sizeof(LIS_SCALAR *),"lis_matrix_diag_duplicateM::Dout->value" );
-			if( NULL==D->v_value )
-			{
-				LIS_SETERR_MEM(bn*sizeof(LIS_SCALAR *));
-				lis_matrix_diag_destroy(D);
-				D = NULL;
-				return LIS_OUT_OF_MEMORY;
-			}
-			bnmax = 0;
-			for(i=0;i<bn;i++)
-			{
-				t                 = bns[i]; 
-				bnmax             = _max(bnmax,t);
-				D->bns[i]   = t;
-				D->v_value[i] = (LIS_SCALAR *)malloc( t*t*sizeof(LIS_SCALAR));
-			}
-			D->bn = bnmax;
-			D->nr = bn;
 		}
+
+		new_bns = (LIS_INT *)lis_malloc( bn*sizeof(LIS_INT),"lis_matrix_diag_set_blocksize::bns" );
+		if( new_bns==NULL )
+		{
+			LIS_SETERR_MEM(bn*sizeof(LIS_INT));
+			return LIS_OUT_OF_MEMORY;
+		}
+		new_v_value = (LIS_SCALAR **)lis_malloc( bn*sizeof(LIS_SCALAR *),"lis_matrix_diag_set_blocksize::v_value" );
+		if( new_v_value==NULL )
+		{
+			LIS_SETERR_MEM(bn*sizeof(LIS_SCALAR *));
+			lis_free(new_bns);
+			return LIS_OUT_OF_MEMORY;
+		}
+		for(i=0;i<bn;i++) new_v_value[i] = NULL;
+
+		bnmax = 0;
+		for(i=0;i<bn;i++)
+		{
+			t = bns[i];
+			bnmax = _max(bnmax,t);
+			new_bns[i] = t;
+			new_v_value[i] = (LIS_SCALAR *)malloc( t*t*sizeof(LIS_SCALAR) );
+			if( new_v_value[i]==NULL )
+			{
+				LIS_SETERR_MEM(t*t*sizeof(LIS_SCALAR));
+				goto allocation_failed;
+			}
+		}
+
+		/* Commit the new representation only when every block exists. */
+		lis_free(D->value);
+		D->value = NULL;
+		D->bns = new_bns;
+		D->v_value = new_v_value;
+		D->bn = bnmax;
+		D->nr = bn;
 	}
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+
+allocation_failed:
+	for(i=0;i<bn;i++)
+	{
+		if( new_v_value[i] ) free(new_v_value[i]);
+	}
+	lis_free(new_v_value);
+	lis_free(new_bns);
+	return LIS_OUT_OF_MEMORY;
 }
 
 #undef __FUNC__
