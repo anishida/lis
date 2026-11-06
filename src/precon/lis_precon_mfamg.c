@@ -8614,6 +8614,12 @@ lis_mfamg_extend_hierarchy_multivector(
                     lis_free(level->aggregate);
                     level->aggregate=NULL;
                     level->nc=0;
+
+                    /* No coarse transfer is built on the terminal level. */
+                    lis_free(cols);
+                    lis_free(vals);
+                    cols=NULL;
+                    vals=NULL;
                     break;
                 }
             }
