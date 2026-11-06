@@ -218,9 +218,13 @@ LIS_INT lis_matrix_diag_destroy(LIS_MATRIX_DIAG D)
 		if( D->work ) lis_free( D->work );
 		if( D->bns )
 		{
-			for(i=0;i<D->nr;i++)
+			/* The table may not exist yet after a partial allocation. */
+			if( D->v_value )
 			{
-				if( D->v_value[i] ) free(D->v_value[i]);
+				for(i=0;i<D->nr;i++)
+				{
+					if( D->v_value[i] ) free(D->v_value[i]);
+				}
 			}
 			lis_free2(2,D->bns,D->v_value);
 		}
@@ -290,6 +294,8 @@ LIS_INT lis_matrix_diag_duplicate(LIS_MATRIX_DIAG Din, LIS_MATRIX_DIAG *Dout)
 	else
 	{
 		nr = Din->nr;
+		/* Track the partial table for safe cleanup on any failure. */
+		(*Dout)->nr = nr;
 		(*Dout)->bns = (LIS_INT *)lis_malloc( nr*sizeof(LIS_INT),"lis_matrix_diag_duplicate::Dout->bns" );
 		if( NULL==(*Dout)->bns )
 		{
@@ -306,6 +312,8 @@ LIS_INT lis_matrix_diag_duplicate(LIS_MATRIX_DIAG Din, LIS_MATRIX_DIAG *Dout)
 			*Dout = NULL;
 			return LIS_OUT_OF_MEMORY;
 		}
+		/* Allow destruction even if a later block allocation fails. */
+		for(i=0;i<nr;i++) (*Dout)->v_value[i] = NULL;
 		bnmax = 0;
 		for(i=0;i<nr;i++)
 		{
@@ -313,6 +321,13 @@ LIS_INT lis_matrix_diag_duplicate(LIS_MATRIX_DIAG Din, LIS_MATRIX_DIAG *Dout)
 			bnmax             = _max(bnmax,t);
 			(*Dout)->bns[i]   = t;
 			(*Dout)->v_value[i] = (LIS_SCALAR *)malloc( t*t*sizeof(LIS_SCALAR));
+			if( (*Dout)->v_value[i]==NULL )
+			{
+				LIS_SETERR_MEM(t*t*sizeof(LIS_SCALAR));
+				lis_matrix_diag_destroy(*Dout);
+				*Dout = NULL;
+				return LIS_OUT_OF_MEMORY;
+			}
 		}
 		(*Dout)->bn = bnmax;
 		(*Dout)->nr = nr;
@@ -393,6 +408,8 @@ LIS_INT lis_matrix_diag_duplicateM(LIS_MATRIX Ain, LIS_MATRIX_DIAG *Dout)
 		break;
 	case LIS_MATRIX_VBR:
 		nr = Ain->nr;
+		/* Track the partial table for safe cleanup on any failure. */
+		(*Dout)->nr = nr;
 		(*Dout)->bns = (LIS_INT *)lis_malloc( nr*sizeof(LIS_INT),"lis_matrix_diag_duplicateM::Dout->bns" );
 		if( NULL==(*Dout)->bns )
 		{
@@ -409,6 +426,8 @@ LIS_INT lis_matrix_diag_duplicateM(LIS_MATRIX Ain, LIS_MATRIX_DIAG *Dout)
 			*Dout = NULL;
 			return LIS_OUT_OF_MEMORY;
 		}
+		/* Allow destruction even if a later block allocation fails. */
+		for(i=0;i<nr;i++) (*Dout)->v_value[i] = NULL;
 		bnmax = 0;
 		for(i=0;i<nr;i++)
 		{
@@ -416,6 +435,13 @@ LIS_INT lis_matrix_diag_duplicateM(LIS_MATRIX Ain, LIS_MATRIX_DIAG *Dout)
 			bnmax             = _max(bnmax,t);
 			(*Dout)->bns[i]   = t;
 			(*Dout)->v_value[i] = (LIS_SCALAR *)malloc( t*t*sizeof(LIS_SCALAR));
+			if( (*Dout)->v_value[i]==NULL )
+			{
+				LIS_SETERR_MEM(t*t*sizeof(LIS_SCALAR));
+				lis_matrix_diag_destroy(*Dout);
+				*Dout = NULL;
+				return LIS_OUT_OF_MEMORY;
+			}
 		}
 		(*Dout)->bn = bnmax;
 		(*Dout)->nr = nr;
