@@ -8605,12 +8605,16 @@ lis_mfamg_extend_hierarchy_multivector(
                 if(err) goto fail;
                 if(star!=NULL)
                 {
+                    LIS_INT leaf_id,pairs=0;
+                    for(leaf_id=0;leaf_id<star->l;leaf_id++)
+                        if(star->partner[leaf_id]>leaf_id) pairs++;
                     state->star=star;
                     state->coarse_n=level->n;
                     fprintf(stderr,
-                        "LIS_MFAMG_STAR_SCHUR depth=%d n=%d core=%d leaves=%d\n",
+                        "LIS_MFAMG_STAR_SCHUR depth=%d n=%d core=%d leaves=%d singles=%d pairs=%d\n",
                         (int)level_id,(int)level->n,
-                        (int)star->c,(int)star->l);
+                        (int)star->c,(int)star->l,
+                        (int)(star->l-2*pairs),(int)pairs);
                     lis_free(level->aggregate);
                     level->aggregate=NULL;
                     level->nc=0;
