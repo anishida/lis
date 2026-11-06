@@ -82,6 +82,9 @@ lis_solver_set_option_replace(
     for(i=0;i<LIS_PARAMS_LEN;i++)
         solver->params[i] = fresh->params[i];
 
+    /* This parsed option is stored outside the public options[] array. */
+    solver->mfamg_block_size = fresh->mfamg_block_size;
+
     solver->precision = solver->options[LIS_OPTIONS_PRECISION];
     solver->setup = LIS_FALSE;
     solver->retcode = LIS_SUCCESS;
@@ -171,6 +174,9 @@ lis_solver_set_option_replace_if_changed(
             }
         }
     }
+
+    if(!different && solver->mfamg_block_size!=fresh->mfamg_block_size)
+        different = LIS_TRUE;
 
     lis_solver_destroy(fresh);
 
