@@ -12,6 +12,9 @@
 #endif
 
 #include <math.h>
+#ifdef _COMPLEX
+#include <complex.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 
@@ -6237,8 +6240,13 @@ lis_precon_mfamg_build_multivector_basis(
                                 ((size_t)aggregate_offset[a]+(size_t)q)
                                 *(size_t)mode_count+(size_t)m];
                     }
-                    mag=fabs(basis[m]->value[i]);
-                    diff=fabs(basis[m]->value[i]-projected);
+#ifdef _COMPLEX
+                    mag=(LIS_REAL)cabs(basis[m]->value[i]);
+                    diff=(LIS_REAL)cabs(basis[m]->value[i]-projected);
+#else
+                    mag=(LIS_REAL)fabs(basis[m]->value[i]);
+                    diff=(LIS_REAL)fabs(basis[m]->value[i]-projected);
+#endif
                     input_norm2+=mag*mag;
                     error_norm2+=diff*diff;
                 }
