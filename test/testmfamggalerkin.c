@@ -2228,6 +2228,75 @@ done:
 #endif
 }
 
+
+/* Singular Schur complements must be rejected at setup, not silently
+ * used as an exact terminal correction.
+ */
+static int
+check_star_schur_singular(void)
+{
+#ifndef _COMPLEX
+    LIS_MATRIX A=NULL;
+    LIS_VECTOR b=NULL,x=NULL;
+    LIS_INT aggregate[6]={0,0,1,2,3,4};
+    LIS_INT used=-1,core_size=-1,err=LIS_SUCCESS;
+    LIS_INT i;
+    int failed=0;
+
+    err=lis_matrix_create(LIS_COMM_WORLD,&A);
+    if(err) goto fail;
+    err=lis_matrix_set_size(A,0,6);
+    if(err) goto fail;
+    for(i=0;i<6;i++)
+    {
+        err=lis_matrix_set_value(
+            LIS_INS_VALUE,i,i,(LIS_SCALAR)1.0,A);
+        if(err) goto fail;
+    }
+    /*
+     * H=I, D=I. F(0,0)=G(0,0)=1 gives S(0,0)=0.
+     * The second core row stays independent.
+     */
+    err=lis_matrix_set_value(
+        LIS_INS_VALUE,0,2,(LIS_SCALAR)1.0,A);
+    if(err) goto fail;
+    err=lis_matrix_set_value(
+        LIS_INS_VALUE,2,0,(LIS_SCALAR)1.0,A);
+    if(err) goto fail;
+    err=lis_matrix_assemble(A);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A,&b);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A,&x);
+    if(err) goto fail;
+    err=lis_vector_set_all((LIS_SCALAR)1.0,b);
+    if(err) goto fail;
+    err=lis_vector_set_all((LIS_SCALAR)0.0,x);
+    if(err) goto fail;
+    err=lis_precon_mfamg_star_schur_for_test(
+        A,aggregate,5,4,b,x,&used,&core_size);
+    if(err!=LIS_SUCCESS || used!=LIS_FALSE || core_size!=0)
+    {
+        fprintf(stderr,
+            "star-Schur did not reject singular core: rc=%d used=%d core=%d\n",
+            (int)err,(int)used,(int)core_size);
+        failed=1;
+    }
+    goto done;
+fail:
+    fprintf(stderr,"star-Schur singular setup failed rc=%d\n",(int)err);
+    failed=1;
+done:
+    if(x) lis_vector_destroy(x);
+    if(b) lis_vector_destroy(b);
+    if(A) lis_matrix_destroy(A);
+    if(!failed) printf("MFAMG STAR SCHUR SINGULAR TEST PASSED\n");
+    return failed;
+#else
+    return 0;
+#endif
+}
+
 static int
 run_serial(void)
 {
@@ -2281,6 +2350,7 @@ run_serial(void)
 
     failed |= check_star_schur_terminal();
     failed |= check_star_schur_large();
+    failed |= check_star_schur_singular();
 
     lis_matrix_destroy(
         A);
