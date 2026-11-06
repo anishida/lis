@@ -4,10 +4,11 @@
  * This file is included by lis_precon_mfamg.c after the existing dense
  * factorization/solve helpers.  Do not enable it by default.
  *
- * The initial greedy aggregate identifies a small candidate core. Any
- * remaining nonzero edge among outside vertices promotes its source
- * vertex into the core.  The resulting outside block D must be diagonal,
- * with numerically safe pivots.  We then factor S=H-F*D^-1*G.
+ * The initial greedy aggregate identifies a small candidate core. The
+ * induced outside graph may contain isolated 1x1 and 2x2 blocks. If
+ * larger components remain, degree-aware core promotion falls back to
+ * the diagonal-leaf strategy.  We then factor S=H-F*D^-1*G with a
+ * block-diagonal D, subject to relative pivot and residual checks.
  */
 
 struct LIS_MFAMG_STAR_SOLVER
@@ -15,7 +16,10 @@ struct LIS_MFAMG_STAR_SOLVER
     LIS_INT n, c, l;
     LIS_MATRIX A; /* borrowed terminal matrix, owned by the hierarchy */
     LIS_INT *core_map, *leaf_map, *core_rows, *leaf_rows, *pivots;
-    LIS_SCALAR *d_inv, *f, *g, *schur, *lu, *rhs, *sol;
+    LIS_INT *partner; /* leaf-index partner, or -1 for a scalar leaf */
+    LIS_REAL *row_scale;
+    LIS_SCALAR *d_inv, *d_cross, *leaf_work;
+    LIS_SCALAR *f, *g, *schur, *lu, *rhs, *sol;
 };
 
 static void
@@ -27,7 +31,11 @@ lis_mfamg_star_destroy(struct LIS_MFAMG_STAR_SOLVER *s)
     if(s->core_rows) lis_free(s->core_rows);
     if(s->leaf_rows) lis_free(s->leaf_rows);
     if(s->pivots) lis_free(s->pivots);
+    if(s->partner) lis_free(s->partner);
+    if(s->row_scale) lis_free(s->row_scale);
     if(s->d_inv) lis_free(s->d_inv);
+    if(s->d_cross) lis_free(s->d_cross);
+    if(s->leaf_work) lis_free(s->leaf_work);
     if(s->f) lis_free(s->f);
     if(s->g) lis_free(s->g);
     if(s->schur) lis_free(s->schur);
@@ -48,7 +56,8 @@ lis_mfamg_star_prepare(
 #ifndef _COMPLEX
     struct LIS_MFAMG_STAR_SOLVER *s=NULL;
     LIS_INT *sizes=NULL,*core=NULL,*degree=NULL;
-    LIS_INT i,j,p,a,largest,largest_size,c,l,k,err=LIS_SUCCESS;
+    LIS_INT i,j,p,a,largest,largest_size,c,l,k,m,err=LIS_SUCCESS;
+    LIS_INT is_matching=LIS_TRUE;
     LIS_REAL mag,row_max;
     size_t cl,cc;
 
@@ -89,21 +98,80 @@ lis_mfamg_star_prepare(
     for(i=0;i<A->n;i++) if(ag[i]==largest) core[i]=1;
 
     /*
-     * Greedy vertex cover of the remaining outside graph.  Count both
-     * endpoints of each live directed CSR edge and promote the vertex
-     * of highest degree.  Unlike the previous row-order rule, this
-     * promotes a high-index hub rather than all of its leaves.
-     *
-     * Retain the initial aggregate as a seed; this is a heuristic, not
-     * a minimum vertex-cover algorithm.  Stop at the prescribed limit
-     * and let the normal hierarchy handle unsupported structures.
+     * A matching (undirected degree <=1) in the induced outside graph
+     * means D consists exclusively of 1x1 and 2x2 blocks. Recognize
+     * both directed orientations; missing reverse entries are zero.
+     * Use degree[] here as a temporary original-row partner array.
      */
-    c=largest_size;
-    while(c<core_limit)
+    for(i=0;i<A->n;i++) degree[i]=-1;
+    for(i=0;i<A->n && is_matching;i++)
     {
-        LIS_INT best=-1;
-        LIS_INT best_degree=0;
-        memset(degree,0,(size_t)A->n*sizeof(LIS_INT));
+        if(core[i]) continue;
+        for(p=A->ptr[i];p<A->ptr[i+1];p++)
+        {
+            j=A->index[p];
+            if(j<0 || j>=A->n)
+            {
+                err=LIS_ERR_ILL_ARG;
+                goto done;
+            }
+            if(j==i || core[j] || A->value[p]==(LIS_SCALAR)0)
+                continue;
+            if((degree[i]>=0 && degree[i]!=j) ||
+               (degree[j]>=0 && degree[j]!=i))
+            {
+                is_matching=LIS_FALSE;
+                break;
+            }
+            degree[i]=j;
+            degree[j]=i;
+        }
+    }
+
+    c=largest_size;
+    if(!is_matching)
+    {
+        /*
+         * Unsupported components retain the previous degree-aware
+         * vertex-cover fallback. It may promote a high-degree hub,
+         * but must never exceed the core limit.
+         */
+        while(c<core_limit)
+        {
+            LIS_INT best=-1;
+            LIS_INT best_degree=0;
+            memset(degree,0,(size_t)A->n*sizeof(LIS_INT));
+            for(i=0;i<A->n;i++)
+            {
+                if(core[i]) continue;
+                for(p=A->ptr[i];p<A->ptr[i+1];p++)
+                {
+                    j=A->index[p];
+                    if(j<0 || j>=A->n)
+                    {
+                        err=LIS_ERR_ILL_ARG;
+                        goto done;
+                    }
+                    if(j!=i && A->value[p]!=(LIS_SCALAR)0 && !core[j])
+                    {
+                        degree[i]++;
+                        degree[j]++;
+                    }
+                }
+            }
+            for(i=0;i<A->n;i++)
+            {
+                if(!core[i] && degree[i]>best_degree)
+                {
+                    best=i;
+                    best_degree=degree[i];
+                }
+            }
+            if(best<0) break;
+            core[best]=1;
+            c++;
+        }
+        /* The fallback must leave a strictly diagonal outside block. */
         for(i=0;i<A->n;i++)
         {
             if(core[i]) continue;
@@ -116,38 +184,8 @@ lis_mfamg_star_prepare(
                     goto done;
                 }
                 if(j!=i && A->value[p]!=(LIS_SCALAR)0 && !core[j])
-                {
-                    degree[i]++;
-                    degree[j]++;
-                }
+                    goto done;
             }
-        }
-        for(i=0;i<A->n;i++)
-        {
-            if(!core[i] && degree[i]>best_degree)
-            {
-                best=i;
-                best_degree=degree[i];
-            }
-        }
-        if(best<0) break; /* Outside block is diagonal. */
-        core[best]=1;
-        c++;
-    }
-    /* Recheck every directed edge, including at the core limit. */
-    for(i=0;i<A->n;i++)
-    {
-        if(core[i]) continue;
-        for(p=A->ptr[i];p<A->ptr[i+1];p++)
-        {
-            j=A->index[p];
-            if(j<0 || j>=A->n)
-            {
-                err=LIS_ERR_ILL_ARG;
-                goto done;
-            }
-            if(j!=i && A->value[p]!=(LIS_SCALAR)0 && !core[j])
-                goto done;
         }
     }
 
@@ -185,7 +223,11 @@ lis_mfamg_star_prepare(
     STAR_ALLOC(core_rows,c,LIS_INT);
     STAR_ALLOC(leaf_rows,l,LIS_INT);
     STAR_ALLOC(pivots,c,LIS_INT);
+    STAR_ALLOC(partner,l,LIS_INT);
+    STAR_ALLOC(row_scale,l,LIS_REAL);
     STAR_ALLOC(d_inv,l,LIS_SCALAR);
+    STAR_ALLOC(d_cross,l,LIS_SCALAR);
+    STAR_ALLOC(leaf_work,l,LIS_SCALAR);
     STAR_ALLOC(f,cl,LIS_SCALAR);
     STAR_ALLOC(g,cl,LIS_SCALAR);
     STAR_ALLOC(schur,cc,LIS_SCALAR);
@@ -197,6 +239,8 @@ lis_mfamg_star_prepare(
     memset(s->g,0,cl*sizeof(LIS_SCALAR));
     memset(s->schur,0,cc*sizeof(LIS_SCALAR));
     memset(s->d_inv,0,(size_t)l*sizeof(LIS_SCALAR));
+    memset(s->d_cross,0,(size_t)l*sizeof(LIS_SCALAR));
+    for(k=0;k<l;k++) s->partner[k]=-1;
 
     c=0; l=0;
     for(i=0;i<A->n;i++)
@@ -214,6 +258,31 @@ lis_mfamg_star_prepare(
         }
     }
     c=s->c; l=s->l;
+
+    /*
+     * Reconstruct the matching in compact leaf indices. Every nonzero
+     * off-diagonal outside edge must agree with the same reciprocal
+     * partner; directed and nonsymmetric matrices are supported.
+     */
+    for(i=0;i<A->n;i++)
+    {
+        if(s->core_map[i]>=0) continue;
+        k=s->leaf_map[i];
+        for(p=A->ptr[i];p<A->ptr[i+1];p++)
+        {
+            j=A->index[p];
+            if(j<0 || j>=A->n) { err=LIS_ERR_ILL_ARG; goto done; }
+            if(j==i || s->leaf_map[j]<0 ||
+               A->value[p]==(LIS_SCALAR)0)
+                continue;
+            m=s->leaf_map[j];
+            if((s->partner[k]>=0 && s->partner[k]!=m) ||
+               (s->partner[m]>=0 && s->partner[m]!=k))
+                goto done;
+            s->partner[k]=m;
+            s->partner[m]=k;
+        }
+    }
 
     for(i=0;i<A->n;i++)
     {
@@ -237,29 +306,73 @@ lis_mfamg_star_prepare(
                 s->g[(size_t)s->leaf_map[i]*c+s->core_map[j]]+=A->value[p];
             else if(i==j)
                 s->d_inv[s->leaf_map[i]]+=A->value[p];
+            else if(s->partner[s->leaf_map[i]]==s->leaf_map[j])
+                s->d_cross[s->leaf_map[i]]+=A->value[p];
             else if(A->value[p]!=(LIS_SCALAR)0)
                 goto done;
         }
         if(a<0)
+            s->row_scale[s->leaf_map[i]]=row_max;
+    }
+
+    /* Invert each isolated scalar or nonsymmetric 2x2 block. */
+    for(k=0;k<l;k++)
+    {
+        LIS_REAL scale,det,denom,aa,bb,cc0,dd;
+        m=s->partner[k];
+        if(m>=0 && m<k) continue;
+        if(m<0)
         {
-            k=s->leaf_map[i];
             mag=fabs((double)s->d_inv[k]);
-            if(!isfinite((double)mag) || row_max==0 ||
-               mag<=1.0e-12*row_max)
+            if(!isfinite((double)mag) || s->row_scale[k]==0 ||
+               mag<=1.0e-12*s->row_scale[k])
                 goto done;
             s->d_inv[k]=(LIS_SCALAR)1/s->d_inv[k];
+            if(!isfinite((double)s->d_inv[k])) goto done;
+            continue;
         }
+        aa=(LIS_REAL)s->d_inv[k];
+        dd=(LIS_REAL)s->d_inv[m];
+        bb=(LIS_REAL)s->d_cross[k];
+        cc0=(LIS_REAL)s->d_cross[m];
+        scale=fabs((double)aa);
+        if(fabs((double)bb)>scale) scale=fabs((double)bb);
+        if(fabs((double)cc0)>scale) scale=fabs((double)cc0);
+        if(fabs((double)dd)>scale) scale=fabs((double)dd);
+        if(!isfinite((double)scale) || scale==0.0 ||
+           scale<=1.0e-12*s->row_scale[k] ||
+           scale<=1.0e-12*s->row_scale[m])
+            goto done;
+        aa/=scale; bb/=scale; cc0/=scale; dd/=scale;
+        det=aa*dd-bb*cc0;
+        if(!isfinite((double)det) || fabs((double)det)<=1.0e-12)
+            goto done;
+        denom=det*scale;
+        s->d_inv[k]=(LIS_SCALAR)(dd/denom);
+        s->d_inv[m]=(LIS_SCALAR)(aa/denom);
+        s->d_cross[k]=(LIS_SCALAR)(-bb/denom);
+        s->d_cross[m]=(LIS_SCALAR)(-cc0/denom);
+        if(!isfinite((double)s->d_inv[k]) ||
+           !isfinite((double)s->d_inv[m]) ||
+           !isfinite((double)s->d_cross[k]) ||
+           !isfinite((double)s->d_cross[m]))
+            goto done;
     }
 
     for(k=0;k<l;k++)
         for(i=0;i<c;i++)
         {
-            LIS_SCALAR t=s->f[(size_t)i*l+k]*s->d_inv[k];
+            LIS_SCALAR t=s->f[(size_t)i*l+k];
             if(t==(LIS_SCALAR)0) continue;
             for(j=0;j<c;j++)
-                if(s->g[(size_t)k*c+j]!=(LIS_SCALAR)0)
-                    s->schur[(size_t)i*c+j]-=
-                        t*s->g[(size_t)k*c+j];
+            {
+                LIS_SCALAR v=s->d_inv[k]*s->g[(size_t)k*c+j];
+                if(s->partner[k]>=0)
+                    v+=s->d_cross[k]*
+                       s->g[(size_t)s->partner[k]*c+j];
+                if(v!=(LIS_SCALAR)0)
+                    s->schur[(size_t)i*c+j]-=t*v;
+            }
         }
     for(k=0;k<c*c;k++)
         if(!isfinite((double)s->schur[k])) goto done;
@@ -304,13 +417,20 @@ lis_mfamg_star_solve(
     LIS_SCALAR t;
     if(s==NULL || b==NULL || x==NULL ||
        b->n!=s->n || x->n!=s->n) return LIS_ERR_ILL_ARG;
+    for(k=0;k<s->l;k++)
+    {
+        t=s->d_inv[k]*b->value[s->leaf_rows[k]];
+        if(s->partner[k]>=0)
+            t+=s->d_cross[k]*
+               b->value[s->leaf_rows[s->partner[k]]];
+        s->leaf_work[k]=t;
+    }
     for(i=0;i<s->c;i++)
     {
         t=b->value[s->core_rows[i]];
         for(k=0;k<s->l;k++)
             if(s->f[(size_t)i*s->l+k]!=(LIS_SCALAR)0)
-                t-=s->f[(size_t)i*s->l+k]*s->d_inv[k]*
-                   b->value[s->leaf_rows[k]];
+                t-=s->f[(size_t)i*s->l+k]*s->leaf_work[k];
         s->rhs[i]=t;
     }
     err=lis_mfamg_dense_solve_values(
@@ -322,7 +442,14 @@ lis_mfamg_star_solve(
         for(j=0;j<s->c;j++)
             if(s->g[(size_t)k*s->c+j]!=(LIS_SCALAR)0)
                 t-=s->g[(size_t)k*s->c+j]*s->sol[j];
-        x->value[s->leaf_rows[k]]=s->d_inv[k]*t;
+        s->leaf_work[k]=t;
+    }
+    for(k=0;k<s->l;k++)
+    {
+        t=s->d_inv[k]*s->leaf_work[k];
+        if(s->partner[k]>=0)
+            t+=s->d_cross[k]*s->leaf_work[s->partner[k]];
+        x->value[s->leaf_rows[k]]=t;
     }
     for(i=0;i<s->c;i++)
         x->value[s->core_rows[i]]=s->sol[i];
