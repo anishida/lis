@@ -2078,6 +2078,62 @@ check_star_schur_terminal(void)
         fprintf(stderr,"star-Schur should refuse an undersized core limit\n");
         failed=1; goto cleanup;
     }
+
+#ifdef LIS_TEST_OOM
+    /*
+     * Exercise every allocation-failure point in the real Schur setup.
+     * The public test hook owns and releases its temporary solver.
+     * The second iteration after the last injected failure must succeed.
+     */
+    {
+        size_t base_live=lis_test_oom_live();
+        size_t fail_at,allocation_calls;
+        int completed=0;
+        for(fail_at=1;fail_at<=64;fail_at++)
+        {
+            used=-1; core_size=-1;
+            lis_test_oom_begin(fail_at);
+            err=lis_precon_mfamg_star_schur_for_test(
+                A,aggregate,STAR_N-3,8,b,x,&used,&core_size);
+            allocation_calls=lis_test_oom_calls();
+            lis_test_oom_end();
+            if(lis_test_oom_live()!=base_live)
+            {
+                fprintf(stderr,
+                    "star-Schur leaked memory at OOM allocation %u\n",
+                    (unsigned)fail_at);
+                failed=1; goto cleanup;
+            }
+            if(allocation_calls<fail_at)
+            {
+                if(err!=LIS_SUCCESS || used!=LIS_TRUE ||
+                   core_size!=5)
+                {
+                    fprintf(stderr,
+                        "star-Schur OOM completed with invalid result\n");
+                    failed=1; goto cleanup;
+                }
+                completed=1;
+                break;
+            }
+            if(err!=LIS_OUT_OF_MEMORY || used!=LIS_FALSE ||
+               core_size!=0)
+            {
+                fprintf(stderr,
+                    "star-Schur OOM failure not propagated at %u, rc=%d\n",
+                    (unsigned)fail_at,(int)err);
+                failed=1; goto cleanup;
+            }
+        }
+        if(!completed)
+        {
+            fprintf(stderr,
+                "star-Schur OOM sweep exceeded 64 allocations\n");
+            failed=1; goto cleanup;
+        }
+    }
+#endif
+
     used=-1; core_size=-1;
     err=lis_precon_mfamg_star_schur_for_test(
         A,aggregate,STAR_N-3,8,b,x,&used,&core_size);
