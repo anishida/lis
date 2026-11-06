@@ -1989,6 +1989,140 @@ check_relaxed_singular_coarse_correction(void)
 }
 
 
+
+/* An exact arrowhead terminal correction must reproduce a manufactured
+ * solution, including nonsymmetric core/leaf couplings.  This also
+ * exercises promoting a leaf with a leaf-to-leaf connection to the core.
+ */
+extern LIS_INT
+lis_precon_mfamg_star_schur_for_test(
+    LIS_MATRIX A,
+    const LIS_INT *aggregate,
+    LIS_INT nag,
+    LIS_INT core_limit,
+    LIS_VECTOR b,
+    LIS_VECTOR x,
+    LIS_INT *used,
+    LIS_INT *core_size);
+
+static int
+check_star_schur_terminal(void)
+{
+#ifndef _COMPLEX
+    enum { STAR_N = 40 };
+    LIS_MATRIX A=NULL;
+    LIS_VECTOR b=NULL,x=NULL,exact=NULL,ax=NULL;
+    LIS_INT aggregate[STAR_N];
+    LIS_INT i,j,err,used,core_size;
+    LIS_REAL maxerr=0.0,errval;
+    int failed=0;
+
+    err=lis_matrix_create(LIS_COMM_WORLD,&A);
+    if(err) goto fail;
+    err=lis_matrix_set_size(A,0,STAR_N);
+    if(err) goto fail;
+    for(i=0;i<STAR_N;i++)
+    {
+        aggregate[i]=(i<4) ? 0 : i-3;
+        err=lis_matrix_set_value(LIS_INS_VALUE,i,i,
+                                  (LIS_SCALAR)(i<4 ? 30.0 : 2.5+0.01*i),A);
+        if(err) goto fail;
+        if(i<4)
+        {
+            for(j=0;j<4;j++)
+            {
+                if(i==j) continue;
+                err=lis_matrix_set_value(LIS_INS_VALUE,i,j,
+                                         (LIS_SCALAR)-0.2,A);
+                if(err) goto fail;
+            }
+        }
+        else
+        {
+            j=i%4;
+            err=lis_matrix_set_value(LIS_INS_VALUE,i,j,
+                                     (LIS_SCALAR)-0.10,A);
+            if(err) goto fail;
+            err=lis_matrix_set_value(LIS_INS_VALUE,j,i,
+                                     (LIS_SCALAR)-0.12,A);
+            if(err) goto fail;
+        }
+    }
+    /* One off-core edge: the detector must promote at least one end. */
+    err=lis_matrix_set_value(LIS_INS_VALUE,4,5,(LIS_SCALAR)-0.01,A);
+    if(err) goto fail;
+    err=lis_matrix_set_value(LIS_INS_VALUE,5,4,(LIS_SCALAR)-0.02,A);
+    if(err) goto fail;
+    err=lis_matrix_assemble(A);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A,&b);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A,&x);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A,&exact);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A,&ax);
+    if(err) goto fail;
+    for(i=0;i<STAR_N;i++)
+        exact->value[i]=(LIS_SCALAR)(1.0+0.001*i);
+    err=lis_matvec(A,exact,b);
+    if(err) goto fail;
+    err=lis_vector_set_all((LIS_SCALAR)0,x);
+    if(err) goto fail;
+
+    used=-1; core_size=-1;
+    err=lis_precon_mfamg_star_schur_for_test(
+        A,aggregate,STAR_N-3,3,b,x,&used,&core_size);
+    if(err || used!=LIS_FALSE || core_size!=0)
+    {
+        fprintf(stderr,"star-Schur should refuse an undersized core limit\n");
+        failed=1; goto cleanup;
+    }
+    used=-1; core_size=-1;
+    err=lis_precon_mfamg_star_schur_for_test(
+        A,aggregate,STAR_N-3,8,b,x,&used,&core_size);
+    if(err || used!=LIS_TRUE || core_size!=5)
+    {
+        fprintf(stderr,
+                "star-Schur selection failed: rc=%d used=%d core=%d\n",
+                (int)err,(int)used,(int)core_size);
+        failed=1; goto cleanup;
+    }
+    err=lis_matvec(A,x,ax);
+    if(err) goto fail;
+    for(i=0;i<STAR_N;i++)
+    {
+        errval=fabs((double)(ax->value[i]-b->value[i]))/
+               (1.0+fabs((double)b->value[i]));
+        if(errval>maxerr) maxerr=errval;
+        errval=fabs((double)(x->value[i]-exact->value[i]));
+        if(errval>maxerr) maxerr=errval;
+    }
+    if(maxerr>1.0e-10)
+    {
+        fprintf(stderr,"star-Schur exact correction mismatch: %.12e\n",
+                (double)maxerr);
+        failed=1;
+    }
+
+cleanup:
+    if(ax)lis_vector_destroy(ax);
+    if(exact)lis_vector_destroy(exact);
+    if(x)lis_vector_destroy(x);
+    if(b)lis_vector_destroy(b);
+    if(A)lis_matrix_destroy(A);
+    if(!failed) printf("MFAMG STAR SCHUR TERMINAL TEST PASSED\n");
+    return failed;
+fail:
+    fprintf(stderr,"star-Schur regression setup failed rc=%d\n",(int)err);
+    failed=1;
+    goto cleanup;
+#else
+    printf("MFAMG STAR SCHUR TERMINAL TEST SKIPPED (complex)\n");
+    return 0;
+#endif
+}
+
 static int
 run_serial(void)
 {
@@ -2039,6 +2173,8 @@ run_serial(void)
 
     failed |=
         check_exact_cancellation();
+
+    failed |= check_star_schur_terminal();
 
     lis_matrix_destroy(
         A);
