@@ -155,7 +155,7 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	test_krylov_api_contract$(EXEEXT) \
 	test_krylov_residual_reuse$(EXEEXT) \
 	test_krylov_both_ends$(EXEEXT) \
-	test_krylov_be_lock_order$(EXEEXT)
+	test_krylov_be_lock_order$(EXEEXT) testilucbsrsmoke$(EXEEXT)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_3 = test2f test6f 
@@ -619,6 +619,10 @@ am_testhybridnested_OBJECTS = testhybridnested.$(OBJEXT)
 testhybridnested_OBJECTS = $(am_testhybridnested_OBJECTS)
 testhybridnested_LDADD = $(LDADD)
 testhybridnested_DEPENDENCIES =
+am_testilucbsrsmoke_OBJECTS = testilucbsrsmoke.$(OBJEXT)
+testilucbsrsmoke_OBJECTS = $(am_testilucbsrsmoke_OBJECTS)
+testilucbsrsmoke_LDADD = $(LDADD)
+testilucbsrsmoke_DEPENDENCIES =
 am_testilupivot_OBJECTS = testilupivot.$(OBJEXT)
 testilupivot_OBJECTS = $(am_testilupivot_OBJECTS)
 testilupivot_LDADD = $(LDADD)
@@ -936,7 +940,8 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testhalfilukmemory.Po \
 	./$(DEPDIR)/testhalfiluksimd.Po ./$(DEPDIR)/testhalfilut.Po \
 	./$(DEPDIR)/testhalfprobe.Po ./$(DEPDIR)/testhalfstorage.Po \
-	./$(DEPDIR)/testhybridnested.Po ./$(DEPDIR)/testilupivot.Po \
+	./$(DEPDIR)/testhybridnested.Po \
+	./$(DEPDIR)/testilucbsrsmoke.Po ./$(DEPDIR)/testilupivot.Po \
 	./$(DEPDIR)/testjacobiuser.Po ./$(DEPDIR)/testkrylovrobust.Po \
 	./$(DEPDIR)/testmatrixautosession.Po \
 	./$(DEPDIR)/testmatrixgeneration.Po \
@@ -1059,8 +1064,9 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
 	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
 	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
-	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testkrylovrobust_SOURCES) $(testmatrixautosession_SOURCES) \
+	$(testilucbsrsmoke_SOURCES) $(testilupivot_SOURCES) \
+	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
+	$(testmatrixautosession_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatrixmaterialize_SOURCES) \
 	$(testmatrixmaterializeomp_SOURCES) \
@@ -1139,8 +1145,9 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
 	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
 	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
-	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testkrylovrobust_SOURCES) $(testmatrixautosession_SOURCES) \
+	$(testilucbsrsmoke_SOURCES) $(testilupivot_SOURCES) \
+	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
+	$(testmatrixautosession_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatrixmaterialize_SOURCES) \
 	$(testmatrixmaterializeomp_SOURCES) \
@@ -1762,7 +1769,7 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	test_krylov_api_contract$(EXEEXT) \
 	test_krylov_residual_reuse$(EXEEXT) \
 	test_krylov_both_ends$(EXEEXT) \
-	test_krylov_be_lock_order$(EXEEXT)
+	test_krylov_be_lock_order$(EXEEXT) testilucbsrsmoke$(EXEEXT)
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
 testgesolvepair_SOURCES = testgesolvepair.c
@@ -1786,6 +1793,7 @@ test_krylov_both_ends_SOURCES = test_krylov_both_ends.c
 # must not link the native solver object from liblis again.
 test_krylov_be_lock_order_SOURCES = test_krylov_be_lock_order.c
 test_krylov_be_lock_order_LDADD = -lm
+testilucbsrsmoke_SOURCES = testilucbsrsmoke.c
 all: all-am
 
 .SUFFIXES:
@@ -2304,6 +2312,10 @@ testhybridnested$(EXEEXT): $(testhybridnested_OBJECTS) $(testhybridnested_DEPEND
 	@rm -f testhybridnested$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testhybridnested_OBJECTS) $(testhybridnested_LDADD) $(LIBS)
 
+testilucbsrsmoke$(EXEEXT): $(testilucbsrsmoke_OBJECTS) $(testilucbsrsmoke_DEPENDENCIES) $(EXTRA_testilucbsrsmoke_DEPENDENCIES) 
+	@rm -f testilucbsrsmoke$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testilucbsrsmoke_OBJECTS) $(testilucbsrsmoke_LDADD) $(LIBS)
+
 testilupivot$(EXEEXT): $(testilupivot_OBJECTS) $(testilupivot_DEPENDENCIES) $(EXTRA_testilupivot_DEPENDENCIES) 
 	@rm -f testilupivot$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testilupivot_OBJECTS) $(testilupivot_LDADD) $(LIBS)
@@ -2637,6 +2649,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testhalfprobe.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testhalfstorage.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testhybridnested.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testilucbsrsmoke.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testilupivot.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testjacobiuser.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testkrylovrobust.Po@am__quote@ # am--include-marker
@@ -3654,6 +3667,13 @@ test_krylov_be_lock_order.log: test_krylov_be_lock_order$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testilucbsrsmoke.log: testilucbsrsmoke$(EXEEXT)
+	@p='testilucbsrsmoke$(EXEEXT)'; \
+	b='testilucbsrsmoke'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -3832,6 +3852,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testhalfprobe.Po
 	-rm -f ./$(DEPDIR)/testhalfstorage.Po
 	-rm -f ./$(DEPDIR)/testhybridnested.Po
+	-rm -f ./$(DEPDIR)/testilucbsrsmoke.Po
 	-rm -f ./$(DEPDIR)/testilupivot.Po
 	-rm -f ./$(DEPDIR)/testjacobiuser.Po
 	-rm -f ./$(DEPDIR)/testkrylovrobust.Po
@@ -4014,6 +4035,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testhalfprobe.Po
 	-rm -f ./$(DEPDIR)/testhalfstorage.Po
 	-rm -f ./$(DEPDIR)/testhybridnested.Po
+	-rm -f ./$(DEPDIR)/testilucbsrsmoke.Po
 	-rm -f ./$(DEPDIR)/testilupivot.Po
 	-rm -f ./$(DEPDIR)/testjacobiuser.Po
 	-rm -f ./$(DEPDIR)/testkrylovrobust.Po
