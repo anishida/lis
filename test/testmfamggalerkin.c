@@ -2123,6 +2123,111 @@ fail:
 #endif
 }
 
+
+/*
+ * Regression at the scale of the observed contact coarse matrix:
+ * 2339 rows, a 96-row core and 2243 diagonal leaves.
+ */
+static int
+check_star_schur_large(void)
+{
+#ifndef _COMPLEX
+    enum { N=2339, C=96 };
+    LIS_MATRIX A=NULL;
+    LIS_VECTOR b=NULL,x=NULL,exact=NULL,ax=NULL;
+    LIS_INT *ag=NULL;
+    LIS_INT i,j,used,core_size,err=LIS_SUCCESS;
+    LIS_REAL worst=0.0,e;
+    int failed=0;
+
+    ag=(LIS_INT *)malloc((size_t)N*sizeof(LIS_INT));
+    if(ag==NULL) { failed=1; goto done; }
+    err=lis_matrix_create(LIS_COMM_WORLD,&A);
+    if(err) goto fail;
+    err=lis_matrix_set_size(A,0,N);
+    if(err) goto fail;
+    for(i=0;i<N;i++)
+    {
+        ag[i]=(i<C)?0:i-C+1;
+        err=lis_matrix_set_value(
+            LIS_INS_VALUE,i,i,(LIS_SCALAR)(i<C?4.0:2.0),A);
+        if(err) goto fail;
+        if(i<C && i+1<C)
+        {
+            err=lis_matrix_set_value(
+                LIS_INS_VALUE,i,i+1,(LIS_SCALAR)-0.1,A);
+            if(err) goto fail;
+            err=lis_matrix_set_value(
+                LIS_INS_VALUE,i+1,i,(LIS_SCALAR)-0.1,A);
+            if(err) goto fail;
+        }
+        if(i>=C)
+        {
+            j=(i-C)%C;
+            err=lis_matrix_set_value(
+                LIS_INS_VALUE,i,j,(LIS_SCALAR)-0.05,A);
+            if(err) goto fail;
+            err=lis_matrix_set_value(
+                LIS_INS_VALUE,j,i,(LIS_SCALAR)-0.05,A);
+            if(err) goto fail;
+        }
+    }
+    err=lis_matrix_assemble(A);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A,&b);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A,&x);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A,&exact);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A,&ax);
+    if(err) goto fail;
+    for(i=0;i<N;i++)
+        exact->value[i]=(LIS_SCALAR)(1.0+(i%7)*0.03125);
+    err=lis_matvec(A,exact,b);
+    if(err) goto fail;
+    err=lis_precon_mfamg_star_schur_for_test(
+        A,ag,N-C+1,384,b,x,&used,&core_size);
+    if(err || !used || core_size!=C)
+    {
+        fprintf(stderr,
+            "large star-Schur selection failed rc=%d used=%d core=%d\n",
+            (int)err,(int)used,(int)core_size);
+        failed=1; goto done;
+    }
+    err=lis_matvec(A,x,ax);
+    if(err) goto fail;
+    for(i=0;i<N;i++)
+    {
+        e=fabs((double)(ax->value[i]-b->value[i]))/
+          (1.0+fabs((double)b->value[i]));
+        if(e>worst) worst=e;
+        e=fabs((double)(x->value[i]-exact->value[i]));
+        if(e>worst) worst=e;
+    }
+    if(worst>1.0e-10)
+    {
+        fprintf(stderr,"large star-Schur error %.12e\n",(double)worst);
+        failed=1;
+    }
+    goto done;
+fail:
+    fprintf(stderr,"large star-Schur setup failed rc=%d\n",(int)err);
+    failed=1;
+done:
+    if(ax)lis_vector_destroy(ax);
+    if(exact)lis_vector_destroy(exact);
+    if(x)lis_vector_destroy(x);
+    if(b)lis_vector_destroy(b);
+    if(A)lis_matrix_destroy(A);
+    if(ag)free(ag);
+    if(!failed)printf("MFAMG STAR SCHUR LARGE TEST PASSED\n");
+    return failed;
+#else
+    return 0;
+#endif
+}
+
 static int
 run_serial(void)
 {
@@ -2175,6 +2280,7 @@ run_serial(void)
         check_exact_cancellation();
 
     failed |= check_star_schur_terminal();
+    failed |= check_star_schur_large();
 
     lis_matrix_destroy(
         A);
