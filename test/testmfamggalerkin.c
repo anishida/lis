@@ -1992,7 +1992,7 @@ check_relaxed_singular_coarse_correction(void)
 
 /* An exact arrowhead terminal correction must reproduce a manufactured
  * solution, including nonsymmetric core/leaf couplings.  This also
- * exercises promoting a leaf with a leaf-to-leaf connection to the core.
+ * exercises an exact isolated 2x2 leaf block.
  */
 extern LIS_INT
 lis_precon_mfamg_star_schur_for_test(
@@ -2107,7 +2107,7 @@ check_star_schur_terminal(void)
             if(allocation_calls<fail_at)
             {
                 if(err!=LIS_SUCCESS || used!=LIS_TRUE ||
-                   core_size!=5)
+                   core_size!=4)
                 {
                     fprintf(stderr,
                         "star-Schur OOM completed with invalid result\n");
@@ -2137,7 +2137,7 @@ check_star_schur_terminal(void)
     used=-1; core_size=-1;
     err=lis_precon_mfamg_star_schur_for_test(
         A,aggregate,STAR_N-3,8,b,x,&used,&core_size);
-    if(err || used!=LIS_TRUE || core_size!=5)
+    if(err || used!=LIS_TRUE || core_size!=4)
     {
         fprintf(stderr,
                 "star-Schur selection failed: rc=%d used=%d core=%d\n",
