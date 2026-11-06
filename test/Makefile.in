@@ -144,8 +144,8 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) \
 	testmatrixautosession$(EXEEXT) testvectorreal64$(EXEEXT) \
 	benchautojacobirefresh$(EXEEXT) testabi$(EXEEXT) \
-	testgesolvepair$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
-	$(am__EXEEXT_3) $(am__EXEEXT_4) test_krylov_modes$(EXEEXT) \
+	testgesolvepair$(EXEEXT) $(am__EXEEXT_2) $(am__EXEEXT_3) \
+	$(am__EXEEXT_4) $(am__EXEEXT_5) test_krylov_modes$(EXEEXT) \
 	test_krylov_sparse$(EXEEXT) test_krylov_regression$(EXEEXT) \
 	test_krylov_lis$(EXEEXT) test_krylov_semidefinite$(EXEEXT) \
 	test_krylov_stress$(EXEEXT) test_krylov_inertia$(EXEEXT) \
@@ -175,6 +175,13 @@ F77LINK = $(LIBTOOL) $(AM_V_lt) --tag=F77 $(AM_LIBTOOLFLAGS) \
 @ENABLE_HALF_REAL_DOUBLE_TRUE@         testhalfilukmemory$(EXEEXT) testhalfiluksimd$(EXEEXT) \
 @ENABLE_HALF_REAL_DOUBLE_TRUE@         testhalfilut$(EXEEXT)
 
+@ENABLE_OOM_TESTS_TRUE@check_PROGRAMS = testoomalloc$(EXEEXT) \
+@ENABLE_OOM_TESTS_TRUE@	testoomilu$(EXEEXT) \
+@ENABLE_OOM_TESTS_TRUE@	testoomdiag$(EXEEXT) \
+@ENABLE_OOM_TESTS_TRUE@	testoomiluc$(EXEEXT) $(am__EXEEXT_1)
+@ENABLE_OOM_TESTS_TRUE@am__append_6 = testoomalloc$(EXEEXT) testoomilu$(EXEEXT) testoomdiag$(EXEEXT) testoomiluc$(EXEEXT)
+@ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@am__append_7 = testoommpiscale
+@ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@am__append_8 = testoommpiscale$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
@@ -190,17 +197,18 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(testdir)" \
 	"$(DESTDIR)$(testdir)" "$(DESTDIR)$(testdir)"
-@ENABLE_HALF_REAL_DOUBLE_TRUE@am__EXEEXT_1 = testhalfstorage$(EXEEXT) \
+@ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@am__EXEEXT_1 = testoommpiscale$(EXEEXT)
+@ENABLE_HALF_REAL_DOUBLE_TRUE@am__EXEEXT_2 = testhalfstorage$(EXEEXT) \
 @ENABLE_HALF_REAL_DOUBLE_TRUE@	testhalfprobe$(EXEEXT) \
 @ENABLE_HALF_REAL_DOUBLE_TRUE@	testhalfdispatch$(EXEEXT) \
 @ENABLE_HALF_REAL_DOUBLE_TRUE@	testhalfilukmemory$(EXEEXT) \
 @ENABLE_HALF_REAL_DOUBLE_TRUE@	testhalfiluksimd$(EXEEXT) \
 @ENABLE_HALF_REAL_DOUBLE_TRUE@	testhalfilut$(EXEEXT)
-@ENABLE_FORTRAN_TRUE@am__EXEEXT_2 = etest1f$(EXEEXT) etest4f$(EXEEXT) \
+@ENABLE_FORTRAN_TRUE@am__EXEEXT_3 = etest1f$(EXEEXT) etest4f$(EXEEXT) \
 @ENABLE_FORTRAN_TRUE@	test1f$(EXEEXT) test4f$(EXEEXT) \
 @ENABLE_FORTRAN_TRUE@	test7f$(EXEEXT)
-@ENABLE_F90_TRUE@am__EXEEXT_3 = test2f$(EXEEXT) test6f$(EXEEXT)
-@ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__EXEEXT_4 = test8f$(EXEEXT)
+@ENABLE_F90_TRUE@am__EXEEXT_4 = test2f$(EXEEXT) test6f$(EXEEXT)
+@ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__EXEEXT_5 = test8f$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(test_PROGRAMS)
 am_benchautojacobirefresh_OBJECTS = benchautojacobirefresh.$(OBJEXT)
 benchautojacobirefresh_OBJECTS = $(am_benchautojacobirefresh_OBJECTS)
@@ -701,6 +709,32 @@ am_testompelastic_OBJECTS = testompelastic.$(OBJEXT)
 testompelastic_OBJECTS = $(am_testompelastic_OBJECTS)
 testompelastic_LDADD = $(LDADD)
 testompelastic_DEPENDENCIES =
+am__testoomalloc_SOURCES_DIST = testoomalloc.c
+@ENABLE_OOM_TESTS_TRUE@am_testoomalloc_OBJECTS =  \
+@ENABLE_OOM_TESTS_TRUE@	testoomalloc.$(OBJEXT)
+testoomalloc_OBJECTS = $(am_testoomalloc_OBJECTS)
+testoomalloc_LDADD = $(LDADD)
+testoomalloc_DEPENDENCIES =
+am__testoomdiag_SOURCES_DIST = testoomdiag.c
+@ENABLE_OOM_TESTS_TRUE@am_testoomdiag_OBJECTS = testoomdiag.$(OBJEXT)
+testoomdiag_OBJECTS = $(am_testoomdiag_OBJECTS)
+testoomdiag_LDADD = $(LDADD)
+testoomdiag_DEPENDENCIES =
+am__testoomilu_SOURCES_DIST = testoomilu.c
+@ENABLE_OOM_TESTS_TRUE@am_testoomilu_OBJECTS = testoomilu.$(OBJEXT)
+testoomilu_OBJECTS = $(am_testoomilu_OBJECTS)
+testoomilu_LDADD = $(LDADD)
+testoomilu_DEPENDENCIES =
+am__testoomiluc_SOURCES_DIST = testoomiluc.c
+@ENABLE_OOM_TESTS_TRUE@am_testoomiluc_OBJECTS = testoomiluc.$(OBJEXT)
+testoomiluc_OBJECTS = $(am_testoomiluc_OBJECTS)
+testoomiluc_LDADD = $(LDADD)
+testoomiluc_DEPENDENCIES =
+am__testoommpiscale_SOURCES_DIST = testoommpiscale.c
+@ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@am_testoommpiscale_OBJECTS = testoommpiscale.$(OBJEXT)
+testoommpiscale_OBJECTS = $(am_testoommpiscale_OBJECTS)
+testoommpiscale_LDADD = $(LDADD)
+testoommpiscale_DEPENDENCIES =
 am_testoperator_OBJECTS = testoperator.$(OBJEXT)
 testoperator_OBJECTS = $(am_testoperator_OBJECTS)
 testoperator_LDADD = $(LDADD)
@@ -956,7 +990,9 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testnearnullspace.Po \
 	./$(DEPDIR)/testnullspacecandidates.Po \
 	./$(DEPDIR)/testnullspacelift.Po ./$(DEPDIR)/testompelastic.Po \
-	./$(DEPDIR)/testoperator.Po \
+	./$(DEPDIR)/testoomalloc.Po ./$(DEPDIR)/testoomdiag.Po \
+	./$(DEPDIR)/testoomilu.Po ./$(DEPDIR)/testoomiluc.Po \
+	./$(DEPDIR)/testoommpiscale.Po ./$(DEPDIR)/testoperator.Po \
 	./$(DEPDIR)/testoperatorrowprecon.Po \
 	./$(DEPDIR)/testparamupdate.Po ./$(DEPDIR)/testprebuiltuser.Po \
 	./$(DEPDIR)/testpreconlifecycle.Po \
@@ -1077,11 +1113,13 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testnearnullspace_SOURCES) \
 	$(testnullspacecandidates_SOURCES) \
 	$(testnullspacelift_SOURCES) $(testompelastic_SOURCES) \
-	$(testoperator_SOURCES) $(testoperatorrowprecon_SOURCES) \
-	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
-	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
-	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
-	$(testprojectedeigen_SOURCES) \
+	$(testoomalloc_SOURCES) $(testoomdiag_SOURCES) \
+	$(testoomilu_SOURCES) $(testoomiluc_SOURCES) \
+	$(testoommpiscale_SOURCES) $(testoperator_SOURCES) \
+	$(testoperatorrowprecon_SOURCES) $(testparamupdate_SOURCES) \
+	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
+	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
+	$(testpreconreuse_SOURCES) $(testprojectedeigen_SOURCES) \
 	$(testprojectedhermitian_SOURCES) $(testrecovery_SOURCES) \
 	$(testrepeatedsystems_SOURCES) testrhistoryerror.c \
 	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
@@ -1158,11 +1196,14 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testnearnullspace_SOURCES) \
 	$(testnullspacecandidates_SOURCES) \
 	$(testnullspacelift_SOURCES) $(testompelastic_SOURCES) \
-	$(testoperator_SOURCES) $(testoperatorrowprecon_SOURCES) \
-	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
-	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
-	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
-	$(testprojectedeigen_SOURCES) \
+	$(am__testoomalloc_SOURCES_DIST) \
+	$(am__testoomdiag_SOURCES_DIST) $(am__testoomilu_SOURCES_DIST) \
+	$(am__testoomiluc_SOURCES_DIST) \
+	$(am__testoommpiscale_SOURCES_DIST) $(testoperator_SOURCES) \
+	$(testoperatorrowprecon_SOURCES) $(testparamupdate_SOURCES) \
+	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
+	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
+	$(testpreconreuse_SOURCES) $(testprojectedeigen_SOURCES) \
 	$(testprojectedhermitian_SOURCES) $(testrecovery_SOURCES) \
 	$(testrepeatedsystems_SOURCES) testrhistoryerror.c \
 	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
@@ -1769,7 +1810,8 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	test_krylov_api_contract$(EXEEXT) \
 	test_krylov_residual_reuse$(EXEEXT) \
 	test_krylov_both_ends$(EXEEXT) \
-	test_krylov_be_lock_order$(EXEEXT) testilucbsrsmoke$(EXEEXT)
+	test_krylov_be_lock_order$(EXEEXT) testilucbsrsmoke$(EXEEXT) \
+	$(am__append_6) $(am__append_8)
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
 testgesolvepair_SOURCES = testgesolvepair.c
@@ -1794,6 +1836,11 @@ test_krylov_both_ends_SOURCES = test_krylov_both_ends.c
 test_krylov_be_lock_order_SOURCES = test_krylov_be_lock_order.c
 test_krylov_be_lock_order_LDADD = -lm
 testilucbsrsmoke_SOURCES = testilucbsrsmoke.c
+@ENABLE_OOM_TESTS_TRUE@testoomalloc_SOURCES = testoomalloc.c
+@ENABLE_OOM_TESTS_TRUE@testoomilu_SOURCES = testoomilu.c
+@ENABLE_OOM_TESTS_TRUE@testoomdiag_SOURCES = testoomdiag.c
+@ENABLE_OOM_TESTS_TRUE@testoomiluc_SOURCES = testoomiluc.c
+@ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@testoommpiscale_SOURCES = testoommpiscale.c
 all: all-am
 
 .SUFFIXES:
@@ -1871,6 +1918,10 @@ uninstall-binPROGRAMS:
 clean-binPROGRAMS:
 	$(am__rm_f) $(bin_PROGRAMS)
 	test -z "$(EXEEXT)" || $(am__rm_f) $(bin_PROGRAMS:$(EXEEXT)=)
+
+clean-checkPROGRAMS:
+	$(am__rm_f) $(check_PROGRAMS)
+	test -z "$(EXEEXT)" || $(am__rm_f) $(check_PROGRAMS:$(EXEEXT)=)
 install-testPROGRAMS: $(test_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	@list='$(test_PROGRAMS)'; test -n "$(testdir)" || list=; \
@@ -2388,6 +2439,26 @@ testompelastic$(EXEEXT): $(testompelastic_OBJECTS) $(testompelastic_DEPENDENCIES
 	@rm -f testompelastic$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testompelastic_OBJECTS) $(testompelastic_LDADD) $(LIBS)
 
+testoomalloc$(EXEEXT): $(testoomalloc_OBJECTS) $(testoomalloc_DEPENDENCIES) $(EXTRA_testoomalloc_DEPENDENCIES) 
+	@rm -f testoomalloc$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testoomalloc_OBJECTS) $(testoomalloc_LDADD) $(LIBS)
+
+testoomdiag$(EXEEXT): $(testoomdiag_OBJECTS) $(testoomdiag_DEPENDENCIES) $(EXTRA_testoomdiag_DEPENDENCIES) 
+	@rm -f testoomdiag$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testoomdiag_OBJECTS) $(testoomdiag_LDADD) $(LIBS)
+
+testoomilu$(EXEEXT): $(testoomilu_OBJECTS) $(testoomilu_DEPENDENCIES) $(EXTRA_testoomilu_DEPENDENCIES) 
+	@rm -f testoomilu$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testoomilu_OBJECTS) $(testoomilu_LDADD) $(LIBS)
+
+testoomiluc$(EXEEXT): $(testoomiluc_OBJECTS) $(testoomiluc_DEPENDENCIES) $(EXTRA_testoomiluc_DEPENDENCIES) 
+	@rm -f testoomiluc$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testoomiluc_OBJECTS) $(testoomiluc_LDADD) $(LIBS)
+
+testoommpiscale$(EXEEXT): $(testoommpiscale_OBJECTS) $(testoommpiscale_DEPENDENCIES) $(EXTRA_testoommpiscale_DEPENDENCIES) 
+	@rm -f testoommpiscale$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testoommpiscale_OBJECTS) $(testoommpiscale_LDADD) $(LIBS)
+
 testoperator$(EXEEXT): $(testoperator_OBJECTS) $(testoperator_DEPENDENCIES) $(EXTRA_testoperator_DEPENDENCIES) 
 	@rm -f testoperator$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testoperator_OBJECTS) $(testoperator_LDADD) $(LIBS)
@@ -2668,6 +2739,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testnullspacecandidates.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testnullspacelift.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testompelastic.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoomalloc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoomdiag.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoomilu.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoomiluc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoommpiscale.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoperator.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoperatorrowprecon.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testparamupdate.Po@am__quote@ # am--include-marker
@@ -2975,7 +3051,7 @@ echo "information.  Thanks.";                                                \
 	fi;								\
 	$$success || exit 1
 
-check-TESTS: 
+check-TESTS: $(check_PROGRAMS)
 	@$(am__rm_f) $(RECHECK_LOGS)
 	@$(am__rm_f) $(RECHECK_LOGS:.log=.trs)
 	@$(am__rm_f) $(TEST_SUITE_LOG)
@@ -2984,7 +3060,7 @@ check-TESTS:
 	log_list=`echo $$log_list`; \
 	$(MAKE) $(AM_MAKEFLAGS) $(TEST_SUITE_LOG) TEST_LOGS="$$log_list"; \
 	exit $$?;
-recheck: all 
+recheck: all $(check_PROGRAMS)
 	@$(am__rm_f) $(TEST_SUITE_LOG)
 	@set +e; $(am__set_TESTS_bases); \
 	bases=`for i in $$bases; do echo $$i; done \
@@ -3674,6 +3750,41 @@ testilucbsrsmoke.log: testilucbsrsmoke$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testoomalloc.log: testoomalloc$(EXEEXT)
+	@p='testoomalloc$(EXEEXT)'; \
+	b='testoomalloc'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testoomilu.log: testoomilu$(EXEEXT)
+	@p='testoomilu$(EXEEXT)'; \
+	b='testoomilu'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testoomdiag.log: testoomdiag$(EXEEXT)
+	@p='testoomdiag$(EXEEXT)'; \
+	b='testoomdiag'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testoomiluc.log: testoomiluc$(EXEEXT)
+	@p='testoomiluc$(EXEEXT)'; \
+	b='testoomiluc'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testoommpiscale.log: testoommpiscale$(EXEEXT)
+	@p='testoommpiscale$(EXEEXT)'; \
+	b='testoommpiscale'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -3723,6 +3834,7 @@ distdir-am: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
+	$(MAKE) $(AM_MAKEFLAGS) $(check_PROGRAMS)
 	$(MAKE) $(AM_MAKEFLAGS) check-TESTS
 check: check-am
 all-am: Makefile $(PROGRAMS) $(SCRIPTS) $(DATA)
@@ -3764,8 +3876,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-binPROGRAMS clean-generic clean-libtool \
-	clean-testPROGRAMS mostlyclean-am
+clean-am: clean-binPROGRAMS clean-checkPROGRAMS clean-generic \
+	clean-libtool clean-testPROGRAMS mostlyclean-am
 
 distclean: distclean-am
 	-rm -f ./$(DEPDIR)/benchautojacobirefresh.Po
@@ -3871,6 +3983,11 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testnullspacecandidates.Po
 	-rm -f ./$(DEPDIR)/testnullspacelift.Po
 	-rm -f ./$(DEPDIR)/testompelastic.Po
+	-rm -f ./$(DEPDIR)/testoomalloc.Po
+	-rm -f ./$(DEPDIR)/testoomdiag.Po
+	-rm -f ./$(DEPDIR)/testoomilu.Po
+	-rm -f ./$(DEPDIR)/testoomiluc.Po
+	-rm -f ./$(DEPDIR)/testoommpiscale.Po
 	-rm -f ./$(DEPDIR)/testoperator.Po
 	-rm -f ./$(DEPDIR)/testoperatorrowprecon.Po
 	-rm -f ./$(DEPDIR)/testparamupdate.Po
@@ -4054,6 +4171,11 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testnullspacecandidates.Po
 	-rm -f ./$(DEPDIR)/testnullspacelift.Po
 	-rm -f ./$(DEPDIR)/testompelastic.Po
+	-rm -f ./$(DEPDIR)/testoomalloc.Po
+	-rm -f ./$(DEPDIR)/testoomdiag.Po
+	-rm -f ./$(DEPDIR)/testoomilu.Po
+	-rm -f ./$(DEPDIR)/testoomiluc.Po
+	-rm -f ./$(DEPDIR)/testoommpiscale.Po
 	-rm -f ./$(DEPDIR)/testoperator.Po
 	-rm -f ./$(DEPDIR)/testoperatorrowprecon.Po
 	-rm -f ./$(DEPDIR)/testparamupdate.Po
@@ -4110,17 +4232,17 @@ uninstall-am: uninstall-binPROGRAMS uninstall-testDATA \
 .MAKE: check-am install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-TESTS \
-	check-am clean clean-binPROGRAMS clean-generic clean-libtool \
-	clean-testPROGRAMS cscopelist-am ctags ctags-am distclean \
-	distclean-compile distclean-generic distclean-libtool \
-	distclean-tags distdir dvi dvi-am html html-am info info-am \
-	install install-am install-binPROGRAMS install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip install-testDATA \
-	install-testPROGRAMS install-testSCRIPTS installcheck \
-	installcheck-am installdirs maintainer-clean \
+	check-am clean clean-binPROGRAMS clean-checkPROGRAMS \
+	clean-generic clean-libtool clean-testPROGRAMS cscopelist-am \
+	ctags ctags-am distclean distclean-compile distclean-generic \
+	distclean-libtool distclean-tags distdir dvi dvi-am html \
+	html-am info info-am install install-am install-binPROGRAMS \
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	install-testDATA install-testPROGRAMS install-testSCRIPTS \
+	installcheck installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	recheck tags tags-am uninstall uninstall-am \

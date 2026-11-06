@@ -669,6 +669,8 @@ enable_quad
 enable_saamg
 enable_omp
 enable_mpi
+ENABLE_OOM_TESTS_FALSE
+ENABLE_OOM_TESTS_TRUE
 DISABLE_TEST_FALSE
 DISABLE_TEST_TRUE
 ENABLE_SSE2_FALSE
@@ -850,6 +852,7 @@ enable_longlong
 enable_longdouble
 enable_complex
 enable_test
+enable_oom_tests
 with_library_suffix
 enable_dependency_tracking
 enable_shared
@@ -1534,6 +1537,8 @@ Optional Features:
   --enable-longdouble     enable long double support [[default=no]]
   --enable-complex        enable complex scalar support [[default=no]]
   --enable-test           enable test programs [[default=yes]]
+  --enable-oom-tests      enable native out-of-memory fault injection tests
+                          [[default=no]]
   --enable-dependency-tracking
                           do not reject slow dependency extractors
   --disable-dependency-tracking
@@ -4340,6 +4345,27 @@ then :
 fi
 
 
+# Opt-in allocation-failure injection for native C regression tests.
+# Check whether --enable-oom-tests was given.
+if test ${enable_oom_tests+y}
+then :
+  enableval=$enable_oom_tests; enable_oom_tests="$enableval"
+else case e in #(
+  e) enable_oom_tests=no ;;
+esac
+fi
+
+case $enable_oom_tests in #(
+  yes) :
+
+printf "%s\n" "#define LIS_TEST_OOM 1" >>confdefs.h
+ ;; #(
+  no) :
+     ;; #(
+  *) :
+    as_fn_error $? "--enable-oom-tests accepts yes or no" "$LINENO" 5 ;;
+esac
+
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for a library suffix to use" >&5
 printf %s "checking for a library suffix to use... " >&6; }
 
@@ -6018,7 +6044,7 @@ _ACEOF
 	# flags.
 	ac_save_CFLAGS=$CFLAGS
 	CFLAGS="$CFLAGS $ac_verb"
-	(eval echo $as_me:6021: \"$ac_link\") >&5
+	(eval echo $as_me:6047: \"$ac_link\") >&5
 	ac_c_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 	echo "$ac_c_v_output" >&5
 	CFLAGS=$ac_save_CFLAGS
@@ -6094,7 +6120,7 @@ _ACEOF
 	# flags.
 	ac_save_CFLAGS=$CFLAGS
 	CFLAGS="$CFLAGS $ac_cv_prog_c_v"
-	(eval echo $as_me:6097: \"$ac_link\") >&5
+	(eval echo $as_me:6123: \"$ac_link\") >&5
 	ac_c_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 	echo "$ac_c_v_output" >&5
 	CFLAGS=$ac_save_CFLAGS
@@ -23244,6 +23270,14 @@ else
   DISABLE_TEST_FALSE=
 fi
 
+ if test "x$enable_oom_tests" = "xyes"; then
+  ENABLE_OOM_TESTS_TRUE=
+  ENABLE_OOM_TESTS_FALSE='#'
+else
+  ENABLE_OOM_TESTS_TRUE='#'
+  ENABLE_OOM_TESTS_FALSE=
+fi
+
 
 
 
@@ -23677,6 +23711,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${DISABLE_TEST_TRUE}" && test -z "${DISABLE_TEST_FALSE}"; then
   as_fn_error $? "conditional \"DISABLE_TEST\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_OOM_TESTS_TRUE}" && test -z "${ENABLE_OOM_TESTS_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_OOM_TESTS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
