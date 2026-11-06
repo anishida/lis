@@ -618,6 +618,53 @@ int main(int argc, char **argv)
         }
     }
 
+    /*
+     * MFAMG block size is a parsed scalar, not an options[] element.
+     * A scalar-only profile change must be detected and installed.
+     */
+    if(!failed)
+    {
+        changed = -1;
+        err = lis_solver_set_option_replace_if_changed(
+            "-i cg -p none -maxiter 123 -mfamg_block_size 3",
+            solver,
+            &changed);
+
+        if(err || changed!=LIS_TRUE || solver->mfamg_block_size!=3)
+        {
+            fprintf(stderr,"MFAMG scalar-only profile change was lost\n");
+            failed = 1;
+        }
+    }
+
+    /* Equivalent options in a different order must not cause a reset. */
+    if(!failed)
+    {
+        changed = -1;
+        err = lis_solver_set_option_replace_if_changed(
+            "-mfamg_block_size 3 -maxiter 123 -p none -i cg",
+            solver,
+            &changed);
+
+        if(err || changed!=LIS_FALSE || solver->mfamg_block_size!=3)
+        {
+            fprintf(stderr,"equivalent MFAMG block profile caused a change\n");
+            failed = 1;
+        }
+    }
+
+    /* Omission in a full replacement restores the default block size. */
+    if(!failed)
+    {
+        err = lis_solver_set_option_replace(
+            "-i cg -p none -maxiter 123",solver);
+        if(err || solver->mfamg_block_size!=1)
+        {
+            fprintf(stderr,"MFAMG block-size default was not restored\n");
+            failed = 1;
+        }
+    }
+
     /* Invalid input must report no completed change. */
     if(!failed)
     {

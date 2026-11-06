@@ -82,6 +82,9 @@ lis_solver_set_option_replace(
     for(i=0;i<LIS_PARAMS_LEN;i++)
         solver->params[i] = fresh->params[i];
 
+    /* MFAMG block-size option merged from upstream #200. */
+    solver->mfamg_block_size = fresh->mfamg_block_size;
+
     /* GCRO-DR configuration is stored outside options[] / params[]. */
     solver->recycle_target_dim = fresh->recycle_target_dim;
     solver->recycle_keep_threshold = fresh->recycle_keep_threshold;
@@ -176,6 +179,9 @@ lis_solver_set_option_replace_if_changed(
             }
         }
     }
+
+    if(!different && solver->mfamg_block_size!=fresh->mfamg_block_size)
+        different = LIS_TRUE;
 
     /* Include solver-specific GCRO-DR profile fields in comparisons. */
     if(!different &&
