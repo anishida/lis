@@ -2353,6 +2353,167 @@ done:
 #endif
 }
 
+
+/* Row-order adversary: hub is the final row, not the first leaf.
+ * Degree-aware selection needs exactly one promotion, not 37.
+ */
+static int
+check_star_schur_high_index_hub(void)
+{
+#ifndef _COMPLEX
+    enum { N=40, HUB=39 };
+    LIS_MATRIX A=NULL;
+    LIS_VECTOR b=NULL,x=NULL,exact=NULL;
+    LIS_INT ag[N],i,err=LIS_SUCCESS,used=-1,core_size=-1;
+    LIS_REAL worst=0.0,e;
+    int failed=0;
+
+    err=lis_matrix_create(LIS_COMM_WORLD,&A);
+    if(err) goto fail;
+    err=lis_matrix_set_size(A,0,N);
+    if(err) goto fail;
+    for(i=0;i<N;i++)
+    {
+        ag[i]=i<2?0:i-1;
+        err=lis_matrix_set_value(
+            LIS_INS_VALUE,i,i,(LIS_SCALAR)10.0,A);
+        if(err) goto fail;
+        if(i>=2 && i<HUB)
+        {
+            err=lis_matrix_set_value(
+                LIS_INS_VALUE,i,HUB,(LIS_SCALAR)-0.3,A);
+            if(err) goto fail;
+            err=lis_matrix_set_value(
+                LIS_INS_VALUE,HUB,i,(LIS_SCALAR)-0.2,A);
+            if(err) goto fail;
+        }
+    }
+    err=lis_matrix_assemble(A);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A,&b);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A,&x);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A,&exact);
+    if(err) goto fail;
+    for(i=0;i<N;i++)exact->value[i]=(LIS_SCALAR)(1.0+i*0.003);
+    err=lis_matvec(A,exact,b);
+    if(err) goto fail;
+
+    err=lis_precon_mfamg_star_schur_for_test(
+        A,ag,N-1,6,b,x,&used,&core_size);
+    if(err || used!=LIS_TRUE || core_size!=3)
+    {
+        fprintf(stderr,
+            "high-index hub rejected: rc=%d used=%d core=%d\n",
+            (int)err,(int)used,(int)core_size);
+        failed=1; goto done;
+    }
+    for(i=0;i<N;i++)
+    {
+        e=fabs((double)(x->value[i]-exact->value[i]));
+        if(e>worst)worst=e;
+    }
+    if(worst>1.0e-10)
+    {
+        fprintf(stderr,"high-index hub error %.12e\n",(double)worst);
+        failed=1;
+    }
+    goto done;
+fail:
+    fprintf(stderr,"high-index hub setup failed rc=%d\n",(int)err);
+    failed=1;
+done:
+    if(exact)lis_vector_destroy(exact);
+    if(x)lis_vector_destroy(x);
+    if(b)lis_vector_destroy(b);
+    if(A)lis_matrix_destroy(A);
+    if(!failed)printf("MFAMG STAR SCHUR HIGH-INDEX HUB TEST PASSED\n");
+    return failed;
+#else
+    return 0;
+#endif
+}
+
+/* Scale invariant pivot criterion: S=O(1e-20) is nonsingular. */
+static int
+check_star_schur_tiny_scale(void)
+{
+#ifndef _COMPLEX
+    enum { N=6 };
+    LIS_MATRIX A=NULL;
+    LIS_VECTOR b=NULL,x=NULL,exact=NULL;
+    LIS_INT ag[N]={0,0,1,2,3,4};
+    LIS_INT i,err=LIS_SUCCESS,used=-1,core_size=-1;
+    LIS_REAL worst=0.0,e;
+    const LIS_SCALAR scale=(LIS_SCALAR)1.0e-20;
+    int failed=0;
+
+    err=lis_matrix_create(LIS_COMM_WORLD,&A);
+    if(err) goto fail;
+    err=lis_matrix_set_size(A,0,N);
+    if(err) goto fail;
+    for(i=0;i<N;i++)
+    {
+        err=lis_matrix_set_value(
+            LIS_INS_VALUE,i,i,(LIS_SCALAR)4.0*scale,A);
+        if(err) goto fail;
+        if(i>=2)
+        {
+            err=lis_matrix_set_value(
+                LIS_INS_VALUE,i,i%2,(LIS_SCALAR)-0.2*scale,A);
+            if(err) goto fail;
+            err=lis_matrix_set_value(
+                LIS_INS_VALUE,i%2,i,(LIS_SCALAR)-0.3*scale,A);
+            if(err) goto fail;
+        }
+    }
+    err=lis_matrix_assemble(A);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A,&b);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A,&x);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A,&exact);
+    if(err) goto fail;
+    for(i=0;i<N;i++)exact->value[i]=(LIS_SCALAR)(1.0+0.125*i);
+    err=lis_matvec(A,exact,b);
+    if(err) goto fail;
+    err=lis_precon_mfamg_star_schur_for_test(
+        A,ag,5,4,b,x,&used,&core_size);
+    if(err || used!=LIS_TRUE || core_size!=2)
+    {
+        fprintf(stderr,
+            "tiny-scale Schur rejected: rc=%d used=%d core=%d\n",
+            (int)err,(int)used,(int)core_size);
+        failed=1; goto done;
+    }
+    for(i=0;i<N;i++)
+    {
+        e=fabs((double)(x->value[i]-exact->value[i]));
+        if(e>worst)worst=e;
+    }
+    if(worst>1.0e-10)
+    {
+        fprintf(stderr,"tiny-scale Schur error %.12e\n",(double)worst);
+        failed=1;
+    }
+    goto done;
+fail:
+    fprintf(stderr,"tiny-scale Schur setup failed rc=%d\n",(int)err);
+    failed=1;
+done:
+    if(exact)lis_vector_destroy(exact);
+    if(x)lis_vector_destroy(x);
+    if(b)lis_vector_destroy(b);
+    if(A)lis_matrix_destroy(A);
+    if(!failed)printf("MFAMG STAR SCHUR TINY-SCALE TEST PASSED\n");
+    return failed;
+#else
+    return 0;
+#endif
+}
+
 static int
 run_serial(void)
 {
@@ -2407,6 +2568,8 @@ run_serial(void)
     failed |= check_star_schur_terminal();
     failed |= check_star_schur_large();
     failed |= check_star_schur_singular();
+    failed |= check_star_schur_high_index_hub();
+    failed |= check_star_schur_tiny_scale();
 
     lis_matrix_destroy(
         A);
