@@ -13,6 +13,7 @@
 struct LIS_MFAMG_STAR_SOLVER
 {
     LIS_INT n, c, l;
+    LIS_MATRIX A; /* borrowed terminal matrix, owned by the hierarchy */
     LIS_INT *core_map, *leaf_map, *core_rows, *leaf_rows, *pivots;
     LIS_SCALAR *d_inv, *f, *g, *schur, *lu, *rhs, *sol;
 };
@@ -117,7 +118,7 @@ lis_mfamg_star_prepare(
                                                  "mfamg_star::state");
     if(s==NULL) { err=LIS_OUT_OF_MEMORY; goto done; }
     memset(s,0,sizeof(*s));
-    s->n=A->n; s->c=c; s->l=l;
+    s->n=A->n; s->c=c; s->l=l; s->A=A;
 #define STAR_ALLOC(field,count,type) do { \
     s->field=(type *)lis_malloc((size_t)(count)*sizeof(type), \
                                 "mfamg_star::" #field); \
@@ -262,6 +263,45 @@ lis_mfamg_star_solve(
     }
     for(i=0;i<s->c;i++)
         x->value[s->core_rows[i]]=s->sol[i];
+
+#ifndef _COMPLEX
+    /*
+     * Check the original coarse operator, not only the reduced Schur
+     * equations.  A poor factorization must never silently return an
+     * inaccurate preconditioner correction.
+     */
+    if(s->A==NULL || s->A->n!=s->n ||
+       s->A->ptr==NULL || s->A->index==NULL ||
+       s->A->value==NULL)
+        return LIS_ERR_ILL_ARG;
+
+    for(i=0;i<s->n;i++)
+    {
+        LIS_SCALAR ax=(LIS_SCALAR)0;
+        LIS_REAL scale=fabs((double)b->value[i]);
+        LIS_REAL discrepancy;
+        LIS_INT p;
+        for(p=s->A->ptr[i];p<s->A->ptr[i+1];p++)
+        {
+            j=s->A->index[p];
+            if(j<0 || j>=s->n) return LIS_ERR_ILL_ARG;
+            ax+=s->A->value[p]*x->value[j];
+            scale+=fabs((double)s->A->value[p])*
+                   fabs((double)x->value[j]);
+        }
+        discrepancy=fabs((double)(b->value[i]-ax));
+        if(!isfinite((double)scale) ||
+           !isfinite((double)discrepancy) ||
+           (scale==0.0 ? discrepancy!=0.0 :
+                           discrepancy>1.0e-9*scale))
+        {
+            LIS_SETERR(LIS_BREAKDOWN,
+                "MFAMG star-Schur correction failed backward-error check\n");
+            return LIS_BREAKDOWN;
+        }
+    }
+#endif
+
     return LIS_SUCCESS;
 }
 
