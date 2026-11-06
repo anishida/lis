@@ -82,7 +82,7 @@ lis_solver_set_option_replace(
     for(i=0;i<LIS_PARAMS_LEN;i++)
         solver->params[i] = fresh->params[i];
 
-    /* MFAMG block-size option merged from upstream #200. */
+    /* This parsed option is stored outside the public options[] array. */
     solver->mfamg_block_size = fresh->mfamg_block_size;
 
     /* GCRO-DR configuration is stored outside options[] / params[]. */
