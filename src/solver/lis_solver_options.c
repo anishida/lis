@@ -85,6 +85,11 @@ lis_solver_set_option_replace(
     /* This parsed option is stored outside the public options[] array. */
     solver->mfamg_block_size = fresh->mfamg_block_size;
 
+    /* GCRO-DR configuration is stored outside options[] / params[]. */
+    solver->recycle_target_dim = fresh->recycle_target_dim;
+    solver->recycle_keep_threshold = fresh->recycle_keep_threshold;
+    solver->recycle_reject_threshold = fresh->recycle_reject_threshold;
+
     solver->precision = solver->options[LIS_OPTIONS_PRECISION];
     solver->setup = LIS_FALSE;
     solver->retcode = LIS_SUCCESS;
@@ -176,6 +181,13 @@ lis_solver_set_option_replace_if_changed(
     }
 
     if(!different && solver->mfamg_block_size!=fresh->mfamg_block_size)
+        different = LIS_TRUE;
+
+    /* Include solver-specific GCRO-DR profile fields in comparisons. */
+    if(!different &&
+       (solver->recycle_target_dim!=fresh->recycle_target_dim ||
+        solver->recycle_keep_threshold!=fresh->recycle_keep_threshold ||
+        solver->recycle_reject_threshold!=fresh->recycle_reject_threshold))
         different = LIS_TRUE;
 
     lis_solver_destroy(fresh);
