@@ -30,9 +30,10 @@ test_PROGRAMS = testesubspaceretry etest1 etest2 etest3 etest4 etest5 etest5b et
 	testblockorthogonal testblockrank
 
 # Keep optional session tests separate from the long test_PROGRAMS list.
-test_PROGRAMS += testmatrixautosession testvectorreal64 benchautojacobirefresh testabi testgesolvepair
+test_PROGRAMS += testmatrixautosession testvectorreal64 benchautojacobirefresh testabi testgesolvepair testrcoalloc
 
 testabi_SOURCES = testabi.c
+testrcoalloc_SOURCES = testrcoalloc.c
 
 testgcrodroptions_SOURCES = testgcrodroptions.c
 testfeastfoundation_SOURCES = testfeastfoundation.c
@@ -249,7 +250,7 @@ TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEX
         testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) testnullspacecandidates$(EXEEXT) testesolverselection$(EXEEXT)
 
 # Explicitly run all new regression binaries under make check.
-TESTS += testmatrixautosession$(EXEEXT) testvectorreal64$(EXEEXT) testgesolvepair$(EXEEXT) testabi$(EXEEXT)
+TESTS += testmatrixautosession$(EXEEXT) testvectorreal64$(EXEEXT) testgesolvepair$(EXEEXT) testabi$(EXEEXT) testrcoalloc$(EXEEXT)
 
 if ENABLE_HALF_REAL_DOUBLE
 TESTS += testhalfstorage$(EXEEXT) testhalfprobe$(EXEEXT) testhalfdispatch$(EXEEXT) \

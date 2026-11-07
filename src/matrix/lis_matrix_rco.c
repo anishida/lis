@@ -40,6 +40,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <math.h>
+#include <stdint.h>
 #ifdef _OPENMP
 	#include <omp.h>
 #endif
@@ -141,6 +142,18 @@ LIS_INT lis_matrix_create_rco(LIS_INT local_n, LIS_INT global_n, LIS_Comm comm, 
 	return LIS_SUCCESS;
 }
 
+/* Reject malformed or unrepresentable allocation sizes before multiplying.
+ * The check is portable across 32/64-bit LIS_INT and size_t builds.
+ */
+static LIS_INT
+lis_matrix_rco_check_size(LIS_INT count,size_t element_size)
+{
+    if(count<0) return LIS_ERR_ILL_ARG;
+    if((uintmax_t)count > (uintmax_t)SIZE_MAX / element_size)
+        return LIS_OUT_OF_MEMORY;
+    return LIS_SUCCESS;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_malloc_rco"
 LIS_INT lis_matrix_malloc_rco(LIS_INT n, LIS_INT nnz[], LIS_INT **row, LIS_INT ***index, LIS_SCALAR ***value)
@@ -150,11 +163,30 @@ LIS_INT lis_matrix_malloc_rco(LIS_INT n, LIS_INT nnz[], LIS_INT **row, LIS_INT *
 	LIS_SCALAR **w_value = NULL;
 
 	LIS_DEBUG_FUNC_IN;
+	if(row==NULL || index==NULL || value==NULL)
+		return LIS_ERR_ILL_ARG;
 	*row   = NULL;
 	*index = NULL;
 	*value = NULL;
 
-	w_row = (LIS_INT *)lis_malloc(n*sizeof(LIS_INT),"lis_matrix_malloc_rco::w_row");
+	if(n<0) return LIS_ERR_ILL_ARG;
+	if(lis_matrix_rco_check_size(n,sizeof(LIS_INT))!=LIS_SUCCESS ||
+	   lis_matrix_rco_check_size(n,sizeof(LIS_INT *))!=LIS_SUCCESS ||
+	   lis_matrix_rco_check_size(n,sizeof(LIS_SCALAR *))!=LIS_SUCCESS)
+		return LIS_OUT_OF_MEMORY;
+	if(nnz!=NULL)
+	{
+		for(i=0;i<n;i++)
+		{
+			LIS_INT err;
+			err=lis_matrix_rco_check_size(nnz[i],sizeof(LIS_INT));
+			if(err) return err;
+			err=lis_matrix_rco_check_size(nnz[i],sizeof(LIS_SCALAR));
+			if(err) return err;
+		}
+	}
+
+	w_row = (LIS_INT *)lis_malloc((size_t)n*sizeof(LIS_INT),"lis_matrix_malloc_rco::w_row");
 	if( w_row==NULL )
 	{
 		LIS_SETERR_MEM(n*sizeof(LIS_INT));
@@ -233,6 +265,16 @@ LIS_INT lis_matrix_realloc_rco(LIS_INT row, LIS_INT nnz, LIS_INT ***index, LIS_S
 	LIS_SCALAR *new_value;
 
 	LIS_DEBUG_FUNC_IN;
+
+	/* There is no valid zero-length row reallocation contract, and a
+	 * zero-size realloc can free the old pointer on some platforms.
+	 */
+	if(row<0 || nnz<=0 || index==NULL || value==NULL ||
+	   *index==NULL || *value==NULL)
+		return LIS_ERR_ILL_ARG;
+	if(lis_matrix_rco_check_size(nnz,sizeof(LIS_INT))!=LIS_SUCCESS ||
+	   lis_matrix_rco_check_size(nnz,sizeof(LIS_SCALAR))!=LIS_SUCCESS)
+		return LIS_OUT_OF_MEMORY;
 
 	w_index = *index;
 	w_value = *value;
