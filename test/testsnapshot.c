@@ -19,11 +19,13 @@ static int header_matches(char *header,const char *expected)
 static int check_matrix(const char *prefix)
 {
     char name[512],header[128];
+    const double expected[2][2]={{4.0,-1.0},{-1.0,3.0}};
+    int seen[2][2]={{0,0},{0,0}};
     FILE *f;
-    long long n,m,nnz,i,j;
+    long long n,m,nnz,i,j,k;
     double value;
-    double total=0.0;
-    long long k;
+    int failed=0;
+
     snprintf(name,sizeof(name),"%s_A.mtx",prefix);
     f=fopen(name,"r");
     if(!f) return 1;
@@ -33,21 +35,28 @@ static int check_matrix(const char *prefix)
        fscanf(f,"%lld %lld %lld",&n,&m,&nnz)!=3 ||
        n!=2 || m!=2 || nnz!=4)
     {
-        fprintf(stderr,"snapshot matrix header/dimension mismatch, header='%s'\n",header);
+        fprintf(stderr,"snapshot matrix header/dimension mismatch: %s\n",header);
         fclose(f);
         return 1;
     }
     for(k=0;k<nnz;k++)
     {
-        if(fscanf(f,"%lld %lld %lf",&i,&j,&value)!=3)
+        if(fscanf(f,"%lld %lld %lf",&i,&j,&value)!=3 ||
+           i<1 || i>2 || j<1 || j>2 ||
+           !isfinite(value) ||
+           fabs(value-expected[i-1][j-1])>1e-12)
         {
-            fclose(f);
-            return 1;
+            failed=1;
+            break;
         }
-        total+=value;
+        if(seen[i-1][j-1]++) failed=1;
     }
-    fclose(f);
-    return fabs(total-5.0)>1e-12;
+    for(i=0;i<2;i++)
+        for(j=0;j<2;j++)
+            if(seen[i][j]!=1) failed=1;
+    if(fclose(f)!=0) failed=1;
+    if(failed) fprintf(stderr,"snapshot matrix values/indices mismatch\n");
+    return failed;
 }
 
 static int check_vector(const char *prefix,const char *suffix,int cols)
@@ -87,12 +96,30 @@ static int check_vector(const char *prefix,const char *suffix,int cols)
         return 1;
     }
     for(i=0;i<2*cols;i++)
-        if(fscanf(f,"%lf",&value)!=1 || !isfinite(value))
+    {
+        double expected;
+        if(strcmp(suffix,"b")==0)
+            expected=(i==0)?2.0:5.0;
+        else if(strcmp(suffix,"x0")==0)
+            expected=0.0;
+        else if(strcmp(suffix,"x")==0)
+            expected=(double)(i+1);
+        else if(strcmp(suffix,"modes")==0)
+            expected=(i==3)?-1.0:1.0;
+        else
         {
             fclose(f);
             return 1;
         }
-    fclose(f);
+        if(fscanf(f,"%lf",&value)!=1 || !isfinite(value) ||
+           fabs(value-expected)>1e-12)
+        {
+            fprintf(stderr,"snapshot vector '%s' value mismatch at %d\n",suffix,i);
+            fclose(f);
+            return 1;
+        }
+    }
+    if(fclose(f)!=0) return 1;
     return 0;
 }
 
@@ -152,7 +179,9 @@ static int check_user_snapshot(LIS_VECTOR b,LIS_VECTOR x0,LIS_VECTOR x,
     if(err) goto finish;
     err=lis_snapshot_export_mm(A,b,x0,x,2,basis,prefix);
     if(err) fprintf(stderr,"USER export failed rc=%d\n",(int)err);
-    if(err || check_matrix(prefix) || check_vector(prefix,"modes",2))
+    if(err || check_matrix(prefix) || check_vector(prefix,"b",1) ||
+       check_vector(prefix,"x0",1) || check_vector(prefix,"x",1) ||
+       check_vector(prefix,"modes",2))
         goto finish;
     failed=0;
 finish:
@@ -222,6 +251,61 @@ check_dof_map(const char *prefix)
         failed=1;
     if(fclose(f)!=0) failed=1;
     if(failed) fprintf(stderr,"DOF map CSV contents mismatch\n");
+    return failed;
+}
+
+
+/* A pre-existing file must never be modified by either exporter. */
+static int check_existing_files(LIS_MATRIX A,LIS_VECTOR b,LIS_VECTOR x0,
+                                LIS_VECTOR x,LIS_VECTOR basis[],
+                                const char *prefix)
+{
+    char other[512],name[512],file_name[512],line[64];
+    FILE *f;
+    LIS_INT err;
+    int failed=0;
+
+    snprintf(other,sizeof(other),"%s-collision",prefix);
+    snprintf(name,sizeof(name),"%s_modes.mtx",other);
+    snprintf(file_name,sizeof(file_name),"%s_A.mtx",other);
+    f=fopen(name,"w");
+    if(!f) return 1;
+    if(fputs("preserve\n",f)==EOF || fclose(f)!=0) return 1;
+    err=lis_snapshot_export_mm(A,b,x0,x,2,basis,other);
+    if(err!=LIS_ERR_FILE_IO) failed=1;
+    f=fopen(file_name,"r");
+    if(f!=NULL)
+    {
+        failed=1;
+        fclose(f);
+        remove(file_name);
+    }
+    f=fopen(name,"r");
+    if(!f) failed=1;
+    else
+    {
+        if(!fgets(line,sizeof(line),f) || strcmp(line,"preserve\n")!=0)
+            failed=1;
+        fclose(f);
+    }
+    remove(name);
+
+    snprintf(name,sizeof(name),"%s_dofs.csv",other);
+    f=fopen(name,"w");
+    if(!f) return 1;
+    if(fputs("preserve\n",f)==EOF || fclose(f)!=0) return 1;
+    err=lis_snapshot_export_dof_map_csv(A,test_dof_labels,NULL,other);
+    if(err!=LIS_ERR_FILE_IO) failed=1;
+    f=fopen(name,"r");
+    if(!f) failed=1;
+    else
+    {
+        if(!fgets(line,sizeof(line),f) || strcmp(line,"preserve\n")!=0)
+            failed=1;
+        fclose(f);
+    }
+    remove(name);
+    if(failed) fprintf(stderr,"snapshot destination collision regression failed\n");
     return failed;
 }
 
@@ -295,7 +379,17 @@ int main(int argc,char **argv)
             remove(bad_file);
             goto fail;
         }
+        snprintf(bad_file,sizeof(bad_file),"%s_dofs.csv.tmp",bad_prefix);
+        unexpected=fopen(bad_file,"r");
+        if(unexpected!=NULL)
+        {
+            fclose(unexpected);
+            remove(bad_file);
+            goto fail;
+        }
     }
+    if(check_existing_files(A,b,x0,x,basis,prefix))
+        goto fail;
     /* Invalid basis must fail before writing anything to the new prefix. */
     err=lis_snapshot_export_mm(A,b,x0,x,-1,basis,prefix);
     if(err!=LIS_ERR_ILL_ARG) goto fail;

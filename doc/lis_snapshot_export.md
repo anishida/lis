@@ -3,12 +3,12 @@
 `lis_snapshot_export_mm()` is a public helper in
 `#include "lis_snapshot.h"` that writes **the matrix actually passed to LIS**
 and the application's current vectors as standard Matrix Market files.
-This generic interface can be reused by any FEA/PDE application that uses LIS,
-independently of the application's mesh, element and field representations.
+This generic interface can be reused by any application that uses LIS,
+independently of its physical model, mesh, element or field representation.
 
 ```c
 #include "lis_snapshot.h"
-/* Call at a consistent linearization point, before the solve overwrites x. */
+/* Call after assembly, before the solver overwrites an input vector. */
 int rc = lis_snapshot_export_mm(A, b, x0, NULL,
                                 near_nullspace_dim, near_nullspace,
                                 "snapshots/step03_iter07");
@@ -35,22 +35,40 @@ The distinct suffix prevents `_b`/`_B` collisions on case-insensitive filesystem
 - Numeric values must be finite; data are written at 17 significant digits
   for double-precision interchange. Applications requiring exact extended
   precision should use a suitable lossless format instead.
-- Files are ordinary filesystem writes, not an atomic multi-file
-  transaction. Use a **unique prefix** per snapshot; any error invalidates
-  the entire prefix and may leave earlier files behind.
-- The routine does **not** write physical metadata. Applications may supply
-  the optional `active_dofs.csv` separately using the generic schema in
-  `doc/fea_operator_snapshots.md`: zero-based `eq,node,dof`, optional
-  grouping `body`. No fixed DOF count or ordering is assumed.
+- Existing destination files (including staging filenames ending in
+  `.tmp`) are rejected before capture. The exporter does not deliberately
+  overwrite existing snapshots. **Use a unique prefix per call**.
+- Each file is written to a temporary path, closed and renamed. If a later
+  file fails, previously published files from the same call are removed
+  (best effort). Multiple files are **not committed atomically**, and the
+  preflight check is **not a cross-process lock**; concurrent writers must
+  never share a prefix.
+- Physical metadata is **optional**. When requested,
+  `lis_snapshot_export_dof_map_csv()` writes
+  `<prefix>_dofs.csv` using zero-based `eq,node,dof,body` columns.
+  No fixed DOF count or ordering is assumed.
 
 This captures **already assembled and eliminated** equations. A generic LIS
 exporter cannot reconstruct full FE coordinates, inactive constraints or
 body labels from algebraic rows. Native application adapters remain
 responsible for such metadata.
 
-## Auditing
+## Auditing and existing LIS writers
 
-After capture:
+LIS already provides `lis_output_matrix()`, `lis_output_vector()` and the
+internal `lis_output_mm_*` functions for standalone Matrix Market output.
+This advanced snapshot API builds an independent capture contract on top
+of LIS matrices: validated serial CSR conversion (including row-backed
+USER/OPERATOR matrices), optional input/solution/mode arrays, consistent
+filename conventions, 17-significant-digit scalar output, and staged writes
+with best-effort rollback. The existing generic writer has different
+interfaces and lifecycle/error semantics; unifying the low-level formatting
+paths can be considered separately.
+
+Offline numerical auditing is **not bundled in this pull request**.
+A separate [generic matrix audit utility](https://github.com/anishida/lis/pull/205)
+can consume the emitted standard Matrix Market files once installed.
+For example, when the auditor is present:
 
 ```sh
 python3 tools/fea_matrix_audit.py \
@@ -58,12 +76,12 @@ python3 tools/fea_matrix_audit.py \
     --rhs snapshots/step03_iter07_b.mtx \
     --initial snapshots/step03_iter07_x0.mtx \
     --modes snapshots/step03_iter07_modes.mtx \
-    --dof-map snapshots/active_dofs.csv
+    --dof-map snapshots/step03_iter07_dofs.csv
 ```
 
-The auditor computes independent true residuals and operator/nullspace
-metrics, which can be used to compare solver backends on identical data.
-No nonlinear convergence or preconditioner performance claim is implied.
+The optional auditor can calculate true residuals and operator/nullspace
+metrics from identical algebraic data; this snapshot exporter makes no
+convergence or performance claims.
 
 ## Optional, application-defined equation labels
 
@@ -82,7 +100,7 @@ LIS_INT label_dof(void *ctx, LIS_INT eq, const char **node,
 }
 
 LIS_INT rc = lis_snapshot_export_dof_map_csv(
-    A, label_dof, my_fea_context, "snapshots/step03_iter07");
+    A, label_dof, my_application_context, "snapshots/step03_iter07");
 ```
 
 The callback must return nonempty node/entity and DOF/field labels; labels
@@ -93,7 +111,10 @@ ordering used by the exported operator, and writes
 `eq,node,dof,body`. It is independent of Matrix Market export and works
 also in complex LIS builds because labels are not numerical values.
 
-On failure, incomplete `_dofs.csv` is deleted and an error returned.
+Each DOF CSV is staged as `<prefix>_dofs.csv.tmp` and published after
+successful close. An existing destination is rejected, and incomplete staged
+CSV is deleted on failure. This API is separately invoked from the numeric
+exporter, so the two calls are not one atomic transaction.
 The caller owns its label memory and callback state throughout the call.
 Use a unique prefix for each snapshot. No fixed field list, physical
-dimension, number of DOFs per node or FEA package is required.
+dimension, number of DOFs per node or application package is required.

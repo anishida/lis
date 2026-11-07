@@ -1,5 +1,5 @@
 /* Optional, solver-independent Matrix Market snapshot exporter.
- * No FEA model, mesh, DOF numbering or contact assumptions are made.
+ * No physical model, mesh, DOF numbering or field assumptions are made.
  * This advanced API is explicitly invoked by the embedding application.
  */
 #ifndef LIS_SNAPSHOT_H
@@ -21,11 +21,13 @@ extern "C" {
  * Serial real-valued matrices only in this first version. Explicit CSR,
  * other convertible explicit formats, and row-backed USER/OPERATOR sources
  * are supported; unsupported/matrix-free sources without row access fail.
- * This does NOT solve or modify the operator, run FEA, or create a DOF map.
+ * This does NOT solve or modify the operator, or create a DOF map.
  *
- * All arguments are borrowed. A failed call returns nonzero; files from
- * earlier successful writes may remain, so discard the entire prefix set
- * on error. Use a unique prefix for each Newton/nonlinear snapshot.
+ * All arguments are borrowed. Existing destination files are rejected.
+ * Every file is staged to a .tmp path before publishing; on failure,
+ * outputs created by this invocation are removed (best effort).
+ * The whole snapshot is not an atomic transaction or process-level lock.
+ * Use a distinct prefix for each capture and for concurrent writers.
  */
 LIS_INT lis_snapshot_export_mm(
     LIS_MATRIX A,
@@ -46,8 +48,9 @@ LIS_INT lis_snapshot_export_mm(
  * thermomechanical fields, or arbitrary application DOF types.
  *
  * Output: <prefix>_dofs.csv with columns eq,node,dof,body.
- * CSV quoting/escaping is handled by LIS. No specific FEA package, mesh
- * numbering, element type or DOFs per node is assumed.
+ * CSV escaping is handled by LIS. The writer rejects existing files,
+ * stages output in a .tmp file, then renames it after a successful close.
+ * No fixed mesh, element, numbering or field-count assumption is made.
  *
  * This is opt-in and independent of lis_snapshot_export_mm(); it never
  * modifies A. Serial equations only in this first implementation.

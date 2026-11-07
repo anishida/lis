@@ -87,31 +87,59 @@ jobs:
           assert all(math.isfinite(float(v["relerr"])) and float(v["relerr"]) < 1e-10 for v in exact)
           PY
 
-      - name: Verify portable FEA snapshot and optional DOF map
+      - name: Verify generic snapshot values and optional DOF labels
         run: |
-          ./test/testsnapshot upstream-fea-snapshot
+          ./test/testsnapshot upstream-generic-snapshot
           python3 - <<'PY'
           import csv
-          from pathlib import Path
           import math
-          prefix = "upstream-fea-snapshot"
-          expected = {"A": (2, 2), "b": (2, 1), "x0": (2, 1),
-                      "x": (2, 1), "modes": (2, 2)}
-          for suffix, shape in expected.items():
+          from pathlib import Path
+
+          prefix = "upstream-generic-snapshot"
+          expected_matrix = {(1, 1): 4.0, (1, 2): -1.0,
+                             (2, 1): -1.0, (2, 2): 3.0}
+          expected_arrays = {"b": [2., 5.], "x0": [0., 0.],
+                             "x": [1., 2.], "modes": [1., 1., 1., -1.]}
+
+          def read_mm(suffix, fmt):
               path = Path(f"{prefix}_{suffix}.mtx")
-              lines = path.read_text().splitlines()
-              assert lines[0].lower().startswith("%%matrixmarket matrix "), path
-              dims = [int(v) for v in lines[1].split()[:2]]
-              assert tuple(dims) == shape, (path, dims)
-              assert all(math.isfinite(float(row.split()[-1])) for row in lines[2:]), path
+              lines = [line.strip() for line in path.read_text().splitlines()]
+              lines = [line for line in lines if line and
+                       (line.startswith("%%MatrixMarket") or
+                        not line.startswith("%"))]
+              assert lines[0] == f"%%MatrixMarket matrix {fmt} real general"
+              dimensions = tuple(map(int, lines[1].split()))
+              return path, dimensions, lines[2:]
+
+          path, shape, entries = read_mm("A", "coordinate")
+          assert shape == (2, 2, 4)
+          actual = {}
+          for line in entries:
+              i, j, value = line.split()
+              key = (int(i), int(j))
+              assert key not in actual
+              actual[key] = float(value)
+          assert actual.keys() == expected_matrix.keys()
+          assert all(math.isfinite(actual[k]) and
+                     math.isclose(actual[k], v, rel_tol=0, abs_tol=1e-13)
+                     for k, v in expected_matrix.items())
+          path.unlink()
+          for suffix, expected in expected_arrays.items():
+              path, shape, values = read_mm(suffix, "array")
+              assert shape == (2, len(expected) // 2)
+              actual = [float(v) for v in values]
+              assert len(actual) == len(expected)
+              assert all(math.isfinite(a) and
+                         math.isclose(a, b, rel_tol=0, abs_tol=1e-13)
+                         for a, b in zip(actual, expected))
               path.unlink()
           with Path(f"{prefix}_dofs.csv").open(newline="") as stream:
               rows = list(csv.DictReader(stream))
-          assert len(rows) == 2
-          assert rows[0] == {"eq": "0", "node": "node,7",
-                             "dof": 'U"X', "body": "part A"}
-          assert rows[1] == {"eq": "1", "node": "thermal-9",
-                             "dof": "TEMP", "body": ""}
+          assert rows == [
+              {"eq": "0", "node": "node,7", "dof": 'U"X',
+               "body": "part A"},
+              {"eq": "1", "node": "thermal-9", "dof": "TEMP", "body": ""},
+          ]
           Path(f"{prefix}_dofs.csv").unlink()
           PY
 
