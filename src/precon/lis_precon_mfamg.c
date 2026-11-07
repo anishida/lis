@@ -6377,7 +6377,7 @@ lis_precon_mfamg_build_multivector_basis(
     return lis_mfamg_build_multivector_basis_impl(
         n, aggregate_count, aggregate, mode_count, basis,
         aggregate_rank_out, aggregate_offset_out, row_ptr_out,
-        prolong_out, coarse_basis_out, coarse_n_out, -1, 0);
+        prolong_out, coarse_basis_out, coarse_n_out, -1, -1);
 }
 
 
@@ -8279,9 +8279,13 @@ lis_mfamg_install_multivector_transfer(
 #ifdef USE_MPI
     if(level->A!=NULL)
     {
-        int mpi_rank = 0;
-        MPI_Comm_rank(level->A->comm, &mpi_rank);
-        diag_rank = (LIS_INT)mpi_rank;
+        const char *diag_env = getenv("LIS_MFAMG_DIAG");
+        if(diag_env!=NULL && strcmp(diag_env,"1")==0)
+        {
+            int mpi_rank = 0;
+            MPI_Comm_rank(level->A->comm, &mpi_rank);
+            diag_rank = (LIS_INT)mpi_rank;
+        }
     }
 #endif
 

@@ -22,7 +22,8 @@ numerical setup, convergence decisions or exit status.
 - Both kinds of record include `level`, `mpi_rank`, and local input
   dimension `n`. Level 0 is the finest transfer and higher levels are
   deeper hierarchy transfers. Stand-alone calls to the low-level builder
-  use `level=-1` (no hierarchy context). Rank is zero in serial.
+  use `level=-1` and `mpi_rank=-1` (no hierarchy or communicator
+  context). For hierarchy transfers rank is zero in serial.
 - Transfer records also provide `aggregates`, `coarse_n`,
   `ratio=coarse_n/n`, `modes`, aggregate size bins
   `singles/pairs/size3to8/size9plus`, algebraic rank bins
