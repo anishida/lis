@@ -55,6 +55,9 @@ jobs:
       - name: Run Automake test suite
         run: make -j2 check
 
+      - name: Audit generic FEA Matrix Market snapshot regressions
+        run: python3 -m unittest discover -s tools -p 'test_fea_matrix_audit.py' -v
+
       - name: Smoke-test opt-in MFAMG contact diagnostics
         run: |
           set -o pipefail
