@@ -279,6 +279,78 @@ lis_fgcrodr_state_destroy(
 }
 
 
+/*
+ * The FGCRO-DR private state contains both configuration and owned recycle
+ * vectors.  Solver option-profile replacement must transfer only the four
+ * textual configuration values, never copy the private state or its pointers.
+ * An absent state is equivalent to the documented default configuration.
+ */
+LIS_INT
+lis_fgcrodr_profile_equal(LIS_SOLVER active,LIS_SOLVER fresh)
+{
+    struct LIS_FGCRODR_STATE_STRUCT defaults;
+    LIS_FGCRODR_STATE a,b;
+
+    if( active==NULL || fresh==NULL ) return LIS_FALSE;
+
+    a=active->fgcrodr_state;
+    b=fresh->fgcrodr_state;
+    if( a==NULL || b==NULL )
+    {
+        lis_fgcrodr_state_defaults(&defaults);
+        if( a==NULL ) a=&defaults;
+        if( b==NULL ) b=&defaults;
+    }
+
+    return (a->target_dim==b->target_dim &&
+            a->keep_threshold==b->keep_threshold &&
+            a->reject_threshold==b->reject_threshold &&
+            a->update==b->update) ? LIS_TRUE : LIS_FALSE;
+}
+
+/* Preflight any allocation before resetting or changing the active profile. */
+LIS_INT
+lis_fgcrodr_profile_prepare(LIS_SOLVER active,LIS_SOLVER fresh)
+{
+    if( active==NULL || fresh==NULL )
+        return LIS_ERR_ILL_ARG;
+    if( fresh->fgcrodr_state!=NULL && active->fgcrodr_state==NULL )
+        return lis_fgcrodr_state_ensure(active);
+    return LIS_SUCCESS;
+}
+
+/* Called only after prepare(), and after the old solve state was reset. */
+LIS_INT
+lis_fgcrodr_profile_copy(LIS_SOLVER active,LIS_SOLVER fresh)
+{
+    struct LIS_FGCRODR_STATE_STRUCT defaults;
+    LIS_FGCRODR_STATE a,b;
+
+    if( active==NULL || fresh==NULL )
+        return LIS_ERR_ILL_ARG;
+
+    a=active->fgcrodr_state;
+    b=fresh->fgcrodr_state;
+    if( a==NULL )
+        return (b==NULL) ? LIS_SUCCESS : LIS_ERR_ILL_ARG;
+
+    if( b==NULL )
+    {
+        lis_fgcrodr_state_defaults(&defaults);
+        b=&defaults;
+    }
+
+    if( a->target_dim!=b->target_dim )
+        lis_fgcrodr_vectors_destroy(a);
+
+    a->target_dim=b->target_dim;
+    a->keep_threshold=b->keep_threshold;
+    a->reject_threshold=b->reject_threshold;
+    a->update=b->update;
+    return LIS_SUCCESS;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_solver_set_fgcrodr_recycle"
 LIS_INT
