@@ -394,6 +394,25 @@ static int check_fgcrodr_profile_settings(void)
         failed=1; goto done;
     }
 
+    /* NaN must not enter a profile: exact equality assumes finite settings. */
+    changed=-1;
+    err=lis_solver_set_option_replace_if_changed(
+        "-i fgcrodr -fgcrodr_keep nan",s,&changed);
+    if(err==LIS_SUCCESS || changed!=LIS_FALSE)
+    {
+        fprintf(stderr,"NaN FGCRO-DR keep was accepted\n");
+        failed=1; goto done;
+    }
+
+    changed=-1;
+    err=lis_solver_set_option_replace_if_changed(
+        "-i fgcrodr -fgcrodr_reject nan",s,&changed);
+    if(err==LIS_SUCCESS || changed!=LIS_FALSE)
+    {
+        fprintf(stderr,"NaN FGCRO-DR reject was accepted\n");
+        failed=1; goto done;
+    }
+
     /* Empty FGCRO-DR configuration must restore actual defaults. */
     changed=-1;
     err=lis_solver_set_option_replace_if_changed("-i fgcrodr -p none",s,&changed);
