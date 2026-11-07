@@ -280,7 +280,7 @@ extern "C"
         /* Internal config-only profile hooks; never copy recycle vectors. */
         extern LIS_INT lis_fgcrodr_profile_equal(LIS_SOLVER active,LIS_SOLVER fresh);
         extern LIS_INT lis_fgcrodr_profile_prepare(LIS_SOLVER active,LIS_SOLVER fresh);
-        extern LIS_INT lis_fgcrodr_profile_copy(LIS_SOLVER active,LIS_SOLVER fresh);
+        extern void lis_fgcrodr_profile_copy(LIS_SOLVER active,LIS_SOLVER fresh);
         extern LIS_INT lis_fgcrodr_validate_recycle(
                 LIS_SOLVER solver, LIS_REAL *orth_error,
                 LIS_REAL *relation_error);
