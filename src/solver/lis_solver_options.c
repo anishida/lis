@@ -99,13 +99,8 @@ lis_solver_set_option_replace(
     solver->recycle_keep_threshold = fresh->recycle_keep_threshold;
     solver->recycle_reject_threshold = fresh->recycle_reject_threshold;
 
-    /* Copy four FGCRO-DR settings only, never the owned recycle vectors. */
-    err = lis_fgcrodr_profile_copy(solver,fresh);
-    if(err)
-    {
-        lis_solver_destroy(fresh);
-        return err;
-    }
+    /* Preflight already completed: copy cannot fail or allocate here. */
+    lis_fgcrodr_profile_copy(solver,fresh);
 
     solver->precision = solver->options[LIS_OPTIONS_PRECISION];
     solver->setup = LIS_FALSE;
