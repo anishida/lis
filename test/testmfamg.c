@@ -2523,6 +2523,169 @@ cleanup:
 }
 
 
+
+/* Existing test CSR helper is defined in the PSD lifecycle section below. */
+static LIS_INT create_scaled_csr(LIS_SCALAR scale, LIS_MATRIX *A);
+
+/*
+ * With more than one near-nullspace vector, the current MFAMG PSD update
+ * must transactionally rebuild the hierarchy, not re-use stale scalar
+ * numeric refresh state.  The two operators have identical CSR structure
+ * but different coefficients; every solve checks the original A*x.
+ */
+static int
+check_mfamg_multivector_psd_value_rebuild(void)
+{
+    LIS_MATRIX A[2]={NULL,NULL};
+    LIS_VECTOR b=NULL,x=NULL,exact=NULL;
+    LIS_VECTOR z0=NULL,z1=NULL;
+    LIS_VECTOR basis[2];
+    LIS_SOLVER solver=NULL;
+    LIS_PRECON precon=NULL;
+    void *previous_state=NULL;
+    LIS_REAL relres;
+    LIS_INT i,phase,err=LIS_SUCCESS;
+    int failed=0,precon_alive=0;
+
+    err=create_csr(&A[0]);
+    if(err) goto fail;
+    err=create_scaled_csr((LIS_SCALAR)1.35,&A[1]);
+    if(err) goto fail;
+
+    if(A[0]->matrix_type!=LIS_MATRIX_CSR ||
+       A[1]->matrix_type!=LIS_MATRIX_CSR ||
+       A[0]->n!=A[1]->n ||
+       A[0]->nnz!=A[1]->nnz)
+    {
+        fprintf(stderr,"MFAMG multivector PSD pattern sizes mismatch\n");
+        failed=1; goto cleanup;
+    }
+    for(i=0;i<=A[0]->n;i++)
+    {
+        if(A[0]->ptr[i]!=A[1]->ptr[i])
+        {
+            fprintf(stderr,"MFAMG multivector PSD row structure changed\n");
+            failed=1; goto cleanup;
+        }
+    }
+    for(i=0;i<A[0]->nnz;i++)
+    {
+        if(A[0]->index[i]!=A[1]->index[i])
+        {
+            fprintf(stderr,"MFAMG multivector PSD column structure changed\n");
+            failed=1; goto cleanup;
+        }
+    }
+
+    err=lis_vector_duplicate(A[0],&b);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A[0],&x);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A[0],&exact);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A[0],&z0);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A[0],&z1);
+    if(err) goto fail;
+
+    for(i=0;i<A[0]->n;i++)
+    {
+        exact->value[i]=(LIS_SCALAR)(0.5+0.015*(i%9));
+        z0->value[i]=(LIS_SCALAR)1.0;
+        /* Distinct globally, but rank one on adjacent strong pairs. */
+        z1->value[i]=(LIS_SCALAR)((double)(i/2)/
+                                   (double)(A[0]->n/2-1)-0.5);
+    }
+    basis[0]=z0;
+    basis[1]=z1;
+    err=lis_solver_create(&solver);
+    if(err) goto fail;
+    err=lis_solver_set_option(
+        "-i fgmres -p mfamg -scale none "
+        "-tol 1.0e-10 -maxiter 300 -restart 20 -print none",
+        solver);
+    if(err) goto fail;
+    err=lis_solver_set_near_nullspace(solver,2,basis);
+    if(err) goto fail;
+
+    for(phase=0;phase<2;phase++)
+    {
+        err=lis_matvec(A[phase],exact,b);
+        if(err) goto fail;
+        err=lis_vector_set_all((LIS_SCALAR)0.0,x);
+        if(err) goto fail;
+        err=lis_solver_set_matrix(A[phase],solver);
+        if(err) goto fail;
+
+        if(phase==0)
+        {
+            err=lis_precon_psd_create(solver,&precon);
+            if(err) { precon=NULL; goto fail; }
+            precon_alive=1;
+            if(precon==NULL || precon->mfamg==NULL)
+            {
+                fprintf(stderr,"MFAMG multivector PSD create missing hierarchy\n");
+                failed=1; goto cleanup;
+            }
+            previous_state=precon->mfamg;
+        }
+        else
+        {
+            err=lis_precon_psd_update(solver,precon);
+            if(err)
+            {
+                /* Dispatcher owns preconditioner destruction on failure. */
+                precon_alive=0; precon=NULL; goto fail;
+            }
+            if(precon==NULL || precon->mfamg==NULL ||
+               precon->mfamg==previous_state)
+            {
+                fprintf(stderr,
+                    "MFAMG multivector PSD did not rebuild old hierarchy\n");
+                failed=1; goto cleanup;
+            }
+        }
+
+        if(precon->A!=A[phase])
+        {
+            fprintf(stderr,"MFAMG multivector PSD retained stale matrix\n");
+            failed=1; goto cleanup;
+        }
+        err=lis_solve_kernel(A[phase],b,x,solver,precon);
+        if(err) goto fail;
+        err=relative_residual(A[phase],b,x,&relres);
+        if(err) goto fail;
+        printf("MFAMG_MULTIVECTOR_PSD_VALUE_REBUILD phase=%d "
+               "state_rebuilt=%d relres=%.12e\n",
+               (int)phase,(int)(phase!=0),(double)relres);
+        if(relres!=relres || !(relres<SOLVE_TOL))
+        {
+            fprintf(stderr,
+                "MFAMG multivector PSD wrong numeric solution phase=%d\n",
+                (int)phase);
+            failed=1; goto cleanup;
+        }
+    }
+    goto cleanup;
+
+fail:
+    fprintf(stderr,"MFAMG multivector PSD rebuild failure rc=%d\n",(int)err);
+    failed=1;
+cleanup:
+    if(precon_alive && precon) lis_precon_destroy(precon);
+    if(solver) lis_solver_destroy(solver);
+    if(z1) lis_vector_destroy(z1);
+    if(z0) lis_vector_destroy(z0);
+    if(exact) lis_vector_destroy(exact);
+    if(x) lis_vector_destroy(x);
+    if(b) lis_vector_destroy(b);
+    if(A[1]) lis_matrix_destroy(A[1]);
+    if(A[0]) lis_matrix_destroy(A[0]);
+    if(!failed)
+        printf("MFAMG MULTIVECTOR PSD VALUE REBUILD TEST PASSED\n");
+    return failed;
+}
+
 /* ============================================================
  * Serial contract
  * ============================================================ */
@@ -5450,6 +5613,9 @@ run_serial(void)
 
     failed |=
         check_mfamg_psd_lifecycle();
+
+    failed |=
+        check_mfamg_multivector_psd_value_rebuild();
 
 
     failed |=
