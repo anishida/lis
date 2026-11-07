@@ -282,6 +282,90 @@ check_profile_replacement_solve(void)
             (int)k,(int)dim,(double)(rn/bn));
     }
 
+    /*
+     * Hold k constant while changing the keep and reject thresholds.
+     * A policy-only complete profile change still invokes reset_sequence()
+     * and must invalidate the old W/Z/C recycle relation. Exercise a real
+     * solve after each change, not just an isolated boolean toggle.
+     */
+    {
+        const char *policy_profiles[2]={
+            "-i fgcrodr -p jacobi -restart 8 -maxiter 300 -tol 1e-10 "
+            "-fgcrodr_k 2 -fgcrodr_keep 0.80 -fgcrodr_reject 0.35 "
+            "-fgcrodr_update true -print none",
+            "-i fgcrodr -p jacobi -restart 8 -maxiter 300 -tol 1e-10 "
+            "-fgcrodr_k 2 -fgcrodr_keep 0.80 -fgcrodr_reject 0.20 "
+            "-fgcrodr_update true -print none"
+        };
+        LIS_INT step;
+        for(step=0;step<2;step++)
+        {
+            changed=-1;
+            err=lis_solver_set_option_replace_if_changed(
+                policy_profiles[step],solver,&changed);
+            if(err || changed!=LIS_TRUE ||
+               solver->fgcrodr_state!=private_state)
+            {
+                fprintf(stderr,
+                    "FGCRO-DR policy-only replacement not detected\n");
+                err=LIS_BREAKDOWN;
+                goto fail;
+            }
+
+            err=lis_solver_get_fgcrodr_recycle_config(
+                solver,&k,&qkeep,&qreject,&update);
+            if(err || k!=2 || update!=LIS_TRUE ||
+               fabs((double)(qkeep-(LIS_REAL)0.80))>1.0e-12 ||
+               fabs((double)(qreject-(LIS_REAL)(step==0?0.35:0.20)))>1.0e-12)
+            {
+                fprintf(stderr,"FGCRO-DR policy-only config mismatch\n");
+                err=LIS_BREAKDOWN;
+                goto fail;
+            }
+
+            err=lis_fgcrodr_get_lifecycle_state(
+                solver,&valid,NULL,NULL,NULL);
+            if(err || valid!=LIS_FALSE)
+            {
+                fprintf(stderr,"FGCRO-DR policy-only change kept recycle valid\n");
+                err=LIS_BREAKDOWN;
+                goto fail;
+            }
+            err=lis_solver_get_fgcrodr_recycle(
+                solver,&dim,&action,&quality,&qmin);
+            if(err || dim!=0)
+            {
+                fprintf(stderr,"FGCRO-DR policy-only change retained recycle vectors\n");
+                err=LIS_BREAKDOWN;
+                goto fail;
+            }
+
+            lis_vector_set_all((LIS_SCALAR)0.0,x);
+            err=lis_solve(A,b,x,solver);
+            if(err) goto fail;
+            err=lis_solver_get_status(solver,&status);
+            if(err || status!=LIS_SUCCESS)
+            {
+                err=LIS_BREAKDOWN;
+                goto fail;
+            }
+            lis_matvec(A,x,r);
+            lis_vector_xpay(b,(LIS_SCALAR)-1.0,r);
+            lis_vector_nrm2(r,&rn);
+            if(rn/bn>1.0e-8)
+            {
+                fprintf(stderr,
+                    "FGCRO-DR policy-only solve true residual %.3e\n",
+                    (double)(rn/bn));
+                err=LIS_BREAKDOWN;
+                goto fail;
+            }
+            printf(
+                "FGCRODR_PROFILE_POLICY_ONLY k=%d step=%d true_resid=%.3e\n",
+                (int)k,(int)step,(double)(rn/bn));
+        }
+    }
+
     err=LIS_SUCCESS;
     goto done;
 
