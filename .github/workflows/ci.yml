@@ -61,6 +61,31 @@ jobs:
           LIS_MFAMG_DIAG=1 ./test/testmfamg 2>&1 | tee mfamg-diagnostics.log
           grep -q '^LIS_MFAMG_DIAG_TRANSFER ' mfamg-diagnostics.log
           grep -q '^LIS_MFAMG_DIAG_MODE ' mfamg-diagnostics.log
+          python3 - <<'PY'
+          import math
+          from pathlib import Path
+
+          records = []
+          for line in Path("mfamg-diagnostics.log").read_text().splitlines():
+              if not line.startswith(("LIS_MFAMG_DIAG_TRANSFER ", "LIS_MFAMG_DIAG_MODE ")):
+                  continue
+              fields = dict(token.split("=", 1) for token in line.split()[1:])
+              assert {"level", "mpi_rank", "n"} <= fields.keys(), line
+              records.append((line.split()[0], fields))
+          transfers = [v for kind, v in records if kind == "LIS_MFAMG_DIAG_TRANSFER"]
+          modes = [v for kind, v in records if kind == "LIS_MFAMG_DIAG_MODE"]
+          assert transfers and modes
+          for v in transfers:
+              aggregates = int(v["aggregates"])
+              assert sum(int(v[k]) for k in ("singles", "pairs", "size3to8", "size9plus")) == aggregates
+              assert sum(int(v[k]) for k in ("rank0", "rank1", "rank2", "rank3", "rank4plus")) == aggregates
+              assert math.isclose(float(v["ratio"]), int(v["coarse_n"])/int(v["n"]), rel_tol=1e-8)
+          # testmfamg includes a deterministic nine-row, two-mode basis
+          # that must be exactly reconstructible by its aggregate-local QR.
+          exact = [v for v in modes if v["level"] == "-1" and v["n"] == "9"]
+          assert len(exact) >= 2, "manufactured low-level basis diagnostics absent"
+          assert all(math.isfinite(float(v["relerr"])) and float(v["relerr"]) < 1e-10 for v in exact)
+          PY
 
       - name: Upload failed test logs
         if: failure()

@@ -5217,9 +5217,9 @@ lis_mfamg_build_distributed_aggregate_metadata(
  * production hierarchy path.
  */
 #undef __FUNC__
-#define __FUNC__ "lis_precon_mfamg_build_multivector_basis"
-LIS_INT
-lis_precon_mfamg_build_multivector_basis(
+#define __FUNC__ "lis_mfamg_build_multivector_basis_impl"
+static LIS_INT
+lis_mfamg_build_multivector_basis_impl(
     LIS_INT n,
     LIS_INT aggregate_count,
     LIS_INT *aggregate,
@@ -5230,7 +5230,9 @@ lis_precon_mfamg_build_multivector_basis(
     LIS_INT **row_ptr_out,
     LIS_SCALAR **prolong_out,
     LIS_SCALAR **coarse_basis_out,
-    LIS_INT *coarse_n_out)
+    LIS_INT *coarse_n_out,
+    LIS_INT diag_level,
+    LIS_INT diag_rank)
 {
     LIS_INT *counts;
     LIS_INT *member_offset;
@@ -6212,10 +6214,11 @@ lis_precon_mfamg_build_multivector_basis(
             }
 
             fprintf(stderr,
-                "LIS_MFAMG_DIAG_TRANSFER n=%d aggregates=%d coarse_n=%d "
+                "LIS_MFAMG_DIAG_TRANSFER level=%d mpi_rank=%d n=%d aggregates=%d coarse_n=%d "
                 "ratio=%.9e modes=%d singles=%d pairs=%d size3to8=%d "
                 "size9plus=%d rank0=%d rank1=%d rank2=%d rank3=%d "
                 "rank4plus=%d poor_coarsening=%d\n",
+                (int)diag_level,(int)diag_rank,
                 (int)n,(int)aggregate_count,(int)coarse_n,
                 (double)ratio,(int)mode_count,(int)size1,(int)size2,
                 (int)size3to8,(int)size9plus,
@@ -6255,8 +6258,9 @@ lis_precon_mfamg_build_multivector_basis(
                     : (error_norm2==0.0 ? (LIS_REAL)0.0
                                         : (LIS_REAL)HUGE_VAL);
                 fprintf(stderr,
-                    "LIS_MFAMG_DIAG_MODE n=%d mode=%d "
+                    "LIS_MFAMG_DIAG_MODE level=%d mpi_rank=%d n=%d mode=%d "
                     "input_norm2=%.9e relerr=%.9e\n",
+                    (int)diag_level,(int)diag_rank,
                     (int)n,(int)m,(double)input_norm2,(double)relerr);
             }
         }
@@ -6347,6 +6351,33 @@ fail:
 
 
     return err;
+}
+
+
+/*
+ * Retain the stand-alone basis builder interface used by tests and callers.
+ * It is independent of FEA node numbering and has no hierarchy context.
+ */
+#undef __FUNC__
+#define __FUNC__ "lis_precon_mfamg_build_multivector_basis"
+LIS_INT
+lis_precon_mfamg_build_multivector_basis(
+    LIS_INT n,
+    LIS_INT aggregate_count,
+    LIS_INT *aggregate,
+    LIS_INT mode_count,
+    LIS_VECTOR basis[],
+    LIS_INT **aggregate_rank_out,
+    LIS_INT **aggregate_offset_out,
+    LIS_INT **row_ptr_out,
+    LIS_SCALAR **prolong_out,
+    LIS_SCALAR **coarse_basis_out,
+    LIS_INT *coarse_n_out)
+{
+    return lis_mfamg_build_multivector_basis_impl(
+        n, aggregate_count, aggregate, mode_count, basis,
+        aggregate_rank_out, aggregate_offset_out, row_ptr_out,
+        prolong_out, coarse_basis_out, coarse_n_out, -1, 0);
 }
 
 
@@ -8180,12 +8211,14 @@ lis_mfamg_install_multivector_transfer(
     LIS_INT mode_count,
     LIS_VECTOR basis[],
     struct LIS_MFAMG_LEVEL *level,
+    LIS_INT level_id,
     LIS_SCALAR **coarse_basis_out,
     LIS_INT *coarsened)
 {
     LIS_INT aggregate_count;
     LIS_INT coarse_n;
     LIS_INT err;
+    LIS_INT diag_rank = 0;
 
     LIS_INT *aggregate_rank;
     LIS_INT *aggregate_offset;
@@ -8243,8 +8276,17 @@ lis_mfamg_install_multivector_transfer(
     coarse_n = 0;
 
 
+#ifdef USE_MPI
+    if(level->A!=NULL)
+    {
+        int mpi_rank = 0;
+        MPI_Comm_rank(level->A->comm, &mpi_rank);
+        diag_rank = (LIS_INT)mpi_rank;
+    }
+#endif
+
     err =
-        lis_precon_mfamg_build_multivector_basis(
+        lis_mfamg_build_multivector_basis_impl(
             level->n,
             aggregate_count,
             level->aggregate,
@@ -8255,7 +8297,9 @@ lis_mfamg_install_multivector_transfer(
             &row_ptr,
             &prolong,
             &coarse_basis,
-            &coarse_n);
+            &coarse_n,
+            level_id,
+            diag_rank);
 
     if(err)
         return err;
@@ -8699,6 +8743,7 @@ lis_mfamg_extend_hierarchy_multivector(
                 mode_count,
                 current_basis,
                 level,
+                level_id,
                 &next_coarse_basis,
                 &coarsened);
 
@@ -13402,6 +13447,7 @@ lis_precon_create_mfamg(
                 mode_count,
                 solver->near_nullspace,
                 level,
+                0,
                 &coarse_basis,
                 &coarsened);
     }
