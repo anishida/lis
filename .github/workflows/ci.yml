@@ -55,6 +55,34 @@ jobs:
       - name: Run Automake test suite
         run: make -j2 check
 
+      - name: Verify portable FEA snapshot and optional DOF map
+        run: |
+          ./test/testsnapshot upstream-fea-snapshot
+          python3 - <<'PY'
+          import csv
+          from pathlib import Path
+          import math
+          prefix = "upstream-fea-snapshot"
+          expected = {"A": (2, 2), "b": (2, 1), "x0": (2, 1),
+                      "x": (2, 1), "modes": (2, 2)}
+          for suffix, shape in expected.items():
+              path = Path(f"{prefix}_{suffix}.mtx")
+              lines = path.read_text().splitlines()
+              assert lines[0].lower().startswith("%%matrixmarket matrix "), path
+              dims = [int(v) for v in lines[1].split()[:2]]
+              assert tuple(dims) == shape, (path, dims)
+              assert all(math.isfinite(float(row.split()[-1])) for row in lines[2:]), path
+              path.unlink()
+          with Path(f"{prefix}_dofs.csv").open(newline="") as stream:
+              rows = list(csv.DictReader(stream))
+          assert len(rows) == 2
+          assert rows[0] == {"eq": "0", "node": "node,7",
+                             "dof": 'U"X', "body": "part A"}
+          assert rows[1] == {"eq": "1", "node": "thermal-9",
+                             "dof": "TEMP", "body": ""}
+          Path(f"{prefix}_dofs.csv").unlink()
+          PY
+
       - name: Upload failed test logs
         if: failure()
         uses: actions/upload-artifact@v4
