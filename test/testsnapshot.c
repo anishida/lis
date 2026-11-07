@@ -110,7 +110,7 @@ static void cleanup(const char *prefix)
     remove(name);
 }
 
-/* A non-CalculiX USER matrix with a generic row callback. */
+/* A generic row-backed USER matrix supplied by an embedding application. */
 static LIS_INT user_matvec(void *userdata,const LIS_SCALAR *x,LIS_SCALAR *y)
 {
     (void)userdata;

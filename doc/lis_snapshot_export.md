@@ -3,7 +3,8 @@
 `lis_snapshot_export_mm()` is a public helper in
 `#include "lis_snapshot.h"` that writes **the matrix actually passed to LIS**
 and the application's current vectors as standard Matrix Market files.
-It does not depend on CalculiX or any other FE application.
+This generic interface can be reused by any FEA/PDE application that uses LIS,
+independently of the application's mesh, element and field representations.
 
 ```c
 #include "lis_snapshot.h"
