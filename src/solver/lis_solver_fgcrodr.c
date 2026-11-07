@@ -319,20 +319,23 @@ lis_fgcrodr_profile_prepare(LIS_SOLVER active,LIS_SOLVER fresh)
     return LIS_SUCCESS;
 }
 
-/* Called only after prepare(), and after the old solve state was reset. */
-LIS_INT
+/*
+ * This phase cannot fail after lis_fgcrodr_profile_prepare(): any needed
+ * state has already been allocated and reset_sequence() has completed.
+ * No allocation and no ownership transfer occurs here.
+ */
+void
 lis_fgcrodr_profile_copy(LIS_SOLVER active,LIS_SOLVER fresh)
 {
     struct LIS_FGCRODR_STATE_STRUCT defaults;
     LIS_FGCRODR_STATE a,b;
 
-    if( active==NULL || fresh==NULL )
-        return LIS_ERR_ILL_ARG;
-
     a=active->fgcrodr_state;
     b=fresh->fgcrodr_state;
+
+    /* If both states are absent, both carry the implicit default profile. */
     if( a==NULL )
-        return (b==NULL) ? LIS_SUCCESS : LIS_ERR_ILL_ARG;
+        return;
 
     if( b==NULL )
     {
@@ -347,7 +350,6 @@ lis_fgcrodr_profile_copy(LIS_SOLVER active,LIS_SOLVER fresh)
     a->keep_threshold=b->keep_threshold;
     a->reject_threshold=b->reject_threshold;
     a->update=b->update;
-    return LIS_SUCCESS;
 }
 
 
