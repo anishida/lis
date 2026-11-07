@@ -229,7 +229,8 @@ check_profile_replacement_solve(void)
 
         err=lis_solver_get_fgcrodr_recycle(
             solver,&dim,&action,&quality,&qmin);
-        if(err || dim<0 || dim>k || dim>=8)
+        if(err || dim<0 || dim>k ||
+           dim>=solver->options[LIS_OPTIONS_RESTART])
         {
             fprintf(stderr,
                 "FGCRO-DR profile solve: invalid recycle dimension\n");
