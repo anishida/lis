@@ -109,7 +109,7 @@ libsystem_la_LIBADD =
 am_libsystem_la_OBJECTS = lis_abi.lo lis_error.lo lis_hash.lo \
 	lis_init.lo lis_omp_capacity.lo lis_input.lo lis_input_hb.lo \
 	lis_input_mm.lo lis_memory.lo lis_output.lo lis_output_mm.lo \
-	lis_sort.lo lis_time.lo mt19937ar.lo
+	lis_snapshot.lo lis_sort.lo lis_time.lo mt19937ar.lo
 libsystem_la_OBJECTS = $(am_libsystem_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -136,8 +136,8 @@ am__depfiles_remade = ./$(DEPDIR)/lis_abi.Plo \
 	./$(DEPDIR)/lis_input_hb.Plo ./$(DEPDIR)/lis_input_mm.Plo \
 	./$(DEPDIR)/lis_memory.Plo ./$(DEPDIR)/lis_omp_capacity.Plo \
 	./$(DEPDIR)/lis_output.Plo ./$(DEPDIR)/lis_output_mm.Plo \
-	./$(DEPDIR)/lis_sort.Plo ./$(DEPDIR)/lis_time.Plo \
-	./$(DEPDIR)/mt19937ar.Plo
+	./$(DEPDIR)/lis_snapshot.Plo ./$(DEPDIR)/lis_sort.Plo \
+	./$(DEPDIR)/lis_time.Plo ./$(DEPDIR)/mt19937ar.Plo
 am__mv = mv -f
 AM_V_CC = $(am__v_CC_@AM_V@)
 am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
@@ -344,6 +344,7 @@ lis_input_mm.c \
 lis_memory.c \
 lis_output.c \
 lis_output_mm.c \
+lis_snapshot.c \
 lis_sort.c \
 lis_time.c \
 mt19937ar.c
@@ -427,6 +428,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_omp_capacity.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_output.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_output_mm.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_snapshot.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_sort.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_time.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mt19937ar.Plo@am__quote@ # am--include-marker
@@ -601,6 +603,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/lis_omp_capacity.Plo
 	-rm -f ./$(DEPDIR)/lis_output.Plo
 	-rm -f ./$(DEPDIR)/lis_output_mm.Plo
+	-rm -f ./$(DEPDIR)/lis_snapshot.Plo
 	-rm -f ./$(DEPDIR)/lis_sort.Plo
 	-rm -f ./$(DEPDIR)/lis_time.Plo
 	-rm -f ./$(DEPDIR)/mt19937ar.Plo
@@ -660,6 +663,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/lis_omp_capacity.Plo
 	-rm -f ./$(DEPDIR)/lis_output.Plo
 	-rm -f ./$(DEPDIR)/lis_output_mm.Plo
+	-rm -f ./$(DEPDIR)/lis_snapshot.Plo
 	-rm -f ./$(DEPDIR)/lis_sort.Plo
 	-rm -f ./$(DEPDIR)/lis_time.Plo
 	-rm -f ./$(DEPDIR)/mt19937ar.Plo

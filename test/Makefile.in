@@ -134,7 +134,8 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testmatrixoperatorlifecycle$(EXEEXT) \
 	testmatrixoperatormpi$(EXEEXT) testsequence$(EXEEXT) \
 	testwarmstart$(EXEEXT) testrecovery$(EXEEXT) \
-	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
+	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) \
+	testsnapshot$(EXEEXT) testmfamg$(EXEEXT) \
 	testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
 	testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) \
 	testfeastfoundation$(EXEEXT) testfeastcontour$(EXEEXT) \
@@ -799,6 +800,10 @@ am_testshellscale_OBJECTS = testshellscale.$(OBJEXT)
 testshellscale_OBJECTS = $(am_testshellscale_OBJECTS)
 testshellscale_LDADD = $(LDADD)
 testshellscale_DEPENDENCIES =
+am_testsnapshot_OBJECTS = testsnapshot.$(OBJEXT)
+testsnapshot_OBJECTS = $(am_testsnapshot_OBJECTS)
+testsnapshot_LDADD = $(LDADD)
+testsnapshot_DEPENDENCIES =
 am_testsolvercallbackcert_OBJECTS = testsolvercallbackcert.$(OBJEXT)
 testsolvercallbackcert_OBJECTS = $(am_testsolvercallbackcert_OBJECTS)
 testsolvercallbackcert_LDADD = $(LDADD)
@@ -1003,6 +1008,7 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testrecovery.Po ./$(DEPDIR)/testrepeatedsystems.Po \
 	./$(DEPDIR)/testrhistoryerror.Po ./$(DEPDIR)/testrqirestore.Po \
 	./$(DEPDIR)/testsequence.Po ./$(DEPDIR)/testshellscale.Po \
+	./$(DEPDIR)/testsnapshot.Po \
 	./$(DEPDIR)/testsolvercallbackcert.Po \
 	./$(DEPDIR)/testsolvercallbackpaths.Po \
 	./$(DEPDIR)/testsolvercapabilities.Po \
@@ -1123,7 +1129,8 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testprojectedhermitian_SOURCES) $(testrecovery_SOURCES) \
 	$(testrepeatedsystems_SOURCES) testrhistoryerror.c \
 	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
-	$(testshellscale_SOURCES) $(testsolvercallbackcert_SOURCES) \
+	$(testshellscale_SOURCES) $(testsnapshot_SOURCES) \
+	$(testsolvercallbackcert_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
 	$(testsolvercapabilities_SOURCES) $(testsolvermonitor_SOURCES) \
 	$(testsolveroptionreplace_SOURCES) $(testsplitview_SOURCES) \
@@ -1207,7 +1214,8 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testprojectedhermitian_SOURCES) $(testrecovery_SOURCES) \
 	$(testrepeatedsystems_SOURCES) testrhistoryerror.c \
 	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
-	$(testshellscale_SOURCES) $(testsolvercallbackcert_SOURCES) \
+	$(testshellscale_SOURCES) $(testsnapshot_SOURCES) \
+	$(testsolvercallbackcert_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
 	$(testsolvercapabilities_SOURCES) $(testsolvermonitor_SOURCES) \
 	$(testsolveroptionreplace_SOURCES) $(testsplitview_SOURCES) \
@@ -1665,6 +1673,7 @@ testhalfdispatch_SOURCES = testhalfdispatch.c
 testhalfilukmemory_SOURCES = testhalfilukmemory.c
 testhalfiluksimd_SOURCES = testhalfiluksimd.c
 testhalfilut_SOURCES = testhalfilut.c
+testsnapshot_SOURCES = testsnapshot.c
 testmfamg_SOURCES = testmfamg.c
 testmfamggalerkin_SOURCES = testmfamggalerkin.c
 getestuser_SOURCES = getestuser.c
@@ -1760,10 +1769,10 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
 
 
 # Explicitly run all new regression binaries under make check.
-TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
-	testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
-	testvectornrm2mpi$(EXEEXT) testoperatorrowprecon$(EXEEXT) \
-	testsolvercapabilities$(EXEEXT) \
+TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) \
+	testuserprecon$(EXEEXT) testmatvecblock$(EXEEXT) \
+	testcapabilities$(EXEEXT) testvectornrm2mpi$(EXEEXT) \
+	testoperatorrowprecon$(EXEEXT) testsolvercapabilities$(EXEEXT) \
 	testsolveroptionreplace$(EXEEXT) testompelastic$(EXEEXT) \
 	testmatrixgraph$(EXEEXT) testcomponentnullspace$(EXEEXT) \
 	testnullspacelift$(EXEEXT) testpreconlifecycle$(EXEEXT) \
@@ -2523,6 +2532,10 @@ testshellscale$(EXEEXT): $(testshellscale_OBJECTS) $(testshellscale_DEPENDENCIES
 	@rm -f testshellscale$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testshellscale_OBJECTS) $(testshellscale_LDADD) $(LIBS)
 
+testsnapshot$(EXEEXT): $(testsnapshot_OBJECTS) $(testsnapshot_DEPENDENCIES) $(EXTRA_testsnapshot_DEPENDENCIES) 
+	@rm -f testsnapshot$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testsnapshot_OBJECTS) $(testsnapshot_LDADD) $(LIBS)
+
 testsolvercallbackcert$(EXEEXT): $(testsolvercallbackcert_OBJECTS) $(testsolvercallbackcert_DEPENDENCIES) $(EXTRA_testsolvercallbackcert_DEPENDENCIES) 
 	@rm -f testsolvercallbackcert$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testsolvercallbackcert_OBJECTS) $(testsolvercallbackcert_LDADD) $(LIBS)
@@ -2760,6 +2773,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrqirestore.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsequence.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testshellscale.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsnapshot.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsolvercallbackcert.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsolvercallbackpaths.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsolvercapabilities.Po@am__quote@ # am--include-marker
@@ -3071,6 +3085,13 @@ recheck: all $(check_PROGRAMS)
 	        am__force_recheck=am--force-recheck \
 	        TEST_LOGS="$$log_list"; \
 	exit $$?
+testsnapshot.log: testsnapshot$(EXEEXT)
+	@p='testsnapshot$(EXEEXT)'; \
+	b='testsnapshot'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 test.sh.log: test.sh
 	@p='test.sh'; \
 	b='test.sh'; \
@@ -4004,6 +4025,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testrqirestore.Po
 	-rm -f ./$(DEPDIR)/testsequence.Po
 	-rm -f ./$(DEPDIR)/testshellscale.Po
+	-rm -f ./$(DEPDIR)/testsnapshot.Po
 	-rm -f ./$(DEPDIR)/testsolvercallbackcert.Po
 	-rm -f ./$(DEPDIR)/testsolvercallbackpaths.Po
 	-rm -f ./$(DEPDIR)/testsolvercapabilities.Po
@@ -4192,6 +4214,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testrqirestore.Po
 	-rm -f ./$(DEPDIR)/testsequence.Po
 	-rm -f ./$(DEPDIR)/testshellscale.Po
+	-rm -f ./$(DEPDIR)/testsnapshot.Po
 	-rm -f ./$(DEPDIR)/testsolvercallbackcert.Po
 	-rm -f ./$(DEPDIR)/testsolvercallbackpaths.Po
 	-rm -f ./$(DEPDIR)/testsolvercapabilities.Po
