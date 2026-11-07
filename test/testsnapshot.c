@@ -18,7 +18,7 @@ static int header_matches(char *header,const char *expected)
 
 static int check_matrix(const char *prefix)
 {
-    char name[512],header[128];
+    char name[1024],header[128];
     const double expected[2][2]={{4.0,-1.0},{-1.0,3.0}};
     int seen[2][2]={{0,0},{0,0}};
     FILE *f;
@@ -61,7 +61,7 @@ static int check_matrix(const char *prefix)
 
 static int check_vector(const char *prefix,const char *suffix,int cols)
 {
-    char name[512],header[128],dimensions[128];
+    char name[1024],header[128],dimensions[128];
     char *end,*after;
     FILE *f;
     long long n=-1,k=-1;
@@ -126,7 +126,7 @@ static int check_vector(const char *prefix,const char *suffix,int cols)
 static void cleanup(const char *prefix)
 {
     const char *names[]={"A","b","x0","x","modes"};
-    char name[512];
+    char name[1024];
     int i;
     for(i=0;i<5;i++)
     {
@@ -167,7 +167,7 @@ static int check_user_snapshot(LIS_VECTOR b,LIS_VECTOR x0,LIS_VECTOR x,
                                LIS_VECTOR basis[],const char *prefix)
 {
     LIS_MATRIX A=NULL;
-    char name[512];
+    char name[1024];
     int failed=1;
     LIS_INT err=lis_matrix_create(LIS_COMM_WORLD,&A);
     if(err) goto finish;
@@ -236,7 +236,7 @@ static int
 check_dof_map(const char *prefix)
 {
     FILE *f;
-    char name[512],line[256],row0[256],row1[256];
+    char name[1024],line[256],row0[256],row1[256];
     int failed=0;
     snprintf(name,sizeof(name),"%s_dofs.csv",prefix);
     f=fopen(name,"r");
@@ -260,7 +260,7 @@ static int check_existing_files(LIS_MATRIX A,LIS_VECTOR b,LIS_VECTOR x0,
                                 LIS_VECTOR x,LIS_VECTOR basis[],
                                 const char *prefix)
 {
-    char other[512],name[512],file_name[512],line[64];
+    char other[512],name[1024],file_name[1024],line[64];
     FILE *f;
     LIS_INT err;
     int failed=0;
@@ -365,7 +365,7 @@ int main(int argc,char **argv)
     if(err || check_dof_map(prefix))
         goto fail;
     {
-        char bad_prefix[512],bad_file[512];
+        char bad_prefix[512],bad_file[1024];
         FILE *unexpected;
         snprintf(bad_prefix,sizeof(bad_prefix),"%s-badmap",prefix);
         snprintf(bad_file,sizeof(bad_file),"%s_dofs.csv",bad_prefix);
