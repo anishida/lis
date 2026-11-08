@@ -180,8 +180,10 @@ F77LINK = $(LIBTOOL) $(AM_V_lt) --tag=F77 $(AM_LIBTOOLFLAGS) \
 @ENABLE_OOM_TESTS_TRUE@check_PROGRAMS = testoomalloc$(EXEEXT) \
 @ENABLE_OOM_TESTS_TRUE@	testoomilu$(EXEEXT) \
 @ENABLE_OOM_TESTS_TRUE@	testoomdiag$(EXEEXT) \
-@ENABLE_OOM_TESTS_TRUE@	testoomiluc$(EXEEXT) $(am__EXEEXT_1)
-@ENABLE_OOM_TESTS_TRUE@am__append_6 = testoomalloc$(EXEEXT) testoomilu$(EXEEXT) testoomdiag$(EXEEXT) testoomiluc$(EXEEXT)
+@ENABLE_OOM_TESTS_TRUE@	testoomiluc$(EXEEXT) \
+@ENABLE_OOM_TESTS_TRUE@	testoomsnapshot$(EXEEXT) \
+@ENABLE_OOM_TESTS_TRUE@	$(am__EXEEXT_1)
+@ENABLE_OOM_TESTS_TRUE@am__append_6 = testoomalloc$(EXEEXT) testoomilu$(EXEEXT) testoomdiag$(EXEEXT) testoomiluc$(EXEEXT) testoomsnapshot$(EXEEXT)
 @ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@am__append_7 = testoommpiscale
 @ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@am__append_8 = testoommpiscale$(EXEEXT)
 subdir = test
@@ -737,6 +739,12 @@ am__testoommpiscale_SOURCES_DIST = testoommpiscale.c
 testoommpiscale_OBJECTS = $(am_testoommpiscale_OBJECTS)
 testoommpiscale_LDADD = $(LDADD)
 testoommpiscale_DEPENDENCIES =
+am__testoomsnapshot_SOURCES_DIST = testoomsnapshot.c
+@ENABLE_OOM_TESTS_TRUE@am_testoomsnapshot_OBJECTS =  \
+@ENABLE_OOM_TESTS_TRUE@	testoomsnapshot.$(OBJEXT)
+testoomsnapshot_OBJECTS = $(am_testoomsnapshot_OBJECTS)
+testoomsnapshot_LDADD = $(LDADD)
+testoomsnapshot_DEPENDENCIES =
 am_testoperator_OBJECTS = testoperator.$(OBJEXT)
 testoperator_OBJECTS = $(am_testoperator_OBJECTS)
 testoperator_LDADD = $(LDADD)
@@ -1002,7 +1010,8 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testnullspacelift.Po ./$(DEPDIR)/testompelastic.Po \
 	./$(DEPDIR)/testoomalloc.Po ./$(DEPDIR)/testoomdiag.Po \
 	./$(DEPDIR)/testoomilu.Po ./$(DEPDIR)/testoomiluc.Po \
-	./$(DEPDIR)/testoommpiscale.Po ./$(DEPDIR)/testoperator.Po \
+	./$(DEPDIR)/testoommpiscale.Po ./$(DEPDIR)/testoomsnapshot.Po \
+	./$(DEPDIR)/testoperator.Po \
 	./$(DEPDIR)/testoperatorrowprecon.Po \
 	./$(DEPDIR)/testparamupdate.Po ./$(DEPDIR)/testprebuiltuser.Po \
 	./$(DEPDIR)/testpreconlifecycle.Po \
@@ -1127,11 +1136,12 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testnullspacelift_SOURCES) $(testompelastic_SOURCES) \
 	$(testoomalloc_SOURCES) $(testoomdiag_SOURCES) \
 	$(testoomilu_SOURCES) $(testoomiluc_SOURCES) \
-	$(testoommpiscale_SOURCES) $(testoperator_SOURCES) \
-	$(testoperatorrowprecon_SOURCES) $(testparamupdate_SOURCES) \
-	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
-	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
-	$(testpreconreuse_SOURCES) $(testprojectedeigen_SOURCES) \
+	$(testoommpiscale_SOURCES) $(testoomsnapshot_SOURCES) \
+	$(testoperator_SOURCES) $(testoperatorrowprecon_SOURCES) \
+	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
+	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
+	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
+	$(testprojectedeigen_SOURCES) \
 	$(testprojectedhermitian_SOURCES) $(testrcoalloc_SOURCES) \
 	$(testrecovery_SOURCES) $(testrepeatedsystems_SOURCES) \
 	testrhistoryerror.c $(testrqirestore_SOURCES) \
@@ -1212,7 +1222,8 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(am__testoomalloc_SOURCES_DIST) \
 	$(am__testoomdiag_SOURCES_DIST) $(am__testoomilu_SOURCES_DIST) \
 	$(am__testoomiluc_SOURCES_DIST) \
-	$(am__testoommpiscale_SOURCES_DIST) $(testoperator_SOURCES) \
+	$(am__testoommpiscale_SOURCES_DIST) \
+	$(am__testoomsnapshot_SOURCES_DIST) $(testoperator_SOURCES) \
 	$(testoperatorrowprecon_SOURCES) $(testparamupdate_SOURCES) \
 	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
 	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
@@ -1857,6 +1868,7 @@ testilucbsrsmoke_SOURCES = testilucbsrsmoke.c
 @ENABLE_OOM_TESTS_TRUE@testoomilu_SOURCES = testoomilu.c
 @ENABLE_OOM_TESTS_TRUE@testoomdiag_SOURCES = testoomdiag.c
 @ENABLE_OOM_TESTS_TRUE@testoomiluc_SOURCES = testoomiluc.c
+@ENABLE_OOM_TESTS_TRUE@testoomsnapshot_SOURCES = testoomsnapshot.c
 @ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@testoommpiscale_SOURCES = testoommpiscale.c
 all: all-am
 
@@ -2476,6 +2488,10 @@ testoommpiscale$(EXEEXT): $(testoommpiscale_OBJECTS) $(testoommpiscale_DEPENDENC
 	@rm -f testoommpiscale$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testoommpiscale_OBJECTS) $(testoommpiscale_LDADD) $(LIBS)
 
+testoomsnapshot$(EXEEXT): $(testoomsnapshot_OBJECTS) $(testoomsnapshot_DEPENDENCIES) $(EXTRA_testoomsnapshot_DEPENDENCIES) 
+	@rm -f testoomsnapshot$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testoomsnapshot_OBJECTS) $(testoomsnapshot_LDADD) $(LIBS)
+
 testoperator$(EXEEXT): $(testoperator_OBJECTS) $(testoperator_DEPENDENCIES) $(EXTRA_testoperator_DEPENDENCIES) 
 	@rm -f testoperator$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testoperator_OBJECTS) $(testoperator_LDADD) $(LIBS)
@@ -2769,6 +2785,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoomilu.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoomiluc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoommpiscale.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoomsnapshot.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoperator.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoperatorrowprecon.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testparamupdate.Po@am__quote@ # am--include-marker
@@ -3819,6 +3836,13 @@ testoomiluc.log: testoomiluc$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testoomsnapshot.log: testoomsnapshot$(EXEEXT)
+	@p='testoomsnapshot$(EXEEXT)'; \
+	b='testoomsnapshot'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 testoommpiscale.log: testoommpiscale$(EXEEXT)
 	@p='testoommpiscale$(EXEEXT)'; \
 	b='testoommpiscale'; \
@@ -4029,6 +4053,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testoomilu.Po
 	-rm -f ./$(DEPDIR)/testoomiluc.Po
 	-rm -f ./$(DEPDIR)/testoommpiscale.Po
+	-rm -f ./$(DEPDIR)/testoomsnapshot.Po
 	-rm -f ./$(DEPDIR)/testoperator.Po
 	-rm -f ./$(DEPDIR)/testoperatorrowprecon.Po
 	-rm -f ./$(DEPDIR)/testparamupdate.Po
@@ -4219,6 +4244,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testoomilu.Po
 	-rm -f ./$(DEPDIR)/testoomiluc.Po
 	-rm -f ./$(DEPDIR)/testoommpiscale.Po
+	-rm -f ./$(DEPDIR)/testoomsnapshot.Po
 	-rm -f ./$(DEPDIR)/testoperator.Po
 	-rm -f ./$(DEPDIR)/testoperatorrowprecon.Po
 	-rm -f ./$(DEPDIR)/testparamupdate.Po
