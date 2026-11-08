@@ -145,14 +145,15 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) \
 	testmatrixautosession$(EXEEXT) testvectorreal64$(EXEEXT) \
 	benchautojacobirefresh$(EXEEXT) testabi$(EXEEXT) \
-	testgesolvepair$(EXEEXT) $(am__EXEEXT_2) $(am__EXEEXT_3) \
-	$(am__EXEEXT_4) $(am__EXEEXT_5) test_krylov_modes$(EXEEXT) \
-	test_krylov_sparse$(EXEEXT) test_krylov_regression$(EXEEXT) \
-	test_krylov_lis$(EXEEXT) test_krylov_semidefinite$(EXEEXT) \
-	test_krylov_stress$(EXEEXT) test_krylov_inertia$(EXEEXT) \
-	test_krylov_window$(EXEEXT) test_krylov_openmp$(EXEEXT) \
-	test_krylov_projected$(EXEEXT) test_krylov_workspace$(EXEEXT) \
-	test_krylov_unified$(EXEEXT) test_krylov_adaptive_ex$(EXEEXT) \
+	testgesolvepair$(EXEEXT) testrcoalloc$(EXEEXT) $(am__EXEEXT_2) \
+	$(am__EXEEXT_3) $(am__EXEEXT_4) $(am__EXEEXT_5) \
+	test_krylov_modes$(EXEEXT) test_krylov_sparse$(EXEEXT) \
+	test_krylov_regression$(EXEEXT) test_krylov_lis$(EXEEXT) \
+	test_krylov_semidefinite$(EXEEXT) test_krylov_stress$(EXEEXT) \
+	test_krylov_inertia$(EXEEXT) test_krylov_window$(EXEEXT) \
+	test_krylov_openmp$(EXEEXT) test_krylov_projected$(EXEEXT) \
+	test_krylov_workspace$(EXEEXT) test_krylov_unified$(EXEEXT) \
+	test_krylov_adaptive_ex$(EXEEXT) \
 	test_krylov_api_contract$(EXEEXT) \
 	test_krylov_residual_reuse$(EXEEXT) \
 	test_krylov_both_ends$(EXEEXT) \
@@ -776,6 +777,10 @@ am_testprojectedhermitian_OBJECTS = testprojectedhermitian.$(OBJEXT)
 testprojectedhermitian_OBJECTS = $(am_testprojectedhermitian_OBJECTS)
 testprojectedhermitian_LDADD = $(LDADD)
 testprojectedhermitian_DEPENDENCIES =
+am_testrcoalloc_OBJECTS = testrcoalloc.$(OBJEXT)
+testrcoalloc_OBJECTS = $(am_testrcoalloc_OBJECTS)
+testrcoalloc_LDADD = $(LDADD)
+testrcoalloc_DEPENDENCIES =
 am_testrecovery_OBJECTS = testrecovery.$(OBJEXT)
 testrecovery_OBJECTS = $(am_testrecovery_OBJECTS)
 testrecovery_LDADD = $(LDADD)
@@ -1005,7 +1010,8 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testpreconreuse.Po \
 	./$(DEPDIR)/testprojectedeigen.Po \
 	./$(DEPDIR)/testprojectedhermitian.Po \
-	./$(DEPDIR)/testrecovery.Po ./$(DEPDIR)/testrepeatedsystems.Po \
+	./$(DEPDIR)/testrcoalloc.Po ./$(DEPDIR)/testrecovery.Po \
+	./$(DEPDIR)/testrepeatedsystems.Po \
 	./$(DEPDIR)/testrhistoryerror.Po ./$(DEPDIR)/testrqirestore.Po \
 	./$(DEPDIR)/testsequence.Po ./$(DEPDIR)/testshellscale.Po \
 	./$(DEPDIR)/testsnapshot.Po \
@@ -1126,11 +1132,11 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
 	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
 	$(testpreconreuse_SOURCES) $(testprojectedeigen_SOURCES) \
-	$(testprojectedhermitian_SOURCES) $(testrecovery_SOURCES) \
-	$(testrepeatedsystems_SOURCES) testrhistoryerror.c \
-	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
-	$(testshellscale_SOURCES) $(testsnapshot_SOURCES) \
-	$(testsolvercallbackcert_SOURCES) \
+	$(testprojectedhermitian_SOURCES) $(testrcoalloc_SOURCES) \
+	$(testrecovery_SOURCES) $(testrepeatedsystems_SOURCES) \
+	testrhistoryerror.c $(testrqirestore_SOURCES) \
+	$(testsequence_SOURCES) $(testshellscale_SOURCES) \
+	$(testsnapshot_SOURCES) $(testsolvercallbackcert_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
 	$(testsolvercapabilities_SOURCES) $(testsolvermonitor_SOURCES) \
 	$(testsolveroptionreplace_SOURCES) $(testsplitview_SOURCES) \
@@ -1211,11 +1217,11 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
 	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
 	$(testpreconreuse_SOURCES) $(testprojectedeigen_SOURCES) \
-	$(testprojectedhermitian_SOURCES) $(testrecovery_SOURCES) \
-	$(testrepeatedsystems_SOURCES) testrhistoryerror.c \
-	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
-	$(testshellscale_SOURCES) $(testsnapshot_SOURCES) \
-	$(testsolvercallbackcert_SOURCES) \
+	$(testprojectedhermitian_SOURCES) $(testrcoalloc_SOURCES) \
+	$(testrecovery_SOURCES) $(testrepeatedsystems_SOURCES) \
+	testrhistoryerror.c $(testrqirestore_SOURCES) \
+	$(testsequence_SOURCES) $(testshellscale_SOURCES) \
+	$(testsnapshot_SOURCES) $(testsolvercallbackcert_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
 	$(testsolvercapabilities_SOURCES) $(testsolvermonitor_SOURCES) \
 	$(testsolveroptionreplace_SOURCES) $(testsplitview_SOURCES) \
@@ -1599,6 +1605,7 @@ testdir = ${prefix}/share/examples/lis
 test_DATA = testmat.mtx testmat2.mtx testmat3.mtx testmat4.mtx testmat0.mtx testvec0.mtx
 test_SCRIPTS = defs test.sh
 testabi_SOURCES = testabi.c
+testrcoalloc_SOURCES = testrcoalloc.c
 testgcrodroptions_SOURCES = testgcrodroptions.c
 testfeastfoundation_SOURCES = testfeastfoundation.c
 testfeastcontour_SOURCES = testfeastcontour.c
@@ -1808,7 +1815,8 @@ TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) \
 	testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) \
 	testnullspacecandidates$(EXEEXT) testesolverselection$(EXEEXT) \
 	testmatrixautosession$(EXEEXT) testvectorreal64$(EXEEXT) \
-	testgesolvepair$(EXEEXT) testabi$(EXEEXT) $(am__append_5) \
+	testgesolvepair$(EXEEXT) testabi$(EXEEXT) \
+	testrcoalloc$(EXEEXT) $(am__append_5) \
 	test_krylov_modes$(EXEEXT) test_krylov_sparse$(EXEEXT) \
 	test_krylov_regression$(EXEEXT) test_krylov_lis$(EXEEXT) \
 	test_krylov_semidefinite$(EXEEXT) test_krylov_stress$(EXEEXT) \
@@ -2508,6 +2516,10 @@ testprojectedhermitian$(EXEEXT): $(testprojectedhermitian_OBJECTS) $(testproject
 	@rm -f testprojectedhermitian$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testprojectedhermitian_OBJECTS) $(testprojectedhermitian_LDADD) $(LIBS)
 
+testrcoalloc$(EXEEXT): $(testrcoalloc_OBJECTS) $(testrcoalloc_DEPENDENCIES) $(EXTRA_testrcoalloc_DEPENDENCIES) 
+	@rm -f testrcoalloc$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testrcoalloc_OBJECTS) $(testrcoalloc_LDADD) $(LIBS)
+
 testrecovery$(EXEEXT): $(testrecovery_OBJECTS) $(testrecovery_DEPENDENCIES) $(EXTRA_testrecovery_DEPENDENCIES) 
 	@rm -f testrecovery$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testrecovery_OBJECTS) $(testrecovery_LDADD) $(LIBS)
@@ -2767,6 +2779,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testpreconreuse.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testprojectedeigen.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testprojectedhermitian.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrcoalloc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrecovery.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrepeatedsystems.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrhistoryerror.Po@am__quote@ # am--include-marker
@@ -3603,6 +3616,13 @@ testabi.log: testabi$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testrcoalloc.log: testrcoalloc$(EXEEXT)
+	@p='testrcoalloc$(EXEEXT)'; \
+	b='testrcoalloc'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 testhalfstorage.log: testhalfstorage$(EXEEXT)
 	@p='testhalfstorage$(EXEEXT)'; \
 	b='testhalfstorage'; \
@@ -4019,6 +4039,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testpreconreuse.Po
 	-rm -f ./$(DEPDIR)/testprojectedeigen.Po
 	-rm -f ./$(DEPDIR)/testprojectedhermitian.Po
+	-rm -f ./$(DEPDIR)/testrcoalloc.Po
 	-rm -f ./$(DEPDIR)/testrecovery.Po
 	-rm -f ./$(DEPDIR)/testrepeatedsystems.Po
 	-rm -f ./$(DEPDIR)/testrhistoryerror.Po
@@ -4208,6 +4229,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testpreconreuse.Po
 	-rm -f ./$(DEPDIR)/testprojectedeigen.Po
 	-rm -f ./$(DEPDIR)/testprojectedhermitian.Po
+	-rm -f ./$(DEPDIR)/testrcoalloc.Po
 	-rm -f ./$(DEPDIR)/testrecovery.Po
 	-rm -f ./$(DEPDIR)/testrepeatedsystems.Po
 	-rm -f ./$(DEPDIR)/testrhistoryerror.Po
