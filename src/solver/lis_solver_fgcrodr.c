@@ -5619,11 +5619,11 @@ lis_fgcrodr_flexible_core(
                     lis_free(h);
                     return LIS_ERR_ILL_ARG;
                 }
-                /* v[0] is the explicit b-A*x computed after the
+                /* v[0] is the explicit b-A*x recomputed after the
                  * preceding harmonic Ritz update (see restart tail).
-                 * In trace mode, monitor projection norm monotonicity. */
-                if(intra_trace)
-                    lis_vector_nrm2(v[0],&residual_before_projection);
+                 * Check projection norm monotonicity regardless of
+                 * diagnostics; nrm2 is global under MPI. */
+                lis_vector_nrm2(v[0],&residual_before_projection);
                 for(ri=0;ri<kcur;ri++)
                 {
                     lis_vector_dot(state->c[ri],v[0],&gamma);
@@ -5631,8 +5631,10 @@ lis_fgcrodr_flexible_core(
                     lis_vector_axpy(-gamma,state->c[ri],v[0]);
                 }
                 lis_vector_nrm2(v[0],&rnorm);
-                if(intra_trace && isfinite(residual_before_projection) &&
-                   isfinite(rnorm) &&
+                /* Invalid or growing projected residual must never
+                 * enter the next Arnoldi cycle, even with trace OFF. */
+                if(!isfinite(residual_before_projection) ||
+                   !isfinite(rnorm) ||
                    rnorm>residual_before_projection*(1.0+1.0e-8))
                 {
                     solver->retcode=LIS_BREAKDOWN;

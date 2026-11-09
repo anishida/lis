@@ -1,4 +1,4 @@
-# FGCRO-DR: experimental within-solve harmonic Ritz recycling
+# FGCRO-DR: opt-in within-solve harmonic Ritz recycling
 
 This is an opt-in LIS FGCRO-DR feature, independent of MFAMG and offline near-nullspace vectors.
 
@@ -13,7 +13,7 @@ before proceeding with the current recycle dimension and new B stride.
 True residual must still pass convergence criteria.
 
 This is **not** an AMG mode generator and does not automatically
-construct the offline six near-nullspace modes in MFAMG experiments.
+construct offline near-nullspace modes.
 
 ## Opt-in configuration
 
@@ -41,8 +41,17 @@ The settings must be configured coherently on all participating ranks.
 The standalone test sets projected-relative normalization **both**
 with intra-solve recycling ON and OFF, so it does **not** isolate that
 normalization switch's impact. Convergence requires the true residual.
-When tracing is enabled, the implementation checks that an orthogonal
-projection does not materially increase the residual norm.
+Every intra-solve recycle projection checks the global residual norm
+before and after projection. An invalid norm or an increase beyond
+floating-point tolerance returns `LIS_BREAKDOWN`, independently of
+`-fgcrodr_intra_trace`. Trace only controls diagnostics. The
+standalone regression exercises both trace-enabled and trace-disabled
+intra-solve solves.
+
+The `-fgcrodr_projected_relative` option also changes the projected
+residual stopping criterion when `-fgcrodr_intra 0`; it is independent
+of whether intra-solve recycling is enabled. The true residual must
+still pass the convergence test.
 
 Recycled rank must remain smaller than restart size. Without the new
 intra-solve switch, historical cross-solve FGCRO-DR remains the default.
@@ -66,10 +75,10 @@ make check. It checks:
 5. The above synthetic operator sequence under two MPI ranks, with
    process-local row assembly.
 
-PR #49 independently adds a MAXITER regression (test/testfgcrodrmaxiter.c)
-for the active-recycle workspace cleanup path. Additional CI runs all
-three targeted regression executables with AddressSanitizer,
-LeakSanitizer and UndefinedBehaviorSanitizer enabled.
+The separate `test/testfgcrodrmaxiter.c` regression covers active-recycle
+workspace cleanup on the ordinary iteration-limit exit path. CI also
+runs the FGCRO-DR regressions with AddressSanitizer, LeakSanitizer
+and UndefinedBehaviorSanitizer enabled.
 
 These checks cover specific source paths. They cannot guarantee that
 every memory or numerical problem has been excluded.
@@ -87,8 +96,8 @@ every memory or numerical problem has been excluded.
 - The feature is not a demonstrated
   general performance improvement; real application benchmarking,
   robustness review and further integration testing remain necessary.
-- Full contact replay and offline mode research stay in
-  [draft PR #47](https://github.com/3rav/lis/pull/47).
+- Contact replay and offline near-nullspace enrichment research remain
+  outside the scope of this standalone solver feature.
 
 ## B-workspace allocation bound
 

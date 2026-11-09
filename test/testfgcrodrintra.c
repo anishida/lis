@@ -36,7 +36,7 @@ static int set_intra(LIS_SOLVER solver, int enabled)
         solver)!=LIS_SUCCESS;
 }
 
-static int solve_one(LIS_MATRIX A, LIS_VECTOR b, int intra, int requested_k)
+static int solve_one(LIS_MATRIX A, LIS_VECTOR b, int intra, int requested_k, int trace)
 {
     LIS_VECTOR x=NULL, ax=NULL;
     LIS_SOLVER solver=NULL;
@@ -49,6 +49,10 @@ static int solve_one(LIS_MATRIX A, LIS_VECTOR b, int intra, int requested_k)
     if((rc=lis_vector_duplicate(A,&ax))) goto done;
     if((rc=lis_solver_create(&solver))) goto done;
     if(set_intra(solver,intra)) goto done;
+    /* Explicitly exercise the safety check without diagnostic trace. */
+    if(intra && !trace &&
+       (rc=lis_solver_set_option("-fgcrodr_intra_trace 0",solver)))
+        goto done;
     snprintf(opts,sizeof(opts),
         "-i fgcrodr -p jacobi -restart 2 -maxiter 300 "
         "-tol 1e-5 -fgcrodr_k %d -print none",requested_k);
@@ -414,8 +418,10 @@ int main(int argc, char **argv)
     for(i=0;i<u->n;i++)
         u->value[i]=(LIS_SCALAR)((((u->is+i)*37)%23)-11.0);
     if((rc=lis_matvec(A,u,b))) goto done;
-    if(solve_one(A,b,0,1) || solve_one(A,b,1,1) ||
-       solve_one(A,b,1,1000000)) goto done;
+    if(solve_one(A,b,0,1,0) ||
+       solve_one(A,b,1,1,1) ||
+       solve_one(A,b,1,1,0) ||
+       solve_one(A,b,1,1000000,0)) goto done;
     if(check_changed_operator(A,b)) goto done;
     /* Run the restart tests on the unmodified reference operator.
      * The value-generation test intentionally changes A in place. */
