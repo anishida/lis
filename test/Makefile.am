@@ -24,7 +24,7 @@ test_PROGRAMS = testesubspaceretry etest1 etest2 etest3 etest4 etest5 etest5b et
         testparamupdate testbreakretry testchangingsystem testkrylovrobust testnearnullspace \
         testcoarsesetup testcoarseapply testgcrodroptions testgcrodrconfig testgcrodrsequence \
         testmatrixgeneration testexternalstorage testmatrixmaterialize testmatrixmaterializeomp testmatrixpolicysolve testfrozenilut benchfrozenilut testsplitview testsplitviewi64 testsplitviewreal64 testmatrixoperatorlifecycle testmatrixoperatormpi testsequence testwarmstart testrecovery \
-        testthreads testfgcrodr testfgcrodrmaxiter testsnapshot testmfamg testmfamggalerkin testexactnullspace testhalfconfig testhalfconvert \
+        testthreads testfgcrodr testfgcrodrmaxiter testfgcrodrintra testsnapshot testmfamg testmfamggalerkin testexactnullspace testhalfconfig testhalfconvert \
         testfeastfoundation testfeastcontour testfeastshifted testnullspacecandidates testesolverselection \
 	testprojectedeigen testprojectedhermitian testblockgram \
 	testblockorthogonal testblockrank
@@ -246,7 +246,7 @@ TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEX
         testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testmatrixmaterialize$(EXEEXT) testmatrixpolicysolve$(EXEEXT) testfrozenilut$(EXEEXT) testsplitview$(EXEEXT) testsplitviewi64$(EXEEXT) testmatrixoperatorlifecycle$(EXEEXT) testsequence$(EXEEXT) \
         testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testmatrixmaterialize$(EXEEXT) testfrozenilut$(EXEEXT) testsplitview$(EXEEXT) testsplitviewi64$(EXEEXT) testmatrixoperatorlifecycle$(EXEEXT) testsequence$(EXEEXT) \
         testwarmstart$(EXEEXT) testrecovery$(EXEEXT) testthreads$(EXEEXT) \
-        testfgcrodr$(EXEEXT) testfgcrodrmaxiter$(EXEEXT) testmfamg$(EXEEXT) testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
+        testfgcrodr$(EXEEXT) testfgcrodrmaxiter$(EXEEXT) testfgcrodrintra$(EXEEXT) testmfamg$(EXEEXT) testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
         testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) testnullspacecandidates$(EXEEXT) testesolverselection$(EXEEXT)
 
 # Explicitly run all new regression binaries under make check.
@@ -269,6 +269,7 @@ installcheck:
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
 testfgcrodrmaxiter_SOURCES = testfgcrodrmaxiter.c
+testfgcrodrintra_SOURCES = testfgcrodrintra.c
 
 testgesolvepair_SOURCES = testgesolvepair.c
 

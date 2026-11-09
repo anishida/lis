@@ -17,6 +17,11 @@
 
 #include <math.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#ifdef USE_MPI
+#include <mpi.h>
+#endif
 
 #include "lislib.h"
 
@@ -71,6 +76,11 @@ struct LIS_FGCRODR_STATE_STRUCT
     LIS_REAL reject_threshold;
 
     LIS_INT update;
+
+    /* Per-solver controls instead of process-global getenv() switches. */
+    LIS_INT intra_recycle;
+    LIS_INT intra_trace;
+    LIS_INT projected_relative;
 
     LIS_REAL quality;
     LIS_REAL quality_min;
@@ -281,7 +291,7 @@ lis_fgcrodr_state_destroy(
 
 /*
  * The FGCRO-DR private state contains both configuration and owned recycle
- * vectors.  Solver option-profile replacement must transfer only the four
+ * vectors.  Solver option-profile replacement must transfer only the
  * textual configuration values, never copy the private state or its pointers.
  * An absent state is equivalent to the documented default configuration.
  */
@@ -305,7 +315,11 @@ lis_fgcrodr_profile_equal(LIS_SOLVER active,LIS_SOLVER fresh)
     return (a->target_dim==b->target_dim &&
             a->keep_threshold==b->keep_threshold &&
             a->reject_threshold==b->reject_threshold &&
-            a->update==b->update) ? LIS_TRUE : LIS_FALSE;
+            a->update==b->update &&
+            a->intra_recycle==b->intra_recycle &&
+            a->intra_trace==b->intra_trace &&
+            a->projected_relative==b->projected_relative)
+            ? LIS_TRUE : LIS_FALSE;
 }
 
 /* Preflight any allocation before resetting or changing the active profile. */
@@ -350,6 +364,9 @@ lis_fgcrodr_profile_copy(LIS_SOLVER active,LIS_SOLVER fresh)
     a->keep_threshold=b->keep_threshold;
     a->reject_threshold=b->reject_threshold;
     a->update=b->update;
+    a->intra_recycle=b->intra_recycle;
+    a->intra_trace=b->intra_trace;
+    a->projected_relative=b->projected_relative;
 }
 
 
@@ -752,6 +769,33 @@ lis_fgcrodr_set_option(
         return LIS_SUCCESS;
     }
 
+
+    /* Explicit per-solver switches. Invalid values must not
+     * silently turn safety-sensitive numerical options off. */
+    if( strcmp(name,"-fgcrodr_intra")==0 ||
+        strcmp(name,"-fgcrodr_intra_trace")==0 ||
+        strcmp(name,"-fgcrodr_projected_relative")==0 )
+    {
+        LIS_INT enabled;
+        if( strcmp(value,"0")==0 )
+            enabled = LIS_FALSE;
+        else if( strcmp(value,"1")==0 )
+            enabled = LIS_TRUE;
+        else
+        {
+            LIS_SETERR(LIS_ERR_ILL_ARG,
+                       "FGCRO-DR switches must be 0 or 1\n");
+            return LIS_ERR_ILL_ARG;
+        }
+
+        if( strcmp(name,"-fgcrodr_intra")==0 )
+            state->intra_recycle = enabled;
+        else if( strcmp(name,"-fgcrodr_intra_trace")==0 )
+            state->intra_trace = enabled;
+        else
+            state->projected_relative = enabled;
+        return LIS_SUCCESS;
+    }
 
     LIS_SETERR1(
         LIS_ERR_ILL_ARG,
@@ -5275,6 +5319,11 @@ lis_fgcrodr_flexible_core(
     LIS_INT use_recycle;
     LIS_INT kcur;
     LIS_INT ri;
+    LIS_INT intra_recycle;
+    LIS_INT intra_trace;
+    LIS_INT recycle_counted;
+    LIS_INT normalize_projected;
+    LIS_REAL residual_before_projection;
 
     double time;
     double ptime;
@@ -5307,6 +5356,12 @@ lis_fgcrodr_flexible_core(
         use_recycle
         ? state->dim
         : 0;
+
+    /* Snapshot these per-solver options once per numerical solve. */
+    intra_recycle=state->intra_recycle;
+    intra_trace=(intra_recycle && state->intra_trace);
+    normalize_projected=state->projected_relative;
+    recycle_counted=use_recycle;
 
     hraw = NULL;
     bcoef = NULL;
@@ -5396,39 +5451,31 @@ lis_fgcrodr_flexible_core(
         *sizeof(LIS_SCALAR));
 
 
-    if( use_recycle )
+    if( use_recycle || intra_recycle )
     {
-        bcoef =
-            (LIS_SCALAR *)lis_malloc(
-                (size_t)kcur
-                *(size_t)m
-                *sizeof(LIS_SCALAR),
-                "lis_fgcrodr_flexible_core::bcoef");
-
-        if( bcoef==NULL )
+        /* A harmonic recycle space can never exceed restart-1.
+         * Do not allocate target_dim*m elements when the user asks
+         * for far more modes than the small restart can retain.
+         * Keep room for any already valid cross-solve space when
+         * restart was changed since the previous solve. */
+        LIS_INT rows=intra_recycle ? state->target_dim : kcur;
+        size_t capacity;
+        if(intra_recycle && rows>m-1)
+            rows=m-1;
+        if(rows<kcur)
+            rows=kcur;
+        capacity=(size_t)rows*(size_t)m;
+        bcoef=(LIS_SCALAR *)lis_malloc(
+            capacity*sizeof(LIS_SCALAR),
+            "lis_fgcrodr_flexible_core::bcoef");
+        if(bcoef==NULL)
         {
-            if( bcoef )
-            lis_free(bcoef);
-
-        if( hraw )
             lis_free(hraw);
-
-        lis_free(h);
-
-            LIS_SETERR_MEM(
-                (size_t)kcur
-                *(size_t)m
-                *sizeof(LIS_SCALAR));
-
+            lis_free(h);
+            LIS_SETERR_MEM(capacity*sizeof(LIS_SCALAR));
             return LIS_ERR_OUT_OF_MEMORY;
         }
-
-        memset(
-            bcoef,
-            0,
-            (size_t)kcur
-            *(size_t)m
-            *sizeof(LIS_SCALAR));
+        memset(bcoef,0,capacity*sizeof(LIS_SCALAR));
     }
 
 
@@ -5544,6 +5591,90 @@ lis_fgcrodr_flexible_core(
     while( iter<maxiter )
     {
         candidate = LIS_FALSE;
+
+        /*
+         * The first cycle builds harmonic Ritz vectors. At each later
+         * cycle, activate the latest valid A*Z=C relation, including
+         * changes in rank after an augmented harmonic update.
+         * Re-project the true residual before the next Arnoldi basis.
+         * This avoids the stale kcur and B-column stride from the
+         * first solve/cycle, and preserves FGMRES when opt-in is off.
+         */
+        if(intra_recycle && iter>0)
+        {
+            use_recycle=(state->valid && state->dim>0 &&
+                state->matrix==A &&
+                state->structure_generation==A->structure_generation &&
+                state->value_generation==A->value_generation);
+            kcur=use_recycle ? state->dim : 0;
+            if(use_recycle)
+            {
+                if(kcur>=m || kcur>state->target_dim)
+                {
+                    solver->retcode=LIS_ERR_ILL_ARG;
+                    solver->iter=iter;
+                    solver->ptime=ptime;
+                    if(bcoef) lis_free(bcoef);
+                    lis_free(hraw);
+                    lis_free(h);
+                    return LIS_ERR_ILL_ARG;
+                }
+                /* v[0] is the explicit b-A*x computed after the
+                 * preceding harmonic Ritz update (see restart tail).
+                 * In trace mode, monitor projection norm monotonicity. */
+                if(intra_trace)
+                    lis_vector_nrm2(v[0],&residual_before_projection);
+                for(ri=0;ri<kcur;ri++)
+                {
+                    lis_vector_dot(state->c[ri],v[0],&gamma);
+                    lis_vector_axpy(gamma,state->z[ri],x);
+                    lis_vector_axpy(-gamma,state->c[ri],v[0]);
+                }
+                lis_vector_nrm2(v[0],&rnorm);
+                if(intra_trace && isfinite(residual_before_projection) &&
+                   isfinite(rnorm) &&
+                   rnorm>residual_before_projection*(1.0+1.0e-8))
+                {
+                    solver->retcode=LIS_BREAKDOWN;
+                    solver->iter=iter;
+                    solver->resid=rnorm;
+                    solver->ptime=ptime;
+                    if(bcoef) lis_free(bcoef);
+                    if(hraw) lis_free(hraw);
+                    lis_free(h);
+                    return LIS_BREAKDOWN;
+                }
+                if(rnorm==0.0 || rnorm!=rnorm)
+                {
+                    solver->retcode=(rnorm==0.0) ?
+                        LIS_SUCCESS : LIS_BREAKDOWN;
+                    solver->iter=iter;
+                    solver->resid=rnorm;
+                    solver->ptime=ptime;
+                    if(bcoef) lis_free(bcoef);
+                    lis_free(hraw);
+                    lis_free(h);
+                    return solver->retcode;
+                }
+                bnrm2=1.0/rnorm;
+                memset(bcoef,0,
+                    (size_t)kcur*(size_t)m*sizeof(LIS_SCALAR));
+                if(!recycle_counted)
+                {
+                    state->uses++;
+                    recycle_counted=LIS_TRUE;
+                }
+                if(intra_trace)
+                    fprintf(stderr,
+                        "LIS_FGCRODR_INTRA_RECYCLE iter=%d k=%d "
+                        "relative=%.12e before=%.12e after=%.12e\n",
+                        (int)iter,(int)kcur,
+                        (double)(rnorm*solver->bnrm),
+                        (double)residual_before_projection,
+                        (double)rnorm);
+            }
+        }
+
         /*
          * First Arnoldi vector:
          *
@@ -5959,8 +6090,17 @@ lis_fgcrodr_flexible_core(
             /* Convergence                                      */
             /* ------------------------------------------------ */
 
+            /*
+             * Match the opt-in relative projected-residual semantics
+             * already used by LIS FGMRES v5. Keep the small-system
+             * least-squares right-hand side in physical units for
+             * back substitution. True residual is still recomputed
+             * before declaring convergence.
+             */
             nrm2 =
                 fabs(s->value[i1]);
+            if(normalize_projected)
+                nrm2 *= solver->bnrm;
 
 
             if( output )
@@ -6411,7 +6551,10 @@ lis_fgcrodr_flexible_core(
         /* ---------------------------------------------------- */
 
 
-        if( use_recycle )
+        /* With opt-in within-solve recycling, projection is delayed
+         * until the next cycle, when the freshly built basis dimension
+         * is known. The old path remains unchanged by default. */
+        if( use_recycle && !intra_recycle )
         {
             for(ri=0;ri<kcur;ri++)
             {
@@ -6536,6 +6679,33 @@ lis_fgcrodr(
     state =
         solver->fgcrodr_state;
 
+#ifdef USE_MPI
+    /* Inconsistent per-rank opt-ins would diverge around Krylov
+     * collectives. Reject them on the operator communicator first. */
+    {
+        int local_flags =
+            (state->intra_recycle ? 1 : 0) |
+            (state->projected_relative ? 2 : 0) |
+            (state->intra_trace ? 4 : 0) |
+            (state->target_dim>0 ? 8 : 0);
+        int min_flags=0,max_flags=0;
+        if( MPI_Allreduce(&local_flags,&min_flags,1,MPI_INT,
+                          MPI_MIN,solver->A->comm)!=MPI_SUCCESS ||
+            MPI_Allreduce(&local_flags,&max_flags,1,MPI_INT,
+                          MPI_MAX,solver->A->comm)!=MPI_SUCCESS )
+        {
+            LIS_SETERR(LIS_ERR_ILL_ARG,
+                       "FGCRO-DR MPI option consistency check failed\n");
+            return LIS_ERR_ILL_ARG;
+        }
+        if(min_flags!=max_flags)
+        {
+            LIS_SETERR(LIS_ERR_ILL_ARG,
+                       "FGCRO-DR options differ across MPI ranks\n");
+            return LIS_ERR_ILL_ARG;
+        }
+    }
+#endif
 
     solve_cross_action =
         LIS_FGCRODR_RECYCLE_NONE;
@@ -6566,8 +6736,35 @@ lis_fgcrodr(
         return err;
 
 
-    solve_cross_action =
-        state->cross_action;
+    /*
+     * A persistent recycle basis may have been built with a larger
+     * restart in a preceding solve. If the caller reduces restart,
+     * the saved rank must not occupy all Arnoldi search directions.
+     * Discard the incompatible basis before the first cycle; a new
+     * rank <= restart-1 can then be built as usual.
+     *
+     * This guard is needed for both normal cross-solve reuse and the
+     * opt-in within-solve path: the latter only checks kcur on later
+     * restarts, after the first cycle has already used the old basis.
+     */
+    if( state->valid &&
+        state->dim >= solver->options[LIS_OPTIONS_RESTART] )
+    {
+        err = lis_fgcrodr_clear_recycle(solver);
+        if( err )
+            return err;
+
+        state->rejects++;
+        state->policy_rejects++;
+        state->last_action = LIS_FGCRODR_RECYCLE_REJECT;
+        state->cross_action = LIS_FGCRODR_RECYCLE_REJECT;
+        solve_cross_action = LIS_FGCRODR_RECYCLE_REJECT;
+    }
+    else
+    {
+        solve_cross_action =
+            state->cross_action;
+    }
 
 
     err =
