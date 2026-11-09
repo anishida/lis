@@ -348,7 +348,7 @@ done:
 /* A per-rank mode mismatch must fail deterministically before Krylov
  * collectives; otherwise inconsistent paths can hang on MPI.
  */
-static int check_mpi_mode_mismatch(LIS_MATRIX A,LIS_VECTOR b)
+static int check_mpi_mode_mismatch(LIS_MATRIX A,LIS_VECTOR b,int mode)
 {
 #ifdef USE_MPI
     int rank=0,nprocs=1;
@@ -364,9 +364,33 @@ static int check_mpi_mode_mismatch(LIS_MATRIX A,LIS_VECTOR b)
         "-i fgcrodr -p jacobi -restart 2 -maxiter 10 "
         "-tol 1e-5 -fgcrodr_k 1 -fgcrodr_projected_relative 1 "
         "-print none",solver))) goto done;
-    if((err=lis_solver_set_option(
-        rank==0 ? "-fgcrodr_intra 1" : "-fgcrodr_intra 0",
-        solver))) goto done;
+    if(mode==0)
+    {
+        if((err=lis_solver_set_option(
+            rank==0 ? "-fgcrodr_intra 1" : "-fgcrodr_intra 0",
+            solver))) goto done;
+    }
+    else if(mode==1)
+    {
+        /* Both ranks have k>0; testing a Boolean would miss this. */
+        if((err=lis_solver_set_option(
+            rank==0 ? "-fgcrodr_k 1" : "-fgcrodr_k 2",
+            solver))) goto done;
+    }
+    else if(mode==2)
+    {
+        if((err=lis_solver_set_option(
+            rank==0 ? "-restart 2" : "-restart 3",
+            solver))) goto done;
+    }
+    else if(mode==3)
+    {
+        if((err=lis_solver_set_option(
+            rank==0 ? "-maxiter 10" : "-maxiter 11",
+            solver))) goto done;
+    }
+    else
+        goto done;
     if((err=lis_vector_set_all(0.0,x))) goto done;
     err=lis_solve_sequence(A,b,x,solver);
     /* LIS solve-sequence API can return success for completed
@@ -375,13 +399,13 @@ static int check_mpi_mode_mismatch(LIS_MATRIX A,LIS_VECTOR b)
        solver->retcode!=LIS_ERR_ILL_ARG)
         goto done;
     if(rank==0)
-        puts("FGCRODR_MPI_MODE_MISMATCH_REJECTED_OK");
+        printf("FGCRODR_MPI_MODE_MISMATCH_REJECTED_OK mode=%d\n",mode);
     failed=0;
 done:
     if(failed)
         fprintf(stderr,"FGCRODR_MPI_MODE_MISMATCH_FAIL "
-                "rank=%d err=%d retcode=%d\n",
-                rank,(int)err,solver?(int)solver->retcode:-1);
+                "mode=%d rank=%d err=%d retcode=%d\n",
+                mode,rank,(int)err,solver?(int)solver->retcode:-1);
     if(solver) lis_solver_destroy(solver);
     if(x) lis_vector_destroy(x);
     return failed;
@@ -428,7 +452,10 @@ int main(int argc, char **argv)
     if(check_restart_shrink(A,b,0) ||
        check_restart_shrink(A,b,1)) goto done;
     if(check_same_operator_value_update(A,b)) goto done;
-    if(check_mpi_mode_mismatch(A,b)) goto done;
+    if(check_mpi_mode_mismatch(A,b,0) ||
+       check_mpi_mode_mismatch(A,b,1) ||
+       check_mpi_mode_mismatch(A,b,2) ||
+       check_mpi_mode_mismatch(A,b,3)) goto done;
     failed=0;
 done:
     if(failed)

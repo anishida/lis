@@ -6682,29 +6682,39 @@ lis_fgcrodr(
         solver->fgcrodr_state;
 
 #ifdef USE_MPI
-    /* Inconsistent per-rank opt-ins would diverge around Krylov
-     * collectives. Reject them on the operator communicator first. */
+    /* Krylov collective control flow depends on dimensions and limits,
+     * not merely on whether positive-k recycling is enabled.
+     * Use LIS_MPI_INT so this check also works for 64-bit LIS_INT. */
     {
-        int local_flags =
+        LIS_INT local[6], min_config[6], max_config[6];
+        LIS_INT j;
+        local[0] =
             (state->intra_recycle ? 1 : 0) |
             (state->projected_relative ? 2 : 0) |
-            (state->intra_trace ? 4 : 0) |
-            (state->target_dim>0 ? 8 : 0);
-        int min_flags=0,max_flags=0;
-        if( MPI_Allreduce(&local_flags,&min_flags,1,MPI_INT,
+            (state->intra_trace ? 4 : 0);
+        local[1] = state->target_dim;
+        local[2] = solver->options[LIS_OPTIONS_RESTART];
+        local[3] = solver->options[LIS_OPTIONS_MAXITER];
+        local[4] = solver->options[LIS_OPTIONS_MAXITER_NO_IMP];
+        local[5] = state->update ? 1 : 0;
+
+        if( MPI_Allreduce(local,min_config,6,LIS_MPI_INT,
                           MPI_MIN,solver->A->comm)!=MPI_SUCCESS ||
-            MPI_Allreduce(&local_flags,&max_flags,1,MPI_INT,
+            MPI_Allreduce(local,max_config,6,LIS_MPI_INT,
                           MPI_MAX,solver->A->comm)!=MPI_SUCCESS )
         {
             LIS_SETERR(LIS_ERR_ILL_ARG,
                        "FGCRO-DR MPI option consistency check failed\n");
             return LIS_ERR_ILL_ARG;
         }
-        if(min_flags!=max_flags)
+        for(j=0;j<6;j++)
         {
-            LIS_SETERR(LIS_ERR_ILL_ARG,
-                       "FGCRO-DR options differ across MPI ranks\n");
-            return LIS_ERR_ILL_ARG;
+            if(min_config[j]!=max_config[j])
+            {
+                LIS_SETERR(LIS_ERR_ILL_ARG,
+                           "FGCRO-DR options differ across MPI ranks\n");
+                return LIS_ERR_ILL_ARG;
+            }
         }
     }
 #endif

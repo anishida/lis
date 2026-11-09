@@ -34,8 +34,10 @@ control these paths.
 
 All three accept only 0 or 1. They are stored in the individual solver's
 private FGCRO-DR state. Under MPI, the algorithm checks that all ranks
-agree on the mode switches before entering the Krylov core; mismatches
-return a deterministic error rather than risking divergent collectives.
+agree on the mode switches, exact recycle dimension, restart dimension,
+iteration limits and recycling update switch before entering the Krylov
+core. A mismatch produces a deterministic error rather than risking
+divergent collectives.
 The settings must be configured coherently on all participating ranks.
 
 The standalone test sets projected-relative normalization **both**
@@ -128,4 +130,7 @@ followed by restart=2 with rank-1 rebuilding, true residual and
 A*Z=C checks. This does not change the default behavior for valid
 recycle dimensions.
 
-The MPI regression intentionally applies conflicting per-rank intra-solve switches and verifies that the solve refuses to enter the numerical core rather than deadlocking.
+The MPI regression intentionally applies conflicting per-rank intra-solve
+switches, positive recycle dimensions (k=1 versus k=2), restart sizes
+and maximum iteration limits. Each test verifies that the solver refuses
+to enter the numerical core rather than deadlocking.
