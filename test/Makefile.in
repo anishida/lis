@@ -135,25 +135,25 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testmatrixoperatormpi$(EXEEXT) testsequence$(EXEEXT) \
 	testwarmstart$(EXEEXT) testrecovery$(EXEEXT) \
 	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) \
-	testsnapshot$(EXEEXT) testmfamg$(EXEEXT) \
-	testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
-	testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) \
-	testfeastfoundation$(EXEEXT) testfeastcontour$(EXEEXT) \
-	testfeastshifted$(EXEEXT) testnullspacecandidates$(EXEEXT) \
-	testesolverselection$(EXEEXT) testprojectedeigen$(EXEEXT) \
-	testprojectedhermitian$(EXEEXT) testblockgram$(EXEEXT) \
-	testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) \
-	testmatrixautosession$(EXEEXT) testvectorreal64$(EXEEXT) \
-	benchautojacobirefresh$(EXEEXT) testabi$(EXEEXT) \
-	testgesolvepair$(EXEEXT) testrcoalloc$(EXEEXT) $(am__EXEEXT_2) \
-	$(am__EXEEXT_3) $(am__EXEEXT_4) $(am__EXEEXT_5) \
-	test_krylov_modes$(EXEEXT) test_krylov_sparse$(EXEEXT) \
-	test_krylov_regression$(EXEEXT) test_krylov_lis$(EXEEXT) \
-	test_krylov_semidefinite$(EXEEXT) test_krylov_stress$(EXEEXT) \
-	test_krylov_inertia$(EXEEXT) test_krylov_window$(EXEEXT) \
-	test_krylov_openmp$(EXEEXT) test_krylov_projected$(EXEEXT) \
-	test_krylov_workspace$(EXEEXT) test_krylov_unified$(EXEEXT) \
-	test_krylov_adaptive_ex$(EXEEXT) \
+	testfgcrodrmaxiter$(EXEEXT) testsnapshot$(EXEEXT) \
+	testmfamg$(EXEEXT) testmfamggalerkin$(EXEEXT) \
+	testexactnullspace$(EXEEXT) testhalfconfig$(EXEEXT) \
+	testhalfconvert$(EXEEXT) testfeastfoundation$(EXEEXT) \
+	testfeastcontour$(EXEEXT) testfeastshifted$(EXEEXT) \
+	testnullspacecandidates$(EXEEXT) testesolverselection$(EXEEXT) \
+	testprojectedeigen$(EXEEXT) testprojectedhermitian$(EXEEXT) \
+	testblockgram$(EXEEXT) testblockorthogonal$(EXEEXT) \
+	testblockrank$(EXEEXT) testmatrixautosession$(EXEEXT) \
+	testvectorreal64$(EXEEXT) benchautojacobirefresh$(EXEEXT) \
+	testabi$(EXEEXT) testgesolvepair$(EXEEXT) \
+	testrcoalloc$(EXEEXT) $(am__EXEEXT_2) $(am__EXEEXT_3) \
+	$(am__EXEEXT_4) $(am__EXEEXT_5) test_krylov_modes$(EXEEXT) \
+	test_krylov_sparse$(EXEEXT) test_krylov_regression$(EXEEXT) \
+	test_krylov_lis$(EXEEXT) test_krylov_semidefinite$(EXEEXT) \
+	test_krylov_stress$(EXEEXT) test_krylov_inertia$(EXEEXT) \
+	test_krylov_window$(EXEEXT) test_krylov_openmp$(EXEEXT) \
+	test_krylov_projected$(EXEEXT) test_krylov_workspace$(EXEEXT) \
+	test_krylov_unified$(EXEEXT) test_krylov_adaptive_ex$(EXEEXT) \
 	test_krylov_api_contract$(EXEEXT) \
 	test_krylov_residual_reuse$(EXEEXT) \
 	test_krylov_both_ends$(EXEEXT) \
@@ -571,6 +571,10 @@ am_testfgcrodr_OBJECTS = testfgcrodr.$(OBJEXT)
 testfgcrodr_OBJECTS = $(am_testfgcrodr_OBJECTS)
 testfgcrodr_LDADD = $(LDADD)
 testfgcrodr_DEPENDENCIES =
+am_testfgcrodrmaxiter_OBJECTS = testfgcrodrmaxiter.$(OBJEXT)
+testfgcrodrmaxiter_OBJECTS = $(am_testfgcrodrmaxiter_OBJECTS)
+testfgcrodrmaxiter_LDADD = $(LDADD)
+testfgcrodrmaxiter_DEPENDENCIES =
 am_testfrozenilut_OBJECTS = testfrozenilut.$(OBJEXT)
 testfrozenilut_OBJECTS = $(am_testfrozenilut_OBJECTS)
 testfrozenilut_LDADD = $(LDADD)
@@ -988,6 +992,7 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testfeastcontour.Po \
 	./$(DEPDIR)/testfeastfoundation.Po \
 	./$(DEPDIR)/testfeastshifted.Po ./$(DEPDIR)/testfgcrodr.Po \
+	./$(DEPDIR)/testfgcrodrmaxiter.Po \
 	./$(DEPDIR)/testfrozenilut.Po ./$(DEPDIR)/testgcrodrconfig.Po \
 	./$(DEPDIR)/testgcrodroptions.Po \
 	./$(DEPDIR)/testgcrodrsequence.Po \
@@ -1118,17 +1123,17 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testesubspaceretry_SOURCES) testexactnullspace.c \
 	$(testexternalstorage_SOURCES) $(testfeastcontour_SOURCES) \
 	$(testfeastfoundation_SOURCES) $(testfeastshifted_SOURCES) \
-	$(testfgcrodr_SOURCES) $(testfrozenilut_SOURCES) \
-	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
-	$(testgcrodrsequence_SOURCES) $(testgesolvepair_SOURCES) \
-	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
-	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
-	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
-	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
-	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
-	$(testilucbsrsmoke_SOURCES) $(testilupivot_SOURCES) \
-	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
-	$(testmatrixautosession_SOURCES) \
+	$(testfgcrodr_SOURCES) $(testfgcrodrmaxiter_SOURCES) \
+	$(testfrozenilut_SOURCES) $(testgcrodrconfig_SOURCES) \
+	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
+	$(testgesolvepair_SOURCES) $(testgmreswork_SOURCES) \
+	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
+	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
+	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
+	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
+	$(testhybridnested_SOURCES) $(testilucbsrsmoke_SOURCES) \
+	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
+	$(testkrylovrobust_SOURCES) $(testmatrixautosession_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatrixmaterialize_SOURCES) \
 	$(testmatrixmaterializeomp_SOURCES) \
@@ -1203,17 +1208,17 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testesubspaceretry_SOURCES) testexactnullspace.c \
 	$(testexternalstorage_SOURCES) $(testfeastcontour_SOURCES) \
 	$(testfeastfoundation_SOURCES) $(testfeastshifted_SOURCES) \
-	$(testfgcrodr_SOURCES) $(testfrozenilut_SOURCES) \
-	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
-	$(testgcrodrsequence_SOURCES) $(testgesolvepair_SOURCES) \
-	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
-	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
-	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
-	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
-	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
-	$(testilucbsrsmoke_SOURCES) $(testilupivot_SOURCES) \
-	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
-	$(testmatrixautosession_SOURCES) \
+	$(testfgcrodr_SOURCES) $(testfgcrodrmaxiter_SOURCES) \
+	$(testfrozenilut_SOURCES) $(testgcrodrconfig_SOURCES) \
+	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
+	$(testgesolvepair_SOURCES) $(testgmreswork_SOURCES) \
+	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
+	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
+	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
+	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
+	$(testhybridnested_SOURCES) $(testilucbsrsmoke_SOURCES) \
+	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
+	$(testkrylovrobust_SOURCES) $(testmatrixautosession_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatrixmaterialize_SOURCES) \
 	$(testmatrixmaterializeomp_SOURCES) \
@@ -1827,7 +1832,8 @@ TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) \
 	testsplitview$(EXEEXT) testsplitviewi64$(EXEEXT) \
 	testmatrixoperatorlifecycle$(EXEEXT) testsequence$(EXEEXT) \
 	testwarmstart$(EXEEXT) testrecovery$(EXEEXT) \
-	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
+	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) \
+	testfgcrodrmaxiter$(EXEEXT) testmfamg$(EXEEXT) \
 	testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
 	testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) \
 	testnullspacecandidates$(EXEEXT) testesolverselection$(EXEEXT) \
@@ -1848,6 +1854,7 @@ TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) \
 	$(am__append_6) $(am__append_8)
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
+testfgcrodrmaxiter_SOURCES = testfgcrodrmaxiter.c
 testgesolvepair_SOURCES = testgesolvepair.c
 test_krylov_modes_SOURCES = test_krylov_modes.c
 test_krylov_sparse_SOURCES = test_krylov_sparse.c
@@ -2339,6 +2346,10 @@ testfgcrodr$(EXEEXT): $(testfgcrodr_OBJECTS) $(testfgcrodr_DEPENDENCIES) $(EXTRA
 	@rm -f testfgcrodr$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testfgcrodr_OBJECTS) $(testfgcrodr_LDADD) $(LIBS)
 
+testfgcrodrmaxiter$(EXEEXT): $(testfgcrodrmaxiter_OBJECTS) $(testfgcrodrmaxiter_DEPENDENCIES) $(EXTRA_testfgcrodrmaxiter_DEPENDENCIES) 
+	@rm -f testfgcrodrmaxiter$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testfgcrodrmaxiter_OBJECTS) $(testfgcrodrmaxiter_LDADD) $(LIBS)
+
 testfrozenilut$(EXEEXT): $(testfrozenilut_OBJECTS) $(testfrozenilut_DEPENDENCIES) $(EXTRA_testfrozenilut_DEPENDENCIES) 
 	@rm -f testfrozenilut$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testfrozenilut_OBJECTS) $(testfrozenilut_LDADD) $(LIBS)
@@ -2757,6 +2768,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfeastfoundation.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfeastshifted.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodr.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodrmaxiter.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfrozenilut.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testgcrodrconfig.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testgcrodroptions.Po@am__quote@ # am--include-marker
@@ -3568,6 +3580,13 @@ testfgcrodr.log: testfgcrodr$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testfgcrodrmaxiter.log: testfgcrodrmaxiter$(EXEEXT)
+	@p='testfgcrodrmaxiter$(EXEEXT)'; \
+	b='testfgcrodrmaxiter'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 testmfamg.log: testmfamg$(EXEEXT)
 	@p='testmfamg$(EXEEXT)'; \
 	b='testmfamg'; \
@@ -4033,6 +4052,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testfeastfoundation.Po
 	-rm -f ./$(DEPDIR)/testfeastshifted.Po
 	-rm -f ./$(DEPDIR)/testfgcrodr.Po
+	-rm -f ./$(DEPDIR)/testfgcrodrmaxiter.Po
 	-rm -f ./$(DEPDIR)/testfrozenilut.Po
 	-rm -f ./$(DEPDIR)/testgcrodrconfig.Po
 	-rm -f ./$(DEPDIR)/testgcrodroptions.Po
@@ -4225,6 +4245,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testfeastfoundation.Po
 	-rm -f ./$(DEPDIR)/testfeastshifted.Po
 	-rm -f ./$(DEPDIR)/testfgcrodr.Po
+	-rm -f ./$(DEPDIR)/testfgcrodrmaxiter.Po
 	-rm -f ./$(DEPDIR)/testfrozenilut.Po
 	-rm -f ./$(DEPDIR)/testgcrodrconfig.Po
 	-rm -f ./$(DEPDIR)/testgcrodroptions.Po
