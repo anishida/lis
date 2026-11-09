@@ -147,6 +147,10 @@ def read_dof_map(path, n, expected_dofs_per_node=None):
             set(reader.fieldnames)
         ):
             raise ValueError("DOF CSV requires eq,node,dof columns")
+        # DictReader silently keeps the last value for duplicate headings,
+        # potentially assigning an equation or body to the wrong DOF.
+        if len(reader.fieldnames) != len(set(reader.fieldnames)):
+            raise ValueError("duplicate DOF CSV column name")
         for row_number, entry in enumerate(reader, start=2):
             if None in entry or any(value is None for value in entry.values()):
                 raise ValueError("incomplete or malformed DOF CSV row %d" % row_number)

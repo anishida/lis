@@ -136,6 +136,39 @@ class ContactSnapshotAuditTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     auditor.audit(f)
 
+    def test_duplicate_dof_csv_headers_are_rejected(self):
+        a = self.symmetric_example()
+        cases = [
+            # Without validation, DictReader silently uses the *last*
+            # eq column and would accept this incorrect permutation.
+            """eq,node,dof,eq
+0,node-A,UX,2
+1,node-B,UY,0
+2,node-C,UZ,1
+""",
+            # The optional physical-body label is also significant:
+            # a repeated header must not silently replace it.
+            """eq,node,dof,body,body
+0,node-A,UX,left,right
+1,node-B,UY,left,right
+2,node-C,UZ,left,right
+""",
+        ]
+        for index, content in enumerate(cases):
+            with self.subTest(index=index):
+                path = self.write("duplicate_header_%d.csv" % index, content)
+                with self.assertRaisesRegex(ValueError, "duplicate DOF CSV column name"):
+                    auditor.audit(a, dof_map_path=path)
+                result = subprocess.run(
+                    [sys.executable, str(Path(auditor.__file__)),
+                     "--matrix", str(a), "--dof-map", str(path)],
+                    capture_output=True, text=True, check=False,
+                )
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertEqual(result.stdout, "")
+                self.assertIn("duplicate DOF CSV column name", result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+
     def test_dof_map_requires_unique_complete_equations(self):
         a = self.symmetric_example()
         bad = self.write("bad.csv", """eq,node,dof,body
