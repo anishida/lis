@@ -6496,6 +6496,10 @@ lis_fgcrodr_flexible_core(
     solver->resid =
         nrm2;
 
+    /* Release B even when active recycling runs into the ordinary
+     * iteration cap (other FGCRO-DR exits already free it). */
+    if( bcoef )
+        lis_free(bcoef);
     if( hraw )
         lis_free(hraw);
 
