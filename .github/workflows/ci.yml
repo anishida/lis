@@ -194,6 +194,81 @@ jobs:
             test/test-suite.log
           if-no-files-found: ignore
 
+  fgcrodr-maxiter-lsan:
+    name: FGCRO-DR MAXITER leak red/green proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+      LSAN_OPTIONS: exitcode=23
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install sanitizer toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+      - name: Build sanitizer-enabled library and regression
+        run: |
+          autoreconf -fiv
+          ./configure --enable-test --disable-fortran --disable-f90 \
+            --disable-saamg --disable-mpi --disable-omp \
+            CC=gcc \
+            CFLAGS="-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all" \
+            LDFLAGS="-fsanitize=address,undefined"
+          make -j2
+      - name: GREEN - patched MAXITER path has no detected leak
+        run: ./test/testfgcrodrmaxiter
+      - name: RED - temporary unfixed MAXITER path triggers LSan
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("src/solver/lis_solver_fgcrodr.c")
+          source = p.read_text()
+          patch = ("    /* Release B even when active recycling runs into the ordinary\n"
+                   "     * iteration cap (other FGCRO-DR exits already free it). */\n"
+                   "    if( bcoef )\n"
+                   "        lis_free(bcoef);\n")
+          assert source.count(patch) == 1, "positive-fix anchor missing"
+          p.write_text(source.replace(patch, "", 1))
+          PY
+          make -j2
+          # The LIS test binary is statically linked: changing liblis.a
+          # alone does not relink an existing test executable.
+          touch test/testfgcrodrmaxiter.c
+          make -C test testfgcrodrmaxiter
+          set +e
+          ./test/testfgcrodrmaxiter > /tmp/fgcrodr-negative-lsan.log 2>&1
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "ERROR: unfixed MAXITER unexpectedly passed LeakSanitizer"
+            cat /tmp/fgcrodr-negative-lsan.log
+            exit 1
+          fi
+          if ! grep -q 'LeakSanitizer: detected memory leaks' /tmp/fgcrodr-negative-lsan.log; then
+            echo "ERROR: negative control did not fail specifically for a leak"
+            cat /tmp/fgcrodr-negative-lsan.log
+            exit 1
+          fi
+          echo "FGCRODR_MAXITER_LSAN_NEGATIVE_CONTROL=DETECTED"
+      - name: GREEN again - restore and validate fix
+        run: |
+          git restore src/solver/lis_solver_fgcrodr.c
+          make -j2
+          touch test/testfgcrodrmaxiter.c
+          make -C test testfgcrodrmaxiter
+          ./test/testfgcrodrmaxiter
+      - name: Upload sanitizer logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fgcrodr-maxiter-lsan-red-green
+          path: |
+            config.log
+            test/*.log
+          if-no-files-found: ignore
+
   linux-mpi:
     name: Linux GCC (MPI, 2 ranks)
     runs-on: ubuntu-latest
