@@ -336,3 +336,9 @@ TESTS += testoommpiscale$(EXEEXT)
 testoommpiscale_SOURCES = testoommpiscale.c
 endif
 endif
+
+# Standalone projected-residual normalization regression.
+test_PROGRAMS += testfgmresprojected
+testfgmresprojected_SOURCES = testfgmresprojected.c
+testfgmresprojected_LDADD = $(LDADD) -lm
+TESTS += testfgmresprojected$(EXEEXT)

@@ -1533,6 +1533,10 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 	tol     = solver->tol;
 	rnorm   = 1.0/bnrm2;
 
+	/* The FGMRES-supported NRM2_R condition uses ||r0|| as the
+	 * normalization denominator. solver->bnrm = 1/||r0||.
+	 * Explicit physical-residual certification remains authoritative.
+	 */
 
 	iter=0;
 	while( iter<maxiter )
@@ -1630,8 +1634,8 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 			aa +=  h[ii+sn]*h[i1+iih];
 			h[ii+iih] = aa;
 
-			/* convergence check */
-			nrm2 = fabs(s->value[i1]);
+			/* FGMRES supports NRM2_R: use relative projected residual units. */
+			nrm2 = fabs(s->value[i1]) * solver->bnrm;
 
 			if( output )
 			{
@@ -1960,8 +1964,8 @@ LIS_INT lis_fgmres_quad(LIS_SOLVER solver)
 			h[ii+iih].hi = aa.hi[0];
 			h[ii+iih].lo = aa.lo[0];
 
-			/* convergence check */
-			nrm2 = fabs(s->value[i1]);
+			/* FGMRES supports NRM2_R: use relative projected residual units. */
+			nrm2 = fabs(s->value[i1]) * solver->bnrm;
 
 			if( output )
 			{
