@@ -285,6 +285,188 @@ LIS_INT lis_precon_update_ilut_frozen(
 }
 
 
+
+/*
+ * Optional serial ILUT preprocessing inspired by hypre's local
+ * reordering/equilibration controls. RCM is computed on the UNDIRECTED
+ * sparsity graph, so it is also defined for nonsymmetric FEA matrices.
+ * This is not hypre's ddPQ pivot matching or a distributed RAS solver.
+ */
+static LIS_INT
+lis_ilut_ordered_create(LIS_SOLVER solver, LIS_PRECON precon)
+{
+    LIS_MATRIX A=solver->A, P=NULL;
+    LIS_INT n=A->n, i,j,k,old,other,p,err=LIS_SUCCESS;
+    LIS_INT *inv=NULL,*degree=NULL,*graphptr=NULL,*cursor=NULL;
+    LIS_INT *edges=NULL,*queue=NULL,*seen=NULL;
+    LIS_INT head,tail,seed,vertex,adj,ndx,tmp;
+    LIS_REAL largest,absv,scale;
+    size_t cap;
+    LIS_INT *perm=NULL;
+    LIS_SCALAR *weights=NULL;
+
+    if(A->nprocs!=1 || A->is!=0 || A->n!=A->gn ||
+       A->matrix_type!=LIS_MATRIX_CSR ||
+       A->ptr==NULL || A->index==NULL || A->value==NULL ||
+       solver->options[LIS_OPTIONS_PRECISION]!=LIS_PRECISION_DOUBLE)
+    {
+        LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+            "ILUT RCM/row scaling supports serial CSR in double precision");
+        return LIS_ERR_NOT_IMPLEMENTED;
+    }
+    if(n<=0 || A->nnz<0 || (size_t)n>SIZE_MAX/sizeof(LIS_INT) ||
+       (size_t)n>SIZE_MAX/sizeof(LIS_SCALAR) ||
+       (size_t)A->nnz>SIZE_MAX/(2*sizeof(LIS_INT)))
+        return LIS_ERR_ILL_ARG;
+
+    perm=(LIS_INT *)lis_malloc((size_t)n*sizeof(LIS_INT),"ILUT RCM permutation");
+    inv=(LIS_INT *)lis_malloc((size_t)n*sizeof(LIS_INT),"ILUT inverse permutation");
+    weights=(LIS_SCALAR *)lis_malloc((size_t)n*sizeof(LIS_SCALAR),"ILUT row scales");
+    if(!perm || !inv || !weights) { err=LIS_OUT_OF_MEMORY; goto cleanup; }
+
+    if(solver->ilut_rcm)
+    {
+        degree=(LIS_INT *)lis_malloc((size_t)n*sizeof(LIS_INT),"ILUT RCM degrees");
+        graphptr=(LIS_INT *)lis_malloc(((size_t)n+1)*sizeof(LIS_INT),"ILUT RCM ptr");
+        cursor=(LIS_INT *)lis_malloc((size_t)n*sizeof(LIS_INT),"ILUT RCM cursor");
+        queue=(LIS_INT *)lis_malloc((size_t)n*sizeof(LIS_INT),"ILUT RCM queue");
+        seen=(LIS_INT *)lis_malloc((size_t)n*sizeof(LIS_INT),"ILUT RCM visited");
+        cap=(size_t)A->nnz*2;
+        edges=(LIS_INT *)lis_malloc((cap?cap:1)*sizeof(LIS_INT),"ILUT RCM edges");
+        if(!degree || !graphptr || !cursor || !queue || !seen || !edges)
+        { err=LIS_OUT_OF_MEMORY; goto cleanup; }
+        memset(degree,0,(size_t)n*sizeof(LIS_INT));
+        memset(seen,0,(size_t)n*sizeof(LIS_INT));
+
+        for(i=0;i<n;i++)
+        for(k=A->ptr[i];k<A->ptr[i+1];k++)
+        {
+            j=A->index[k];
+            if(j<0 || j>=n) { err=LIS_ERR_ILL_ARG; goto cleanup; }
+            if(i!=j) { ++degree[i]; ++degree[j]; }
+        }
+        graphptr[0]=0;
+        for(i=0;i<n;i++)
+        {
+            if(degree[i]>A->nnz*2-graphptr[i])
+            { err=LIS_ERR_ILL_ARG; goto cleanup; }
+            graphptr[i+1]=graphptr[i]+degree[i];
+            cursor[i]=graphptr[i];
+        }
+        for(i=0;i<n;i++)
+        for(k=A->ptr[i];k<A->ptr[i+1];k++)
+        {
+            j=A->index[k];
+            if(i==j) continue;
+            edges[cursor[i]++]=j;
+            edges[cursor[j]++]=i;
+        }
+        /* Insertion sort by graph degree for deterministic RCM BFS. */
+        for(i=0;i<n;i++)
+        for(k=graphptr[i]+1;k<graphptr[i+1];k++)
+        {
+            old=edges[k];
+            p=k;
+            while(p>graphptr[i] &&
+                  (degree[edges[p-1]]>degree[old] ||
+                   (degree[edges[p-1]]==degree[old] && edges[p-1]>old)))
+            {
+                edges[p]=edges[p-1];
+                --p;
+            }
+            edges[p]=old;
+        }
+
+        head=tail=0;
+        while(tail<n)
+        {
+            seed=-1;
+            for(i=0;i<n;i++)
+                if(!seen[i] && (seed<0 ||
+                   degree[i]<degree[seed])) seed=i;
+            if(seed<0) break;
+            queue[tail++]=seed;
+            seen[seed]=1;
+            while(head<tail)
+            {
+                vertex=queue[head++];
+                for(ndx=graphptr[vertex];ndx<graphptr[vertex+1];ndx++)
+                {
+                    adj=edges[ndx];
+                    if(!seen[adj])
+                    {
+                        seen[adj]=1;
+                        queue[tail++]=adj;
+                    }
+                }
+            }
+        }
+        if(tail!=n) { err=LIS_ERR_ILL_ARG; goto cleanup; }
+        for(i=0;i<n;i++) perm[i]=queue[n-1-i];
+    }
+    else for(i=0;i<n;i++) perm[i]=i;
+    for(i=0;i<n;i++) inv[perm[i]]=i;
+
+    err=lis_matrix_create(LIS_COMM_WORLD,&P);
+    if(err) goto cleanup;
+    err=lis_matrix_set_size(P,0,n);
+    if(err) goto cleanup;
+    err=lis_matrix_set_type(P,LIS_MATRIX_CSR);
+    if(err) goto cleanup;
+
+    for(i=0;i<n;i++)
+    {
+        old=perm[i];
+        largest=0.0;
+        for(k=A->ptr[old];k<A->ptr[old+1];k++)
+        {
+            absv=fabs(A->value[k]);
+            if(!isfinite((double)absv)) { err=LIS_ERR_ILL_ARG; goto cleanup; }
+            if(absv>largest) largest=absv;
+        }
+        scale=1.0;
+        if(solver->ilut_row_scale && largest>0.0)
+        {
+            scale=1.0/largest;
+            if(!isfinite((double)scale) || scale<=0.0) scale=1.0;
+        }
+        weights[i]=(LIS_SCALAR)scale;
+        for(k=A->ptr[old];k<A->ptr[old+1];k++)
+        {
+            other=A->index[k];
+            err=lis_matrix_set_value(LIS_INS_VALUE,i,inv[other],
+                                     weights[i]*A->value[k],P);
+            if(err) goto cleanup;
+        }
+    }
+    err=lis_matrix_assemble(P);
+    if(err) goto cleanup;
+
+    solver->A=P;
+    err=lis_precon_create_ilut_csr(solver,precon);
+    solver->A=A;
+    if(err) goto cleanup;
+    precon->ilut_perm=perm; perm=NULL;
+    precon->ilut_row_scale=weights; weights=NULL;
+    err=lis_vector_duplicate(A,&precon->ilut_work_b);
+    if(err) goto cleanup;
+    err=lis_vector_duplicate(A,&precon->ilut_work_x);
+
+cleanup:
+    solver->A=A;
+    if(P) lis_matrix_destroy(P);
+    lis_free(perm);
+    lis_free(inv);
+    lis_free(weights);
+    lis_free(degree);
+    lis_free(graphptr);
+    lis_free(cursor);
+    lis_free(edges);
+    lis_free(queue);
+    lis_free(seen);
+    return err;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_precon_create_ilut"
 LIS_INT lis_precon_create_ilut(LIS_SOLVER solver, LIS_PRECON precon)
@@ -294,13 +476,20 @@ LIS_INT lis_precon_create_ilut(LIS_SOLVER solver, LIS_PRECON precon)
 
 	LIS_DEBUG_FUNC_IN;
 
+	if((solver->ilut_rcm || solver->ilut_row_scale) &&
+	   solver->A->matrix_type!=LIS_MATRIX_CSR)
+	{
+		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+		    "ILUT RCM and row scaling require serial CSR input");
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
 	switch( solver->A->matrix_type )
 	{
 	case LIS_MATRIX_CSR:
-		err =
-			lis_precon_create_ilut_csr(
-				solver,
-				precon);
+		err = (solver->ilut_rcm || solver->ilut_row_scale) ?
+			lis_ilut_ordered_create(solver,precon) :
+			lis_precon_create_ilut_csr(solver,precon);
 
 		lis_psolve_xxx[LIS_PRECON_TYPE_ILUT] =
 			lis_psolve_ilut_csr;
