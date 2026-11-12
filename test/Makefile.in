@@ -158,7 +158,8 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	test_krylov_api_contract$(EXEEXT) \
 	test_krylov_residual_reuse$(EXEEXT) \
 	test_krylov_both_ends$(EXEEXT) \
-	test_krylov_be_lock_order$(EXEEXT) testilucbsrsmoke$(EXEEXT)
+	test_krylov_be_lock_order$(EXEEXT) testilucbsrsmoke$(EXEEXT) \
+	testfgmresprojected$(EXEEXT)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_3 = test2f test6f 
@@ -580,6 +581,10 @@ am_testfgcrodrmaxiter_OBJECTS = testfgcrodrmaxiter.$(OBJEXT)
 testfgcrodrmaxiter_OBJECTS = $(am_testfgcrodrmaxiter_OBJECTS)
 testfgcrodrmaxiter_LDADD = $(LDADD)
 testfgcrodrmaxiter_DEPENDENCIES =
+am_testfgmresprojected_OBJECTS = testfgmresprojected.$(OBJEXT)
+testfgmresprojected_OBJECTS = $(am_testfgmresprojected_OBJECTS)
+am__DEPENDENCIES_1 =
+testfgmresprojected_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_testfrozenilut_OBJECTS = testfrozenilut.$(OBJEXT)
 testfrozenilut_OBJECTS = $(am_testfrozenilut_OBJECTS)
 testfrozenilut_LDADD = $(LDADD)
@@ -999,6 +1004,7 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testfeastshifted.Po ./$(DEPDIR)/testfgcrodr.Po \
 	./$(DEPDIR)/testfgcrodrintra.Po \
 	./$(DEPDIR)/testfgcrodrmaxiter.Po \
+	./$(DEPDIR)/testfgmresprojected.Po \
 	./$(DEPDIR)/testfrozenilut.Po ./$(DEPDIR)/testgcrodrconfig.Po \
 	./$(DEPDIR)/testgcrodroptions.Po \
 	./$(DEPDIR)/testgcrodrsequence.Po \
@@ -1130,17 +1136,17 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testexternalstorage_SOURCES) $(testfeastcontour_SOURCES) \
 	$(testfeastfoundation_SOURCES) $(testfeastshifted_SOURCES) \
 	$(testfgcrodr_SOURCES) $(testfgcrodrintra_SOURCES) \
-	$(testfgcrodrmaxiter_SOURCES) $(testfrozenilut_SOURCES) \
-	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
-	$(testgcrodrsequence_SOURCES) $(testgesolvepair_SOURCES) \
-	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
-	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
-	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
-	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
-	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
-	$(testilucbsrsmoke_SOURCES) $(testilupivot_SOURCES) \
-	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
-	$(testmatrixautosession_SOURCES) \
+	$(testfgcrodrmaxiter_SOURCES) $(testfgmresprojected_SOURCES) \
+	$(testfrozenilut_SOURCES) $(testgcrodrconfig_SOURCES) \
+	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
+	$(testgesolvepair_SOURCES) $(testgmreswork_SOURCES) \
+	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
+	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
+	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
+	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
+	$(testhybridnested_SOURCES) $(testilucbsrsmoke_SOURCES) \
+	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
+	$(testkrylovrobust_SOURCES) $(testmatrixautosession_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatrixmaterialize_SOURCES) \
 	$(testmatrixmaterializeomp_SOURCES) \
@@ -1216,17 +1222,17 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testexternalstorage_SOURCES) $(testfeastcontour_SOURCES) \
 	$(testfeastfoundation_SOURCES) $(testfeastshifted_SOURCES) \
 	$(testfgcrodr_SOURCES) $(testfgcrodrintra_SOURCES) \
-	$(testfgcrodrmaxiter_SOURCES) $(testfrozenilut_SOURCES) \
-	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
-	$(testgcrodrsequence_SOURCES) $(testgesolvepair_SOURCES) \
-	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
-	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
-	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
-	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
-	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
-	$(testilucbsrsmoke_SOURCES) $(testilupivot_SOURCES) \
-	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
-	$(testmatrixautosession_SOURCES) \
+	$(testfgcrodrmaxiter_SOURCES) $(testfgmresprojected_SOURCES) \
+	$(testfrozenilut_SOURCES) $(testgcrodrconfig_SOURCES) \
+	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
+	$(testgesolvepair_SOURCES) $(testgmreswork_SOURCES) \
+	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
+	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
+	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
+	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
+	$(testhybridnested_SOURCES) $(testilucbsrsmoke_SOURCES) \
+	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
+	$(testkrylovrobust_SOURCES) $(testmatrixautosession_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatrixmaterialize_SOURCES) \
 	$(testmatrixmaterializeomp_SOURCES) \
@@ -1859,7 +1865,7 @@ TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) \
 	test_krylov_residual_reuse$(EXEEXT) \
 	test_krylov_both_ends$(EXEEXT) \
 	test_krylov_be_lock_order$(EXEEXT) testilucbsrsmoke$(EXEEXT) \
-	$(am__append_6) $(am__append_8)
+	$(am__append_6) $(am__append_8) testfgmresprojected$(EXEEXT)
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
 testfgcrodrmaxiter_SOURCES = testfgcrodrmaxiter.c
@@ -1893,6 +1899,8 @@ testilucbsrsmoke_SOURCES = testilucbsrsmoke.c
 @ENABLE_OOM_TESTS_TRUE@testoomsnapshot_SOURCES = testoomsnapshot.c
 @ENABLE_OOM_TESTS_TRUE@testoomrco_SOURCES = testoomrco.c
 @ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@testoommpiscale_SOURCES = testoommpiscale.c
+testfgmresprojected_SOURCES = testfgmresprojected.c
+testfgmresprojected_LDADD = $(LDADD) -lm
 all: all-am
 
 .SUFFIXES:
@@ -2363,6 +2371,10 @@ testfgcrodrmaxiter$(EXEEXT): $(testfgcrodrmaxiter_OBJECTS) $(testfgcrodrmaxiter_
 	@rm -f testfgcrodrmaxiter$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testfgcrodrmaxiter_OBJECTS) $(testfgcrodrmaxiter_LDADD) $(LIBS)
 
+testfgmresprojected$(EXEEXT): $(testfgmresprojected_OBJECTS) $(testfgmresprojected_DEPENDENCIES) $(EXTRA_testfgmresprojected_DEPENDENCIES) 
+	@rm -f testfgmresprojected$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testfgmresprojected_OBJECTS) $(testfgmresprojected_LDADD) $(LIBS)
+
 testfrozenilut$(EXEEXT): $(testfrozenilut_OBJECTS) $(testfrozenilut_DEPENDENCIES) $(EXTRA_testfrozenilut_DEPENDENCIES) 
 	@rm -f testfrozenilut$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testfrozenilut_OBJECTS) $(testfrozenilut_LDADD) $(LIBS)
@@ -2783,6 +2795,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodr.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodrintra.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodrmaxiter.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgmresprojected.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfrozenilut.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testgcrodrconfig.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testgcrodroptions.Po@am__quote@ # am--include-marker
@@ -3909,6 +3922,13 @@ testoommpiscale.log: testoommpiscale$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testfgmresprojected.log: testfgmresprojected$(EXEEXT)
+	@p='testfgmresprojected$(EXEEXT)'; \
+	b='testfgmresprojected'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -4075,6 +4095,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testfgcrodr.Po
 	-rm -f ./$(DEPDIR)/testfgcrodrintra.Po
 	-rm -f ./$(DEPDIR)/testfgcrodrmaxiter.Po
+	-rm -f ./$(DEPDIR)/testfgmresprojected.Po
 	-rm -f ./$(DEPDIR)/testfrozenilut.Po
 	-rm -f ./$(DEPDIR)/testgcrodrconfig.Po
 	-rm -f ./$(DEPDIR)/testgcrodroptions.Po
@@ -4269,6 +4290,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testfgcrodr.Po
 	-rm -f ./$(DEPDIR)/testfgcrodrintra.Po
 	-rm -f ./$(DEPDIR)/testfgcrodrmaxiter.Po
+	-rm -f ./$(DEPDIR)/testfgmresprojected.Po
 	-rm -f ./$(DEPDIR)/testfrozenilut.Po
 	-rm -f ./$(DEPDIR)/testgcrodrconfig.Po
 	-rm -f ./$(DEPDIR)/testgcrodroptions.Po
