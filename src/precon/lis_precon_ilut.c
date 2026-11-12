@@ -47,6 +47,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <math.h>
+#include <stdint.h>
 #ifdef _OPENMP
 	#include <omp.h>
 #endif
@@ -299,7 +300,7 @@ lis_ilut_ordered_create(LIS_SOLVER solver, LIS_PRECON precon)
     LIS_INT n=A->n, i,j,k,old,other,p,err=LIS_SUCCESS;
     LIS_INT *inv=NULL,*degree=NULL,*graphptr=NULL,*cursor=NULL;
     LIS_INT *edges=NULL,*queue=NULL,*seen=NULL;
-    LIS_INT head,tail,seed,vertex,adj,ndx,tmp;
+    LIS_INT head,tail,seed,vertex,adj,ndx;
     LIS_REAL largest,absv,scale;
     size_t cap;
     LIS_INT *perm=NULL;
