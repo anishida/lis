@@ -20,6 +20,10 @@ The regression compares ILUT normal and adjoint residuals under RCM, equilibrati
 -ilut_drop 0.01 -ilut_rate 10 -ilu_pivot_tol 1e-12
 ```
 
+## Synthetic contact-KKT regression
+
+`testhalfilut` now assembles an indefinite **48×48 stabilized saddle-point system** with a 36×36 spring-stiffness block, twelve displacement-difference constraints, and a negative 0.1 multiplier diagonal. It compares the legacy ILUT control with the opt-in variant, requiring convergence to a **true relative residual below 1e-7** and printing Krylov iterations and residuals. This is an algebraic contact-style regression, **not** a production nonlinear FEA benchmark and not evidence of a speedup.
+
 ## Applicability and caveats
 
 This first implementation supports **serial CSR in ordinary double precision**, including nonsymmetric sparse matrices. It explicitly rejects distributed, USER/OPERATOR and quad-precision configurations when the new transform options are requested. This is neither ddPQ (diagonal matching) nor distributed RAS/Schur. Matrix entries must be finite; a zero row or singular matrix may still produce a factorization failure.
