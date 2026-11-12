@@ -148,13 +148,14 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	benchautojacobirefresh$(EXEEXT) testabi$(EXEEXT) \
 	testgesolvepair$(EXEEXT) testrcoalloc$(EXEEXT) $(am__EXEEXT_2) \
 	$(am__EXEEXT_3) $(am__EXEEXT_4) $(am__EXEEXT_5) \
-	testfgcrodrblocked$(EXEEXT) test_krylov_modes$(EXEEXT) \
-	test_krylov_sparse$(EXEEXT) test_krylov_regression$(EXEEXT) \
-	test_krylov_lis$(EXEEXT) test_krylov_semidefinite$(EXEEXT) \
-	test_krylov_stress$(EXEEXT) test_krylov_inertia$(EXEEXT) \
-	test_krylov_window$(EXEEXT) test_krylov_openmp$(EXEEXT) \
-	test_krylov_projected$(EXEEXT) test_krylov_workspace$(EXEEXT) \
-	test_krylov_unified$(EXEEXT) test_krylov_adaptive_ex$(EXEEXT) \
+	testfgcrodrblocked$(EXEEXT) testfgcrodrtransport$(EXEEXT) \
+	test_krylov_modes$(EXEEXT) test_krylov_sparse$(EXEEXT) \
+	test_krylov_regression$(EXEEXT) test_krylov_lis$(EXEEXT) \
+	test_krylov_semidefinite$(EXEEXT) test_krylov_stress$(EXEEXT) \
+	test_krylov_inertia$(EXEEXT) test_krylov_window$(EXEEXT) \
+	test_krylov_openmp$(EXEEXT) test_krylov_projected$(EXEEXT) \
+	test_krylov_workspace$(EXEEXT) test_krylov_unified$(EXEEXT) \
+	test_krylov_adaptive_ex$(EXEEXT) \
 	test_krylov_api_contract$(EXEEXT) \
 	test_krylov_residual_reuse$(EXEEXT) \
 	test_krylov_both_ends$(EXEEXT) \
@@ -586,6 +587,10 @@ am_testfgcrodrmaxiter_OBJECTS = testfgcrodrmaxiter.$(OBJEXT)
 testfgcrodrmaxiter_OBJECTS = $(am_testfgcrodrmaxiter_OBJECTS)
 testfgcrodrmaxiter_LDADD = $(LDADD)
 testfgcrodrmaxiter_DEPENDENCIES =
+am_testfgcrodrtransport_OBJECTS = testfgcrodrtransport.$(OBJEXT)
+testfgcrodrtransport_OBJECTS = $(am_testfgcrodrtransport_OBJECTS)
+testfgcrodrtransport_LDADD = $(LDADD)
+testfgcrodrtransport_DEPENDENCIES =
 am_testfgmresprojected_OBJECTS = testfgmresprojected.$(OBJEXT)
 testfgmresprojected_OBJECTS = $(am_testfgmresprojected_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -1020,6 +1025,7 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testfgcrodrblocked.Po \
 	./$(DEPDIR)/testfgcrodrintra.Po \
 	./$(DEPDIR)/testfgcrodrmaxiter.Po \
+	./$(DEPDIR)/testfgcrodrtransport.Po \
 	./$(DEPDIR)/testfgmresprojected.Po \
 	./$(DEPDIR)/testfrozenilut.Po ./$(DEPDIR)/testgcrodrconfig.Po \
 	./$(DEPDIR)/testgcrodroptions.Po \
@@ -1156,17 +1162,17 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testfeastfoundation_SOURCES) $(testfeastshifted_SOURCES) \
 	$(testfgcrodr_SOURCES) $(testfgcrodrblocked_SOURCES) \
 	$(testfgcrodrintra_SOURCES) $(testfgcrodrmaxiter_SOURCES) \
-	$(testfgmresprojected_SOURCES) $(testfrozenilut_SOURCES) \
-	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
-	$(testgcrodrsequence_SOURCES) $(testgesolvepair_SOURCES) \
-	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
-	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
-	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
-	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
-	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
-	$(testilucbsrsmoke_SOURCES) $(testilupivot_SOURCES) \
-	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
-	$(testmatrixautosession_SOURCES) \
+	$(testfgcrodrtransport_SOURCES) $(testfgmresprojected_SOURCES) \
+	$(testfrozenilut_SOURCES) $(testgcrodrconfig_SOURCES) \
+	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
+	$(testgesolvepair_SOURCES) $(testgmreswork_SOURCES) \
+	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
+	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
+	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
+	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
+	$(testhybridnested_SOURCES) $(testilucbsrsmoke_SOURCES) \
+	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
+	$(testkrylovrobust_SOURCES) $(testmatrixautosession_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatrixmaterialize_SOURCES) \
 	$(testmatrixmaterializeomp_SOURCES) \
@@ -1244,17 +1250,17 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testfeastfoundation_SOURCES) $(testfeastshifted_SOURCES) \
 	$(testfgcrodr_SOURCES) $(testfgcrodrblocked_SOURCES) \
 	$(testfgcrodrintra_SOURCES) $(testfgcrodrmaxiter_SOURCES) \
-	$(testfgmresprojected_SOURCES) $(testfrozenilut_SOURCES) \
-	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
-	$(testgcrodrsequence_SOURCES) $(testgesolvepair_SOURCES) \
-	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
-	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
-	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
-	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
-	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
-	$(testilucbsrsmoke_SOURCES) $(testilupivot_SOURCES) \
-	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
-	$(testmatrixautosession_SOURCES) \
+	$(testfgcrodrtransport_SOURCES) $(testfgmresprojected_SOURCES) \
+	$(testfrozenilut_SOURCES) $(testgcrodrconfig_SOURCES) \
+	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
+	$(testgesolvepair_SOURCES) $(testgmreswork_SOURCES) \
+	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
+	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
+	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
+	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
+	$(testhybridnested_SOURCES) $(testilucbsrsmoke_SOURCES) \
+	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
+	$(testkrylovrobust_SOURCES) $(testmatrixautosession_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatrixmaterialize_SOURCES) \
 	$(testmatrixmaterializeomp_SOURCES) \
@@ -1877,13 +1883,14 @@ TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) \
 	testesolverselection$(EXEEXT) testmatrixautosession$(EXEEXT) \
 	testvectorreal64$(EXEEXT) testgesolvepair$(EXEEXT) \
 	testabi$(EXEEXT) testrcoalloc$(EXEEXT) $(am__append_5) \
-	testfgcrodrblocked$(EXEEXT) test_krylov_modes$(EXEEXT) \
-	test_krylov_sparse$(EXEEXT) test_krylov_regression$(EXEEXT) \
-	test_krylov_lis$(EXEEXT) test_krylov_semidefinite$(EXEEXT) \
-	test_krylov_stress$(EXEEXT) test_krylov_inertia$(EXEEXT) \
-	test_krylov_window$(EXEEXT) test_krylov_openmp$(EXEEXT) \
-	test_krylov_projected$(EXEEXT) test_krylov_workspace$(EXEEXT) \
-	test_krylov_unified$(EXEEXT) test_krylov_adaptive_ex$(EXEEXT) \
+	testfgcrodrblocked$(EXEEXT) testfgcrodrtransport$(EXEEXT) \
+	test_krylov_modes$(EXEEXT) test_krylov_sparse$(EXEEXT) \
+	test_krylov_regression$(EXEEXT) test_krylov_lis$(EXEEXT) \
+	test_krylov_semidefinite$(EXEEXT) test_krylov_stress$(EXEEXT) \
+	test_krylov_inertia$(EXEEXT) test_krylov_window$(EXEEXT) \
+	test_krylov_openmp$(EXEEXT) test_krylov_projected$(EXEEXT) \
+	test_krylov_workspace$(EXEEXT) test_krylov_unified$(EXEEXT) \
+	test_krylov_adaptive_ex$(EXEEXT) \
 	test_krylov_api_contract$(EXEEXT) \
 	test_krylov_residual_reuse$(EXEEXT) \
 	test_krylov_both_ends$(EXEEXT) \
@@ -1896,6 +1903,7 @@ testfgcrodr_SOURCES = testfgcrodr.c
 testfgcrodrmaxiter_SOURCES = testfgcrodrmaxiter.c
 testfgcrodrintra_SOURCES = testfgcrodrintra.c
 testfgcrodrblocked_SOURCES = testfgcrodrblocked.c
+testfgcrodrtransport_SOURCES = testfgcrodrtransport.c
 testgesolvepair_SOURCES = testgesolvepair.c
 test_krylov_modes_SOURCES = test_krylov_modes.c
 test_krylov_sparse_SOURCES = test_krylov_sparse.c
@@ -2406,6 +2414,10 @@ testfgcrodrmaxiter$(EXEEXT): $(testfgcrodrmaxiter_OBJECTS) $(testfgcrodrmaxiter_
 	@rm -f testfgcrodrmaxiter$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testfgcrodrmaxiter_OBJECTS) $(testfgcrodrmaxiter_LDADD) $(LIBS)
 
+testfgcrodrtransport$(EXEEXT): $(testfgcrodrtransport_OBJECTS) $(testfgcrodrtransport_DEPENDENCIES) $(EXTRA_testfgcrodrtransport_DEPENDENCIES) 
+	@rm -f testfgcrodrtransport$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testfgcrodrtransport_OBJECTS) $(testfgcrodrtransport_LDADD) $(LIBS)
+
 testfgmresprojected$(EXEEXT): $(testfgmresprojected_OBJECTS) $(testfgmresprojected_DEPENDENCIES) $(EXTRA_testfgmresprojected_DEPENDENCIES) 
 	@rm -f testfgmresprojected$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testfgmresprojected_OBJECTS) $(testfgmresprojected_LDADD) $(LIBS)
@@ -2843,6 +2855,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodrblocked.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodrintra.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodrmaxiter.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodrtransport.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgmresprojected.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfrozenilut.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testgcrodrconfig.Po@am__quote@ # am--include-marker
@@ -3805,6 +3818,13 @@ testfgcrodrblocked.log: testfgcrodrblocked$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testfgcrodrtransport.log: testfgcrodrtransport$(EXEEXT)
+	@p='testfgcrodrtransport$(EXEEXT)'; \
+	b='testfgcrodrtransport'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 test_krylov_modes.log: test_krylov_modes$(EXEEXT)
 	@p='test_krylov_modes$(EXEEXT)'; \
 	b='test_krylov_modes'; \
@@ -4175,6 +4195,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testfgcrodrblocked.Po
 	-rm -f ./$(DEPDIR)/testfgcrodrintra.Po
 	-rm -f ./$(DEPDIR)/testfgcrodrmaxiter.Po
+	-rm -f ./$(DEPDIR)/testfgcrodrtransport.Po
 	-rm -f ./$(DEPDIR)/testfgmresprojected.Po
 	-rm -f ./$(DEPDIR)/testfrozenilut.Po
 	-rm -f ./$(DEPDIR)/testgcrodrconfig.Po
@@ -4374,6 +4395,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testfgcrodrblocked.Po
 	-rm -f ./$(DEPDIR)/testfgcrodrintra.Po
 	-rm -f ./$(DEPDIR)/testfgcrodrmaxiter.Po
+	-rm -f ./$(DEPDIR)/testfgcrodrtransport.Po
 	-rm -f ./$(DEPDIR)/testfgmresprojected.Po
 	-rm -f ./$(DEPDIR)/testfrozenilut.Po
 	-rm -f ./$(DEPDIR)/testgcrodrconfig.Po
