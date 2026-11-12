@@ -24,6 +24,8 @@ The regression compares ILUT normal and adjoint residuals under RCM, equilibrati
 
 This first implementation supports **serial CSR in ordinary double precision**, including nonsymmetric sparse matrices. It explicitly rejects distributed, USER/OPERATOR and quad-precision configurations when the new transform options are requested. This is neither ddPQ (diagonal matching) nor distributed RAS/Schur. Matrix entries must be finite; a zero row or singular matrix may still produce a factorization failure.
 
+A read-only internal diagnostic `lis_precon_ilut_factor_stats` reports the stored L/U nonzero counts and minimum/maximum actual pivot magnitudes (the stored D values are reciprocals). The regression prints these statistics to support controlled fill and stability comparisons.
+
 RCM is a fill/bandwidth heuristic. It does **not** guarantee lower Krylov iteration counts or greater stability for contact KKT saddle-point systems. Report true relative residual, pivot failures, factor nonzeros, setup time and process memory when benchmarking. Preserve the default ILUT path as a control. Near-singular rows should use `-ilu_pivot_tol` as an explicit policy rather than silently replacing pivots.
 
 Hypre's ILU framework additionally offers local RCM, dual-threshold ILUT, ddPQ matching, RAS-ILUT and two-level Schur correction; these are distinct algorithms and should not be conflated with this opt-in serial preprocessing step: https://hypre.readthedocs.io/en/latest/solvers-ilu.html
