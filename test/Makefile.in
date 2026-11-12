@@ -159,7 +159,8 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	test_krylov_residual_reuse$(EXEEXT) \
 	test_krylov_both_ends$(EXEEXT) \
 	test_krylov_be_lock_order$(EXEEXT) testilucbsrsmoke$(EXEEXT) \
-	testfgmresprojected$(EXEEXT) testmfamgfineagg$(EXEEXT)
+	testfgmresprojected$(EXEEXT) testmfamgvcycle$(EXEEXT) \
+	testmfamgfineagg$(EXEEXT)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_3 = test2f test6f 
@@ -712,6 +713,9 @@ am_testmfamggalerkin_OBJECTS = testmfamggalerkin.$(OBJEXT)
 testmfamggalerkin_OBJECTS = $(am_testmfamggalerkin_OBJECTS)
 testmfamggalerkin_LDADD = $(LDADD)
 testmfamggalerkin_DEPENDENCIES =
+am_testmfamgvcycle_OBJECTS = testmfamgvcycle.$(OBJEXT)
+testmfamgvcycle_OBJECTS = $(am_testmfamgvcycle_OBJECTS)
+testmfamgvcycle_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_testnearnullspace_OBJECTS = testnearnullspace.$(OBJEXT)
 testnearnullspace_OBJECTS = $(am_testnearnullspace_OBJECTS)
 testnearnullspace_LDADD = $(LDADD)
@@ -1031,6 +1035,7 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testmatvecblock.Po ./$(DEPDIR)/testmfamg.Po \
 	./$(DEPDIR)/testmfamgfineagg.Po \
 	./$(DEPDIR)/testmfamggalerkin.Po \
+	./$(DEPDIR)/testmfamgvcycle.Po \
 	./$(DEPDIR)/testnearnullspace.Po \
 	./$(DEPDIR)/testnullspacecandidates.Po \
 	./$(DEPDIR)/testnullspacelift.Po ./$(DEPDIR)/testompelastic.Po \
@@ -1158,7 +1163,8 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testmatrixoperatormpi_SOURCES) \
 	$(testmatrixpolicysolve_SOURCES) $(testmatvecblock_SOURCES) \
 	$(testmfamg_SOURCES) $(testmfamgfineagg_SOURCES) \
-	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
+	$(testmfamggalerkin_SOURCES) $(testmfamgvcycle_SOURCES) \
+	$(testnearnullspace_SOURCES) \
 	$(testnullspacecandidates_SOURCES) \
 	$(testnullspacelift_SOURCES) $(testompelastic_SOURCES) \
 	$(testoomalloc_SOURCES) $(testoomdiag_SOURCES) \
@@ -1244,7 +1250,8 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testmatrixoperatormpi_SOURCES) \
 	$(testmatrixpolicysolve_SOURCES) $(testmatvecblock_SOURCES) \
 	$(testmfamg_SOURCES) $(testmfamgfineagg_SOURCES) \
-	$(testmfamggalerkin_SOURCES) $(testnearnullspace_SOURCES) \
+	$(testmfamggalerkin_SOURCES) $(testmfamgvcycle_SOURCES) \
+	$(testnearnullspace_SOURCES) \
 	$(testnullspacecandidates_SOURCES) \
 	$(testnullspacelift_SOURCES) $(testompelastic_SOURCES) \
 	$(am__testoomalloc_SOURCES_DIST) \
@@ -1870,7 +1877,7 @@ TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) \
 	test_krylov_both_ends$(EXEEXT) \
 	test_krylov_be_lock_order$(EXEEXT) testilucbsrsmoke$(EXEEXT) \
 	$(am__append_6) $(am__append_8) testfgmresprojected$(EXEEXT) \
-	testmfamgfineagg$(EXEEXT)
+	testmfamgvcycle$(EXEEXT) testmfamgfineagg$(EXEEXT)
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
 testfgcrodrmaxiter_SOURCES = testfgcrodrmaxiter.c
@@ -1906,6 +1913,8 @@ testilucbsrsmoke_SOURCES = testilucbsrsmoke.c
 @ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@testoommpiscale_SOURCES = testoommpiscale.c
 testfgmresprojected_SOURCES = testfgmresprojected.c
 testfgmresprojected_LDADD = $(LDADD) -lm
+testmfamgvcycle_SOURCES = testmfamgvcycle.c
+testmfamgvcycle_LDADD = $(LDADD) -lm
 testmfamgfineagg_SOURCES = testmfamgfineagg.c
 testmfamgfineagg_LDADD = $(LDADD) -lm
 all: all-am
@@ -2506,6 +2515,10 @@ testmfamggalerkin$(EXEEXT): $(testmfamggalerkin_OBJECTS) $(testmfamggalerkin_DEP
 	@rm -f testmfamggalerkin$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmfamggalerkin_OBJECTS) $(testmfamggalerkin_LDADD) $(LIBS)
 
+testmfamgvcycle$(EXEEXT): $(testmfamgvcycle_OBJECTS) $(testmfamgvcycle_DEPENDENCIES) $(EXTRA_testmfamgvcycle_DEPENDENCIES) 
+	@rm -f testmfamgvcycle$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testmfamgvcycle_OBJECTS) $(testmfamgvcycle_LDADD) $(LIBS)
+
 testnearnullspace$(EXEEXT): $(testnearnullspace_OBJECTS) $(testnearnullspace_DEPENDENCIES) $(EXTRA_testnearnullspace_DEPENDENCIES) 
 	@rm -f testnearnullspace$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testnearnullspace_OBJECTS) $(testnearnullspace_LDADD) $(LIBS)
@@ -2838,6 +2851,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamgfineagg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamggalerkin.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamgvcycle.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testnearnullspace.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testnullspacecandidates.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testnullspacelift.Po@am__quote@ # am--include-marker
@@ -3941,6 +3955,13 @@ testfgmresprojected.log: testfgmresprojected$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testmfamgvcycle.log: testmfamgvcycle$(EXEEXT)
+	@p='testmfamgvcycle$(EXEEXT)'; \
+	b='testmfamgvcycle'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 testmfamgfineagg.log: testmfamgfineagg$(EXEEXT)
 	@p='testmfamgfineagg$(EXEEXT)'; \
 	b='testmfamgfineagg'; \
@@ -4146,6 +4167,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testmfamg.Po
 	-rm -f ./$(DEPDIR)/testmfamgfineagg.Po
 	-rm -f ./$(DEPDIR)/testmfamggalerkin.Po
+	-rm -f ./$(DEPDIR)/testmfamgvcycle.Po
 	-rm -f ./$(DEPDIR)/testnearnullspace.Po
 	-rm -f ./$(DEPDIR)/testnullspacecandidates.Po
 	-rm -f ./$(DEPDIR)/testnullspacelift.Po
@@ -4342,6 +4364,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testmfamg.Po
 	-rm -f ./$(DEPDIR)/testmfamgfineagg.Po
 	-rm -f ./$(DEPDIR)/testmfamggalerkin.Po
+	-rm -f ./$(DEPDIR)/testmfamgvcycle.Po
 	-rm -f ./$(DEPDIR)/testnearnullspace.Po
 	-rm -f ./$(DEPDIR)/testnullspacecandidates.Po
 	-rm -f ./$(DEPDIR)/testnullspacelift.Po
