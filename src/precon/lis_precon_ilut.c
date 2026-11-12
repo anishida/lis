@@ -1331,10 +1331,49 @@ LIS_INT lis_precon_create_ilut_csr(LIS_SOLVER solver, LIS_PRECON precon)
 #endif
 }
 
+
+/*
+ * Solve M = D_row P A P^T in factor-space, then map back. For the
+ * Hermitian-transpose solve, D_row acts on the output, not the RHS:
+ * (D_row P A P^T)^H = P A^H P^T D_row.
+ * Workspace ownership is per preconditioner; concurrent applies to
+ * the SAME preconditioner must be externally serialized.
+ */
+static LIS_INT
+lis_ilut_ordered_apply(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X,
+                       LIS_INT adjoint)
+{
+    LIS_PRECON pc=solver->precon;
+    LIS_INT i,n=solver->A->n,err;
+    LIS_VECTOR rhs=pc->ilut_work_b,sol=pc->ilut_work_x;
+    if(!rhs || !sol || !pc->ilut_perm || !pc->ilut_row_scale)
+        return LIS_ERR_ILL_ARG;
+    for(i=0;i<n;i++)
+    {
+        rhs->value[i]=B->value[pc->ilut_perm[i]] *
+            (adjoint ? (LIS_SCALAR)1.0 : pc->ilut_row_scale[i]);
+    }
+    pc->ilut_apply_active=1;
+    err=adjoint ? lis_psolveh_ilut_csr(solver,rhs,sol) :
+                  lis_psolve_ilut_csr(solver,rhs,sol);
+    pc->ilut_apply_active=0;
+    if(err) return err;
+    for(i=0;i<n;i++)
+    {
+        X->value[pc->ilut_perm[i]] =
+            sol->value[i] *
+            (adjoint ? pc->ilut_row_scale[i] : (LIS_SCALAR)1.0);
+    }
+    return LIS_SUCCESS;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_psolve_ilut_csr"
 LIS_INT lis_psolve_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 {
+	if(solver && solver->precon && solver->precon->ilut_perm &&
+	   !solver->precon->ilut_apply_active)
+		return lis_ilut_ordered_apply(solver,B,X,0);
 #ifdef _OPENMP
 	LIS_INT i,j,jj,n;
 	LIS_INT nprocs,my_rank,is,ie;
@@ -1572,6 +1611,9 @@ LIS_INT lis_psolve_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 #define __FUNC__ "lis_psolveh_ilut_csr"
 LIS_INT lis_psolveh_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 {
+	if(solver && solver->precon && solver->precon->ilut_perm &&
+	   !solver->precon->ilut_apply_active)
+		return lis_ilut_ordered_apply(solver,B,X,1);
 #ifdef _OPENMP
 	LIS_INT i,j,jj,n;
 	LIS_INT is,ie,my_rank,nprocs;
