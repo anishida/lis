@@ -274,6 +274,11 @@ test_PROGRAMS += testfgcrodrblocked
 testfgcrodrblocked_SOURCES = testfgcrodrblocked.c
 TESTS += testfgcrodrblocked$(EXEEXT)
 
+# Independent cross-operator FGCRO-DR TRANSPORT regression.
+test_PROGRAMS += testfgcrodrtransport
+testfgcrodrtransport_SOURCES = testfgcrodrtransport.c
+TESTS += testfgcrodrtransport$(EXEEXT)
+
 testgesolvepair_SOURCES = testgesolvepair.c
 
 # Native restarted Krylov eigensolver numerical regressions.
