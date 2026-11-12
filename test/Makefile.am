@@ -354,3 +354,8 @@ test_PROGRAMS += testmfamgfineagg
 testmfamgfineagg_SOURCES = testmfamgfineagg.c
 testmfamgfineagg_LDADD = $(LDADD) -lm
 TESTS += testmfamgfineagg$(EXEEXT)
+
+# Opt-in serial MFAMG deep sibling aggregate grouping regression.
+test_PROGRAMS += testmfamgdeepmerge
+testmfamgdeepmerge_SOURCES = testmfamgdeepmerge.c
+TESTS += testmfamgdeepmerge$(EXEEXT)

@@ -26,6 +26,14 @@
 #define LIS_MFAMG_STRENGTH_THETA ((LIS_REAL)0.05)
 #define LIS_MFAMG_DEFAULT_OMEGA ((LIS_REAL)(2.0/3.0))
 #define LIS_MFAMG_RANK_TOL ((LIS_REAL)1.0e-12)
+/*
+ * The deep sibling path is intentionally limited to coarse levels:
+ * larger groups make local QR more expensive (roughly cubic in size).
+ */
+#define LIS_MFAMG_DEEP_SIBLING_MIN_LEVEL 4
+#define LIS_MFAMG_DEEP_SIBLING_TARGET_FACTOR 8
+/* Only high-degree hubs merit reaggregating the deep hierarchy. */
+#define LIS_MFAMG_DEEP_SIBLING_MIN_FAN_IN 3
 #define LIS_MFAMG_COARSE_PIVOT_TOL LIS_MFAMG_RANK_TOL
 
 #define LIS_MFAMG_SMOOTHER_WEIGHTED_JACOBI 0
@@ -95,6 +103,11 @@ struct LIS_MFAMG_STRUCT
     LIS_INT level_capacity;
     LIS_INT smoother_block_size;
     LIS_INT vcycle_smooth_steps;
+    LIS_INT deep_sibling_merge;
+    LIS_INT deep_merge_attempts;
+    LIS_INT deep_merge_events;
+    LIS_INT deep_merge_reduced;
+    LIS_INT deep_merge_max_depth;
     struct LIS_MFAMG_LEVEL *levels;
     struct LIS_MFAMG_STAR_SOLVER *star;
 
@@ -4029,6 +4042,207 @@ cleanup:
         diagonal);
 
 
+    return err;
+}
+
+/*
+ * Opt-in distance-two grouping for star-shaped coarse graphs.
+ * An existing aggregate selects its strongest DIAGONAL-NORMALIZED
+ * adjacent aggregate as anchor. When at least three sibling aggregates
+ * select the same hub, combine the hub with as many of those siblings as
+ * will fit in one connected aggregate; leave other siblings separate.
+ * This avoids disconnected siblings-only aggregate groups. The multivector
+ * QR still determines local ranks. MPI uses the original aggregation path.
+ */
+static LIS_INT
+lis_mfamg_merge_sibling_aggregates(
+    LIS_MATRIX A, struct LIS_MFAMG_LEVEL *level,
+    LIS_INT depth, LIS_INT target,
+    LIS_INT row_capacity, LIS_INT *cols, LIS_SCALAR *vals)
+{
+    LIS_INT n, nc, i, j, k, a, b, nnz, new_nc, used, eligible;
+    LIS_INT *work=NULL,*counts,*anchors,*heads,*links,*remap;
+    LIS_REAL *score=NULL, mag, diagonal_i, diagonal_j, strength;
+    LIS_VECTOR diagonal=NULL;
+    LIS_INT err=LIS_SUCCESS;
+
+    if(A==NULL || level==NULL || level->aggregate==NULL ||
+       A->nprocs!=1 || A->n!=level->n || level->nc<=0 ||
+       target<=1 || row_capacity<=0 || cols==NULL || vals==NULL)
+        return LIS_ERR_ILL_ARG;
+    n=level->n;
+    nc=level->nc;
+    if(target>n) target=n;
+    if((size_t)nc>((size_t)-1)/(5*sizeof(LIS_INT)) ||
+       (size_t)nc>((size_t)-1)/sizeof(LIS_REAL))
+        return LIS_OUT_OF_MEMORY;
+    work=(LIS_INT *)lis_malloc(
+        (size_t)5*(size_t)nc*sizeof(LIS_INT),
+        "lis_mfamg_merge_sibling_aggregates::work");
+    score=(LIS_REAL *)lis_malloc(
+        (size_t)nc*sizeof(LIS_REAL),
+        "lis_mfamg_merge_sibling_aggregates::score");
+    if(work==NULL || score==NULL) {
+        err=LIS_OUT_OF_MEMORY;
+        goto done;
+    }
+    err=lis_vector_duplicate(A,&diagonal);
+    if(err) goto done;
+    err=lis_matrix_get_diagonal(A,diagonal);
+    if(err) goto done;
+    counts=work; anchors=work+nc; heads=work+2*nc;
+    links=work+3*nc; remap=work+4*nc;
+    for(a=0;a<nc;a++) {
+        counts[a]=0; anchors[a]=-1; heads[a]=-1;
+        links[a]=-1; remap[a]=-1; score[a]=0.0;
+    }
+    for(i=0;i<n;i++) {
+        a=level->aggregate[i];
+        if(a<0 || a>=nc) { err=LIS_ERR_ILL_ARG; goto done; }
+        counts[a]++;
+    }
+    for(i=0;i<n;i++) {
+        a=level->aggregate[i];
+#ifdef _COMPLEX
+        diagonal_i=(LIS_REAL)cabs(diagonal->value[i]);
+#else
+        diagonal_i=(LIS_REAL)fabs(diagonal->value[i]);
+#endif
+        if(!isfinite((double)diagonal_i) || diagonal_i<=0.0) continue;
+        nnz=row_capacity;
+        err=lis_mfamg_row_fill(A,i,row_capacity,&nnz,cols,vals);
+        if(err) goto done;
+        for(k=0;k<nnz;k++) {
+            j=cols[k]-A->is;
+            if(j<0 || j>=n || j==i) continue;
+            b=level->aggregate[j];
+            if(b==a) continue;
+#ifdef _COMPLEX
+            mag=(LIS_REAL)cabs(vals[k]);
+#else
+            mag=(LIS_REAL)fabs(vals[k]);
+#endif
+            if(!isfinite((double)mag) || mag>LIS_SCALAR_MAX) {
+                err=LIS_ERR_ILL_ARG;
+                goto done;
+            }
+#ifdef _COMPLEX
+            diagonal_j=(LIS_REAL)cabs(diagonal->value[j]);
+#else
+            diagonal_j=(LIS_REAL)fabs(diagonal->value[j]);
+#endif
+            if(!isfinite((double)diagonal_j) || diagonal_j<=0.0) continue;
+            /*
+             * Rank by the same diagonal-normalized edge strength used
+             * to qualify candidates (rather than by raw |a_ij|).
+             * Divide by square roots separately to reduce overflow risk.
+             * Symmetric positive diagonal scaling preserves this ranking
+             * in exact arithmetic; finite-precision ties remain exact.
+             */
+            strength=(mag/sqrt(diagonal_i))/sqrt(diagonal_j);
+            if(!isfinite((double)strength) ||
+               strength<LIS_MFAMG_STRENGTH_THETA ||
+               strength<=0.0) continue;
+            if(strength>score[a] ||
+               (strength==score[a] && (anchors[a]<0 || b<anchors[a]))) {
+                score[a]=strength; anchors[a]=b;
+            }
+        }
+    }
+    for(a=nc;a>0;) {
+        --a;
+        b=anchors[a];
+        if(b<0) continue;
+        links[a]=heads[b];
+        heads[b]=a;
+    }
+    /*
+     * A valid rooted group contains the anchor itself and at least
+     * MIN_FAN_IN eligible siblings, all connected by strong edges to
+     * that anchor. Never pack overflow siblings into a hub-free group.
+     * Iterate hubs and children by aggregate index for reproducibility.
+     */
+    new_nc=0;
+    for(b=0;b<nc;b++) {
+        if(remap[b]>=0 || counts[b]>=target) continue;
+        eligible=0;
+        for(a=heads[b];a>=0;a=links[a])
+            if(a!=b && remap[a]<0 && counts[a]<=target-counts[b])
+                eligible++;
+        if(eligible<LIS_MFAMG_DEEP_SIBLING_MIN_FAN_IN) continue;
+        remap[b]=new_nc;
+        used=counts[b];
+        for(a=heads[b];a>=0;a=links[a]) {
+            if(a==b || remap[a]>=0 || counts[a]>target-used) continue;
+            remap[a]=new_nc;
+            used+=counts[a];
+        }
+        new_nc++;
+    }
+    for(a=0;a<nc;a++)
+        if(remap[a]<0) remap[a]=new_nc++;
+    if(new_nc<nc) {
+        for(i=0;i<n;i++)
+            level->aggregate[i]=remap[level->aggregate[i]];
+        level->nc=new_nc;
+    }
+    /* Diagnostics are exposed via an internal test accessor instead
+     * of writing unsolicited progress output from library routines. */
+    (void)depth;
+done:
+    if(diagonal) lis_vector_destroy(diagonal);
+    if(score) lis_free(score);
+    if(work) lis_free(work);
+    return err;
+}
+
+/* Internal numerical regression hook; not part of public LIS API. */
+LIS_INT
+lis_precon_mfamg_get_deep_merge_info(
+    LIS_PRECON precon, LIS_INT *attempts, LIS_INT *events,
+    LIS_INT *reduced, LIS_INT *max_depth)
+{
+    struct LIS_MFAMG_STRUCT *state;
+    if(precon==NULL || precon->precon_type!=LIS_PRECON_TYPE_MFAMG ||
+       precon->mfamg==NULL || attempts==NULL || events==NULL ||
+       reduced==NULL || max_depth==NULL)
+        return LIS_ERR_ILL_ARG;
+    state=precon->mfamg;
+    *attempts=state->deep_merge_attempts;
+    *events=state->deep_merge_events;
+    *reduced=state->deep_merge_reduced;
+    *max_depth=state->deep_merge_max_depth;
+    return LIS_SUCCESS;
+}
+
+/* Internal structural test hook (not part of the public LIS API). */
+LIS_INT
+lis_precon_mfamg_merge_siblings_for_test(
+    LIS_MATRIX A, LIS_INT target, LIS_INT *aggregate, LIS_INT *nc)
+{
+    struct LIS_MFAMG_LEVEL level;
+    LIS_INT *cols=NULL, err;
+    LIS_SCALAR *vals=NULL;
+    if(A==NULL || A->nprocs!=1 || A->n<=0 ||
+       aggregate==NULL || nc==NULL || *nc<=0)
+        return LIS_ERR_ILL_ARG;
+    cols=(LIS_INT *)lis_malloc(
+        (size_t)A->n*sizeof(LIS_INT),
+        "lis_mfamg_merge_test::cols");
+    vals=(LIS_SCALAR *)lis_malloc(
+        (size_t)A->n*sizeof(LIS_SCALAR),
+        "lis_mfamg_merge_test::vals");
+    if(cols==NULL || vals==NULL) {
+        if(vals) lis_free(vals);
+        if(cols) lis_free(cols);
+        return LIS_OUT_OF_MEMORY;
+    }
+    memset(&level,0,sizeof(level));
+    level.n=A->n; level.nc=*nc; level.aggregate=aggregate;
+    err=lis_mfamg_merge_sibling_aggregates(
+        A,&level,-1,target,A->n,cols,vals);
+    if(err==LIS_SUCCESS) *nc=level.nc;
+    lis_free(vals); lis_free(cols);
     return err;
 }
 
@@ -8765,6 +8979,35 @@ lis_mfamg_extend_hierarchy_multivector(
         }
 
 
+        /*
+         * Optional serial grouping of two-hop siblings on deeper levels.
+         * Existing first-level aggregation and default behavior are
+         * unchanged; the local QR still determines aggregate ranks.
+         */
+        if(level_id>=LIS_MFAMG_DEEP_SIBLING_MIN_LEVEL &&
+           state->deep_sibling_merge && level->A->nprocs==1)
+        {
+            LIS_INT before_merge=level->nc;
+            LIS_INT merge_target =
+                (mode_count>level->n/LIS_MFAMG_DEEP_SIBLING_TARGET_FACTOR)
+                ? level->n
+                : LIS_MFAMG_DEEP_SIBLING_TARGET_FACTOR*mode_count;
+            if(merge_target<aggregate_target)
+                merge_target=aggregate_target;
+            err=lis_mfamg_merge_sibling_aggregates(
+                level->A,level,level_id,merge_target,
+                max_row_nnz,cols,vals);
+            if(err) goto fail;
+            state->deep_merge_attempts++;
+            if(level->nc<before_merge)
+            {
+                state->deep_merge_events++;
+                state->deep_merge_reduced += before_merge-level->nc;
+                if(level_id>state->deep_merge_max_depth)
+                    state->deep_merge_max_depth=level_id;
+            }
+        }
+
         if(
             level->nc<=0
             ||
@@ -13231,6 +13474,14 @@ lis_precon_create_mfamg(
         return LIS_ERR_ILL_ARG;
     }
 
+    if(solver->mfamg_deep_sibling_merge!=0 &&
+       solver->mfamg_deep_sibling_merge!=1)
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,
+            "MFAMG deep sibling merge must be 0 or 1\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
     if(
         solver->mfamg_block_size<1
         ||
@@ -13275,6 +13526,8 @@ lis_precon_create_mfamg(
         solver->mfamg_block_size;
     state->vcycle_smooth_steps =
         solver->mfamg_vcycle_smooth_steps;
+    state->deep_sibling_merge =
+        solver->mfamg_deep_sibling_merge;
 
     state->levels =
         (struct LIS_MFAMG_LEVEL *)

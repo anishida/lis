@@ -1092,6 +1092,8 @@ struct LIS_SOLVER_STRUCT
 	 */
 	LIS_INT precon_half_mode;
 	LIS_INT sequence_precon_half_mode;
+	/* Appended to preserve the offsets of all preexisting solver fields. */
+	LIS_INT mfamg_deep_sibling_merge;
 };
 typedef struct LIS_SOLVER_STRUCT *LIS_SOLVER;
 

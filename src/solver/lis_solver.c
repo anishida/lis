@@ -288,6 +288,7 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->mfamg_block_size = 1;
 	solver->mfamg_fine_agg_factor = 0;
 	solver->mfamg_vcycle_smooth_steps = 1;
+	solver->mfamg_deep_sibling_merge = 0;
 	solver->near_nullspace_coarse = NULL;
 	solver->recycle_u = NULL;
 	solver->recycle_zu = NULL;
@@ -5339,6 +5340,28 @@ LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 			return LIS_ERR_ILL_ARG;
 		}
 		solver->mfamg_vcycle_smooth_steps = steps;
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
+
+	if( strcmp(arg1,"-mfamg_deep_sibling_merge")==0 )
+	{
+		LIS_INT enabled;
+		char extra;
+#ifdef _LONG__LONG
+		if(arg2==NULL || sscanf(arg2,"%lld %c",&enabled,&extra)!=1 ||
+		   (enabled!=0 && enabled!=1))
+#else
+		if(arg2==NULL || sscanf(arg2,"%d %c",&enabled,&extra)!=1 ||
+		   (enabled!=0 && enabled!=1))
+#endif
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,
+				"-mfamg_deep_sibling_merge must be 0 or 1\n");
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_ERR_ILL_ARG;
+		}
+		solver->mfamg_deep_sibling_merge = enabled;
 		LIS_DEBUG_FUNC_OUT;
 		return LIS_SUCCESS;
 	}
