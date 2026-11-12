@@ -148,13 +148,13 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	benchautojacobirefresh$(EXEEXT) testabi$(EXEEXT) \
 	testgesolvepair$(EXEEXT) testrcoalloc$(EXEEXT) $(am__EXEEXT_2) \
 	$(am__EXEEXT_3) $(am__EXEEXT_4) $(am__EXEEXT_5) \
-	test_krylov_modes$(EXEEXT) test_krylov_sparse$(EXEEXT) \
-	test_krylov_regression$(EXEEXT) test_krylov_lis$(EXEEXT) \
-	test_krylov_semidefinite$(EXEEXT) test_krylov_stress$(EXEEXT) \
-	test_krylov_inertia$(EXEEXT) test_krylov_window$(EXEEXT) \
-	test_krylov_openmp$(EXEEXT) test_krylov_projected$(EXEEXT) \
-	test_krylov_workspace$(EXEEXT) test_krylov_unified$(EXEEXT) \
-	test_krylov_adaptive_ex$(EXEEXT) \
+	testfgcrodrblocked$(EXEEXT) test_krylov_modes$(EXEEXT) \
+	test_krylov_sparse$(EXEEXT) test_krylov_regression$(EXEEXT) \
+	test_krylov_lis$(EXEEXT) test_krylov_semidefinite$(EXEEXT) \
+	test_krylov_stress$(EXEEXT) test_krylov_inertia$(EXEEXT) \
+	test_krylov_window$(EXEEXT) test_krylov_openmp$(EXEEXT) \
+	test_krylov_projected$(EXEEXT) test_krylov_workspace$(EXEEXT) \
+	test_krylov_unified$(EXEEXT) test_krylov_adaptive_ex$(EXEEXT) \
 	test_krylov_api_contract$(EXEEXT) \
 	test_krylov_residual_reuse$(EXEEXT) \
 	test_krylov_both_ends$(EXEEXT) \
@@ -574,6 +574,10 @@ am_testfgcrodr_OBJECTS = testfgcrodr.$(OBJEXT)
 testfgcrodr_OBJECTS = $(am_testfgcrodr_OBJECTS)
 testfgcrodr_LDADD = $(LDADD)
 testfgcrodr_DEPENDENCIES =
+am_testfgcrodrblocked_OBJECTS = testfgcrodrblocked.$(OBJEXT)
+testfgcrodrblocked_OBJECTS = $(am_testfgcrodrblocked_OBJECTS)
+testfgcrodrblocked_LDADD = $(LDADD)
+testfgcrodrblocked_DEPENDENCIES =
 am_testfgcrodrintra_OBJECTS = testfgcrodrintra.$(OBJEXT)
 testfgcrodrintra_OBJECTS = $(am_testfgcrodrintra_OBJECTS)
 testfgcrodrintra_LDADD = $(LDADD)
@@ -1013,6 +1017,7 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testfeastcontour.Po \
 	./$(DEPDIR)/testfeastfoundation.Po \
 	./$(DEPDIR)/testfeastshifted.Po ./$(DEPDIR)/testfgcrodr.Po \
+	./$(DEPDIR)/testfgcrodrblocked.Po \
 	./$(DEPDIR)/testfgcrodrintra.Po \
 	./$(DEPDIR)/testfgcrodrmaxiter.Po \
 	./$(DEPDIR)/testfgmresprojected.Po \
@@ -1149,18 +1154,19 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testesubspaceretry_SOURCES) testexactnullspace.c \
 	$(testexternalstorage_SOURCES) $(testfeastcontour_SOURCES) \
 	$(testfeastfoundation_SOURCES) $(testfeastshifted_SOURCES) \
-	$(testfgcrodr_SOURCES) $(testfgcrodrintra_SOURCES) \
-	$(testfgcrodrmaxiter_SOURCES) $(testfgmresprojected_SOURCES) \
-	$(testfrozenilut_SOURCES) $(testgcrodrconfig_SOURCES) \
-	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
-	$(testgesolvepair_SOURCES) $(testgmreswork_SOURCES) \
-	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
-	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
-	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
-	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
-	$(testhybridnested_SOURCES) $(testilucbsrsmoke_SOURCES) \
-	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testkrylovrobust_SOURCES) $(testmatrixautosession_SOURCES) \
+	$(testfgcrodr_SOURCES) $(testfgcrodrblocked_SOURCES) \
+	$(testfgcrodrintra_SOURCES) $(testfgcrodrmaxiter_SOURCES) \
+	$(testfgmresprojected_SOURCES) $(testfrozenilut_SOURCES) \
+	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
+	$(testgcrodrsequence_SOURCES) $(testgesolvepair_SOURCES) \
+	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
+	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
+	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
+	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
+	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
+	$(testilucbsrsmoke_SOURCES) $(testilupivot_SOURCES) \
+	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
+	$(testmatrixautosession_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatrixmaterialize_SOURCES) \
 	$(testmatrixmaterializeomp_SOURCES) \
@@ -1236,18 +1242,19 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testesubspaceretry_SOURCES) testexactnullspace.c \
 	$(testexternalstorage_SOURCES) $(testfeastcontour_SOURCES) \
 	$(testfeastfoundation_SOURCES) $(testfeastshifted_SOURCES) \
-	$(testfgcrodr_SOURCES) $(testfgcrodrintra_SOURCES) \
-	$(testfgcrodrmaxiter_SOURCES) $(testfgmresprojected_SOURCES) \
-	$(testfrozenilut_SOURCES) $(testgcrodrconfig_SOURCES) \
-	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
-	$(testgesolvepair_SOURCES) $(testgmreswork_SOURCES) \
-	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
-	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
-	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
-	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
-	$(testhybridnested_SOURCES) $(testilucbsrsmoke_SOURCES) \
-	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testkrylovrobust_SOURCES) $(testmatrixautosession_SOURCES) \
+	$(testfgcrodr_SOURCES) $(testfgcrodrblocked_SOURCES) \
+	$(testfgcrodrintra_SOURCES) $(testfgcrodrmaxiter_SOURCES) \
+	$(testfgmresprojected_SOURCES) $(testfrozenilut_SOURCES) \
+	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
+	$(testgcrodrsequence_SOURCES) $(testgesolvepair_SOURCES) \
+	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
+	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
+	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
+	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
+	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
+	$(testilucbsrsmoke_SOURCES) $(testilupivot_SOURCES) \
+	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
+	$(testmatrixautosession_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatrixmaterialize_SOURCES) \
 	$(testmatrixmaterializeomp_SOURCES) \
@@ -1870,13 +1877,13 @@ TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) \
 	testesolverselection$(EXEEXT) testmatrixautosession$(EXEEXT) \
 	testvectorreal64$(EXEEXT) testgesolvepair$(EXEEXT) \
 	testabi$(EXEEXT) testrcoalloc$(EXEEXT) $(am__append_5) \
-	test_krylov_modes$(EXEEXT) test_krylov_sparse$(EXEEXT) \
-	test_krylov_regression$(EXEEXT) test_krylov_lis$(EXEEXT) \
-	test_krylov_semidefinite$(EXEEXT) test_krylov_stress$(EXEEXT) \
-	test_krylov_inertia$(EXEEXT) test_krylov_window$(EXEEXT) \
-	test_krylov_openmp$(EXEEXT) test_krylov_projected$(EXEEXT) \
-	test_krylov_workspace$(EXEEXT) test_krylov_unified$(EXEEXT) \
-	test_krylov_adaptive_ex$(EXEEXT) \
+	testfgcrodrblocked$(EXEEXT) test_krylov_modes$(EXEEXT) \
+	test_krylov_sparse$(EXEEXT) test_krylov_regression$(EXEEXT) \
+	test_krylov_lis$(EXEEXT) test_krylov_semidefinite$(EXEEXT) \
+	test_krylov_stress$(EXEEXT) test_krylov_inertia$(EXEEXT) \
+	test_krylov_window$(EXEEXT) test_krylov_openmp$(EXEEXT) \
+	test_krylov_projected$(EXEEXT) test_krylov_workspace$(EXEEXT) \
+	test_krylov_unified$(EXEEXT) test_krylov_adaptive_ex$(EXEEXT) \
 	test_krylov_api_contract$(EXEEXT) \
 	test_krylov_residual_reuse$(EXEEXT) \
 	test_krylov_both_ends$(EXEEXT) \
@@ -1888,6 +1895,7 @@ testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
 testfgcrodrmaxiter_SOURCES = testfgcrodrmaxiter.c
 testfgcrodrintra_SOURCES = testfgcrodrintra.c
+testfgcrodrblocked_SOURCES = testfgcrodrblocked.c
 testgesolvepair_SOURCES = testgesolvepair.c
 test_krylov_modes_SOURCES = test_krylov_modes.c
 test_krylov_sparse_SOURCES = test_krylov_sparse.c
@@ -2386,6 +2394,10 @@ testfgcrodr$(EXEEXT): $(testfgcrodr_OBJECTS) $(testfgcrodr_DEPENDENCIES) $(EXTRA
 	@rm -f testfgcrodr$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testfgcrodr_OBJECTS) $(testfgcrodr_LDADD) $(LIBS)
 
+testfgcrodrblocked$(EXEEXT): $(testfgcrodrblocked_OBJECTS) $(testfgcrodrblocked_DEPENDENCIES) $(EXTRA_testfgcrodrblocked_DEPENDENCIES) 
+	@rm -f testfgcrodrblocked$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testfgcrodrblocked_OBJECTS) $(testfgcrodrblocked_LDADD) $(LIBS)
+
 testfgcrodrintra$(EXEEXT): $(testfgcrodrintra_OBJECTS) $(testfgcrodrintra_DEPENDENCIES) $(EXTRA_testfgcrodrintra_DEPENDENCIES) 
 	@rm -f testfgcrodrintra$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testfgcrodrintra_OBJECTS) $(testfgcrodrintra_LDADD) $(LIBS)
@@ -2828,6 +2840,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfeastfoundation.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfeastshifted.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodr.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodrblocked.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodrintra.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodrmaxiter.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgmresprojected.Po@am__quote@ # am--include-marker
@@ -3785,6 +3798,13 @@ testhalfilut.log: testhalfilut$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testfgcrodrblocked.log: testfgcrodrblocked$(EXEEXT)
+	@p='testfgcrodrblocked$(EXEEXT)'; \
+	b='testfgcrodrblocked'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 test_krylov_modes.log: test_krylov_modes$(EXEEXT)
 	@p='test_krylov_modes$(EXEEXT)'; \
 	b='test_krylov_modes'; \
@@ -4152,6 +4172,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testfeastfoundation.Po
 	-rm -f ./$(DEPDIR)/testfeastshifted.Po
 	-rm -f ./$(DEPDIR)/testfgcrodr.Po
+	-rm -f ./$(DEPDIR)/testfgcrodrblocked.Po
 	-rm -f ./$(DEPDIR)/testfgcrodrintra.Po
 	-rm -f ./$(DEPDIR)/testfgcrodrmaxiter.Po
 	-rm -f ./$(DEPDIR)/testfgmresprojected.Po
@@ -4350,6 +4371,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testfeastfoundation.Po
 	-rm -f ./$(DEPDIR)/testfeastshifted.Po
 	-rm -f ./$(DEPDIR)/testfgcrodr.Po
+	-rm -f ./$(DEPDIR)/testfgcrodrblocked.Po
 	-rm -f ./$(DEPDIR)/testfgcrodrintra.Po
 	-rm -f ./$(DEPDIR)/testfgcrodrmaxiter.Po
 	-rm -f ./$(DEPDIR)/testfgmresprojected.Po
