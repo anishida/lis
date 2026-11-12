@@ -5543,6 +5543,10 @@ LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 		return LIS_SUCCESS;
 	}
 
+	/* Explicit ILUT spellings retain the established ILUC parameter IDs. */
+	if(strcmp(arg1,"-ilut_drop")==0) arg1="-iluc_drop";
+	else if(strcmp(arg1,"-ilut_rate")==0) arg1="-iluc_rate";
+
 	err = 0;
 
 	for(i=0;i<LIS_SOLVER_OPTION_LEN;i++)
