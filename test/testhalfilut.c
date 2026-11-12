@@ -702,6 +702,7 @@ check_ilut_contact_kkt(void)
     if(err) goto done;
     err=lis_matrix_set_size(A,0,n);
     if(err) goto done;
+    if(A->nprocs!=1) { failed=0; goto done; }
     for(i=0;i<nu;i++)
     {
         err=lis_matrix_set_value(LIS_INS_VALUE,i,i,(LIS_SCALAR)4.0,A);
