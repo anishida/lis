@@ -6,6 +6,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <string.h>
 
@@ -10251,6 +10252,180 @@ cleanup:
         0;
 }
 
+
+/*
+ * Optional, isolated-process benchmark of a 7-point Dirichlet Laplacian
+ * on a regular 3-D grid. Not included in "make check": invocation is
+ *
+ *     ./test/testmfamg --fp16-3d-bench SIDE off|on|noprobe
+ *
+ * Run modes in SEPARATE processes for comparable VmRSS snapshots.
+ * The byte counter covers only three MFAMG numerical coefficient arrays.
+ * VmRSS includes the matrix, solver, vectors, heap and all other objects.
+ */
+static unsigned long
+mfamg_benchmark_vmrss_kib(void)
+{
+    FILE *f;
+    char line[256];
+    unsigned long kb=0;
+
+    f=fopen("/proc/self/status","r");
+    if(f==NULL)
+        return 0; /* Not available on non-Linux systems. */
+
+    while(fgets(line,sizeof(line),f)!=NULL)
+    {
+        if(sscanf(line,"VmRSS: %lu kB",&kb)==1)
+            break;
+    }
+    fclose(f);
+    return kb;
+}
+
+static int
+mfamg_benchmark_3d(LIS_INT side, LIS_INT half_mode)
+{
+    LIS_MATRIX A=NULL;
+    LIS_VECTOR b=NULL, x=NULL, truth=NULL, constant=NULL, residual=NULL;
+    LIS_VECTOR basis[1];
+    LIS_SOLVER solver=NULL;
+    LIS_PRECON precon=NULL;
+    LIS_INT n=side*side*side;
+    LIS_INT ix, iy, iz, i, iter=0, capability=LIS_FALSE;
+    LIS_INT err=0;
+    LIS_REAL bnrm=0.0, rnrm=0.0;
+    size_t ref_bytes=0, resident_bytes=0;
+    unsigned long vmrss_matrix=0, vmrss_precon=0;
+    int failed=1;
+
+    err=lis_matrix_create(LIS_COMM_WORLD,&A);
+    if(err) goto done;
+    err=lis_matrix_set_size(A,0,n);
+    if(err) goto done;
+
+    for(iz=0;iz<side;iz++)
+    for(iy=0;iy<side;iy++)
+    for(ix=0;ix<side;ix++)
+    {
+        i=ix+side*(iy+side*iz);
+        err=lis_matrix_set_value(LIS_INS_VALUE,i,i,(LIS_SCALAR)6.0,A);
+        if(err) goto done;
+#define MFAMG_3D_INSERT(neighbor) \
+        do { err=lis_matrix_set_value(LIS_INS_VALUE,i,(neighbor), \
+                   (LIS_SCALAR)-1.0,A); if(err) goto done; } while(0)
+        if(ix>0) MFAMG_3D_INSERT(i-1);
+        if(ix+1<side) MFAMG_3D_INSERT(i+1);
+        if(iy>0) MFAMG_3D_INSERT(i-side);
+        if(iy+1<side) MFAMG_3D_INSERT(i+side);
+        if(iz>0) MFAMG_3D_INSERT(i-side*side);
+        if(iz+1<side) MFAMG_3D_INSERT(i+side*side);
+#undef MFAMG_3D_INSERT
+    }
+    err=lis_matrix_assemble(A);
+    if(err) goto done;
+
+    err=lis_vector_duplicate(A,&b);
+    if(err) goto done;
+    err=lis_vector_duplicate(A,&x);
+    if(err) goto done;
+    err=lis_vector_duplicate(A,&truth);
+    if(err) goto done;
+    err=lis_vector_duplicate(A,&constant);
+    if(err) goto done;
+    err=lis_vector_duplicate(A,&residual);
+    if(err) goto done;
+
+    /* Deterministic mixture of smooth and high-frequency error. */
+    for(i=0;i<n;i++)
+        truth->value[i]=(LIS_SCALAR)(1.0+0.005*(double)((i*17)%31));
+    err=lis_matvec(A,truth,b);
+    if(err) goto done;
+    err=lis_vector_set_all((LIS_SCALAR)0.0,x);
+    if(err) goto done;
+    err=lis_vector_set_all((LIS_SCALAR)1.0,constant);
+    if(err) goto done;
+    basis[0]=constant;
+
+    err=lis_solver_create(&solver);
+    if(err) goto done;
+    err=lis_solver_set_option(
+        "-i gmres -p mfamg -scale none -tol 1.0e-8 "
+        "-maxiter 150 -print none",solver);
+    if(err) goto done;
+    err=lis_solver_set_precon_half(solver,half_mode);
+    if(err) goto done;
+    err=lis_solver_set_near_nullspace(solver,1,basis);
+    if(err) goto done;
+    err=lis_solver_set_matrix(A,solver);
+    if(err) goto done;
+
+    vmrss_matrix=mfamg_benchmark_vmrss_kib();
+    err=lis_precon_create(solver,&precon);
+    if(err)
+    {
+        precon=NULL; /* Constructor cleans up after failure. */
+        goto done;
+    }
+
+    err=lis_precon_mfamg_get_half_coefficient_bytes(
+        precon,&ref_bytes,&resident_bytes);
+    if(err) goto done;
+    vmrss_precon=mfamg_benchmark_vmrss_kib();
+    err=lis_solve_kernel(A,b,x,solver,precon);
+    if(err) goto done;
+    err=lis_solver_get_iter(solver,&iter);
+    if(err) goto done;
+    err=lis_matvec(A,x,residual);
+    if(err) goto done;
+    err=lis_vector_axpy((LIS_SCALAR)-1.0,b,residual);
+    if(err) goto done;
+    err=lis_vector_nrm2(residual,&rnrm);
+    if(err) goto done;
+    err=lis_vector_nrm2(b,&bnrm);
+    if(err || bnrm<=0.0) goto done;
+
+    err=lis_half_get_capability(&capability);
+    if(err) goto done;
+
+    printf("MFAMG_FP16_3D side=%ld dof=%ld mode=%s "
+           "ref_mb=%.6f resident_mb=%.6f "
+           "vmrss_matrix_kib=%lu vmrss_precon_kib=%lu "
+           "iterations=%ld relres=%.9e capability=%ld\n",
+           (long)side,(long)n,
+           half_mode==LIS_PRECON_HALF_OFF ? "off" :
+           (half_mode==LIS_PRECON_HALF_ON ? "on" : "noprobe"),
+           (double)ref_bytes/(1024.0*1024.0),
+           (double)resident_bytes/(1024.0*1024.0),
+           vmrss_matrix,vmrss_precon,
+           (long)iter,(double)(rnrm/bnrm),(long)capability);
+
+    if(rnrm/bnrm>1.0e-7 || resident_bytes>ref_bytes ||
+       (half_mode==LIS_PRECON_HALF_OFF && resident_bytes!=ref_bytes) ||
+       (half_mode!=LIS_PRECON_HALF_OFF && capability &&
+        resident_bytes>=ref_bytes))
+        goto done;
+
+    failed=0;
+done:
+    if(failed)
+        fprintf(stderr,"MFAMG_FP16_3D_FAILED side=%ld mode=%ld rc=%ld\n",
+                (long)side,(long)half_mode,(long)err);
+    if(precon)
+    {
+        if(solver) solver->precon=NULL;
+        lis_precon_destroy(precon);
+    }
+    if(solver) lis_solver_destroy(solver);
+    if(residual) lis_vector_destroy(residual);
+    if(constant) lis_vector_destroy(constant);
+    if(truth) lis_vector_destroy(truth);
+    if(x) lis_vector_destroy(x);
+    if(b) lis_vector_destroy(b);
+    if(A) lis_matrix_destroy(A);
+    return failed;
+}
+
 /* ============================================================
  * Main
  * ============================================================ */
@@ -10309,7 +10484,27 @@ main(
 #endif
 
 
-    if(nprocs==1)
+    if(argc==4 && strcmp(argv[1],"--fp16-3d-bench")==0)
+    {
+        char *end=NULL;
+        long side=strtol(argv[2],&end,10);
+        LIS_INT mode;
+        if(end==argv[2] || *end!='\0' || side<4 || side>60 || nprocs!=1)
+            failed=1;
+        else
+        {
+            if(strcmp(argv[3],"off")==0)
+                mode=LIS_PRECON_HALF_OFF;
+            else if(strcmp(argv[3],"on")==0)
+                mode=LIS_PRECON_HALF_ON;
+            else if(strcmp(argv[3],"noprobe")==0)
+                mode=LIS_PRECON_HALF_NOPROBE;
+            else
+                mode=-1;
+            failed=mode<0 ? 1 : mfamg_benchmark_3d((LIS_INT)side,mode);
+        }
+    }
+    else if(nprocs==1)
     {
         failed =
             run_serial();
