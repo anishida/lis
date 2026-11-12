@@ -4899,6 +4899,135 @@ lis_fgcrodr_validate_recycle(
 
 
 /*
+ * Optional serial-CSR normwise recycle validation for offline replay.
+ * Preserve the existing absolute validator exactly as-is.
+ *
+ * scaled_error = max_i ||A Z_i-C_i||_2 /
+ *                     (|| |A| |Z_i| ||_2 + ||C_i||_2)
+ *
+ * This is normwise, NOT the componentwise Oettli-Prager backward error.
+ * It does not substitute for checking the physical residual of x.
+ * No MPI/local-submatrix shortcut or global correctness claim.
+ */
+/* Internal, read-only single-column kernel, also used by regression.
+ * The zero/zero denominator is an invalid diagnostic input, not 0/0.
+ * Standard LIS_SCALAR value data are used; this does not certify a
+ * higher-precision low-part contribution in quad work vectors.
+ */
+LIS_INT
+lis_fgcrodr_normwise_relation_one(
+    LIS_MATRIX A, LIS_VECTOR z, LIS_VECTOR c, LIS_VECTOR scratch,
+    LIS_REAL *ratio, LIS_REAL *abs_az_norm)
+{
+#ifdef USE_MPI
+    (void)A; (void)z; (void)c; (void)scratch;
+    (void)ratio; (void)abs_az_norm;
+    return LIS_ERR_NOT_IMPLEMENTED;
+#else
+    LIS_INT row,j,col,err;
+    LIS_REAL raw,row_abs,norm_abs_az,c_norm,denom;
+    if(A==NULL || z==NULL || c==NULL || scratch==NULL ||
+       ratio==NULL || abs_az_norm==NULL ||
+       A->nprocs!=1 || A->matrix_type!=LIS_MATRIX_CSR ||
+       A->ptr==NULL || A->index==NULL || A->value==NULL ||
+       z->value==NULL || c->value==NULL || z->n<A->n ||
+       c->n<A->n || scratch->n<A->n)
+        return LIS_ERR_ILL_ARG;
+    err=lis_matvec(A,z,scratch);
+    if(err!=LIS_SUCCESS) return err;
+    err=lis_vector_axpy((LIS_SCALAR)-1.0,c,scratch);
+    if(err!=LIS_SUCCESS) return err;
+    err=lis_vector_nrm2(scratch,&raw);
+    if(err!=LIS_SUCCESS) return err;
+    if(!isfinite((double)raw)) return LIS_ERR_ILL_ARG;
+
+    norm_abs_az=0.0;
+    for(row=0;row<A->n;row++)
+    {
+        row_abs=0.0;
+        if(A->ptr[row]<0 || A->ptr[row+1]<A->ptr[row] ||
+           A->ptr[row+1]>A->nnz)
+            return LIS_ERR_ILL_ARG;
+        for(j=A->ptr[row];j<A->ptr[row+1];j++)
+        {
+            col=A->index[j];
+            if(col<0 || col>=z->n)
+                return LIS_ERR_ILL_ARG;
+#ifdef _COMPLEX
+            row_abs+=(LIS_REAL)cabs(A->value[j]) *
+                     (LIS_REAL)cabs(z->value[col]);
+#else
+            row_abs+=(LIS_REAL)fabs(A->value[j]) *
+                     (LIS_REAL)fabs(z->value[col]);
+#endif
+        }
+        if(!isfinite((double)row_abs)) return LIS_ERR_ILL_ARG;
+        norm_abs_az=hypot(norm_abs_az,row_abs);
+    }
+    err=lis_vector_nrm2(c,&c_norm);
+    if(err!=LIS_SUCCESS) return err;
+    denom=norm_abs_az+c_norm;
+    if(denom<=0.0 || !isfinite((double)denom))
+        return LIS_ERR_ILL_ARG;
+    *ratio=raw/denom;
+    if(!isfinite((double)*ratio))
+        return LIS_ERR_ILL_ARG;
+    *abs_az_norm=norm_abs_az;
+    return LIS_SUCCESS;
+#endif
+}
+
+LIS_INT
+lis_fgcrodr_validate_recycle_normwise(
+    LIS_SOLVER solver,
+    LIS_REAL *orth_error,
+    LIS_REAL *relation_error,
+    LIS_REAL *scaled_error,
+    LIS_REAL *abs_az_norm_max)
+{
+    LIS_INT err;
+    if(solver==NULL || orth_error==NULL || relation_error==NULL ||
+       scaled_error==NULL || abs_az_norm_max==NULL)
+        return LIS_ERR_ILL_ARG;
+
+    *scaled_error=0.0;
+    *abs_az_norm_max=0.0;
+#ifdef USE_MPI
+    return LIS_ERR_NOT_IMPLEMENTED;
+#else
+    {
+        LIS_MATRIX A=solver->A;
+        LIS_FGCRODR_STATE state;
+        LIS_VECTOR scratch=NULL;
+        LIS_INT k;
+        LIS_REAL ratio,amp;
+        if(A==NULL || A->nprocs!=1 ||
+           A->matrix_type!=LIS_MATRIX_CSR ||
+           A->ptr==NULL || A->index==NULL || A->value==NULL)
+            return LIS_ERR_NOT_IMPLEMENTED;
+        err=lis_fgcrodr_validate_recycle(
+            solver,orth_error,relation_error);
+        if(err!=LIS_SUCCESS) return err;
+        state=solver->fgcrodr_state;
+        if(state==NULL || !state->valid || state->dim<=0)
+            return LIS_SUCCESS;
+        err=lis_vector_duplicate(A,&scratch);
+        if(err!=LIS_SUCCESS) return err;
+        for(k=0;k<state->dim;k++)
+        {
+            err=lis_fgcrodr_normwise_relation_one(
+                A,state->z[k],state->c[k],scratch,&ratio,&amp);
+            if(err!=LIS_SUCCESS) break;
+            if(ratio>*scaled_error) *scaled_error=ratio;
+            if(amp>*abs_az_norm_max) *abs_az_norm_max=amp;
+        }
+        lis_vector_destroy(scratch);
+        return err;
+    }
+#endif
+}
+
+/*
  * Prepare a persistent flexible recycle basis for a changed matrix
  * value generation.
  *

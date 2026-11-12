@@ -284,6 +284,16 @@ extern "C"
         extern LIS_INT lis_fgcrodr_validate_recycle(
                 LIS_SOLVER solver, LIS_REAL *orth_error,
                 LIS_REAL *relation_error);
+        /* Read-only serial CSR diagnostic; unsupported on MPI builds. */
+        extern LIS_INT lis_fgcrodr_validate_recycle_normwise(
+                LIS_SOLVER solver, LIS_REAL *orth_error,
+                LIS_REAL *relation_error, LIS_REAL *scaled_error,
+                LIS_REAL *abs_az_norm_max);
+        /* Internal single-column diagnostic used by the regression. */
+        extern LIS_INT lis_fgcrodr_normwise_relation_one(
+                LIS_MATRIX A, LIS_VECTOR z, LIS_VECTOR c,
+                LIS_VECTOR scratch, LIS_REAL *ratio,
+                LIS_REAL *abs_az_norm);
         /* Internal overlap kernel; exposed for numerical regression only. */
         extern LIS_INT lis_fgcrodr_flexible_overlap(
                 LIS_VECTOR *q, LIS_INT nq, LIS_VECTOR *z, LIS_INT nz,

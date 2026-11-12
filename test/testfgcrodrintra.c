@@ -69,6 +69,20 @@ static int solve_one(LIS_MATRIX A, LIS_VECTOR b, int intra, int requested_k, int
         solver,&builds,&updates,&uses,&rejects))) goto done;
     if((rc=lis_fgcrodr_validate_recycle(
         solver,&orth,&relation))) goto done;
+    {
+        LIS_REAL orth2=0.0,relation2=0.0,scaled=-1.0,absaz=-1.0;
+        rc=lis_fgcrodr_validate_recycle_normwise(
+            solver,&orth2,&relation2,&scaled,&absaz);
+#ifdef USE_MPI
+        if(rc!=LIS_ERR_NOT_IMPLEMENTED) goto done;
+#else
+        if(rc!=LIS_SUCCESS || !isfinite(scaled) ||
+           !isfinite(absaz) || scaled<0.0 || absaz<0.0 ||
+           scaled>1e-12 || fabs(orth2-orth)>1e-12 ||
+           fabs(relation2-relation)>1e-12)
+            goto done;
+#endif
+    }
     if((rc=lis_matvec(A,x,ax))) goto done;
     if((rc=lis_vector_xpay(b,-1.0,ax))) goto done;
     if((rc=lis_vector_nrm2(ax,&rnorm))) goto done;
@@ -442,6 +456,44 @@ int main(int argc, char **argv)
     for(i=0;i<u->n;i++)
         u->value[i]=(LIS_SCALAR)((((u->is+i)*37)%23)-11.0);
     if((rc=lis_matvec(A,u,b))) goto done;
+#ifndef USE_MPI
+    /* Exercise the actual one-column numerical kernel with a
+     * well-defined denominator failure and a deliberate C perturbation.
+     * The test intentionally uses the same A/u/Au as the solver path. */
+    {
+        LIS_VECTOR scratch=NULL,zero=NULL,disturbed=NULL;
+        LIS_REAL base=0.0,scaled=0.0,amp=0.0;
+        int bad=1;
+        if((rc=lis_vector_duplicate(A,&scratch))) goto edge_done;
+        if((rc=lis_vector_duplicate(A,&zero))) goto edge_done;
+        if((rc=lis_vector_duplicate(A,&disturbed))) goto edge_done;
+        if((rc=lis_vector_set_all(0.0,zero))) goto edge_done;
+        if(lis_fgcrodr_normwise_relation_one(
+            A,zero,zero,scratch,&scaled,&amp)!=LIS_ERR_ILL_ARG)
+            goto edge_done;
+        if((rc=lis_fgcrodr_normwise_relation_one(
+            A,u,b,scratch,&base,&amp))) goto edge_done;
+        if(!isfinite(base) || base>1e-12 || amp<=0.0)
+            goto edge_done;
+        if((rc=lis_vector_copy(b,disturbed))) goto edge_done;
+        disturbed->value[0]+=(LIS_SCALAR)1e-3;
+        if((rc=lis_fgcrodr_normwise_relation_one(
+            A,u,disturbed,scratch,&scaled,&amp))) goto edge_done;
+        if(!isfinite(scaled) || scaled<=base+1e-7)
+            goto edge_done;
+        bad=0;
+edge_done:
+        if(disturbed) lis_vector_destroy(disturbed);
+        if(zero) lis_vector_destroy(zero);
+        if(scratch) lis_vector_destroy(scratch);
+        if(bad)
+        {
+            fprintf(stderr,"FGCRODR_NORMWISE_EDGE_FAIL rc=%d base=%g scaled=%g\n",
+                    (int)rc,(double)base,(double)scaled);
+            goto done;
+        }
+    }
+#endif
     if(solve_one(A,b,0,1,0) ||
        solve_one(A,b,1,1,1) ||
        solve_one(A,b,1,1,0) ||
