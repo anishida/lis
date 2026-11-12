@@ -160,7 +160,7 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	test_krylov_both_ends$(EXEEXT) \
 	test_krylov_be_lock_order$(EXEEXT) testilucbsrsmoke$(EXEEXT) \
 	testfgmresprojected$(EXEEXT) testmfamgvcycle$(EXEEXT) \
-	testmfamgfineagg$(EXEEXT)
+	testmfamgfineagg$(EXEEXT) testmfamgdeepmerge$(EXEEXT)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_3 = test2f test6f 
@@ -706,6 +706,10 @@ am_testmfamg_OBJECTS = testmfamg.$(OBJEXT)
 testmfamg_OBJECTS = $(am_testmfamg_OBJECTS)
 testmfamg_LDADD = $(LDADD)
 testmfamg_DEPENDENCIES =
+am_testmfamgdeepmerge_OBJECTS = testmfamgdeepmerge.$(OBJEXT)
+testmfamgdeepmerge_OBJECTS = $(am_testmfamgdeepmerge_OBJECTS)
+testmfamgdeepmerge_LDADD = $(LDADD)
+testmfamgdeepmerge_DEPENDENCIES =
 am_testmfamgfineagg_OBJECTS = testmfamgfineagg.$(OBJEXT)
 testmfamgfineagg_OBJECTS = $(am_testmfamgfineagg_OBJECTS)
 testmfamgfineagg_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -1033,6 +1037,7 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testmatrixoperatormpi.Po \
 	./$(DEPDIR)/testmatrixpolicysolve.Po \
 	./$(DEPDIR)/testmatvecblock.Po ./$(DEPDIR)/testmfamg.Po \
+	./$(DEPDIR)/testmfamgdeepmerge.Po \
 	./$(DEPDIR)/testmfamgfineagg.Po \
 	./$(DEPDIR)/testmfamggalerkin.Po \
 	./$(DEPDIR)/testmfamgvcycle.Po \
@@ -1162,9 +1167,9 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testmatrixoperatorlifecycle_SOURCES) \
 	$(testmatrixoperatormpi_SOURCES) \
 	$(testmatrixpolicysolve_SOURCES) $(testmatvecblock_SOURCES) \
-	$(testmfamg_SOURCES) $(testmfamgfineagg_SOURCES) \
-	$(testmfamggalerkin_SOURCES) $(testmfamgvcycle_SOURCES) \
-	$(testnearnullspace_SOURCES) \
+	$(testmfamg_SOURCES) $(testmfamgdeepmerge_SOURCES) \
+	$(testmfamgfineagg_SOURCES) $(testmfamggalerkin_SOURCES) \
+	$(testmfamgvcycle_SOURCES) $(testnearnullspace_SOURCES) \
 	$(testnullspacecandidates_SOURCES) \
 	$(testnullspacelift_SOURCES) $(testompelastic_SOURCES) \
 	$(testoomalloc_SOURCES) $(testoomdiag_SOURCES) \
@@ -1249,9 +1254,9 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testmatrixoperatorlifecycle_SOURCES) \
 	$(testmatrixoperatormpi_SOURCES) \
 	$(testmatrixpolicysolve_SOURCES) $(testmatvecblock_SOURCES) \
-	$(testmfamg_SOURCES) $(testmfamgfineagg_SOURCES) \
-	$(testmfamggalerkin_SOURCES) $(testmfamgvcycle_SOURCES) \
-	$(testnearnullspace_SOURCES) \
+	$(testmfamg_SOURCES) $(testmfamgdeepmerge_SOURCES) \
+	$(testmfamgfineagg_SOURCES) $(testmfamggalerkin_SOURCES) \
+	$(testmfamgvcycle_SOURCES) $(testnearnullspace_SOURCES) \
 	$(testnullspacecandidates_SOURCES) \
 	$(testnullspacelift_SOURCES) $(testompelastic_SOURCES) \
 	$(am__testoomalloc_SOURCES_DIST) \
@@ -1877,7 +1882,8 @@ TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) \
 	test_krylov_both_ends$(EXEEXT) \
 	test_krylov_be_lock_order$(EXEEXT) testilucbsrsmoke$(EXEEXT) \
 	$(am__append_6) $(am__append_8) testfgmresprojected$(EXEEXT) \
-	testmfamgvcycle$(EXEEXT) testmfamgfineagg$(EXEEXT)
+	testmfamgvcycle$(EXEEXT) testmfamgfineagg$(EXEEXT) \
+	testmfamgdeepmerge$(EXEEXT)
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
 testfgcrodrmaxiter_SOURCES = testfgcrodrmaxiter.c
@@ -1917,6 +1923,7 @@ testmfamgvcycle_SOURCES = testmfamgvcycle.c
 testmfamgvcycle_LDADD = $(LDADD) -lm
 testmfamgfineagg_SOURCES = testmfamgfineagg.c
 testmfamgfineagg_LDADD = $(LDADD) -lm
+testmfamgdeepmerge_SOURCES = testmfamgdeepmerge.c
 all: all-am
 
 .SUFFIXES:
@@ -2507,6 +2514,10 @@ testmfamg$(EXEEXT): $(testmfamg_OBJECTS) $(testmfamg_DEPENDENCIES) $(EXTRA_testm
 	@rm -f testmfamg$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmfamg_OBJECTS) $(testmfamg_LDADD) $(LIBS)
 
+testmfamgdeepmerge$(EXEEXT): $(testmfamgdeepmerge_OBJECTS) $(testmfamgdeepmerge_DEPENDENCIES) $(EXTRA_testmfamgdeepmerge_DEPENDENCIES) 
+	@rm -f testmfamgdeepmerge$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testmfamgdeepmerge_OBJECTS) $(testmfamgdeepmerge_LDADD) $(LIBS)
+
 testmfamgfineagg$(EXEEXT): $(testmfamgfineagg_OBJECTS) $(testmfamgfineagg_DEPENDENCIES) $(EXTRA_testmfamgfineagg_DEPENDENCIES) 
 	@rm -f testmfamgfineagg$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmfamgfineagg_OBJECTS) $(testmfamgfineagg_LDADD) $(LIBS)
@@ -2849,6 +2860,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixpolicysolve.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatvecblock.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamg.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamgdeepmerge.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamgfineagg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamggalerkin.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamgvcycle.Po@am__quote@ # am--include-marker
@@ -3969,6 +3981,13 @@ testmfamgfineagg.log: testmfamgfineagg$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testmfamgdeepmerge.log: testmfamgdeepmerge$(EXEEXT)
+	@p='testmfamgdeepmerge$(EXEEXT)'; \
+	b='testmfamgdeepmerge'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -4165,6 +4184,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testmatrixpolicysolve.Po
 	-rm -f ./$(DEPDIR)/testmatvecblock.Po
 	-rm -f ./$(DEPDIR)/testmfamg.Po
+	-rm -f ./$(DEPDIR)/testmfamgdeepmerge.Po
 	-rm -f ./$(DEPDIR)/testmfamgfineagg.Po
 	-rm -f ./$(DEPDIR)/testmfamggalerkin.Po
 	-rm -f ./$(DEPDIR)/testmfamgvcycle.Po
@@ -4362,6 +4382,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testmatrixpolicysolve.Po
 	-rm -f ./$(DEPDIR)/testmatvecblock.Po
 	-rm -f ./$(DEPDIR)/testmfamg.Po
+	-rm -f ./$(DEPDIR)/testmfamgdeepmerge.Po
 	-rm -f ./$(DEPDIR)/testmfamgfineagg.Po
 	-rm -f ./$(DEPDIR)/testmfamggalerkin.Po
 	-rm -f ./$(DEPDIR)/testmfamgvcycle.Po
