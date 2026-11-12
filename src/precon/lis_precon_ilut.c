@@ -468,6 +468,37 @@ cleanup:
     return err;
 }
 
+
+/* Read-only factor statistics for convergence/pivot diagnostics.
+ * D stores reciprocal pivots. Packed L/U keep their symbolic nnz.
+ */
+LIS_INT
+lis_precon_ilut_factor_stats(LIS_PRECON precon, LIS_INT *nnz_l,
+                            LIS_INT *nnz_u, LIS_REAL *min_pivot,
+                            LIS_REAL *max_pivot)
+{
+    LIS_INT i;
+    LIS_REAL v;
+    if(!precon || precon->precon_type!=LIS_PRECON_TYPE_ILUT ||
+       !precon->L || !precon->U || !precon->D ||
+       !nnz_l || !nnz_u || !min_pivot || !max_pivot)
+        return LIS_ERR_ILL_ARG;
+    *nnz_l=0; *nnz_u=0;
+    *min_pivot=LIS_SCALAR_MAX; *max_pivot=0.0;
+    for(i=0;i<precon->D->n;i++)
+    {
+        *nnz_l+=precon->L->nnz[i];
+        *nnz_u+=precon->U->nnz[i];
+        v=(LIS_REAL)fabs(precon->D->value[i]);
+        if(!(v>0.0) || !isfinite((double)v))
+            return LIS_ERR_ILL_ARG;
+        v=1.0/v;
+        if(v<*min_pivot) *min_pivot=v;
+        if(v>*max_pivot) *max_pivot=v;
+    }
+    return LIS_SUCCESS;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_precon_create_ilut"
 LIS_INT lis_precon_create_ilut(LIS_SOLVER solver, LIS_PRECON precon)
