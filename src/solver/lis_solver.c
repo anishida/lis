@@ -287,6 +287,7 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->near_nullspace_dim = 0;
 	solver->mfamg_block_size = 1;
 	solver->mfamg_fine_agg_factor = 0;
+	solver->mfamg_vcycle_smooth_steps = 1;
 	solver->near_nullspace_coarse = NULL;
 	solver->recycle_u = NULL;
 	solver->recycle_zu = NULL;
@@ -5316,6 +5317,28 @@ LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 			return LIS_ERR_ILL_ARG;
 		}
 		solver->mfamg_fine_agg_factor = factor;
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
+
+	if( strcmp(arg1,"-mfamg_vcycle_smooth_steps")==0 )
+	{
+		LIS_INT steps;
+		char extra;
+#ifdef _LONG__LONG
+		if(arg2==NULL || sscanf(arg2,"%lld %c",&steps,&extra)!=1 ||
+		   steps<1 || steps>3)
+#else
+		if(arg2==NULL || sscanf(arg2,"%d %c",&steps,&extra)!=1 ||
+		   steps<1 || steps>3)
+#endif
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,
+				"-mfamg_vcycle_smooth_steps must be 1, 2 or 3\n");
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_ERR_ILL_ARG;
+		}
+		solver->mfamg_vcycle_smooth_steps = steps;
 		LIS_DEBUG_FUNC_OUT;
 		return LIS_SUCCESS;
 	}

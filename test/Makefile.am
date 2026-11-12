@@ -343,6 +343,12 @@ testfgmresprojected_SOURCES = testfgmresprojected.c
 testfgmresprojected_LDADD = $(LDADD) -lm
 TESTS += testfgmresprojected$(EXEEXT)
 
+# Per-solver MFAMG V-cycle smoothing pass regression.
+test_PROGRAMS += testmfamgvcycle
+testmfamgvcycle_SOURCES = testmfamgvcycle.c
+testmfamgvcycle_LDADD = $(LDADD) -lm
+TESTS += testmfamgvcycle$(EXEEXT)
+
 # Opt-in first-level multivector MFAMG aggregation regression.
 test_PROGRAMS += testmfamgfineagg
 testmfamgfineagg_SOURCES = testmfamgfineagg.c

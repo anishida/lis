@@ -94,6 +94,7 @@ struct LIS_MFAMG_STRUCT
     LIS_INT nlevels;
     LIS_INT level_capacity;
     LIS_INT smoother_block_size;
+    LIS_INT vcycle_smooth_steps;
     struct LIS_MFAMG_LEVEL *levels;
     struct LIS_MFAMG_STAR_SOLVER *star;
 
@@ -10004,6 +10005,7 @@ lis_mfamg_v_cycle(
     LIS_INT p;
     LIS_INT rank;
     LIS_INT row_start;
+    LIS_INT smooth_pass;
     LIS_INT err;
 
     LIS_SCALAR residual;
@@ -10123,17 +10125,18 @@ lis_mfamg_v_cycle(
 
 
     /*
-     * One pre-smoothing step from zero.
+     * First pre-smoothing pass starts from zero. Subsequent passes
+     * correct the current iterate without resetting it.
      */
-    err =
-        lis_mfamg_smoother_apply(
-            level,
-            b,
-            x,
-            LIS_TRUE);
-
-    if(err)
-        return err;
+    for(smooth_pass=0;
+        smooth_pass<state->vcycle_smooth_steps;
+        smooth_pass++)
+    {
+        err=lis_mfamg_smoother_apply(
+            level,b,x,smooth_pass==0 ? LIS_TRUE : LIS_FALSE);
+        if(err)
+            return err;
+    }
 
 
     err =
@@ -10376,18 +10379,15 @@ lis_mfamg_v_cycle(
     }
 
 
-    /*
-     * One post-smoothing step.
-     */
-    err =
-        lis_mfamg_smoother_apply(
-            level,
-            b,
-            x,
-            LIS_FALSE);
-
-    if(err)
-        return err;
+    /* Each post-smoothing pass corrects the prolongated solution. */
+    for(smooth_pass=0;
+        smooth_pass<state->vcycle_smooth_steps;
+        smooth_pass++)
+    {
+        err=lis_mfamg_smoother_apply(level,b,x,LIS_FALSE);
+        if(err)
+            return err;
+    }
 
 
     return LIS_SUCCESS;
@@ -13223,6 +13223,14 @@ lis_precon_create_mfamg(
         return LIS_ERR_ILL_ARG;
     }
 
+    if(solver->mfamg_vcycle_smooth_steps<1 ||
+       solver->mfamg_vcycle_smooth_steps>3)
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,
+            "MFAMG V-cycle smoother passes must be 1, 2 or 3\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
     if(
         solver->mfamg_block_size<1
         ||
@@ -13265,6 +13273,8 @@ lis_precon_create_mfamg(
 
     state->smoother_block_size =
         solver->mfamg_block_size;
+    state->vcycle_smooth_steps =
+        solver->mfamg_vcycle_smooth_steps;
 
     state->levels =
         (struct LIS_MFAMG_LEVEL *)

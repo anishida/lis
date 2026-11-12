@@ -972,6 +972,8 @@ struct LIS_SOLVER_STRUCT
 	LIS_INT mfamg_block_size;
 	/* 0 = historical 2-node fine aggregates; 2..4 = opt-in mode factor. */
 	LIS_INT mfamg_fine_agg_factor;
+	/* MFAMG V-cycle pre/post smoother passes, 1 (default) to 3. */
+	LIS_INT mfamg_vcycle_smooth_steps;
 	LIS_NEAR_NULLSPACE_COARSE near_nullspace_coarse;
 	/* Persistent GCRO-DR recycle state. */
 	LIS_VECTOR *recycle_u;
