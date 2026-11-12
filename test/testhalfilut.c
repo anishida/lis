@@ -557,6 +557,118 @@ cleanup:
 }
 
 
+
+/* Exercise the opt-in symmetric-graph RCM and row-equilibrated ILUT path.
+ * The old ILUT path remains unchanged when neither option is set.
+ */
+static int
+check_ilut_ordering(LIS_MATRIX A)
+{
+    const char *variants[] = {
+        "-ilut_rcm 1 -ilut_row_scale 0",
+        "-ilut_rcm 0 -ilut_row_scale 1",
+        "-ilut_rcm 1 -ilut_row_scale 1"
+    };
+    LIS_SOLVER solver=NULL;
+    LIS_PRECON pc=NULL;
+    LIS_VECTOR b=NULL,x=NULL,h=NULL,r=NULL,e=NULL;
+    LIS_INT i,j,err,seen[64];
+    LIS_REAL rn=0.0,bn=0.0;
+    int v,failed=0;
+    char opts[320];
+
+    if(A->n!=64 || A->nprocs!=1) return 0;
+    if(lis_vector_duplicate(A,&b) ||
+       lis_vector_duplicate(A,&x) ||
+       lis_vector_duplicate(A,&h) ||
+       lis_vector_duplicate(A,&r) ||
+       lis_vector_duplicate(A,&e))
+    { failed=1; goto cleanup; }
+    lis_vector_set_all((LIS_SCALAR)1.0,e);
+    err=lis_matvec(A,e,b);
+    if(err) { failed=1; goto cleanup; }
+    lis_vector_nrm2(b,&bn);
+
+    for(v=0;v<3;v++)
+    {
+        solver=NULL;pc=NULL;
+        err=lis_solver_create(&solver);
+        if(err) { failed=1; goto cleanup; }
+        snprintf(opts,sizeof(opts),
+                 "-i gmres -p ilut -scale none -print none "
+                 "-ilut_drop 0 -ilut_rate 10 -ilu_pivot_tol 1e-12 %s",
+                 variants[v]);
+        err=lis_solver_set_option(opts,solver);
+        if(err) { failed=1; goto cleanup; }
+        err=lis_solver_set_matrix(A,solver);
+        if(err) { failed=1; goto cleanup; }
+        err=lis_precon_create(solver,&pc);
+        if(err) { failed=1; goto cleanup; }
+        solver->precon=pc;
+        if(!pc->ilut_perm || !pc->ilut_row_scale)
+        { failed=1; goto cleanup; }
+
+        memset(seen,0,sizeof(seen));
+        for(i=0;i<64;i++)
+        {
+            j=pc->ilut_perm[i];
+            if(j<0 || j>=64 || seen[j]++ ||
+               !isfinite((double)pc->ilut_row_scale[i]) ||
+               pc->ilut_row_scale[i]<=0.0)
+            { failed=1; goto cleanup; }
+        }
+
+        lis_vector_set_all((LIS_SCALAR)0.0,x);
+        err=lis_psolve(solver,b,x);
+        if(err) { failed=1; goto cleanup; }
+        err=lis_matvec(A,x,r);
+        if(err) { failed=1; goto cleanup; }
+        err=lis_vector_axpy((LIS_SCALAR)-1.0,b,r);
+        if(err) { failed=1; goto cleanup; }
+        lis_vector_nrm2(r,&rn);
+        if(!(rn/bn<0.10))
+        {
+            fprintf(stderr,"ILUT RCM variant %d poor residual %.3g\n",
+                    v,(double)(rn/bn));
+            failed=1; goto cleanup;
+        }
+
+        /* Check transpose mapping independently from the normal solve. */
+        lis_vector_set_all((LIS_SCALAR)0.0,h);
+        err=lis_psolveh(solver,b,h);
+        if(err) { failed=1; goto cleanup; }
+        err=lis_matvech(A,h,r);
+        if(err) { failed=1; goto cleanup; }
+        err=lis_vector_axpy((LIS_SCALAR)-1.0,b,r);
+        if(err) { failed=1; goto cleanup; }
+        lis_vector_nrm2(r,&rn);
+        if(!(rn/bn<0.10))
+        {
+            fprintf(stderr,"ILUT RCM adjoint variant %d residual %.3g\n",
+                    v,(double)(rn/bn));
+            failed=1; goto cleanup;
+        }
+        solver->precon=NULL;
+        lis_precon_destroy(pc);pc=NULL;
+        lis_solver_destroy(solver);solver=NULL;
+    }
+
+    printf("ILUT_RCM_ROW_SCALE PASSED\n");
+cleanup:
+    if(pc)
+    {
+        if(solver) solver->precon=NULL;
+        lis_precon_destroy(pc);
+    }
+    if(solver) lis_solver_destroy(solver);
+    if(e) lis_vector_destroy(e);
+    if(r) lis_vector_destroy(r);
+    if(h) lis_vector_destroy(h);
+    if(x) lis_vector_destroy(x);
+    if(b) lis_vector_destroy(b);
+    return failed;
+}
+
 int
 main(
 	int argc,
@@ -616,6 +728,8 @@ main(
 		failed = 1;
 		goto cleanup;
 	}
+
+	failed |= check_ilut_ordering(A);
 
 	failed |=
 		run_mode(
