@@ -572,8 +572,8 @@ check_ilut_ordering(LIS_MATRIX A)
     LIS_SOLVER solver=NULL;
     LIS_PRECON pc=NULL;
     LIS_VECTOR b=NULL,x=NULL,h=NULL,r=NULL,e=NULL;
-    LIS_INT i,j,err,seen[64];
-    LIS_REAL rn=0.0,bn=0.0;
+    LIS_INT i,j,err,seen[64],nnz_l=0,nnz_u=0;
+    LIS_REAL rn=0.0,bn=0.0,min_piv=0.0,max_piv=0.0;
     int v,failed=0;
     char opts[320];
 
@@ -605,6 +605,13 @@ check_ilut_ordering(LIS_MATRIX A)
         err=lis_precon_create(solver,&pc);
         if(err) { failed=1; goto cleanup; }
         solver->precon=pc;
+        err=lis_precon_ilut_factor_stats(pc,&nnz_l,&nnz_u,
+                                         &min_piv,&max_piv);
+        if(err || nnz_l<=0 || nnz_u<=0 ||
+           !(min_piv>0.0 && max_piv>=min_piv))
+        { failed=1; goto cleanup; }
+        printf("ILUT_RCM_FACTOR_STATS variant=%d nnz_l=%d nnz_u=%d min_pivot=%.6g max_pivot=%.6g\n",
+               v,(int)nnz_l,(int)nnz_u,(double)min_piv,(double)max_piv);
         if(!pc->ilut_perm || !pc->ilut_row_scale)
         { failed=1; goto cleanup; }
 
