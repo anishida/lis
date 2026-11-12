@@ -284,6 +284,11 @@ extern "C"
         extern LIS_INT lis_fgcrodr_validate_recycle(
                 LIS_SOLVER solver, LIS_REAL *orth_error,
                 LIS_REAL *relation_error);
+        /* Internal overlap kernel; exposed for numerical regression only. */
+        extern LIS_INT lis_fgcrodr_flexible_overlap(
+                LIS_VECTOR *q, LIS_INT nq, LIS_VECTOR *z, LIS_INT nz,
+                LIS_SCALAR *f, LIS_INT ld, LIS_INT row_offset,
+                LIS_INT col_offset);
 
 
 
