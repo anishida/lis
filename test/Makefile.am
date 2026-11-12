@@ -342,3 +342,9 @@ test_PROGRAMS += testfgmresprojected
 testfgmresprojected_SOURCES = testfgmresprojected.c
 testfgmresprojected_LDADD = $(LDADD) -lm
 TESTS += testfgmresprojected$(EXEEXT)
+
+# Opt-in first-level multivector MFAMG aggregation regression.
+test_PROGRAMS += testmfamgfineagg
+testmfamgfineagg_SOURCES = testmfamgfineagg.c
+testmfamgfineagg_LDADD = $(LDADD) -lm
+TESTS += testmfamgfineagg$(EXEEXT)

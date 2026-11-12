@@ -970,6 +970,8 @@ struct LIS_SOLVER_STRUCT
 	LIS_INT near_nullspace_dim;
 	/* MFAMG block size; 1 preserves weighted Jacobi. */
 	LIS_INT mfamg_block_size;
+	/* 0 = historical 2-node fine aggregates; 2..4 = opt-in mode factor. */
+	LIS_INT mfamg_fine_agg_factor;
 	LIS_NEAR_NULLSPACE_COARSE near_nullspace_coarse;
 	/* Persistent GCRO-DR recycle state. */
 	LIS_VECTOR *recycle_u;

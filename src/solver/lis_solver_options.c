@@ -93,6 +93,7 @@ lis_solver_set_option_replace(
 
     /* This parsed option is stored outside the public options[] array. */
     solver->mfamg_block_size = fresh->mfamg_block_size;
+    solver->mfamg_fine_agg_factor = fresh->mfamg_fine_agg_factor;
 
     /* GCRO-DR configuration is stored outside options[] / params[]. */
     solver->recycle_target_dim = fresh->recycle_target_dim;
@@ -193,6 +194,8 @@ lis_solver_set_option_replace_if_changed(
     }
 
     if(!different && solver->mfamg_block_size!=fresh->mfamg_block_size)
+        different = LIS_TRUE;
+    if(!different && solver->mfamg_fine_agg_factor!=fresh->mfamg_fine_agg_factor)
         different = LIS_TRUE;
 
     /* Include solver-specific GCRO-DR profile fields in comparisons. */

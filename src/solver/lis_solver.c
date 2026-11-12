@@ -286,6 +286,7 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->rhs_compatibility_tol = (LIS_REAL)1.0e-12;
 	solver->near_nullspace_dim = 0;
 	solver->mfamg_block_size = 1;
+	solver->mfamg_fine_agg_factor = 0;
 	solver->near_nullspace_coarse = NULL;
 	solver->recycle_u = NULL;
 	solver->recycle_zu = NULL;
@@ -5296,6 +5297,28 @@ LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 	double double_value;
 
 	LIS_DEBUG_FUNC_IN;
+
+	if( strcmp(arg1,"-mfamg_fine_agg_factor")==0 )
+	{
+		LIS_INT factor;
+		char extra;
+#ifdef _LONG__LONG
+		if(arg2==NULL || sscanf(arg2,"%lld %c",&factor,&extra)!=1 ||
+		   (factor!=0 && factor!=2 && factor!=3 && factor!=4))
+#else
+		if(arg2==NULL || sscanf(arg2,"%d %c",&factor,&extra)!=1 ||
+		   (factor!=0 && factor!=2 && factor!=3 && factor!=4))
+#endif
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,
+				"-mfamg_fine_agg_factor accepts 0, 2, 3 or 4\n");
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_ERR_ILL_ARG;
+		}
+		solver->mfamg_fine_agg_factor = factor;
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
 
 	if( strcmp(arg1,"-mfamg_block_size")==0 )
 	{

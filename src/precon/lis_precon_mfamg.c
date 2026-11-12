@@ -13213,6 +13213,16 @@ lis_precon_create_mfamg(
     }
 
 
+    if(solver->mfamg_fine_agg_factor!=0 &&
+       solver->mfamg_fine_agg_factor!=2 &&
+       solver->mfamg_fine_agg_factor!=3 &&
+       solver->mfamg_fine_agg_factor!=4)
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,
+            "MFAMG fine aggregation factor must be 0, 2, 3 or 4\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
     if(
         solver->mfamg_block_size<1
         ||
@@ -13463,13 +13473,28 @@ lis_precon_create_mfamg(
     }
 
 
-    err =
-        lis_mfamg_build_aggregates(
-            A,
-            level,
-            max_row_nnz,
-            cols,
-            vals);
+    /*
+     * Opt-in enlargement of the first connected aggregates when several
+     * near-nullspace modes are provided.  The historical target of two
+     * nodes is untouched unless this option is explicitly requested.
+     *
+     * Cap before multiplying to avoid overflow in LIS_INT.
+     */
+    {
+        LIS_INT target = 2;
+        if(mode_count>1 && solver->mfamg_fine_agg_factor!=0)
+        {
+            LIS_INT factor = solver->mfamg_fine_agg_factor;
+            target = (mode_count>A->n/factor)
+                ? A->n : factor*mode_count;
+        }
+        if(target==2)
+            err = lis_mfamg_build_aggregates(
+                A,level,max_row_nnz,cols,vals);
+        else
+            err = lis_mfamg_build_aggregates_sized(
+                A,level,target,max_row_nnz,cols,vals);
+    }
 
     if(err)
     {
