@@ -12,6 +12,7 @@
 #endif
 
 #include <math.h>
+#include <stdint.h>
 #ifdef _COMPLEX
 #include <complex.h>
 #endif
@@ -20,6 +21,9 @@
 
 #include "lislib.h"
 
+
+extern uint16_t lis_half_from_double(double value);
+extern double lis_half_to_double(uint16_t value);
 
 #define LIS_MFAMG_MAX_LEVELS 32
 #define LIS_MFAMG_COARSE_LIMIT 8
@@ -67,10 +71,12 @@ struct LIS_MFAMG_LEVEL
     LIS_INT *prolong_row_ptr;
 
     LIS_SCALAR *prolong;
+    uint16_t *prolong_half;
 
     LIS_INT smoother_type;
 
     LIS_VECTOR diagonal;
+    uint16_t *diagonal_half; /* optional FP16 residency, either/or */
     LIS_VECTOR ax;
 
     LIS_REAL omega;
@@ -84,6 +90,7 @@ struct LIS_MFAMG_LEVEL
     LIS_INT block_size;
     LIS_INT block_count;
     LIS_SCALAR *block_lu;
+    uint16_t *block_lu_half;
     LIS_INT *block_pivots;
     LIS_INT *block_valid;
     LIS_SCALAR *block_work;
@@ -100,6 +107,7 @@ static void lis_mfamg_star_destroy(struct LIS_MFAMG_STAR_SOLVER *);
 struct LIS_MFAMG_STRUCT
 {
     LIS_INT nlevels;
+    LIS_INT half_mode;
     LIS_INT level_capacity;
     LIS_INT smoother_block_size;
     LIS_INT vcycle_smooth_steps;
@@ -146,6 +154,12 @@ lis_mfamg_smoother_destroy(
     }
 
 
+    if(level->diagonal_half)
+    {
+        lis_free(level->diagonal_half);
+        level->diagonal_half=NULL;
+    }
+
     if(level->ax)
     {
         lis_vector_destroy(
@@ -165,6 +179,12 @@ lis_mfamg_smoother_destroy(
             NULL;
     }
 
+
+    if(level->block_lu_half)
+    {
+        lis_free(level->block_lu_half);
+        level->block_lu_half=NULL;
+    }
 
     if(level->block_pivots)
     {
@@ -218,6 +238,211 @@ lis_mfamg_smoother_destroy(
 
 
 
+
+/* Setup and coarse-grid Galerkin products stay in LIS_SCALAR precision.
+ * Only the resident prolongation coefficients use IEEE binary16.
+ * An unsafe conversion or allocation failure keeps the full precision data.
+ */
+static LIS_SCALAR
+lis_mfamg_prolong_value(const struct LIS_MFAMG_LEVEL *level, LIS_INT i)
+{
+    if(level->prolong_half)
+        return (LIS_SCALAR)lis_half_to_double(level->prolong_half[i]);
+    return level->prolong[i];
+}
+
+static void
+lis_mfamg_compress_prolongation(struct LIS_MFAMG_STRUCT *state)
+{
+#ifndef _COMPLEX
+    LIS_INT l, i, count;
+    struct LIS_MFAMG_LEVEL *level;
+    uint16_t *packed;
+    double original, decoded;
+    LIS_INT capability;
+    if(state==NULL || state->half_mode==LIS_PRECON_HALF_OFF)
+        return;
+    capability=LIS_FALSE;
+    if(lis_half_get_capability(&capability)!=LIS_SUCCESS || !capability)
+        return;
+    for(l=0;l<state->nlevels-1;l++)
+    {
+        level=&state->levels[l];
+        if(level->prolong==NULL)
+            continue;
+        count=level->prolong_row_ptr ?
+            level->prolong_row_ptr[level->n] : level->n;
+        if(count<=0 || (size_t)count>SIZE_MAX/sizeof(uint16_t))
+            continue;
+        packed=(uint16_t *)lis_malloc((size_t)count*sizeof(uint16_t),
+                                     "lis_mfamg_compress_prolongation");
+        if(packed==NULL)
+            continue;
+        for(i=0;i<count;i++)
+        {
+            original=(double)level->prolong[i];
+            if(!isfinite(original))
+                break;
+            packed[i]=lis_half_from_double(original);
+            decoded=lis_half_to_double(packed[i]);
+            if(!isfinite(decoded) || (original!=0.0 && decoded==0.0))
+                break;
+            if(state->half_mode==LIS_PRECON_HALF_ON &&
+               fabs(decoded-original)>0.01*fabs(original)+1.0e-7)
+                break;
+        }
+        if(i!=count)
+        {
+            lis_free(packed);
+            continue;
+        }
+        lis_free(level->prolong);
+        level->prolong=NULL;
+        level->prolong_half=packed;
+    }
+#else
+    (void)state;
+#endif
+}
+
+
+/* Block-Jacobi factors are factored in LIS_SCALAR; resident values may
+ * subsequently be packed, while pivots and arithmetic stay unchanged.
+ * Reject invalid or lossy conversions and keep original data on failure.
+ */
+static void
+lis_mfamg_compress_block_factors(struct LIS_MFAMG_STRUCT *state)
+{
+#ifndef _COMPLEX
+    LIS_INT l, capability=LIS_FALSE;
+    size_t count, i;
+    struct LIS_MFAMG_LEVEL *level;
+    uint16_t *packed;
+    double original, decoded;
+
+    if(state==NULL || state->half_mode==LIS_PRECON_HALF_OFF ||
+       lis_half_get_capability(&capability)!=LIS_SUCCESS || !capability)
+        return;
+    for(l=0;l<state->nlevels-1;l++)
+    {
+        level=&state->levels[l];
+        if(level->smoother_type!=LIS_MFAMG_SMOOTHER_BLOCK_JACOBI ||
+           level->block_lu==NULL || level->block_size<=1 ||
+           level->block_count<=0)
+            continue;
+        if((size_t)level->block_count >
+           SIZE_MAX/(size_t)level->block_size/(size_t)level->block_size)
+            continue;
+        count=(size_t)level->block_count *
+              (size_t)level->block_size * (size_t)level->block_size;
+        if(count==0 || count>SIZE_MAX/sizeof(uint16_t))
+            continue;
+        packed=(uint16_t *)lis_malloc(count*sizeof(uint16_t),
+                                     "lis_mfamg_compress_block_factors");
+        if(packed==NULL)
+            continue;
+        for(i=0;i<count;i++)
+        {
+            original=(double)level->block_lu[i];
+            if(!isfinite(original))
+                break;
+            packed[i]=lis_half_from_double(original);
+            decoded=lis_half_to_double(packed[i]);
+            if(!isfinite(decoded) || (original!=0.0 && decoded==0.0))
+                break;
+            if(state->half_mode==LIS_PRECON_HALF_ON &&
+               fabs(decoded-original)>0.01*fabs(original)+1.0e-7)
+                break;
+        }
+        if(i!=count)
+        {
+            lis_free(packed);
+            continue;
+        }
+        lis_free(level->block_lu);
+        level->block_lu=NULL;
+        level->block_lu_half=packed;
+    }
+#else
+    (void)state;
+#endif
+}
+
+
+/*
+ * A diagonal is validated and used for damping estimation in full precision
+ * during setup. Once those stages complete, its resident values can use FP16.
+ * For block-Jacobi, retain full precision on a level if its LU factors must
+ * fall back, but an independently packable diagonal is still useful.
+ */
+static LIS_SCALAR
+lis_mfamg_diagonal_value(
+    const struct LIS_MFAMG_LEVEL *level, LIS_INT i)
+{
+    if(level->diagonal_half)
+        return (LIS_SCALAR)lis_half_to_double(level->diagonal_half[i]);
+    return level->diagonal->value[i];
+}
+
+static void
+lis_mfamg_compress_diagonals(struct LIS_MFAMG_STRUCT *state)
+{
+#ifndef _COMPLEX
+    LIS_INT l, i, capability=LIS_FALSE;
+    struct LIS_MFAMG_LEVEL *level;
+    uint16_t *packed;
+    double original, decoded;
+
+    if(state==NULL || state->half_mode==LIS_PRECON_HALF_OFF ||
+       lis_half_get_capability(&capability)!=LIS_SUCCESS || !capability)
+        return;
+
+    for(l=0;l<state->nlevels-1;l++)
+    {
+        level=&state->levels[l];
+        if(level->diagonal==NULL || level->n<=0 ||
+           level->diagonal->n!=level->n ||
+           (size_t)level->n>SIZE_MAX/sizeof(uint16_t))
+            continue;
+
+        packed=(uint16_t *)lis_malloc((size_t)level->n*sizeof(uint16_t),
+                                     "lis_mfamg_compress_diagonals");
+        if(packed==NULL)
+            continue;
+
+        for(i=0;i<level->n;i++)
+        {
+            original=(double)level->diagonal->value[i];
+            if(!isfinite(original) || original==0.0)
+                break;
+            packed[i]=lis_half_from_double(original);
+            decoded=lis_half_to_double(packed[i]);
+            if(!isfinite(decoded) || decoded==0.0)
+                break;
+            /*
+             * Guard the reciprocal used by Jacobi, rather than merely the
+             * relative error of the diagonal itself.
+             */
+            if(state->half_mode==LIS_PRECON_HALF_ON &&
+               fabs(1.0/decoded-1.0/original)>
+                   0.01*fabs(1.0/original)+1.0e-7)
+                break;
+        }
+        if(i!=level->n)
+        {
+            lis_free(packed);
+            continue;
+        }
+
+        lis_vector_destroy(level->diagonal);
+        level->diagonal=NULL;
+        level->diagonal_half=packed;
+    }
+#else
+    (void)state;
+#endif
+}
+
 static void
 lis_mfamg_state_free(
     struct LIS_MFAMG_STRUCT *state)
@@ -257,6 +482,8 @@ lis_mfamg_state_free(
 
             if(level->prolong)
                 lis_free(level->prolong);
+            if(level->prolong_half)
+                lis_free(level->prolong_half);
 
             if(level->coarse_ranges)
                 lis_free(level->coarse_ranges);
@@ -1128,11 +1355,21 @@ lis_mfamg_block_factor(
 
 
 
+static LIS_SCALAR
+lis_mfamg_block_lu_value(
+    const LIS_SCALAR *lu, const uint16_t *half, LIS_INT index)
+{
+    if(half)
+        return (LIS_SCALAR)lis_half_to_double(half[index]);
+    return lu[index];
+}
+
 static LIS_INT
 lis_mfamg_block_solve(
     LIS_INT n,
     LIS_INT ld,
     const LIS_SCALAR *lu,
+    const uint16_t *half,
     const LIS_INT *pivots,
     LIS_SCALAR *x)
 {
@@ -1152,7 +1389,7 @@ lis_mfamg_block_solve(
         ||
         ld<n
         ||
-        lu==NULL
+        (lu==NULL && half==NULL)
         ||
         pivots==NULL
         ||
@@ -1198,7 +1435,7 @@ lis_mfamg_block_solve(
         for(j=0;j<i;j++)
         {
             sum -=
-                lu[i*ld+j]
+                lis_mfamg_block_lu_value(lu,half,i*ld+j)
                 *
                 x[j];
         }
@@ -1216,7 +1453,7 @@ lis_mfamg_block_solve(
         for(j=i+1;j<n;j++)
         {
             sum -=
-                lu[i*ld+j]
+                lis_mfamg_block_lu_value(lu,half,i*ld+j)
                 *
                 x[j];
         }
@@ -1224,7 +1461,7 @@ lis_mfamg_block_solve(
 
         mag =
             fabs(
-                lu[i*ld+i]);
+                lis_mfamg_block_lu_value(lu,half,i*ld+i));
 
         if(
             mag!=mag
@@ -1244,7 +1481,7 @@ lis_mfamg_block_solve(
         x[i] =
             sum
             /
-            lu[i*ld+i];
+            lis_mfamg_block_lu_value(lu,half,i*ld+i);
 
 
         mag =
@@ -1944,8 +2181,8 @@ lis_mfamg_smoother_apply(
     LIS_SCALAR *bv;
     LIS_SCALAR *xv;
     LIS_SCALAR *av;
-    LIS_SCALAR *diag;
     LIS_SCALAR *lu;
+    const uint16_t *half;
     LIS_SCALAR *work;
 
 
@@ -1964,11 +2201,11 @@ lis_mfamg_smoother_apply(
         ||
         x->n!=level->n
         ||
-        level->diagonal==NULL
+        (level->diagonal==NULL && level->diagonal_half==NULL)
         ||
         level->ax==NULL
         ||
-        level->diagonal->n!=level->n
+        (level->diagonal && level->diagonal->n!=level->n)
         ||
         level->ax->n!=level->n
         ||
@@ -1988,9 +2225,6 @@ lis_mfamg_smoother_apply(
     xv =
         x->value;
 
-    diag =
-        level->diagonal->value;
-
 
     switch(level->smoother_type)
     {
@@ -2005,7 +2239,7 @@ lis_mfamg_smoother_apply(
                     *
                     bv[i]
                     /
-                    diag[i];
+                    lis_mfamg_diagonal_value(level,i);
             }
 
 
@@ -2039,7 +2273,7 @@ lis_mfamg_smoother_apply(
                 *
                 residual
                 /
-                diag[i];
+                lis_mfamg_diagonal_value(level,i);
         }
 
 
@@ -2055,7 +2289,7 @@ lis_mfamg_smoother_apply(
             ||
             level->block_count<=0
             ||
-            level->block_lu==NULL
+            (level->block_lu==NULL && level->block_lu_half==NULL)
             ||
             level->block_pivots==NULL
             ||
@@ -2138,14 +2372,22 @@ lis_mfamg_smoother_apply(
 
             if(level->block_valid[block])
             {
-                lu =
+                lu = level->block_lu ?
                     level->block_lu
                     +
                     (size_t)block
                     *
                     (size_t)level->block_size
                     *
-                    (size_t)level->block_size;
+                    (size_t)level->block_size : NULL;
+                half = level->block_lu_half ?
+                    level->block_lu_half
+                    +
+                    (size_t)block
+                    *
+                    (size_t)level->block_size
+                    *
+                    (size_t)level->block_size : NULL;
 
 
                 err =
@@ -2153,6 +2395,7 @@ lis_mfamg_smoother_apply(
                         width,
                         level->block_size,
                         lu,
+                        half,
                         level->block_pivots
                             +
                             block
@@ -2192,7 +2435,7 @@ lis_mfamg_smoother_apply(
                         *
                         work[i]
                         /
-                        diag[start+i];
+                        lis_mfamg_diagonal_value(level,start+i);
 
                     if(initial_zero)
                     {
@@ -10333,9 +10576,9 @@ lis_mfamg_v_cycle(
     if(
         level->aggregate==NULL
         ||
-        level->prolong==NULL
+        (level->prolong==NULL && level->prolong_half==NULL)
         ||
-        level->diagonal==NULL
+        (level->diagonal==NULL && level->diagonal_half==NULL)
         ||
         level->ax==NULL
         ||
@@ -10481,10 +10724,7 @@ lis_mfamg_v_cycle(
 
                 coarse_b[p] +=
                     conj(
-                        level->prolong[
-                            row_start
-                            +
-                            q])
+                        lis_mfamg_prolong_value(level,row_start+q))
                     *
                     residual;
             }
@@ -10512,7 +10752,7 @@ lis_mfamg_v_cycle(
 
             coarse_b[a] +=
                 conj(
-                    level->prolong[i])
+                    lis_mfamg_prolong_value(level,i))
                 *
                 residual;
         }
@@ -10590,10 +10830,7 @@ lis_mfamg_v_cycle(
                     q;
 
                 xv[i] +=
-                    level->prolong[
-                        row_start
-                        +
-                        q]
+                    lis_mfamg_prolong_value(level,row_start+q)
                     *
                     coarse_x[p];
             }
@@ -10615,7 +10852,7 @@ lis_mfamg_v_cycle(
             }
 
             xv[i] +=
-                level->prolong[i]
+                lis_mfamg_prolong_value(level,i)
                 *
                 coarse_x[a];
         }
@@ -13234,6 +13471,157 @@ lis_precon_mfamg_get_hierarchy_info(
 }
 
 
+/*
+ * Internal read-only diagnostics for MFAMG FP16 resident storage.
+ * Report packed transfer levels and coefficients for regression tests.
+ */
+
+
+/* Read-only test hook: number of FP16 resident smoother diagonals. */
+LIS_INT
+lis_precon_mfamg_get_half_diagonal_info(
+    LIS_PRECON precon,
+    LIS_INT *packed_levels,
+    LIS_INT *packed_coefficients)
+{
+    struct LIS_MFAMG_STRUCT *state;
+    struct LIS_MFAMG_LEVEL *level;
+    LIS_INT l;
+
+    if(precon==NULL || precon->precon_type!=LIS_PRECON_TYPE_MFAMG ||
+       precon->mfamg==NULL || packed_levels==NULL ||
+       packed_coefficients==NULL)
+        return LIS_ERR_ILL_ARG;
+
+    state=precon->mfamg;
+    *packed_levels=0;
+    *packed_coefficients=0;
+    for(l=0;l<state->nlevels-1;l++)
+    {
+        level=&state->levels[l];
+        if(level->diagonal_half)
+        {
+            ++*packed_levels;
+            *packed_coefficients+=level->n;
+        }
+    }
+    return LIS_SUCCESS;
+}
+
+/*
+ * Bytes used by the three eligible numerical coefficient categories only.
+ * This deliberately excludes all matrices, vectors, index arrays, metadata
+ * and allocator overhead, and is not a whole-preconditioner memory counter.
+ */
+LIS_INT
+lis_precon_mfamg_get_half_coefficient_bytes(
+    LIS_PRECON precon, size_t *reference_bytes, size_t *resident_bytes)
+{
+    struct LIS_MFAMG_STRUCT *state;
+    struct LIS_MFAMG_LEVEL *level;
+    LIS_INT l;
+    size_t n;
+
+    if(precon==NULL || precon->precon_type!=LIS_PRECON_TYPE_MFAMG ||
+       precon->mfamg==NULL || reference_bytes==NULL ||
+       resident_bytes==NULL)
+        return LIS_ERR_ILL_ARG;
+
+    state=precon->mfamg;
+    *reference_bytes=0;
+    *resident_bytes=0;
+    for(l=0;l<state->nlevels-1;l++)
+    {
+        level=&state->levels[l];
+
+        if(level->prolong || level->prolong_half)
+        {
+            n=(size_t)(level->prolong_row_ptr ?
+                level->prolong_row_ptr[level->n] : level->n);
+            *reference_bytes+=n*sizeof(LIS_SCALAR);
+            *resident_bytes+=n*(level->prolong_half ?
+                sizeof(uint16_t) : sizeof(LIS_SCALAR));
+        }
+
+        if(level->block_lu || level->block_lu_half)
+        {
+            n=(size_t)level->block_count * (size_t)level->block_size *
+                (size_t)level->block_size;
+            *reference_bytes+=n*sizeof(LIS_SCALAR);
+            *resident_bytes+=n*(level->block_lu_half ?
+                sizeof(uint16_t) : sizeof(LIS_SCALAR));
+        }
+
+        if(level->diagonal || level->diagonal_half)
+        {
+            n=(size_t)level->n;
+            *reference_bytes+=n*sizeof(LIS_SCALAR);
+            *resident_bytes+=n*(level->diagonal_half ?
+                sizeof(uint16_t) : sizeof(LIS_SCALAR));
+        }
+    }
+    return LIS_SUCCESS;
+}
+
+LIS_INT
+lis_precon_mfamg_get_half_block_info(
+    LIS_PRECON precon, LIS_INT *packed_levels, LIS_INT *packed_coefficients)
+{
+    struct LIS_MFAMG_STRUCT *state;
+    struct LIS_MFAMG_LEVEL *level;
+    LIS_INT l;
+
+    if(precon==NULL || precon->precon_type!=LIS_PRECON_TYPE_MFAMG ||
+       precon->mfamg==NULL || packed_levels==NULL ||
+       packed_coefficients==NULL)
+        return LIS_ERR_ILL_ARG;
+    state=precon->mfamg;
+    *packed_levels=0;
+    *packed_coefficients=0;
+    for(l=0;l<state->nlevels-1;l++)
+    {
+        level=&state->levels[l];
+        if(level->block_lu_half)
+        {
+            ++*packed_levels;
+            *packed_coefficients+=level->block_count *
+                                 level->block_size * level->block_size;
+        }
+    }
+    return LIS_SUCCESS;
+}
+
+LIS_INT
+lis_precon_mfamg_get_half_storage_info(
+    LIS_PRECON precon,
+    LIS_INT *packed_levels,
+    LIS_INT *packed_coefficients)
+{
+    struct LIS_MFAMG_STRUCT *state;
+    struct LIS_MFAMG_LEVEL *level;
+    LIS_INT l;
+
+    if(precon==NULL || precon->precon_type!=LIS_PRECON_TYPE_MFAMG ||
+       precon->mfamg==NULL || packed_levels==NULL ||
+       packed_coefficients==NULL)
+        return LIS_ERR_ILL_ARG;
+
+    state=precon->mfamg;
+    *packed_levels=0;
+    *packed_coefficients=0;
+    for(l=0;l<state->nlevels-1;l++)
+    {
+        level=&state->levels[l];
+        if(level->prolong_half)
+        {
+            ++*packed_levels;
+            *packed_coefficients+=level->prolong_row_ptr ?
+                level->prolong_row_ptr[level->n] : level->n;
+        }
+    }
+    return LIS_SUCCESS;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_precon_create_mfamg"
 LIS_INT
@@ -14106,6 +14494,11 @@ lis_precon_create_mfamg(
     }
 
 
+    state->half_mode = solver->precon_half_mode;
+    lis_mfamg_compress_prolongation(state);
+    lis_mfamg_compress_block_factors(state);
+    lis_mfamg_compress_diagonals(state);
+
     precon->A =
         A;
 
@@ -14748,7 +15141,9 @@ lis_precon_psd_update_mfamg(
     }
 
 
-    if(same_pattern)
+    /* Packed transfer coefficients require transactional rebuilding. */
+    if(same_pattern && precon->mfamg->half_mode==LIS_PRECON_HALF_OFF &&
+       solver->precon_half_mode==LIS_PRECON_HALF_OFF)
     {
         err =
             lis_mfamg_refresh_serial_scalar_numeric(

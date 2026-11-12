@@ -18,6 +18,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  generated-makefiles:
+    name: Build from tracked Makefile.in (no autoreconf)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libtool libtool-bin
+
+      - name: Configure and build without regenerating Autotools files
+        run: |
+          ./configure --enable-test --disable-fortran --disable-f90 \
+            --disable-saamg --disable-mpi
+          make -j2
+          test -x test/testsnapshot
+          ./test/testsnapshot
+          ./test/testmfamg
+
+      - name: Verify snapshot header is installed by tracked Makefile.in
+        run: |
+          make -C include install-data "DESTDIR=$RUNNER_TEMP/lis-staging"
+          find "$RUNNER_TEMP/lis-staging" -type f -name lis_snapshot.h | grep -q .
+
   linux:
     name: Linux GCC (${{ matrix.mode }})
     runs-on: ubuntu-latest
@@ -30,6 +56,8 @@ jobs:
             options: ''
           - mode: openmp
             options: '--enable-omp'
+          - mode: half
+            options: '--enable-half'
     env:
       OMP_NUM_THREADS: '2'
       OMP_DYNAMIC: 'FALSE'
@@ -54,6 +82,34 @@ jobs:
 
       - name: Run Automake test suite
         run: make -j2 check
+
+      - name: Smoke-test optional 3D FP16 memory and Krylov benchmark
+        if: matrix.mode == 'half'
+        run: |
+          set -euo pipefail
+          # Small smoke case and a representative >100k-DOF 3D problem.
+          # Each mode runs in a fresh process for comparable RSS snapshots.
+          for side in 12 48; do
+            ./test/testmfamg --fp16-3d-bench "$side" off | tee "mfamg-3d-$side-off.log"
+            ./test/testmfamg --fp16-3d-bench "$side" on | tee "mfamg-3d-$side-on.log"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          def fields(path):
+              line = next(x for x in Path(path).read_text().splitlines()
+                          if x.startswith('MFAMG_FP16_3D '))
+              return dict(x.split('=', 1) for x in line.split()[1:])
+          for side in (12, 48):
+              off = fields(f'mfamg-3d-{side}-off.log')
+              on = fields(f'mfamg-3d-{side}-on.log')
+              assert off['mode'] == 'off' and on['mode'] == 'on'
+              assert off['dof'] == on['dof'] == str(side ** 3)
+              assert float(off['ref_mb']) == float(off['resident_mb'])
+              assert float(on['resident_mb']) < float(off['resident_mb'])
+              assert int(off['iterations']) > 0 and int(on['iterations']) > 0
+              assert float(off['relres']) < 1e-7 and float(on['relres']) < 1e-7
+              print(f'3D FP16 benchmark passed ({side}^3):', off, on)
+          PY
 
       - name: Audit generic FEA Matrix Market snapshot regressions
         run: python3 -m unittest discover -s tools -p 'test_fea_matrix_audit.py' -v
