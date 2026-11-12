@@ -296,6 +296,10 @@ LIS_INT lis_precon_update_ilut_frozen(
 static LIS_INT
 lis_ilut_ordered_create(LIS_SOLVER solver, LIS_PRECON precon)
 {
+#if defined(_COMPLEX) || defined(USE_COMPLEX)
+    (void)solver; (void)precon;
+    return LIS_ERR_NOT_IMPLEMENTED;
+#else
     LIS_MATRIX A=solver->A, P=NULL;
     LIS_INT n=A->n, i,j,k,old,other,p,err=LIS_SUCCESS;
     LIS_INT *inv=NULL,*degree=NULL,*graphptr=NULL,*cursor=NULL;
@@ -466,6 +470,7 @@ cleanup:
     lis_free(queue);
     lis_free(seen);
     return err;
+#endif
 }
 
 
@@ -489,7 +494,11 @@ lis_precon_ilut_factor_stats(LIS_PRECON precon, LIS_INT *nnz_l,
     {
         *nnz_l+=precon->L->nnz[i];
         *nnz_u+=precon->U->nnz[i];
+#if defined(_COMPLEX) || defined(USE_COMPLEX)
+        v=(LIS_REAL)cabs(precon->D->value[i]);
+#else
         v=(LIS_REAL)fabs(precon->D->value[i]);
+#endif
         if(!(v>0.0) || !isfinite((double)v))
             return LIS_ERR_ILL_ARG;
         v=1.0/v;
