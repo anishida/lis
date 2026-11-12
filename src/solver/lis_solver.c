@@ -251,6 +251,10 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->sequence_precon_max_age = 0;
 	solver->sequence_precon_age = 0;
 	solver->precon_half_mode = LIS_PRECON_HALF_OFF;
+	solver->ilut_rcm = 0;
+	solver->ilut_row_scale = 0;
+	solver->sequence_precon_ilut_rcm = 0;
+	solver->sequence_precon_ilut_row_scale = 0;
 	solver->sequence_precon_half_mode = LIS_PRECON_HALF_OFF;
 	solver->sequence_initial_residual = 0.0;
 	solver->sequence_rhs_norm = 0.0;
@@ -2619,6 +2623,12 @@ static LIS_INT lis_solver_sequence_precon_config_matches(
 		return LIS_FALSE;
 	}
 
+	if(solver->sequence_precon_ilut_rcm!=solver->ilut_rcm ||
+	   solver->sequence_precon_ilut_row_scale!=solver->ilut_row_scale)
+	{
+		return LIS_FALSE;
+	}
+
 	if( solver->sequence_precon_half_mode!=
 		solver->precon_half_mode )
 	{
@@ -2643,6 +2653,8 @@ static void lis_solver_sequence_precon_snapshot(
 
 	solver->sequence_precon_half_mode =
 		solver->precon_half_mode;
+	solver->sequence_precon_ilut_rcm = solver->ilut_rcm;
+	solver->sequence_precon_ilut_row_scale = solver->ilut_row_scale;
 }
 
 #undef __FUNC__
@@ -5402,6 +5414,28 @@ LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 		solver->mfamg_block_size =
 			value;
 
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
+
+	/* ILUT setup policies are intentionally per-solver, not global. */
+	if(strcmp(arg1,"-ilut_rcm")==0 ||
+	   strcmp(arg1,"-ilut_row_scale")==0)
+	{
+		LIS_INT on;
+		if(arg2!=NULL && (strcmp(arg2,"1")==0 ||
+		   strcmp(arg2,"rcm")==0)) on=1;
+		else if(arg2!=NULL && (strcmp(arg2,"0")==0 ||
+		   strcmp(arg2,"none")==0)) on=0;
+		else
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,
+			    "ILUT option expects 0/1 or none/rcm\n");
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_ERR_ILL_ARG;
+		}
+		if(strcmp(arg1,"-ilut_rcm")==0) solver->ilut_rcm=on;
+		else solver->ilut_row_scale=on;
 		LIS_DEBUG_FUNC_OUT;
 		return LIS_SUCCESS;
 	}
