@@ -676,6 +676,123 @@ cleanup:
     return failed;
 }
 
+
+/*
+ * Deterministic stabilized contact-KKT-like system:
+ * [ K  B^T ][u] = [f]
+ * [ B -0.1I][λ]   [g]
+ *
+ * K is an SPD spring chain, B enforces displacement differences.
+ * The negative multiplier block makes the matrix indefinite.
+ * This is an algebraic regression, NOT a full nonlinear contact FEA run.
+ */
+static int
+check_ilut_contact_kkt(void)
+{
+    const LIS_INT nu=36,nlambda=12,n=48;
+    LIS_MATRIX A=NULL;
+    LIS_VECTOR b=NULL,x=NULL,u=NULL,r=NULL;
+    LIS_SOLVER solver=NULL;
+    LIS_INT err=0,i,q,iters=0,variant;
+    LIS_REAL bn=0.0,rn=0.0;
+    char opts[320];
+    int failed=1;
+
+    err=lis_matrix_create(LIS_COMM_WORLD,&A);
+    if(err) goto done;
+    err=lis_matrix_set_size(A,0,n);
+    if(err) goto done;
+    for(i=0;i<nu;i++)
+    {
+        err=lis_matrix_set_value(LIS_INS_VALUE,i,i,(LIS_SCALAR)4.0,A);
+        if(err) goto done;
+        if(i>0)
+        {
+            err=lis_matrix_set_value(LIS_INS_VALUE,i,i-1,
+                                     (LIS_SCALAR)-0.8,A);
+            if(err) goto done;
+        }
+        if(i+1<nu)
+        {
+            err=lis_matrix_set_value(LIS_INS_VALUE,i,i+1,
+                                     (LIS_SCALAR)-0.8,A);
+            if(err) goto done;
+        }
+    }
+    for(q=0;q<nlambda;q++)
+    {
+        LIS_INT l=nu+q,a=3*q,c=3*q+1;
+        err=lis_matrix_set_value(LIS_INS_VALUE,l,l,
+                                 (LIS_SCALAR)-0.1,A);
+        if(err) goto done;
+        err=lis_matrix_set_value(LIS_INS_VALUE,l,a,(LIS_SCALAR)1.0,A);
+        if(err) goto done;
+        err=lis_matrix_set_value(LIS_INS_VALUE,l,c,(LIS_SCALAR)-1.0,A);
+        if(err) goto done;
+        err=lis_matrix_set_value(LIS_INS_VALUE,a,l,(LIS_SCALAR)1.0,A);
+        if(err) goto done;
+        err=lis_matrix_set_value(LIS_INS_VALUE,c,l,(LIS_SCALAR)-1.0,A);
+        if(err) goto done;
+    }
+    err=lis_matrix_set_type(A,LIS_MATRIX_CSR);
+    if(err) goto done;
+    err=lis_matrix_assemble(A);
+    if(err) goto done;
+    if(A->nprocs!=1) { failed=0; goto done; }
+    if(lis_vector_duplicate(A,&b) ||
+       lis_vector_duplicate(A,&x) ||
+       lis_vector_duplicate(A,&u) ||
+       lis_vector_duplicate(A,&r)) goto done;
+    lis_vector_set_all((LIS_SCALAR)1.0,u);
+    err=lis_matvec(A,u,b);
+    if(err) goto done;
+    err=lis_vector_nrm2(b,&bn);
+    if(err || bn<=0.0) goto done;
+    for(variant=0;variant<2;variant++)
+    {
+        solver=NULL;
+        err=lis_solver_create(&solver);
+        if(err) goto done;
+        snprintf(opts,sizeof(opts),
+            "-i fgmres -p ilut -scale none -print none "
+            "-tol 1e-8 -maxiter 120 -restart 30 "
+            "-ilut_drop 0.005 -ilut_rate 8 -ilu_pivot_tol 1e-9 %s",
+            variant ? "-ilut_rcm 1 -ilut_row_scale 1" : "");
+        err=lis_solver_set_option(opts,solver);
+        if(err) goto done;
+        lis_vector_set_all((LIS_SCALAR)0.0,x);
+        err=lis_solve(A,b,x,solver);
+        if(err) goto done;
+        err=lis_matvec(A,x,r);
+        if(err) goto done;
+        err=lis_vector_axpy((LIS_SCALAR)-1.0,b,r);
+        if(err) goto done;
+        err=lis_vector_nrm2(r,&rn);
+        if(err) goto done;
+        err=lis_solver_get_iter(solver,&iters);
+        if(err || rn/bn>1e-7 || iters<1)
+        {
+            fprintf(stderr,"ILUT_CONTACT_KKT variant=%d iter=%d residual=%.3e\n",
+                    variant,(int)iters,(double)(rn/bn));
+            goto done;
+        }
+        printf("ILUT_CONTACT_KKT variant=%d iter=%d residual=%.6e\n",
+               variant,(int)iters,(double)(rn/bn));
+        lis_solver_destroy(solver); solver=NULL;
+    }
+    failed=0;
+done:
+    if(failed)
+        fprintf(stderr,"ILUT_CONTACT_KKT_FAILED rc=%d\n",(int)err);
+    if(solver) lis_solver_destroy(solver);
+    if(r) lis_vector_destroy(r);
+    if(u) lis_vector_destroy(u);
+    if(x) lis_vector_destroy(x);
+    if(b) lis_vector_destroy(b);
+    if(A) lis_matrix_destroy(A);
+    return failed;
+}
+
 int
 main(
 	int argc,
@@ -737,6 +854,7 @@ main(
 	}
 
 	failed |= check_ilut_ordering(A);
+	failed |= check_ilut_contact_kkt();
 
 	failed |=
 		run_mode(
