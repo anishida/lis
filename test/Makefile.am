@@ -270,6 +270,9 @@ testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
 testfgcrodrmaxiter_SOURCES = testfgcrodrmaxiter.c
 testfgcrodrintra_SOURCES = testfgcrodrintra.c
+test_PROGRAMS += testfgcrodrblocked
+testfgcrodrblocked_SOURCES = testfgcrodrblocked.c
+TESTS += testfgcrodrblocked$(EXEEXT)
 
 testgesolvepair_SOURCES = testgesolvepair.c
 

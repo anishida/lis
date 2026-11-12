@@ -1925,6 +1925,153 @@ lis_fgcrodr_install_recycle(
     LIS_INT jdim);
 
 
+
+/*
+ * Compute a block of the flexible harmonic overlap F = Q^H Z.
+ *
+ * A scalar lis_vector_dot() for each of the O(m^2) entries rereads the
+ * same full-length vectors and, with OpenMP, launches a parallel region
+ * for every entry.  On a 180-vector Arnoldi basis this means >32,000
+ * reductions at each harmonic update.
+ *
+ * Fuse four Z columns against eight Q rows per independent 2D tile,
+ * reusing each streamed Z entry. Each dot product still accumulates in
+ * increasing local row order; only independent dot products run in
+ * a different order. The flexible Z and harmonic Ritz formulation
+ * are unchanged.
+ *
+ * MPI retains the original collective lis_vector_dot() behavior: the
+ * fused local-only kernel must not drop or reorder global reductions.
+ */
+#define FGCRODR_OVERLAP_TILE 4
+#define FGCRODR_OVERLAP_ROW_TILE 8
+#define FGCRODR_OVERLAP_STRIP 512
+
+LIS_INT
+lis_fgcrodr_flexible_overlap(
+    LIS_VECTOR *q,
+    LIS_INT nq,
+    LIS_VECTOR *z,
+    LIS_INT nz,
+    LIS_SCALAR *f,
+    LIS_INT ld,
+    LIS_INT row_offset,
+    LIS_INT col_offset)
+{
+    LIS_INT r,c;
+
+    if(nq<0 || nz<0 || row_offset<0 || col_offset<0 ||
+       ld<row_offset+nq)
+        return LIS_ERR_ILL_ARG;
+    if(nq==0 || nz==0)
+        return LIS_SUCCESS;
+    if(q==NULL || z==NULL || f==NULL)
+        return LIS_ERR_ILL_ARG;
+
+#ifdef USE_MPI
+    {
+        LIS_INT err;
+        for(c=0;c<nz;c++)
+        {
+            for(r=0;r<nq;r++)
+            {
+                err=lis_vector_dot(
+                    q[r],z[c],&f[row_offset+r+(col_offset+c)*ld]);
+                if(err)
+                    return err;
+            }
+        }
+    }
+#else
+    {
+        LIS_INT n,ntiles,nrowtiles,ncoltiles,tile;
+
+        if(q[0]==NULL)
+            return LIS_ERR_ILL_ARG;
+        n=q[0]->n;
+        for(r=0;r<nq;r++)
+            if(q[r]==NULL || q[r]->n!=n || q[r]->value==NULL)
+                return LIS_ERR_ILL_ARG;
+        for(c=0;c<nz;c++)
+            if(z[c]==NULL || z[c]->n!=n || z[c]->value==NULL)
+                return LIS_ERR_ILL_ARG;
+
+        /*
+         * A 2D tile grid avoids starving OpenMP when the existing
+         * recycle space has only a few columns. Processing 8 Q rows
+         * per 4 Z columns reuses each streamed Z[i] eight times.
+         * Strip boundaries never change each dot product's row order.
+         */
+        nrowtiles=(nq+FGCRODR_OVERLAP_ROW_TILE-1)/
+            FGCRODR_OVERLAP_ROW_TILE;
+        ncoltiles=(nz+FGCRODR_OVERLAP_TILE-1)/
+            FGCRODR_OVERLAP_TILE;
+        ntiles=nrowtiles*ncoltiles;
+
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static)
+#endif
+        for(tile=0;tile<ntiles;tile++)
+        {
+            LIS_INT rbase,cbase,ir,ic,i,i0,ilimit,nrows,ncols;
+            const LIS_SCALAR *qv[FGCRODR_OVERLAP_ROW_TILE];
+            const LIS_SCALAR *zv[FGCRODR_OVERLAP_TILE];
+            LIS_SCALAR sums[FGCRODR_OVERLAP_TILE]
+                           [FGCRODR_OVERLAP_ROW_TILE];
+
+            rbase=(tile%nrowtiles)*FGCRODR_OVERLAP_ROW_TILE;
+            cbase=(tile/nrowtiles)*FGCRODR_OVERLAP_TILE;
+            nrows=nq-rbase;
+            if(nrows>FGCRODR_OVERLAP_ROW_TILE)
+                nrows=FGCRODR_OVERLAP_ROW_TILE;
+            ncols=nz-cbase;
+            if(ncols>FGCRODR_OVERLAP_TILE)
+                ncols=FGCRODR_OVERLAP_TILE;
+
+            for(ir=0;ir<nrows;ir++)
+                qv[ir]=q[rbase+ir]->value;
+            for(ic=0;ic<ncols;ic++)
+                zv[ic]=z[cbase+ic]->value;
+            for(ic=0;ic<ncols;ic++)
+                for(ir=0;ir<nrows;ir++)
+                    sums[ic][ir]=(LIS_SCALAR)0.0;
+
+            for(i0=0;i0<n;i0+=FGCRODR_OVERLAP_STRIP)
+            {
+                ilimit=n-i0;
+                if(ilimit>FGCRODR_OVERLAP_STRIP)
+                    ilimit=FGCRODR_OVERLAP_STRIP;
+                ilimit+=i0;
+
+                for(i=i0;i<ilimit;i++)
+                {
+                    LIS_SCALAR qrow[FGCRODR_OVERLAP_ROW_TILE];
+                    for(ir=0;ir<nrows;ir++)
+                        qrow[ir]=lis_fgcrodr_conj_scalar(qv[ir][i]);
+                    for(ic=0;ic<ncols;ic++)
+                    {
+                        LIS_SCALAR zval=zv[ic][i];
+                        for(ir=0;ir<nrows;ir++)
+                            sums[ic][ir]+=qrow[ir]*zval;
+                    }
+                }
+            }
+
+            for(ic=0;ic<ncols;ic++)
+                for(ir=0;ir<nrows;ir++)
+                    f[row_offset+rbase+ir+(col_offset+cbase+ic)*ld]
+                        =sums[ic][ir];
+        }
+    }
+#endif
+
+    return LIS_SUCCESS;
+}
+
+#undef FGCRODR_OVERLAP_TILE
+#undef FGCRODR_OVERLAP_ROW_TILE
+#undef FGCRODR_OVERLAP_STRIP
+
 /*
  * First-generation harmonic Ritz BUILD.
  *
@@ -2214,29 +2361,13 @@ lis_fgcrodr_try_harmonic_build(
 
 
     /*
-     * Flexible-domain overlap:
-     *
-     *     F = V_{m+1}^T Z_m
-     *
-     * Unlike ordinary GCRO-DR, this is not an identity block because
-     * flexible Z_j are not the Arnoldi vectors V_j.
+     * Flexible-domain overlap F = V_{m+1}^T Z_m.
+     * Blocked serial kernel; MPI keeps the scalar collective path.
      */
-    for(c=0;c<psmall;c++)
-    {
-        for(r=0;r<qsmall;r++)
-        {
-            err =
-                lis_vector_dot(
-                    v[r],
-                    z[c],
-                    &F[
-                        r
-                        +c*qsmall]);
-
-            if( err )
-                goto cleanup;
-        }
-    }
+    err=lis_fgcrodr_flexible_overlap(
+        v,qsmall,z,psmall,F,qsmall,0,0);
+    if(err)
+        goto cleanup;
 
 
     /*
@@ -3516,6 +3647,8 @@ lis_fgcrodr_try_harmonic_update(
 
     LIS_VECTOR *neww = NULL;
     LIS_VECTOR *newz = NULL;
+    LIS_VECTOR *overlap_q = NULL;
+    LIS_VECTOR *overlap_z = NULL;
 
     LIS_SCALAR ag;
     LIS_SCALAR bg;
@@ -3796,78 +3929,36 @@ lis_fgcrodr_try_harmonic_update(
 
 
     /*
-     * Full flexible overlap:
-     *
-     *     F = [C,Vnext]^T [Z_old,Z_krylov].
-     *
-     * We intentionally compute every block explicitly.
+     * Full flexible overlap F=[C,Vnext]^H [Z_old,Z_krylov].
+     * One tiled call and one parallel region for the entire matrix.
      */
-
-    /* old domain columns */
-    for(c=0;c<oldk;c++)
+    overlap_q=(LIS_VECTOR *)lis_malloc(
+        (size_t)qsmall*sizeof(LIS_VECTOR),
+        "lis_fgcrodr_try_harmonic_update::overlap_q");
+    overlap_z=(LIS_VECTOR *)lis_malloc(
+        (size_t)psmall*sizeof(LIS_VECTOR),
+        "lis_fgcrodr_try_harmonic_update::overlap_z");
+    if(overlap_q==NULL || overlap_z==NULL)
     {
-        for(r=0;r<oldk;r++)
-        {
-            err =
-                lis_vector_dot(
-                    state->c[r],
-                    state->z[c],
-                    &F[
-                        r+c*qsmall]);
-
-            if( err )
-                goto cleanup;
-        }
-
-
-        for(r=0;r<=jdim;r++)
-        {
-            err =
-                lis_vector_dot(
-                    v[r],
-                    state->z[c],
-                    &F[
-                        oldk+r
-                        +c*qsmall]);
-
-            if( err )
-                goto cleanup;
-        }
+        err=LIS_ERR_OUT_OF_MEMORY;
+        goto cleanup;
     }
-
-
-    /* new flexible Krylov domain columns */
-    for(c=0;c<jdim;c++)
+    for(i=0;i<oldk;i++)
     {
-        for(r=0;r<oldk;r++)
-        {
-            err =
-                lis_vector_dot(
-                    state->c[r],
-                    z[c],
-                    &F[
-                        r
-                        +(oldk+c)*qsmall]);
-
-            if( err )
-                goto cleanup;
-        }
-
-
-        for(r=0;r<=jdim;r++)
-        {
-            err =
-                lis_vector_dot(
-                    v[r],
-                    z[c],
-                    &F[
-                        oldk+r
-                        +(oldk+c)*qsmall]);
-
-            if( err )
-                goto cleanup;
-        }
+        overlap_q[i]=state->c[i];
+        overlap_z[i]=state->z[i];
     }
+    for(i=0;i<jdim;i++)
+    {
+        overlap_q[oldk+i]=v[i];
+        overlap_z[oldk+i]=z[i];
+    }
+    overlap_q[oldk+jdim]=v[jdim];
+
+    err=lis_fgcrodr_flexible_overlap(
+        overlap_q,qsmall,overlap_z,psmall,F,qsmall,0,0);
+    if(err)
+        goto cleanup;
 
 
     /*
@@ -4364,6 +4455,8 @@ cleanup:
 
     lis_free(neww);
     lis_free(newz);
+    lis_free(overlap_q);
+    lis_free(overlap_z);
 
     lis_free(G);
     lis_free(F);
