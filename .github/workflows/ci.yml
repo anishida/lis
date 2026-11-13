@@ -83,14 +83,39 @@ jobs:
       - name: Run Automake test suite
         run: make -j2 check
 
-      - name: Smoke-test fill-reporting ILUT Matrix Market benchmark
+      - name: Smoke-test honest ILUT FEA wall-time and failure reporting
         if: matrix.mode == 'half'
         run: |
           set -euo pipefail
-          ./test/testhalfilut --fea-matrix test/testmat0.mtx 8 8 0.005 | tee ilut-fea-bench.log
+          LIS_FEA_BASELINE_THREADS=1 LIS_FEA_RCM_THREADS=1 \
+            ./test/testhalfilut --fea-matrix test/testmat0.mtx 8 8 0.005 | tee ilut-fea-bench.log
           grep -q '^ILUT_FEA_MATRIX ' ilut-fea-bench.log
-          grep -q '^baseline,' ilut-fea-bench.log
-          grep -q '^rcm_scaled,' ilut-fea-bench.log
+          python3 - <<'PY'
+          import csv
+          from pathlib import Path
+          lines = Path("ilut-fea-bench.log").read_text().splitlines()
+          start = next(i for i,s in enumerate(lines) if s.startswith("variant,rate,"))
+          rows = list(csv.DictReader(lines[start:]))
+          assert [r["variant"] for r in rows] == ["baseline", "rcm_scaled"], rows
+          for r in rows:
+              assert float(r["setup_wall_s"]) >= 0
+              assert float(r["solve_wall_s"]) >= 0
+              assert float(r["total_wall_s"]) >= 0
+              assert int(r["threads"]) == 1
+              assert r["solver_error"] == "0", r
+              assert r["status"] in {"converged","not_converged"}
+              assert r["target_1e-8_met"] == ("yes" if float(r["true_relres"]) <= 1e-8 else "no")
+          PY
+          # Invalid reference thread configuration must not hide the second result.
+          set +e
+          LIS_FEA_BASELINE_THREADS=0 \
+            ./test/testhalfilut --fea-matrix test/testmat0.mtx 8 8 0.005 \
+            > ilut-fea-invalid.log 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          grep -q '^baseline,' ilut-fea-invalid.log
+          grep -q '^rcm_scaled,' ilut-fea-invalid.log
 
       - name: Smoke-test optional 3D FP16 memory and Krylov benchmark
         if: matrix.mode == 'half'
