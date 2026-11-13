@@ -83,6 +83,14 @@ jobs:
       - name: Run Automake test suite
         run: make -j2 check
 
+      - name: Check finite ILUT pivots and scale-normalized inverse response
+        run: |
+          set -euo pipefail
+          ./test/testilupivot | tee ilut-numerical-probe.log
+          grep -q '^LIS_ILUT_NUMERICAL_PROBE case=well_scaled ' ilut-numerical-probe.log
+          grep -q '^LIS_ILUT_NUMERICAL_PROBE case=ill_scaled ' ilut-numerical-probe.log
+          grep -q '^LIS_ILU_PIVOT_STAGE6B PASSED' ilut-numerical-probe.log
+
       - name: Smoke-test fill-reporting ILUT Matrix Market benchmark
         if: matrix.mode == 'half'
         run: |
