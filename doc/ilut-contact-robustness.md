@@ -24,6 +24,34 @@ The regression compares ILUT normal and adjoint residuals under RCM, equilibrati
 
 `testhalfilut` now assembles an indefinite **48×48 stabilized saddle-point system** with a 36×36 spring-stiffness block, twelve displacement-difference constraints, and a negative 0.1 multiplier diagonal. It compares the legacy ILUT control with the opt-in variant, requiring convergence to a **true relative residual below 1e-7** and printing Krylov iterations and residuals. This is an algebraic contact-style regression, **not** a production nonlinear FEA benchmark and not evidence of a speedup.
 
+## Reproducible evaluation on an external FEA snapshot
+
+The existing `testhalfilut` executable now includes an **opt-in Matrix
+Market benchmark** for a real sparse stiffness/contact matrix, without
+checking private matrices or invented performance claims into this repo:
+
+```sh
+# Serial LIS build recommended; use a true FEA Newton/contact snapshot.
+./test/testhalfilut --fea-matrix path/to/contact.mtx 8 8 0.005
+```
+
+The two rates control the baseline and RCM+row-scaled ILUT fill limits
+respectively. The last argument is a common drop tolerance. The benchmark
+solves the **original** linear system with a deterministic manufactured
+right-hand side, reports both the true relative residual and FGMRES
+iteration count, L/U nonzero counts, pivot magnitude ranges, and setup/solve
+CPU seconds. It emits `fair_fill=yes` only when `nnz(L+U)` differs by at
+most 5%. Vary the rate arguments until fill is comparable **before**
+drawing conclusions about convergence or timing.
+
+This benchmark is optional and **not** included in `make check`. The
+existing 48×48 synthetic KKT case remains a correctness regression, not
+evidence of better convergence for nonlinear contact FEA. A valid FEA
+comparison also requires multiple Newton/contact states, a fixed
+stopping tolerance and physical scaling, external peak-RSS measurements,
+and repeated timings. The present PR includes **no validated real-world
+FEA speedup**.
+
 ## Applicability and caveats
 
 This first implementation supports **serial CSR in ordinary double precision**, including nonsymmetric sparse matrices. It explicitly rejects distributed, USER/OPERATOR and quad-precision configurations when the new transform options are requested. This is neither ddPQ (diagonal matching) nor distributed RAS/Schur. Matrix entries must be finite; a zero row or singular matrix may still produce a factorization failure.
