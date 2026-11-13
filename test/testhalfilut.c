@@ -6,6 +6,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <time.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -794,6 +795,167 @@ done:
     return failed;
 }
 
+
+/*
+ * Manually-invoked external Matrix Market FEA review harness.
+ *
+ * ./test/testhalfilut --fea-matrix A.mtx BASE_RATE RCM_RATE [DROP]
+ *
+ * Both modes solve the *original* system A x = A x_true, not the reordered
+ * or equilibrated surrogate. Adjust the rates until factor nnz match to
+ * within 5%; the output states explicitly if they do not.
+ *
+ * Intentionally NOT part of make check: no private FEA data are shipped.
+ */
+typedef struct {
+    LIS_INT iterations,nnz_l,nnz_u;
+    LIS_REAL residual,min_pivot,max_pivot;
+    double setup_cpu_s,solve_cpu_s;
+} LIS_ILUT_FEA_METRICS;
+
+static int
+run_ilut_fea_variant(LIS_MATRIX A,LIS_VECTOR b,LIS_INT reordered,
+                     double rate,double drop,LIS_ILUT_FEA_METRICS *m)
+{
+    LIS_SOLVER solver=NULL;
+    LIS_PRECON pc=NULL;
+    LIS_VECTOR x=NULL,r=NULL;
+    LIS_INT err=0;
+    LIS_REAL bn=0.0,rn=0.0;
+    clock_t t0,t1,t2;
+    char opts[360];
+    int failed=1;
+    if(!m || !isfinite(rate) || !isfinite(drop) ||
+       rate<=0.0 || drop<0.0 || drop>=1.0) return 1;
+    memset(m,0,sizeof(*m));
+    snprintf(opts,sizeof(opts),
+             "-i fgmres -p ilut -scale none -print none -tol 1e-8 "
+             "-maxiter 500 -restart 40 -ilu_pivot_tol 1e-10 "
+             "-ilut_rate %.12g -ilut_drop %.12g %s",
+             rate,drop,
+             reordered ? "-ilut_rcm 1 -ilut_row_scale 1" : "");
+    err=lis_solver_create(&solver);
+    if(err) goto done;
+    err=lis_solver_set_option(opts,solver);
+    if(err) goto done;
+    err=lis_solver_set_matrix(A,solver);
+    if(err) goto done;
+    err=lis_vector_duplicate(A,&x);
+    if(err) goto done;
+    err=lis_vector_duplicate(A,&r);
+    if(err) goto done;
+    err=lis_vector_set_all((LIS_SCALAR)0.0,x);
+    if(err) goto done;
+    t0=clock();
+    err=lis_precon_create(solver,&pc);
+    t1=clock();
+    if(err) { pc=NULL; goto done; }
+    solver->precon=pc;
+    err=lis_precon_ilut_factor_stats(pc,&m->nnz_l,&m->nnz_u,
+                                     &m->min_pivot,&m->max_pivot);
+    if(err) goto done;
+    err=lis_solve_kernel(A,b,x,solver,pc);
+    t2=clock();
+    if(err) goto done;
+    err=lis_solver_get_iter(solver,&m->iterations);
+    if(err) goto done;
+    err=lis_matvec(A,x,r);
+    if(err) goto done;
+    err=lis_vector_axpy((LIS_SCALAR)-1.0,b,r);
+    if(err) goto done;
+    err=lis_vector_nrm2(r,&rn);
+    if(err) goto done;
+    err=lis_vector_nrm2(b,&bn);
+    if(err || !(bn>0.0)) goto done;
+    m->residual=rn/bn;
+    m->setup_cpu_s=(double)(t1-t0)/CLOCKS_PER_SEC;
+    m->solve_cpu_s=(double)(t2-t1)/CLOCKS_PER_SEC;
+    if(!isfinite((double)m->residual) || m->residual>1e-7)
+        goto done;
+    failed=0;
+done:
+    if(failed)
+        fprintf(stderr,"ILUT_FEA_BENCH_FAILED mode=%s rc=%ld\n",
+                reordered?"rcm":"baseline",(long)err);
+    if(pc)
+    {
+        if(solver) solver->precon=NULL;
+        lis_precon_destroy(pc);
+    }
+    if(solver) lis_solver_destroy(solver);
+    if(r) lis_vector_destroy(r);
+    if(x) lis_vector_destroy(x);
+    return failed;
+}
+
+static int
+run_ilut_fea_matrix(const char *file,double baseline_rate,
+                    double rcm_rate,double drop)
+{
+    LIS_MATRIX A=NULL;
+    LIS_VECTOR exact=NULL,b=NULL;
+    LIS_ILUT_FEA_METRICS m[2];
+    LIS_INT i,err=0;
+    double fill_gap;
+    int failed=1;
+    if(!file || !isfinite(baseline_rate) || !isfinite(rcm_rate) ||
+       baseline_rate<=0.0 || rcm_rate<=0.0 ||
+       !isfinite(drop) || drop<0.0 || drop>=1.0)
+        return 1;
+    err=lis_matrix_create(LIS_COMM_WORLD,&A);
+    if(err) goto done;
+    err=lis_matrix_set_type(A,LIS_MATRIX_CSR);
+    if(err) goto done;
+    err=lis_input_matrix(A,(char *)file);
+    if(err) goto done;
+    if(A->nprocs!=1 || A->matrix_type!=LIS_MATRIX_CSR ||
+       A->n!=A->gn || A->n<2)
+    {
+        err=LIS_ERR_NOT_IMPLEMENTED;
+        goto done;
+    }
+    err=lis_vector_duplicate(A,&exact);
+    if(err) goto done;
+    err=lis_vector_duplicate(A,&b);
+    if(err) goto done;
+    /* Avoid an all-ones null mode in elasticity stiffness matrices. */
+    for(i=0;i<A->n;i++)
+        exact->value[i]=(LIS_SCALAR)(1.0+0.017*(double)((i*19)%29));
+    err=lis_matvec(A,exact,b);
+    if(err) goto done;
+    if(run_ilut_fea_variant(A,b,0,baseline_rate,drop,&m[0]) ||
+       run_ilut_fea_variant(A,b,1,rcm_rate,drop,&m[1]))
+        goto done;
+    fill_gap=fabs((double)(m[0].nnz_l+m[0].nnz_u) -
+                  (double)(m[1].nnz_l+m[1].nnz_u))/
+                  (double)(m[0].nnz_l+m[0].nnz_u);
+    printf("ILUT_FEA_MATRIX file=%s dof=%ld nnz_A=%ld drop=%.9g "
+           "fill_gap=%.5f fair_fill=%s\n",
+           file,(long)A->n,(long)A->nnz,drop,fill_gap,
+           fill_gap<=0.05 ? "yes" : "no");
+    printf("variant,rate,nnz_L,nnz_U,nnz_LU,iterations,"
+           "true_relres,min_pivot,max_pivot,setup_cpu_s,solve_cpu_s\n");
+    for(i=0;i<2;i++)
+        printf("%s,%.9g,%ld,%ld,%ld,%ld,%.9g,%.9g,%.9g,%.6f,%.6f\n",
+               i==0?"baseline":"rcm_scaled",
+               i==0?baseline_rate:rcm_rate,
+               (long)m[i].nnz_l,(long)m[i].nnz_u,
+               (long)(m[i].nnz_l+m[i].nnz_u),
+               (long)m[i].iterations,(double)m[i].residual,
+               (double)m[i].min_pivot,(double)m[i].max_pivot,
+               m[i].setup_cpu_s,m[i].solve_cpu_s);
+    failed=0;
+done:
+    if(failed)
+        fprintf(stderr,"ILUT_FEA_MATRIX_FAILED file=%s rc=%ld\n",
+                file?file:"(null)",(long)err);
+    if(b) lis_vector_destroy(b);
+    if(exact) lis_vector_destroy(exact);
+    if(A) lis_matrix_destroy(A);
+    return failed;
+}
+
+
 int
 main(
 	int argc,
@@ -829,6 +991,23 @@ main(
 	if( err )
 	{
 		return 1;
+	}
+
+	if(argc>=5 && argc<=6 &&
+	   strcmp(argv[1],"--fea-matrix")==0)
+	{
+		char *end1=NULL,*end2=NULL,*end3=NULL;
+		double baseline_rate=strtod(argv[3],&end1);
+		double rcm_rate=strtod(argv[4],&end2);
+		double drop=argc==6 ? strtod(argv[5],&end3) : 0.005;
+		if(end1==argv[3] || *end1!='\0' ||
+		   end2==argv[4] || *end2!='\0' ||
+		   (argc==6 && (end3==argv[5] || *end3!='\0')))
+			failed=1;
+		else
+			failed=run_ilut_fea_matrix(argv[2],baseline_rate,rcm_rate,drop);
+		lis_finalize();
+		return failed ? 1 : 0;
 	}
 
 	err = create_matrix(&A);
