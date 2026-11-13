@@ -205,6 +205,15 @@ LIS_INT lis_precon_create_hybrid(LIS_SOLVER solver, LIS_PRECON precon)
 	 * both solver lifetimes remain independent.  This is required for MFAMG
 	 * when it is selected through -hybrid_p mfamg.
 	 */
+	/*
+	 * An inner ILU/ILUT/MFAMG preconditioner must inherit the outer
+	 * solver's optional binary16-storage policy.  Without this, Hybrid
+	 * silently forces its inner preconditioner back to half=off.
+	 * Keep the inner policy solver-local, never process-global.
+	 */
+	err = lis_solver_set_precon_half(psolver,solver->precon_half_mode);
+	if( err ) goto fail;
+
 	psolver->mfamg_block_size = solver->mfamg_block_size;
 
 	if( solver->near_nullspace_dim>0 && solver->near_nullspace!=NULL )
