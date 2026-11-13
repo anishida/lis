@@ -11,7 +11,7 @@ The existing test executable is built with the LIS half-enabled test profile:
 ./configure --enable-test --enable-half --enable-omp --disable-mpi
 make -j2
 OMP_NUM_THREADS=8 OMP_DYNAMIC=FALSE \
-  LIS_FEA_BASELINE_THREADS=1 LIS_FEA_RCM_THREADS=8 \
+  LIS_FEA_BASELINE_THREADS=8 LIS_FEA_RCM_THREADS=8 \
   ./test/testhalfilut --fea-matrix test/testmat0.mtx 8 8 0.005
 ```
 
@@ -29,6 +29,29 @@ residual** is `||Ax-b||_2 / ||b||_2` on that original system.
 `rcm_scaled` enables the opt-in ILUT RCM ordering and row equilibration
 already provided by upstream. The test is limited to single-process
 real-valued CSR matrices.
+
+## Thread-count confounding (important)
+
+**Use equal thread counts in both variants if the question is whether RCM +
+row scaling helps the existing ILUT at a fixed parallel configuration.**
+LIS's OpenMP ILUT is partitioned by thread: its create path uses
+`omp_get_max_threads()` and thread-specific row ranges; the apply path
+uses the corresponding ranges. Consequently, changing a factor's thread
+count can change *its L/U entries, factor fill and Krylov iteration count*.
+The tool deliberately supports unequal thread budgets to study
+thread-dependent algorithm behavior, but such a run cannot isolate the
+effect of RCM or row scaling alone. The `threads` CSV column is required
+to interpret each result; `fair_fill=yes` does not eliminate this
+algorithmic confounder.
+
+For a separate thread-sensitivity experiment, hold the matrix, ordering,
+drop and rate fixed and run the RCM variant twice with
+`LIS_FEA_RCM_THREADS=1` and `=2`, while holding the baseline at one
+thread. Compare `nnz_LU`, `iterations`, true residual, and wall times.
+Never compare their timings without also considering thread budget.
+
+This is not a demonstration of a speedup, nor evidence that a different
+factor-count proxy implies equal solver quality.
 
 ## Interpreting the results
 
