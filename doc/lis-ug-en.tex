@@ -2108,6 +2108,10 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criter
 ratio of the maximum fill-in \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+         &                       & \verb=-ilut_rcm [0]= & Optional symmetric RCM (serial CSR, double) \\
+         &                       & \verb=-ilut_row_scale [0]= & Optional max-abs row equilibration \\
+         &                       & \verb=-ilut_drop [0.05]= & Alias for \verb=-iluc_drop= \\
+         &                       & \verb=-ilut_rate [5.0]= & Alias for \verb=-iluc_rate= \\
 MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
          &                       & \verb=-mfamg_block_size [1]= & The local contiguous smoother block size \\
          &                       &                              & (1: weighted Jacobi; 2--16: block Jacobi) \\
@@ -2335,6 +2339,10 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criter
          &                       & \verb=-iluc_rate [5.0]=     & The ratio of the maximum fill-in \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+         &                       & \verb=-ilut_rcm [0]= & Optional symmetric RCM (serial CSR, double) \\
+         &                       & \verb=-ilut_row_scale [0]= & Optional max-abs row equilibration \\
+         &                       & \verb=-ilut_drop [0.05]= & Alias for \verb=-iluc_drop= \\
+         &                       & \verb=-ilut_rate [5.0]= & Alias for \verb=-iluc_rate= \\
 MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
          &                       & \verb=-mfamg_block_size [1]= & The local contiguous smoother block size \\
          &                       &                              & (1: weighted Jacobi; 2--16: block Jacobi) \\
@@ -6539,6 +6547,10 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criter
 &                       & \verb=-iluc_rate [5.0]=     & The ratio of the maximum fill-in \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+         &                       & \verb=-ilut_rcm [0]= & Optional symmetric RCM (serial CSR, double) \\
+         &                       & \verb=-ilut_row_scale [0]= & Optional max-abs row equilibration \\
+         &                       & \verb=-ilut_drop [0.05]= & Alias for \verb=-iluc_drop= \\
+         &                       & \verb=-ilut_rate [5.0]= & Alias for \verb=-iluc_rate= \\
 MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
          &                       & \verb=-mfamg_block_size [1]= & The local contiguous smoother block size \\
          &                       &                              & (1: weighted Jacobi; 2--16: block Jacobi) \\
@@ -7107,6 +7119,10 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criter
          &                       & \verb=-iluc_rate [5.0]=     & The ratio of the maximum fill-in \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+         &                       & \verb=-ilut_rcm [0]= & Optional symmetric RCM (serial CSR, double) \\
+         &                       & \verb=-ilut_row_scale [0]= & Optional max-abs row equilibration \\
+         &                       & \verb=-ilut_drop [0.05]= & Alias for \verb=-iluc_drop= \\
+         &                       & \verb=-ilut_rate [5.0]= & Alias for \verb=-iluc_rate= \\
 MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
          &                       & \verb=-mfamg_block_size [1]= & The local contiguous smoother block size \\
          &                       &                              & (1: weighted Jacobi; 2--16: block Jacobi) \\
