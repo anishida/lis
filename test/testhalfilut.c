@@ -796,6 +796,196 @@ done:
 }
 
 
+
+/*
+ * High-unit-contrast 48x48 contact-KKT algebraic regression:
+ *       [ 1e8 K   B^T ] [u] = [f]
+ *       [ B     -1e-8 I] [l]   [g]
+ *
+ * Compare unscaled, row equilibration, RCM+row equilibration, and
+ * a manually block-balanced congruence D A D, where
+ * D_u=1e-4 and D_l=1e4. The latter is a diagnostic reference,
+ * NOT an implemented automatic two-sided equilibrator.
+ *
+ * Always check both the original true residual and D(Ax-b); the
+ * latter gives multiplier equations meaningful weight despite
+ * displacement stiffness being orders of magnitude larger.
+ * Only the block-balanced reference is a hard convergence gate:
+ * the other variants intentionally record numerical failures.
+ * This is not a production contact FEA performance benchmark.
+ */
+static int
+check_ilut_kkt_unit_contrast(void)
+{
+    const LIS_INT nu=36,nlambda=12,n=48;
+    const double stiffness=1.0e8;
+    const double du=1.0e-4,dl=1.0e4;
+    const char *labels[]={"baseline","row","rcm_row","block_balanced"};
+    const char *flags[]={"","-ilut_row_scale 1",
+                          "-ilut_rcm 1 -ilut_row_scale 1",
+                          "-ilut_rcm 1"};
+    LIS_MATRIX A=NULL,Ab=NULL,M;
+    LIS_VECTOR truth=NULL,b=NULL,bb=NULL,x=NULL,xb=NULL,r=NULL,wr=NULL;
+    LIS_SOLVER solver=NULL;
+    LIS_INT err=0,pass,i,q,variant,iters=0;
+    LIS_REAL bn=0.0,bbn=0.0,rn=0.0,wrn=0.0;
+    char opts[320];
+    int failed=1,balanced_ok=0;
+
+    err=lis_matrix_create(LIS_COMM_WORLD,&A);
+    if(err) goto done;
+    err=lis_matrix_set_size(A,0,n);
+    if(err) goto done;
+    if(A->nprocs!=1) { failed=0; goto done; }
+    err=lis_matrix_create(LIS_COMM_WORLD,&Ab);
+    if(err) goto done;
+    err=lis_matrix_set_size(Ab,0,n);
+    if(err) goto done;
+
+    for(pass=0;pass<2;pass++)
+    {
+        M=pass ? Ab : A;
+        for(i=0;i<nu;i++)
+        {
+            double factor=pass ? du*du : 1.0;
+            err=lis_matrix_set_value(LIS_INS_VALUE,i,i,
+                                     (LIS_SCALAR)(4.0*stiffness*factor),M);
+            if(err) goto done;
+            if(i>0)
+            {
+                err=lis_matrix_set_value(LIS_INS_VALUE,i,i-1,
+                         (LIS_SCALAR)(-0.8*stiffness*factor),M);
+                if(err) goto done;
+            }
+            if(i+1<nu)
+            {
+                err=lis_matrix_set_value(LIS_INS_VALUE,i,i+1,
+                         (LIS_SCALAR)(-0.8*stiffness*factor),M);
+                if(err) goto done;
+            }
+        }
+        for(q=0;q<nlambda;q++)
+        {
+            LIS_INT l=nu+q,a=3*q,c=3*q+1;
+            double cross=pass ? du*dl : 1.0;
+            double cc=pass ? dl*dl : 1.0;
+            err=lis_matrix_set_value(LIS_INS_VALUE,l,l,
+                                     (LIS_SCALAR)(-1e-8*cc),M);
+            if(err) goto done;
+            err=lis_matrix_set_value(LIS_INS_VALUE,l,a,
+                                     (LIS_SCALAR)cross,M);
+            if(err) goto done;
+            err=lis_matrix_set_value(LIS_INS_VALUE,l,c,
+                                     (LIS_SCALAR)(-cross),M);
+            if(err) goto done;
+            err=lis_matrix_set_value(LIS_INS_VALUE,a,l,
+                                     (LIS_SCALAR)cross,M);
+            if(err) goto done;
+            err=lis_matrix_set_value(LIS_INS_VALUE,c,l,
+                                     (LIS_SCALAR)(-cross),M);
+            if(err) goto done;
+        }
+        err=lis_matrix_set_type(M,LIS_MATRIX_CSR);
+        if(err) goto done;
+        err=lis_matrix_assemble(M);
+        if(err) goto done;
+    }
+
+    if(lis_vector_duplicate(A,&truth) ||
+       lis_vector_duplicate(A,&b) ||
+       lis_vector_duplicate(A,&bb) ||
+       lis_vector_duplicate(A,&x) ||
+       lis_vector_duplicate(A,&xb) ||
+       lis_vector_duplicate(A,&r) ||
+       lis_vector_duplicate(A,&wr)) goto done;
+
+    for(i=0;i<n;i++)
+    {
+        double di=i<nu ? du : dl;
+        double yi=(i%2 ? -1.0 : 1.0)*(1.0+0.01*i);
+        truth->value[i]=(LIS_SCALAR)(di*yi);
+    }
+    err=lis_matvec(A,truth,b);
+    if(err) goto done;
+    for(i=0;i<n;i++)
+        bb->value[i]=b->value[i]*(i<nu ? du : dl);
+    if(lis_vector_nrm2(b,&bn) || lis_vector_nrm2(bb,&bbn) ||
+       !(bn>0.0) || !(bbn>0.0)) goto done;
+
+    for(variant=0;variant<4;variant++)
+    {
+        LIS_MATRIX target=variant==3 ? Ab : A;
+        LIS_VECTOR rhs=variant==3 ? bb : b;
+        LIS_VECTOR solution=variant==3 ? xb : x;
+        LIS_INT nnzl=0,nnzu=0;
+        LIS_REAL minpivot=0.0,maxpivot=0.0;
+        int solve_rc;
+        solver=NULL;
+        err=lis_solver_create(&solver);
+        if(err) goto done;
+        snprintf(opts,sizeof(opts),
+                 "-i fgmres -p ilut -scale none -print none "
+                 "-tol 1e-9 -maxiter 250 -restart 40 "
+                 "-ilut_drop 0.001 -ilut_rate 12 "
+                 "-ilu_pivot_tol 1e-12 %s",flags[variant]);
+        err=lis_solver_set_option(opts,solver);
+        if(err) goto done;
+        lis_vector_set_all((LIS_SCALAR)0.0,solution);
+        solve_rc=lis_solve(target,rhs,solution,solver);
+        if(solve_rc)
+        {
+            printf("ILUT_KKT_CONTRAST variant=%s solve_rc=%d\n",
+                   labels[variant],(int)solve_rc);
+            lis_solver_destroy(solver); solver=NULL;
+            continue;
+        }
+        if(variant==3)
+            for(i=0;i<n;i++)
+                x->value[i]=xb->value[i]*(i<nu ? du : dl);
+        err=lis_matvec(A,x,r);
+        if(err) goto done;
+        err=lis_vector_axpy((LIS_SCALAR)-1.0,b,r);
+        if(err) goto done;
+        for(i=0;i<n;i++)
+            wr->value[i]=r->value[i]*(i<nu ? du : dl);
+        if(lis_vector_nrm2(r,&rn) || lis_vector_nrm2(wr,&wrn))
+            goto done;
+        err=lis_solver_get_iter(solver,&iters);
+        if(err) goto done;
+        if(solver->precon)
+            (void)lis_precon_ilut_factor_stats(solver->precon,
+                    &nnzl,&nnzu,&minpivot,&maxpivot);
+        printf("ILUT_KKT_CONTRAST variant=%s iter=%d "
+               "true_residual=%.6e balanced_residual=%.6e "
+               "nnz_lu=%d min_pivot=%.6e max_pivot=%.6e\n",
+               labels[variant],(int)iters,(double)(rn/bn),
+               (double)(wrn/bbn),(int)(nnzl+nnzu),
+               (double)minpivot,(double)maxpivot);
+        if(variant==3 && isfinite((double)rn) &&
+           isfinite((double)wrn) && rn/bn<1e-7 && wrn/bbn<1e-7 &&
+           iters>=1)
+            balanced_ok=1;
+        lis_solver_destroy(solver); solver=NULL;
+    }
+    failed=!balanced_ok;
+done:
+    if(failed)
+        fprintf(stderr,"ILUT_KKT_CONTRAST_FAILED rc=%d balanced_ok=%d\n",
+                (int)err,balanced_ok);
+    if(solver) lis_solver_destroy(solver);
+    if(wr) lis_vector_destroy(wr);
+    if(r) lis_vector_destroy(r);
+    if(xb) lis_vector_destroy(xb);
+    if(x) lis_vector_destroy(x);
+    if(bb) lis_vector_destroy(bb);
+    if(b) lis_vector_destroy(b);
+    if(truth) lis_vector_destroy(truth);
+    if(Ab) lis_matrix_destroy(Ab);
+    if(A) lis_matrix_destroy(A);
+    return failed;
+}
+
+
 /*
  * Manually-invoked external Matrix Market FEA review harness.
  *
@@ -1035,6 +1225,7 @@ main(
 
 	failed |= check_ilut_ordering(A);
 	failed |= check_ilut_contact_kkt();
+	failed |= check_ilut_kkt_unit_contrast();
 
 	failed |=
 		run_mode(
