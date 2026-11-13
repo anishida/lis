@@ -28,6 +28,23 @@
 #ifndef __LIS_FORTRAN_H__
 #define __LIS_FORTRAN_H__
 
+#include <stddef.h>
+
+/*
+ * The hidden length argument of a Fortran CHARACTER parameter is
+ * size_t with GNU Fortran 8 and later, not LIS_INT. Older GNU Fortran
+ * used int. Match the Fortran ABI to avoid GCC LTO type mismatches.
+ * Other compiler combinations can override LIS_FORTRAN_CHARLEN_TYPE.
+ */
+#ifndef LIS_FORTRAN_CHARLEN_TYPE
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ < 8)
+#define LIS_FORTRAN_CHARLEN_TYPE int
+#else
+#define LIS_FORTRAN_CHARLEN_TYPE size_t
+#endif
+#endif
+typedef LIS_FORTRAN_CHARLEN_TYPE LIS_FORTRAN_CHARLEN;
+
 #ifdef _WIN64
 typedef long long LIS_MATRIX_F;
 typedef long long LIS_VECTOR_F;

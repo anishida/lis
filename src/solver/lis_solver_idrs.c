@@ -531,9 +531,9 @@ LIS_INT lis_idrs(LIS_SOLVER solver)
 	LIS_VECTOR r,t,v,av,*dX,*dR,*P;
 	LIS_SCALAR om, h;
 	LIS_SCALAR *M,*m,*c,*MM;
-	LIS_REAL bnrm2,nrm2,tol;
+	LIS_REAL bnrm2,nrm2,tol,min_nrm2;
 	LIS_INT i,j,k,s,oldest;
-	LIS_INT iter,maxiter,n,output,conv;
+	LIS_INT iter,maxiter,n,output,conv,maxiter_noimp,noimp_count;
 	double time,ptime,tim;
         unsigned long init[4]={0x123, 0x234, 0x345, 0x456}, length=4;
 
@@ -548,6 +548,9 @@ LIS_INT lis_idrs(LIS_SOLVER solver)
 	output  = solver->options[LIS_OPTIONS_OUTPUT];
 	conv    = solver->options[LIS_OPTIONS_CONV_COND];
 	s       = solver->options[LIS_OPTIONS_IDRS_RESTART];
+	maxiter_noimp = solver->options[LIS_OPTIONS_MAXITER_NO_IMP];
+	noimp_count   = 0;
+	min_nrm2      = LIS_SCALAR_MAX;
 	ptime   = 0.0;
 
 	r       = solver->work[0];
@@ -758,6 +761,24 @@ LIS_INT lis_idrs(LIS_SOLVER solver)
 			solver->ptime      = ptime;
 			LIS_DEBUG_FUNC_OUT;
 			return LIS_SUCCESS;
+		}
+
+		if ( maxiter_noimp )
+		{
+			if ( min_nrm2 > nrm2 )
+			{
+				min_nrm2 = nrm2;
+				noimp_count = 0;
+			}
+			else if ( ++noimp_count > maxiter_noimp )
+			{
+				solver->retcode = LIS_MAXITER;
+				solver->iter = iter;
+				solver->resid = nrm2;
+				solver->ptime = ptime;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_MAXITER;
+			}
 		}
 
 		for(i=0;i<s;i++)

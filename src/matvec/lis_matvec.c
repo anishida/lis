@@ -50,13 +50,213 @@
 LIS_MATVEC_FUNC LIS_MATVEC  = lis_matvec;
 LIS_MATVEC_FUNC LIS_MATVECH = lis_matvech;
 
+
+/*
+ * Generic serial USER kernels backed by LIS_MATRIX_USER_GET_ROW.
+ *
+ * Explicit application callbacks remain the fast path.  These helpers
+ * let applications exposing complete rows avoid duplicating basic
+ * matrix-vector kernels.
+ *
+ * LIS_PRECON_ROW_SOURCE owns only a reusable maximum-row-sized buffer;
+ * it never materializes storage proportional to total matrix nnz.
+ */
+static LIS_INT
+lis_matvec_user_rows(
+	LIS_MATRIX A,
+	const LIS_SCALAR *x,
+	LIS_SCALAR *y)
+{
+#ifdef _OPENMP
+	if( A->user_get_row_thread_safe && omp_get_max_threads()>1 )
+	{
+		LIS_INT parallel_err = LIS_SUCCESS;
+
+#pragma omp parallel
+		{
+			LIS_PRECON_ROW_SOURCE row;
+			LIS_INT local_err;
+			LIS_INT row_ready;
+			LIS_INT i,k;
+
+			local_err = lis_precon_row_source_init_mode(A,&row,LIS_TRUE);
+			row_ready = (local_err==LIS_SUCCESS);
+			if( local_err )
+			{
+#pragma omp critical(lis_user_row_error)
+				{
+					if( parallel_err==LIS_SUCCESS ) parallel_err = local_err;
+				}
+			}
+
+			/* Every thread in the team must encounter this worksharing region. */
+#pragma omp for schedule(static)
+			for(i=0;i<A->n;i++)
+			{
+				LIS_SCALAR sum = (LIS_SCALAR)0.0;
+				if( !row_ready ) continue;
+				local_err = lis_precon_row_source_get(&row,i);
+				if( local_err )
+				{
+#pragma omp critical(lis_user_row_error)
+					{
+						if( parallel_err==LIS_SUCCESS ) parallel_err = local_err;
+					}
+					continue;
+				}
+				for(k=0;k<row.nnz;k++)
+					sum += row.value[k] * x[row.index[k]];
+				y[i] = sum;
+			}
+			if( row_ready ) lis_precon_row_source_destroy(&row);
+		}
+		return parallel_err;
+	}
+#endif
+
+	{
+		LIS_PRECON_ROW_SOURCE row;
+		LIS_INT err;
+		LIS_INT i,k;
+		LIS_SCALAR sum;
+
+		err = lis_precon_row_source_init(A,&row);
+		if( err ) return err;
+		for(i=0;i<A->n;i++)
+		{
+			err = lis_precon_row_source_get(&row,i);
+			if( err )
+			{
+				lis_precon_row_source_destroy(&row);
+				return err;
+			}
+			sum = (LIS_SCALAR)0.0;
+			for(k=0;k<row.nnz;k++) sum += row.value[k] * x[row.index[k]];
+			y[i] = sum;
+		}
+		lis_precon_row_source_destroy(&row);
+		return LIS_SUCCESS;
+	}
+}
+
+static LIS_INT
+lis_matvech_user_rows(
+	LIS_MATRIX A,
+	const LIS_SCALAR *x,
+	LIS_SCALAR *y)
+{
+	LIS_PRECON_ROW_SOURCE row;
+	LIS_INT err;
+	LIS_INT i,k;
+
+	err = lis_precon_row_source_init(A,&row);
+	if( err ) return err;
+
+	for(i=0;i<A->n;i++)
+	{
+		y[i] = (LIS_SCALAR)0.0;
+	}
+
+	for(i=0;i<A->n;i++)
+	{
+		err = lis_precon_row_source_get(&row,i);
+		if( err )
+		{
+			lis_precon_row_source_destroy(&row);
+			return err;
+		}
+
+		for(k=0;k<row.nnz;k++)
+		{
+			y[row.index[k]] +=
+				conj(row.value[k])
+				*
+				x[i];
+		}
+	}
+
+	lis_precon_row_source_destroy(&row);
+
+	return LIS_SUCCESS;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_matvec"
 LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 {
+	LIS_INT err,i;
 	LIS_SCALAR *x,*y;
 
 	LIS_DEBUG_FUNC_IN;
+
+	if( A->matrix_type==LIS_MATRIX_OPERATOR )
+	{
+		if( X->precision!=LIS_PRECISION_DEFAULT ||
+		    Y->precision!=LIS_PRECISION_DEFAULT )
+		{
+			LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+			           "LIS_MATRIX_OPERATOR does not support quad precision yet\n");
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
+		if( A->operator_scale!=NULL )
+		{
+		        if( A->operator_A==NULL ||
+		            A->operator_work==NULL )
+		        {
+		                LIS_SETERR(
+		                        LIS_ERR_ILL_ARG,
+		                        "scaled matrix operator is not initialized\n");
+		                return LIS_ERR_ILL_ARG;
+		        }
+
+		        /* work = D*x */
+		        for(i=0;i<A->n;i++)
+		        {
+		                A->operator_work->value[i] =
+		                        A->operator_scale->value[i]
+		                        * X->value[i];
+		        }
+
+		        /* y = A*work */
+		        err = lis_matvec(
+		                A->operator_A,
+		                A->operator_work,
+		                Y);
+		        if( err ) return err;
+
+		        /* y = D*y */
+		        for(i=0;i<A->n;i++)
+		        {
+		                Y->value[i] *= A->operator_scale->value[i];
+		        }
+
+		        LIS_DEBUG_FUNC_OUT;
+		        return LIS_SUCCESS;
+		}
+
+		if( A->operator_A==NULL || A->operator_B==NULL ||
+		    A->operator_work==NULL )
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,
+			           "LIS_MATRIX_OPERATOR is not initialized\n");
+			return LIS_ERR_ILL_ARG;
+		}
+
+		err = lis_matvec(A->operator_A,X,A->operator_work);
+		if( err ) return err;
+		err = lis_matvec(A->operator_B,X,Y);
+		if( err ) return err;
+		err = lis_vector_scale(A->operator_alpha,A->operator_work);
+		if( err ) return err;
+		err = lis_vector_scale(A->operator_beta,Y);
+		if( err ) return err;
+		err = lis_vector_axpy((LIS_SCALAR)1.0,A->operator_work,Y);
+		if( err ) return err;
+
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
 
 	if( X->precision==LIS_PRECISION_DEFAULT )
 	{
@@ -142,6 +342,24 @@ LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 			#endif
 			lis_matvec_coo(A, x, y);
 			break;
+		case LIS_MATRIX_USER:
+			if( A->user_matvec!=NULL )
+			{
+				err = A->user_matvec(A->user_data,x,y);
+			}
+			else if( A->user_get_row!=NULL )
+			{
+				err = lis_matvec_user_rows(A,x,y);
+			}
+			else
+			{
+				LIS_SETERR(
+					LIS_ERR_NOT_IMPLEMENTED,
+					"user matvec callback and row callback are not set\n");
+				return LIS_ERR_NOT_IMPLEMENTED;
+			}
+			if( err ) return err;
+			break;
 		default:
 			LIS_SETERR_IMP;
 			return LIS_ERR_NOT_IMPLEMENTED;
@@ -190,9 +408,87 @@ LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 #define __FUNC__ "lis_matvech"
 LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 {
+	LIS_INT err,i;
 	LIS_SCALAR *x,*y;
 
 	LIS_DEBUG_FUNC_IN;
+
+	if( A->matrix_type==LIS_MATRIX_OPERATOR )
+	{
+		if( X->precision!=LIS_PRECISION_DEFAULT ||
+		    Y->precision!=LIS_PRECISION_DEFAULT )
+		{
+			LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+			           "LIS_MATRIX_OPERATOR does not support quad precision yet\n");
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
+		if( A->operator_scale!=NULL )
+		{
+		        if( A->operator_A==NULL ||
+		            A->operator_work==NULL )
+		        {
+		                LIS_SETERR(
+		                        LIS_ERR_ILL_ARG,
+		                        "scaled matrix operator is not initialized\n");
+		                return LIS_ERR_ILL_ARG;
+		        }
+
+		        /* work = D*x */
+		        for(i=0;i<A->n;i++)
+		        {
+		                A->operator_work->value[i] =
+#ifdef _COMPLEX
+		                        conj(A->operator_scale->value[i])
+#else
+		                        A->operator_scale->value[i]
+#endif
+		                        * X->value[i];
+		        }
+
+		        /* y = A*work */
+		        err = lis_matvech(
+		                A->operator_A,
+		                A->operator_work,
+		                Y);
+		        if( err ) return err;
+
+		        /* y = D*y */
+		        for(i=0;i<A->n;i++)
+		        {
+#ifdef _COMPLEX
+		                Y->value[i] *= conj(A->operator_scale->value[i]);
+#else
+		                Y->value[i] *= A->operator_scale->value[i];
+#endif
+		        }
+
+		        LIS_DEBUG_FUNC_OUT;
+		        return LIS_SUCCESS;
+		}
+
+		if( A->operator_A==NULL || A->operator_B==NULL ||
+		    A->operator_work==NULL )
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,
+			           "LIS_MATRIX_OPERATOR is not initialized\n");
+			return LIS_ERR_ILL_ARG;
+		}
+
+		err = lis_matvech(A->operator_A,X,A->operator_work);
+		if( err ) return err;
+		err = lis_matvech(A->operator_B,X,Y);
+		if( err ) return err;
+		err = lis_vector_scale(conj(A->operator_alpha),A->operator_work);
+		if( err ) return err;
+		err = lis_vector_scale(conj(A->operator_beta),Y);
+		if( err ) return err;
+		err = lis_vector_axpy((LIS_SCALAR)1.0,A->operator_work,Y);
+		if( err ) return err;
+
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
+
 
 	x = X->value;
 	y = Y->value;
@@ -300,6 +596,24 @@ LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 				LIS_MATVEC_REDUCE;
 			#endif
 			break;
+		case LIS_MATRIX_USER:
+			if( A->user_matvech!=NULL )
+			{
+				err = A->user_matvech(A->user_data,x,y);
+			}
+			else if( A->user_get_row!=NULL )
+			{
+				err = lis_matvech_user_rows(A,x,y);
+			}
+			else
+			{
+				LIS_SETERR(
+					LIS_ERR_NOT_IMPLEMENTED,
+					"user transpose/Hermitian matvec callback and row callback are not set\n");
+				return LIS_ERR_NOT_IMPLEMENTED;
+			}
+			if( err ) return err;
+			break;
 		default:
 			LIS_SETERR_IMP;
 			return LIS_ERR_NOT_IMPLEMENTED;
@@ -346,6 +660,202 @@ LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 #endif
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_matvec_block"
+LIS_INT lis_matvec_block(
+        LIS_MATRIX A,
+        LIS_INT nvec,
+        LIS_VECTOR X[],
+        LIS_VECTOR Y[])
+{
+        LIS_INT i,err;
+        LIS_INT use_user_block;
+
+        LIS_DEBUG_FUNC_IN;
+
+        if( nvec<0 )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "number of block vectors is negative\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( nvec==0 )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_SUCCESS;
+        }
+
+        if( A==NULL || X==NULL || Y==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "invalid block matvec argument\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        for(i=0;i<nvec;i++)
+        {
+                if( X[i]==NULL || Y[i]==NULL )
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "block matvec contains a null vector\n");
+                        return LIS_ERR_ILL_ARG;
+                }
+        }
+
+        /*
+         * A USER matrix may provide a native block callback.
+         *
+         * The USER callback interface is currently default-precision.
+         * If a vector requests another precision, preserve the existing
+         * scalar lis_matvec() behavior through the fallback below.
+         */
+        use_user_block =
+                A->matrix_type==LIS_MATRIX_USER &&
+                A->user_matvec_block!=NULL;
+
+        if( use_user_block )
+        {
+                for(i=0;i<nvec;i++)
+                {
+                        if( X[i]->precision!=LIS_PRECISION_DEFAULT )
+                        {
+                                use_user_block = LIS_FALSE;
+                                break;
+                        }
+                }
+        }
+
+        if( use_user_block )
+        {
+                err = A->user_matvec_block(
+                        A->user_data,
+                        nvec,
+                        X,
+                        Y);
+
+                if( err ) return err;
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_SUCCESS;
+        }
+
+        /*
+         * Compatibility fallback.
+         *
+         * This deliberately reuses lis_matvec() so all existing matrix
+         * formats, operator semantics, MPI communication, and precision
+         * handling remain unchanged.
+         */
+        for(i=0;i<nvec;i++)
+        {
+                err = lis_matvec(
+                        A,
+                        X[i],
+                        Y[i]);
+
+                if( err ) return err;
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_matvech_block"
+LIS_INT lis_matvech_block(
+        LIS_MATRIX A,
+        LIS_INT nvec,
+        LIS_VECTOR X[],
+        LIS_VECTOR Y[])
+{
+        LIS_INT i,err;
+        LIS_INT use_user_block;
+
+        LIS_DEBUG_FUNC_IN;
+
+        if( nvec<0 )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "number of block vectors is negative\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( nvec==0 )
+        {
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_SUCCESS;
+        }
+
+        if( A==NULL || X==NULL || Y==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "invalid block matvech argument\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        for(i=0;i<nvec;i++)
+        {
+                if( X[i]==NULL || Y[i]==NULL )
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "block matvech contains a null vector\n");
+                        return LIS_ERR_ILL_ARG;
+                }
+        }
+
+        use_user_block =
+                A->matrix_type==LIS_MATRIX_USER &&
+                A->user_matvech_block!=NULL;
+
+        if( use_user_block )
+        {
+                for(i=0;i<nvec;i++)
+                {
+                        if( X[i]->precision!=LIS_PRECISION_DEFAULT )
+                        {
+                                use_user_block = LIS_FALSE;
+                                break;
+                        }
+                }
+        }
+
+        if( use_user_block )
+        {
+                err = A->user_matvech_block(
+                        A->user_data,
+                        nvec,
+                        X,
+                        Y);
+
+                if( err ) return err;
+
+                LIS_DEBUG_FUNC_OUT;
+                return LIS_SUCCESS;
+        }
+
+        for(i=0;i<nvec;i++)
+        {
+                err = lis_matvech(
+                        A,
+                        X[i],
+                        Y[i]);
+
+                if( err ) return err;
+        }
+
+        LIS_DEBUG_FUNC_OUT;
+        return LIS_SUCCESS;
 }
 
 

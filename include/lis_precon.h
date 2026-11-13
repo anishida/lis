@@ -26,15 +26,16 @@
 
 
 #ifndef __LIS_PRECON_H__
+#include <stddef.h>
 #define __LIS_PRECON_H__
 
 
-#define lis_psolve(solver,b,x) lis_psolve_xxx[solver->precon->precon_type](solver,b,x)
-#define lis_psolveh(solver,b,x) lis_psolveh_xxx[solver->precon->precon_type](solver,b,x)
 
 
 
 
+#define lis_psolve(solver,b,x) lis_psolve_dispatch((solver),(b),(x))
+#define lis_psolveh(solver,b,x) lis_psolveh_dispatch((solver),(b),(x))
 #ifdef __cplusplus
 extern "C"
 {
@@ -48,11 +49,78 @@ extern "C"
 	extern LIS_PRECON_CREATE_XXX lis_precon_create_xxx[];
 	extern LIS_PSOLVE_XXX lis_psolve_xxx[];
 	extern LIS_PSOLVEH_XXX lis_psolveh_xxx[];
+	extern LIS_INT lis_psolve_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
+	extern LIS_INT lis_psolveh_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
+
+        extern LIS_REAL lis_precon_csr_row_scale(LIS_MATRIX A, LIS_INT row);
+
+/*
+ * Internal row access used by preconditioner setup.
+ *
+ * CSR rows are exposed directly. LIS_MATRIX_USER rows are obtained
+ * through the USER row callback and kept only in a reusable row-sized
+ * buffer. Operator rows additionally keep reusable merge scratch so that
+ * repeated row access does not allocate/free temporary storage per row.
+ */
+typedef struct LIS_PRECON_ROW_SOURCE_STRUCT
+{
+	LIS_MATRIX A;
+	LIS_INT raw_scratch; /* private libc allocation, never LIS registry */
+	LIS_INT capacity;
+	LIS_INT *index_buffer;
+	LIS_SCALAR *value_buffer;
+	const LIS_INT *index;
+	const LIS_SCALAR *value;
+	LIS_INT nnz;
+	struct LIS_PRECON_ROW_SOURCE_STRUCT *operator_A;
+	struct LIS_PRECON_ROW_SOURCE_STRUCT *operator_B;
+	void *operator_entries;
+	LIS_INT operator_entries_capacity;
+} LIS_PRECON_ROW_SOURCE;
+
+extern LIS_INT lis_precon_row_source_init(
+	LIS_MATRIX A,
+	LIS_PRECON_ROW_SOURCE *source);
+
+/* Worker-local scratch must bypass the process-global LIS allocation table.
+ * The ordinary row-source ABI and allocator remain unchanged.
+ */
+extern LIS_INT lis_precon_row_source_init_mode(
+    LIS_MATRIX A,LIS_PRECON_ROW_SOURCE *source,LIS_INT raw_scratch);
+extern void *lis_precon_row_source_alloc(
+    LIS_PRECON_ROW_SOURCE *source,size_t bytes,char *tag);
+extern void lis_precon_row_source_release(
+    LIS_PRECON_ROW_SOURCE *source,void *ptr);
+
+extern LIS_INT lis_precon_row_source_get(
+	LIS_PRECON_ROW_SOURCE *source,
+	LIS_INT local_row);
+
+extern LIS_INT lis_precon_row_source_count_nnz(
+	LIS_MATRIX A,
+	LIS_INT *nnz);
+
+extern void lis_precon_row_source_destroy(
+	LIS_PRECON_ROW_SOURCE *source);
+
+extern LIS_INT lis_precon_operator_row_source_init(
+	LIS_PRECON_ROW_SOURCE *source);
+extern LIS_INT lis_precon_operator_row_source_get(
+	LIS_PRECON_ROW_SOURCE *source, LIS_INT local_row);
+extern void lis_precon_operator_row_source_destroy(
+	LIS_PRECON_ROW_SOURCE *source);
+
+        extern LIS_INT lis_precon_check_ilu_pivot_tol(LIS_MATRIX A, LIS_REAL tol);
+        extern LIS_SCALAR lis_precon_regularize_ilu_pivot(LIS_SCALAR pivot, LIS_REAL row_scale, LIS_REAL tol);
 
 /*******************/
 /* NONE            */
 /*******************/
 
+	extern LIS_INT lis_precon_create_mfamg(LIS_SOLVER solver, LIS_PRECON precon);
+	extern LIS_INT lis_precon_psd_update_mfamg(LIS_SOLVER solver, LIS_PRECON precon);
+	extern LIS_INT lis_precon_destroy_mfamg(LIS_PRECON precon);
+	extern LIS_INT lis_psolve_mfamg(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
 	extern LIS_INT lis_precon_create_none(LIS_SOLVER solver, LIS_PRECON precon);
 	extern LIS_INT lis_psolve_none(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
 	extern LIS_INT lis_psolveh_none(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
@@ -62,6 +130,7 @@ extern "C"
 /*******************/
 
 	extern LIS_INT lis_precon_create_jacobi(LIS_SOLVER solver, LIS_PRECON precon);
+	extern LIS_INT lis_precon_update_jacobi(LIS_SOLVER solver, LIS_PRECON precon);
 	extern LIS_INT lis_psolve_jacobi(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
 	extern LIS_INT lis_psolveh_jacobi(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
 	extern LIS_INT lis_precon_create_bjacobi(LIS_SOLVER solver, LIS_PRECON precon);
@@ -126,8 +195,8 @@ extern "C"
 	extern LIS_INT lis_precon_psd_create_saamg(LIS_SOLVER solver, LIS_PRECON precon);
 /*NEH support for extended "solve_kernel" workflow*/
     extern LIS_INT lis_precon_psd_update_saamg(LIS_SOLVER solver, LIS_PRECON precon);
-	extern LIS_INT lis_psolve_saamg(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X);
-	extern LIS_INT lis_psolveh_saamg(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X);
+	extern LIS_INT lis_psolve_saamg(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
+	extern LIS_INT lis_psolveh_saamg(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
 
 /*******************/
 /* Crout ILU       */
@@ -146,6 +215,7 @@ extern "C"
 
 	extern LIS_INT lis_precon_create_ilut(LIS_SOLVER solver, LIS_PRECON precon);
 	extern LIS_INT lis_precon_create_ilut_csr(LIS_SOLVER solver, LIS_PRECON precon);
+	extern LIS_INT lis_precon_update_ilut_frozen(LIS_SOLVER solver, LIS_PRECON precon);
 	extern LIS_INT lis_psolve_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X);
 	extern LIS_INT lis_psolveh_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X);
 

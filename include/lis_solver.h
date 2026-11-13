@@ -39,7 +39,20 @@ extern "C"
 #endif
 	extern LIS_INT lis_solver_init(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_work_destroy(LIS_SOLVER solver);
+	extern LIS_INT lis_solver_sequence_prepare_precon(LIS_MATRIX A, LIS_SOLVER solver, LIS_PRECON *precon);
+	extern LIS_INT lis_solver_sequence_precon_destroy(LIS_SOLVER solver);
+	extern LIS_INT lis_solver_compute_true_residual(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_REAL *residual_norm, LIS_REAL *rhs_norm);
+	extern LIS_INT lis_solver_work_vector_compatible(LIS_VECTOR v, LIS_MATRIX A, LIS_INT precision);
+	extern LIS_INT lis_solver_work_compatible(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VECTOR t, LIS_VECTOR r, LIS_REAL *bnrm2);
+	extern void lis_solver_monitor_residual(
+		LIS_SOLVER solver, LIS_INT iter,
+		LIS_REAL residual, LIS_REAL tolerance,
+		LIS_INT residual_kind);
+	extern LIS_INT lis_solver_test_convergence(
+		LIS_SOLVER solver, LIS_INT iter,
+		LIS_REAL residual, LIS_REAL tolerance,
+		LIS_INT residual_kind, LIS_INT default_converged);
 	extern LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_option_solver(char *argv, LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_option_psolver(char *argv, LIS_SOLVER solver);
@@ -248,6 +261,54 @@ extern "C"
 	extern LIS_INT lis_fgmres_malloc_work(LIS_SOLVER solver);
 
 /*******************/
+/* GCRO-DR         */
+/*******************/
+	extern LIS_INT lis_gcrodr(LIS_SOLVER solver);
+	extern LIS_INT lis_gcrodr_check_params(LIS_SOLVER solver);
+	extern LIS_INT lis_gcrodr_malloc_work(LIS_SOLVER solver);
+	extern LIS_INT lis_gcrodr_clear_recycle(LIS_SOLVER solver);
+
+/*******************/
+/* FGCRO-DR        */
+/*******************/
+        extern LIS_INT lis_fgcrodr(LIS_SOLVER solver);
+        extern LIS_INT lis_fgcrodr_quad(LIS_SOLVER solver);
+        extern LIS_INT lis_fgcrodr_check_params(LIS_SOLVER solver);
+        extern LIS_INT lis_fgcrodr_malloc_work(LIS_SOLVER solver);
+        extern LIS_INT lis_fgcrodr_clear_recycle(LIS_SOLVER solver);
+        extern LIS_INT lis_fgcrodr_state_destroy(LIS_SOLVER solver);
+        extern LIS_INT lis_fgcrodr_validate_recycle(
+                LIS_SOLVER solver, LIS_REAL *orth_error,
+                LIS_REAL *relation_error);
+
+
+
+extern LIS_INT lis_fgcrodr_get_lifecycle_state(
+        LIS_SOLVER solver,
+        LIS_INT *valid,
+        LIS_MATRIX *matrix,
+        LIS_UNSIGNED_INT *structure_generation,
+        LIS_UNSIGNED_INT *value_generation);
+extern LIS_INT lis_fgcrodr_get_stats(
+        LIS_SOLVER solver,
+        LIS_UNSIGNED_INT *builds,
+        LIS_UNSIGNED_INT *updates,
+        LIS_UNSIGNED_INT *uses,
+        LIS_UNSIGNED_INT *rejects);
+
+extern LIS_INT lis_fgcrodr_get_policy_stats(
+        LIS_SOLVER solver,
+        LIS_UNSIGNED_INT *cross_uses,
+        LIS_UNSIGNED_INT *keeps,
+        LIS_UNSIGNED_INT *transports,
+        LIS_UNSIGNED_INT *rejects);
+
+
+        extern LIS_INT lis_fgcrodr_set_option(
+                LIS_SOLVER solver, const char *name, const char *value);
+
+
+/*******************/
 /* IDR(s)          */
 /*******************/
 
@@ -288,6 +349,42 @@ extern "C"
 	extern LIS_INT lis_cocr_malloc_work(LIS_SOLVER solver);
 
   
+
+/************************************************/
+/* Exact right-nullspace projection */
+extern LIS_INT lis_solver_project_nullspace(LIS_SOLVER solver, LIS_VECTOR vector);
+
+/* Near-nullspace coarse state                  */
+/************************************************/
+
+struct LIS_NEAR_NULLSPACE_COARSE_STRUCT
+{
+        LIS_INT dim;
+        LIS_VECTOR *Z;
+        LIS_VECTOR *AZ;
+        LIS_SCALAR *E;
+        LIS_SCALAR *LU;
+        LIS_INT *pivots;
+
+        /*
+         * Reusable two-level apply storage.
+         */
+        LIS_VECTOR work;
+        LIS_SCALAR *rhs;
+        LIS_SCALAR *coeff;
+
+        LIS_INT ready;
+};
+
+extern LIS_INT lis_solver_near_nullspace_coarse_setup(
+	LIS_SOLVER solver, LIS_MATRIX A, LIS_INT scale);
+extern LIS_INT lis_solver_near_nullspace_coarse_destroy(
+	LIS_SOLVER solver);
+extern LIS_INT lis_solver_near_nullspace_coarse_solve(
+	LIS_SOLVER solver, const LIS_SCALAR *rhs, LIS_SCALAR *x);
+extern LIS_INT lis_solver_near_nullspace_apply(
+        LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x,
+        LIS_PSOLVE_XXX psolve);
 #ifdef __cplusplus
 }
 #endif

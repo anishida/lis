@@ -62,8 +62,10 @@
 
 LIS_ARGS cmd_args = NULL;
 int lis_mpi_initialized = LIS_FALSE;
+int lis_mpi_management = LIS_TRUE;
 LIS_SCALAR *lis_vec_tmp = NULL;
 
+LIS_INT lis_omp_thread_capacity = 1;
 #ifdef USE_QUAD_PRECISION
 	#define LIS_QUAD_SCALAR_SIZE 128
 	double *lis_quad_scalar_tmp = NULL;
@@ -94,6 +96,17 @@ LIS_INT LIS_INIT_OPTACT[] = {
  ************************************************/
 
 #undef __FUNC__
+#define __FUNC__ "lis_do_not_handle_mpi"
+void lis_do_not_handle_mpi(void)
+{
+	LIS_DEBUG_FUNC_IN;
+
+	lis_mpi_management = LIS_FALSE;
+
+	LIS_DEBUG_FUNC_OUT;
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_version"
 void lis_version(void)
 {
@@ -116,8 +129,11 @@ LIS_INT lis_initialize(int* argc, char** argv[])
 /*	lis_memory_init();*/
 
 	#ifdef USE_MPI
-		MPI_Initialized(&lis_mpi_initialized);
-		if (!lis_mpi_initialized) MPI_Init(argc, argv);
+		if (lis_mpi_management)
+		{
+			MPI_Initialized(&lis_mpi_initialized);
+			if (!lis_mpi_initialized) MPI_Init(argc, argv);
+		}
 
 		#ifdef USE_QUAD_PRECISION
 			MPI_Type_contiguous(LIS_MPI_MSCALAR_LEN, MPI_DOUBLE, &LIS_MPI_MSCALAR );
@@ -155,10 +171,17 @@ LIS_INT lis_initialize(int* argc, char** argv[])
 
 	#ifdef _OPENMP
 		omp_set_num_threads(nprocs);
-		lis_vec_tmp = (LIS_SCALAR *)lis_malloc( nprocs*LIS_VEC_TMP_PADD*sizeof(LIS_QUAD),"lis_initialize::lis_vec_tmp" );
+		lis_omp_thread_capacity = nprocs;
+		/*
+		 * lis_vec_tms is declared and indexed as LIS_SCALAR*.  Extended
+		 * precision reductions keep high/low parts in adjacent scalar slots;
+		 * they do not treat this storage as an array of LIS_QUAD objects.
+		 * Size the allocation by its actual element type.
+		 */
+		lis_vec_tmp = (LIS_SCALAR *)lis_malloc( nprocs*LIS_VEC_TMP_PADD*sizeof(LIS_SCALAR),"lis_initialize::lis_vec_tmp" );
 		if( lis_vec_tmp==NULL )
 		{
-			LIS_SETERR_MEM(nprocs*LIS_VEC_TMP_PADD*sizeof(LIS_QUAD));
+			LIS_SETERR_MEM(nprocs*LIS_VEC_TMP_PADD*sizeof(LIS_SCALAR));
 			return LIS_ERR_OUT_OF_MEMORY;
 		}
 	#endif
@@ -217,7 +240,11 @@ LIS_INT lis_finalize(void)
 	lis_free_all();
 	
 	#ifdef USE_MPI
+	if (lis_mpi_management)
+	{
+		MPI_Finalized(&lis_mpi_initialized); // reuse lis_mpi_initialized
 		if (!lis_mpi_initialized) MPI_Finalize();
+	}
 	#endif
 
 	LIS_DEBUG_FUNC_OUT;

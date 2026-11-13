@@ -210,9 +210,9 @@ LIS_INT lis_vector_nhdot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_SCALAR *value)
 LIS_INT lis_vector_nrm2(LIS_VECTOR vx, LIS_REAL *value)
 {
 	LIS_INT i,n;
-	LIS_SCALAR dot;
+	LIS_REAL dot;
 	LIS_SCALAR *x;
-	LIS_SCALAR tmp;
+	LIS_REAL tmp;
 	#ifdef _OPENMP
 		LIS_INT nprocs,my_rank;
 	#endif
@@ -240,14 +240,14 @@ LIS_INT lis_vector_nrm2(LIS_VECTOR vx, LIS_REAL *value)
 			#pragma omp for
 			for(i=0; i<n; i++)
 			{
-				tmp += conj(x[i])*x[i];
+				tmp += fabs(x[i])*fabs(x[i]);
 			}
 			lis_vec_tmp[my_rank*LIS_VEC_TMP_PADD] = tmp;
 		}
 		dot = 0.0;
 		for(i=0;i<nprocs;i++)
 		{
-			dot += lis_vec_tmp[i*LIS_VEC_TMP_PADD];
+			dot += fabs(lis_vec_tmp[i*LIS_VEC_TMP_PADD]);
 		}
 	#else
 		dot  = 0.0;
@@ -256,7 +256,7 @@ LIS_INT lis_vector_nrm2(LIS_VECTOR vx, LIS_REAL *value)
 		#endif
 		for(i=0; i<n; i++)
 		{
-			dot += conj(x[i])*x[i];
+			dot += fabs(x[i])*fabs(x[i]);
 		}
 	#endif
 	#ifdef USE_MPI
@@ -269,7 +269,6 @@ LIS_INT lis_vector_nrm2(LIS_VECTOR vx, LIS_REAL *value)
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 }
-
 /**********************/
 /* v <- ||x||_1       */
 /**********************/

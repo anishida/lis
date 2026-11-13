@@ -1,7 +1,8 @@
 noinst_LTLIBRARIES = libprecision.la
 libprecision_la_SOURCES = lis_precision.c \
 lis_precision_matvec.c \
-lis_precision_vec.c
+lis_precision_vec.c \
+lis_half.c
 
 
 AM_CFLAGS = -I$(top_srcdir)/include $(MPFLAG)

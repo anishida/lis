@@ -1,0 +1,455 @@
+#ifdef HAVE_CONFIG_H
+#include "lis_config.h"
+#else
+#ifdef HAVE_CONFIG_WIN_H
+#include "lis_config_win.h"
+#endif
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include "lis.h"
+
+typedef struct
+{
+	LIS_INT n;
+	LIS_SCALAR *diag;
+} DIAG_USER;
+
+static LIS_INT diag_matvec(void *user_data, const LIS_SCALAR *x, LIS_SCALAR *y)
+{
+	DIAG_USER *D = (DIAG_USER *)user_data;
+	LIS_INT i;
+
+	for(i=0;i<D->n;i++) y[i] = D->diag[i] * x[i];
+	return LIS_SUCCESS;
+}
+
+static LIS_INT diag_matvech(void *user_data, const LIS_SCALAR *x, LIS_SCALAR *y)
+{
+	DIAG_USER *D = (DIAG_USER *)user_data;
+	LIS_INT i;
+
+	for(i=0;i<D->n;i++) y[i] = conj(D->diag[i]) * x[i];
+	return LIS_SUCCESS;
+}
+
+static int scalar_close(LIS_SCALAR a, LIS_SCALAR b, LIS_REAL tol)
+{
+#ifdef _COMPLEX
+	return cabs(a-b) <= tol;
+#else
+	LIS_REAL d = (LIS_REAL)(a-b);
+	if( d<0 ) d = -d;
+	return d <= tol;
+#endif
+}
+
+static int inputs_unchanged(LIS_MATRIX A, LIS_MATRIX B,
+                            LIS_VECTOR x, LIS_VECTOR y)
+{
+	LIS_INT i, gi;
+	LIS_SCALAR expected;
+
+	lis_vector_set_all((LIS_SCALAR)1.0,x);
+
+	if( lis_matvec(A,x,y) ) return 1;
+	for(i=0;i<y->n;i++)
+	{
+		gi = y->is+i;
+		expected = (LIS_SCALAR)((gi+1)*(gi+2));
+		if( !scalar_close(y->value[i],expected,(LIS_REAL)1.0e-12) )
+			return 1;
+	}
+
+	if( lis_matvec(B,x,y) ) return 1;
+	for(i=0;i<y->n;i++)
+	{
+		gi = y->is+i;
+		expected = (LIS_SCALAR)(gi+1);
+		if( !scalar_close(y->value[i],expected,(LIS_REAL)1.0e-12) )
+			return 1;
+	}
+
+	return A->matrix_type!=LIS_MATRIX_USER ||
+	       B->matrix_type!=LIS_MATRIX_USER;
+}
+
+static int run_case(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x,
+                    char *options, LIS_SCALAR expected, const char *name)
+{
+	LIS_ESOLVER esolver = NULL;
+	LIS_SCALAR evalue = 0.0;
+	LIS_INT err, status;
+
+	err = lis_esolver_create(&esolver);
+	if( err ) return 1;
+
+	err = lis_esolver_set_option(options,esolver);
+	if( err )
+	{
+		lis_esolver_destroy(esolver);
+		return 1;
+	}
+
+	err = lis_gesolve(A,B,x,&evalue,esolver);
+	if( err )
+	{
+		fprintf(stderr,"%s returned %d\n",name,(int)err);
+		lis_esolver_destroy(esolver);
+		return 1;
+	}
+
+	lis_esolver_get_status(esolver,&status);
+	if( status!=LIS_SUCCESS )
+	{
+		fprintf(stderr,"%s status %d\n",name,(int)status);
+		lis_esolver_destroy(esolver);
+		return 1;
+	}
+
+	if( !scalar_close(evalue,expected,(LIS_REAL)1.0e-7) )
+	{
+#ifdef _COMPLEX
+		fprintf(stderr,"%s unexpected eigenvalue (%e,%e)\n",
+		        name,(double)creal(evalue),(double)cimag(evalue));
+#else
+		fprintf(stderr,"%s unexpected eigenvalue %e\n",
+		        name,(double)evalue);
+#endif
+		lis_esolver_destroy(esolver);
+		return 1;
+	}
+
+	lis_esolver_destroy(esolver);
+	return 0;
+}
+
+
+static int
+create_explicit_diagonal(
+    LIS_MATRIX *A,
+    LIS_INT n,
+    LIS_INT quadratic)
+{
+    LIS_INT err;
+    LIS_INT i,is,ie;
+    LIS_SCALAR value;
+
+    *A = NULL;
+
+    err = lis_matrix_create(LIS_COMM_WORLD,A);
+    if( err ) return 1;
+
+    if( (*A)->nprocs!=1 )
+    {
+        lis_matrix_destroy(*A);
+        *A = NULL;
+        return 2;
+    }
+
+    err = lis_matrix_set_size(*A,0,n);
+    if( err ) return 1;
+
+    err = lis_matrix_get_range(*A,&is,&ie);
+    if( err ) return 1;
+
+    for(i=is;i<ie;i++)
+    {
+        value = quadratic ?
+            (LIS_SCALAR)((i+1)*(i+2)) :
+            (LIS_SCALAR)(i+1);
+
+        err = lis_matrix_set_value(
+            LIS_INS_VALUE,i,i,value,*A);
+        if( err ) return 1;
+    }
+
+    err = lis_matrix_set_type(*A,LIS_MATRIX_CSR);
+    if( err ) return 1;
+
+    err = lis_matrix_assemble(*A);
+    if( err ) return 1;
+
+    return 0;
+}
+
+
+static int
+configured_case(
+    LIS_MATRIX A,
+    LIS_MATRIX B,
+    LIS_VECTOR x,
+    const char *eoptions,
+    const char *linear_options,
+    const char *refine_options,
+    LIS_REAL refine_gap,
+    LIS_SCALAR expected,
+    const char *name)
+{
+    LIS_ESOLVER esolver = NULL;
+    LIS_SCALAR evalue = 0.0;
+    LIS_REAL residual = 0.0;
+    LIS_INT err,status;
+
+    err = lis_vector_set_all(1.0,x);
+    if( err ) goto fail;
+
+    err = lis_esolver_create(&esolver);
+    if( err ) goto fail;
+
+    err = lis_esolver_set_option((char *)eoptions,esolver);
+    if( err ) goto fail;
+
+    err = lis_esolver_set_linear_options(linear_options,esolver);
+    if( err ) goto fail;
+
+    err = lis_esolver_set_refine_linear_options(refine_options,esolver);
+    if( err ) goto fail;
+
+    err = lis_esolver_set_refine_gap_fraction(refine_gap,esolver);
+    if( err ) goto fail;
+
+    err = lis_gesolve(A,B,x,&evalue,esolver);
+    if( err )
+    {
+        fprintf(stderr,"%s API return %d\n",name,(int)err);
+        goto fail;
+    }
+
+    err = lis_esolver_get_status(esolver,&status);
+    if( err ) goto fail;
+
+    if( status!=LIS_SUCCESS )
+    {
+        fprintf(stderr,"%s status %d\n",name,(int)status);
+        goto fail;
+    }
+
+    err = lis_esolver_get_residualnorm(esolver,&residual);
+    if( err ) goto fail;
+
+    if( !scalar_close(evalue,expected,(LIS_REAL)1.0e-6) ||
+        !isfinite((double)residual) ||
+        residual>(LIS_REAL)1.0e-8 )
+    {
+        fprintf(stderr,"%s residual %e\n",name,(double)residual);
+        goto fail;
+    }
+
+    printf("PASS: %s -> residual %.6e\n",name,(double)residual);
+    lis_esolver_destroy(esolver);
+    return 0;
+
+fail:
+    if( esolver ) lis_esolver_destroy(esolver);
+    return 1;
+}
+
+
+static int
+run_configured_operator_regressions(void)
+{
+    LIS_MATRIX A = NULL, B = NULL;
+    LIS_VECTOR x = NULL;
+    int fail = 0;
+    int rc;
+
+    rc = create_explicit_diagonal(&A,4,1);
+    if( rc==2 ) return 0;
+    if( rc ) { fail=1; goto cleanup; }
+
+    rc = create_explicit_diagonal(&B,4,0);
+    if( rc ) { fail=1; goto cleanup; }
+
+    rc = lis_vector_duplicate(A,&x);
+    if( rc ) { fail=1; goto cleanup; }
+
+    fail |= configured_case(
+        A,B,x,
+        "-e gii -shift 3.6 -etransform buckling "
+        "-etol 1.0e-8 -emaxiter 1000",
+        "-i bicg -p ilu -ilu_fill 1 "
+        "-tol 2.0e-8 -maxiter 2000 -scale none",
+        NULL,
+        (LIS_REAL)0.20,
+        (LIS_SCALAR)4.0,
+        "configured buckling GII operator PC");
+
+    fail |= configured_case(
+        A,B,x,
+        "-e gli -ss 4 -nev 1 -rval 0 "
+        "-shift 3.6 -etransform buckling -ige gii "
+        "-etol 1.0e-8 -emaxiter 1000",
+        "-i bicg -p ilu -ilu_fill 0 "
+        "-tol 1.0e-10 -maxiter 2000 -scale none",
+        "-i bicg -p ilu -ilu_fill 1 "
+        "-tol 2.0e-8 -maxiter 2000 -scale none",
+        (LIS_REAL)0.20,
+        (LIS_SCALAR)4.0,
+        "configured buckling GLI refinement");
+
+cleanup:
+    if( x ) lis_vector_destroy(x);
+    if( B ) lis_matrix_destroy(B);
+    if( A ) lis_matrix_destroy(A);
+    return fail;
+}
+
+
+int main(int argc, char *argv[])
+{
+	LIS_MATRIX A = NULL, B = NULL;
+	LIS_VECTOR x = NULL, y = NULL;
+	DIAG_USER Ad = {0,NULL}, Bd = {0,NULL};
+	LIS_INT i, is, ie, err;
+	LIS_INT global_n = 4;
+	int fail = 0;
+
+	lis_initialize(&argc,&argv);
+
+	err = lis_matrix_create(LIS_COMM_WORLD,&A);
+	if( err ) goto api_fail;
+	if( A->nprocs>global_n ) global_n = A->nprocs;
+
+	err = lis_matrix_set_size(A,0,global_n);
+	if( err ) goto api_fail;
+	err = lis_matrix_get_range(A,&is,&ie);
+	if( err ) goto api_fail;
+
+	Ad.n = A->n;
+	Ad.diag = (LIS_SCALAR *)malloc((size_t)Ad.n*sizeof(LIS_SCALAR));
+	if( !Ad.diag ) goto api_fail;
+	for(i=0;i<Ad.n;i++)
+	{
+		LIS_INT gi = is+i;
+		Ad.diag[i] = (LIS_SCALAR)((gi+1)*(gi+2));
+	}
+	err = lis_matrix_set_user(A,&Ad,diag_matvec,diag_matvech);
+	if( err ) goto api_fail;
+
+	err = lis_matrix_create(LIS_COMM_WORLD,&B);
+	if( err ) goto api_fail;
+	err = lis_matrix_set_size(B,0,global_n);
+	if( err ) goto api_fail;
+	err = lis_matrix_get_range(B,&is,&ie);
+	if( err ) goto api_fail;
+
+	Bd.n = B->n;
+	Bd.diag = (LIS_SCALAR *)malloc((size_t)Bd.n*sizeof(LIS_SCALAR));
+	if( !Bd.diag ) goto api_fail;
+	for(i=0;i<Bd.n;i++)
+	{
+		LIS_INT gi = is+i;
+		Bd.diag[i] = (LIS_SCALAR)(gi+1);
+	}
+	err = lis_matrix_set_user(B,&Bd,diag_matvec,diag_matvech);
+	if( err ) goto api_fail;
+
+	err = lis_vector_duplicate(A,&x);
+	if( err ) goto api_fail;
+	err = lis_vector_duplicate(A,&y);
+	if( err ) goto api_fail;
+
+	/* Generalized eigenvalues are 2,3,...,global_n+1. */
+	fail |= run_case(A,B,x,
+	                 "-e gpi -shift 1.0 -etol 1.0e-10 -emaxiter 1000",
+	                 (LIS_SCALAR)(global_n+1),"shifted GPI");
+	fail |= inputs_unchanged(A,B,x,y);
+
+	/* 3.6 makes lambda=4 the unique nearest eigenvalue for inverse iteration. */
+	fail |= run_case(A,B,x,
+	                 "-e gii -shift 3.6 -etol 1.0e-10 -emaxiter 1000",
+	                 (LIS_SCALAR)4.0,"shifted GII");
+	fail |= inputs_unchanged(A,B,x,y);
+
+        /* Explicit shift-invert must preserve the established result. */
+        fail |= run_case(A,B,x,
+                         "-e gii -shift 3.6 "
+                         "-etransform shift-invert "
+                         "-etol 1.0e-10 -emaxiter 1000",
+                         (LIS_SCALAR)4.0,
+                         "explicit shift-invert GII");
+        fail |= inputs_unchanged(A,B,x,y);
+
+        /*
+         * For lambda=2,3,... and sigma=3.6,
+         *
+         *     nu = lambda / (lambda - sigma)
+         *
+         * has largest magnitude at lambda=4.
+         */
+        fail |= run_case(A,B,x,
+                         "-e gii -shift 3.6 "
+                         "-etransform buckling "
+                         "-etol 1.0e-10 -emaxiter 1000",
+                         (LIS_SCALAR)4.0,
+                         "buckling GII");
+        fail |= inputs_unchanged(A,B,x,y);
+
+
+        /*
+         * Explicit transformed GLI must support USER matrices without
+         * materializing the shifted operator.
+         */
+        fail |= run_case(A,B,x,
+                         "-e gli -ss 4 -rval 0 "
+                         "-shift 3.6 "
+                         "-etransform shift-invert "
+                         "-ige gii "
+                         "-etol 1.0e-10 -emaxiter 1000",
+                         (LIS_SCALAR)4.0,
+                         "matrix-free shift-invert GLI");
+        fail |= inputs_unchanged(A,B,x,y);
+
+        fail |= run_case(A,B,x,
+                         "-e gli -ss 4 -rval 0 "
+                         "-shift 3.6 "
+                         "-etransform buckling "
+                         "-ige gii "
+                         "-etol 1.0e-10 -emaxiter 1000",
+                         (LIS_SCALAR)4.0,
+                         "matrix-free buckling GLI");
+        fail |= inputs_unchanged(A,B,x,y);
+
+
+        /* Preserve the established shifted GCR result. */
+        fail |= run_case(A,B,x,
+                         "-e gcr -shift 1.0 -etol 1.0e-10 -emaxiter 1000",
+                         (LIS_SCALAR)5.0,"shifted GCR");
+        fail |= inputs_unchanged(A,B,x,y);
+
+        fail |= run_configured_operator_regressions();
+
+#ifdef USE_MPI
+	{
+		int local_fail = fail, global_fail = 0;
+		MPI_Allreduce(&local_fail,&global_fail,1,MPI_INT,MPI_MAX,LIS_COMM_WORLD);
+		fail = global_fail;
+	}
+#endif
+
+	if( A->my_rank==0 )
+		printf("shifted USER GPI/GII/GCR %s\n",fail ? "FAILED" : "PASSED");
+
+	lis_vector_destroy(y);
+	lis_vector_destroy(x);
+	lis_matrix_destroy(B);
+	lis_matrix_destroy(A);
+	free(Bd.diag);
+	free(Ad.diag);
+	lis_finalize();
+	return fail ? 1 : 0;
+
+api_fail:
+	fprintf(stderr,"getestoperator API failure: %d\n",(int)err);
+	if( y ) lis_vector_destroy(y);
+	if( x ) lis_vector_destroy(x);
+	if( B ) lis_matrix_destroy(B);
+	if( A ) lis_matrix_destroy(A);
+	free(Bd.diag);
+	free(Ad.diag);
+	lis_finalize();
+	return 1;
+}

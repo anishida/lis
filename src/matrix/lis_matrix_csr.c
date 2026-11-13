@@ -99,8 +99,98 @@ LIS_INT lis_matrix_set_csr(LIS_INT nnz, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR
 	A->index       = index;
 	A->value       = value;
 	A->is_copy     = LIS_FALSE;
+	A->csr_external = LIS_FALSE;
 	A->status      = -LIS_MATRIX_CSR;
 	A->nnz         = nnz;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_set_csr_external"
+LIS_INT lis_matrix_set_csr_external(
+	LIS_INT nnz,
+	LIS_INT *ptr,
+	LIS_INT *index,
+	LIS_SCALAR *value,
+	LIS_MATRIX A)
+{
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	err = lis_matrix_check(A,LIS_MATRIX_CHECK_SET);
+	if( err ) return err;
+
+	if( nnz<0 )
+	{
+		LIS_SETERR1(LIS_ERR_ILL_ARG,"nnz(=%D) is less than 0\n",nnz);
+		return LIS_ERR_ILL_ARG;
+	}
+
+	if( A->n>0 && (ptr==NULL || (nnz>0 && (index==NULL || value==NULL))) )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"external CSR storage pointer is NULL\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	A->ptr          = ptr;
+	A->index        = index;
+	A->value        = value;
+	A->is_copy      = LIS_FALSE;
+	A->csr_external = LIS_TRUE;
+	A->status       = -LIS_MATRIX_CSR;
+	A->matrix_type  = LIS_MATRIX_CSR;
+	A->nnz          = nnz;
+
+	LIS_DEBUG_FUNC_OUT;
+	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_set_csr_values_external"
+LIS_INT lis_matrix_set_csr_values_external(
+	LIS_SCALAR *value,
+	LIS_MATRIX A)
+{
+	LIS_INT err;
+
+	LIS_DEBUG_FUNC_IN;
+
+	err = lis_matrix_check(A,LIS_MATRIX_CHECK_NULL);
+	if( err ) return err;
+
+	if( !A->csr_external )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"matrix does not use external CSR storage\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	if( A->matrix_type!=LIS_MATRIX_CSR ||
+	    (A->status!=LIS_MATRIX_CSR && A->status!=-LIS_MATRIX_CSR) )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"matrix is not CSR\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	if( A->nnz>0 && value==NULL )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"external CSR value pointer is NULL\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	if( A->is_splited || A->is_scaled )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,
+			"external CSR values cannot be replaced while matrix has derived split/scale state\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	A->value = value;
+
+	err = lis_matrix_mark_values_changed(A);
+	if( err ) return err;
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
@@ -1306,6 +1396,8 @@ LIS_INT lis_matrix_merge_csr(LIS_MATRIX A)
 	A->value      = value;
 	A->index      = index;
 
+	/* merge_csr creates new LIS-owned CSR storage. */
+	A->csr_external = LIS_FALSE;
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 }

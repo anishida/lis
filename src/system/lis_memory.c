@@ -34,6 +34,7 @@
 /*#undef malloc*/
 
 #include <stdlib.h>
+#include <stdint.h>
 #ifdef HAVE_MALLOC_H
         #include <malloc.h>
 #endif
@@ -59,9 +60,9 @@
 	#define USE_MALLOC_TAG	1
 #endif
 
-#if 1
 typedef struct _malloc_address {
 	struct _malloc_address *next, *prev;
+	struct _malloc_address *hash_next;
 	void *address, *real_address;
 	size_t size;
 	#ifdef USE_MALLOC_TAG
@@ -69,22 +70,205 @@ typedef struct _malloc_address {
 	#endif
 } malloc_address;
 
-malloc_address malloc_address_top = 
-  {&malloc_address_top, &malloc_address_top, NULL, NULL};
-#else
-#define MALLOC_ADDRESS_SIZE	1021
+malloc_address malloc_address_top =
+  {&malloc_address_top, &malloc_address_top,
+   NULL, NULL, NULL, 0};
 
-typedef struct _malloc_address {
-  struct _malloc_address *next, *prev;
-  void *address, *real_address;
-  size_t size;
-} malloc_address;
+#define LIS_MALLOC_ADDRESS_HASH_INITIAL_SIZE 1024
 
-malloc_address malloc_address_top = 
-  {&malloc_address_top, &malloc_address_top, NULL, NULL};
+static malloc_address **malloc_address_table = NULL;
+static size_t malloc_address_table_size = 0;
+static size_t malloc_address_count = 0;
 
-malloc_address *malloc_address_table;
-#endif
+
+static size_t
+lis_malloc_address_hash_value(
+	const void *p,
+	size_t table_size)
+{
+	uintptr_t x;
+
+	x = (uintptr_t)p;
+	x >>= 4;
+	x ^= x >> 7;
+	x ^= x >> 17;
+
+	return (size_t)(x & (table_size-1));
+}
+
+
+static void
+lis_malloc_address_hash_rebuild(size_t new_size)
+{
+	malloc_address **new_table;
+	malloc_address *ma;
+	size_t h;
+
+	new_table = (malloc_address **)calloc(
+		new_size,
+		sizeof(malloc_address *));
+
+	if( new_table==NULL )
+	{
+		return;
+	}
+
+	for(
+		ma=malloc_address_top.next;
+		ma->address;
+		ma=ma->next)
+	{
+		h = lis_malloc_address_hash_value(
+			ma->address,
+			new_size);
+
+		ma->hash_next = new_table[h];
+		new_table[h] = ma;
+	}
+
+	free(malloc_address_table);
+
+	malloc_address_table = new_table;
+	malloc_address_table_size = new_size;
+}
+
+
+static void
+lis_malloc_address_hash_prepare(void)
+{
+	if( malloc_address_table==NULL )
+	{
+		lis_malloc_address_hash_rebuild(
+			LIS_MALLOC_ADDRESS_HASH_INITIAL_SIZE);
+
+		return;
+	}
+
+	if(
+		malloc_address_table_size<=((size_t)-1)/2
+		&&
+		malloc_address_count>=
+			2*malloc_address_table_size)
+	{
+		lis_malloc_address_hash_rebuild(
+			2*malloc_address_table_size);
+	}
+}
+
+
+static void
+lis_malloc_address_hash_insert(
+	malloc_address *ma)
+{
+	size_t h;
+
+	if( malloc_address_table==NULL )
+	{
+		return;
+	}
+
+	h = lis_malloc_address_hash_value(
+		ma->address,
+		malloc_address_table_size);
+
+	ma->hash_next = malloc_address_table[h];
+	malloc_address_table[h] = ma;
+}
+
+
+static void
+lis_malloc_address_hash_remove(
+	malloc_address *ma)
+{
+	malloc_address **link;
+	size_t h;
+
+	if(
+		malloc_address_table==NULL
+		||
+		ma==NULL)
+	{
+		return;
+	}
+
+	h = lis_malloc_address_hash_value(
+		ma->address,
+		malloc_address_table_size);
+
+	link = &malloc_address_table[h];
+
+	while(
+		*link!=NULL
+		&&
+		*link!=ma)
+	{
+		link = &(*link)->hash_next;
+	}
+
+	if( *link==ma )
+	{
+		*link = ma->hash_next;
+	}
+
+	ma->hash_next = NULL;
+}
+
+
+static malloc_address *
+lis_malloc_address_find(void *p)
+{
+	malloc_address *ma;
+	size_t h;
+
+	if( p==NULL )
+	{
+		return NULL;
+	}
+
+	if( malloc_address_table!=NULL )
+	{
+		h = lis_malloc_address_hash_value(
+			p,
+			malloc_address_table_size);
+
+		for(
+			ma=malloc_address_table[h];
+			ma!=NULL;
+			ma=ma->hash_next)
+		{
+			if( ma->address==p )
+			{
+				return ma;
+			}
+		}
+
+		return NULL;
+	}
+
+	for(
+		ma=malloc_address_top.next;
+		ma->address;
+		ma=ma->next)
+	{
+		if( ma->address==p )
+		{
+			return ma;
+		}
+	}
+
+	return NULL;
+}
+
+
+static void
+lis_malloc_address_hash_reset(void)
+{
+	free(malloc_address_table);
+
+	malloc_address_table = NULL;
+	malloc_address_table_size = 0;
+	malloc_address_count = 0;
+}
 
 /*
 void *malloc ();
@@ -106,12 +290,24 @@ void *lis_malloc( size_t size, char *tag )
 	malloc_address *ma;
 	LIS_INT sz;
 
+	/* Leave enough room for alignment without wrapping size_t. */
+	if( size>((size_t)-1)-16 )
+	{
+		return NULL;
+	}
 	addr.ptr = malloc(size + 16);
+	if( addr.ptr==NULL )
+	{
+		return NULL;
+	}
 	ma = (malloc_address *)malloc(sizeof(malloc_address));
-	ma->next = &malloc_address_top;
-	ma->prev = malloc_address_top.prev;
-	ma->prev->next = ma;
-	ma->next->prev = ma;
+	if( ma==NULL )
+	{
+		free(addr.ptr);
+		return NULL;
+	}
+	lis_malloc_address_hash_prepare();
+	ma->hash_next = NULL;
 	ma->real_address = addr.ptr;
 	ma->size = size;
 	addr.l += 0xf;
@@ -121,9 +317,23 @@ void *lis_malloc( size_t size, char *tag )
 	#ifdef USE_MALLOC_TAG
 		sz = (LIS_INT)strlen(tag);
 		ma->tag = (char *)malloc(sz+1);
+		if( ma->tag==NULL )
+		{
+			free(ma->real_address);
+			free(ma);
+			return NULL;
+		}
 		strcpy(ma->tag,tag);
 	#endif
  
+	ma->next = &malloc_address_top;
+	ma->prev = malloc_address_top.prev;
+	ma->prev->next = ma;
+	ma->next->prev = ma;
+
+  lis_malloc_address_hash_insert(ma);
+  malloc_address_count++;
+
   return addr.ptr;
 }
 
@@ -136,12 +346,24 @@ void *lis_calloc( size_t size, char *tag )
   malloc_address *ma;
   LIS_INT sz;
 
+	/* Leave enough room for alignment without wrapping size_t. */
+	if( size>((size_t)-1)-16 )
+	{
+		return NULL;
+	}
 	addr.ptr = malloc(size + 16);
+	if( addr.ptr==NULL )
+	{
+		return NULL;
+	}
 	ma = (malloc_address *)malloc(sizeof(malloc_address));
-	ma->next = &malloc_address_top;
-	ma->prev = malloc_address_top.prev;
-	ma->prev->next = ma;
-	ma->next->prev = ma;
+	if( ma==NULL )
+	{
+		free(addr.ptr);
+		return NULL;
+	}
+	lis_malloc_address_hash_prepare();
+	ma->hash_next = NULL;
 	ma->real_address = addr.ptr;
 	ma->size = size;
 	addr.l += 0xf;
@@ -152,8 +374,22 @@ void *lis_calloc( size_t size, char *tag )
 	#ifdef USE_MALLOC_TAG
 		sz = (LIS_INT)strlen(tag);
 		ma->tag = (char *)malloc(sz+1);
+		if( ma->tag==NULL )
+		{
+			free(ma->real_address);
+			free(ma);
+			return NULL;
+		}
 		strcpy(ma->tag,tag);
 	#endif
+
+	ma->next = &malloc_address_top;
+	ma->prev = malloc_address_top.prev;
+	ma->prev->next = ma;
+	ma->next->prev = ma;
+
+  lis_malloc_address_hash_insert(ma);
+  malloc_address_count++;
 
   return addr.ptr;
 }
@@ -168,27 +404,33 @@ void *lis_realloc( void *p, size_t size )
 	size_t old_size;
 	void *real_address,*address;
 
-	ma = malloc_address_top.next;
-	while (ma->address)
+	ma = lis_malloc_address_find(p);
+	if( ma!=NULL )
 	{
-	    if (ma->address == p) break;
-		ma = ma->next;
-	}
-	if (ma->address)
-	{
+		/* A failed realloc must leave p and its tracking entry intact. */
+		if( size>((size_t)-1)-16 )
+		{
+			return NULL;
+		}
 		old_size       = ma->size;
 		addr.ptr       = malloc(size + 16);
+		if( addr.ptr==NULL )
+		{
+			return NULL;
+		}
 		real_address   = addr.ptr;
 		addr.l        += 0xf;
 		addr.l        &= ~0xf;
 		address        = addr.ptr;
 
-		memcpy(address,p,old_size);
+		memcpy(address,p,old_size<size ? old_size : size);
+		lis_malloc_address_hash_remove(ma);
 		free(ma->real_address);
 
 		ma->address      = address;
 		ma->real_address = real_address;
 		ma->size         = size;
+		lis_malloc_address_hash_insert(ma);
 		return address;
 	}
 	address = realloc(p,size);
@@ -199,13 +441,14 @@ void lis_free(void *p)
 {
   malloc_address *ma;
 
-  ma = malloc_address_top.next;
-  while (ma->address) {
-    if (ma->address == p) break;
-    ma = ma->next;
-  }
-  if (ma->address) {
-    ma->next->prev = ma->prev;
+  ma = lis_malloc_address_find(p);
+	if( ma!=NULL ) {
+    lis_malloc_address_hash_remove(ma);
+		if( malloc_address_count>0 )
+		{
+			malloc_address_count--;
+		}
+		ma->next->prev = ma->prev;
     ma->prev->next = ma->next;
     free(ma->real_address);
 #ifdef USE_MALLOC_TAG
@@ -233,6 +476,11 @@ void lis_free_mat(LIS_MATRIX A)
 			ma = ma->next;
 		}
 		if (ma->address) {
+			lis_malloc_address_hash_remove(ma);
+			if( malloc_address_count>0 )
+			{
+				malloc_address_count--;
+			}
 			ma->next->prev = ma->prev;
 			ma->prev->next = ma->next;
 			ma_bak         = ma->next;
@@ -248,6 +496,11 @@ void lis_free_mat(LIS_MATRIX A)
 			ma = ma->next;
 		}
 		if (ma->address) {
+			lis_malloc_address_hash_remove(ma);
+			if( malloc_address_count>0 )
+			{
+				malloc_address_count--;
+			}
 			ma->next->prev = ma->prev;
 			ma->prev->next = ma->next;
 			ma_bak         = ma->next;
@@ -304,22 +557,16 @@ void lis_free_all()
 	malloc_address_top.address      = NULL;
 	malloc_address_top.real_address = NULL;
 	malloc_address_top.size         = 0;
+	lis_malloc_address_hash_reset();
 	return;
 }
 
 LIS_INT lis_is_malloc( void *p )
 {
-	malloc_address *ma;
-
-	ma = malloc_address_top.next;
-	while (ma->address)
-	{
-	    if (ma->address == p) break;
-		ma = ma->next;
-	}
-	if (ma->address)
+	if( lis_malloc_address_find(p)!=NULL )
 	{
 		return LIS_TRUE;
 	}
+
 	return LIS_FALSE;
 }

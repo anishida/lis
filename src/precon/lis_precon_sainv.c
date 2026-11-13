@@ -138,7 +138,7 @@ LIS_INT lis_precon_create_sainv_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	A      = solver->A;
 	n      = A->n;
 	tol    = solver->params[LIS_PARAMS_DROP-LIS_OPTIONS_LEN];
-	annz   = A->n / 10;
+	annz   = (n>0) ? _min(n,10+A->nnz/n) : 1;
 
 	W      = NULL;
 	ww     = NULL;
@@ -202,6 +202,10 @@ LIS_INT lis_precon_create_sainv_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	}
 
 	for(i=0;i<n;i++) ww[i] = 0;
+	memset(l,0,n*sizeof(LIS_SCALAR));
+	memset(u,0,n*sizeof(LIS_SCALAR));
+	cl = 0;
+	cu = 0;
 	for(i=0;i<n;i++)
 	{
 		W->value[i][0] = 1.0;
@@ -222,8 +226,8 @@ LIS_INT lis_precon_create_sainv_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		nrm = 1.0/nrm;
 
 		/* l = AZ_i */
+		for(k=0;k<cl;k++) l[il[k]] = 0.0;
 		cl = 0;
-		memset(l,0,n*sizeof(LIS_SCALAR));
 		for(k=0;k<Z->nnz[i];k++)
 		{
 			ii = Z->index[i][k];
@@ -244,8 +248,8 @@ LIS_INT lis_precon_create_sainv_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		for(k=0;k<cl;k++) ww[il[k]] = 0;
 
 		/* u = W_i'A */
+		for(k=0;k<cu;k++) u[iu[k]] = 0.0;
 		cu = 0;
-		memset(u,0,n*sizeof(LIS_SCALAR));
 		for(k=0;k<W->nnz[i];k++)
 		{
 			ii = W->index[i][k];
@@ -256,7 +260,7 @@ LIS_INT lis_precon_create_sainv_csr(LIS_SOLVER solver, LIS_PRECON precon)
 					if( jj>n-1 ) continue;
 				#endif
 				u[jj] += A->value[j]*W->value[i][k];
-				if( jj>i && ww[jj]==0 )
+				if( ww[jj]==0 )
 				{
 					ww[jj]   = 1;
 					iu[cu++] = jj;
@@ -323,6 +327,7 @@ LIS_INT lis_precon_create_sainv_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		for(jj=0;jj<cu;jj++)
 		{
 			j = iu[jj];
+			if( j<=i ) continue;
 			dd = u[j]*d[i];
 			for(k=0;k<Z->nnz[j];k++)
 			{

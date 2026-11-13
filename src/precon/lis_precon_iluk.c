@@ -67,6 +67,274 @@ LIS_INT lis_numerical_fact_bsr(LIS_SOLVER solver, LIS_PRECON precon);
 LIS_INT lis_symbolic_fact_vbr(LIS_SOLVER solver, LIS_PRECON precon);
 LIS_INT lis_numerical_fact_vbr(LIS_SOLVER solver, LIS_PRECON precon);
 
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_precon_allocate_ilu_numeric_values"
+static LIS_INT
+lis_precon_allocate_ilu_numeric_values(
+	LIS_MATRIX_ILU A)
+{
+	LIS_INT i,j,n;
+	LIS_INT *created;
+
+	if( A==NULL ||
+		A->nnz==NULL ||
+		A->value==NULL )
+	{
+		return LIS_ERR_ILL_ARG;
+	}
+
+	n = A->n;
+
+	if( n==0 )
+	{
+		return LIS_SUCCESS;
+	}
+
+	created =
+		(LIS_INT *)lis_malloc(
+			n*sizeof(LIS_INT),
+			"lis_precon_allocate_ilu_numeric_values::created");
+
+	if( created==NULL )
+	{
+		LIS_SETERR_MEM(
+			n*sizeof(LIS_INT));
+
+		return LIS_OUT_OF_MEMORY;
+	}
+
+	for(i=0;i<n;i++)
+	{
+		created[i] = 0;
+	}
+
+	for(i=0;i<n;i++)
+	{
+		if( A->nnz[i]<=0 ||
+			A->value[i]!=NULL )
+		{
+			continue;
+		}
+
+		A->value[i] =
+			(LIS_SCALAR *)lis_malloc(
+				A->nnz[i] *
+				sizeof(LIS_SCALAR),
+				"lis_precon_allocate_ilu_numeric_values::row");
+
+		if( A->value[i]==NULL )
+		{
+			for(j=0;j<n;j++)
+			{
+				if( created[j] )
+				{
+					lis_free(
+						A->value[j]);
+
+					A->value[j] = NULL;
+				}
+			}
+
+			lis_free(created);
+
+			LIS_SETERR_MEM(
+				A->nnz[i] *
+				sizeof(LIS_SCALAR));
+
+			return LIS_OUT_OF_MEMORY;
+		}
+
+		created[i] = 1;
+	}
+
+	lis_free(created);
+
+	return LIS_SUCCESS;
+}
+
+
+static void
+lis_precon_release_ilu_numeric_values(
+	LIS_MATRIX_ILU A)
+{
+#ifndef USE_QUAD_PRECISION
+
+	LIS_INT i;
+
+	if( A==NULL ||
+		A->value==NULL )
+	{
+		return;
+	}
+
+	for(i=0;i<A->n;i++)
+	{
+		if( A->nnz[i]>0 &&
+			A->value[i]!=NULL )
+		{
+			lis_free(
+				A->value[i]);
+
+			A->value[i] = NULL;
+		}
+	}
+
+#else
+
+	(void)A;
+
+#endif
+}
+
+
+static LIS_INT
+lis_precon_prepare_half_iluk_update(
+	LIS_PRECON precon)
+{
+	LIS_INT err;
+
+	if( precon==NULL ||
+		precon->L==NULL ||
+		precon->U==NULL )
+	{
+		return LIS_ERR_ILL_ARG;
+	}
+
+	/*
+	 * Accepted half storage may have released normal
+	 * numerical L/U values in a non-quad build.
+	 */
+	err =
+		lis_precon_allocate_ilu_numeric_values(
+			precon->L);
+
+	if( err )
+	{
+		return err;
+	}
+
+	err =
+		lis_precon_allocate_ilu_numeric_values(
+			precon->U);
+
+	if( err )
+	{
+		return err;
+	}
+
+	/*
+	 * The old half factors represent the previous
+	 * numerical matrix state.
+	 */
+	if( precon->half!=NULL )
+	{
+		lis_half_ilu_destroy(
+			precon->half);
+
+		precon->half = NULL;
+	}
+
+	return LIS_SUCCESS;
+}
+
+
+static LIS_INT
+lis_precon_refresh_half_iluk(
+	LIS_SOLVER solver,
+	LIS_PRECON precon)
+{
+	LIS_HALF_ILU half;
+	LIS_REAL underflow;
+	LIS_REAL probe_error;
+	LIS_REAL probe_tolerance;
+	LIS_INT accepted;
+	LIS_INT err;
+	LIS_INT mode;
+
+	if( solver==NULL || precon==NULL )
+	{
+		return LIS_SUCCESS;
+	}
+
+	if( precon->half!=NULL )
+	{
+		lis_half_ilu_destroy(
+			precon->half);
+
+		precon->half = NULL;
+	}
+
+	mode = solver->precon_half_mode;
+
+	if( mode==LIS_PRECON_HALF_OFF )
+	{
+		return LIS_SUCCESS;
+	}
+
+	if( precon->L==NULL ||
+		precon->U==NULL ||
+		precon->D==NULL ||
+		precon->L->bs!=1 ||
+		precon->U->bs!=1 )
+	{
+		return LIS_SUCCESS;
+	}
+
+	half = NULL;
+	underflow = 0.0;
+
+	err = lis_half_ilu_compress(
+		precon->L,
+		precon->U,
+		&half,
+		&underflow);
+
+	if( err || half==NULL )
+	{
+		lis_half_ilu_destroy(half);
+		return LIS_SUCCESS;
+	}
+
+	accepted = LIS_FALSE;
+	probe_error = 0.0;
+	probe_tolerance = 0.0;
+
+	err = lis_half_ilu_assess(
+		precon->L,
+		precon->U,
+		precon->D,
+		half,
+		mode,
+		&accepted,
+		&probe_error,
+		&probe_tolerance);
+
+	if( err || !accepted )
+	{
+		lis_half_ilu_destroy(half);
+		return LIS_SUCCESS;
+	}
+
+	precon->half = half;
+
+	/*
+	 * Symbolic L/U remain alive because half storage borrows
+	 * their pattern.  Only normal numerical values are
+	 * released, and only when quad precision does not need
+	 * them as a fallback representation.
+	 */
+	lis_precon_release_ilu_numeric_values(
+		precon->L);
+
+	lis_precon_release_ilu_numeric_values(
+		precon->U);
+
+	return LIS_SUCCESS;
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "lis_precon_create_iluk"
 LIS_INT lis_precon_create_iluk(LIS_SOLVER solver, LIS_PRECON precon)
@@ -115,6 +383,42 @@ LIS_INT lis_precon_create_iluk(LIS_SOLVER solver, LIS_PRECON precon)
 		lis_psolve_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolve_iluk_vbr;
 /*		lis_psolveh_xxx[LIS_PRECON_TYPE_ILU]  = lis_psolveh_iluk_vbr;*/
 		break;
+	case LIS_MATRIX_OPERATOR:
+	case LIS_MATRIX_USER:
+		if(
+			solver->A->nprocs==1
+			&&
+			solver->A->n==solver->A->gn)
+		{
+			err = lis_symbolic_fact_csr(
+				solver,
+				precon);
+
+			if( err ) return err;
+
+			err = lis_numerical_fact_csr(
+				solver,
+				precon);
+
+			if( err ) return err;
+
+			lis_psolve_xxx[LIS_PRECON_TYPE_ILU] =
+				lis_psolve_iluk_csr;
+
+			lis_psolveh_xxx[LIS_PRECON_TYPE_ILU] =
+				lis_psolveh_iluk_csr;
+
+			precon->is_copy = LIS_FALSE;
+
+			break;
+		}
+
+		/*
+		 * Distributed USER matrices retain the existing
+		 * explicit conversion fallback.
+		 */
+		/* fall through */
+
 	default:
 		A = solver->A;
 		err = lis_matrix_duplicate(A,&B);
@@ -134,6 +438,9 @@ LIS_INT lis_precon_create_iluk(LIS_SOLVER solver, LIS_PRECON precon)
 		precon->is_copy = LIS_TRUE;
 		break;
 	}
+
+	err = lis_precon_refresh_half_iluk(solver,precon);
+	if( err ) return err;
 
 	LIS_DEBUG_FUNC_OUT;
     return LIS_SUCCESS;
@@ -189,6 +496,36 @@ LIS_INT lis_precon_psd_create_iluk(LIS_SOLVER solver, LIS_PRECON precon)
 /*        break;*/
         err = LIS_ERR_NOT_IMPLEMENTED;
 		return err;
+	case LIS_MATRIX_OPERATOR:
+	case LIS_MATRIX_USER:
+		if(
+			solver->A->nprocs==1
+			&&
+			solver->A->n==solver->A->gn)
+		{
+			err = lis_symbolic_fact_csr(
+				solver,
+				precon);
+
+			if( err ) return err;
+
+			lis_psolve_xxx[LIS_PRECON_TYPE_ILU] =
+				lis_psolve_iluk_csr;
+
+			lis_psolveh_xxx[LIS_PRECON_TYPE_ILU] =
+				lis_psolveh_iluk_csr;
+
+			precon->is_copy = LIS_FALSE;
+
+			break;
+		}
+
+		/*
+		 * Distributed USER matrices retain the existing
+		 * explicit conversion fallback.
+		 */
+		/* fall through */
+
 	default:
 		A = solver->A;
 		err = lis_matrix_duplicate(A,&B);
@@ -225,9 +562,36 @@ LIS_INT lis_precon_psd_update_iluk(LIS_SOLVER solver, LIS_PRECON precon)
 	switch( solver->A->matrix_type )
 	{
 	case LIS_MATRIX_CSR:
+		err = lis_precon_prepare_half_iluk_update(
+			precon);
+
+		if( err ) return err;
+
 		err = lis_numerical_fact_csr(solver,precon);
 		if( err ) return err;
+
+		err = lis_precon_refresh_half_iluk(
+			solver,
+			precon);
+
+		if( err ) return err;
 		break;
+	case LIS_MATRIX_OPERATOR:
+	case LIS_MATRIX_USER:
+		if(
+			solver->A->nprocs==1
+			&&
+			solver->A->n==solver->A->gn)
+		{
+			err = lis_numerical_fact_csr(
+				solver,
+				precon);
+
+			if( err ) return err;
+		}
+
+		break;
+
 	case LIS_MATRIX_BSR:
 /*        err = lis_symbolic_fact_bsr(solver,precon);*/
 /*        if( err ) return err;*/
@@ -263,7 +627,7 @@ LIS_INT lis_precon_psd_update_iluk(LIS_SOLVER solver, LIS_PRECON precon)
 LIS_INT lis_symbolic_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 {
 #ifdef _OPENMP
-	LIS_INT	err;
+	LIS_INT err,row_err,get_err;
 	LIS_INT	i,j,k;
 	LIS_INT	n,levfill;
 	LIS_INT	col,ip,it,jpiv,incl,incu,jmin,kmin;
@@ -272,6 +636,7 @@ LIS_INT lis_symbolic_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	LIS_MATRIX A;
 	LIS_MATRIX_ILU L,U;
 	LIS_VECTOR D;
+	LIS_PRECON_ROW_SOURCE *rows,*row;
 
 	LIS_DEBUG_FUNC_IN;
 
@@ -306,6 +671,11 @@ LIS_INT lis_symbolic_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		LIS_SETERR_MEM(n*sizeof(LIS_INT));
 		return LIS_OUT_OF_MEMORY;
 	}
+	memset(
+		ulvl,
+		0,
+		n*sizeof(LIS_INT *));
+
 	levls   = (LIS_INT *)lis_malloc(nprocs*n*sizeof(LIS_INT),"lis_symbolic_fact_csr::levls");
 	if( levls==NULL )
 	{
@@ -325,9 +695,69 @@ LIS_INT lis_symbolic_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		return LIS_OUT_OF_MEMORY;
 	}
 
-	#pragma omp parallel private(i,j,k,is,ie,my_rank,incl,incu,col,jpiv,it,ip,kmin,jmin)
+	rows =
+		(LIS_PRECON_ROW_SOURCE *)lis_malloc(
+			nprocs*sizeof(LIS_PRECON_ROW_SOURCE),
+			"lis_symbolic_fact_csr::rows");
+
+	if( rows==NULL )
+	{
+		LIS_SETERR_MEM(
+			nprocs*sizeof(LIS_PRECON_ROW_SOURCE));
+
+		lis_free2(
+			3,
+			levls,
+			jbuf,
+			iw);
+
+		lis_free(ulvl);
+
+		lis_matrix_ilu_destroy(L);
+		lis_matrix_ilu_destroy(U);
+		lis_vector_destroy(D);
+
+		return LIS_OUT_OF_MEMORY;
+	}
+
+	for(j=0;j<nprocs;j++)
+	{
+		err = lis_precon_row_source_init(
+			A,
+			&rows[j]);
+
+		if( err )
+		{
+			for(k=0;k<j;k++)
+			{
+				lis_precon_row_source_destroy(
+					&rows[k]);
+			}
+
+			lis_free(rows);
+
+			lis_free2(
+				3,
+				levls,
+				jbuf,
+				iw);
+
+			lis_free(ulvl);
+
+			lis_matrix_ilu_destroy(L);
+			lis_matrix_ilu_destroy(U);
+			lis_vector_destroy(D);
+
+			return err;
+		}
+	}
+
+	row_err = LIS_SUCCESS;
+
+	#pragma omp parallel private(i,j,k,is,ie,my_rank,incl,incu,col,jpiv,it,ip,kmin,jmin,get_err,row)
 	{
 		my_rank  = omp_get_thread_num();
+		row = &rows[my_rank];
 		LIS_GET_ISIE(my_rank,nprocs,n,is,ie);
 
 		for(i=is;i<ie;i++) iw[i]=-1;
@@ -337,28 +767,76 @@ LIS_INT lis_symbolic_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 			incl = 0;
 			incu = i;
 
-			for(j=A->ptr[i];j<A->ptr[i+1];j++)
+			get_err = LIS_SUCCESS;
+
+			if( (A->matrix_type==LIS_MATRIX_USER || A->matrix_type==LIS_MATRIX_OPERATOR) )
 			{
-				col = A->index[j];
-				#ifdef USE_MPI
-					if( col>=n ) continue;
-				#endif
-				if( col>=is && col<ie )
+				#pragma omp critical(lis_precon_user_row_access)
 				{
-					if( col < i )
+					get_err =
+						lis_precon_row_source_get(
+							row,
+							i);
+
+					if(
+						get_err
+						&&
+						row_err==LIS_SUCCESS)
 					{
-						jbuf[my_rank*n+incl] = col;
-						levls[my_rank*n+incl] = 0;
-						iw[col] = incl++;
-					}
-					else if( col > i )
-					{
-						jbuf[my_rank*n+incu] = col;
-						levls[my_rank*n+incu] = 0;
-						iw[col] = incu++;
+						row_err = get_err;
 					}
 				}
 			}
+			else
+			{
+				get_err =
+					lis_precon_row_source_get(
+						row,
+						i);
+
+				if( get_err )
+				{
+					#pragma omp critical(lis_precon_row_error)
+					{
+						if( row_err==LIS_SUCCESS )
+						{
+							row_err = get_err;
+						}
+					}
+				}
+			}
+
+			if( get_err )
+			{
+				break;
+			}
+
+			for(j=0;j<row->nnz;j++)
+			{
+				col = row->index[j];
+
+				if(
+					col<is
+					||
+					col>=ie)
+				{
+					continue;
+				}
+
+				if( col<i )
+				{
+					jbuf[my_rank*n+incl] = col;
+					levls[my_rank*n+incl] = 0;
+					iw[col] = incl++;
+				}
+				else if( col>i )
+				{
+					jbuf[my_rank*n+incu] = col;
+					levls[my_rank*n+incu] = 0;
+					iw[col] = incu++;
+				}
+			}
+
 
 			jpiv = -1;
 			while( ++jpiv < incl )
@@ -438,6 +916,39 @@ LIS_INT lis_symbolic_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		}
 	}
 
+	for(j=0;j<nprocs;j++)
+	{
+		lis_precon_row_source_destroy(
+			&rows[j]);
+	}
+
+	lis_free(rows);
+
+	if( row_err )
+	{
+		for(i=0;i<n;i++)
+		{
+			if( ulvl[i]!=NULL )
+			{
+				free(ulvl[i]);
+			}
+		}
+
+		lis_free(ulvl);
+
+		lis_free2(
+			3,
+			levls,
+			jbuf,
+			iw);
+
+		lis_matrix_ilu_destroy(L);
+		lis_matrix_ilu_destroy(U);
+		lis_vector_destroy(D);
+
+		return row_err;
+	}
+
 	precon->L  = L;
 	precon->U  = U;
 	precon->D  = D;
@@ -452,7 +963,7 @@ LIS_INT lis_symbolic_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 #else
-	LIS_INT	err;
+	LIS_INT err,get_err;
 	LIS_INT	i,j,k;
 	LIS_INT	n,levfill;
 	LIS_INT	col,ip,it,jpiv,incl,incu,jmin,kmin;
@@ -460,6 +971,7 @@ LIS_INT lis_symbolic_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 	LIS_MATRIX A;
 	LIS_MATRIX_ILU L,U;
 	LIS_VECTOR D;
+	LIS_PRECON_ROW_SOURCE row;
 
 	LIS_DEBUG_FUNC_IN;
 
@@ -494,6 +1006,11 @@ LIS_INT lis_symbolic_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		LIS_SETERR_MEM(n*sizeof(LIS_INT));
 		return LIS_OUT_OF_MEMORY;
 	}
+	memset(
+		ulvl,
+		0,
+		n*sizeof(LIS_INT *));
+
 	levls   = (LIS_INT *)lis_malloc(n*sizeof(LIS_INT),"lis_symbolic_fact_csr::levls");
 	if( levls==NULL )
 	{
@@ -513,6 +1030,27 @@ LIS_INT lis_symbolic_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		return LIS_OUT_OF_MEMORY;
 	}
 
+	err = lis_precon_row_source_init(
+		A,
+		&row);
+
+	if( err )
+	{
+		lis_free2(
+			3,
+			levls,
+			jbuf,
+			iw);
+
+		lis_free(ulvl);
+
+		lis_matrix_ilu_destroy(L);
+		lis_matrix_ilu_destroy(U);
+		lis_vector_destroy(D);
+
+		return err;
+	}
+
 	for(i=0;i<n;i++) iw[i]=-1;
 
 	for(i=0;i<n;i++)
@@ -520,25 +1058,61 @@ LIS_INT lis_symbolic_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		incl = 0;
 		incu = i;
 
-		for(j=A->ptr[i];j<A->ptr[i+1];j++)
+		get_err =
+			lis_precon_row_source_get(
+				&row,
+				i);
+
+		if( get_err )
 		{
-			col = A->index[j];
+			lis_precon_row_source_destroy(
+				&row);
+
+			for(k=0;k<n;k++)
+			{
+				if( ulvl[k]!=NULL )
+				{
+					free(ulvl[k]);
+				}
+			}
+
+			lis_free(ulvl);
+
+			lis_free2(
+				3,
+				levls,
+				jbuf,
+				iw);
+
+			lis_matrix_ilu_destroy(L);
+			lis_matrix_ilu_destroy(U);
+			lis_vector_destroy(D);
+
+			return get_err;
+		}
+
+		for(j=0;j<row.nnz;j++)
+		{
+			col = row.index[j];
+
 			#ifdef USE_MPI
 				if( col>=n ) continue;
 			#endif
-			if( col < i )
+
+			if( col<i )
 			{
 				jbuf[incl] = col;
 				levls[incl] = 0;
 				iw[col] = incl++;
 			}
-			else if( col > i )
+			else if( col>i )
 			{
 				jbuf[incu] = col;
 				levls[incu] = 0;
 				iw[col] = incu++;
 			}
 		}
+
 
 		jpiv = -1;
 		while( ++jpiv < incl )
@@ -617,6 +1191,9 @@ LIS_INT lis_symbolic_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		}
 	}
 
+	lis_precon_row_source_destroy(
+		&row);
+
 	precon->L  = L;
 	precon->U  = U;
 	precon->D  = D;
@@ -638,20 +1215,28 @@ LIS_INT lis_symbolic_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 {
 #ifdef _OPENMP
-	LIS_INT	i,j,k;
-	LIS_INT	n;
+	LIS_INT i,j,k,err,row_err,get_err;
+	LIS_INT n;
+	LIS_REAL pivot_tol,row_scale,rt;
 	LIS_INT	col,jpos,jrow;
 	LIS_INT	*jw;
 	LIS_INT	is,ie,my_rank,nprocs;
 	LIS_MATRIX A;
 	LIS_MATRIX_ILU L,U;
 	LIS_VECTOR D;
+	LIS_PRECON_ROW_SOURCE *rows,*row;
 
 	LIS_DEBUG_FUNC_IN;
 
 
 	A      = solver->A;
 	n      = A->n;
+	pivot_tol = solver->params[
+	    LIS_PARAMS_ILU_PIVOT_TOL-LIS_OPTIONS_LEN];
+
+	err = lis_precon_check_ilu_pivot_tol(
+	    A,pivot_tol);
+	if( err ) return err;
 	nprocs = omp_get_max_threads();
 
 	L = precon->L;
@@ -666,9 +1251,48 @@ LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		return LIS_OUT_OF_MEMORY;
 	}
 
-	#pragma omp parallel private(i,j,k,is,ie,my_rank,col,jpos,jrow)
+	rows =
+		(LIS_PRECON_ROW_SOURCE *)lis_malloc(
+			nprocs*sizeof(LIS_PRECON_ROW_SOURCE),
+			"lis_numerical_fact_csr::rows");
+
+	if( rows==NULL )
+	{
+		LIS_SETERR_MEM(
+			nprocs*sizeof(LIS_PRECON_ROW_SOURCE));
+
+		lis_free(jw);
+
+		return LIS_OUT_OF_MEMORY;
+	}
+
+	for(j=0;j<nprocs;j++)
+	{
+		err = lis_precon_row_source_init(
+			A,
+			&rows[j]);
+
+		if( err )
+		{
+			for(k=0;k<j;k++)
+			{
+				lis_precon_row_source_destroy(
+					&rows[k]);
+			}
+
+			lis_free(rows);
+			lis_free(jw);
+
+			return err;
+		}
+	}
+
+	row_err = LIS_SUCCESS;
+
+	#pragma omp parallel private(i,j,k,is,ie,my_rank,col,jpos,jrow,row_scale,get_err,row,rt)
 	{
 		my_rank  = omp_get_thread_num();
+		row = &rows[my_rank];
 		LIS_GET_ISIE(my_rank,nprocs,n,is,ie);
 
 		for(i=is;i<ie;i++) jw[i] = -1;
@@ -693,29 +1317,109 @@ LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 				U->value[i][j] = 0;
 			}
 
-			for(j=A->ptr[i];j<A->ptr[i+1];j++)
+			get_err = LIS_SUCCESS;
+
+			if( (A->matrix_type==LIS_MATRIX_USER || A->matrix_type==LIS_MATRIX_OPERATOR) )
 			{
-				col = A->index[j];
-				#ifdef USE_MPI
-					if( col>=n ) continue;
-				#endif
-				if( col>=is && col<ie )
+				#pragma omp critical(lis_precon_user_row_access)
 				{
-					jpos = jw[col];
-					if( col<i )
+					get_err =
+						lis_precon_row_source_get(
+							row,
+							i);
+
+					if(
+						get_err
+						&&
+						row_err==LIS_SUCCESS)
 					{
-						L->value[i][jpos] = A->value[j];
-					}
-					else if( col==i )
-					{
-						D->value[i] = A->value[j];
-					}
-					else
-					{
-						U->value[i][jpos] = A->value[j];
+						row_err = get_err;
 					}
 				}
 			}
+			else
+			{
+				get_err =
+					lis_precon_row_source_get(
+						row,
+						i);
+
+				if( get_err )
+				{
+					#pragma omp critical(lis_precon_row_error)
+					{
+						if( row_err==LIS_SUCCESS )
+						{
+							row_err = get_err;
+						}
+					}
+				}
+			}
+
+			if( get_err )
+			{
+				break;
+			}
+
+			row_scale = 0.0;
+
+			for(j=0;j<row->nnz;j++)
+			{
+				col = row->index[j];
+
+				if( pivot_tol>0.0 )
+				{
+					rt = fabs(
+						row->value[j]);
+
+					if( rt>row_scale )
+					{
+						row_scale = rt;
+					}
+				}
+
+				if(
+					col<is
+					||
+					col>=ie)
+				{
+					continue;
+				}
+
+				jpos = jw[col];
+
+				/* Only frozen ILUT may omit entries present in A. */
+				if( jpos==-1 )
+				{
+					if( precon->precon_type==LIS_PRECON_TYPE_ILUT )
+						continue;
+					get_err=LIS_ERR_ILL_ARG;
+					#pragma omp critical(lis_precon_row_error)
+					{
+						if( row_err==LIS_SUCCESS ) row_err=get_err;
+					}
+					break;
+				}
+
+				if( col<i )
+				{
+					L->value[i][jpos] =
+						row->value[j];
+				}
+				else if( col==i )
+				{
+					D->value[i] =
+						row->value[j];
+				}
+				else
+				{
+					U->value[i][jpos] =
+						row->value[j];
+				}
+			}
+
+
+			if( get_err ) break;
 
 			for(j=0;j<L->nnz[i];j++)
 			{
@@ -753,27 +1457,59 @@ LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 				col = U->index[i][j];
 				jw[col] = -1;
 			}
+			if( pivot_tol>0.0 )
+			{
+			    row_scale = row_scale;
+			    D->value[i] =
+			        lis_precon_regularize_ilu_pivot(
+			            D->value[i],
+			            row_scale,
+			            pivot_tol);
+			}
 			D->value[i] = 1.0 / D->value[i];
 		}
 	}
+	for(j=0;j<nprocs;j++)
+	{
+		lis_precon_row_source_destroy(
+			&rows[j]);
+	}
+
+	lis_free(rows);
+
+	if( row_err )
+	{
+		lis_free(jw);
+
+		return row_err;
+	}
+
 	lis_free(jw);
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 #else
-	LIS_INT	i,j,k;
-	LIS_INT	n;
+	LIS_INT i,j,k,err,get_err;
+	LIS_INT n;
+	LIS_REAL pivot_tol,row_scale,rt;
 	LIS_INT	col,jpos,jrow;
 	LIS_INT	*jw;
 	LIS_MATRIX A;
 	LIS_MATRIX_ILU L,U;
 	LIS_VECTOR D;
+	LIS_PRECON_ROW_SOURCE row;
 
 	LIS_DEBUG_FUNC_IN;
 
 
 	A      = solver->A;
 	n      = A->n;
+	pivot_tol = solver->params[
+	    LIS_PARAMS_ILU_PIVOT_TOL-LIS_OPTIONS_LEN];
+
+	err = lis_precon_check_ilu_pivot_tol(
+	    A,pivot_tol);
+	if( err ) return err;
 
 	L = precon->L;
 	U = precon->U;
@@ -787,6 +1523,18 @@ LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		return LIS_OUT_OF_MEMORY;
 	}
 
+
+	err =
+		lis_precon_row_source_init(
+			A,
+			&row);
+
+	if( err )
+	{
+		lis_free(jw);
+
+		return err;
+	}
 
 	for(i=0;i<n;i++) jw[i] = -1;
 
@@ -809,26 +1557,71 @@ LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 			U->value[i][j] = 0;
 		}
 
-		for(j=A->ptr[i];j<A->ptr[i+1];j++)
+		get_err =
+			lis_precon_row_source_get(
+				&row,
+				i);
+
+		if( get_err )
 		{
-			col = A->index[j];
+			lis_precon_row_source_destroy(
+				&row);
+
+			lis_free(jw);
+
+			return get_err;
+		}
+
+		row_scale = 0.0;
+
+		for(j=0;j<row.nnz;j++)
+		{
+			col = row.index[j];
+
+			if( pivot_tol>0.0 )
+			{
+				rt = fabs(
+					row.value[j]);
+
+				if( rt>row_scale )
+				{
+					row_scale = rt;
+				}
+			}
+
 			#ifdef USE_MPI
 				if( col>=n ) continue;
 			#endif
+
 			jpos = jw[col];
+
+			/* Only frozen ILUT may omit entries present in A. */
+			if( jpos==-1 )
+			{
+				if( precon->precon_type==LIS_PRECON_TYPE_ILUT )
+					continue;
+				lis_precon_row_source_destroy(&row);
+				lis_free(jw);
+				return LIS_ERR_ILL_ARG;
+			}
+
 			if( col<i )
 			{
-				L->value[i][jpos] = A->value[j];
+				L->value[i][jpos] =
+					row.value[j];
 			}
 			else if( col==i )
 			{
-				D->value[i] = A->value[j];
+				D->value[i] =
+					row.value[j];
 			}
 			else
 			{
-				U->value[i][jpos] = A->value[j];
+				U->value[i][jpos] =
+					row.value[j];
 			}
 		}
+
 
 		for(j=0;j<L->nnz[i];j++)
 		{
@@ -866,8 +1659,20 @@ LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon)
 			col = U->index[i][j];
 			jw[col] = -1;
 		}
+		if( pivot_tol>0.0 )
+		{
+		    row_scale = row_scale;
+		    D->value[i] =
+		        lis_precon_regularize_ilu_pivot(
+		            D->value[i],
+		            row_scale,
+		            pivot_tol);
+		}
 		D->value[i] = 1.0 / D->value[i];
 	}
+	lis_precon_row_source_destroy(
+		&row);
+
 	lis_free(jw);
 
 	LIS_DEBUG_FUNC_OUT;
@@ -894,6 +1699,20 @@ LIS_INT lis_psolve_iluk_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 	LIS_DEBUG_FUNC_IN;
 
 	precon = solver->precon;
+
+#ifdef USE_QUAD_PRECISION
+	if( precon->half!=NULL &&
+		B->precision==LIS_PRECISION_DEFAULT )
+#else
+	if( precon->half!=NULL )
+#endif
+	{
+		return lis_half_ilu_psolve(
+			solver,
+			B,
+			X);
+	}
+
 	L = precon->L;
 	U = precon->U;
 	D = precon->D;
@@ -1004,6 +1823,20 @@ LIS_INT lis_psolve_iluk_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 	LIS_DEBUG_FUNC_IN;
 
 	precon = solver->precon;
+
+#ifdef USE_QUAD_PRECISION
+	if( precon->half!=NULL &&
+		B->precision==LIS_PRECISION_DEFAULT )
+#else
+	if( precon->half!=NULL )
+#endif
+	{
+		return lis_half_ilu_psolve(
+			solver,
+			B,
+			X);
+	}
+
 	L = precon->L;
 	U = precon->U;
 	D = precon->D;
@@ -1100,6 +1933,20 @@ LIS_INT lis_psolveh_iluk_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 	LIS_DEBUG_FUNC_IN;
 
 	precon = solver->precon;
+
+#ifdef USE_QUAD_PRECISION
+	if( precon->half!=NULL &&
+		B->precision==LIS_PRECISION_DEFAULT )
+#else
+	if( precon->half!=NULL )
+#endif
+	{
+		return lis_half_ilu_psolveh(
+			solver,
+			B,
+			X);
+	}
+
 	L = precon->L;
 	U = precon->U;
 	D = precon->D;
@@ -1206,6 +2053,20 @@ LIS_INT lis_psolveh_iluk_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
 	LIS_DEBUG_FUNC_IN;
 
 	precon = solver->precon;
+
+#ifdef USE_QUAD_PRECISION
+	if( precon->half!=NULL &&
+		B->precision==LIS_PRECISION_DEFAULT )
+#else
+	if( precon->half!=NULL )
+#endif
+	{
+		return lis_half_ilu_psolveh(
+			solver,
+			B,
+			X);
+	}
+
 	L = precon->L;
 	U = precon->U;
 	D = precon->D;

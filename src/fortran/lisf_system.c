@@ -155,7 +155,7 @@ void lis_set_argv_begin_f(LIS_INT *argc, LIS_INT *ierr)
 
 #undef __FUNC__
 #define __FUNC__ "lis_set_argv_f"
-void lis_set_argv_f(LIS_INT *no, char *argv, LIS_INT *ierr, LIS_INT len)
+void lis_set_argv_f(LIS_INT *no, char *argv, LIS_INT *ierr, LIS_FORTRAN_CHARLEN len)
 {
 	LIS_INT i;
 	char *p;
@@ -221,7 +221,7 @@ void lis_arg2args_f(LIS_INT *ierr)
 
 #undef __FUNC__
 #define __FUNC__ "lis_input_f"
-void lis_input_f(LIS_MATRIX_F *A, LIS_VECTOR_F *b, LIS_VECTOR_F *x, char *filename, LIS_INT *ierr, LIS_INT len)
+void lis_input_f(LIS_MATRIX_F *A, LIS_VECTOR_F *b, LIS_VECTOR_F *x, char *filename, LIS_INT *ierr, LIS_FORTRAN_CHARLEN len)
 {
 	char buf[1024];
 	char *p;
@@ -246,7 +246,7 @@ void lis_input_f(LIS_MATRIX_F *A, LIS_VECTOR_F *b, LIS_VECTOR_F *x, char *filena
 
 #undef __FUNC__
 #define __FUNC__ "lis_input_matrix_f"
-void lis_input_matrix_f(LIS_MATRIX_F *A, char *filename, LIS_INT *ierr, LIS_INT len)
+void lis_input_matrix_f(LIS_MATRIX_F *A, char *filename, LIS_INT *ierr, LIS_FORTRAN_CHARLEN len)
 {
 	char buf[1024];
 	char *p;
@@ -272,7 +272,7 @@ void lis_input_matrix_f(LIS_MATRIX_F *A, char *filename, LIS_INT *ierr, LIS_INT 
 
 #undef __FUNC__
 #define __FUNC__ "lis_input_vector_f"
-void lis_input_vector_f(LIS_VECTOR_F *v, char *filename, LIS_INT *ierr, LIS_INT len)
+void lis_input_vector_f(LIS_VECTOR_F *v, char *filename, LIS_INT *ierr, LIS_FORTRAN_CHARLEN len)
 {
 	char buf[1024];
 	char *p;
@@ -298,7 +298,7 @@ void lis_input_vector_f(LIS_VECTOR_F *v, char *filename, LIS_INT *ierr, LIS_INT 
 
 #undef __FUNC__
 #define __FUNC__ "lis_output_f"
-void lis_output_f(LIS_MATRIX_F *A, LIS_VECTOR_F *b, LIS_VECTOR_F *x, LIS_INT *mode, char *path, LIS_INT *ierr, LIS_INT len)
+void lis_output_f(LIS_MATRIX_F *A, LIS_VECTOR_F *b, LIS_VECTOR_F *x, LIS_INT *mode, char *path, LIS_INT *ierr, LIS_FORTRAN_CHARLEN len)
 {
 	char buf[1024];
 	char *p;
@@ -324,7 +324,7 @@ void lis_output_f(LIS_MATRIX_F *A, LIS_VECTOR_F *b, LIS_VECTOR_F *x, LIS_INT *mo
 
 #undef __FUNC__
 #define __FUNC__ "lis_output_matrix_f"
-void lis_output_matrix_f(LIS_MATRIX_F *A, LIS_INT *mode, char *path, LIS_INT *ierr, LIS_INT len)
+void lis_output_matrix_f(LIS_MATRIX_F *A, LIS_INT *mode, char *path, LIS_INT *ierr, LIS_FORTRAN_CHARLEN len)
 {
 	char buf[1024];
 	char *p;
@@ -350,7 +350,7 @@ void lis_output_matrix_f(LIS_MATRIX_F *A, LIS_INT *mode, char *path, LIS_INT *ie
 
 #undef __FUNC__
 #define __FUNC__ "lis_output_vector_f"
-void lis_output_vector_f(LIS_VECTOR_F *v, LIS_INT *format, char *filename, LIS_INT *ierr, LIS_INT len)
+void lis_output_vector_f(LIS_VECTOR_F *v, LIS_INT *format, char *filename, LIS_INT *ierr, LIS_FORTRAN_CHARLEN len)
 {
 	char buf[1024];
 	char *p;
@@ -376,7 +376,7 @@ void lis_output_vector_f(LIS_VECTOR_F *v, LIS_INT *format, char *filename, LIS_I
 
 #undef __FUNC__
 #define __FUNC__ "lis_solver_output_rhistory_f"
-void lis_solver_output_rhistory_f(LIS_SOLVER_F *solver, char *filename, LIS_INT *ierr, LIS_INT len)
+void lis_solver_output_rhistory_f(LIS_SOLVER_F *solver, char *filename, LIS_INT *ierr, LIS_FORTRAN_CHARLEN len)
 {
 	char buf[1024];
 	char *p;
@@ -402,7 +402,7 @@ void lis_solver_output_rhistory_f(LIS_SOLVER_F *solver, char *filename, LIS_INT 
 
 #undef __FUNC__
 #define __FUNC__ "lis_esolver_output_rhistory_f"
-void lis_esolver_output_rhistory_f(LIS_ESOLVER_F *esolver, char *filename, LIS_INT *ierr, LIS_INT len)
+void lis_esolver_output_rhistory_f(LIS_ESOLVER_F *esolver, char *filename, LIS_INT *ierr, LIS_FORTRAN_CHARLEN len)
 {
 	char buf[1024];
 	char *p;

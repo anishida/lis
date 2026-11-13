@@ -9,7 +9,7 @@ RM = del
 
 # See win32.mak for details. 
 
-!include <win32.mak>
+#!include <win32.mak>
 #!include <C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\Include\win32.mak>
 
 
@@ -290,13 +290,13 @@ etest4f.exe: ..\test\$*.obj
 	$(LINKER) $(LDFLAGS) $*.obj lis.lib 
 
 .c.obj:
-	$(CC) $(CFLAGS) $*.c
+	$(CC) -c $(CFLAGS) $*.c
 
 .f.obj:
-	$(FC) $(FFLAGS) $*.f 
+	$(FC) -c $(FFLAGS) $*.f 
 
 .f90.obj:
-	$(FC) $(FFLAGS) $*.f90
+	$(FC) -c $(FFLAGS) $*.f90
 
 .obj.exe:
 	$(LINKER) $(LDFLAGS) $*.obj lis.lib 

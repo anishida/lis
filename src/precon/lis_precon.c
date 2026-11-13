@@ -45,6 +45,8 @@
 #ifdef USE_MPI
 	#include <mpi.h>
 #endif
+#include <math.h>
+#include <limits.h>
 #include "lislib.h"
 
 /************************************************
@@ -55,44 +57,85 @@
  * lis_psolveh
  ************************************************/
 
+
+static LIS_INT
+lis_precon_builtin_unavailable(
+    LIS_SOLVER solver,
+    LIS_PRECON precon)
+{
+    (void)solver;
+    (void)precon;
+
+    return LIS_ERR_NOT_IMPLEMENTED;
+}
+
+
+static LIS_INT
+lis_psolve_builtin_unavailable(
+    LIS_SOLVER solver,
+    LIS_VECTOR b,
+    LIS_VECTOR x)
+{
+    (void)solver;
+    (void)b;
+    (void)x;
+
+    return LIS_ERR_NOT_IMPLEMENTED;
+}
+
+
 LIS_PRECON_CREATE_XXX lis_precon_create_xxx[] = {
-	lis_precon_create_none, lis_precon_create_jacobi, lis_precon_create_iluk,
-	lis_precon_create_ssor, lis_precon_create_hybrid, lis_precon_create_is,
-	lis_precon_create_sainv,lis_precon_create_saamg,  lis_precon_create_iluc,
-	lis_precon_create_ilut, lis_precon_create_bjacobi
+        lis_precon_create_none, lis_precon_create_jacobi, lis_precon_create_iluk,
+        lis_precon_create_ssor, lis_precon_create_hybrid, lis_precon_create_is,
+        lis_precon_create_sainv,lis_precon_create_saamg,  lis_precon_create_iluc,
+        lis_precon_create_ilut, lis_precon_create_bjacobi,
+        lis_precon_builtin_unavailable,
+        lis_precon_create_mfamg
 };
 
 /*NEH support for extended "solve_kernel" workflow*/
 LIS_PRECON_PSD_CREATE_XXX lis_precon_psd_create_xxx[] = {
-	lis_precon_create_none, NULL,                        lis_precon_psd_create_iluk,
-	NULL,                   NULL,                        NULL,
-	NULL,                   lis_precon_psd_create_saamg, NULL,
-	NULL,                   NULL
+        lis_precon_create_none, NULL,                        lis_precon_psd_create_iluk,
+        NULL,                   NULL,                        NULL,
+        NULL,                   lis_precon_psd_create_saamg, NULL,
+        NULL,                   NULL,
+        lis_precon_builtin_unavailable,
+        lis_precon_create_mfamg
 };
 
 /*NEH support for extended "solve_kernel" workflow*/
 LIS_PRECON_PSD_UPDATE_XXX lis_precon_psd_update_xxx[] = {
-	NULL,                   NULL,                        lis_precon_psd_update_iluk,
-	NULL,                   NULL,                        NULL,
-	NULL,                   lis_precon_psd_update_saamg, NULL,
-	NULL,                   NULL
+        NULL,                   NULL,                        lis_precon_psd_update_iluk,
+        NULL,                   NULL,                        NULL,
+        NULL,                   lis_precon_psd_update_saamg, NULL,
+        NULL,                   NULL,
+        lis_precon_builtin_unavailable,
+        lis_precon_psd_update_mfamg
 };
 
 LIS_PSOLVE_XXX lis_psolve_xxx[] = {
-	lis_psolve_none,     lis_psolve_jacobi, lis_psolve_iluk_csr,
-	lis_psolve_ssor,     lis_psolve_hybrid, lis_psolve_none,
-	lis_psolve_sainv,    lis_psolve_saamg,  lis_psolve_iluc,
-	lis_psolve_ilut_csr, lis_psolve_bjacobi, lis_psolve_adds
+        lis_psolve_none,     lis_psolve_jacobi, lis_psolve_iluk_csr,
+        lis_psolve_ssor,     lis_psolve_hybrid, lis_psolve_none,
+        lis_psolve_sainv,    lis_psolve_saamg,  lis_psolve_iluc,
+        lis_psolve_ilut_csr, lis_psolve_bjacobi, lis_psolve_adds,
+        lis_psolve_mfamg
 };
 
 LIS_PSOLVEH_XXX lis_psolveh_xxx[] = {
-	lis_psolveh_none,     lis_psolveh_jacobi, lis_psolveh_iluk_csr,
-	lis_psolveh_ssor,     lis_psolveh_hybrid, lis_psolveh_none,
-	lis_psolveh_sainv,    lis_psolveh_saamg,  lis_psolveh_iluc,
-	lis_psolveh_ilut_csr, lis_psolveh_bjacobi, lis_psolveh_adds
+        lis_psolveh_none,     lis_psolveh_jacobi, lis_psolveh_iluk_csr,
+        lis_psolveh_ssor,     lis_psolveh_hybrid, lis_psolveh_none,
+        lis_psolveh_sainv,    lis_psolveh_saamg,  lis_psolveh_iluc,
+        lis_psolveh_ilut_csr, lis_psolveh_bjacobi, lis_psolveh_adds,
+        lis_psolve_builtin_unavailable
 };
 
 LIS_PRECON_REGISTER *precon_register_top = NULL;
+
+static LIS_PRECON_PSD_CREATE_XXX
+        precon_register_psd_create[LIS_PRECON_REGISTER_MAX] = {NULL};
+
+static LIS_PRECON_PSD_UPDATE_XXX
+        precon_register_psd_update[LIS_PRECON_REGISTER_MAX] = {NULL};
 LIS_INT	precon_register_type = LIS_PRECON_TYPE_USERDEF;
 
 #if defined(USE_SAAMG)
@@ -100,6 +143,541 @@ LIS_INT	precon_register_type = LIS_PRECON_TYPE_USERDEF;
 	extern char *f_v_cycle_ptr;
 	extern char *f_clear_matrix_ptr;
 #endif
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_precon_row_source_init"
+LIS_INT lis_precon_row_source_init_mode(
+	LIS_MATRIX A,
+	LIS_PRECON_ROW_SOURCE *source,LIS_INT raw_scratch)
+{
+	if( A==NULL || source==NULL )
+	{
+		return LIS_ERR_ILL_ARG;
+	}
+
+	memset(source,0,sizeof(*source));
+	source->A = A;
+	source->raw_scratch=raw_scratch;
+
+	switch( A->matrix_type )
+	{
+	case LIS_MATRIX_CSR:
+		return LIS_SUCCESS;
+
+	case LIS_MATRIX_OPERATOR:
+		return lis_precon_operator_row_source_init(source);
+
+	case LIS_MATRIX_USER:
+		/*
+		 * USER callbacks expose global column indices.  In serial
+		 * mode global and local numbering coincide.  Distributed
+		 * USER matrices keep the existing explicit-storage path
+		 * until a direct local/halo mapping is available.
+		 */
+		if( A->nprocs!=1 || A->n!=A->gn )
+		{
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
+
+		return LIS_SUCCESS;
+
+	default:
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+}
+
+
+void *lis_precon_row_source_alloc(
+    LIS_PRECON_ROW_SOURCE *source,size_t bytes,char *tag)
+{
+    return source->raw_scratch ? malloc(bytes) : lis_malloc(bytes,tag);
+}
+
+void lis_precon_row_source_release(
+    LIS_PRECON_ROW_SOURCE *source,void *ptr)
+{
+    if(source->raw_scratch) free(ptr);
+    else lis_free(ptr);
+}
+
+LIS_INT lis_precon_row_source_init(
+    LIS_MATRIX A,LIS_PRECON_ROW_SOURCE *source)
+{
+    return lis_precon_row_source_init_mode(A,source,LIS_FALSE);
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_precon_row_source_destroy"
+void lis_precon_row_source_destroy(
+	LIS_PRECON_ROW_SOURCE *source)
+{
+	if( source==NULL )
+	{
+		return;
+	}
+
+	if( source->index_buffer!=NULL )
+	{
+		lis_precon_row_source_release(source,source->index_buffer);
+	}
+
+	if( source->value_buffer!=NULL )
+	{
+		lis_precon_row_source_release(source,source->value_buffer);
+	}
+
+	lis_precon_operator_row_source_destroy(source);
+
+	memset(source,0,sizeof(*source));
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_precon_row_source_get"
+LIS_INT lis_precon_row_source_get(
+	LIS_PRECON_ROW_SOURCE *source,
+	LIS_INT local_row)
+{
+	LIS_MATRIX A;
+	LIS_INT err;
+	LIS_INT needed;
+	LIS_INT count;
+	LIS_INT k;
+	LIS_INT *new_index;
+	LIS_SCALAR *new_value;
+
+	if(
+		source==NULL
+		||
+		source->A==NULL)
+	{
+		return LIS_ERR_ILL_ARG;
+	}
+
+	A = source->A;
+
+	if(
+		local_row<0
+		||
+		local_row>=A->n)
+	{
+		return LIS_ERR_ILL_ARG;
+	}
+
+	source->index = NULL;
+	source->value = NULL;
+	source->nnz = 0;
+
+
+	/*
+	 * Native CSR: expose the existing row directly.
+	 * No allocation and no value/index copy.
+	 */
+	if( A->matrix_type==LIS_MATRIX_CSR )
+	{
+		if( A->ptr==NULL )
+		{
+			return LIS_ERR_ILL_ARG;
+		}
+
+		if(
+			A->ptr[local_row]<0
+			||
+			A->ptr[local_row+1]<A->ptr[local_row])
+		{
+			return LIS_ERR_ILL_ARG;
+		}
+
+		count =
+			A->ptr[local_row+1]
+			-
+			A->ptr[local_row];
+
+		if(
+			count>0
+			&&
+			(
+				A->index==NULL
+				||
+				A->value==NULL
+			))
+		{
+			return LIS_ERR_ILL_ARG;
+		}
+
+		source->nnz = count;
+
+		if( count>0 )
+		{
+			source->index =
+				&A->index[A->ptr[local_row]];
+
+			source->value =
+				&A->value[A->ptr[local_row]];
+		}
+
+		return LIS_SUCCESS;
+	}
+
+
+	if( A->matrix_type==LIS_MATRIX_OPERATOR )
+	{
+		return lis_precon_operator_row_source_get(source,local_row);
+	}
+
+	if( A->matrix_type!=LIS_MATRIX_USER )
+	{
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
+	if( A->nprocs!=1 || A->n!=A->gn )
+	{
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
+
+	/*
+	 * First callback invocation is a row-size query.
+	 */
+	needed = 0;
+
+	err = lis_matrix_get_user_row(
+		A,
+		local_row,
+		&needed,
+		NULL,
+		NULL);
+
+	if( err )
+	{
+		return err;
+	}
+
+	if( needed<0 )
+	{
+		return LIS_ERR_ILL_ARG;
+	}
+
+
+	/*
+	 * Grow only to the largest row observed so far.
+	 * There is never storage proportional to total matrix nnz here.
+	 */
+	if( needed>source->capacity )
+	{
+		new_index = NULL;
+		new_value = NULL;
+
+		if( needed>0 )
+		{
+			new_index =
+				(LIS_INT *)lis_precon_row_source_alloc(source,
+					needed*sizeof(LIS_INT),
+					"lis_precon_row_source_get::index");
+
+			if( new_index==NULL )
+			{
+				LIS_SETERR_MEM(
+					needed*sizeof(LIS_INT));
+
+				return LIS_OUT_OF_MEMORY;
+			}
+
+			new_value =
+				(LIS_SCALAR *)lis_precon_row_source_alloc(source,
+					needed*sizeof(LIS_SCALAR),
+					"lis_precon_row_source_get::value");
+
+			if( new_value==NULL )
+			{
+				lis_precon_row_source_release(source,new_index);
+
+				LIS_SETERR_MEM(
+					needed*sizeof(LIS_SCALAR));
+
+				return LIS_OUT_OF_MEMORY;
+			}
+		}
+
+		if( source->index_buffer!=NULL )
+		{
+			lis_precon_row_source_release(source,source->index_buffer);
+		}
+
+		if( source->value_buffer!=NULL )
+		{
+			lis_precon_row_source_release(source,source->value_buffer);
+		}
+
+		source->index_buffer = new_index;
+		source->value_buffer = new_value;
+		source->capacity = needed;
+	}
+
+
+	if( needed>0 )
+	{
+		count = source->capacity;
+
+		err = lis_matrix_get_user_row(
+			A,
+			local_row,
+			&count,
+			source->index_buffer,
+			source->value_buffer);
+
+		if( err )
+		{
+			return err;
+		}
+
+		if( count!=needed )
+		{
+			return LIS_ERR_ILL_ARG;
+		}
+
+		/*
+		 * USER columns are global.  The current direct path is
+		 * intentionally serial, therefore the same values are also
+		 * valid local column indices for the ILU-family algorithms.
+		 */
+		for(k=0;k<count;k++)
+		{
+			if(
+				source->index_buffer[k]<0
+				||
+				source->index_buffer[k]>=A->n)
+			{
+				return LIS_ERR_ILL_ARG;
+			}
+		}
+
+		source->index =
+			source->index_buffer;
+
+		source->value =
+			source->value_buffer;
+	}
+
+	source->nnz = needed;
+
+	return LIS_SUCCESS;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_precon_row_source_count_nnz"
+LIS_INT lis_precon_row_source_count_nnz(LIS_MATRIX A,LIS_INT *nnz)
+{
+	LIS_PRECON_ROW_SOURCE source;
+	LIS_INT err,i,total=0;
+	if(A==NULL || nnz==NULL) return LIS_ERR_ILL_ARG;
+	if(A->matrix_type==LIS_MATRIX_CSR){ if(A->nnz<0) return LIS_ERR_ILL_ARG; *nnz=A->nnz; return LIS_SUCCESS; }
+	err=lis_precon_row_source_init(A,&source); if(err) return err;
+	for(i=0;i<A->n;i++){
+		err=lis_precon_row_source_get(&source,i); if(err) break;
+		if(source.nnz<0 || total>INT_MAX-source.nnz){ err=LIS_ERR_ILL_ARG; break; }
+		total+=source.nnz;
+	}
+	lis_precon_row_source_destroy(&source);
+	if(err) return err; *nnz=total; return LIS_SUCCESS;
+}
+
+
+
+#undef __FUNC__
+LIS_REAL lis_precon_csr_row_scale(
+    LIS_MATRIX A,
+    LIS_INT row)
+{
+    LIS_INT j;
+    LIS_REAL scale,t;
+
+    scale = 0.0;
+
+    if( A==NULL || row<0 || row>=A->n )
+    {
+        return scale;
+    }
+
+    if( A->is_splited &&
+        A->D!=NULL &&
+        A->L!=NULL &&
+        A->U!=NULL )
+    {
+        scale = fabs(A->D->value[row]);
+
+        for(j=A->L->ptr[row];j<A->L->ptr[row+1];j++)
+        {
+
+            t = fabs(A->L->value[j]);
+            if( t>scale ) scale = t;
+        }
+
+        for(j=A->U->ptr[row];j<A->U->ptr[row+1];j++)
+        {
+
+            t = fabs(A->U->value[j]);
+            if( t>scale ) scale = t;
+        }
+    }
+    else
+    {
+        for(j=A->ptr[row];j<A->ptr[row+1];j++)
+        {
+
+            t = fabs(A->value[j]);
+            if( t>scale ) scale = t;
+        }
+    }
+
+    return scale;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_precon_check_ilu_pivot_tol"
+LIS_INT lis_precon_check_ilu_pivot_tol(
+	LIS_MATRIX A,
+	LIS_REAL tol)
+{
+	LIS_INT i,j,err;
+	LIS_REAL scale,t;
+	LIS_PRECON_ROW_SOURCE source;
+
+	if( tol<0.0 )
+	{
+		LIS_SETERR1(
+			LIS_ERR_ILL_ARG,
+			"ILU pivot tolerance (%e) is less than 0\n",
+			(double)tol);
+		return LIS_ERR_ILL_ARG;
+	}
+
+	if( tol==0.0 )
+	{
+		return LIS_SUCCESS;
+	}
+
+	/*
+	 * USER matrices have no explicit CSR storage.  Validate their
+	 * row scale directly through the row-access capability.
+	 */
+	if( A->matrix_type==LIS_MATRIX_USER ||
+	    A->matrix_type==LIS_MATRIX_OPERATOR )
+	{
+		err = lis_precon_row_source_init(
+			A,
+			&source);
+
+		if( err )
+		{
+			return err;
+		}
+
+		for(i=0;i<A->n;i++)
+		{
+			err = lis_precon_row_source_get(
+				&source,
+				i);
+
+			if( err )
+			{
+				lis_precon_row_source_destroy(
+					&source);
+
+				return err;
+			}
+
+			scale = 0.0;
+
+			for(j=0;j<source.nnz;j++)
+			{
+				t = fabs(
+					source.value[j]);
+
+				if( t>scale )
+				{
+					scale = t;
+				}
+			}
+
+			if( !(scale>0.0) )
+			{
+				lis_precon_row_source_destroy(
+					&source);
+
+				LIS_SETERR1(
+					LIS_BREAKDOWN,
+					"zero row scale at row %D\n",
+					i);
+
+				return LIS_BREAKDOWN;
+			}
+		}
+
+		lis_precon_row_source_destroy(
+			&source);
+
+		return LIS_SUCCESS;
+	}
+
+	/*
+	 * Existing explicit-storage path.
+	 */
+	for(i=0;i<A->n;i++)
+	{
+		scale =
+			lis_precon_csr_row_scale(
+				A,
+				i);
+
+		if( !(scale>0.0) )
+		{
+			LIS_SETERR1(
+				LIS_BREAKDOWN,
+				"zero row scale at row %D\n",
+				i);
+
+			return LIS_BREAKDOWN;
+		}
+	}
+
+	return LIS_SUCCESS;
+}
+
+
+LIS_SCALAR lis_precon_regularize_ilu_pivot(
+    LIS_SCALAR pivot,
+    LIS_REAL row_scale,
+    LIS_REAL tol)
+{
+    LIS_REAL mag,limit;
+
+    if( tol<=0.0 )
+    {
+        return pivot;
+    }
+
+    limit = tol * row_scale;
+    mag   = fabs(pivot);
+
+    if( mag < limit )
+    {
+        if( mag>0.0 )
+        {
+            pivot *= (LIS_SCALAR)(limit/mag);
+        }
+        else
+        {
+            pivot = (LIS_SCALAR)limit;
+        }
+    }
+
+    return pivot;
+}
+
 
 #undef __FUNC__
 #define __FUNC__ "lis_precon_init"
@@ -112,6 +690,47 @@ LIS_INT lis_precon_init(LIS_PRECON precon)
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_precon_set_user_data"
+LIS_INT lis_precon_set_user_data(LIS_PRECON precon, void *user_data)
+{
+    LIS_DEBUG_FUNC_IN;
+
+    if( precon==NULL )
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,"preconditioner is NULL\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    precon->user_data = user_data;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_precon_get_user_data"
+LIS_INT lis_precon_get_user_data(LIS_PRECON precon, void **user_data)
+{
+    LIS_DEBUG_FUNC_IN;
+
+    if( precon==NULL )
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,"preconditioner is NULL\n");
+        return LIS_ERR_ILL_ARG;
+    }
+    if( user_data==NULL )
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,"user_data output pointer is NULL\n");
+        return LIS_ERR_ILL_ARG;
+    }
+
+    *user_data = precon->user_data;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
 }
 
 #undef __FUNC__
@@ -137,13 +756,31 @@ LIS_INT lis_precon_create(LIS_SOLVER solver, LIS_PRECON *precon)
 
 	if( precon_type>=LIS_PRECON_TYPE_USERDEF )
 	{
+		(*precon)->user_destroy =
+		    precon_register_top[
+		        precon_type-LIS_PRECON_TYPE_USERDEF].pdestroy;
 		err = precon_register_top[precon_type-LIS_PRECON_TYPE_USERDEF].pcreate(solver,*precon);
 	}
-	else if( precon_type && solver->options[LIS_OPTIONS_ADDS] )
-	{
-		err = lis_precon_create_adds(solver,*precon);
-		(*precon)->precon_type = LIS_PRECON_TYPE_ADDS;
-	}
+	else if( precon_type==LIS_PRECON_TYPE_MFAMG &&
+         solver->options[LIS_OPTIONS_ADDS] )
+    {
+        LIS_SETERR(
+            LIS_ERR_NOT_IMPLEMENTED,
+            "MFAMG does not support additive Schwarz in the two-level implementation\n");
+
+        err =
+            LIS_ERR_NOT_IMPLEMENTED;
+    }
+    else if( precon_type && solver->options[LIS_OPTIONS_ADDS] )
+    {
+        err =
+            lis_precon_create_adds(
+                solver,
+                *precon);
+
+        (*precon)->precon_type =
+            LIS_PRECON_TYPE_ADDS;
+    }
 	else
 	{
 		err = lis_precon_create_xxx[precon_type](solver,*precon);
@@ -180,11 +817,32 @@ LIS_INT lis_precon_psd_create(LIS_SOLVER solver, LIS_PRECON *precon)
 	lis_precon_init(*precon);
 	(*precon)->precon_type = precon_type;
 
-	if( precon_type>=LIS_PRECON_TYPE_USERDEF )
-	{
-/*        err = precon_register_top[precon_type-LIS_PRECON_TYPE_USERDEF].pcreate(solver,*precon);*/
-        err = LIS_ERR_NOT_IMPLEMENTED;
-	}
+        if( precon_type>=LIS_PRECON_TYPE_USERDEF )
+        {
+                if( precon_register_top==NULL ||
+                    precon_type>=precon_register_type )
+                {
+                        err = LIS_ERR_ILL_ARG;
+                }
+                else
+                {
+                        (*precon)->user_destroy =
+                                precon_register_top[
+                                    precon_type-LIS_PRECON_TYPE_USERDEF].pdestroy;
+
+                        if( precon_register_psd_create[
+                                precon_type-LIS_PRECON_TYPE_USERDEF] )
+                        {
+                                err = precon_register_psd_create[
+                                        precon_type-LIS_PRECON_TYPE_USERDEF](
+                                                solver,*precon);
+                        }
+                        else
+                        {
+                                err = LIS_ERR_NOT_IMPLEMENTED;
+                        }
+                }
+        }
 	else if( precon_type && solver->options[LIS_OPTIONS_ADDS] )
 	{
 /*        err = lis_precon_create_adds(solver,*precon);*/
@@ -244,11 +902,25 @@ LIS_INT lis_precon_psd_update(LIS_SOLVER solver, LIS_PRECON precon)
 
     precon_type = precon->precon_type;
 
-	if( precon_type>=LIS_PRECON_TYPE_USERDEF )
-	{
-/*        err = precon_register_top[precon_type-LIS_PRECON_TYPE_USERDEF].pcreate(solver,*precon);*/
-        err = LIS_ERR_NOT_IMPLEMENTED;
-	}
+        if( precon_type>=LIS_PRECON_TYPE_USERDEF )
+        {
+                if( precon_register_top==NULL ||
+                    precon_type>=precon_register_type )
+                {
+                        err = LIS_ERR_ILL_ARG;
+                }
+                else if( precon_register_psd_update[
+                             precon_type-LIS_PRECON_TYPE_USERDEF] )
+                {
+                        err = precon_register_psd_update[
+                                precon_type-LIS_PRECON_TYPE_USERDEF](
+                                        solver,precon);
+                }
+                else
+                {
+                        err = LIS_ERR_NOT_IMPLEMENTED;
+                }
+        }
 	else if( precon_type && solver->options[LIS_OPTIONS_ADDS] )
 	{
 /*        err = lis_precon_create_adds(solver,*precon);*/
@@ -318,16 +990,32 @@ LIS_INT lis_precon_create_none(LIS_SOLVER solver, LIS_PRECON precon)
 #define __FUNC__ "lis_precon_destroy"
 LIS_INT lis_precon_destroy(LIS_PRECON precon)
 {
-	LIS_INT i;
+	LIS_INT i, err = LIS_SUCCESS;
+	LIS_INT mfamg_err;
 
 	LIS_DEBUG_FUNC_IN;
 
 	if( precon )
 	{
+	    if( precon->user_destroy )
+	    {
+	        err = precon->user_destroy(precon);
+	    }
+		if( precon->mfamg )
+		{
+			mfamg_err = lis_precon_destroy_mfamg(precon);
+			if( err==LIS_SUCCESS ) err = mfamg_err;
+		}
 		if( precon->is_copy ) lis_matrix_destroy(precon->A);
 		lis_vector_destroy(precon->Pb);
 		lis_vector_destroy(precon->D);
 		lis_vector_destroy(precon->temp);
+
+		lis_half_ilu_destroy(
+			precon->half);
+
+		precon->half = NULL;
+
 		lis_matrix_ilu_destroy(precon->L);
 		lis_matrix_ilu_destroy(precon->U);
 		lis_matrix_diag_destroy(precon->WD);
@@ -341,7 +1029,7 @@ LIS_INT lis_precon_destroy(LIS_PRECON precon)
 		lis_commtable_destroy(precon->commtable);
 		if( precon->precon_type==LIS_PRECON_TYPE_SAAMG )
 		{
-		 (*(void (*)(void *))f_clear_matrix_ptr)(&precon->level_num);
+		 ((void (*)(void *))f_clear_matrix_ptr)(&precon->level_num);
 		}
 #endif
 		if( precon->work    )
@@ -356,9 +1044,213 @@ LIS_INT lis_precon_destroy(LIS_PRECON precon)
 	}
 
 	LIS_DEBUG_FUNC_OUT;
-	return LIS_SUCCESS;
+	return err;
 }
 
+
+#undef __FUNC__
+#define __FUNC__ "lis_psolve_dispatch"
+LIS_INT lis_psolve_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
+{
+        LIS_INT precon_type;
+        LIS_PSOLVE_XXX psolve;
+
+        LIS_DEBUG_FUNC_IN;
+
+        if( solver==NULL || solver->precon==NULL )
+        {
+                LIS_SETERR(
+                        LIS_ERR_ILL_ARG,
+                        "preconditioner is not initialized\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        precon_type =
+                solver->precon->precon_type;
+
+
+        if( precon_type>=LIS_PRECON_TYPE_USERDEF )
+        {
+                if(
+                        precon_type>=precon_register_type
+                        ||
+                        precon_register_top==NULL)
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "invalid registered preconditioner type\n");
+                        return LIS_ERR_ILL_ARG;
+                }
+
+                psolve =
+                        precon_register_top[
+                                precon_type
+                                -
+                                LIS_PRECON_TYPE_USERDEF].psolve;
+
+                if( psolve==NULL )
+                {
+                        LIS_SETERR(
+                                LIS_ERR_NOT_IMPLEMENTED,
+                                "registered preconditioner has no psolve callback\n");
+                        return LIS_ERR_NOT_IMPLEMENTED;
+                }
+        }
+        else
+        {
+                if(
+                        precon_type<0
+                        ||
+                        precon_type>=LIS_PRECON_TYPE_LEN)
+                {
+                        LIS_SETERR(
+                                LIS_ERR_ILL_ARG,
+                                "invalid built-in preconditioner type\n");
+                        return LIS_ERR_ILL_ARG;
+                }
+
+                psolve =
+                        lis_psolve_xxx[precon_type];
+        }
+
+
+
+        if(
+                (
+                    solver->options[LIS_OPTIONS_SOLVER]
+                        ==
+                    LIS_SOLVER_FGMRES
+                    ||
+                    solver->options[LIS_OPTIONS_SOLVER]
+                        ==
+                    LIS_SOLVER_FGCRODR
+                )
+                &&
+                precon_type!=LIS_PRECON_TYPE_MFAMG
+                &&
+                solver->near_nullspace_coarse!=NULL
+                &&
+                solver->near_nullspace_coarse->ready)
+        {
+                LIS_INT err;
+
+                err =
+                        lis_solver_near_nullspace_apply(
+                                solver,
+                                b,
+                                x,
+                                psolve);
+
+                if(err)
+                {
+                        return err;
+                }
+        }
+        else
+        {
+                LIS_INT err;
+
+                err =
+                        psolve(
+                                solver,
+                                b,
+                                x);
+
+                if(err)
+                {
+                        return err;
+                }
+        }
+
+        /*
+         * Exact right-nullspace deflation for right
+         * preconditioning.
+         *
+         * The primal preconditioner output is a solution-space
+         * correction. Applying P preserves its image under A
+         * whenever A*Q=0.
+         *
+         * lis_psolveh_dispatch() is intentionally untouched:
+         * a right nullspace does not define a left/Hermitian
+         * projection.
+         */
+        if(
+                solver->nullspace_dim>0
+                &&
+                (
+                    solver->options[LIS_OPTIONS_SOLVER]
+                        ==
+                    LIS_SOLVER_GMRES
+                    ||
+                    solver->options[LIS_OPTIONS_SOLVER]
+                        ==
+                    LIS_SOLVER_FGMRES
+                    ||
+                    solver->options[LIS_OPTIONS_SOLVER]
+                        ==
+                    LIS_SOLVER_GCRODR
+                    ||
+                    solver->options[LIS_OPTIONS_SOLVER]
+                        ==
+                    LIS_SOLVER_FGCRODR
+                ))
+        {
+                LIS_INT err;
+
+                err =
+                        lis_solver_project_nullspace(
+                                solver,
+                                x);
+
+                if(err)
+                {
+                        return err;
+                }
+        }
+
+        return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_psolveh_dispatch"
+LIS_INT lis_psolveh_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
+{
+	LIS_INT precon_type;
+	LIS_PSOLVEH_XXX psolveh;
+
+	LIS_DEBUG_FUNC_IN;
+
+	if( solver==NULL || solver->precon==NULL )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"preconditioner is not initialized\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
+	precon_type = solver->precon->precon_type;
+	if( precon_type>=LIS_PRECON_TYPE_USERDEF )
+	{
+		if( precon_type>=precon_register_type || precon_register_top==NULL )
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,"invalid registered preconditioner type\n");
+			return LIS_ERR_ILL_ARG;
+		}
+		psolveh = precon_register_top[precon_type-LIS_PRECON_TYPE_USERDEF].psolveh;
+		if( psolveh==NULL )
+		{
+			LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+			           "registered preconditioner has no psolveh callback\n");
+			return LIS_ERR_NOT_IMPLEMENTED;
+		}
+		return psolveh(solver,b,x);
+	}
+
+	if( precon_type<0 || precon_type>=LIS_PRECON_TYPE_LEN )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,"invalid built-in preconditioner type\n");
+		return LIS_ERR_ILL_ARG;
+	}
+	return lis_psolveh_xxx[precon_type](solver,b,x);
+}
 
 #undef __FUNC__
 #define __FUNC__ "lis_psolve_none"
@@ -408,15 +1300,31 @@ LIS_INT lis_psolveh_none(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
 
 #undef __FUNC__
 #define __FUNC__ "lis_precon_register"
-LIS_INT lis_precon_register(char *name, LIS_PRECON_CREATE_XXX pcreate, LIS_PSOLVE_XXX psolve, LIS_PSOLVEH_XXX psolveh)
+LIS_INT lis_precon_register(char *name, LIS_PRECON_CREATE_XXX pcreate,
+                            LIS_PSOLVE_XXX psolve, LIS_PSOLVEH_XXX psolveh)
 {
-
 	LIS_DEBUG_FUNC_IN;
+
+	if( name==NULL || pcreate==NULL || psolve==NULL )
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,
+		           "registered preconditioner requires name, pcreate and psolve\n");
+		return LIS_ERR_ILL_ARG;
+	}
 
 	if( precon_register_top==NULL )
 	{
-		precon_register_top = (LIS_PRECON_REGISTER *)lis_malloc(LIS_PRECON_REGISTER_MAX*sizeof(struct LIS_PRECON_REGISTER_STRUCT),"lis_precon_register::precon_register_top");
+		precon_register_top = (LIS_PRECON_REGISTER *)lis_malloc(
+			LIS_PRECON_REGISTER_MAX*sizeof(struct LIS_PRECON_REGISTER_STRUCT),
+			"lis_precon_register::precon_register_top");
+		if( precon_register_top==NULL )
+		{
+			LIS_SETERR_MEM(
+				LIS_PRECON_REGISTER_MAX*sizeof(struct LIS_PRECON_REGISTER_STRUCT));
+			return LIS_OUT_OF_MEMORY;
+		}
 	}
+
 	if( precon_register_type-LIS_PRECON_TYPE_USERDEF==LIS_PRECON_REGISTER_MAX )
 	{
 		LIS_SETERR(LIS_FAILS,"lis_precon_resister is max\n");
@@ -424,15 +1332,87 @@ LIS_INT lis_precon_register(char *name, LIS_PRECON_CREATE_XXX pcreate, LIS_PSOLV
 	}
 
 	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].pcreate = pcreate;
-	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].psolve  = psolve;
+	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].psolve = psolve;
 	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].psolveh = psolveh;
-	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].precon_type = precon_register_type;
-	strncpy(precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].name,name,LIS_PRECONNAME_MAX);
-	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].name[LIS_PRECONNAME_MAX] = '\0';
+	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].pdestroy = NULL;
+        precon_register_psd_create[
+                precon_register_type-LIS_PRECON_TYPE_USERDEF] = NULL;
+        precon_register_psd_update[
+                precon_register_type-LIS_PRECON_TYPE_USERDEF] = NULL;
+	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].precon_type =
+		precon_register_type;
+	strncpy(precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF].name,
+	        name,LIS_PRECONNAME_MAX);
+	precon_register_top[precon_register_type-LIS_PRECON_TYPE_USERDEF]
+		.name[LIS_PRECONNAME_MAX] = '\0';
 	precon_register_type++;
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+}
+#undef __FUNC__
+#define __FUNC__ "lis_precon_register_ex"
+LIS_INT lis_precon_register_ex(char *name, LIS_PRECON_CREATE_XXX pcreate,
+                               LIS_PSOLVE_XXX psolve, LIS_PSOLVEH_XXX psolveh,
+                               LIS_PRECON_DESTROY_XXX pdestroy)
+{
+    LIS_INT err;
+
+    LIS_DEBUG_FUNC_IN;
+
+    err = lis_precon_register(name,pcreate,psolve,psolveh);
+    if( err ) return err;
+
+    precon_register_top[
+        precon_register_type-LIS_PRECON_TYPE_USERDEF-1].pdestroy = pdestroy;
+
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
+}
+
+#undef __FUNC__
+#define __FUNC__ "lis_precon_register_psd"
+LIS_INT lis_precon_register_psd(char *name,
+                                LIS_PRECON_PSD_CREATE_XXX psd_create,
+                                LIS_PRECON_PSD_UPDATE_XXX psd_update)
+{
+        LIS_INT i;
+        LIS_INT nregister;
+
+        LIS_DEBUG_FUNC_IN;
+
+        if( name==NULL || psd_create==NULL || psd_update==NULL )
+        {
+                LIS_SETERR(LIS_ERR_ILL_ARG,
+                           "PSD registration requires name, psd_create and psd_update\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        if( precon_register_top==NULL )
+        {
+                LIS_SETERR(LIS_ERR_ILL_ARG,
+                           "registered preconditioner not found\n");
+                return LIS_ERR_ILL_ARG;
+        }
+
+        nregister = precon_register_type-LIS_PRECON_TYPE_USERDEF;
+
+        for(i=0;i<nregister;i++)
+        {
+                if( strncmp(precon_register_top[i].name,
+                            name,LIS_PRECONNAME_MAX)==0 )
+                {
+                        precon_register_psd_create[i] = psd_create;
+                        precon_register_psd_update[i] = psd_update;
+
+                        LIS_DEBUG_FUNC_OUT;
+                        return LIS_SUCCESS;
+                }
+        }
+
+        LIS_SETERR(LIS_ERR_ILL_ARG,
+                   "registered preconditioner not found\n");
+        return LIS_ERR_ILL_ARG;
 }
 
 #undef __FUNC__
@@ -447,6 +1427,7 @@ LIS_INT lis_precon_register_free(void)
 		lis_free(precon_register_top);
 		precon_register_top = NULL;
 	}
+	precon_register_type = LIS_PRECON_TYPE_USERDEF;
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;

@@ -44,7 +44,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis User Guide}\\
-Version 2.1.4
+Version 2.1.23
 \end{flushleft}
 
 \vspace*{2cm}
@@ -276,7 +276,7 @@ and {\tt -hybrid\_omega}, respectively.
 \newpage
 \section{Introduction}
 Lis (Library of Iterative Solvers for linear systems, pronounced [lis]) 
-is a parallel software library for solving discretized linear equations
+is a parallel software library to solve discretized linear equations
 \[
  Ax = b
 \]
@@ -284,11 +284,11 @@ and eigenvalue problems
 \[
  Ax = \lambda Bx
 \]
-that arise in the numerical solution of
+that arise from the numerical solution of
 partial differential equations using iterative methods\cite{nishida}.
-The solvers available in Lis are listed in Table \ref{tab:solvers} and
-\ref{tab:esolvers}, and the preconditioners are listed in Table \ref{tab:precon}.
-The supported matrix storage formats are listed in Table \ref{tab:storage}.
+The available solvers in Lis are listed in Table \ref{tab:solvers} and
+\ref{tab:esolvers}, the preconditioners in Table \ref{tab:precon}, and
+the supported matrix storage formats in Table \ref{tab:storage}.
 
 \begin{table}[htb]
 \begin{minipage}[t]{0.50\textwidth}
@@ -309,6 +309,7 @@ Gauss-Seidel\cite{gauss,seidel} & GMRES(m)\cite{gmres} \\
 SOR\cite{young,frankel} & FGMRES(m)\cite{fgmres} \\
 IDR(s)\cite{idrs}       & MINRES\cite{minres} \\
 COCG\cite{cocg}         & COCR\cite{cocr} \\
+GCRO-DR\cite{gcro-dr}   & FGCRO-DR\cite{fgcro-dr} \\
 \hline         
 \end{tabular}
 \hfil}
@@ -328,6 +329,8 @@ CR\cite{suetomi} \\
 Subspace\cite{rutishauser} \\
 Lanczos\cite{lanczos2} \\
 Arnoldi\cite{arnoldi} \\
+FEAST\cite{polizzi} \\
+Krylov \\
 \hline         
 \end{tabular}
 \hfil}
@@ -346,6 +349,7 @@ ILUT\cite{ilut,ITSOL} \\
 Crout ILU\cite{ITSOL,iluc} \\
 I+S\cite{kohno01} \\
 SA-AMG\cite{fujii01}  \\
+MFAMG\cite{epperly} \\
 Hybrid\cite{abe01} \\
 SAINV\cite{bridson01}  \\
 Additive Schwarz\cite{chan,dryja} \\
@@ -383,14 +387,14 @@ Dense &	(DNS) \\
 This section describes the instructions for installing and testing Lis. 
 
 \subsection{System Requirements}
-The installation of Lis requires a C compiler. The Fortran interface
-requires a Fortran compiler, and the
+Installing Lis requires a C compiler. If you wish to use the Fortran interface,
+a Fortran compiler is needed, and the
 algebraic multigrid preconditioner requires a Fortran 90 compiler.
 For parallel computing environments, an OpenMP\cite{OpenMP} or 
-MPI-1\cite{MPI} library is required\cite{kota1,kota2}.
-Both the Harwell-Boeing\cite{duff92} and 
-Matrix Market\cite{matrixmarket} formats are supported to import and
-export user data. 
+MPI-1\cite{MPI} library is necessary\cite{kota1,kota2}.
+Lis supports both the Harwell-Boeing\cite{duff92} and 
+Matrix Market\cite{matrixmarket} formats for importing and
+exporting user data. 
 Lis has been tested in the environments listed in Table \ref{platforms}
 (see also Table \ref{targetoption}). 
 
@@ -446,10 +450,10 @@ gfortran 4.4, 5.4, 6.4, 8.2, 10.1, 11.3    & macOS \\
 
 \subsection{Installing on UNIX and Compatible Systems}
 \subsubsection{Extracting Archive}
-Enter the following command to extract the archive, 
+To extract the archive, use the following command,  
 where \verb|($VERSION)| represents the version:\\
  \verb&      > unzip lis-($VERSION).zip &\\
-This creates a directory {\tt lis-(\$VERSION)} together 
+This will create a directory named {\tt lis-(\$VERSION)} along 
 with its subfolders as shown in Figure \ref{listargz}.
 
 \begin{figure}[htbp]
@@ -477,7 +481,7 @@ lis-($VERSION)
 \end{figure}
 
 \subsubsection{Configuring Source Tree}
- In the directory {\tt lis-(\$VERSION)}, run the following command to configure the source tree:
+ Navigate to the directory {\tt lis-(\$VERSION)} and run the following command to configure the source tree:
  \begin{itemize}
 \item default: \verb&      > ./configure&
 \item specify the installation destination: \verb&      > ./configure --prefix=<install-dir>&
@@ -564,16 +568,16 @@ by \verb+TARGET+.
 In the directory {\tt lis-(\$VERSION)}, run the following command to generate
 the executable files: \\
  \verb+      > make +\\
-To ensure that the library has been built successfully, enter 
+To verify that the library has been built successfully, enter 
 \\
  \verb+      > make check+\\
-in {\tt lis-(\$VERSION)}. 
-This runs a test script using the executable files created 
-in {\tt lis-(\$VERSION)/test}, which reads 
-the data of the coefficient matrix and the right-hand side vector 
-from the file 
-{\tt test/testmat.mtx} and solve the linear equation $Ax = b$ 
-by the BiCG method. The result on the SGI Altix 3700 is
+in the directory {\tt lis-(\$VERSION)}. 
+This command runs a test script using the executable files created 
+in {\tt lis-(\$VERSION)/test}. The script reads 
+data from the coefficient matrix and the right-hand side vector 
+in the file 
+{\tt test/testmat.mtx} and solves the linear equation $Ax = b$ 
+using the BiCG method. The result on the SGI Altix 3700 is
  shown below. Options {\tt --enable-omp} and {\tt --enable-mpi} can be combined.
 \begin{itembox}[l]{Default}
  \begin{minipage}{10cm}
@@ -1937,6 +1941,65 @@ To create a solver, the following functions are used:
 \end{itemize}
 
 \noindent
+{\bf Monitoring Residuals and Custom Convergence}
+
+Applications can attach C callbacks to a linear solver without changing
+the command line options. A residual monitor is registered with
+
+\begin{verbatim}
+LIS_INT lis_solver_set_monitor(
+    LIS_SOLVER solver,
+    LIS_SOLVER_MONITOR_CALLBACK monitor,
+    void *user_data);
+\end{verbatim}
+
+and a custom convergence callback is registered with
+
+\begin{verbatim}
+LIS_INT lis_solver_set_convergence(
+    LIS_SOLVER solver,
+    LIS_SOLVER_CONVERGENCE_CALLBACK convergence,
+    void *user_data);
+\end{verbatim}
+
+The monitor observes residual progress and does not change the solver
+decision. The convergence callback returns a nonzero value to accept a
+convergence candidate and zero to reject it. Passing a null callback
+restores the default behavior. The application retains ownership of
+\verb|user_data|.
+
+Callbacks receive one of the following residual classifications:
+
+\begin{verbatim}
+LIS_SOLVER_RESIDUAL_RECURSIVE
+LIS_SOLVER_RESIDUAL_PROJECTED
+LIS_SOLVER_RESIDUAL_TRUE
+\end{verbatim}
+
+\verb|LIS_SOLVER_RESIDUAL_PROJECTED| identifies a Krylov projected
+residual estimate, while \verb|LIS_SOLVER_RESIDUAL_TRUE| identifies an
+explicitly evaluated residual of the original system. Restarted
+GMRES-family solvers use projected residuals to form convergence
+candidates and perform a true-residual decision before solver-level
+success.
+
+For switch-precision GMRES, the double-precision switch threshold is
+reported to the monitor but remains an algorithmic precision-switch
+criterion. Custom convergence controls the final convergence phase and
+does not redefine the double-to-quad switch threshold.
+
+The common initial-residual path reports a true residual. Sequence
+recovery also honors a custom convergence veto when an independently
+certified physical residual would otherwise promote a failed iterative
+attempt to success.
+
+A custom callback does not bypass the final safety certification in
+\verb|lis_solve|. A successful iterative result is still rejected when
+the final true residual is non-finite or exceeds the solver tolerance.
+Callback configuration is part of the solver object and is preserved by
+\verb|lis_solver_reset_sequence|.
+\\ \\
+\noindent
 {\bf Specifying Options}
 
 To specify options, 
@@ -1991,6 +2054,15 @@ where \verb=-i {cg|1}= means \verb=-i cg= or \verb=-i 1= and \verb=-maxiter [100
  MINRES      & \verb=-i {minres|23}=    &    \\
  COCG        & \verb=-i {cocg|24}=      &    \\
  COCR        & \verb=-i {cocr|25}=      &    \\  
+ GCRO-DR     & \verb=-i {gcrodr|26}=    & \verb=-gcrodr_k [40]= & The subspace dimension \\ 
+             &                          & \verb=-gcrodr_keep [8]= & The number of recycled vectors \\ 
+             &                          & \verb=-gcrodr_keep_quality [0.9]= & The threshold to keep vectors \\ 
+ &                          & \verb=-gcrodr_reject_quality [0.35]= & The threshold to reject vectors \\   
+ FGCRO-DR    & \verb=-i {fgcrodr|27}=   & \verb=-restart [40]= & The restart value $m$ \\
+             &                          & \verb=-fgcrodr_k [8]= & The dimension of subspace \\
+             &                          & \verb=-fgcrodr_keep [0.90]= & The threshold to keep space \\
+             &                          & \verb=-fgcrodr_reject [0.10]= & The threshold to reject space \\
+             &                          & \verb=-fgcrodr_update [true]= & Enable recycle-space updates \\
 \hline         
 \end{tabular}
 \end{center}
@@ -2004,6 +2076,7 @@ Preconditioner   & Option           & Auxiliary Options \\ \hline
 None     & \verb=-p {none|0}=    &   \\
 Jacobi   & \verb=-p {jacobi|1}=  &     \\
 ILU(k)   & \verb=-p {ilu|2}=     & \verb=-ilu_fill [0]=    & The fill level $k$ \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_omega [1.0]= & The relaxation coefficient \\
          &                       &                          & $\omega$ ($0<\omega<2$) \\
 Hybrid   & \verb=-p {hybrid|4}=  & \verb=-hybrid_i [sor]=  & The linear solver\\
@@ -2032,8 +2105,12 @@ SA-AMG   & \verb=-p {saamg|7}=   & \verb=-saamg_unsym [false]=    &
          &                       &                             & (symmetric or unsymmetric) \\
 Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criterion    \\
          &                       & \verb=-iluc_rate [5.0]=     & The
- ratio of the maximum fill-in \\
-ILUT     & \verb=-p {ilut|9}=    &     \\
+ratio of the maximum fill-in \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
+         &                       & \verb=-mfamg_block_size [1]= & The local contiguous smoother block size \\
+         &                       &                              & (1: weighted Jacobi; 2--16: block Jacobi) \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -2041,12 +2118,15 @@ Schwarz  &                       &                             &                
 \end{center}
 \end{minipage}
 \\ \\
+
 \begin{minipage}[t]{\textwidth}
 \begin{center}
 {\bf Other Options}\\
 \begin{tabular}{l|ll}\hline\hline
 Option &                          \\ \hline
-\verb=-maxiter [1000]= & The maximum number of iterations         \\ 
+\verb=-maxiter [1000]= & The maximum number of iterations         \\
+\verb=-maxiter_noimp [0]= & The maximum number of consecutive iterations allowed without residual improvement \\
+                       & before early stopping (default: 0, which disables early stopping) \\
 \verb=-tol [1.0e-12]=  & The convergence tolerance $tol$             \\
 \verb=-tol_w [1.0]=    & The convergence tolerance $tol_w$  \\
 \verb=-print [0]=      & The output of the residual history                \\
@@ -2200,6 +2280,25 @@ that \verb=-emaxiter= defaults to $1,000$.
  \verb=-ss [1]= & The size of the subspace \\
  Generalized Arnoldi               & \verb=-e {gai|16}=      &
  \verb=-ss [1]= & The size of the subspace \\  
+
+ Native FEAST                      & \verb=-e {feast|17}=    &
+ \verb=-ss [1]= & The size of the search subspace \\
+                                   &                         &
+ \verb=-feast_emin= & The lower bound of target interval \\
+                                   &                         &
+ \verb=-feast_emax= & The upper bound of target interval \\
+                                   &                         &
+ \verb=-feast_ratio [0.30]= & The contour ellipse aspect ratio \\
+                                   &                         &
+ \verb=-feast_points [8]= & The number of contour points \\
+                                   &                         &
+ \verb=-feast_solver [gmres]= & The inner linear solver \\
+ Native Krylov                      & \verb=-e {krylov|18}= &
+ \verb=-ss [1]= & The result-vector capacity \\
+                                    &                        &
+ \verb=-nev [1]= & The requested eigenpairs \\
+                                    &                        &
+ \verb=-kncv [0]= & The Krylov subspace size \\
 \hline         
 \end{tabular}
 \end{center}
@@ -2213,6 +2312,7 @@ Preconditioner   & Option           & Auxiliary Options \\ \hline
 None     & \verb=-p {none|0}=    &   \\
 Jacobi   & \verb=-p {jacobi|1}=  &     \\
 ILU(k)   & \verb=-p {ilu|2}=     & \verb=-ilu_fill [0]=        & The fill level $k$ \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_omega [1.0]=    & The relaxation coefficient \\
          &                       &                             & $\omega$ ($0<\omega<2$) \\
 Hybrid   & \verb=-p {hybrid|4}=  & \verb=-hybrid_i [sor]=      & The linear solver\\
@@ -2233,7 +2333,11 @@ SA-AMG   & \verb=-p {saamg|7}=   & \verb=-saamg_unsym [false]= & Select the unsy
          &                       &                             & (symmetric or unsymmetric) \\
 Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criterion    \\
          &                       & \verb=-iluc_rate [5.0]=     & The ratio of the maximum fill-in \\
-ILUT     & \verb=-p {ilut|9}=    &     \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
+         &                       & \verb=-mfamg_block_size [1]= & The local contiguous smoother block size \\
+         &                       &                              & (1: weighted Jacobi; 2--16: block Jacobi) \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -2274,6 +2378,11 @@ Option &                          \\ \hline
 \verb=-rval [0]=       & The Ritz values \\
                        & \verb=-rval {false|0}     =  The eigenpairs are computed based on the Ritz values \\
                        & \verb=-rval {true|1}      =  Only the Ritz values are computed \\
+\verb=-nev [1]=        & The number of requested eigenpairs ($\le$ \verb=ss=) \\
+\verb=-etransform [0]=       & The generalized eigenvalue transformation selection \\
+                       & \verb=-etransform {auto|0}     =  Select the default transformation behavior \\
+                       & \verb=-etransform {shift-invert|1}      =  Shift-invert $T = (A - \sigma B)^{-1}B$ \\
+                       & \verb=-etransform {buckling|2}      =  Buckling $T = (A - \sigma B)^{-1}A$ \\
 \hline         
 \end{tabular}
 \end{center}
@@ -2582,6 +2691,250 @@ An actual implementation can be seen in test problem test8f.F90.
 \end{itembox}
 
 \newpage
+\subsection{Matrix-Free Computations}
+Starting from Version 2.1.13, Lis introduces \texttt{LIS\_MATRIX\_USER} and \texttt{LIS\_MATRIX\_OPERATOR} for matrix-free computations.
+\subsubsection{User-Defined Shell Matrix (\texttt{LIS\_MATRIX\_USER})}
+This interface allows applications to retain custom matrix formats and register callback functions for matrix-vector products. To extract the diagonal elements of a user-defined matrix, the following function is provided to register an optional diagonal callback function:
+\noindent
+\texttt{LIS\_INT lis\_matrix\_set\_user\_diagonal(LIS\_MATRIX A, LIS\_INT (*callback)(LIS\_MATRIX A, LIS\_VECTOR d))}
+\begin{itemize}
+\item \texttt{A}: The target matrix defined as \texttt{LIS\_MATRIX\_USER}.
+\item \texttt{callback}: The user-defined function pointer that computes and stores the diagonal into vector \texttt{d}.
+\end{itemize}
+
+User-defined matrices can optionally provide block matrix-vector callbacks.
+The callbacks are registered independently of the existing scalar callbacks
+using:
+
+\noindent
+\texttt{LIS\_INT lis\_matrix\_set\_user\_matvec\_block(}\\
+\texttt{\hspace*{5mm}LIS\_MATRIX A,}\\
+\texttt{\hspace*{5mm}LIS\_MATRIX\_USER\_MATVEC\_BLOCK matvec\_block,}\\
+\texttt{\hspace*{5mm}LIS\_MATRIX\_USER\_MATVEC\_BLOCK matvech\_block)}
+
+The block callback type is:
+
+\noindent
+\texttt{LIS\_INT (*callback)(void *user\_data, LIS\_INT nvec,}\\
+\texttt{\hspace*{28mm}LIS\_VECTOR X[], LIS\_VECTOR Y[])}
+
+The arrays \texttt{X} and \texttt{Y} contain \texttt{nvec} vectors.
+The application retains ownership of these vectors.  The
+\texttt{matvec\_block} callback computes $Y_i=A X_i$, while
+\texttt{matvech\_block} computes the corresponding Hermitian-transpose
+operation.
+
+The public functions
+
+\noindent
+\texttt{lis\_matvec\_block(A,nvec,X,Y)} and\\
+\texttt{lis\_matvech\_block(A,nvec,X,Y)}
+
+apply a matrix to several vectors.  If a user-defined matrix provides a
+native block callback, it is invoked once for the complete vector block.
+Otherwise, Lis automatically falls back to the existing scalar
+matrix-vector operation for each vector.  Therefore, existing matrix
+formats and existing user-defined scalar callbacks remain compatible
+without modification.
+
+Passing \texttt{NULL} block callbacks to
+\texttt{lis\_matrix\_set\_user\_matvec\_block()} restores the scalar
+fallback behavior.
+
+\subsubsection{Linear-Combination Matrix Operator (\texttt{LIS\_MATRIX\_OPERATOR})}
+This operator represents the linear combination of two matrices $C = \alpha A + \beta B$ without altering the original matrices. For operator matrices, the diagonal is automatically evaluated recursively as follows:
+\[
+\mathrm{diag}(\alpha A + \beta B) = \alpha \cdot \mathrm{diag}(A) + \beta \cdot \mathrm{diag}(B)
+\]
+\subsubsection{Shifted Generalized Eigenvalue Solvers with Matrix Operators}
+For shifted generalized eigenvalue problems $(A - \sigma B)x = \lambda Bx$, Generalized Power Iteration (GPI), Generalized Inverse Iteration (GII), and Generalized Conjugate Residual (GCR) solvers now utilize \texttt{LIS\_MATRIX\_OPERATOR} to dynamically create a temporary operator for $A - \sigma B$. This ensures the original matrices remain pristine and enables full support for user-defined custom matrices (\texttt{LIS\_MATRIX\_USER}). Shifted \texttt{LIS\_MATRIX\_USER} remains unsupported for other methods like Lanczos.
+
+
+\subsubsection{Native Restarted Krylov Eigensolver}
+\label{subsubsec:native-krylov}
+The native symmetric restarted Krylov solver is selected with
+\verb|-e krylov| (numeric identifier 18).  It computes several
+eigenpairs of real symmetric standard $Ax=\lambda x$ and generalized
+$Ax=\lambda Bx$ eigenproblems with Rayleigh--Ritz projection,
+thick restarting, metric reorthogonalization and explicit residual
+verification.  It is an additional solver, not a replacement for
+the existing subspace iteration, Lanczos, Arnoldi or FEAST methods.
+Its distinguishing features are a standalone callback API, optional
+semidefinite metric and hard locking, and an inertia-based interval
+helper.  No comparative performance superiority is claimed.
+
+\noindent
+{\bf Standard Lis eigensolver interface}
+
+The method is available through \verb|lis_esolve| and
+\verb|lis_gesolve| for local matrices, including
+\texttt{LIS\_MATRIX\_USER}.  In the following C example the
+application has prepared $A$, $B$ and the initial vector $x$.
+
+\begin{verbatim}
+LIS_ESOLVER esolver;
+LIS_SCALAR lambda0;
+LIS_INT status;
+
+lis_esolver_create(&esolver);
+lis_esolver_set_option(
+    "-e krylov -ss 4 -nev 4 -kncv 20 "
+    "-kwhich LM -etol 1e-9 -emaxiter 500",
+    esolver);
+status = lis_gesolve(A, B, x, &lambda0, esolver);
+/* Check status and residuals; then destroy esolver. */
+\end{verbatim}
+
+For the standard problem use
+\verb|lis_esolve(A,x,&lambda0,esolver)| instead.
+The most relevant options are:
+\begin{itemize}
+\item \verb|-ss n| specifies the result capacity and
+\verb|-nev k| the requested number of eigenpairs
+($1\leq k\leq n_{\rm ss}$, $k<n$).
+\item \verb|-kncv n| selects the internal Krylov subspace size.
+It must exceed $k$; zero chooses $\min(n,3k+8)$.
+\item \verb|-kwhich LM|, \verb|SM|, \verb|LA| or \verb|SA|
+selects largest/smallest magnitude or algebraic ordering
+of the \emph{transformed} Ritz values.
+\item \verb|-etol t| and \verb|-emaxiter m| set the residual
+tolerance and iteration/restart limit.
+\item \verb|-kresidual_scale a| supplies an estimate of
+$\| A\|$ for residual scaling. Zero uses an
+automatically sampled estimate.
+\item \verb|-kinner_tol t| enables explicit verification of
+shifted linear solves when positive, at additional cost.
+\item \verb|-ksemidefinite 1| enables a positive-semidefinite
+$B$ metric for generalized shift-invert; this is opt-in.
+\item \verb|-khardlock 1| enables persistent locking and
+metric deflation of converged pairs, with purging and
+reinitialization of the active subspace. The default is off.
+\item \verb|-shift sigma| and
+\verb|-etransform shift-invert| configure the shift.
+The \verb|buckling| transformation requires nonzero shift
+and positive-definite $A$.
+\end{itemize}
+The existing Lis linear solver and preconditioner options
+configure the shifted solve; preconditioner setup is reused
+across Krylov iterations.
+
+\noindent
+{\bf Transformations and metric normalization}
+
+The supported operations and mappings from the Ritz value
+$\mu$ to the physical eigenvalue $\lambda$ are:
+\begin{itemize}
+\item Standard: $\mathcal{T}=A$, with $\lambda=\mu$
+and Euclidean normalization.
+\item Generalized shift-invert:
+$\mathcal{T}=(A-\sigma B)^{-1}B$, with
+$\lambda=\sigma+1/\mu$ and the positive-definite
+$B$ metric (or semidefinite $B$ when enabled).
+\item Generalized buckling:
+$\mathcal{T}=(A-\sigma B)^{-1}A$, with
+$\lambda=\sigma\mu/(\mu-1)$ and the
+positive-definite $A$ metric. Here $B$ may be indefinite.
+\end{itemize}
+The shifted operator must be nonsingular and the inverse
+action must be sufficiently accurate and nearly symmetric.
+Ritz values too close to an inverse-transformation pole
+cannot be represented as valid physical eigenvalues.
+
+In the semidefinite mode, starting and replenishment
+directions are mapped through $(A-\sigma B)^{-1}B$.
+Zero-metric directions are rejected. This mode seeks
+finite eigenpairs with nonzero $B$-norm; a rank-deficient
+metric can result in partial convergence.
+Arbitrary singular matrix pencils are not supported.
+For further
+implementation details see
+\verb|doc/native-krylov-eigensolver.md|.
+
+\subsubsection{Half Precision Preconditioner Storage}
+
+Lis can optionally store the numerical $L$ and $U$ factor values of the
+ILU(k) and ILUT preconditioners in IEEE 754 binary16 format. This feature
+reduces the storage required for the numerical factors; matrix indices,
+the inverse diagonal, vectors, arithmetic operations, residuals, and
+convergence tests remain in the normal Lis scalar precision.
+
+The feature is enabled at build time with
+\verb|--enable-half|. The run-time option is
+
+\begin{verbatim}
+-precon_half {0|1|2}
+\end{verbatim}
+
+where
+
+\begin{itemize}
+\item \verb|0| disables half precision preconditioner storage;
+\item \verb|1| enables binary16 storage with a quality probe and automatic
+fallback to the normal numerical factors if the compressed factors do not
+satisfy the quality criterion;
+\item \verb|2| enables binary16 storage without the quality probe. Hard
+validity and finite-value checks are still applied, and normal factors are
+retained if half storage cannot be used safely.
+\end{itemize}
+
+The half storage mode is a policy setting. If half storage is unavailable
+for the selected build or scalar configuration, Lis keeps the normal
+preconditioner factors and continues without an error.
+
+For ILU(k), the half numerical factors are refreshed after a PSD numerical
+preconditioner update. ILUT uses the same binary16 storage and application
+kernels when the preconditioner is created normally.
+
+The default relative tolerance of the quality probe is $5\times10^{-2}$.
+It can be overridden with the environment variable
+\verb|LIS_HALF_PROBE_TOL|.
+
+On supported x86 systems, Lis may use the F16C instruction set to decode
+binary16 factor values at run time. The scalar decoder remains available
+as the reference and fallback implementation. Setting
+\verb|LIS_HALF_NO_SIMD=1| forces the scalar decoder.
+
+\subsubsection{Preconditioner Reuse and Compatibility with User-Defined Matrices}
+Starting from Version 2.1.15, Lis clarifies preconditioner ownership and improves support for repeated solves with user-defined matrices (\texttt{LIS\_MATRIX\_USER}), relaxing previous restrictions when compatible prebuilt preconditioners are supplied.
+
+\subsubsection{Solver-Managed Feature Enhancements}
+Version 2.1.16 now supports the symmetric diagonal scaling of shell matrices without any direct modifications to the original matrix structure or the right-hand side vector. Furthermore, solver-managed near-nullspace support and a two-level deflation correction have been incorporated for FGMRES solvers to improve convergence robustness in nested iterations. 
+
+\subsubsection{MFAMG Preconditioner}
+MFAMG is a built-in matrix-free aggregation multigrid preconditioner.
+It builds a multilevel aggregation hierarchy from one or more
+user-supplied near-nullspace vectors.
+MFAMG supports CSR matrices and, in serial,
+{\tt LIS\_MATRIX\_USER} matrices. In MPI environments, CSR matrices
+are currently required. MFAMG currently supports double precision and
+requires \verb=-scale none=.
+The option \verb=-mfamg_block_size [1]= controls the local smoother
+block size. The default value 1 preserves the weighted-Jacobi smoother.
+Values from 2 through 16 enable block Jacobi using consecutive local
+unknowns. Blocks do not cross process boundaries, and the final local
+block may contain fewer unknowns than the requested block size.
+Each usable diagonal block is factored with pivoting. If a block is
+numerically singular, MFAMG falls back to the weighted-Jacobi correction
+for that block when its scalar diagonal entries remain usable.
+When the existing MFAMG numeric-update path reuses a hierarchy, the
+block factors are refreshed from the updated matrix values.
+
+\subsubsection{Native FEAST eigensolver}
+The native FEAST eigensolver computes eigenpairs inside the real interval
+specified by \verb|-feast_emin| and \verb|-feast_emax|.  Both interval
+bounds are required and must satisfy
+\verb|-feast_emin < -feast_emax|.  The subspace dimension is selected by
+\verb|-ss|.  The contour integration uses
+\verb|-feast_points| quadrature points and the positive ellipse aspect
+ratio \verb|-feast_ratio|.
+
+The shifted linear systems may be solved with
+\verb|-feast_solver gmres|, \verb|fgmres|, \verb|gcrodr|, or
+\verb|fgcrodr|.  GMRES is used by default.  Native FEAST is available
+for standard and generalized eigenvalue problems and supports both real
+and complex scalar builds.
+
+\newpage
 \subsection{Compiling and Linking}
 Provided below is an example {\tt test4.c} located in
 the directory \verb|lis-($VERSION)/test|, 
@@ -2706,7 +3059,8 @@ linear solver status  : normal end
 \subsection{Zero DOFs on a Process}
 For the case of multiple MPI processes, it is possible to specify
 $global\_n = 0$ and $local\_n \ge 0$. This will allow one or more
-MPI processes to have zero DOFs. However, it is still the case that,
+MPI processes to have zero degrees of freedom (DOFs).
+However, it is still the case that,
 for $global\_n = 0$, the summation of $local\_n$ over all processes
 should be greater than zero. 
 
@@ -2717,7 +3071,8 @@ should be greater than zero.
 Double precision operations sometimes require a large number of iterations 
 because of the rounding error. Besides long double precision operations,
 Lis supports "double-double" precision operations, 
-or quadruple precision operations by combining 
+which are effectively quadruple precision operations
+achieved by combining 
 two double precision floating point numbers\cite{dd,qd}.
 To use the double-double precision with the same interface 
 as the double precision operations, 
@@ -2747,9 +3102,9 @@ of the solution $x$ are $1$. The value $n$ is the size of matrix $A$.
 \\ \\
 \noindent
 {\bf Double precision}\\
-By entering
+To run the test, enter\\
 \verb+      > ./test5 200 2.0 -f double+\\
-the following results will be returned:
+and the following results will be returned:
 
 \begin{verbatim}
 n = 200, gamma = 2.000000
@@ -2772,9 +3127,9 @@ BiCG: relative residual    = 8.917591e+01
 
 \noindent
 {\bf Quadruple precision}\\
-By entering
+To run the test, enter\\
 \verb+      > ./test5 200 2.0 -f quad+\\
-the following results will be returned:
+and the following results will be returned:
 
 \begin{verbatim}
 n = 200, gamma = 2.000000
@@ -6003,6 +6358,39 @@ Destroy the solver.
 \end{namelist}
 
 \newpage
+
+\subsubsection{lis\_solver\_set\_nullspace}
+
+\verb|C       LIS_INT lis_solver_set_nullspace(LIS_SOLVER solver, LIS_INT nvec,|\\
+\verb|                    LIS_VECTOR vectors[])|
+
+Set an exact right-nullspace basis for the linear solver.
+LIS stores solver-owned orthonormal copies of the supplied vectors.
+The basis vectors must be linearly independent and compatible with the
+solver vectors.
+
+The current exact-nullspace deflation path is available for GMRES, FGMRES,
+GCRO-DR and FGCRO-DR with \verb|-scale none| and the default precision.  The
+projection is applied to solution-space corrections.  The right-hand side
+and residual are not projected, so a singular system must have a
+compatible right-hand side in order to converge.
+
+\begin{description}
+\item[\tt solver] The solver
+\item[\tt nvec] The number of exact-nullspace basis vectors
+\item[\tt vectors] The exact right-nullspace basis vectors
+\end{description}
+
+\subsubsection{lis\_solver\_clear\_nullspace}
+
+\verb|C       LIS_INT lis_solver_clear_nullspace(LIS_SOLVER solver)|
+
+Clear the exact right-nullspace basis stored in the solver.
+
+\begin{description}
+\item[\tt solver] The solver
+\end{description}
+
 \subsubsection{lis\_precon\_create}
 \begin{screen}
 \verb|C       LIS_INT lis_precon_create(LIS_SOLVER solver, LIS_PRECON *precon)|\\
@@ -6106,6 +6494,15 @@ that \verb=-maxiter= defaults to $1,000$.
  MINRES      & \verb=-i {minres|23}=    &    \\
  COCG        & \verb=-i {cocg|24}=      &    \\
  COCR        & \verb=-i {cocr|25}=      &    \\   
+ GCRO-DR     & \verb=-i {gcrodr|26}=    & \verb=-gcrodr_k [40]= & The subspace dimension \\ 
+             &                          & \verb=-gcrodr_keep [8]= & The number of recycled vectors \\ 
+             &                          & \verb=-gcrodr_keep_quality [0.9]= & The threshold to keep vectors \\ 
+ &                          & \verb=-gcrodr_reject_quality [0.35]= & The threshold to reject vectors \\   
+ FGCRO-DR    & \verb=-i {fgcrodr|27}=   & \verb=-restart [40]= & The restart value $m$ \\
+             &                          & \verb=-fgcrodr_k [8]= & The dimension of subspace \\
+             &                          & \verb=-fgcrodr_keep [0.90]= & The threshold to keep space \\
+             &                          & \verb=-fgcrodr_reject [0.10]= & The threshold to reject space \\
+             &                          & \verb=-fgcrodr_update [true]= & Enable recycle-space updates \\
 \hline         
 \end{tabular}
 \end{center}
@@ -6119,6 +6516,7 @@ Preconditioner   & Option           & Auxiliary Options \\ \hline
 None     & \verb=-p {none|0}=    &   \\
 Jacobi   & \verb=-p {jacobi|1}=  &     \\
 ILU(k)   & \verb=-p {ilu|2}=     & \verb=-ilu_fill [0]=        & The fill level $k$ \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_omega [1.0]=    & The relaxation coefficient \\
          &                       &                             & $\omega$ ($0<\omega<2$) \\
 Hybrid   & \verb=-p {hybrid|4}=  & \verb=-hybrid_i [sor]=      & The linear solver\\
@@ -6139,7 +6537,11 @@ SA-AMG   & \verb=-p {saamg|7}=   & \verb=-saamg_unsym [false]= & Select the unsy
          &                       &                             & (symmetric or unsymmetric) \\
 Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criterion    \\
 &                       & \verb=-iluc_rate [5.0]=     & The ratio of the maximum fill-in \\
-ILUT     & \verb=-p {ilut|9}=    &     \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
+         &                       & \verb=-mfamg_block_size [1]= & The local contiguous smoother block size \\
+         &                       &                              & (1: weighted Jacobi; 2--16: block Jacobi) \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -6153,7 +6555,9 @@ Schwarz  &                       &                             &                
 {\bf Other Options}\\
 \begin{tabular}{l|ll}\hline\hline
 Option &                          \\ \hline
-\verb=-maxiter [1000]= & The maximum number of iterations         \\ 
+\verb=-maxiter [1000]= & The maximum number of iterations         \\
+\verb=-maxiter_noimp [0]= & The maximum number of consecutive iterations allowed without residual improvement \\
+                       & before early stopping (default: 0, which disables early stopping) \\
 \verb=-tol [1.0e-12]=  & The convergence tolerance $tol$            \\
 \verb=-tol_w [1.0]=    & The convergence tolerance $tol_w$  \\
 \verb=-print [0]=      & The output of the residual history                \\
@@ -6648,6 +7052,25 @@ that \verb=-emaxiter= defaults to $1,000$.
  \verb=-ss [1]= & The size of the subspace \\
  Generalized Arnoldi               & \verb=-e {gai|16}=      &
  \verb=-ss [1]= & The size of the subspace \\  
+
+ Native FEAST                      & \verb=-e {feast|17}=    &
+ \verb=-ss [1]= & The size of the search subspace \\
+                                   &                         &
+ \verb=-feast_emin= & The lower bound of target interval \\
+                                   &                         &
+ \verb=-feast_emax= & The upper bound of target interval \\
+                                   &                         &
+ \verb=-feast_ratio [0.30]= & The contour ellipse aspect ratio \\
+                                   &                         &
+ \verb=-feast_points [8]= & The number of contour points \\
+                                   &                         &
+ \verb=-feast_solver [gmres]= & The inner linear solver \\
+ Native Krylov                      & \verb=-e {krylov|18}= &
+ \verb=-ss [1]= & The result-vector capacity \\
+                                    &                        &
+ \verb=-nev [1]= & The requested eigenpairs \\
+                                    &                        &
+ \verb=-kncv [0]= & The Krylov subspace size \\
 \hline         
 \end{tabular}
 \end{center}
@@ -6661,6 +7084,7 @@ Preconditioner   & Option           & Auxiliary Options \\ \hline
 None     & \verb=-p {none|0}=    &   \\
 Jacobi   & \verb=-p {jacobi|1}=  &     \\
 ILU(k)   & \verb=-p {ilu|2}=     & \verb=-ilu_fill [0]=        & The fill level $k$ \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
 SSOR     & \verb=-p {ssor|3}=    & \verb=-ssor_omega [1.0]=    & The relaxation coefficient \\ 
          &                       &                             & $\omega$ ($0<\omega<2$) \\
 Hybrid   & \verb=-p {hybrid|4}=  & \verb=-hybrid_i [sor]=      & The linear solver\\
@@ -6681,7 +7105,11 @@ SA-AMG   & \verb=-p {saamg|7}=   & \verb=-saamg_unsym [false]= & Select the unsy
          &                       &                             & (symmetric or unsymmetric) \\
 Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & The drop criterion    \\
          &                       & \verb=-iluc_rate [5.0]=     & The ratio of the maximum fill-in \\
-ILUT     & \verb=-p {ilut|9}=    &     \\
+         &                       & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & The relative small-pivot threshold \\
+MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
+         &                       & \verb=-mfamg_block_size [1]= & The local contiguous smoother block size \\
+         &                       &                              & (1: weighted Jacobi; 2--16: block Jacobi) \\
 Additive & \verb=-adds true=     & \verb=-adds_iter [1]=       & The number of iterations   \\
 Schwarz  &                       &                             &                            \\
 \hline         
@@ -6722,6 +7150,11 @@ Option &                          \\ \hline
 \verb=-rval [0]=       & The Ritz values \\
                        & \verb=-rval {false|0}     =  The eigenpairs are computed based on the Ritz values \\
                        & \verb=-rval {true|1}      =  Only the Ritz values are computed \\
+\verb=-nev [1]=        & The number of requested eigenpairs ($\le$ \verb=ss=)) \\
+\verb=-etransform [0]=       & The generalized eigenvalue transformation selection \\
+                       & \verb=-etransform {auto|0}     =  Select the default transformation behavior \\
+                       & \verb=-etransform {shift-invert|1}      =  Shift-invert $T = (A - \sigma B)^{-1}B$ \\
+                       & \verb=-etransform {buckling|2}      =  Buckling $T = (A - \sigma B)^{-1}A$ \\
 \hline         
 \end{tabular}
 \end{center}
@@ -8391,6 +8824,16 @@ T. Sogabe and S. Zhang.
 \newblock A COCR Method for Solving Complex Symmetric Linear Systems.
 \newblock Journal of Computational and Applied Mathematics, Vol.~199, No.~2, pp.\ 297--303, 2007.
 
+\bibitem{gcro-dr}
+Q. Niu, L-Z. Lu and G. Liu.
+\newblock Accelerated GCRO-DR method for solving sequences of systems of linear equations.
+\newblock Journal of Computational and Applied Mathematics, Vol.~253, pp.\ 131--141, 2013. 
+
+\bibitem{fgcro-dr}
+L. M. Carvalho, S. Gratton, R. Lago and X. Vasseur.
+\newblock A Flexible Generalized Conjugate Residual Method with Inner Orthogonalization and Deflated Restarting.
+\newblock SIAM Journal on Matrix Analysis and Applications, Vol.~32, No.~4, pp.\ 1212--1235, 2011. 
+
 \bibitem{power}
 R. von Mises and H. Pollaczek-Geiringer.
 \newblock Praktische Verfahren der Gleichungsaufl\"osung.
@@ -8439,6 +8882,11 @@ W. E. Arnoldi.
 \newblock The Principle of Minimized Iterations in the Solution of the Matrix Eigenvalue Problems.
 \newblock Quarterly of Applied Mathematics, Vol.~9, No.~17, pp.\ 17--29, 1951.
 
+\bibitem{polizzi}
+E. Polizzi.
+\newblock FEAST Eigenvalue Solver v4.0 User Guide.
+\newblock arXiv:2002.04807, 2020.
+  
 \bibitem{axelsson}
 O. Axelsson.
 \newblock A Survey of Preconditioned Iterative Methods for Linear
@@ -8478,7 +8926,12 @@ T. Kohno, H. Kotakemori, and H. Niki.
 \bibitem{fujii01}
 A. Fujii, A. Nishida, and Y. Oyanagi.
 \newblock Evaluation of Parallel Aggregate Creation Orders : Smoothed Aggregation Algebraic Multigrid Method.
-\newblock High Performance Computational Science and Engineering, pp.\ 99--122, Springer, 2005. 
+\newblock High Performance Computational Science and Engineering, pp.\ 99--122, Springer, 2005.
+
+\bibitem{epperly}
+E. N. Epperly, A. T. Barker, and R. D. Falgout.
+\newblock Smoothers for Matrix-Free Algebraic Multigrid Preconditioning of High-Order Finite Elements.
+\newblock LLNL-TR-814531, 2020.
 
 \bibitem{abe01}
 K. Abe, S. Zhang, H. Hasegawa, and R. Himeno.

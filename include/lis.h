@@ -1,5 +1,4 @@
-/* Copyright (C) 2005 The Scalable Software Infrastructure Project. All rights
-   reserved.
+/* Copyright (C) 2005 The Scalable Software Infrastructure Project. All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
@@ -8,25 +7,35 @@
    2. Redistributions in binary form must reproduce the above copyright
       notice, this list of conditions and the following disclaimer in the
       documentation and/or other materials provided with the distribution.
-   3. Neither the name of the project nor the names of its contributors
-      may be used to endorse or promote products derived from this software
+   3. Neither the name of the project nor the names of its contributors 
+      may be used to endorse or promote products derived from this software 
       without specific prior written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE SCALABLE SOFTWARE INFRASTRUCTURE PROJECT
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
    TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-   PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE SCALABLE SOFTWARE
-   INFRASTRUCTURE PROJECT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
-   OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-   WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-   OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
-   ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+   PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE SCALABLE SOFTWARE INFRASTRUCTURE
+   PROJECT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+   OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+   POSSIBILITY OF SUCH DAMAGE.
 */
 
 #ifndef __LIS_H__
 #define __LIS_H__
+
+#ifdef HAVE_CONFIG_H
+#include "lis_config.h"
+#else
+#ifdef HAVE_CONFIG_WIN_H
+#include "lis_config_win.h"
+#endif
+#endif
+
+#include <math.h>
 
 #ifdef __cplusplus
 #undef HAVE_COMPLEX_H
@@ -34,7 +43,7 @@ extern "C" {
 #endif
 
 /**************************************/
-#define LIS_VERSION "2.1.4"
+#define LIS_VERSION	"2.1.23"
 /**************************************/
 #include <stdio.h>
 #ifdef USE_COMPLEX
@@ -50,8 +59,8 @@ extern "C" {
 #include <quadmath.h>
 #endif
 
-#define _max(a, b) ((a) >= (b) ? (a) : (b))
-#define _min(a, b) ((a) <= (b) ? (a) : (b))
+#define _max(a,b) ((a) >= (b) ? (a) : (b))
+#define _min(a,b) ((a) <= (b) ? (a) : (b))
 
 #define LIS_FMT_AUTO 0
 #define LIS_FMT_PLAIN 1
@@ -67,7 +76,8 @@ extern "C" {
 #define LIS_BINARY_BIG 0
 #define LIS_BINARY_LITTLE 1
 
-#define LIS_OPTIONS_LEN 27
+
+#define LIS_OPTIONS_LEN 28
 #define LIS_OPTIONS_SOLVER 0
 #define LIS_OPTIONS_PRECON 1
 #define LIS_OPTIONS_MAXITER 2
@@ -95,6 +105,7 @@ extern "C" {
 #define LIS_OPTIONS_CONV_COND 24
 #define LIS_OPTIONS_INIT_SHADOW_RESID 25
 #define LIS_OPTIONS_IDRS_RESTART 26
+#define LIS_OPTIONS_MAXITER_NO_IMP 27
 
 #define LIS_EOPTIONS_LEN 13
 #define LIS_EOPTIONS_ESOLVER 0
@@ -111,31 +122,38 @@ extern "C" {
 #define LIS_EOPTIONS_SWITCH_MAXITER 11
 #define LIS_EOPTIONS_RVAL 12
 
-#define LIS_PARAMS_LEN 15
-#define LIS_PARAMS_RESID LIS_OPTIONS_LEN + 0
-#define LIS_PARAMS_OMEGA LIS_OPTIONS_LEN + 1
-#define LIS_PARAMS_RELAX LIS_OPTIONS_LEN + 2
-#define LIS_PARAMS_DROP LIS_OPTIONS_LEN + 3
-#define LIS_PARAMS_ALPHA LIS_OPTIONS_LEN + 4
-#define LIS_PARAMS_TAU LIS_OPTIONS_LEN + 5
-#define LIS_PARAMS_SIGMA LIS_OPTIONS_LEN + 6
-#define LIS_PARAMS_GAMMA LIS_OPTIONS_LEN + 7
-#define LIS_PARAMS_SSOR_OMEGA LIS_OPTIONS_LEN + 8
-#define LIS_PARAMS_PRESID LIS_OPTIONS_LEN + 9
-#define LIS_PARAMS_POMEGA LIS_OPTIONS_LEN + 10
-#define LIS_PARAMS_SWITCH_RESID LIS_OPTIONS_LEN + 11
-#define LIS_PARAMS_RATE LIS_OPTIONS_LEN + 12
-#define LIS_PARAMS_RESID_WEIGHT LIS_OPTIONS_LEN + 13
-#define LIS_PARAMS_SAAMG_THETA LIS_OPTIONS_LEN + 14
+#define LIS_PARAMS_LEN 16
+#define LIS_PARAMS_RESID LIS_OPTIONS_LEN+0
+#define LIS_PARAMS_OMEGA LIS_OPTIONS_LEN+1
+#define LIS_PARAMS_RELAX LIS_OPTIONS_LEN+2
+#define LIS_PARAMS_DROP LIS_OPTIONS_LEN+3
+#define LIS_PARAMS_ALPHA LIS_OPTIONS_LEN+4
+#define LIS_PARAMS_TAU LIS_OPTIONS_LEN+5
+#define LIS_PARAMS_SIGMA LIS_OPTIONS_LEN+6
+#define LIS_PARAMS_GAMMA LIS_OPTIONS_LEN+7
+#define LIS_PARAMS_SSOR_OMEGA LIS_OPTIONS_LEN+8
+#define LIS_PARAMS_PRESID LIS_OPTIONS_LEN+9
+#define LIS_PARAMS_POMEGA LIS_OPTIONS_LEN+10
+#define LIS_PARAMS_SWITCH_RESID LIS_OPTIONS_LEN+11
+#define LIS_PARAMS_RATE LIS_OPTIONS_LEN+12
+#define LIS_PARAMS_RESID_WEIGHT LIS_OPTIONS_LEN+13
+#define LIS_PARAMS_SAAMG_THETA LIS_OPTIONS_LEN+14
+#define LIS_PARAMS_ILU_PIVOT_TOL LIS_OPTIONS_LEN+15
 
 #define LIS_EPARAMS_LEN 3
-#define LIS_EPARAMS_RESID LIS_EOPTIONS_LEN + 0
-#define LIS_EPARAMS_SHIFT LIS_EOPTIONS_LEN + 1
-#define LIS_EPARAMS_SHIFT_IM LIS_EOPTIONS_LEN + 2
+#define LIS_EPARAMS_RESID LIS_EOPTIONS_LEN+0
+#define LIS_EPARAMS_SHIFT LIS_EOPTIONS_LEN+1
+#define LIS_EPARAMS_SHIFT_IM LIS_EOPTIONS_LEN+2
 
 #define LIS_OPTIONS_FILE -1
 #define LIS_OPTIONS_HELP -2
 #define LIS_OPTIONS_VER -3
+
+/* RHS compatibility policy for configured left nullspaces. */
+#define LIS_RHS_POLICY_ASSUME_COMPATIBLE 0
+#define LIS_RHS_POLICY_REJECT            1
+#define LIS_RHS_POLICY_PROJECT           2
+
 
 #define LIS_PRINT_NONE 0
 #define LIS_PRINT_MEM 1
@@ -156,7 +174,12 @@ extern "C" {
 #define LIS_CONV_COND_NRM2_B 1
 #define LIS_CONV_COND_NRM1_B 2
 
-#define LIS_SOLVER_LEN 25
+/* Residual classification reported by solver callbacks. */
+#define LIS_SOLVER_RESIDUAL_RECURSIVE 0
+#define LIS_SOLVER_RESIDUAL_PROJECTED 1
+#define LIS_SOLVER_RESIDUAL_TRUE      2
+
+#define LIS_SOLVER_LEN 27
 #define LIS_SOLVER_CG 1
 #define LIS_SOLVER_BICG 2
 #define LIS_SOLVER_CGS 3
@@ -183,8 +206,22 @@ extern "C" {
 #define LIS_SOLVER_MINRES 23
 #define LIS_SOLVER_COCG 24
 #define LIS_SOLVER_COCR 25
+#define LIS_SOLVER_GCRODR 26
+#define LIS_SOLVER_FGCRODR 27
 
-#define LIS_ESOLVER_LEN 16
+#define LIS_GCRODR_RECYCLE_NONE 0
+#define LIS_GCRODR_RECYCLE_BUILD 1
+#define LIS_GCRODR_RECYCLE_KEEP 2
+#define LIS_GCRODR_RECYCLE_REFRESH 3
+#define LIS_GCRODR_RECYCLE_REJECT 4
+
+#define LIS_FGCRODR_RECYCLE_NONE 0
+#define LIS_FGCRODR_RECYCLE_BUILD 1
+#define LIS_FGCRODR_RECYCLE_KEEP 2
+#define LIS_FGCRODR_RECYCLE_TRANSPORT 3
+#define LIS_FGCRODR_RECYCLE_REJECT 4
+
+#define LIS_ESOLVER_LEN 18
 #define LIS_ESOLVER_PI 1
 #define LIS_ESOLVER_II 2
 #define LIS_ESOLVER_RQI 3
@@ -201,6 +238,12 @@ extern "C" {
 #define LIS_ESOLVER_GSI 14
 #define LIS_ESOLVER_GLI 15
 #define LIS_ESOLVER_GAI 16
+#define LIS_ESOLVER_FEAST 17
+#define LIS_ESOLVER_KRYLOV 18
+
+#define LIS_EIGEN_TRANSFORM_AUTO 0
+#define LIS_EIGEN_TRANSFORM_SHIFT_INVERT 1
+#define LIS_EIGEN_TRANSFORM_BUCKLING 2
 
 #define LIS_INS_VALUE 0
 #define LIS_ADD_VALUE 1
@@ -221,6 +264,15 @@ extern "C" {
 #define LIS_PRECISION_QUAD 1
 #define LIS_PRECISION_SWITCH 2
 
+/*
+ * Storage precision policy for supported preconditioners.
+ *
+ * This is independent of LIS_PRECISION_* solver arithmetic.
+ */
+#define LIS_PRECON_HALF_OFF   0
+#define LIS_PRECON_HALF_ON    1
+#define LIS_PRECON_HALF_NOPROBE 2
+
 #define LIS_LABEL_VECTOR 0
 #define LIS_LABEL_MATRIX 1
 
@@ -233,7 +285,7 @@ extern "C" {
 #define LIS_PRECONNAME_MAX 10
 #define LIS_PRECON_REGISTER_MAX 10
 
-#define LIS_PRECON_TYPE_LEN 12
+#define LIS_PRECON_TYPE_LEN 13
 #define LIS_PRECON_TYPE_NONE 0
 #define LIS_PRECON_TYPE_JACOBI 1
 #define LIS_PRECON_TYPE_ILU 2
@@ -246,7 +298,21 @@ extern "C" {
 #define LIS_PRECON_TYPE_ILUT 9
 #define LIS_PRECON_TYPE_BJACOBI 10
 #define LIS_PRECON_TYPE_ADDS 11
+#define LIS_PRECON_TYPE_MFAMG 12
 #define LIS_PRECON_TYPE_USERDEF LIS_PRECON_TYPE_LEN
+
+/* Sequence policy selection. */
+#define LIS_SEQUENCE_POLICY_MANUAL 0
+#define LIS_SEQUENCE_POLICY_AUTO 1
+
+/* Persistent preconditioner refresh policies for value-only changes.
+ * SAFE: conservative reset; FROZEN_PATTERN: existing ILUT numeric refresh.
+ * JACOBI_NUMERIC: separate opt-in Jacobi diagonal refresh on verified CSR.
+ * This avoids changing semantics for existing FROZEN_PATTERN users.
+ */
+#define LIS_SEQUENCE_PRECON_REFRESH_SAFE 0
+#define LIS_SEQUENCE_PRECON_REFRESH_FROZEN_PATTERN 1
+#define LIS_SEQUENCE_PRECON_REFRESH_JACOBI_NUMERIC 2
 
 #define LIS_MATRIX_ASSEMBLING 0
 #define LIS_MATRIX_CSR 1
@@ -274,35 +340,54 @@ extern "C" {
 #define LIS_MATRIX_LBSR 19
 #define LIS_MATRIX_CDIA 20
 #define LIS_MATRIX_MSC 21
-#define LIS_MATRIX_DECIDING_SIZE -(LIS_MATRIX_RCO + 1)
-#define LIS_MATRIX_NULL -(LIS_MATRIX_RCO + 2)
+#define LIS_MATRIX_USER 22
+#define LIS_MATRIX_OPERATOR 23
+
+/*
+ * Matrix operation capabilities.
+ *
+ * These flags describe operation support provided by the current
+ * matrix type and callbacks. They do not imply that matrix assembly
+ * or numerical setup has been completed.
+ */
+#define LIS_MATRIX_CAP_MATVEC      0x01
+#define LIS_MATRIX_CAP_MATVECH     0x02
+#define LIS_MATRIX_CAP_DIAGONAL    0x04
+#define LIS_MATRIX_CAP_ROW_ACCESS  0x08
+#define LIS_MATRIX_CAP_ROW_THREAD_SAFE 0x10
+#define LIS_MATRIX_DECIDING_SIZE -(LIS_MATRIX_RCO+1)
+#define LIS_MATRIX_NULL -(LIS_MATRIX_RCO+2)
 
 #define LIS_MATRIX_DEFAULT LIS_MATRIX_CSR
 #define LIS_MATRIX_POINT LIS_MATRIX_CSR
 #define LIS_MATRIX_BLOCK LIS_MATRIX_BSR
 
+
 #if defined(_DEBUG)
-#define LIS_DEBUG_FUNC_IN lis_debug_trace_func(1, __FUNC__)
-#define LIS_DEBUG_FUNC_OUT lis_debug_trace_func(0, __FUNC__)
+#define LIS_DEBUG_FUNC_IN lis_debug_trace_func(1,__FUNC__)
+#define LIS_DEBUG_FUNC_OUT lis_debug_trace_func(0,__FUNC__)
 #else
 #define LIS_DEBUG_FUNC_IN
 #define LIS_DEBUG_FUNC_OUT
 #endif
 /****************************************/
 /****************************************/
-typedef struct {
-  double hi;
-  double lo;
+typedef struct
+{
+	double	hi;
+	double	lo;
 } LIS_DOUBLE_DOUBLE;
 
-typedef struct {
-  double hi[2];
-  double lo[2];
+typedef struct
+{
+	double	hi[2];
+	double	lo[2];
 } LIS_DOUBLE_DOUBLE_PD;
 
-typedef struct {
-  double *hi;
-  double *lo;
+typedef struct
+{
+	double	*hi;
+	double	*lo;
 } LIS_DOUBLE_DOUBLE_PTR;
 
 #if defined(_LONG__DOUBLE)
@@ -329,7 +414,7 @@ typedef __float128 LIS_REAL;
 #define fabs(x) cabsq(x)
 #define log(x) clogq(x)
 #define conj(x) conjq(x)
-#define pow(x, y) cpowq(x, y)
+#define pow(x,y) cpowq(x,y)
 #define proj(x) cprojq(x)
 #define sin(x) csinq(x)
 #define sinh(x) csinhq(x)
@@ -355,7 +440,7 @@ typedef long double LIS_REAL;
 #define fabs(x) cabsl(x)
 #define log(x) clogl(x)
 #define conj(x) conjl(x)
-#define pow(x, y) cpowl(x, y)
+#define pow(x,y) cpowl(x,y)
 #define proj(x) cprojl(x)
 #define sin(x) csinl(x)
 #define sinh(x) csinhl(x)
@@ -368,22 +453,22 @@ typedef long double LIS_REAL;
 #else
 #ifdef HAVE_QUADMATH_H
 typedef __float128 LIS_SCALAR;
-typedef __float128 LIS_REAL;
+typedef __float128 LIS_REAL;  
 #define sin(x) sinq(x)
 #define cos(x) cosq(x)
 #define tan(x) tanq(x)
 #define asin(x) asinq(x)
 #define acos(x) acosq(x)
 #define atan(x) atanq(x)
-#define atan2(x, y) atan2q((x), (y))
-#define fmod(x, y) fmodq((x), (y))
+#define atan2(x,y) atan2q((x),(y))
+#define fmod(x,y) fmodq((x),(y))
 #define fabs(x) fabsq(x)
 #define sqrt(x) sqrtq(x)
 #define log(x) logq(x)
 #define log10(x) log10q(x)
 #define conj(x) x
 #define exp(x) expq(x)
-#define pow(x, y) powq((x), (y))
+#define pow(x,y) powq((x),(y))
 #define LIS_MPI_SCALAR MPI_LONG_DOUBLE
 #define LIS_MPI_REAL MPI_LONG_DOUBLE
 #else
@@ -395,15 +480,15 @@ typedef long double LIS_REAL;
 #define asin(x) asinl(x)
 #define acos(x) acosl(x)
 #define atan(x) atanl(x)
-#define atan2(x, y) atan2l((x), (y))
-#define fmod(x, y) fmodl((x), (y))
+#define atan2(x,y) atan2l((x),(y))
+#define fmod(x,y) fmodl((x),(y))
 #define fabs(x) fabsl(x)
 #define sqrt(x) sqrtl(x)
 #define log(x) logl(x)
 #define log10(x) log10l(x)
 #define conj(x) x
 #define exp(x) expl(x)
-#define pow(x, y) powl((x), (y))
+#define pow(x,y) powl((x),(y))
 #define LIS_MPI_SCALAR MPI_LONG_DOUBLE
 #define LIS_MPI_REAL MPI_LONG_DOUBLE
 #endif
@@ -428,7 +513,7 @@ typedef double LIS_REAL;
 #define exp(x) cexp(x)
 #define fabs(x) cabs(x)
 #define log(x) clog(x)
-#define pow(x, y) cpow(x, y)
+#define pow(x,y) cpow(x,y)
 #define proj(x) cproj(x)
 #define sin(x) csin(x)
 #define sinh(x) csinh(x)
@@ -458,667 +543,1159 @@ typedef unsigned int LIS_UNSIGNED_INT;
 #endif
 
 #ifdef USE_MAIN__
-#define main MAIN__
+	#define main MAIN__
 #endif
 
 #ifdef _OPENMP
-#include <omp.h>
+	#include <omp.h>
 #endif
 
 #ifdef USE_MPI
-#include <mpi.h>
-typedef MPI_Comm LIS_Comm;
-#define LIS_COMM_WORLD ((LIS_Comm)MPI_COMM_WORLD)
-#if defined(_LONG__LONG)
-#define LIS_MPI_INT MPI_LONG_LONG_INT
-#define LIS_MPI_Fint MPI_Fint
+	#include <mpi.h>
+	typedef MPI_Comm LIS_Comm;
+	#define LIS_COMM_WORLD	((LIS_Comm)MPI_COMM_WORLD)
+#if defined(_LONG__LONG) 
+	#define LIS_MPI_INT     MPI_LONG_LONG_INT
+	#define LIS_MPI_Fint    MPI_Fint
 #else
-#define LIS_MPI_INT MPI_INT
-#define LIS_MPI_Fint MPI_Fint
+	#define LIS_MPI_INT     MPI_INT
+	#define LIS_MPI_Fint    MPI_Fint
 #endif
 #else
-typedef LIS_INT LIS_Comm;
-#define LIS_COMM_WORLD ((LIS_Comm)0x1)
+	typedef LIS_INT LIS_Comm;
+	#define LIS_COMM_WORLD	((LIS_Comm)0x1)
 #endif
 
-struct LIS_COMMTABLE_STRUCT {
-  LIS_Comm comm;
-  LIS_INT pad;
-  LIS_INT neibpetot;
-  LIS_INT imnnz;
-  LIS_INT exnnz;
-  LIS_INT wssize;
-  LIS_INT wrsize;
-  LIS_INT *neibpe;
-  LIS_INT *import_ptr;
-  LIS_INT *import_index;
-  LIS_INT *export_ptr;
-  LIS_INT *export_index;
-  LIS_SCALAR *ws;
-  LIS_SCALAR *wr;
+struct LIS_COMMTABLE_STRUCT
+{
+	LIS_Comm comm;
+	LIS_INT pad;
+	LIS_INT neibpetot;
+	LIS_INT imnnz;
+	LIS_INT exnnz;
+	LIS_INT wssize;
+	LIS_INT wrsize;
+	LIS_INT *neibpe;
+	LIS_INT *import_ptr;
+	LIS_INT *import_index;
+	LIS_INT *export_ptr;
+	LIS_INT *export_index;
+	LIS_SCALAR *ws;
+	LIS_SCALAR *wr;
 #ifdef USE_MPI
-  MPI_Request *req1, *req2;
-  MPI_Status *sta1, *sta2;
+	MPI_Request  *req1,*req2;
+	MPI_Status *sta1,*sta2;
 #endif
 };
 
 typedef struct LIS_COMMTABLE_STRUCT *LIS_COMMTABLE;
 
-struct LIS_VECTOR_STRUCT {
-  LIS_INT label;
-  LIS_INT status;
-  LIS_INT precision;
-  LIS_INT gn;
-  LIS_INT n;
-  LIS_INT np;
-  LIS_INT pad;
-  LIS_INT origin;
-  LIS_INT is_copy;
-  LIS_INT is_destroy;
-  LIS_INT is_scaled;
-  LIS_INT my_rank;
-  LIS_INT nprocs;
-  LIS_Comm comm;
-  LIS_INT is;
-  LIS_INT ie;
-  LIS_INT *ranges;
-  LIS_SCALAR *value;
-  LIS_SCALAR *value_lo;
-  LIS_SCALAR *work;
-  LIS_INT intvalue;
+struct LIS_VECTOR_STRUCT
+{
+	LIS_INT label;
+	LIS_INT status;
+	LIS_INT precision;
+	LIS_INT gn;
+	LIS_INT n;
+	LIS_INT np;
+	LIS_INT pad;
+	LIS_INT origin;
+	LIS_INT is_copy;
+	LIS_INT is_destroy;
+	LIS_INT is_scaled;
+	LIS_INT my_rank;
+	LIS_INT nprocs;
+	LIS_Comm comm;
+	LIS_INT is;
+	LIS_INT ie;
+	LIS_INT *ranges;
+	LIS_SCALAR *value;
+	LIS_SCALAR *value_lo;
+	LIS_SCALAR *work;
+	LIS_INT intvalue;
+	/* value points to application-owned storage. */
+	LIS_INT value_external;
 };
 typedef struct LIS_VECTOR_STRUCT *LIS_VECTOR;
 
-struct LIS_VECTOR_S_STRUCT {
-  LIS_INT label;
-  LIS_INT status;
-  LIS_INT precision;
-  LIS_INT gn;
-  LIS_INT n;
-  LIS_INT np;
-  LIS_INT pad;
-  LIS_INT origin;
-  LIS_INT is_copy;
-  LIS_INT is_destroy;
-  LIS_INT is_scaled;
-  LIS_INT my_rank;
-  LIS_INT nprocs;
-  LIS_Comm comm;
-  LIS_INT is;
-  LIS_INT ie;
-  LIS_INT *ranges;
-  LIS_SCALAR *value;
-  LIS_SCALAR *value_lo;
-  LIS_QUAD_PTR value_hl;
-  LIS_SCALAR *work;
-  LIS_INT *index;
-  LIS_INT nnz;
+struct LIS_VECTOR_S_STRUCT
+{
+	LIS_INT label;
+	LIS_INT status;
+	LIS_INT precision;
+	LIS_INT gn;
+	LIS_INT n;
+	LIS_INT np;
+	LIS_INT pad;
+	LIS_INT origin;
+	LIS_INT is_copy;
+	LIS_INT is_destroy;
+	LIS_INT is_scaled;
+	LIS_INT my_rank;
+	LIS_INT nprocs;
+	LIS_Comm comm;
+	LIS_INT is;
+	LIS_INT ie;
+	LIS_INT *ranges;
+	LIS_SCALAR *value;
+	LIS_SCALAR *value_lo;
+	LIS_QUAD_PTR value_hl;
+	LIS_SCALAR *work;
+	LIS_INT *index;
+	LIS_INT nnz;
 };
 typedef struct LIS_VECTOR_S_STRUCT *LIS_VECTOR_S;
 
+/* Generic application-owned shell/user matrix callback. */
+typedef LIS_INT (*LIS_MATRIX_USER_MATVEC)(void *user_data,
+                                          const LIS_SCALAR *x,
+                                          LIS_SCALAR *y);
+
+/*
+ * Optional application-owned block matrix-vector callback.
+ *
+ * X and Y contain nvec LIS vectors. LIS does not take ownership
+ * of the vectors or their storage.
+ */
+typedef LIS_INT (*LIS_MATRIX_USER_MATVEC_BLOCK)(
+        void *user_data,
+        LIS_INT nvec,
+        LIS_VECTOR X[],
+        LIS_VECTOR Y[]);
+
+typedef LIS_INT (*LIS_MATRIX_USER_GET_DIAGONAL)(void *user_data,
+                                                LIS_SCALAR *d);
+/*
+ * Application-owned row access for LIS_MATRIX_USER.
+ *
+ * local_row is zero-based and local to the current process.
+ *
+ * Query mode:
+ *   cols == NULL && vals == NULL
+ *   -> *nnz receives the required number of entries.
+ *
+ * Fill mode:
+ *   cols != NULL && vals != NULL
+ *   -> on entry *nnz is the capacity of cols/vals;
+ *      on success *nnz is the number of entries written.
+ *
+ * Returned column indices are zero-based GLOBAL indices.
+ */
+typedef LIS_INT (*LIS_MATRIX_USER_GET_ROW)(void *user_data,
+                                           LIS_INT local_row,
+                                           LIS_INT *nnz,
+                                           LIS_INT *cols,
+                                           LIS_SCALAR *vals);
+
 #define LIS_MATRIX_OPTION_LEN 10
 
-struct LIS_MATRIX_CORE_STRUCT {
-  LIS_INT nnz;
-  LIS_INT ndz;
-  LIS_INT bnr;
-  LIS_INT bnc;
-  LIS_INT nr;
-  LIS_INT nc;
-  LIS_INT bnnz;
-  LIS_INT nnd;
-  LIS_INT maxnzr;
-  LIS_INT *ptr;
-  LIS_INT *row;
-  LIS_INT *col;
-  LIS_INT *index;
-  LIS_INT *bptr;
-  LIS_INT *bindex;
-  LIS_SCALAR *value;
-  LIS_SCALAR *work;
+struct LIS_MATRIX_CORE_STRUCT
+{
+	LIS_INT nnz;
+	LIS_INT ndz;
+	LIS_INT bnr;
+	LIS_INT bnc;
+	LIS_INT nr;
+	LIS_INT nc;
+	LIS_INT bnnz;
+	LIS_INT nnd;
+	LIS_INT maxnzr;
+	LIS_INT *ptr;
+	LIS_INT *row;
+	LIS_INT *col;
+	LIS_INT *index;
+	LIS_INT *bptr;
+	LIS_INT *bindex;
+	LIS_SCALAR *value;
+	LIS_SCALAR *work;
 };
 typedef struct LIS_MATRIX_CORE_STRUCT *LIS_MATRIX_CORE;
 
-struct LIS_MATRIX_DIAG_STRUCT {
-  LIS_INT label;
-  LIS_INT status;
-  LIS_INT precision;
-  LIS_INT gn;
-  LIS_INT n;
-  LIS_INT np;
-  LIS_INT pad;
-  LIS_INT origin;
-  LIS_INT is_copy;
-  LIS_INT is_destroy;
-  LIS_INT is_scaled;
-  LIS_INT my_rank;
-  LIS_INT nprocs;
-  LIS_Comm comm;
-  LIS_INT is;
-  LIS_INT ie;
-  LIS_INT *ranges;
-  LIS_SCALAR *value;
-  LIS_SCALAR *work;
+struct LIS_MATRIX_DIAG_STRUCT
+{
+	LIS_INT label;
+	LIS_INT status;
+	LIS_INT precision;
+	LIS_INT gn;
+	LIS_INT n;
+	LIS_INT np;
+	LIS_INT pad;
+	LIS_INT origin;
+	LIS_INT is_copy;
+	LIS_INT is_destroy;
+	LIS_INT is_scaled;
+	LIS_INT my_rank;
+	LIS_INT nprocs;
+	LIS_Comm comm;
+	LIS_INT is;
+	LIS_INT ie;
+	LIS_INT *ranges;
+	LIS_SCALAR *value;
+	LIS_SCALAR *work;
 
-  LIS_INT bn;
-  LIS_INT nr;
-  LIS_INT *bns;
-  LIS_INT *ptr;
-  LIS_SCALAR **v_value;
+	LIS_INT bn;
+	LIS_INT nr;
+	LIS_INT *bns;
+	LIS_INT *ptr;
+	LIS_SCALAR **v_value;
 };
 typedef struct LIS_MATRIX_DIAG_STRUCT *LIS_MATRIX_DIAG;
 
-struct LIS_MATRIX_STRUCT {
-  LIS_INT label;
-  LIS_INT status;
-  LIS_INT precision;
-  LIS_INT gn;
-  LIS_INT n;
-  LIS_INT np;
-  LIS_INT pad;
-  LIS_INT origin;
-  LIS_INT is_copy;
-  LIS_INT is_destroy;
-  LIS_INT is_scaled;
-  LIS_INT my_rank;
-  LIS_INT nprocs;
-  LIS_Comm comm;
-  LIS_INT is;
-  LIS_INT ie;
-  LIS_INT *ranges;
+struct LIS_MATRIX_STRUCT
+{
+	LIS_INT label;
+	LIS_INT status;
+	LIS_INT precision;
+	LIS_INT gn;
+	LIS_INT n;
+	LIS_INT np;
+	LIS_INT pad;
+	LIS_INT origin;
+	LIS_INT is_copy;
+	LIS_INT is_destroy;
+	LIS_INT is_scaled;
+	LIS_INT my_rank;
+	LIS_INT nprocs;
+	LIS_Comm comm;
+	LIS_INT is;
+	LIS_INT ie;
+	LIS_INT *ranges;
 
-  LIS_INT matrix_type;
-  LIS_INT nnz;       /* CSR,CSC,MSR,JAD,VBR,COO */
-  LIS_INT ndz;       /* MSR */
-  LIS_INT bnr;       /* BSR,BSC */
-  LIS_INT bnc;       /* BSR,BSC */
-  LIS_INT nr;        /* BSR,BSC,VBR */
-  LIS_INT nc;        /* BSR,BSC,VBR */
-  LIS_INT bnnz;      /* BSR,BSC,VBR */
-  LIS_INT nnd;       /* DIA */
-  LIS_INT maxnzr;    /* ELL,JAD */
-  LIS_INT *ptr;      /* CSR,CSC,JAD */
-  LIS_INT *row;      /* JAD,VBR,COO */
-  LIS_INT *col;      /* JAD,VBR,COO */
-  LIS_INT *index;    /* CSR,CSC,MSR,DIA,ELL,JAD */
-  LIS_INT *bptr;     /* BSR,BSC,VBR */
-  LIS_INT *bindex;   /* BSR,BSC,VBR */
-  LIS_SCALAR *value; /* CSR,CSC,MSR,DIA,ELL,JAD,BSR,BSC,VBR,DNS,COO */
-  LIS_SCALAR *work;
+	LIS_INT matrix_type;
+	LIS_INT nnz; /* CSR,CSC,MSR,JAD,VBR,COO */
+	LIS_INT ndz; /* MSR */
+	LIS_INT bnr; /* BSR,BSC */
+	LIS_INT bnc; /* BSR,BSC */
+	LIS_INT nr; /* BSR,BSC,VBR */
+	LIS_INT nc; /* BSR,BSC,VBR */
+	LIS_INT bnnz; /* BSR,BSC,VBR */
+	LIS_INT nnd; /* DIA */
+	LIS_INT maxnzr; /* ELL,JAD */
+	LIS_INT *ptr; /* CSR,CSC,JAD */
+	LIS_INT *row; /* JAD,VBR,COO */
+	LIS_INT *col; /* JAD,VBR,COO */
+	LIS_INT *index; /* CSR,CSC,MSR,DIA,ELL,JAD */
+	LIS_INT *bptr; /* BSR,BSC,VBR */
+	LIS_INT *bindex; /* BSR,BSC,VBR */
+	LIS_SCALAR *value; /* CSR,CSC,MSR,DIA,ELL,JAD,BSR,BSC,VBR,DNS,COO */
+	LIS_SCALAR *work;
 
-  LIS_MATRIX_CORE L;
-  LIS_MATRIX_CORE U;
-  LIS_MATRIX_DIAG D;
-  LIS_MATRIX_DIAG WD;
+	LIS_MATRIX_CORE L;
+	LIS_MATRIX_CORE U;
+	LIS_MATRIX_DIAG D;
+	LIS_MATRIX_DIAG WD;
 
-  LIS_INT is_block;
-  LIS_INT pad_comm;
-  LIS_INT is_pmat;
-  LIS_INT is_sorted;
-  LIS_INT is_splited;
-  LIS_INT is_save;
-  LIS_INT is_comm;
-  LIS_INT is_fallocated;
-  LIS_INT use_wd;
-  LIS_INT conv_bnr;
-  LIS_INT conv_bnc;
-  LIS_INT *conv_row;
-  LIS_INT *conv_col;
-  LIS_INT options[LIS_MATRIX_OPTION_LEN];
+	LIS_INT is_block;
+	LIS_INT pad_comm;
+	LIS_INT is_pmat;
+	LIS_INT is_sorted;
+	LIS_INT is_splited;
+	LIS_INT is_save;
+	LIS_INT is_comm;
+	LIS_INT is_fallocated;
+	LIS_INT use_wd;
+	LIS_INT conv_bnr;
+	LIS_INT conv_bnc;
+	LIS_INT *conv_row;
+	LIS_INT *conv_col;
+	LIS_INT options[LIS_MATRIX_OPTION_LEN];
 
-  LIS_INT w_annz;
-  LIS_INT *w_nnz;
-  LIS_INT *w_row;
-  LIS_INT **w_index;
-  LIS_SCALAR **w_value;
-  LIS_SCALAR ***v_value;
+	LIS_INT w_annz;
+	LIS_INT *w_nnz;
+	LIS_INT *w_row;
+	LIS_INT **w_index;
+	LIS_SCALAR **w_value;
+	LIS_SCALAR ***v_value;
 
-  LIS_INT *l2g_map;
-  LIS_COMMTABLE commtable;
+	LIS_INT *l2g_map;
+	LIS_COMMTABLE commtable;
+
+	/* Application-owned shell matrix state. LIS never frees user_data. */
+	void *user_data;
+	LIS_MATRIX_USER_MATVEC user_matvec;
+	LIS_MATRIX_USER_MATVEC user_matvech;
+	LIS_MATRIX_USER_MATVEC_BLOCK user_matvec_block;
+	LIS_MATRIX_USER_MATVEC_BLOCK user_matvech_block;
+	LIS_MATRIX_USER_GET_DIAGONAL user_get_diagonal;
+	LIS_MATRIX_USER_GET_ROW user_get_row;
+	LIS_INT user_get_row_thread_safe;
+
+	/* Non-owning linear-combination operator: alpha*A + beta*B. */
+	struct LIS_MATRIX_STRUCT *operator_A;
+	struct LIS_MATRIX_STRUCT *operator_B;
+	LIS_SCALAR operator_alpha;
+	LIS_SCALAR operator_beta;
+	LIS_VECTOR operator_work;
+	LIS_VECTOR operator_scale; /* non-owning scale for D*A*D */
+
+	/*
+	 * Explicit generations for sequences of related matrix states.
+	 * A structure change also implies a new numerical value state.
+	 */
+	LIS_UNSIGNED_INT structure_generation;
+	LIS_UNSIGNED_INT value_generation;
+
+	/* CSR ptr/index/value are borrowed from the application. */
+	LIS_INT csr_external;
 };
 typedef struct LIS_MATRIX_STRUCT *LIS_MATRIX;
 
-struct LIS_MATRIX_ILU_STRUCT {
-  LIS_INT n;
-  LIS_INT bs;
-  LIS_INT *nnz_ma;
-  LIS_INT *nnz;
-  LIS_INT *bsz;
-  LIS_INT **index;
-  LIS_SCALAR **value;
-  LIS_SCALAR ***values;
+
+struct LIS_MATRIX_ILU_STRUCT
+{
+	LIS_INT n;
+	LIS_INT bs;
+	LIS_INT *nnz_ma;
+	LIS_INT *nnz;
+	LIS_INT *bsz;
+	LIS_INT **index;
+	LIS_SCALAR **value;
+	LIS_SCALAR ***values;
 };
 typedef struct LIS_MATRIX_ILU_STRUCT *LIS_MATRIX_ILU;
 
-struct LIS_PRECON_STRUCT {
-  LIS_INT precon_type;
-  LIS_MATRIX A; /* SSOR */
-  LIS_MATRIX Ah;
-  LIS_MATRIX_ILU L;                 /* ilu(k),ilut,iluc,sainv */
-  LIS_MATRIX_ILU U;                 /* ilu(k),ilut,iluc,sainv */
-  LIS_MATRIX_DIAG WD;               /* bilu(k),bilut,biluc,bjacobi */
-  LIS_VECTOR D;                     /* ilu(k),ilut,iluc,jacobi,sainv */
-  LIS_VECTOR Pb;                    /* i+s */
-  LIS_VECTOR temp;                  /* saamg */
-  LIS_REAL theta;                   /* saamg */
-  LIS_VECTOR *work;                 /* adds */
-  struct LIS_SOLVER_STRUCT *solver; /* hybrid */
-  LIS_INT worklen;                  /* adds */
-  LIS_INT level_num;                /* saamg */
-  LIS_INT wsize;                    /* saamg */
-  LIS_INT solver_comm;              /* saamg */
-  LIS_INT my_rank;                  /* saamg */
-  LIS_INT nprocs;                   /* saamg */
-  LIS_INT is_copy;
-  LIS_COMMTABLE commtable; /* saamg */
+/*
+ * Private half-storage implementation state.
+ */
+struct LIS_HALF_ILU_STRUCT;
+typedef struct LIS_HALF_ILU_STRUCT *LIS_HALF_ILU;
+
+struct LIS_PRECON_STRUCT
+{
+	LIS_INT precon_type;
+	LIS_MATRIX A; /* SSOR */
+	LIS_MATRIX Ah;
+	LIS_MATRIX_ILU L; /* ilu(k),ilut,iluc,sainv */
+	LIS_MATRIX_ILU U; /* ilu(k),ilut,iluc,sainv */
+	LIS_MATRIX_DIAG WD; /* bilu(k),bilut,biluc,bjacobi */
+	LIS_VECTOR D; /* ilu(k),ilut,iluc,jacobi,sainv */
+	LIS_VECTOR Pb; /* i+s */
+	LIS_VECTOR temp; /* saamg */
+	LIS_REAL theta; /* saamg */
+	LIS_VECTOR *work; /* adds */
+	struct LIS_SOLVER_STRUCT *solver; /* hybrid */
+	LIS_INT worklen; /* adds */
+	LIS_INT level_num; /* saamg */
+	LIS_INT wsize; /* saamg */
+	LIS_INT solver_comm; /* saamg */
+	LIS_INT my_rank; /* saamg */
+	LIS_INT nprocs; /* saamg */
+	LIS_INT is_copy;
+	LIS_COMMTABLE commtable; /* saamg */
+	/* Built-in matrix-free aggregation state. */
+	struct LIS_MFAMG_STRUCT *mfamg;
+
+	/* Application-owned state for registered user preconditioners. */
+	void *user_data;
+	/* USERDEF cleanup callback copied from the registry at create time. */
+	LIS_INT (*user_destroy)(struct LIS_PRECON_STRUCT *precon);
+
+	/*
+	 * Optional private FP16 storage state.
+	 * Kept at the end of LIS_PRECON_STRUCT.
+	 */
+	LIS_HALF_ILU half;
 };
 typedef struct LIS_PRECON_STRUCT *LIS_PRECON;
 
-struct LIS_SOLVER_STRUCT {
-  LIS_MATRIX A, Ah;
-  LIS_VECTOR b, x, xx, d;
-  LIS_MATRIX_DIAG WD;
-  LIS_PRECON precon;
-  LIS_VECTOR *work;
-  LIS_REAL *rhistory;
-  LIS_INT worklen;
-  LIS_INT options[LIS_OPTIONS_LEN];
-  LIS_SCALAR params[LIS_PARAMS_LEN];
-  LIS_INT retcode;
-  LIS_INT iter;
-  LIS_INT iter2;
-  LIS_REAL resid;
-  double time;
-  double itime;
-  double ptime;
-  double p_c_time;
-  double p_i_time;
-  LIS_INT precision;
-  LIS_REAL bnrm;
-  LIS_REAL tol;
-  LIS_REAL tol_switch;
-  LIS_INT setup;
+struct LIS_NEAR_NULLSPACE_COARSE_STRUCT;
+typedef struct LIS_NEAR_NULLSPACE_COARSE_STRUCT *LIS_NEAR_NULLSPACE_COARSE;
+
+
+typedef struct LIS_SEQUENCE_DIAGNOSTICS_STRUCT
+{
+    /* Diagnostics for the most recent sequence solve. */
+    LIS_INT attempts;
+    LIS_INT retries;
+    LIS_INT recycle_resets;
+    LIS_INT precon_rebuilds;
+
+    LIS_INT first_retcode;
+    LIS_INT final_retcode;
+
+    LIS_INT initial_warm_start_kept;
+    LIS_INT last_warm_start_kept;
+
+    LIS_INT initial_residual_valid;
+    LIS_INT true_residual_valid;
+    LIS_REAL initial_residual;
+    LIS_REAL rhs_norm;
+    LIS_REAL true_residual;
+    LIS_REAL true_relative_residual;
+
+    /* Lifetime counters for this solver object. */
+    LIS_UNSIGNED_INT total_solves;
+    LIS_UNSIGNED_INT total_attempts;
+    LIS_UNSIGNED_INT total_retries;
+    LIS_UNSIGNED_INT total_recycle_resets;
+    LIS_UNSIGNED_INT total_precon_rebuilds;
+} LIS_SEQUENCE_DIAGNOSTICS;
+
+typedef struct LIS_FGCRODR_STATE_STRUCT *LIS_FGCRODR_STATE;
+
+struct LIS_SOLVER_STRUCT;
+
+/* Application-owned solver residual monitor. */
+typedef void (*LIS_SOLVER_MONITOR_CALLBACK)(
+	struct LIS_SOLVER_STRUCT *solver,
+	LIS_INT iter,
+	LIS_REAL residual,
+	LIS_REAL tolerance,
+	LIS_INT residual_kind,
+	void *user_data);
+
+/* Application-owned solver convergence decision. */
+typedef LIS_INT (*LIS_SOLVER_CONVERGENCE_CALLBACK)(
+	struct LIS_SOLVER_STRUCT *solver,
+	LIS_INT iter,
+	LIS_REAL residual,
+	LIS_REAL tolerance,
+	LIS_INT residual_kind,
+	void *user_data);
+
+struct LIS_SOLVER_STRUCT
+{
+	LIS_MATRIX A,Ah;
+	LIS_VECTOR b,x,xx,d;
+	LIS_MATRIX_DIAG WD;
+	LIS_PRECON precon;
+	/* Solver-owned copies of exact right, exact left, and near-nullspace vectors. */
+	LIS_VECTOR *near_nullspace;
+	LIS_VECTOR *nullspace;
+	LIS_VECTOR *left_nullspace;
+	LIS_INT nullspace_dim;
+	LIS_INT left_nullspace_dim;
+	LIS_INT rhs_compatibility_policy;
+	LIS_REAL rhs_compatibility_tol;
+	LIS_INT near_nullspace_dim;
+	/* MFAMG block size; 1 preserves weighted Jacobi. */
+	LIS_INT mfamg_block_size;
+	LIS_NEAR_NULLSPACE_COARSE near_nullspace_coarse;
+	/* Persistent GCRO-DR recycle state. */
+	LIS_VECTOR *recycle_u;
+	LIS_VECTOR *recycle_zu;
+	LIS_VECTOR *recycle_c;
+	LIS_INT recycle_dim;
+	LIS_INT recycle_alloc;
+	LIS_INT recycle_valid;
+	LIS_INT recycle_builds;
+	LIS_INT recycle_updates;
+	LIS_INT recycle_uses;
+	LIS_INT recycle_rejects;
+
+	/* GCRO-DR cross-solve policy/configuration. */
+	LIS_INT recycle_target_dim;
+	LIS_REAL recycle_keep_threshold;
+	LIS_REAL recycle_reject_threshold;
+	LIS_REAL recycle_quality;
+	LIS_REAL recycle_quality_min;
+	LIS_INT recycle_last_action;
+	LIS_INT recycle_cross_uses;
+	LIS_INT recycle_policy_keeps;
+	LIS_INT recycle_policy_refreshes;
+	LIS_INT recycle_policy_rejects;
+	LIS_VECTOR *work;
+	LIS_REAL *rhistory;
+
+	/* Application-owned residual monitor configuration. */
+	LIS_SOLVER_MONITOR_CALLBACK monitor;
+	void *monitor_data;
+
+	LIS_SOLVER_CONVERGENCE_CALLBACK convergence;
+	void *convergence_data;
+	LIS_INT worklen;
+	LIS_INT options[LIS_OPTIONS_LEN];
+	LIS_SCALAR params[LIS_PARAMS_LEN];
+	LIS_INT retcode;
+	LIS_INT iter;
+	LIS_INT iter2;
+	LIS_REAL resid;
+	double time;
+	double itime;
+	double ptime;
+	double p_c_time;
+	double p_i_time;
+	LIS_INT precision;
+	LIS_REAL bnrm;
+	LIS_REAL tol;
+	LIS_REAL tol_switch;
+	LIS_INT setup;
+
+	/* Policy controlling solver-owned sequence decisions. */
+	LIS_INT sequence_policy;
+
+	/* Value-only refresh strategy for persistent preconditioners. */
+	LIS_INT sequence_precon_refresh_policy;
+
+	/* Persistent preconditioner state for related systems. */
+	LIS_PRECON sequence_precon;
+	LIS_MATRIX sequence_precon_matrix;
+	LIS_UNSIGNED_INT sequence_precon_structure_generation;
+	LIS_UNSIGNED_INT sequence_precon_value_generation;
+	LIS_INT sequence_precon_matrix_type;
+	LIS_INT sequence_precon_is_scaled;
+	LIS_INT sequence_precon_type;
+
+	/*
+	 * Maximum number of sequence solves that may reuse a
+	 * numerically stale persistent preconditioner after
+	 * matrix values change. Zero preserves eager updates.
+	 */
+	LIS_INT sequence_precon_max_age;
+	LIS_INT sequence_precon_age;
+	LIS_INT sequence_precon_options[LIS_OPTIONS_LEN];
+	LIS_SCALAR sequence_precon_params[LIS_PARAMS_LEN];
+
+	/* Sequence warm-start and physical residual state. */
+	LIS_REAL sequence_initial_residual;
+	LIS_REAL sequence_rhs_norm;
+	LIS_REAL sequence_true_residual;
+	LIS_REAL sequence_true_relative_residual;
+	LIS_INT sequence_warm_start_kept;
+
+	LIS_INT sequence_initial_residual_valid;
+	LIS_INT sequence_true_residual_valid;
+	/* Most recent sequence-solve diagnostics. */
+	LIS_INT sequence_diag_attempts;
+	LIS_INT sequence_diag_retries;
+	LIS_INT sequence_diag_recycle_resets;
+	LIS_INT sequence_diag_precon_rebuilds;
+	LIS_INT sequence_diag_first_retcode;
+	LIS_INT sequence_diag_final_retcode;
+	LIS_INT sequence_diag_initial_warm_start_kept;
+	LIS_INT sequence_diag_initial_residual_valid;
+	LIS_REAL sequence_diag_initial_residual;
+	LIS_REAL sequence_diag_rhs_norm;
+
+	/* Lifetime sequence-solve diagnostics. */
+	LIS_UNSIGNED_INT sequence_diag_total_solves;
+	LIS_UNSIGNED_INT sequence_diag_total_attempts;
+	LIS_UNSIGNED_INT sequence_diag_total_retries;
+	LIS_UNSIGNED_INT sequence_diag_total_recycle_resets;
+	LIS_UNSIGNED_INT sequence_diag_total_precon_rebuilds;
+
+	/* Per-solver execution thread override. */
+	LIS_INT num_threads;
+
+        /* Private persistent FGCRO-DR state. */
+        LIS_FGCRODR_STATE fgcrodr_state;
+
+	/*
+	 * Half-storage policy remains separate from options[].
+	 *
+	 * This preserves LIS_OPTIONS_LEN and all existing
+	 * LIS_PARAMS_* numeric identifiers.
+	 */
+	LIS_INT precon_half_mode;
+	LIS_INT sequence_precon_half_mode;
 };
 typedef struct LIS_SOLVER_STRUCT *LIS_SOLVER;
 
-struct LIS_ESOLVER_STRUCT {
-  LIS_MATRIX A, B;
-  LIS_VECTOR x, xx, d;
-  LIS_SCALAR *evalue;
-  LIS_VECTOR *evector;
-  LIS_REAL *resid;
-  LIS_VECTOR *work;
-  LIS_REAL *rhistory;
-  LIS_INT worklen;
-  LIS_INT options[LIS_EOPTIONS_LEN];
-  LIS_SCALAR params[LIS_EPARAMS_LEN];
-  LIS_INT retcode;
-  LIS_INT *iter;
-  LIS_INT *iter2;
-  double time;
-  LIS_INT *nesol;
-  double itime;
-  double ptime;
-  double p_c_time;
-  double p_i_time;
-  LIS_INT eprecision;
-  LIS_SCALAR ishift;
-  LIS_REAL nrm2;
-  LIS_REAL tol;
+struct LIS_ESOLVER_STRUCT
+{
+        LIS_MATRIX A,B;
+        LIS_VECTOR x,xx,d; 
+        LIS_SCALAR *evalue;
+        LIS_VECTOR *evector;
+
+        /*
+         * Number of evector[] slots whose non-NULL entries are
+         * owned by this eigensolver instance.
+         *
+         * This metadata belongs to the result array itself and is
+         * independent of later -e or -ss option changes.
+         */
+        LIS_INT evector_owned_count;
+	LIS_REAL *resid;
+	LIS_VECTOR *work;
+	LIS_REAL *rhistory;
+	LIS_INT worklen;
+	LIS_INT options[LIS_EOPTIONS_LEN];
+	LIS_SCALAR params[LIS_EPARAMS_LEN];
+	LIS_INT retcode;
+        LIS_INT *iter;       
+	LIS_INT *iter2;
+        double time;
+        LIS_INT *nesol;
+        double itime;
+        double ptime;
+        double p_c_time;
+        double p_i_time;
+	LIS_INT eprecision;
+        LIS_SCALAR ishift;
+        LIS_INT transform;
+        LIS_INT nev;
+        /*
+         * Stable requested eigenpair count, configured by the typed setter
+         * or -nev.  nev remains the legacy execution/result field.
+         * The active flag preserves direct writes to nev by older callers.
+         */
+        LIS_INT requested_nev;
+        LIS_INT requested_nev_active;
+	LIS_REAL nrm2;
+        LIS_REAL tol;
+        /*
+         * Native FEAST configuration.
+         *
+         * Kept outside LIS_EOPTIONS_* and LIS_EPARAMS_* so that
+         * existing public numeric option identifiers remain stable.
+         */
+        LIS_REAL feast_emin;
+        LIS_REAL feast_emax;
+        LIS_REAL feast_ratio;
+        LIS_INT feast_points;
+        LIS_INT feast_solver;
+        LIS_INT feast_interval_mask;
+        LIS_INT block_size;
+
+        /*
+         * Optional linear-solver configuration for eigensolver
+         * internal shifted systems.
+         *
+         * linear_options applies to linear solves owned by the
+         * current eigensolver. refine_linear_options applies to the
+         * nested eigensolver used to refine projected Ritz pairs.
+         * Both strings are owned by the eigensolver.
+         */
+        char *linear_options;
+        char *refine_linear_options;
+
+        /*
+         * Fraction of the nearest distinct Ritz spacing used to move
+         * a refinement shift away from the Ritz pole. 0.01 preserves
+         * the established default behavior.
+         */
+        LIS_REAL refine_gap_fraction;
+
+        /*
+         * Optional retry policy for subspace-based eigensolvers.
+         * The configured subspace is restored after lis_gesolve().
+         * Retries warm-start from the previous attempt. iter/resid describe
+         * the final attempt, while time covers the complete retry sequence.
+         */
+        LIS_INT subspace_retry_max;
+        LIS_REAL subspace_retry_growth;
+        LIS_INT subspace_retry_min;
+        LIS_INT subspace_retry_attempts;
+        LIS_INT subspace_retry_final_size;
+        /* Native Krylov options retained outside numeric option arrays. */
+        LIS_INT krylov_ncv;
+        LIS_REAL krylov_residual_scale;
+        LIS_REAL krylov_inner_tol;
+        LIS_INT krylov_allow_semidefinite;
+        LIS_INT krylov_hard_locking;
+        char krylov_which[3];
 };
 typedef struct LIS_ESOLVER_STRUCT *LIS_ESOLVER;
 
-struct LIS_CONV_OPTIONS_STRUCT {
-  LIS_INT bnr;
-  LIS_INT bnc;
-  LIS_INT *row;
-  LIS_INT *col;
+struct LIS_CONV_OPTIONS_STRUCT
+{
+	LIS_INT bnr;
+	LIS_INT bnc;
+	LIS_INT *row;
+	LIS_INT *col;
 };
 typedef struct LIS_CONV_OPTIONS_STRUCT LIS_CONV_OPTIONS;
 
 typedef LIS_INT (*LIS_PRECON_CREATE_XXX)(LIS_SOLVER solver, LIS_PRECON precon);
+typedef LIS_INT (*LIS_PRECON_DESTROY_XXX)(LIS_PRECON precon);
 /*NEH support for extended "solve_kernel" workflow*/
-typedef LIS_INT (*LIS_PRECON_PSD_CREATE_XXX)(LIS_SOLVER solver,
-                                             LIS_PRECON precon);
+typedef LIS_INT (*LIS_PRECON_PSD_CREATE_XXX)(LIS_SOLVER solver, LIS_PRECON precon);
 /*NEH support for extended "solve_kernel" workflow*/
-typedef LIS_INT (*LIS_PRECON_PSD_UPDATE_XXX)(LIS_SOLVER solver,
-                                             LIS_PRECON precon);
-typedef LIS_INT (*LIS_PSOLVE_XXX)(LIS_SOLVER solver, LIS_VECTOR b,
-                                  LIS_VECTOR x);
-typedef LIS_INT (*LIS_PSOLVEH_XXX)(LIS_SOLVER solver, LIS_VECTOR b,
-                                   LIS_VECTOR x);
+typedef LIS_INT (*LIS_PRECON_PSD_UPDATE_XXX)(LIS_SOLVER solver, LIS_PRECON precon);
+typedef LIS_INT (*LIS_PSOLVE_XXX)(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
+typedef LIS_INT (*LIS_PSOLVEH_XXX)(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x);
 
-typedef struct LIS_PRECON_REGISTER_STRUCT {
-  LIS_INT precon_type;
-  char name[LIS_PRECONNAME_MAX + 1];
-  LIS_PRECON_CREATE_XXX pcreate;
-  LIS_PSOLVE_XXX psolve;
-  LIS_PSOLVEH_XXX psolveh;
+typedef struct LIS_PRECON_REGISTER_STRUCT
+{
+	LIS_INT precon_type;
+	char name[LIS_PRECONNAME_MAX+1];
+	LIS_PRECON_CREATE_XXX pcreate;
+	LIS_PSOLVE_XXX psolve;
+	LIS_PSOLVEH_XXX psolveh;
+	LIS_PRECON_DESTROY_XXX pdestroy;
 } LIS_PRECON_REGISTER;
 
+
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /****************************/
 /* Vector Operations        */
 /****************************/
 
-extern LIS_INT lis_vector_create(LIS_Comm comm, LIS_VECTOR *vec);
-extern LIS_INT lis_vector_set_size(LIS_VECTOR vec, LIS_INT local_n,
-                                   LIS_INT global_n);
+	extern LIS_INT lis_vector_create(LIS_Comm comm, LIS_VECTOR *vec); 
+	extern LIS_INT lis_vector_set_size(LIS_VECTOR vec, LIS_INT local_n, LIS_INT global_n); 
+    /*
+     * Attach application-owned vector storage.
+     * LIS borrows the supplied array and never frees it.
+     * The caller must keep the storage valid while it is attached.
+     */
+	extern LIS_INT lis_vector_set_external(LIS_VECTOR vec, LIS_SCALAR *value);
 /*NEH support for extended "solve_kernel" workflow*/
-extern LIS_INT lis_vector_psd_reset_scale(LIS_VECTOR vec);
-extern LIS_INT lis_vector_destroy(LIS_VECTOR vec);
-extern LIS_INT lis_vector_duplicate(void *vin, LIS_VECTOR *vout);
-extern LIS_INT lis_vector_get_size(LIS_VECTOR v, LIS_INT *local_n,
-                                   LIS_INT *global_n);
-extern LIS_INT lis_vector_get_range(LIS_VECTOR v, LIS_INT *is, LIS_INT *ie);
-extern LIS_INT lis_vector_get_value(LIS_VECTOR v, LIS_INT i, LIS_SCALAR *value);
-extern LIS_INT lis_vector_get_values(LIS_VECTOR v, LIS_INT start, LIS_INT count,
-                                     LIS_SCALAR value[]);
-extern LIS_INT lis_vector_set_value(LIS_INT flag, LIS_INT i, LIS_SCALAR value,
-                                    LIS_VECTOR v);
-extern LIS_INT lis_vector_set_values(LIS_INT flag, LIS_INT count,
-                                     LIS_INT index[], LIS_SCALAR value[],
-                                     LIS_VECTOR v);
-extern LIS_INT lis_vector_set_values2(LIS_INT flag, LIS_INT start,
-                                      LIS_INT count, LIS_SCALAR value[],
-                                      LIS_VECTOR v);
-extern LIS_INT lis_vector_print(LIS_VECTOR x);
-extern LIS_INT lis_vector_scatter(LIS_SCALAR value[], LIS_VECTOR v);
-extern LIS_INT lis_vector_gather(LIS_VECTOR v, LIS_SCALAR value[]);
-extern LIS_INT lis_vector_is_null(LIS_VECTOR v);
-extern LIS_INT lis_vector_swap(LIS_VECTOR vsrc, LIS_VECTOR vdst);
-extern LIS_INT lis_vector_copy(LIS_VECTOR vsrc, LIS_VECTOR vdst);
-extern LIS_INT lis_vector_axpy(LIS_SCALAR alpha, LIS_VECTOR vx, LIS_VECTOR vy);
-extern LIS_INT lis_vector_xpay(LIS_VECTOR vx, LIS_SCALAR alpha, LIS_VECTOR vy);
-extern LIS_INT lis_vector_axpyz(LIS_SCALAR alpha, LIS_VECTOR vx, LIS_VECTOR vy,
-                                LIS_VECTOR vz);
-extern LIS_INT lis_vector_scale(LIS_SCALAR alpha, LIS_VECTOR vx);
-extern LIS_INT lis_vector_pmul(LIS_VECTOR vx, LIS_VECTOR vy, LIS_VECTOR vz);
-extern LIS_INT lis_vector_pdiv(LIS_VECTOR vx, LIS_VECTOR vy, LIS_VECTOR vz);
-extern LIS_INT lis_vector_set_all(LIS_SCALAR alpha, LIS_VECTOR vx);
-extern LIS_INT lis_vector_abs(LIS_VECTOR vx);
-extern LIS_INT lis_vector_reciprocal(LIS_VECTOR vx);
-extern LIS_INT lis_vector_conjugate(LIS_VECTOR vx);
-extern LIS_INT lis_vector_shift(LIS_SCALAR sigma, LIS_VECTOR vx);
-extern LIS_INT lis_vector_dot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_SCALAR *value);
-extern LIS_INT lis_vector_nhdot(LIS_VECTOR vx, LIS_VECTOR vy,
-                                LIS_SCALAR *value);
-extern LIS_INT lis_vector_nrm1(LIS_VECTOR vx, LIS_REAL *value);
-extern LIS_INT lis_vector_nrm2(LIS_VECTOR vx, LIS_REAL *value);
-extern LIS_INT lis_vector_nrmi(LIS_VECTOR vx, LIS_REAL *value);
-extern LIS_INT lis_vector_sum(LIS_VECTOR vx, LIS_SCALAR *value);
+	extern LIS_INT lis_vector_psd_reset_scale(LIS_VECTOR vec); 
+/*
+ * Strided application real64 transfers for default-precision local vectors.
+ * Import/export validate input before modifying the destination. REJECT_LOSS
+ * refuses nonreal complex values or nonrepresentable outputs.
+ * NULL src/dst is permitted for zero-length vectors and valid stride/policy.
+ * Nonfinite input, including ignored imaginary parts under ALLOW_LOSS,
+ * is rejected rather than exporting potentially divergent solver values.
+ * The transfer remains serial to preserve validate-before-write behavior.
+ * This PR provides C-only APIs; Fortran wrappers are not included.
+ */
+#define LIS_VECTOR_REAL64_REJECT_LOSS 0
+#define LIS_VECTOR_REAL64_ALLOW_LOSS  1
+extern LIS_INT lis_vector_import_real64(
+    LIS_VECTOR vector,const double *src,LIS_INT length,LIS_INT stride);
+extern LIS_INT lis_vector_export_real64(
+    LIS_VECTOR vector,double *dst,LIS_INT length,LIS_INT stride,
+    LIS_INT loss_policy);
+
+/*
+ * Atomic real64 export with bounded imaginary content. The largest
+ * imaginary magnitude must satisfy:
+ *
+ *   max(abs(imag(v))) <= absolute_imag_tolerance
+ *                        + relative_imag_tolerance*max(abs(real(v))).
+ *
+ * The first tolerance argument is absolute, the second is relative.
+ * Maxima are taken over the LOCAL vector (v->n), not across MPI ranks;
+ * no MPI collective is performed.
+ * Both tolerances must be finite and nonnegative. REJECT_LOSS still rejects
+ * every nonzero imaginary component and any real-precision loss; ALLOW_LOSS
+ * allows dropping imaginary components only within the supplied bounds.
+ * The destination is not modified on any failure, including nonfinite data.
+ * The same checked vector/stride and zero-length rules as export_real64 apply.
+ */
+extern LIS_INT lis_vector_export_real64_tolerant(
+    LIS_VECTOR vector,double *dst,LIS_INT length,LIS_INT stride,
+    LIS_INT loss_policy,LIS_REAL absolute_imag_tolerance,
+    LIS_REAL relative_imag_tolerance);
+
+	extern LIS_INT lis_vector_destroy(LIS_VECTOR vec);
+	extern LIS_INT lis_vector_duplicate(void *vin, LIS_VECTOR *vout);
+	extern LIS_INT lis_vector_get_size(LIS_VECTOR v, LIS_INT *local_n, LIS_INT *global_n);
+	extern LIS_INT lis_vector_get_range(LIS_VECTOR v, LIS_INT *is, LIS_INT *ie);
+	extern LIS_INT lis_vector_get_value(LIS_VECTOR v, LIS_INT i, LIS_SCALAR *value);
+	extern LIS_INT lis_vector_get_values(LIS_VECTOR v, LIS_INT start, LIS_INT count, LIS_SCALAR value[]);
+	extern LIS_INT lis_vector_set_value(LIS_INT flag, LIS_INT i, LIS_SCALAR value, LIS_VECTOR v);
+	extern LIS_INT lis_vector_set_values(LIS_INT flag, LIS_INT count, LIS_INT index[], LIS_SCALAR value[], LIS_VECTOR v);
+	extern LIS_INT lis_vector_set_values2(LIS_INT flag, LIS_INT start, LIS_INT count, LIS_SCALAR value[], LIS_VECTOR v);
+	extern LIS_INT lis_vector_set_values3(LIS_INT flag, LIS_INT start, LIS_INT count, LIS_SCALAR value[], LIS_VECTOR v, LIS_SCALAR scale);
+	extern LIS_INT lis_vector_set_values4(LIS_INT flag, LIS_INT count, LIS_INT index[], LIS_SCALAR value[], LIS_VECTOR v, LIS_SCALAR scale);
+	extern LIS_INT lis_vector_set_values5(LIS_INT flag, LIS_INT start, LIS_INT stride, LIS_INT count, LIS_SCALAR value[], LIS_VECTOR v, LIS_SCALAR scale);
+	extern LIS_INT lis_vector_set_values6(LIS_INT flag, LIS_INT start, LIS_INT stride, LIS_INT count, LIS_SCALAR value, LIS_VECTOR v);
+	extern LIS_INT lis_vector_set_values7(LIS_INT flag, LIS_INT start, LIS_INT stride, LIS_INT count, LIS_VECTOR value, LIS_VECTOR v, LIS_SCALAR scale);
+	extern LIS_INT lis_vector_set_values8(LIS_INT flag, LIS_INT start, LIS_INT stride, LIS_INT count, LIS_SCALAR value[], LIS_VECTOR v, LIS_SCALAR scale, LIS_INT start_value, LIS_INT stride_value);
+	extern LIS_INT lis_vector_set_values9(LIS_INT flag, LIS_INT start, LIS_INT stride, LIS_INT count, LIS_VECTOR value, LIS_VECTOR v, LIS_SCALAR scale, LIS_INT start_value, LIS_INT stride_value);
+	extern LIS_INT lis_vector_get_values_from_index(LIS_VECTOR v, LIS_INT count, LIS_INT index[], LIS_SCALAR value[]);
+	extern LIS_INT lis_vector_get_values_from_range(LIS_VECTOR v, LIS_INT start, LIS_INT stride, LIS_INT count, LIS_SCALAR value[]);
+	extern LIS_INT lis_vector_get_values_from_range2(LIS_VECTOR v, LIS_INT start, LIS_INT stride, LIS_INT count, LIS_SCALAR value[], LIS_INT start_value, LIS_INT stride_value);
+	extern LIS_INT lis_vector_get_values_from_range3(LIS_VECTOR v, LIS_INT start, LIS_INT stride, LIS_INT count, LIS_VECTOR value);
+	extern LIS_INT lis_vector_get_values_from_range4(LIS_VECTOR v, LIS_INT start, LIS_INT stride, LIS_INT count, LIS_VECTOR value, LIS_INT start_value, LIS_INT stride_value);
+	extern LIS_INT lis_vector_unset(LIS_VECTOR v);
+	extern LIS_INT lis_vector_print(LIS_VECTOR x);
+	extern LIS_INT lis_vector_scatter(LIS_SCALAR value[], LIS_VECTOR v);
+        extern LIS_INT lis_vector_gather(LIS_VECTOR v, LIS_SCALAR value[]);
+	extern LIS_INT lis_vector_is_null(LIS_VECTOR v);
+	extern LIS_INT lis_vector_swap(LIS_VECTOR vsrc, LIS_VECTOR vdst);
+	extern LIS_INT lis_vector_copy(LIS_VECTOR vsrc, LIS_VECTOR vdst);
+	extern LIS_INT lis_vector_axpy(LIS_SCALAR alpha, LIS_VECTOR vx, LIS_VECTOR vy);
+	extern LIS_INT lis_vector_xpay(LIS_VECTOR vx, LIS_SCALAR alpha, LIS_VECTOR vy);
+	extern LIS_INT lis_vector_axpyz(LIS_SCALAR alpha, LIS_VECTOR vx, LIS_VECTOR vy, LIS_VECTOR vz);
+	extern LIS_INT lis_vector_scale(LIS_SCALAR alpha, LIS_VECTOR vx);
+	extern LIS_INT lis_vector_pmul(LIS_VECTOR vx,LIS_VECTOR vy,LIS_VECTOR vz);
+	extern LIS_INT lis_vector_pdiv(LIS_VECTOR vx,LIS_VECTOR vy,LIS_VECTOR vz);
+	extern LIS_INT lis_vector_set_all(LIS_SCALAR alpha, LIS_VECTOR vx);
+	extern LIS_INT lis_vector_abs(LIS_VECTOR vx);
+	extern LIS_INT lis_vector_reciprocal(LIS_VECTOR vx);
+	extern LIS_INT lis_vector_conjugate(LIS_VECTOR vx);
+	extern LIS_INT lis_vector_shift(LIS_SCALAR sigma, LIS_VECTOR vx);
+	extern LIS_INT lis_vector_dot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_SCALAR *value);
+	extern LIS_INT lis_vector_nhdot(LIS_VECTOR vx, LIS_VECTOR vy, LIS_SCALAR *value);  
+	extern LIS_INT lis_vector_nrm1(LIS_VECTOR vx, LIS_REAL *value);
+	extern LIS_INT lis_vector_nrm2(LIS_VECTOR vx, LIS_REAL *value);
+	extern LIS_INT lis_vector_nrmi(LIS_VECTOR vx, LIS_REAL *value);
+	extern LIS_INT lis_vector_sum(LIS_VECTOR vx, LIS_SCALAR *value);
 
 /****************************/
 /* Matrix Operations        */
 /****************************/
 
-extern LIS_INT lis_matrix_create(LIS_Comm comm, LIS_MATRIX *Amat);
-extern LIS_INT lis_matrix_destroy(LIS_MATRIX Amat);
-extern LIS_INT lis_matrix_assemble(LIS_MATRIX A);
-extern LIS_INT lis_matrix_is_assembled(LIS_MATRIX A);
-extern LIS_INT lis_matrix_duplicate(LIS_MATRIX Ain, LIS_MATRIX *Aout);
-extern LIS_INT lis_matrix_set_size(LIS_MATRIX A, LIS_INT local_n,
-                                   LIS_INT global_n);
-extern LIS_INT lis_matrix_get_size(LIS_MATRIX A, LIS_INT *local_n,
-                                   LIS_INT *global_n);
-extern LIS_INT lis_matrix_get_range(LIS_MATRIX A, LIS_INT *is, LIS_INT *ie);
-extern LIS_INT lis_matrix_get_nnz(LIS_MATRIX A, LIS_INT *nnz);
-extern LIS_INT lis_matrix_set_type(LIS_MATRIX A, LIS_INT matrix_type);
-extern LIS_INT lis_matrix_get_type(LIS_MATRIX A, LIS_INT *matrix_type);
-extern LIS_INT lis_matrix_set_value(LIS_INT flag, LIS_INT i, LIS_INT j,
-                                    LIS_SCALAR value, LIS_MATRIX A);
-extern LIS_INT lis_matrix_set_value_new(LIS_INT flag, LIS_INT i, LIS_INT j,
-                                        LIS_SCALAR value, LIS_MATRIX A);
-extern LIS_INT lis_matrix_set_values(LIS_INT flag, LIS_INT n,
-                                     LIS_SCALAR value[], LIS_MATRIX A);
-extern LIS_INT lis_matrix_psd_set_value(LIS_INT flag, LIS_INT i, LIS_INT j,
-                                        LIS_SCALAR value, LIS_MATRIX A);
-extern LIS_INT lis_matrix_malloc(LIS_MATRIX A, LIS_INT nnz_row, LIS_INT nnz[]);
-extern LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR d);
-extern LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR D,
-                                LIS_INT action);
+	extern LIS_INT lis_matrix_create(LIS_Comm comm, LIS_MATRIX *Amat);
+	extern LIS_INT lis_matrix_destroy(LIS_MATRIX Amat);
+	extern LIS_INT lis_matrix_assemble(LIS_MATRIX A);
+	extern LIS_INT lis_matrix_is_assembled(LIS_MATRIX A);
+	extern LIS_INT lis_matrix_duplicate(LIS_MATRIX Ain, LIS_MATRIX *Aout);
+	extern LIS_INT lis_matrix_set_size(LIS_MATRIX A, LIS_INT local_n, LIS_INT global_n);
+	extern LIS_INT lis_matrix_get_size(LIS_MATRIX A, LIS_INT *local_n, LIS_INT *global_n);
+	extern LIS_INT lis_matrix_get_range(LIS_MATRIX A, LIS_INT *is, LIS_INT *ie);
+    extern LIS_INT lis_matrix_get_capabilities(LIS_MATRIX A, LIS_INT *capabilities);
+	extern LIS_INT lis_matrix_get_nnz(LIS_MATRIX A, LIS_INT *nnz);
+	extern LIS_INT lis_matrix_mark_values_changed(LIS_MATRIX A);
+	extern LIS_INT lis_matrix_mark_structure_changed(LIS_MATRIX A);
+	extern LIS_INT lis_matrix_get_generation(
+	                                   LIS_MATRIX A,
+	                                   LIS_UNSIGNED_INT *structure_generation,
+	                                   LIS_UNSIGNED_INT *value_generation);
+	extern LIS_INT lis_matrix_set_user(LIS_MATRIX A, void *user_data,
+	                                   LIS_MATRIX_USER_MATVEC matvec,
+	                                   LIS_MATRIX_USER_MATVEC matvech);
+	extern LIS_INT lis_matrix_set_user_matvec_block(
+	                                   LIS_MATRIX A,
+	                                   LIS_MATRIX_USER_MATVEC_BLOCK matvec_block,
+	                                   LIS_MATRIX_USER_MATVEC_BLOCK matvech_block);
+	extern LIS_INT lis_matrix_set_user_diagonal(
+	                                   LIS_MATRIX A,
+	                                   LIS_MATRIX_USER_GET_DIAGONAL get_diagonal);
+	extern LIS_INT lis_matrix_set_user_row(
+	                                   LIS_MATRIX A,
+	                                   LIS_MATRIX_USER_GET_ROW get_row);
+	/*
+	 * Mark the currently installed USER row callback as safe for concurrent
+	 * invocations. lis_matrix_set_user_row() always clears this opt-in, so a
+	 * replacement callback must be marked thread-safe explicitly again.
+	 */
+	extern LIS_INT lis_matrix_set_user_row_thread_safe(
+	                                   LIS_MATRIX A,
+	                                   LIS_INT thread_safe);
+	extern LIS_INT lis_matrix_get_user_row(
+	                                   LIS_MATRIX A,
+	                                   LIS_INT local_row,
+	                                   LIS_INT *nnz,
+	                                   LIS_INT *cols,
+	                                   LIS_SCALAR *vals);
+	extern LIS_INT lis_matrix_get_user_data(LIS_MATRIX A, void **user_data);
+	extern LIS_INT lis_matrix_create_operator(LIS_SCALAR alpha, LIS_MATRIX A,
+	                                          LIS_SCALAR beta, LIS_MATRIX B,
+	                                          LIS_MATRIX *C);
+	extern LIS_INT lis_matrix_set_type(LIS_MATRIX A, LIS_INT matrix_type);
+	extern LIS_INT lis_matrix_get_type(LIS_MATRIX A, LIS_INT *matrix_type);
+	extern LIS_INT lis_matrix_set_value(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);
+	extern LIS_INT lis_matrix_set_value_new(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);
+	extern LIS_INT lis_matrix_set_values(LIS_INT flag, LIS_INT n, LIS_SCALAR value[], LIS_MATRIX A);
+	extern LIS_INT lis_matrix_psd_set_value(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);  
+	extern LIS_INT lis_matrix_malloc(LIS_MATRIX A, LIS_INT nnz_row, LIS_INT nnz[]);
+	extern LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR d);
+	/*
+	 * Exact infinity norm max_i sum_j |a_ij| for explicit matrices and
+	 * row-backed USER matrices. Duplicate column entries in one row are
+	 * algebraically combined before taking the absolute value.
+	 * LIS_MATRIX_OPERATOR returns LIS_ERR_NOT_IMPLEMENTED.
+	 */
+	extern LIS_INT lis_matrix_get_inf_norm(LIS_MATRIX A, LIS_REAL *value);
+	extern LIS_INT lis_matrix_scale(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR D, LIS_INT action);
 /*NEH support for extended "solve_kernel" workflow*/
-extern LIS_INT lis_matrix_psd_reset_scale(LIS_MATRIX A);
-extern LIS_INT lis_matrix_convert(LIS_MATRIX Ain, LIS_MATRIX Aout);
-extern LIS_INT lis_matrix_copy(LIS_MATRIX Ain, LIS_MATRIX Aout);
-extern LIS_INT lis_matrix_set_blocksize(LIS_MATRIX A, LIS_INT bnr, LIS_INT bnc,
-                                        LIS_INT row[], LIS_INT col[]);
-extern LIS_INT lis_matrix_unset(LIS_MATRIX A);
+	extern LIS_INT lis_matrix_psd_reset_scale(LIS_MATRIX A);
+	extern LIS_INT lis_matrix_convert(LIS_MATRIX Ain, LIS_MATRIX Aout);
+	extern LIS_INT lis_matrix_copy(LIS_MATRIX Ain, LIS_MATRIX Aout);
+	extern LIS_INT lis_matrix_set_blocksize(LIS_MATRIX A, LIS_INT bnr, LIS_INT bnc, LIS_INT row[], LIS_INT col[]);
+	extern LIS_INT lis_matrix_unset(LIS_MATRIX A);  
 
-extern LIS_INT lis_matrix_malloc_csr(LIS_INT n, LIS_INT nnz, LIS_INT **ptr,
-                                     LIS_INT **index, LIS_SCALAR **value);
-extern LIS_INT lis_matrix_set_value_csr(LIS_INT flag, LIS_INT i, LIS_INT j,
-                                        LIS_SCALAR value, LIS_MATRIX A);
-extern LIS_INT lis_matrix_psd_set_value_csr(LIS_INT flag, LIS_INT i, LIS_INT j,
-                                            LIS_SCALAR value, LIS_MATRIX A);
-extern LIS_INT lis_matrix_set_csr(LIS_INT nnz, LIS_INT *row, LIS_INT *index,
-                                  LIS_SCALAR *value, LIS_MATRIX A);
-extern LIS_INT lis_matrix_malloc_csc(LIS_INT n, LIS_INT nnz, LIS_INT **ptr,
-                                     LIS_INT **index, LIS_SCALAR **value);
-extern LIS_INT lis_matrix_set_csc(LIS_INT nnz, LIS_INT *row, LIS_INT *index,
-                                  LIS_SCALAR *value, LIS_MATRIX A);
-extern LIS_INT lis_matrix_malloc_bsr(LIS_INT n, LIS_INT bnr, LIS_INT bnc,
-                                     LIS_INT bnnz, LIS_INT **bptr,
-                                     LIS_INT **bindex, LIS_SCALAR **value);
-extern LIS_INT lis_matrix_set_bsr(LIS_INT bnr, LIS_INT bnc, LIS_INT bnnz,
-                                  LIS_INT *bptr, LIS_INT *bindex,
-                                  LIS_SCALAR *value, LIS_MATRIX A);
-extern LIS_INT lis_matrix_set_msr(LIS_INT nnz, LIS_INT ndz, LIS_INT *index,
-                                  LIS_SCALAR *value, LIS_MATRIX A);
-extern LIS_INT lis_matrix_malloc_msr(LIS_INT n, LIS_INT nnz, LIS_INT ndz,
-                                     LIS_INT **index, LIS_SCALAR **value);
-extern LIS_INT lis_matrix_set_ell(LIS_INT maxnzr, LIS_INT *index,
-                                  LIS_SCALAR *value, LIS_MATRIX A);
-extern LIS_INT lis_matrix_malloc_ell(LIS_INT n, LIS_INT maxnzr, LIS_INT **index,
-                                     LIS_SCALAR **value);
-extern LIS_INT lis_matrix_set_jad(LIS_INT nnz, LIS_INT maxnzr, LIS_INT *perm,
-                                  LIS_INT *ptr, LIS_INT *index,
-                                  LIS_SCALAR *value, LIS_MATRIX A);
-extern LIS_INT lis_matrix_malloc_jad(LIS_INT n, LIS_INT nnz, LIS_INT maxnzr,
-                                     LIS_INT **perm, LIS_INT **ptr,
-                                     LIS_INT **index, LIS_SCALAR **value);
-extern LIS_INT lis_matrix_set_dia(LIS_INT nnd, LIS_INT *index,
-                                  LIS_SCALAR *value, LIS_MATRIX A);
-extern LIS_INT lis_matrix_malloc_dia(LIS_INT n, LIS_INT nnd, LIS_INT **index,
-                                     LIS_SCALAR **value);
-extern LIS_INT lis_matrix_malloc_bsc(LIS_INT n, LIS_INT bnr, LIS_INT bnc,
-                                     LIS_INT bnnz, LIS_INT **bptr,
-                                     LIS_INT **bindex, LIS_SCALAR **value);
-extern LIS_INT lis_matrix_set_bsc(LIS_INT bnr, LIS_INT bnc, LIS_INT bnnz,
-                                  LIS_INT *bptr, LIS_INT *bindex,
-                                  LIS_SCALAR *value, LIS_MATRIX A);
-extern LIS_INT lis_matrix_get_vbr_rowcol(LIS_MATRIX Ain, LIS_INT *nr,
-                                         LIS_INT *nc, LIS_INT **row,
-                                         LIS_INT **col);
-extern LIS_INT lis_matrix_malloc_vbr(LIS_INT n, LIS_INT nnz, LIS_INT nr,
-                                     LIS_INT nc, LIS_INT bnnz, LIS_INT **row,
-                                     LIS_INT **col, LIS_INT **ptr,
-                                     LIS_INT **bptr, LIS_INT **bindex,
-                                     LIS_SCALAR **value);
-extern LIS_INT lis_matrix_set_vbr(LIS_INT nnz, LIS_INT nr, LIS_INT nc,
-                                  LIS_INT bnnz, LIS_INT *row, LIS_INT *col,
-                                  LIS_INT *ptr, LIS_INT *bptr, LIS_INT *bindex,
-                                  LIS_SCALAR *value, LIS_MATRIX A);
-extern LIS_INT lis_matrix_malloc_coo(LIS_INT nnz, LIS_INT **row, LIS_INT **col,
-                                     LIS_SCALAR **value);
-extern LIS_INT lis_matrix_set_coo(LIS_INT nnz, LIS_INT *row, LIS_INT *col,
-                                  LIS_SCALAR *value, LIS_MATRIX A);
-extern LIS_INT lis_matrix_set_dns(LIS_SCALAR *value, LIS_MATRIX A);
-extern LIS_INT lis_matrix_malloc_dns(LIS_INT n, LIS_INT gn, LIS_SCALAR **value);
+	extern LIS_INT lis_matrix_malloc_csr(LIS_INT n, LIS_INT nnz, LIS_INT **ptr, LIS_INT **index, LIS_SCALAR **value);
+	extern LIS_INT lis_matrix_set_value_csr(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);
+	extern LIS_INT lis_matrix_psd_set_value_csr(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR value, LIS_MATRIX A);  
+	extern LIS_INT lis_matrix_set_csr(LIS_INT nnz, LIS_INT *row, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);
+    /*
+     * Attach application-owned CSR storage.
+     * LIS borrows ptr, index, and value and never frees those arrays.
+     * The caller must keep the storage valid while it is attached.
+     */
+	extern LIS_INT lis_matrix_set_csr_external(LIS_INT nnz, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);
+	extern LIS_INT lis_matrix_set_csr_values_external(LIS_SCALAR *value, LIS_MATRIX A);
+	extern LIS_INT lis_matrix_malloc_csc(LIS_INT n, LIS_INT nnz, LIS_INT **ptr, LIS_INT **index, LIS_SCALAR **value);
+	extern LIS_INT lis_matrix_set_csc(LIS_INT nnz, LIS_INT *row, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);
+	extern LIS_INT lis_matrix_malloc_bsr(LIS_INT n, LIS_INT bnr, LIS_INT bnc, LIS_INT bnnz, LIS_INT **bptr, LIS_INT **bindex, LIS_SCALAR **value);
+	extern LIS_INT lis_matrix_set_bsr(LIS_INT bnr, LIS_INT bnc, LIS_INT bnnz, LIS_INT *bptr, LIS_INT *bindex, LIS_SCALAR *value, LIS_MATRIX A);
+	extern LIS_INT lis_matrix_set_msr(LIS_INT nnz, LIS_INT ndz, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);
+	extern LIS_INT lis_matrix_malloc_msr(LIS_INT n, LIS_INT nnz, LIS_INT ndz, LIS_INT **index, LIS_SCALAR **value);
+	extern LIS_INT lis_matrix_set_ell(LIS_INT maxnzr, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);
+	extern LIS_INT lis_matrix_malloc_ell(LIS_INT n, LIS_INT maxnzr, LIS_INT **index, LIS_SCALAR **value);
+	extern LIS_INT lis_matrix_set_jad(LIS_INT nnz, LIS_INT maxnzr, LIS_INT *perm, LIS_INT *ptr, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);
+	extern LIS_INT lis_matrix_malloc_jad(LIS_INT n, LIS_INT nnz, LIS_INT maxnzr, LIS_INT **perm, LIS_INT **ptr, LIS_INT **index, LIS_SCALAR **value);
+	extern LIS_INT lis_matrix_set_dia(LIS_INT nnd, LIS_INT *index, LIS_SCALAR *value, LIS_MATRIX A);
+	extern LIS_INT lis_matrix_malloc_dia(LIS_INT n, LIS_INT nnd, LIS_INT **index, LIS_SCALAR **value);
+	extern LIS_INT lis_matrix_malloc_bsc(LIS_INT n, LIS_INT bnr, LIS_INT bnc, LIS_INT bnnz, LIS_INT **bptr, LIS_INT **bindex, LIS_SCALAR **value);
+	extern LIS_INT lis_matrix_set_bsc(LIS_INT bnr, LIS_INT bnc, LIS_INT bnnz, LIS_INT *bptr, LIS_INT *bindex, LIS_SCALAR *value, LIS_MATRIX A);
+	extern LIS_INT lis_matrix_get_vbr_rowcol(LIS_MATRIX Ain, LIS_INT *nr, LIS_INT *nc, LIS_INT **row, LIS_INT **col);
+	extern LIS_INT lis_matrix_malloc_vbr(LIS_INT n, LIS_INT nnz, LIS_INT nr, LIS_INT nc, LIS_INT bnnz, LIS_INT **row, LIS_INT **col, LIS_INT **ptr, LIS_INT **bptr, LIS_INT **bindex, LIS_SCALAR **value);
+	extern LIS_INT lis_matrix_set_vbr(LIS_INT nnz, LIS_INT nr, LIS_INT nc, LIS_INT bnnz, LIS_INT *row, LIS_INT *col, LIS_INT *ptr, LIS_INT *bptr, LIS_INT *bindex, LIS_SCALAR *value, LIS_MATRIX A);
+	extern LIS_INT lis_matrix_malloc_coo(LIS_INT nnz, LIS_INT **row, LIS_INT **col, LIS_SCALAR **value);
+	extern LIS_INT lis_matrix_set_coo(LIS_INT nnz, LIS_INT *row, LIS_INT *col, LIS_SCALAR *value, LIS_MATRIX A);
+	extern LIS_INT lis_matrix_set_dns(LIS_SCALAR *value, LIS_MATRIX A);
+	extern LIS_INT lis_matrix_malloc_dns(LIS_INT n, LIS_INT gn, LIS_SCALAR **value);
 
 /****************************/
 /* Matrix-Vector Operations */
 /****************************/
 
-extern LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y);
-extern LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y);
+	extern LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y);
+	extern LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR x, LIS_VECTOR y);  
+	extern LIS_INT lis_matvec_block(
+	                                   LIS_MATRIX A,
+	                                   LIS_INT nvec,
+	                                   LIS_VECTOR X[],
+	                                   LIS_VECTOR Y[]);
+	extern LIS_INT lis_matvech_block(
+	                                   LIS_MATRIX A,
+	                                   LIS_INT nvec,
+	                                   LIS_VECTOR X[],
+	                                   LIS_VECTOR Y[]);
 
 /****************************/
 /* Array Operations         */
 /****************************/
 
-extern LIS_INT lis_array_swap(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y);
-extern LIS_INT lis_array_copy(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y);
-extern LIS_INT lis_array_axpy(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR *x,
-                              LIS_SCALAR *y);
-extern LIS_INT lis_array_xpay(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR alpha,
-                              LIS_SCALAR *y);
-extern LIS_INT lis_array_axpyz(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR *x,
-                               LIS_SCALAR *y, LIS_SCALAR *z);
-extern LIS_INT lis_array_scale(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR *x);
-extern LIS_INT lis_array_pmul(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y,
-                              LIS_SCALAR *z);
-extern LIS_INT lis_array_pdiv(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y,
-                              LIS_SCALAR *z);
-extern LIS_INT lis_array_set_all(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR *x);
-extern LIS_INT lis_array_abs(LIS_INT n, LIS_SCALAR *x);
-extern LIS_INT lis_array_reciprocal(LIS_INT n, LIS_SCALAR *x);
-extern LIS_INT lis_array_conjugate(LIS_INT n, LIS_SCALAR *x);
-extern LIS_INT lis_array_shift(LIS_INT n, LIS_SCALAR sigma, LIS_SCALAR *x);
-extern LIS_INT lis_array_dot(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y,
-                             LIS_SCALAR *value);
-extern LIS_INT lis_array_nhdot(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y,
-                               LIS_SCALAR *value);
-extern LIS_INT lis_array_nrm1(LIS_INT n, LIS_SCALAR *x, LIS_REAL *value);
-extern LIS_INT lis_array_nrm2(LIS_INT n, LIS_SCALAR *x, LIS_REAL *value);
-extern LIS_INT lis_array_nrmi(LIS_INT n, LIS_SCALAR *x, LIS_REAL *value);
-extern LIS_INT lis_array_sum(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *value);
-extern LIS_INT lis_array_matvec(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *x,
-                                LIS_SCALAR *y, LIS_INT op);
-extern LIS_INT lis_array_matvech(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *x,
-                                 LIS_SCALAR *y, LIS_INT op);
-extern LIS_INT lis_array_matvec_ns(LIS_INT m, LIS_INT n, LIS_SCALAR *a,
-                                   LIS_INT lda, LIS_SCALAR *x, LIS_SCALAR *y,
-                                   LIS_INT op);
-extern LIS_INT lis_array_matmat(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *b,
-                                LIS_SCALAR *c, LIS_INT op);
-extern LIS_INT lis_array_matmat_ns(LIS_INT m, LIS_INT n, LIS_INT k,
-                                   LIS_SCALAR *a, LIS_INT lda, LIS_SCALAR *b,
-                                   LIS_INT ldb, LIS_SCALAR *c, LIS_INT ldc,
-                                   LIS_INT op);
-extern LIS_INT lis_array_ge(LIS_INT n, LIS_SCALAR *a);
-extern LIS_INT lis_array_solve(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *b,
-                               LIS_SCALAR *x, LIS_SCALAR *w);
-extern LIS_INT lis_array_cgs(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *q,
-                             LIS_SCALAR *r);
-extern LIS_INT lis_array_mgs(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *q,
-                             LIS_SCALAR *r);
-extern LIS_INT lis_array_qr(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *q,
-                            LIS_SCALAR *r, LIS_INT *qriter, LIS_REAL *qrerr);
+        extern LIS_INT lis_array_swap(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y);
+        extern LIS_INT lis_array_copy(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y);
+        extern LIS_INT lis_array_axpy(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR *x, LIS_SCALAR *y);
+        extern LIS_INT lis_array_xpay(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR alpha, LIS_SCALAR *y);
+        extern LIS_INT lis_array_axpyz(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *z);
+        extern LIS_INT lis_array_scale(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR *x);
+        extern LIS_INT lis_array_pmul(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *z);
+        extern LIS_INT lis_array_pdiv(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *z);
+        extern LIS_INT lis_array_set_all(LIS_INT n, LIS_SCALAR alpha, LIS_SCALAR *x);
+        extern LIS_INT lis_array_abs(LIS_INT n, LIS_SCALAR *x);
+        extern LIS_INT lis_array_reciprocal(LIS_INT n, LIS_SCALAR *x);
+        extern LIS_INT lis_array_conjugate(LIS_INT n, LIS_SCALAR *x);  
+        extern LIS_INT lis_array_shift(LIS_INT n, LIS_SCALAR sigma, LIS_SCALAR *x);
+        extern LIS_INT lis_array_dot(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *value);
+        extern LIS_INT lis_array_nhdot(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *y, LIS_SCALAR *value);  
+	extern LIS_INT lis_array_nrm1(LIS_INT n, LIS_SCALAR *x, LIS_REAL *value);
+	extern LIS_INT lis_array_nrm2(LIS_INT n, LIS_SCALAR *x, LIS_REAL *value);
+	extern LIS_INT lis_array_nrmi(LIS_INT n, LIS_SCALAR *x, LIS_REAL *value);
+	extern LIS_INT lis_array_sum(LIS_INT n, LIS_SCALAR *x, LIS_SCALAR *value);
+	extern LIS_INT lis_array_matvec(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *x, LIS_SCALAR *y, LIS_INT op);
+	extern LIS_INT lis_array_matvech(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *x, LIS_SCALAR *y, LIS_INT op);
+	extern LIS_INT lis_array_matvec_ns(LIS_INT m, LIS_INT n, LIS_SCALAR *a, LIS_INT lda, LIS_SCALAR *x, LIS_SCALAR *y, LIS_INT op);
+	extern LIS_INT lis_array_matmat(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *b, LIS_SCALAR *c, LIS_INT op);
+	extern LIS_INT lis_array_matmat_ns(LIS_INT m, LIS_INT n, LIS_INT k, LIS_SCALAR *a, LIS_INT lda, LIS_SCALAR *b, LIS_INT ldb, LIS_SCALAR *c, LIS_INT ldc, LIS_INT op);
+	extern LIS_INT lis_array_ge(LIS_INT n, LIS_SCALAR *a);
+	extern LIS_INT lis_array_solve(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *b, LIS_SCALAR *x, LIS_SCALAR *w);
+        extern LIS_INT lis_array_cgs(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *q, LIS_SCALAR *r);
+        extern LIS_INT lis_array_mgs(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *q, LIS_SCALAR *r);
+        extern LIS_INT lis_array_qr(LIS_INT n, LIS_SCALAR *a, LIS_SCALAR *q, LIS_SCALAR *r, LIS_INT *qriter, LIS_REAL *qrerr);
 
 /****************************/
 /* Linear Solvers           */
 /****************************/
 
-extern LIS_INT lis_solver_create(LIS_SOLVER *solver);
-extern LIS_INT lis_solver_destroy(LIS_SOLVER solver);
-extern LIS_INT lis_solver_get_iter(LIS_SOLVER solver, LIS_INT *iter);
-extern LIS_INT lis_solver_get_iterex(LIS_SOLVER solver, LIS_INT *iter,
-                                     LIS_INT *iter_double, LIS_INT *iter_quad);
-extern LIS_INT lis_solver_get_time(LIS_SOLVER solver, double *time);
-extern LIS_INT lis_solver_get_timeex(LIS_SOLVER solver, double *time,
-                                     double *itime, double *ptime,
-                                     double *p_c_time, double *p_i_time);
-extern LIS_INT lis_solver_get_residualnorm(LIS_SOLVER solver,
-                                           LIS_REAL *residual);
-extern LIS_INT lis_solver_get_solver(LIS_SOLVER solver, LIS_INT *nsol);
-extern LIS_INT lis_solver_get_precon(LIS_SOLVER solver, LIS_INT *precon_type);
-extern LIS_INT lis_solver_get_status(LIS_SOLVER solver, LIS_INT *status);
-extern LIS_INT lis_solver_get_rhistory(LIS_SOLVER solver, LIS_VECTOR v);
-extern LIS_INT lis_solver_set_option(char *text, LIS_SOLVER solver);
-extern LIS_INT lis_solver_set_optionC(LIS_SOLVER solver);
+    extern LIS_INT lis_solver_create(LIS_SOLVER *solver);
+    extern LIS_INT lis_solver_set_monitor(
+            LIS_SOLVER solver,
+            LIS_SOLVER_MONITOR_CALLBACK monitor,
+            void *user_data);
+    extern LIS_INT lis_solver_set_convergence(
+            LIS_SOLVER solver,
+            LIS_SOLVER_CONVERGENCE_CALLBACK convergence,
+            void *user_data);
+	extern LIS_INT lis_solver_destroy(LIS_SOLVER solver);
+	extern LIS_INT lis_solver_set_nullspace(LIS_SOLVER solver, LIS_INT nvec, LIS_VECTOR vectors[]);
+	extern LIS_INT lis_solver_clear_nullspace(LIS_SOLVER solver);
+	extern LIS_INT lis_solver_set_left_nullspace(LIS_SOLVER solver, LIS_INT nvec, LIS_VECTOR vectors[]);
+	extern LIS_INT lis_solver_clear_left_nullspace(LIS_SOLVER solver);
+	extern LIS_INT lis_solver_check_rhs_compatibility(
+	    LIS_SOLVER solver, LIS_VECTOR rhs,
+	    LIS_REAL *defect, LIS_REAL *relative_defect);
+	extern LIS_INT lis_solver_project_rhs_compatible(
+	    LIS_SOLVER solver, LIS_VECTOR rhs,
+	    LIS_VECTOR projected_rhs);
+	extern LIS_INT lis_solver_set_rhs_compatibility_policy(
+	    LIS_SOLVER solver, LIS_INT policy);
+	extern LIS_INT lis_solver_get_rhs_compatibility_policy(
+	    LIS_SOLVER solver, LIS_INT *policy);
+	extern LIS_INT lis_solver_set_rhs_compatibility_tolerance(
+	    LIS_SOLVER solver, LIS_REAL tolerance);
+	extern LIS_INT lis_solver_get_rhs_compatibility_tolerance(
+	    LIS_SOLVER solver, LIS_REAL *tolerance);
+	extern LIS_INT lis_solver_set_near_nullspace(LIS_SOLVER solver, LIS_INT nvec, LIS_VECTOR vectors[]);
+	extern LIS_INT lis_solver_clear_near_nullspace(LIS_SOLVER solver);
+	extern LIS_INT lis_solver_set_gcrodr_recycle(
+		LIS_SOLVER solver, LIS_INT dim,
+		LIS_REAL keep_quality, LIS_REAL reject_quality);
+	extern LIS_INT lis_solver_get_gcrodr_recycle(
+		LIS_SOLVER solver, LIS_INT *dim, LIS_INT *action,
+		LIS_REAL *quality, LIS_REAL *quality_min);
+	extern LIS_INT lis_solver_get_iter(LIS_SOLVER solver, LIS_INT *iter);
+	extern LIS_INT lis_solver_get_iterex(LIS_SOLVER solver, LIS_INT *iter, LIS_INT *iter_double, LIS_INT *iter_quad);
+	extern LIS_INT lis_solver_get_time(LIS_SOLVER solver, double *time);
+	extern LIS_INT lis_solver_get_timeex(LIS_SOLVER solver, double *time, double *itime, double *ptime, double *p_c_time, double *p_i_time);
+	extern LIS_INT lis_solver_get_residualnorm(LIS_SOLVER solver, LIS_REAL *residual);
+	extern LIS_INT lis_solver_get_solver(LIS_SOLVER solver, LIS_INT *nsol);
+	extern LIS_INT lis_solver_get_precon(LIS_SOLVER solver, LIS_INT *precon_type);
+	extern LIS_INT lis_solver_get_status(LIS_SOLVER solver, LIS_INT *status);
+	extern LIS_INT lis_solver_set_fgcrodr_recycle(
+	    LIS_SOLVER solver, LIS_INT dim,
+	    LIS_REAL keep_quality, LIS_REAL reject_quality);
+	extern LIS_INT lis_solver_get_fgcrodr_recycle_config(
+	    LIS_SOLVER solver, LIS_INT *dim,
+	    LIS_REAL *keep_quality, LIS_REAL *reject_quality,
+	    LIS_INT *update);
+	extern LIS_INT lis_solver_get_fgcrodr_recycle(
+	    LIS_SOLVER solver, LIS_INT *dim, LIS_INT *action,
+	    LIS_REAL *quality, LIS_REAL *quality_min);
+	extern LIS_INT lis_solver_set_fgcrodr_recycle_update(
+	    LIS_SOLVER solver, LIS_INT update);
+	extern LIS_INT lis_solver_get_fgcrodr_recycle_update(
+	    LIS_SOLVER solver, LIS_INT *update);
+	extern LIS_INT lis_solver_get_sequence_diagnostics(LIS_SOLVER solver, LIS_SEQUENCE_DIAGNOSTICS *diag);
+	extern LIS_INT lis_solver_set_sequence_policy(LIS_SOLVER solver, LIS_INT policy);
+	extern LIS_INT lis_solver_get_sequence_policy(LIS_SOLVER solver, LIS_INT *policy);
+	extern LIS_INT lis_solver_set_sequence_precon_refresh_policy(LIS_SOLVER solver, LIS_INT policy);
+	extern LIS_INT lis_solver_get_sequence_precon_refresh_policy(LIS_SOLVER solver, LIS_INT *policy);
+
+	/* Half precision preconditioner storage capability and policy. */
+	extern LIS_INT lis_half_get_capability(LIS_INT *available);
+	extern LIS_INT lis_solver_set_precon_half(LIS_SOLVER solver, LIS_INT mode);
+	extern LIS_INT lis_solver_get_precon_half(LIS_SOLVER solver, LIS_INT *mode);
+
+	extern LIS_INT lis_solver_set_num_threads(LIS_SOLVER solver, LIS_INT num_threads);
+	extern LIS_INT lis_solver_get_num_threads(LIS_SOLVER solver, LIS_INT *num_threads);
+	extern LIS_INT lis_solver_set_sequence_precon_max_age(LIS_SOLVER solver, LIS_INT max_age);
+	extern LIS_INT lis_solver_get_sequence_precon_max_age(LIS_SOLVER solver, LIS_INT *max_age);
+	extern LIS_INT lis_solver_get_sequence_precon_age(LIS_SOLVER solver, LIS_INT *age);
+        extern LIS_INT lis_solver_get_rhistory(LIS_SOLVER solver, LIS_VECTOR v);
+	extern LIS_INT lis_solver_set_option(char *text, LIS_SOLVER solver);
+	extern LIS_INT lis_solver_set_optionC(LIS_SOLVER solver);
 /*NEH support for extended "solve_kernel" workflow*/
-extern LIS_INT lis_solver_set_matrix(LIS_MATRIX A, LIS_SOLVER solver);
-extern LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x,
-                         LIS_SOLVER solver);
-extern LIS_INT lis_solve_setup(LIS_MATRIX A, LIS_SOLVER solver);
-extern LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x,
-                                LIS_SOLVER solver, LIS_PRECON precon);
-extern LIS_PRECON_REGISTER *precon_register_top;
-extern LIS_INT precon_register_type;
-extern LIS_INT lis_precon_register(char *name, LIS_PRECON_CREATE_XXX pcreate,
-                                   LIS_PSOLVE_XXX psolve,
-                                   LIS_PSOLVEH_XXX psolveh);
-extern LIS_INT lis_precon_register_free(void);
-extern LIS_INT lis_solver_get_solvername(LIS_INT solver, char *solvername);
-extern LIS_INT lis_solver_get_preconname(LIS_INT precon_type, char *preconname);
+    extern LIS_INT lis_solver_set_matrix(LIS_MATRIX A, LIS_SOLVER solver);
+	extern LIS_INT lis_solve(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver);
+     extern LIS_INT lis_solve_sequence(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver);
+     extern LIS_INT lis_solve_sequence_with_precon_matrix(LIS_MATRIX A, LIS_MATRIX precon_A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver);
+     extern LIS_INT lis_solver_reset_sequence(LIS_SOLVER solver);
+	extern LIS_INT lis_solve_setup(LIS_MATRIX A, LIS_SOLVER solver);
+	extern LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver, LIS_PRECON precon);
+	extern LIS_PRECON_REGISTER *precon_register_top;
+	extern LIS_INT precon_register_type;
+	extern LIS_INT lis_precon_set_user_data(LIS_PRECON precon, void *user_data);
+	extern LIS_INT lis_precon_get_user_data(LIS_PRECON precon, void **user_data);
+	extern LIS_INT lis_precon_register(char *name, LIS_PRECON_CREATE_XXX pcreate, LIS_PSOLVE_XXX psolve, LIS_PSOLVEH_XXX psolveh);
+	extern LIS_INT lis_precon_register_ex(char *name, LIS_PRECON_CREATE_XXX pcreate, LIS_PSOLVE_XXX psolve, LIS_PSOLVEH_XXX psolveh, LIS_PRECON_DESTROY_XXX pdestroy);
+	extern LIS_INT lis_precon_register_psd(char *name, LIS_PRECON_PSD_CREATE_XXX psd_create, LIS_PRECON_PSD_UPDATE_XXX psd_update);
+	extern LIS_INT lis_precon_register_free(void);
+	extern LIS_INT lis_solver_get_solvername(LIS_INT solver, char *solvername);
+	extern LIS_INT lis_solver_get_preconname(LIS_INT precon_type, char *preconname);
 
 /****************************/
 /* Eigensolvers             */
 /****************************/
 
-extern LIS_INT lis_esolver_create(LIS_ESOLVER *esolver);
-extern LIS_INT lis_esolver_destroy(LIS_ESOLVER esolver);
-extern LIS_INT lis_iesolver_destroy(LIS_ESOLVER esolver);
-extern LIS_INT lis_esolver_set_option(char *text, LIS_ESOLVER esolver);
-extern LIS_INT lis_esolver_set_optionC(LIS_ESOLVER esolver);
-extern LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0,
-                          LIS_ESOLVER esolver);
-extern LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x,
-                           LIS_SCALAR *evalue0, LIS_ESOLVER esolver);
-extern LIS_INT lis_esolver_get_iter(LIS_ESOLVER esolver, LIS_INT *iter);
-extern LIS_INT lis_esolver_get_iterex(LIS_ESOLVER esolver, LIS_INT *iter,
-                                      LIS_INT *iter_double, LIS_INT *iter_quad);
-extern LIS_INT lis_esolver_get_time(LIS_ESOLVER esolver, double *time);
-extern LIS_INT lis_esolver_get_timeex(LIS_ESOLVER esolver, double *time,
-                                      double *itime, double *ptime,
-                                      double *p_c_time, double *p_i_time);
-extern LIS_INT lis_esolver_get_residualnorm(LIS_ESOLVER esolver,
-                                            LIS_REAL *residual);
-extern LIS_INT lis_esolver_get_status(LIS_ESOLVER esolver, LIS_INT *status);
-extern LIS_INT lis_esolver_get_rhistory(LIS_ESOLVER esolver, LIS_VECTOR v);
-extern LIS_INT lis_esolver_get_evalues(LIS_ESOLVER esolver, LIS_VECTOR v);
-extern LIS_INT lis_esolver_get_specific_evalue(LIS_ESOLVER esolver,
-                                               LIS_INT mode,
-                                               LIS_SCALAR *evalue);
-extern LIS_INT lis_esolver_get_evectors(LIS_ESOLVER esolver, LIS_MATRIX M);
-extern LIS_INT lis_esolver_get_specific_evector(LIS_ESOLVER esolver,
-                                                LIS_INT mode, LIS_VECTOR x);
-extern LIS_INT lis_esolver_get_residualnorms(LIS_ESOLVER esolver, LIS_VECTOR v);
-extern LIS_INT lis_esolver_get_specific_residualnorm(LIS_ESOLVER esolver,
-                                                     LIS_INT mode,
-                                                     LIS_REAL *residual);
-extern LIS_INT lis_esolver_get_iters(LIS_ESOLVER esolver, LIS_VECTOR v);
-extern LIS_INT lis_esolver_get_specific_iter(LIS_ESOLVER esolver, LIS_INT mode,
-                                             LIS_INT *iter);
-extern LIS_INT lis_esolver_get_esolver(LIS_ESOLVER esolver, LIS_INT *nesol);
-extern LIS_INT lis_esolver_get_esolvername(LIS_INT esolver, char *esolvername);
+	extern LIS_INT lis_esolver_create(LIS_ESOLVER *esolver);
+	extern LIS_INT lis_esolver_destroy(LIS_ESOLVER esolver);
+	extern LIS_INT lis_iesolver_destroy(LIS_ESOLVER esolver);
+	extern LIS_INT lis_esolver_set_subspace_retry(
+	                                   LIS_ESOLVER esolver,
+	                                   LIS_INT max_retries,
+	                                   LIS_REAL growth_factor,
+	                                   LIS_INT min_subspace);
+	extern LIS_INT lis_esolver_get_subspace_retry(
+	                                   LIS_ESOLVER esolver,
+	                                   LIS_INT *max_retries,
+	                                   LIS_REAL *growth_factor,
+	                                   LIS_INT *min_subspace,
+	                                   LIS_INT *attempts,
+	                                   LIS_INT *final_subspace);
+	extern LIS_INT lis_esolver_set_option(char *text, LIS_ESOLVER esolver);
+	extern LIS_INT lis_esolver_set_optionC(LIS_ESOLVER esolver);
+	extern LIS_INT lis_esolver_set_linear_options(const char *text, LIS_ESOLVER esolver);
+	extern LIS_INT lis_esolver_set_refine_linear_options(const char *text, LIS_ESOLVER esolver);
+	extern LIS_INT lis_esolver_set_refine_gap_fraction(LIS_REAL fraction, LIS_ESOLVER esolver);
+	extern LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver);
+	extern LIS_INT lis_gesolve(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver);
+/* Generic, conservative matrix-pair generalized eigensolver session.
+ * The session owns both CSR caches and the eigensolver.  A previous
+ * eigensolver is fully retired before either cache changes. Only the
+ * cached CSR matrices may be reused; eigensolver work is rebuilt.
+ *
+ * A/B/x are owned by the caller and may remain referenced by the eigensolver
+ * after solve() returns. Keep them alive until the NEXT solve(), reset(), or
+ * destroy() has retired those references. Do not mutate them concurrently
+ * with session use. Call reset() before freeing a previously used source.
+ *
+ * USER/OPERATOR inputs with row access are materialized as CSR. Native
+ * matrices pass through unchanged. This v1 supports single-process
+ * distributions (including MPI builds with one rank).
+ *
+ * get_esolver returns a BORROWED configuration handle, invalidated by the
+ * next solve, reset, or destroy. Reacquire before changing options.
+ * Indexed result access copies into a caller-owned default-precision vector
+ * with matching local/global dimensions; no internal pointers escape.
+ * Policy outputs are committed only after a successful solve.
+ */
+typedef struct LIS_GESOLVE_MATRIX_SESSION_STRUCT *LIS_GESOLVE_MATRIX_SESSION;
+extern LIS_INT lis_gesolve_matrix_session_create(
+    LIS_GESOLVE_MATRIX_SESSION *session);
+extern LIS_INT lis_gesolve_matrix_session_get_esolver(
+    LIS_GESOLVE_MATRIX_SESSION session,LIS_ESOLVER *borrowed_esolver);
+extern LIS_INT lis_gesolve_matrix_session_solve(
+    LIS_GESOLVE_MATRIX_SESSION session,LIS_MATRIX A,LIS_MATRIX B,
+    LIS_VECTOR x,LIS_INT *policy_A,LIS_INT *policy_B);
+extern LIS_INT lis_gesolve_matrix_session_get_nev(
+    LIS_GESOLVE_MATRIX_SESSION session,LIS_INT *computed_nev);
+extern LIS_INT lis_gesolve_matrix_session_get_eigenpair(
+    LIS_GESOLVE_MATRIX_SESSION session,LIS_INT mode,
+    LIS_SCALAR *eigenvalue,LIS_VECTOR eigenvector_out);
+extern LIS_INT lis_gesolve_matrix_session_reset(
+    LIS_GESOLVE_MATRIX_SESSION session);
+extern void lis_gesolve_matrix_session_destroy(
+    LIS_GESOLVE_MATRIX_SESSION session);
+
+  
+	  
+	  
+	extern LIS_INT lis_esolver_get_iter(LIS_ESOLVER esolver, LIS_INT *iter);
+	extern LIS_INT lis_esolver_get_iterex(LIS_ESOLVER esolver, LIS_INT *iter, LIS_INT *iter_double, LIS_INT *iter_quad);
+	extern LIS_INT lis_esolver_get_time(LIS_ESOLVER esolver, double *time);
+	extern LIS_INT lis_esolver_get_timeex(LIS_ESOLVER esolver, double *time, double *itime, double *ptime, double *p_c_time, double *p_i_time);
+	extern LIS_INT lis_esolver_get_residualnorm(LIS_ESOLVER esolver, LIS_REAL *residual);
+	extern LIS_INT lis_esolver_get_status(LIS_ESOLVER esolver, LIS_INT *status);
+        extern LIS_INT lis_esolver_get_rhistory(LIS_ESOLVER esolver, LIS_VECTOR v);
+        extern LIS_INT lis_esolver_get_evalues(LIS_ESOLVER esolver, LIS_VECTOR v);
+        extern LIS_INT lis_esolver_get_specific_evalue(LIS_ESOLVER esolver, LIS_INT mode, LIS_SCALAR *evalue);  
+        extern LIS_INT lis_esolver_get_evectors(LIS_ESOLVER esolver, LIS_MATRIX M);
+        extern LIS_INT lis_esolver_get_specific_evector(LIS_ESOLVER esolver, LIS_INT mode, LIS_VECTOR x);  
+        extern LIS_INT lis_esolver_get_residualnorms(LIS_ESOLVER esolver, LIS_VECTOR v);
+        extern LIS_INT lis_esolver_get_specific_residualnorm(LIS_ESOLVER esolver, LIS_INT mode, LIS_REAL *residual);  
+        extern LIS_INT lis_esolver_get_iters(LIS_ESOLVER esolver, LIS_VECTOR v);
+        extern LIS_INT lis_esolver_get_specific_iter(LIS_ESOLVER esolver, LIS_INT mode, LIS_INT *iter);  
+	extern LIS_INT lis_esolver_get_esolver(LIS_ESOLVER esolver, LIS_INT *nesol);
+	extern LIS_INT lis_esolver_get_esolvername(LIS_INT esolver, char *esolvername);
 
 /****************************/
 /* I/O Functions            */
 /****************************/
 
-extern LIS_INT lis_input(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x,
-                         char *filename);
-extern LIS_INT lis_input_matrix(LIS_MATRIX A, char *filename);
-extern LIS_INT lis_input_vector(LIS_VECTOR v, char *filename);
-extern LIS_INT lis_output(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x,
-                          LIS_INT mode, char *path);
-extern LIS_INT lis_output_matrix(LIS_MATRIX A, LIS_INT mode, char *path);
-extern LIS_INT lis_output_vector(LIS_VECTOR v, LIS_INT format, char *filename);
-extern LIS_INT lis_solver_output_rhistory(LIS_SOLVER solver, char *filename);
-extern LIS_INT lis_esolver_output_rhistory(LIS_ESOLVER esolver, char *filename);
+	extern LIS_INT lis_input(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, char *filename);
+	extern LIS_INT lis_input_matrix(LIS_MATRIX A, char *filename);
+	extern LIS_INT lis_input_vector(LIS_VECTOR v, char *filename);
+	extern LIS_INT lis_output(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_INT mode, char *path);
+	extern LIS_INT lis_output_matrix(LIS_MATRIX A, LIS_INT mode, char *path);
+	extern LIS_INT lis_output_vector(LIS_VECTOR v, LIS_INT format, char *filename);
+	extern LIS_INT lis_solver_output_rhistory(LIS_SOLVER solver, char *filename);
+	extern LIS_INT lis_esolver_output_rhistory(LIS_ESOLVER esolver, char *filename);
 
 /****************************/
 /* Utilities                */
 /****************************/
 
-extern LIS_INT lis_initialize(int *argc, char **argv[]);
-extern LIS_INT lis_finalize(void);
-extern double lis_wtime(void);
-extern void CHKERR(LIS_INT err);
-extern LIS_INT lis_debug_trace_func(LIS_INT flag, char *func);
-extern void *lis_malloc(size_t size, char *tag);
-extern void *lis_calloc(size_t size, char *tag);
-extern void *lis_realloc(void *p, size_t size);
-extern void lis_free(void *p);
-extern void lis_free2(LIS_INT n, ...);
-extern LIS_INT lis_is_malloc(void *p);
-extern void lis_date(char *date);
-extern LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...);
+	extern void lis_do_not_handle_mpi();
+	extern LIS_INT lis_initialize(int *argc, char** argv[]);
+	extern LIS_INT lis_finalize(void);
+	extern double lis_wtime(void);
+	extern void CHKERR(LIS_INT err);
+	extern LIS_INT lis_debug_trace_func(LIS_INT flag, char *func);
+	extern void *lis_malloc( size_t size, char *tag );
+	extern void *lis_calloc( size_t size, char *tag );
+	extern void *lis_realloc( void *p, size_t size );
+	extern void lis_free(void *p);
+	extern void lis_free2(LIS_INT n, ...);
+	extern LIS_INT lis_is_malloc( void *p );
+	extern void lis_date(char *date);
+	extern LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...);
+
 
 #ifdef __cplusplus
 }
@@ -1134,25 +1711,31 @@ extern LIS_INT lis_printf(LIS_Comm comm, const char *mess, ...);
 #define LIS_OUT_OF_MEMORY 3
 #define LIS_ERR_OUT_OF_MEMORY 3
 #define LIS_MAXITER 4
-#define LIS_ERR_NOT_IMPLEMENTED 5
-#define LIS_ERR_FILE_IO 6
+#define LIS_ERR_NOT_IMPLEMENTED	5
+#define LIS_ERR_FILE_IO	6
+
 
 #if 1
-#define LIS_GET_ISIE(id, nprocs, n, is, ie)                                    \
-  if ((id) < (n) % (nprocs)) {                                                 \
-    (ie) = (n) / (nprocs) + 1;                                                 \
-    (is) = (ie) * (id);                                                        \
-  } else {                                                                     \
-    (ie) = (n) / (nprocs);                                                     \
-    (is) = (ie) * (id) + (n) % (nprocs);                                       \
-  }                                                                            \
-  (ie) = (ie) + (is);
+#define LIS_GET_ISIE(id,nprocs,n,is,ie) \
+		if( (id) < (n)%(nprocs) ) \
+		{ \
+			(ie) = (n)/(nprocs)+1; \
+			(is) = (ie)*(id); \
+		} \
+		else \
+		{ \
+			(ie) = (n)/(nprocs); \
+			(is) = (ie)*(id) + (n)%(nprocs); \
+		} \
+		(ie) = (ie)+(is);
 #else
-#define LIS_GET_ISIE(id, nprocs, n, is, ie)                                    \
-  (ie) = (n) / (nprocs) + 1;                                                   \
-  (is) = (id) * (ie) < ((n) + 1) ? (id) * (ie) : (n) + 1;                      \
-  (ie) = (is) + (ie) - 1 < (n) ? (is) + (ie) - 1 : (n);
+#define LIS_GET_ISIE(id,nprocs,n,is,ie) \
+		(ie) = (n)/(nprocs)+1; \
+		(is) = (id)*(ie)<((n)+1)?(id)*(ie):(n)+1; \
+		(ie) = (is)+(ie)-1<(n)?(is)+(ie)-1:(n);
 #endif
+
+#define LIS_SCALAR_MAX 1.7976931348623158e+308
 
 #ifdef __cplusplus
 }

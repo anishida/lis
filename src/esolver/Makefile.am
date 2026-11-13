@@ -1,12 +1,18 @@
 noinst_LTLIBRARIES = libesolver.la
-libesolver_la_SOURCES = lis_esolver.c \
+libesolver_la_SOURCES = lis_esolver.c lis_gesolve_matrix_session.c \
+lis_esolver_config.c \
+lis_esolver_selection.c lis_esolver_selection_copy.c \
+lis_esolver_block.c \
 lis_esolver_ai.c \
 lis_esolver_cg.c \
 lis_esolver_ii.c \
 lis_esolver_li.c \
 lis_esolver_pi.c \
 lis_esolver_rqi.c \
+lis_esolver_feast.c \
 lis_esolver_si.c	
+
+libesolver_la_SOURCES += lis_krylov.c lis_esolver_krylov.c
 
 AM_CFLAGS = -I$(top_srcdir)/include
 CLEANFILES = *.il

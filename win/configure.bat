@@ -90,7 +90,6 @@ rem   Build Options
 
 :setmsvcrt
 
-@shift
 @set msvcrt=1
 @shift
 @goto again

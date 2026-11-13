@@ -1,3 +1,136 @@
+Version 2.1.23 (November 5, 2026)
+
+  - Added unified extension API, BothEnds (-kwhich BE) selection mode, sorting suffixes (:ASC, :DESC), thresholded cyclic Jacobi sweeps, and hard-locking residual reuse for the native symmetric Krylov eigensolver (thanks to Rafal Brzegowy).
+
+Version 2.1.22 (November 4, 2026)
+
+  - Added a native restarted Krylov subspace eigensolver for real symmetric standard and generalized eigenvalue problems, supporting OpenMP parallelization, adaptive DGKS reorthogonalization, and hard locking (thanks to Rafal Brzegowy).
+  - Introduced generic matrix session frameworks, including a conservative generalized eigenvalue problem session and an opt-in numeric Jacobi preconditioner refresh policy for AUTO solver sessions (thanks to Rafal Brzegowy).
+  - Introduced a standalone runtime ABI descriptor API (lis_abi_get_info) and generic C APIs for nullspace preflight configuration and caller-owned independent CSR matrix materialization (thanks to Rafal Brzegowy).
+  - Added checked, strided real64 vector import/export interfaces supporting both strict validation and absolute/relative imaginary-component loss tolerances (thanks to Rafal Brzegowy).
+  - Fixed critical memory-safety issues, including an OpenMP heap-corruption race in USER row operations, an allocator integer overflow, and various memory leaks detected via AddressSanitizer (thanks to Rafal Brzegowy).
+  - Fixed vector indexing bugs, uninitialized memory reads after lis_vector_unset(), and a C/Fortran ABI mismatch affecting hidden CHARACTER length parameters under GCC LTO (thanks to Rafal Brzegowy).
+
+Version 2.1.21 October 31, 2026
+
+  - Treated inner LIS_MAXITER as a usable truncated preconditioner application in Hybrid nested KSP/PC (thanks to Rafal Brzegowy).
+  - Added public APIs for configuring internal linear solves and refinement choices inside transformed generalized eigensolvers (thanks to Rafal Brzegowy).
+  - Added generic serial matrix kernels for LIS_MATRIX_USER matrices that provide row access (thanks to Rafal Brzegowy).
+  - Added a small public helper to select, filter, and order converged eigensolver results (thanks to Rafal Brzegowy).
+  - Fixed the sizing of the global OpenMP temporary scalar buffer used by Lis vector reductions (thanks to Rafal Brzegowy).
+  - Extended the generic row-backed LIS_MATRIX_USER fallback kernels with OpenMP parallel execution (thanks to Rafal Brzegowy).
+  - Added a generic adaptive subspace retry policy for Lis eigensolvers (thanks to Rafal Brzegowy).
+  - Added a generic matrix infinity-norm operation supporting row-backed matrix representations (thanks to Rafal Brzegowy).
+  - Added generic public queries for the effective solver and preconditioner configuration (thanks to Rafal Brzegowy).
+  - Added a generic API (lis_solver_set_option_replace) for transactionally replacing the complete solver option profile (thanks to Rafal Brzegowy).
+  - Added generic support for increasing Lis OpenMP scratch capacity after initialization (thanks to Rafal Brzegowy).
+  - Added a generic matrix graph operation to compute weakly connected components (thanks to Rafal Brzegowy).
+  - Fixed complex-build portability in the public Lis header and corrected lis_vector_nrm2() for complex MPI builds (thanks to Rafal Brzegowy).
+  - Introduced an opt-in frozen-pattern ILUT numerical refresh policy for persistent sequences of linear solves (thanks to Rafal Brzegowy).
+  - Added a typed runtime API for stable solver and eigensolver controls, including requested eigenpair counts (thanks to Rafal Brzegowy).
+  - Introduced a managed AUTO matrix/sequence session API and caller-owned CSR materialization paths (thanks to Rafal Brzegowy).
+
+Version 2.1.20 October 25, 2026
+
+  - Added robust orthogonalization and subspace locking (thanks to Rafal Brzegowy).
+  - Added a self-contained FEAST foundation, numerical integration, and shift layers (thanks to Rafal Brzegowy).
+  - Added common block eigensolver infrastructure resilient to rank deficiency (thanks to Rafal Brzegowy).
+  - Added a standard Block Lanczos method (thanks to Rafal Brzegowy).
+  - Added generalized and transformed Block Lanczos methods (thanks to Rafal Brzegowy).
+  - Added a full native FEAST eigensolver (thanks to Rafal Brzegowy).
+
+Version 2.1.19 October 22, 2026
+
+  - MFAMG: Optimized sparse Galerkin assembly (thanks to Rafal Brzegowy).
+  - SAINV & Factor Storage: Optimized setup overhead and added half-precision factor storage (thanks to Rafal Brzegowy).
+
+Version 2.1.18 October 20, 2026
+
+  - Improved the construction of the MFAMG coarsening hierarchy when multiple vectors are supplied (thanks to Rafal Brzegowy).
+  - Fixed an issue with complex-build exposed by reliable residual changes, improving test portability (thanks to Rafal Brzegowy).
+  - Added an API and lifecycle infrastructure to store exact left nullspace within the solver (thanks to Rafal Brzegowy).
+  - Added compatibility queries and non-destructive projections for right-hand side terms RHS against a specified left nullspace (thanks to Rafal Brzegowy).
+  - Introduced explicit solver-time RHS compatibility policies for rejecting or projecting incompatible right-hand side terms (thanks to Rafal Brzegowy).
+  - Improved the efficiency of matrix assembly by avoiding memory expansion for duplicate elements, and enhanced robustness by limiting the number of QR iterations during Krylov solver recycling (thanks to Rafal Brzegowy).
+  - Added support for block matrix and vector multiplication callbacks (lis_matvec_block and lis_matvech_block) whilst retaining the existing Scalar interface (thanks to Rafal Brzegowy).
+  - Added application-owned residual monitors and custom convergence callbacks that do not bypass the final physical residual safety check (thanks to Rafal Brzegowy).
+  - Added a comprehensive regression test suite for the new features and policies (thanks to Rafal Brzegowy).
+
+Version 2.1.17 October 16, 2026
+
+  - Implemented the GCRO-DR and FGCRO-DR linear solvers (thanks to Rafal Brzegowy).
+  - Allowed compatible prebuilt preconditioners for LIS_MATRIX_USER and added the MFAMG preconditioner for serial/distributed matrices (thanks to Rafal Brzegowy).
+  - Supported non-conflicting near-nullspace handling between MFAMG and (F)GCRO-DR, and improved persistent sequence behavior for GCRO-DR (thanks to Rafal Brzegowy).
+  - Added matrix capability queries, row-access interfaces, sequence preconditioner reuse via lis_solver_set_sequence_precon_max_age(), and hardened sequence recovery mechanisms (thanks to Rafal Brzegowy).
+
+Version 2.1.16 October 9, 2026
+
+  - Added support for symmetric diagonal scaling of shell matrices without modifying the original matrix or right-hand side (thanks to Rafal Brzegowy).
+  - Added solver-managed near-nullspace support and a two-level deflation correction for FGMRES solvers (thanks to Rafal Brzegowy).
+  - Enhanced numerical stability, error handling, and expanded the test suite with new regression tests (thanks to Rafal Brzegowy).
+
+Version 2.1.15 October 6, 2026
+
+  - Clarified preconditioner ownership around lis_solve_kernel() to ensure consistent lifecycle management (thanks to Rafal Brzegowy).
+  - Fixed missing matrix restoration on error paths within Rayleigh Quotient Iteration (RQI) (thanks to Rafal Brzegowy).
+  - Hardened repeated-solve error handling and residual history (rhistory) memory state safety (thanks to Rafal Brzegowy).
+  - Added regression test for repeated system reuse with user-defined preconditioners and warm starts (thanks to Rafal Brzegowy).
+  - Added regression test for caller-controlled preconditioner retry and rebuild policies (thanks to Rafal Brzegowy).
+  - Hardened workspace allocation error handling and cleanup for GMRES and FGMRES solvers (thanks to Rafal Brzegowy).
+  - Defined explicit solver workspace compatibility rules for layout, precision, and MPI contexts (thanks to Rafal Brzegowy).
+  - Implemented optimal reuse of compatible solver workspaces across repeated solves (thanks to Rafal Brzegowy).
+  - Allowed prebuilt preconditioners to be successfully supplied with user-defined matrices (thanks to Rafal Brzegowy).
+
+Version 2.1.14 October 2, 2026
+
+  - Added new option -maxiter_noimp for early stopping (thanks to Caio Souza).
+
+Version 2.1.13 September 30, 2026
+
+  - Added generic user-defined shell matrix interface (thanks to Rafal Brzegowy).
+  - Handled unsupported user matrix eigensolver paths (thanks to Rafal Brzegowy).
+  - Added generic linear-combination matrix operator (thanks to Rafal Brzegowy).
+  - Used matrix operator for shifted generalized eigensolvers (thanks to Rafal Brzegowy).
+  - Hardened matrix operator test coverage for composed operators and distributed-memory environments (thanks to Rafal Brzegowy).
+  - Added diagonal extraction support and recursive diagonal evaluation for user and operator matrices (thanks to Rafal Brzegowy).
+  - Added lifecycles and destroy routines for user-defined preconditioners via lis_precon_register_ex (thanks to Rafal Brzegowy).
+  - Propagated Jacobi diagonal errors (thanks to Rafal Brzegowy).
+  - Added PSD support for user preconditioners (thanks to Rafal Brzegowy).
+
+Version 2.1.12 September 25, 2026
+
+  - Fixed bugs in lis_matrix_g2l_csr(), where g2l_map was checked instead of l2g_map (thanks to Carlos Mendes).
+
+Version 2.1.11 March 11, 2026
+
+  - Fixed definition of f_clear_matrix_ptr (thanks to Rosset).
+
+Version 2.1.10 April 18, 2025
+
+  - Added support for inner shift parameter in eigenvalue solver (thanks to Theodore Chang).
+
+Version 2.1.9 April 18, 2025
+
+  - Updated eigenvalue condition in lis_eai function (thanks to Theodore Chang).
+  - Refactored eigenpair computation to create and destroy the inner eigensolver
+    within the loop for each refined eigenpair (thanks to Theodore Chang).
+
+Version 2.1.8 March 17, 2025
+
+  - Added MPI management functionality (thanks to Theodore Chang).
+
+Version 2.1.7 December 17, 2024
+
+  - Updated documents (thanks to ChatGPT-4o).
+
+Version 2.1.6 July 3, 2024
+
+  - Fixed a bug in lis_precon_saamg.c (thanks to Carlos Mendes).
+
+Version 2.1.5 June 27, 2024
+
+  - Removed extra @shift in win\configure.bat (thanks to Carlos Mendes).
+
 Version 2.1.4 May 8, 2024
 
   - Changed COPYING to symbolic link to LICENSE (thanks to Ralf Greeve).

@@ -11,7 +11,57 @@ test_DATA = testmat.mtx testmat2.mtx testmat3.mtx testmat4.mtx testmat0.mtx test
 
 test_SCRIPTS = defs test.sh
 
-test_PROGRAMS = etest1 etest2 etest3 etest4 etest5 etest5b etest6 etest7 getest1 getest5 getest5b spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b spmvtest4 spmvtest5 test1 test2 test2b test3 test3b test3c test4 test5 test6 test7
+test_PROGRAMS = testesubspaceretry etest1 etest2 etest3 etest4 etest5 etest5b etest6 etest7 getest1 \
+        getest5 getest5b spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b \
+        spmvtest4 spmvtest5 test1 test2 test2b test3 test3b test3c \
+        test4 test5 test6 test7 testuser testuserrow testuserprecon testmatvecblock \
+        testcapabilities testvectornrm2mpi testoperatorrowprecon testsolvercapabilities testsolveroptionreplace \
+	testompelastic testmatrixgraph testcomponentnullspace testnullspacelift getestuser testoperator getestoperator testdiagonal \
+        testpreconlifecycle testhybridnested testjacobiuser testpreconpsd testpreconreuse testeigenbreakdown testrqirestore \
+        testrhistoryerror testrepeatedsystems testpreconpolicy testgmreswork \
+        testsolvermonitor testsolvercallbackpaths testsolvercallbackcert testworkcompat \
+        testworkreuse testprebuiltuser testshellscale testsymmdiagguard testilupivot \
+        testparamupdate testbreakretry testchangingsystem testkrylovrobust testnearnullspace \
+        testcoarsesetup testcoarseapply testgcrodroptions testgcrodrconfig testgcrodrsequence \
+        testmatrixgeneration testexternalstorage testmatrixmaterialize testmatrixmaterializeomp testmatrixpolicysolve testfrozenilut benchfrozenilut testsplitview testsplitviewi64 testsplitviewreal64 testmatrixoperatorlifecycle testmatrixoperatormpi testsequence testwarmstart testrecovery \
+        testthreads testfgcrodr testmfamg testmfamggalerkin testexactnullspace testhalfconfig testhalfconvert \
+        testfeastfoundation testfeastcontour testfeastshifted testnullspacecandidates testesolverselection \
+	testprojectedeigen testprojectedhermitian testblockgram \
+	testblockorthogonal testblockrank
+
+# Keep optional session tests separate from the long test_PROGRAMS list.
+test_PROGRAMS += testmatrixautosession testvectorreal64 benchautojacobirefresh testabi testgesolvepair
+
+testabi_SOURCES = testabi.c
+
+testgcrodroptions_SOURCES = testgcrodroptions.c
+testfeastfoundation_SOURCES = testfeastfoundation.c
+testfeastcontour_SOURCES = testfeastcontour.c
+testfeastshifted_SOURCES = testfeastshifted.c
+testgcrodrconfig_SOURCES = testgcrodrconfig.c
+testgcrodrsequence_SOURCES = testgcrodrsequence.c
+testmatrixgeneration_SOURCES = testmatrixgeneration.c
+testexternalstorage_SOURCES = testexternalstorage.c
+testmatrixmaterialize_SOURCES = testmatrixmaterialize.c
+testmatrixmaterializeomp_SOURCES = testmatrixmaterializeomp.c
+testmatrixpolicysolve_SOURCES = testmatrixpolicysolve.c
+testmatrixautosession_SOURCES = testmatrixautosession.c
+benchautojacobirefresh_SOURCES = benchautojacobirefresh.c
+testvectorreal64_SOURCES = testvectorreal64.c
+testfrozenilut_SOURCES = testfrozenilut.c
+benchfrozenilut_SOURCES = benchfrozenilut.c
+testsplitview_SOURCES = testsplitview.c
+testsplitviewi64_SOURCES = testsplitviewi64.c
+testsplitviewreal64_SOURCES = testsplitviewreal64.c
+testmatrixoperatorlifecycle_SOURCES = testmatrixoperatorlifecycle.c
+testmatrixoperatormpi_SOURCES = testmatrixoperatormpi.c
+testsequence_SOURCES = testsequence.c
+testwarmstart_SOURCES = testwarmstart.c
+testrecovery_SOURCES = testrecovery.c
+if ENABLE_HALF_REAL_DOUBLE
+  test_PROGRAMS += testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
+endif
+
 if ENABLE_FORTRAN
   test_PROGRAMS += etest1f etest4f test1f test4f test7f
 endif
@@ -35,6 +85,7 @@ etest7_SOURCES = etest7.c
 getest1_SOURCES = getest1.c
 getest5_SOURCES = getest5.c
 getest5b_SOURCES = getest5b.c
+getestoperator_SOURCES = getestoperator.c
 spmvtest1_SOURCES = spmvtest1.c
 spmvtest2_SOURCES = spmvtest2.c
 spmvtest2b_SOURCES = spmvtest2b.c
@@ -52,6 +103,67 @@ test4_SOURCES = test4.c
 test5_SOURCES = test5.c
 test6_SOURCES = test6.c
 test7_SOURCES = test7.c
+testuser_SOURCES = testuser.c
+testuserrow_SOURCES = testuserrow.c
+testuserprecon_SOURCES = testuserprecon.c
+testmatvecblock_SOURCES = testmatvecblock.c
+testcapabilities_SOURCES = testcapabilities.c
+testvectornrm2mpi_SOURCES = testvectornrm2mpi.c
+testoperatorrowprecon_SOURCES = testoperatorrowprecon.c
+testsolvercapabilities_SOURCES = testsolvercapabilities.c
+testsolveroptionreplace_SOURCES = testsolveroptionreplace.c
+testompelastic_SOURCES = testompelastic.c
+testmatrixgraph_SOURCES = testmatrixgraph.c
+testcomponentnullspace_SOURCES = testcomponentnullspace.c
+testnullspacelift_SOURCES = testnullspacelift.c
+testhalfconfig_SOURCES = testhalfconfig.c
+testhalfconvert_SOURCES = testhalfconvert.c
+testhalfstorage_SOURCES = testhalfstorage.c
+testhalfprobe_SOURCES = testhalfprobe.c
+testhalfdispatch_SOURCES = testhalfdispatch.c
+testhalfilukmemory_SOURCES = testhalfilukmemory.c
+testhalfiluksimd_SOURCES = testhalfiluksimd.c
+testhalfilut_SOURCES = testhalfilut.c
+testmfamg_SOURCES = testmfamg.c
+testmfamggalerkin_SOURCES = testmfamggalerkin.c
+getestuser_SOURCES = getestuser.c
+testoperator_SOURCES = testoperator.c
+testdiagonal_SOURCES = testdiagonal.c
+testpreconlifecycle_SOURCES = testpreconlifecycle.c
+testhybridnested_SOURCES = testhybridnested.c
+testjacobiuser_SOURCES = testjacobiuser.c
+testpreconpsd_SOURCES = testpreconpsd.c
+testpreconreuse_SOURCES = testpreconreuse.c
+testeigenbreakdown_SOURCES = testeigenbreakdown.c
+testesubspaceretry_SOURCES = testesubspaceretry.c
+testprojectedeigen_SOURCES = testprojectedeigen.c
+testprojectedhermitian_SOURCES = testprojectedhermitian.c
+testblockgram_SOURCES = testblockgram.c
+testblockorthogonal_SOURCES = testblockorthogonal.c
+testblockrank_SOURCES = testblockrank.c
+testnullspacecandidates_SOURCES = testnullspacecandidates.c
+testesolverselection_SOURCES = testesolverselection.c
+testrqirestore_SOURCES = testrqirestore.c
+testrepeatedsystems_SOURCES = testrepeatedsystems.c
+testpreconpolicy_SOURCES = testpreconpolicy.c
+testgmreswork_SOURCES = testgmreswork.c
+testsolvermonitor_SOURCES = testsolvermonitor.c
+testsolvercallbackpaths_SOURCES = testsolvercallbackpaths.c
+testsolvercallbackcert_SOURCES = testsolvercallbackcert.c
+testworkcompat_SOURCES = testworkcompat.c
+testworkreuse_SOURCES = testworkreuse.c
+testprebuiltuser_SOURCES = testprebuiltuser.c
+testshellscale_SOURCES = testshellscale.c
+testsymmdiagguard_SOURCES = testsymmdiagguard.c
+testnearnullspace_SOURCES = testnearnullspace.c
+testcoarsesetup_SOURCES = testcoarsesetup.c
+testcoarseapply_SOURCES = testcoarseapply.c
+testilupivot_SOURCES = testilupivot.c
+testparamupdate_SOURCES = testparamupdate.c
+testbreakretry_SOURCES = testbreakretry.c
+testchangingsystem_SOURCES = testchangingsystem.c
+testkrylovrobust_SOURCES = testkrylovrobust.c
+
 if ENABLE_FORTRAN
   etest1f_SOURCES = etest1f.F
   etest4f_SOURCES = etest4f.F
@@ -82,8 +194,7 @@ LTPPF77COMPILE = $(LIBTOOL) --mode=compile --tag=F77 $(F77) $(AMDEFS) $(DEFS) \
 	$(AM_FFLAGS) $(FFLAGS)
 COMPILE = $(CC) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) \
-	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
 	$(AM_CFLAGS) $(CFLAGS)
 
 if ENABLE_SAAMG
@@ -111,12 +222,39 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_mpi=$(enable_mpi) \
                     enable_omp=$(enable_omp) \
                     enable_quad=$(enable_quad) \
+                    enable_half=$(enable_half) \
                     enable_longdouble=$(enable_longdouble) \
                     enable_complex=$(enable_complex) \
                     enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
-TESTS = test.sh
+TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) testvectornrm2mpi$(EXEEXT) testoperatorrowprecon$(EXEEXT) testsolvercapabilities$(EXEEXT) \
+	testsolveroptionreplace$(EXEEXT) testompelastic$(EXEEXT) \
+	testmatrixgraph$(EXEEXT) testcomponentnullspace$(EXEEXT) testnullspacelift$(EXEEXT) \
+        testpreconlifecycle$(EXEEXT) testhybridnested$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
+        testpreconreuse$(EXEEXT) testesubspaceretry$(EXEEXT) testprojectedeigen$(EXEEXT) testprojectedhermitian$(EXEEXT) testblockgram$(EXEEXT) testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) testeigenbreakdown$(EXEEXT) testrqirestore$(EXEEXT) testrhistoryerror$(EXEEXT) \
+        testrepeatedsystems$(EXEEXT) testpreconpolicy$(EXEEXT) testgmreswork$(EXEEXT) \
+        testsolvermonitor$(EXEEXT) testsolvercallbackpaths$(EXEEXT) \
+        testsolvercallbackcert$(EXEEXT) testworkcompat$(EXEEXT) \
+        testworkreuse$(EXEEXT) testprebuiltuser$(EXEEXT) testshellscale$(EXEEXT) \
+        testsymmdiagguard$(EXEEXT) testilupivot$(EXEEXT) testparamupdate$(EXEEXT) \
+        testbreakretry$(EXEEXT) testchangingsystem$(EXEEXT) testkrylovrobust$(EXEEXT) \
+        testnearnullspace$(EXEEXT) testcoarsesetup$(EXEEXT) testcoarseapply$(EXEEXT) \
+        testgcrodroptions$(EXEEXT) testgcrodrconfig$(EXEEXT) testgcrodrsequence$(EXEEXT) \
+        testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testmatrixmaterialize$(EXEEXT) testmatrixpolicysolve$(EXEEXT) testfrozenilut$(EXEEXT) testsplitview$(EXEEXT) testsplitviewi64$(EXEEXT) testmatrixoperatorlifecycle$(EXEEXT) testsequence$(EXEEXT) \
+        testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testmatrixmaterialize$(EXEEXT) testfrozenilut$(EXEEXT) testsplitview$(EXEEXT) testsplitviewi64$(EXEEXT) testmatrixoperatorlifecycle$(EXEEXT) testsequence$(EXEEXT) \
+        testwarmstart$(EXEEXT) testrecovery$(EXEEXT) testthreads$(EXEEXT) \
+        testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
+        testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) testnullspacecandidates$(EXEEXT) testesolverselection$(EXEEXT)
+
+# Explicitly run all new regression binaries under make check.
+TESTS += testmatrixautosession$(EXEEXT) testvectorreal64$(EXEEXT) testgesolvepair$(EXEEXT) testabi$(EXEEXT)
+
+if ENABLE_HALF_REAL_DOUBLE
+TESTS += testhalfstorage$(EXEEXT) testhalfprobe$(EXEEXT) testhalfdispatch$(EXEEXT) \
+         testhalfilukmemory$(EXEEXT) testhalfiluksimd$(EXEEXT) \
+         testhalfilut$(EXEEXT)
+endif
 
 installcheck: 
 	@if test ! -f $(testdir)/test.sh; then \
@@ -125,3 +263,49 @@ installcheck:
 	fi; \
 	$(TESTS_ENVIRONMENT) $(testdir)/test.sh
 
+
+testthreads_SOURCES = testthreads.c
+testfgcrodr_SOURCES = testfgcrodr.c
+
+testgesolvepair_SOURCES = testgesolvepair.c
+
+# Native restarted Krylov eigensolver numerical regressions.
+test_PROGRAMS += test_krylov_modes test_krylov_sparse test_krylov_regression test_krylov_lis test_krylov_semidefinite test_krylov_stress test_krylov_inertia test_krylov_window test_krylov_openmp test_krylov_projected test_krylov_workspace test_krylov_unified test_krylov_adaptive_ex test_krylov_api_contract test_krylov_residual_reuse test_krylov_both_ends test_krylov_be_lock_order
+test_krylov_modes_SOURCES = test_krylov_modes.c
+test_krylov_sparse_SOURCES = test_krylov_sparse.c
+
+test_krylov_regression_SOURCES = test_krylov_regression.c
+test_krylov_lis_SOURCES = test_krylov_lis.c
+test_krylov_semidefinite_SOURCES = test_krylov_semidefinite.c
+test_krylov_stress_SOURCES = test_krylov_stress.c
+test_krylov_inertia_SOURCES = test_krylov_inertia.c
+test_krylov_window_SOURCES = test_krylov_window.c
+test_krylov_openmp_SOURCES = test_krylov_openmp.c
+test_krylov_projected_SOURCES = test_krylov_projected.c
+test_krylov_workspace_SOURCES = test_krylov_workspace.c
+test_krylov_unified_SOURCES = test_krylov_unified.c
+test_krylov_adaptive_ex_SOURCES = test_krylov_adaptive_ex.c
+test_krylov_api_contract_SOURCES = test_krylov_api_contract.c
+test_krylov_residual_reuse_SOURCES = test_krylov_residual_reuse.c
+test_krylov_both_ends_SOURCES = test_krylov_both_ends.c
+# This white-box regression includes the native solver C file once; it
+# must not link the native solver object from liblis again.
+test_krylov_be_lock_order_SOURCES = test_krylov_be_lock_order.c
+test_krylov_be_lock_order_LDADD = -lm
+TESTS += test_krylov_modes$(EXEEXT) \
+         test_krylov_sparse$(EXEEXT) \
+         test_krylov_regression$(EXEEXT) \
+         test_krylov_lis$(EXEEXT) \
+         test_krylov_semidefinite$(EXEEXT) \
+         test_krylov_stress$(EXEEXT) \
+         test_krylov_inertia$(EXEEXT) \
+         test_krylov_window$(EXEEXT) \
+         test_krylov_openmp$(EXEEXT) \
+         test_krylov_projected$(EXEEXT) \
+         test_krylov_workspace$(EXEEXT) \
+         test_krylov_unified$(EXEEXT) \
+         test_krylov_adaptive_ex$(EXEEXT) \
+         test_krylov_api_contract$(EXEEXT) \
+         test_krylov_residual_reuse$(EXEEXT) \
+         test_krylov_both_ends$(EXEEXT) \
+         test_krylov_be_lock_order$(EXEEXT)

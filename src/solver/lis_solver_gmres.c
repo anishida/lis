@@ -115,13 +115,26 @@ LIS_INT lis_gmres_malloc_work(LIS_SOLVER solver)
 	}
 	if( solver->precision==LIS_PRECISION_DEFAULT )
 	{
-		lis_vector_create(solver->A->comm,&work[0]);
+		err = lis_vector_create(solver->A->comm,&work[0]);
 	}
 	else
 	{
-		lis_vector_createex(LIS_PRECISION_QUAD,solver->A->comm,&work[0]);
+		err = lis_vector_createex(LIS_PRECISION_QUAD,solver->A->comm,&work[0]);
 	}
-	lis_vector_set_size(work[0],restart+1,0);
+	if( err )
+	{
+		for(j=1;j<worklen;j++) lis_vector_destroy(work[j]);
+		lis_free(work);
+		return err;
+	}
+	err = lis_vector_set_size(work[0],restart+1,0);
+	if( err )
+	{
+		lis_vector_destroy(work[0]);
+		for(j=1;j<worklen;j++) lis_vector_destroy(work[j]);
+		lis_free(work);
+		return err;
+	}
 	solver->worklen = worklen;
 	solver->work    = work;
 
@@ -142,8 +155,8 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 	LIS_SCALAR aa,bb,rr,a2,b2;
 	LIS_SCALAR t;
 
-	LIS_REAL bnrm2,nrm2,tol;
-	LIS_INT iter,maxiter,n,output;
+	LIS_REAL bnrm2,nrm2,tol,min_nrm2;
+	LIS_INT iter,maxiter,n,output,maxiter_noimp,noimp_count;
 	double time,ptime;
 
 	LIS_REAL rnorm;
@@ -163,6 +176,9 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 	maxiter = solver->options[LIS_OPTIONS_MAXITER];
 	output  = solver->options[LIS_OPTIONS_OUTPUT];
 	m       = solver->options[LIS_OPTIONS_RESTART];
+	maxiter_noimp = solver->options[LIS_OPTIONS_MAXITER_NO_IMP];
+	noimp_count   = 0;
+	min_nrm2      = LIS_SCALAR_MAX;
 	h_dim   = m+1;
 	ptime   = 0.0;
 
@@ -234,7 +250,11 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 			/* v[i+1]   = w / h[i+1,i]   */
 			lis_vector_nrm2(v[i1v],(LIS_REAL *)&t);
 			h[i1+iih] = t;
-			lis_vector_scale(1.0/t,v[i1v]);
+			/* Preserve a zero Arnoldi norm for lucky breakdown handling. */
+			if( t!=0.0 && t==t )
+			{
+				lis_vector_scale(1.0/t,v[i1v]);
+			}
 
 			for(k=1;k<=ii;k++)
 			{
@@ -252,7 +272,18 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 			a2 = aa*aa;
 			b2 = bb*bb;
 			rr = sqrt(a2+b2);
-			if( rr==0.0 ) rr=1.0e-17;
+			/* Reject a degenerate GMRES Givens rotation. */
+			if( rr==0.0 || rr!=rr )
+			{
+				nrm2 = fabs(s->value[ii])*bnrm2;
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
 			h[ii+cs] = aa/rr;
 			h[ii+sn] = bb/rr;
 			s->value[i1] = -h[ii+sn]*s->value[ii];
@@ -271,10 +302,48 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 				if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 			}
 
-			if( tol >= nrm2 ) break;
+			lis_solver_monitor_residual(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_PROJECTED);
+			if( lis_solver_test_convergence(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_PROJECTED,
+				tol >= nrm2) ) break;
+
+			if (maxiter_noimp)
+			{
+				if (min_nrm2 > nrm2)
+				{
+					min_nrm2 = nrm2;
+					noimp_count = 0;
+				}
+				else if (++noimp_count > maxiter_noimp)
+				{
+					solver->retcode = LIS_MAXITER;
+					solver->iter = iter;
+					solver->resid = nrm2;
+					solver->ptime = ptime;
+					lis_free(h);
+					LIS_DEBUG_FUNC_OUT;
+					return LIS_MAXITER;
+				}
+			}
+
 		} while( i<m && iter <maxiter );
 
 		/* Solve H * Y = S for upper Hessenberg matrix H */
+		/* Guard the GMRES back substitution. */
+		if( h[ii+iih]==0.0 || h[ii+iih]!=h[ii+iih] )
+		{
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			lis_free(h);
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
+
 		s->value[ii] = s->value[ii]/h[ii+iih];
 		for(k=1;k<=ii;k++)
 		{
@@ -284,6 +353,17 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 			{
 				t -= h[jj+j*h_dim]*s->value[j];
 			}
+			if( h[jj+jj*h_dim]==0.0 || h[jj+jj*h_dim]!=h[jj+jj*h_dim] )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
 			s->value[jj] = t/h[jj+jj*h_dim];
 		}
 		/* z = z + y * v */
@@ -307,29 +387,48 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 		/* x = x + r */
 		lis_vector_axpy(1,r,x);
 
-		if( tol >= nrm2 )
+		/*
+		 * Right-preconditioned GMRES advances with A M^-1.
+		 * Keep the restarted Arnoldi residual in the original
+		 * residual space: v[0] = b - A*x.
+		 */
+		lis_matvec(A,x,z);
+		lis_vector_xpay(b,-1.0,z);
+		lis_vector_copy(z,v[0]);
+		lis_vector_nrm2(v[0],&rnorm);
+		nrm2 = rnorm * bnrm2;
+
+		if( nrm2!=nrm2 || fabs(nrm2)>LIS_SCALAR_MAX )
 		{
-			solver->retcode    = LIS_SUCCESS;
-			solver->iter       = iter;
-			solver->resid      = nrm2;
-			solver->ptime      = ptime;
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			lis_free(h);
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
+
+		if( output & LIS_PRINT_MEM )
+		{
+			solver->rhistory[iter] = nrm2;
+		}
+
+		lis_solver_monitor_residual(
+			solver,iter,nrm2,tol,
+			LIS_SOLVER_RESIDUAL_TRUE);
+		if( lis_solver_test_convergence(
+			solver,iter,nrm2,tol,
+			LIS_SOLVER_RESIDUAL_TRUE,
+			tol >= nrm2) )
+		{
+			solver->retcode = LIS_SUCCESS;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
 			lis_free(h);
 			LIS_DEBUG_FUNC_OUT;
 			return LIS_SUCCESS;
-		}
-
-		for(j=1;j<=i;j++)
-		{
-			jj = i1-j+1;
-			s->value[jj-1] = -h[jj-1+sn]*s->value[jj];
-			s->value[jj]   =  h[jj-1+cs]*s->value[jj];
-		}
-
-		for(j=0;j<=i1;j++)
-		{
-			t = s->value[j];
-			if( j==0 ) t = t-1.0;
-			lis_vector_axpy(t,v[j],v[0]);
 		}
 	}
 
@@ -354,8 +453,8 @@ LIS_INT lis_gmres_quad(LIS_SOLVER solver)
 	LIS_QUAD_PTR aa,bb,rr,a2,b2,t,one,tmp;
 	LIS_QUAD_PTR rnorm;
 
-	LIS_REAL bnrm2,nrm2,tol;
-	LIS_INT iter,maxiter,n,output;
+	LIS_REAL bnrm2,nrm2,tol,min_nrm2;
+	LIS_INT iter,maxiter,n,output,maxiter_noimp,noimp_count;
 	double time,ptime;
 
 	LIS_INT i,j,k,m;
@@ -374,6 +473,9 @@ LIS_INT lis_gmres_quad(LIS_SOLVER solver)
 	maxiter = solver->options[LIS_OPTIONS_MAXITER];
 	output  = solver->options[LIS_OPTIONS_OUTPUT];
 	m       = solver->options[LIS_OPTIONS_RESTART];
+	maxiter_noimp = solver->options[LIS_OPTIONS_MAXITER_NO_IMP];
+	noimp_count   = 0;
+	min_nrm2      = LIS_SCALAR_MAX;
 	h_dim   = m+1;
 	ptime   = 0.0;
 
@@ -462,9 +564,13 @@ LIS_INT lis_gmres_quad(LIS_SOLVER solver)
 			lis_vector_nrm2ex_mm(v[i1v],&t);
 			h[i1+iih].hi = t.hi[0];
 			h[i1+iih].lo = t.lo[0];
-			lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)one.hi,(LIS_QUAD *)t.hi);
-			lis_vector_scaleex_mm(tmp,v[i1v]);
+			/* Preserve a zero quad Arnoldi norm for lucky breakdown handling. */
+			if( (t.hi[0]!=0.0 || t.lo[0]!=0.0) && t.hi[0]==t.hi[0] && t.lo[0]==t.lo[0] )
+			{
+				lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)one.hi,(LIS_QUAD *)t.hi);
+				lis_vector_scaleex_mm(tmp,v[i1v]);
 
+			}
 			for(k=1;k<=ii;k++)
 			{
 				jj  = k-1;
@@ -490,10 +596,17 @@ LIS_INT lis_gmres_quad(LIS_SOLVER solver)
 			lis_quad_sqr((LIS_QUAD *)b2.hi,(LIS_QUAD *)bb.hi);
 			lis_quad_add((LIS_QUAD *)rr.hi,(LIS_QUAD *)a2.hi,(LIS_QUAD *)b2.hi);
 			lis_quad_sqrt((LIS_QUAD *)rr.hi,(LIS_QUAD *)rr.hi);
-			if( rr.hi[0]==0.0 )
+			/* Reject a degenerate quad GMRES Givens rotation. */
+			if( (rr.hi[0]==0.0 && rr.lo[0]==0.0) || rr.hi[0]!=rr.hi[0] || rr.lo[0]!=rr.lo[0] )
 			{
-				rr.hi[0]=1.0e-17;
-				rr.lo[0]=0.0;
+				nrm2 = fabs(s->value[ii])*bnrm2;
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
 			}
 			lis_quad_div((LIS_QUAD *)&h[ii+cs],(LIS_QUAD *)aa.hi,(LIS_QUAD *)rr.hi);
 			lis_quad_div((LIS_QUAD *)&h[ii+sn],(LIS_QUAD *)bb.hi,(LIS_QUAD *)rr.hi);
@@ -522,12 +635,49 @@ LIS_INT lis_gmres_quad(LIS_SOLVER solver)
 				if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 			}
 
-			if( tol >= nrm2 ) break;
+			lis_solver_monitor_residual(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_PROJECTED);
+			if( lis_solver_test_convergence(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_PROJECTED,
+				tol >= nrm2) ) break;
+
+			if ( maxiter_noimp )
+			{
+				if ( min_nrm2 > nrm2 )
+				{
+					min_nrm2 = nrm2;
+					noimp_count = 0;
+				}
+				else if ( ++noimp_count > maxiter_noimp )
+				{
+					solver->retcode = LIS_MAXITER;
+					solver->iter = iter;
+					solver->resid = nrm2;
+					solver->ptime = ptime;
+					lis_free(h);
+					LIS_DEBUG_FUNC_OUT;
+					return LIS_MAXITER;
+				}
+			}
 		} while( i<m && iter <maxiter );
 
 		/* Solve H * Y = S for upper Hessenberg matrix H */
 		tmp.hi[0] = s->value[ii];
 		tmp.lo[0] = s->value_lo[ii];
+		/* Guard the quad GMRES back substitution. */
+		if( ((h[ii+iih]).hi==0.0 && (h[ii+iih]).lo==0.0) || (h[ii+iih]).hi!=(h[ii+iih]).hi || (h[ii+iih]).lo!=(h[ii+iih]).lo )
+		{
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			lis_free(h);
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
+
 		lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)tmp.hi,(LIS_QUAD *)&h[ii+iih]);
 		s->value[ii] = tmp.hi[0];
 		s->value_lo[ii] = tmp.lo[0];
@@ -543,6 +693,18 @@ LIS_INT lis_gmres_quad(LIS_SOLVER solver)
 				lis_quad_mul((LIS_QUAD *)tmp.hi,(LIS_QUAD *)tmp.hi,(LIS_QUAD *)&h[jj+j*h_dim]);
 				lis_quad_sub((LIS_QUAD *)t.hi,(LIS_QUAD *)t.hi,(LIS_QUAD *)tmp.hi);
 			}
+			/* Guard the quad GMRES back substitution. */
+			if( ((h[jj+jj*h_dim]).hi==0.0 && (h[jj+jj*h_dim]).lo==0.0) || (h[jj+jj*h_dim]).hi!=(h[jj+jj*h_dim]).hi || (h[jj+jj*h_dim]).lo!=(h[jj+jj*h_dim]).lo )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
 			lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)t.hi,(LIS_QUAD *)&h[jj+jj*h_dim]);
 			s->value[jj] = tmp.hi[0];
 			s->value_lo[jj] = tmp.lo[0];
@@ -572,41 +734,50 @@ LIS_INT lis_gmres_quad(LIS_SOLVER solver)
 		/* x = x + r */
 		lis_vector_axpyex_mmm(one,r,x);
 
-		if( tol >= nrm2 )
+		/*
+		 * Right-preconditioned GMRES advances with A M^-1.
+		 * Replace the projected restart residual with the
+		 * explicit physical residual b - A*x before accepting
+		 * convergence or starting the next Krylov cycle.
+		 */
+		lis_matvec(A,x,v[0]);
+		lis_vector_xpay(b,-1.0,v[0]);
+		memset(v[0]->value_lo,0,n*sizeof(LIS_SCALAR));
+
+		lis_solver_get_residual[0](v[0],solver,&nrm2);
+
+		if( nrm2!=nrm2 || fabs(nrm2)>LIS_SCALAR_MAX )
 		{
-			solver->retcode    = LIS_SUCCESS;
-			solver->iter       = iter;
-			solver->iter2      = 0;
-			solver->resid      = nrm2;
-			solver->ptime      = ptime;
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			lis_free(h);
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
+
+		if( output & LIS_PRINT_MEM )
+		{
+			solver->rhistory[iter] = nrm2;
+		}
+
+		lis_solver_monitor_residual(
+			solver,iter,nrm2,tol,
+			LIS_SOLVER_RESIDUAL_TRUE);
+		if( lis_solver_test_convergence(
+			solver,iter,nrm2,tol,
+			LIS_SOLVER_RESIDUAL_TRUE,
+			tol >= nrm2) )
+		{
+			solver->retcode = LIS_SUCCESS;
+			solver->iter    = iter;
+			solver->iter2   = 0;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
 			lis_free(h);
 			LIS_DEBUG_FUNC_OUT;
 			return LIS_SUCCESS;
-		}
-
-		for(j=1;j<=i;j++)
-		{
-			jj = i1-j+1;
-			tmp.hi[0] = s->value[jj];
-			tmp.lo[0] = s->value_lo[jj];
-			lis_quad_mul((LIS_QUAD *)aa.hi,(LIS_QUAD *)tmp.hi,(LIS_QUAD *)&h[jj-1+sn]);
-			lis_quad_mul((LIS_QUAD *)bb.hi,(LIS_QUAD *)tmp.hi,(LIS_QUAD *)&h[jj-1+cs]);
-			lis_quad_minus((LIS_QUAD *)aa.hi);
-			s->value[jj-1] = aa.hi[0];
-			s->value_lo[jj-1] = aa.lo[0];
-			s->value[jj] = bb.hi[0];
-			s->value_lo[jj] = bb.lo[0];
-		}
-
-		for(j=0;j<=i1;j++)
-		{
-			t.hi[0] = s->value[j];
-			t.lo[0] = s->value_lo[j];
-			if( j==0 )
-			{
-				lis_quad_sub((LIS_QUAD *)t.hi,(LIS_QUAD *)t.hi,(LIS_QUAD *)one.hi);
-			}
-			lis_vector_axpyex_mmm(t,v[j],v[0]);
 		}
 	}
 
@@ -633,7 +804,7 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 	LIS_QUAD_PTR rnorm;
 	LIS_REAL bnrm2,nrm2,tol,tol2;
 	LIS_INT iter,maxiter,n,output;
-	LIS_INT iter2,maxiter2;
+	LIS_INT iter2,maxiter2,candidate;
 	double time,ptime;
 
 	LIS_INT i,j,k,m;
@@ -741,7 +912,11 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 			/* v[i+1]   = w / h[i+1,i]   */
 			lis_vector_nrm2(v[i1v],&t.hi[0]);
 			hd[i1+iih] = t.hi[0];
-			lis_vector_scale(1.0/t.hi[0],v[i1v]);
+			/* Preserve a zero switch Arnoldi norm for lucky breakdown handling. */
+			if( t.hi[0]!=0.0 && t.hi[0]==t.hi[0] )
+			{
+				lis_vector_scale(1.0/t.hi[0],v[i1v]);
+			}
 
 			for(k=1;k<=ii;k++)
 			{
@@ -759,7 +934,19 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 			a2.hi[0] = aa.hi[0]*aa.hi[0];
 			b2.hi[0] = bb.hi[0]*bb.hi[0];
 			rr.hi[0] = sqrt(a2.hi[0]+b2.hi[0]);
-			if( rr.hi[0]==0.0 ) rr.hi[0]=1.0e-17;
+			/* Reject a degenerate switch GMRES Givens rotation. */
+			if( rr.hi[0]==0.0 || rr.hi[0]!=rr.hi[0] )
+			{
+				nrm2 = fabs(s->value[ii])*bnrm2;
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->iter2   = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
 			hd[ii+cs] = aa.hi[0]/rr.hi[0];
 			hd[ii+sn] = bb.hi[0]/rr.hi[0];
 			s->value[i1] = -hd[ii+sn]*s->value[ii];
@@ -778,10 +965,30 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 				if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 			}
 
+			lis_solver_monitor_residual(
+				solver,
+				iter,
+				nrm2,
+				tol2,
+				LIS_SOLVER_RESIDUAL_PROJECTED);
+
 			if( tol2 >= nrm2 ) break;
 		} while( i<m && iter <maxiter2 );
 
 		/* Solve H * Y = S for upper Hessenberg matrix H */
+		/* Guard the switch GMRES back substitution. */
+		if( hd[ii+iih]==0.0 || hd[ii+iih]!=hd[ii+iih] )
+		{
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->iter2   = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			lis_free(h);
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
+
 		s->value[ii] = s->value[ii]/hd[ii+iih];
 		for(k=1;k<=ii;k++)
 		{
@@ -791,6 +998,19 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 			{
 				t.hi[0] -= hd[jj+j*h_dim]*s->value[j];
 			}
+			/* Guard the switch GMRES back substitution. */
+			if( hd[jj+jj*h_dim]==0.0 || hd[jj+jj*h_dim]!=hd[jj+jj*h_dim] )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->iter2   = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
 			s->value[jj] = t.hi[0]/hd[jj+jj*h_dim];
 		}
 		/* z = z + y * v */
@@ -839,13 +1059,23 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 	solver->options[LIS_OPTIONS_INITGUESS_ZEROS] = LIS_FALSE;
 	lis_vector_copyex_mn(x,solver->xx);
 
-	lis_solver_get_initial_residual(solver,NULL,NULL,v[0],&bnrm2);
+	if( lis_solver_get_initial_residual(
+		solver,NULL,NULL,v[0],&bnrm2) )
+	{
+		solver->iter  = iter;
+		solver->iter2 = iter;
+		solver->ptime = ptime;
+		lis_free(h);
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
 	tol     = solver->tol;
 
 
 	iter2=iter;
 	while( iter2<maxiter )
 	{
+		candidate = LIS_FALSE;
 		/* first column of V */
 		/* v = r / ||r||_2 */
 		lis_vector_nrm2ex_mm(v[0],&rnorm);
@@ -892,8 +1122,12 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 			lis_vector_nrm2ex_mm(v[i1v],&t);
 			h[i1+iih].hi = t.hi[0];
 			h[i1+iih].lo = t.lo[0];
-			lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)one.hi,(LIS_QUAD *)t.hi);
-			lis_vector_scaleex_mm(tmp,v[i1v]);
+			/* Preserve a zero switch quad Arnoldi norm for lucky breakdown handling. */
+			if( (t.hi[0]!=0.0 || t.lo[0]!=0.0) && t.hi[0]==t.hi[0] && t.lo[0]==t.lo[0] )
+			{
+				lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)one.hi,(LIS_QUAD *)t.hi);
+				lis_vector_scaleex_mm(tmp,v[i1v]);
+			}
 
 			for(k=1;k<=ii;k++)
 			{
@@ -920,6 +1154,20 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 			lis_quad_sqr((LIS_QUAD *)b2.hi,(LIS_QUAD *)bb.hi);
 			lis_quad_add((LIS_QUAD *)rr.hi,(LIS_QUAD *)a2.hi,(LIS_QUAD *)b2.hi);
 			lis_quad_sqrt((LIS_QUAD *)rr.hi,(LIS_QUAD *)rr.hi);
+			/* Reject a degenerate switch quad GMRES Givens rotation. */
+			if( (rr.hi[0]==0.0 && rr.lo[0]==0.0) || rr.hi[0]!=rr.hi[0] || rr.lo[0]!=rr.lo[0] )
+			{
+				nrm2 = fabs(s->value[ii])*bnrm2;
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter2;
+				solver->iter2   = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
 			lis_quad_div((LIS_QUAD *)&h[ii+cs],(LIS_QUAD *)aa.hi,(LIS_QUAD *)rr.hi);
 			lis_quad_div((LIS_QUAD *)&h[ii+sn],(LIS_QUAD *)bb.hi,(LIS_QUAD *)rr.hi);
 			tmp.hi[0] = s->value[ii];
@@ -947,12 +1195,40 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 				if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 			}
 
-			if( tol >= nrm2 ) break;
+			lis_solver_monitor_residual(
+				solver,
+				iter2,
+				nrm2,
+				tol,
+				LIS_SOLVER_RESIDUAL_PROJECTED);
+
+			candidate = lis_solver_test_convergence(
+				solver,
+				iter2,
+				nrm2,
+				tol,
+				LIS_SOLVER_RESIDUAL_PROJECTED,
+				tol >= nrm2);
+
+			if( candidate ) break;
 		} while( i<m && iter2 <maxiter );
 
 		/* Solve H * Y = S for upper Hessenberg matrix H */
 		tmp.hi[0] = s->value[ii];
 		tmp.lo[0] = s->value_lo[ii];
+		/* Guard the switch quad GMRES back substitution. */
+		if( (h[ii+iih].hi==0.0 && h[ii+iih].lo==0.0) || h[ii+iih].hi!=h[ii+iih].hi || h[ii+iih].lo!=h[ii+iih].lo )
+		{
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter2;
+			solver->iter2   = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			lis_free(h);
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
+
 		lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)tmp.hi,(LIS_QUAD *)&h[ii+iih]);
 		s->value[ii] = tmp.hi[0];
 		s->value_lo[ii] = tmp.lo[0];
@@ -968,6 +1244,19 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 				lis_quad_mul((LIS_QUAD *)tmp.hi,(LIS_QUAD *)tmp.hi,(LIS_QUAD *)&h[jj+j*h_dim]);
 				lis_quad_sub((LIS_QUAD *)t.hi,(LIS_QUAD *)t.hi,(LIS_QUAD *)tmp.hi);
 			}
+			/* Guard the switch quad GMRES back substitution. */
+			if( (h[jj+jj*h_dim].hi==0.0 && h[jj+jj*h_dim].lo==0.0) || h[jj+jj*h_dim].hi!=h[jj+jj*h_dim].hi || h[jj+jj*h_dim].lo!=h[jj+jj*h_dim].lo )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter2;
+				solver->iter2   = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
 			lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)t.hi,(LIS_QUAD *)&h[jj+jj*h_dim]);
 			s->value[jj] = tmp.hi[0];
 			s->value_lo[jj] = tmp.lo[0];
@@ -997,16 +1286,66 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 		/* x = x + r */
 		lis_vector_axpyex_mmm(one,r,x);
 
-		if( tol >= nrm2 )
+		if( candidate )
 		{
-			solver->retcode    = LIS_SUCCESS;
-			solver->iter       = iter2;
-			solver->iter2      = iter;
-			solver->resid      = nrm2;
-			solver->ptime      = ptime;
-			lis_free(h);
-			LIS_DEBUG_FUNC_OUT;
-			return LIS_SUCCESS;
+			/* Replace the projected candidate with b - A*x. */
+			lis_matvec(A,x,v[0]);
+			lis_vector_xpay(b,-1.0,v[0]);
+			memset(
+				v[0]->value_lo,
+				0,
+				n*sizeof(LIS_SCALAR));
+
+			lis_solver_get_residual[0](
+				v[0],
+				solver,
+				&nrm2);
+
+			if( nrm2!=nrm2 ||
+			    fabs(nrm2)>LIS_SCALAR_MAX )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter2;
+				solver->iter2   = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
+			if( output & LIS_PRINT_MEM )
+			{
+				solver->rhistory[iter2] = nrm2;
+			}
+
+			lis_solver_monitor_residual(
+				solver,
+				iter2,
+				nrm2,
+				tol,
+				LIS_SOLVER_RESIDUAL_TRUE);
+
+			if( lis_solver_test_convergence(
+				solver,
+				iter2,
+				nrm2,
+				tol,
+				LIS_SOLVER_RESIDUAL_TRUE,
+				tol >= nrm2) )
+			{
+				solver->retcode = LIS_SUCCESS;
+				solver->iter    = iter2;
+				solver->iter2   = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_SUCCESS;
+			}
+
+			/* v[0] contains the certified TRUE residual. */
+			continue;
 		}
 
 		for(j=1;j<=i;j++)
@@ -1102,19 +1441,32 @@ LIS_INT lis_fgmres_malloc_work(LIS_SOLVER solver)
 	}
 	if( i<worklen )
 	{
-		for(j=0;j<i;j++) lis_vector_destroy(work[j]);
+		for(j=1;j<i;j++) lis_vector_destroy(work[j]);
 		lis_free(work);
 		return err;
 	}
 	if( solver->precision==LIS_PRECISION_DEFAULT )
 	{
-		lis_vector_create(solver->A->comm,&work[0]);
+		err = lis_vector_create(solver->A->comm,&work[0]);
 	}
 	else
 	{
-		lis_vector_createex(LIS_PRECISION_QUAD,solver->A->comm,&work[0]);
+		err = lis_vector_createex(LIS_PRECISION_QUAD,solver->A->comm,&work[0]);
 	}
-	lis_vector_set_size(work[0],restart+1,0);
+	if( err )
+	{
+		for(j=1;j<worklen;j++) lis_vector_destroy(work[j]);
+		lis_free(work);
+		return err;
+	}
+	err = lis_vector_set_size(work[0],restart+1,0);
+	if( err )
+	{
+		lis_vector_destroy(work[0]);
+		for(j=1;j<worklen;j++) lis_vector_destroy(work[j]);
+		lis_free(work);
+		return err;
+	}
 	solver->worklen = worklen;
 	solver->work    = work;
 
@@ -1135,8 +1487,9 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 	LIS_SCALAR aa,bb,rr,a2,b2;
 	LIS_SCALAR t;
 
-	LIS_REAL bnrm2,nrm2,tol;
-	LIS_INT iter,maxiter,output;
+	LIS_REAL bnrm2,nrm2,tol,min_nrm2;
+	LIS_INT err,iter,maxiter,output,maxiter_noimp,noimp_count,candidate;
+     LIS_INT noimp_stop;
 	double time,ptime;
 
 	LIS_REAL rnorm;
@@ -1155,6 +1508,10 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 	maxiter = solver->options[LIS_OPTIONS_MAXITER];
 	output  = solver->options[LIS_OPTIONS_OUTPUT];
 	m       = solver->options[LIS_OPTIONS_RESTART];
+	maxiter_noimp = solver->options[LIS_OPTIONS_MAXITER_NO_IMP];
+	noimp_count   = 0;
+	min_nrm2      = LIS_SCALAR_MAX;
+     noimp_stop    = LIS_FALSE;
 	h_dim   = m+1;
 	ptime   = 0.0;
 
@@ -1180,6 +1537,7 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 	iter=0;
 	while( iter<maxiter )
 	{
+		candidate = LIS_FALSE;
 		/* first column of V */
 		/* v = r / ||r||_2 */
 		lis_vector_scale(bnrm2,v[0]);
@@ -1201,8 +1559,18 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 
 			/* z = M^-1 * v */
 			time = lis_wtime();
-			lis_psolve(solver,v[iiv],z[iiv]);
+			err = lis_psolve(solver,v[iiv],z[iiv]);
 			ptime += lis_wtime()-time;
+
+			if( err )
+			{
+			        solver->retcode = err;
+			        solver->iter    = iter;
+			        solver->ptime   = ptime;
+			        lis_free(h);
+			        LIS_DEBUG_FUNC_OUT;
+			        return err;
+			}
 
 			/* w = A * z */
 			lis_matvec(A,z[iiv], v[i1v]);
@@ -1219,7 +1587,11 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 			/* v[i+1]   = w / h[i+1,i]   */
 			lis_vector_nrm2(v[i1v],(LIS_REAL *)&t);
 			h[i1+iih] = t;
-			lis_vector_scale(1.0/t,v[i1v]);
+			/* Preserve a zero Arnoldi norm for lucky breakdown handling. */
+			if( t!=0.0 && t==t )
+			{
+				lis_vector_scale(1.0/t,v[i1v]);
+			}
 
 			for(k=1;k<=ii;k++)
 			{
@@ -1237,7 +1609,18 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 			a2 = aa*aa;
 			b2 = bb*bb;
 			rr = sqrt(a2+b2);
-			if( rr==0.0 ) rr=1.0e-17;
+			/* Reject a degenerate FGMRES Givens rotation. */
+			if( rr==0.0 || rr!=rr )
+			{
+				nrm2 = fabs(s->value[ii]);
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
 			h[ii+cs] = aa/rr;
 			h[ii+sn] = bb/rr;
 			s->value[i1] = -h[ii+sn]*s->value[ii];
@@ -1256,10 +1639,49 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 				if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 			}
 
-			if( tol >= nrm2 ) break;
+			lis_solver_monitor_residual(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_PROJECTED);
+			candidate = lis_solver_test_convergence(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_PROJECTED,
+				tol >= nrm2);
+			if( candidate ) break;
+
+			if (maxiter_noimp)
+			{
+				if (min_nrm2 > nrm2)
+				{
+					min_nrm2 = nrm2;
+					noimp_count = 0;
+				}
+				else if (++noimp_count > maxiter_noimp)
+				{
+					/*
+					 * Finish the current Krylov cycle before reporting
+					 * a no-improvement stop.  Do not discard the
+					 * least-squares approximation already computed.
+					 */
+					noimp_stop = LIS_TRUE;
+					break;
+				}
+			}
+
 		} while( i<m && iter <maxiter );
 
 		/* Solve H * Y = S for upper Hessenberg matrix H */
+		/* Guard the FGMRES back substitution. */
+		if( h[ii+iih]==0.0 || h[ii+iih]!=h[ii+iih] )
+		{
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			lis_free(h);
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
+
 		s->value[ii] = s->value[ii]/h[ii+iih];
 		for(k=1;k<=ii;k++)
 		{
@@ -1269,6 +1691,17 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 			{
 				t -= h[jj+j*h_dim]*s->value[j];
 			}
+			if( h[jj+jj*h_dim]==0.0 || h[jj+jj*h_dim]!=h[jj+jj*h_dim] )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
 			s->value[jj] = t/h[jj+jj*h_dim];
 		}
 		/* x = x + z * y */
@@ -1277,20 +1710,64 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 			lis_vector_axpy(s->value[j],z[j],x);
 		}
 
-		if( tol >= nrm2 )
+		/*
+		 * A no-improvement decision terminates the solve, but
+		 * the current Krylov approximation has now been applied.
+		 */
+		if( noimp_stop )
 		{
-			solver->retcode    = LIS_SUCCESS;
-			solver->iter       = iter;
-			solver->resid      = nrm2;
-			solver->ptime      = ptime;
+			solver->retcode = LIS_MAXITER;
+			solver->iter = iter;
+			solver->resid = nrm2;
+			solver->ptime = ptime;
 			lis_free(h);
 			LIS_DEBUG_FUNC_OUT;
-			return LIS_SUCCESS;
+			return LIS_MAXITER;
 		}
 
+				/*
+		 * The projected FGMRES residual is only a convergence
+		 * candidate.  Form the explicit residual of the updated
+		 * iterate before accepting success.
+		 */
 		lis_matvec(A,x,v[0]);
 		lis_vector_xpay(b,-1.0,v[0]);
 		lis_vector_nrm2(v[0],&rnorm);
+
+		if( candidate )
+		{
+			lis_solver_get_residual[0](v[0],solver,&nrm2);
+
+			if( nrm2!=nrm2 || fabs(nrm2)>LIS_SCALAR_MAX )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
+			lis_solver_monitor_residual(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_TRUE);
+
+			if( lis_solver_test_convergence(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_TRUE,
+				tol >= nrm2) )
+			{
+				solver->retcode    = LIS_SUCCESS;
+				solver->iter       = iter;
+				solver->resid      = nrm2;
+				solver->ptime      = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_SUCCESS;
+			}
+		}
+
 		bnrm2 = 1.0/rnorm;
 	}
 
@@ -1314,8 +1791,8 @@ LIS_INT lis_fgmres_quad(LIS_SOLVER solver)
 	LIS_QUAD *h;
 	LIS_QUAD_PTR aa,bb,rr,a2,b2,t,one,tmp;
 
-	LIS_REAL bnrm2,nrm2,tol;
-	LIS_INT iter,maxiter,n,output;
+	LIS_REAL bnrm2,nrm2,tol,min_nrm2;
+	LIS_INT iter,maxiter,n,output,maxiter_noimp,noimp_count,candidate;
 	double time,ptime;
 
 	LIS_REAL rnorm;
@@ -1335,6 +1812,9 @@ LIS_INT lis_fgmres_quad(LIS_SOLVER solver)
 	maxiter = solver->options[LIS_OPTIONS_MAXITER];
 	output  = solver->options[LIS_OPTIONS_OUTPUT];
 	m       = solver->options[LIS_OPTIONS_RESTART];
+	maxiter_noimp = solver->options[LIS_OPTIONS_MAXITER_NO_IMP];
+	noimp_count   = 0;
+	min_nrm2      = LIS_SCALAR_MAX;
 	h_dim   = m+1;
 	ptime   = 0.0;
 
@@ -1373,6 +1853,7 @@ LIS_INT lis_fgmres_quad(LIS_SOLVER solver)
 	iter=0;
 	while( iter<maxiter )
 	{
+		candidate = LIS_FALSE;
 		/* first column of V */
 		/* v = r / ||r||_2 */
 		lis_vector_scaleex_nm(bnrm2,v[0]);
@@ -1417,9 +1898,13 @@ LIS_INT lis_fgmres_quad(LIS_SOLVER solver)
 			lis_vector_nrm2ex_mm(v[i1v],&t);
 			h[i1+iih].hi = t.hi[0];
 			h[i1+iih].lo = t.lo[0];
-			lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)one.hi,(LIS_QUAD *)t.hi);
-			lis_vector_scaleex_mm(tmp,v[i1v]);
+			/* Preserve a zero quad Arnoldi norm for lucky breakdown handling. */
+			if( (t.hi[0]!=0.0 || t.lo[0]!=0.0) && t.hi[0]==t.hi[0] && t.lo[0]==t.lo[0] )
+			{
+				lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)one.hi,(LIS_QUAD *)t.hi);
+				lis_vector_scaleex_mm(tmp,v[i1v]);
 
+			}
 			for(k=1;k<=ii;k++)
 			{
 				jj  = k-1;
@@ -1445,10 +1930,17 @@ LIS_INT lis_fgmres_quad(LIS_SOLVER solver)
 			lis_quad_sqr((LIS_QUAD *)b2.hi,(LIS_QUAD *)bb.hi);
 			lis_quad_add((LIS_QUAD *)rr.hi,(LIS_QUAD *)a2.hi,(LIS_QUAD *)b2.hi);
 			lis_quad_sqrt((LIS_QUAD *)rr.hi,(LIS_QUAD *)rr.hi);
-			if( rr.hi[0]==0.0 )
+			/* Reject a degenerate quad FGMRES Givens rotation. */
+			if( (rr.hi[0]==0.0 && rr.lo[0]==0.0) || rr.hi[0]!=rr.hi[0] || rr.lo[0]!=rr.lo[0] )
 			{
-				rr.hi[0]=1.0e-17;
-				rr.lo[0]=0.0;
+				nrm2 = fabs(s->value[ii]);
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
 			}
 			lis_quad_div((LIS_QUAD *)&h[ii+cs],(LIS_QUAD *)aa.hi,(LIS_QUAD *)rr.hi);
 			lis_quad_div((LIS_QUAD *)&h[ii+sn],(LIS_QUAD *)bb.hi,(LIS_QUAD *)rr.hi);
@@ -1477,12 +1969,50 @@ LIS_INT lis_fgmres_quad(LIS_SOLVER solver)
 				if( output & LIS_PRINT_OUT ) lis_print_rhistory(comm,iter,nrm2);
 			}
 
-			if( tol >= nrm2 ) break;
+			lis_solver_monitor_residual(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_PROJECTED);
+			candidate = lis_solver_test_convergence(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_PROJECTED,
+				tol >= nrm2);
+			if( candidate ) break;
+
+			if ( maxiter_noimp )
+			{
+				if ( min_nrm2 > nrm2 )
+				{
+					min_nrm2 = nrm2;
+					noimp_count = 0;
+				}
+				else if ( ++noimp_count > maxiter_noimp )
+				{
+					solver->retcode = LIS_MAXITER;
+					solver->iter = iter;
+					solver->resid = nrm2;
+					solver->ptime = ptime;
+					lis_free(h);
+					LIS_DEBUG_FUNC_OUT;
+					return LIS_MAXITER;
+				}
+			}
 		} while( i<m && iter <maxiter );
 
 		/* Solve H * Y = S for upper Hessenberg matrix H */
 		tmp.hi[0] = s->value[ii];
 		tmp.lo[0] = s->value_lo[ii];
+		/* Guard the quad FGMRES back substitution. */
+		if( ((h[ii+iih]).hi==0.0 && (h[ii+iih]).lo==0.0) || (h[ii+iih]).hi!=(h[ii+iih]).hi || (h[ii+iih]).lo!=(h[ii+iih]).lo )
+		{
+			solver->retcode = LIS_BREAKDOWN;
+			solver->iter    = iter;
+			solver->resid   = nrm2;
+			solver->ptime   = ptime;
+			lis_free(h);
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_BREAKDOWN;
+		}
+
 		lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)tmp.hi,(LIS_QUAD *)&h[ii+iih]);
 		s->value[ii] = tmp.hi[0];
 		s->value_lo[ii] = tmp.lo[0];
@@ -1498,6 +2028,18 @@ LIS_INT lis_fgmres_quad(LIS_SOLVER solver)
 				lis_quad_mul((LIS_QUAD *)tmp.hi,(LIS_QUAD *)tmp.hi,(LIS_QUAD *)&h[jj+j*h_dim]);
 				lis_quad_sub((LIS_QUAD *)t.hi,(LIS_QUAD *)t.hi,(LIS_QUAD *)tmp.hi);
 			}
+			/* Guard the quad FGMRES back substitution. */
+			if( ((h[jj+jj*h_dim]).hi==0.0 && (h[jj+jj*h_dim]).lo==0.0) || (h[jj+jj*h_dim]).hi!=(h[jj+jj*h_dim]).hi || (h[jj+jj*h_dim]).lo!=(h[jj+jj*h_dim]).lo )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
 			lis_quad_div((LIS_QUAD *)tmp.hi,(LIS_QUAD *)t.hi,(LIS_QUAD *)&h[jj+jj*h_dim]);
 			s->value[jj] = tmp.hi[0];
 			s->value_lo[jj] = tmp.lo[0];
@@ -1510,21 +2052,50 @@ LIS_INT lis_fgmres_quad(LIS_SOLVER solver)
 			lis_vector_axpyex_mmm(aa,z[j],x);
 		}
 
-		if( tol >= nrm2 )
-		{
-			solver->retcode    = LIS_SUCCESS;
-			solver->iter       = iter;
-			solver->resid      = nrm2;
-			solver->ptime      = ptime;
-			lis_free(h);
-			LIS_DEBUG_FUNC_OUT;
-			return LIS_SUCCESS;
-		}
-
+		/*
+		 * The projected quad FGMRES residual is only a
+		 * convergence candidate. Form the explicit residual
+		 * of the updated iterate before accepting success.
+		 */
 		lis_matvec(A,x,v[0]);
 		lis_vector_xpay(b,-1.0,v[0]);
 		memset(v[0]->value_lo,0,n*sizeof(LIS_SCALAR));
 		lis_vector_nrm2(v[0],&rnorm);
+
+		if( candidate )
+		{
+			lis_solver_get_residual[0](v[0],solver,&nrm2);
+
+			if( nrm2!=nrm2 || fabs(nrm2)>LIS_SCALAR_MAX )
+			{
+				solver->retcode = LIS_BREAKDOWN;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_BREAKDOWN;
+			}
+
+			lis_solver_monitor_residual(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_TRUE);
+
+			if( lis_solver_test_convergence(
+				solver,iter,nrm2,tol,
+				LIS_SOLVER_RESIDUAL_TRUE,
+				tol >= nrm2) )
+			{
+				solver->retcode = LIS_SUCCESS;
+				solver->iter    = iter;
+				solver->resid   = nrm2;
+				solver->ptime   = ptime;
+				lis_free(h);
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_SUCCESS;
+			}
+		}
+
 		bnrm2 = 1.0/rnorm;
 	}
 
