@@ -165,13 +165,13 @@ LIS_INT lis_precon_create_saamg(LIS_SOLVER solver, LIS_PRECON precon)
 	#else
 		if( !unsym )
 		{
-			(*(void (*)())f_data_creation_ptr)(&A->n,&A->L->nnz,&A->U->nnz,
+			(*(void (*)(LIS_INT *, LIS_INT *, LIS_INT *, LIS_SCALAR *, LIS_SCALAR *, LIS_INT *, LIS_INT *, LIS_SCALAR *, LIS_INT *, LIS_INT *, LIS_INT *, LIS_REAL *))f_data_creation_ptr)(&A->n,&A->L->nnz,&A->U->nnz,
 				A->D->value,A->L->value,A->L->ptr,A->L->index,
 				A->U->value, A->U->ptr, A->U->index, &precon->level_num, &theta);
 		}
 		else
 		{
-			(*(void (*)())f_data_creation_unsym_ptr)(&A->n,&A->L->nnz,&A->U->nnz,
+			(*(void (*)(LIS_INT *, LIS_INT *, LIS_INT *, LIS_SCALAR *, LIS_SCALAR *, LIS_INT *, LIS_INT *, LIS_SCALAR *, LIS_INT *, LIS_INT *, LIS_INT *, LIS_REAL *))f_data_creation_unsym_ptr)(&A->n,&A->L->nnz,&A->U->nnz,
 				A->D->value,A->L->value,A->L->ptr,A->L->index,
 				A->U->value, A->U->ptr, A->U->index, &precon->level_num, &theta);
 		}
@@ -308,13 +308,13 @@ LIS_INT lis_precon_psd_update_saamg(LIS_SOLVER solver, LIS_PRECON precon)
 	#else
 		if( !unsym )
 		{
-			(*(void (*)())f_data_creation_ptr)(&A->n,&A->L->nnz,&A->U->nnz,
+			(*(void (*)(LIS_INT *, LIS_INT *, LIS_INT *, LIS_SCALAR *, LIS_SCALAR *, LIS_INT *, LIS_INT *, LIS_SCALAR *, LIS_INT *, LIS_INT *, LIS_INT *, LIS_REAL *))f_data_creation_ptr)(&A->n,&A->L->nnz,&A->U->nnz,
 				A->D->value,A->L->value,A->L->ptr,A->L->index,
 				A->U->value, A->U->ptr, A->U->index, &precon->level_num, &theta);
 		}
 		else
 		{
-			(*(void (*)())f_data_creation_unsym_ptr)(&A->n,&A->L->nnz,&A->U->nnz,
+			(*(void (*)(LIS_INT *, LIS_INT *, LIS_INT *, LIS_SCALAR *, LIS_SCALAR *, LIS_INT *, LIS_INT *, LIS_SCALAR *, LIS_INT *, LIS_INT *, LIS_INT *, LIS_REAL *))f_data_creation_unsym_ptr)(&A->n,&A->L->nnz,&A->U->nnz,
 				A->D->value,A->L->value,A->L->ptr,A->L->index,
 				A->U->value, A->U->ptr, A->U->index, &precon->level_num, &theta);
 		}
@@ -349,7 +349,7 @@ LIS_INT lis_psolve_saamg(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
 			 &comm,A->commtable->ws,A->commtable->wr,&n,&precon->wsize);
 	#else
 		n = b->n;
-		 (*(void (*)())f_v_cycle_ptr)(&n,b->value,x->value,&precon->level_num,precon->temp->value);
+		 (*(void (*)(LIS_INT *, LIS_SCALAR *, LIS_SCALAR *, LIS_INT *, LIS_SCALAR *))f_v_cycle_ptr)(&n,b->value,x->value,&precon->level_num,precon->temp->value);
 	#endif
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
@@ -387,7 +387,7 @@ LIS_INT lis_psolveh_saamg(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
 			 &comm,A->commtable->ws,A->commtable->wr,&n,&precon->wsize);
 	#else
 		n = b->n;
-		 (*(void (*)())f_v_cycle_ptr)(&n,b->value,x->value,&precon->level_num,precon->temp->value);
+		 (*(void (*)(LIS_INT *, LIS_SCALAR *, LIS_SCALAR *, LIS_INT *, LIS_SCALAR *))f_v_cycle_ptr)(&n,b->value,x->value,&precon->level_num,precon->temp->value);
 	#endif
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;

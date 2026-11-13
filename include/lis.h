@@ -1284,6 +1284,18 @@ extern LIS_INT lis_vector_export_real64_tolerant(
 	extern LIS_INT lis_vector_set_value(LIS_INT flag, LIS_INT i, LIS_SCALAR value, LIS_VECTOR v);
 	extern LIS_INT lis_vector_set_values(LIS_INT flag, LIS_INT count, LIS_INT index[], LIS_SCALAR value[], LIS_VECTOR v);
 	extern LIS_INT lis_vector_set_values2(LIS_INT flag, LIS_INT start, LIS_INT count, LIS_SCALAR value[], LIS_VECTOR v);
+	extern LIS_INT lis_vector_set_values3(LIS_INT flag, LIS_INT start, LIS_INT count, LIS_SCALAR value[], LIS_VECTOR v, LIS_SCALAR scale);
+	extern LIS_INT lis_vector_set_values4(LIS_INT flag, LIS_INT count, LIS_INT index[], LIS_SCALAR value[], LIS_VECTOR v, LIS_SCALAR scale);
+	extern LIS_INT lis_vector_set_values5(LIS_INT flag, LIS_INT start, LIS_INT stride, LIS_INT count, LIS_SCALAR value[], LIS_VECTOR v, LIS_SCALAR scale);
+	extern LIS_INT lis_vector_set_values6(LIS_INT flag, LIS_INT start, LIS_INT stride, LIS_INT count, LIS_SCALAR value, LIS_VECTOR v);
+	extern LIS_INT lis_vector_set_values7(LIS_INT flag, LIS_INT start, LIS_INT stride, LIS_INT count, LIS_VECTOR value, LIS_VECTOR v, LIS_SCALAR scale);
+	extern LIS_INT lis_vector_set_values8(LIS_INT flag, LIS_INT start, LIS_INT stride, LIS_INT count, LIS_SCALAR value[], LIS_VECTOR v, LIS_SCALAR scale, LIS_INT start_value, LIS_INT stride_value);
+	extern LIS_INT lis_vector_set_values9(LIS_INT flag, LIS_INT start, LIS_INT stride, LIS_INT count, LIS_VECTOR value, LIS_VECTOR v, LIS_SCALAR scale, LIS_INT start_value, LIS_INT stride_value);
+	extern LIS_INT lis_vector_get_values_from_index(LIS_VECTOR v, LIS_INT count, LIS_INT index[], LIS_SCALAR value[]);
+	extern LIS_INT lis_vector_get_values_from_range(LIS_VECTOR v, LIS_INT start, LIS_INT stride, LIS_INT count, LIS_SCALAR value[]);
+	extern LIS_INT lis_vector_get_values_from_range2(LIS_VECTOR v, LIS_INT start, LIS_INT stride, LIS_INT count, LIS_SCALAR value[], LIS_INT start_value, LIS_INT stride_value);
+	extern LIS_INT lis_vector_get_values_from_range3(LIS_VECTOR v, LIS_INT start, LIS_INT stride, LIS_INT count, LIS_VECTOR value);
+	extern LIS_INT lis_vector_get_values_from_range4(LIS_VECTOR v, LIS_INT start, LIS_INT stride, LIS_INT count, LIS_VECTOR value, LIS_INT start_value, LIS_INT stride_value);
 	extern LIS_INT lis_vector_unset(LIS_VECTOR v);
 	extern LIS_INT lis_vector_print(LIS_VECTOR x);
 	extern LIS_INT lis_vector_scatter(LIS_SCALAR value[], LIS_VECTOR v);

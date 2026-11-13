@@ -1,0 +1,2 @@
+CompileFlags:                     # Tweak the parse settings
+  Add: [--enable-f90, -DUSE_FORTRAN]
