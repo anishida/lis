@@ -319,9 +319,19 @@ lis_ilut_ordered_create(LIS_SOLVER solver, LIS_PRECON precon)
             "ILUT RCM/row scaling supports serial CSR in double precision");
         return LIS_ERR_NOT_IMPLEMENTED;
     }
-    if(n<=0 || A->nnz<0 || (size_t)n>SIZE_MAX/sizeof(LIS_INT) ||
+    /*
+     * Edge offsets are stored in LIS_INT, not size_t. Validate both the
+     * allocation sizes and the 2*nnz graph offset arithmetic before any
+     * increments; this matters for 32-bit LIS_INT with very large CSR.
+     */
+    if(n<=0 || A->nnz<0 ||
+       ((size_t)n+1)>SIZE_MAX/sizeof(LIS_INT) ||
        (size_t)n>SIZE_MAX/sizeof(LIS_SCALAR) ||
-       (size_t)A->nnz>SIZE_MAX/(2*sizeof(LIS_INT)))
+       (size_t)A->nnz>SIZE_MAX/(2*sizeof(LIS_INT)) ||
+       (size_t)A->nnz > (sizeof(LIS_INT)==4 ?
+                        (size_t)INT32_MAX/2 : (size_t)INT64_MAX/2))
+        return LIS_ERR_ILL_ARG;
+    if(A->ptr[0]!=0 || A->ptr[n]!=A->nnz)
         return LIS_ERR_ILL_ARG;
 
     perm=(LIS_INT *)lis_malloc((size_t)n*sizeof(LIS_INT),"ILUT RCM permutation");
@@ -353,7 +363,8 @@ lis_ilut_ordered_create(LIS_SOLVER solver, LIS_PRECON precon)
         graphptr[0]=0;
         for(i=0;i<n;i++)
         {
-            if(degree[i]>A->nnz*2-graphptr[i])
+            if((size_t)degree[i] > (size_t)A->nnz*2 -
+                                    (size_t)graphptr[i])
             { err=LIS_ERR_ILL_ARG; goto cleanup; }
             graphptr[i+1]=graphptr[i]+degree[i];
             cursor[i]=graphptr[i];
