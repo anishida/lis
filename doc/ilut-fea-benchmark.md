@@ -53,6 +53,28 @@ Never compare their timings without also considering thread budget.
 This is not a demonstration of a speedup, nor evidence that a different
 factor-count proxy implies equal solver quality.
 
+### Controlled same-run demonstration
+
+We tested `test/testmat0.mtx` (100 unknowns, 460 imported entries)
+twice **in the same OpenMP GitHub Actions job**, holding the original
+matrix, RHS, drop rate, ordering, row scaling and baseline thread budget
+fixed. Only `LIS_FEA_RCM_THREADS` changed:
+
+| RCM+scaled ILUT threads | Stored L+U entries | FGMRES iterations | Original-system true residual |
+|---:|---:|---:|---:|
+| 1 | 968 | 5 | 1.15692696e-9 |
+| 2 | 776 | 17 | 9.33675937e-9 |
+
+Source: https://github.com/3rav/lis/actions/runs/43419495035
+
+This demonstrates that the **thread partition changes the numerical
+preconditioner**. A 1-vs-2 thread comparison must *not* be called a pure
+RCM/row-equilibration comparison. Both solves met `1e-8` here, but
+the small bundled test is only a regression fixture, not a structural
+FEA speedup result. The comparison intentionally does not assert that
+all future implementations must exhibit the same thread dependence.
+
+
 ## Interpreting the results
 
 CSV contains the legacy columns and additionally:
