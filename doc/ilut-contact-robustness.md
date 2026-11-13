@@ -24,6 +24,14 @@ The regression compares ILUT normal and adjoint residuals under RCM, equilibrati
 
 `testhalfilut` now assembles an indefinite **48×48 stabilized saddle-point system** with a 36×36 spring-stiffness block, twelve displacement-difference constraints, and a negative 0.1 multiplier diagonal. It compares the legacy ILUT control with the opt-in variant, requiring convergence to a **true relative residual below 1e-7** and printing Krylov iterations and residuals. This is an algebraic contact-style regression, **not** a production nonlinear FEA benchmark and not evidence of a speedup.
 
+## High-unit-contrast KKT regression
+
+The additional `ILUT_KKT_CONTRAST` regression constructs a 48x48 saddle-point matrix with displacement stiffness at `1e8`, off-diagonal constraint couplings at `1`, and multiplier stabilization at `1e-8`. It compares baseline ILUT, row-only equilibration, RCM plus row equilibration, and a manually block-balanced congruence `D A D` with displacement factors `1e-4` and multiplier factors `1e4`.
+
+The test reports FGMRES iterations, actual `nnz(L+U)`, true original-system residual `||Ax-b||/||b||`, and the block-balanced residual `||D(Ax-b)||/||Db||`. The latter prevents tiny multiplier-equation errors from being hidden by the much larger displacement-block scale. The balanced variant is a required convergence reference; failures of the other variants are reported as observations and do not assert one ordering/scaling strategy always converges. **The manually balanced variant is a test reference, not an implemented general two-sided scaling option.**
+
+The test remains synthetic, serial-only for these preprocessing modes, and does not establish production contact FEA performance. Extreme stiffness/coupling contrasts remain numerically challenging; use a real Matrix Market contact snapshot for performance conclusions.
+
 ## Reproducible evaluation on an external FEA snapshot
 
 The existing `testhalfilut` executable now includes an **opt-in Matrix
