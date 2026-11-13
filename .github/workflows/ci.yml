@@ -83,6 +83,15 @@ jobs:
       - name: Run Automake test suite
         run: make -j2 check
 
+      - name: Smoke-test fill-reporting ILUT Matrix Market benchmark
+        if: matrix.mode == 'half'
+        run: |
+          set -euo pipefail
+          ./test/testhalfilut --fea-matrix test/testmat0.mtx 8 8 0.005 | tee ilut-fea-bench.log
+          grep -q '^ILUT_FEA_MATRIX ' ilut-fea-bench.log
+          grep -q '^baseline,' ilut-fea-bench.log
+          grep -q '^rcm_scaled,' ilut-fea-bench.log
+
       - name: Smoke-test optional 3D FP16 memory and Krylov benchmark
         if: matrix.mode == 'half'
         run: |

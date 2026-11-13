@@ -214,6 +214,8 @@ extern void lis_precon_operator_row_source_destroy(
 /*******************/
 
 	extern LIS_INT lis_precon_create_ilut(LIS_SOLVER solver, LIS_PRECON precon);
+	extern LIS_INT lis_precon_ilut_factor_stats(LIS_PRECON precon, LIS_INT *nnz_l,
+		LIS_INT *nnz_u, LIS_REAL *min_pivot, LIS_REAL *max_pivot);
 	extern LIS_INT lis_precon_create_ilut_csr(LIS_SOLVER solver, LIS_PRECON precon);
 	extern LIS_INT lis_precon_update_ilut_frozen(LIS_SOLVER solver, LIS_PRECON precon);
 	extern LIS_INT lis_psolve_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X);
