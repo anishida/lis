@@ -827,6 +827,34 @@ main(
                 0,
                 0);
 
+        /* A USER row callback continues to support legacy ILUT.
+         * Opt-in ILUTP/full-fill is deliberately CSR-only. It must
+         * reject unsupported USER input, not silently run legacy ILUT. */
+        failed += run_case(
+                "USER_ILUTP_UNSUPPORTED",
+                "-i gmres -p ilut -ilutp 1 "
+                "-ilutp_threshold 0.5 "
+                "-scale none -tol 1.0e-12 -maxiter 200 -print none",
+                1, 1, 0, 0, 0);
+
+        failed += run_case(
+                "USER_ILUTP_FULL_UNSUPPORTED",
+                "-i gmres -p ilut -ilutp 1 -ilutp_full 1 "
+                "-ilutp_threshold 0.1 "
+                "-scale none -tol 1.0e-12 -maxiter 200 -print none",
+                1, 1, 0, 0, 0);
+
+        /* Hybrid must not silently downgrade explicit ILUTP options
+         * to the legacy inner ILUT when using a USER operator. */
+        failed += run_case(
+                "USER_HYBRID_ILUTP_UNSUPPORTED",
+                "-i gmres -p hybrid -hybrid_i gmres -hybrid_p ilut "
+                "-ilutp 1 -ilutp_threshold 0.5 "
+                "-hybrid_maxiter 50 -hybrid_restart 20 "
+                "-hybrid_tol 1.0e-10 -restart 20 "
+                "-scale none -tol 1.0e-12 -maxiter 200 -print none",
+                1, 1, 0, 0, 0);
+
         failed += run_case(
                 "USER_ILUT_NO_ROW",
                 "-i gmres -p ilut "

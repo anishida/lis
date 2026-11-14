@@ -3,7 +3,7 @@ AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)/include
 AM_FFLAGS = -I$(top_builddir) -I$(top_srcdir)/include
 AM_LDFLAGS = $(AMDEFS)
 
-EXTRA_DIST = defs test.sh testmat.mtx testmat2.mtx testmat3.mtx testmat4.mtx testmat0.mtx testvec0.mtx
+EXTRA_DIST = gen_ilutp_fullfill_case.py benchilutp_rhs_100.mtx defs test.sh testmat.mtx testmat2.mtx testmat3.mtx testmat4.mtx testmat0.mtx testvec0.mtx
 
 testdir = ${prefix}/share/examples/lis
 
@@ -30,7 +30,7 @@ test_PROGRAMS = testesubspaceretry etest1 etest2 etest3 etest4 etest5 etest5b et
 	testblockorthogonal testblockrank
 
 # Keep optional session tests separate from the long test_PROGRAMS list.
-test_PROGRAMS += testmatrixautosession testvectorreal64 benchautojacobirefresh testabi testgesolvepair testrcoalloc
+test_PROGRAMS += testmatrixautosession testvectorreal64 benchautojacobirefresh testabi testgesolvepair testrcoalloc testilutp benchilutp
 
 testabi_SOURCES = testabi.c
 testrcoalloc_SOURCES = testrcoalloc.c
@@ -50,6 +50,8 @@ testmatrixautosession_SOURCES = testmatrixautosession.c
 benchautojacobirefresh_SOURCES = benchautojacobirefresh.c
 testvectorreal64_SOURCES = testvectorreal64.c
 testfrozenilut_SOURCES = testfrozenilut.c
+testilutp_SOURCES = testilutp.c
+benchilutp_SOURCES = benchilutp.c
 benchfrozenilut_SOURCES = benchfrozenilut.c
 testsplitview_SOURCES = testsplitview.c
 testsplitviewi64_SOURCES = testsplitviewi64.c
@@ -249,6 +251,8 @@ TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEX
         testfgcrodr$(EXEEXT) testfgcrodrmaxiter$(EXEEXT) testfgcrodrintra$(EXEEXT) testmfamg$(EXEEXT) testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
         testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) testnullspacecandidates$(EXEEXT) testesolverselection$(EXEEXT)
 
+TESTS += testilutp$(EXEEXT)
+
 # Explicitly run all new regression binaries under make check.
 TESTS += testmatrixautosession$(EXEEXT) testvectorreal64$(EXEEXT) testgesolvepair$(EXEEXT) testabi$(EXEEXT) testrcoalloc$(EXEEXT)
 
@@ -274,7 +278,7 @@ test_PROGRAMS += testfgcrodrblocked
 testfgcrodrblocked_SOURCES = testfgcrodrblocked.c
 TESTS += testfgcrodrblocked$(EXEEXT)
 
-# Independent cross-operator FGCRO-DR TRANSPORT regression.
+# Independent cross-operator FGCRO-DR TRANSPORT regression (from develop).
 test_PROGRAMS += testfgcrodrtransport
 testfgcrodrtransport_SOURCES = testfgcrodrtransport.c
 TESTS += testfgcrodrtransport$(EXEEXT)
