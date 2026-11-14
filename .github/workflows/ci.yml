@@ -117,6 +117,16 @@ jobs:
       - name: Run Automake test suite
         run: make -j2 check
 
+      - name: Verify 8-thread pivoted RAS ILUTP regression
+        if: matrix.mode == 'openmp'
+        run: |
+          set -euo pipefail
+          make -C test testhalfilut
+          OMP_DYNAMIC=FALSE OMP_NUM_THREADS=8 ./test/testhalfilut --parallel-ras-ilutp | tee parallel-ras-ilutp.log
+          grep -q 'ILUT_RAS_LOCAL_ILUTP threads=8 .* PASSED' parallel-ras-ilutp.log
+          grep -q 'ILUT_RAS_OVERLAP overlap=1 full=0 threads=8 .* DETERMINISTIC PASS' parallel-ras-ilutp.log
+          grep -q 'ILUT_RAS_OVERLAP overlap=2 full=1 threads=8 .* DETERMINISTIC PASS' parallel-ras-ilutp.log
+
       - name: Smoke-test native ILUTP Matrix Market comparison
         if: matrix.mode == 'serial'
         run: |
@@ -543,6 +553,16 @@ jobs:
       - name: Run Automake test suite
         run: make -j2 check
 
+      - name: Verify pivoted eight-domain parallel ILUTP on MSYS2
+        if: matrix.mode == 'openmp'
+        run: |
+          set -euo pipefail
+          make -C test testhalfilut.exe
+          OMP_DYNAMIC=FALSE OMP_NUM_THREADS=8 ./test/testhalfilut.exe --parallel-ras-ilutp | tee parallel-ras-ilutp-msys2.log
+          grep -q 'ILUT_RAS_LOCAL_ILUTP threads=8 .* PASSED' parallel-ras-ilutp-msys2.log
+          grep -q 'ILUT_RAS_OVERLAP overlap=1 full=0 threads=8 .* DETERMINISTIC PASS' parallel-ras-ilutp-msys2.log
+          grep -q 'ILUT_RAS_OVERLAP overlap=2 full=1 threads=8 .* DETERMINISTIC PASS' parallel-ras-ilutp-msys2.log
+
       - name: Upload failed test logs
         if: failure()
         uses: actions/upload-artifact@v4
@@ -554,6 +574,92 @@ jobs:
             test/*.log
           if-no-files-found: ignore
 
+
+  tsan-archer-ilutp:
+    name: TSan + LLVM Archer OpenMP RAS race audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      OMP_NUM_THREADS: '8'
+      OMP_DYNAMIC: 'FALSE'
+      TSAN_OPTIONS: 'halt_on_error=1:exitcode=66:ignore_noninstrumented_modules=1'
+      ARCHER_OPTIONS: 'verbose=1'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Clang, LLVM OpenMP, Archer and Autotools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin \
+            clang-18 libomp-18-dev llvm-18
+      - name: Build all LIS code with ThreadSanitizer instrumentation
+        run: |
+          autoreconf -fiv
+          ./configure --enable-test --enable-omp --enable-half \
+            --disable-fortran --disable-f90 --disable-saamg --disable-mpi \
+            CC=clang-18 \
+            CFLAGS="-O1 -g -fno-omit-frame-pointer -fsanitize=thread" \
+            LDFLAGS="-fsanitize=thread"
+          make -j2
+          make -C test testhalfilut
+      - name: Run native pivot/overlap/OpenMP regression under Archer
+        run: |
+          set -euo pipefail
+          archer=$(find /usr/lib/llvm-18 -name libarcher.so | head -1)
+          test -f "$archer"
+          export OMP_TOOL_LIBRARIES="$archer"
+          export LLVM_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-18
+          ./test/testhalfilut --parallel-ras-ilutp | tee tsan-archer-ras.log
+          grep -q 'ILUT_RAS_OVERLAP overlap=2 full=1 threads=8 .* DETERMINISTIC PASS' tsan-archer-ras.log
+      - name: Upload sanitizer diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tsan-archer-ras-diagnostics
+          path: |
+            config.log
+            tsan-archer-ras.log
+            test/test-suite.log
+          if-no-files-found: ignore
+
+  native-oom-parallel-ilutp:
+    name: Native ILUTP parallel RAS injected-OOM regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      OMP_NUM_THREADS: '8'
+      OMP_DYNAMIC: 'FALSE'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install autotools and OpenMP toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+      - name: Configure OpenMP and native OOM injection together
+        run: |
+          autoreconf -fiv
+          ./configure --enable-oom-tests --enable-test --enable-omp --enable-half \
+            --disable-fortran --disable-f90 --disable-saamg --disable-mpi
+      - name: Build LIS and the isolated fault-injection test
+        run: |
+          make -j2
+          make -C test testhalfilut
+      - name: Inject OOM while ILUTP domains factor concurrently
+        run: |
+          set -euo pipefail
+          ./test/testhalfilut --parallel-ras-ilutp | tee ilutp-ras-oom.log
+          grep -q 'PARALLEL_RAS_OOM injected=.* PASS' ilutp-ras-oom.log
+          grep -q 'ILUT_OPTIONS_OOM_PASS checked=' ilutp-ras-oom.log
+      - name: Upload OOM logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-oom-parallel-ras-logs
+          path: |
+            config.log
+            test/test-suite.log
+            test/*.log
+            ilutp-ras-oom.log
+          if-no-files-found: ignore
 
   native-oom:
     name: Native OOM regressions (serial)
