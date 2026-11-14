@@ -6,6 +6,7 @@ lis_precon_hybrid.c \
 lis_precon_iluc.c \
 lis_precon_iluk.c \
 lis_precon_ilut.c \
+lis_precon_ilut_ras.c \
 lis_precon_is.c \
 lis_precon_jacobi.c \
 lis_precon_mfamg.c \

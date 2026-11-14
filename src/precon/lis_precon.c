@@ -1001,6 +1001,11 @@ LIS_INT lis_precon_destroy(LIS_PRECON precon)
 	    {
 	        err = precon->user_destroy(precon);
 	    }
+		if( precon->ilut_ras )
+		{
+			lis_precon_ilut_ras_destroy(precon->ilut_ras);
+			precon->ilut_ras=NULL;
+		}
 		if( precon->mfamg )
 		{
 			mfamg_err = lis_precon_destroy_mfamg(precon);

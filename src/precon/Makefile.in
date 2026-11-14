@@ -106,7 +106,7 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 libprecon_la_LIBADD =
 am_libprecon_la_OBJECTS = lis_precon.lo lis_precon_operator_row.lo \
 	lis_precon_ads.lo lis_precon_hybrid.lo lis_precon_iluc.lo \
-	lis_precon_iluk.lo lis_precon_ilut.lo lis_precon_is.lo \
+	lis_precon_iluk.lo lis_precon_ilut.lo lis_precon_ilut_ras.lo lis_precon_is.lo \
 	lis_precon_jacobi.lo lis_precon_mfamg.lo lis_precon_saamg.lo \
 	lis_precon_sainv.lo lis_precon_ssor.lo
 libprecon_la_OBJECTS = $(am_libprecon_la_OBJECTS)
@@ -134,7 +134,8 @@ am__depfiles_remade = ./$(DEPDIR)/lis_precon.Plo \
 	./$(DEPDIR)/lis_precon_hybrid.Plo \
 	./$(DEPDIR)/lis_precon_iluc.Plo \
 	./$(DEPDIR)/lis_precon_iluk.Plo \
-	./$(DEPDIR)/lis_precon_ilut.Plo ./$(DEPDIR)/lis_precon_is.Plo \
+	./$(DEPDIR)/lis_precon_ilut.Plo ./$(DEPDIR)/lis_precon_ilut_ras.Plo \
+	./$(DEPDIR)/lis_precon_is.Plo \
 	./$(DEPDIR)/lis_precon_jacobi.Plo \
 	./$(DEPDIR)/lis_precon_mfamg.Plo \
 	./$(DEPDIR)/lis_precon_operator_row.Plo \
@@ -342,6 +343,7 @@ lis_precon_hybrid.c \
 lis_precon_iluc.c \
 lis_precon_iluk.c \
 lis_precon_ilut.c \
+lis_precon_ilut_ras.c \
 lis_precon_is.c \
 lis_precon_jacobi.c \
 lis_precon_mfamg.c \
@@ -428,6 +430,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precon_iluc.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precon_iluk.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precon_ilut.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precon_ilut_ras.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precon_is.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precon_jacobi.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_precon_mfamg.Plo@am__quote@ # am--include-marker
@@ -600,6 +603,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/lis_precon_iluc.Plo
 	-rm -f ./$(DEPDIR)/lis_precon_iluk.Plo
 	-rm -f ./$(DEPDIR)/lis_precon_ilut.Plo
+	-rm -f ./$(DEPDIR)/lis_precon_ilut_ras.Plo
 	-rm -f ./$(DEPDIR)/lis_precon_is.Plo
 	-rm -f ./$(DEPDIR)/lis_precon_jacobi.Plo
 	-rm -f ./$(DEPDIR)/lis_precon_mfamg.Plo
@@ -658,6 +662,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/lis_precon_iluc.Plo
 	-rm -f ./$(DEPDIR)/lis_precon_iluk.Plo
 	-rm -f ./$(DEPDIR)/lis_precon_ilut.Plo
+	-rm -f ./$(DEPDIR)/lis_precon_ilut_ras.Plo
 	-rm -f ./$(DEPDIR)/lis_precon_is.Plo
 	-rm -f ./$(DEPDIR)/lis_precon_jacobi.Plo
 	-rm -f ./$(DEPDIR)/lis_precon_mfamg.Plo

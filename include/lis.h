@@ -895,6 +895,7 @@ struct LIS_PRECON_STRUCT
 	 * Kept at the end of LIS_PRECON_STRUCT.
 	 */
 	LIS_HALF_ILU half;
+	struct LIS_ILUT_RAS_STRUCT *ilut_ras;
 
 	/* Optional serial ILUT symmetric RCM ordering and row equilibration. */
 	LIS_INT *ilut_perm;          /* new index -> original index */
@@ -1108,6 +1109,12 @@ struct LIS_SOLVER_STRUCT
 	LIS_INT ilut_row_scale;
 	LIS_INT sequence_precon_ilut_rcm;
 	LIS_INT sequence_precon_ilut_row_scale;
+	LIS_INT ilut_ras_overlap;
+	LIS_INT ilut_ras_domains;
+	LIS_INT ilut_schur;
+	LIS_INT sequence_precon_ilut_ras_overlap;
+	LIS_INT sequence_precon_ilut_ras_domains;
+	LIS_INT sequence_precon_ilut_schur;
 	/* Opt-in real-double serial ILUTP. Defaults off; tau defaults 0.5. */
 	LIS_INT ilutp_enabled;
 	LIS_REAL ilutp_threshold;
