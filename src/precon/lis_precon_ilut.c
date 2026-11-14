@@ -69,6 +69,9 @@
 /* Fixed-pattern numerical refactorization is shared with ILU(k). */
 LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon);
 
+/* Isolated opt-in ILUTP implementation, compiled with the ILUT module. */
+#include "lis_precon_ilutp.inc"
+
 static void
 lis_precon_release_ilut_numeric_values(
 	LIS_MATRIX_ILU A)
@@ -235,6 +238,10 @@ LIS_INT lis_precon_update_ilut_frozen(
      * Keep the first implementation conservative: fall back to the normal
      * sequence rebuild instead of reconstructing those arrays here.
      */
+    /* Frozen ILUT does not transport the ILUTP column permutation. */
+    if(solver->ilutp_enabled || precon->ilutp_colperm)
+        return LIS_ERR_NOT_IMPLEMENTED;
+
     if( solver->precon_half_mode!=LIS_PRECON_HALF_OFF ||
         precon->half!=NULL )
     {
@@ -316,7 +323,7 @@ lis_ilut_ordered_create(LIS_SOLVER solver, LIS_PRECON precon)
        solver->options[LIS_OPTIONS_PRECISION]!=LIS_PRECISION_DOUBLE)
     {
         LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-            "ILUT RCM/row scaling supports serial CSR in double precision");
+            "ILUT RCM, row scaling and ILUTP require serial double CSR");
         return LIS_ERR_NOT_IMPLEMENTED;
     }
     /*
@@ -459,7 +466,9 @@ lis_ilut_ordered_create(LIS_SOLVER solver, LIS_PRECON precon)
     if(err) goto cleanup;
 
     solver->A=P;
-    err=lis_precon_create_ilut_csr(solver,precon);
+    err=solver->ilutp_enabled ?
+        lis_precon_create_ilutp_csr(solver,precon) :
+        lis_precon_create_ilut_csr(solver,precon);
     solver->A=A;
     if(err) goto cleanup;
     precon->ilut_perm=perm; perm=NULL;
@@ -528,18 +537,25 @@ LIS_INT lis_precon_create_ilut(LIS_SOLVER solver, LIS_PRECON precon)
 
 	LIS_DEBUG_FUNC_IN;
 
-	if((solver->ilut_rcm || solver->ilut_row_scale) &&
+	if(solver->ilutp_full && !solver->ilutp_enabled)
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG, "-ilutp_full requires -ilutp 1");
+		return LIS_ERR_ILL_ARG;
+	}
+	if((solver->ilut_rcm || solver->ilut_row_scale ||
+        solver->ilutp_enabled) &&
 	   solver->A->matrix_type!=LIS_MATRIX_CSR)
 	{
 		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-		    "ILUT RCM and row scaling require serial CSR input");
+		    "ILUT RCM, row scaling and ILUTP require serial CSR input");
 		return LIS_ERR_NOT_IMPLEMENTED;
 	}
 
 	switch( solver->A->matrix_type )
 	{
 	case LIS_MATRIX_CSR:
-		err = (solver->ilut_rcm || solver->ilut_row_scale) ?
+		err = (solver->ilut_rcm || solver->ilut_row_scale ||
+		       solver->ilutp_enabled) ?
 			lis_ilut_ordered_create(solver,precon) :
 			lis_precon_create_ilut_csr(solver,precon);
 
@@ -1396,13 +1412,31 @@ lis_ilut_ordered_apply(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X,
                        LIS_INT adjoint)
 {
     LIS_PRECON pc=solver->precon;
-    LIS_INT i,n=solver->A->n,err;
+    LIS_INT i,j,n=solver->A->n,err;
     LIS_VECTOR rhs=pc->ilut_work_b,sol=pc->ilut_work_x;
     if(!rhs || !sol || !pc->ilut_perm || !pc->ilut_row_scale)
         return LIS_ERR_ILL_ARG;
+#ifdef _OPENMP
+    /* Changing OMP_NUM_THREADS after ILUTP construction must not silently
+     * apply a permutation through the block-parallel ILUT kernels. */
+    if(pc->ilutp_colperm && omp_get_max_threads()!=1)
+    {
+        LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+            "ILUTP apply requires one active OpenMP thread");
+        return LIS_ERR_NOT_IMPLEMENTED;
+    }
+#endif
+
+    /*
+     * We factor D_row P A P^T Q = L U.
+     * Forward: y=(LU)^-1 (D_row P b), x=P^T Q y.
+     * Adjoint: y=(LU)^-H Q^T P b, x=P^T D_row^H y.
+     */
     for(i=0;i<n;i++)
     {
-        rhs->value[i]=B->value[pc->ilut_perm[i]] *
+        j=(adjoint && pc->ilutp_colperm) ?
+            pc->ilutp_colperm[i] : i;
+        rhs->value[i]=B->value[pc->ilut_perm[j]] *
             (adjoint ? (LIS_SCALAR)1.0 : pc->ilut_row_scale[i]);
     }
     pc->ilut_apply_active=1;
@@ -1412,7 +1446,9 @@ lis_ilut_ordered_apply(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X,
     if(err) return err;
     for(i=0;i<n;i++)
     {
-        X->value[pc->ilut_perm[i]] =
+        j=(!adjoint && pc->ilutp_colperm) ?
+            pc->ilutp_colperm[i] : i;
+        X->value[pc->ilut_perm[j]] =
             sol->value[i] *
             (adjoint ? pc->ilut_row_scale[i] : (LIS_SCALAR)1.0);
     }
