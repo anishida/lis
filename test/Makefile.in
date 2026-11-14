@@ -149,15 +149,14 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testgesolvepair$(EXEEXT) testrcoalloc$(EXEEXT) \
 	testilutp$(EXEEXT) testilutequil$(EXEEXT) benchilutp$(EXEEXT) \
 	benchilutpequil$(EXEEXT) $(am__EXEEXT_2) $(am__EXEEXT_3) \
-	$(am__EXEEXT_4) $(am__EXEEXT_5) \
-	testfgcrodrblocked$(EXEEXT) testfgcrodrtransport$(EXEEXT) \
-	test_krylov_modes$(EXEEXT) test_krylov_sparse$(EXEEXT) \
-	test_krylov_regression$(EXEEXT) test_krylov_lis$(EXEEXT) \
-	test_krylov_semidefinite$(EXEEXT) test_krylov_stress$(EXEEXT) \
-	test_krylov_inertia$(EXEEXT) test_krylov_window$(EXEEXT) \
-	test_krylov_openmp$(EXEEXT) test_krylov_projected$(EXEEXT) \
-	test_krylov_workspace$(EXEEXT) test_krylov_unified$(EXEEXT) \
-	test_krylov_adaptive_ex$(EXEEXT) \
+	$(am__EXEEXT_4) $(am__EXEEXT_5) testfgcrodrblocked$(EXEEXT) \
+	testfgcrodrtransport$(EXEEXT) test_krylov_modes$(EXEEXT) \
+	test_krylov_sparse$(EXEEXT) test_krylov_regression$(EXEEXT) \
+	test_krylov_lis$(EXEEXT) test_krylov_semidefinite$(EXEEXT) \
+	test_krylov_stress$(EXEEXT) test_krylov_inertia$(EXEEXT) \
+	test_krylov_window$(EXEEXT) test_krylov_openmp$(EXEEXT) \
+	test_krylov_projected$(EXEEXT) test_krylov_workspace$(EXEEXT) \
+	test_krylov_unified$(EXEEXT) test_krylov_adaptive_ex$(EXEEXT) \
 	test_krylov_api_contract$(EXEEXT) \
 	test_krylov_residual_reuse$(EXEEXT) \
 	test_krylov_both_ends$(EXEEXT) \
@@ -994,21 +993,22 @@ depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/benchfrozenilut.Po ./$(DEPDIR)/benchilutp.Po \
-	./$(DEPDIR)/benchilutpequil.Po ./$(DEPDIR)/etest1.Po ./$(DEPDIR)/etest2.Po \
-	./$(DEPDIR)/etest3.Po ./$(DEPDIR)/etest4.Po \
-	./$(DEPDIR)/etest5.Po ./$(DEPDIR)/etest5b.Po \
-	./$(DEPDIR)/etest6.Po ./$(DEPDIR)/etest7.Po \
-	./$(DEPDIR)/getest1.Po ./$(DEPDIR)/getest5.Po \
-	./$(DEPDIR)/getest5b.Po ./$(DEPDIR)/getestoperator.Po \
-	./$(DEPDIR)/getestuser.Po ./$(DEPDIR)/spmvtest1.Po \
-	./$(DEPDIR)/spmvtest2.Po ./$(DEPDIR)/spmvtest2b.Po \
-	./$(DEPDIR)/spmvtest3.Po ./$(DEPDIR)/spmvtest3b.Po \
-	./$(DEPDIR)/spmvtest4.Po ./$(DEPDIR)/spmvtest5.Po \
-	./$(DEPDIR)/test1.Po ./$(DEPDIR)/test2.Po \
-	./$(DEPDIR)/test2b.Po ./$(DEPDIR)/test3.Po \
-	./$(DEPDIR)/test3b.Po ./$(DEPDIR)/test3c.Po \
-	./$(DEPDIR)/test4.Po ./$(DEPDIR)/test5.Po ./$(DEPDIR)/test6.Po \
-	./$(DEPDIR)/test7.Po ./$(DEPDIR)/test_krylov_adaptive_ex.Po \
+	./$(DEPDIR)/benchilutpequil.Po ./$(DEPDIR)/etest1.Po \
+	./$(DEPDIR)/etest2.Po ./$(DEPDIR)/etest3.Po \
+	./$(DEPDIR)/etest4.Po ./$(DEPDIR)/etest5.Po \
+	./$(DEPDIR)/etest5b.Po ./$(DEPDIR)/etest6.Po \
+	./$(DEPDIR)/etest7.Po ./$(DEPDIR)/getest1.Po \
+	./$(DEPDIR)/getest5.Po ./$(DEPDIR)/getest5b.Po \
+	./$(DEPDIR)/getestoperator.Po ./$(DEPDIR)/getestuser.Po \
+	./$(DEPDIR)/spmvtest1.Po ./$(DEPDIR)/spmvtest2.Po \
+	./$(DEPDIR)/spmvtest2b.Po ./$(DEPDIR)/spmvtest3.Po \
+	./$(DEPDIR)/spmvtest3b.Po ./$(DEPDIR)/spmvtest4.Po \
+	./$(DEPDIR)/spmvtest5.Po ./$(DEPDIR)/test1.Po \
+	./$(DEPDIR)/test2.Po ./$(DEPDIR)/test2b.Po \
+	./$(DEPDIR)/test3.Po ./$(DEPDIR)/test3b.Po \
+	./$(DEPDIR)/test3c.Po ./$(DEPDIR)/test4.Po \
+	./$(DEPDIR)/test5.Po ./$(DEPDIR)/test6.Po ./$(DEPDIR)/test7.Po \
+	./$(DEPDIR)/test_krylov_adaptive_ex.Po \
 	./$(DEPDIR)/test_krylov_api_contract.Po \
 	./$(DEPDIR)/test_krylov_be_lock_order.Po \
 	./$(DEPDIR)/test_krylov_both_ends.Po \
@@ -1056,8 +1056,8 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testhalfprobe.Po ./$(DEPDIR)/testhalfstorage.Po \
 	./$(DEPDIR)/testhybridnested.Po \
 	./$(DEPDIR)/testilucbsrsmoke.Po ./$(DEPDIR)/testilupivot.Po \
-	./$(DEPDIR)/testilutequil.Po ./$(DEPDIR)/testilutp.Po ./$(DEPDIR)/testjacobiuser.Po \
-	./$(DEPDIR)/testkrylovrobust.Po \
+	./$(DEPDIR)/testilutequil.Po ./$(DEPDIR)/testilutp.Po \
+	./$(DEPDIR)/testjacobiuser.Po ./$(DEPDIR)/testkrylovrobust.Po \
 	./$(DEPDIR)/testmatrixautosession.Po \
 	./$(DEPDIR)/testmatrixgeneration.Po \
 	./$(DEPDIR)/testmatrixgraph.Po \
@@ -1141,11 +1141,12 @@ am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(benchilutp_SOURCES) $(benchilutpequil_SOURCES) \
-	$(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) $(etest1f_SOURCES) $(etest2_SOURCES) \
-	$(etest3_SOURCES) $(etest4_SOURCES) $(etest4f_SOURCES) \
-	$(etest5_SOURCES) $(etest5b_SOURCES) $(etest6_SOURCES) \
-	$(etest7_SOURCES) $(gesolve_SOURCES) $(gesolver_SOURCES) \
-	$(getest1_SOURCES) $(getest5_SOURCES) $(getest5b_SOURCES) \
+	$(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
+	$(etest1f_SOURCES) $(etest2_SOURCES) $(etest3_SOURCES) \
+	$(etest4_SOURCES) $(etest4f_SOURCES) $(etest5_SOURCES) \
+	$(etest5b_SOURCES) $(etest6_SOURCES) $(etest7_SOURCES) \
+	$(gesolve_SOURCES) $(gesolver_SOURCES) $(getest1_SOURCES) \
+	$(getest5_SOURCES) $(getest5b_SOURCES) \
 	$(getestoperator_SOURCES) $(getestuser_SOURCES) \
 	$(hpcg_kernel_SOURCES) $(hpcg_spmvtest_SOURCES) \
 	$(lsolve_SOURCES) $(spmvtest1_SOURCES) $(spmvtest2_SOURCES) \
@@ -1907,9 +1908,9 @@ TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) \
 	testexactnullspace$(EXEEXT) testhalfconfig$(EXEEXT) \
 	testhalfconvert$(EXEEXT) testnullspacecandidates$(EXEEXT) \
 	testesolverselection$(EXEEXT) testilutp$(EXEEXT) \
-	testilutequil$(EXEEXT) testmatrixautosession$(EXEEXT) testvectorreal64$(EXEEXT) \
-	testgesolvepair$(EXEEXT) testabi$(EXEEXT) \
-	testrcoalloc$(EXEEXT) $(am__append_5) \
+	testilutequil$(EXEEXT) testmatrixautosession$(EXEEXT) \
+	testvectorreal64$(EXEEXT) testgesolvepair$(EXEEXT) \
+	testabi$(EXEEXT) testrcoalloc$(EXEEXT) $(am__append_5) \
 	testfgcrodrblocked$(EXEEXT) testfgcrodrtransport$(EXEEXT) \
 	test_krylov_modes$(EXEEXT) test_krylov_sparse$(EXEEXT) \
 	test_krylov_regression$(EXEEXT) test_krylov_lis$(EXEEXT) \
