@@ -7,6 +7,9 @@
 #include <math.h>
 #include <stdio.h>
 #include <time.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 
@@ -795,6 +798,554 @@ done:
     return failed;
 }
 
+/* Opt-in serial partitioned RAS ILUT with diagonal-approximate Schur
+ * correction must remain separate from the legacy ILUT default.
+ */
+static int
+check_ilut_ras_schur(LIS_MATRIX A)
+{
+    LIS_SOLVER solver=NULL;
+    LIS_PRECON pc=NULL;
+    LIS_VECTOR b=NULL,x=NULL,e=NULL,r=NULL;
+    LIS_INT err,overlap,schur;
+    LIS_REAL bn=0.0,rn=0.0;
+    int failed=0;
+    char opts[300];
+
+    if(A->nprocs!=1 || A->n!=64) return 0;
+    if(lis_vector_duplicate(A,&b) || lis_vector_duplicate(A,&x) ||
+       lis_vector_duplicate(A,&e) || lis_vector_duplicate(A,&r))
+    { failed=1; goto cleanup; }
+    lis_vector_set_all((LIS_SCALAR)1.0,e);
+    err=lis_matvec(A,e,b);
+    if(err) { failed=1; goto cleanup; }
+    err=lis_vector_nrm2(b,&bn);
+    if(err) { failed=1; goto cleanup; }
+
+    for(overlap=0;overlap<=2;overlap++)
+    for(schur=0;schur<=1;schur++)
+    {
+        solver=NULL;pc=NULL;
+        err=lis_solver_create(&solver);
+        if(err) { failed=1; goto cleanup; }
+        snprintf(opts,sizeof(opts),
+            "-i gmres -p ilut -scale none -print none "
+            "-iluc_drop 0 -iluc_rate 8 -ilu_pivot_tol 1e-12 "
+            "-ilut_ras_domains 4 -ilut_ras_overlap %d -ilut_schur %d",
+            (int)overlap,(int)schur);
+        err=lis_solver_set_option(opts,solver);
+        if(err) { failed=1; goto cleanup; }
+        err=lis_solver_set_matrix(A,solver);
+        if(err) { failed=1; goto cleanup; }
+        err=lis_precon_create(solver,&pc);
+        if(err) { failed=1; goto cleanup; }
+        solver->precon=pc;
+        if(pc->ilut_ras==NULL)
+        { failed=1; goto cleanup; }
+        err=lis_psolve(solver,b,x);
+        if(err) { failed=1; goto cleanup; }
+        err=lis_matvec(A,x,r);
+        if(err) { failed=1; goto cleanup; }
+        err=lis_vector_axpy((LIS_SCALAR)-1.0,b,r);
+        if(err) { failed=1; goto cleanup; }
+        err=lis_vector_nrm2(r,&rn);
+        if(err || !(rn/bn<0.80))
+        {
+            fprintf(stderr,"ILUT RAS overlap=%d schur=%d residual %.5e\n",
+                    (int)overlap,(int)schur,(double)(rn/bn));
+            failed=1; goto cleanup;
+        }
+        /* No mathematically incorrect adjoint implementation. */
+        err=lis_psolveh(solver,b,x);
+        if(err!=LIS_ERR_NOT_IMPLEMENTED)
+        {
+            fprintf(stderr,"ILUT RAS unexpectedly accepted adjoint\n");
+            failed=1; goto cleanup;
+        }
+        solver->precon=NULL;
+        lis_precon_destroy(pc);pc=NULL;
+        lis_solver_destroy(solver);solver=NULL;
+    }
+    printf("ILUT_RAS_SCHUR PASSED\n");
+
+cleanup:
+    if(pc)
+    {
+        if(solver) solver->precon=NULL;
+        lis_precon_destroy(pc);
+    }
+    if(solver) lis_solver_destroy(solver);
+    if(r) lis_vector_destroy(r);
+    if(e) lis_vector_destroy(e);
+    if(x) lis_vector_destroy(x);
+    if(b) lis_vector_destroy(b);
+    return failed;
+}
+
+
+/*
+ * Exact-interface correctness witness, not a general performance claim.
+ * A = 4I with symmetric -1 edges (2,3), (3,4), and (4,5).
+ * Partition [0,4) / [4,8) or [0,4) / [4,9):
+ * Gamma={3,4}, A_II=4I, even for unequal partition sizes.
+ * exact S=[[3.75,-1],[-1,3.75]].
+ * For b=A*(e3+e4), overlap-0 RAS alone has residual ~0.2319;
+ * the additional Schur step should recover the solution to roundoff.
+ */
+static int
+check_ilut_ras_exact_interface_one(LIS_INT n,LIS_INT coupled,LIS_INT local_ilutp)
+{
+    const LIS_INT ei[3]={2,3,4},ej[3]={3,4,5};
+    LIS_MATRIX A=NULL;
+    LIS_VECTOR exact=NULL,b=NULL,x=NULL,r=NULL;
+    LIS_SOLVER solver=NULL;
+    LIS_PRECON pc=NULL;
+    LIS_INT err=0,i,v,edge_count;
+    LIS_REAL bn=0.0,rn=0.0,baseline=0.0,schur=0.0,xerr=0.0;
+    char opts[256];
+    int failed=1;
+
+    err=lis_matrix_create(LIS_COMM_WORLD,&A);
+    if(err) goto done;
+    err=lis_matrix_set_size(A,0,n);
+    if(err) goto done;
+    if(A->nprocs!=1) { failed=0; goto done; }
+    for(i=0;i<n;i++)
+    {
+        err=lis_matrix_set_value(LIS_INS_VALUE,i,i,(LIS_SCALAR)4.0,A);
+        if(err) goto done;
+    }
+    edge_count=coupled ? n-1 : 3;
+    for(i=0;i<edge_count;i++)
+    {
+        LIS_INT u=coupled ? i : ei[i],v=coupled ? i+1 : ej[i];
+        err=lis_matrix_set_value(LIS_INS_VALUE,u,v,(LIS_SCALAR)-1.0,A);
+        if(err) goto done;
+        err=lis_matrix_set_value(LIS_INS_VALUE,v,u,(LIS_SCALAR)-1.0,A);
+        if(err) goto done;
+    }
+    err=lis_matrix_set_type(A,LIS_MATRIX_CSR);
+    if(err) goto done;
+    err=lis_matrix_assemble(A);
+    if(err) goto done;
+    if(lis_vector_duplicate(A,&exact) || lis_vector_duplicate(A,&b) ||
+       lis_vector_duplicate(A,&x) || lis_vector_duplicate(A,&r))
+        goto done;
+    err=lis_vector_set_all((LIS_SCALAR)0.0,exact);
+    if(err) goto done;
+    exact->value[3]=(LIS_SCALAR)1.0;
+    exact->value[4]=(LIS_SCALAR)1.0;
+    err=lis_matvec(A,exact,b);
+    if(err) goto done;
+    err=lis_vector_nrm2(b,&bn);
+    if(err || !(bn>0.0)) goto done;
+
+    for(v=0;v<2;v++)
+    {
+        err=lis_solver_create(&solver);
+        if(err) goto done;
+        snprintf(opts,sizeof(opts),
+            "-i gmres -p ilut -scale none -print none "
+            "-iluc_drop 0 -iluc_rate 8 -ilu_pivot_tol 1e-12 "
+            "-ilut_ras_domains 2 -ilut_ras_overlap 0 -ilut_schur %d %s",
+            (int)v,local_ilutp ?
+            "-ilutp 1 -ilutp_threshold 0.5 -ilutp_full 1 "
+            "-ilutp_full_limit 128" : "");
+        err=lis_solver_set_option(opts,solver);
+        if(err) goto done;
+        err=lis_solver_set_matrix(A,solver);
+        if(err) goto done;
+        err=lis_precon_create(solver,&pc);
+        if(err) { pc=NULL; goto done; }
+        solver->precon=pc;
+        err=lis_psolve(solver,b,x);
+        if(err) goto done;
+        err=lis_matvec(A,x,r);
+        if(err) goto done;
+        err=lis_vector_axpy((LIS_SCALAR)-1.0,b,r);
+        if(err) goto done;
+        err=lis_vector_nrm2(r,&rn);
+        if(err) goto done;
+        if(v==0) baseline=rn/bn;
+        else
+        {
+            schur=rn/bn;
+            for(i=0;i<n;i++)
+            {
+                LIS_REAL delta=fabs(x->value[i]-exact->value[i]);
+                if(delta>xerr) xerr=delta;
+            }
+        }
+        printf("ILUT_RAS_INTERFACE n=%ld coupled=%d ilutp=%d "
+               "schur=%d true_rel_res=%.9e\n",
+               (long)n,(int)coupled,(int)local_ilutp,
+               (int)v,(double)(rn/bn));
+        solver->precon=NULL;
+        lis_precon_destroy(pc);pc=NULL;
+        lis_solver_destroy(solver);solver=NULL;
+    }
+    /* Exact diagonal interior or >=5x improvement with coupled interior. */
+    if(!(baseline>0.20 && baseline<0.26 &&
+         (coupled ? (schur>0.001 && schur<0.05 &&
+                     schur<baseline/5.0) :
+                    (schur<1e-10 && xerr<1e-10))))
+    {
+        fprintf(stderr,"ILUT_RAS_INTERFACE_FAILED n=%ld coupled=%d baseline=%.9e "
+                "schur=%.9e xerr=%.9e\n",
+                (long)n,(int)coupled,(double)baseline,(double)schur,(double)xerr);
+        goto done;
+    }
+    printf("ILUT_RAS_INTERFACE n=%ld coupled=%d ilutp=%d PASSED\n",
+           (long)n,(int)coupled,(int)local_ilutp);
+    failed=0;
+done:
+    if(pc)
+    {
+        if(solver) solver->precon=NULL;
+        lis_precon_destroy(pc);
+    }
+    if(solver) lis_solver_destroy(solver);
+    if(r) lis_vector_destroy(r);
+    if(x) lis_vector_destroy(x);
+    if(b) lis_vector_destroy(b);
+    if(exact) lis_vector_destroy(exact);
+    if(A) lis_matrix_destroy(A);
+    return failed;
+}
+
+static int
+check_ilut_ras_exact_interface(void)
+{
+#ifdef _OPENMP
+    int original_threads;
+#endif
+    int failed=check_ilut_ras_exact_interface_one(8,0,0);
+    failed |= check_ilut_ras_exact_interface_one(9,0,0);
+    failed |= check_ilut_ras_exact_interface_one(8,1,0);
+    failed |= check_ilut_ras_exact_interface_one(9,1,0);
+#ifdef _OPENMP
+    original_threads=omp_get_max_threads();
+    /* Native ILUTP (including nested RAS factors) is single-thread only. */
+    omp_set_num_threads(1);
+#endif
+    /* Schur on/off with genuinely coupled interior and local ILUTP. */
+    failed |= check_ilut_ras_exact_interface_one(8,1,1);
+    failed |= check_ilut_ras_exact_interface_one(9,1,1);
+#ifdef _OPENMP
+    omp_set_num_threads(original_threads);
+#endif
+    return failed;
+}
+
+/*
+ * Integration regression for #225 RAS with #229 ILUTP.
+ * Four reversible 2x2 off-diagonal blocks have zero diagonals.
+ * Dynamic column pivoting is required for exact local complete-fill LU.
+ * Without propagating -ilutp from the outer solver, this deliberately
+ * difficult local factorization cannot pass the true residual test.
+ */
+static int check_ilut_ras_local_ilutp(void)
+{
+#ifdef _OPENMP
+    int original_threads=omp_get_max_threads();
+#endif
+    LIS_MATRIX A=NULL;
+    LIS_SOLVER solver=NULL;
+    LIS_PRECON pc=NULL;
+    LIS_VECTOR b=NULL,x=NULL,exact=NULL,r=NULL;
+    LIS_INT err=0,i,variant;
+    LIS_REAL bn=0.0,rn=0.0,exerr=0.0;
+    int failed=1;
+    char opts[350];
+
+#ifdef _OPENMP
+    /* Local ILUTP explicitly supports only one OpenMP solver thread. */
+    omp_set_num_threads(1);
+#endif
+    err=lis_matrix_create(LIS_COMM_WORLD,&A);
+    if(err) goto cleanup;
+    err=lis_matrix_set_size(A,0,8);
+    if(err) goto cleanup;
+    if(A->nprocs!=1) { failed=0; goto cleanup; }
+    for(i=0;i<8;i+=2)
+    {
+        err=lis_matrix_set_value(LIS_INS_VALUE,i,i+1,(LIS_SCALAR)1.0,A);
+        if(err) goto cleanup;
+        err=lis_matrix_set_value(LIS_INS_VALUE,i+1,i,(LIS_SCALAR)1.0,A);
+        if(err) goto cleanup;
+    }
+    err=lis_matrix_set_type(A,LIS_MATRIX_CSR);
+    if(err) goto cleanup;
+    err=lis_matrix_assemble(A);
+    if(err) goto cleanup;
+
+    if(lis_vector_duplicate(A,&b) || lis_vector_duplicate(A,&x) ||
+       lis_vector_duplicate(A,&exact) || lis_vector_duplicate(A,&r))
+        goto cleanup;
+    for(i=0;i<8;i++) exact->value[i]=(LIS_SCALAR)(1.0+0.125*i);
+    err=lis_matvec(A,exact,b);
+    if(err) goto cleanup;
+    err=lis_vector_nrm2(b,&bn);
+    if(err || !(bn>0.0)) goto cleanup;
+    for(variant=0;variant<=1;variant++)
+    {
+        err=lis_solver_create(&solver);
+        if(err) goto cleanup;
+        snprintf(opts,sizeof(opts),
+            "-i fgmres -p ilut -scale none -print none "
+            "-iluc_drop 0 -iluc_rate 8 "
+            "-ilut_ras_domains 2 -ilut_ras_overlap 0 -ilut_schur 0 "
+            "-ilutp %d -ilutp_threshold 0.5 -ilutp_full 1 "
+            "-ilutp_full_limit 128",
+            (int)variant);
+        err=lis_solver_set_option(opts,solver);
+        if(err) goto cleanup;
+        err=lis_solver_set_matrix(A,solver);
+        if(err) goto cleanup;
+        err=lis_precon_create(solver,&pc);
+        if(variant==0)
+        {
+            /* Full fill may never be accepted with ILUTP disabled. */
+            if(err!=LIS_ERR_ILL_ARG)
+            {
+                fprintf(stderr,"RAS+ILUTP silently ignored -ilutp_full\n");
+                goto cleanup;
+            }
+            pc=NULL;
+            lis_solver_destroy(solver);solver=NULL;
+            continue;
+        }
+        if(err) { pc=NULL; goto cleanup; }
+        solver->precon=pc;
+        err=lis_psolve(solver,b,x);
+        if(err) goto cleanup;
+        err=lis_matvec(A,x,r);
+        if(err) goto cleanup;
+        err=lis_vector_axpy((LIS_SCALAR)-1.0,b,r);
+        if(err) goto cleanup;
+        err=lis_vector_nrm2(r,&rn);
+        if(err) goto cleanup;
+        for(i=0;i<8;i++)
+        {
+            LIS_REAL v=fabs(x->value[i]-exact->value[i]);
+            if(v>exerr) exerr=v;
+        }
+        if(!(rn/bn<1.0e-10 && exerr<1.0e-10))
+        {
+            fprintf(stderr,
+                "RAS+ILUTP pivoted local solve residual=%.6e xerr=%.6e\n",
+                (double)(rn/bn),(double)exerr);
+            goto cleanup;
+        }
+        printf("ILUT_RAS_LOCAL_ILUTP residual=%.9e xerr=%.9e PASSED\n",
+                (double)(rn/bn),(double)exerr);
+        solver->precon=NULL;
+        lis_precon_destroy(pc);pc=NULL;
+        lis_solver_destroy(solver);solver=NULL;
+    }
+    failed=0;
+cleanup:
+    if(pc)
+    {
+        if(solver) solver->precon=NULL;
+        lis_precon_destroy(pc);
+    }
+    if(solver) lis_solver_destroy(solver);
+    if(r) lis_vector_destroy(r);
+    if(exact) lis_vector_destroy(exact);
+    if(x) lis_vector_destroy(x);
+    if(b) lis_vector_destroy(b);
+    if(A) lis_matrix_destroy(A);
+#ifdef _OPENMP
+    omp_set_num_threads(original_threads);
+#endif
+    return failed;
+}
+
+/*
+ * Deterministic stabilized contact-KKT-like system:
+ * [ K  B^T ][u] = [f]
+ * [ B -0.1I][λ]   [g]
+ *
+ * K is an SPD spring chain, B enforces displacement differences.
+ * The negative multiplier block makes the matrix indefinite.
+ * This is an algebraic regression, NOT a full nonlinear contact FEA run.
+ */
+static int
+check_ilut_ras_contact_kkt(void)
+{
+    const LIS_INT nu=36,nlambda=12,n=48;
+    LIS_MATRIX A=NULL;
+    LIS_VECTOR b=NULL,x=NULL,u=NULL,r=NULL;
+    LIS_SOLVER solver=NULL;
+    LIS_INT err=0,i,q,iters=0,variant;
+    LIS_REAL bn=0.0,rn=0.0;
+    char opts[320];
+    int failed=1;
+
+    err=lis_matrix_create(LIS_COMM_WORLD,&A);
+    if(err) goto done;
+    err=lis_matrix_set_size(A,0,n);
+    if(err) goto done;
+    if(A->nprocs!=1) { failed=0; goto done; }
+    for(i=0;i<nu;i++)
+    {
+        err=lis_matrix_set_value(LIS_INS_VALUE,i,i,(LIS_SCALAR)4.0,A);
+        if(err) goto done;
+        if(i>0)
+        {
+            err=lis_matrix_set_value(LIS_INS_VALUE,i,i-1,
+                                     (LIS_SCALAR)-0.8,A);
+            if(err) goto done;
+        }
+        if(i+1<nu)
+        {
+            err=lis_matrix_set_value(LIS_INS_VALUE,i,i+1,
+                                     (LIS_SCALAR)-0.8,A);
+            if(err) goto done;
+        }
+    }
+    for(q=0;q<nlambda;q++)
+    {
+        LIS_INT l=nu+q,a=3*q,c=3*q+1;
+        err=lis_matrix_set_value(LIS_INS_VALUE,l,l,
+                                 (LIS_SCALAR)-0.1,A);
+        if(err) goto done;
+        err=lis_matrix_set_value(LIS_INS_VALUE,l,a,(LIS_SCALAR)1.0,A);
+        if(err) goto done;
+        err=lis_matrix_set_value(LIS_INS_VALUE,l,c,(LIS_SCALAR)-1.0,A);
+        if(err) goto done;
+        err=lis_matrix_set_value(LIS_INS_VALUE,a,l,(LIS_SCALAR)1.0,A);
+        if(err) goto done;
+        err=lis_matrix_set_value(LIS_INS_VALUE,c,l,(LIS_SCALAR)-1.0,A);
+        if(err) goto done;
+    }
+    err=lis_matrix_set_type(A,LIS_MATRIX_CSR);
+    if(err) goto done;
+    err=lis_matrix_assemble(A);
+    if(err) goto done;
+    if(A->nprocs!=1) { failed=0; goto done; }
+    if(lis_vector_duplicate(A,&b) ||
+       lis_vector_duplicate(A,&x) ||
+       lis_vector_duplicate(A,&u) ||
+       lis_vector_duplicate(A,&r)) goto done;
+    lis_vector_set_all((LIS_SCALAR)1.0,u);
+    err=lis_matvec(A,u,b);
+    if(err) goto done;
+    err=lis_vector_nrm2(b,&bn);
+    if(err || bn<=0.0) goto done;
+    for(variant=0;variant<2;variant++)
+    {
+        solver=NULL;
+        err=lis_solver_create(&solver);
+        if(err) goto done;
+        snprintf(opts,sizeof(opts),
+            "-i fgmres -p ilut -scale none -print none "
+            "-tol 1e-8 -maxiter 120 -restart 30 "
+            "-iluc_drop 0.005 -iluc_rate 8 -ilu_pivot_tol 1e-9 %s",
+            variant ? "-ilut_ras_domains 4 -ilut_ras_overlap 1 -ilut_schur 1" : "");
+        err=lis_solver_set_option(opts,solver);
+        if(err) goto done;
+        lis_vector_set_all((LIS_SCALAR)0.0,x);
+        err=lis_solve(A,b,x,solver);
+        if(err) goto done;
+        err=lis_matvec(A,x,r);
+        if(err) goto done;
+        err=lis_vector_axpy((LIS_SCALAR)-1.0,b,r);
+        if(err) goto done;
+        err=lis_vector_nrm2(r,&rn);
+        if(err) goto done;
+        err=lis_solver_get_iter(solver,&iters);
+        if(err || rn/bn>1e-7 || iters<1)
+        {
+            fprintf(stderr,"ILUT_RAS_CONTACT_KKT variant=%d iter=%d residual=%.3e\n",
+                    variant,(int)iters,(double)(rn/bn));
+            goto done;
+        }
+        printf("ILUT_RAS_CONTACT_KKT variant=%d iter=%d residual=%.6e\n",
+               variant,(int)iters,(double)(rn/bn));
+        lis_solver_destroy(solver); solver=NULL;
+    }
+    failed=0;
+done:
+    if(failed)
+        fprintf(stderr,"ILUT_RAS_CONTACT_KKT_FAILED rc=%d\n",(int)err);
+    if(solver) lis_solver_destroy(solver);
+    if(r) lis_vector_destroy(r);
+    if(u) lis_vector_destroy(u);
+    if(x) lis_vector_destroy(x);
+    if(b) lis_vector_destroy(b);
+    if(A) lis_matrix_destroy(A);
+    return failed;
+}
+
+
+/*
+ * Negative regression: the Schur approximation MUST reject a weak
+ * interior diagonal instead of quietly treating diag(A_II)^-1 as zero.
+ * Row 1 is interior for the 2-domain partition of this 8x8 system.
+ */
+static int
+check_ilut_ras_unsafe_interior(void)
+{
+    LIS_MATRIX A=NULL;
+    LIS_SOLVER solver=NULL;
+    LIS_PRECON pc=NULL;
+    LIS_INT i,err=0;
+    int failed=1;
+
+    err=lis_matrix_create(LIS_COMM_WORLD,&A);
+    if(err) goto done;
+    err=lis_matrix_set_size(A,0,8);
+    if(err) goto done;
+    if(A->nprocs!=1) { failed=0; goto done; }
+    for(i=0;i<8;i++)
+    {
+        err=lis_matrix_set_value(LIS_INS_VALUE,i,i,
+             i==1 ? (LIS_SCALAR)1.0e-20 : (LIS_SCALAR)3.0,A);
+        if(err) goto done;
+        if(i>0)
+        {
+            err=lis_matrix_set_value(LIS_INS_VALUE,i,i-1,
+                                     (LIS_SCALAR)-0.4,A);
+            if(err) goto done;
+        }
+        if(i<7)
+        {
+            err=lis_matrix_set_value(LIS_INS_VALUE,i,i+1,
+                                     (LIS_SCALAR)-0.4,A);
+            if(err) goto done;
+        }
+    }
+    err=lis_matrix_set_type(A,LIS_MATRIX_CSR);
+    if(err) goto done;
+    err=lis_matrix_assemble(A);
+    if(err) goto done;
+    err=lis_solver_create(&solver);
+    if(err) goto done;
+    err=lis_solver_set_option(
+        "-i fgmres -p ilut -scale none -print none "
+        "-iluc_drop 0 -iluc_rate 8 -ilu_pivot_tol 1e-9 "
+        "-ilut_ras_domains 2 -ilut_ras_overlap 1 -ilut_schur 1",
+        solver);
+    if(err) goto done;
+    err=lis_solver_set_matrix(A,solver);
+    if(err) goto done;
+    err=lis_precon_create(solver,&pc);
+    if(err==LIS_ERR_ILL_ARG)
+    {
+        pc=NULL; /* failing constructor releases its partial preconditioner */
+        printf("ILUT_RAS_WEAK_DIAG_REJECTED\n");
+        failed=0;
+        goto done;
+    }
+    fprintf(stderr,"Schur accepted weak interior pivot; rc=%ld\n",(long)err);
+done:
+    if(pc) lis_precon_destroy(pc);
+    if(solver) lis_solver_destroy(solver);
+    if(A) lis_matrix_destroy(A);
+    return failed;
+}
 
 
 /*
@@ -1226,6 +1777,11 @@ main(
 	failed |= check_ilut_ordering(A);
 	failed |= check_ilut_contact_kkt();
 	failed |= check_ilut_kkt_unit_contrast();
+	failed |= check_ilut_ras_schur(A);
+	failed |= check_ilut_ras_exact_interface();
+	failed |= check_ilut_ras_local_ilutp();
+	failed |= check_ilut_ras_unsafe_interior();
+	failed |= check_ilut_ras_contact_kkt();
 
 	failed |=
 		run_mode(
