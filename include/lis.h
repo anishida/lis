@@ -1203,6 +1203,11 @@ struct LIS_ESOLVER_STRUCT
         LIS_INT krylov_allow_semidefinite;
         LIS_INT krylov_hard_locking;
         char krylov_which[3];
+        /* Diagnostic bits from the last inverse recovery invocation:
+         * 1 = base inner solve, 2 = +delta inner solve,
+         * 4 = -delta inner solve, 8 = both perturbations exhausted.
+         * A non-converged outer iteration alone cannot set bit 8. */
+        LIS_INT inverse_recovery_shift_mask;
 };
 typedef struct LIS_ESOLVER_STRUCT *LIS_ESOLVER;
 

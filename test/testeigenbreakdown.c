@@ -100,11 +100,12 @@ create_diagonal_matrix3(
 
 
 static LIS_INT
-check_standard_breakdown(
+check_standard_failure_status(
     const char *name,
     const char *options,
     LIS_MATRIX A,
-    LIS_SCALAR initial_value)
+    LIS_SCALAR initial_value,
+    int allow_maxiter)
 {
     LIS_INT err;
     LIS_INT api;
@@ -163,20 +164,34 @@ check_standard_breakdown(
     if( err )
         goto cleanup;
 
-    if( status!=LIS_BREAKDOWN )
+    if( status!=LIS_BREAKDOWN &&
+        !(allow_maxiter && status==LIS_MAXITER) )
     {
         printf(
-            "%s: status %d, expected LIS_BREAKDOWN (%d)\n",
+            "%s: status %d, expected LIS_BREAKDOWN%s\n",
             name,
             (int)status,
-            (int)LIS_BREAKDOWN);
+            allow_maxiter ? " or LIS_MAXITER" : "");
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+
+    /* MAXITER alone can come from the *outer* inverse iteration. The
+     * exhaustion case must actually visit the base, +delta and -delta
+     * inner solves; otherwise this regression does not exercise recovery. */
+    if( allow_maxiter && esolver->inverse_recovery_shift_mask != 15 )
+    {
+        printf("%s: recovery shifts not exhausted (mask=%d, expected 15)\n",
+               name, (int)esolver->inverse_recovery_shift_mask);
         err = LIS_FAILS;
         goto cleanup;
     }
 
     printf(
-        "PASS: %s -> LIS_BREAKDOWN\n",
-        name);
+        "PASS: %s -> %s (recovery shift mask=%d)\n",
+        name,
+        status==LIS_MAXITER ? "LIS_MAXITER" : "LIS_BREAKDOWN",
+        (int)esolver->inverse_recovery_shift_mask);
 
     err = LIS_SUCCESS;
 
@@ -188,6 +203,32 @@ cleanup:
         lis_vector_destroy(x);
 
     return err;
+}
+
+
+/* Ordinary breakdown tests continue to require LIS_BREAKDOWN exactly. */
+static LIS_INT
+check_standard_breakdown(
+    const char *name,
+    const char *options,
+    LIS_MATRIX A,
+    LIS_SCALAR initial_value)
+{
+    return check_standard_failure_status(name, options, A,
+                                         initial_value, 0);
+}
+
+/* An inconsistent system at an exact singular shift can end with MAXITER
+ * instead of a detected zero pivot. Neither is a successful recovery. */
+static LIS_INT
+check_standard_recovery_exhaustion(
+    const char *name,
+    const char *options,
+    LIS_MATRIX A,
+    LIS_SCALAR initial_value)
+{
+    return check_standard_failure_status(name, options, A,
+                                         initial_value, 1);
 }
 
 
@@ -1604,6 +1645,58 @@ cleanup:
 
 
 
+/* Negative control: outer MAXITER must NOT count as exhausted recovery.
+ * This nonsingular inverse solve needs more than one outer iteration to
+ * converge, but the first inner solve succeeds at the base shift. */
+static LIS_INT
+test_inverse_outer_maxiter_without_recovery(void)
+{
+    LIS_MATRIX A = NULL;
+    LIS_VECTOR x = NULL;
+    LIS_ESOLVER esolver = NULL;
+    LIS_SCALAR evalue = 0.0;
+    LIS_INT err, api, status;
+
+    err = create_diagonal_matrix(&A, 2.0, 3.0);
+    if( err ) goto cleanup;
+    err = lis_vector_duplicate(A, &x);
+    if( err ) goto cleanup;
+    err = lis_vector_set_all(1.0, x);
+    if( err ) goto cleanup;
+    err = lis_esolver_create(&esolver);
+    if( err ) goto cleanup;
+    err = lis_esolver_set_option(
+        "-e ii -shift 1.0 -emaxiter 1 -etol 1.0e-16", esolver);
+    if( err ) goto cleanup;
+
+    api = lis_esolve(A, x, &evalue, esolver);
+    if( api != LIS_SUCCESS && api != LIS_MAXITER )
+    {
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+    err = lis_esolver_get_status(esolver, &status);
+    if( err ) goto cleanup;
+    if( status != LIS_MAXITER ||
+        esolver->inverse_recovery_shift_mask != 1 )
+    {
+        printf("Inverse outer MAXITER control: status=%d shift mask=%d "
+               "(expected MAXITER, base shift only)\n",
+               (int)status, (int)esolver->inverse_recovery_shift_mask);
+        err = LIS_FAILS;
+        goto cleanup;
+    }
+    printf("PASS: inverse outer MAXITER without recovery (mask=1)\n");
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( esolver ) lis_esolver_destroy(esolver);
+    if( x ) lis_vector_destroy(x);
+    if( A ) lis_matrix_destroy(A);
+    return err;
+}
+
+
 static LIS_INT
 test_inverse_shift_recovery_exhaustion(void)
 {
@@ -1619,8 +1712,9 @@ test_inverse_shift_recovery_exhaustion(void)
      * Construct one exact singular mode for each bounded recovery
      * shift: sigma, sigma+delta and sigma-delta.  With an all-ones
      * right-hand side every trial is inconsistent in at least one
-     * component, so the finite recovery sequence must exhaust and
-     * propagate a breakdown rather than looping or reporting success.
+     * component, so the finite recovery sequence must exhaust rather
+     * than looping or reporting success. The inner solve may report
+     * BREAKDOWN or MAXITER depending on floating-point arithmetic.
      */
     delta = lis_esolver_shift_perturbation(shift);
 
@@ -1639,7 +1733,7 @@ test_inverse_shift_recovery_exhaustion(void)
     if( err )
         goto cleanup;
 
-    err = check_standard_breakdown(
+    err = check_standard_recovery_exhaustion(
         "Inverse bounded-shift recovery exhaustion",
         "-e ii -shift 1.0 -emaxiter 2 -etol 1.0e-12",
         A,
@@ -8103,6 +8197,14 @@ main(
         return 1;
     }
 #endif
+
+    err = test_inverse_outer_maxiter_without_recovery();
+    if( err )
+    {
+        printf("LIS_EIGEN_RECOVERY OUTER_MAXITER CONTROL FAILED\n");
+        lis_finalize();
+        return 1;
+    }
 
     err = test_inverse_shift_recovery_exhaustion();
     if( err )

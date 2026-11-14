@@ -131,7 +131,8 @@ lis_eii_solve_with_recovery(
         LIS_PRECON *precon,
         LIS_SCALAR base_shift,
         LIS_REAL acceptance_tol,
-        LIS_SCALAR *used_shift)
+        LIS_SCALAR *used_shift,
+        LIS_INT *tried_shifts)
 {
         LIS_INT err,status,attempt;
         LIS_SCALAR perturbation;
@@ -140,6 +141,9 @@ lis_eii_solve_with_recovery(
 
         *used_shift = base_shift;
 
+        /* Reset per recovery call so outer-iteration retries cannot
+         * accidentally combine unrelated shift attempts. */
+        *tried_shifts = 1;
         status = lis_esolver_inner_solve_attempt(
                 A,b,x,solver,*precon);
         if( status==LIS_SUCCESS )
@@ -212,6 +216,7 @@ lis_eii_solve_with_recovery(
 
                 lis_vector_set_all(0.0,x);
 
+                *tried_shifts |= attempt==0 ? 2 : 4;
                 status =
                         lis_esolver_inner_solve_attempt(
                                 A,b,x,solver,*precon);
@@ -245,6 +250,8 @@ lis_eii_solve_with_recovery(
                 }
         }
 
+        /* Both perturbed inner solves terminated with retryable failure. */
+        *tried_shifts |= 8;
         return status;
 }
 
@@ -429,6 +436,7 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
   comm = LIS_COMM_WORLD;
 
   emaxiter = esolver->options[LIS_EOPTIONS_MAXITER];
+  esolver->inverse_recovery_shift_mask = 0;
   tol = esolver->params[LIS_EPARAMS_RESID - LIS_EOPTIONS_LEN];
 #ifdef _COMPLEX
   oshift = esolver->params[LIS_EPARAMS_SHIFT - LIS_EOPTIONS_LEN] + esolver->params[LIS_EPARAMS_SHIFT_IM - LIS_EOPTIONS_LEN] * _Complex_I;
@@ -509,7 +517,8 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
       solve_shift = oshift;
       err = lis_eii_solve_with_recovery(
               A, v, y, solver, &precon,
-              oshift, tol, &solve_shift);
+              oshift, tol, &solve_shift,
+              &esolver->inverse_recovery_shift_mask);
       if( err )
 	{
 	  esolver->retcode = err;
