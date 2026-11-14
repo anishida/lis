@@ -10,6 +10,11 @@ on:
       - develop
   workflow_dispatch:
 
+# CI reproducibility: on 2026-11-14 the three unchanged eigensolver
+# regressions passed on Ubuntu 24.04/GCC 13.3 and failed on Ubuntu
+# 26.04/GCC 15.2 for BOTH upstream develop and PR #229.
+# Keep the full unmodified tests on the validated image while GCC 15
+# compatibility is investigated separately; do not silently skip tests.
 permissions:
   contents: read
 
@@ -20,7 +25,7 @@ concurrency:
 jobs:
   generated-makefiles:
     name: Build from tracked Makefile.in (no autoreconf)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -44,9 +49,38 @@ jobs:
           make -C include install-data "DESTDIR=$RUNNER_TEMP/lis-staging"
           find "$RUNNER_TEMP/lis-staging" -type f -name lis_snapshot.h | grep -q .
 
+      - name: Verify tracked test targets and distribution (no autoreconf)
+        run: |
+          set -euo pipefail
+          test -x test/testilutp
+          test -x test/benchilutp
+          ./test/testilutp
+          make distdir
+          python3 - <<'PY'
+          from pathlib import Path
+          dirs=[p for p in Path('.').iterdir()
+                if p.is_dir() and p.name.startswith('lis-')]
+          assert len(dirs)==1, dirs
+          root=dirs[0]
+          required=[
+              'src/precon/lis_precon_ilutp.inc',
+              'test/testilutp.c',
+              'test/benchilutp.c',
+              'test/benchilutp_rhs_100.mtx',
+              'test/gen_ilutp_fullfill_case.py',
+              'tools/run_native_ilutp_contact.py',
+              'tools/test_run_native_ilutp_contact.py',
+              'doc/ilutp.md',
+              'doc/ilutp_contact_ccx_v2_benchmarks.md',
+          ]
+          missing=[p for p in required if not (root/p).is_file()]
+          assert not missing, missing
+          print('LIS_NATIVE_ILUTP_DIST PASS: all release sources and tools present')
+          PY
+
   linux:
     name: Linux GCC (${{ matrix.mode }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -82,6 +116,27 @@ jobs:
 
       - name: Run Automake test suite
         run: make -j2 check
+
+      - name: Smoke-test native ILUTP Matrix Market comparison
+        if: matrix.mode == 'serial'
+        run: |
+          set -euo pipefail
+          ./test/benchilutp test/testmat2.mtx test/benchilutp_rhs_100.mtx \
+            --maxiter 180 --restart 30 --drop 0.005 --rate 8 \
+            --rcm 1 --row-scale 1 --csv benchilutp-smoke.csv
+          cat benchilutp-smoke.csv
+          python3 - <<'PY'
+          import csv
+          from pathlib import Path
+          rows = list(csv.DictReader(Path("benchilutp-smoke.csv").open()))
+          assert len(rows) == 3, rows
+          assert [r["variant"] for r in rows] == [
+              "legacy_ilut", "ilutp_0p5", "ilutp_1p0"]
+          for r in rows:
+              assert r["status"] == "converged", r
+              assert int(r["iterations"]) >= 1
+              assert float(r["physical_relres"]) < 1e-5, r
+          PY
 
       - name: Smoke-test fill-reporting ILUT Matrix Market benchmark
         if: matrix.mode == 'half'
@@ -224,7 +279,7 @@ jobs:
 
   linux-longlong:
     name: Linux GCC (64-bit LIS_INT RCO overflow)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -261,7 +316,7 @@ jobs:
 
   fgcrodr-maxiter-lsan:
     name: FGCRO-DR MAXITER leak red/green proof
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
@@ -337,7 +392,7 @@ jobs:
 
   fgcrodr-sanitizer:
     name: FGCRO-DR AddressSanitizer and LeakSanitizer
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
       ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
@@ -377,7 +432,7 @@ jobs:
 
   linux-mpi:
     name: Linux GCC (MPI, 2 ranks)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       OMP_NUM_THREADS: '1'
@@ -497,7 +552,7 @@ jobs:
 
   native-oom:
     name: Native OOM regressions (serial)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -525,7 +580,7 @@ jobs:
 
   native-oom-mpi:
     name: Native OOM regressions (MPI)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
