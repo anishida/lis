@@ -69,6 +69,9 @@
 /* Fixed-pattern numerical refactorization is shared with ILU(k). */
 LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon);
 
+/* Isolated opt-in ILUTP implementation, compiled with the ILUT module. */
+#include "lis_precon_ilutp.inc"
+
 static void
 lis_precon_release_ilut_numeric_values(
 	LIS_MATRIX_ILU A)
@@ -235,6 +238,11 @@ LIS_INT lis_precon_update_ilut_frozen(
      * Keep the first implementation conservative: fall back to the normal
      * sequence rebuild instead of reconstructing those arrays here.
      */
+    /* Frozen ILUT does not transport the ILUTP column permutation. */
+    if(solver->ilutp_enabled || precon->ilutp_colperm ||
+       solver->ilut_equil || precon->ilut_col_scale || precon->ilut_perm)
+        return LIS_ERR_NOT_IMPLEMENTED;
+
     if( solver->precon_half_mode!=LIS_PRECON_HALF_OFF ||
         precon->half!=NULL )
     {
@@ -305,10 +313,12 @@ lis_ilut_ordered_create(LIS_SOLVER solver, LIS_PRECON precon)
     LIS_INT *inv=NULL,*degree=NULL,*graphptr=NULL,*cursor=NULL;
     LIS_INT *edges=NULL,*queue=NULL,*seen=NULL;
     LIS_INT head,tail,seed,vertex,adj,ndx;
-    LIS_REAL largest,absv,scale;
+    LIS_REAL largest,absv,scale,scaled;
+    LIS_SCALAR entry;
     size_t cap;
     LIS_INT *perm=NULL;
-    LIS_SCALAR *weights=NULL;
+    LIS_SCALAR *weights=NULL,*colweights=NULL;
+    LIS_REAL *colmax=NULL;
 
     if(A->nprocs!=1 || A->is!=0 || A->n!=A->gn ||
        A->matrix_type!=LIS_MATRIX_CSR ||
@@ -316,7 +326,7 @@ lis_ilut_ordered_create(LIS_SOLVER solver, LIS_PRECON precon)
        solver->options[LIS_OPTIONS_PRECISION]!=LIS_PRECISION_DOUBLE)
     {
         LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-            "ILUT RCM/row scaling supports serial CSR in double precision");
+            "ILUT RCM, row scaling, Equil and ILUTP require serial real-double CSR");
         return LIS_ERR_NOT_IMPLEMENTED;
     }
     /*
@@ -338,6 +348,16 @@ lis_ilut_ordered_create(LIS_SOLVER solver, LIS_PRECON precon)
     inv=(LIS_INT *)lis_malloc((size_t)n*sizeof(LIS_INT),"ILUT inverse permutation");
     weights=(LIS_SCALAR *)lis_malloc((size_t)n*sizeof(LIS_SCALAR),"ILUT row scales");
     if(!perm || !inv || !weights) { err=LIS_OUT_OF_MEMORY; goto cleanup; }
+    if(solver->ilut_equil)
+    {
+        colmax=(LIS_REAL *)lis_malloc((size_t)n*sizeof(LIS_REAL),
+                                      "ILUT Equil column maxima");
+        colweights=(LIS_SCALAR *)lis_malloc((size_t)n*sizeof(LIS_SCALAR),
+                                            "ILUT Equil column weights");
+        if(!colmax || !colweights) { err=LIS_OUT_OF_MEMORY; goto cleanup; }
+        memset(colmax,0,(size_t)n*sizeof(LIS_REAL));
+    }
+
 
     if(solver->ilut_rcm)
     {
@@ -441,17 +461,54 @@ lis_ilut_ordered_create(LIS_SOLVER solver, LIS_PRECON precon)
             if(absv>largest) largest=absv;
         }
         scale=1.0;
-        if(solver->ilut_row_scale && largest>0.0)
+        if((solver->ilut_row_scale || solver->ilut_equil) && largest>0.0)
         {
             scale=1.0/largest;
             if(!isfinite((double)scale) || scale<=0.0) scale=1.0;
         }
         weights[i]=(LIS_SCALAR)scale;
+    }
+
+    if(solver->ilut_equil)
+    {
+        /* A second sparse pass obtains column maxima after row scaling. */
+        for(i=0;i<n;i++)
+        {
+            old=perm[i];
+            for(k=A->ptr[old];k<A->ptr[old+1];k++)
+            {
+                other=A->index[k];
+                if(other<0 || other>=n) { err=LIS_ERR_ILL_ARG; goto cleanup; }
+                scaled=fabs(weights[i]*A->value[k]);
+                if(!isfinite((double)scaled))
+                { err=LIS_ERR_ILL_ARG; goto cleanup; }
+                if(scaled>colmax[inv[other]]) colmax[inv[other]]=scaled;
+            }
+        }
+        for(i=0;i<n;i++)
+        {
+            scale=1.0;
+            if(colmax[i]>0.0)
+            {
+                scale=1.0/colmax[i];
+                if(!isfinite((double)scale) || scale<=0.0) scale=1.0;
+            }
+            colweights[i]=(LIS_SCALAR)scale;
+        }
+    }
+
+    for(i=0;i<n;i++)
+    {
+        old=perm[i];
         for(k=A->ptr[old];k<A->ptr[old+1];k++)
         {
             other=A->index[k];
-            err=lis_matrix_set_value(LIS_INS_VALUE,i,inv[other],
-                                     weights[i]*A->value[k],P);
+            if(other<0 || other>=n) { err=LIS_ERR_ILL_ARG; goto cleanup; }
+            entry=weights[i]*A->value[k];
+            if(colweights) entry*=colweights[inv[other]];
+            if(!isfinite((double)entry))
+            { err=LIS_ERR_ILL_ARG; goto cleanup; }
+            err=lis_matrix_set_value(LIS_INS_VALUE,i,inv[other],entry,P);
             if(err) goto cleanup;
         }
     }
@@ -459,11 +516,14 @@ lis_ilut_ordered_create(LIS_SOLVER solver, LIS_PRECON precon)
     if(err) goto cleanup;
 
     solver->A=P;
-    err=lis_precon_create_ilut_csr(solver,precon);
+    err=solver->ilutp_enabled ?
+        lis_precon_create_ilutp_csr(solver,precon) :
+        lis_precon_create_ilut_csr(solver,precon);
     solver->A=A;
     if(err) goto cleanup;
     precon->ilut_perm=perm; perm=NULL;
     precon->ilut_row_scale=weights; weights=NULL;
+    precon->ilut_col_scale=colweights; colweights=NULL;
     err=lis_vector_duplicate(A,&precon->ilut_work_b);
     if(err) goto cleanup;
     err=lis_vector_duplicate(A,&precon->ilut_work_x);
@@ -474,6 +534,8 @@ cleanup:
     lis_free(perm);
     lis_free(inv);
     lis_free(weights);
+    lis_free(colweights);
+    lis_free(colmax);
     lis_free(degree);
     lis_free(graphptr);
     lis_free(cursor);
@@ -528,18 +590,25 @@ LIS_INT lis_precon_create_ilut(LIS_SOLVER solver, LIS_PRECON precon)
 
 	LIS_DEBUG_FUNC_IN;
 
-	if((solver->ilut_rcm || solver->ilut_row_scale) &&
+	if(solver->ilutp_full && !solver->ilutp_enabled)
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG, "-ilutp_full requires -ilutp 1");
+		return LIS_ERR_ILL_ARG;
+	}
+	if((solver->ilut_rcm || solver->ilut_row_scale ||
+        solver->ilutp_enabled || solver->ilut_equil) &&
 	   solver->A->matrix_type!=LIS_MATRIX_CSR)
 	{
 		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-		    "ILUT RCM and row scaling require serial CSR input");
+		    "ILUT RCM, row scaling, Equil and ILUTP require serial CSR input");
 		return LIS_ERR_NOT_IMPLEMENTED;
 	}
 
 	switch( solver->A->matrix_type )
 	{
 	case LIS_MATRIX_CSR:
-		err = (solver->ilut_rcm || solver->ilut_row_scale) ?
+		err = (solver->ilut_rcm || solver->ilut_row_scale ||
+		       solver->ilutp_enabled || solver->ilut_equil) ?
 			lis_ilut_ordered_create(solver,precon) :
 			lis_precon_create_ilut_csr(solver,precon);
 
@@ -1396,14 +1465,35 @@ lis_ilut_ordered_apply(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X,
                        LIS_INT adjoint)
 {
     LIS_PRECON pc=solver->precon;
-    LIS_INT i,n=solver->A->n,err;
+    LIS_INT i,j,n=solver->A->n,err;
+    LIS_SCALAR colscale;
     LIS_VECTOR rhs=pc->ilut_work_b,sol=pc->ilut_work_x;
     if(!rhs || !sol || !pc->ilut_perm || !pc->ilut_row_scale)
         return LIS_ERR_ILL_ARG;
+#ifdef _OPENMP
+    /* Changing OMP_NUM_THREADS after ILUTP construction must not silently
+     * apply a permutation through the block-parallel ILUT kernels. */
+    if(pc->ilutp_colperm && omp_get_max_threads()!=1)
+    {
+        LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+            "ILUTP apply requires one active OpenMP thread");
+        return LIS_ERR_NOT_IMPLEMENTED;
+    }
+#endif
+
+    /*
+     * Factor R P A P^T C Q = L U, where C is in pre-pivot coordinates.
+     * Forward: P^T C Q (LU)^-1 R P.
+     * Adjoint: P^T R^H (LU)^-H Q^T C^H P.
+     */
     for(i=0;i<n;i++)
     {
-        rhs->value[i]=B->value[pc->ilut_perm[i]] *
-            (adjoint ? (LIS_SCALAR)1.0 : pc->ilut_row_scale[i]);
+        j=(adjoint && pc->ilutp_colperm) ?
+            pc->ilutp_colperm[i] : i;
+        colscale=pc->ilut_col_scale ?
+            pc->ilut_col_scale[j] : (LIS_SCALAR)1.0;
+        rhs->value[i]=B->value[pc->ilut_perm[j]] *
+            (adjoint ? colscale : pc->ilut_row_scale[i]);
     }
     pc->ilut_apply_active=1;
     err=adjoint ? lis_psolveh_ilut_csr(solver,rhs,sol) :
@@ -1412,9 +1502,13 @@ lis_ilut_ordered_apply(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X,
     if(err) return err;
     for(i=0;i<n;i++)
     {
-        X->value[pc->ilut_perm[i]] =
+        j=(!adjoint && pc->ilutp_colperm) ?
+            pc->ilutp_colperm[i] : i;
+        colscale=pc->ilut_col_scale ?
+            pc->ilut_col_scale[j] : (LIS_SCALAR)1.0;
+        X->value[pc->ilut_perm[j]] =
             sol->value[i] *
-            (adjoint ? pc->ilut_row_scale[i] : (LIS_SCALAR)1.0);
+            (adjoint ? pc->ilut_row_scale[i] : colscale);
     }
     return LIS_SUCCESS;
 }
