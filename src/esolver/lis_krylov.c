@@ -1334,7 +1334,11 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
                 restart_basis(&s, m, keep);
                 ++stats->restarts;
                 m = keep;
-                previous = keep;
+                /* Multi-direction restarts near repeated roots can
+                 * accumulate roundoff in the retained Ritz projection.
+                 * Refresh it from the actual operator images in this mode;
+                 * preserve the legacy scalar restart path otherwise. */
+                previous = restart_directions > 1 ? 0 : keep;
                 /* Original first restart direction is unmodified. */
                 for (i = 0; i < 4 && m < ncv; ++i) {
                     int result;

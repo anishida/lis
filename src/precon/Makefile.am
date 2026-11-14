@@ -6,6 +6,7 @@ lis_precon_hybrid.c \
 lis_precon_iluc.c \
 lis_precon_iluk.c \
 lis_precon_ilut.c \
+lis_precon_ilut_ras.c \
 lis_precon_is.c \
 lis_precon_jacobi.c \
 lis_precon_mfamg.c \
@@ -29,4 +30,4 @@ LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) \
 	$(AM_CFLAGS) $(CFLAGS)
 
 # Included by lis_precon_mfamg.c; distribute with release archives.
-EXTRA_DIST = lis_mfamg_star_schur.inc
+EXTRA_DIST = lis_mfamg_star_schur.inc lis_precon_ilutp.inc

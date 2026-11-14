@@ -1,0 +1,236 @@
+name: Native LIS ILUTP complete-fill regression
+
+on:
+  pull_request:
+    branches:
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-fullfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native LIS build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+      - name: Configure and build native LIS
+        run: |
+          autoreconf -fiv
+          ./configure --enable-test --disable-fortran --disable-f90 \
+            --disable-saamg --disable-mpi
+          make -j2
+      - name: Verify legacy USER and Hybrid capability gates
+        run: |
+          set -euo pipefail
+          ./test/testuserprecon
+      - name: Native ILUTP regression and physical residual
+        run: |
+          set -euo pipefail
+          ./test/testilutp 2>&1 | tee native-ilutp-fullfill.log
+          grep -q '^ILUTP_FULL n=32 ' native-ilutp-fullfill.log
+          grep -q '^testilutp: PASS' native-ilutp-fullfill.log
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          text = Path('native-ilutp-fullfill.log').read_text()
+          m = re.search(r'ILUTP_FULL n=32 weak_relres=([0-9.eE+-]+) full_relres=([0-9.eE+-]+)', text)
+          assert m, text
+          weak, full = map(float, m.groups())
+          assert 0 <= weak < float('inf') and 0 <= full < 1e-11, (weak, full)
+          counts = re.search(r'weak_nnz=([0-9]+) factor_nnz=([0-9]+)', text)
+          assert counts, text
+          limited_nnz, full_nnz = map(int, counts.groups())
+          assert 0 <= limited_nnz < full_nnz <= 5000, (limited_nnz, full_nnz)
+          PY
+      - name: Reject fractional and overflowing LIS_INT CLI arguments
+        run: |
+          set -euo pipefail
+          for bad in "--maxiter 1e20" "--restart 1.5" "--rcm 2" \
+                     "--row-scale -1" "--full-limit 9223372036854775808"; do
+            if ./test/benchilutp test/testmat2.mtx test/benchilutp_rhs_100.mtx $bad \
+               >/dev/null 2>&1; then
+              echo "Invalid integer argument was accepted: $bad" >&2
+              exit 1
+            fi
+          done
+      - name: Synthetic 60265 DOF benchmark and bounded factor fill
+        run: |
+          set -euo pipefail
+          python3 test/gen_ilutp_fullfill_case.py --n 60265 \
+            --matrix "$RUNNER_TEMP/native-A.mtx" \
+            --rhs "$RUNNER_TEMP/native-b.mtx"
+          ./test/benchilutp "$RUNNER_TEMP/native-A.mtx" "$RUNNER_TEMP/native-b.mtx" \
+            --maxiter 80 --restart 20 --drop 0.05 --rate 1 \
+            --rcm 0 --row-scale 1 --full 1 --full-limit 20000000 \
+            --csv native-fullfill-60265.csv
+          cat native-fullfill-60265.csv
+          ./test/benchilutp "$RUNNER_TEMP/native-A.mtx" "$RUNNER_TEMP/native-b.mtx" \
+            --full 1 --only-full 1 --full-limit 10000 \
+            --maxiter 40 --restart 20 --rcm 0 --row-scale 1 \
+            --csv native-fullfill-limit.csv
+          cat native-fullfill-limit.csv
+          python3 - <<'PY'
+          import csv
+          from pathlib import Path
+          rows = list(csv.DictReader(Path('native-fullfill-60265.csv').open()))
+          assert [r['variant'] for r in rows] == [
+              'legacy_ilut', 'ilutp_0p5', 'ilutp_1p0', 'ilutp_full'], rows
+          full = rows[-1]
+          assert all(r['status'] == 'converged' for r in rows), rows
+          assert int(full['iterations']) == 1, full
+          assert int(full['moved_columns']) > 0, full
+          assert int(full['nnz_L']) + int(full['nnz_U']) > (
+              int(rows[2]['nnz_L']) + int(rows[2]['nnz_U'])), rows
+          assert float(full['physical_relres']) < 1e-10, full
+          assert int(full['api_error']) == 0 and int(full['solver_status']) == 0, full
+          limit = list(csv.DictReader(Path('native-fullfill-limit.csv').open()))
+          assert len(limit) == 1 and limit[0]['variant'] == 'ilutp_full', limit
+          assert limit[0]['status'] == 'setup_failed' and int(limit[0]['api_error']) != 0, limit
+          print('LIS_NATIVE_FULLFILL_60265 PASS synthetic, residual, limit')
+          PY
+          if ./test/benchilutp "$RUNNER_TEMP/native-A.mtx" \
+            "$RUNNER_TEMP/native-b.mtx" --full-limit 1.5 >/dev/null 2>&1; then
+            echo 'Malformed fill limit was accepted' >&2
+            exit 1
+          fi
+      - name: Audit synthetic large case with original-system acceptance and memory limits
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tools -p test_run_native_ilutp_contact.py -v
+          python3 tools/run_native_ilutp_contact.py --bench ./test/benchilutp \
+            --case synthetic-60265 "$RUNNER_TEMP/native-A.mtx" "$RUNNER_TEMP/native-b.mtx" \
+            --report "$RUNNER_TEMP/native-audit.json" \
+            --csv "$RUNNER_TEMP/native-audit.csv" \
+            --full-limit 20000000 --maxiter 80 --restart 20 \
+            --rcm 0 --row-scale 1 --rtol 1e-6 --accept-residual 1e-10 \
+            --max-rss-mib 2048 --max-vmem-mib 4096 --timeout 120
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path(__import__('os').environ['RUNNER_TEMP'], 'native-audit.json').read_text())
+          assert data['accepted'] and len(data['cases']) == 1, data
+          case = data['cases'][0]
+          assert case['sha256_before'] == case['sha256_after'], case
+          assert case['metrics']['physical_relres'] < 1e-10, case
+          assert case['metrics']['peak_rss_kib'] > 0, case
+          assert case['metrics']['nnz_L'] + case['metrics']['nnz_U'] > 0, case
+          print('LIS_NATIVE_CONTACT_AUDIT PASS original A/b, physical residual, SHA256, RSS')
+          PY
+          if python3 tools/run_native_ilutp_contact.py --bench ./test/benchilutp \
+            --case insufficient-fill "$RUNNER_TEMP/native-A.mtx" "$RUNNER_TEMP/native-b.mtx" \
+            --report "$RUNNER_TEMP/native-budget-fail.json" \
+            --full-limit 10000 --maxiter 80 --restart 20 --rcm 0 --timeout 120 ; then
+            echo 'Insufficient fill budget unexpectedly accepted' >&2
+            exit 1
+          fi
+          if python3 tools/run_native_ilutp_contact.py --bench ./test/benchilutp \
+            --case strict-residual "$RUNNER_TEMP/native-A.mtx" "$RUNNER_TEMP/native-b.mtx" \
+            --report "$RUNNER_TEMP/native-residual-fail.json" \
+            --full-limit 20000000 --maxiter 80 --restart 20 --rcm 0 \
+            --accept-residual 1e-20 --timeout 120 ; then
+            echo 'Unmet physical residual was unexpectedly accepted' >&2
+            exit 1
+          fi
+      - name: Native complete-fill threshold with symmetric RCM
+        run: |
+          set -euo pipefail
+          ./test/benchilutp "$RUNNER_TEMP/native-A.mtx" "$RUNNER_TEMP/native-b.mtx" \
+            --full 1 --only-full 1 --full-limit 20000000 --full-tau 0.1 \
+            --maxiter 80 --restart 20 --rcm 1 --row-scale 1 \
+            --csv native-fullfill-rcm-threshold.csv
+          cat native-fullfill-rcm-threshold.csv
+          python3 - <<'PY'
+          import csv
+          from pathlib import Path
+          rows = list(csv.DictReader(Path('native-fullfill-rcm-threshold.csv').open()))
+          assert len(rows) == 1 and rows[0]['variant'] == 'ilutp_full', rows
+          r = rows[0]
+          assert r['status'] == 'converged' and int(r['iterations']) == 1, r
+          assert abs(float(r['tau']) - 0.1) < 1e-12, r
+          assert float(r['physical_relres']) < 1e-10, r
+          assert int(r['api_error']) == int(r['solver_status']) == 0, r
+          assert 0 < int(r['nnz_L']) + int(r['nnz_U']) < 20000000, r
+          print('LIS_NATIVE_FULLFILL_RCM_TAU PASS')
+          PY
+          if ./test/benchilutp "$RUNNER_TEMP/native-A.mtx" "$RUNNER_TEMP/native-b.mtx" \
+            --full 1 --full-tau 2 >/dev/null 2>&1; then
+            echo 'Invalid pivot threshold was accepted' >&2
+            exit 1
+          fi
+
+  native-fullfill-asan:
+    name: Native ILUTP RCM+scale fill-limit cleanup (ASan/LSan)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      OMP_NUM_THREADS: '1'
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+      UBSAN_OPTIONS: halt_on_error=1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native LIS build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+      - name: Configure and build instrumented LIS
+        run: |
+          autoreconf -fiv
+          ./configure --enable-test --disable-fortran --disable-f90 \
+            --disable-saamg --disable-mpi \
+            CFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer" \
+            LDFLAGS="-fsanitize=address,undefined"
+          make -j2
+      - name: Exercise numerical regressions and partial-factor cleanup (sanitized)
+        run: |
+          set -euo pipefail
+          ./test/testilutp
+          # 100x100 five-point stencil: cap=50 permits multiple L/U
+          # rows before setup fails; cap=1 only tested the empty path.
+          ./test/benchilutp test/testmat2.mtx test/benchilutp_rhs_100.mtx \
+            --full 1 --only-full 1 --full-limit 50 --full-tau 0.1 \
+            --pivot-tol 0 --rcm 1 --row-scale 1 \
+            --csv "$RUNNER_TEMP/fullfill-asan-limit.csv"
+          python3 - <<'PY'
+          import csv
+          import os
+          from pathlib import Path
+          path = Path(os.environ["RUNNER_TEMP"], "fullfill-asan-limit.csv")
+          rows = list(csv.DictReader(path.open()))
+          assert len(rows) == 1 and rows[0]["variant"] == "ilutp_full", rows
+          assert rows[0]["status"] == "setup_failed", rows
+          assert int(rows[0]["api_error"]) != 0, rows
+          print("LIS_ILUTP_FULL_LIMIT_ASAN PASS: expected setup failure; no sanitizer errors")
+          PY
+
+  native-half-user-hybrid:
+    name: Half precision, USER and Hybrid compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native LIS build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+      - name: Build with half precision enabled
+        run: |
+          autoreconf -fiv
+          ./configure --enable-test --enable-half --disable-fortran --disable-f90 \
+            --disable-saamg --disable-mpi
+          make -j2
+      - name: Validate half, USER and nested Hybrid paths
+        run: |
+          set -euo pipefail
+          ./test/testilutp
+          ./test/testuserprecon
+          ./test/testhalfilut --fea-matrix test/testmat0.mtx 8 8 0.005
