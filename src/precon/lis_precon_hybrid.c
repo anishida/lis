@@ -100,14 +100,25 @@ static LIS_INT lis_precon_hybrid_validate_config(LIS_SOLVER solver)
 		return LIS_ERR_ILL_ARG;
 	}
 
-	/* Never silently ignore an explicitly requested ILUTP when Hybrid's
-	 * inner preconditioner is not ILUT. Legacy Hybrid is unchanged. */
-	if( (solver->ilutp_enabled || solver->ilutp_full) &&
+	/* These ILUT-specific options cannot silently fall back to another
+	 * Hybrid inner preconditioner.  The default Hybrid path is unchanged. */
+	if( (solver->ilutp_enabled || solver->ilutp_full ||
+	      solver->ilut_equil) &&
 	    inner_precon!=LIS_PRECON_TYPE_ILUT )
 	{
 		LIS_SETERR(LIS_ERR_ILL_ARG,
-			"Hybrid ILUTP requires -hybrid_p ilut\n");
+			"Hybrid ILUTP/Equil requires -hybrid_p ilut\n");
 		return LIS_ERR_ILL_ARG;
+	}
+	/* Equil builds a transformed serial CSR factorization. In particular
+	 * do not silently accept matrix-free USER input via Hybrid. */
+	if( solver->ilut_equil &&
+	    (solver->A->matrix_type!=LIS_MATRIX_CSR ||
+	     solver->A->nprocs!=1 || solver->A->n!=solver->A->gn) )
+	{
+		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+			"Hybrid ILUT Equil requires serial CSR input\n");
+		return LIS_ERR_NOT_IMPLEMENTED;
 	}
 
 	return LIS_SUCCESS;
@@ -189,12 +200,12 @@ LIS_INT lis_precon_create_hybrid(LIS_SOLVER solver, LIS_PRECON precon)
 	psolver->Ah = NULL;
 	psolver->precision = solver->precision;
 
-	/* ILUTP is stored outside options[] and params[]. When a Hybrid
-	 * inner ILUT is explicitly selected, transfer its numerical policy,
-	 * including the half-storage restriction, instead of silently using
-	 * the default legacy ILUT. Do not alter legacy Hybrid defaults. */
+	/* ILUTP and Equil are stored outside options[] / params[]. Propagate
+	 * them together with the ILUT numerical parameters to the nested
+	 * solver; Equil-only Hybrid must work without enabling pivoting. */
 	if( psolver->options[LIS_OPTIONS_PRECON]==LIS_PRECON_TYPE_ILUT &&
-	    (solver->ilutp_enabled || solver->ilutp_full) )
+	    (solver->ilutp_enabled || solver->ilutp_full ||
+	     solver->ilut_equil) )
 	{
 		psolver->ilutp_enabled=solver->ilutp_enabled;
 		psolver->ilutp_threshold=solver->ilutp_threshold;
@@ -202,6 +213,7 @@ LIS_INT lis_precon_create_hybrid(LIS_SOLVER solver, LIS_PRECON precon)
 		psolver->ilutp_full_limit=solver->ilutp_full_limit;
 		psolver->ilut_rcm=solver->ilut_rcm;
 		psolver->ilut_row_scale=solver->ilut_row_scale;
+		psolver->ilut_equil=solver->ilut_equil;
 		psolver->precon_half_mode=solver->precon_half_mode;
 		psolver->params[LIS_PARAMS_DROP-LIS_OPTIONS_LEN]=
 			solver->params[LIS_PARAMS_DROP-LIS_OPTIONS_LEN];

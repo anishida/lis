@@ -10,7 +10,7 @@ import unittest
 
 from run_native_ilutp_contact import (
     integer_nonnegative, parse_full_row, parse_time_file, sha256_file,
-    positive_number, nonnegative_number, run_process_tree, gnu_time,
+    positive_number, nonnegative_number, run_process_tree, gnu_time, run_one,
 )
 
 
@@ -34,6 +34,40 @@ class NativeContactAuditTest(unittest.TestCase):
                      '9223372036854775808'):
             with self.assertRaises(argparse.ArgumentTypeError):
                 integer_nonnegative(item)
+
+    def test_equil_forwarded_and_audited(self):
+        # A minimal executable records the selected native benchmark flag
+        # and produces the same CSV schema as benchilutp.
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            matrix = root / "A.mtx"
+            rhs = root / "b.mtx"
+            matrix.write_text("matrix fixture", encoding="utf-8")
+            rhs.write_text("rhs fixture", encoding="utf-8")
+            bench = root / "fake_bench.py"
+            bench.write_text(
+                "#!" + sys.executable + "\n"
+                "import csv,sys\n"
+                "from pathlib import Path\n"
+                "args=sys.argv[1:]\n"
+                "mode=args[args.index('--equil')+1]\n"
+                "p=Path(args[args.index('--csv')+1])\n"
+                "p.write_text('variant,equil,status,iterations,nnz_L,nnz_U,'"
+                "+'moved_columns,api_error,solver_status,setup_cpu_s,'"
+                "+'solve_cpu_s,physical_relres\\n'"
+                "+'ilutp_full,'+mode+',converged,2,4,4,0,0,0,0.01,0.02,1e-9\\n')\n",
+                encoding="utf-8")
+            bench.chmod(0o755)
+            args = argparse.Namespace(
+                bench=bench, full_limit=1000, full_tau=1.0,
+                maxiter=30, restart=10, rtol=1e-6, drop=0.005,
+                rate=12, rcm=1, row_scale=1, equil=1, compare=False,
+                timeout=20, max_vmem_mib=None, max_rss_mib=None,
+                accept_residual=1e-5)
+            result = run_one(args, "equil_on", matrix, rhs, root, None)
+            self.assertTrue(result['accepted'], result['reasons'])
+            self.assertEqual(result['solver_row']['equil'], '1')
+            self.assertEqual(result['command'][result['command'].index('--equil')+1], '1')
 
     def test_finite_numeric_validation(self):
         self.assertEqual(positive_number('1e-5'), 1e-5)

@@ -177,7 +177,8 @@ def run_one(args: argparse.Namespace, name: str, matrix: Path, rhs: Path,
                '--maxiter', str(args.maxiter), '--restart', str(args.restart),
                '--rtol', str(args.rtol), '--drop', str(args.drop),
                '--rate', str(args.rate), '--rcm', str(args.rcm),
-               '--row-scale', str(args.row_scale), '--csv', str(csv_path)]
+               '--row-scale', str(args.row_scale), '--equil', str(args.equil),
+               '--csv', str(csv_path)]
     result['command'] = command
     with tempfile.TemporaryDirectory(prefix='lis-native-timing-') as d:
         time_file = Path(d) / 'time.txt'
@@ -215,6 +216,8 @@ def run_one(args: argparse.Namespace, name: str, matrix: Path, rhs: Path,
             result['reasons'].append(error)
         else:
             result['solver_row'] = row
+            if row.get('equil') is not None and row['equil'] != str(args.equil):
+                result['reasons'].append('benchmark Equil mode does not match requested --equil')
             for key in ('iterations', 'nnz_L', 'nnz_U', 'moved_columns',
                         'api_error', 'solver_status'):
                 try:
@@ -275,6 +278,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--rate', type=nonnegative_number, default=12)
     parser.add_argument('--rcm', type=int, choices=(0, 1), default=1)
     parser.add_argument('--row-scale', type=int, choices=(0, 1), default=1)
+    parser.add_argument('--equil', type=int, choices=(0, 1), default=0,
+                        help='forward native ILUT two-sided Equil mode to benchilutp')
     parser.add_argument('--timeout', type=positive_number, default=600,
                         help='max seconds per benchmark case')
     parser.add_argument('--max-rss-mib', type=positive_number, default=None,
