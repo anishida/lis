@@ -256,70 +256,93 @@ LIS_INT lis_finalize(void)
 #define __FUNC__ "lis_text2args"
 LIS_INT lis_text2args(char *text, LIS_ARGS *args)
 {
-	char buf[1024];
-	char *p,*s1,*s2;
-	LIS_INT k1,k2,f;
-	LIS_ARGS arg_top,arg;
+    char buf[1024];
+    char *p,*s1,*s2;
+    LIS_INT k1,k2,f;
+    LIS_ARGS arg_top=NULL,arg=NULL;
 
-	LIS_DEBUG_FUNC_IN;
+    LIS_DEBUG_FUNC_IN;
 
-	arg_top = (LIS_ARGS)lis_malloc(sizeof(struct LIS_ARGS_STRUCT),"lis_text2args::arg_top");
-	arg_top->next = arg_top;
-	arg_top->prev = arg_top;
-	arg_top->arg1 = NULL;
-	arg_top->arg2 = NULL;
+    if(!text || !args || strlen(text)>=sizeof(buf))
+    {
+        LIS_SETERR(LIS_ERR_ILL_ARG,"lis_text2args invalid/oversized option text");
+        return LIS_ERR_ILL_ARG;
+    }
+    *args=NULL;
+    arg_top=(LIS_ARGS)lis_malloc(sizeof(struct LIS_ARGS_STRUCT),
+                                "lis_text2args::arg_top");
+    if(!arg_top) return LIS_OUT_OF_MEMORY;
+    arg_top->next=arg_top;
+    arg_top->prev=arg_top;
+    arg_top->arg1=NULL;
+    arg_top->arg2=NULL;
 
-	strcpy(buf,text);
-	p   = buf;
-	f   = LIS_TRUE;
-	while( *p!='\0' && f )
-	{
-		while( *p==' ' || *p=='\t' || *p=='\n' || *p=='\r' )
-		{
-			p++;
-		}
-		s1 = p;
-		while( *p!=' ' && *p!='\t' && *p!='\n' && *p!='\r' && *p!='\0' )
-		{
-			*p = (char)tolower(*p);
-			p++;
-		}
-		if( *p=='\0' ) break;
-		*p++ = '\0';
-/*NEH pretty sure the following logic was goofed up . . .*/
-/*        while( *p==' ' && *p=='\t' && *p=='\n' && *p=='\r' )*/
-		while( *p==' ' || *p=='\t' || *p=='\n' || *p=='\r' )
-		{
-			p++;
-		}
-		s2 = p;
-		while( *p!=' ' && *p!='\t' && *p!='\n' && *p!='\r' && *p!='\0' )
-		{
-			*p = (char)tolower(*p);
-			p++;
-		}
-		if( *p=='\0' ) f = LIS_FALSE;
-		*p++ = '\0';
-		k1 = (LIS_INT)strlen(s1);
-		k2 = (LIS_INT)strlen(s2);
-		if( k1>0 && k2>0 )
-		{
-			arg             = (LIS_ARGS)lis_malloc(sizeof(struct LIS_ARGS_STRUCT),"lis_text2args::arg");
-			arg->arg1       = (char *)lis_malloc((k1+1)*sizeof(char),"lis_text2args::arg->arg1");
-			arg->arg2       = (char *)lis_malloc((k2+1)*sizeof(char),"lis_text2args::arg->arg2");
-			arg->next       = arg_top;
-			arg->prev       = arg_top->prev;
-			arg->prev->next = arg;
-			arg->next->prev = arg;
-			strcpy(arg->arg1,s1);
-			strcpy(arg->arg2,s2);
-		}
-	}
+    strcpy(buf,text);
+    p=buf;
+    f=LIS_TRUE;
+    while(*p!='\0' && f)
+    {
+        while(*p==' ' || *p=='\t' || *p=='\n' || *p=='\r') p++;
+        s1=p;
+        while(*p!=' ' && *p!='\t' && *p!='\n' &&
+              *p!='\r' && *p!='\0')
+        {
+            *p=(char)tolower(*p);
+            p++;
+        }
+        if(*p=='\0') break;
+        *p++='\0';
+        while(*p==' ' || *p=='\t' || *p=='\n' || *p=='\r') p++;
+        s2=p;
+        while(*p!=' ' && *p!='\t' && *p!='\n' &&
+              *p!='\r' && *p!='\0')
+        {
+            *p=(char)tolower(*p);
+            p++;
+        }
+        if(*p=='\0') f=LIS_FALSE;
+        *p++='\0';
+        k1=(LIS_INT)strlen(s1);
+        k2=(LIS_INT)strlen(s2);
+        if(k1>0 && k2>0)
+        {
+            /* Never insert a partially allocated argument node into the
+             * intrusive linked list. Parallel RAS OOM injection can fail
+             * on any one of these allocations in any worker thread. */
+            arg=(LIS_ARGS)lis_malloc(sizeof(struct LIS_ARGS_STRUCT),
+                                     "lis_text2args::arg");
+            if(!arg) goto oom;
+            arg->arg1=NULL;
+            arg->arg2=NULL;
+            arg->arg1=(char *)lis_malloc((size_t)k1+1,
+                                        "lis_text2args::arg->arg1");
+            if(!arg->arg1) goto oom;
+            arg->arg2=(char *)lis_malloc((size_t)k2+1,
+                                        "lis_text2args::arg->arg2");
+            if(!arg->arg2) goto oom;
+            strcpy(arg->arg1,s1);
+            strcpy(arg->arg2,s2);
+            arg->next=arg_top;
+            arg->prev=arg_top->prev;
+            arg->prev->next=arg;
+            arg->next->prev=arg;
+            arg=NULL;
+        }
+    }
+    *args=arg_top;
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
 
-	*args = arg_top;
-
-	LIS_DEBUG_FUNC_OUT;
-	return LIS_SUCCESS;
+oom:
+    if(arg)
+    {
+        lis_free(arg->arg2);
+        lis_free(arg->arg1);
+        lis_free(arg);
+    }
+    lis_args_free(arg_top);
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_OUT_OF_MEMORY;
 }
 
 #undef __FUNC__
