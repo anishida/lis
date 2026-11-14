@@ -542,8 +542,6 @@ LIS_INT lis_precon_create_ilut(LIS_SOLVER solver, LIS_PRECON precon)
 		if(solver->ilut_ras_overlap<0) return LIS_ERR_ILL_ARG;
 		err=lis_precon_create_ilut_ras(solver,precon);
 		if(err) return err;
-		lis_psolve_xxx[LIS_PRECON_TYPE_ILUT]=lis_psolve_ilut_csr;
-		lis_psolveh_xxx[LIS_PRECON_TYPE_ILUT]=lis_psolveh_ilut_csr;
 		return LIS_SUCCESS;
 	}
 
@@ -569,11 +567,9 @@ LIS_INT lis_precon_create_ilut(LIS_SOLVER solver, LIS_PRECON precon)
 			lis_ilut_ordered_create(solver,precon) :
 			lis_precon_create_ilut_csr(solver,precon);
 
-		lis_psolve_xxx[LIS_PRECON_TYPE_ILUT] =
-			lis_psolve_ilut_csr;
-
-		lis_psolveh_xxx[LIS_PRECON_TYPE_ILUT] =
-			lis_psolveh_ilut_csr;
+		/* lis_psolve_xxx / lis_psolveh_xxx already contain these
+		 * exact CSR dispatch functions at static initialization.
+		 * Do not write shared dispatch tables in worker threads. */
 
 		break;
 
@@ -588,12 +584,6 @@ LIS_INT lis_precon_create_ilut(LIS_SOLVER solver, LIS_PRECON precon)
 				lis_precon_create_ilut_csr(
 					solver,
 					precon);
-
-			lis_psolve_xxx[LIS_PRECON_TYPE_ILUT] =
-				lis_psolve_ilut_csr;
-
-			lis_psolveh_xxx[LIS_PRECON_TYPE_ILUT] =
-				lis_psolveh_ilut_csr;
 
 			break;
 		}
@@ -615,8 +605,6 @@ LIS_INT lis_precon_create_ilut(LIS_SOLVER solver, LIS_PRECON precon)
 		if( err ) return err;
 		solver->A = B;
 		err = lis_precon_create_ilut_csr(solver,precon);
-		lis_psolve_xxx[LIS_PRECON_TYPE_ILUT]  = lis_psolve_ilut_csr;
-		lis_psolveh_xxx[LIS_PRECON_TYPE_ILUT]  = lis_psolveh_ilut_csr;
 		lis_matrix_destroy(B);
 		solver->A = A;
 		break;
