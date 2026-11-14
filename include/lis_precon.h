@@ -220,6 +220,9 @@ extern void lis_precon_operator_row_source_destroy(
 	extern LIS_INT lis_precon_update_ilut_frozen(LIS_SOLVER solver, LIS_PRECON precon);
 	extern LIS_INT lis_psolve_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X);
 	extern LIS_INT lis_psolveh_ilut_csr(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X);
+	extern LIS_INT lis_precon_create_ilut_ras(LIS_SOLVER solver, LIS_PRECON precon);
+	extern LIS_INT lis_psolve_ilut_ras(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X);
+	extern void lis_precon_ilut_ras_destroy(struct LIS_ILUT_RAS_STRUCT *ras);
 
 /********************/
 /* Additive Schwarz */
