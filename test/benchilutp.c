@@ -4,7 +4,7 @@
  *
  * Usage: ./test/benchilutp A.mtx b.mtx [--maxiter N] [--restart N]
  *        [--rtol V] [--drop V] [--rate V] [--pivot-tol V]
- *        [--rcm 0|1] [--row-scale 0|1]
+ *        [--rcm 0|1] [--row-scale 0|1] [--equil 0|1]
  *
  * Emits CSV, comparing ILUT against ILUTP with tau=0.5 and 1.0.
  * Factor setup and Krylov CPU times are measured separately; the original
@@ -36,7 +36,7 @@ int main(void)
 #else
 typedef struct
 {
-    LIS_INT maxiter,restart,rcm,row_scale,full,only_full,full_limit;
+    LIS_INT maxiter,restart,rcm,row_scale,equil,full,only_full,full_limit;
     double rtol,drop,rate,pivot_tol,full_tau;
 } BENCH_ARGS;
 
@@ -120,13 +120,14 @@ static int run_case(FILE *csv,const char *name,LIS_MATRIX A,LIS_VECTOR b,
         "-initx_zeros true -restart %lld -maxiter %lld "
         "-tol %.16g -ilut_drop %.16g -ilut_rate %.16g "
         "-ilu_pivot_tol %.16g -omp_num_threads 1 "
-        "-ilut_rcm %lld -ilut_row_scale %lld "
+        "-ilut_rcm %lld -ilut_row_scale %lld -ilut_equil %lld "
         "-ilutp %d -ilutp_threshold %.16g "
         "-ilutp_full %d -ilutp_full_limit %lld",
         (long long)args->restart,(long long)args->maxiter,args->rtol,
         args->drop,args->rate,args->pivot_tol,
         (long long)args->rcm,(long long)args->row_scale,
-        use_ilutp,tau,full,full ? (long long)args->full_limit : 0LL)>=(int)sizeof(opts))
+        (long long)args->equil,use_ilutp,tau,full,
+        full ? (long long)args->full_limit : 0LL)>=(int)sizeof(opts))
     {
         err=LIS_ERR_ILL_ARG;
         goto report;
@@ -177,8 +178,8 @@ static int run_case(FILE *csv,const char *name,LIS_MATRIX A,LIS_VECTOR b,
 
 report:
     if(solver && iter==0)iter=solver->iter;
-    fprintf(csv,"%s,%d,%.6g,%s,%lld,%lld,%lld,%lld,%.8g,%.8g,%.15g,%d,%lld\n",
-           name,use_ilutp,tau,status,(long long)iter,
+    fprintf(csv,"%s,%d,%lld,%.6g,%s,%lld,%lld,%lld,%lld,%.8g,%.8g,%.15g,%d,%lld\n",
+           name,use_ilutp,(long long)args->equil,tau,status,(long long)iter,
            nnz_l,nnz_u,permuted,setup_s,solve_s,relative,
            (int)err,(long long)retcode);
     fflush(csv);
@@ -222,14 +223,14 @@ int main(int argc,char **argv)
         fprintf(stderr,
             "Usage: %s A.mtx b.mtx [--maxiter N] [--restart N] "
             "[--rtol V] [--drop V] [--rate V] [--pivot-tol V] "
-            "[--rcm 0|1] [--row-scale 0|1] "
+            "[--rcm 0|1] [--row-scale 0|1] [--equil 0|1] "
             "[--full 0|1] [--only-full 0|1] [--full-limit N] [--full-tau 0..1] "
             "[--csv FILE]\n",argv[0]);
         return 2;
     }
     a.maxiter=1000;a.restart=120;
     a.rtol=1e-5;a.drop=0.005;a.rate=12.0;
-    a.pivot_tol=1e-9;a.rcm=1;a.row_scale=1;
+    a.pivot_tol=1e-9;a.rcm=1;a.row_scale=1;a.equil=0;
     a.full=0;a.only_full=0;a.full_limit=0;a.full_tau=1.0;
     for(i=3;i<argc;i+=2)
     {
@@ -259,6 +260,7 @@ int main(int argc,char **argv)
            strcmp(argv[i],"--restart")==0 ||
            strcmp(argv[i],"--rcm")==0 ||
            strcmp(argv[i],"--row-scale")==0 ||
+           strcmp(argv[i],"--equil")==0 ||
            strcmp(argv[i],"--full")==0 ||
            strcmp(argv[i],"--only-full")==0)
         {
@@ -266,6 +268,7 @@ int main(int argc,char **argv)
             if(parse_nonnegative_lis_int(argv[i+1],&value) ||
                ((strcmp(argv[i],"--rcm")==0 ||
                  strcmp(argv[i],"--row-scale")==0 ||
+                 strcmp(argv[i],"--equil")==0 ||
                  strcmp(argv[i],"--full")==0 ||
                  strcmp(argv[i],"--only-full")==0) && value>1))
             {
@@ -277,6 +280,7 @@ int main(int argc,char **argv)
             else if(strcmp(argv[i],"--restart")==0)a.restart=value;
             else if(strcmp(argv[i],"--rcm")==0)a.rcm=value;
             else if(strcmp(argv[i],"--row-scale")==0)a.row_scale=value;
+            else if(strcmp(argv[i],"--equil")==0)a.equil=value;
             else if(strcmp(argv[i],"--full")==0)a.full=value;
             else a.only_full=value;
             continue;
@@ -301,6 +305,7 @@ int main(int argc,char **argv)
        a.rate<0 || a.pivot_tol<0 ||
        (a.rcm!=0 && a.rcm!=1) ||
        (a.row_scale!=0 && a.row_scale!=1) ||
+       (a.equil!=0 && a.equil!=1) ||
        (a.only_full && !a.full) ||
        a.full_tau<0.0 || a.full_tau>1.0)
         return 2;
@@ -340,7 +345,7 @@ int main(int argc,char **argv)
             goto cleanup;
         }
     }
-    fprintf(csv,"variant,ilutp,tau,status,iterations,nnz_L,nnz_U,"
+    fprintf(csv,"variant,ilutp,equil,tau,status,iterations,nnz_L,nnz_U,"
            "moved_columns,setup_cpu_s,solve_cpu_s,physical_relres,"
            "api_error,solver_status\n");
     if(!a.only_full)
