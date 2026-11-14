@@ -25,6 +25,129 @@ when `-ilutp 0` (the default). No SuperLU library or plugin is needed.
   max-entry row scaling inside the preconditioner; GMRES still
   solves the **original** `Ax=b`.
 
+## Optional two-sided ILUT equilibration
+
+`-ilut_equil 1` enables two-sided maximum-absolute-value scaling in
+serial real-double CSR ILUT, including the dynamic-column-pivoting and
+bounded complete-fill variants. It is **disabled by default**.
+The option applies one row pass and then one column pass to the
+row-scaled matrix. `-ilut_row_scale 1` remains available as an
+independent row-only baseline; when Equil is enabled, the row pass
+is performed only once. `-ilut_rcm 1` may be combined with either.
+
+With symmetric ordering `P`, diagonal row weights `R`, diagonal
+column weights `C`, and dynamic **column** permutation `Q`:
+
+```text
+B = P A P^T
+S = R B C
+S Q ~= L U
+forward: P^T C Q (LU)^-1 R P
+adjoint: P^T R^H (LU)^-H Q^T C^H P
+```
+
+Importantly, `C` is indexed in the **pre-pivot** column coordinates,
+so the outgoing forward and incoming adjoint factors use `C[Q[i]]`.
+The original Krylov operator `A` remains unchanged. Row/column
+maximum passes take `O(nnz)` and the column weights cost `O(n)`
+additional memory. Empty rows/columns retain unit scaling; nonfinite
+input or transformed coefficients are rejected. Equil is not
+a substitute for numerical pivoting, and it can increase incomplete
+factor fill.
+
+The nested solver supports `-p hybrid -hybrid_p ilut -ilut_equil 1`
+with and without `-ilutp 1`. Equil with a non-ILUT nested
+preconditioner is rejected rather than silently ignored. The
+combined path requires serial CSR input and one active OpenMP thread
+when ILUTP is enabled.
+
+To compare Equil with its controls on the **same original** sparse
+Matrix Market matrix and RHS, use:
+
+```sh
+./test/benchilutp A.mtx b.mtx --equil 0 --rcm 1 --row-scale 1 --csv row.csv
+./test/benchilutp A.mtx b.mtx --equil 1 --rcm 1 --row-scale 1 --csv equil.csv
+```
+
+The `equil` CSV column records the requested mode. The
+`physical_relres` field is measured against the original `A`
+and `b`. `tools/run_native_ilutp_contact.py` also accepts
+`--equil 0|1` and forwards it to this benchmark.
+For a small manufactured-system control with five profiles, run
+`./test/benchilutpequil 30 5 0.005`.
+
+Regression coverage is provided by `testilutequil` and
+`testilutp`, including forward/transpose solves, sequence
+invalidations, Hybrid forwarding and bounded complete-fill.
+Neither lower GMRES iteration counts nor a reduction in pivot
+swaps alone establishes total-time or memory superiority.
+
+### Reproducible Stokes-type indefinite saddle point
+
+The included `test/gen_stokes_saddle.py` manufactures a nonsingular,
+**symmetric-indefinite** pressure/velocity saddle matrix with *exactly
+zero* pressure diagonal. This is a Stokes-inspired finite-difference
+model, **not** a real IFISS, PETSc or CalculiX export.
+
+```text
+H = [ 0    B  ]
+    [ B^T  K  ]
+A = D H D
+```
+
+`K` is a positive-definite five-point velocity stiffness operator,
+`B` a full-row-rank discrete divergence-like constraint matrix,
+and the positive diagonal `D` introduces a manufactured unit contrast.
+On an `m × m` grid, `A` has `3m²` unknowns, `m²` zero
+pressure pivots, `2m²` positive and `m²` negative eigenvalues.
+
+```sh
+python3 test/gen_stokes_saddle.py --side 8 --contrast 30 \
+  --units mixed_checker --ordering interleaved --gamma 0.3 \
+  --delta 0 --matrix stokes-A.mtx --rhs stokes-b.mtx
+
+./test/benchilutp stokes-A.mtx stokes-b.mtx \
+  --maxiter 180 --restart 70 --rtol 1e-6 --drop 0.005 \
+  --rate 3 --pivot-tol 0.001 --rcm 0 --row-scale 0 \
+  --equil 0 --csv no-scale.csv
+
+./test/benchilutp stokes-A.mtx stokes-b.mtx \
+  --maxiter 180 --restart 70 --rtol 1e-6 --drop 0.005 \
+  --rate 3 --pivot-tol 0.001 --rcm 0 --row-scale 1 \
+  --equil 0 --csv row-only.csv
+
+./test/benchilutp stokes-A.mtx stokes-b.mtx \
+  --maxiter 180 --restart 70 --rtol 1e-6 --drop 0.005 \
+  --rate 3 --pivot-tol 0.001 --rcm 0 --row-scale 0 \
+  --equil 1 --csv two-sided.csv
+```
+
+For the native LIS n=192 example, the following five controls all
+exhausted 180 GMRES iterations: ordinary ILUT, row-scaled ILUT,
+unscaled ILUTP, row-scaled ILUTP and Equil-only ILUT. By contrast,
+**ILUTP+Equil converged in 9 iterations**, with original-system
+relative residual **4.78e-7** and 2889 stored L+U off-diagonal
+coefficients (versus at most 2734 for the controls). These controls
+use the same `-ilut_rate 3` and `-ilut_drop 0.005` settings.
+
+At n=300 (`--side 10 --gamma 1`, other parameters unchanged)
+the same five controls failed at 180, while **ILUTP+Equil
+converged in 11 iterations** and used 4575 L+U nonzeros (the
+largest control: 4318). Original-system relative residual was
+**3.14e-7**. Independent manufactured exact-solution comparisons
+also confirmed relative solution errors **5.38e-4** and
+**1.36e-4**, respectively, against an acceptance threshold of
+`1e-3`. That optional accuracy audit resides on the experimental
+branch and is not part of the generic Matrix Market benchmark.
+
+These results demonstrate actual **numerical complementarity**:
+neither pivoting nor two-sided Equil (nor row-only scaling) suffices
+alone for these *selected* saddle systems. They are not claims
+about general wall-clock speed, memory optimality or a real
+Stokes/contact FEM dataset. The sweep, raw controls and accuracy
+check are documented in the
+[reproducible experiment](https://github.com/3rav/lis/blob/experiment/stokes-saddle-ilutp-equil-20261114/doc/stokes-saddle-equil-benchmark.md).
+
 ### Example: complete-fill mode
 
 ```sh
