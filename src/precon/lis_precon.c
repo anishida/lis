@@ -1013,6 +1013,7 @@ LIS_INT lis_precon_destroy(LIS_PRECON precon)
 
 		lis_free(precon->ilut_perm);
 		lis_free(precon->ilutp_colperm);
+		lis_free(precon->ilut_col_scale);
 		lis_free(precon->ilut_row_scale);
 		if(precon->ilut_work_b) lis_vector_destroy(precon->ilut_work_b);
 		if(precon->ilut_work_x) lis_vector_destroy(precon->ilut_work_x);

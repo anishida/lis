@@ -903,6 +903,9 @@ struct LIS_PRECON_STRUCT
 	LIS_INT ilut_apply_active;
 	/* ILUTP: factor-space column position -> original factor-space col. */
 	LIS_INT *ilutp_colperm;
+	LIS_INT ilutp_swap_count; /* number of dynamic column pivot swaps */
+	/* Optional column maximum scaling before ILUT/ILUTP pivoting. */
+	LIS_SCALAR *ilut_col_scale;
 };
 typedef struct LIS_PRECON_STRUCT *LIS_PRECON;
 
@@ -1118,6 +1121,9 @@ struct LIS_SOLVER_STRUCT
 	LIS_INT ilutp_full_limit; /* L+U nonzeros, 0 means auto budget */
 	LIS_INT sequence_precon_ilutp_full;
 	LIS_INT sequence_precon_ilutp_full_limit;
+	/* Opt-in two-sided row/column equilibration for ILUT and ILUTP. */
+	LIS_INT ilut_equil;
+	LIS_INT sequence_precon_ilut_equil;
 };
 typedef struct LIS_SOLVER_STRUCT *LIS_SOLVER;
 

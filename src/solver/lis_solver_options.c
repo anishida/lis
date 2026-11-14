@@ -102,6 +102,7 @@ lis_solver_set_option_replace(
     solver->ilutp_threshold = fresh->ilutp_threshold;
     solver->ilutp_full = fresh->ilutp_full;
     solver->ilutp_full_limit = fresh->ilutp_full_limit;
+    solver->ilut_equil = fresh->ilut_equil;
 
     /* GCRO-DR configuration is stored outside options[] / params[]. */
     solver->recycle_target_dim = fresh->recycle_target_dim;
@@ -214,7 +215,8 @@ lis_solver_set_option_replace_if_changed(
                       solver->ilutp_enabled!=fresh->ilutp_enabled ||
                       solver->ilutp_threshold!=fresh->ilutp_threshold ||
                       solver->ilutp_full!=fresh->ilutp_full ||
-                      solver->ilutp_full_limit!=fresh->ilutp_full_limit))
+                      solver->ilutp_full_limit!=fresh->ilutp_full_limit ||
+                      solver->ilut_equil!=fresh->ilut_equil))
         different = LIS_TRUE;
 
     /* Include solver-specific GCRO-DR profile fields in comparisons. */
