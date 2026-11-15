@@ -123,6 +123,17 @@ jobs:
       - name: Run Automake test suite
         run: make -j2 check
 
+      - name: Verify 1/2/4/8-thread MFAMG V-cycle determinism
+        if: matrix.mode == 'openmp'
+        run: |
+          set -euo pipefail
+          OMP_DYNAMIC=FALSE OMP_NUM_THREADS=8 ./test/testmfamgvcycle --omp-stress | tee mfamg-omp.log
+          grep -q 'MFAMG_OMP_STRESS mode=0 threads=8 .* PASS' mfamg-omp.log
+          grep -q 'MFAMG_OMP_STRESS mode=1 threads=8 .* PASS' mfamg-omp.log
+          grep -q 'MFAMG_OMP_EDGES block=4 phase=0 threads=8 .* PASS' mfamg-omp.log
+          grep -q 'MFAMG_OMP_EDGES block=5 phase=1 threads=8 .* PASS' mfamg-omp.log
+          grep -q 'MFAMG_OMP_MULTIVECTOR threads=8 .* PASS' mfamg-omp.log
+
       - name: Verify 8-thread pivoted RAS ILUTP regression
         if: matrix.mode == 'openmp'
         run: |
@@ -657,6 +668,17 @@ jobs:
       - name: Run Automake test suite
         run: make -j2 check
 
+      - name: Verify 1/2/4/8-thread MFAMG V-cycle on MSYS2
+        if: matrix.mode == 'openmp'
+        run: |
+          set -euo pipefail
+          OMP_DYNAMIC=FALSE OMP_NUM_THREADS=8 ./test/testmfamgvcycle.exe --omp-stress | tee mfamg-omp-msys2.log
+          grep -q 'MFAMG_OMP_STRESS mode=0 threads=8 .* PASS' mfamg-omp-msys2.log
+          grep -q 'MFAMG_OMP_STRESS mode=1 threads=8 .* PASS' mfamg-omp-msys2.log
+          grep -q 'MFAMG_OMP_EDGES block=4 phase=0 threads=8 .* PASS' mfamg-omp-msys2.log
+          grep -q 'MFAMG_OMP_EDGES block=5 phase=1 threads=8 .* PASS' mfamg-omp-msys2.log
+          grep -q 'MFAMG_OMP_MULTIVECTOR threads=8 .* PASS' mfamg-omp-msys2.log
+
       - name: Verify pivoted eight-domain parallel ILUTP on MSYS2
         if: matrix.mode == 'openmp'
         run: |
@@ -704,7 +726,7 @@ jobs:
             CFLAGS="-O1 -g -fno-omit-frame-pointer -fsanitize=thread" \
             LDFLAGS="-fsanitize=thread"
           make -j2
-          make -C test testhalfilut
+          make -C test testhalfilut testmfamgvcycle
       - name: Run native pivot/overlap/OpenMP regression under Archer
         run: |
           set -euo pipefail
@@ -714,6 +736,10 @@ jobs:
           export LLVM_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-18
           ./test/testhalfilut --parallel-ras-ilutp | tee tsan-archer-ras.log
           grep -q 'ILUT_RAS_OVERLAP overlap=2 full=1 threads=8 .* DETERMINISTIC PASS' tsan-archer-ras.log
+          ./test/testmfamgvcycle --omp-stress | tee tsan-archer-mfamg.log
+          grep -q 'MFAMG_OMP_STRESS mode=1 threads=8 .* PASS' tsan-archer-mfamg.log
+          grep -q 'MFAMG_OMP_EDGES block=5 phase=1 threads=8 .* PASS' tsan-archer-mfamg.log
+          grep -q 'MFAMG_OMP_MULTIVECTOR threads=8 .* PASS' tsan-archer-mfamg.log
       - name: Upload sanitizer diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -722,6 +748,7 @@ jobs:
           path: |
             config.log
             tsan-archer-ras.log
+            tsan-archer-mfamg.log
             test/test-suite.log
           if-no-files-found: ignore
 
