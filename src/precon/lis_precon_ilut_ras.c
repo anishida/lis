@@ -11,6 +11,9 @@
 #include <math.h>
 #include <stdint.h>
 #include <string.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 #include "lislib.h"
 
 #define __FUNC__ "lis_precon_ilut_ras"
@@ -40,6 +43,7 @@ struct LIS_ILUT_RAS_PART {
     LIS_SOLVER solver;
     LIS_PRECON pc;
     LIS_VECTOR b,x;
+    LIS_INT parallel_error; /* one writer per domain, read after OMP barrier */
 };
 
 struct LIS_ILUT_RAS_STRUCT {
@@ -369,6 +373,9 @@ lis_precon_create_ilut_ras(LIS_SOLVER solver, LIS_PRECON precon)
     struct LIS_ILUT_RAS_STRUCT *s=NULL;
     LIS_MATRIX A=solver->A;
     LIS_INT n=A->n,d,i,k,err;
+#ifdef _OPENMP
+    int workers;
+#endif
     if(A->nprocs!=1 || A->n!=A->gn || A->is!=0 ||
        A->matrix_type!=LIS_MATRIX_CSR || A->ptr==NULL ||
        A->index==NULL || A->value==NULL ||
@@ -427,10 +434,42 @@ lis_precon_create_ilut_ras(LIS_SOLVER solver, LIS_PRECON precon)
             p->start=d*block+(d*rem)/s->ndomains;
             p->end=(d+1)*block+((d+1)*rem)/s->ndomains;
             for(i=p->start;i<p->end;i++) s->owner[i]=d;
-            err=lis_ilut_ras_make_subdomain(solver,s,p);
-            if(err) return err;
         }
     }
+    /*
+     * One complete native ILUTP factorization per independent RAS domain.
+     * A single ILUTP factor must remain serial: the dynamic pivot sequence
+     * is not safe for the block-parallel triangular kernels. OpenMP
+     * parallelism is therefore across domains, not within one LU factor.
+     *
+     * omp_set_num_threads(1) affects the calling OpenMP task's nested
+     * regions, not its siblings. It permits the existing native ILUTP
+     * creation guard and preserves serial triangular solves per domain.
+     * Restore the task's previous setting before leaving the region.
+     */
+#ifdef _OPENMP
+    workers=omp_get_max_threads();
+    if(workers>s->ndomains) workers=(int)s->ndomains;
+/* Domain costs differ with pivoting/fill; distribute excess domains
+ * to the next available worker instead of binding adjacent heavy blocks. */
+#pragma omp parallel for schedule(dynamic,1) num_threads(workers) if(workers>1)
+#endif
+    for(d=0;d<s->ndomains;d++)
+    {
+        struct LIS_ILUT_RAS_PART *p=&s->parts[d];
+#ifdef _OPENMP
+        int previous_threads=omp_get_max_threads();
+        omp_set_num_threads(1);
+#endif
+        p->parallel_error=lis_ilut_ras_make_subdomain(solver,s,p);
+#ifdef _OPENMP
+        omp_set_num_threads(previous_threads);
+#endif
+    }
+    /* Always drain all workers before reporting failure and destroying
+     * partially initialized domains (including OOM paths). */
+    for(d=0;d<s->ndomains;d++)
+        if(s->parts[d].parallel_error) return s->parts[d].parallel_error;
     if(solver->ilut_schur)
     {
         err=lis_ilut_ras_make_schur(s);
@@ -445,25 +484,48 @@ lis_psolve_ilut_ras(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X)
     struct LIS_ILUT_RAS_STRUCT *s=solver->precon->ilut_ras;
     LIS_INT d,i,k,gi,err,ng;
     LIS_SCALAR val;
+#ifdef _OPENMP
+    int workers;
+#endif
     if(!s || !B || !X || B->n!=s->n || X->n!=s->n)
         return LIS_ERR_ILL_ARG;
     err=lis_vector_set_all((LIS_SCALAR)0.0,X);
     if(err) return err;
+    /* The owner cores are disjoint, so each worker writes a separate
+     * part of X. The overlapping RHS and solve workspaces are per-domain.
+     * A single preconditioner instance must not be applied concurrently. */
+#ifdef _OPENMP
+    workers=omp_get_max_threads();
+    if(workers>s->ndomains) workers=(int)s->ndomains;
+#pragma omp parallel for schedule(static) private(i,gi,err) num_threads(workers) if(workers>1)
+#endif
     for(d=0;d<s->ndomains;d++)
     {
         struct LIS_ILUT_RAS_PART *p=&s->parts[d];
+#ifdef _OPENMP
+        int previous_threads=omp_get_max_threads();
+        omp_set_num_threads(1);
+#endif
         for(i=0;i<p->nlocal;i++)
             p->b->value[i]=B->value[p->global[i]];
         err=lis_psolve(p->solver,p->b,p->x);
-        if(err) return err;
-        /* RAS: inject each solve only into its nonoverlapping owner core. */
-        for(i=0;i<p->nlocal;i++)
+        p->parallel_error=err;
+        if(!err)
         {
-            gi=p->global[i];
-            if(gi>=p->start && gi<p->end)
-                X->value[gi]=p->x->value[i];
+            /* RAS restricts each correction to its disjoint owner core. */
+            for(i=0;i<p->nlocal;i++)
+            {
+                gi=p->global[i];
+                if(gi>=p->start && gi<p->end)
+                    X->value[gi]=p->x->value[i];
+            }
         }
+#ifdef _OPENMP
+        omp_set_num_threads(previous_threads);
+#endif
     }
+    for(d=0;d<s->ndomains;d++)
+        if(s->parts[d].parallel_error) return s->parts[d].parallel_error;
     if(s->ngamma==0) return LIS_SUCCESS;
     ng=s->ngamma;
     err=lis_matvec(s->A,X,s->residual);

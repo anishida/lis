@@ -5317,7 +5317,13 @@ LIS_INT lis_solver_set_option(char *text, LIS_SOLVER solver)
 
 	LIS_DEBUG_FUNC_IN;
 
-	lis_text2args(text,&args);
+	err=lis_text2args(text,&args);
+	if(err)
+	{
+		if(solver) solver->retcode=err;
+		LIS_DEBUG_FUNC_OUT;
+		return err;
+	}
 	p = args->next;
 	while( p!=args )
 	{
