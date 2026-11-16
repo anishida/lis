@@ -1352,6 +1352,77 @@ cleanup:
 
 
 /*
+ * An RCO-to-CSR assembly owns an intermediate duplicated matrix. Force
+ * OOM at every allocation in that conversion and verify no matrix leaks.
+ */
+static LIS_INT make_unassembled_rco_oom(LIS_MATRIX *out)
+{
+    LIS_INT i,err;
+    *out=NULL;
+    err=lis_matrix_create(LIS_COMM_WORLD,out);
+    if(err)return err;
+    err=lis_matrix_set_size(*out,0,8);
+    if(err)return err;
+    err=lis_matrix_set_type(*out,LIS_MATRIX_CSR);
+    if(err)return err;
+    for(i=0;i<8;i++)
+    {
+        err=lis_matrix_set_value(LIS_INS_VALUE,i,i,4.0,*out);
+        if(err)return err;
+        if(i+1<8)
+        {
+            err=lis_matrix_set_value(LIS_INS_VALUE,i,i+1,-1.0,*out);
+            if(err)return err;
+        }
+    }
+    return LIS_SUCCESS;
+}
+
+static int check_rco_assemble_oom_cleanup(void)
+{
+#ifndef LIS_TEST_OOM
+    return 0;
+#else
+    LIS_MATRIX A=NULL;
+    LIS_INT err;
+    size_t baseline,calls,target;
+    int failed=1;
+    baseline=lis_test_oom_live();
+    err=make_unassembled_rco_oom(&A);
+    if(err)goto done;
+    lis_test_oom_begin(0);
+    err=lis_matrix_assemble(A);
+    lis_test_oom_end();
+    calls=lis_test_oom_calls();
+    lis_matrix_destroy(A);A=NULL;
+    if(err || calls<4 || lis_test_oom_live()!=baseline)
+        goto done;
+    for(target=1;target<=calls;target++)
+    {
+        err=make_unassembled_rco_oom(&A);
+        if(err)goto done;
+        lis_test_oom_begin(target);
+        err=lis_matrix_assemble(A);
+        lis_test_oom_end();
+        lis_matrix_destroy(A);A=NULL;
+        if(err!=LIS_OUT_OF_MEMORY || lis_test_oom_live()!=baseline)
+        {
+            fprintf(stderr,"RCO_ASSEMBLE_OOM_FAIL at %lu error=%ld live=%lu baseline=%lu\n",
+                (unsigned long)target,(long)err,
+                (unsigned long)lis_test_oom_live(),(unsigned long)baseline);
+            goto done;
+        }
+    }
+    printf("RCO_ASSEMBLE_OOM_CLEANUP checked=%lu PASS\n",(unsigned long)calls);
+    failed=0;
+done:
+    lis_test_oom_end();
+    if(A)lis_matrix_destroy(A);
+    return failed;
+#endif
+}
+
+/*
  * Regression for option-tokenizer OOM: lis_text2args must clean up a
  * partially constructed linked list and lis_solver_set_option must
  * propagate the error, not dereference a null list.
@@ -2187,6 +2258,7 @@ main(
 		failed |= check_ilut_ras_parallel_overlap();
 		failed |= check_ilut_ras_parallel_oom();
 		failed |= check_ilutp_options_oom();
+		failed |= check_rco_assemble_oom_cleanup();
 		lis_finalize();
 		return failed ? 1 : 0;
 	}

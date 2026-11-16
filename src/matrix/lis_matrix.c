@@ -903,9 +903,20 @@ LIS_INT lis_matrix_assemble(LIS_MATRIX A)
 		#endif
 		err = lis_matrix_duplicate(A,&B);
 		if( err ) return err;
-		lis_matrix_set_type(B,matrix_type);
+		err = lis_matrix_set_type(B,matrix_type);
+		if( err )
+		{
+			lis_matrix_destroy(B);
+			return err;
+		}
 		err = lis_matrix_convert(A,B);
-		if( err ) return err;
+		if( err )
+		{
+			/* Conversion may fail after allocating only part of B.
+			 * The original RCO matrix A still owns its own storage. */
+			lis_matrix_destroy(B);
+			return err;
+		}
 		lis_matrix_storage_destroy(A);
 		lis_matrix_DLU_destroy(A);
 		lis_matrix_diag_destroy(A->WD);
