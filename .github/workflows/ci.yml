@@ -144,6 +144,16 @@ jobs:
           grep -q 'ILUT_RAS_OVERLAP overlap=1 full=0 threads=8 .* DETERMINISTIC PASS' parallel-ras-ilutp.log
           grep -q 'ILUT_RAS_OVERLAP overlap=2 full=1 threads=8 .* DETERMINISTIC PASS' parallel-ras-ilutp.log
 
+      - name: Verify MFAMG plus local native ILUTP RAS on 2 and 4 threads
+        if: matrix.mode == 'openmp'
+        run: |
+          set -euo pipefail
+          OMP_DYNAMIC=FALSE OMP_NUM_THREADS=4 ./test/testmfamgilutp --parallel-ras | tee mfamg-ilutp-ras.log
+          grep -q 'MFAMG_ILUTP_RAS threads=2 overlap=0 full=0 .* DETERMINISTIC PASS' mfamg-ilutp-ras.log
+          grep -q 'MFAMG_ILUTP_RAS threads=2 overlap=1 full=0 .* DETERMINISTIC PASS' mfamg-ilutp-ras.log
+          grep -q 'MFAMG_ILUTP_RAS threads=4 overlap=1 full=0 .* DETERMINISTIC PASS' mfamg-ilutp-ras.log
+          grep -q 'MFAMG_ILUTP_RAS threads=4 overlap=2 full=1 .* DETERMINISTIC PASS' mfamg-ilutp-ras.log
+
       - name: Smoke-test native ILUTP Matrix Market comparison
         if: matrix.mode == 'serial'
         run: |
@@ -550,6 +560,10 @@ jobs:
         run: |
           make -C test testhalfilut
           ./test/testhalfilut
+      - name: Validate MFAMG plus ILUTP lifecycle under ASan and UBSan
+        run: |
+          make -C test testmfamgilutp
+          OMP_NUM_THREADS=1 ./test/testmfamgilutp
       - name: Upload sanitizer logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -597,6 +611,7 @@ jobs:
           mpiexec -n 2 ./test/testmatrixoperatormpi
           mpiexec -n 2 ./test/testvectornrm2mpi
           mpiexec -n 2 ./test/testfgcrodrintra
+          mpiexec -n 2 ./test/testmfamgilutp
 
       - name: Upload failed test logs
         if: failure()
@@ -689,6 +704,14 @@ jobs:
           grep -q 'ILUT_RAS_OVERLAP overlap=1 full=0 threads=8 .* DETERMINISTIC PASS' parallel-ras-ilutp-msys2.log
           grep -q 'ILUT_RAS_OVERLAP overlap=2 full=1 threads=8 .* DETERMINISTIC PASS' parallel-ras-ilutp-msys2.log
 
+      - name: Verify composite MFAMG plus local ILUTP RAS on Windows
+        if: matrix.mode == 'openmp'
+        run: |
+          set -euo pipefail
+          OMP_DYNAMIC=FALSE OMP_NUM_THREADS=4 ./test/testmfamgilutp.exe --parallel-ras | tee mfamg-ilutp-ras-msys2.log
+          grep -q 'MFAMG_ILUTP_RAS threads=2 overlap=1 full=0 .* DETERMINISTIC PASS' mfamg-ilutp-ras-msys2.log
+          grep -q 'MFAMG_ILUTP_RAS threads=4 overlap=2 full=1 .* DETERMINISTIC PASS' mfamg-ilutp-ras-msys2.log
+
       - name: Upload failed test logs
         if: failure()
         uses: actions/upload-artifact@v4
@@ -740,6 +763,15 @@ jobs:
           grep -q 'MFAMG_OMP_STRESS mode=1 threads=8 .* PASS' tsan-archer-mfamg.log
           grep -q 'MFAMG_OMP_EDGES block=5 phase=1 threads=8 .* PASS' tsan-archer-mfamg.log
           grep -q 'MFAMG_OMP_MULTIVECTOR threads=8 .* PASS' tsan-archer-mfamg.log
+      - name: Audit MFAMG plus local ILUTP RAS on OpenMP with Archer
+        run: |
+          set -euo pipefail
+          archer=$(find /usr/lib/llvm-18 -name libarcher.so | head -1)
+          test -f "$archer"
+          export OMP_TOOL_LIBRARIES="$archer"
+          export LLVM_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-18
+          OMP_DYNAMIC=FALSE OMP_NUM_THREADS=4 ./test/testmfamgilutp --parallel-ras | tee tsan-archer-mfamg-ilutp-ras.log
+          grep -q 'MFAMG_ILUTP_RAS threads=4 overlap=2 full=1 .* DETERMINISTIC PASS' tsan-archer-mfamg-ilutp-ras.log
       - name: Upload sanitizer diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -749,6 +781,7 @@ jobs:
             config.log
             tsan-archer-ras.log
             tsan-archer-mfamg.log
+            tsan-archer-mfamg-ilutp-ras.log
             test/test-suite.log
           if-no-files-found: ignore
 
@@ -853,3 +886,39 @@ jobs:
             test/test-suite.log
             test/*.log
           if-no-files-found: ignore
+
+
+  mfamg-ilutp-scalar-configurations:
+    name: MFAMG+ILUTP build and test (${{ matrix.mode }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: complex
+            options: '--enable-complex'
+          - mode: quad
+            options: '--enable-quad'
+    env:
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+      - name: Configure scalar build
+        env:
+          CONFIGURE_OPTIONS: ${{ matrix.options }}
+        run: |
+          autoreconf -fiv
+          ./configure --enable-test --disable-fortran --disable-f90 \
+            --disable-saamg --disable-mpi --disable-omp \
+            $CONFIGURE_OPTIONS
+      - name: Build all targets
+        run: make -j2
+      - name: Exercise MFAMG+ILUTP supported or rejected scalar path
+        run: |
+          make -C test testmfamgilutp
+          ./test/testmfamgilutp
