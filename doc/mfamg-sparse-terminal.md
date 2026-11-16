@@ -28,9 +28,16 @@ set "CCX_LIS_NL_CONTACT_OPTIONS=-i fgmres -restart 120 -p mfamg -mfamg_block_siz
 
 When enabled, **serial CSR** multivector hierarchies stop after two consecutive
 transfers each reduce the dimension by less than 10%. If the remaining
-terminal matrix still exceeds the dense limit, MFAMG uses eight passes of the
-existing Weighted Jacobi or Block Jacobi smoother on that sparse terminal
-matrix instead. This avoids the O(n²) storage and O(n³) factorization of a
+terminal matrix still exceeds the dense limit, MFAMG uses eight passes by
+default of the existing Weighted Jacobi or Block Jacobi smoother on that sparse
+terminal matrix instead. To control the strength and cost of the approximate
+terminal correction, you may **opt in** to 1–32 passes using
+`LIS_MFAMG_SPARSE_TERMINAL_PASSES=16`, for example. The setting is read
+once during preconditioner setup; an invalid value fails explicitly with
+`LIS_ERR_ILL_ARG` if the sparse terminal is activated. It has no effect
+on normal dense-terminal hierarchies and does not enable sparse terminal
+automatically. The default remains eight passes, with no change in results
+when the new variable is unset. This avoids the O(n²) storage and O(n³) factorization of a
 large dense terminal solve.
 
 This is an **approximate** terminal correction. It does not preserve the
@@ -50,7 +57,7 @@ The following messages distinguish hierarchy stagnation from Krylov failure:
 
 - `MFAMG COARSENING STAGNATION` — consecutive weak reductions under the opt-in.
 - `MFAMG SPARSE TERMINAL` — sparse terminal is active; reports final size,
-  smoother, and the eight terminal passes.
+  smoother, and the configured (default eight) terminal passes.
 - `MFAMG HIERARCHY STALLED` — normal dense terminal is too small and the
   fallback has not been enabled.
 - `LIS_MFAMG_DIAG_TRANSFER` — per-level rank and dimension statistics when
@@ -60,7 +67,9 @@ The regression in `test/testmfamgvcycle.c` uses 36 disconnected 16-row
 positive-definite chains and 12 near-nullspace vectors. It verifies that a
 large sparse terminal is used instead of a forbidden dense factor and that
 repeated corrections are finite, reduce the defect, and match bitwise across
-the exercised OpenMP thread counts.
+the exercised OpenMP thread counts. It also checks that the default eight-pass
+correction remains reproducible, that an explicit 16-pass correction improves
+the manufactured SPD defect, and that invalid pass counts fail closed.
 
 ## Limitations and follow-up
 

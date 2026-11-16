@@ -133,6 +133,8 @@ jobs:
           grep -q 'MFAMG_OMP_EDGES block=4 phase=0 threads=8 .* PASS' mfamg-omp.log
           grep -q 'MFAMG_OMP_EDGES block=5 phase=1 threads=8 .* PASS' mfamg-omp.log
           grep -q 'MFAMG_OMP_MULTIVECTOR threads=8 .* PASS' mfamg-omp.log
+          grep -q '^MFAMG_SPARSE_TERMINAL_PASSES passes=16 .* PASS$' mfamg-omp.log
+          grep -q '^MFAMG_SPARSE_TERMINAL_PASSES invalid range PASS$' mfamg-omp.log
 
       - name: Verify 8-thread pivoted RAS ILUTP regression
         if: matrix.mode == 'openmp'

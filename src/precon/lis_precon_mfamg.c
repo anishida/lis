@@ -47,6 +47,9 @@ extern double lis_half_to_double(uint16_t value);
 #define LIS_MFAMG_SMOOTHER_WEIGHTED_JACOBI 0
 #define LIS_MFAMG_SMOOTHER_BLOCK_JACOBI 1
 #define LIS_MFAMG_BLOCK_MAX_SIZE 16
+/* Only for the experimental, serial sparse-terminal fallback. */
+#define LIS_MFAMG_SPARSE_TERMINAL_DEFAULT_PASSES 8
+#define LIS_MFAMG_SPARSE_TERMINAL_MAX_PASSES 32
 
 /* Memory-bound kernels may be slower at 4096 rows due to team overhead.
  * Build-time default: -DLIS_MFAMG_OMP_MIN_ROWS=N.
@@ -153,6 +156,7 @@ struct LIS_MFAMG_STRUCT
     LIS_INT coarse_n;
     /* Opt-in sparse terminal smoother for hierarchies that cannot coarsen. */
     LIS_INT sparse_terminal;
+    LIS_INT sparse_terminal_passes;
 
     LIS_VECTOR alias_rhs;
 
@@ -10424,7 +10428,9 @@ lis_mfamg_v_cycle(
          */
         if(state->sparse_terminal)
         {
-            for(smooth_pass=0;smooth_pass<8;smooth_pass++)
+            for(smooth_pass=0;
+                smooth_pass<state->sparse_terminal_passes;
+                smooth_pass++)
             {
                 err=lis_mfamg_smoother_apply(
                     level,b,x,(smooth_pass==0) ? LIS_TRUE : LIS_FALSE);
@@ -14395,20 +14401,48 @@ lis_precon_create_mfamg(
         }
         else
         {
-            err=lis_mfamg_prepare_level_work(
-                terminal_level,state->smoother_block_size);
+            const char *pass_env=getenv("LIS_MFAMG_SPARSE_TERMINAL_PASSES");
+            LIS_INT passes=LIS_MFAMG_SPARSE_TERMINAL_DEFAULT_PASSES;
+            /*
+             * Read once at setup; unlike global environment reads at
+             * apply time this is deterministic for the preconditioner.
+             * Cap work to prevent accidental unbounded iterations.
+             * The option is ignored when sparse terminal is not active.
+             */
+            if(pass_env!=NULL)
+            {
+                char *end=NULL;
+                long requested=strtol(pass_env,&end,10);
+                if(end==pass_env || *end!='\0' ||
+                   requested<1 ||
+                   requested>LIS_MFAMG_SPARSE_TERMINAL_MAX_PASSES)
+                {
+                    LIS_SETERR(LIS_ERR_ILL_ARG,
+                        "MFAMG sparse terminal passes must be 1..32\n");
+                    err=LIS_ERR_ILL_ARG;
+                }
+                else
+                {
+                    passes=(LIS_INT)requested;
+                }
+            }
+            if(err==LIS_SUCCESS)
+                err=lis_mfamg_prepare_level_work(
+                    terminal_level,state->smoother_block_size);
             if(err==LIS_SUCCESS)
             {
                 state->coarse_n=terminal_level->A->gn;
                 state->sparse_terminal=LIS_TRUE;
+                state->sparse_terminal_passes=passes;
                 fprintf(stderr,
                     "MFAMG SPARSE TERMINAL: levels=%d terminal_n=%d "
-                    "dense_limit=%d smoother=%s passes=8 "
+                    "dense_limit=%d smoother=%s passes=%d "
                     "(experimental, not an exact coarse solve)\n",
                     (int)state->nlevels,(int)state->coarse_n,
                     (int)terminal_limit,
                     (state->smoother_block_size>1) ?
-                        "block-jacobi" : "weighted-jacobi");
+                        "block-jacobi" : "weighted-jacobi",
+                    (int)passes);
             }
         }
     }
