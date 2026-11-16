@@ -133,19 +133,84 @@ tracked `Makefile.in` files are kept in sync to support builds without
 tracked `Makefile.in`. Regeneration with the project's maintained Automake
 version and a minimized diff must be checked before release.
 
-These tests **do not** establish a contact-model convergence advantage,
-iteration speedup, race freedom under arbitrary concurrent calls, or safe
-reuse across changing matrix generations. Benchmark on saved *identical*
-CalculiX/contact `A,b,near-nullspace` snapshots with the same outer
-FGMRES settings. Compare true physical residual, iterations, factor setup
-time, total wall time, and peak resident memory against standalone ILUTP
-and standalone MFAMG. The global variant builds an additional full-matrix ILUTP factorization,
+The synthetic tests **do not** establish race freedom for arbitrary
+concurrent applications of one instance or safe reuse when matrix storage
+is changed without notifying LIS. On production matrices, compare *the same*
+A, b, near-nullspace, FGMRES restart, iteration limit and tolerance, and
+report **true** residual, factor setup, total wall time and peak RSS.
+The global variant builds an additional full-matrix ILUTP factorization,
 which can be expensive. The RAS variant builds **one local ILUTP factor per
 domain**, potentially reducing individual setup cost but increasing aggregate
 memory as overlapping subdomains are replicated. Its `-ilutp_full_limit`
 applies **per domain**, not globally. Increasing the number of domains may
 also weaken the preconditioner; fewer iterations or more concurrent threads
 do not necessarily mean faster end-to-end solves.
+
+## External numerical validation for review (2026-11-16)
+
+The following are **anonymized aggregates from frozen linear Newton/contact
+systems** evaluated with native LIS. The matrix and RHS files, meshes,
+near-nullspace vectors and displacement solutions remain private and are
+**not** part of this repository. These are *single-run observations*, not
+Cal-culiX end-to-end nonlinear speedups or controlled performance claims.
+The full-system MFAMG experiments used the separately developed,
+**experimental** `LIS_MFAMG_SPARSE_TERMINAL=1` facility, because the
+unmodified MFAMG hierarchy otherwise stalled on one tested full system.
+This is a numerical limitation, not a configuration a user should have to
+assume for every input.
+
+For an anonymous difficult 60,265-unknown real-double CSR system, with
+six supplied near-nullspace candidates, FGMRES `restart=120`,
+`maxiter=500`, `tol=1e-6`, identical native ILUTP parameters and
+true residual verified against the original A and b:
+
+| Preconditioner | Threads | Iterations | True relative residual | Setup + solve, seconds | Outcome |
+| --- | ---: | ---: | ---: | ---: | --- |
+| ILUTP alone | 1 | 154 | 9.93e-7 | 24.30 | converged |
+| MFAMG + global ILUTP | 1 | 114 | 6.05e-7 | 25.98 | converged |
+| MFAMG alone | 4 | limit 500 | 4.25e-6 | 18.96 | not converged |
+| MFAMG + 4-domain RAS ILUTP | 4 | 227 | 8.65e-7 | 44.32 | converged |
+
+The one- and four-thread runtimes are **not a controlled speedup
+comparison**. For the two serial ILUTP configurations the composition
+reduced Krylov iterations, **but did not reduce total time**. The tested
+simple contiguous-row RAS partition was slower and costlier in memory.
+With another difficult system, the same `restart=120` configuration
+converged in 104 iterations / 14.03 s using ILUTP alone versus 91
+iterations / 20.83 s using the global composite.
+
+On a separate difficult system, **standalone native ILUTP, the global
+composite and the local RAS composite all returned `LIS_BREAKDOWN`
+during incomplete factorization**. A zero pivot emerged after sparse
+elimination and pivoting, not from a zero original diagonal. Explicit
+pivot regularization permitted setup but caused FGMRES breakdown; it
+is not a numerical fix. No silent pivot regularization or fallback has
+been introduced.
+
+These results support **reviewing a deliberately limited experimental
+preconditioner**, not describing it as production-ready or universally
+robust. The separate, model-informed C3D8I static-condensation prototype
+is **not part of this PR** and does not constrain the general LIS
+preconditioner to a particular finite-element type.
+
+## Ready-for-review boundaries
+
+- Scope is opt-in, real-double, single-LIS-rank, unsplit CSR; multiple
+  OpenMP threads are allowed only with explicitly selected RAS correction.
+- Caller supplies physically appropriate near-nullspace vectors.
+  Numerical convergence is **not guaranteed**; native ILUTP breakdown
+  is propagated without a hidden fallback.
+- A single composite instance is not reentrant. Rebuild for changed
+  matrix generations. Direct edits to CSR arrays bypass generation checks.
+- USERDEF numeric ID changes from 13 to 14. The `LIS_PRECON_STRUCT`
+  ABI layout is unchanged, but external consumers must recompile.
+- The separate C3D8I reduction remains outside this PR.
+- The CI matrix covers Linux/Windows, serial/OpenMP, MPI rejection,
+  complex/quad and 64-bit integer builds, ASan/UBSan/LSan, TSan/Archer
+  and injected-OOM paths. A passing CI is **not** evidence that this
+  preconditioner solves every nonlinear contact system successfully.
+- Maintainer review/approval and any requested changes remain necessary
+  before merging into `develop`.
 
 ## ABI / rollout
 
@@ -164,8 +229,9 @@ the human-readable built-in label is shortened to `MFAMG+P`. Search external
 code for hardcoded preconditioner ID 13 before upgrading. Recompile code
 against a consistent LIS header and binary; code with hardcoded
 user-defined preconditioner IDs must be updated.
-This PR is experimental and should not be merged without CI and real
-contact-matrix verification. The optional RAS composition is a separate
-numerical mode with a wider validation surface. Splitting it into a
-follow-up PR is reasonable if maintainers prefer the global composite to
-be reviewed independently.
+This PR is experimental and may be made **Ready for Review** when the
+relevant CI checks pass and numerical limitations are documented; it
+must not be treated as production-ready or merged without maintainer
+review. The optional RAS composition has a wider validation surface.
+Splitting it into a follow-up PR is reasonable if maintainers prefer
+the global composite to be reviewed independently.
