@@ -209,6 +209,7 @@ static int test_owned_lifecycle(LIS_MATRIX A,LIS_VECTOR b,
     {
         LIS_SOLVER solver=NULL;
         LIS_PRECON precon=NULL;
+        void *opaque=&err;
         err=lis_solver_create(&solver);
         if(err) { failed=1; goto finish_iteration; }
         err=lis_solver_set_option(
@@ -227,6 +228,22 @@ static int test_owned_lifecycle(LIS_MATRIX A,LIS_VECTOR b,
             goto finish_iteration;
         }
         solver->precon=precon;
+        /* The built-in owns user_data. Public USERDEF accessors must fail
+         * without overwriting or exposing the composite state pointer. */
+        err=lis_precon_set_user_data(precon,NULL);
+        if(err!=LIS_ERR_NOT_IMPLEMENTED)
+        {
+            fprintf(stderr,"composite user_data setter not rejected\n");
+            failed=1;
+            goto finish_iteration;
+        }
+        err=lis_precon_get_user_data(precon,&opaque);
+        if(err!=LIS_ERR_NOT_IMPLEMENTED || opaque!=&err)
+        {
+            fprintf(stderr,"composite user_data getter not rejected\n");
+            failed=1;
+            goto finish_iteration;
+        }
         err=lis_psolve(solver,b,reference);
         if(err) { failed=1; goto finish_iteration; }
         err=lis_vector_copy(b,x);
@@ -323,10 +340,10 @@ static int check_parallel_ras(LIS_MATRIX A,LIS_VECTOR b,
 {
     struct {
         int threads,overlap,full;
-    } cases[]={{2,0,0},{2,1,0},{4,1,0},{4,2,1}};
+    } cases[]={{1,0,0},{1,1,0},{2,0,0},{2,1,0},{4,1,0},{4,2,1}};
     const int original_threads=omp_get_max_threads();
     const int original_dynamic=omp_get_dynamic();
-    LIS_VECTOR first=NULL,residual=NULL,modes[1];
+    LIS_VECTOR first=NULL,residual=NULL,two_thread_reference=NULL,modes[1];
     LIS_REAL bnorm,rnorm;
     int failed=0,c,k;
     LIS_INT err,j;
@@ -335,6 +352,8 @@ static int check_parallel_ras(LIS_MATRIX A,LIS_VECTOR b,
     err=lis_vector_duplicate(A,&first);
     if(err) { failed=1; goto cleanup; }
     err=lis_vector_duplicate(A,&residual);
+    if(err) { failed=1; goto cleanup; }
+    err=lis_vector_duplicate(A,&two_thread_reference);
     if(err) { failed=1; goto cleanup; }
     err=lis_vector_nrm2(b,&bnorm);
     if(err || !(bnorm>0.0)) { failed=1; goto cleanup; }
@@ -423,6 +442,30 @@ static int check_parallel_ras(LIS_MATRIX A,LIS_VECTOR b,
                 err=lis_vector_copy(x,first);
                 if(err) { failed=1; goto case_cleanup; }
             }
+            if(k && cases[c].overlap==1 && !cases[c].full)
+            {
+                if(workers==2)
+                {
+                    /* Same operator and four RAS domains: remember its
+                     * result for an exact cross-thread comparison. */
+                    err=lis_vector_copy(x,two_thread_reference);
+                    if(err) { failed=1; goto case_cleanup; }
+                }
+                else if(workers==4)
+                {
+                    if(memcmp(x->value,two_thread_reference->value,
+                              (size_t)x->n*sizeof(*x->value))!=0)
+                    {
+                        fprintf(stderr,
+                            "RAS solutions differ bitwise: 2 vs 4 workers "
+                            "with overlap=1 and four domains\n");
+                        failed=1;
+                        goto case_cleanup;
+                    }
+                    printf("MFAMG_ILUTP_RAS_BITWISE threads=2_vs_4 "
+                           "overlap=1 domains=4 PASS\n");
+                }
+            }
         }
         printf("MFAMG_ILUTP_RAS threads=%d overlap=%d full=%d "
                "physical_relres=%.9e DETERMINISTIC PASS\n",
@@ -434,6 +477,7 @@ case_cleanup:
     }
 
 cleanup:
+    if(two_thread_reference) lis_vector_destroy(two_thread_reference);
     if(residual) lis_vector_destroy(residual);
     if(first) lis_vector_destroy(first);
     omp_set_num_threads(original_threads);

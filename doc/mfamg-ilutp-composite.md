@@ -25,9 +25,12 @@ correction, *not* ILUTP pivoting inside MFAMG blocks and *not* recursive
 `Hybrid`. The outer FGMRES still verifies convergence on the original
 system.
 
-## Initial supported scope
+## Supported matrices and execution modes
 
-- Real, double-precision, non-split, single-process explicit CSR matrices.
+- The operator is a real-double, non-split CSR matrix **within one LIS/MPI
+  process** (`nprocs=1`); no distributed matrix or inter-rank exchanges are
+  supported. This serial *matrix ownership* restriction does **not** prohibit
+  multiple OpenMP threads operating on independent local RAS domains.
 - `-scale none`; at least one caller-supplied MFAMG near-nullspace vector.
 - **Global mode (default):** one native ILUTP factor with a serial pivot
   sequence. Set `OMP_NUM_THREADS=1` **before** creating the solver.
@@ -51,7 +54,12 @@ system.
   threads. Independent instances can be created separately.
 - Numeric PSD/sequence preconditioner refresh is not implemented in this
   first version. Each apply checks the original matrix pointer and the
-  structure/value generation recorded at setup, rejecting stale factors.
+  structure/value generation recorded at setup, rejecting stale factors
+  **only when the generation counters are updated through LIS APIs**.
+  Applications that modify `A->ptr`, `A->index` or `A->value` directly,
+  without calling `lis_matrix_mark_structure_changed()` or
+  `lis_matrix_mark_values_changed()` as appropriate, bypass this safeguard.
+  Never mutate the CSR storage during a preconditioner apply.
   Rebuild with ordinary `lis_solve` after each changed Newton/contact
   matrix; do not cache this preconditioner across matrix updates.
 
@@ -112,6 +120,12 @@ invalidation on an in-place matrix generation change. In OpenMP builds
 `./test/testmfamgilutp --parallel-ras` additionally tests actual two-/four-
 worker teams, overlaps 0/1/2, bounded complete-fill local ILUTP, repeated
 FGMRES solves, original-system residuals and deterministic solutions.
+For a fixed four-domain configuration with overlap 1, the test also compares
+the entire final solution **bitwise across two and four OpenMP workers**
+(`memcmp`), not merely across successive solves at the same thread count.
+An additional RAS-specific ASan/UBSan/LSan job exercises one, two and four
+workers; the LLVM Archer/ThreadSanitizer job checks the composite RAS path.
+A separate CI job covers complex, quad-build and 64-bit LIS_INT combinations.
 
 The source Automake file is `src/precon/Makefile.am` / `test/Makefile.am`;
 tracked `Makefile.in` files are kept in sync to support builds without
@@ -125,8 +139,13 @@ reuse across changing matrix generations. Benchmark on saved *identical*
 CalculiX/contact `A,b,near-nullspace` snapshots with the same outer
 FGMRES settings. Compare true physical residual, iterations, factor setup
 time, total wall time, and peak resident memory against standalone ILUTP
-and standalone MFAMG. The second full-matrix ILUTP setup can be expensive,
-so better convergence need not imply better total runtime.
+and standalone MFAMG. The global variant builds an additional full-matrix ILUTP factorization,
+which can be expensive. The RAS variant builds **one local ILUTP factor per
+domain**, potentially reducing individual setup cost but increasing aggregate
+memory as overlapping subdomains are replicated. Its `-ilutp_full_limit`
+applies **per domain**, not globally. Increasing the number of domains may
+also weaken the preconditioner; fewer iterations or more concurrent threads
+do not necessarily mean faster end-to-end solves.
 
 ## ABI / rollout
 
@@ -135,11 +154,18 @@ moving `LIS_PRECON_TYPE_USERDEF` from 13 to 14. The internal composite
 state reuses the existing `LIS_PRECON_STRUCT::user_data` pointer only for
 the new built-in type; the preconditioner struct size and layout are
 **unchanged**. Registered user-defined preconditioners keep their prior
-`user_data` and `user_destroy` semantics. The public `LIS_PRECONNAME_MAX` is deliberately kept
+`user_data` and `user_destroy` semantics. To prevent applications from
+overwriting or obtaining the composite's private owned state, public
+`lis_precon_set_user_data()` and `lis_precon_get_user_data()` explicitly
+return `LIS_ERR_NOT_IMPLEMENTED` for `MFAMG_ILUTP`; these APIs remain
+unchanged for registered user-defined preconditioners. The public `LIS_PRECONNAME_MAX` is deliberately kept
 at 10 to avoid changing the `LIS_PRECON_REGISTER_STRUCT` name-buffer size;
 the human-readable built-in label is shortened to `MFAMG+P`. Search external
 code for hardcoded preconditioner ID 13 before upgrading. Recompile code
 against a consistent LIS header and binary; code with hardcoded
 user-defined preconditioner IDs must be updated.
 This PR is experimental and should not be merged without CI and real
-contact-matrix verification.
+contact-matrix verification. The optional RAS composition is a separate
+numerical mode with a wider validation surface. Splitting it into a
+follow-up PR is reasonable if maintainers prefer the global composite to
+be reviewed independently.

@@ -149,10 +149,13 @@ jobs:
         run: |
           set -euo pipefail
           OMP_DYNAMIC=FALSE OMP_NUM_THREADS=4 ./test/testmfamgilutp --parallel-ras | tee mfamg-ilutp-ras.log
+          grep -q 'MFAMG_ILUTP_RAS threads=1 overlap=0 full=0 .* DETERMINISTIC PASS' mfamg-ilutp-ras.log
+          grep -q 'MFAMG_ILUTP_RAS threads=1 overlap=1 full=0 .* DETERMINISTIC PASS' mfamg-ilutp-ras.log
           grep -q 'MFAMG_ILUTP_RAS threads=2 overlap=0 full=0 .* DETERMINISTIC PASS' mfamg-ilutp-ras.log
           grep -q 'MFAMG_ILUTP_RAS threads=2 overlap=1 full=0 .* DETERMINISTIC PASS' mfamg-ilutp-ras.log
           grep -q 'MFAMG_ILUTP_RAS threads=4 overlap=1 full=0 .* DETERMINISTIC PASS' mfamg-ilutp-ras.log
           grep -q 'MFAMG_ILUTP_RAS threads=4 overlap=2 full=1 .* DETERMINISTIC PASS' mfamg-ilutp-ras.log
+          grep -q 'MFAMG_ILUTP_RAS_BITWISE threads=2_vs_4 overlap=1 domains=4 PASS' mfamg-ilutp-ras.log
 
       - name: Smoke-test native ILUTP Matrix Market comparison
         if: matrix.mode == 'serial'
@@ -711,6 +714,7 @@ jobs:
           OMP_DYNAMIC=FALSE OMP_NUM_THREADS=4 ./test/testmfamgilutp.exe --parallel-ras | tee mfamg-ilutp-ras-msys2.log
           grep -q 'MFAMG_ILUTP_RAS threads=2 overlap=1 full=0 .* DETERMINISTIC PASS' mfamg-ilutp-ras-msys2.log
           grep -q 'MFAMG_ILUTP_RAS threads=4 overlap=2 full=1 .* DETERMINISTIC PASS' mfamg-ilutp-ras-msys2.log
+          grep -q 'MFAMG_ILUTP_RAS_BITWISE threads=2_vs_4 overlap=1 domains=4 PASS' mfamg-ilutp-ras-msys2.log
 
       - name: Upload failed test logs
         if: failure()
@@ -900,6 +904,12 @@ jobs:
             options: '--enable-complex'
           - mode: quad
             options: '--enable-quad'
+          - mode: longlong
+            options: '--enable-longlong'
+          - mode: complex-longlong
+            options: '--enable-complex --enable-longlong'
+          - mode: quad-longlong
+            options: '--enable-quad --enable-longlong'
     env:
       OMP_NUM_THREADS: '1'
     steps:
@@ -922,3 +932,49 @@ jobs:
         run: |
           make -C test testmfamgilutp
           ./test/testmfamgilutp
+
+
+  mfamg-ilutp-ras-sanitizers:
+    name: MFAMG+ILUTP OpenMP RAS ASan/UBSan/LSan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      OMP_NUM_THREADS: '4'
+      OMP_DYNAMIC: 'FALSE'
+      ASAN_OPTIONS: 'detect_leaks=1:halt_on_error=1'
+      LSAN_OPTIONS: 'exitcode=23:report_objects=1'
+      UBSAN_OPTIONS: 'halt_on_error=1:print_stacktrace=1'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+      - name: Configure OpenMP with AddressSanitizer and UBSan
+        run: |
+          autoreconf -fiv
+          ./configure --enable-test --enable-omp \
+            --disable-fortran --disable-f90 --disable-saamg --disable-mpi \
+            CC=gcc \
+            CFLAGS="-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all" \
+            LDFLAGS="-fsanitize=address,undefined"
+      - name: Build all targets
+        run: make -j2
+      - name: Validate global composite and RAS 1/2/4 threads under sanitizers
+        run: |
+          set -euo pipefail
+          OMP_NUM_THREADS=1 ./test/testmfamgilutp
+          OMP_NUM_THREADS=4 ./test/testmfamgilutp --parallel-ras | tee mfamg-ilutp-ras-sanitizer.log
+          grep -q 'MFAMG_ILUTP_RAS threads=1 overlap=1 full=0 .* DETERMINISTIC PASS' mfamg-ilutp-ras-sanitizer.log
+          grep -q 'MFAMG_ILUTP_RAS_BITWISE threads=2_vs_4 overlap=1 domains=4 PASS' mfamg-ilutp-ras-sanitizer.log
+      - name: Upload failure logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mfamg-ilutp-ras-sanitizer-logs
+          path: |
+            config.log
+            test/test-suite.log
+            test/*.log
+            mfamg-ilutp-ras-sanitizer.log
+          if-no-files-found: ignore
