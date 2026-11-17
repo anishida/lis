@@ -844,7 +844,7 @@ done:
  * Exercise the opt-in sparse terminal without an O(n^2) coarse factor,
  * and verify deterministic finite corrections under OpenMP.
  */
-static int mfamg_sparse_terminal_regression(void)
+static int mfamg_sparse_terminal_regression(LIS_REAL diagonal)
 {
     enum { CHAIN=16, BLOCKS=36, MODES=12, NTEST=CHAIN*BLOCKS };
     LIS_MATRIX A=NULL;
@@ -881,7 +881,7 @@ static int mfamg_sparse_terminal_regression(void)
     if(A->nprocs!=1) {failed=0;goto done;}
     for(i=0;i<NTEST;i++)
     {
-        err=lis_matrix_set_value(LIS_INS_VALUE,i,i,(LIS_SCALAR)4.0,A);
+        err=lis_matrix_set_value(LIS_INS_VALUE,i,i,(LIS_SCALAR)diagonal,A);
         if(err) goto done;
         if(i%CHAIN>0)
         {
@@ -1001,11 +1001,14 @@ static int mfamg_sparse_terminal_regression(void)
                 }
                 else if(memcmp(baseline8,x->value,
                                (size_t)NTEST*sizeof(LIS_SCALAR))==0 ||
-                        normr/normb>relative8+(LIS_REAL)1.0e-8)
+                        normr/normb >= relative8 *
+                           (diagonal<3.0 ? (LIS_REAL)0.99 : (LIS_REAL)1.0))
                 {
                     fprintf(stderr,
-                        "MFAMG_SPARSE_TERMINAL_PASSES 16 passes "
-                        "did not improve the coarse correction\n");
+                        "MFAMG_SPARSE_TERMINAL_PASSES insufficient improvement "
+                        "diagonal=%.3f 8pass=%.9e 16pass=%.9e\n",
+                        (double)diagonal,(double)relative8,
+                        (double)(normr/normb));
                     goto done;
                 }
             }
@@ -1023,13 +1026,19 @@ static int mfamg_sparse_terminal_regression(void)
         lis_precon_destroy(pc);pc=NULL;
         lis_solver_destroy(solver);solver=NULL;
     }
-        printf("MFAMG_SPARSE_TERMINAL_PASSES passes=%d relative_defect=%.9e PASS\n",
-               pass_case ? 16 : 8,(double)(normr/normb));
+        printf("MFAMG_SPARSE_TERMINAL_PASSES passes=%d diagonal=%.3f "
+               "relative_defect=%.9e PASS\n",
+               pass_case ? 16 : 8,(double)diagonal,(double)(normr/normb));
     }
+    if(diagonal<3.0)
+        printf("MFAMG_SPARSE_TERMINAL_SLOW diagonal=%.3f "
+               "relative_improvement=%.6f PASS\n",
+               (double)diagonal,
+               (double)(1.0-(normr/normb)/relative8));
     /* Reject invalid work budgets rather than silently ignoring typos. */
-    for(pass_case=0;pass_case<3;pass_case++)
+    for(pass_case=0;pass_case<5;pass_case++)
     {
-        const char *invalid[3]={"0","33","invalid"};
+        const char *invalid[5]={"0","33","invalid","16abc","-1"};
 #ifdef _WIN32
         if(_putenv_s("LIS_MFAMG_SPARSE_TERMINAL_PASSES",
                      invalid[pass_case])!=0) goto done;
@@ -1115,7 +1124,8 @@ int main(int argc,char **argv)
         failed=mfamg_omp_stress();
         if(!failed) failed=mfamg_omp_block_edges();
         if(!failed) failed=mfamg_omp_multivector();
-        if(!failed) failed=mfamg_sparse_terminal_regression();
+        if(!failed) failed=mfamg_sparse_terminal_regression((LIS_REAL)4.0);
+        if(!failed) failed=mfamg_sparse_terminal_regression((LIS_REAL)2.25);
         lis_finalize();
         return failed ? 1 : 0;
     }
@@ -1193,7 +1203,8 @@ int main(int argc,char **argv)
        mfamg_omp_multivector()!=0)
         failed=1;
 #endif
-    if(!failed && mfamg_sparse_terminal_regression()!=0)
+    if(!failed && (mfamg_sparse_terminal_regression((LIS_REAL)4.0)!=0 ||
+                   mfamg_sparse_terminal_regression((LIS_REAL)2.25)!=0))
         failed=1;
 done:
     if(err) fprintf(stderr,"MFAMG VCYCLE setup rc=%d\n",(int)err);
