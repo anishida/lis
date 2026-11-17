@@ -1,0 +1,4 @@
+# Upstream lis (anishida/lis) is not clang-formatted.
+# Disable formatting so editors keep upstream's style and merges stay clean.
+DisableFormat: true
+SortIncludes: Never
