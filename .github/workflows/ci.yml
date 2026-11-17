@@ -811,6 +811,11 @@ jobs:
         run: |
           make -j2
           make -C test testhalfilut
+      - name: Verify RCO-to-CSR assembly OOM cleanup independently
+        run: |
+          set -euo pipefail
+          ./test/testhalfilut --rco-assemble-oom | tee rco-assemble-oom.log
+          grep -Eq '^RCO_ASSEMBLE_OOM_CLEANUP checked=[1-9][0-9]* PASS$' rco-assemble-oom.log
       - name: Inject OOM while ILUTP domains factor concurrently
         run: |
           set -euo pipefail
@@ -828,6 +833,7 @@ jobs:
             test/test-suite.log
             test/*.log
             ilutp-ras-oom.log
+            rco-assemble-oom.log
           if-no-files-found: ignore
 
   native-oom:

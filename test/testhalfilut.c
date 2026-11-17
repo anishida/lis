@@ -2250,6 +2250,19 @@ main(
 		return failed ? 1 : 0;
 	}
 
+    /* Run the matrix conversion OOM regression independently of ILUTP. */
+    if(argc==2 && strcmp(argv[1],"--rco-assemble-oom")==0)
+    {
+#ifndef LIS_TEST_OOM
+        fprintf(stderr,"RCO assembly OOM test requires --enable-oom-tests\n");
+        failed=1;
+#else
+        failed=check_rco_assemble_oom_cleanup();
+#endif
+        lis_finalize();
+        return failed ? 1 : 0;
+    }
+
 	/* Isolate parallel ILUTP from unrelated legacy half-ILUT tests:
 	 * the latter were not originally designed for OMP_NUM_THREADS=8. */
 	if(argc==2 && strcmp(argv[1],"--parallel-ras-ilutp")==0)
