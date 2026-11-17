@@ -737,9 +737,6 @@ am_testmfamgdeepmerge_OBJECTS = testmfamgdeepmerge.$(OBJEXT)
 testmfamgdeepmerge_OBJECTS = $(am_testmfamgdeepmerge_OBJECTS)
 testmfamgdeepmerge_LDADD = $(LDADD)
 testmfamgdeepmerge_DEPENDENCIES =
-am_testmfamgilutp_OBJECTS = testmfamgilutp.$(OBJEXT)
-testmfamgilutp_OBJECTS = $(am_testmfamgilutp_OBJECTS)
-testmfamgilutp_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_testmfamgfineagg_OBJECTS = testmfamgfineagg.$(OBJEXT)
 testmfamgfineagg_OBJECTS = $(am_testmfamgfineagg_OBJECTS)
 testmfamgfineagg_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -747,6 +744,9 @@ am_testmfamggalerkin_OBJECTS = testmfamggalerkin.$(OBJEXT)
 testmfamggalerkin_OBJECTS = $(am_testmfamggalerkin_OBJECTS)
 testmfamggalerkin_LDADD = $(LDADD)
 testmfamggalerkin_DEPENDENCIES =
+am_testmfamgilutp_OBJECTS = testmfamgilutp.$(OBJEXT)
+testmfamgilutp_OBJECTS = $(am_testmfamgilutp_OBJECTS)
+testmfamgilutp_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_testmfamgvcycle_OBJECTS = testmfamgvcycle.$(OBJEXT)
 testmfamgvcycle_OBJECTS = $(am_testmfamgvcycle_OBJECTS)
 testmfamgvcycle_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -1072,9 +1072,8 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testmatrixpolicysolve.Po \
 	./$(DEPDIR)/testmatvecblock.Po ./$(DEPDIR)/testmfamg.Po \
 	./$(DEPDIR)/testmfamgdeepmerge.Po \
-	./$(DEPDIR)/testmfamgilutp.Po \
 	./$(DEPDIR)/testmfamgfineagg.Po \
-	./$(DEPDIR)/testmfamggalerkin.Po \
+	./$(DEPDIR)/testmfamggalerkin.Po ./$(DEPDIR)/testmfamgilutp.Po \
 	./$(DEPDIR)/testmfamgvcycle.Po \
 	./$(DEPDIR)/testnearnullspace.Po \
 	./$(DEPDIR)/testnullspacecandidates.Po \
@@ -1206,9 +1205,9 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testmatrixoperatormpi_SOURCES) \
 	$(testmatrixpolicysolve_SOURCES) $(testmatvecblock_SOURCES) \
 	$(testmfamg_SOURCES) $(testmfamgdeepmerge_SOURCES) \
-	$(testmfamgilutp_SOURCES) \
 	$(testmfamgfineagg_SOURCES) $(testmfamggalerkin_SOURCES) \
-	$(testmfamgvcycle_SOURCES) $(testnearnullspace_SOURCES) \
+	$(testmfamgilutp_SOURCES) $(testmfamgvcycle_SOURCES) \
+	$(testnearnullspace_SOURCES) \
 	$(testnullspacecandidates_SOURCES) \
 	$(testnullspacelift_SOURCES) $(testompelastic_SOURCES) \
 	$(testoomalloc_SOURCES) $(testoomdiag_SOURCES) \
@@ -1297,9 +1296,9 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testmatrixoperatormpi_SOURCES) \
 	$(testmatrixpolicysolve_SOURCES) $(testmatvecblock_SOURCES) \
 	$(testmfamg_SOURCES) $(testmfamgdeepmerge_SOURCES) \
-	$(testmfamgilutp_SOURCES) \
 	$(testmfamgfineagg_SOURCES) $(testmfamggalerkin_SOURCES) \
-	$(testmfamgvcycle_SOURCES) $(testnearnullspace_SOURCES) \
+	$(testmfamgilutp_SOURCES) $(testmfamgvcycle_SOURCES) \
+	$(testnearnullspace_SOURCES) \
 	$(testnullspacecandidates_SOURCES) \
 	$(testnullspacelift_SOURCES) $(testompelastic_SOURCES) \
 	$(am__testoomalloc_SOURCES_DIST) \
@@ -2595,10 +2594,6 @@ testmfamgdeepmerge$(EXEEXT): $(testmfamgdeepmerge_OBJECTS) $(testmfamgdeepmerge_
 	@rm -f testmfamgdeepmerge$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmfamgdeepmerge_OBJECTS) $(testmfamgdeepmerge_LDADD) $(LIBS)
 
-testmfamgilutp$(EXEEXT): $(testmfamgilutp_OBJECTS) $(testmfamgilutp_DEPENDENCIES) $(EXTRA_testmfamgilutp_DEPENDENCIES) 
-	@rm -f testmfamgilutp$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(testmfamgilutp_OBJECTS) $(testmfamgilutp_LDADD) $(LIBS)
-
 testmfamgfineagg$(EXEEXT): $(testmfamgfineagg_OBJECTS) $(testmfamgfineagg_DEPENDENCIES) $(EXTRA_testmfamgfineagg_DEPENDENCIES) 
 	@rm -f testmfamgfineagg$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmfamgfineagg_OBJECTS) $(testmfamgfineagg_LDADD) $(LIBS)
@@ -2606,6 +2601,10 @@ testmfamgfineagg$(EXEEXT): $(testmfamgfineagg_OBJECTS) $(testmfamgfineagg_DEPEND
 testmfamggalerkin$(EXEEXT): $(testmfamggalerkin_OBJECTS) $(testmfamggalerkin_DEPENDENCIES) $(EXTRA_testmfamggalerkin_DEPENDENCIES) 
 	@rm -f testmfamggalerkin$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmfamggalerkin_OBJECTS) $(testmfamggalerkin_LDADD) $(LIBS)
+
+testmfamgilutp$(EXEEXT): $(testmfamgilutp_OBJECTS) $(testmfamgilutp_DEPENDENCIES) $(EXTRA_testmfamgilutp_DEPENDENCIES) 
+	@rm -f testmfamgilutp$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testmfamgilutp_OBJECTS) $(testmfamgilutp_LDADD) $(LIBS)
 
 testmfamgvcycle$(EXEEXT): $(testmfamgvcycle_OBJECTS) $(testmfamgvcycle_DEPENDENCIES) $(EXTRA_testmfamgvcycle_DEPENDENCIES) 
 	@rm -f testmfamgvcycle$(EXEEXT)
@@ -2948,9 +2947,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatvecblock.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamgdeepmerge.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamgilutp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamgfineagg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamggalerkin.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamgilutp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamgvcycle.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testnearnullspace.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testnullspacecandidates.Po@am__quote@ # am--include-marker
@@ -4104,6 +4103,13 @@ testmfamgdeepmerge.log: testmfamgdeepmerge$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testmfamgilutp.log: testmfamgilutp$(EXEEXT)
+	@p='testmfamgilutp$(EXEEXT)'; \
+	b='testmfamgilutp'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -4307,9 +4313,9 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testmatvecblock.Po
 	-rm -f ./$(DEPDIR)/testmfamg.Po
 	-rm -f ./$(DEPDIR)/testmfamgdeepmerge.Po
-	-rm -f ./$(DEPDIR)/testmfamgilutp.Po
 	-rm -f ./$(DEPDIR)/testmfamgfineagg.Po
 	-rm -f ./$(DEPDIR)/testmfamggalerkin.Po
+	-rm -f ./$(DEPDIR)/testmfamgilutp.Po
 	-rm -f ./$(DEPDIR)/testmfamgvcycle.Po
 	-rm -f ./$(DEPDIR)/testnearnullspace.Po
 	-rm -f ./$(DEPDIR)/testnullspacecandidates.Po
@@ -4512,9 +4518,9 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testmatvecblock.Po
 	-rm -f ./$(DEPDIR)/testmfamg.Po
 	-rm -f ./$(DEPDIR)/testmfamgdeepmerge.Po
-	-rm -f ./$(DEPDIR)/testmfamgilutp.Po
 	-rm -f ./$(DEPDIR)/testmfamgfineagg.Po
 	-rm -f ./$(DEPDIR)/testmfamggalerkin.Po
+	-rm -f ./$(DEPDIR)/testmfamgilutp.Po
 	-rm -f ./$(DEPDIR)/testmfamgvcycle.Po
 	-rm -f ./$(DEPDIR)/testnearnullspace.Po
 	-rm -f ./$(DEPDIR)/testnullspacecandidates.Po
