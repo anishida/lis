@@ -866,6 +866,53 @@ done:
     return failed;
 }
 
+
+/* A nonzero original diagonal may become a zero Schur pivot after
+ * incomplete elimination. Reject that factor explicitly (no fallback),
+ * rather than producing an invalid inverse diagonal. */
+static int check_singular_pivot_rejection(void)
+{
+    LIS_MATRIX A=NULL;
+    LIS_SOLVER solver=NULL;
+    LIS_PRECON precon=NULL;
+    LIS_INT err,i,j;
+    int failed=1;
+
+    err=lis_matrix_create(LIS_COMM_WORLD,&A);if(err)goto done;
+    err=lis_matrix_set_size(A,0,2);if(err)goto done;
+    for(i=0;i<2;i++)
+        for(j=0;j<2;j++)
+        {
+            err=lis_matrix_set_value(LIS_INS_VALUE,i,j,1.0,A);
+            if(err)goto done;
+        }
+    err=lis_matrix_set_type(A,LIS_MATRIX_CSR);if(err)goto done;
+    err=lis_matrix_assemble(A);if(err)goto done;
+    err=lis_solver_create(&solver);if(err)goto done;
+    err=lis_solver_set_option(
+       "-i fgmres -p ilut -scale none -ilutp 1 -ilutp_threshold 0.5 "
+       "-ilut_drop 0 -ilut_rate 8 -ilut_rcm 0 -ilut_equil 0 "
+       "-ilu_pivot_tol 0",solver);
+    if(err)goto done;
+    solver->A=A;
+    err=lis_precon_create(solver,&precon);
+    if(err!=LIS_BREAKDOWN)
+    {
+        fprintf(stderr,"ILUTP singular pivot expected breakdown, got %d\n",(int)err);
+        if(err==LIS_SUCCESS)lis_precon_destroy(precon);
+        precon=NULL;
+        goto done;
+    }
+    precon=NULL; /* failing factory already destroyed its preconditioner */
+    printf("ILUTP_SINGULAR_ZERO_PIVOT_REJECTED PASS\n");
+    failed=0;
+done:
+    if(precon)lis_precon_destroy(precon);
+    if(solver)lis_solver_destroy(solver);
+    if(A)lis_matrix_destroy(A);
+    return failed;
+}
+
 int main(int argc,char **argv)
 {
     int failed=0;
@@ -893,6 +940,7 @@ int main(int argc,char **argv)
     failed|=check_hybrid_equil_user_rejection();
     failed|=check_ilutp_half_guard();
     failed|=check_full_fill();
+    failed|=check_singular_pivot_rejection();
     err=lis_solver_create(&solver);
     if(err)failed=1;
     else

@@ -90,7 +90,8 @@ LIS_PRECON_CREATE_XXX lis_precon_create_xxx[] = {
         lis_precon_create_sainv,lis_precon_create_saamg,  lis_precon_create_iluc,
         lis_precon_create_ilut, lis_precon_create_bjacobi,
         lis_precon_builtin_unavailable,
-        lis_precon_create_mfamg
+        lis_precon_create_mfamg,
+        lis_precon_create_mfamg_ilutp
 };
 
 /*NEH support for extended "solve_kernel" workflow*/
@@ -100,7 +101,8 @@ LIS_PRECON_PSD_CREATE_XXX lis_precon_psd_create_xxx[] = {
         NULL,                   lis_precon_psd_create_saamg, NULL,
         NULL,                   NULL,
         lis_precon_builtin_unavailable,
-        lis_precon_create_mfamg
+        lis_precon_create_mfamg,
+        lis_precon_builtin_unavailable
 };
 
 /*NEH support for extended "solve_kernel" workflow*/
@@ -110,7 +112,8 @@ LIS_PRECON_PSD_UPDATE_XXX lis_precon_psd_update_xxx[] = {
         NULL,                   lis_precon_psd_update_saamg, NULL,
         NULL,                   NULL,
         lis_precon_builtin_unavailable,
-        lis_precon_psd_update_mfamg
+        lis_precon_psd_update_mfamg,
+        lis_precon_builtin_unavailable
 };
 
 LIS_PSOLVE_XXX lis_psolve_xxx[] = {
@@ -118,7 +121,8 @@ LIS_PSOLVE_XXX lis_psolve_xxx[] = {
         lis_psolve_ssor,     lis_psolve_hybrid, lis_psolve_none,
         lis_psolve_sainv,    lis_psolve_saamg,  lis_psolve_iluc,
         lis_psolve_ilut_csr, lis_psolve_bjacobi, lis_psolve_adds,
-        lis_psolve_mfamg
+        lis_psolve_mfamg,
+        lis_psolve_mfamg_ilutp
 };
 
 LIS_PSOLVEH_XXX lis_psolveh_xxx[] = {
@@ -126,6 +130,7 @@ LIS_PSOLVEH_XXX lis_psolveh_xxx[] = {
         lis_psolveh_ssor,     lis_psolveh_hybrid, lis_psolveh_none,
         lis_psolveh_sainv,    lis_psolveh_saamg,  lis_psolveh_iluc,
         lis_psolveh_ilut_csr, lis_psolveh_bjacobi, lis_psolveh_adds,
+        lis_psolve_builtin_unavailable,
         lis_psolve_builtin_unavailable
 };
 
@@ -704,6 +709,15 @@ LIS_INT lis_precon_set_user_data(LIS_PRECON precon, void *user_data)
         return LIS_ERR_ILL_ARG;
     }
 
+    /* The MFAMG+ILUTP built-in owns this slot. Exposing or overwriting
+     * it through the public user-data API would corrupt child ownership. */
+    if( precon->precon_type==LIS_PRECON_TYPE_MFAMG_ILUTP )
+    {
+        LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+                   "MFAMG_ILUTP user_data is reserved for built-in state\n");
+        return LIS_ERR_NOT_IMPLEMENTED;
+    }
+
     precon->user_data = user_data;
 
     LIS_DEBUG_FUNC_OUT;
@@ -725,6 +739,15 @@ LIS_INT lis_precon_get_user_data(LIS_PRECON precon, void **user_data)
     {
         LIS_SETERR(LIS_ERR_ILL_ARG,"user_data output pointer is NULL\n");
         return LIS_ERR_ILL_ARG;
+    }
+
+    /* Never expose the composite's owned child/state pointer as
+     * arbitrary application-controlled preconditioner user_data. */
+    if( precon->precon_type==LIS_PRECON_TYPE_MFAMG_ILUTP )
+    {
+        LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+                   "MFAMG_ILUTP user_data is reserved for built-in state\n");
+        return LIS_ERR_NOT_IMPLEMENTED;
     }
 
     *user_data = precon->user_data;
@@ -761,12 +784,13 @@ LIS_INT lis_precon_create(LIS_SOLVER solver, LIS_PRECON *precon)
 		        precon_type-LIS_PRECON_TYPE_USERDEF].pdestroy;
 		err = precon_register_top[precon_type-LIS_PRECON_TYPE_USERDEF].pcreate(solver,*precon);
 	}
-	else if( precon_type==LIS_PRECON_TYPE_MFAMG &&
+	else if( (precon_type==LIS_PRECON_TYPE_MFAMG ||
+          precon_type==LIS_PRECON_TYPE_MFAMG_ILUTP) &&
          solver->options[LIS_OPTIONS_ADDS] )
     {
         LIS_SETERR(
             LIS_ERR_NOT_IMPLEMENTED,
-            "MFAMG does not support additive Schwarz in the two-level implementation\n");
+            "MFAMG-based preconditioners do not support additive Schwarz\n");
 
         err =
             LIS_ERR_NOT_IMPLEMENTED;
@@ -1001,6 +1025,11 @@ LIS_INT lis_precon_destroy(LIS_PRECON precon)
 	    {
 	        err = precon->user_destroy(precon);
 	    }
+		if( precon->precon_type==LIS_PRECON_TYPE_MFAMG_ILUTP )
+		{
+			mfamg_err=lis_precon_destroy_mfamg_ilutp(precon);
+			if(err==LIS_SUCCESS) err=mfamg_err;
+		}
 		if( precon->ilut_ras )
 		{
 			lis_precon_ilut_ras_destroy(precon->ilut_ras);
@@ -1139,6 +1168,7 @@ LIS_INT lis_psolve_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
                 )
                 &&
                 precon_type!=LIS_PRECON_TYPE_MFAMG
+                && precon_type!=LIS_PRECON_TYPE_MFAMG_ILUTP
                 &&
                 solver->near_nullspace_coarse!=NULL
                 &&

@@ -65,7 +65,7 @@
  ************************************************/
 
 #define LIS_SOLVERS_LEN                 27
-#define LIS_PRECON_TYPE_LEN            13
+#define LIS_PRECON_TYPE_LEN            14
 
 
 LIS_SOLVER_CHECK_PARAMS lis_solver_check_params[] = {
@@ -202,7 +202,7 @@ LIS_INT LIS_SOLVER_OPTACT[] = {
 };
 
 char *lis_solver_atoi[]    = {"cg", "bicg", "cgs", "bicgstab", "bicgstabl", "gpbicg", "tfqmr","orthomin", "gmres", "jacobi", "gs", "sor", "bicgsafe", "cr", "bicr", "crs", "bicrstab", "gpbicr", "bicrsafe", "fgmres", "idrs", "idr1", "minres", "cocg", "cocr", "gcrodr", "fgcrodr"};
-char *lis_precon_atoi[]    = {"none", "jacobi", "ilu", "ssor", "hybrid", "is", "sainv", "saamg", "iluc", "ilut", "bjacobi", "", "mfamg"};
+char *lis_precon_atoi[]    = {"none", "jacobi", "ilu", "ssor", "hybrid", "is", "sainv", "saamg", "iluc", "ilut", "bjacobi", "", "mfamg", "mfamg_ilutp"};
 char *lis_storage_atoi[]   = {"csr", "csc", "msr", "dia", "ell", "jad", "bsr", "bsc", "vbr", "coo", "dns"};
 char *lis_print_atoi[]     = {"none", "mem", "out", "all"};
 char *lis_scale_atoi[]     = {"none", "jacobi", "symm_diag"};
@@ -211,7 +211,7 @@ char *lis_precision_atoi[] = {"double", "quad", "switch"};
 char *lis_conv_cond_atoi[] = {"nrm2_r", "nrm2_b", "nrm1_b"};
 
 char *lis_solvername[] = {"", "CG", "BiCG", "CGS", "BiCGSTAB", "BiCGSTAB(l)", "GPBiCG", "TFQMR", "Orthomin", "GMRES", "Jacobi",	"Gauss-Seidel", "SOR", "BiCGSafe", "CR", "BiCR", "CRS", "BiCRSTAB", "GPBiCR", "BiCRSafe", "FGMRES", "IDR(s)", "IDR(1)", "MINRES", "COCG", "COCR", "GCRO-DR", "FGCRO-DR"};
-char *lis_preconname[] = {"none", "Jacobi", "ILU", "SSOR", "Hybrid", "I+S", "SAINV", "SAAMG", "Crout ILU", "ILUT", "Block Jacobi", "", "MFAMG"};
+char *lis_preconname[] = {"none", "Jacobi", "ILU", "SSOR", "Hybrid", "I+S", "SAINV", "SAAMG", "Crout ILU", "ILUT", "Block Jacobi", "", "MFAMG", "MFAMG+P"};
 
 char *lis_returncode[] = {"LIS_SUCCESS", "LIS_ILL_OPTION", "LIS_BREAKDOWN", "LIS_OUT_OF_MEMORY", "LIS_MAXITER", "LIS_NOT_IMPLEMENTED", "LIS_ERR_FILE_IO"};
 char *lis_precisionname[] = {"double", "quad", "switch"};
@@ -2512,6 +2512,7 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
 	if( precon_type!=LIS_PRECON_TYPE_NONE &&
 	    precon_type<LIS_PRECON_TYPE_USERDEF &&
 	    precon_type!=LIS_PRECON_TYPE_MFAMG &&
+	    precon_type!=LIS_PRECON_TYPE_MFAMG_ILUTP &&
 	    precon==NULL )
 	{
 		if( A->matrix_type==LIS_MATRIX_USER )
@@ -4761,6 +4762,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	 */
 	if( solver->near_nullspace_dim>0 &&
 	    precon_type!=LIS_PRECON_TYPE_MFAMG &&
+	    precon_type!=LIS_PRECON_TYPE_MFAMG_ILUTP &&
 	    !(precon_type==LIS_PRECON_TYPE_HYBRID &&
 	      solver->options[LIS_OPTIONS_PPRECON]==
 	          LIS_PRECON_TYPE_MFAMG) )

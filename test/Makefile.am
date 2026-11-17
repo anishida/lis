@@ -373,3 +373,10 @@ TESTS += testmfamgfineagg$(EXEEXT)
 test_PROGRAMS += testmfamgdeepmerge
 testmfamgdeepmerge_SOURCES = testmfamgdeepmerge.c
 TESTS += testmfamgdeepmerge$(EXEEXT)
+
+
+# Serial experimental MFAMG -> ILUTP composition regression.
+test_PROGRAMS += testmfamgilutp
+testmfamgilutp_SOURCES = testmfamgilutp.c
+testmfamgilutp_LDADD = $(LDADD) -lm
+TESTS += testmfamgilutp$(EXEEXT)
