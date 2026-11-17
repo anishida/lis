@@ -123,6 +123,15 @@ jobs:
       - name: Run Automake test suite
         run: make -j2 check
 
+      - name: Verify serial MFAMG sparse-terminal defect regression
+        if: matrix.mode == 'serial'
+        run: |
+          set -euo pipefail
+          ./test/testmfamgvcycle | tee mfamg-serial.log
+          grep -q '^MFAMG_SPARSE_TERMINAL_PASSES passes=16 .* PASS$' mfamg-serial.log
+          grep -q '^MFAMG_SPARSE_TERMINAL_SLOW diagonal=2.250 .* PASS$' mfamg-serial.log
+          grep -q '^MFAMG_SPARSE_TERMINAL_PASSES invalid range PASS$' mfamg-serial.log
+
       - name: Verify 1/2/4/8-thread MFAMG V-cycle determinism
         if: matrix.mode == 'openmp'
         run: |
@@ -135,6 +144,7 @@ jobs:
           grep -q 'MFAMG_OMP_MULTIVECTOR threads=8 .* PASS' mfamg-omp.log
           grep -q '^MFAMG_SPARSE_TERMINAL_PASSES passes=16 .* PASS$' mfamg-omp.log
           grep -q '^MFAMG_SPARSE_TERMINAL_PASSES invalid range PASS$' mfamg-omp.log
+          grep -q '^MFAMG_SPARSE_TERMINAL_SLOW diagonal=2.250 .* PASS$' mfamg-omp.log
 
       - name: Verify 8-thread pivoted RAS ILUTP regression
         if: matrix.mode == 'openmp'
@@ -670,6 +680,15 @@ jobs:
       - name: Run Automake test suite
         run: make -j2 check
 
+      - name: Verify serial MFAMG sparse-terminal defect regression on MSYS2
+        if: matrix.mode == 'serial'
+        run: |
+          set -euo pipefail
+          ./test/testmfamgvcycle.exe | tee mfamg-serial-msys2.log
+          grep -q '^MFAMG_SPARSE_TERMINAL_PASSES passes=16 .* PASS$' mfamg-serial-msys2.log
+          grep -q '^MFAMG_SPARSE_TERMINAL_SLOW diagonal=2.250 .* PASS$' mfamg-serial-msys2.log
+          grep -q '^MFAMG_SPARSE_TERMINAL_PASSES invalid range PASS$' mfamg-serial-msys2.log
+
       - name: Verify 1/2/4/8-thread MFAMG V-cycle on MSYS2
         if: matrix.mode == 'openmp'
         run: |
@@ -680,6 +699,7 @@ jobs:
           grep -q 'MFAMG_OMP_EDGES block=4 phase=0 threads=8 .* PASS' mfamg-omp-msys2.log
           grep -q 'MFAMG_OMP_EDGES block=5 phase=1 threads=8 .* PASS' mfamg-omp-msys2.log
           grep -q 'MFAMG_OMP_MULTIVECTOR threads=8 .* PASS' mfamg-omp-msys2.log
+          grep -q '^MFAMG_SPARSE_TERMINAL_SLOW diagonal=2.250 .* PASS$' mfamg-omp-msys2.log
 
       - name: Verify pivoted eight-domain parallel ILUTP on MSYS2
         if: matrix.mode == 'openmp'
