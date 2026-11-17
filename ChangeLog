@@ -1,3 +1,16 @@
+Version 2.1.24 (November 17, 2026)
+
+  - Added OpenMP parallelization for MFAMG setup, Jacobi smoothing, and V-cycle prolongation, along with optional FP16 storage and Hybrid policy propagation (thanks to Rafal Brzegowy).
+  - Added per-solver MFAMG options (-mfamg_fine_agg_factor, -mfamg_vcycle_smooth_steps, -mfamg_deep_sibling_merge), transfer diagnostics, and an opt-in block-Schur terminal solver (thanks to Rafal Brzegowy).
+  - Added opt-in native ILUTP with dynamic column pivoting, bounded complete-fill LU, symmetric RCM ordering, and row or two-sided equilibration (thanks to Rafal Brzegowy).
+  - Added an experimental serial Restricted Additive Schwarz (RAS) preconditioner with OpenMP subdomain parallelization and approximate interface Schur correction (thanks to Rafal Brzegowy).
+  - Added optional intra-solve harmonic Ritz recycling (-fgcrodr_intra), normwise relation diagnostics, and blocked overlap dot-product optimization for FGCRO-DR (thanks to Rafal Brzegowy).
+  - Fixed several solver and normalization issues (FGMRES, FGCRO-DR, MFAMG) (thanks to Rafal Brzegowy).
+  - Introduced an experimental spectrum-aware Ritz-retention heuristic and enhanced restart stagnation handling in the native symmetric Krylov eigensolver (thanks to Rafal Brzegowy).
+  - Added snapshot export APIs (Matrix Market, DOF metadata CSVs), a generic FEA audit utility, and a native C out-of-memory test framework (thanks to Rafal Brzegowy).
+  - Improved memory safety, allocation-overflow checks, and error cleanup across sparse matrix, vector, ILU, and solver setup routines (thanks to Rafal Brzegowy).
+  - Consolidated GitHub Actions CI matrices for Linux and Windows MSYS2 UCRT64 builds and standardized code formatting in include/lis.h (thanks to Rafal Brzegowy).
+
 Version 2.1.23 (November 5, 2026)
 
   - Added unified extension API, BothEnds (-kwhich BE) selection mode, sorting suffixes (:ASC, :DESC), thresholded cyclic Jacobi sweeps, and hard-locking residual reuse for the native symmetric Krylov eigensolver (thanks to Rafal Brzegowy).
