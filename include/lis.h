@@ -43,7 +43,7 @@ extern "C" {
 #endif
 
 /**************************************/
-#define LIS_VERSION	"2.1.23"
+#define LIS_VERSION	"2.1.24"
 /**************************************/
 #include <stdio.h>
 #ifdef USE_COMPLEX
@@ -895,6 +895,18 @@ struct LIS_PRECON_STRUCT
 	 * Kept at the end of LIS_PRECON_STRUCT.
 	 */
 	LIS_HALF_ILU half;
+	struct LIS_ILUT_RAS_STRUCT *ilut_ras;
+
+	/* Optional serial ILUT symmetric RCM ordering and row equilibration. */
+	LIS_INT *ilut_perm;          /* new index -> original index */
+	LIS_SCALAR *ilut_row_scale; /* factor-space row weights */
+	LIS_VECTOR ilut_work_b, ilut_work_x;
+	LIS_INT ilut_apply_active;
+	/* ILUTP: factor-space column position -> original factor-space col. */
+	LIS_INT *ilutp_colperm;
+	LIS_INT ilutp_swap_count; /* number of dynamic column pivot swaps */
+	/* Optional column maximum scaling before ILUT/ILUTP pivoting. */
+	LIS_SCALAR *ilut_col_scale;
 };
 typedef struct LIS_PRECON_STRUCT *LIS_PRECON;
 
@@ -970,6 +982,10 @@ struct LIS_SOLVER_STRUCT
 	LIS_INT near_nullspace_dim;
 	/* MFAMG block size; 1 preserves weighted Jacobi. */
 	LIS_INT mfamg_block_size;
+	/* 0 = historical 2-node fine aggregates; 2..4 = opt-in mode factor. */
+	LIS_INT mfamg_fine_agg_factor;
+	/* MFAMG V-cycle pre/post smoother passes, 1 (default) to 3. */
+	LIS_INT mfamg_vcycle_smooth_steps;
 	LIS_NEAR_NULLSPACE_COARSE near_nullspace_coarse;
 	/* Persistent GCRO-DR recycle state. */
 	LIS_VECTOR *recycle_u;
@@ -1088,6 +1104,33 @@ struct LIS_SOLVER_STRUCT
 	 */
 	LIS_INT precon_half_mode;
 	LIS_INT sequence_precon_half_mode;
+	/* Appended to preserve the offsets of all preexisting solver fields. */
+	LIS_INT mfamg_deep_sibling_merge;
+
+	/* Opt-in ILUT local reordering / row equilibration, off by default. */
+	LIS_INT ilut_rcm;
+	LIS_INT ilut_row_scale;
+	LIS_INT sequence_precon_ilut_rcm;
+	LIS_INT sequence_precon_ilut_row_scale;
+	LIS_INT ilut_ras_overlap;
+	LIS_INT ilut_ras_domains;
+	LIS_INT ilut_schur;
+	LIS_INT sequence_precon_ilut_ras_overlap;
+	LIS_INT sequence_precon_ilut_ras_domains;
+	LIS_INT sequence_precon_ilut_schur;
+	/* Opt-in real-double serial ILUTP. Defaults off; tau defaults 0.5. */
+	LIS_INT ilutp_enabled;
+	LIS_REAL ilutp_threshold;
+	LIS_INT sequence_precon_ilutp_enabled;
+	LIS_REAL sequence_precon_ilutp_threshold;
+	/* Opt-in complete-fill column-pivoted LU, never the ILUT default. */
+	LIS_INT ilutp_full;
+	LIS_INT ilutp_full_limit; /* L+U nonzeros, 0 means auto budget */
+	LIS_INT sequence_precon_ilutp_full;
+	LIS_INT sequence_precon_ilutp_full_limit;
+	/* Opt-in two-sided row/column equilibration for ILUT and ILUTP. */
+	LIS_INT ilut_equil;
+	LIS_INT sequence_precon_ilut_equil;
 };
 typedef struct LIS_SOLVER_STRUCT *LIS_SOLVER;
 
@@ -1185,6 +1228,11 @@ struct LIS_ESOLVER_STRUCT
         LIS_INT krylov_allow_semidefinite;
         LIS_INT krylov_hard_locking;
         char krylov_which[3];
+        /* Diagnostic bits from the last inverse recovery invocation:
+         * 1 = base inner solve, 2 = +delta inner solve,
+         * 4 = -delta inner solve, 8 = both perturbations exhausted.
+         * A non-converged outer iteration alone cannot set bit 8. */
+        LIS_INT inverse_recovery_shift_mask;
 };
 typedef struct LIS_ESOLVER_STRUCT *LIS_ESOLVER;
 

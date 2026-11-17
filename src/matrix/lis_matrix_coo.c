@@ -171,35 +171,40 @@ LIS_INT lis_matrix_malloc_coo(LIS_INT nnz, LIS_INT **row, LIS_INT **col, LIS_SCA
 {
 	LIS_DEBUG_FUNC_IN;
 
-	*row     = NULL;
-	*col     = NULL;
-	*value   = NULL;
+	*row   = NULL;
+	*col   = NULL;
+	*value = NULL;
 
-	*row = (LIS_INT *)lis_malloc( nnz*sizeof(LIS_INT),"lis_matrix_malloc_coo::row" );
+	*row = (LIS_INT *)lis_malloc(nnz*sizeof(LIS_INT),"lis_matrix_malloc_coo::row");
 	if( *row==NULL )
 	{
 		LIS_SETERR_MEM(nnz*sizeof(LIS_INT));
-		lis_free2(3,*row,*col,*value);
-		return LIS_OUT_OF_MEMORY;
+		goto allocation_failed;
 	}
-	*col = (LIS_INT *)lis_malloc( nnz*sizeof(LIS_INT),"lis_matrix_malloc_coo::col" );
+	*col = (LIS_INT *)lis_malloc(nnz*sizeof(LIS_INT),"lis_matrix_malloc_coo::col");
 	if( *col==NULL )
 	{
 		LIS_SETERR_MEM(nnz*sizeof(LIS_INT));
-		lis_free2(3,*row,*col,*value);
-		return LIS_OUT_OF_MEMORY;
+		goto allocation_failed;
 	}
-	*value = (LIS_SCALAR *)lis_malloc( nnz*sizeof(LIS_SCALAR),"lis_matrix_malloc_coo::value" );
+	*value = (LIS_SCALAR *)lis_malloc(nnz*sizeof(LIS_SCALAR),"lis_matrix_malloc_coo::value");
 	if( *value==NULL )
 	{
 		LIS_SETERR_MEM(nnz*sizeof(LIS_SCALAR));
-		lis_free2(3,*row,*col,*value);
-		return LIS_OUT_OF_MEMORY;
+		goto allocation_failed;
 	}
+
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
-}
 
+allocation_failed:
+	lis_free2(3,*row,*col,*value);
+	/* Never publish dangling output pointers after partial failure. */
+	*row   = NULL;
+	*col   = NULL;
+	*value = NULL;
+	return LIS_OUT_OF_MEMORY;
+}
 
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_elements_copy_coo"

@@ -6,11 +6,21 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <string.h>
 
 #include "lislib.h"
 
+
+extern LIS_INT lis_precon_mfamg_get_half_storage_info(
+    LIS_PRECON precon, LIS_INT *packed_levels, LIS_INT *packed_coefficients);
+extern LIS_INT lis_precon_mfamg_get_half_block_info(
+    LIS_PRECON precon, LIS_INT *packed_levels, LIS_INT *packed_coefficients);
+extern LIS_INT lis_precon_mfamg_get_half_diagonal_info(
+    LIS_PRECON precon, LIS_INT *packed_levels, LIS_INT *packed_coefficients);
+extern LIS_INT lis_precon_mfamg_get_half_coefficient_bytes(
+    LIS_PRECON precon, size_t *reference_bytes, size_t *resident_bytes);
 
 extern LIS_INT
 lis_precon_mfamg_get_smoother_omega(
@@ -2522,6 +2532,169 @@ cleanup:
     return failed;
 }
 
+
+
+/* Existing test CSR helper is defined in the PSD lifecycle section below. */
+static LIS_INT create_scaled_csr(LIS_SCALAR scale, LIS_MATRIX *A);
+
+/*
+ * With more than one near-nullspace vector, the current MFAMG PSD update
+ * must transactionally rebuild the hierarchy, not re-use stale scalar
+ * numeric refresh state.  The two operators have identical CSR structure
+ * but different coefficients; every solve checks the original A*x.
+ */
+static int
+check_mfamg_multivector_psd_value_rebuild(void)
+{
+    LIS_MATRIX A[2]={NULL,NULL};
+    LIS_VECTOR b=NULL,x=NULL,exact=NULL;
+    LIS_VECTOR z0=NULL,z1=NULL;
+    LIS_VECTOR basis[2];
+    LIS_SOLVER solver=NULL;
+    LIS_PRECON precon=NULL;
+    void *previous_state=NULL;
+    LIS_REAL relres;
+    LIS_INT i,phase,err=LIS_SUCCESS;
+    int failed=0,precon_alive=0;
+
+    err=create_csr(&A[0]);
+    if(err) goto fail;
+    err=create_scaled_csr((LIS_SCALAR)1.35,&A[1]);
+    if(err) goto fail;
+
+    if(A[0]->matrix_type!=LIS_MATRIX_CSR ||
+       A[1]->matrix_type!=LIS_MATRIX_CSR ||
+       A[0]->n!=A[1]->n ||
+       A[0]->nnz!=A[1]->nnz)
+    {
+        fprintf(stderr,"MFAMG multivector PSD pattern sizes mismatch\n");
+        failed=1; goto cleanup;
+    }
+    for(i=0;i<=A[0]->n;i++)
+    {
+        if(A[0]->ptr[i]!=A[1]->ptr[i])
+        {
+            fprintf(stderr,"MFAMG multivector PSD row structure changed\n");
+            failed=1; goto cleanup;
+        }
+    }
+    for(i=0;i<A[0]->nnz;i++)
+    {
+        if(A[0]->index[i]!=A[1]->index[i])
+        {
+            fprintf(stderr,"MFAMG multivector PSD column structure changed\n");
+            failed=1; goto cleanup;
+        }
+    }
+
+    err=lis_vector_duplicate(A[0],&b);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A[0],&x);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A[0],&exact);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A[0],&z0);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A[0],&z1);
+    if(err) goto fail;
+
+    for(i=0;i<A[0]->n;i++)
+    {
+        exact->value[i]=(LIS_SCALAR)(0.5+0.015*(i%9));
+        z0->value[i]=(LIS_SCALAR)1.0;
+        /* Distinct globally, but rank one on adjacent strong pairs. */
+        z1->value[i]=(LIS_SCALAR)((double)(i/2)/
+                                   (double)(A[0]->n/2-1)-0.5);
+    }
+    basis[0]=z0;
+    basis[1]=z1;
+    err=lis_solver_create(&solver);
+    if(err) goto fail;
+    err=lis_solver_set_option(
+        "-i fgmres -p mfamg -scale none "
+        "-tol 1.0e-10 -maxiter 300 -restart 20 -print none",
+        solver);
+    if(err) goto fail;
+    err=lis_solver_set_near_nullspace(solver,2,basis);
+    if(err) goto fail;
+
+    for(phase=0;phase<2;phase++)
+    {
+        err=lis_matvec(A[phase],exact,b);
+        if(err) goto fail;
+        err=lis_vector_set_all((LIS_SCALAR)0.0,x);
+        if(err) goto fail;
+        err=lis_solver_set_matrix(A[phase],solver);
+        if(err) goto fail;
+
+        if(phase==0)
+        {
+            err=lis_precon_psd_create(solver,&precon);
+            if(err) { precon=NULL; goto fail; }
+            precon_alive=1;
+            if(precon==NULL || precon->mfamg==NULL)
+            {
+                fprintf(stderr,"MFAMG multivector PSD create missing hierarchy\n");
+                failed=1; goto cleanup;
+            }
+            previous_state=precon->mfamg;
+        }
+        else
+        {
+            err=lis_precon_psd_update(solver,precon);
+            if(err)
+            {
+                /* Dispatcher owns preconditioner destruction on failure. */
+                precon_alive=0; precon=NULL; goto fail;
+            }
+            if(precon==NULL || precon->mfamg==NULL ||
+               precon->mfamg==previous_state)
+            {
+                fprintf(stderr,
+                    "MFAMG multivector PSD did not rebuild old hierarchy\n");
+                failed=1; goto cleanup;
+            }
+        }
+
+        if(precon->A!=A[phase])
+        {
+            fprintf(stderr,"MFAMG multivector PSD retained stale matrix\n");
+            failed=1; goto cleanup;
+        }
+        err=lis_solve_kernel(A[phase],b,x,solver,precon);
+        if(err) goto fail;
+        err=relative_residual(A[phase],b,x,&relres);
+        if(err) goto fail;
+        printf("MFAMG_MULTIVECTOR_PSD_VALUE_REBUILD phase=%d "
+               "state_rebuilt=%d relres=%.12e\n",
+               (int)phase,(int)(phase!=0),(double)relres);
+        if(relres!=relres || !(relres<SOLVE_TOL))
+        {
+            fprintf(stderr,
+                "MFAMG multivector PSD wrong numeric solution phase=%d\n",
+                (int)phase);
+            failed=1; goto cleanup;
+        }
+    }
+    goto cleanup;
+
+fail:
+    fprintf(stderr,"MFAMG multivector PSD rebuild failure rc=%d\n",(int)err);
+    failed=1;
+cleanup:
+    if(precon_alive && precon) lis_precon_destroy(precon);
+    if(solver) lis_solver_destroy(solver);
+    if(z1) lis_vector_destroy(z1);
+    if(z0) lis_vector_destroy(z0);
+    if(exact) lis_vector_destroy(exact);
+    if(x) lis_vector_destroy(x);
+    if(b) lis_vector_destroy(b);
+    if(A[1]) lis_matrix_destroy(A[1]);
+    if(A[0]) lis_matrix_destroy(A[0]);
+    if(!failed)
+        printf("MFAMG MULTIVECTOR PSD VALUE REBUILD TEST PASSED\n");
+    return failed;
+}
 
 /* ============================================================
  * Serial contract
@@ -5402,6 +5575,250 @@ fail:
 
 
 
+
+/* Verify binary16 storage is actually resident and test its V-cycle output
+ * against the ordinary full-precision preconditioner.
+ */
+static int
+check_mfamg_half_storage(LIS_MATRIX A, LIS_INT block_size)
+{
+    const LIS_INT modes[3] = {
+        LIS_PRECON_HALF_OFF, LIS_PRECON_HALF_ON, LIS_PRECON_HALF_NOPROBE
+    };
+    LIS_VECTOR b=NULL, x=NULL, z=NULL, basis[1];
+    LIS_SOLVER solver=NULL;
+    LIS_PRECON precon=NULL;
+    LIS_SCALAR reference[TEST_N];
+    LIS_SCALAR before_update[TEST_N];
+    LIS_INT err=0, capability=LIS_FALSE, packed_levels, packed_coeffs;
+    LIS_INT packed_block_levels, packed_block_coeffs;
+    LIS_INT packed_diag_levels, packed_diag_coeffs;
+    size_t reference_bytes, resident_bytes;
+    LIS_INT mode=0, i;
+    LIS_REAL rel, delta;
+    int failed=0;
+
+    if(lis_half_get_capability(&capability)!=LIS_SUCCESS)
+        return 1;
+    err=lis_vector_duplicate(A,&b);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A,&x);
+    if(err) goto fail;
+    err=lis_vector_duplicate(A,&z);
+    if(err) goto fail;
+    build_manufactured_rhs(b);
+    lis_vector_set_all((LIS_SCALAR)1.0,z);
+    basis[0]=z;
+
+    for(mode=0;mode<3;mode++)
+    {
+        err=lis_solver_create(&solver);
+        if(err) goto fail;
+        err=lis_solver_set_option(block_size>1 ?
+            "-i gmres -p mfamg -mfamg_block_size 3 -scale none -print none" :
+            "-i gmres -p mfamg -scale none -print none",solver);
+        if(err) goto fail;
+        err=lis_solver_set_precon_half(solver,modes[mode]);
+        if(err) goto fail;
+        err=lis_solver_set_near_nullspace(solver,1,basis);
+        if(err) goto fail;
+        err=lis_solver_set_matrix(A,solver);
+        if(err) goto fail;
+        err=lis_precon_create(solver,&precon);
+        if(err)
+        {
+            precon=NULL; /* failed factory creation already cleans up */
+            goto fail;
+        }
+        solver->precon=precon;
+        packed_levels=-1;
+        packed_coeffs=-1;
+        err=lis_precon_mfamg_get_half_storage_info(
+            precon,&packed_levels,&packed_coeffs);
+        if(err) goto fail;
+        packed_block_levels=-1;
+        packed_block_coeffs=-1;
+        err=lis_precon_mfamg_get_half_block_info(
+            precon,&packed_block_levels,&packed_block_coeffs);
+        if(err) goto fail;
+        packed_diag_levels=-1;
+        packed_diag_coeffs=-1;
+        err=lis_precon_mfamg_get_half_diagonal_info(
+            precon,&packed_diag_levels,&packed_diag_coeffs);
+        if(err) goto fail;
+        reference_bytes=0;
+        resident_bytes=0;
+        err=lis_precon_mfamg_get_half_coefficient_bytes(
+            precon,&reference_bytes,&resident_bytes);
+        if(err) goto fail;
+        if(reference_bytes==0 || resident_bytes==0 ||
+           resident_bytes>reference_bytes ||
+           ((mode==0 || !capability) && resident_bytes!=reference_bytes) ||
+           (mode>0 && capability && resident_bytes>=reference_bytes))
+        {
+            fprintf(stderr,
+                "MFAMG FP16 coefficient memory mismatch mode=%d block=%d reference=%lu resident=%lu\n",
+                (int)modes[mode],(int)block_size,
+                (unsigned long)reference_bytes,(unsigned long)resident_bytes);
+            failed=1;
+        }
+        if((mode==0 || !capability) &&
+           (packed_diag_levels!=0 || packed_diag_coeffs!=0))
+        {
+            fprintf(stderr,"MFAMG FP16 diagonal packed when disabled\n");
+            failed=1;
+        }
+        if(mode>0 && capability &&
+           (packed_diag_levels<1 || packed_diag_coeffs<1))
+        {
+            fprintf(stderr,"MFAMG FP16 diagonal not resident in half mode\n");
+            failed=1;
+        }
+        if((mode==0 || !capability) &&
+           (packed_block_levels!=0 || packed_block_coeffs!=0))
+        {
+            fprintf(stderr,"MFAMG half disabled but block LU was packed\n");
+            failed=1;
+        }
+        if(mode>0 && capability && block_size>1 &&
+           (packed_block_levels<1 || packed_block_coeffs<1))
+        {
+            fprintf(stderr,"MFAMG half block mode %d did not pack LU\n",
+                    (int)modes[mode]);
+            failed=1;
+        }
+        if((mode==0 || !capability) &&
+           (packed_levels!=0 || packed_coeffs!=0))
+        {
+            fprintf(stderr,"MFAMG half disabled but coefficients were packed\n");
+            failed=1;
+        }
+        if(mode>0 && capability && (packed_levels<1 || packed_coeffs<1))
+        {
+            fprintf(stderr,
+                    "MFAMG half mode %d did not pack coefficients\n",
+                    (int)modes[mode]);
+            failed=1;
+        }
+
+        lis_vector_set_all((LIS_SCALAR)0.0,x);
+        err=lis_psolve(solver,b,x);
+        if(err) goto fail;
+        err=relative_residual(A,b,x,&rel);
+        if(err) goto fail;
+        if(!(rel<1.0))
+        {
+            fprintf(stderr,"MFAMG half mode %d did not improve residual\n",
+                    (int)modes[mode]);
+            failed=1;
+        }
+        for(i=0;i<TEST_N;i++)
+        {
+            if(mode==0)
+                reference[i]=x->value[i];
+            else
+            {
+                delta=fabs(x->value[i]-reference[i]);
+                if(!(delta<=0.10*(1.0+fabs(reference[i]))))
+                {
+                    fprintf(stderr,
+                        "MFAMG half mode %d deviates at row %d\n",
+                        (int)modes[mode],(int)i);
+                    failed=1;
+                    break;
+                }
+            }
+        }
+        printf("MFAMG_HALF mode=%d block=%d packed_transfer=%d/%d packed_lu=%d/%d packed_diag=%d/%d reference_bytes=%lu resident_bytes=%lu residual=%.6e\n",
+               (int)modes[mode],(int)block_size,
+               (int)packed_levels,(int)packed_coeffs,
+               (int)packed_block_levels,(int)packed_block_coeffs,
+               (int)packed_diag_levels,(int)packed_diag_coeffs,
+               (unsigned long)reference_bytes,(unsigned long)resident_bytes,
+               (double)rel);
+
+        if(mode>0)
+        {
+            for(i=0;i<TEST_N;i++)
+                before_update[i]=x->value[i];
+            err=lis_precon_psd_update(solver,precon);
+            if(err)
+            {
+                /* The PSD dispatcher may destroy the preconditioner. */
+                precon=NULL;
+                solver->precon=NULL;
+                goto fail;
+            }
+            packed_levels=0;
+            packed_coeffs=0;
+            err=lis_precon_mfamg_get_half_storage_info(
+                precon,&packed_levels,&packed_coeffs);
+            if(err) goto fail;
+            if(capability && (packed_levels<1 || packed_coeffs<1))
+            {
+                fprintf(stderr,"MFAMG PSD rebuild lost transfer FP16 storage\n");
+                failed=1;
+            }
+            packed_block_levels=0;
+            packed_block_coeffs=0;
+            err=lis_precon_mfamg_get_half_block_info(
+                precon,&packed_block_levels,&packed_block_coeffs);
+            if(err) goto fail;
+            if(capability && block_size>1 && packed_block_levels<1)
+            {
+                fprintf(stderr,"MFAMG PSD rebuild lost LU FP16 storage\n");
+                failed=1;
+            }
+            packed_diag_levels=0;
+            packed_diag_coeffs=0;
+            err=lis_precon_mfamg_get_half_diagonal_info(
+                precon,&packed_diag_levels,&packed_diag_coeffs);
+            if(err) goto fail;
+            if(capability && (packed_diag_levels<1 || packed_diag_coeffs<1))
+            {
+                fprintf(stderr,"MFAMG PSD rebuild lost diagonal FP16 storage\n");
+                failed=1;
+            }
+            lis_vector_set_all((LIS_SCALAR)0.0,x);
+            err=lis_psolve(solver,b,x);
+            if(err) goto fail;
+            for(i=0;i<TEST_N;i++)
+            {
+                delta=fabs(x->value[i]-before_update[i]);
+                if(!(delta<=1.0e-6*(1.0+fabs(before_update[i]))))
+                {
+                    fprintf(stderr,"MFAMG half PSD rebuild changed correction\n");
+                    failed=1;
+                    break;
+                }
+            }
+        }
+
+        solver->precon=NULL;
+        lis_precon_destroy(precon);
+        precon=NULL;
+        lis_solver_destroy(solver);
+        solver=NULL;
+    }
+
+cleanup:
+    if(precon)
+    {
+        if(solver) solver->precon=NULL;
+        lis_precon_destroy(precon);
+    }
+    if(solver) lis_solver_destroy(solver);
+    if(z) lis_vector_destroy(z);
+    if(x) lis_vector_destroy(x);
+    if(b) lis_vector_destroy(b);
+    return failed;
+fail:
+    fprintf(stderr,"MFAMG half regression failed rc=%d mode=%d\n",
+            (int)err,(int)mode);
+    failed=1;
+    goto cleanup;
+}
+
 static int
 run_serial(void)
 {
@@ -5451,6 +5868,9 @@ run_serial(void)
     failed |=
         check_mfamg_psd_lifecycle();
 
+    failed |=
+        check_mfamg_multivector_psd_value_rebuild();
+
 
     failed |=
         check_mfamg_psd_pattern_fallback();
@@ -5472,6 +5892,9 @@ run_serial(void)
         goto cleanup;
     }
 
+
+    failed |= check_mfamg_half_storage(A,0);
+    failed |= check_mfamg_half_storage(A,3);
 
     err =
         create_user(
@@ -9829,6 +10252,180 @@ cleanup:
         0;
 }
 
+
+/*
+ * Optional, isolated-process benchmark of a 7-point Dirichlet Laplacian
+ * on a regular 3-D grid. Not included in "make check": invocation is
+ *
+ *     ./test/testmfamg --fp16-3d-bench SIDE off|on|noprobe
+ *
+ * Run modes in SEPARATE processes for comparable VmRSS snapshots.
+ * The byte counter covers only three MFAMG numerical coefficient arrays.
+ * VmRSS includes the matrix, solver, vectors, heap and all other objects.
+ */
+static unsigned long
+mfamg_benchmark_vmrss_kib(void)
+{
+    FILE *f;
+    char line[256];
+    unsigned long kb=0;
+
+    f=fopen("/proc/self/status","r");
+    if(f==NULL)
+        return 0; /* Not available on non-Linux systems. */
+
+    while(fgets(line,sizeof(line),f)!=NULL)
+    {
+        if(sscanf(line,"VmRSS: %lu kB",&kb)==1)
+            break;
+    }
+    fclose(f);
+    return kb;
+}
+
+static int
+mfamg_benchmark_3d(LIS_INT side, LIS_INT half_mode)
+{
+    LIS_MATRIX A=NULL;
+    LIS_VECTOR b=NULL, x=NULL, truth=NULL, constant=NULL, residual=NULL;
+    LIS_VECTOR basis[1];
+    LIS_SOLVER solver=NULL;
+    LIS_PRECON precon=NULL;
+    LIS_INT n=side*side*side;
+    LIS_INT ix, iy, iz, i, iter=0, capability=LIS_FALSE;
+    LIS_INT err=0;
+    LIS_REAL bnrm=0.0, rnrm=0.0;
+    size_t ref_bytes=0, resident_bytes=0;
+    unsigned long vmrss_matrix=0, vmrss_precon=0;
+    int failed=1;
+
+    err=lis_matrix_create(LIS_COMM_WORLD,&A);
+    if(err) goto done;
+    err=lis_matrix_set_size(A,0,n);
+    if(err) goto done;
+
+    for(iz=0;iz<side;iz++)
+    for(iy=0;iy<side;iy++)
+    for(ix=0;ix<side;ix++)
+    {
+        i=ix+side*(iy+side*iz);
+        err=lis_matrix_set_value(LIS_INS_VALUE,i,i,(LIS_SCALAR)6.0,A);
+        if(err) goto done;
+#define MFAMG_3D_INSERT(neighbor) \
+        do { err=lis_matrix_set_value(LIS_INS_VALUE,i,(neighbor), \
+                   (LIS_SCALAR)-1.0,A); if(err) goto done; } while(0)
+        if(ix>0) MFAMG_3D_INSERT(i-1);
+        if(ix+1<side) MFAMG_3D_INSERT(i+1);
+        if(iy>0) MFAMG_3D_INSERT(i-side);
+        if(iy+1<side) MFAMG_3D_INSERT(i+side);
+        if(iz>0) MFAMG_3D_INSERT(i-side*side);
+        if(iz+1<side) MFAMG_3D_INSERT(i+side*side);
+#undef MFAMG_3D_INSERT
+    }
+    err=lis_matrix_assemble(A);
+    if(err) goto done;
+
+    err=lis_vector_duplicate(A,&b);
+    if(err) goto done;
+    err=lis_vector_duplicate(A,&x);
+    if(err) goto done;
+    err=lis_vector_duplicate(A,&truth);
+    if(err) goto done;
+    err=lis_vector_duplicate(A,&constant);
+    if(err) goto done;
+    err=lis_vector_duplicate(A,&residual);
+    if(err) goto done;
+
+    /* Deterministic mixture of smooth and high-frequency error. */
+    for(i=0;i<n;i++)
+        truth->value[i]=(LIS_SCALAR)(1.0+0.005*(double)((i*17)%31));
+    err=lis_matvec(A,truth,b);
+    if(err) goto done;
+    err=lis_vector_set_all((LIS_SCALAR)0.0,x);
+    if(err) goto done;
+    err=lis_vector_set_all((LIS_SCALAR)1.0,constant);
+    if(err) goto done;
+    basis[0]=constant;
+
+    err=lis_solver_create(&solver);
+    if(err) goto done;
+    err=lis_solver_set_option(
+        "-i gmres -p mfamg -scale none -tol 1.0e-8 "
+        "-maxiter 150 -print none",solver);
+    if(err) goto done;
+    err=lis_solver_set_precon_half(solver,half_mode);
+    if(err) goto done;
+    err=lis_solver_set_near_nullspace(solver,1,basis);
+    if(err) goto done;
+    err=lis_solver_set_matrix(A,solver);
+    if(err) goto done;
+
+    vmrss_matrix=mfamg_benchmark_vmrss_kib();
+    err=lis_precon_create(solver,&precon);
+    if(err)
+    {
+        precon=NULL; /* Constructor cleans up after failure. */
+        goto done;
+    }
+
+    err=lis_precon_mfamg_get_half_coefficient_bytes(
+        precon,&ref_bytes,&resident_bytes);
+    if(err) goto done;
+    vmrss_precon=mfamg_benchmark_vmrss_kib();
+    err=lis_solve_kernel(A,b,x,solver,precon);
+    if(err) goto done;
+    err=lis_solver_get_iter(solver,&iter);
+    if(err) goto done;
+    err=lis_matvec(A,x,residual);
+    if(err) goto done;
+    err=lis_vector_axpy((LIS_SCALAR)-1.0,b,residual);
+    if(err) goto done;
+    err=lis_vector_nrm2(residual,&rnrm);
+    if(err) goto done;
+    err=lis_vector_nrm2(b,&bnrm);
+    if(err || bnrm<=0.0) goto done;
+
+    err=lis_half_get_capability(&capability);
+    if(err) goto done;
+
+    printf("MFAMG_FP16_3D side=%ld dof=%ld mode=%s "
+           "ref_mb=%.6f resident_mb=%.6f "
+           "vmrss_matrix_kib=%lu vmrss_precon_kib=%lu "
+           "iterations=%ld relres=%.9e capability=%ld\n",
+           (long)side,(long)n,
+           half_mode==LIS_PRECON_HALF_OFF ? "off" :
+           (half_mode==LIS_PRECON_HALF_ON ? "on" : "noprobe"),
+           (double)ref_bytes/(1024.0*1024.0),
+           (double)resident_bytes/(1024.0*1024.0),
+           vmrss_matrix,vmrss_precon,
+           (long)iter,(double)(rnrm/bnrm),(long)capability);
+
+    if(rnrm/bnrm>1.0e-7 || resident_bytes>ref_bytes ||
+       (half_mode==LIS_PRECON_HALF_OFF && resident_bytes!=ref_bytes) ||
+       (half_mode!=LIS_PRECON_HALF_OFF && capability &&
+        resident_bytes>=ref_bytes))
+        goto done;
+
+    failed=0;
+done:
+    if(failed)
+        fprintf(stderr,"MFAMG_FP16_3D_FAILED side=%ld mode=%ld rc=%ld\n",
+                (long)side,(long)half_mode,(long)err);
+    if(precon)
+    {
+        if(solver) solver->precon=NULL;
+        lis_precon_destroy(precon);
+    }
+    if(solver) lis_solver_destroy(solver);
+    if(residual) lis_vector_destroy(residual);
+    if(constant) lis_vector_destroy(constant);
+    if(truth) lis_vector_destroy(truth);
+    if(x) lis_vector_destroy(x);
+    if(b) lis_vector_destroy(b);
+    if(A) lis_matrix_destroy(A);
+    return failed;
+}
+
 /* ============================================================
  * Main
  * ============================================================ */
@@ -9887,7 +10484,27 @@ main(
 #endif
 
 
-    if(nprocs==1)
+    if(argc==4 && strcmp(argv[1],"--fp16-3d-bench")==0)
+    {
+        char *end=NULL;
+        long side=strtol(argv[2],&end,10);
+        LIS_INT mode;
+        if(end==argv[2] || *end!='\0' || side<4 || side>60 || nprocs!=1)
+            failed=1;
+        else
+        {
+            if(strcmp(argv[3],"off")==0)
+                mode=LIS_PRECON_HALF_OFF;
+            else if(strcmp(argv[3],"on")==0)
+                mode=LIS_PRECON_HALF_ON;
+            else if(strcmp(argv[3],"noprobe")==0)
+                mode=LIS_PRECON_HALF_NOPROBE;
+            else
+                mode=-1;
+            failed=mode<0 ? 1 : mfamg_benchmark_3d((LIS_INT)side,mode);
+        }
+    }
+    else if(nprocs==1)
     {
         failed =
             run_serial();

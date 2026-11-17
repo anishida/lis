@@ -277,9 +277,28 @@ extern "C"
         extern LIS_INT lis_fgcrodr_malloc_work(LIS_SOLVER solver);
         extern LIS_INT lis_fgcrodr_clear_recycle(LIS_SOLVER solver);
         extern LIS_INT lis_fgcrodr_state_destroy(LIS_SOLVER solver);
+        /* Internal config-only profile hooks; never copy recycle vectors. */
+        extern LIS_INT lis_fgcrodr_profile_equal(LIS_SOLVER active,LIS_SOLVER fresh);
+        extern LIS_INT lis_fgcrodr_profile_prepare(LIS_SOLVER active,LIS_SOLVER fresh);
+        extern void lis_fgcrodr_profile_copy(LIS_SOLVER active,LIS_SOLVER fresh);
         extern LIS_INT lis_fgcrodr_validate_recycle(
                 LIS_SOLVER solver, LIS_REAL *orth_error,
                 LIS_REAL *relation_error);
+        /* Read-only serial CSR diagnostic; unsupported on MPI builds. */
+        extern LIS_INT lis_fgcrodr_validate_recycle_normwise(
+                LIS_SOLVER solver, LIS_REAL *orth_error,
+                LIS_REAL *relation_error, LIS_REAL *scaled_error,
+                LIS_REAL *abs_az_norm_max);
+        /* Internal single-column diagnostic used by the regression. */
+        extern LIS_INT lis_fgcrodr_normwise_relation_one(
+                LIS_MATRIX A, LIS_VECTOR z, LIS_VECTOR c,
+                LIS_VECTOR scratch, LIS_REAL *ratio,
+                LIS_REAL *abs_az_norm);
+        /* Internal overlap kernel; exposed for numerical regression only. */
+        extern LIS_INT lis_fgcrodr_flexible_overlap(
+                LIS_VECTOR *q, LIS_INT nq, LIS_VECTOR *z, LIS_INT nz,
+                LIS_SCALAR *f, LIS_INT ld, LIS_INT row_offset,
+                LIS_INT col_offset);
 
 
 

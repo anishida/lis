@@ -7,6 +7,9 @@
 #include "lis.h"
 #include "lis_precon.h"
 
+extern LIS_INT lis_precon_mfamg_get_half_storage_info(
+    LIS_PRECON precon, LIS_INT *packed_levels, LIS_INT *packed_coefficients);
+
 static LIS_INT
 create_nonsymmetric_matrix(LIS_MATRIX *A, LIS_INT n)
 {
@@ -565,6 +568,102 @@ cleanup:
     return failed;
 }
 
+/*
+ * Verify real nested preconditioner policy and resident FP16 factors,
+ * rather than merely checking that the outer option was accepted.
+ */
+static int
+run_nested_half_forwarding(LIS_MATRIX A, LIS_VECTOR exact)
+{
+    const LIS_INT modes[3] = {
+        LIS_PRECON_HALF_OFF, LIS_PRECON_HALF_ON, LIS_PRECON_HALF_NOPROBE
+    };
+    const char *inner[2] = { "ilut", "mfamg" };
+    LIS_INT mode, type, err, capability=LIS_FALSE;
+    LIS_SOLVER outer=NULL;
+    LIS_PRECON hybrid=NULL;
+    LIS_VECTOR modes1[1];
+    LIS_INT packed_levels, packed_coeffs;
+    int failed=0;
+
+    modes1[0]=exact;
+    err=lis_half_get_capability(&capability);
+    if(err) return 1;
+
+    for(type=0;type<2;type++)
+    for(mode=0;mode<3;mode++)
+    {
+        outer=NULL;
+        hybrid=NULL;
+        err=lis_solver_create(&outer);
+        if(err) { failed=1; goto cleanup; }
+
+        err=lis_solver_set_option(
+            type==0 ?
+            "-i fgmres -p hybrid -hybrid_i gmres -hybrid_p ilut "
+            "-hybrid_maxiter 12 -hybrid_tol 1e-9 -scale none -print none" :
+            "-i fgmres -p hybrid -hybrid_i gmres -hybrid_p mfamg "
+            "-hybrid_maxiter 12 -hybrid_tol 1e-9 -scale none -print none",
+            outer);
+        if(err) { failed=1; goto cleanup; }
+        err=lis_solver_set_precon_half(outer,modes[mode]);
+        if(err) { failed=1; goto cleanup; }
+        err=lis_solver_set_near_nullspace(outer,1,modes1);
+        if(err) { failed=1; goto cleanup; }
+        err=lis_solver_set_matrix(A,outer);
+        if(err) { failed=1; goto cleanup; }
+        err=lis_precon_create(outer,&hybrid);
+        if(err) { failed=1; goto cleanup; }
+
+        if(hybrid->solver==NULL ||
+           hybrid->solver->precon_half_mode!=modes[mode] ||
+           hybrid->solver->precon==NULL)
+        {
+            fprintf(stderr,"Hybrid did not forward half policy to %s mode=%d\n",
+                    inner[type],(int)modes[mode]);
+            failed=1;
+            goto cleanup;
+        }
+
+        if(type==0)
+        {
+            LIS_PRECON inner_pc=hybrid->solver->precon;
+            if((mode==0 || !capability) && inner_pc->half!=NULL)
+            {
+                fprintf(stderr,"Hybrid ILUT unexpectedly packed factors\n");
+                failed=1;
+            }
+            if(mode>0 && capability && inner_pc->half==NULL)
+            {
+                fprintf(stderr,"Hybrid ILUT did not pack FP16 factors mode=%d\n",
+                        (int)modes[mode]);
+                failed=1;
+            }
+        }
+        else
+        {
+            packed_levels=0;
+            packed_coeffs=0;
+            err=lis_precon_mfamg_get_half_storage_info(
+                hybrid->solver->precon,&packed_levels,&packed_coeffs);
+            if(err || ((mode==0 || !capability) && packed_coeffs!=0) ||
+               (mode>0 && capability && packed_coeffs==0))
+            {
+                fprintf(stderr,"Hybrid MFAMG FP16 storage mismatch mode=%d packed=%d\n",
+                        (int)modes[mode],(int)packed_coeffs);
+                failed=1;
+            }
+        }
+cleanup:
+        if(hybrid) lis_precon_destroy(hybrid);
+        if(outer) lis_solver_destroy(outer);
+        if(failed) return failed;
+    }
+
+    printf("LIS_HYBRID_FP16_FORWARDING PASSED\n");
+    return failed;
+}
+
 int main(int argc, char **argv)
 {
     LIS_MATRIX A = NULL;
@@ -592,6 +691,9 @@ int main(int argc, char **argv)
     lis_vector_set_all((LIS_SCALAR)1.0,exact);
     err = lis_matvec(A,exact,b);
     if( err ) { failed = 1; goto cleanup; }
+
+    failed |= run_nested_half_forwarding(A,exact);
+    if( failed ) goto cleanup;
 
     failed |= run_nested_success(A,b,x);
     if( failed ) goto cleanup;

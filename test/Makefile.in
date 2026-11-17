@@ -134,7 +134,9 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testmatrixoperatorlifecycle$(EXEEXT) \
 	testmatrixoperatormpi$(EXEEXT) testsequence$(EXEEXT) \
 	testwarmstart$(EXEEXT) testrecovery$(EXEEXT) \
-	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
+	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) \
+	testfgcrodrmaxiter$(EXEEXT) testfgcrodrintra$(EXEEXT) \
+	testsnapshot$(EXEEXT) testmfamg$(EXEEXT) \
 	testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
 	testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) \
 	testfeastfoundation$(EXEEXT) testfeastcontour$(EXEEXT) \
@@ -144,8 +146,11 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) \
 	testmatrixautosession$(EXEEXT) testvectorreal64$(EXEEXT) \
 	benchautojacobirefresh$(EXEEXT) testabi$(EXEEXT) \
-	testgesolvepair$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
-	$(am__EXEEXT_3) $(am__EXEEXT_4) test_krylov_modes$(EXEEXT) \
+	testgesolvepair$(EXEEXT) testrcoalloc$(EXEEXT) \
+	testilutp$(EXEEXT) testilutequil$(EXEEXT) benchilutp$(EXEEXT) \
+	benchilutpequil$(EXEEXT) $(am__EXEEXT_2) $(am__EXEEXT_3) \
+	$(am__EXEEXT_4) $(am__EXEEXT_5) testfgcrodrblocked$(EXEEXT) \
+	testfgcrodrtransport$(EXEEXT) test_krylov_modes$(EXEEXT) \
 	test_krylov_sparse$(EXEEXT) test_krylov_regression$(EXEEXT) \
 	test_krylov_lis$(EXEEXT) test_krylov_semidefinite$(EXEEXT) \
 	test_krylov_stress$(EXEEXT) test_krylov_inertia$(EXEEXT) \
@@ -155,7 +160,9 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	test_krylov_api_contract$(EXEEXT) \
 	test_krylov_residual_reuse$(EXEEXT) \
 	test_krylov_both_ends$(EXEEXT) \
-	test_krylov_be_lock_order$(EXEEXT)
+	test_krylov_be_lock_order$(EXEEXT) testilucbsrsmoke$(EXEEXT) \
+	testfgmresprojected$(EXEEXT) testmfamgvcycle$(EXEEXT) \
+	testmfamgfineagg$(EXEEXT) testmfamgdeepmerge$(EXEEXT)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_3 = test2f test6f 
@@ -175,6 +182,15 @@ F77LINK = $(LIBTOOL) $(AM_V_lt) --tag=F77 $(AM_LIBTOOLFLAGS) \
 @ENABLE_HALF_REAL_DOUBLE_TRUE@         testhalfilukmemory$(EXEEXT) testhalfiluksimd$(EXEEXT) \
 @ENABLE_HALF_REAL_DOUBLE_TRUE@         testhalfilut$(EXEEXT)
 
+@ENABLE_OOM_TESTS_TRUE@check_PROGRAMS = testoomalloc$(EXEEXT) \
+@ENABLE_OOM_TESTS_TRUE@	testoomilu$(EXEEXT) \
+@ENABLE_OOM_TESTS_TRUE@	testoomdiag$(EXEEXT) \
+@ENABLE_OOM_TESTS_TRUE@	testoomiluc$(EXEEXT) \
+@ENABLE_OOM_TESTS_TRUE@	testoomsnapshot$(EXEEXT) \
+@ENABLE_OOM_TESTS_TRUE@	testoomrco$(EXEEXT) $(am__EXEEXT_1)
+@ENABLE_OOM_TESTS_TRUE@am__append_6 = testoomalloc$(EXEEXT) testoomilu$(EXEEXT) testoomdiag$(EXEEXT) testoomiluc$(EXEEXT) testoomsnapshot$(EXEEXT) testoomrco$(EXEEXT)
+@ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@am__append_7 = testoommpiscale
+@ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@am__append_8 = testoommpiscale$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
@@ -190,17 +206,18 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(testdir)" \
 	"$(DESTDIR)$(testdir)" "$(DESTDIR)$(testdir)"
-@ENABLE_HALF_REAL_DOUBLE_TRUE@am__EXEEXT_1 = testhalfstorage$(EXEEXT) \
+@ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@am__EXEEXT_1 = testoommpiscale$(EXEEXT)
+@ENABLE_HALF_REAL_DOUBLE_TRUE@am__EXEEXT_2 = testhalfstorage$(EXEEXT) \
 @ENABLE_HALF_REAL_DOUBLE_TRUE@	testhalfprobe$(EXEEXT) \
 @ENABLE_HALF_REAL_DOUBLE_TRUE@	testhalfdispatch$(EXEEXT) \
 @ENABLE_HALF_REAL_DOUBLE_TRUE@	testhalfilukmemory$(EXEEXT) \
 @ENABLE_HALF_REAL_DOUBLE_TRUE@	testhalfiluksimd$(EXEEXT) \
 @ENABLE_HALF_REAL_DOUBLE_TRUE@	testhalfilut$(EXEEXT)
-@ENABLE_FORTRAN_TRUE@am__EXEEXT_2 = etest1f$(EXEEXT) etest4f$(EXEEXT) \
+@ENABLE_FORTRAN_TRUE@am__EXEEXT_3 = etest1f$(EXEEXT) etest4f$(EXEEXT) \
 @ENABLE_FORTRAN_TRUE@	test1f$(EXEEXT) test4f$(EXEEXT) \
 @ENABLE_FORTRAN_TRUE@	test7f$(EXEEXT)
-@ENABLE_F90_TRUE@am__EXEEXT_3 = test2f$(EXEEXT) test6f$(EXEEXT)
-@ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__EXEEXT_4 = test8f$(EXEEXT)
+@ENABLE_F90_TRUE@am__EXEEXT_4 = test2f$(EXEEXT) test6f$(EXEEXT)
+@ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__EXEEXT_5 = test8f$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(test_PROGRAMS)
 am_benchautojacobirefresh_OBJECTS = benchautojacobirefresh.$(OBJEXT)
 benchautojacobirefresh_OBJECTS = $(am_benchautojacobirefresh_OBJECTS)
@@ -214,6 +231,14 @@ am_benchfrozenilut_OBJECTS = benchfrozenilut.$(OBJEXT)
 benchfrozenilut_OBJECTS = $(am_benchfrozenilut_OBJECTS)
 benchfrozenilut_LDADD = $(LDADD)
 benchfrozenilut_DEPENDENCIES =
+am_benchilutp_OBJECTS = benchilutp.$(OBJEXT)
+benchilutp_OBJECTS = $(am_benchilutp_OBJECTS)
+benchilutp_LDADD = $(LDADD)
+benchilutp_DEPENDENCIES =
+am_benchilutpequil_OBJECTS = benchilutpequil.$(OBJEXT)
+benchilutpequil_OBJECTS = $(am_benchilutpequil_OBJECTS)
+benchilutpequil_LDADD = $(LDADD)
+benchilutpequil_DEPENDENCIES =
 am_esolve_OBJECTS = etest5.$(OBJEXT)
 esolve_OBJECTS = $(am_esolve_OBJECTS)
 esolve_LDADD = $(LDADD)
@@ -559,6 +584,26 @@ am_testfgcrodr_OBJECTS = testfgcrodr.$(OBJEXT)
 testfgcrodr_OBJECTS = $(am_testfgcrodr_OBJECTS)
 testfgcrodr_LDADD = $(LDADD)
 testfgcrodr_DEPENDENCIES =
+am_testfgcrodrblocked_OBJECTS = testfgcrodrblocked.$(OBJEXT)
+testfgcrodrblocked_OBJECTS = $(am_testfgcrodrblocked_OBJECTS)
+testfgcrodrblocked_LDADD = $(LDADD)
+testfgcrodrblocked_DEPENDENCIES =
+am_testfgcrodrintra_OBJECTS = testfgcrodrintra.$(OBJEXT)
+testfgcrodrintra_OBJECTS = $(am_testfgcrodrintra_OBJECTS)
+testfgcrodrintra_LDADD = $(LDADD)
+testfgcrodrintra_DEPENDENCIES =
+am_testfgcrodrmaxiter_OBJECTS = testfgcrodrmaxiter.$(OBJEXT)
+testfgcrodrmaxiter_OBJECTS = $(am_testfgcrodrmaxiter_OBJECTS)
+testfgcrodrmaxiter_LDADD = $(LDADD)
+testfgcrodrmaxiter_DEPENDENCIES =
+am_testfgcrodrtransport_OBJECTS = testfgcrodrtransport.$(OBJEXT)
+testfgcrodrtransport_OBJECTS = $(am_testfgcrodrtransport_OBJECTS)
+testfgcrodrtransport_LDADD = $(LDADD)
+testfgcrodrtransport_DEPENDENCIES =
+am_testfgmresprojected_OBJECTS = testfgmresprojected.$(OBJEXT)
+testfgmresprojected_OBJECTS = $(am_testfgmresprojected_OBJECTS)
+am__DEPENDENCIES_1 =
+testfgmresprojected_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_testfrozenilut_OBJECTS = testfrozenilut.$(OBJEXT)
 testfrozenilut_OBJECTS = $(am_testfrozenilut_OBJECTS)
 testfrozenilut_LDADD = $(LDADD)
@@ -619,10 +664,22 @@ am_testhybridnested_OBJECTS = testhybridnested.$(OBJEXT)
 testhybridnested_OBJECTS = $(am_testhybridnested_OBJECTS)
 testhybridnested_LDADD = $(LDADD)
 testhybridnested_DEPENDENCIES =
+am_testilucbsrsmoke_OBJECTS = testilucbsrsmoke.$(OBJEXT)
+testilucbsrsmoke_OBJECTS = $(am_testilucbsrsmoke_OBJECTS)
+testilucbsrsmoke_LDADD = $(LDADD)
+testilucbsrsmoke_DEPENDENCIES =
 am_testilupivot_OBJECTS = testilupivot.$(OBJEXT)
 testilupivot_OBJECTS = $(am_testilupivot_OBJECTS)
 testilupivot_LDADD = $(LDADD)
 testilupivot_DEPENDENCIES =
+am_testilutequil_OBJECTS = testilutequil.$(OBJEXT)
+testilutequil_OBJECTS = $(am_testilutequil_OBJECTS)
+testilutequil_LDADD = $(LDADD)
+testilutequil_DEPENDENCIES =
+am_testilutp_OBJECTS = testilutp.$(OBJEXT)
+testilutp_OBJECTS = $(am_testilutp_OBJECTS)
+testilutp_LDADD = $(LDADD)
+testilutp_DEPENDENCIES =
 am_testjacobiuser_OBJECTS = testjacobiuser.$(OBJEXT)
 testjacobiuser_OBJECTS = $(am_testjacobiuser_OBJECTS)
 testjacobiuser_LDADD = $(LDADD)
@@ -675,10 +732,20 @@ am_testmfamg_OBJECTS = testmfamg.$(OBJEXT)
 testmfamg_OBJECTS = $(am_testmfamg_OBJECTS)
 testmfamg_LDADD = $(LDADD)
 testmfamg_DEPENDENCIES =
+am_testmfamgdeepmerge_OBJECTS = testmfamgdeepmerge.$(OBJEXT)
+testmfamgdeepmerge_OBJECTS = $(am_testmfamgdeepmerge_OBJECTS)
+testmfamgdeepmerge_LDADD = $(LDADD)
+testmfamgdeepmerge_DEPENDENCIES =
+am_testmfamgfineagg_OBJECTS = testmfamgfineagg.$(OBJEXT)
+testmfamgfineagg_OBJECTS = $(am_testmfamgfineagg_OBJECTS)
+testmfamgfineagg_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_testmfamggalerkin_OBJECTS = testmfamggalerkin.$(OBJEXT)
 testmfamggalerkin_OBJECTS = $(am_testmfamggalerkin_OBJECTS)
 testmfamggalerkin_LDADD = $(LDADD)
 testmfamggalerkin_DEPENDENCIES =
+am_testmfamgvcycle_OBJECTS = testmfamgvcycle.$(OBJEXT)
+testmfamgvcycle_OBJECTS = $(am_testmfamgvcycle_OBJECTS)
+testmfamgvcycle_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_testnearnullspace_OBJECTS = testnearnullspace.$(OBJEXT)
 testnearnullspace_OBJECTS = $(am_testnearnullspace_OBJECTS)
 testnearnullspace_LDADD = $(LDADD)
@@ -697,6 +764,43 @@ am_testompelastic_OBJECTS = testompelastic.$(OBJEXT)
 testompelastic_OBJECTS = $(am_testompelastic_OBJECTS)
 testompelastic_LDADD = $(LDADD)
 testompelastic_DEPENDENCIES =
+am__testoomalloc_SOURCES_DIST = testoomalloc.c
+@ENABLE_OOM_TESTS_TRUE@am_testoomalloc_OBJECTS =  \
+@ENABLE_OOM_TESTS_TRUE@	testoomalloc.$(OBJEXT)
+testoomalloc_OBJECTS = $(am_testoomalloc_OBJECTS)
+testoomalloc_LDADD = $(LDADD)
+testoomalloc_DEPENDENCIES =
+am__testoomdiag_SOURCES_DIST = testoomdiag.c
+@ENABLE_OOM_TESTS_TRUE@am_testoomdiag_OBJECTS = testoomdiag.$(OBJEXT)
+testoomdiag_OBJECTS = $(am_testoomdiag_OBJECTS)
+testoomdiag_LDADD = $(LDADD)
+testoomdiag_DEPENDENCIES =
+am__testoomilu_SOURCES_DIST = testoomilu.c
+@ENABLE_OOM_TESTS_TRUE@am_testoomilu_OBJECTS = testoomilu.$(OBJEXT)
+testoomilu_OBJECTS = $(am_testoomilu_OBJECTS)
+testoomilu_LDADD = $(LDADD)
+testoomilu_DEPENDENCIES =
+am__testoomiluc_SOURCES_DIST = testoomiluc.c
+@ENABLE_OOM_TESTS_TRUE@am_testoomiluc_OBJECTS = testoomiluc.$(OBJEXT)
+testoomiluc_OBJECTS = $(am_testoomiluc_OBJECTS)
+testoomiluc_LDADD = $(LDADD)
+testoomiluc_DEPENDENCIES =
+am__testoommpiscale_SOURCES_DIST = testoommpiscale.c
+@ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@am_testoommpiscale_OBJECTS = testoommpiscale.$(OBJEXT)
+testoommpiscale_OBJECTS = $(am_testoommpiscale_OBJECTS)
+testoommpiscale_LDADD = $(LDADD)
+testoommpiscale_DEPENDENCIES =
+am__testoomrco_SOURCES_DIST = testoomrco.c
+@ENABLE_OOM_TESTS_TRUE@am_testoomrco_OBJECTS = testoomrco.$(OBJEXT)
+testoomrco_OBJECTS = $(am_testoomrco_OBJECTS)
+testoomrco_LDADD = $(LDADD)
+testoomrco_DEPENDENCIES =
+am__testoomsnapshot_SOURCES_DIST = testoomsnapshot.c
+@ENABLE_OOM_TESTS_TRUE@am_testoomsnapshot_OBJECTS =  \
+@ENABLE_OOM_TESTS_TRUE@	testoomsnapshot.$(OBJEXT)
+testoomsnapshot_OBJECTS = $(am_testoomsnapshot_OBJECTS)
+testoomsnapshot_LDADD = $(LDADD)
+testoomsnapshot_DEPENDENCIES =
 am_testoperator_OBJECTS = testoperator.$(OBJEXT)
 testoperator_OBJECTS = $(am_testoperator_OBJECTS)
 testoperator_LDADD = $(LDADD)
@@ -737,6 +841,10 @@ am_testprojectedhermitian_OBJECTS = testprojectedhermitian.$(OBJEXT)
 testprojectedhermitian_OBJECTS = $(am_testprojectedhermitian_OBJECTS)
 testprojectedhermitian_LDADD = $(LDADD)
 testprojectedhermitian_DEPENDENCIES =
+am_testrcoalloc_OBJECTS = testrcoalloc.$(OBJEXT)
+testrcoalloc_OBJECTS = $(am_testrcoalloc_OBJECTS)
+testrcoalloc_LDADD = $(LDADD)
+testrcoalloc_DEPENDENCIES =
 am_testrecovery_OBJECTS = testrecovery.$(OBJEXT)
 testrecovery_OBJECTS = $(am_testrecovery_OBJECTS)
 testrecovery_LDADD = $(LDADD)
@@ -761,6 +869,10 @@ am_testshellscale_OBJECTS = testshellscale.$(OBJEXT)
 testshellscale_OBJECTS = $(am_testshellscale_OBJECTS)
 testshellscale_LDADD = $(LDADD)
 testshellscale_DEPENDENCIES =
+am_testsnapshot_OBJECTS = testsnapshot.$(OBJEXT)
+testsnapshot_OBJECTS = $(am_testsnapshot_OBJECTS)
+testsnapshot_LDADD = $(LDADD)
+testsnapshot_DEPENDENCIES =
 am_testsolvercallbackcert_OBJECTS = testsolvercallbackcert.$(OBJEXT)
 testsolvercallbackcert_OBJECTS = $(am_testsolvercallbackcert_OBJECTS)
 testsolvercallbackcert_LDADD = $(LDADD)
@@ -880,7 +992,8 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/include
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
-	./$(DEPDIR)/benchfrozenilut.Po ./$(DEPDIR)/etest1.Po \
+	./$(DEPDIR)/benchfrozenilut.Po ./$(DEPDIR)/benchilutp.Po \
+	./$(DEPDIR)/benchilutpequil.Po ./$(DEPDIR)/etest1.Po \
 	./$(DEPDIR)/etest2.Po ./$(DEPDIR)/etest3.Po \
 	./$(DEPDIR)/etest4.Po ./$(DEPDIR)/etest5.Po \
 	./$(DEPDIR)/etest5b.Po ./$(DEPDIR)/etest6.Po \
@@ -927,6 +1040,11 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testfeastcontour.Po \
 	./$(DEPDIR)/testfeastfoundation.Po \
 	./$(DEPDIR)/testfeastshifted.Po ./$(DEPDIR)/testfgcrodr.Po \
+	./$(DEPDIR)/testfgcrodrblocked.Po \
+	./$(DEPDIR)/testfgcrodrintra.Po \
+	./$(DEPDIR)/testfgcrodrmaxiter.Po \
+	./$(DEPDIR)/testfgcrodrtransport.Po \
+	./$(DEPDIR)/testfgmresprojected.Po \
 	./$(DEPDIR)/testfrozenilut.Po ./$(DEPDIR)/testgcrodrconfig.Po \
 	./$(DEPDIR)/testgcrodroptions.Po \
 	./$(DEPDIR)/testgcrodrsequence.Po \
@@ -936,7 +1054,9 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testhalfilukmemory.Po \
 	./$(DEPDIR)/testhalfiluksimd.Po ./$(DEPDIR)/testhalfilut.Po \
 	./$(DEPDIR)/testhalfprobe.Po ./$(DEPDIR)/testhalfstorage.Po \
-	./$(DEPDIR)/testhybridnested.Po ./$(DEPDIR)/testilupivot.Po \
+	./$(DEPDIR)/testhybridnested.Po \
+	./$(DEPDIR)/testilucbsrsmoke.Po ./$(DEPDIR)/testilupivot.Po \
+	./$(DEPDIR)/testilutequil.Po ./$(DEPDIR)/testilutp.Po \
 	./$(DEPDIR)/testjacobiuser.Po ./$(DEPDIR)/testkrylovrobust.Po \
 	./$(DEPDIR)/testmatrixautosession.Po \
 	./$(DEPDIR)/testmatrixgeneration.Po \
@@ -947,11 +1067,17 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testmatrixoperatormpi.Po \
 	./$(DEPDIR)/testmatrixpolicysolve.Po \
 	./$(DEPDIR)/testmatvecblock.Po ./$(DEPDIR)/testmfamg.Po \
+	./$(DEPDIR)/testmfamgdeepmerge.Po \
+	./$(DEPDIR)/testmfamgfineagg.Po \
 	./$(DEPDIR)/testmfamggalerkin.Po \
+	./$(DEPDIR)/testmfamgvcycle.Po \
 	./$(DEPDIR)/testnearnullspace.Po \
 	./$(DEPDIR)/testnullspacecandidates.Po \
 	./$(DEPDIR)/testnullspacelift.Po ./$(DEPDIR)/testompelastic.Po \
-	./$(DEPDIR)/testoperator.Po \
+	./$(DEPDIR)/testoomalloc.Po ./$(DEPDIR)/testoomdiag.Po \
+	./$(DEPDIR)/testoomilu.Po ./$(DEPDIR)/testoomiluc.Po \
+	./$(DEPDIR)/testoommpiscale.Po ./$(DEPDIR)/testoomrco.Po \
+	./$(DEPDIR)/testoomsnapshot.Po ./$(DEPDIR)/testoperator.Po \
 	./$(DEPDIR)/testoperatorrowprecon.Po \
 	./$(DEPDIR)/testparamupdate.Po ./$(DEPDIR)/testprebuiltuser.Po \
 	./$(DEPDIR)/testpreconlifecycle.Po \
@@ -959,9 +1085,11 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testpreconreuse.Po \
 	./$(DEPDIR)/testprojectedeigen.Po \
 	./$(DEPDIR)/testprojectedhermitian.Po \
-	./$(DEPDIR)/testrecovery.Po ./$(DEPDIR)/testrepeatedsystems.Po \
+	./$(DEPDIR)/testrcoalloc.Po ./$(DEPDIR)/testrecovery.Po \
+	./$(DEPDIR)/testrepeatedsystems.Po \
 	./$(DEPDIR)/testrhistoryerror.Po ./$(DEPDIR)/testrqirestore.Po \
 	./$(DEPDIR)/testsequence.Po ./$(DEPDIR)/testshellscale.Po \
+	./$(DEPDIR)/testsnapshot.Po \
 	./$(DEPDIR)/testsolvercallbackcert.Po \
 	./$(DEPDIR)/testsolvercallbackpaths.Po \
 	./$(DEPDIR)/testsolvercapabilities.Po \
@@ -1012,6 +1140,7 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
+	$(benchilutp_SOURCES) $(benchilutpequil_SOURCES) \
 	$(esolve_SOURCES) $(esolver_SOURCES) $(etest1_SOURCES) \
 	$(etest1f_SOURCES) $(etest2_SOURCES) $(etest3_SOURCES) \
 	$(etest4_SOURCES) $(etest4f_SOURCES) $(etest5_SOURCES) \
@@ -1051,15 +1180,19 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testesubspaceretry_SOURCES) testexactnullspace.c \
 	$(testexternalstorage_SOURCES) $(testfeastcontour_SOURCES) \
 	$(testfeastfoundation_SOURCES) $(testfeastshifted_SOURCES) \
-	$(testfgcrodr_SOURCES) $(testfrozenilut_SOURCES) \
-	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
-	$(testgcrodrsequence_SOURCES) $(testgesolvepair_SOURCES) \
-	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
-	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
-	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
-	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
-	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
-	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
+	$(testfgcrodr_SOURCES) $(testfgcrodrblocked_SOURCES) \
+	$(testfgcrodrintra_SOURCES) $(testfgcrodrmaxiter_SOURCES) \
+	$(testfgcrodrtransport_SOURCES) $(testfgmresprojected_SOURCES) \
+	$(testfrozenilut_SOURCES) $(testgcrodrconfig_SOURCES) \
+	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
+	$(testgesolvepair_SOURCES) $(testgmreswork_SOURCES) \
+	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
+	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
+	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
+	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
+	$(testhybridnested_SOURCES) $(testilucbsrsmoke_SOURCES) \
+	$(testilupivot_SOURCES) $(testilutequil_SOURCES) \
+	$(testilutp_SOURCES) $(testjacobiuser_SOURCES) \
 	$(testkrylovrobust_SOURCES) $(testmatrixautosession_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatrixmaterialize_SOURCES) \
@@ -1067,19 +1200,24 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testmatrixoperatorlifecycle_SOURCES) \
 	$(testmatrixoperatormpi_SOURCES) \
 	$(testmatrixpolicysolve_SOURCES) $(testmatvecblock_SOURCES) \
-	$(testmfamg_SOURCES) $(testmfamggalerkin_SOURCES) \
-	$(testnearnullspace_SOURCES) \
+	$(testmfamg_SOURCES) $(testmfamgdeepmerge_SOURCES) \
+	$(testmfamgfineagg_SOURCES) $(testmfamggalerkin_SOURCES) \
+	$(testmfamgvcycle_SOURCES) $(testnearnullspace_SOURCES) \
 	$(testnullspacecandidates_SOURCES) \
 	$(testnullspacelift_SOURCES) $(testompelastic_SOURCES) \
-	$(testoperator_SOURCES) $(testoperatorrowprecon_SOURCES) \
-	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
-	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
-	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
-	$(testprojectedeigen_SOURCES) \
-	$(testprojectedhermitian_SOURCES) $(testrecovery_SOURCES) \
-	$(testrepeatedsystems_SOURCES) testrhistoryerror.c \
-	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
-	$(testshellscale_SOURCES) $(testsolvercallbackcert_SOURCES) \
+	$(testoomalloc_SOURCES) $(testoomdiag_SOURCES) \
+	$(testoomilu_SOURCES) $(testoomiluc_SOURCES) \
+	$(testoommpiscale_SOURCES) $(testoomrco_SOURCES) \
+	$(testoomsnapshot_SOURCES) $(testoperator_SOURCES) \
+	$(testoperatorrowprecon_SOURCES) $(testparamupdate_SOURCES) \
+	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
+	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
+	$(testpreconreuse_SOURCES) $(testprojectedeigen_SOURCES) \
+	$(testprojectedhermitian_SOURCES) $(testrcoalloc_SOURCES) \
+	$(testrecovery_SOURCES) $(testrepeatedsystems_SOURCES) \
+	testrhistoryerror.c $(testrqirestore_SOURCES) \
+	$(testsequence_SOURCES) $(testshellscale_SOURCES) \
+	$(testsnapshot_SOURCES) $(testsolvercallbackcert_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
 	$(testsolvercapabilities_SOURCES) $(testsolvermonitor_SOURCES) \
 	$(testsolveroptionreplace_SOURCES) $(testsplitview_SOURCES) \
@@ -1090,7 +1228,8 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testvectorreal64_SOURCES) $(testwarmstart_SOURCES) \
 	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
 DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
-	$(benchfrozenilut_SOURCES) $(esolve_SOURCES) \
+	$(benchfrozenilut_SOURCES) $(benchilutp_SOURCES) \
+	$(benchilutpequil_SOURCES) $(esolve_SOURCES) \
 	$(esolver_SOURCES) $(etest1_SOURCES) \
 	$(am__etest1f_SOURCES_DIST) $(etest2_SOURCES) \
 	$(etest3_SOURCES) $(etest4_SOURCES) \
@@ -1131,15 +1270,19 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testesubspaceretry_SOURCES) testexactnullspace.c \
 	$(testexternalstorage_SOURCES) $(testfeastcontour_SOURCES) \
 	$(testfeastfoundation_SOURCES) $(testfeastshifted_SOURCES) \
-	$(testfgcrodr_SOURCES) $(testfrozenilut_SOURCES) \
-	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
-	$(testgcrodrsequence_SOURCES) $(testgesolvepair_SOURCES) \
-	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
-	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
-	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
-	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
-	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
-	$(testilupivot_SOURCES) $(testjacobiuser_SOURCES) \
+	$(testfgcrodr_SOURCES) $(testfgcrodrblocked_SOURCES) \
+	$(testfgcrodrintra_SOURCES) $(testfgcrodrmaxiter_SOURCES) \
+	$(testfgcrodrtransport_SOURCES) $(testfgmresprojected_SOURCES) \
+	$(testfrozenilut_SOURCES) $(testgcrodrconfig_SOURCES) \
+	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
+	$(testgesolvepair_SOURCES) $(testgmreswork_SOURCES) \
+	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
+	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
+	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
+	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
+	$(testhybridnested_SOURCES) $(testilucbsrsmoke_SOURCES) \
+	$(testilupivot_SOURCES) $(testilutequil_SOURCES) \
+	$(testilutp_SOURCES) $(testjacobiuser_SOURCES) \
 	$(testkrylovrobust_SOURCES) $(testmatrixautosession_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatrixmaterialize_SOURCES) \
@@ -1147,19 +1290,26 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testmatrixoperatorlifecycle_SOURCES) \
 	$(testmatrixoperatormpi_SOURCES) \
 	$(testmatrixpolicysolve_SOURCES) $(testmatvecblock_SOURCES) \
-	$(testmfamg_SOURCES) $(testmfamggalerkin_SOURCES) \
-	$(testnearnullspace_SOURCES) \
+	$(testmfamg_SOURCES) $(testmfamgdeepmerge_SOURCES) \
+	$(testmfamgfineagg_SOURCES) $(testmfamggalerkin_SOURCES) \
+	$(testmfamgvcycle_SOURCES) $(testnearnullspace_SOURCES) \
 	$(testnullspacecandidates_SOURCES) \
 	$(testnullspacelift_SOURCES) $(testompelastic_SOURCES) \
-	$(testoperator_SOURCES) $(testoperatorrowprecon_SOURCES) \
-	$(testparamupdate_SOURCES) $(testprebuiltuser_SOURCES) \
-	$(testpreconlifecycle_SOURCES) $(testpreconpolicy_SOURCES) \
-	$(testpreconpsd_SOURCES) $(testpreconreuse_SOURCES) \
-	$(testprojectedeigen_SOURCES) \
-	$(testprojectedhermitian_SOURCES) $(testrecovery_SOURCES) \
-	$(testrepeatedsystems_SOURCES) testrhistoryerror.c \
-	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
-	$(testshellscale_SOURCES) $(testsolvercallbackcert_SOURCES) \
+	$(am__testoomalloc_SOURCES_DIST) \
+	$(am__testoomdiag_SOURCES_DIST) $(am__testoomilu_SOURCES_DIST) \
+	$(am__testoomiluc_SOURCES_DIST) \
+	$(am__testoommpiscale_SOURCES_DIST) \
+	$(am__testoomrco_SOURCES_DIST) \
+	$(am__testoomsnapshot_SOURCES_DIST) $(testoperator_SOURCES) \
+	$(testoperatorrowprecon_SOURCES) $(testparamupdate_SOURCES) \
+	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
+	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
+	$(testpreconreuse_SOURCES) $(testprojectedeigen_SOURCES) \
+	$(testprojectedhermitian_SOURCES) $(testrcoalloc_SOURCES) \
+	$(testrecovery_SOURCES) $(testrepeatedsystems_SOURCES) \
+	testrhistoryerror.c $(testrqirestore_SOURCES) \
+	$(testsequence_SOURCES) $(testshellscale_SOURCES) \
+	$(testsnapshot_SOURCES) $(testsolvercallbackcert_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
 	$(testsolvercapabilities_SOURCES) $(testsolvermonitor_SOURCES) \
 	$(testsolveroptionreplace_SOURCES) $(testsplitview_SOURCES) \
@@ -1538,11 +1688,12 @@ LDADD = -L$(top_builddir)/src -llis@LIBSUFFIX@
 AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)/include
 AM_FFLAGS = -I$(top_builddir) -I$(top_srcdir)/include
 AM_LDFLAGS = $(AMDEFS)
-EXTRA_DIST = defs test.sh testmat.mtx testmat2.mtx testmat3.mtx testmat4.mtx testmat0.mtx testvec0.mtx
+EXTRA_DIST = gen_ilutp_fullfill_case.py gen_stokes_saddle.py benchilutp_rhs_100.mtx defs test.sh testmat.mtx testmat2.mtx testmat3.mtx testmat4.mtx testmat0.mtx testvec0.mtx
 testdir = ${prefix}/share/examples/lis
 test_DATA = testmat.mtx testmat2.mtx testmat3.mtx testmat4.mtx testmat0.mtx testvec0.mtx
 test_SCRIPTS = defs test.sh
 testabi_SOURCES = testabi.c
+testrcoalloc_SOURCES = testrcoalloc.c
 testgcrodroptions_SOURCES = testgcrodroptions.c
 testfeastfoundation_SOURCES = testfeastfoundation.c
 testfeastcontour_SOURCES = testfeastcontour.c
@@ -1558,6 +1709,10 @@ testmatrixautosession_SOURCES = testmatrixautosession.c
 benchautojacobirefresh_SOURCES = benchautojacobirefresh.c
 testvectorreal64_SOURCES = testvectorreal64.c
 testfrozenilut_SOURCES = testfrozenilut.c
+testilutp_SOURCES = testilutp.c
+testilutequil_SOURCES = testilutequil.c
+benchilutpequil_SOURCES = benchilutpequil.c
+benchilutp_SOURCES = benchilutp.c
 benchfrozenilut_SOURCES = benchfrozenilut.c
 testsplitview_SOURCES = testsplitview.c
 testsplitviewi64_SOURCES = testsplitviewi64.c
@@ -1617,6 +1772,7 @@ testhalfdispatch_SOURCES = testhalfdispatch.c
 testhalfilukmemory_SOURCES = testhalfilukmemory.c
 testhalfiluksimd_SOURCES = testhalfiluksimd.c
 testhalfilut_SOURCES = testhalfilut.c
+testsnapshot_SOURCES = testsnapshot.c
 testmfamg_SOURCES = testmfamg.c
 testmfamggalerkin_SOURCES = testmfamggalerkin.c
 getestuser_SOURCES = getestuser.c
@@ -1712,10 +1868,10 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
 
 
 # Explicitly run all new regression binaries under make check.
-TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
-	testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) \
-	testvectornrm2mpi$(EXEEXT) testoperatorrowprecon$(EXEEXT) \
-	testsolvercapabilities$(EXEEXT) \
+TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) \
+	testuserprecon$(EXEEXT) testmatvecblock$(EXEEXT) \
+	testcapabilities$(EXEEXT) testvectornrm2mpi$(EXEEXT) \
+	testoperatorrowprecon$(EXEEXT) testsolvercapabilities$(EXEEXT) \
 	testsolveroptionreplace$(EXEEXT) testompelastic$(EXEEXT) \
 	testmatrixgraph$(EXEEXT) testcomponentnullspace$(EXEEXT) \
 	testnullspacelift$(EXEEXT) testpreconlifecycle$(EXEEXT) \
@@ -1746,12 +1902,16 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	testsplitview$(EXEEXT) testsplitviewi64$(EXEEXT) \
 	testmatrixoperatorlifecycle$(EXEEXT) testsequence$(EXEEXT) \
 	testwarmstart$(EXEEXT) testrecovery$(EXEEXT) \
-	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) \
-	testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
-	testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) \
-	testnullspacecandidates$(EXEEXT) testesolverselection$(EXEEXT) \
-	testmatrixautosession$(EXEEXT) testvectorreal64$(EXEEXT) \
-	testgesolvepair$(EXEEXT) testabi$(EXEEXT) $(am__append_5) \
+	testthreads$(EXEEXT) testfgcrodr$(EXEEXT) \
+	testfgcrodrmaxiter$(EXEEXT) testfgcrodrintra$(EXEEXT) \
+	testmfamg$(EXEEXT) testmfamggalerkin$(EXEEXT) \
+	testexactnullspace$(EXEEXT) testhalfconfig$(EXEEXT) \
+	testhalfconvert$(EXEEXT) testnullspacecandidates$(EXEEXT) \
+	testesolverselection$(EXEEXT) testilutp$(EXEEXT) \
+	testilutequil$(EXEEXT) testmatrixautosession$(EXEEXT) \
+	testvectorreal64$(EXEEXT) testgesolvepair$(EXEEXT) \
+	testabi$(EXEEXT) testrcoalloc$(EXEEXT) $(am__append_5) \
+	testfgcrodrblocked$(EXEEXT) testfgcrodrtransport$(EXEEXT) \
 	test_krylov_modes$(EXEEXT) test_krylov_sparse$(EXEEXT) \
 	test_krylov_regression$(EXEEXT) test_krylov_lis$(EXEEXT) \
 	test_krylov_semidefinite$(EXEEXT) test_krylov_stress$(EXEEXT) \
@@ -1762,9 +1922,16 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) \
 	test_krylov_api_contract$(EXEEXT) \
 	test_krylov_residual_reuse$(EXEEXT) \
 	test_krylov_both_ends$(EXEEXT) \
-	test_krylov_be_lock_order$(EXEEXT)
+	test_krylov_be_lock_order$(EXEEXT) testilucbsrsmoke$(EXEEXT) \
+	$(am__append_6) $(am__append_8) testfgmresprojected$(EXEEXT) \
+	testmfamgvcycle$(EXEEXT) testmfamgfineagg$(EXEEXT) \
+	testmfamgdeepmerge$(EXEEXT)
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
+testfgcrodrmaxiter_SOURCES = testfgcrodrmaxiter.c
+testfgcrodrintra_SOURCES = testfgcrodrintra.c
+testfgcrodrblocked_SOURCES = testfgcrodrblocked.c
+testfgcrodrtransport_SOURCES = testfgcrodrtransport.c
 testgesolvepair_SOURCES = testgesolvepair.c
 test_krylov_modes_SOURCES = test_krylov_modes.c
 test_krylov_sparse_SOURCES = test_krylov_sparse.c
@@ -1786,6 +1953,21 @@ test_krylov_both_ends_SOURCES = test_krylov_both_ends.c
 # must not link the native solver object from liblis again.
 test_krylov_be_lock_order_SOURCES = test_krylov_be_lock_order.c
 test_krylov_be_lock_order_LDADD = -lm
+testilucbsrsmoke_SOURCES = testilucbsrsmoke.c
+@ENABLE_OOM_TESTS_TRUE@testoomalloc_SOURCES = testoomalloc.c
+@ENABLE_OOM_TESTS_TRUE@testoomilu_SOURCES = testoomilu.c
+@ENABLE_OOM_TESTS_TRUE@testoomdiag_SOURCES = testoomdiag.c
+@ENABLE_OOM_TESTS_TRUE@testoomiluc_SOURCES = testoomiluc.c
+@ENABLE_OOM_TESTS_TRUE@testoomsnapshot_SOURCES = testoomsnapshot.c
+@ENABLE_OOM_TESTS_TRUE@testoomrco_SOURCES = testoomrco.c
+@ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@testoommpiscale_SOURCES = testoommpiscale.c
+testfgmresprojected_SOURCES = testfgmresprojected.c
+testfgmresprojected_LDADD = $(LDADD) -lm
+testmfamgvcycle_SOURCES = testmfamgvcycle.c
+testmfamgvcycle_LDADD = $(LDADD) -lm
+testmfamgfineagg_SOURCES = testmfamgfineagg.c
+testmfamgfineagg_LDADD = $(LDADD) -lm
+testmfamgdeepmerge_SOURCES = testmfamgdeepmerge.c
 all: all-am
 
 .SUFFIXES:
@@ -1863,6 +2045,10 @@ uninstall-binPROGRAMS:
 clean-binPROGRAMS:
 	$(am__rm_f) $(bin_PROGRAMS)
 	test -z "$(EXEEXT)" || $(am__rm_f) $(bin_PROGRAMS:$(EXEEXT)=)
+
+clean-checkPROGRAMS:
+	$(am__rm_f) $(check_PROGRAMS)
+	test -z "$(EXEEXT)" || $(am__rm_f) $(check_PROGRAMS:$(EXEEXT)=)
 install-testPROGRAMS: $(test_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	@list='$(test_PROGRAMS)'; test -n "$(testdir)" || list=; \
@@ -1915,6 +2101,14 @@ benchautojacobirefresh$(EXEEXT): $(benchautojacobirefresh_OBJECTS) $(benchautoja
 benchfrozenilut$(EXEEXT): $(benchfrozenilut_OBJECTS) $(benchfrozenilut_DEPENDENCIES) $(EXTRA_benchfrozenilut_DEPENDENCIES) 
 	@rm -f benchfrozenilut$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(benchfrozenilut_OBJECTS) $(benchfrozenilut_LDADD) $(LIBS)
+
+benchilutp$(EXEEXT): $(benchilutp_OBJECTS) $(benchilutp_DEPENDENCIES) $(EXTRA_benchilutp_DEPENDENCIES) 
+	@rm -f benchilutp$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(benchilutp_OBJECTS) $(benchilutp_LDADD) $(LIBS)
+
+benchilutpequil$(EXEEXT): $(benchilutpequil_OBJECTS) $(benchilutpequil_DEPENDENCIES) $(EXTRA_benchilutpequil_DEPENDENCIES) 
+	@rm -f benchilutpequil$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(benchilutpequil_OBJECTS) $(benchilutpequil_LDADD) $(LIBS)
 
 esolve$(EXEEXT): $(esolve_OBJECTS) $(esolve_DEPENDENCIES) $(EXTRA_esolve_DEPENDENCIES) 
 	@rm -f esolve$(EXEEXT)
@@ -2244,6 +2438,26 @@ testfgcrodr$(EXEEXT): $(testfgcrodr_OBJECTS) $(testfgcrodr_DEPENDENCIES) $(EXTRA
 	@rm -f testfgcrodr$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testfgcrodr_OBJECTS) $(testfgcrodr_LDADD) $(LIBS)
 
+testfgcrodrblocked$(EXEEXT): $(testfgcrodrblocked_OBJECTS) $(testfgcrodrblocked_DEPENDENCIES) $(EXTRA_testfgcrodrblocked_DEPENDENCIES) 
+	@rm -f testfgcrodrblocked$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testfgcrodrblocked_OBJECTS) $(testfgcrodrblocked_LDADD) $(LIBS)
+
+testfgcrodrintra$(EXEEXT): $(testfgcrodrintra_OBJECTS) $(testfgcrodrintra_DEPENDENCIES) $(EXTRA_testfgcrodrintra_DEPENDENCIES) 
+	@rm -f testfgcrodrintra$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testfgcrodrintra_OBJECTS) $(testfgcrodrintra_LDADD) $(LIBS)
+
+testfgcrodrmaxiter$(EXEEXT): $(testfgcrodrmaxiter_OBJECTS) $(testfgcrodrmaxiter_DEPENDENCIES) $(EXTRA_testfgcrodrmaxiter_DEPENDENCIES) 
+	@rm -f testfgcrodrmaxiter$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testfgcrodrmaxiter_OBJECTS) $(testfgcrodrmaxiter_LDADD) $(LIBS)
+
+testfgcrodrtransport$(EXEEXT): $(testfgcrodrtransport_OBJECTS) $(testfgcrodrtransport_DEPENDENCIES) $(EXTRA_testfgcrodrtransport_DEPENDENCIES) 
+	@rm -f testfgcrodrtransport$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testfgcrodrtransport_OBJECTS) $(testfgcrodrtransport_LDADD) $(LIBS)
+
+testfgmresprojected$(EXEEXT): $(testfgmresprojected_OBJECTS) $(testfgmresprojected_DEPENDENCIES) $(EXTRA_testfgmresprojected_DEPENDENCIES) 
+	@rm -f testfgmresprojected$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testfgmresprojected_OBJECTS) $(testfgmresprojected_LDADD) $(LIBS)
+
 testfrozenilut$(EXEEXT): $(testfrozenilut_OBJECTS) $(testfrozenilut_DEPENDENCIES) $(EXTRA_testfrozenilut_DEPENDENCIES) 
 	@rm -f testfrozenilut$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testfrozenilut_OBJECTS) $(testfrozenilut_LDADD) $(LIBS)
@@ -2304,9 +2518,21 @@ testhybridnested$(EXEEXT): $(testhybridnested_OBJECTS) $(testhybridnested_DEPEND
 	@rm -f testhybridnested$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testhybridnested_OBJECTS) $(testhybridnested_LDADD) $(LIBS)
 
+testilucbsrsmoke$(EXEEXT): $(testilucbsrsmoke_OBJECTS) $(testilucbsrsmoke_DEPENDENCIES) $(EXTRA_testilucbsrsmoke_DEPENDENCIES) 
+	@rm -f testilucbsrsmoke$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testilucbsrsmoke_OBJECTS) $(testilucbsrsmoke_LDADD) $(LIBS)
+
 testilupivot$(EXEEXT): $(testilupivot_OBJECTS) $(testilupivot_DEPENDENCIES) $(EXTRA_testilupivot_DEPENDENCIES) 
 	@rm -f testilupivot$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testilupivot_OBJECTS) $(testilupivot_LDADD) $(LIBS)
+
+testilutequil$(EXEEXT): $(testilutequil_OBJECTS) $(testilutequil_DEPENDENCIES) $(EXTRA_testilutequil_DEPENDENCIES) 
+	@rm -f testilutequil$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testilutequil_OBJECTS) $(testilutequil_LDADD) $(LIBS)
+
+testilutp$(EXEEXT): $(testilutp_OBJECTS) $(testilutp_DEPENDENCIES) $(EXTRA_testilutp_DEPENDENCIES) 
+	@rm -f testilutp$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testilutp_OBJECTS) $(testilutp_LDADD) $(LIBS)
 
 testjacobiuser$(EXEEXT): $(testjacobiuser_OBJECTS) $(testjacobiuser_DEPENDENCIES) $(EXTRA_testjacobiuser_DEPENDENCIES) 
 	@rm -f testjacobiuser$(EXEEXT)
@@ -2356,9 +2582,21 @@ testmfamg$(EXEEXT): $(testmfamg_OBJECTS) $(testmfamg_DEPENDENCIES) $(EXTRA_testm
 	@rm -f testmfamg$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmfamg_OBJECTS) $(testmfamg_LDADD) $(LIBS)
 
+testmfamgdeepmerge$(EXEEXT): $(testmfamgdeepmerge_OBJECTS) $(testmfamgdeepmerge_DEPENDENCIES) $(EXTRA_testmfamgdeepmerge_DEPENDENCIES) 
+	@rm -f testmfamgdeepmerge$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testmfamgdeepmerge_OBJECTS) $(testmfamgdeepmerge_LDADD) $(LIBS)
+
+testmfamgfineagg$(EXEEXT): $(testmfamgfineagg_OBJECTS) $(testmfamgfineagg_DEPENDENCIES) $(EXTRA_testmfamgfineagg_DEPENDENCIES) 
+	@rm -f testmfamgfineagg$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testmfamgfineagg_OBJECTS) $(testmfamgfineagg_LDADD) $(LIBS)
+
 testmfamggalerkin$(EXEEXT): $(testmfamggalerkin_OBJECTS) $(testmfamggalerkin_DEPENDENCIES) $(EXTRA_testmfamggalerkin_DEPENDENCIES) 
 	@rm -f testmfamggalerkin$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmfamggalerkin_OBJECTS) $(testmfamggalerkin_LDADD) $(LIBS)
+
+testmfamgvcycle$(EXEEXT): $(testmfamgvcycle_OBJECTS) $(testmfamgvcycle_DEPENDENCIES) $(EXTRA_testmfamgvcycle_DEPENDENCIES) 
+	@rm -f testmfamgvcycle$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testmfamgvcycle_OBJECTS) $(testmfamgvcycle_LDADD) $(LIBS)
 
 testnearnullspace$(EXEEXT): $(testnearnullspace_OBJECTS) $(testnearnullspace_DEPENDENCIES) $(EXTRA_testnearnullspace_DEPENDENCIES) 
 	@rm -f testnearnullspace$(EXEEXT)
@@ -2375,6 +2613,34 @@ testnullspacelift$(EXEEXT): $(testnullspacelift_OBJECTS) $(testnullspacelift_DEP
 testompelastic$(EXEEXT): $(testompelastic_OBJECTS) $(testompelastic_DEPENDENCIES) $(EXTRA_testompelastic_DEPENDENCIES) 
 	@rm -f testompelastic$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testompelastic_OBJECTS) $(testompelastic_LDADD) $(LIBS)
+
+testoomalloc$(EXEEXT): $(testoomalloc_OBJECTS) $(testoomalloc_DEPENDENCIES) $(EXTRA_testoomalloc_DEPENDENCIES) 
+	@rm -f testoomalloc$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testoomalloc_OBJECTS) $(testoomalloc_LDADD) $(LIBS)
+
+testoomdiag$(EXEEXT): $(testoomdiag_OBJECTS) $(testoomdiag_DEPENDENCIES) $(EXTRA_testoomdiag_DEPENDENCIES) 
+	@rm -f testoomdiag$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testoomdiag_OBJECTS) $(testoomdiag_LDADD) $(LIBS)
+
+testoomilu$(EXEEXT): $(testoomilu_OBJECTS) $(testoomilu_DEPENDENCIES) $(EXTRA_testoomilu_DEPENDENCIES) 
+	@rm -f testoomilu$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testoomilu_OBJECTS) $(testoomilu_LDADD) $(LIBS)
+
+testoomiluc$(EXEEXT): $(testoomiluc_OBJECTS) $(testoomiluc_DEPENDENCIES) $(EXTRA_testoomiluc_DEPENDENCIES) 
+	@rm -f testoomiluc$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testoomiluc_OBJECTS) $(testoomiluc_LDADD) $(LIBS)
+
+testoommpiscale$(EXEEXT): $(testoommpiscale_OBJECTS) $(testoommpiscale_DEPENDENCIES) $(EXTRA_testoommpiscale_DEPENDENCIES) 
+	@rm -f testoommpiscale$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testoommpiscale_OBJECTS) $(testoommpiscale_LDADD) $(LIBS)
+
+testoomrco$(EXEEXT): $(testoomrco_OBJECTS) $(testoomrco_DEPENDENCIES) $(EXTRA_testoomrco_DEPENDENCIES) 
+	@rm -f testoomrco$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testoomrco_OBJECTS) $(testoomrco_LDADD) $(LIBS)
+
+testoomsnapshot$(EXEEXT): $(testoomsnapshot_OBJECTS) $(testoomsnapshot_DEPENDENCIES) $(EXTRA_testoomsnapshot_DEPENDENCIES) 
+	@rm -f testoomsnapshot$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testoomsnapshot_OBJECTS) $(testoomsnapshot_LDADD) $(LIBS)
 
 testoperator$(EXEEXT): $(testoperator_OBJECTS) $(testoperator_DEPENDENCIES) $(EXTRA_testoperator_DEPENDENCIES) 
 	@rm -f testoperator$(EXEEXT)
@@ -2416,6 +2682,10 @@ testprojectedhermitian$(EXEEXT): $(testprojectedhermitian_OBJECTS) $(testproject
 	@rm -f testprojectedhermitian$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testprojectedhermitian_OBJECTS) $(testprojectedhermitian_LDADD) $(LIBS)
 
+testrcoalloc$(EXEEXT): $(testrcoalloc_OBJECTS) $(testrcoalloc_DEPENDENCIES) $(EXTRA_testrcoalloc_DEPENDENCIES) 
+	@rm -f testrcoalloc$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testrcoalloc_OBJECTS) $(testrcoalloc_LDADD) $(LIBS)
+
 testrecovery$(EXEEXT): $(testrecovery_OBJECTS) $(testrecovery_DEPENDENCIES) $(EXTRA_testrecovery_DEPENDENCIES) 
 	@rm -f testrecovery$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testrecovery_OBJECTS) $(testrecovery_LDADD) $(LIBS)
@@ -2439,6 +2709,10 @@ testsequence$(EXEEXT): $(testsequence_OBJECTS) $(testsequence_DEPENDENCIES) $(EX
 testshellscale$(EXEEXT): $(testshellscale_OBJECTS) $(testshellscale_DEPENDENCIES) $(EXTRA_testshellscale_DEPENDENCIES) 
 	@rm -f testshellscale$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testshellscale_OBJECTS) $(testshellscale_LDADD) $(LIBS)
+
+testsnapshot$(EXEEXT): $(testsnapshot_OBJECTS) $(testsnapshot_DEPENDENCIES) $(EXTRA_testsnapshot_DEPENDENCIES) 
+	@rm -f testsnapshot$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testsnapshot_OBJECTS) $(testsnapshot_LDADD) $(LIBS)
 
 testsolvercallbackcert$(EXEEXT): $(testsolvercallbackcert_OBJECTS) $(testsolvercallbackcert_DEPENDENCIES) $(EXTRA_testsolvercallbackcert_DEPENDENCIES) 
 	@rm -f testsolvercallbackcert$(EXEEXT)
@@ -2555,6 +2829,8 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/benchautojacobirefresh.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/benchfrozenilut.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/benchilutp.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/benchilutpequil.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/etest1.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/etest2.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/etest3.Po@am__quote@ # am--include-marker
@@ -2622,6 +2898,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfeastfoundation.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfeastshifted.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodr.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodrblocked.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodrintra.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodrmaxiter.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgcrodrtransport.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfgmresprojected.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfrozenilut.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testgcrodrconfig.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testgcrodroptions.Po@am__quote@ # am--include-marker
@@ -2637,7 +2918,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testhalfprobe.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testhalfstorage.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testhybridnested.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testilucbsrsmoke.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testilupivot.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testilutequil.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testilutp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testjacobiuser.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testkrylovrobust.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixautosession.Po@am__quote@ # am--include-marker
@@ -2650,11 +2934,21 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixpolicysolve.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatvecblock.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamg.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamgdeepmerge.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamgfineagg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamggalerkin.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmfamgvcycle.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testnearnullspace.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testnullspacecandidates.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testnullspacelift.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testompelastic.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoomalloc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoomdiag.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoomilu.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoomiluc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoommpiscale.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoomrco.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoomsnapshot.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoperator.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testoperatorrowprecon.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testparamupdate.Po@am__quote@ # am--include-marker
@@ -2665,12 +2959,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testpreconreuse.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testprojectedeigen.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testprojectedhermitian.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrcoalloc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrecovery.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrepeatedsystems.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrhistoryerror.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrqirestore.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsequence.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testshellscale.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsnapshot.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsolvercallbackcert.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsolvercallbackpaths.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testsolvercapabilities.Po@am__quote@ # am--include-marker
@@ -2962,7 +3258,7 @@ echo "information.  Thanks.";                                                \
 	fi;								\
 	$$success || exit 1
 
-check-TESTS: 
+check-TESTS: $(check_PROGRAMS)
 	@$(am__rm_f) $(RECHECK_LOGS)
 	@$(am__rm_f) $(RECHECK_LOGS:.log=.trs)
 	@$(am__rm_f) $(TEST_SUITE_LOG)
@@ -2971,7 +3267,7 @@ check-TESTS:
 	log_list=`echo $$log_list`; \
 	$(MAKE) $(AM_MAKEFLAGS) $(TEST_SUITE_LOG) TEST_LOGS="$$log_list"; \
 	exit $$?;
-recheck: all 
+recheck: all $(check_PROGRAMS)
 	@$(am__rm_f) $(TEST_SUITE_LOG)
 	@set +e; $(am__set_TESTS_bases); \
 	bases=`for i in $$bases; do echo $$i; done \
@@ -2982,6 +3278,13 @@ recheck: all
 	        am__force_recheck=am--force-recheck \
 	        TEST_LOGS="$$log_list"; \
 	exit $$?
+testsnapshot.log: testsnapshot$(EXEEXT)
+	@p='testsnapshot$(EXEEXT)'; \
+	b='testsnapshot'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 test.sh.log: test.sh
 	@p='test.sh'; \
 	b='test.sh'; \
@@ -3416,6 +3719,20 @@ testfgcrodr.log: testfgcrodr$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testfgcrodrmaxiter.log: testfgcrodrmaxiter$(EXEEXT)
+	@p='testfgcrodrmaxiter$(EXEEXT)'; \
+	b='testfgcrodrmaxiter'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testfgcrodrintra.log: testfgcrodrintra$(EXEEXT)
+	@p='testfgcrodrintra$(EXEEXT)'; \
+	b='testfgcrodrintra'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 testmfamg.log: testmfamg$(EXEEXT)
 	@p='testmfamg$(EXEEXT)'; \
 	b='testmfamg'; \
@@ -3465,6 +3782,20 @@ testesolverselection.log: testesolverselection$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testilutp.log: testilutp$(EXEEXT)
+	@p='testilutp$(EXEEXT)'; \
+	b='testilutp'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testilutequil.log: testilutequil$(EXEEXT)
+	@p='testilutequil$(EXEEXT)'; \
+	b='testilutequil'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 testmatrixautosession.log: testmatrixautosession$(EXEEXT)
 	@p='testmatrixautosession$(EXEEXT)'; \
 	b='testmatrixautosession'; \
@@ -3489,6 +3820,13 @@ testgesolvepair.log: testgesolvepair$(EXEEXT)
 testabi.log: testabi$(EXEEXT)
 	@p='testabi$(EXEEXT)'; \
 	b='testabi'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testrcoalloc.log: testrcoalloc$(EXEEXT)
+	@p='testrcoalloc$(EXEEXT)'; \
+	b='testrcoalloc'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -3531,6 +3869,20 @@ testhalfiluksimd.log: testhalfiluksimd$(EXEEXT)
 testhalfilut.log: testhalfilut$(EXEEXT)
 	@p='testhalfilut$(EXEEXT)'; \
 	b='testhalfilut'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testfgcrodrblocked.log: testfgcrodrblocked$(EXEEXT)
+	@p='testfgcrodrblocked$(EXEEXT)'; \
+	b='testfgcrodrblocked'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testfgcrodrtransport.log: testfgcrodrtransport$(EXEEXT)
+	@p='testfgcrodrtransport$(EXEEXT)'; \
+	b='testfgcrodrtransport'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -3654,6 +4006,90 @@ test_krylov_be_lock_order.log: test_krylov_be_lock_order$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testilucbsrsmoke.log: testilucbsrsmoke$(EXEEXT)
+	@p='testilucbsrsmoke$(EXEEXT)'; \
+	b='testilucbsrsmoke'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testoomalloc.log: testoomalloc$(EXEEXT)
+	@p='testoomalloc$(EXEEXT)'; \
+	b='testoomalloc'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testoomilu.log: testoomilu$(EXEEXT)
+	@p='testoomilu$(EXEEXT)'; \
+	b='testoomilu'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testoomdiag.log: testoomdiag$(EXEEXT)
+	@p='testoomdiag$(EXEEXT)'; \
+	b='testoomdiag'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testoomiluc.log: testoomiluc$(EXEEXT)
+	@p='testoomiluc$(EXEEXT)'; \
+	b='testoomiluc'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testoomsnapshot.log: testoomsnapshot$(EXEEXT)
+	@p='testoomsnapshot$(EXEEXT)'; \
+	b='testoomsnapshot'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testoomrco.log: testoomrco$(EXEEXT)
+	@p='testoomrco$(EXEEXT)'; \
+	b='testoomrco'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testoommpiscale.log: testoommpiscale$(EXEEXT)
+	@p='testoommpiscale$(EXEEXT)'; \
+	b='testoommpiscale'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testfgmresprojected.log: testfgmresprojected$(EXEEXT)
+	@p='testfgmresprojected$(EXEEXT)'; \
+	b='testfgmresprojected'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testmfamgvcycle.log: testmfamgvcycle$(EXEEXT)
+	@p='testmfamgvcycle$(EXEEXT)'; \
+	b='testmfamgvcycle'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testmfamgfineagg.log: testmfamgfineagg$(EXEEXT)
+	@p='testmfamgfineagg$(EXEEXT)'; \
+	b='testmfamgfineagg'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testmfamgdeepmerge.log: testmfamgdeepmerge$(EXEEXT)
+	@p='testmfamgdeepmerge$(EXEEXT)'; \
+	b='testmfamgdeepmerge'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -3703,6 +4139,7 @@ distdir-am: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
+	$(MAKE) $(AM_MAKEFLAGS) $(check_PROGRAMS)
 	$(MAKE) $(AM_MAKEFLAGS) check-TESTS
 check: check-am
 all-am: Makefile $(PROGRAMS) $(SCRIPTS) $(DATA)
@@ -3744,12 +4181,14 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-binPROGRAMS clean-generic clean-libtool \
-	clean-testPROGRAMS mostlyclean-am
+clean-am: clean-binPROGRAMS clean-checkPROGRAMS clean-generic \
+	clean-libtool clean-testPROGRAMS mostlyclean-am
 
 distclean: distclean-am
 	-rm -f ./$(DEPDIR)/benchautojacobirefresh.Po
 	-rm -f ./$(DEPDIR)/benchfrozenilut.Po
+	-rm -f ./$(DEPDIR)/benchilutp.Po
+	-rm -f ./$(DEPDIR)/benchilutpequil.Po
 	-rm -f ./$(DEPDIR)/etest1.Po
 	-rm -f ./$(DEPDIR)/etest2.Po
 	-rm -f ./$(DEPDIR)/etest3.Po
@@ -3817,6 +4256,11 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testfeastfoundation.Po
 	-rm -f ./$(DEPDIR)/testfeastshifted.Po
 	-rm -f ./$(DEPDIR)/testfgcrodr.Po
+	-rm -f ./$(DEPDIR)/testfgcrodrblocked.Po
+	-rm -f ./$(DEPDIR)/testfgcrodrintra.Po
+	-rm -f ./$(DEPDIR)/testfgcrodrmaxiter.Po
+	-rm -f ./$(DEPDIR)/testfgcrodrtransport.Po
+	-rm -f ./$(DEPDIR)/testfgmresprojected.Po
 	-rm -f ./$(DEPDIR)/testfrozenilut.Po
 	-rm -f ./$(DEPDIR)/testgcrodrconfig.Po
 	-rm -f ./$(DEPDIR)/testgcrodroptions.Po
@@ -3832,7 +4276,10 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testhalfprobe.Po
 	-rm -f ./$(DEPDIR)/testhalfstorage.Po
 	-rm -f ./$(DEPDIR)/testhybridnested.Po
+	-rm -f ./$(DEPDIR)/testilucbsrsmoke.Po
 	-rm -f ./$(DEPDIR)/testilupivot.Po
+	-rm -f ./$(DEPDIR)/testilutequil.Po
+	-rm -f ./$(DEPDIR)/testilutp.Po
 	-rm -f ./$(DEPDIR)/testjacobiuser.Po
 	-rm -f ./$(DEPDIR)/testkrylovrobust.Po
 	-rm -f ./$(DEPDIR)/testmatrixautosession.Po
@@ -3845,11 +4292,21 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testmatrixpolicysolve.Po
 	-rm -f ./$(DEPDIR)/testmatvecblock.Po
 	-rm -f ./$(DEPDIR)/testmfamg.Po
+	-rm -f ./$(DEPDIR)/testmfamgdeepmerge.Po
+	-rm -f ./$(DEPDIR)/testmfamgfineagg.Po
 	-rm -f ./$(DEPDIR)/testmfamggalerkin.Po
+	-rm -f ./$(DEPDIR)/testmfamgvcycle.Po
 	-rm -f ./$(DEPDIR)/testnearnullspace.Po
 	-rm -f ./$(DEPDIR)/testnullspacecandidates.Po
 	-rm -f ./$(DEPDIR)/testnullspacelift.Po
 	-rm -f ./$(DEPDIR)/testompelastic.Po
+	-rm -f ./$(DEPDIR)/testoomalloc.Po
+	-rm -f ./$(DEPDIR)/testoomdiag.Po
+	-rm -f ./$(DEPDIR)/testoomilu.Po
+	-rm -f ./$(DEPDIR)/testoomiluc.Po
+	-rm -f ./$(DEPDIR)/testoommpiscale.Po
+	-rm -f ./$(DEPDIR)/testoomrco.Po
+	-rm -f ./$(DEPDIR)/testoomsnapshot.Po
 	-rm -f ./$(DEPDIR)/testoperator.Po
 	-rm -f ./$(DEPDIR)/testoperatorrowprecon.Po
 	-rm -f ./$(DEPDIR)/testparamupdate.Po
@@ -3860,12 +4317,14 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testpreconreuse.Po
 	-rm -f ./$(DEPDIR)/testprojectedeigen.Po
 	-rm -f ./$(DEPDIR)/testprojectedhermitian.Po
+	-rm -f ./$(DEPDIR)/testrcoalloc.Po
 	-rm -f ./$(DEPDIR)/testrecovery.Po
 	-rm -f ./$(DEPDIR)/testrepeatedsystems.Po
 	-rm -f ./$(DEPDIR)/testrhistoryerror.Po
 	-rm -f ./$(DEPDIR)/testrqirestore.Po
 	-rm -f ./$(DEPDIR)/testsequence.Po
 	-rm -f ./$(DEPDIR)/testshellscale.Po
+	-rm -f ./$(DEPDIR)/testsnapshot.Po
 	-rm -f ./$(DEPDIR)/testsolvercallbackcert.Po
 	-rm -f ./$(DEPDIR)/testsolvercallbackpaths.Po
 	-rm -f ./$(DEPDIR)/testsolvercapabilities.Po
@@ -3932,6 +4391,8 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/benchautojacobirefresh.Po
 	-rm -f ./$(DEPDIR)/benchfrozenilut.Po
+	-rm -f ./$(DEPDIR)/benchilutp.Po
+	-rm -f ./$(DEPDIR)/benchilutpequil.Po
 	-rm -f ./$(DEPDIR)/etest1.Po
 	-rm -f ./$(DEPDIR)/etest2.Po
 	-rm -f ./$(DEPDIR)/etest3.Po
@@ -3999,6 +4460,11 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testfeastfoundation.Po
 	-rm -f ./$(DEPDIR)/testfeastshifted.Po
 	-rm -f ./$(DEPDIR)/testfgcrodr.Po
+	-rm -f ./$(DEPDIR)/testfgcrodrblocked.Po
+	-rm -f ./$(DEPDIR)/testfgcrodrintra.Po
+	-rm -f ./$(DEPDIR)/testfgcrodrmaxiter.Po
+	-rm -f ./$(DEPDIR)/testfgcrodrtransport.Po
+	-rm -f ./$(DEPDIR)/testfgmresprojected.Po
 	-rm -f ./$(DEPDIR)/testfrozenilut.Po
 	-rm -f ./$(DEPDIR)/testgcrodrconfig.Po
 	-rm -f ./$(DEPDIR)/testgcrodroptions.Po
@@ -4014,7 +4480,10 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testhalfprobe.Po
 	-rm -f ./$(DEPDIR)/testhalfstorage.Po
 	-rm -f ./$(DEPDIR)/testhybridnested.Po
+	-rm -f ./$(DEPDIR)/testilucbsrsmoke.Po
 	-rm -f ./$(DEPDIR)/testilupivot.Po
+	-rm -f ./$(DEPDIR)/testilutequil.Po
+	-rm -f ./$(DEPDIR)/testilutp.Po
 	-rm -f ./$(DEPDIR)/testjacobiuser.Po
 	-rm -f ./$(DEPDIR)/testkrylovrobust.Po
 	-rm -f ./$(DEPDIR)/testmatrixautosession.Po
@@ -4027,11 +4496,21 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testmatrixpolicysolve.Po
 	-rm -f ./$(DEPDIR)/testmatvecblock.Po
 	-rm -f ./$(DEPDIR)/testmfamg.Po
+	-rm -f ./$(DEPDIR)/testmfamgdeepmerge.Po
+	-rm -f ./$(DEPDIR)/testmfamgfineagg.Po
 	-rm -f ./$(DEPDIR)/testmfamggalerkin.Po
+	-rm -f ./$(DEPDIR)/testmfamgvcycle.Po
 	-rm -f ./$(DEPDIR)/testnearnullspace.Po
 	-rm -f ./$(DEPDIR)/testnullspacecandidates.Po
 	-rm -f ./$(DEPDIR)/testnullspacelift.Po
 	-rm -f ./$(DEPDIR)/testompelastic.Po
+	-rm -f ./$(DEPDIR)/testoomalloc.Po
+	-rm -f ./$(DEPDIR)/testoomdiag.Po
+	-rm -f ./$(DEPDIR)/testoomilu.Po
+	-rm -f ./$(DEPDIR)/testoomiluc.Po
+	-rm -f ./$(DEPDIR)/testoommpiscale.Po
+	-rm -f ./$(DEPDIR)/testoomrco.Po
+	-rm -f ./$(DEPDIR)/testoomsnapshot.Po
 	-rm -f ./$(DEPDIR)/testoperator.Po
 	-rm -f ./$(DEPDIR)/testoperatorrowprecon.Po
 	-rm -f ./$(DEPDIR)/testparamupdate.Po
@@ -4042,12 +4521,14 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testpreconreuse.Po
 	-rm -f ./$(DEPDIR)/testprojectedeigen.Po
 	-rm -f ./$(DEPDIR)/testprojectedhermitian.Po
+	-rm -f ./$(DEPDIR)/testrcoalloc.Po
 	-rm -f ./$(DEPDIR)/testrecovery.Po
 	-rm -f ./$(DEPDIR)/testrepeatedsystems.Po
 	-rm -f ./$(DEPDIR)/testrhistoryerror.Po
 	-rm -f ./$(DEPDIR)/testrqirestore.Po
 	-rm -f ./$(DEPDIR)/testsequence.Po
 	-rm -f ./$(DEPDIR)/testshellscale.Po
+	-rm -f ./$(DEPDIR)/testsnapshot.Po
 	-rm -f ./$(DEPDIR)/testsolvercallbackcert.Po
 	-rm -f ./$(DEPDIR)/testsolvercallbackpaths.Po
 	-rm -f ./$(DEPDIR)/testsolvercapabilities.Po
@@ -4088,17 +4569,17 @@ uninstall-am: uninstall-binPROGRAMS uninstall-testDATA \
 .MAKE: check-am install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-TESTS \
-	check-am clean clean-binPROGRAMS clean-generic clean-libtool \
-	clean-testPROGRAMS cscopelist-am ctags ctags-am distclean \
-	distclean-compile distclean-generic distclean-libtool \
-	distclean-tags distdir dvi dvi-am html html-am info info-am \
-	install install-am install-binPROGRAMS install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip install-testDATA \
-	install-testPROGRAMS install-testSCRIPTS installcheck \
-	installcheck-am installdirs maintainer-clean \
+	check-am clean clean-binPROGRAMS clean-checkPROGRAMS \
+	clean-generic clean-libtool clean-testPROGRAMS cscopelist-am \
+	ctags ctags-am distclean distclean-compile distclean-generic \
+	distclean-libtool distclean-tags distdir dvi dvi-am html \
+	html-am info info-am install install-am install-binPROGRAMS \
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	install-testDATA install-testPROGRAMS install-testSCRIPTS \
+	installcheck installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	recheck tags tags-am uninstall uninstall-am \

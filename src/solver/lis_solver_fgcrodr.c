@@ -17,6 +17,11 @@
 
 #include <math.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#ifdef USE_MPI
+#include <mpi.h>
+#endif
 
 #include "lislib.h"
 
@@ -71,6 +76,11 @@ struct LIS_FGCRODR_STATE_STRUCT
     LIS_REAL reject_threshold;
 
     LIS_INT update;
+
+    /* Per-solver controls instead of process-global getenv() switches. */
+    LIS_INT intra_recycle;
+    LIS_INT intra_trace;
+    LIS_INT projected_relative;
 
     LIS_REAL quality;
     LIS_REAL quality_min;
@@ -276,6 +286,87 @@ lis_fgcrodr_state_destroy(
     LIS_DEBUG_FUNC_OUT;
 
     return LIS_SUCCESS;
+}
+
+
+/*
+ * The FGCRO-DR private state contains both configuration and owned recycle
+ * vectors.  Solver option-profile replacement must transfer only the
+ * textual configuration values, never copy the private state or its pointers.
+ * An absent state is equivalent to the documented default configuration.
+ */
+LIS_INT
+lis_fgcrodr_profile_equal(LIS_SOLVER active,LIS_SOLVER fresh)
+{
+    struct LIS_FGCRODR_STATE_STRUCT defaults;
+    LIS_FGCRODR_STATE a,b;
+
+    if( active==NULL || fresh==NULL ) return LIS_FALSE;
+
+    a=active->fgcrodr_state;
+    b=fresh->fgcrodr_state;
+    if( a==NULL || b==NULL )
+    {
+        lis_fgcrodr_state_defaults(&defaults);
+        if( a==NULL ) a=&defaults;
+        if( b==NULL ) b=&defaults;
+    }
+
+    return (a->target_dim==b->target_dim &&
+            a->keep_threshold==b->keep_threshold &&
+            a->reject_threshold==b->reject_threshold &&
+            a->update==b->update &&
+            a->intra_recycle==b->intra_recycle &&
+            a->intra_trace==b->intra_trace &&
+            a->projected_relative==b->projected_relative)
+            ? LIS_TRUE : LIS_FALSE;
+}
+
+/* Preflight any allocation before resetting or changing the active profile. */
+LIS_INT
+lis_fgcrodr_profile_prepare(LIS_SOLVER active,LIS_SOLVER fresh)
+{
+    if( active==NULL || fresh==NULL )
+        return LIS_ERR_ILL_ARG;
+    if( fresh->fgcrodr_state!=NULL && active->fgcrodr_state==NULL )
+        return lis_fgcrodr_state_ensure(active);
+    return LIS_SUCCESS;
+}
+
+/*
+ * This phase cannot fail after lis_fgcrodr_profile_prepare(): any needed
+ * state has already been allocated and reset_sequence() has completed.
+ * No allocation and no ownership transfer occurs here.
+ */
+void
+lis_fgcrodr_profile_copy(LIS_SOLVER active,LIS_SOLVER fresh)
+{
+    struct LIS_FGCRODR_STATE_STRUCT defaults;
+    LIS_FGCRODR_STATE a,b;
+
+    a=active->fgcrodr_state;
+    b=fresh->fgcrodr_state;
+
+    /* If both states are absent, both carry the implicit default profile. */
+    if( a==NULL )
+        return;
+
+    if( b==NULL )
+    {
+        lis_fgcrodr_state_defaults(&defaults);
+        b=&defaults;
+    }
+
+    if( a->target_dim!=b->target_dim )
+        lis_fgcrodr_vectors_destroy(a);
+
+    a->target_dim=b->target_dim;
+    a->keep_threshold=b->keep_threshold;
+    a->reject_threshold=b->reject_threshold;
+    a->update=b->update;
+    a->intra_recycle=b->intra_recycle;
+    a->intra_trace=b->intra_trace;
+    a->projected_relative=b->projected_relative;
 }
 
 
@@ -678,6 +769,33 @@ lis_fgcrodr_set_option(
         return LIS_SUCCESS;
     }
 
+
+    /* Explicit per-solver switches. Invalid values must not
+     * silently turn safety-sensitive numerical options off. */
+    if( strcmp(name,"-fgcrodr_intra")==0 ||
+        strcmp(name,"-fgcrodr_intra_trace")==0 ||
+        strcmp(name,"-fgcrodr_projected_relative")==0 )
+    {
+        LIS_INT enabled;
+        if( strcmp(value,"0")==0 )
+            enabled = LIS_FALSE;
+        else if( strcmp(value,"1")==0 )
+            enabled = LIS_TRUE;
+        else
+        {
+            LIS_SETERR(LIS_ERR_ILL_ARG,
+                       "FGCRO-DR switches must be 0 or 1\n");
+            return LIS_ERR_ILL_ARG;
+        }
+
+        if( strcmp(name,"-fgcrodr_intra")==0 )
+            state->intra_recycle = enabled;
+        else if( strcmp(name,"-fgcrodr_intra_trace")==0 )
+            state->intra_trace = enabled;
+        else
+            state->projected_relative = enabled;
+        return LIS_SUCCESS;
+    }
 
     LIS_SETERR1(
         LIS_ERR_ILL_ARG,
@@ -1807,6 +1925,153 @@ lis_fgcrodr_install_recycle(
     LIS_INT jdim);
 
 
+
+/*
+ * Compute a block of the flexible harmonic overlap F = Q^H Z.
+ *
+ * A scalar lis_vector_dot() for each of the O(m^2) entries rereads the
+ * same full-length vectors and, with OpenMP, launches a parallel region
+ * for every entry.  On a 180-vector Arnoldi basis this means >32,000
+ * reductions at each harmonic update.
+ *
+ * Fuse four Z columns against eight Q rows per independent 2D tile,
+ * reusing each streamed Z entry. Each dot product still accumulates in
+ * increasing local row order; only independent dot products run in
+ * a different order. The flexible Z and harmonic Ritz formulation
+ * are unchanged.
+ *
+ * MPI retains the original collective lis_vector_dot() behavior: the
+ * fused local-only kernel must not drop or reorder global reductions.
+ */
+#define FGCRODR_OVERLAP_TILE 4
+#define FGCRODR_OVERLAP_ROW_TILE 8
+#define FGCRODR_OVERLAP_STRIP 512
+
+LIS_INT
+lis_fgcrodr_flexible_overlap(
+    LIS_VECTOR *q,
+    LIS_INT nq,
+    LIS_VECTOR *z,
+    LIS_INT nz,
+    LIS_SCALAR *f,
+    LIS_INT ld,
+    LIS_INT row_offset,
+    LIS_INT col_offset)
+{
+    LIS_INT r,c;
+
+    if(nq<0 || nz<0 || row_offset<0 || col_offset<0 ||
+       ld<row_offset+nq)
+        return LIS_ERR_ILL_ARG;
+    if(nq==0 || nz==0)
+        return LIS_SUCCESS;
+    if(q==NULL || z==NULL || f==NULL)
+        return LIS_ERR_ILL_ARG;
+
+#ifdef USE_MPI
+    {
+        LIS_INT err;
+        for(c=0;c<nz;c++)
+        {
+            for(r=0;r<nq;r++)
+            {
+                err=lis_vector_dot(
+                    q[r],z[c],&f[row_offset+r+(col_offset+c)*ld]);
+                if(err)
+                    return err;
+            }
+        }
+    }
+#else
+    {
+        LIS_INT n,ntiles,nrowtiles,ncoltiles,tile;
+
+        if(q[0]==NULL)
+            return LIS_ERR_ILL_ARG;
+        n=q[0]->n;
+        for(r=0;r<nq;r++)
+            if(q[r]==NULL || q[r]->n!=n || q[r]->value==NULL)
+                return LIS_ERR_ILL_ARG;
+        for(c=0;c<nz;c++)
+            if(z[c]==NULL || z[c]->n!=n || z[c]->value==NULL)
+                return LIS_ERR_ILL_ARG;
+
+        /*
+         * A 2D tile grid avoids starving OpenMP when the existing
+         * recycle space has only a few columns. Processing 8 Q rows
+         * per 4 Z columns reuses each streamed Z[i] eight times.
+         * Strip boundaries never change each dot product's row order.
+         */
+        nrowtiles=(nq+FGCRODR_OVERLAP_ROW_TILE-1)/
+            FGCRODR_OVERLAP_ROW_TILE;
+        ncoltiles=(nz+FGCRODR_OVERLAP_TILE-1)/
+            FGCRODR_OVERLAP_TILE;
+        ntiles=nrowtiles*ncoltiles;
+
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static)
+#endif
+        for(tile=0;tile<ntiles;tile++)
+        {
+            LIS_INT rbase,cbase,ir,ic,i,i0,ilimit,nrows,ncols;
+            const LIS_SCALAR *qv[FGCRODR_OVERLAP_ROW_TILE];
+            const LIS_SCALAR *zv[FGCRODR_OVERLAP_TILE];
+            LIS_SCALAR sums[FGCRODR_OVERLAP_TILE]
+                           [FGCRODR_OVERLAP_ROW_TILE];
+
+            rbase=(tile%nrowtiles)*FGCRODR_OVERLAP_ROW_TILE;
+            cbase=(tile/nrowtiles)*FGCRODR_OVERLAP_TILE;
+            nrows=nq-rbase;
+            if(nrows>FGCRODR_OVERLAP_ROW_TILE)
+                nrows=FGCRODR_OVERLAP_ROW_TILE;
+            ncols=nz-cbase;
+            if(ncols>FGCRODR_OVERLAP_TILE)
+                ncols=FGCRODR_OVERLAP_TILE;
+
+            for(ir=0;ir<nrows;ir++)
+                qv[ir]=q[rbase+ir]->value;
+            for(ic=0;ic<ncols;ic++)
+                zv[ic]=z[cbase+ic]->value;
+            for(ic=0;ic<ncols;ic++)
+                for(ir=0;ir<nrows;ir++)
+                    sums[ic][ir]=(LIS_SCALAR)0.0;
+
+            for(i0=0;i0<n;i0+=FGCRODR_OVERLAP_STRIP)
+            {
+                ilimit=n-i0;
+                if(ilimit>FGCRODR_OVERLAP_STRIP)
+                    ilimit=FGCRODR_OVERLAP_STRIP;
+                ilimit+=i0;
+
+                for(i=i0;i<ilimit;i++)
+                {
+                    LIS_SCALAR qrow[FGCRODR_OVERLAP_ROW_TILE];
+                    for(ir=0;ir<nrows;ir++)
+                        qrow[ir]=lis_fgcrodr_conj_scalar(qv[ir][i]);
+                    for(ic=0;ic<ncols;ic++)
+                    {
+                        LIS_SCALAR zval=zv[ic][i];
+                        for(ir=0;ir<nrows;ir++)
+                            sums[ic][ir]+=qrow[ir]*zval;
+                    }
+                }
+            }
+
+            for(ic=0;ic<ncols;ic++)
+                for(ir=0;ir<nrows;ir++)
+                    f[row_offset+rbase+ir+(col_offset+cbase+ic)*ld]
+                        =sums[ic][ir];
+        }
+    }
+#endif
+
+    return LIS_SUCCESS;
+}
+
+#undef FGCRODR_OVERLAP_TILE
+#undef FGCRODR_OVERLAP_ROW_TILE
+#undef FGCRODR_OVERLAP_STRIP
+
 /*
  * First-generation harmonic Ritz BUILD.
  *
@@ -2096,29 +2361,13 @@ lis_fgcrodr_try_harmonic_build(
 
 
     /*
-     * Flexible-domain overlap:
-     *
-     *     F = V_{m+1}^T Z_m
-     *
-     * Unlike ordinary GCRO-DR, this is not an identity block because
-     * flexible Z_j are not the Arnoldi vectors V_j.
+     * Flexible-domain overlap F = V_{m+1}^T Z_m.
+     * Blocked serial kernel; MPI keeps the scalar collective path.
      */
-    for(c=0;c<psmall;c++)
-    {
-        for(r=0;r<qsmall;r++)
-        {
-            err =
-                lis_vector_dot(
-                    v[r],
-                    z[c],
-                    &F[
-                        r
-                        +c*qsmall]);
-
-            if( err )
-                goto cleanup;
-        }
-    }
+    err=lis_fgcrodr_flexible_overlap(
+        v,qsmall,z,psmall,F,qsmall,0,0);
+    if(err)
+        goto cleanup;
 
 
     /*
@@ -3398,6 +3647,8 @@ lis_fgcrodr_try_harmonic_update(
 
     LIS_VECTOR *neww = NULL;
     LIS_VECTOR *newz = NULL;
+    LIS_VECTOR *overlap_q = NULL;
+    LIS_VECTOR *overlap_z = NULL;
 
     LIS_SCALAR ag;
     LIS_SCALAR bg;
@@ -3678,78 +3929,36 @@ lis_fgcrodr_try_harmonic_update(
 
 
     /*
-     * Full flexible overlap:
-     *
-     *     F = [C,Vnext]^T [Z_old,Z_krylov].
-     *
-     * We intentionally compute every block explicitly.
+     * Full flexible overlap F=[C,Vnext]^H [Z_old,Z_krylov].
+     * One tiled call and one parallel region for the entire matrix.
      */
-
-    /* old domain columns */
-    for(c=0;c<oldk;c++)
+    overlap_q=(LIS_VECTOR *)lis_malloc(
+        (size_t)qsmall*sizeof(LIS_VECTOR),
+        "lis_fgcrodr_try_harmonic_update::overlap_q");
+    overlap_z=(LIS_VECTOR *)lis_malloc(
+        (size_t)psmall*sizeof(LIS_VECTOR),
+        "lis_fgcrodr_try_harmonic_update::overlap_z");
+    if(overlap_q==NULL || overlap_z==NULL)
     {
-        for(r=0;r<oldk;r++)
-        {
-            err =
-                lis_vector_dot(
-                    state->c[r],
-                    state->z[c],
-                    &F[
-                        r+c*qsmall]);
-
-            if( err )
-                goto cleanup;
-        }
-
-
-        for(r=0;r<=jdim;r++)
-        {
-            err =
-                lis_vector_dot(
-                    v[r],
-                    state->z[c],
-                    &F[
-                        oldk+r
-                        +c*qsmall]);
-
-            if( err )
-                goto cleanup;
-        }
+        err=LIS_ERR_OUT_OF_MEMORY;
+        goto cleanup;
     }
-
-
-    /* new flexible Krylov domain columns */
-    for(c=0;c<jdim;c++)
+    for(i=0;i<oldk;i++)
     {
-        for(r=0;r<oldk;r++)
-        {
-            err =
-                lis_vector_dot(
-                    state->c[r],
-                    z[c],
-                    &F[
-                        r
-                        +(oldk+c)*qsmall]);
-
-            if( err )
-                goto cleanup;
-        }
-
-
-        for(r=0;r<=jdim;r++)
-        {
-            err =
-                lis_vector_dot(
-                    v[r],
-                    z[c],
-                    &F[
-                        oldk+r
-                        +(oldk+c)*qsmall]);
-
-            if( err )
-                goto cleanup;
-        }
+        overlap_q[i]=state->c[i];
+        overlap_z[i]=state->z[i];
     }
+    for(i=0;i<jdim;i++)
+    {
+        overlap_q[oldk+i]=v[i];
+        overlap_z[oldk+i]=z[i];
+    }
+    overlap_q[oldk+jdim]=v[jdim];
+
+    err=lis_fgcrodr_flexible_overlap(
+        overlap_q,qsmall,overlap_z,psmall,F,qsmall,0,0);
+    if(err)
+        goto cleanup;
 
 
     /*
@@ -4246,6 +4455,8 @@ cleanup:
 
     lis_free(neww);
     lis_free(newz);
+    lis_free(overlap_q);
+    lis_free(overlap_z);
 
     lis_free(G);
     lis_free(F);
@@ -4686,6 +4897,135 @@ lis_fgcrodr_validate_recycle(
 }
 
 
+
+/*
+ * Optional serial-CSR normwise recycle validation for offline replay.
+ * Preserve the existing absolute validator exactly as-is.
+ *
+ * scaled_error = max_i ||A Z_i-C_i||_2 /
+ *                     (|| |A| |Z_i| ||_2 + ||C_i||_2)
+ *
+ * This is normwise, NOT the componentwise Oettli-Prager backward error.
+ * It does not substitute for checking the physical residual of x.
+ * No MPI/local-submatrix shortcut or global correctness claim.
+ */
+/* Internal, read-only single-column kernel, also used by regression.
+ * The zero/zero denominator is an invalid diagnostic input, not 0/0.
+ * Standard LIS_SCALAR value data are used; this does not certify a
+ * higher-precision low-part contribution in quad work vectors.
+ */
+LIS_INT
+lis_fgcrodr_normwise_relation_one(
+    LIS_MATRIX A, LIS_VECTOR z, LIS_VECTOR c, LIS_VECTOR scratch,
+    LIS_REAL *ratio, LIS_REAL *abs_az_norm)
+{
+#ifdef USE_MPI
+    (void)A; (void)z; (void)c; (void)scratch;
+    (void)ratio; (void)abs_az_norm;
+    return LIS_ERR_NOT_IMPLEMENTED;
+#else
+    LIS_INT row,j,col,err;
+    LIS_REAL raw,row_abs,norm_abs_az,c_norm,denom;
+    if(A==NULL || z==NULL || c==NULL || scratch==NULL ||
+       ratio==NULL || abs_az_norm==NULL ||
+       A->nprocs!=1 || A->matrix_type!=LIS_MATRIX_CSR ||
+       A->ptr==NULL || A->index==NULL || A->value==NULL ||
+       z->value==NULL || c->value==NULL || z->n<A->n ||
+       c->n<A->n || scratch->n<A->n)
+        return LIS_ERR_ILL_ARG;
+    err=lis_matvec(A,z,scratch);
+    if(err!=LIS_SUCCESS) return err;
+    err=lis_vector_axpy((LIS_SCALAR)-1.0,c,scratch);
+    if(err!=LIS_SUCCESS) return err;
+    err=lis_vector_nrm2(scratch,&raw);
+    if(err!=LIS_SUCCESS) return err;
+    if(!isfinite((double)raw)) return LIS_ERR_ILL_ARG;
+
+    norm_abs_az=0.0;
+    for(row=0;row<A->n;row++)
+    {
+        row_abs=0.0;
+        if(A->ptr[row]<0 || A->ptr[row+1]<A->ptr[row] ||
+           A->ptr[row+1]>A->nnz)
+            return LIS_ERR_ILL_ARG;
+        for(j=A->ptr[row];j<A->ptr[row+1];j++)
+        {
+            col=A->index[j];
+            if(col<0 || col>=z->n)
+                return LIS_ERR_ILL_ARG;
+#ifdef _COMPLEX
+            row_abs+=(LIS_REAL)cabs(A->value[j]) *
+                     (LIS_REAL)cabs(z->value[col]);
+#else
+            row_abs+=(LIS_REAL)fabs(A->value[j]) *
+                     (LIS_REAL)fabs(z->value[col]);
+#endif
+        }
+        if(!isfinite((double)row_abs)) return LIS_ERR_ILL_ARG;
+        norm_abs_az=hypot(norm_abs_az,row_abs);
+    }
+    err=lis_vector_nrm2(c,&c_norm);
+    if(err!=LIS_SUCCESS) return err;
+    denom=norm_abs_az+c_norm;
+    if(denom<=0.0 || !isfinite((double)denom))
+        return LIS_ERR_ILL_ARG;
+    *ratio=raw/denom;
+    if(!isfinite((double)*ratio))
+        return LIS_ERR_ILL_ARG;
+    *abs_az_norm=norm_abs_az;
+    return LIS_SUCCESS;
+#endif
+}
+
+LIS_INT
+lis_fgcrodr_validate_recycle_normwise(
+    LIS_SOLVER solver,
+    LIS_REAL *orth_error,
+    LIS_REAL *relation_error,
+    LIS_REAL *scaled_error,
+    LIS_REAL *abs_az_norm_max)
+{
+    LIS_INT err;
+    if(solver==NULL || orth_error==NULL || relation_error==NULL ||
+       scaled_error==NULL || abs_az_norm_max==NULL)
+        return LIS_ERR_ILL_ARG;
+
+    *scaled_error=0.0;
+    *abs_az_norm_max=0.0;
+#ifdef USE_MPI
+    return LIS_ERR_NOT_IMPLEMENTED;
+#else
+    {
+        LIS_MATRIX A=solver->A;
+        LIS_FGCRODR_STATE state;
+        LIS_VECTOR scratch=NULL;
+        LIS_INT k;
+        LIS_REAL ratio,amp;
+        if(A==NULL || A->nprocs!=1 ||
+           A->matrix_type!=LIS_MATRIX_CSR ||
+           A->ptr==NULL || A->index==NULL || A->value==NULL)
+            return LIS_ERR_NOT_IMPLEMENTED;
+        err=lis_fgcrodr_validate_recycle(
+            solver,orth_error,relation_error);
+        if(err!=LIS_SUCCESS) return err;
+        state=solver->fgcrodr_state;
+        if(state==NULL || !state->valid || state->dim<=0)
+            return LIS_SUCCESS;
+        err=lis_vector_duplicate(A,&scratch);
+        if(err!=LIS_SUCCESS) return err;
+        for(k=0;k<state->dim;k++)
+        {
+            err=lis_fgcrodr_normwise_relation_one(
+                A,state->z[k],state->c[k],scratch,&ratio,&amp);
+            if(err!=LIS_SUCCESS) break;
+            if(ratio>*scaled_error) *scaled_error=ratio;
+            if(amp>*abs_az_norm_max) *abs_az_norm_max=amp;
+        }
+        lis_vector_destroy(scratch);
+        return err;
+    }
+#endif
+}
 
 /*
  * Prepare a persistent flexible recycle basis for a changed matrix
@@ -5201,6 +5541,11 @@ lis_fgcrodr_flexible_core(
     LIS_INT use_recycle;
     LIS_INT kcur;
     LIS_INT ri;
+    LIS_INT intra_recycle;
+    LIS_INT intra_trace;
+    LIS_INT recycle_counted;
+    LIS_INT normalize_projected;
+    LIS_REAL residual_before_projection;
 
     double time;
     double ptime;
@@ -5233,6 +5578,12 @@ lis_fgcrodr_flexible_core(
         use_recycle
         ? state->dim
         : 0;
+
+    /* Snapshot these per-solver options once per numerical solve. */
+    intra_recycle=state->intra_recycle;
+    intra_trace=(intra_recycle && state->intra_trace);
+    normalize_projected=state->projected_relative;
+    recycle_counted=use_recycle;
 
     hraw = NULL;
     bcoef = NULL;
@@ -5322,39 +5673,31 @@ lis_fgcrodr_flexible_core(
         *sizeof(LIS_SCALAR));
 
 
-    if( use_recycle )
+    if( use_recycle || intra_recycle )
     {
-        bcoef =
-            (LIS_SCALAR *)lis_malloc(
-                (size_t)kcur
-                *(size_t)m
-                *sizeof(LIS_SCALAR),
-                "lis_fgcrodr_flexible_core::bcoef");
-
-        if( bcoef==NULL )
+        /* A harmonic recycle space can never exceed restart-1.
+         * Do not allocate target_dim*m elements when the user asks
+         * for far more modes than the small restart can retain.
+         * Keep room for any already valid cross-solve space when
+         * restart was changed since the previous solve. */
+        LIS_INT rows=intra_recycle ? state->target_dim : kcur;
+        size_t capacity;
+        if(intra_recycle && rows>m-1)
+            rows=m-1;
+        if(rows<kcur)
+            rows=kcur;
+        capacity=(size_t)rows*(size_t)m;
+        bcoef=(LIS_SCALAR *)lis_malloc(
+            capacity*sizeof(LIS_SCALAR),
+            "lis_fgcrodr_flexible_core::bcoef");
+        if(bcoef==NULL)
         {
-            if( bcoef )
-            lis_free(bcoef);
-
-        if( hraw )
             lis_free(hraw);
-
-        lis_free(h);
-
-            LIS_SETERR_MEM(
-                (size_t)kcur
-                *(size_t)m
-                *sizeof(LIS_SCALAR));
-
+            lis_free(h);
+            LIS_SETERR_MEM(capacity*sizeof(LIS_SCALAR));
             return LIS_ERR_OUT_OF_MEMORY;
         }
-
-        memset(
-            bcoef,
-            0,
-            (size_t)kcur
-            *(size_t)m
-            *sizeof(LIS_SCALAR));
+        memset(bcoef,0,capacity*sizeof(LIS_SCALAR));
     }
 
 
@@ -5470,6 +5813,92 @@ lis_fgcrodr_flexible_core(
     while( iter<maxiter )
     {
         candidate = LIS_FALSE;
+
+        /*
+         * The first cycle builds harmonic Ritz vectors. At each later
+         * cycle, activate the latest valid A*Z=C relation, including
+         * changes in rank after an augmented harmonic update.
+         * Re-project the true residual before the next Arnoldi basis.
+         * This avoids the stale kcur and B-column stride from the
+         * first solve/cycle, and preserves FGMRES when opt-in is off.
+         */
+        if(intra_recycle && iter>0)
+        {
+            use_recycle=(state->valid && state->dim>0 &&
+                state->matrix==A &&
+                state->structure_generation==A->structure_generation &&
+                state->value_generation==A->value_generation);
+            kcur=use_recycle ? state->dim : 0;
+            if(use_recycle)
+            {
+                if(kcur>=m || kcur>state->target_dim)
+                {
+                    solver->retcode=LIS_ERR_ILL_ARG;
+                    solver->iter=iter;
+                    solver->ptime=ptime;
+                    if(bcoef) lis_free(bcoef);
+                    lis_free(hraw);
+                    lis_free(h);
+                    return LIS_ERR_ILL_ARG;
+                }
+                /* v[0] is the explicit b-A*x recomputed after the
+                 * preceding harmonic Ritz update (see restart tail).
+                 * Check projection norm monotonicity regardless of
+                 * diagnostics; nrm2 is global under MPI. */
+                lis_vector_nrm2(v[0],&residual_before_projection);
+                for(ri=0;ri<kcur;ri++)
+                {
+                    lis_vector_dot(state->c[ri],v[0],&gamma);
+                    lis_vector_axpy(gamma,state->z[ri],x);
+                    lis_vector_axpy(-gamma,state->c[ri],v[0]);
+                }
+                lis_vector_nrm2(v[0],&rnorm);
+                /* Invalid or growing projected residual must never
+                 * enter the next Arnoldi cycle, even with trace OFF. */
+                if(!isfinite(residual_before_projection) ||
+                   !isfinite(rnorm) ||
+                   rnorm>residual_before_projection*(1.0+1.0e-8))
+                {
+                    solver->retcode=LIS_BREAKDOWN;
+                    solver->iter=iter;
+                    solver->resid=rnorm;
+                    solver->ptime=ptime;
+                    if(bcoef) lis_free(bcoef);
+                    if(hraw) lis_free(hraw);
+                    lis_free(h);
+                    return LIS_BREAKDOWN;
+                }
+                if(rnorm==0.0 || rnorm!=rnorm)
+                {
+                    solver->retcode=(rnorm==0.0) ?
+                        LIS_SUCCESS : LIS_BREAKDOWN;
+                    solver->iter=iter;
+                    solver->resid=rnorm;
+                    solver->ptime=ptime;
+                    if(bcoef) lis_free(bcoef);
+                    lis_free(hraw);
+                    lis_free(h);
+                    return solver->retcode;
+                }
+                bnrm2=1.0/rnorm;
+                memset(bcoef,0,
+                    (size_t)kcur*(size_t)m*sizeof(LIS_SCALAR));
+                if(!recycle_counted)
+                {
+                    state->uses++;
+                    recycle_counted=LIS_TRUE;
+                }
+                if(intra_trace)
+                    fprintf(stderr,
+                        "LIS_FGCRODR_INTRA_RECYCLE iter=%d k=%d "
+                        "relative=%.12e before=%.12e after=%.12e\n",
+                        (int)iter,(int)kcur,
+                        (double)(rnorm*solver->bnrm),
+                        (double)residual_before_projection,
+                        (double)rnorm);
+            }
+        }
+
         /*
          * First Arnoldi vector:
          *
@@ -5885,8 +6314,17 @@ lis_fgcrodr_flexible_core(
             /* Convergence                                      */
             /* ------------------------------------------------ */
 
+            /*
+             * Match the opt-in relative projected-residual semantics
+             * already used by LIS FGMRES v5. Keep the small-system
+             * least-squares right-hand side in physical units for
+             * back substitution. True residual is still recomputed
+             * before declaring convergence.
+             */
             nrm2 =
                 fabs(s->value[i1]);
+            if(normalize_projected)
+                nrm2 *= solver->bnrm;
 
 
             if( output )
@@ -6337,7 +6775,10 @@ lis_fgcrodr_flexible_core(
         /* ---------------------------------------------------- */
 
 
-        if( use_recycle )
+        /* With opt-in within-solve recycling, projection is delayed
+         * until the next cycle, when the freshly built basis dimension
+         * is known. The old path remains unchanged by default. */
+        if( use_recycle && !intra_recycle )
         {
             for(ri=0;ri<kcur;ri++)
             {
@@ -6422,6 +6863,10 @@ lis_fgcrodr_flexible_core(
     solver->resid =
         nrm2;
 
+    /* Release B even when active recycling runs into the ordinary
+     * iteration cap (other FGCRO-DR exits already free it). */
+    if( bcoef )
+        lis_free(bcoef);
     if( hraw )
         lis_free(hraw);
 
@@ -6458,6 +6903,43 @@ lis_fgcrodr(
     state =
         solver->fgcrodr_state;
 
+#ifdef USE_MPI
+    /* Krylov collective control flow depends on dimensions and limits,
+     * not merely on whether positive-k recycling is enabled.
+     * Use LIS_MPI_INT so this check also works for 64-bit LIS_INT. */
+    {
+        LIS_INT local[6], min_config[6], max_config[6];
+        LIS_INT j;
+        local[0] =
+            (state->intra_recycle ? 1 : 0) |
+            (state->projected_relative ? 2 : 0) |
+            (state->intra_trace ? 4 : 0);
+        local[1] = state->target_dim;
+        local[2] = solver->options[LIS_OPTIONS_RESTART];
+        local[3] = solver->options[LIS_OPTIONS_MAXITER];
+        local[4] = solver->options[LIS_OPTIONS_MAXITER_NO_IMP];
+        local[5] = state->update ? 1 : 0;
+
+        if( MPI_Allreduce(local,min_config,6,LIS_MPI_INT,
+                          MPI_MIN,solver->A->comm)!=MPI_SUCCESS ||
+            MPI_Allreduce(local,max_config,6,LIS_MPI_INT,
+                          MPI_MAX,solver->A->comm)!=MPI_SUCCESS )
+        {
+            LIS_SETERR(LIS_ERR_ILL_ARG,
+                       "FGCRO-DR MPI option consistency check failed\n");
+            return LIS_ERR_ILL_ARG;
+        }
+        for(j=0;j<6;j++)
+        {
+            if(min_config[j]!=max_config[j])
+            {
+                LIS_SETERR(LIS_ERR_ILL_ARG,
+                           "FGCRO-DR options differ across MPI ranks\n");
+                return LIS_ERR_ILL_ARG;
+            }
+        }
+    }
+#endif
 
     solve_cross_action =
         LIS_FGCRODR_RECYCLE_NONE;
@@ -6488,8 +6970,35 @@ lis_fgcrodr(
         return err;
 
 
-    solve_cross_action =
-        state->cross_action;
+    /*
+     * A persistent recycle basis may have been built with a larger
+     * restart in a preceding solve. If the caller reduces restart,
+     * the saved rank must not occupy all Arnoldi search directions.
+     * Discard the incompatible basis before the first cycle; a new
+     * rank <= restart-1 can then be built as usual.
+     *
+     * This guard is needed for both normal cross-solve reuse and the
+     * opt-in within-solve path: the latter only checks kcur on later
+     * restarts, after the first cycle has already used the old basis.
+     */
+    if( state->valid &&
+        state->dim >= solver->options[LIS_OPTIONS_RESTART] )
+    {
+        err = lis_fgcrodr_clear_recycle(solver);
+        if( err )
+            return err;
+
+        state->rejects++;
+        state->policy_rejects++;
+        state->last_action = LIS_FGCRODR_RECYCLE_REJECT;
+        state->cross_action = LIS_FGCRODR_RECYCLE_REJECT;
+        solve_cross_action = LIS_FGCRODR_RECYCLE_REJECT;
+    }
+    else
+    {
+        solve_cross_action =
+            state->cross_action;
+    }
 
 
     err =

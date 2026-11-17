@@ -795,6 +795,116 @@ cleanup:
 }
 
 
+/*
+ * Deterministic ILUT numerical-safety diagnostic regression.
+ *
+ * A finite inverse pivot is not a stability certificate. Measure a
+ * scale-normalized response to a known right-hand side:
+ *
+ *    gain = ||A||_inf * ||M^-1 b||_inf / ||b||_inf.
+ *
+ * This is a SINGLE-VECTOR diagnostic, NOT an estimate of cond(A), and
+ * does not enable any global fallback or change default ILUT behavior.
+ * The two 4x4 diagonal examples make this diagnostic deterministic
+ * across serial and OpenMP ILUT block partitions.
+ */
+static int
+check_ilut_inverse_gain(int extreme)
+{
+        const LIS_INT n = 4;
+        LIS_MATRIX A = NULL;
+        LIS_SOLVER solver = NULL;
+        LIS_PRECON pc = NULL;
+        LIS_VECTOR b = NULL, x = NULL;
+        LIS_REAL norm_a = 0.0, norm_b = 0.0, norm_x = 0.0;
+        LIS_REAL min_pivot = 0.0, max_pivot = 0.0, gain;
+        LIS_INT nl = 0, nu = 0, err = LIS_SUCCESS, i;
+        const LIS_REAL normal_diag[4] = {2.0,3.0,4.0,5.0};
+        const LIS_REAL extreme_diag[4] = {1.0,1.0e-12,1.0e6,2.0};
+        const LIS_REAL *diag = extreme ? extreme_diag : normal_diag;
+        int failed = 1;
+
+        err = lis_matrix_create(LIS_COMM_WORLD,&A);
+        if(err) goto done;
+        err = lis_matrix_set_size(A,0,n);
+        if(err) goto done;
+        if(A->nprocs!=1) { failed=0; goto done; }
+        for(i=0;i<n;i++)
+        {
+                err = lis_matrix_set_value(LIS_INS_VALUE,i,i,
+                                          (LIS_SCALAR)diag[i],A);
+                if(err) goto done;
+                if(diag[i]>norm_a) norm_a=diag[i];
+        }
+        err = lis_matrix_set_type(A,LIS_MATRIX_CSR);
+        if(err) goto done;
+        err = lis_matrix_assemble(A);
+        if(err) goto done;
+
+        err = lis_vector_duplicate(A,&b);
+        if(err) goto done;
+        err = lis_vector_duplicate(A,&x);
+        if(err) goto done;
+        err = lis_vector_set_all((LIS_SCALAR)0.0,b);
+        if(err) goto done;
+        b->value[1]=(LIS_SCALAR)1.0;
+
+        err = lis_solver_create(&solver);
+        if(err) goto done;
+        err = lis_solver_set_option(
+            "-i gmres -p ilut -scale none -print none "
+            "-ilu_pivot_tol 0 -ilut_rate 8 -ilut_drop 0",solver);
+        if(err) goto done;
+        err = lis_solver_set_matrix(A,solver);
+        if(err) goto done;
+        err = lis_precon_create(solver,&pc);
+        if(err) { pc=NULL; goto done; }
+        solver->precon=pc;
+        err = lis_precon_ilut_factor_stats(pc,&nl,&nu,
+                                           &min_pivot,&max_pivot);
+        if(err || nl<0 || nu<0 ||
+           !isfinite((double)min_pivot) ||
+           !isfinite((double)max_pivot) ||
+           !(min_pivot>0.0)) goto done;
+        err = lis_psolve(solver,b,x);
+        if(err) goto done;
+        for(i=0;i<n;i++)
+        {
+                LIS_REAL bi=(LIS_REAL)fabs(b->value[i]);
+                LIS_REAL xi=(LIS_REAL)fabs(x->value[i]);
+                if(!isfinite((double)xi)) goto done;
+                if(bi>norm_b) norm_b=bi;
+                if(xi>norm_x) norm_x=xi;
+        }
+        if(!(norm_b>0.0)) goto done;
+        gain=norm_a*(norm_x/norm_b);
+        if(!isfinite((double)gain)) goto done;
+        if(extreme)
+        {
+                if(gain<1.0e15) goto done;
+        }
+        else if(gain>=10.0) goto done;
+        printf("LIS_ILUT_NUMERICAL_PROBE case=%s gain=%.9e "
+               "min_pivot=%.9e max_pivot=%.9e entries=%ld\n",
+               extreme ? "ill_scaled" : "well_scaled",
+               (double)gain,(double)min_pivot,(double)max_pivot,
+               (long)(nl+nu));
+        failed=0;
+done:
+        if(failed)
+                fprintf(stderr,
+                  "LIS_ILUT_NUMERICAL_PROBE_FAILED extreme=%d rc=%ld\n",
+                  extreme,(long)err);
+        if(solver) solver->precon=NULL;
+        if(pc) lis_precon_destroy(pc);
+        if(solver) lis_solver_destroy(solver);
+        if(x) lis_vector_destroy(x);
+        if(b) lis_vector_destroy(b);
+        if(A) lis_matrix_destroy(A);
+        return failed;
+}
+
+
 int
 main(int argc, char *argv[])
 {
@@ -886,6 +996,11 @@ main(int argc, char *argv[])
 
         failed |=
                 check_zero_row_breakdown("iluc");
+
+        /* Existing ILUT factor statistics must expose inverse-response
+         * amplification even when all pivots are finite. */
+        failed |= check_ilut_inverse_gain(0);
+        failed |= check_ilut_inverse_gain(1);
 
         if( failed )
         {

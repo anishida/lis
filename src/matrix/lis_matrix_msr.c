@@ -178,18 +178,22 @@ LIS_INT lis_matrix_malloc_msr(LIS_INT n, LIS_INT nnz, LIS_INT ndz, LIS_INT **ind
 	if( *index==NULL )
 	{
 		LIS_SETERR_MEM((nnz+ndz+1)*sizeof(LIS_INT));
-		lis_free2(2,*index,*value);
-		return LIS_OUT_OF_MEMORY;
+		goto allocation_failed;
 	}
 	*value = (LIS_SCALAR *)lis_malloc( (nnz+ndz+1)*sizeof(LIS_SCALAR),"lis_matrix_malloc_msr::value" );
 	if( *value==NULL )
 	{
 		LIS_SETERR_MEM((nnz+ndz+1)*sizeof(LIS_SCALAR));
-		lis_free2(2,*index,*value);
-		return LIS_OUT_OF_MEMORY;
+		goto allocation_failed;
 	}
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+
+allocation_failed:
+	lis_free2(2,*index,*value);
+	*index = NULL;
+	*value = NULL;
+	return LIS_OUT_OF_MEMORY;
 }
 
 

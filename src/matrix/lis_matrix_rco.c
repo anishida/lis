@@ -40,6 +40,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <math.h>
+#include <stdint.h>
 #ifdef _OPENMP
 	#include <omp.h>
 #endif
@@ -141,69 +142,96 @@ LIS_INT lis_matrix_create_rco(LIS_INT local_n, LIS_INT global_n, LIS_Comm comm, 
 	return LIS_SUCCESS;
 }
 
+/* Reject malformed or unrepresentable allocation sizes before multiplying.
+ * The check is portable across 32/64-bit LIS_INT and size_t builds.
+ */
+static LIS_INT
+lis_matrix_rco_check_size(LIS_INT count,size_t element_size)
+{
+    if(count<0) return LIS_ERR_ILL_ARG;
+    if((uintmax_t)count > (uintmax_t)SIZE_MAX / element_size)
+        return LIS_OUT_OF_MEMORY;
+    return LIS_SUCCESS;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_matrix_malloc_rco"
 LIS_INT lis_matrix_malloc_rco(LIS_INT n, LIS_INT nnz[], LIS_INT **row, LIS_INT ***index, LIS_SCALAR ***value)
 {
-	LIS_INT	i,j;
-	LIS_INT *w_row,**w_index;
-	LIS_SCALAR **w_value;
+	LIS_INT i,j;
+	LIS_INT *w_row = NULL, **w_index = NULL;
+	LIS_SCALAR **w_value = NULL;
 
 	LIS_DEBUG_FUNC_IN;
+	if(row==NULL || index==NULL || value==NULL)
+		return LIS_ERR_ILL_ARG;
+	*row   = NULL;
+	*index = NULL;
+	*value = NULL;
 
-	w_row     = NULL;
-	w_index   = NULL;
-	w_value   = NULL;
+	if(n<0) return LIS_ERR_ILL_ARG;
+	if(lis_matrix_rco_check_size(n,sizeof(LIS_INT))!=LIS_SUCCESS ||
+	   lis_matrix_rco_check_size(n,sizeof(LIS_INT *))!=LIS_SUCCESS ||
+	   lis_matrix_rco_check_size(n,sizeof(LIS_SCALAR *))!=LIS_SUCCESS)
+		return LIS_OUT_OF_MEMORY;
+	if(nnz!=NULL)
+	{
+		for(i=0;i<n;i++)
+		{
+			LIS_INT err;
+			err=lis_matrix_rco_check_size(nnz[i],sizeof(LIS_INT));
+			if(err) return err;
+			err=lis_matrix_rco_check_size(nnz[i],sizeof(LIS_SCALAR));
+			if(err) return err;
+		}
+	}
 
-	w_row = (LIS_INT *)lis_malloc( n*sizeof(LIS_INT),"lis_matrix_malloc_rco::w_row" );
+	w_row = (LIS_INT *)lis_malloc((size_t)n*sizeof(LIS_INT),"lis_matrix_malloc_rco::w_row");
 	if( w_row==NULL )
 	{
 		LIS_SETERR_MEM(n*sizeof(LIS_INT));
 		return LIS_OUT_OF_MEMORY;
 	}
-	w_index = (LIS_INT **)lis_malloc( n*sizeof(LIS_INT *),"lis_matrix_malloc_rco::w_index" );
+	w_index = (LIS_INT **)lis_malloc(n*sizeof(LIS_INT *),"lis_matrix_malloc_rco::w_index");
 	if( w_index==NULL )
 	{
 		LIS_SETERR_MEM(n*sizeof(LIS_INT *));
-		lis_free2(3,w_row,w_index,w_value);
+		lis_free(w_row);
 		return LIS_OUT_OF_MEMORY;
 	}
-	w_value = (LIS_SCALAR **)lis_malloc( n*sizeof(LIS_SCALAR *),"lis_matrix_malloc_rco::w_value" );
+	w_value = (LIS_SCALAR **)lis_malloc(n*sizeof(LIS_SCALAR *),"lis_matrix_malloc_rco::w_value");
 	if( w_value==NULL )
 	{
 		LIS_SETERR_MEM(n*sizeof(LIS_SCALAR *));
-		lis_free2(3,w_row,w_index,w_value);
+		lis_free2(2,w_row,w_index);
 		return LIS_OUT_OF_MEMORY;
+	}
+
+	/* Initialize all rows, including the no-preallocation path. */
+	for(i=0;i<n;i++)
+	{
+		w_index[i] = NULL;
+		w_value[i] = NULL;
 	}
 	if( nnz!=NULL )
 	{
 		for(i=0;i<n;i++)
 		{
-			w_index[i] = NULL;
-			w_value[i] = NULL;
 			if( nnz[i]==0 ) continue;
-			w_index[i] = (LIS_INT *)lis_malloc( nnz[i]*sizeof(LIS_INT),"lis_matrix_malloc_rco::w_index[i]" );
+			w_index[i] = (LIS_INT *)lis_malloc(nnz[i]*sizeof(LIS_INT),
+			                                   "lis_matrix_malloc_rco::w_index[i]");
 			if( w_index[i]==NULL )
 			{
 				LIS_SETERR_MEM(nnz[i]*sizeof(LIS_INT));
-				break;
+				goto cleanup;
 			}
-			w_value[i] = (LIS_SCALAR *)lis_malloc( nnz[i]*sizeof(LIS_SCALAR),"lis_matrix_malloc_rco::w_value[i]" );
+			w_value[i] = (LIS_SCALAR *)lis_malloc(nnz[i]*sizeof(LIS_SCALAR),
+			                                     "lis_matrix_malloc_rco::w_value[i]");
 			if( w_value[i]==NULL )
 			{
 				LIS_SETERR_MEM(nnz[i]*sizeof(LIS_SCALAR));
-				break;
+				goto cleanup;
 			}
-		}
-		if(i<n)
-		{
-			for(j=0;j<i;j++)
-			{
-				if( w_index[i] ) lis_free(w_index[i]);
-				if( w_value[i] ) lis_free(w_value[i]);
-			}
-			lis_free2(3,w_row,w_index,w_value);
-			return LIS_OUT_OF_MEMORY;
 		}
 	}
 	#ifdef _OPENMP
@@ -216,6 +244,15 @@ LIS_INT lis_matrix_malloc_rco(LIS_INT n, LIS_INT nnz[], LIS_INT **row, LIS_INT *
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+
+cleanup:
+	for(j=0;j<n;j++)
+	{
+		lis_free(w_index[j]);
+		lis_free(w_value[j]);
+	}
+	lis_free2(3,w_row,w_index,w_value);
+	return LIS_OUT_OF_MEMORY;
 }
 
 #undef __FUNC__
@@ -224,26 +261,39 @@ LIS_INT lis_matrix_realloc_rco(LIS_INT row, LIS_INT nnz, LIS_INT ***index, LIS_S
 {
 	LIS_INT **w_index;
 	LIS_SCALAR **w_value;
+	LIS_INT *new_index;
+	LIS_SCALAR *new_value;
 
 	LIS_DEBUG_FUNC_IN;
+
+	/* There is no valid zero-length row reallocation contract, and a
+	 * zero-size realloc can free the old pointer on some platforms.
+	 */
+	if(row<0 || nnz<=0 || index==NULL || value==NULL ||
+	   *index==NULL || *value==NULL)
+		return LIS_ERR_ILL_ARG;
+	if(lis_matrix_rco_check_size(nnz,sizeof(LIS_INT))!=LIS_SUCCESS ||
+	   lis_matrix_rco_check_size(nnz,sizeof(LIS_SCALAR))!=LIS_SUCCESS)
+		return LIS_OUT_OF_MEMORY;
 
 	w_index = *index;
 	w_value = *value;
 
-	w_index[row] = (LIS_INT *)lis_realloc(w_index[row],nnz*sizeof(LIS_INT));
-	if( w_index[row]==NULL )
+	/* Keep the old row pointer accessible if resizing fails. */
+	new_index = (LIS_INT *)lis_realloc(w_index[row],nnz*sizeof(LIS_INT));
+	if( new_index==NULL )
 	{
 		LIS_SETERR_MEM(nnz*sizeof(LIS_INT));
 		return LIS_OUT_OF_MEMORY;
 	}
-	w_value[row] = (LIS_SCALAR *)lis_realloc(w_value[row],nnz*sizeof(LIS_SCALAR));
-	if( w_value[row]==NULL )
+	w_index[row] = new_index;
+	new_value = (LIS_SCALAR *)lis_realloc(w_value[row],nnz*sizeof(LIS_SCALAR));
+	if( new_value==NULL )
 	{
 		LIS_SETERR_MEM(nnz*sizeof(LIS_SCALAR));
 		return LIS_OUT_OF_MEMORY;
 	}
-	*index = w_index;
-	*value = w_value;
+	w_value[row] = new_value;
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;

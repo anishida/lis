@@ -5,7 +5,11 @@ else
 endif
 SUBDIRS = include src $(MAYBE_TEST)
 
-EXTRA_DIST = doc/Makefile \
+EXTRA_DIST = doc/ilutp.md \
+             doc/ilutp_contact_ccx_v2_benchmarks.md \
+             tools/run_native_ilutp_contact.py \
+             tools/test_run_native_ilutp_contact.py \
+             doc/Makefile \
              doc/double-double.eps \
              doc/irises_korin.eps \
              doc/lis-ug-en.tex \

@@ -82,6 +82,15 @@ extern "C"
 	extern LIS_INT lis_error(const char *file, const char *func, const LIS_INT line, const LIS_INT code, const char *mess, ...);
 	extern LIS_INT lis_print_rhistory(LIS_Comm comm,LIS_INT iter, LIS_REAL resid);
 	extern void lis_free_all(void);
+#ifdef LIS_TEST_OOM
+	/* Test-only hooks; not part of the normal LIS binary interface. */
+	extern void lis_test_oom_begin(size_t fail_at);
+	extern void lis_test_oom_end(void);
+	extern size_t lis_test_oom_calls(void);
+	extern size_t lis_test_oom_live(void);
+	extern void *lis_test_oom_raw_malloc(size_t size);
+	extern void lis_test_oom_raw_free(void *p);
+#endif
 	extern void lis_sort_i(LIS_INT is, LIS_INT ie, LIS_INT *i1);
 	extern void lis_sort_ii(LIS_INT is, LIS_INT ie, LIS_INT *i1, LIS_INT *i2);
 	extern void lis_sort_id(LIS_INT is, LIS_INT ie, LIS_INT *i1, LIS_SCALAR *d1);

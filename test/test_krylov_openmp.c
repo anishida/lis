@@ -52,7 +52,8 @@ static int solve_shifted(void *state, int n, const double *x, double *y)
     return 0;
 }
 
-static int run_case(int threads, int hard_locking, double *reference)
+static int run_case(int threads, int hard_locking, double *reference,
+                    int require_thick_restart)
 {
     test_context ctx = {0};
     lis_krylov_problem p = {0};
@@ -71,8 +72,9 @@ static int run_case(int threads, int hard_locking, double *reference)
     if (!vectors) return 1;
     lis_krylov_options_default(&options);
     options.nev = NEV;
-    options.ncv = NCV;
-    options.maxiter = 150;
+    /* A smaller subspace is used only in the dedicated coverage case. */
+    options.ncv = require_thick_restart ? NEV + 2 : NCV;
+    options.maxiter = require_thick_restart ? 600 : 150;
     options.tol = 1e-9;
     options.random_seed = 43;
     options.hard_locking = hard_locking;
@@ -87,9 +89,12 @@ static int run_case(int threads, int hard_locking, double *reference)
 
     status = lis_krylov_symmetric(&p, &options, values,
                                   vectors, residuals, &stats);
+    /* A successful solve may converge within its first Krylov cycle.
+     * Restart counts are an algorithmic detail, not a success condition. */
     if (status != LIS_KRYLOV_SUCCESS || stats.nconv != NEV ||
-        stats.nreturned != NEV || stats.restarts < 1 ||
-        stats.solve_count != ctx.solves) {
+        stats.nreturned != NEV ||
+        stats.solve_count != ctx.solves ||
+        (require_thick_restart && stats.restarts < 1)) {
         fprintf(stderr,
                 "FAIL threads=%d hardlock=%d status=%d nconv=%d "
                 "restarts=%d solves=%d/%d\n",
@@ -136,13 +141,19 @@ int main(void)
 #ifdef _OPENMP
     const int threads[] = {1, 2, 4, 8};
     double ref_plain[NEV] = {0}, ref_locked[NEV] = {0};
+    double ref_restart[NEV] = {0};
     int i;
     for (i = 0; i < 4; ++i)
-        if (run_case(threads[i], 0, ref_plain) ||
-            run_case(threads[i], 1, ref_locked))
+        if (run_case(threads[i], 0, ref_plain, 0) ||
+            run_case(threads[i], 1, ref_locked, 0))
             return 1;
+    /* Explicitly exercise thick restart (including OpenMP basis rotation)
+     * instead of making a restart a precondition of every valid solve. */
+    for (i = 0; i < 4; ++i)
+        if (run_case(threads[i], 0, ref_restart, 1)) return 1;
 #else
-    if (run_case(1, 0, NULL) || run_case(1, 1, NULL)) return 1;
+    if (run_case(1, 0, NULL, 0) || run_case(1, 1, NULL, 0) ||
+        run_case(1, 0, NULL, 1)) return 1;
 #endif
     return 0;
 }

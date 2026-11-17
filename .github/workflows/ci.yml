@@ -1,0 +1,855 @@
+name: Build and test (Linux / MSYS2 MinGW)
+
+on:
+  push:
+    branches:
+      - develop
+      - ci/linux-mingw
+  pull_request:
+    branches:
+      - develop
+  workflow_dispatch:
+
+# CI reproducibility: on 2026-11-14 the three unchanged eigensolver
+# regressions passed on Ubuntu 24.04/GCC 13.3 and failed on Ubuntu
+# 26.04/GCC 15.2 for BOTH upstream develop and PR #229.
+# Keep the full unmodified tests on the validated image while GCC 15
+# compatibility is investigated separately; do not silently skip tests.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  generated-makefiles:
+    name: Build from tracked Makefile.in (no autoreconf)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libtool libtool-bin
+
+      - name: Configure and build without regenerating Autotools files
+        run: |
+          ./configure --enable-test --disable-fortran --disable-f90 \
+            --disable-saamg --disable-mpi
+          make -j2
+          test -x test/testsnapshot
+          ./test/testsnapshot
+          ./test/testmfamg
+
+      - name: Verify snapshot header is installed by tracked Makefile.in
+        run: |
+          make -C include install-data "DESTDIR=$RUNNER_TEMP/lis-staging"
+          find "$RUNNER_TEMP/lis-staging" -type f -name lis_snapshot.h | grep -q .
+
+      - name: Verify tracked test targets and distribution (no autoreconf)
+        run: |
+          set -euo pipefail
+          test -x test/testilutp
+          test -x test/testilutequil
+          test -x test/benchilutp
+          test -x test/benchilutpequil
+          ./test/testilutp
+          ./test/testilutequil
+          make distdir
+          python3 - <<'PY'
+          from pathlib import Path
+          dirs=[p for p in Path('.').iterdir()
+                if p.is_dir() and p.name.startswith('lis-')]
+          assert len(dirs)==1, dirs
+          root=dirs[0]
+          required=[
+              'src/precon/lis_precon_ilutp.inc',
+              'test/testilutp.c',
+              'test/testilutequil.c',
+              'test/benchilutp.c',
+              'test/benchilutpequil.c',
+              'test/benchilutp_rhs_100.mtx',
+              'test/gen_ilutp_fullfill_case.py',
+              'test/gen_stokes_saddle.py',
+              'tools/run_native_ilutp_contact.py',
+              'tools/test_run_native_ilutp_contact.py',
+              'doc/ilutp.md',
+              'doc/ilutp_contact_ccx_v2_benchmarks.md',
+          ]
+          missing=[p for p in required if not (root/p).is_file()]
+          assert not missing, missing
+          print('LIS_NATIVE_ILUTP_DIST PASS: all release sources and tools present')
+          PY
+
+  linux:
+    name: Linux GCC (${{ matrix.mode }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: serial
+            options: ''
+          - mode: openmp
+            options: '--enable-omp'
+          - mode: half
+            options: '--enable-half'
+    env:
+      OMP_NUM_THREADS: '2'
+      OMP_DYNAMIC: 'FALSE'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Autotools and compilers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+
+      - name: Configure
+        env:
+          CONFIGURE_OPTIONS: ${{ matrix.options }}
+        run: |
+          autoreconf -fiv
+          ./configure --enable-test --disable-fortran --disable-f90 \
+            --disable-saamg --disable-mpi $CONFIGURE_OPTIONS
+
+      - name: Build
+        run: make -j2
+
+      - name: Run Automake test suite
+        run: make -j2 check
+
+      - name: Verify 1/2/4/8-thread MFAMG V-cycle determinism
+        if: matrix.mode == 'openmp'
+        run: |
+          set -euo pipefail
+          OMP_DYNAMIC=FALSE OMP_NUM_THREADS=8 ./test/testmfamgvcycle --omp-stress | tee mfamg-omp.log
+          grep -q 'MFAMG_OMP_STRESS mode=0 threads=8 .* PASS' mfamg-omp.log
+          grep -q 'MFAMG_OMP_STRESS mode=1 threads=8 .* PASS' mfamg-omp.log
+          grep -q 'MFAMG_OMP_EDGES block=4 phase=0 threads=8 .* PASS' mfamg-omp.log
+          grep -q 'MFAMG_OMP_EDGES block=5 phase=1 threads=8 .* PASS' mfamg-omp.log
+          grep -q 'MFAMG_OMP_MULTIVECTOR threads=8 .* PASS' mfamg-omp.log
+
+      - name: Verify 8-thread pivoted RAS ILUTP regression
+        if: matrix.mode == 'openmp'
+        run: |
+          set -euo pipefail
+          make -C test testhalfilut
+          OMP_DYNAMIC=FALSE OMP_NUM_THREADS=8 ./test/testhalfilut --parallel-ras-ilutp | tee parallel-ras-ilutp.log
+          grep -q 'ILUT_RAS_LOCAL_ILUTP threads=8 .* PASSED' parallel-ras-ilutp.log
+          grep -q 'ILUT_RAS_OVERLAP overlap=1 full=0 threads=8 .* DETERMINISTIC PASS' parallel-ras-ilutp.log
+          grep -q 'ILUT_RAS_OVERLAP overlap=2 full=1 threads=8 .* DETERMINISTIC PASS' parallel-ras-ilutp.log
+
+      - name: Smoke-test native ILUTP Matrix Market comparison
+        if: matrix.mode == 'serial'
+        run: |
+          set -euo pipefail
+          ./test/benchilutp test/testmat2.mtx test/benchilutp_rhs_100.mtx \
+            --maxiter 180 --restart 30 --drop 0.005 --rate 8 \
+            --rcm 1 --row-scale 1 --csv benchilutp-smoke.csv
+          cat benchilutp-smoke.csv
+          python3 - <<'PY'
+          import csv
+          from pathlib import Path
+          rows = list(csv.DictReader(Path("benchilutp-smoke.csv").open()))
+          assert len(rows) == 3, rows
+          assert [r["variant"] for r in rows] == [
+              "legacy_ilut", "ilutp_0p5", "ilutp_1p0"]
+          for r in rows:
+              assert r["status"] == "converged", r
+              assert int(r["iterations"]) >= 1
+              assert float(r["physical_relres"]) < 1e-5, r
+          PY
+
+      - name: Smoke-test two-sided Equil on original Matrix Market A/b
+        if: matrix.mode == 'serial'
+        run: |
+          set -euo pipefail
+          ./test/benchilutp test/testmat2.mtx test/benchilutp_rhs_100.mtx \
+            --maxiter 180 --restart 30 --drop 0.005 --rate 8 \
+            --rcm 1 --row-scale 1 --equil 1 --csv benchilutp-equil.csv
+          python3 - <<'PY'
+          import csv
+          from pathlib import Path
+          rows=list(csv.DictReader(Path("benchilutp-equil.csv").open()))
+          assert len(rows)==3, rows
+          for r in rows:
+              assert r["equil"] == "1", r
+              assert r["status"] == "converged", r
+              assert float(r["physical_relres"]) < 1e-5, r
+          PY
+          ./test/benchilutpequil 30 5 0.005 | tee benchilutp-combined.log
+          for mode in ilut equil ilutp ilutp_equil row_only; do
+            grep -q "^ILUTP_EQUIL_BENCH mode=$mode " benchilutp-combined.log
+          done
+
+      - name: Reproduce indefinite Stokes saddle-point control
+        if: matrix.mode == 'serial'
+        run: |
+          set -euo pipefail
+          python3 test/gen_stokes_saddle.py \
+            --side 8 --contrast 30 --units mixed_checker \
+            --ordering interleaved --gamma 0.3 --delta 0 \
+            --matrix stokes-saddle-A.mtx --rhs stokes-saddle-b.mtx
+          for spec in "0 0 plain" "1 0 row" "0 1 equil"; do
+            set -- $spec
+            ./test/benchilutp stokes-saddle-A.mtx stokes-saddle-b.mtx \
+              --maxiter 180 --restart 70 --rtol 1e-6 \
+              --drop 0.005 --rate 3 --pivot-tol 0.001 \
+              --rcm 0 --row-scale "$1" --equil "$2" \
+              --csv "stokes-saddle-$3.csv"
+          done
+          python3 - <<'PY'
+          import csv
+          def read(label):
+              with open(f"stokes-saddle-{label}.csv", newline="") as f:
+                  return {r["variant"]: r for r in csv.DictReader(f)}
+          plain, row, scaled = read("plain"), read("row"), read("equil")
+          controls = [("ILUT", plain["legacy_ilut"]),
+                      ("ILUT row-only", row["legacy_ilut"]),
+                      ("ILUTP", plain["ilutp_0p5"]),
+                      ("ILUTP row-only", row["ilutp_0p5"]),
+                      ("Equil-only", scaled["legacy_ilut"])]
+          combo = scaled["ilutp_0p5"]
+          for name, result in controls + [("ILUTP+Equil", combo)]:
+              print(f"SADDLE_STOKES {name}: status={result['status']} "
+                    f"iterations={result['iterations']} "
+                    f"fill={int(result['nnz_L'])+int(result['nnz_U'])} "
+                    f"physical_relres={result['physical_relres']}")
+          assert combo["equil"] == "1"
+          assert combo["status"] == "converged", combo
+          assert float(combo["physical_relres"]) < 1e-5, combo
+          PY
+
+      - name: Audit native Matrix Market tool option propagation
+        if: matrix.mode == 'serial'
+        run: python3 -m unittest discover -s tools -p 'test_run_native_ilutp_contact.py' -v
+
+      - name: Smoke-test honest ILUT FEA wall-time and failure reporting
+
+        if: matrix.mode == 'half'
+        run: |
+          set -euo pipefail
+          LIS_FEA_BASELINE_THREADS=1 LIS_FEA_RCM_THREADS=1 \
+            ./test/testhalfilut --fea-matrix test/testmat0.mtx 8 8 0.005 | tee ilut-fea-bench.log
+          grep -q '^ILUT_FEA_MATRIX ' ilut-fea-bench.log
+          python3 - <<'PY'
+          import csv
+          from pathlib import Path
+          lines = Path("ilut-fea-bench.log").read_text().splitlines()
+          start = next(i for i,s in enumerate(lines) if s.startswith("variant,rate,"))
+          rows = list(csv.DictReader(lines[start:]))
+          assert [r["variant"] for r in rows] == ["baseline", "rcm_scaled"], rows
+          for r in rows:
+              assert float(r["setup_wall_s"]) >= 0
+              assert float(r["solve_wall_s"]) >= 0
+              assert float(r["total_wall_s"]) >= 0
+              assert int(r["threads"]) == 1
+              assert r["solver_error"] == "0", r
+              assert r["status"] in {"converged","not_converged"}
+              assert r["target_1e-8_met"] == ("yes" if float(r["true_relres"]) <= 1e-8 else "no")
+          PY
+          # Invalid reference thread configuration must not hide the second result.
+          set +e
+          LIS_FEA_BASELINE_THREADS=0 \
+            ./test/testhalfilut --fea-matrix test/testmat0.mtx 8 8 0.005 \
+            > ilut-fea-invalid.log 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          grep -q '^baseline,' ilut-fea-invalid.log
+          grep -q '^rcm_scaled,' ilut-fea-invalid.log
+
+      - name: Smoke-test optional 3D FP16 memory and Krylov benchmark
+        if: matrix.mode == 'half'
+        run: |
+          set -euo pipefail
+          # Small smoke case and a representative >100k-DOF 3D problem.
+          # Each mode runs in a fresh process for comparable RSS snapshots.
+          for side in 12 48; do
+            ./test/testmfamg --fp16-3d-bench "$side" off | tee "mfamg-3d-$side-off.log"
+            ./test/testmfamg --fp16-3d-bench "$side" on | tee "mfamg-3d-$side-on.log"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          def fields(path):
+              line = next(x for x in Path(path).read_text().splitlines()
+                          if x.startswith('MFAMG_FP16_3D '))
+              return dict(x.split('=', 1) for x in line.split()[1:])
+          for side in (12, 48):
+              off = fields(f'mfamg-3d-{side}-off.log')
+              on = fields(f'mfamg-3d-{side}-on.log')
+              assert off['mode'] == 'off' and on['mode'] == 'on'
+              assert off['dof'] == on['dof'] == str(side ** 3)
+              assert float(off['ref_mb']) == float(off['resident_mb'])
+              assert float(on['resident_mb']) < float(off['resident_mb'])
+              assert int(off['iterations']) > 0 and int(on['iterations']) > 0
+              assert float(off['relres']) < 1e-7 and float(on['relres']) < 1e-7
+              print(f'3D FP16 benchmark passed ({side}^3):', off, on)
+          PY
+
+      - name: Audit generic FEA Matrix Market snapshot regressions
+        run: python3 -m unittest discover -s tools -p 'test_fea_matrix_audit.py' -v
+
+      - name: Check finite ILUT pivots and scale-normalized inverse response
+        run: |
+          set -euo pipefail
+          ./test/testilupivot | tee ilut-numerical-probe.log
+          grep -q '^LIS_ILUT_NUMERICAL_PROBE case=well_scaled ' ilut-numerical-probe.log
+          grep -q '^LIS_ILUT_NUMERICAL_PROBE case=ill_scaled ' ilut-numerical-probe.log
+          grep -q '^LIS_ILU_PIVOT_STAGE6B PASSED' ilut-numerical-probe.log
+
+      - name: Smoke-test opt-in MFAMG contact diagnostics
+        run: |
+          set -o pipefail
+          LIS_MFAMG_DIAG=1 ./test/testmfamg 2>&1 | tee mfamg-diagnostics.log
+          grep -q '^LIS_MFAMG_DIAG_TRANSFER ' mfamg-diagnostics.log
+          grep -q '^LIS_MFAMG_DIAG_MODE ' mfamg-diagnostics.log
+          python3 - <<'PY'
+          import math
+          from pathlib import Path
+
+          records = []
+          for line in Path("mfamg-diagnostics.log").read_text().splitlines():
+              if not line.startswith(("LIS_MFAMG_DIAG_TRANSFER ", "LIS_MFAMG_DIAG_MODE ")):
+                  continue
+              fields = dict(token.split("=", 1) for token in line.split()[1:])
+              assert {"level", "mpi_rank", "n"} <= fields.keys(), line
+              records.append((line.split()[0], fields))
+          transfers = [v for kind, v in records if kind == "LIS_MFAMG_DIAG_TRANSFER"]
+          modes = [v for kind, v in records if kind == "LIS_MFAMG_DIAG_MODE"]
+          assert transfers and modes
+          for v in transfers:
+              aggregates = int(v["aggregates"])
+              assert sum(int(v[k]) for k in ("singles", "pairs", "size3to8", "size9plus")) == aggregates
+              assert sum(int(v[k]) for k in ("rank0", "rank1", "rank2", "rank3", "rank4plus")) == aggregates
+              assert math.isclose(float(v["ratio"]), int(v["coarse_n"])/int(v["n"]), rel_tol=1e-8)
+          # testmfamg includes a deterministic nine-row, two-mode basis
+          # that must be exactly reconstructible by its aggregate-local QR.
+          exact = [v for v in modes if v["level"] == "-1" and v["n"] == "9"]
+          assert len(exact) >= 2, "manufactured low-level basis diagnostics absent"
+          assert all(math.isfinite(float(v["relerr"])) and float(v["relerr"]) < 1e-10 for v in exact)
+          PY
+
+      - name: Verify generic snapshot values and optional DOF labels
+        run: |
+          ./test/testsnapshot upstream-generic-snapshot
+          python3 - <<'PY'
+          import csv
+          import math
+          from pathlib import Path
+
+          prefix = "upstream-generic-snapshot"
+          expected_matrix = {(1, 1): 4.0, (1, 2): -1.0,
+                             (2, 1): -1.0, (2, 2): 3.0}
+          expected_arrays = {"b": [2., 5.], "x0": [0., 0.],
+                             "x": [1., 2.], "modes": [1., 1., 1., -1.]}
+
+          def read_mm(suffix, fmt):
+              path = Path(f"{prefix}_{suffix}.mtx")
+              lines = [line.strip() for line in path.read_text().splitlines()]
+              lines = [line for line in lines if line and
+                       (line.startswith("%%MatrixMarket") or
+                        not line.startswith("%"))]
+              assert lines[0] == f"%%MatrixMarket matrix {fmt} real general"
+              dimensions = tuple(map(int, lines[1].split()))
+              return path, dimensions, lines[2:]
+
+          path, shape, entries = read_mm("A", "coordinate")
+          assert shape == (2, 2, 4)
+          actual = {}
+          for line in entries:
+              i, j, value = line.split()
+              key = (int(i), int(j))
+              assert key not in actual
+              actual[key] = float(value)
+          assert actual.keys() == expected_matrix.keys()
+          assert all(math.isfinite(actual[k]) and
+                     math.isclose(actual[k], v, rel_tol=0, abs_tol=1e-13)
+                     for k, v in expected_matrix.items())
+          path.unlink()
+          for suffix, expected in expected_arrays.items():
+              path, shape, values = read_mm(suffix, "array")
+              assert shape == (2, len(expected) // 2)
+              actual = [float(v) for v in values]
+              assert len(actual) == len(expected)
+              assert all(math.isfinite(a) and
+                         math.isclose(a, b, rel_tol=0, abs_tol=1e-13)
+                         for a, b in zip(actual, expected))
+              path.unlink()
+          with Path(f"{prefix}_dofs.csv").open(newline="") as stream:
+              rows = list(csv.DictReader(stream))
+          assert rows == [
+              {"eq": "0", "node": "node,7", "dof": 'U"X',
+               "body": "part A"},
+              {"eq": "1", "node": "thermal-9", "dof": "TEMP", "body": ""},
+          ]
+          Path(f"{prefix}_dofs.csv").unlink()
+          PY
+
+      - name: Upload failed test logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.mode }}-logs
+          path: |
+            config.log
+            test/test-suite.log
+            test/*.log
+          if-no-files-found: ignore
+
+  linux-longlong:
+    name: Linux GCC (64-bit LIS_INT RCO overflow)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Autotools and compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+
+      - name: Build with 64-bit LIS_INT
+        run: |
+          autoreconf -fiv
+          ./configure --enable-test --enable-longlong --disable-fortran --disable-f90 \
+            --disable-saamg --disable-mpi --disable-omp
+          make -j2
+
+      - name: Verify RCO allocation-size overflow branch executes
+        run: |
+          set -o pipefail
+          ./test/testrcoalloc | tee rco-overflow.log
+          grep -q '^RCO_ALLOC_OVERFLOW: exercised real size_t guards$' rco-overflow.log
+          grep -q '^RCO_ALLOC_SAFETY=PASSED$' rco-overflow.log
+
+      - name: Upload failed test logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-longlong-rco-logs
+          path: |
+            config.log
+            rco-overflow.log
+            test/test-suite.log
+          if-no-files-found: ignore
+
+  fgcrodr-maxiter-lsan:
+    name: FGCRO-DR MAXITER leak red/green proof
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+      LSAN_OPTIONS: exitcode=23
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install sanitizer toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+      - name: Build sanitizer-enabled library and regression
+        run: |
+          autoreconf -fiv
+          ./configure --enable-test --disable-fortran --disable-f90 \
+            --disable-saamg --disable-mpi --disable-omp --enable-half \
+            CC=gcc \
+            CFLAGS="-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all" \
+            LDFLAGS="-fsanitize=address,undefined"
+          make -j2
+      - name: GREEN - patched MAXITER path has no detected leak
+        run: ./test/testfgcrodrmaxiter
+      - name: RED - temporary unfixed MAXITER path triggers LSan
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("src/solver/lis_solver_fgcrodr.c")
+          source = p.read_text()
+          patch = ("    /* Release B even when active recycling runs into the ordinary\n"
+                   "     * iteration cap (other FGCRO-DR exits already free it). */\n"
+                   "    if( bcoef )\n"
+                   "        lis_free(bcoef);\n")
+          assert source.count(patch) == 1, "positive-fix anchor missing"
+          p.write_text(source.replace(patch, "", 1))
+          PY
+          make -j2
+          # The LIS test binary is statically linked: changing liblis.a
+          # alone does not relink an existing test executable.
+          touch test/testfgcrodrmaxiter.c
+          make -C test testfgcrodrmaxiter
+          set +e
+          ./test/testfgcrodrmaxiter > /tmp/fgcrodr-negative-lsan.log 2>&1
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "ERROR: unfixed MAXITER unexpectedly passed LeakSanitizer"
+            cat /tmp/fgcrodr-negative-lsan.log
+            exit 1
+          fi
+          if ! grep -q 'LeakSanitizer: detected memory leaks' /tmp/fgcrodr-negative-lsan.log; then
+            echo "ERROR: negative control did not fail specifically for a leak"
+            cat /tmp/fgcrodr-negative-lsan.log
+            exit 1
+          fi
+          echo "FGCRODR_MAXITER_LSAN_NEGATIVE_CONTROL=DETECTED"
+      - name: GREEN again - restore and validate fix
+        run: |
+          git restore src/solver/lis_solver_fgcrodr.c
+          make -j2
+          touch test/testfgcrodrmaxiter.c
+          make -C test testfgcrodrmaxiter
+          ./test/testfgcrodrmaxiter
+      - name: Upload sanitizer logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fgcrodr-maxiter-lsan-red-green
+          path: |
+            config.log
+            test/*.log
+          if-no-files-found: ignore
+
+
+  fgcrodr-sanitizer:
+    name: FGCRO-DR AddressSanitizer and LeakSanitizer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+      LSAN_OPTIONS: exitcode=23:report_objects=1
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Autotools and compilers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+      - name: Configure with address and undefined-behavior sanitizers
+        run: |
+          autoreconf -fiv
+          ./configure --enable-test --disable-fortran --disable-f90 \
+            --disable-saamg --disable-mpi --disable-omp --enable-half \
+            CC=gcc \
+            CFLAGS="-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all" \
+            LDFLAGS="-fsanitize=address,undefined"
+      - name: Build the FGCRO-DR library and targeted regressions
+        run: |
+          make -j2
+      - name: Exercise active-recycle MAXITER and restart under sanitizers
+        run: |
+          ./test/testfgcrodrmaxiter
+          ./test/testfgcrodrintra
+          ./test/testfgcrodr
+
+      - name: Validate ILUT RCM, RAS, Schur and contact KKT under sanitizers
+        run: |
+          make -C test testhalfilut
+          ./test/testhalfilut
+      - name: Upload sanitizer logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fgcrodr-sanitizer-logs
+          path: |
+            config.log
+            test/*.log
+          if-no-files-found: ignore
+
+  linux-mpi:
+    name: Linux GCC (MPI, 2 ranks)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Autotools and Open MPI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin \
+            openmpi-bin libopenmpi-dev
+
+      - name: Configure with MPI
+        run: |
+          set -o pipefail
+          command -v mpicc
+          command -v mpiexec
+          autoreconf -fiv
+          ./configure MPICC=mpicc MPIRUN=mpiexec --enable-test --enable-mpi \
+            --disable-fortran --disable-f90 --disable-saamg --disable-omp \
+            2>&1 | tee configure-output.log
+          grep -Eq 'Build with MPI library[[:space:]]+=[[:space:]]+yes' configure-output.log
+
+      - name: Build
+        run: make -j2
+
+      - name: Run Automake test suite
+        run: make -j2 check
+
+      - name: Run distributed MPI regressions (2 ranks)
+        run: |
+          mpiexec -n 2 ./test/testmatrixoperatormpi
+          mpiexec -n 2 ./test/testvectornrm2mpi
+          mpiexec -n 2 ./test/testfgcrodrintra
+
+      - name: Upload failed test logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-mpi-logs
+          path: |
+            config.log
+            configure-output.log
+            test/test-suite.log
+            test/*.log
+          if-no-files-found: ignore
+
+  mingw:
+    name: MSYS2 UCRT64 (${{ matrix.mode }})
+    runs-on: windows-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: serial
+            openmp_package: ''
+            options: ''
+          - mode: openmp
+            openmp_package: mingw-w64-ucrt-x86_64-libgomp
+            options: '--enable-omp'
+    defaults:
+      run:
+        shell: msys2 {0}
+    env:
+      OMP_NUM_THREADS: '2'
+      OMP_DYNAMIC: 'FALSE'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MSYS2 and native MinGW-w64 GCC
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            autoconf automake libtool make
+            mingw-w64-ucrt-x86_64-gcc
+            ${{ matrix.openmp_package }}
+
+      - name: Configure
+        env:
+          CONFIGURE_OPTIONS: ${{ matrix.options }}
+        run: |
+          gcc -dumpmachine | grep -q 'mingw32'
+          autoreconf -fiv
+          # Static linking makes the first native Windows CI independent of
+          # the DLL export/import conventions used by downstream applications.
+          set -o pipefail
+          ./configure CC=gcc --enable-test --disable-shared --enable-static \
+            --disable-fortran --disable-f90 --disable-saamg --disable-mpi \
+            $CONFIGURE_OPTIONS 2>&1 | tee configure-output.log
+          if [[ "$CONFIGURE_OPTIONS" == *--enable-omp* ]]; then
+            if ! grep -Eq 'Build with OpenMP library[[:space:]]+=[[:space:]]+yes' configure-output.log; then
+              echo "::error::OpenMP was requested but configure did not enable it"
+              exit 1
+            fi
+          fi
+
+      - name: Build
+        run: make -j2
+
+      - name: Run Automake test suite
+        run: make -j2 check
+
+      - name: Verify 1/2/4/8-thread MFAMG V-cycle on MSYS2
+        if: matrix.mode == 'openmp'
+        run: |
+          set -euo pipefail
+          OMP_DYNAMIC=FALSE OMP_NUM_THREADS=8 ./test/testmfamgvcycle.exe --omp-stress | tee mfamg-omp-msys2.log
+          grep -q 'MFAMG_OMP_STRESS mode=0 threads=8 .* PASS' mfamg-omp-msys2.log
+          grep -q 'MFAMG_OMP_STRESS mode=1 threads=8 .* PASS' mfamg-omp-msys2.log
+          grep -q 'MFAMG_OMP_EDGES block=4 phase=0 threads=8 .* PASS' mfamg-omp-msys2.log
+          grep -q 'MFAMG_OMP_EDGES block=5 phase=1 threads=8 .* PASS' mfamg-omp-msys2.log
+          grep -q 'MFAMG_OMP_MULTIVECTOR threads=8 .* PASS' mfamg-omp-msys2.log
+
+      - name: Verify pivoted eight-domain parallel ILUTP on MSYS2
+        if: matrix.mode == 'openmp'
+        run: |
+          set -euo pipefail
+          make -C test testhalfilut.exe
+          OMP_DYNAMIC=FALSE OMP_NUM_THREADS=8 ./test/testhalfilut.exe --parallel-ras-ilutp | tee parallel-ras-ilutp-msys2.log
+          grep -q 'ILUT_RAS_LOCAL_ILUTP threads=8 .* PASSED' parallel-ras-ilutp-msys2.log
+          grep -q 'ILUT_RAS_OVERLAP overlap=1 full=0 threads=8 .* DETERMINISTIC PASS' parallel-ras-ilutp-msys2.log
+          grep -q 'ILUT_RAS_OVERLAP overlap=2 full=1 threads=8 .* DETERMINISTIC PASS' parallel-ras-ilutp-msys2.log
+
+      - name: Upload failed test logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ucrt64-${{ matrix.mode }}-logs
+          path: |
+            config.log
+            test/test-suite.log
+            test/*.log
+          if-no-files-found: ignore
+
+
+  tsan-archer-ilutp:
+    name: TSan + LLVM Archer OpenMP RAS race audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      OMP_NUM_THREADS: '8'
+      OMP_DYNAMIC: 'FALSE'
+      TSAN_OPTIONS: 'halt_on_error=1:exitcode=66:ignore_noninstrumented_modules=1'
+      ARCHER_OPTIONS: 'verbose=1'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Clang, LLVM OpenMP, Archer and Autotools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin \
+            clang-18 libomp-18-dev llvm-18
+      - name: Build all LIS code with ThreadSanitizer instrumentation
+        run: |
+          autoreconf -fiv
+          ./configure --enable-test --enable-omp --enable-half \
+            --disable-fortran --disable-f90 --disable-saamg --disable-mpi \
+            CC=clang-18 \
+            CFLAGS="-O1 -g -fno-omit-frame-pointer -fsanitize=thread" \
+            LDFLAGS="-fsanitize=thread"
+          make -j2
+          make -C test testhalfilut testmfamgvcycle
+      - name: Run native pivot/overlap/OpenMP regression under Archer
+        run: |
+          set -euo pipefail
+          archer=$(find /usr/lib/llvm-18 -name libarcher.so | head -1)
+          test -f "$archer"
+          export OMP_TOOL_LIBRARIES="$archer"
+          export LLVM_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-18
+          ./test/testhalfilut --parallel-ras-ilutp | tee tsan-archer-ras.log
+          grep -q 'ILUT_RAS_OVERLAP overlap=2 full=1 threads=8 .* DETERMINISTIC PASS' tsan-archer-ras.log
+          ./test/testmfamgvcycle --omp-stress | tee tsan-archer-mfamg.log
+          grep -q 'MFAMG_OMP_STRESS mode=1 threads=8 .* PASS' tsan-archer-mfamg.log
+          grep -q 'MFAMG_OMP_EDGES block=5 phase=1 threads=8 .* PASS' tsan-archer-mfamg.log
+          grep -q 'MFAMG_OMP_MULTIVECTOR threads=8 .* PASS' tsan-archer-mfamg.log
+      - name: Upload sanitizer diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tsan-archer-ras-diagnostics
+          path: |
+            config.log
+            tsan-archer-ras.log
+            tsan-archer-mfamg.log
+            test/test-suite.log
+          if-no-files-found: ignore
+
+  native-oom-parallel-ilutp:
+    name: Native ILUTP parallel RAS injected-OOM regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      OMP_NUM_THREADS: '8'
+      OMP_DYNAMIC: 'FALSE'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install autotools and OpenMP toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+      - name: Configure OpenMP and native OOM injection together
+        run: |
+          autoreconf -fiv
+          ./configure --enable-oom-tests --enable-test --enable-omp --enable-half \
+            --disable-fortran --disable-f90 --disable-saamg --disable-mpi
+      - name: Build LIS and the isolated fault-injection test
+        run: |
+          make -j2
+          make -C test testhalfilut
+      - name: Inject OOM while ILUTP domains factor concurrently
+        run: |
+          set -euo pipefail
+          ./test/testhalfilut --parallel-ras-ilutp | tee ilutp-ras-oom.log
+          grep -q 'PARALLEL_RAS_OOM injected=.* PASS' ilutp-ras-oom.log
+          grep -q 'ILUT_OPTIONS_OOM_PASS checked=' ilutp-ras-oom.log
+      - name: Upload OOM logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-oom-parallel-ras-logs
+          path: |
+            config.log
+            test/test-suite.log
+            test/*.log
+            ilutp-ras-oom.log
+          if-no-files-found: ignore
+
+  native-oom:
+    name: Native OOM regressions (serial)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+      - name: Configure native OOM injector
+        run: |
+          autoreconf -fiv
+          ./configure --enable-oom-tests --enable-test --disable-mpi \
+            --disable-omp --disable-fortran --disable-f90 --disable-saamg
+      - name: Build and run make check
+        run: make -j2 check
+      - name: Upload failed test logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-oom-logs
+          path: |
+            config.log
+            test/test-suite.log
+            test/*.log
+          if-no-files-found: ignore
+
+  native-oom-mpi:
+    name: Native OOM regressions (MPI)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools and Open MPI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin \
+            openmpi-bin libopenmpi-dev
+      - name: Configure native OOM injector with MPI
+        run: |
+          autoreconf -fiv
+          ./configure MPICC=mpicc MPIRUN=mpiexec --enable-oom-tests \
+            --enable-test --enable-mpi --disable-omp --disable-fortran \
+            --disable-f90 --disable-saamg
+      - name: Compile MPI growth regression
+        run: |
+          make -j2
+          make -C test testoommpiscale
+      - name: Run MPI growth regression (single rank)
+        run: ./test/testoommpiscale
+      - name: Upload failed test logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-oom-mpi-logs
+          path: |
+            config.log
+            test/test-suite.log
+            test/*.log
+          if-no-files-found: ignore

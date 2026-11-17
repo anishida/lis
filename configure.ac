@@ -4,7 +4,7 @@
 
 # General Configurations
 
-AC_INIT([lis],[2.1.23],[devel@ssisc.org])
+AC_INIT([lis],[2.1.24],[devel@ssisc.org])
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -42,6 +42,17 @@ AC_ARG_ENABLE(longlong, AS_HELP_STRING([--enable-longlong],[enable long long int
 AC_ARG_ENABLE(longdouble, AS_HELP_STRING([--enable-longdouble],[enable long double support [[default=no]]]))
 AC_ARG_ENABLE(complex, AS_HELP_STRING([--enable-complex],[enable complex scalar support [[default=no]]]))
 AC_ARG_ENABLE(test, AS_HELP_STRING([--enable-test],[enable test programs [[default=yes]]]))
+
+# Opt-in allocation-failure injection for native C regression tests.
+AC_ARG_ENABLE([oom-tests],
+  [AS_HELP_STRING([--enable-oom-tests],
+    [enable native out-of-memory fault injection tests [[default=no]]])],
+  [enable_oom_tests="$enableval"], [enable_oom_tests=no])
+AS_CASE([$enable_oom_tests],
+  [yes], [AC_DEFINE([LIS_TEST_OOM], [1],
+                   [Define to enable the test-only LIS OOM injector])],
+  [no], [],
+  [AC_MSG_ERROR([--enable-oom-tests accepts yes or no])])
 
 AC_MSG_CHECKING([for a library suffix to use])
 AC_ARG_WITH(library-suffix,
@@ -1278,6 +1289,7 @@ AM_CONDITIONAL([ENABLE_HALF_REAL_DOUBLE],
    test x"$enable_complex" != xyes])
 AM_CONDITIONAL(ENABLE_SSE2, test x$enable_sse2 = xyes)
 AM_CONDITIONAL(DISABLE_TEST, test x$enable_test = xno)
+AM_CONDITIONAL([ENABLE_OOM_TESTS], [test "x$enable_oom_tests" = "xyes"])
 AC_SUBST(enable_mpi)
 AC_SUBST(enable_omp)
 AC_SUBST(enable_saamg)

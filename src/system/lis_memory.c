@@ -281,7 +281,129 @@ void *rpl_malloc( size_t n )
 }
 */
 
-void *lis_malloc( size_t size, char *tag )
+/*
+ * Opt-in, single-threaded native regression-test fault injector.
+ * Only logical LIS allocation calls are counted: bookkeeping allocations
+ * made by the memory tracker are deliberately not fault injected.
+ */
+#ifdef LIS_TEST_OOM
+typedef struct lis_test_raw_allocation {
+	struct lis_test_raw_allocation *next;
+	void *ptr;
+} lis_test_raw_allocation;
+static lis_test_raw_allocation *lis_test_raw_head;
+static size_t lis_test_raw_live;
+static size_t lis_test_oom_at;
+static size_t lis_test_oom_count;
+static int lis_test_oom_active;
+
+static int lis_test_oom_should_fail(void)
+{
+    int fail=0;
+    /* Fault injection is test-only. Setup/teardown of the injector must
+     * be done with all worker threads quiescent. Counting must still be
+     * atomic when the OOM target is inside parallel RAS construction. */
+#ifdef _OPENMP
+#pragma omp critical(lis_test_oom_counter)
+#endif
+    {
+        if(lis_test_oom_active)
+        {
+            ++lis_test_oom_count;
+            fail=(lis_test_oom_at!=0 &&
+                  lis_test_oom_count==lis_test_oom_at);
+        }
+    }
+    return fail;
+}
+
+void lis_test_oom_begin(size_t fail_at)
+{
+	lis_test_oom_count = 0;
+	lis_test_oom_at = fail_at;
+	lis_test_oom_active = 1;
+}
+
+void lis_test_oom_end(void)
+{
+	lis_test_oom_active = 0;
+	lis_test_oom_at = 0;
+}
+
+size_t lis_test_oom_calls(void)
+{
+	return lis_test_oom_count;
+}
+
+size_t lis_test_oom_live(void)
+{
+	return malloc_address_count + lis_test_raw_live;
+}
+
+/* Raw block allocations in lis_matrix_diag.c use matching raw free. */
+void *lis_test_oom_raw_malloc(size_t size)
+{
+	lis_test_raw_allocation *entry;
+	void *p;
+	if( lis_test_oom_should_fail() ) return NULL;
+	p = malloc(size);
+	if( p==NULL ) return NULL;
+	entry = (lis_test_raw_allocation *)malloc(sizeof(*entry));
+	if( entry==NULL )
+	{
+		free(p);
+		return NULL;
+	}
+	entry->ptr = p;
+	entry->next = lis_test_raw_head;
+	lis_test_raw_head = entry;
+	++lis_test_raw_live;
+	return p;
+}
+
+void lis_test_oom_raw_free(void *p)
+{
+	lis_test_raw_allocation **entry;
+	if( p==NULL ) return;
+	entry = &lis_test_raw_head;
+	while( *entry!=NULL && (*entry)->ptr!=p )
+		entry = &(*entry)->next;
+	if( *entry!=NULL )
+	{
+		lis_test_raw_allocation *old = *entry;
+		*entry = old->next;
+		free(old);
+		--lis_test_raw_live;
+	}
+	free(p);
+}
+#endif
+
+/*
+ * The global LIS allocation list/hash predates OpenMP-parallel local
+ * preconditioner setup. Its lookup, rehash, insertion and deletion are
+ * mutable shared state. Preserve legacy allocation semantics while
+ * serializing each complete tracking transaction. Do not call the
+ * registry functions or call public lis_* allocation wrappers from
+ * within a registry critical section. malloc/calloc helpers intentionally
+ * allocate raw memory before acquiring the registry lock.
+ * lis_free_all() is a finalize-only operation after worker quiescence.
+ * malloc/calloc initialization and free() are outside the lock; only the
+ * shared list/hash mutations, lookups and tracked realloc are serialized.
+ */
+static void
+lis_malloc_address_register(malloc_address *ma)
+{
+    lis_malloc_address_hash_prepare();
+    ma->next=&malloc_address_top;
+    ma->prev=malloc_address_top.prev;
+    ma->prev->next=ma;
+    ma->next->prev=ma;
+    lis_malloc_address_hash_insert(ma);
+    malloc_address_count++;
+}
+
+static void * lis_malloc_tracked_body(size_t size, char *tag, malloc_address **entry)
 {
 	union {
 		void *ptr;
@@ -290,6 +412,9 @@ void *lis_malloc( size_t size, char *tag )
 	malloc_address *ma;
 	LIS_INT sz;
 
+#ifdef LIS_TEST_OOM
+	if( lis_test_oom_should_fail() ) return NULL;
+#endif
 	/* Leave enough room for alignment without wrapping size_t. */
 	if( size>((size_t)-1)-16 )
 	{
@@ -306,7 +431,6 @@ void *lis_malloc( size_t size, char *tag )
 		free(addr.ptr);
 		return NULL;
 	}
-	lis_malloc_address_hash_prepare();
 	ma->hash_next = NULL;
 	ma->real_address = addr.ptr;
 	ma->size = size;
@@ -326,18 +450,31 @@ void *lis_malloc( size_t size, char *tag )
 		strcpy(ma->tag,tag);
 	#endif
  
-	ma->next = &malloc_address_top;
-	ma->prev = malloc_address_top.prev;
-	ma->prev->next = ma;
-	ma->next->prev = ma;
-
-  lis_malloc_address_hash_insert(ma);
-  malloc_address_count++;
-
-  return addr.ptr;
+	*entry=ma;
+	return addr.ptr;
 }
 
-void *lis_calloc( size_t size, char *tag )
+void * lis_malloc(size_t size, char *tag)
+{
+    malloc_address *entry=NULL;
+    /* Allocate/copy/zero potentially large storage without holding the
+     * global registry lock. Only publish the fully initialized entry
+     * while holding the lock; no external caller has this pointer yet. */
+    void *result=lis_malloc_tracked_body(size,tag,&entry);
+    if(entry)
+    {
+#ifdef _OPENMP
+#pragma omp critical(lis_memory_registry)
+#endif
+        {
+            lis_malloc_address_register(entry);
+        }
+    }
+    return result;
+}
+
+
+static void * lis_calloc_tracked_body(size_t size, char *tag, malloc_address **entry)
 {
   union {
     void *ptr;
@@ -346,6 +483,9 @@ void *lis_calloc( size_t size, char *tag )
   malloc_address *ma;
   LIS_INT sz;
 
+#ifdef LIS_TEST_OOM
+	if( lis_test_oom_should_fail() ) return NULL;
+#endif
 	/* Leave enough room for alignment without wrapping size_t. */
 	if( size>((size_t)-1)-16 )
 	{
@@ -362,7 +502,6 @@ void *lis_calloc( size_t size, char *tag )
 		free(addr.ptr);
 		return NULL;
 	}
-	lis_malloc_address_hash_prepare();
 	ma->hash_next = NULL;
 	ma->real_address = addr.ptr;
 	ma->size = size;
@@ -383,18 +522,28 @@ void *lis_calloc( size_t size, char *tag )
 		strcpy(ma->tag,tag);
 	#endif
 
-	ma->next = &malloc_address_top;
-	ma->prev = malloc_address_top.prev;
-	ma->prev->next = ma;
-	ma->next->prev = ma;
-
-  lis_malloc_address_hash_insert(ma);
-  malloc_address_count++;
-
-  return addr.ptr;
+	*entry=ma;
+	return addr.ptr;
 }
 
-void *lis_realloc( void *p, size_t size )
+void * lis_calloc(size_t size, char *tag)
+{
+    malloc_address *entry=NULL;
+    void *result=lis_calloc_tracked_body(size,tag,&entry);
+    if(entry)
+    {
+#ifdef _OPENMP
+#pragma omp critical(lis_memory_registry)
+#endif
+        {
+            lis_malloc_address_register(entry);
+        }
+    }
+    return result;
+}
+
+
+static void * lis_realloc_tracked_body(void *p, size_t size)
 {
 	union {
 		void *ptr;
@@ -404,6 +553,9 @@ void *lis_realloc( void *p, size_t size )
 	size_t old_size;
 	void *real_address,*address;
 
+#ifdef LIS_TEST_OOM
+	if( lis_test_oom_should_fail() ) return NULL;
+#endif
 	ma = lis_malloc_address_find(p);
 	if( ma!=NULL )
 	{
@@ -437,31 +589,55 @@ void *lis_realloc( void *p, size_t size )
 	return address;
 }
 
-void lis_free(void *p)
+void * lis_realloc(void *p, size_t size)
 {
-  malloc_address *ma;
-
-  ma = lis_malloc_address_find(p);
-	if( ma!=NULL ) {
-    lis_malloc_address_hash_remove(ma);
-		if( malloc_address_count>0 )
-		{
-			malloc_address_count--;
-		}
-		ma->next->prev = ma->prev;
-    ma->prev->next = ma->next;
-    free(ma->real_address);
-#ifdef USE_MALLOC_TAG
-    free(ma->tag);
+    void * result;
+#ifdef _OPENMP
+#pragma omp critical(lis_memory_registry)
 #endif
-    free(ma); 
-    return;
-  }
-  free(p);
-  return;
+    {
+        result=lis_realloc_tracked_body(p,size);
+    }
+    return result;
 }
 
-void lis_free_mat(LIS_MATRIX A)
+
+/* Detach under the lock, release potentially large pages afterwards. */
+static malloc_address *lis_free_tracked_body(void *p)
+{
+    malloc_address *ma=lis_malloc_address_find(p);
+    if(ma!=NULL)
+    {
+        lis_malloc_address_hash_remove(ma);
+        if(malloc_address_count>0) malloc_address_count--;
+        ma->next->prev=ma->prev;
+        ma->prev->next=ma->next;
+    }
+    return ma;
+}
+
+void lis_free(void *p)
+{
+    malloc_address *ma;
+#ifdef _OPENMP
+#pragma omp critical(lis_memory_registry)
+#endif
+    {
+        ma=lis_free_tracked_body(p);
+    }
+    if(ma!=NULL)
+    {
+        free(ma->real_address);
+#ifdef USE_MALLOC_TAG
+        free(ma->tag);
+#endif
+        free(ma);
+    }
+    else free(p);
+}
+
+
+static void lis_free_mat_tracked_body(LIS_MATRIX A)
 {
 	malloc_address *ma;
 	malloc_address *ma_bak;
@@ -515,6 +691,17 @@ void lis_free_mat(LIS_MATRIX A)
 	return;
 }
 
+void lis_free_mat(LIS_MATRIX A)
+{
+#ifdef _OPENMP
+#pragma omp critical(lis_memory_registry)
+#endif
+    {
+        lis_free_mat_tracked_body(A);
+    }
+}
+
+
 void lis_free2(LIS_INT n, ...)
 {
 	va_list vvlist;
@@ -561,7 +748,7 @@ void lis_free_all()
 	return;
 }
 
-LIS_INT lis_is_malloc( void *p )
+static LIS_INT lis_is_malloc_tracked_body(void *p)
 {
 	if( lis_malloc_address_find(p)!=NULL )
 	{
@@ -570,3 +757,16 @@ LIS_INT lis_is_malloc( void *p )
 
 	return LIS_FALSE;
 }
+
+LIS_INT lis_is_malloc(void *p)
+{
+    LIS_INT result;
+#ifdef _OPENMP
+#pragma omp critical(lis_memory_registry)
+#endif
+    {
+        result=lis_is_malloc_tracked_body(p);
+    }
+    return result;
+}
+

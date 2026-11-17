@@ -156,6 +156,295 @@ done:
     return failed;
 }
 
+
+/*
+ * GCRO-DR options have dedicated solver fields, outside the normal option
+ * arrays.  Replacing a complete profile must copy all of them, detect
+ * changes to any one, restore omitted defaults and avoid invalidating
+ * reusable state for an equivalent effective profile.
+ */
+static int check_gcrodr_profile_settings(void)
+{
+    LIS_SOLVER s=NULL,defaults=NULL;
+    LIS_INT err,changed;
+    int failed=0;
+
+    err=lis_solver_create(&s);
+    if(err) return 1;
+    err=lis_solver_create(&defaults);
+    if(err)
+    {
+        lis_solver_destroy(s);
+        return 1;
+    }
+
+    err=lis_solver_set_option_replace(
+        "-i gcrodr -p none -gcrodr_keep 5 "
+        "-gcrodr_keep_quality 0.82 -gcrodr_reject_quality 0.22",s);
+    if(err || s->recycle_target_dim!=5 ||
+       s->recycle_keep_threshold!=(LIS_REAL)0.82 ||
+       s->recycle_reject_threshold!=(LIS_REAL)0.22)
+    {
+        fprintf(stderr,"GCRO-DR profile fields not copied\n");
+        failed=1; goto done;
+    }
+
+    /* Effective profile equality must not clear an existing recycle. */
+    s->recycle_valid=LIS_TRUE;
+    changed=-1;
+    err=lis_solver_set_option_replace_if_changed(
+        "-gcrodr_reject_quality 0.22 -p none -gcrodr_keep 5 "
+        "-gcrodr_keep_quality 0.82 -i gcrodr",s,&changed);
+    if(err || changed!=LIS_FALSE || s->recycle_valid!=LIS_TRUE)
+    {
+        fprintf(stderr,"equivalent GCRO-DR profile invalidated recycle\n");
+        failed=1; goto done;
+    }
+
+    /* Change only the number of vectors. */
+    changed=-1;
+    err=lis_solver_set_option_replace_if_changed(
+        "-i gcrodr -p none -gcrodr_keep 6 "
+        "-gcrodr_keep_quality 0.82 -gcrodr_reject_quality 0.22",s,&changed);
+    if(err || changed!=LIS_TRUE || s->recycle_valid!=LIS_FALSE ||
+       s->recycle_target_dim!=6)
+    {
+        fprintf(stderr,"GCRO-DR keep-only profile change not detected\n");
+        failed=1; goto done;
+    }
+
+    /* Change only the keep-quality policy. */
+    s->recycle_valid=LIS_TRUE;
+    changed=-1;
+    err=lis_solver_set_option_replace_if_changed(
+        "-i gcrodr -p none -gcrodr_keep 6 "
+        "-gcrodr_keep_quality 0.75 -gcrodr_reject_quality 0.22",s,&changed);
+    if(err || changed!=LIS_TRUE || s->recycle_valid!=LIS_FALSE ||
+       s->recycle_keep_threshold!=(LIS_REAL)0.75)
+    {
+        fprintf(stderr,"GCRO-DR keep-quality-only profile change not detected\n");
+        failed=1; goto done;
+    }
+
+    /* Change only the reject-quality policy. */
+    s->recycle_valid=LIS_TRUE;
+    changed=-1;
+    err=lis_solver_set_option_replace_if_changed(
+        "-i gcrodr -p none -gcrodr_keep 6 "
+        "-gcrodr_keep_quality 0.75 -gcrodr_reject_quality 0.10",s,&changed);
+    if(err || changed!=LIS_TRUE || s->recycle_valid!=LIS_FALSE ||
+       s->recycle_reject_threshold!=(LIS_REAL)0.10)
+    {
+        fprintf(stderr,"GCRO-DR reject-quality-only profile change not detected\n");
+        failed=1; goto done;
+    }
+
+    /* Parse failure must leave the active profile and recycle intact. */
+    s->recycle_valid=LIS_TRUE;
+    changed=-1;
+    err=lis_solver_set_option_replace_if_changed(
+        "-i gcrodr -p none -gcrodr_keep 9 "
+        "-gcrodr_keep_quality 1.7 -gcrodr_reject_quality 0.10",s,&changed);
+    if(err==LIS_SUCCESS || changed!=LIS_FALSE ||
+       s->recycle_valid!=LIS_TRUE || s->recycle_target_dim!=6 ||
+       s->recycle_keep_threshold!=(LIS_REAL)0.75 ||
+       s->recycle_reject_threshold!=(LIS_REAL)0.10)
+    {
+        fprintf(stderr,"invalid GCRO-DR profile changed active settings\n");
+        failed=1; goto done;
+    }
+
+    /* Compare omitted options with a genuinely fresh solver, so a change
+     * in documented defaults does not make this regression obsolete. */
+    changed=-1;
+    err=lis_solver_set_option_replace_if_changed("-i gcrodr -p none",s,&changed);
+    if(err || changed!=LIS_TRUE || s->recycle_valid!=LIS_FALSE ||
+       s->recycle_target_dim!=defaults->recycle_target_dim ||
+       s->recycle_keep_threshold!=defaults->recycle_keep_threshold ||
+       s->recycle_reject_threshold!=defaults->recycle_reject_threshold)
+    {
+        fprintf(stderr,"GCRO-DR omitted defaults not restored\n");
+        failed=1; goto done;
+    }
+
+    s->recycle_valid=LIS_TRUE;
+    changed=-1;
+    err=lis_solver_set_option_replace_if_changed("-p none -i gcrodr",s,&changed);
+    if(err || changed!=LIS_FALSE || s->recycle_valid!=LIS_TRUE)
+    {
+        fprintf(stderr,"GCRO-DR default profile unexpectedly invalidated\n");
+        failed=1;
+    }
+
+done:
+    lis_solver_destroy(defaults);
+    lis_solver_destroy(s);
+    printf("GCRODR_OPTION_PROFILE %s\n",failed?"FAILED":"PASSED");
+    return failed;
+}
+
+/*
+ * FGCRO-DR's private state owns W/Z/C.  Full profile replacements must
+ * compare and copy only k, keep/reject thresholds and update policy.
+ * Tests also cover default-vs-explicit-default equality and parse atomicity.
+ */
+static int check_fgcrodr_profile_settings(void)
+{
+    LIS_SOLVER s=NULL,defaults=NULL;
+    LIS_INT err,changed,k,update,dk,du;
+    LIS_REAL keep,reject,dkeep,dreject;
+    void *saved_state=NULL;
+    int failed=0;
+
+    err=lis_solver_create(&s);
+    if(err) return 1;
+    err=lis_solver_create(&defaults);
+    if(err) { lis_solver_destroy(s); return 1; }
+
+    err=lis_solver_get_fgcrodr_recycle_config(
+        defaults,&dk,&dkeep,&dreject,&du);
+    if(err) { failed=1; goto done; }
+
+    err=lis_solver_set_option_replace(
+        "-i fgcrodr -p none -fgcrodr_k 3 -fgcrodr_keep 0.83 "
+        "-fgcrodr_reject 0.23 -fgcrodr_update false",s);
+    if(err) { failed=1; goto done; }
+    err=lis_solver_get_fgcrodr_recycle_config(
+        s,&k,&keep,&reject,&update);
+    if(err || k!=3 || fabs((double)(keep-(LIS_REAL)0.83))>1.0e-12 ||
+       fabs((double)(reject-(LIS_REAL)0.23))>1.0e-12 ||
+       update!=LIS_FALSE || !s->fgcrodr_state)
+    {
+        fprintf(stderr,"FGCRO-DR profile fields not copied\n");
+        failed=1; goto done;
+    }
+    saved_state=s->fgcrodr_state;
+
+    /* Reordering a complete but identical profile must be a no-op. */
+    changed=-1;
+    err=lis_solver_set_option_replace_if_changed(
+        "-fgcrodr_update false -fgcrodr_reject 0.23 "
+        "-p none -fgcrodr_k 3 -fgcrodr_keep 0.83 -i fgcrodr",
+        s,&changed);
+    if(err || changed!=LIS_FALSE || s->fgcrodr_state!=saved_state)
+    {
+        fprintf(stderr,"FGCRO-DR equivalent profile was not a no-op\n");
+        failed=1; goto done;
+    }
+
+    /* Each of the four private configuration fields must be detected. */
+    changed=-1;
+    err=lis_solver_set_option_replace_if_changed(
+        "-i fgcrodr -p none -fgcrodr_k 6 -fgcrodr_keep 0.83 "
+        "-fgcrodr_reject 0.23 -fgcrodr_update false",s,&changed);
+    if(err || changed!=LIS_TRUE || s->fgcrodr_state!=saved_state)
+    {
+        fprintf(stderr,"FGCRO-DR k-only change missed\n");
+        failed=1; goto done;
+    }
+
+    changed=-1;
+    err=lis_solver_set_option_replace_if_changed(
+        "-i fgcrodr -p none -fgcrodr_k 6 -fgcrodr_keep 0.74 "
+        "-fgcrodr_reject 0.23 -fgcrodr_update false",s,&changed);
+    if(err || changed!=LIS_TRUE)
+    {
+        fprintf(stderr,"FGCRO-DR keep-only change missed\n");
+        failed=1; goto done;
+    }
+
+    changed=-1;
+    err=lis_solver_set_option_replace_if_changed(
+        "-i fgcrodr -p none -fgcrodr_k 6 -fgcrodr_keep 0.74 "
+        "-fgcrodr_reject 0.19 -fgcrodr_update false",s,&changed);
+    if(err || changed!=LIS_TRUE)
+    {
+        fprintf(stderr,"FGCRO-DR reject-only change missed\n");
+        failed=1; goto done;
+    }
+
+    changed=-1;
+    err=lis_solver_set_option_replace_if_changed(
+        "-i fgcrodr -p none -fgcrodr_k 6 -fgcrodr_keep 0.74 "
+        "-fgcrodr_reject 0.19 -fgcrodr_update true",s,&changed);
+    if(err || changed!=LIS_TRUE)
+    {
+        fprintf(stderr,"FGCRO-DR update-only change missed\n");
+        failed=1; goto done;
+    }
+
+    /* The active state must survive a rejected, freshly parsed profile. */
+    changed=-1;
+    err=lis_solver_set_option_replace_if_changed(
+        "-i fgcrodr -fgcrodr_k 8 -fgcrodr_keep 1.7",s,&changed);
+    if(err==LIS_SUCCESS || changed!=LIS_FALSE ||
+       s->fgcrodr_state!=saved_state)
+    {
+        fprintf(stderr,"Invalid FGCRO-DR profile was installed\n");
+        failed=1; goto done;
+    }
+    err=lis_solver_get_fgcrodr_recycle_config(
+        s,&k,&keep,&reject,&update);
+    if(err || k!=6 ||
+       fabs((double)(keep-(LIS_REAL)0.74))>1.0e-12 ||
+       fabs((double)(reject-(LIS_REAL)0.19))>1.0e-12 ||
+       update!=LIS_TRUE)
+    {
+        fprintf(stderr,"Invalid FGCRO-DR profile modified configuration\n");
+        failed=1; goto done;
+    }
+
+    /* NaN must not enter a profile: exact equality assumes finite settings. */
+    changed=-1;
+    err=lis_solver_set_option_replace_if_changed(
+        "-i fgcrodr -fgcrodr_keep nan",s,&changed);
+    if(err==LIS_SUCCESS || changed!=LIS_FALSE)
+    {
+        fprintf(stderr,"NaN FGCRO-DR keep was accepted\n");
+        failed=1; goto done;
+    }
+
+    changed=-1;
+    err=lis_solver_set_option_replace_if_changed(
+        "-i fgcrodr -fgcrodr_reject nan",s,&changed);
+    if(err==LIS_SUCCESS || changed!=LIS_FALSE)
+    {
+        fprintf(stderr,"NaN FGCRO-DR reject was accepted\n");
+        failed=1; goto done;
+    }
+
+    /* Empty FGCRO-DR configuration must restore actual defaults. */
+    changed=-1;
+    err=lis_solver_set_option_replace_if_changed("-i fgcrodr -p none",s,&changed);
+    if(err || changed!=LIS_TRUE || s->fgcrodr_state!=saved_state)
+    {
+        fprintf(stderr,"FGCRO-DR defaults not restored by profile\n");
+        failed=1; goto done;
+    }
+    err=lis_solver_get_fgcrodr_recycle_config(
+        s,&k,&keep,&reject,&update);
+    if(err || k!=dk || keep!=dkeep || reject!=dreject || update!=du)
+    {
+        fprintf(stderr,"FGCRO-DR default values mismatch\n");
+        failed=1; goto done;
+    }
+
+    /* Explicit defaults equal a solver with no private state allocated. */
+    changed=-1;
+    err=lis_solver_set_option_replace_if_changed("-p none -i fgcrodr",s,&changed);
+    if(err || changed!=LIS_FALSE)
+    {
+        fprintf(stderr,"FGCRO-DR equal default profile reported changed\n");
+        failed=1;
+    }
+
+done:
+    if(defaults) lis_solver_destroy(defaults);
+    if(s) lis_solver_destroy(s);
+    printf("FGCRODR_OPTION_PROFILE %s\n",failed?"FAILED":"PASSED");
+    return failed;
+}
+
 int main(int argc, char **argv)
 {
     if(argc>1 && strcmp(argv[1],"--typed-only")==0)
@@ -491,6 +780,53 @@ int main(int argc, char **argv)
         }
     }
 
+    /*
+     * MFAMG block size is a parsed scalar, not an options[] element.
+     * A scalar-only profile change must be detected and installed.
+     */
+    if(!failed)
+    {
+        changed = -1;
+        err = lis_solver_set_option_replace_if_changed(
+            "-i cg -p none -maxiter 123 -mfamg_block_size 3",
+            solver,
+            &changed);
+
+        if(err || changed!=LIS_TRUE || solver->mfamg_block_size!=3)
+        {
+            fprintf(stderr,"MFAMG scalar-only profile change was lost\n");
+            failed = 1;
+        }
+    }
+
+    /* Equivalent options in a different order must not cause a reset. */
+    if(!failed)
+    {
+        changed = -1;
+        err = lis_solver_set_option_replace_if_changed(
+            "-mfamg_block_size 3 -maxiter 123 -p none -i cg",
+            solver,
+            &changed);
+
+        if(err || changed!=LIS_FALSE || solver->mfamg_block_size!=3)
+        {
+            fprintf(stderr,"equivalent MFAMG block profile caused a change\n");
+            failed = 1;
+        }
+    }
+
+    /* Omission in a full replacement restores the default block size. */
+    if(!failed)
+    {
+        err = lis_solver_set_option_replace(
+            "-i cg -p none -maxiter 123",solver);
+        if(err || solver->mfamg_block_size!=1)
+        {
+            fprintf(stderr,"MFAMG block-size default was not restored\n");
+            failed = 1;
+        }
+    }
+
     /* Invalid input must report no completed change. */
     if(!failed)
     {
@@ -508,6 +844,11 @@ int main(int argc, char **argv)
             failed = 1;
         }
     }
+
+    /* Isolated GCRO-DR profile regression, independent of the solve above. */
+    failed |= check_gcrodr_profile_settings();
+
+    failed |= check_fgcrodr_profile_settings();
 
     if(x) lis_vector_destroy(x);
     if(b) lis_vector_destroy(b);

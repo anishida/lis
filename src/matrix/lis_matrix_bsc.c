@@ -191,25 +191,29 @@ LIS_INT lis_matrix_malloc_bsc(LIS_INT n, LIS_INT bnr, LIS_INT bnc, LIS_INT bnnz,
 	if( *bptr==NULL )
 	{
 		LIS_SETERR_MEM((nc+1)*sizeof(LIS_INT));
-		lis_free2(3,*bptr,*bindex,*value);
-		return LIS_FAILS;
+		goto allocation_failed;
 	}
 	*bindex = (LIS_INT *)lis_malloc( bnnz*sizeof(LIS_INT),"lis_matrix_malloc_bsc::bindex" );
 	if( *bindex==NULL )
 	{
 		LIS_SETERR_MEM(bnnz*sizeof(LIS_INT));
-		lis_free2(3,*bptr,*bindex,*value);
-		return LIS_OUT_OF_MEMORY;
+		goto allocation_failed;
 	}
 	*value = (LIS_SCALAR *)lis_malloc( bnnz*bnr*bnc*sizeof(LIS_SCALAR),"lis_matrix_malloc_bsc::value" );
 	if( *value==NULL )
 	{
 		LIS_SETERR_MEM(bnnz*bnr*bnc*sizeof(LIS_SCALAR));
-		lis_free2(3,*bptr,*bindex,*value);
-		return LIS_OUT_OF_MEMORY;
+		goto allocation_failed;
 	}
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+
+allocation_failed:
+	lis_free2(3,*bptr,*bindex,*value);
+	*bptr = NULL;
+	*bindex = NULL;
+	*value = NULL;
+	return LIS_OUT_OF_MEMORY;
 }
 
 #undef __FUNC__

@@ -1032,6 +1032,7 @@ LIS_INT lis_matrix_set_value(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR valu
 		if( err )
 		{
 			lis_free(A->w_nnz);
+			A->w_nnz = NULL;
 			return err;
 		}
 		A->status  = LIS_MATRIX_ASSEMBLING;
@@ -1094,6 +1095,11 @@ LIS_INT lis_matrix_set_value(LIS_INT flag, LIS_INT i, LIS_INT j, LIS_SCALAR valu
 					lis_free(A->w_value[k]);
 				}
 				lis_free2(4,A->w_nnz,A->w_row,A->w_index,A->w_value);
+				A->w_nnz   = NULL;
+				A->w_row   = NULL;
+				A->w_index = NULL;
+				A->w_value = NULL;
+				A->status  = LIS_MATRIX_NULL;
 				return err;
 			}
 			A->w_nnz[i-is] = new_nnz;

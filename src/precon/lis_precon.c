@@ -1001,6 +1001,11 @@ LIS_INT lis_precon_destroy(LIS_PRECON precon)
 	    {
 	        err = precon->user_destroy(precon);
 	    }
+		if( precon->ilut_ras )
+		{
+			lis_precon_ilut_ras_destroy(precon->ilut_ras);
+			precon->ilut_ras=NULL;
+		}
 		if( precon->mfamg )
 		{
 			mfamg_err = lis_precon_destroy_mfamg(precon);
@@ -1010,6 +1015,13 @@ LIS_INT lis_precon_destroy(LIS_PRECON precon)
 		lis_vector_destroy(precon->Pb);
 		lis_vector_destroy(precon->D);
 		lis_vector_destroy(precon->temp);
+
+		lis_free(precon->ilut_perm);
+		lis_free(precon->ilutp_colperm);
+		lis_free(precon->ilut_col_scale);
+		lis_free(precon->ilut_row_scale);
+		if(precon->ilut_work_b) lis_vector_destroy(precon->ilut_work_b);
+		if(precon->ilut_work_x) lis_vector_destroy(precon->ilut_work_x);
 
 		lis_half_ilu_destroy(
 			precon->half);

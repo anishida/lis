@@ -1,0 +1,71 @@
+# Optional ILUT reordering and row equilibration for FEA
+
+The LIS ILUT preconditioner accepts two **opt-in** solver-local options:
+
+- `-ilut_rcm 1` computes deterministic reverse Cuthill–McKee ordering on the **undirected sparsity graph** of the input CSR matrix. It permutes both rows and columns before factorization, and inversely permutes the triangular-solve result.
+- `-ilut_row_scale 1` scales each reordered row by the reciprocal of its largest absolute coefficient before factorization. The corresponding scaling is applied to the right-hand side (and to the output of adjoint solves).
+
+Both defaults remain zero. The factorization and direct `off` behavior are unchanged when neither option is requested. Use `-ilut_drop` and `-ilut_rate` as readable aliases for the existing `-iluc_drop` and `-iluc_rate` options (the same numerical parameter slots).
+
+## Example
+
+```sh
+./test/testhalfilut
+```
+
+The regression compares ILUT normal and adjoint residuals under RCM, equilibration and their combination. For a custom solve:
+
+```
+-i fgmres -p ilut -scale none -ilut_rcm 1 -ilut_row_scale 1 \
+-ilut_drop 0.01 -ilut_rate 10 -ilu_pivot_tol 1e-12
+```
+
+## Synthetic contact-KKT regression
+
+`testhalfilut` now assembles an indefinite **48×48 stabilized saddle-point system** with a 36×36 spring-stiffness block, twelve displacement-difference constraints, and a negative 0.1 multiplier diagonal. It compares the legacy ILUT control with the opt-in variant, requiring convergence to a **true relative residual below 1e-7** and printing Krylov iterations and residuals. This is an algebraic contact-style regression, **not** a production nonlinear FEA benchmark and not evidence of a speedup.
+
+## High-unit-contrast KKT regression
+
+The additional `ILUT_KKT_CONTRAST` regression constructs a 48x48 saddle-point matrix with displacement stiffness at `1e8`, off-diagonal constraint couplings at `1`, and multiplier stabilization at `1e-8`. It compares baseline ILUT, row-only equilibration, RCM plus row equilibration, and a manually block-balanced congruence `D A D` with displacement factors `1e-4` and multiplier factors `1e4`.
+
+The test reports FGMRES iterations, actual `nnz(L+U)`, true original-system residual `||Ax-b||/||b||`, and the block-balanced residual `||D(Ax-b)||/||Db||`. The latter prevents tiny multiplier-equation errors from being hidden by the much larger displacement-block scale. The balanced variant is a required convergence reference; failures of the other variants are reported as observations and do not assert one ordering/scaling strategy always converges. **The manually balanced variant is a test reference, not an implemented general two-sided scaling option.**
+
+The test remains synthetic, serial-only for these preprocessing modes, and does not establish production contact FEA performance. Extreme stiffness/coupling contrasts remain numerically challenging; use a real Matrix Market contact snapshot for performance conclusions.
+
+## Reproducible evaluation on an external FEA snapshot
+
+The existing `testhalfilut` executable now includes an **opt-in Matrix
+Market benchmark** for a real sparse stiffness/contact matrix, without
+checking private matrices or invented performance claims into this repo:
+
+```sh
+# Serial LIS build recommended; use a true FEA Newton/contact snapshot.
+./test/testhalfilut --fea-matrix path/to/contact.mtx 8 8 0.005
+```
+
+The two rates control the baseline and RCM+row-scaled ILUT fill limits
+respectively. The last argument is a common drop tolerance. The benchmark
+solves the **original** linear system with a deterministic manufactured
+right-hand side, reports both the true relative residual and FGMRES
+iteration count, L/U nonzero counts, pivot magnitude ranges, and setup/solve
+CPU seconds. It emits `fair_fill=yes` only when `nnz(L+U)` differs by at
+most 5%. Vary the rate arguments until fill is comparable **before**
+drawing conclusions about convergence or timing.
+
+This benchmark is optional and **not** included in `make check`. The
+existing 48×48 synthetic KKT case remains a correctness regression, not
+evidence of better convergence for nonlinear contact FEA. A valid FEA
+comparison also requires multiple Newton/contact states, a fixed
+stopping tolerance and physical scaling, external peak-RSS measurements,
+and repeated timings. The present PR includes **no validated real-world
+FEA speedup**.
+
+## Applicability and caveats
+
+This first implementation supports **serial CSR in ordinary double precision**, including nonsymmetric sparse matrices. It explicitly rejects distributed, USER/OPERATOR and quad-precision configurations when the new transform options are requested. This is neither ddPQ (diagonal matching) nor distributed RAS/Schur. Matrix entries must be finite; a zero row or singular matrix may still produce a factorization failure.
+
+A read-only internal diagnostic `lis_precon_ilut_factor_stats` reports the stored L/U nonzero counts and minimum/maximum actual pivot magnitudes (the stored D values are reciprocals). The regression prints these statistics to support controlled fill and stability comparisons.
+
+RCM is a fill/bandwidth heuristic. It does **not** guarantee lower Krylov iteration counts or greater stability for contact KKT saddle-point systems. Report true relative residual, pivot failures, factor nonzeros, setup time and process memory when benchmarking. Preserve the default ILUT path as a control. Near-singular rows should use `-ilu_pivot_tol` as an explicit policy rather than silently replacing pivots.
+
+Hypre's ILU framework additionally offers local RCM, dual-threshold ILUT, ddPQ matching, RAS-ILUT and two-level Schur correction; these are distinct algorithms and should not be conflated with this opt-in serial preprocessing step: https://hypre.readthedocs.io/en/latest/solvers-ilu.html

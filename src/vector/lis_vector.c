@@ -159,7 +159,8 @@ LIS_INT lis_vector_set_size(LIS_VECTOR vec, LIS_INT local_n, LIS_INT global_n)
 	LIS_INT nprocs,my_rank;
 	LIS_INT is,ie;
 	LIS_INT i,err,precision;
-	LIS_INT *ranges;
+	LIS_INT *ranges = NULL;
+	LIS_SCALAR *value = NULL, *work = NULL;
 
 	LIS_DEBUG_FUNC_IN;
 
@@ -186,39 +187,37 @@ LIS_INT lis_vector_set_size(LIS_VECTOR vec, LIS_INT local_n, LIS_INT global_n)
 	{
 		return err;
 	}
-	vec->ranges      = ranges;
-
+	/* Keep temporary allocations local until the whole vector is ready. */
 	precision = vec->precision;
 	if( !precision )
 	{
-		vec->value = (LIS_SCALAR *)lis_malloc( local_n*sizeof(LIS_SCALAR),"lis_vector_set_size::vec->value" );
-		if( NULL==vec->value )
+		value = (LIS_SCALAR *)lis_malloc( local_n*sizeof(LIS_SCALAR),"lis_vector_set_size::vec->value" );
+		if( NULL==value )
 		{
 			LIS_SETERR_MEM(local_n*sizeof(LIS_SCALAR));
-			return LIS_OUT_OF_MEMORY;
+			goto allocation_failed;
 		}
 		#ifdef _OPENMP
 		#pragma omp parallel for private(i)
 		#endif
 		for(i=0;i<local_n;i++)
 		{
-			vec->value[i] = 0.0;
+			value[i] = 0.0;
 		}
 	}
 	else
 	{
-		vec->value = (LIS_SCALAR *)lis_malloc( (2*local_n + local_n%2)*sizeof(LIS_SCALAR),"lis_vector_set_size::vec->value" );
-		if( NULL==vec->value )
+		value = (LIS_SCALAR *)lis_malloc( (2*local_n + local_n%2)*sizeof(LIS_SCALAR),"lis_vector_set_size::vec->value" );
+		if( NULL==value )
 		{
 			LIS_SETERR_MEM((2*local_n+local_n%2)*sizeof(LIS_SCALAR));
-			return LIS_OUT_OF_MEMORY;
+			goto allocation_failed;
 		}
-		vec->value_lo = vec->value + local_n + local_n%2;
-		vec->work = (LIS_SCALAR *)lis_malloc( 32*sizeof(LIS_SCALAR),"lis_vector_set_size::vec->work" );
-		if( NULL==vec->work )
+		work = (LIS_SCALAR *)lis_malloc( 32*sizeof(LIS_SCALAR),"lis_vector_set_size::vec->work" );
+		if( NULL==work )
 		{
 			LIS_SETERR_MEM(32*sizeof(LIS_SCALAR));
-			return LIS_OUT_OF_MEMORY;
+			goto allocation_failed;
 		}
 		#ifdef USE_VEC_COMP
 		#pragma cdir nodep
@@ -229,11 +228,15 @@ LIS_INT lis_vector_set_size(LIS_VECTOR vec, LIS_INT local_n, LIS_INT global_n)
 		#endif
 		for(i=0;i<local_n;i++)
 		{
-			vec->value[i]    = 0.0;
-			vec->value_lo[i] = 0.0;
+			value[i] = 0.0;
+			value[local_n + local_n%2 + i] = 0.0;
 		}
 	}
 	
+	vec->ranges      = ranges;
+	vec->value       = value;
+	vec->value_lo    = precision ? value + local_n + local_n%2 : NULL;
+	vec->work        = work;
 	vec->is_copy     = LIS_TRUE;
 	vec->value_external = LIS_FALSE;
 	vec->status      = LIS_VECTOR_ASSEMBLED;
@@ -247,6 +250,12 @@ LIS_INT lis_vector_set_size(LIS_VECTOR vec, LIS_INT local_n, LIS_INT global_n)
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+
+allocation_failed:
+	lis_free(work);
+	lis_free(value);
+	lis_free(ranges);
+	return LIS_OUT_OF_MEMORY;
 }
 
 /*NEH support for extended "solve_kernel" workflow*/
@@ -262,7 +271,8 @@ LIS_INT lis_vector_psd_reset_scale(LIS_VECTOR vec)
 #define __FUNC__ "lis_vector_reuse"
 LIS_INT lis_vector_reuse(LIS_VECTOR *vec)
 {
-	LIS_INT	err,np,precision;
+	LIS_INT err,np,precision;
+	LIS_SCALAR *value,*work;
 
 	LIS_DEBUG_FUNC_IN;
 
@@ -272,36 +282,40 @@ LIS_INT lis_vector_reuse(LIS_VECTOR *vec)
 	np = (*vec)->np;
 	if( (*vec)->status==LIS_VECTOR_NULL )
 	{
-		precision = ((LIS_VECTOR)*vec)->precision;
+		precision = (*vec)->precision;
+		value = NULL;
+		work = NULL;
 		if( !precision )
 		{
-			(*vec)->value = (LIS_SCALAR *)lis_malloc( np*sizeof(LIS_SCALAR),"lis_vector_reuse::vec->value" );
-			if( NULL==(*vec)->value )
+			value = (LIS_SCALAR *)lis_malloc( np*sizeof(LIS_SCALAR),"lis_vector_reuse::vec->value" );
+			if( NULL==value )
 			{
 				LIS_SETERR_MEM(np*sizeof(LIS_SCALAR));
 				return LIS_OUT_OF_MEMORY;
 			}
-			(*vec)->is_copy = LIS_TRUE;
 		}
 		else
 		{
-			(*vec)->value = (LIS_SCALAR *)lis_malloc( (2*np+np%2)*sizeof(LIS_SCALAR),"lis_vector_reuse::vec->value" );
-			if( NULL==(*vec)->value )
+			value = (LIS_SCALAR *)lis_malloc( (2*np+np%2)*sizeof(LIS_SCALAR),"lis_vector_reuse::vec->value" );
+			if( NULL==value )
 			{
 				LIS_SETERR_MEM((2*np+np%2)*sizeof(LIS_SCALAR));
 				return LIS_OUT_OF_MEMORY;
 			}
-			(*vec)->is_copy = LIS_TRUE;
-			(*vec)->value_lo = (*vec)->value + np + np%2;
-			(*vec)->work = (LIS_SCALAR *)lis_malloc( 32*sizeof(LIS_SCALAR),"lis_vector_reuse::vec->work" );
-			if( NULL==(*vec)->work )
+			work = (LIS_SCALAR *)lis_malloc( 32*sizeof(LIS_SCALAR),"lis_vector_reuse::vec->work" );
+			if( NULL==work )
 			{
 				LIS_SETERR_MEM(32*sizeof(LIS_SCALAR));
-				lis_vector_destroy(*vec);
-				*vec = NULL;
+				lis_free(value);
 				return LIS_OUT_OF_MEMORY;
 			}
 		}
+
+		/* Commit only after all allocations succeed: failed reuse is retryable. */
+		(*vec)->value = value;
+		(*vec)->value_lo = precision ? value + np + np%2 : NULL;
+		(*vec)->work = work;
+		(*vec)->is_copy = LIS_TRUE;
 	}
 
 	(*vec)->status = LIS_VECTOR_ASSEMBLED;

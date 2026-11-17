@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "lis.h"
+#include "lis_solver_options.h"
 
 #ifdef _COMPLEX
 int main(int argc, char **argv)
@@ -391,6 +392,65 @@ int main(int argc, char *argv[])
             lis_printf(comm,
                 "CASE %-20s : PASS non-default condition rejected\n",
                 "conv-cond-guard");
+    }
+
+    /*
+     * CASE 6: run real GCRO-DR solves across FULL option-profile replacement.
+     * A change of -gcrodr_keep from 3 to 6 and back to 2 must recreate the
+     * U/ZU/C buffers at the new capacity, rather than keeping stale arrays.
+     * The solve_once() helper verifies the true residual against A*x.
+     */
+    {
+        const LIS_INT targets[3]={3,6,2};
+        const char *profiles[3]={
+            "-i gcrodr -p jacobi -restart 8 -maxiter 2000 -tol 1e-10 "
+            "-gcrodr_keep 3 -gcrodr_keep_quality 0.90 "
+            "-gcrodr_reject_quality 0.35 -print none",
+            "-i gcrodr -p jacobi -restart 8 -maxiter 2000 -tol 1e-10 "
+            "-gcrodr_keep 6 -gcrodr_keep_quality 0.90 "
+            "-gcrodr_reject_quality 0.35 -print none",
+            "-i gcrodr -p jacobi -restart 8 -maxiter 2000 -tol 1e-10 "
+            "-gcrodr_keep 2 -gcrodr_keep_quality 0.90 "
+            "-gcrodr_reject_quality 0.35 -print none"
+        };
+        LIS_INT step,changed;
+
+        for(step=0;step<3;step++)
+        {
+            changed=LIS_FALSE;
+            err=lis_solver_set_option_replace_if_changed(
+                profiles[step],solver,&changed);
+            if(err || changed!=LIS_TRUE ||
+               solver->recycle_target_dim!=targets[step] ||
+               solver->recycle_valid!=LIS_FALSE)
+            {
+                failed |= fail_case(comm,"profile-change-solve",
+                                    "profile replacement not applied/reset");
+                break;
+            }
+
+            err=solve_once(comm,solver,m,n,&resid);
+            if(err)
+            {
+                failed |= fail_case(comm,"profile-change-solve",
+                                    "GCRO-DR solve or true residual failed");
+                break;
+            }
+            lis_solver_get_gcrodr_recycle(
+                solver,&dim,&action,&quality,&qmin);
+            if(solver->recycle_alloc!=targets[step] ||
+               dim<=0 || dim>targets[step] ||
+               !solver->recycle_valid)
+            {
+                failed |= fail_case(comm,"profile-change-solve",
+                                    "recycle allocation did not match keep");
+                break;
+            }
+
+            lis_printf(comm,
+                "CASE profile-change-solve : PASS keep=%D alloc=%D dim=%D true_resid=%.3e\n",
+                targets[step],solver->recycle_alloc,dim,(double)resid);
+        }
     }
 
     /*

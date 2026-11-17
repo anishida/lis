@@ -3,7 +3,7 @@ AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)/include
 AM_FFLAGS = -I$(top_builddir) -I$(top_srcdir)/include
 AM_LDFLAGS = $(AMDEFS)
 
-EXTRA_DIST = defs test.sh testmat.mtx testmat2.mtx testmat3.mtx testmat4.mtx testmat0.mtx testvec0.mtx
+EXTRA_DIST = gen_ilutp_fullfill_case.py gen_stokes_saddle.py benchilutp_rhs_100.mtx defs test.sh testmat.mtx testmat2.mtx testmat3.mtx testmat4.mtx testmat0.mtx testvec0.mtx
 
 testdir = ${prefix}/share/examples/lis
 
@@ -24,15 +24,16 @@ test_PROGRAMS = testesubspaceretry etest1 etest2 etest3 etest4 etest5 etest5b et
         testparamupdate testbreakretry testchangingsystem testkrylovrobust testnearnullspace \
         testcoarsesetup testcoarseapply testgcrodroptions testgcrodrconfig testgcrodrsequence \
         testmatrixgeneration testexternalstorage testmatrixmaterialize testmatrixmaterializeomp testmatrixpolicysolve testfrozenilut benchfrozenilut testsplitview testsplitviewi64 testsplitviewreal64 testmatrixoperatorlifecycle testmatrixoperatormpi testsequence testwarmstart testrecovery \
-        testthreads testfgcrodr testmfamg testmfamggalerkin testexactnullspace testhalfconfig testhalfconvert \
+        testthreads testfgcrodr testfgcrodrmaxiter testfgcrodrintra testsnapshot testmfamg testmfamggalerkin testexactnullspace testhalfconfig testhalfconvert \
         testfeastfoundation testfeastcontour testfeastshifted testnullspacecandidates testesolverselection \
 	testprojectedeigen testprojectedhermitian testblockgram \
 	testblockorthogonal testblockrank
 
 # Keep optional session tests separate from the long test_PROGRAMS list.
-test_PROGRAMS += testmatrixautosession testvectorreal64 benchautojacobirefresh testabi testgesolvepair
+test_PROGRAMS += testmatrixautosession testvectorreal64 benchautojacobirefresh testabi testgesolvepair testrcoalloc testilutp testilutequil benchilutp benchilutpequil
 
 testabi_SOURCES = testabi.c
+testrcoalloc_SOURCES = testrcoalloc.c
 
 testgcrodroptions_SOURCES = testgcrodroptions.c
 testfeastfoundation_SOURCES = testfeastfoundation.c
@@ -49,6 +50,10 @@ testmatrixautosession_SOURCES = testmatrixautosession.c
 benchautojacobirefresh_SOURCES = benchautojacobirefresh.c
 testvectorreal64_SOURCES = testvectorreal64.c
 testfrozenilut_SOURCES = testfrozenilut.c
+testilutp_SOURCES = testilutp.c
+testilutequil_SOURCES = testilutequil.c
+benchilutpequil_SOURCES = benchilutpequil.c
+benchilutp_SOURCES = benchilutp.c
 benchfrozenilut_SOURCES = benchfrozenilut.c
 testsplitview_SOURCES = testsplitview.c
 testsplitviewi64_SOURCES = testsplitviewi64.c
@@ -124,6 +129,7 @@ testhalfdispatch_SOURCES = testhalfdispatch.c
 testhalfilukmemory_SOURCES = testhalfilukmemory.c
 testhalfiluksimd_SOURCES = testhalfiluksimd.c
 testhalfilut_SOURCES = testhalfilut.c
+testsnapshot_SOURCES = testsnapshot.c
 testmfamg_SOURCES = testmfamg.c
 testmfamggalerkin_SOURCES = testmfamggalerkin.c
 getestuser_SOURCES = getestuser.c
@@ -228,7 +234,7 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir) testdir=$(testdir) \
                     enable_saamg=$(enable_saamg) \
                     MPIRUN=$(MPIRUN) MPINP=$(MPINP)
 
-TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) testvectornrm2mpi$(EXEEXT) testoperatorrowprecon$(EXEEXT) testsolvercapabilities$(EXEEXT) \
+TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) testmatvecblock$(EXEEXT) testcapabilities$(EXEEXT) testvectornrm2mpi$(EXEEXT) testoperatorrowprecon$(EXEEXT) testsolvercapabilities$(EXEEXT) \
 	testsolveroptionreplace$(EXEEXT) testompelastic$(EXEEXT) \
 	testmatrixgraph$(EXEEXT) testcomponentnullspace$(EXEEXT) testnullspacelift$(EXEEXT) \
         testpreconlifecycle$(EXEEXT) testhybridnested$(EXEEXT) testjacobiuser$(EXEEXT) testpreconpsd$(EXEEXT) \
@@ -244,11 +250,13 @@ TESTS = test.sh testuserrow$(EXEEXT) testuserprecon$(EXEEXT) testmatvecblock$(EX
         testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testmatrixmaterialize$(EXEEXT) testmatrixpolicysolve$(EXEEXT) testfrozenilut$(EXEEXT) testsplitview$(EXEEXT) testsplitviewi64$(EXEEXT) testmatrixoperatorlifecycle$(EXEEXT) testsequence$(EXEEXT) \
         testmatrixgeneration$(EXEEXT) testexternalstorage$(EXEEXT) testmatrixmaterialize$(EXEEXT) testfrozenilut$(EXEEXT) testsplitview$(EXEEXT) testsplitviewi64$(EXEEXT) testmatrixoperatorlifecycle$(EXEEXT) testsequence$(EXEEXT) \
         testwarmstart$(EXEEXT) testrecovery$(EXEEXT) testthreads$(EXEEXT) \
-        testfgcrodr$(EXEEXT) testmfamg$(EXEEXT) testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
+        testfgcrodr$(EXEEXT) testfgcrodrmaxiter$(EXEEXT) testfgcrodrintra$(EXEEXT) testmfamg$(EXEEXT) testmfamggalerkin$(EXEEXT) testexactnullspace$(EXEEXT) \
         testhalfconfig$(EXEEXT) testhalfconvert$(EXEEXT) testnullspacecandidates$(EXEEXT) testesolverselection$(EXEEXT)
 
+TESTS += testilutp$(EXEEXT) testilutequil$(EXEEXT)
+
 # Explicitly run all new regression binaries under make check.
-TESTS += testmatrixautosession$(EXEEXT) testvectorreal64$(EXEEXT) testgesolvepair$(EXEEXT) testabi$(EXEEXT)
+TESTS += testmatrixautosession$(EXEEXT) testvectorreal64$(EXEEXT) testgesolvepair$(EXEEXT) testabi$(EXEEXT) testrcoalloc$(EXEEXT)
 
 if ENABLE_HALF_REAL_DOUBLE
 TESTS += testhalfstorage$(EXEEXT) testhalfprobe$(EXEEXT) testhalfdispatch$(EXEEXT) \
@@ -266,6 +274,16 @@ installcheck:
 
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
+testfgcrodrmaxiter_SOURCES = testfgcrodrmaxiter.c
+testfgcrodrintra_SOURCES = testfgcrodrintra.c
+test_PROGRAMS += testfgcrodrblocked
+testfgcrodrblocked_SOURCES = testfgcrodrblocked.c
+TESTS += testfgcrodrblocked$(EXEEXT)
+
+# Independent cross-operator FGCRO-DR TRANSPORT regression (from develop).
+test_PROGRAMS += testfgcrodrtransport
+testfgcrodrtransport_SOURCES = testfgcrodrtransport.c
+TESTS += testfgcrodrtransport$(EXEEXT)
 
 testgesolvepair_SOURCES = testgesolvepair.c
 
@@ -309,3 +327,49 @@ TESTS += test_krylov_modes$(EXEEXT) \
          test_krylov_residual_reuse$(EXEEXT) \
          test_krylov_both_ends$(EXEEXT) \
          test_krylov_be_lock_order$(EXEEXT)
+
+# BSR ILUC smoke test: built and executed by the native make check suite.
+test_PROGRAMS += testilucbsrsmoke
+testilucbsrsmoke_SOURCES = testilucbsrsmoke.c
+TESTS += testilucbsrsmoke$(EXEEXT)
+
+
+# Opt-in native OOM regressions; build and run against the actual LIS library.
+if ENABLE_OOM_TESTS
+check_PROGRAMS = testoomalloc testoomilu testoomdiag testoomiluc testoomsnapshot testoomrco
+TESTS += testoomalloc$(EXEEXT) testoomilu$(EXEEXT) testoomdiag$(EXEEXT) testoomiluc$(EXEEXT) testoomsnapshot$(EXEEXT) testoomrco$(EXEEXT)
+testoomalloc_SOURCES = testoomalloc.c
+testoomilu_SOURCES = testoomilu.c
+testoomdiag_SOURCES = testoomdiag.c
+testoomiluc_SOURCES = testoomiluc.c
+testoomsnapshot_SOURCES = testoomsnapshot.c
+testoomrco_SOURCES = testoomrco.c
+if ENABLE_MPI
+check_PROGRAMS += testoommpiscale
+TESTS += testoommpiscale$(EXEEXT)
+testoommpiscale_SOURCES = testoommpiscale.c
+endif
+endif
+
+# Standalone projected-residual normalization regression.
+test_PROGRAMS += testfgmresprojected
+testfgmresprojected_SOURCES = testfgmresprojected.c
+testfgmresprojected_LDADD = $(LDADD) -lm
+TESTS += testfgmresprojected$(EXEEXT)
+
+# Per-solver MFAMG V-cycle smoothing pass regression.
+test_PROGRAMS += testmfamgvcycle
+testmfamgvcycle_SOURCES = testmfamgvcycle.c
+testmfamgvcycle_LDADD = $(LDADD) -lm
+TESTS += testmfamgvcycle$(EXEEXT)
+
+# Opt-in first-level multivector MFAMG aggregation regression.
+test_PROGRAMS += testmfamgfineagg
+testmfamgfineagg_SOURCES = testmfamgfineagg.c
+testmfamgfineagg_LDADD = $(LDADD) -lm
+TESTS += testmfamgfineagg$(EXEEXT)
+
+# Opt-in serial MFAMG deep sibling aggregate grouping regression.
+test_PROGRAMS += testmfamgdeepmerge
+testmfamgdeepmerge_SOURCES = testmfamgdeepmerge.c
+TESTS += testmfamgdeepmerge$(EXEEXT)
