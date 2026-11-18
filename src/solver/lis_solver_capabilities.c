@@ -87,7 +87,10 @@ lis_solver_get_effective_capabilities(
         caps |= LIS_SOLVER_CAP_RECYCLING;
     }
 
-    if(precon_type==LIS_PRECON_TYPE_MFAMG)
+    /* MFAMG_ILUTP owns an MFAMG child and requires the same
+     * caller-supplied near-nullspace basis as standalone MFAMG. */
+    if(precon_type==LIS_PRECON_TYPE_MFAMG ||
+       precon_type==LIS_PRECON_TYPE_MFAMG_ILUTP)
     {
         caps |= LIS_SOLVER_CAP_NEAR_NULLSPACE;
     }

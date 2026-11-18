@@ -221,6 +221,7 @@ FCFLAGS = @FCFLAGS@
 FCLDFLAGS = @FCLDFLAGS@
 FFLAGS = @FFLAGS@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 FLIBS = @FLIBS@
 GREP = @GREP@
 INSTALL = @INSTALL@
@@ -376,7 +377,8 @@ LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) \
 
 
 # Included by lis_precon_mfamg.c; distribute with release archives.
-EXTRA_DIST = lis_mfamg_star_schur.inc lis_precon_ilutp.inc
+EXTRA_DIST = lis_mfamg_star_schur.inc lis_precon_ilutp.inc \
+	lis_camfamg_composite_core.c
 all: all-am
 
 .SUFFIXES:

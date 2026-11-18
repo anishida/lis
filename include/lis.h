@@ -1132,6 +1132,12 @@ struct LIS_SOLVER_STRUCT
 	/* Opt-in two-sided row/column equilibration for ILUT and ILUTP. */
 	LIS_INT ilut_equil;
 	LIS_INT sequence_precon_ilut_equil;
+
+	/* Opt-in CA-MFAMG: solver-owned local DOF partition labels. */
+	LIS_INT mfamg_contact_aware;
+	LIS_INT *mfamg_contact_partition;
+	LIS_INT mfamg_contact_partition_n;
+	LIS_INT sequence_precon_mfamg_contact_aware;
 };
 typedef struct LIS_SOLVER_STRUCT *LIS_SOLVER;
 
@@ -1549,6 +1555,9 @@ extern LIS_INT lis_vector_export_real64_tolerant(
 	extern LIS_INT lis_solver_get_rhs_compatibility_tolerance(
 	    LIS_SOLVER solver, LIS_REAL *tolerance);
 	extern LIS_INT lis_solver_set_near_nullspace(LIS_SOLVER solver, LIS_INT nvec, LIS_VECTOR vectors[]);
+	/* Equal labels may aggregate; differing labels define contact boundaries. */
+	extern LIS_INT lis_solver_set_mfamg_contact_partition(LIS_SOLVER solver,
+		LIS_INT nlocal, const LIS_INT *partition);
 	extern LIS_INT lis_solver_clear_near_nullspace(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_gcrodr_recycle(
 		LIS_SOLVER solver, LIS_INT dim,

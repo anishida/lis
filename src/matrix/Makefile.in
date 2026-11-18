@@ -106,7 +106,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libmatrix_la_LIBADD =
-am_libmatrix_la_OBJECTS = lis_matrix.lo lis_matrix_split_view.lo \
+am_libmatrix_la_OBJECTS = lis_matrix.lo lis_condense_core.lo \
+	lis_condense_lis.lo lis_matrix_split_view.lo \
 	lis_matrix_materialize.lo lis_matrix_operator.lo \
 	lis_matrix_split_view_i64.lo lis_matrix_bsc.lo \
 	lis_matrix_bsr.lo lis_matrix_csc.lo lis_matrix_coo.lo \
@@ -135,7 +136,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/include
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/lis_matrix.Plo \
+am__depfiles_remade = ./$(DEPDIR)/lis_condense_core.Plo \
+	./$(DEPDIR)/lis_condense_lis.Plo ./$(DEPDIR)/lis_matrix.Plo \
 	./$(DEPDIR)/lis_matrix_bsc.Plo ./$(DEPDIR)/lis_matrix_bsr.Plo \
 	./$(DEPDIR)/lis_matrix_coo.Plo ./$(DEPDIR)/lis_matrix_csc.Plo \
 	./$(DEPDIR)/lis_matrix_csr.Plo ./$(DEPDIR)/lis_matrix_dia.Plo \
@@ -224,6 +226,7 @@ FCFLAGS = @FCFLAGS@
 FCLDFLAGS = @FCLDFLAGS@
 FFLAGS = @FFLAGS@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 FLIBS = @FLIBS@
 GREP = @GREP@
 INSTALL = @INSTALL@
@@ -346,6 +349,8 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LTLIBRARIES = libmatrix.la
 libmatrix_la_SOURCES = lis_matrix.c \
+lis_condense_core.c \
+lis_condense_lis.c \
 lis_matrix_split_view.c \
 lis_matrix_materialize.c \
 lis_matrix_operator.c \
@@ -436,6 +441,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_condense_core.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_condense_lis.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_matrix.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_matrix_bsc.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_matrix_bsr.Plo@am__quote@ # am--include-marker
@@ -618,6 +625,8 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
+	-rm -f ./$(DEPDIR)/lis_condense_core.Plo
+	-rm -f ./$(DEPDIR)/lis_condense_lis.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix_bsc.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix_bsr.Plo
@@ -685,6 +694,8 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
+	-rm -f ./$(DEPDIR)/lis_condense_core.Plo
+	-rm -f ./$(DEPDIR)/lis_condense_lis.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix_bsc.Plo
 	-rm -f ./$(DEPDIR)/lis_matrix_bsr.Plo

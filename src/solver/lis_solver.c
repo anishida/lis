@@ -311,6 +311,10 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->mfamg_fine_agg_factor = 0;
 	solver->mfamg_vcycle_smooth_steps = 1;
 	solver->mfamg_deep_sibling_merge = 0;
+	solver->mfamg_contact_aware = 0;
+	solver->mfamg_contact_partition = NULL;
+	solver->mfamg_contact_partition_n = 0;
+	solver->sequence_precon_mfamg_contact_aware = 0;
 	solver->near_nullspace_coarse = NULL;
 	solver->recycle_u = NULL;
 	solver->recycle_zu = NULL;
@@ -2188,6 +2192,48 @@ LIS_INT lis_solver_set_near_nullspace(
 }
 
 
+/* Store partition labels by value, not by caller reference. Replacing labels
+ * invalidates a retained hierarchy even when the matrix is unchanged. */
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_mfamg_contact_partition"
+LIS_INT lis_solver_set_mfamg_contact_partition(
+	LIS_SOLVER solver, LIS_INT nlocal, const LIS_INT *partition)
+{
+	LIS_INT *copy = NULL;
+	LIS_INT err;
+	size_t bytes;
+
+	if(solver==NULL || nlocal<0 ||
+	   (nlocal>0 && partition==NULL) ||
+	   (nlocal==0 && partition!=NULL))
+		return LIS_ERR_ILL_ARG;
+	if((size_t)nlocal > ((size_t)-1)/sizeof(LIS_INT))
+		return LIS_OUT_OF_MEMORY;
+	bytes = (size_t)nlocal*sizeof(LIS_INT);
+	if(nlocal>0)
+	{
+		copy = (LIS_INT *)lis_malloc(bytes,
+			"lis_solver_set_mfamg_contact_partition::copy");
+		if(copy==NULL)
+		{
+			LIS_SETERR_MEM(bytes);
+			return LIS_OUT_OF_MEMORY;
+		}
+		memcpy(copy,partition,bytes);
+	}
+	err = lis_solver_reset_sequence(solver);
+	if(err)
+	{
+		if(copy!=NULL) lis_free(copy);
+		return err;
+	}
+	if(solver->mfamg_contact_partition!=NULL)
+		lis_free(solver->mfamg_contact_partition);
+	solver->mfamg_contact_partition = copy;
+	solver->mfamg_contact_partition_n = nlocal;
+	return LIS_SUCCESS;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_solver_destroy"
 LIS_INT lis_solver_destroy(LIS_SOLVER solver)
@@ -2203,6 +2249,8 @@ LIS_INT lis_solver_destroy(LIS_SOLVER solver)
 		lis_solver_clear_nullspace(solver);
 		lis_solver_clear_left_nullspace(solver);
 	lis_solver_clear_near_nullspace(solver);
+		if(solver->mfamg_contact_partition)
+			lis_free(solver->mfamg_contact_partition);
 		lis_vector_destroy(solver->d);
 		if( solver->Ah ) lis_matrix_destroy(solver->Ah);
 		if( solver->rhistory ) lis_free(solver->rhistory);
@@ -2658,6 +2706,10 @@ static LIS_INT lis_solver_sequence_precon_config_matches(
 	   solver->sequence_precon_ilut_schur!=solver->ilut_schur)
 		return LIS_FALSE;
 
+	if(solver->sequence_precon_mfamg_contact_aware!=
+	   solver->mfamg_contact_aware)
+		return LIS_FALSE;
+
 	if( solver->sequence_precon_half_mode!=
 		solver->precon_half_mode )
 	{
@@ -2680,6 +2732,8 @@ static void lis_solver_sequence_precon_snapshot(
 		solver->params,
 		sizeof(solver->params));
 
+	solver->sequence_precon_mfamg_contact_aware =
+		solver->mfamg_contact_aware;
 	solver->sequence_precon_half_mode =
 		solver->precon_half_mode;
 	solver->sequence_precon_ilut_rcm = solver->ilut_rcm;
@@ -5356,6 +5410,26 @@ LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 
 	LIS_DEBUG_FUNC_IN;
 
+	if( strcmp(arg1,"-mfamg_contact_aware")==0 )
+	{
+		LIS_INT enabled;
+		char extra;
+#ifdef _LONG__LONG
+		if(arg2==NULL || sscanf(arg2,"%lld %c",&enabled,&extra)!=1 ||
+		   (enabled!=0 && enabled!=1))
+#else
+		if(arg2==NULL || sscanf(arg2,"%d %c",&enabled,&extra)!=1 ||
+		   (enabled!=0 && enabled!=1))
+#endif
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,
+				"-mfamg_contact_aware must be 0 or 1\n");
+			return LIS_ERR_ILL_ARG;
+		}
+		solver->mfamg_contact_aware = enabled;
+		return LIS_SUCCESS;
+	}
+
 	if( strcmp(arg1,"-mfamg_fine_agg_factor")==0 )
 	{
 		LIS_INT factor;
@@ -5871,6 +5945,14 @@ LIS_INT lis_solver_set_option_precon(char *argv, LIS_SOLVER solver)
 		sscanf(argv, "%d", &solver->options[LIS_OPTIONS_PRECON]);
 #endif
 		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
+
+	/* Alias: separate opt-in name, canonical MFAMG implementation. */
+	if(strcmp(argv,"ca-mfamg")==0)
+	{
+		solver->options[LIS_OPTIONS_PRECON] = LIS_PRECON_TYPE_MFAMG;
+		solver->mfamg_contact_aware = 1;
 		return LIS_SUCCESS;
 	}
 

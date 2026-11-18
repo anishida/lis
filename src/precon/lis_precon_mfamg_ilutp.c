@@ -56,6 +56,8 @@ lis_precon_destroy_mfamg_ilutp(LIS_PRECON precon)
     return LIS_SUCCESS;
 }
 
+#undef __FUNC__
+#define __FUNC__ "lis_mfamg_ilutp_create_child"
 static LIS_INT
 lis_mfamg_ilutp_create_child(LIS_SOLVER outer, LIS_INT kind,
                               LIS_SOLVER *created)
@@ -90,6 +92,27 @@ lis_mfamg_ilutp_create_child(LIS_SOLVER outer, LIS_INT kind,
                                          outer->near_nullspace_dim,
                                          outer->near_nullspace);
         if(err) goto fail;
+
+        /* CA-MFAMG is a property of the MFAMG child, not the ILUTP child.
+         * Keep partition metadata intact when composing the two native
+         * preconditioners. The setter owns a private copy of the labels.
+         * Never guess labels from node numbers, fixed DOF counts or matrices. */
+        if(outer->mfamg_contact_aware)
+        {
+            if(outer->mfamg_contact_partition==NULL ||
+               outer->mfamg_contact_partition_n!=outer->A->n)
+            {
+                LIS_SETERR(LIS_ERR_ILL_ARG,
+                           "CA-MFAMG_ILUTP requires partition labels for every local DOF\n");
+                err=LIS_ERR_ILL_ARG;
+                goto fail;
+            }
+            child->mfamg_contact_aware=1;
+            err=lis_solver_set_mfamg_contact_partition(
+                child,outer->mfamg_contact_partition_n,
+                outer->mfamg_contact_partition);
+            if(err) goto fail;
+        }
     }
     else
     {
@@ -107,6 +130,10 @@ lis_mfamg_ilutp_create_child(LIS_SOLVER outer, LIS_INT kind,
         child->ilut_ras_domains=outer->ilut_ras_domains;
         child->ilut_schur=0;
     }
+
+    /* Metadata setters invalidate retained sequence state, including A.
+     * Restore the borrowed operator only after all child setters finish. */
+    child->A=outer->A;
 
     err=lis_precon_create(child,&child->precon);
     if(err)

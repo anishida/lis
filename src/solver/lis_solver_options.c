@@ -96,6 +96,7 @@ lis_solver_set_option_replace(
     solver->mfamg_fine_agg_factor = fresh->mfamg_fine_agg_factor;
     solver->mfamg_vcycle_smooth_steps = fresh->mfamg_vcycle_smooth_steps;
     solver->mfamg_deep_sibling_merge = fresh->mfamg_deep_sibling_merge;
+    solver->mfamg_contact_aware = fresh->mfamg_contact_aware;
     solver->ilut_rcm = fresh->ilut_rcm;
     solver->ilut_row_scale = fresh->ilut_row_scale;
     solver->ilutp_enabled = fresh->ilutp_enabled;
@@ -209,6 +210,8 @@ lis_solver_set_option_replace_if_changed(
     if(!different && solver->mfamg_vcycle_smooth_steps!=fresh->mfamg_vcycle_smooth_steps)
         different = LIS_TRUE;
     if(!different && solver->mfamg_deep_sibling_merge!=fresh->mfamg_deep_sibling_merge)
+        different = LIS_TRUE;
+    if(!different && solver->mfamg_contact_aware!=fresh->mfamg_contact_aware)
         different = LIS_TRUE;
     if(!different && (solver->ilut_rcm!=fresh->ilut_rcm ||
                       solver->ilut_row_scale!=fresh->ilut_row_scale ||

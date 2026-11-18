@@ -21,3 +21,6 @@ EXTRA_DIST = lis_config_win.h \
 	lis_vector.h \
 	lislib.h \
 	mt19937ar.h
+
+nobase_include_HEADERS += lis_condense_core.h lis_condense_lis.h
+EXTRA_DIST += lis_camfamg_composite_core.h

@@ -207,6 +207,7 @@ FCFLAGS = @FCFLAGS@
 FCLDFLAGS = @FCLDFLAGS@
 FFLAGS = @FFLAGS@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 FLIBS = @FLIBS@
 GREP = @GREP@
 INSTALL = @INSTALL@
@@ -333,22 +334,11 @@ nobase_include_HEADERS = lis_config.h lis.h lisf.h lis_abi.h \
 	lis_solver_capabilities.h lis_solver_options.h \
 	lis_omp_capacity.h lis_matrix_graph.h lis_matrix_split_view.h \
 	lis_matrix_materialize.h lis_matrix_operator.h lis_snapshot.h \
-	lis_krylov.h
-EXTRA_DIST = lis_config_win.h \
-	lis_esolver.h \
-	lis_fortran.h \
-	lis_io.h \
-	lis_matrix.h \
-	lis_matvec.h \
-	lis_mpi.h \
-	lis_precision.h \
-	lis_precon.h \
-	lis_solver.h \
-	lis_system.h \
-	lis_vector.h \
-	lislib.h \
-	mt19937ar.h
-
+	lis_krylov.h lis_condense_core.h lis_condense_lis.h
+EXTRA_DIST = lis_config_win.h lis_esolver.h lis_fortran.h lis_io.h \
+	lis_matrix.h lis_matvec.h lis_mpi.h lis_precision.h \
+	lis_precon.h lis_solver.h lis_system.h lis_vector.h lislib.h \
+	mt19937ar.h lis_camfamg_composite_core.h
 all: lis_config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
