@@ -844,18 +844,18 @@ done:
  * Exercise the opt-in sparse terminal without an O(n^2) coarse factor,
  * and verify deterministic finite corrections under OpenMP.
  */
-static int mfamg_sparse_terminal_regression(void)
+static int mfamg_sparse_terminal_regression(LIS_REAL diagonal)
 {
     enum { CHAIN=16, BLOCKS=36, MODES=12, NTEST=CHAIN*BLOCKS };
     LIS_MATRIX A=NULL;
     LIS_VECTOR near[MODES]={NULL}, b=NULL, x=NULL, Ax=NULL;
     LIS_SOLVER solver=NULL;
     LIS_PRECON pc=NULL;
-    LIS_SCALAR *reference=NULL;
-    LIS_REAL normb,normr,diff;
+    LIS_SCALAR *reference=NULL, *baseline8=NULL;
+    LIS_REAL normb,normr,diff,relative8=0.0;
     LIS_INT i,m,err=0,nlevels=0,coarse_n=0;
     LIS_INT sizes[MAX_LEVELS],owned[MAX_LEVELS];
-    int run,repeat,failed=1;
+    int run,repeat,failed=1,pass_case;
     const char *stage="setup";
 #ifdef _OPENMP
     const int threads[2]={1,8};
@@ -872,7 +872,8 @@ static int mfamg_sparse_terminal_regression(void)
     if(setenv("LIS_MFAMG_SPARSE_TERMINAL","1",1)!=0) goto done;
 #endif
     reference=(LIS_SCALAR *)malloc((size_t)NTEST*sizeof(LIS_SCALAR));
-    if(reference==NULL) goto done;
+    baseline8=(LIS_SCALAR *)malloc((size_t)NTEST*sizeof(LIS_SCALAR));
+    if(reference==NULL || baseline8==NULL) goto done;
     err=lis_matrix_create(LIS_COMM_WORLD,&A);
     if(err) goto done;
     err=lis_matrix_set_size(A,0,NTEST);
@@ -880,7 +881,7 @@ static int mfamg_sparse_terminal_regression(void)
     if(A->nprocs!=1) {failed=0;goto done;}
     for(i=0;i<NTEST;i++)
     {
-        err=lis_matrix_set_value(LIS_INS_VALUE,i,i,(LIS_SCALAR)4.0,A);
+        err=lis_matrix_set_value(LIS_INS_VALUE,i,i,(LIS_SCALAR)diagonal,A);
         if(err) goto done;
         if(i%CHAIN>0)
         {
@@ -914,6 +915,19 @@ static int mfamg_sparse_terminal_regression(void)
                 (LIS_SCALAR)((i%CHAIN)==m ? 1.0 : 0.0);
     }
 
+    /* The unset environment must be bitwise compatible with 8 passes.
+     * 16 passes are opt-in and should improve this manufactured SPD case.
+     * Compare repeated applications across serial and OpenMP workers. */
+    for(pass_case=0;pass_case<2;pass_case++)
+    {
+#ifdef _WIN32
+        if(_putenv_s("LIS_MFAMG_SPARSE_TERMINAL_PASSES",
+                     pass_case ? "16" : "")!=0) goto done;
+#else
+        if(pass_case ?
+           setenv("LIS_MFAMG_SPARSE_TERMINAL_PASSES","16",1) :
+           unsetenv("LIS_MFAMG_SPARSE_TERMINAL_PASSES")) goto done;
+#endif
     for(run=0;run<2;run++)
     {
 #ifdef _OPENMP
@@ -976,14 +990,35 @@ static int mfamg_sparse_terminal_regression(void)
                 goto done;
             }
             if(run==0 && repeat==0)
+            {
                 memcpy(reference,x->value,
                        (size_t)NTEST*sizeof(LIS_SCALAR));
+                if(pass_case==0)
+                {
+                    memcpy(baseline8,x->value,
+                           (size_t)NTEST*sizeof(LIS_SCALAR));
+                    relative8=normr/normb;
+                }
+                else if(memcmp(baseline8,x->value,
+                               (size_t)NTEST*sizeof(LIS_SCALAR))==0 ||
+                        normr/normb >= relative8 *
+                           (diagonal<3.0 ? (LIS_REAL)0.99 : (LIS_REAL)1.0))
+                {
+                    fprintf(stderr,
+                        "MFAMG_SPARSE_TERMINAL_PASSES insufficient improvement "
+                        "diagonal=%.3f 8pass=%.9e 16pass=%.9e\n",
+                        (double)diagonal,(double)relative8,
+                        (double)(normr/normb));
+                    goto done;
+                }
+            }
             else if(memcmp(reference,x->value,
                            (size_t)NTEST*sizeof(LIS_SCALAR))!=0)
             {
                 fprintf(stderr,
                     "MFAMG_SPARSE_TERMINAL correction differs "
-                    "run=%d repeat=%d\n",run,repeat);
+                    "passes=%d run=%d repeat=%d\n",
+                    pass_case ? 16 : 8,run,repeat);
                 goto done;
             }
         }
@@ -991,6 +1026,51 @@ static int mfamg_sparse_terminal_regression(void)
         lis_precon_destroy(pc);pc=NULL;
         lis_solver_destroy(solver);solver=NULL;
     }
+        printf("MFAMG_SPARSE_TERMINAL_PASSES passes=%d diagonal=%.3f "
+               "relative_defect=%.9e PASS\n",
+               pass_case ? 16 : 8,(double)diagonal,(double)(normr/normb));
+    }
+    if(diagonal<3.0)
+        printf("MFAMG_SPARSE_TERMINAL_SLOW diagonal=%.3f "
+               "relative_improvement=%.6f PASS\n",
+               (double)diagonal,
+               (double)(1.0-(normr/normb)/relative8));
+    /* Reject invalid work budgets rather than silently ignoring typos. */
+    for(pass_case=0;pass_case<5;pass_case++)
+    {
+        const char *invalid[5]={"0","33","invalid","16abc","-1"};
+#ifdef _WIN32
+        if(_putenv_s("LIS_MFAMG_SPARSE_TERMINAL_PASSES",
+                     invalid[pass_case])!=0) goto done;
+#else
+        if(setenv("LIS_MFAMG_SPARSE_TERMINAL_PASSES",
+                  invalid[pass_case],1)!=0) goto done;
+#endif
+        stage="invalid-pass-solver-create";
+        err=lis_solver_create(&solver);
+        if(err) goto done;
+        err=lis_solver_set_option(
+            "-i fgmres -p mfamg -scale none -print none "
+            "-mfamg_block_size 4 -mfamg_fine_agg_factor 2",solver);
+        if(err) goto done;
+        err=lis_solver_set_near_nullspace(solver,MODES,near);
+        if(err) goto done;
+        err=lis_solver_set_matrix(A,solver);
+        if(err) goto done;
+        stage="invalid-pass-preconditioner";
+        err=lis_precon_create(solver,&pc);
+        if(err!=LIS_ERR_ILL_ARG)
+        {
+            fprintf(stderr,
+                "MFAMG_SPARSE_TERMINAL invalid passes=%s got rc=%d\n",
+                invalid[pass_case],(int)err);
+            goto done;
+        }
+        pc=NULL; /* Failed factory already destroys the partial preconditioner. */
+        lis_solver_destroy(solver);solver=NULL;
+        err=LIS_SUCCESS;
+    }
+    puts("MFAMG_SPARSE_TERMINAL_PASSES invalid range PASS");
     puts("MFAMG_SPARSE_TERMINAL stalled multivector hierarchy PASS");
     failed=0;
 done:
@@ -1007,9 +1087,12 @@ done:
         if(near[m]) lis_vector_destroy(near[m]);
     if(A) lis_matrix_destroy(A);
     free(reference);
+    free(baseline8);
 #ifdef _WIN32
+    (void)_putenv_s("LIS_MFAMG_SPARSE_TERMINAL_PASSES","");
     (void)_putenv_s("LIS_MFAMG_SPARSE_TERMINAL","");
 #else
+    (void)unsetenv("LIS_MFAMG_SPARSE_TERMINAL_PASSES");
     (void)unsetenv("LIS_MFAMG_SPARSE_TERMINAL");
 #endif
     (void)mfamg_force_omp_test_threshold("16384");
@@ -1041,7 +1124,8 @@ int main(int argc,char **argv)
         failed=mfamg_omp_stress();
         if(!failed) failed=mfamg_omp_block_edges();
         if(!failed) failed=mfamg_omp_multivector();
-        if(!failed) failed=mfamg_sparse_terminal_regression();
+        if(!failed) failed=mfamg_sparse_terminal_regression((LIS_REAL)4.0);
+        if(!failed) failed=mfamg_sparse_terminal_regression((LIS_REAL)2.25);
         lis_finalize();
         return failed ? 1 : 0;
     }
@@ -1119,7 +1203,8 @@ int main(int argc,char **argv)
        mfamg_omp_multivector()!=0)
         failed=1;
 #endif
-    if(!failed && mfamg_sparse_terminal_regression()!=0)
+    if(!failed && (mfamg_sparse_terminal_regression((LIS_REAL)4.0)!=0 ||
+                   mfamg_sparse_terminal_regression((LIS_REAL)2.25)!=0))
         failed=1;
 done:
     if(err) fprintf(stderr,"MFAMG VCYCLE setup rc=%d\n",(int)err);
