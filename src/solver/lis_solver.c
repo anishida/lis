@@ -4185,6 +4185,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	double p_c_time, p_i_time,itime;
 	LIS_REAL nrm2,tol,tol_w;
 	LIS_VECTOR t;
+	LIS_INT residual_err;
 	LIS_VECTOR bb,shell_b;
 	LIS_MATRIX AA,B,shell_A;
 	LIS_MATRIX Ah;
@@ -5024,18 +5025,21 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	solver->p_i_time = p_i_time;
 	solver->time  = solver->ptime + itime;
 	solver->itime = itime;
-	lis_vector_duplicate(A,&t);
+	/* Residual certification must not read an uninitialized vector when
+	 * a USER/OPERATOR matvec callback fails (nor after an OOM).
+	 * Solver status is reported through solver->retcode as before. */
+	t = NULL;
+	residual_err = lis_vector_duplicate(A,&t);
 	xx->precision = LIS_PRECISION_DEFAULT;
-	if( shell_scale )
+	if( residual_err==LIS_SUCCESS )
 	{
-	        lis_matvec(A,x,t);
+		residual_err = shell_scale
+		    ? lis_matvec(A,x,t)
+		    : lis_matvec(A,xx,t);
 	}
-	else
-	{
-	        lis_matvec(A,xx,t);
-	}
-	lis_vector_xpay(b,-1.0,t);
-	if( !shell_scale &&
+	if( residual_err==LIS_SUCCESS )
+		residual_err = lis_vector_xpay(b,-1.0,t);
+	if( residual_err==LIS_SUCCESS && !shell_scale &&
 	    scale==LIS_SCALE_SYMM_DIAG &&
 	    precon_type!=LIS_PRECON_TYPE_IS )
 	{
@@ -5056,6 +5060,8 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
     if(
         err==LIS_SUCCESS
         &&
+        residual_err==LIS_SUCCESS
+        &&
         solver->nullspace_dim>0)
     {
         err =
@@ -5069,8 +5075,16 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
         }
     }
 
-	/* Validate a successful recursive solve against the true residual. */
-	lis_solver_get_residual[conv_cond](t,solver,&nrm2);
+	/* A callback or allocation failure is never certified as convergence. */
+	if( residual_err==LIS_SUCCESS )
+	{
+		residual_err = lis_solver_get_residual[conv_cond](t,solver,&nrm2);
+	}
+	if( residual_err!=LIS_SUCCESS )
+	{
+		if( err==LIS_SUCCESS ) err=residual_err;
+		solver->retcode = err;
+	}
 
 	if( !solver->setup && err==LIS_SUCCESS )
 	{

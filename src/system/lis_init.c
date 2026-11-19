@@ -40,6 +40,8 @@
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
+#include <limits.h>
+#include <stdint.h>
 #ifdef USE_SSE2
 	#include <emmintrin.h>
 #endif
@@ -122,7 +124,7 @@ void lis_version(void)
 LIS_INT lis_initialize(int* argc, char** argv[])
 {
 	LIS_ARGS p;
-	LIS_INT	i,nprocs;
+	LIS_INT	i,nprocs,err;
 
 	LIS_DEBUG_FUNC_IN;
 
@@ -146,7 +148,8 @@ LIS_INT lis_initialize(int* argc, char** argv[])
 		nprocs = omp_get_max_threads();
 	#endif
 
-	lis_arg2args(*argc,*argv,&cmd_args);
+	err = lis_arg2args(*argc,*argv,&cmd_args);
+	if(err) return err;
 	p = cmd_args->next;
 	while( p!=cmd_args )
 	{
@@ -170,7 +173,17 @@ LIS_INT lis_initialize(int* argc, char** argv[])
 	}
 
 	#ifdef _OPENMP
-		omp_set_num_threads(nprocs);
+        if(nprocs<1 || (size_t)nprocs>INT_MAX ||
+           (size_t)nprocs>
+              SIZE_MAX/((size_t)LIS_VEC_TMP_PADD*sizeof(LIS_SCALAR)))
+        {
+            lis_args_free(cmd_args);
+            cmd_args=NULL;
+            LIS_SETERR(LIS_ERR_ILL_ARG,
+                       "OpenMP thread count is invalid or overflows scratch size");
+            return LIS_ERR_ILL_ARG;
+        }
+		omp_set_num_threads((int)nprocs);
 		lis_omp_thread_capacity = nprocs;
 		/*
 		 * lis_vec_tms is declared and indexed as LIS_SCALAR*.  Extended
@@ -178,10 +191,12 @@ LIS_INT lis_initialize(int* argc, char** argv[])
 		 * they do not treat this storage as an array of LIS_QUAD objects.
 		 * Size the allocation by its actual element type.
 		 */
-		lis_vec_tmp = (LIS_SCALAR *)lis_malloc( nprocs*LIS_VEC_TMP_PADD*sizeof(LIS_SCALAR),"lis_initialize::lis_vec_tmp" );
+		lis_vec_tmp = (LIS_SCALAR *)lis_malloc(
+            (size_t)nprocs*(size_t)LIS_VEC_TMP_PADD*sizeof(LIS_SCALAR),
+            "lis_initialize::lis_vec_tmp" );
 		if( lis_vec_tmp==NULL )
 		{
-			LIS_SETERR_MEM(nprocs*LIS_VEC_TMP_PADD*sizeof(LIS_SCALAR));
+			LIS_SETERR_MEM((size_t)nprocs*(size_t)LIS_VEC_TMP_PADD*sizeof(LIS_SCALAR));
 			return LIS_ERR_OUT_OF_MEMORY;
 		}
 	#endif
@@ -349,60 +364,85 @@ oom:
 #define __FUNC__ "lis_arg2args"
 LIS_INT lis_arg2args(LIS_INT argc, char *argv[], LIS_ARGS *args)
 {
-	char *p;
-	LIS_INT i,k1,k2;
-	LIS_ARGS arg_top,arg;
+    char *p;
+    LIS_INT i,k1,k2;
+    LIS_ARGS arg_top=NULL,arg=NULL;
 
-	LIS_DEBUG_FUNC_IN;
+    LIS_DEBUG_FUNC_IN;
+    if(args==NULL || argc<0 || (argc>0 && argv==NULL))
+        return LIS_ERR_ILL_ARG;
+    *args=NULL;
 
-	arg_top = (LIS_ARGS)lis_malloc(sizeof(struct LIS_ARGS_STRUCT),"lis_arg2args::arg_top");
-	arg_top->next = arg_top;
-	arg_top->prev = arg_top;
-	arg_top->arg1 = NULL;
-	arg_top->arg2 = NULL;
+    arg_top=(LIS_ARGS)lis_malloc(sizeof(struct LIS_ARGS_STRUCT),
+                                "lis_arg2args::arg_top");
+    if(arg_top==NULL) return LIS_OUT_OF_MEMORY;
+    arg_top->next=arg_top;
+    arg_top->prev=arg_top;
+    arg_top->arg1=NULL;
+    arg_top->arg2=NULL;
 
-	i = 1;
-	while( i<argc )
-	{
-		if( argv[i][0]=='-' && (i+1)<argc )
-		{
-			k1              = (LIS_INT)strlen(argv[i]);
-			k2              = (LIS_INT)strlen(argv[i+1]);
-			arg             = (LIS_ARGS)lis_malloc(sizeof(struct LIS_ARGS_STRUCT),"lis_arg2args::arg");
-			arg->arg1       = (char *)lis_malloc((k1+1)*sizeof(char),"lis_arg2args::arg->arg1");
-			arg->arg2       = (char *)lis_malloc((k2+1)*sizeof(char),"lis_arg2args::arg->arg2");
-			arg->next       = arg_top;
-			arg->prev       = arg_top->prev;
-			arg->prev->next = arg;
-			arg->next->prev = arg;
-			strcpy(arg->arg1,argv[i]);
-			strcpy(arg->arg2,argv[i+1]);
-			p = arg->arg1;
-			while( *p!='\0' )
-			{
-				*p = (char)tolower(*p);
-				p++;
-			}
-			p = arg->arg2;
-			while( *p!='\0' )
-			{
-				*p = (char)tolower(*p);
-				p++;
-			}
-			i += 2;
-		}
-		else
-		{
-			i++;
-		}
-	}
+    i=1;
+    while(i<argc)
+    {
+        if(argv[i]!=NULL && argv[i][0]=='-' &&
+           (i+1)<argc && argv[i+1]!=NULL)
+        {
+            size_t len1=strlen(argv[i]),len2=strlen(argv[i+1]);
+            if(len1>(sizeof(LIS_INT)<=sizeof(int) ? (size_t)INT_MAX : (size_t)LLONG_MAX) ||
+               len2>(sizeof(LIS_INT)<=sizeof(int) ? (size_t)INT_MAX : (size_t)LLONG_MAX))
+                goto invalid;
+            k1=(LIS_INT)len1;
+            k2=(LIS_INT)len2;
+            arg=(LIS_ARGS)lis_malloc(sizeof(struct LIS_ARGS_STRUCT),
+                                     "lis_arg2args::arg");
+            if(arg==NULL) goto oom;
+            arg->arg1=NULL;
+            arg->arg2=NULL;
+            arg->arg1=(char *)lis_malloc((size_t)k1+1,
+                                        "lis_arg2args::arg->arg1");
+            if(arg->arg1==NULL) goto oom;
+            arg->arg2=(char *)lis_malloc((size_t)k2+1,
+                                        "lis_arg2args::arg->arg2");
+            if(arg->arg2==NULL) goto oom;
+            memcpy(arg->arg1,argv[i],(size_t)k1+1);
+            memcpy(arg->arg2,argv[i+1],(size_t)k2+1);
+            arg->next=arg_top;
+            arg->prev=arg_top->prev;
+            arg->prev->next=arg;
+            arg->next->prev=arg;
+            for(p=arg->arg1;*p!='\0';p++)
+                *p=(char)tolower((unsigned char)*p);
+            for(p=arg->arg2;*p!='\0';p++)
+                *p=(char)tolower((unsigned char)*p);
+            arg=NULL;
+            i+=2;
+        }
+        else i++;
+    }
+    *args=arg_top;
+    LIS_DEBUG_FUNC_OUT;
+    return LIS_SUCCESS;
 
-	*args = arg_top;
-	
-	LIS_DEBUG_FUNC_OUT;
-	return LIS_SUCCESS;
+invalid:
+    if(arg)
+    {
+        lis_free(arg->arg2);
+        lis_free(arg->arg1);
+        lis_free(arg);
+    }
+    lis_args_free(arg_top);
+    return LIS_ERR_ILL_ARG;
+
+oom:
+    if(arg)
+    {
+        lis_free(arg->arg2);
+        lis_free(arg->arg1);
+        lis_free(arg);
+    }
+    lis_args_free(arg_top);
+    return LIS_OUT_OF_MEMORY;
 }
-
 
 #undef __FUNC__
 #define __FUNC__ "lis_args_free"

@@ -899,7 +899,7 @@ LIS_INT lis_matrix_scale_symm_bsr(LIS_MATRIX A, LIS_SCALAR d[])
 	if( A->is_splited )
 	{
 		#ifdef _OPENMP
-		#pragma omp parallel for private(bi,bj,i,j)
+		#pragma omp parallel for private(bi,bj,bjj,i,j)
 		#endif
 		for(bi=0;bi<nr;bi++)
 		{
@@ -929,7 +929,7 @@ LIS_INT lis_matrix_scale_symm_bsr(LIS_MATRIX A, LIS_SCALAR d[])
 			{
 				for(i=0;i<bnr;i++)
 				{
-					A->D->value[bi*bs+j*bnr+i] *= d[bi*bnr+i]*d[bi*bnr+i];
+					A->D->value[bi*bs+j*bnr+i] *= d[bi*bnr+i]*d[bi*bnc+j];
 				}
 			}
 		}
@@ -976,7 +976,7 @@ LIS_INT lis_matrix_bscale_bsr(LIS_MATRIX A, LIS_MATRIX_DIAG D)
 	if( bnr==1 )
 	{
 		#ifdef _OPENMP
-		#pragma omp parallel for private(bi,bj)
+		#pragma omp parallel for private(bi,bj,b)
 		#endif
 		for(bi=0;bi<nr;bi++)
 		{
@@ -994,7 +994,7 @@ LIS_INT lis_matrix_bscale_bsr(LIS_MATRIX A, LIS_MATRIX_DIAG D)
 	else if( bnr==2 )
 	{
 		#ifdef _OPENMP
-		#pragma omp parallel for private(bi,bj)
+		#pragma omp parallel for private(bi,bj,b)
 		#endif
 		for(bi=0;bi<nr;bi++)
 		{
@@ -1023,7 +1023,7 @@ LIS_INT lis_matrix_bscale_bsr(LIS_MATRIX A, LIS_MATRIX_DIAG D)
 	else if( bnr==3 )
 	{
 		#ifdef _OPENMP
-		#pragma omp parallel for private(bi,bj)
+		#pragma omp parallel for private(bi,bj,b)
 		#endif
 		for(bi=0;bi<nr;bi++)
 		{
@@ -1047,7 +1047,7 @@ LIS_INT lis_matrix_bscale_bsr(LIS_MATRIX A, LIS_MATRIX_DIAG D)
 				b[6] = d[9*bi+0] * A->L->value[9*bj+6] + d[9*bi+3] * A->L->value[9*bj+7] + d[9*bi+6] * A->L->value[9*bj+8];
 				b[7] = d[9*bi+1] * A->L->value[9*bj+6] + d[9*bi+4] * A->L->value[9*bj+7] + d[9*bi+7] * A->L->value[9*bj+8];
 				b[8] = d[9*bi+2] * A->L->value[9*bj+6] + d[9*bi+5] * A->L->value[9*bj+7] + d[9*bi+8] * A->L->value[9*bj+8];
-				memcpy(&A->L->value[9*bj],b,8*sizeof(LIS_SCALAR));
+				memcpy(&A->L->value[9*bj],b,9*sizeof(LIS_SCALAR));
 			}
 			for(bj=A->U->bptr[bi];bj<A->U->bptr[bi+1];bj++)
 			{
@@ -1060,7 +1060,7 @@ LIS_INT lis_matrix_bscale_bsr(LIS_MATRIX A, LIS_MATRIX_DIAG D)
 				b[6] = d[9*bi+0] * A->U->value[9*bj+6] + d[9*bi+3] * A->U->value[9*bj+7] + d[9*bi+6] * A->U->value[9*bj+8];
 				b[7] = d[9*bi+1] * A->U->value[9*bj+6] + d[9*bi+4] * A->U->value[9*bj+7] + d[9*bi+7] * A->U->value[9*bj+8];
 				b[8] = d[9*bi+2] * A->U->value[9*bj+6] + d[9*bi+5] * A->U->value[9*bj+7] + d[9*bi+8] * A->U->value[9*bj+8];
-				memcpy(&A->U->value[9*bj],b,8*sizeof(LIS_SCALAR));
+				memcpy(&A->U->value[9*bj],b,9*sizeof(LIS_SCALAR));
 			}
 		}
 	}
@@ -1093,18 +1093,23 @@ LIS_INT lis_matrix_normf_bsr(LIS_MATRIX A, LIS_SCALAR *nrm)
 		#endif
 		for(bi=0;bi<nr;bi++)
 		{
+			/* The separated diagonal block belongs to the Frobenius norm too. */
+			for(j=0;j<bs;j++)
+			{
+				sum += A->D->value[bi*bs+j]*A->D->value[bi*bs+j];
+			}
 			for(bj=A->L->bptr[bi];bj<A->L->bptr[bi+1];bj++)
 			{
 				for(j=0;j<bs;j++)
 				{
-					sum += A->L->value[bj+j]*A->L->value[bj+j];
+					sum += A->L->value[bj*bs+j]*A->L->value[bj*bs+j];
 				}
 			}
 			for(bj=A->U->bptr[bi];bj<A->U->bptr[bi+1];bj++)
 			{
 				for(j=0;j<bs;j++)
 				{
-					sum += A->U->value[bj+j]*A->U->value[bj+j];
+					sum += A->U->value[bj*bs+j]*A->U->value[bj*bs+j];
 				}
 			}
 		}
@@ -1120,7 +1125,7 @@ LIS_INT lis_matrix_normf_bsr(LIS_MATRIX A, LIS_SCALAR *nrm)
 			{
 				for(j=0;j<bs;j++)
 				{
-					sum += A->value[bj+j]*A->value[bj+j];
+					sum += A->value[bj*bs+j]*A->value[bj*bs+j];
 				}
 			}
 		}
