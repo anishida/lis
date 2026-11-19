@@ -3,11 +3,6 @@ name: ILUTP bounded top-k regression
 on:
   pull_request:
   workflow_dispatch:
-  # Temporary branch trigger for validating this upstream-review candidate.
-  # Remove after CI passes; upstream should use pull_request only.
-  push:
-    branches: ['review/ilutp-topk-upstream-tests-20261119']
-
 concurrency:
   group: ilutp-topk-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -67,8 +62,8 @@ jobs:
           else
             python3 test/check_ilutp_topk.py 2>&1 | tee topk-diagnostics/topk-qsort.log
           fi
-      - name: Upload failure logs
-        if: failure()
+      - name: Upload test and configuration logs
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: topk-diagnostics-${{ matrix.mode }}
