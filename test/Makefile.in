@@ -549,10 +549,10 @@ testcomponentnullspace_LDADD = $(LDADD)
 testcomponentnullspace_DEPENDENCIES =
 am_testcomposite_core_OBJECTS = testcomposite_core.$(OBJEXT)
 testcomposite_core_OBJECTS = $(am_testcomposite_core_OBJECTS)
+am__DEPENDENCIES_1 =
 testcomposite_core_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_testcondense_core_OBJECTS = testcondense_core.$(OBJEXT)
 testcondense_core_OBJECTS = $(am_testcondense_core_OBJECTS)
-am__DEPENDENCIES_1 =
 testcondense_core_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_testcondense_lis_OBJECTS = testcondense_lis.$(OBJEXT)
 testcondense_lis_OBJECTS = $(am_testcondense_lis_OBJECTS)
@@ -1053,8 +1053,8 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testcomposite_core.Po \
 	./$(DEPDIR)/testcondense_core.Po \
 	./$(DEPDIR)/testcondense_lis.Po \
-	./$(DEPDIR)/testcondense_oom.Po \
-	./$(DEPDIR)/testdiagonal.Po ./$(DEPDIR)/testeigenbreakdown.Po \
+	./$(DEPDIR)/testcondense_oom.Po ./$(DEPDIR)/testdiagonal.Po \
+	./$(DEPDIR)/testeigenbreakdown.Po \
 	./$(DEPDIR)/testesolverselection.Po \
 	./$(DEPDIR)/testesubspaceretry.Po \
 	./$(DEPDIR)/testexactnullspace.Po \
