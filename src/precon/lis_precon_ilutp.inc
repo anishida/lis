@@ -32,6 +32,51 @@ lis_ilutp_compare_desc(const void *va,const void *vb)
     return 0;
 }
 
+/* Maintain the cap strongest entries using a worst-at-root heap.
+ * Deterministic tie-break (column ascending) matches the old full qsort.
+ * Sorting only retained entries reduces limited-fill selection to
+ * O(m log(cap) + cap log(cap)), instead of O(m log(m)).
+ */
+static void
+lis_ilutp_worst_heap_down(LIS_ILUTP_ENTRY *entry,LIS_INT pos,LIS_INT n)
+{
+    LIS_ILUTP_ENTRY held=entry[pos];
+    while(pos<n/2)
+    {
+        LIS_INT child=2*pos+1;
+        if(child>=n) break;
+        if(child+1<n &&
+           lis_ilutp_compare_desc(&entry[child+1],&entry[child])>0)
+            child++;
+        if(lis_ilutp_compare_desc(&entry[child],&held)<=0) break;
+        entry[pos]=entry[child];
+        pos=child;
+    }
+    entry[pos]=held;
+}
+static LIS_INT
+lis_ilutp_keep_largest(LIS_ILUTP_ENTRY *entry,LIS_INT m,LIS_INT cap)
+{
+    LIS_INT i,kept;
+    kept=m<cap?m:cap;
+    if(kept<=0) return 0;
+    if(m>kept)
+    {
+        for(i=kept/2;i>0;i--)
+            lis_ilutp_worst_heap_down(entry,i-1,kept);
+        for(i=kept;i<m;i++)
+        {
+            if(lis_ilutp_compare_desc(&entry[i],&entry[0])<0)
+            {
+                entry[0]=entry[i];
+                lis_ilutp_worst_heap_down(entry,0,kept);
+            }
+        }
+    }
+    qsort(entry,(size_t)kept,sizeof(entry[0]),lis_ilutp_compare_desc);
+    return kept;
+}
+
 /* A min-heap avoids O(lower_fill^2) selection scans. Lower column fill
  * may appear during elimination, so a fixed initial sort is insufficient. */
 static void lis_ilutp_heap_push(LIS_INT *a,LIS_INT *count,LIS_INT col)
@@ -395,9 +440,7 @@ lis_precon_create_ilutp_csr(LIS_SOLVER solver,LIS_PRECON precon)
             entries[m].magnitude=fabs(w[col]);
             m++;
         }
-        if(!full)
-            qsort(entries,(size_t)m,sizeof(entries[0]),lis_ilutp_compare_desc);
-        kept=m<cap?m:cap;
+        kept=full ? m : lis_ilutp_keep_largest(entries,m,cap);
         L->nnz[i]=kept;
         if(kept)
         {
@@ -426,9 +469,7 @@ lis_precon_create_ilutp_csr(LIS_SOLVER solver,LIS_PRECON precon)
             entries[m].magnitude=fabs(w[col]);
             m++;
         }
-        if(!full)
-            qsort(entries,(size_t)m,sizeof(entries[0]),lis_ilutp_compare_desc);
-        kept=m<cap?m:cap;
+        kept=full ? m : lis_ilutp_keep_largest(entries,m,cap);
         U->nnz[i]=kept;
         if(kept)
         {

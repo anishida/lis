@@ -1,0 +1,55 @@
+name: ILUTP bounded top-k regression
+
+on:
+  push:
+    branches: ['perf/ilutp-limited-fill-topk-20261119']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [release, asan-ubsan]
+    env:
+      OMP_NUM_THREADS: '1'
+      OMP_DYNAMIC: 'FALSE'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+      - name: Configure and compile
+        shell: bash
+        run: |
+          set -euo pipefail
+          autoreconf -fiv
+          if [ "${{ matrix.mode }}" = "asan-ubsan" ]; then
+            export CFLAGS="-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined"
+            export LDFLAGS="-fsanitize=address,undefined"
+          else
+            export CFLAGS="-O2 -g"
+          fi
+          ./configure --enable-test --enable-omp --enable-half --disable-mpi \
+            --disable-fortran --disable-f90 --disable-saamg
+          make -j2
+          make -C test testilutp
+      - name: Test ILUTP limited/full fill, pivot, RCM and equilibration
+        shell: bash
+        run: |
+          set -euo pipefail
+          export LD_LIBRARY_PATH="$PWD/src/.libs:${LD_LIBRARY_PATH:-}"
+          ./test/testilutp
+      - name: Upload failure logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: topk-diagnostics-${{ matrix.mode }}
+          path: |
+            config.log
+            test/*.log
+          if-no-files-found: ignore
