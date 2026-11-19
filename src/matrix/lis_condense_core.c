@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#include "lis_config.h"
+#endif
 #include "lis_condense_core.h"
 #include <math.h>
 #include <float.h>
@@ -30,7 +33,7 @@ static int size_add(size_t a, size_t b, size_t *out) {
     *out=a+b;
     return 1;
 }
-#ifdef LIS_SC_TEST_ALLOC_FAIL
+#ifdef LIS_TEST_OOM
 static long lis_sc_alloc_fail_index = -1;
 static long lis_sc_alloc_counter = 0;
 void lis_sc_test_fail_after(long index){
@@ -41,7 +44,7 @@ void lis_sc_test_fail_after(long index){
 static void *calloc_n(size_t n, size_t item) {
     size_t bytes;
     if (!size_mul(n,item,&bytes)) return NULL;
-#ifdef LIS_SC_TEST_ALLOC_FAIL
+#ifdef LIS_TEST_OOM
     if(lis_sc_alloc_fail_index>=0 &&
        lis_sc_alloc_counter++==lis_sc_alloc_fail_index)return NULL;
 #endif

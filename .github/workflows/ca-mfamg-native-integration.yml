@@ -65,7 +65,7 @@ jobs:
           mkdir -p "build-$MODE"
           cd "build-$MODE"
           root="$(cd .. && pwd)"
-          flags=(--enable-test --disable-fortran --disable-f90 --disable-saamg)
+          flags=(--enable-test --enable-oom-tests --disable-fortran --disable-f90 --disable-saamg)
           cc=gcc
           cflags='-O2'
           ldflags=''

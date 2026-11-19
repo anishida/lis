@@ -547,10 +547,9 @@ am_testcomponentnullspace_OBJECTS = testcomponentnullspace.$(OBJEXT)
 testcomponentnullspace_OBJECTS = $(am_testcomponentnullspace_OBJECTS)
 testcomponentnullspace_LDADD = $(LDADD)
 testcomponentnullspace_DEPENDENCIES =
-am_testcomposite_core_OBJECTS = testcomposite_core.$(OBJEXT) \
-	lis_camfamg_composite_core.$(OBJEXT)
+am_testcomposite_core_OBJECTS = testcomposite_core.$(OBJEXT)
 testcomposite_core_OBJECTS = $(am_testcomposite_core_OBJECTS)
-testcomposite_core_DEPENDENCIES =
+testcomposite_core_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_testcondense_core_OBJECTS = testcondense_core.$(OBJEXT)
 testcondense_core_OBJECTS = $(am_testcondense_core_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -558,15 +557,9 @@ testcondense_core_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_testcondense_lis_OBJECTS = testcondense_lis.$(OBJEXT)
 testcondense_lis_OBJECTS = $(am_testcondense_lis_OBJECTS)
 testcondense_lis_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_testcondense_oom_OBJECTS =  \
-	testcondense_oom-testcondense_oom.$(OBJEXT) \
-	testcondense_oom-lis_condense_core.$(OBJEXT)
+am_testcondense_oom_OBJECTS = testcondense_oom.$(OBJEXT)
 testcondense_oom_OBJECTS = $(am_testcondense_oom_OBJECTS)
-testcondense_oom_DEPENDENCIES =
-testcondense_oom_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(testcondense_oom_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
-	-o $@
+testcondense_oom_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_testdiagonal_OBJECTS = testdiagonal.$(OBJEXT)
 testdiagonal_OBJECTS = $(am_testdiagonal_OBJECTS)
 testdiagonal_LDADD = $(LDADD)
@@ -1025,7 +1018,6 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/etest7.Po ./$(DEPDIR)/getest1.Po \
 	./$(DEPDIR)/getest5.Po ./$(DEPDIR)/getest5b.Po \
 	./$(DEPDIR)/getestoperator.Po ./$(DEPDIR)/getestuser.Po \
-	./$(DEPDIR)/lis_camfamg_composite_core.Po \
 	./$(DEPDIR)/spmvtest1.Po ./$(DEPDIR)/spmvtest2.Po \
 	./$(DEPDIR)/spmvtest2b.Po ./$(DEPDIR)/spmvtest3.Po \
 	./$(DEPDIR)/spmvtest3b.Po ./$(DEPDIR)/spmvtest4.Po \
@@ -1061,8 +1053,7 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testcomposite_core.Po \
 	./$(DEPDIR)/testcondense_core.Po \
 	./$(DEPDIR)/testcondense_lis.Po \
-	./$(DEPDIR)/testcondense_oom-lis_condense_core.Po \
-	./$(DEPDIR)/testcondense_oom-testcondense_oom.Po \
+	./$(DEPDIR)/testcondense_oom.Po \
 	./$(DEPDIR)/testdiagonal.Po ./$(DEPDIR)/testeigenbreakdown.Po \
 	./$(DEPDIR)/testesolverselection.Po \
 	./$(DEPDIR)/testesubspaceretry.Po \
@@ -2020,11 +2011,10 @@ testmfamgilutp_SOURCES = testmfamgilutp.c
 testmfamgilutp_LDADD = $(LDADD) -lm
 testcondense_core_SOURCES = testcondense_core.c
 testcondense_core_LDADD = $(LDADD) -lm
-testcondense_oom_SOURCES = testcondense_oom.c $(top_srcdir)/src/matrix/lis_condense_core.c
-testcondense_oom_CFLAGS = $(AM_CFLAGS) -DLIS_SC_TEST_ALLOC_FAIL
-testcondense_oom_LDADD = -lm
-testcomposite_core_SOURCES = testcomposite_core.c $(top_srcdir)/src/precon/lis_camfamg_composite_core.c
-testcomposite_core_LDADD = -lm
+testcondense_oom_SOURCES = testcondense_oom.c
+testcondense_oom_LDADD = $(LDADD) -lm
+testcomposite_core_SOURCES = testcomposite_core.c
+testcomposite_core_LDADD = $(LDADD) -lm
 testcondense_lis_SOURCES = testcondense_lis.c
 testcondense_lis_LDADD = $(LDADD) -lm
 all: all-am
@@ -2471,7 +2461,7 @@ testcondense_lis$(EXEEXT): $(testcondense_lis_OBJECTS) $(testcondense_lis_DEPEND
 
 testcondense_oom$(EXEEXT): $(testcondense_oom_OBJECTS) $(testcondense_oom_DEPENDENCIES) $(EXTRA_testcondense_oom_DEPENDENCIES) 
 	@rm -f testcondense_oom$(EXEEXT)
-	$(AM_V_CCLD)$(testcondense_oom_LINK) $(testcondense_oom_OBJECTS) $(testcondense_oom_LDADD) $(LIBS)
+	$(AM_V_CCLD)$(LINK) $(testcondense_oom_OBJECTS) $(testcondense_oom_LDADD) $(LIBS)
 
 testdiagonal$(EXEEXT): $(testdiagonal_OBJECTS) $(testdiagonal_DEPENDENCIES) $(EXTRA_testdiagonal_DEPENDENCIES) 
 	@rm -f testdiagonal$(EXEEXT)
@@ -2923,7 +2913,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getest5b.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getestoperator.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getestuser.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lis_camfamg_composite_core.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spmvtest1.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spmvtest2.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spmvtest2b.Po@am__quote@ # am--include-marker
@@ -2971,8 +2960,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testcomposite_core.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testcondense_core.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testcondense_lis.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testcondense_oom-lis_condense_core.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testcondense_oom-testcondense_oom.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testcondense_oom.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testdiagonal.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testeigenbreakdown.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testesolverselection.Po@am__quote@ # am--include-marker
@@ -3118,48 +3106,6 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
-
-lis_camfamg_composite_core.o: $(top_srcdir)/src/precon/lis_camfamg_composite_core.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lis_camfamg_composite_core.o -MD -MP -MF $(DEPDIR)/lis_camfamg_composite_core.Tpo -c -o lis_camfamg_composite_core.o `test -f '$(top_srcdir)/src/precon/lis_camfamg_composite_core.c' || echo '$(srcdir)/'`$(top_srcdir)/src/precon/lis_camfamg_composite_core.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/lis_camfamg_composite_core.Tpo $(DEPDIR)/lis_camfamg_composite_core.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/src/precon/lis_camfamg_composite_core.c' object='lis_camfamg_composite_core.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lis_camfamg_composite_core.o `test -f '$(top_srcdir)/src/precon/lis_camfamg_composite_core.c' || echo '$(srcdir)/'`$(top_srcdir)/src/precon/lis_camfamg_composite_core.c
-
-lis_camfamg_composite_core.obj: $(top_srcdir)/src/precon/lis_camfamg_composite_core.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lis_camfamg_composite_core.obj -MD -MP -MF $(DEPDIR)/lis_camfamg_composite_core.Tpo -c -o lis_camfamg_composite_core.obj `if test -f '$(top_srcdir)/src/precon/lis_camfamg_composite_core.c'; then $(CYGPATH_W) '$(top_srcdir)/src/precon/lis_camfamg_composite_core.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/precon/lis_camfamg_composite_core.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/lis_camfamg_composite_core.Tpo $(DEPDIR)/lis_camfamg_composite_core.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/src/precon/lis_camfamg_composite_core.c' object='lis_camfamg_composite_core.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lis_camfamg_composite_core.obj `if test -f '$(top_srcdir)/src/precon/lis_camfamg_composite_core.c'; then $(CYGPATH_W) '$(top_srcdir)/src/precon/lis_camfamg_composite_core.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/precon/lis_camfamg_composite_core.c'; fi`
-
-testcondense_oom-testcondense_oom.o: testcondense_oom.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(testcondense_oom_CFLAGS) $(CFLAGS) -MT testcondense_oom-testcondense_oom.o -MD -MP -MF $(DEPDIR)/testcondense_oom-testcondense_oom.Tpo -c -o testcondense_oom-testcondense_oom.o `test -f 'testcondense_oom.c' || echo '$(srcdir)/'`testcondense_oom.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/testcondense_oom-testcondense_oom.Tpo $(DEPDIR)/testcondense_oom-testcondense_oom.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='testcondense_oom.c' object='testcondense_oom-testcondense_oom.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(testcondense_oom_CFLAGS) $(CFLAGS) -c -o testcondense_oom-testcondense_oom.o `test -f 'testcondense_oom.c' || echo '$(srcdir)/'`testcondense_oom.c
-
-testcondense_oom-testcondense_oom.obj: testcondense_oom.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(testcondense_oom_CFLAGS) $(CFLAGS) -MT testcondense_oom-testcondense_oom.obj -MD -MP -MF $(DEPDIR)/testcondense_oom-testcondense_oom.Tpo -c -o testcondense_oom-testcondense_oom.obj `if test -f 'testcondense_oom.c'; then $(CYGPATH_W) 'testcondense_oom.c'; else $(CYGPATH_W) '$(srcdir)/testcondense_oom.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/testcondense_oom-testcondense_oom.Tpo $(DEPDIR)/testcondense_oom-testcondense_oom.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='testcondense_oom.c' object='testcondense_oom-testcondense_oom.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(testcondense_oom_CFLAGS) $(CFLAGS) -c -o testcondense_oom-testcondense_oom.obj `if test -f 'testcondense_oom.c'; then $(CYGPATH_W) 'testcondense_oom.c'; else $(CYGPATH_W) '$(srcdir)/testcondense_oom.c'; fi`
-
-testcondense_oom-lis_condense_core.o: $(top_srcdir)/src/matrix/lis_condense_core.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(testcondense_oom_CFLAGS) $(CFLAGS) -MT testcondense_oom-lis_condense_core.o -MD -MP -MF $(DEPDIR)/testcondense_oom-lis_condense_core.Tpo -c -o testcondense_oom-lis_condense_core.o `test -f '$(top_srcdir)/src/matrix/lis_condense_core.c' || echo '$(srcdir)/'`$(top_srcdir)/src/matrix/lis_condense_core.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/testcondense_oom-lis_condense_core.Tpo $(DEPDIR)/testcondense_oom-lis_condense_core.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/src/matrix/lis_condense_core.c' object='testcondense_oom-lis_condense_core.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(testcondense_oom_CFLAGS) $(CFLAGS) -c -o testcondense_oom-lis_condense_core.o `test -f '$(top_srcdir)/src/matrix/lis_condense_core.c' || echo '$(srcdir)/'`$(top_srcdir)/src/matrix/lis_condense_core.c
-
-testcondense_oom-lis_condense_core.obj: $(top_srcdir)/src/matrix/lis_condense_core.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(testcondense_oom_CFLAGS) $(CFLAGS) -MT testcondense_oom-lis_condense_core.obj -MD -MP -MF $(DEPDIR)/testcondense_oom-lis_condense_core.Tpo -c -o testcondense_oom-lis_condense_core.obj `if test -f '$(top_srcdir)/src/matrix/lis_condense_core.c'; then $(CYGPATH_W) '$(top_srcdir)/src/matrix/lis_condense_core.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/matrix/lis_condense_core.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/testcondense_oom-lis_condense_core.Tpo $(DEPDIR)/testcondense_oom-lis_condense_core.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/src/matrix/lis_condense_core.c' object='testcondense_oom-lis_condense_core.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(testcondense_oom_CFLAGS) $(CFLAGS) -c -o testcondense_oom-lis_condense_core.obj `if test -f '$(top_srcdir)/src/matrix/lis_condense_core.c'; then $(CYGPATH_W) '$(top_srcdir)/src/matrix/lis_condense_core.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/matrix/lis_condense_core.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -4386,7 +4332,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/getest5b.Po
 	-rm -f ./$(DEPDIR)/getestoperator.Po
 	-rm -f ./$(DEPDIR)/getestuser.Po
-	-rm -f ./$(DEPDIR)/lis_camfamg_composite_core.Po
 	-rm -f ./$(DEPDIR)/spmvtest1.Po
 	-rm -f ./$(DEPDIR)/spmvtest2.Po
 	-rm -f ./$(DEPDIR)/spmvtest2b.Po
@@ -4434,8 +4379,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testcomposite_core.Po
 	-rm -f ./$(DEPDIR)/testcondense_core.Po
 	-rm -f ./$(DEPDIR)/testcondense_lis.Po
-	-rm -f ./$(DEPDIR)/testcondense_oom-lis_condense_core.Po
-	-rm -f ./$(DEPDIR)/testcondense_oom-testcondense_oom.Po
+	-rm -f ./$(DEPDIR)/testcondense_oom.Po
 	-rm -f ./$(DEPDIR)/testdiagonal.Po
 	-rm -f ./$(DEPDIR)/testeigenbreakdown.Po
 	-rm -f ./$(DEPDIR)/testesolverselection.Po
@@ -4597,7 +4541,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/getest5b.Po
 	-rm -f ./$(DEPDIR)/getestoperator.Po
 	-rm -f ./$(DEPDIR)/getestuser.Po
-	-rm -f ./$(DEPDIR)/lis_camfamg_composite_core.Po
 	-rm -f ./$(DEPDIR)/spmvtest1.Po
 	-rm -f ./$(DEPDIR)/spmvtest2.Po
 	-rm -f ./$(DEPDIR)/spmvtest2b.Po
@@ -4645,8 +4588,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testcomposite_core.Po
 	-rm -f ./$(DEPDIR)/testcondense_core.Po
 	-rm -f ./$(DEPDIR)/testcondense_lis.Po
-	-rm -f ./$(DEPDIR)/testcondense_oom-lis_condense_core.Po
-	-rm -f ./$(DEPDIR)/testcondense_oom-testcondense_oom.Po
+	-rm -f ./$(DEPDIR)/testcondense_oom.Po
 	-rm -f ./$(DEPDIR)/testdiagonal.Po
 	-rm -f ./$(DEPDIR)/testeigenbreakdown.Po
 	-rm -f ./$(DEPDIR)/testesolverselection.Po

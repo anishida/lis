@@ -1,15 +1,18 @@
-/* Deterministic test-only allocation failures in transactional Schur setup.
- * No global malloc overrides, no injection code in production compilation.
+/* Deterministic allocation faults against linked liblis Schur code.
+ * Available only with --enable-oom-tests; production has no injector.
  */
+#ifdef HAVE_CONFIG_H
+#include "lis_config.h"
+#endif
 #include "lis_condense_core.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
-#ifndef LIS_SC_TEST_ALLOC_FAIL
-#error Test must compile its own copy of lis_condense_core.c with LIS_SC_TEST_ALLOC_FAIL
-#endif
+#ifndef LIS_TEST_OOM
+int main(void){puts("SKIP: requires --enable-oom-tests");return 77;}
+#else
 
 static size_t rp[]={0,2,3,6,8};
 static size_t ci[]={0,2,1,0,2,3,2,3};
@@ -80,3 +83,5 @@ int main(void){
     printf("condensation allocator faults: %d assertions, 0 failures\n",checked);
     return 0;
 }
+
+#endif /* LIS_TEST_OOM */

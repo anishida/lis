@@ -44,8 +44,8 @@ typedef enum {
 
 typedef struct lis_sc_plan lis_sc_plan;
 
-#ifdef LIS_SC_TEST_ALLOC_FAIL
-/* Test-only allocation failure injection. Not compiled in production LIS. */
+#ifdef LIS_TEST_OOM
+/* Opt-in --enable-oom-tests builds only: deterministic allocation faults. */
 void lis_sc_test_fail_after(long allocation_index);
 #endif
 

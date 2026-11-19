@@ -90,6 +90,10 @@ def main():
                  "libmatrix_la_SOURCES = lis_matrix.c \\\n",
                  "lis_condense_core.c \\\nlis_condense_lis.c \\\n")
 
+    preflight_insert(target / "src/precon/Makefile.am",
+                     "lis_precon_mfamg_ilutp.c \\\n",
+                     "lis_camfamg_composite_core.c \\\n")
+
     ci_source = root / ".github/workflows/ca-mfamg-native-integration.yml"
     ci_dest = target / ".github/workflows/ca-mfamg-native-integration.yml"
     if args.install_ci:
@@ -114,27 +118,44 @@ def main():
                  "lis_condense_core.c \\\nlis_condense_lis.c \\\n")
     append_once(target / "include/Makefile.am", "nobase_include_HEADERS += lis_condense_core.h",
                 "nobase_include_HEADERS += lis_condense_core.h lis_condense_lis.h")
-    # Test-only composite is distributed as source, but is NOT installed as a
-    # public header and is NOT linked into the production preconditioner.
+    # The callback-composition header is distributed but stays non-installed.
     append_once(target / "include/Makefile.am", "EXTRA_DIST += lis_camfamg_composite_core.h",
                 "EXTRA_DIST += lis_camfamg_composite_core.h")
-    append_once(target / "src/precon/Makefile.am", "EXTRA_DIST += lis_camfamg_composite_core.c",
-                "EXTRA_DIST += lis_camfamg_composite_core.c")
+    insert_after(target / "src/precon/Makefile.am",
+                 "lis_precon_mfamg_ilutp.c \\\n",
+                 "lis_camfamg_composite_core.c \\\n")
+    precon_am = target / "src/precon/Makefile.am"
+    precon_am.write_text(precon_am.read_text().replace(
+        "EXTRA_DIST += lis_camfamg_composite_core.c\n", ""))
     append_once(target / "test/Makefile.am", "test_PROGRAMS += testcondense_core",
                 """# Portable condensation and callback-composition regressions.
 test_PROGRAMS += testcondense_core testcomposite_core testcondense_lis testcondense_oom
 testcondense_core_SOURCES = testcondense_core.c
 testcondense_core_LDADD = $(LDADD) -lm
-# Compile the portable core separately with test-only allocation injection.
-testcondense_oom_SOURCES = testcondense_oom.c $(top_srcdir)/src/matrix/lis_condense_core.c
-testcondense_oom_CFLAGS = $(AM_CFLAGS) -DLIS_SC_TEST_ALLOC_FAIL
-testcondense_oom_LDADD = -lm
-# Test-only callback core: compile into this test, NOT libprecon.
-testcomposite_core_SOURCES = testcomposite_core.c $(top_srcdir)/src/precon/lis_camfamg_composite_core.c
+# Run against liblis; the Schur fault injector is enabled by --enable-oom-tests.
+testcondense_oom_SOURCES = testcondense_oom.c
+testcondense_oom_LDADD = $(LDADD) -lm
+testcomposite_core_SOURCES = testcomposite_core.c
 testcondense_lis_SOURCES = testcondense_lis.c
-testcomposite_core_LDADD = -lm
+testcomposite_core_LDADD = $(LDADD) -lm
 testcondense_lis_LDADD = $(LDADD) -lm
 TESTS += testcondense_core$(EXEEXT) testcomposite_core$(EXEEXT) testcondense_lis$(EXEEXT) testcondense_oom$(EXEEXT)""")
+    # Upgrade previously integrated checkouts rather than retaining old direct
+    # source-file compilation entries that trigger Automake warnings.
+    test_am = target / "test/Makefile.am"
+    test_text = test_am.read_text()
+    for old, new in (
+        ("testcondense_oom_SOURCES = testcondense_oom.c $(top_srcdir)/src/matrix/lis_condense_core.c",
+         "testcondense_oom_SOURCES = testcondense_oom.c"),
+        ("testcondense_oom_CFLAGS = $(AM_CFLAGS) -DLIS_SC_TEST_ALLOC_FAIL\n", ""),
+        ("testcondense_oom_LDADD = -lm", "testcondense_oom_LDADD = $(LDADD) -lm"),
+        ("testcomposite_core_SOURCES = testcomposite_core.c $(top_srcdir)/src/precon/lis_camfamg_composite_core.c",
+         "testcomposite_core_SOURCES = testcomposite_core.c"),
+        ("testcomposite_core_LDADD = -lm", "testcomposite_core_LDADD = $(LDADD) -lm"),
+    ):
+        test_text = test_text.replace(old, new)
+    if test_text != test_am.read_text():
+        test_am.write_text(test_text)
     append_once(target / "test/Makefile.am", "TESTS += testca_mfamg_ilutp.sh",
                 """# End-to-end native contact-aware MFAMG + ILUTP on two Schur matrices.
 TESTS += testca_mfamg_ilutp.sh testca_mfamg_profiles.sh

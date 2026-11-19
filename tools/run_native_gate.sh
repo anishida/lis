@@ -34,7 +34,7 @@ python3 "$PROJECT_ROOT/tools/install_into_lis.py" "$LIS_ROOT" --regenerate \
   > "$REPORT_DIR/install.log" 2>&1
 (
   cd "$LIS_ROOT"
-  ./configure --enable-test --disable-mpi --disable-fortran --disable-f90 --disable-saamg > "$REPORT_DIR/configure.log" 2>&1
+  ./configure --enable-test --enable-oom-tests --disable-mpi --disable-fortran --disable-f90 --disable-saamg > "$REPORT_DIR/configure.log" 2>&1
   make -j2 > "$REPORT_DIR/build.log" 2>&1
   make -C test testcondense_core testcomposite_core testcondense_lis \
       > "$REPORT_DIR/build-tests.log" 2>&1

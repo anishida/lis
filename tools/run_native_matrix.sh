@@ -29,7 +29,7 @@ if ! command -v autoreconf >/dev/null || ! command -v gcc >/dev/null ||
 fi
 # Build artifacts always outside the source tree; no git commit/push.
 (cd "$lis" && autoreconf -fi > "$out/autoreconf.log" 2>&1)
-common=(--enable-test --disable-fortran --disable-f90 --disable-saamg)
+common=(--enable-test --enable-oom-tests --disable-fortran --disable-f90 --disable-saamg)
 configurations=(serial openmp int64 sanitized)
 if command -v mpicc >/dev/null && command -v mpiexec >/dev/null; then
   configurations+=(mpi)
