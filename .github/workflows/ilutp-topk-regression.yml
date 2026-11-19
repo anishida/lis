@@ -1,0 +1,73 @@
+name: ILUTP bounded top-k regression
+
+on:
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  group: ilutp-topk-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [release, asan-ubsan]
+    env:
+      OMP_NUM_THREADS: '1'
+      OMP_DYNAMIC: 'FALSE'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+      - name: Configure and compile
+        shell: bash
+        run: |
+          set -euo pipefail
+          autoreconf -fiv
+          if [ "${{ matrix.mode }}" = "asan-ubsan" ]; then
+            export CFLAGS="-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined"
+            export LDFLAGS="-fsanitize=address,undefined"
+            # Autoconf feature probes are not leak tests. Re-enable LSan
+            # for the executable tests in a separate workflow step.
+            export ASAN_OPTIONS=detect_leaks=0
+          else
+            export CFLAGS="-O2 -g"
+          fi
+          ./configure --enable-test --enable-omp --enable-half --disable-mpi \
+            --disable-fortran --disable-f90 --disable-saamg
+          make -j2
+          make -C test testilutp
+      - name: Test ILUTP limited/full fill, pivot, RCM and equilibration
+        shell: bash
+        run: |
+          set -euo pipefail
+          export LD_LIBRARY_PATH="$PWD/src/.libs:${LD_LIBRARY_PATH:-}"
+          mkdir -p topk-diagnostics
+          if [ "${{ matrix.mode }}" = "asan-ubsan" ]; then
+            export ASAN_OPTIONS=detect_leaks=1:halt_on_error=1
+          fi
+          ./test/testilutp 2>&1 | tee topk-diagnostics/testilutp.log
+      - name: Verify bounded top-k exactly matches full qsort
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p topk-diagnostics
+          if [ "${{ matrix.mode }}" = "asan-ubsan" ]; then
+            python3 test/check_ilutp_topk.py --sanitize 2>&1 | tee topk-diagnostics/topk-qsort.log
+          else
+            python3 test/check_ilutp_topk.py 2>&1 | tee topk-diagnostics/topk-qsort.log
+          fi
+      - name: Upload test and configuration logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: topk-diagnostics-${{ matrix.mode }}
+          path: |
+            config.log
+            topk-diagnostics/*.log
+          if-no-files-found: ignore
