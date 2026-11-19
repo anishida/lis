@@ -184,6 +184,8 @@ extern "C"
 	extern LIS_INT lis_matrix_scale_bsr(LIS_MATRIX A, LIS_SCALAR d[]);
 	extern LIS_INT lis_matrix_scale_symm_bsr(LIS_MATRIX A, LIS_SCALAR d[]);
 	extern LIS_INT lis_matrix_bscale_bsr(LIS_MATRIX A, LIS_MATRIX_DIAG D);
+	/* Internal ABI-neutral callback lookup; workers snapshot it on row-source init. */
+extern LIS_MATRIX_USER_GET_ROWS_BATCH lis_matrix_user_batch_lookup(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_split_bsr(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_merge_bsr(LIS_MATRIX A);
 	extern LIS_INT lis_matrix_solve_bsr(LIS_MATRIX A, LIS_VECTOR B, LIS_VECTOR X, LIS_INT flag);

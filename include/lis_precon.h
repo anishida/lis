@@ -76,6 +76,22 @@ typedef struct LIS_PRECON_ROW_SOURCE_STRUCT
 	struct LIS_PRECON_ROW_SOURCE_STRUCT *operator_B;
 	void *operator_entries;
 	LIS_INT operator_entries_capacity;
+
+    /* Optional sixteen-row USER cache; one per row source / OpenMP worker.
+     * The inline offsets keep callback-query storage allocation-free.
+     * All other cache arrays use the source's ordinary/raw allocator. */
+    LIS_MATRIX_USER_GET_ROWS_BATCH batch_callback;
+    LIS_INT batch_disabled; /* Internal scratch OOM: use scalar rows. */
+    /* Locality heuristic: stop fetching 16-row batches after two distant
+     * cache misses; resume once eight consecutive rows have been requested.
+     * Independent of the permanent internal-scratch-OOM fallback. */
+    LIS_INT batch_seen,batch_previous_row,batch_remote_misses;
+    LIS_INT batch_linear_streak,batch_prefer_scalar;
+    LIS_INT batch_scratch_oom; /* Distinguish LIS OOM from callback error. */
+    LIS_INT batch_first,batch_last,batch_capacity;
+    LIS_INT batch_offset[17];
+    LIS_INT *batch_index;
+    LIS_SCALAR *batch_value;
 } LIS_PRECON_ROW_SOURCE;
 
 extern LIS_INT lis_precon_row_source_init(
