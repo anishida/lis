@@ -548,7 +548,8 @@ static LIS_INT lis_gcrodr_refresh_recycle(LIS_SOLVER solver)
 
         err = lis_psolve(solver,ui,zui);
         if( err ) return err;
-        lis_matvec(solver->A,zui,ci);
+        err = lis_matvec(solver->A,zui,ci);
+        if( err ) return err;
 
         for(pass=0;pass<2;pass++)
         {
@@ -651,7 +652,8 @@ static LIS_INT lis_gcrodr_assess_refresh_recycle(
         {
             return err;
         }
-        lis_matvec(solver->A,scratch_z[i],scratch_c[i]);
+        err = lis_matvec(solver->A,scratch_z[i],scratch_c[i]);
+        if( err ) return err;
         lis_vector_nrm2(scratch_c[i],&nrm);
 
         if( nrm<=GCRODR_REORTH_TINY || nrm!=nrm )
@@ -1444,7 +1446,8 @@ LIS_INT lis_gcrodr(LIS_SOLVER solver)
             ptime += lis_wtime()-time;
             if( err ) goto fail;
 
-            lis_matvec(A,z[j],v[j+1]);
+            err = lis_matvec(A,z[j],v[j+1]);
+            if( err ) goto fail;
 
             /* Project A M^-1 v_j away from C, with a second MGS pass. */
             for(pass=0;pass<2;pass++)
@@ -1728,7 +1731,8 @@ LIS_INT lis_gcrodr(LIS_SOLVER solver)
         }
 
         /* True residual replacement at every restart boundary. */
-        lis_matvec(A,x,wtmp);
+        err = lis_matvec(A,x,wtmp);
+        if( err ) goto fail;
         lis_vector_xpay(b,-1.0,wtmp);
         lis_vector_copy(wtmp,v[0]);
 
