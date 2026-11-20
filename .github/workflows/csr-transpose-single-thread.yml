@@ -1,8 +1,6 @@
 name: CSR transpose single-worker fast path and OOM regression
 
 on:
-  push:
-    branches: ['upstream/perf-csr-transpose-serial-20261120']
   pull_request:
   workflow_dispatch:
 
