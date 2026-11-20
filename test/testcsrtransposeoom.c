@@ -20,7 +20,7 @@ static int check_case(int split,int threads)
     LIS_MATRIX A=NULL;
     LIS_VECTOR x=NULL,y=NULL;
     LIS_INT i,err=0;
-    size_t calls=0;
+    size_t calls=0,normal_calls=0,live_before=0;
     int bad=1;
 #ifdef _OPENMP
     omp_set_num_threads(threads);
@@ -50,8 +50,16 @@ static int check_case(int split,int threads)
     err=lis_vector_duplicate(A,&y); if(err)goto done;
     for(i=0;i<n;i++) x->value[i]=(LIS_SCALAR)(1.0+0.01*i);
 
-    /* Normal and allocation-failed calls must return the same y. */
-    err=lis_matvech(A,x,y); if(err)goto done;
+    /* Track the allocation count in the successful path as well:
+     * one worker must bypass scratch, while two workers use exactly
+     * one scratch allocation and free it before returning. */
+    live_before=lis_test_oom_live();
+    lis_test_oom_begin(0);
+    err=lis_matvech(A,x,y);
+    normal_calls=lis_test_oom_calls();
+    lis_test_oom_end();
+    if(err || normal_calls!=(size_t)(threads==1 && !split ? 0 : 1) ||
+       lis_test_oom_live()!=live_before)goto done;
     for(i=0;i<n;i++)
     {
         double expect=4.0*(double)x->value[i];
@@ -63,7 +71,8 @@ static int check_case(int split,int threads)
     err=lis_matvech(A,x,y);
     calls=lis_test_oom_calls();
     lis_test_oom_end();
-    if(err || (threads==1 && !split ? calls!=0 : calls==0))goto done;
+    if(err || calls!=(size_t)(threads==1 && !split ? 0 : 1) ||
+       lis_test_oom_live()!=live_before)goto done;
     for(i=0;i<n;i++)
     {
         double expect=4.0*(double)x->value[i];
@@ -75,11 +84,16 @@ static int check_case(int split,int threads)
             goto done;
         }
     }
+    printf("CSR_TRANSPOSE_CASE_OK split=%d threads=%d normal_alloc=%llu oom_alloc=%llu\n",
+           split,threads,(unsigned long long)normal_calls,
+           (unsigned long long)calls);
     bad=0;
 done:
     lis_test_oom_end();
-    if(bad) fprintf(stderr,"CSR_TRANSPOSE_OOM FAIL split=%d err=%d calls=%llu\\n",
-                    split,(int)err,(unsigned long long)calls);
+    if(bad) fprintf(stderr,"CSR_TRANSPOSE_OOM FAIL split=%d threads=%d err=%d normal_alloc=%llu oom_alloc=%llu\n",
+                    split,threads,(int)err,
+                    (unsigned long long)normal_calls,
+                    (unsigned long long)calls);
     if(y)lis_vector_destroy(y);
     if(x)lis_vector_destroy(x);
     if(A)lis_matrix_destroy(A);
