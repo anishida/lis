@@ -1,8 +1,6 @@
 name: BSR transpose scratch OOM regression
 
 on:
-  push:
-    branches: ['upstream/fix-bsr-transpose-oom-20261120']
   pull_request:
   workflow_dispatch:
 
