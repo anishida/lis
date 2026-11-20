@@ -947,6 +947,10 @@ void lis_matvech_bsr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				w = (LIS_SCALAR *)lis_malloc(
 					(size_t)nprocs*(size_t)np*sizeof(LIS_SCALAR),
 					"lis_matvech_bsr::w");
+			#ifdef LIS_TEST_OOM
+			fprintf(stderr,"BSR diagnostic alloc np=%lld nprocs=%lld ok=%d\\n",
+			        (long long)np,(long long)nprocs,w!=NULL);
+			#endif
 			if(w!=NULL)
 			{
 				#pragma omp parallel private(bi,bc,bj,i,j,k,my_rank,t)
@@ -993,6 +997,10 @@ void lis_matvech_bsr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 			else
 		#endif
 			{
+				#ifdef LIS_TEST_OOM
+				fprintf(stderr,"BSR diagnostic serial enter np=%lld nr=%lld\\n",
+				        (long long)np,(long long)nr);
+				#endif
 				/* Both serial and parallel paths write all np entries.
 				 * Transpose may scatter into off-process columns (np>n). */
 				for(i=0; i<np; i)
