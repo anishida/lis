@@ -191,7 +191,8 @@ F77LINK = $(LIBTOOL) $(AM_V_lt) --tag=F77 $(AM_LIBTOOLFLAGS) \
 @ENABLE_OOM_TESTS_TRUE@	testoomiluc$(EXEEXT) \
 @ENABLE_OOM_TESTS_TRUE@	testoomsnapshot$(EXEEXT) \
 @ENABLE_OOM_TESTS_TRUE@	testoomrco$(EXEEXT) \
-@ENABLE_OOM_TESTS_TRUE@	testcsrtransposeoom$(EXEEXT) $(am__EXEEXT_1)
+@ENABLE_OOM_TESTS_TRUE@	testcsrtransposeoom$(EXEEXT) \
+@ENABLE_OOM_TESTS_TRUE@	$(am__EXEEXT_1)
 @ENABLE_OOM_TESTS_TRUE@am__append_6 = testoomalloc$(EXEEXT) testoomilu$(EXEEXT) testoomdiag$(EXEEXT) testoomiluc$(EXEEXT) testoomsnapshot$(EXEEXT) testoomrco$(EXEEXT) testcsrtransposeoom$(EXEEXT)
 @ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@am__append_7 = testoommpiscale
 @ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@am__append_8 = testoommpiscale$(EXEEXT)
@@ -1208,25 +1209,25 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testcomponentnullspace_SOURCES) \
 	$(testcomposite_core_SOURCES) $(testcondense_core_SOURCES) \
 	$(testcondense_lis_SOURCES) $(testcondense_oom_SOURCES) \
-	$(testcsrtransposeoom_SOURCES) $(testdiagonal_SOURCES) $(testeigenbreakdown_SOURCES) \
-	$(testesolverselection_SOURCES) $(testesubspaceretry_SOURCES) \
-	testexactnullspace.c $(testexternalstorage_SOURCES) \
-	$(testfeastcontour_SOURCES) $(testfeastfoundation_SOURCES) \
-	$(testfeastshifted_SOURCES) $(testfgcrodr_SOURCES) \
-	$(testfgcrodrblocked_SOURCES) $(testfgcrodrintra_SOURCES) \
-	$(testfgcrodrmaxiter_SOURCES) $(testfgcrodrtransport_SOURCES) \
-	$(testfgmresprojected_SOURCES) $(testfrozenilut_SOURCES) \
-	$(testgcrodrconfig_SOURCES) $(testgcrodroptions_SOURCES) \
-	$(testgcrodrsequence_SOURCES) $(testgesolvepair_SOURCES) \
-	$(testgmreswork_SOURCES) $(testhalfconfig_SOURCES) \
-	$(testhalfconvert_SOURCES) $(testhalfdispatch_SOURCES) \
-	$(testhalfilukmemory_SOURCES) $(testhalfiluksimd_SOURCES) \
-	$(testhalfilut_SOURCES) $(testhalfprobe_SOURCES) \
-	$(testhalfstorage_SOURCES) $(testhybridnested_SOURCES) \
-	$(testilucbsrsmoke_SOURCES) $(testilupivot_SOURCES) \
-	$(testilutequil_SOURCES) $(testilutp_SOURCES) \
-	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
-	$(testmatrixautosession_SOURCES) \
+	$(testcsrtransposeoom_SOURCES) $(testdiagonal_SOURCES) \
+	$(testeigenbreakdown_SOURCES) $(testesolverselection_SOURCES) \
+	$(testesubspaceretry_SOURCES) testexactnullspace.c \
+	$(testexternalstorage_SOURCES) $(testfeastcontour_SOURCES) \
+	$(testfeastfoundation_SOURCES) $(testfeastshifted_SOURCES) \
+	$(testfgcrodr_SOURCES) $(testfgcrodrblocked_SOURCES) \
+	$(testfgcrodrintra_SOURCES) $(testfgcrodrmaxiter_SOURCES) \
+	$(testfgcrodrtransport_SOURCES) $(testfgmresprojected_SOURCES) \
+	$(testfrozenilut_SOURCES) $(testgcrodrconfig_SOURCES) \
+	$(testgcrodroptions_SOURCES) $(testgcrodrsequence_SOURCES) \
+	$(testgesolvepair_SOURCES) $(testgmreswork_SOURCES) \
+	$(testhalfconfig_SOURCES) $(testhalfconvert_SOURCES) \
+	$(testhalfdispatch_SOURCES) $(testhalfilukmemory_SOURCES) \
+	$(testhalfiluksimd_SOURCES) $(testhalfilut_SOURCES) \
+	$(testhalfprobe_SOURCES) $(testhalfstorage_SOURCES) \
+	$(testhybridnested_SOURCES) $(testilucbsrsmoke_SOURCES) \
+	$(testilupivot_SOURCES) $(testilutequil_SOURCES) \
+	$(testilutp_SOURCES) $(testjacobiuser_SOURCES) \
+	$(testkrylovrobust_SOURCES) $(testmatrixautosession_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatrixmaterialize_SOURCES) \
 	$(testmatrixmaterializeomp_SOURCES) \
@@ -1302,7 +1303,8 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testcomponentnullspace_SOURCES) \
 	$(testcomposite_core_SOURCES) $(testcondense_core_SOURCES) \
 	$(testcondense_lis_SOURCES) $(testcondense_oom_SOURCES) \
-	$(am__testcsrtransposeoom_SOURCES_DIST) $(testdiagonal_SOURCES) $(testeigenbreakdown_SOURCES) \
+	$(am__testcsrtransposeoom_SOURCES_DIST) \
+	$(testdiagonal_SOURCES) $(testeigenbreakdown_SOURCES) \
 	$(testesolverselection_SOURCES) $(testesubspaceretry_SOURCES) \
 	testexactnullspace.c $(testexternalstorage_SOURCES) \
 	$(testfeastcontour_SOURCES) $(testfeastfoundation_SOURCES) \
