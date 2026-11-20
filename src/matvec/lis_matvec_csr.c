@@ -189,6 +189,16 @@ void lis_matvech_csr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 	n    = A->n;
 	np   = A->np;
+#ifdef _OPENMP
+    /* In the unsplit CSR case a single OpenMP worker has the exact
+     * serial accumulation order. Avoid a dense scratch allocation,
+     * its memset and OpenMP setup on every transposed SpMV call. */
+    if(!A->is_splited && omp_get_max_threads()==1)
+    {
+        lis_matvech_csr_serial_fallback(A,x,y);
+        return;
+    }
+#endif
 	if( A->is_splited )
 	{
 		#ifdef _OPENMP
