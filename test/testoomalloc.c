@@ -5,6 +5,7 @@
 #include "lislib.h"
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 #ifndef LIS_TEST_OOM
 #error "testoomalloc requires --enable-oom-tests"
@@ -100,6 +101,75 @@ static int check_vbr(size_t base)
     return 0;
 }
 
+
+/* The non-split transposed BSR SpMV used to dereference a failed
+ * OpenMP scratch allocation. Check identical output after injected OOM. */
+static int check_bsr_transpose_oom(size_t base)
+{
+#ifdef _OPENMP
+    struct LIS_MATRIX_STRUCT a;
+    LIS_INT ptr[3]={0,2,3};
+    LIS_INT cols[3]={0,1,1};
+    LIS_SCALAR values[3]={(LIS_SCALAR)2.0,(LIS_SCALAR)3.0,
+                          (LIS_SCALAR)4.0};
+    LIS_SCALAR x[2]={(LIS_SCALAR)5.0,(LIS_SCALAR)7.0};
+    LIS_SCALAR y[2]={0,0};
+    memset(&a,0,sizeof(a));
+    a.n=2; a.np=2; a.nr=2;
+    a.bnr=1; a.bnc=1;
+    a.is_splited=LIS_FALSE;
+    a.bptr=ptr; a.bindex=cols; a.value=values;
+
+    lis_test_oom_begin(0);
+    lis_matvech_bsr(&a,x,y);
+    lis_test_oom_end();
+    CHECK(lis_test_oom_calls()==1);
+    CHECK(lis_test_oom_live()==base);
+    CHECK(y[0]==(LIS_SCALAR)10.0 && y[1]==(LIS_SCALAR)43.0);
+
+    y[0]=y[1]=(LIS_SCALAR)-99.0;
+    lis_test_oom_begin(1);
+    lis_matvech_bsr(&a,x,y);
+    lis_test_oom_end();
+    CHECK(lis_test_oom_calls()==1);
+    CHECK(lis_test_oom_live()==base);
+    CHECK(y[0]==(LIS_SCALAR)10.0 && y[1]==(LIS_SCALAR)43.0);
+
+    /* Transpose scatter can write an off-process column: np > n.
+     * Both OpenMP reduction and serial OOM fallback must initialize
+     * the complete y[0..np-1] range, including the third entry. */
+    {
+        LIS_SCALAR y_halo[3]={(LIS_SCALAR)-99.0,(LIS_SCALAR)-99.0,
+                              (LIS_SCALAR)-99.0};
+        a.np=3;
+        cols[1]=2; /* Row 0: 2*x[0] into y[0], 3*x[0] into y[2]. */
+        lis_test_oom_begin(0);
+        lis_matvech_bsr(&a,x,y_halo);
+        lis_test_oom_end();
+        CHECK(lis_test_oom_calls()==1);
+        CHECK(lis_test_oom_live()==base);
+        CHECK(y_halo[0]==(LIS_SCALAR)10.0 &&
+              y_halo[1]==(LIS_SCALAR)28.0 &&
+              y_halo[2]==(LIS_SCALAR)15.0);
+
+        y_halo[0]=y_halo[1]=y_halo[2]=(LIS_SCALAR)-99.0;
+        lis_test_oom_begin(1);
+        lis_matvech_bsr(&a,x,y_halo);
+        lis_test_oom_end();
+        CHECK(lis_test_oom_calls()==1);
+        CHECK(lis_test_oom_live()==base);
+        CHECK(y_halo[0]==(LIS_SCALAR)10.0 &&
+              y_halo[1]==(LIS_SCALAR)28.0 &&
+              y_halo[2]==(LIS_SCALAR)15.0);
+    }
+    puts("BSR transpose: OpenMP scratch and injected OOM fallback passed");
+#else
+    (void)base;
+    puts("BSR transpose OOM: skipped (requires OpenMP)");
+#endif
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     size_t base;
@@ -108,6 +178,7 @@ int main(int argc, char **argv)
     if( check_block("BSR",lis_matrix_malloc_bsr,base)!=0 ) return 1;
     if( check_block("BSC",lis_matrix_malloc_bsc,base)!=0 ) return 1;
     if( check_vbr(base)!=0 ) return 1;
+    if( check_bsr_transpose_oom(base)!=0 ) return 1;
     puts("NATIVE_BLOCK_ALLOC_OOM_TESTS_PASSED");
     return lis_finalize()!=LIS_SUCCESS;
 }

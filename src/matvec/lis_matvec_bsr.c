@@ -35,7 +35,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef HAVE_MALLOC_H
-        #include <malloc.h>
+	#include <malloc.h>
+#endif
+#include <stdint.h>
+#include <limits.h>
+/* Keep the signed bound in lockstep with LIS_INT's typedef in lis.h. */
+#ifdef _LONG__LONG
+#define LIS_BSR_MAX_INDEX LLONG_MAX
+#else
+#define LIS_BSR_MAX_INDEX INT_MAX
 #endif
 #include <string.h>
 #include <stdarg.h>
@@ -857,6 +865,33 @@ void lis_matvec_bsr_4x3(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	}
 }
 
+/* Shared serial non-split transpose for non-OpenMP builds and for
+ * OpenMP scratch allocation failures. No temporary storage is needed. */
+static void lis_matvech_bsr_nonsplit_serial(
+    LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
+{
+	LIS_INT i,j,k,bi,bj,bc;
+	LIS_INT nr=A->nr,bnr=A->bnr,bnc=A->bnc,bs=bnr*bnc,np=A->np;
+	/* A^T x can scatter into external columns; initialize all np entries. */
+	for(i=0;i<np;i++) y[i]=0.0;
+	for(bi=0;bi<nr;bi++)
+	{
+		for(bc=A->bptr[bi];bc<A->bptr[bi+1];bc++)
+		{
+			bj = A->bindex[bc]*bnc;
+			k = bc*bs;
+			for(j=0;j<bnc;j++)
+			{
+				for(i=0;i<bnr;i++)
+				{
+					y[bj+j] += conj(A->value[k]) * x[bi*bnr+i];
+					k++;
+				}
+			}
+		}
+	}
+}
+
 void lis_matvech_bsr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 {
 	LIS_INT i,j,k;
@@ -926,68 +961,65 @@ void lis_matvech_bsr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	{
 		#ifdef _OPENMP
 			nprocs = omp_get_max_threads();
-			w = (LIS_SCALAR *)lis_malloc( nprocs*np*sizeof(LIS_SCALAR),"lis_matvech_bsr::w" );
-
-			#pragma omp parallel private(bi,bc,bj,i,j,k,my_rank)
+			w = NULL;
+			/* Check size_t allocation bounds and the signed LIS_INT
+			 * offsets used to index the thread-local reduction buffer.
+			 * When LIS_INT is wider than size_t, the cast of the type
+			 * limit to size_t is at least SIZE_MAX and remains safe.
+			 */
+			if(nprocs>0 && np>0 &&
+			   (size_t)nprocs<=SIZE_MAX/(size_t)np &&
+			   (size_t)nprocs*(size_t)np<=SIZE_MAX/sizeof(LIS_SCALAR) &&
+			   (size_t)nprocs<=(size_t)LIS_BSR_MAX_INDEX/(size_t)np)
+				w = (LIS_SCALAR *)lis_malloc(
+					(size_t)nprocs*(size_t)np*sizeof(LIS_SCALAR),
+					"lis_matvech_bsr::w");
+			if(w!=NULL)
 			{
-				my_rank = omp_get_thread_num();
+				#pragma omp parallel private(bi,bc,bj,i,j,k,my_rank,t)
+				{
+					my_rank = omp_get_thread_num();
 
-				#pragma omp for
-				for(j=0;j<nprocs;j++)
-				{
-					memset( &w[j*np], 0, np*sizeof(LIS_SCALAR) );
-				}
-				#pragma omp for 
-				for(bi=0;bi<nr;bi++)
-				{
-					for(bc=A->bptr[bi];bc<A->bptr[bi+1];bc++)
+					#pragma omp for
+					for(j=0;j<nprocs;j++)
 					{
-						bj   = my_rank*np + A->bindex[bc] * bnc;
-						k    = bc*bs;
-						for(j=0;j<bnc;j++)
+						memset( &w[j*np], 0, np*sizeof(LIS_SCALAR) );
+					}
+					#pragma omp for 
+					for(bi=0;bi<nr;bi++)
+					{
+						for(bc=A->bptr[bi];bc<A->bptr[bi+1];bc++)
 						{
-							for(i=0;i<bnr;i++)
+							bj   = my_rank*np + A->bindex[bc] * bnc;
+							k    = bc*bs;
+							for(j=0;j<bnc;j++)
 							{
-								w[bj+j] += conj(A->value[k]) * x[bi*bnr+i];
-								k++;
+								for(i=0;i<bnr;i++)
+								{
+									w[bj+j] += conj(A->value[k]) * x[bi*bnr+i];
+									k++;
+								}
 							}
 						}
 					}
-				}
-				#pragma omp barrier
-				#pragma omp for 
-				for(i=0;i<np;i++)
-				{
-					t = 0.0;
-					for(j=0;j<nprocs;j++)
+					#pragma omp barrier
+					#pragma omp for 
+					for(i=0;i<np;i++)
 					{
-						t += w[j*np+i];
-					}
-					y[i] = t;
-				}
-			}
-			lis_free(w);
-		#else
-			for(i=0; i<n; i++)
-			{
-				y[i] = 0.0;
-			}
-			for(bi=0;bi<nr;bi++)
-			{
-				for(bc=A->bptr[bi];bc<A->bptr[bi+1];bc++)
-				{
-					bj   = A->bindex[bc] * bnc;
-					k    = bc*bs;
-					for(j=0;j<bnc;j++)
-					{
-						for(i=0;i<bnr;i++)
+						t = 0.0;
+						for(j=0;j<nprocs;j++)
 						{
-							y[bj+j] += conj(A->value[k]) * x[bi*bnr+i];
-							k++;
+							t += w[j*np+i];
 						}
+						y[i] = t;
 					}
 				}
+				lis_free(w);
+				return;
 			}
 		#endif
+		/* The OpenMP scratch was unavailable or its size overflowed:
+		 * use the same serial implementation as non-OpenMP builds. */
+		lis_matvech_bsr_nonsplit_serial(A,x,y);
 	}
 }
