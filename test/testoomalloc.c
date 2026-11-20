@@ -120,7 +120,6 @@ static int check_bsr_transpose_oom(size_t base)
     a.is_splited=LIS_FALSE;
     a.bptr=ptr; a.bindex=cols; a.value=values;
 
-    fprintf(stderr,"BSR probe: normal parallel path np=2\n");
     lis_test_oom_begin(0);
     lis_matvech_bsr(&a,x,y);
     lis_test_oom_end();
@@ -129,7 +128,6 @@ static int check_bsr_transpose_oom(size_t base)
     CHECK(y[0]==(LIS_SCALAR)10.0 && y[1]==(LIS_SCALAR)43.0);
 
     y[0]=y[1]=(LIS_SCALAR)-99.0;
-    fprintf(stderr,"BSR probe: OOM fallback np=2\n");
     lis_test_oom_begin(1);
     lis_matvech_bsr(&a,x,y);
     lis_test_oom_end();
@@ -145,7 +143,6 @@ static int check_bsr_transpose_oom(size_t base)
                               (LIS_SCALAR)-99.0};
         a.np=3;
         cols[1]=2; /* Row 0: 2*x[0] into y[0], 3*x[0] into y[2]. */
-        fprintf(stderr,"BSR probe: normal parallel path np=3\n");
         lis_test_oom_begin(0);
         lis_matvech_bsr(&a,x,y_halo);
         lis_test_oom_end();
@@ -156,7 +153,6 @@ static int check_bsr_transpose_oom(size_t base)
               y_halo[2]==(LIS_SCALAR)15.0);
 
         y_halo[0]=y_halo[1]=y_halo[2]=(LIS_SCALAR)-99.0;
-        fprintf(stderr,"BSR probe: OOM fallback np=3\n");
         lis_test_oom_begin(1);
         lis_matvech_bsr(&a,x,y_halo);
         lis_test_oom_end();
