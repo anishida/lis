@@ -872,12 +872,6 @@ static void lis_matvech_bsr_nonsplit_serial(
 {
 	LIS_INT i,j,k,bi,bj,bc;
 	LIS_INT nr=A->nr,bnr=A->bnr,bnc=A->bnc,bs=bnr*bnc,np=A->np;
-#ifdef LIS_TEST_OOM
-	fprintf(stderr,"BSR diagnostic serial helper np=%lld nr=%lld ptr=%lld,%lld,%lld\\n",
-	        (long long)np,(long long)nr,
-	        (long long)A->bptr[0],(long long)A->bptr[1],
-	        (long long)A->bptr[2]);
-#endif
 	/* A^T x can scatter into external columns; initialize all np entries. */
 	for(i=0;i<np;i++) y[i]=0.0;
 	for(bi=0;bi<nr;bi++)
@@ -896,9 +890,6 @@ static void lis_matvech_bsr_nonsplit_serial(
 			}
 		}
 	}
-#ifdef LIS_TEST_OOM
-	fprintf(stderr,"BSR diagnostic serial helper exited\\n");
-#endif
 }
 
 void lis_matvech_bsr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
@@ -983,50 +974,46 @@ void lis_matvech_bsr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				w = (LIS_SCALAR *)lis_malloc(
 					(size_t)nprocs*(size_t)np*sizeof(LIS_SCALAR),
 					"lis_matvech_bsr::w");
-			#ifdef LIS_TEST_OOM
-			fprintf(stderr,"BSR diagnostic alloc np=%lld nprocs=%lld ok=%d\\n",
-			        (long long)np,(long long)nprocs,w!=NULL);
-			#endif
 			if(w!=NULL)
 			{
 				#pragma omp parallel private(bi,bc,bj,i,j,k,my_rank,t)
-			{
-				my_rank = omp_get_thread_num();
+				{
+					my_rank = omp_get_thread_num();
 
-				#pragma omp for
-				for(j=0;j<nprocs;j++)
-				{
-					memset( &w[j*np], 0, np*sizeof(LIS_SCALAR) );
-				}
-				#pragma omp for 
-				for(bi=0;bi<nr;bi++)
-				{
-					for(bc=A->bptr[bi];bc<A->bptr[bi+1];bc++)
+					#pragma omp for
+					for(j=0;j<nprocs;j++)
 					{
-						bj   = my_rank*np + A->bindex[bc] * bnc;
-						k    = bc*bs;
-						for(j=0;j<bnc;j++)
+						memset( &w[j*np], 0, np*sizeof(LIS_SCALAR) );
+					}
+					#pragma omp for 
+					for(bi=0;bi<nr;bi++)
+					{
+						for(bc=A->bptr[bi];bc<A->bptr[bi+1];bc++)
 						{
-							for(i=0;i<bnr;i++)
+							bj   = my_rank*np + A->bindex[bc] * bnc;
+							k    = bc*bs;
+							for(j=0;j<bnc;j++)
 							{
-								w[bj+j] += conj(A->value[k]) * x[bi*bnr+i];
-								k++;
+								for(i=0;i<bnr;i++)
+								{
+									w[bj+j] += conj(A->value[k]) * x[bi*bnr+i];
+									k++;
+								}
 							}
 						}
 					}
-				}
-				#pragma omp barrier
-				#pragma omp for 
-				for(i=0;i<np;i++)
-				{
-					t = 0.0;
-					for(j=0;j<nprocs;j++)
+					#pragma omp barrier
+					#pragma omp for 
+					for(i=0;i<np;i++)
 					{
-						t += w[j*np+i];
+						t = 0.0;
+						for(j=0;j<nprocs;j++)
+						{
+							t += w[j*np+i];
+						}
+						y[i] = t;
 					}
-					y[i] = t;
 				}
-			}
 				lis_free(w);
 				return;
 			}
