@@ -35,10 +35,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef HAVE_MALLOC_H
-        #include <malloc.h>
+	#include <malloc.h>
+#endif
 #include <stdint.h>
 #include <limits.h>
-#endif
 #include <string.h>
 #include <stdarg.h>
 #ifdef _OPENMP
@@ -867,6 +867,7 @@ void lis_matvech_bsr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	LIS_INT n,np;
 	#ifdef _OPENMP
 		LIS_INT nprocs,my_rank;
+		LIS_UNSIGNED_INT max_index;
 		LIS_SCALAR t;
 		LIS_SCALAR *w;
 	#endif
@@ -927,24 +928,28 @@ void lis_matvech_bsr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	else
 	{
 		#ifdef _OPENMP
-            nprocs = omp_get_max_threads();
-            w = NULL;
-            /* Check both size_t allocation bounds and LIS_INT scratch
-             * indexing before using a per-thread dense reduction buffer.
-             * A failed allocation must not dereference NULL. */
-            if(nprocs>0 && np>0 &&
-               (size_t)nprocs<=SIZE_MAX/(size_t)np &&
-               (size_t)nprocs*(size_t)np<=SIZE_MAX/sizeof(LIS_SCALAR) &&
-               (size_t)nprocs<=
-                   (sizeof(LIS_INT)<=sizeof(int) ?
-                    (size_t)INT_MAX/(size_t)np :
-                    (size_t)LLONG_MAX/(size_t)np))
-                w = (LIS_SCALAR *)lis_malloc(
-                    (size_t)nprocs*(size_t)np*sizeof(LIS_SCALAR),
-                    "lis_matvech_bsr::w");
-            if(w!=NULL)
-            {
-            #pragma omp parallel private(bi,bc,bj,i,j,k,my_rank,t)
+			nprocs = omp_get_max_threads();
+			w = NULL;
+			/* LIS_UNSIGNED_INT has the same width as LIS_INT in lis.h.
+			 * Derive the signed indexing limit from the actual typedef,
+			 * rather than guessing its width from int/long/long long.
+			 */
+			max_index = ((LIS_UNSIGNED_INT)~(LIS_UNSIGNED_INT)0) >> 1;
+			/* Guard both the allocation size_t and LIS_INT offsets.
+			 * On a platform where LIS_INT is wider than size_t, the
+			 * latter's bounds already guarantee valid LIS_INT offsets.
+			 */
+			if(nprocs>0 && np>0 &&
+			   (size_t)nprocs<=SIZE_MAX/(size_t)np &&
+			   (size_t)nprocs*(size_t)np<=SIZE_MAX/sizeof(LIS_SCALAR) &&
+			   (sizeof(size_t)<sizeof(LIS_INT) ||
+			    (size_t)nprocs<=(size_t)max_index/(size_t)np))
+				w = (LIS_SCALAR *)lis_malloc(
+					(size_t)nprocs*(size_t)np*sizeof(LIS_SCALAR),
+					"lis_matvech_bsr::w");
+			if(w!=NULL)
+			{
+				#pragma omp parallel private(bi,bc,bj,i,j,k,my_rank,t)
 			{
 				my_rank = omp_get_thread_num();
 
@@ -982,14 +987,15 @@ void lis_matvech_bsr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 					y[i] = t;
 				}
 			}
-            lis_free(w);
-            }
-            else
-        #endif
-            {
-            /* The serial path also handles allocation failure and
-             * empty matrices without allocating scratch space. */
-            for(i=0; i<np; i++)
+				lis_free(w);
+			}
+			/* OOM / overflow / empty dimensions: use serial transpose. */
+			else
+		#endif
+			{
+				/* Both serial and parallel paths write all np entries.
+				 * Transpose may scatter into off-process columns (np>n). */
+				for(i=0; i<np; i)
 			{
 				y[i] = 0.0;
 			}
@@ -1009,6 +1015,6 @@ void lis_matvech_bsr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 					}
 				}
 			}
-            }
+			}
 	}
 }
