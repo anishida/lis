@@ -1,0 +1,103 @@
+name: CSR transpose single-worker A/B benchmark
+
+on:
+  push:
+    branches: ['upstream/perf-csr-transpose-serial-20261120']
+  workflow_dispatch:
+
+concurrency:
+  group: csr-transpose-benchmark-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  paired-benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      OMP_NUM_THREADS: '1'
+      OMP_DYNAMIC: 'FALSE'
+      OPENBLAS_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: optimized
+      - uses: actions/checkout@v4
+        with:
+          repository: anishida/lis
+          ref: '096478e4483f7f60e46b46d1a9faf1262dcdbe72'
+          path: baseline
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+      - name: Build same compiler configuration for upstream and optimized
+        shell: bash
+        run: |
+          set -euo pipefail
+          for variant in baseline optimized; do
+            pushd "$variant"
+            autoreconf -fiv
+            ./configure --enable-omp --disable-mpi --disable-fortran --disable-f90 --disable-saamg CFLAGS='-O2 -g'
+            make -j2
+            gcc -O2 -g -fopenmp -I. -Iinclude \
+              "$GITHUB_WORKSPACE/optimized/tools/bench_csr_transpose_oneworker.c" \
+              -Lsrc -llis -lm -o "$GITHUB_WORKSPACE/bench-$variant"
+            popd
+          done
+      - name: Run paired cold and repeated single-worker series
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p csr-timing
+          echo 'variant,n,repeats,batch,seconds,ns_per_call,checksum' > csr-timing/raw.csv
+          for case in '256 12000' '1024 5000' '4096 1200'; do
+            read -r n reps <<< "$case"
+            for phase in baseline_first optimized_first optimized_repeat baseline_repeat; do
+              case "$phase" in
+                baseline*) variant=baseline ;;
+                optimized*) variant=optimized ;;
+              esac
+              LD_LIBRARY_PATH="$GITHUB_WORKSPACE/$variant/src/.libs:${LD_LIBRARY_PATH:-}" \
+                timeout 100s "$GITHUB_WORKSPACE/bench-$variant" \
+                  "$phase" "$n" "$reps" 7 >> csr-timing/raw.csv
+            done
+          done
+      - name: Audit numerical checksums and report paired timings
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee csr-timing/summary.txt
+          import csv,statistics,math
+          from collections import defaultdict
+          records=defaultdict(list)
+          with open('csr-timing/raw.csv',newline='') as f:
+              for row in csv.DictReader(f):
+                  v,n=row['variant'],int(row['n'])
+                  cost=float(row['ns_per_call']); chk=float(row['checksum'])
+                  if not math.isfinite(cost) or not math.isfinite(chk) or cost<=0:
+                      raise SystemExit('Nonfinite/invalid benchmark record')
+                  records[(v,n)].append((cost,chk))
+          for n in (256,1024,4096):
+              keys=[(v,n) for v in ('baseline_first','optimized_first','optimized_repeat','baseline_repeat')]
+              if any(len(records[k])!=7 for k in keys):
+                  raise SystemExit(f'Missing batch at n={n}')
+              vals=[p[1] for k in keys for p in records[k]]
+              if max(vals)-min(vals)>1e-8*max(1.0,abs(vals[0])):
+                  raise SystemExit(f'Mismatched transpose checksum at n={n}')
+              mid={k[0]:statistics.median(p[0] for p in records[k]) for k in keys}
+              baseline=statistics.median((mid['baseline_first'],mid['baseline_repeat']))
+              optimized=statistics.median((mid['optimized_first'],mid['optimized_repeat']))
+              print(f'n={n} baseline={baseline:.3f}ns/spmv optimized={optimized:.3f}ns/spmv speedup={baseline/optimized:.3f}x drift={mid["baseline_repeat"]/mid["baseline_first"]:.3f}')
+          print('PASS: all transpose checksums and 84 timing batches validated; timings are non-gating')
+          PY
+      - name: Preserve CSV timings and build configurations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: csr-transpose-paired-${{ github.run_id }}
+          path: |
+            csr-timing/
+            baseline/config.log
+            optimized/config.log
+          if-no-files-found: warn
