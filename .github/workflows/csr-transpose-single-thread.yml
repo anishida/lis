@@ -33,7 +33,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          autoreconf -fiv
+          # Verify the checked-in generated Makefile.in without autoreconf
+          # for one configuration; the other three regenerate as usual.
+          if [ "${{ matrix.mode }}" = release ] && [ "${{ matrix.index }}" = int32 ]; then
+            echo 'Building with tracked Autotools templates (no autoreconf)'
+          else
+            autoreconf -fiv
+          fi
           if [ "${{ matrix.mode }}" = "asan-ubsan" ]; then
             export CFLAGS="-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=undefined"
             export LDFLAGS="-fsanitize=address,undefined"
