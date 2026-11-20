@@ -1,6 +1,8 @@
 name: CSR transpose single-worker fast path and OOM regression
 
 on:
+  push:
+    branches: ['upstream/perf-csr-transpose-serial-20261120']
   pull_request:
   workflow_dispatch:
 
@@ -19,6 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         mode: [release, asan-ubsan]
+        index: [int32, int64]
     env:
       OMP_NUM_THREADS: '2'
       OMP_DYNAMIC: 'FALSE'
@@ -32,16 +35,20 @@ jobs:
           set -euo pipefail
           autoreconf -fiv
           if [ "${{ matrix.mode }}" = "asan-ubsan" ]; then
-            export CFLAGS="-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined"
+            export CFLAGS="-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=undefined"
             export LDFLAGS="-fsanitize=address,undefined"
             export ASAN_OPTIONS="detect_leaks=0"
           else
             export CFLAGS="-O2 -g"
           fi
+          INDEX_FLAGS=''
+          if [ "${{ matrix.index }}" = int64 ]; then INDEX_FLAGS='--enable-longlong'; fi
           ./configure --enable-test --enable-oom-tests --enable-omp \
-            --disable-mpi --disable-fortran --disable-f90 --disable-saamg
+            --disable-mpi --disable-fortran --disable-f90 --disable-saamg \
+            $INDEX_FLAGS
           make -j2
           make -C test testcsrtransposeoom
+          git diff -- test/Makefile.in > test-makefile-generated.patch || true
       - name: Check one-worker CSR transpose and multi-worker OOM
         shell: bash
         run: |
@@ -49,14 +56,23 @@ jobs:
           export LD_LIBRARY_PATH="$PWD/src/.libs:${LD_LIBRARY_PATH:-}"
           if [ "${{ matrix.mode }}" = "asan-ubsan" ]; then
             export ASAN_OPTIONS="detect_leaks=1:halt_on_error=1"
+            export UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1"
           fi
-          ./test/testcsrtransposeoom 2>&1 | tee csr-transpose.log
+          timeout 90s ./test/testcsrtransposeoom 2>&1 | tee csr-transpose.log
+          grep -Fqx 'CSR_TRANSPOSE_OOM PASS' csr-transpose.log
+          grep -Fqx 'CSR_TRANSPOSE_OPENMP_EXECUTED' csr-transpose.log
+          if grep -Eqi 'CSR_TRANSPOSE_OPENMP_SKIPPED|skipped \(requires OpenMP\)' csr-transpose.log; then
+            echo 'CSR OpenMP regression unexpectedly skipped' >&2
+            exit 1
+          fi
       - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: csr-transpose-${{ matrix.mode }}
+          name: csr-transpose-${{ matrix.mode }}-${{ matrix.index }}
           path: |
             config.log
             csr-transpose.log
+            test-makefile-generated.patch
+            test/Makefile.in
           if-no-files-found: ignore
