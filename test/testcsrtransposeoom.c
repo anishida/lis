@@ -92,6 +92,11 @@ int main(int argc,char **argv)
     if(lis_initialize(&argc,&argv)!=LIS_SUCCESS)return 2;
     failed=check_case(0,2)|check_case(1,2)|check_case(0,1);
     lis_finalize();
+#ifdef _OPENMP
+    if(!failed)puts("CSR_TRANSPOSE_OPENMP_EXECUTED");
+#else
+    puts("CSR_TRANSPOSE_OPENMP_SKIPPED");
+#endif
     if(!failed)puts("CSR_TRANSPOSE_OOM PASS");
     return failed;
 }
