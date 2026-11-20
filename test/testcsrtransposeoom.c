@@ -6,12 +6,15 @@
 #endif
 #include <math.h>
 #include <stdio.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 #include "lislib.h"
 #ifndef LIS_TEST_OOM
 #error "Build this regression with -DLIS_TEST_OOM"
 #endif
 
-static int check_case(int split)
+static int check_case(int split,int threads)
 {
     const LIS_INT n=64;
     LIS_MATRIX A=NULL;
@@ -19,6 +22,11 @@ static int check_case(int split)
     LIS_INT i,err=0;
     size_t calls=0;
     int bad=1;
+#ifdef _OPENMP
+    omp_set_num_threads(threads);
+#else
+    (void)threads;
+#endif
     err=lis_matrix_create(LIS_COMM_WORLD,&A); if(err)goto done;
     err=lis_matrix_set_size(A,0,n); if(err)goto done;
     for(i=0;i<n;i++)
@@ -55,7 +63,7 @@ static int check_case(int split)
     err=lis_matvech(A,x,y);
     calls=lis_test_oom_calls();
     lis_test_oom_end();
-    if(err || calls==0)goto done;
+    if(err || (threads==1 && !split ? calls!=0 : calls==0))goto done;
     for(i=0;i<n;i++)
     {
         double expect=4.0*(double)x->value[i];
@@ -82,7 +90,7 @@ int main(int argc,char **argv)
 {
     int failed;
     if(lis_initialize(&argc,&argv)!=LIS_SUCCESS)return 2;
-    failed=check_case(0)|check_case(1);
+    failed=check_case(0,2)|check_case(1,2)|check_case(0,1);
     lis_finalize();
     if(!failed)puts("CSR_TRANSPOSE_OOM PASS");
     return failed;
