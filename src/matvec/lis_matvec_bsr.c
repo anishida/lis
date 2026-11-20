@@ -865,6 +865,42 @@ void lis_matvec_bsr_4x3(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	}
 }
 
+/* Shared serial non-split transpose for non-OpenMP builds and for
+ * OpenMP scratch allocation failures. No temporary storage is needed. */
+static void lis_matvech_bsr_nonsplit_serial(
+    LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
+{
+	LIS_INT i,j,k,bi,bj,bc;
+	LIS_INT nr=A->nr,bnr=A->bnr,bnc=A->bnc,bs=bnr*bnc,np=A->np;
+#ifdef LIS_TEST_OOM
+	fprintf(stderr,"BSR diagnostic serial helper np=%lld nr=%lld ptr=%lld,%lld,%lld\\n",
+	        (long long)np,(long long)nr,
+	        (long long)A->bptr[0],(long long)A->bptr[1],
+	        (long long)A->bptr[2]);
+#endif
+	/* A^T x can scatter into external columns; initialize all np entries. */
+	for(i=0;i<np;i++) y[i]=0.0;
+	for(bi=0;bi<nr;bi++)
+	{
+		for(bc=A->bptr[bi];bc<A->bptr[bi+1];bc++)
+		{
+			bj = A->bindex[bc]*bnc;
+			k = bc*bs;
+			for(j=0;j<bnc;j++)
+			{
+				for(i=0;i<bnr;i++)
+				{
+					y[bj+j] += conj(A->value[k]) * x[bi*bnr+i];
+					k++;
+				}
+			}
+		}
+	}
+#ifdef LIS_TEST_OOM
+	fprintf(stderr,"BSR diagnostic serial helper exited\\n");
+#endif
+}
+
 void lis_matvech_bsr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 {
 	LIS_INT i,j,k;
@@ -992,37 +1028,11 @@ void lis_matvech_bsr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 				}
 			}
 				lis_free(w);
+				return;
 			}
-			/* OOM / overflow / empty dimensions: use serial transpose. */
-			else
 		#endif
-			{
-				#ifdef LIS_TEST_OOM
-				fprintf(stderr,"BSR diagnostic serial enter np=%lld nr=%lld\\n",
-				        (long long)np,(long long)nr);
-				#endif
-				/* Both serial and parallel paths write all np entries.
-				 * Transpose may scatter into off-process columns (np>n). */
-				for(i=0; i<np; i)
-			{
-				y[i] = 0.0;
-			}
-			for(bi=0;bi<nr;bi++)
-			{
-				for(bc=A->bptr[bi];bc<A->bptr[bi+1];bc++)
-				{
-					bj   = A->bindex[bc] * bnc;
-					k    = bc*bs;
-					for(j=0;j<bnc;j++)
-					{
-						for(i=0;i<bnr;i++)
-						{
-							y[bj+j] += conj(A->value[k]) * x[bi*bnr+i];
-							k++;
-						}
-					}
-				}
-			}
-			}
+		/* The OpenMP scratch was unavailable or its size overflowed:
+		 * use the same serial implementation as non-OpenMP builds. */
+		lis_matvech_bsr_nonsplit_serial(A,x,y);
 	}
 }
