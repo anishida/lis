@@ -190,8 +190,9 @@ F77LINK = $(LIBTOOL) $(AM_V_lt) --tag=F77 $(AM_LIBTOOLFLAGS) \
 @ENABLE_OOM_TESTS_TRUE@	testoomdiag$(EXEEXT) \
 @ENABLE_OOM_TESTS_TRUE@	testoomiluc$(EXEEXT) \
 @ENABLE_OOM_TESTS_TRUE@	testoomsnapshot$(EXEEXT) \
-@ENABLE_OOM_TESTS_TRUE@	testoomrco$(EXEEXT) $(am__EXEEXT_1)
-@ENABLE_OOM_TESTS_TRUE@am__append_6 = testoomalloc$(EXEEXT) testoomilu$(EXEEXT) testoomdiag$(EXEEXT) testoomiluc$(EXEEXT) testoomsnapshot$(EXEEXT) testoomrco$(EXEEXT)
+@ENABLE_OOM_TESTS_TRUE@	testoomrco$(EXEEXT) \
+@ENABLE_OOM_TESTS_TRUE@	testcsrtransposeoom$(EXEEXT) $(am__EXEEXT_1)
+@ENABLE_OOM_TESTS_TRUE@am__append_6 = testoomalloc$(EXEEXT) testoomilu$(EXEEXT) testoomdiag$(EXEEXT) testoomiluc$(EXEEXT) testoomsnapshot$(EXEEXT) testoomrco$(EXEEXT) testcsrtransposeoom$(EXEEXT)
 @ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@am__append_7 = testoommpiscale
 @ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@am__append_8 = testoommpiscale$(EXEEXT)
 subdir = test
@@ -560,6 +561,12 @@ testcondense_lis_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_testcondense_oom_OBJECTS = testcondense_oom.$(OBJEXT)
 testcondense_oom_OBJECTS = $(am_testcondense_oom_OBJECTS)
 testcondense_oom_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__testcsrtransposeoom_SOURCES_DIST = testcsrtransposeoom.c
+@ENABLE_OOM_TESTS_TRUE@am_testcsrtransposeoom_OBJECTS =  \
+@ENABLE_OOM_TESTS_TRUE@	testcsrtransposeoom.$(OBJEXT)
+testcsrtransposeoom_OBJECTS = $(am_testcsrtransposeoom_OBJECTS)
+testcsrtransposeoom_LDADD = $(LDADD)
+testcsrtransposeoom_DEPENDENCIES =
 am_testdiagonal_OBJECTS = testdiagonal.$(OBJEXT)
 testdiagonal_OBJECTS = $(am_testdiagonal_OBJECTS)
 testdiagonal_LDADD = $(LDADD)
@@ -1053,7 +1060,8 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testcomposite_core.Po \
 	./$(DEPDIR)/testcondense_core.Po \
 	./$(DEPDIR)/testcondense_lis.Po \
-	./$(DEPDIR)/testcondense_oom.Po ./$(DEPDIR)/testdiagonal.Po \
+	./$(DEPDIR)/testcondense_oom.Po \
+	./$(DEPDIR)/testcsrtransposeoom.Po ./$(DEPDIR)/testdiagonal.Po \
 	./$(DEPDIR)/testeigenbreakdown.Po \
 	./$(DEPDIR)/testesolverselection.Po \
 	./$(DEPDIR)/testesubspaceretry.Po \
@@ -1200,7 +1208,7 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testcomponentnullspace_SOURCES) \
 	$(testcomposite_core_SOURCES) $(testcondense_core_SOURCES) \
 	$(testcondense_lis_SOURCES) $(testcondense_oom_SOURCES) \
-	$(testdiagonal_SOURCES) $(testeigenbreakdown_SOURCES) \
+	$(testcsrtransposeoom_SOURCES) $(testdiagonal_SOURCES) $(testeigenbreakdown_SOURCES) \
 	$(testesolverselection_SOURCES) $(testesubspaceretry_SOURCES) \
 	testexactnullspace.c $(testexternalstorage_SOURCES) \
 	$(testfeastcontour_SOURCES) $(testfeastfoundation_SOURCES) \
@@ -1294,7 +1302,7 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testcomponentnullspace_SOURCES) \
 	$(testcomposite_core_SOURCES) $(testcondense_core_SOURCES) \
 	$(testcondense_lis_SOURCES) $(testcondense_oom_SOURCES) \
-	$(testdiagonal_SOURCES) $(testeigenbreakdown_SOURCES) \
+	$(am__testcsrtransposeoom_SOURCES_DIST) $(testdiagonal_SOURCES) $(testeigenbreakdown_SOURCES) \
 	$(testesolverselection_SOURCES) $(testesubspaceretry_SOURCES) \
 	testexactnullspace.c $(testexternalstorage_SOURCES) \
 	$(testfeastcontour_SOURCES) $(testfeastfoundation_SOURCES) \
@@ -1998,6 +2006,7 @@ testilucbsrsmoke_SOURCES = testilucbsrsmoke.c
 @ENABLE_OOM_TESTS_TRUE@testoomiluc_SOURCES = testoomiluc.c
 @ENABLE_OOM_TESTS_TRUE@testoomsnapshot_SOURCES = testoomsnapshot.c
 @ENABLE_OOM_TESTS_TRUE@testoomrco_SOURCES = testoomrco.c
+@ENABLE_OOM_TESTS_TRUE@testcsrtransposeoom_SOURCES = testcsrtransposeoom.c
 @ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@testoommpiscale_SOURCES = testoommpiscale.c
 testfgmresprojected_SOURCES = testfgmresprojected.c
 testfgmresprojected_LDADD = $(LDADD) -lm
@@ -2461,6 +2470,10 @@ testcondense_lis$(EXEEXT): $(testcondense_lis_OBJECTS) $(testcondense_lis_DEPEND
 testcondense_oom$(EXEEXT): $(testcondense_oom_OBJECTS) $(testcondense_oom_DEPENDENCIES) $(EXTRA_testcondense_oom_DEPENDENCIES) 
 	@rm -f testcondense_oom$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testcondense_oom_OBJECTS) $(testcondense_oom_LDADD) $(LIBS)
+
+testcsrtransposeoom$(EXEEXT): $(testcsrtransposeoom_OBJECTS) $(testcsrtransposeoom_DEPENDENCIES) $(EXTRA_testcsrtransposeoom_DEPENDENCIES) 
+	@rm -f testcsrtransposeoom$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testcsrtransposeoom_OBJECTS) $(testcsrtransposeoom_LDADD) $(LIBS)
 
 testdiagonal$(EXEEXT): $(testdiagonal_OBJECTS) $(testdiagonal_DEPENDENCIES) $(EXTRA_testdiagonal_DEPENDENCIES) 
 	@rm -f testdiagonal$(EXEEXT)
@@ -2960,6 +2973,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testcondense_core.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testcondense_lis.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testcondense_oom.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testcsrtransposeoom.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testdiagonal.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testeigenbreakdown.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testesolverselection.Po@am__quote@ # am--include-marker
@@ -4128,6 +4142,13 @@ testoomrco.log: testoomrco$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testcsrtransposeoom.log: testcsrtransposeoom$(EXEEXT)
+	@p='testcsrtransposeoom$(EXEEXT)'; \
+	b='testcsrtransposeoom'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 testoommpiscale.log: testoommpiscale$(EXEEXT)
 	@p='testoommpiscale$(EXEEXT)'; \
 	b='testoommpiscale'; \
@@ -4379,6 +4400,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testcondense_core.Po
 	-rm -f ./$(DEPDIR)/testcondense_lis.Po
 	-rm -f ./$(DEPDIR)/testcondense_oom.Po
+	-rm -f ./$(DEPDIR)/testcsrtransposeoom.Po
 	-rm -f ./$(DEPDIR)/testdiagonal.Po
 	-rm -f ./$(DEPDIR)/testeigenbreakdown.Po
 	-rm -f ./$(DEPDIR)/testesolverselection.Po
@@ -4588,6 +4610,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testcondense_core.Po
 	-rm -f ./$(DEPDIR)/testcondense_lis.Po
 	-rm -f ./$(DEPDIR)/testcondense_oom.Po
+	-rm -f ./$(DEPDIR)/testcsrtransposeoom.Po
 	-rm -f ./$(DEPDIR)/testdiagonal.Po
 	-rm -f ./$(DEPDIR)/testeigenbreakdown.Po
 	-rm -f ./$(DEPDIR)/testesolverselection.Po
