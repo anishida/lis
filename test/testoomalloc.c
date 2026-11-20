@@ -134,6 +134,34 @@ static int check_bsr_transpose_oom(size_t base)
     CHECK(lis_test_oom_calls()==1);
     CHECK(lis_test_oom_live()==base);
     CHECK(y[0]==(LIS_SCALAR)10.0 && y[1]==(LIS_SCALAR)43.0);
+
+    /* Transpose scatter can write an off-process column: np > n.
+     * Both OpenMP reduction and serial OOM fallback must initialize
+     * the complete y[0..np-1] range, including the third entry. */
+    {
+        LIS_SCALAR y_halo[3]={(LIS_SCALAR)-99.0,(LIS_SCALAR)-99.0,
+                              (LIS_SCALAR)-99.0};
+        a.np=3;
+        cols[1]=2; /* Row 0: 2*x[0] into y[0], 3*x[0] into y[2]. */
+        lis_test_oom_begin(0);
+        lis_matvech_bsr(&a,x,y_halo);
+        lis_test_oom_end();
+        CHECK(lis_test_oom_calls()==1);
+        CHECK(lis_test_oom_live()==base);
+        CHECK(y_halo[0]==(LIS_SCALAR)10.0 &&
+              y_halo[1]==(LIS_SCALAR)28.0 &&
+              y_halo[2]==(LIS_SCALAR)15.0);
+
+        y_halo[0]=y_halo[1]=y_halo[2]=(LIS_SCALAR)-99.0;
+        lis_test_oom_begin(1);
+        lis_matvech_bsr(&a,x,y_halo);
+        lis_test_oom_end();
+        CHECK(lis_test_oom_calls()==1);
+        CHECK(lis_test_oom_live()==base);
+        CHECK(y_halo[0]==(LIS_SCALAR)10.0 &&
+              y_halo[1]==(LIS_SCALAR)28.0 &&
+              y_halo[2]==(LIS_SCALAR)15.0);
+    }
     puts("BSR transpose: OpenMP scratch and injected OOM fallback passed");
 #else
     (void)base;
