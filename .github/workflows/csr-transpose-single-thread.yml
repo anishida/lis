@@ -1,9 +1,13 @@
 name: CSR transpose single-worker fast path and OOM regression
 
 on:
-  push:
-    branches: ['upstream/perf-csr-transpose-serial-20261120']
   pull_request:
+    paths:
+      - 'src/matvec/lis_matvec_csr.c'
+      - 'test/testcsrtransposeoom.c'
+      - 'test/Makefile.am'
+      - 'test/Makefile.in'
+      - '.github/workflows/csr-transpose-single-thread.yml'
   workflow_dispatch:
 
 concurrency:
