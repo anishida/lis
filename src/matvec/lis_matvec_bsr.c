@@ -39,6 +39,12 @@
 #endif
 #include <stdint.h>
 #include <limits.h>
+/* Keep the signed bound in lockstep with LIS_INT's typedef in lis.h. */
+#ifdef _LONG__LONG
+#define LIS_BSR_MAX_INDEX LLONG_MAX
+#else
+#define LIS_BSR_MAX_INDEX INT_MAX
+#endif
 #include <string.h>
 #include <stdarg.h>
 #ifdef _OPENMP
@@ -867,7 +873,6 @@ void lis_matvech_bsr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	LIS_INT n,np;
 	#ifdef _OPENMP
 		LIS_INT nprocs,my_rank;
-		LIS_UNSIGNED_INT max_index;
 		LIS_SCALAR t;
 		LIS_SCALAR *w;
 	#endif
@@ -930,20 +935,15 @@ void lis_matvech_bsr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 		#ifdef _OPENMP
 			nprocs = omp_get_max_threads();
 			w = NULL;
-			/* LIS_UNSIGNED_INT has the same width as LIS_INT in lis.h.
-			 * Derive the signed indexing limit from the actual typedef,
-			 * rather than guessing its width from int/long/long long.
-			 */
-			max_index = ((LIS_UNSIGNED_INT)~(LIS_UNSIGNED_INT)0) >> 1;
-			/* Guard both the allocation size_t and LIS_INT offsets.
-			 * On a platform where LIS_INT is wider than size_t, the
-			 * latter's bounds already guarantee valid LIS_INT offsets.
+			/* Check size_t allocation bounds and the signed LIS_INT
+			 * offsets used to index the thread-local reduction buffer.
+			 * When LIS_INT is wider than size_t, the cast of the type
+			 * limit to size_t is at least SIZE_MAX and remains safe.
 			 */
 			if(nprocs>0 && np>0 &&
 			   (size_t)nprocs<=SIZE_MAX/(size_t)np &&
 			   (size_t)nprocs*(size_t)np<=SIZE_MAX/sizeof(LIS_SCALAR) &&
-			   (sizeof(size_t)<sizeof(LIS_INT) ||
-			    (size_t)nprocs<=(size_t)max_index/(size_t)np))
+			   (size_t)nprocs<=(size_t)LIS_BSR_MAX_INDEX/(size_t)np)
 				w = (LIS_SCALAR *)lis_malloc(
 					(size_t)nprocs*(size_t)np*sizeof(LIS_SCALAR),
 					"lis_matvech_bsr::w");
