@@ -60,7 +60,7 @@ jobs:
             export ASAN_OPTIONS="detect_leaks=1:halt_on_error=1"
             export UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1"
           fi
-          ./test/testoomalloc 2>&1 | tee bsr-oom.log
+          timeout 45s ./test/testoomalloc 2>&1 | tee bsr-oom.log
           # Do not silently pass if the OOM regression compiled without
           # OpenMP and printed its standard "skipped" message.
           grep -Fqx 'BSR transpose: OpenMP scratch and injected OOM fallback passed' bsr-oom.log
