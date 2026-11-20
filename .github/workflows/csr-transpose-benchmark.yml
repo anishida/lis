@@ -42,7 +42,7 @@ jobs:
             make -j2
             gcc -O2 -g -fopenmp -I. -Iinclude \
               "$GITHUB_WORKSPACE/optimized/tools/bench_csr_transpose_oneworker.c" \
-              -Lsrc -llis -lm -o "$GITHUB_WORKSPACE/bench-$variant"
+              "$GITHUB_WORKSPACE/$variant/src/.libs/liblis.a" -lm -o "$GITHUB_WORKSPACE/bench-$variant"
             popd
           done
       - name: Run paired cold and repeated single-worker series
