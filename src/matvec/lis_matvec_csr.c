@@ -189,6 +189,16 @@ void lis_matvech_csr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 	n    = A->n;
 	np   = A->np;
+#ifdef _OPENMP
+	/* With one worker, unsplit CSR can use the existing serial scatter
+	 * order without scratch allocation, memset or a parallel region.
+	 * Split CSR intentionally keeps its established OpenMP path. */
+	if(!A->is_splited && omp_get_max_threads()==1)
+	{
+		lis_matvech_csr_serial_fallback(A,x,y);
+		return;
+	}
+#endif
 	if( A->is_splited )
 	{
 		#ifdef _OPENMP
