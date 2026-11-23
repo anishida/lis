@@ -191,12 +191,7 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 	cs      = (m+1)*h_dim;
 	sn      = (m+2)*h_dim;
 
-	/* r = M^-1 * (b - A * x) */
-	lis_matvec(A,x,z);
-	lis_vector_xpay(b,-1.0,z);
-	lis_psolve(solver,z,v[0]);
-	
-	/* Initial Residual */
+	/* Initial residual is computed once by the checked shared helper. */
 	if( lis_solver_get_initial_residual(solver,NULL,NULL,v[0],&bnrm2) )
 	{
 		lis_free(h);
@@ -500,12 +495,7 @@ LIS_INT lis_gmres_quad(LIS_SOLVER solver)
 	one.hi[0]   = 1.0;
 	one.lo[0]   = 0.0;
 
-	/* r = M^-1 * (b - A * x) */
-	lis_matvec(A,x,z);
-	lis_vector_xpay(b,-1.0,z);
-	lis_psolve(solver,z,v[0]);
-
-	/* Initial Residual */
+	/* Initial residual is computed once by the checked shared helper. */
 	if( lis_solver_get_initial_residual(solver,NULL,NULL,v[0],&bnrm2) )
 	{
 		lis_free(h);
@@ -853,12 +843,7 @@ LIS_INT lis_gmres_switch(LIS_SOLVER solver)
 
 	z->precision = LIS_PRECISION_DEFAULT;
 
-	/* r = M^-1 * (b - A * x) */
-	lis_matvec(A,x,z);
-	lis_vector_xpay(b,-1.0,z);
-	lis_psolve(solver,z,v[0]);
-
-	/* Initial Residual */
+	/* Initial residual is computed once by the checked shared helper. */
 	if( lis_solver_get_initial_residual(solver,NULL,NULL,v[0],&bnrm2) )
 	{
 		lis_free(h);
