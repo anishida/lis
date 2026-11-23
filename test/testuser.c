@@ -5,6 +5,8 @@
 #endif
 
 #include "lis.h"
+#include "lis_solver.h"
+#include "lis_precon.h"
 #include <stdio.h>
 
 typedef struct
@@ -13,6 +15,7 @@ typedef struct
 	LIS_SCALAR diag;
 	LIS_SCALAR offdiag;
 	LIS_INT fail_next_matvec;
+	LIS_INT fail_next_psolve;
 } USER_TRIDIAG;
 
 static LIS_INT shell_matvec(void *ctx, const LIS_SCALAR *x, LIS_SCALAR *y)
@@ -63,6 +66,11 @@ static LIS_INT userdiag_psolve(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
 	err = lis_matrix_get_user_data(solver->A,&ctx);
 	if( err ) return err;
 	A = (USER_TRIDIAG *)ctx;
+	if( A->fail_next_psolve )
+	{
+		A->fail_next_psolve = LIS_FALSE;
+		return LIS_ERR_ILL_ARG;
+	}
 
 	for(i=0;i<b->n;i++) x->value[i] = b->value[i] / A->diag;
 	return LIS_SUCCESS;
@@ -140,6 +148,75 @@ fail:
     return 1;
 }
 
+/* Directly exercise the shared initial-residual M!=NULL branch.
+ * The ordinary default-precision Krylov paths pass M==NULL, so
+ * injecting a psolve error in their iterations would not test this fix.
+ * QMR's quad variant uses M!=NULL; this is a default-precision helper
+ * test so it is also runnable in configurations with quad disabled. */
+static int test_initial_psolve_error(LIS_MATRIX A, LIS_VECTOR b,
+                                     LIS_VECTOR x, USER_TRIDIAG *ctx)
+{
+    LIS_SOLVER solver=NULL;
+    LIS_PRECON precon=NULL;
+    LIS_VECTOR scratch=NULL,residual=NULL;
+    LIS_REAL bnrm2=0;
+    LIS_INT err,result;
+    int failed=1;
+    char options[]="-i qmr -p userdiag -tol 1e-12 -print none";
+
+    if(A->nprocs!=1) return 0;
+    err=lis_solver_create(&solver);if(err)goto done;
+    err=lis_solver_set_option(options,solver);if(err)goto done;
+    solver->A=A;
+    solver->b=b;
+    solver->x=x;
+    solver->precision=LIS_PRECISION_DEFAULT;
+    solver->options[LIS_OPTIONS_INITGUESS_ZEROS]=LIS_TRUE;
+    err=lis_precon_create(solver,&precon);if(err)goto done;
+    solver->precon=precon;
+    err=lis_vector_duplicate(A,&scratch);if(err)goto done;
+    err=lis_vector_duplicate(A,&residual);if(err)goto done;
+
+    solver->retcode=LIS_SUCCESS;
+    solver->iter=101;
+    ctx->fail_next_psolve=LIS_TRUE;
+    result=lis_solver_get_initial_residual(
+        solver,precon,scratch,residual,&bnrm2);
+    if(result!=LIS_FAILS || solver->retcode!=LIS_ERR_ILL_ARG ||
+       solver->iter!=0 || ctx->fail_next_psolve)
+    {
+        fprintf(stderr,
+                "USER initial psolve error was lost: result=%lld status=%lld iter=%lld\n",
+                (long long)result,(long long)solver->retcode,
+                (long long)solver->iter);
+        goto done;
+    }
+
+    /* A second call must succeed with the same preconditioner, and
+     * the input RHS must not be accidentally changed by the failure. */
+    solver->retcode=LIS_SUCCESS;
+    result=lis_solver_get_initial_residual(
+        solver,precon,scratch,residual,&bnrm2);
+    if(result!=LIS_SUCCESS || solver->retcode!=LIS_SUCCESS ||
+       ctx->fail_next_psolve)
+    {
+        fprintf(stderr,"USER initial psolve recovery failed: %lld\n",
+                (long long)result);
+        goto done;
+    }
+    printf("USER_INITIAL_PSOLVE_ERROR PASS\n");
+    failed=0;
+
+done:
+    ctx->fail_next_psolve=LIS_FALSE;
+    if(solver) solver->precon=NULL; /* caller owns this test preconditioner */
+    if(precon) lis_precon_destroy(precon);
+    if(residual) lis_vector_destroy(residual);
+    if(scratch) lis_vector_destroy(scratch);
+    if(solver) lis_solver_destroy(solver);
+    return failed;
+}
+
 int main(int argc, char *argv[])
 {
 	LIS_MATRIX A;
@@ -157,6 +234,7 @@ int main(int argc, char *argv[])
 	shell.diag = 2.0;
 	shell.offdiag = -1.0;
 	shell.fail_next_matvec = LIS_FALSE;
+	shell.fail_next_psolve = LIS_FALSE;
 
 	err = lis_precon_register("userdiag",
 	                          userdiag_create,
@@ -217,7 +295,8 @@ int main(int argc, char *argv[])
 	lis_vector_nrm2(x,&nrm2);
 	printf("LIS_MATRIX_USER solution error = %.15e\n",(double)nrm2);
 
-	if( nrm2<=1.0e-8 && test_initial_matvec_error(A,b,x,&shell) )
+	if( nrm2<=1.0e-8 && (test_initial_matvec_error(A,b,x,&shell) ||
+	                        test_initial_psolve_error(A,b,x,&shell)) )
 	{
 		fprintf(stderr,"USER initial residual regression FAILED\n");
 		return 1;
