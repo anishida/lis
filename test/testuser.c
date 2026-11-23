@@ -113,9 +113,11 @@ static int test_initial_matvec_error(LIS_MATRIX A, LIS_VECTOR b,
             goto fail;
         }
 
+        /* Warm-start from the exact solution: a successful early exit
+         * must clear the previous callback failure deterministically. */
         ctx->fail_next_matvec=LIS_FALSE;
-        s->options[LIS_OPTIONS_INITGUESS_ZEROS]=LIS_TRUE;
-        err=lis_vector_set_all((LIS_SCALAR)0.0,x);
+        s->options[LIS_OPTIONS_INITGUESS_ZEROS]=LIS_FALSE;
+        err=lis_vector_set_all((LIS_SCALAR)1.0,x);
         if(err) goto fail;
         err=lis_solve(A,b,x,s);
         if(err) goto fail;
