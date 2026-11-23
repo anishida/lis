@@ -5160,7 +5160,18 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 
 	if( err )
 	  {
-	    if( output ) lis_printf(comm,"linear solver status  : %s(code=%D)\n\n",lis_returncode[err],err); 
+	    if( output )
+	    {
+	      /* USER callbacks may return LIS_FAILS (-1) or an application
+	       * error outside the built-in returncode table. Never index it
+	       * with an unchecked callback result. */
+	      const char *status_name =
+	          (err>=LIS_SUCCESS &&
+	           err<(LIS_INT)(sizeof(lis_returncode)/sizeof(lis_returncode[0])))
+	          ? lis_returncode[err] : "LIS_CALLBACK_ERROR";
+	      lis_printf(comm,"linear solver status  : %s(code=%D)\n\n",
+	                 status_name,err);
+	    }
 	  }
 	else
 	  {
