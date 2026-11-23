@@ -373,6 +373,11 @@ test_PROGRAMS += testuserbicgadjoint
 testuserbicgadjoint_SOURCES = testuserbicgadjoint.c
 TESTS += testuserbicgadjoint$(EXEEXT)
 
+# Native USER callback regression for BiCGSafe/BiCRSafe.
+test_PROGRAMS += testuserbicgsafe
+testuserbicgsafe_SOURCES = testuserbicgsafe.c
+TESTS += testuserbicgsafe$(EXEEXT)
+
 # Standalone projected-residual normalization regression.
 test_PROGRAMS += testfgmresprojected
 testfgmresprojected_SOURCES = testfgmresprojected.c

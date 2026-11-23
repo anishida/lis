@@ -154,7 +154,7 @@ LIS_INT lis_bicgsafe(LIS_SOLVER solver)
 	LIS_SCALAR qsi, eta;
 	LIS_SCALAR tmp, tmpdot[5];
 	LIS_REAL bnrm2, nrm2, tol, min_nrm2;
-	LIS_INT iter,maxiter,output,conv, maxiter_noimp,noimp_count;
+	LIS_INT err,iter,maxiter,output,conv, maxiter_noimp,noimp_count;
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
@@ -196,9 +196,24 @@ LIS_INT lis_bicgsafe(LIS_SOLVER solver)
 	lis_solver_set_shadowresidual(solver,r,rtld);
 
 	time = lis_wtime();
-	lis_psolve(solver, r, mr);
+	err=lis_psolve(solver, r, mr);
+	if(err)
+	{
+		ptime += lis_wtime()-time;
+		solver->retcode=err;
+		solver->iter=0;
+		solver->ptime=ptime;
+		return err;
+	}
 	ptime += lis_wtime()-time;
-	lis_matvec(A,mr,amr);
+	err=lis_matvec(A,mr,amr);
+	if(err)
+	{
+		solver->retcode=err;
+		solver->iter=0;
+		solver->ptime=ptime;
+		return err;
+	}
 	lis_vector_dot(rtld,r,&rho_old);
 	lis_vector_copy(amr,ap);
 	lis_vector_copy(mr,p);
@@ -242,13 +257,28 @@ LIS_INT lis_bicgsafe(LIS_SOLVER solver)
 
 		/* mt  = M^-1 * t */
 		time = lis_wtime();
-		lis_psolve(solver, t, mt);
+		err=lis_psolve(solver, t, mt);
+		if(err)
+		{
+			ptime += lis_wtime()-time;
+			solver->retcode=err;
+			solver->iter=iter;
+			solver->ptime=ptime;
+			return err;
+		}
 		ptime += lis_wtime()-time;
 
 		/* u    = mt + eta*beta*u */
 		/* au = A * u             */
 		lis_vector_xpay(mt,eta*beta,u);
-		lis_matvec(A,u,au);
+		err=lis_matvec(A,u,au);
+		if(err)
+		{
+			solver->retcode=err;
+			solver->iter=iter;
+			solver->ptime=ptime;
+			return err;
+		}
 
 		/* z = qsi*mr + eta*z - alpha*u */
 		lis_vector_scale(eta,z);
@@ -321,9 +351,24 @@ LIS_INT lis_bicgsafe(LIS_SOLVER solver)
 		/* mr  = M^-1 * r */
 		/* amr = A * mr   */
 		time = lis_wtime();
-		lis_psolve(solver, r, mr);
+		err=lis_psolve(solver, r, mr);
+		if(err)
+		{
+			ptime += lis_wtime()-time;
+			solver->retcode=err;
+			solver->iter=iter;
+			solver->ptime=ptime;
+			return err;
+		}
 		ptime += lis_wtime()-time;
-		lis_matvec(A,mr,amr);
+		err=lis_matvec(A,mr,amr);
+		if(err)
+		{
+			solver->retcode=err;
+			solver->iter=iter;
+			solver->ptime=ptime;
+			return err;
+		}
 
 		/* p  = mr + beta*(p - u)    */
 		/* ap = amr + beta*(ap - au) */
@@ -1099,7 +1144,7 @@ LIS_INT lis_bicrsafe(LIS_SOLVER solver)
 	LIS_SCALAR qsi, eta;
 	LIS_SCALAR tmp, tmpdot[5];
 	LIS_REAL bnrm2, nrm2, tol, min_nrm2;
-	LIS_INT iter,maxiter,output,conv,maxiter_noimp,noimp_count;
+	LIS_INT err,iter,maxiter,output,conv,maxiter_noimp,noimp_count;
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
@@ -1141,11 +1186,33 @@ LIS_INT lis_bicrsafe(LIS_SOLVER solver)
 
 	lis_solver_set_shadowresidual(solver,r,rtld);
 
-	lis_matvech(A,rtld,artld);
+	err=lis_matvech(A,rtld,artld);
+	if(err)
+	{
+		solver->retcode=err;
+		solver->iter=0;
+		solver->ptime=ptime;
+		return err;
+	}
 	time = lis_wtime();
-	lis_psolve(solver, r, mr);
+	err=lis_psolve(solver, r, mr);
+	if(err)
+	{
+		ptime += lis_wtime()-time;
+		solver->retcode=err;
+		solver->iter=0;
+		solver->ptime=ptime;
+		return err;
+	}
 	ptime += lis_wtime()-time;
-	lis_matvec(A,mr,amr);
+	err=lis_matvec(A,mr,amr);
+	if(err)
+	{
+		solver->retcode=err;
+		solver->iter=0;
+		solver->ptime=ptime;
+		return err;
+	}
 	lis_vector_dot(rtld,amr,&rho_old);
 	lis_vector_copy(amr,ap);
 	lis_vector_copy(mr,p);
@@ -1156,7 +1223,15 @@ LIS_INT lis_bicrsafe(LIS_SOLVER solver)
 	{
 		/* map  = M^-1 * ap */
 		time = lis_wtime();
-		lis_psolve(solver, ap, map);
+		err=lis_psolve(solver, ap, map);
+		if(err)
+		{
+			ptime += lis_wtime()-time;
+			solver->retcode=err;
+			solver->iter=iter;
+			solver->ptime=ptime;
+			return err;
+		}
 		ptime += lis_wtime()-time;
 
 		/* tmpdot[0] = <artld,map> */
@@ -1192,7 +1267,14 @@ LIS_INT lis_bicrsafe(LIS_SOLVER solver)
 		lis_vector_scale(eta*beta,u);
 		lis_vector_axpy(qsi,map,u);
 		lis_vector_axpy(eta,my,u);
-		lis_matvec(A,u,au);
+		err=lis_matvec(A,u,au);
+		if(err)
+		{
+			solver->retcode=err;
+			solver->iter=iter;
+			solver->ptime=ptime;
+			return err;
+		}
 
 		/* z = qsi*mr + eta*z - alpha*u */
 		lis_vector_scale(eta,z);
@@ -1205,7 +1287,15 @@ LIS_INT lis_bicrsafe(LIS_SOLVER solver)
 		lis_vector_axpy(qsi,amr,y);
 		lis_vector_axpy(-alpha,au,y);
 		time = lis_wtime();
-		lis_psolve(solver, y, my);
+		err=lis_psolve(solver, y, my);
+		if(err)
+		{
+			ptime += lis_wtime()-time;
+			solver->retcode=err;
+			solver->iter=iter;
+			solver->ptime=ptime;
+			return err;
+		}
 		ptime += lis_wtime()-time;
 
 		/* x = x + alpha*p + z */
@@ -1239,7 +1329,14 @@ LIS_INT lis_bicrsafe(LIS_SOLVER solver)
 		/* rho = <rtld,amr> */
 		lis_vector_axpy(-alpha,map,mr);
 		lis_vector_axpy(-1.0,my,mr);
-		lis_matvec(A,mr,amr);
+		err=lis_matvec(A,mr,amr);
+		if(err)
+		{
+			solver->retcode=err;
+			solver->iter=iter;
+			solver->ptime=ptime;
+			return err;
+		}
 		lis_vector_dot(rtld,amr,&rho);
 		if( rho==0.0 )
 		{
