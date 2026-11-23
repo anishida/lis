@@ -207,7 +207,13 @@ static int test_initial_psolve_error(LIS_MATRIX A, LIS_VECTOR b,
     solver->x=x;
     solver->precision=LIS_PRECISION_DEFAULT;
     solver->options[LIS_OPTIONS_INITGUESS_ZEROS]=LIS_TRUE;
-    err=lis_precon_create(solver,&precon);if(err)goto done;
+    err=lis_precon_create(solver,&precon);
+    if(err)
+    {
+        /* lis_precon_create already frees a partially built preconditioner. */
+        precon=NULL;
+        goto done;
+    }
     solver->precon=precon;
     err=lis_vector_duplicate(A,&scratch);if(err)goto done;
     err=lis_vector_duplicate(A,&residual);if(err)goto done;
