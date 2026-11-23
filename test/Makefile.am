@@ -352,6 +352,12 @@ testoommpiscale_SOURCES = testoommpiscale.c
 endif
 endif
 
+# Native serial/MPI matrix duplication regression. The dedicated MPI CI
+# additionally runs two ranks with nonempty ghost communication tables.
+test_PROGRAMS += testusermpiduplicate
+testusermpiduplicate_SOURCES = testusermpiduplicate.c
+TESTS += testusermpiduplicate$(EXEEXT)
+
 # Standalone projected-residual normalization regression.
 test_PROGRAMS += testfgmresprojected
 testfgmresprojected_SOURCES = testfgmresprojected.c
