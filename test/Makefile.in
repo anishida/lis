@@ -144,7 +144,7 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testesolverselection$(EXEEXT) testprojectedeigen$(EXEEXT) \
 	testprojectedhermitian$(EXEEXT) testblockgram$(EXEEXT) \
 	testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) \
-	testmatrixautosession$(EXEEXT) testuserbicgsafe$(EXEEXT) testvectorreal64$(EXEEXT) \
+	testmatrixautosession$(EXEEXT) testvectorreal64$(EXEEXT) \
 	benchautojacobirefresh$(EXEEXT) testabi$(EXEEXT) \
 	testgesolvepair$(EXEEXT) testrcoalloc$(EXEEXT) \
 	testilutp$(EXEEXT) testilutequil$(EXEEXT) benchilutp$(EXEEXT) \
@@ -163,11 +163,11 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	test_krylov_be_lock_order$(EXEEXT) testilucbsrsmoke$(EXEEXT) \
 	testusercsrbounds$(EXEEXT) testusermpiduplicate$(EXEEXT) \
 	testuserbicgerrors$(EXEEXT) testuserbicgadjoint$(EXEEXT) \
-	testfgmresprojected$(EXEEXT) testmfamgvcycle$(EXEEXT) \
-	testmfamgfineagg$(EXEEXT) testmfamgdeepmerge$(EXEEXT) \
-	testmfamgilutp$(EXEEXT) testcondense_core$(EXEEXT) \
-	testcomposite_core$(EXEEXT) testcondense_lis$(EXEEXT) \
-	testcondense_oom$(EXEEXT)
+	testuserbicgsafe$(EXEEXT) testfgmresprojected$(EXEEXT) \
+	testmfamgvcycle$(EXEEXT) testmfamgfineagg$(EXEEXT) \
+	testmfamgdeepmerge$(EXEEXT) testmfamgilutp$(EXEEXT) \
+	testcondense_core$(EXEEXT) testcomposite_core$(EXEEXT) \
+	testcondense_lis$(EXEEXT) testcondense_oom$(EXEEXT)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_3 = test2f test6f 
@@ -713,10 +713,6 @@ am_testkrylovrobust_OBJECTS = testkrylovrobust.$(OBJEXT)
 testkrylovrobust_OBJECTS = $(am_testkrylovrobust_OBJECTS)
 testkrylovrobust_LDADD = $(LDADD)
 testkrylovrobust_DEPENDENCIES =
-am_testuserbicgsafe_OBJECTS = testuserbicgsafe.$(OBJEXT)
-testuserbicgsafe_OBJECTS = $(am_testuserbicgsafe_OBJECTS)
-testuserbicgsafe_LDADD = $(LDADD)
-testuserbicgsafe_DEPENDENCIES =
 am_testmatrixautosession_OBJECTS = testmatrixautosession.$(OBJEXT)
 testmatrixautosession_OBJECTS = $(am_testmatrixautosession_OBJECTS)
 testmatrixautosession_LDADD = $(LDADD)
@@ -961,6 +957,10 @@ am_testuserbicgerrors_OBJECTS = testuserbicgerrors.$(OBJEXT)
 testuserbicgerrors_OBJECTS = $(am_testuserbicgerrors_OBJECTS)
 testuserbicgerrors_LDADD = $(LDADD)
 testuserbicgerrors_DEPENDENCIES =
+am_testuserbicgsafe_OBJECTS = testuserbicgsafe.$(OBJEXT)
+testuserbicgsafe_OBJECTS = $(am_testuserbicgsafe_OBJECTS)
+testuserbicgsafe_LDADD = $(LDADD)
+testuserbicgsafe_DEPENDENCIES =
 am_testusercsrbounds_OBJECTS = testusercsrbounds.$(OBJEXT)
 testusercsrbounds_OBJECTS = $(am_testusercsrbounds_OBJECTS)
 testusercsrbounds_LDADD = $(LDADD)
@@ -1111,7 +1111,7 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testilucbsrsmoke.Po ./$(DEPDIR)/testilupivot.Po \
 	./$(DEPDIR)/testilutequil.Po ./$(DEPDIR)/testilutp.Po \
 	./$(DEPDIR)/testjacobiuser.Po ./$(DEPDIR)/testkrylovrobust.Po \
-	./$(DEPDIR)/testmatrixautosession.Po ./$(DEPDIR)/testuserbicgsafe.Po \
+	./$(DEPDIR)/testmatrixautosession.Po \
 	./$(DEPDIR)/testmatrixgeneration.Po \
 	./$(DEPDIR)/testmatrixgraph.Po \
 	./$(DEPDIR)/testmatrixmaterialize.Po \
@@ -1153,6 +1153,7 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testsymmdiagguard.Po ./$(DEPDIR)/testthreads.Po \
 	./$(DEPDIR)/testuser.Po ./$(DEPDIR)/testuserbicgadjoint.Po \
 	./$(DEPDIR)/testuserbicgerrors.Po \
+	./$(DEPDIR)/testuserbicgsafe.Po \
 	./$(DEPDIR)/testusercsrbounds.Po \
 	./$(DEPDIR)/testusermpiduplicate.Po \
 	./$(DEPDIR)/testuserprecon.Po ./$(DEPDIR)/testuserrow.Po \
@@ -1253,7 +1254,7 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testhybridnested_SOURCES) $(testilucbsrsmoke_SOURCES) \
 	$(testilupivot_SOURCES) $(testilutequil_SOURCES) \
 	$(testilutp_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testkrylovrobust_SOURCES) $(testmatrixautosession_SOURCES) $(testuserbicgsafe_SOURCES) \
+	$(testkrylovrobust_SOURCES) $(testmatrixautosession_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatrixmaterialize_SOURCES) \
 	$(testmatrixmaterializeomp_SOURCES) \
@@ -1285,11 +1286,12 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testsplitviewi64_SOURCES) $(testsplitviewreal64_SOURCES) \
 	$(testsymmdiagguard_SOURCES) $(testthreads_SOURCES) \
 	$(testuser_SOURCES) $(testuserbicgadjoint_SOURCES) \
-	$(testuserbicgerrors_SOURCES) $(testusercsrbounds_SOURCES) \
-	$(testusermpiduplicate_SOURCES) $(testuserprecon_SOURCES) \
-	$(testuserrow_SOURCES) $(testvectornrm2mpi_SOURCES) \
-	$(testvectorreal64_SOURCES) $(testwarmstart_SOURCES) \
-	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
+	$(testuserbicgerrors_SOURCES) $(testuserbicgsafe_SOURCES) \
+	$(testusercsrbounds_SOURCES) $(testusermpiduplicate_SOURCES) \
+	$(testuserprecon_SOURCES) $(testuserrow_SOURCES) \
+	$(testvectornrm2mpi_SOURCES) $(testvectorreal64_SOURCES) \
+	$(testwarmstart_SOURCES) $(testworkcompat_SOURCES) \
+	$(testworkreuse_SOURCES)
 DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(benchfrozenilut_SOURCES) $(benchilutp_SOURCES) \
 	$(benchilutpequil_SOURCES) $(esolve_SOURCES) \
@@ -1350,7 +1352,7 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testilucbsrsmoke_SOURCES) $(testilupivot_SOURCES) \
 	$(testilutequil_SOURCES) $(testilutp_SOURCES) \
 	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
-	$(testmatrixautosession_SOURCES) $(testuserbicgsafe_SOURCES) \
+	$(testmatrixautosession_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatrixmaterialize_SOURCES) \
 	$(testmatrixmaterializeomp_SOURCES) \
@@ -1384,11 +1386,12 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testsplitviewi64_SOURCES) $(testsplitviewreal64_SOURCES) \
 	$(testsymmdiagguard_SOURCES) $(testthreads_SOURCES) \
 	$(testuser_SOURCES) $(testuserbicgadjoint_SOURCES) \
-	$(testuserbicgerrors_SOURCES) $(testusercsrbounds_SOURCES) \
-	$(testusermpiduplicate_SOURCES) $(testuserprecon_SOURCES) \
-	$(testuserrow_SOURCES) $(testvectornrm2mpi_SOURCES) \
-	$(testvectorreal64_SOURCES) $(testwarmstart_SOURCES) \
-	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
+	$(testuserbicgerrors_SOURCES) $(testuserbicgsafe_SOURCES) \
+	$(testusercsrbounds_SOURCES) $(testusermpiduplicate_SOURCES) \
+	$(testuserprecon_SOURCES) $(testuserrow_SOURCES) \
+	$(testvectornrm2mpi_SOURCES) $(testvectorreal64_SOURCES) \
+	$(testwarmstart_SOURCES) $(testworkcompat_SOURCES) \
+	$(testworkreuse_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -1781,7 +1784,6 @@ testmatrixmaterialize_SOURCES = testmatrixmaterialize.c
 testmatrixmaterializeomp_SOURCES = testmatrixmaterializeomp.c
 testmatrixpolicysolve_SOURCES = testmatrixpolicysolve.c
 testmatrixautosession_SOURCES = testmatrixautosession.c
-testuserbicgsafe_SOURCES = testuserbicgsafe.c
 benchautojacobirefresh_SOURCES = benchautojacobirefresh.c
 testvectorreal64_SOURCES = testvectorreal64.c
 testfrozenilut_SOURCES = testfrozenilut.c
@@ -1984,7 +1986,7 @@ TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) \
 	testexactnullspace$(EXEEXT) testhalfconfig$(EXEEXT) \
 	testhalfconvert$(EXEEXT) testnullspacecandidates$(EXEEXT) \
 	testesolverselection$(EXEEXT) testilutp$(EXEEXT) \
-	testilutequil$(EXEEXT) testmatrixautosession$(EXEEXT) testuserbicgsafe$(EXEEXT) \
+	testilutequil$(EXEEXT) testmatrixautosession$(EXEEXT) \
 	testvectorreal64$(EXEEXT) testgesolvepair$(EXEEXT) \
 	testabi$(EXEEXT) testrcoalloc$(EXEEXT) $(am__append_5) \
 	testfgcrodrblocked$(EXEEXT) testfgcrodrtransport$(EXEEXT) \
@@ -2001,13 +2003,13 @@ TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) \
 	test_krylov_be_lock_order$(EXEEXT) testilucbsrsmoke$(EXEEXT) \
 	$(am__append_6) $(am__append_8) testusercsrbounds$(EXEEXT) \
 	testusermpiduplicate$(EXEEXT) testuserbicgerrors$(EXEEXT) \
-	testuserbicgadjoint$(EXEEXT) testfgmresprojected$(EXEEXT) \
-	testmfamgvcycle$(EXEEXT) testmfamgfineagg$(EXEEXT) \
-	testmfamgdeepmerge$(EXEEXT) testmfamgilutp$(EXEEXT) \
-	testcondense_core$(EXEEXT) testcomposite_core$(EXEEXT) \
-	testcondense_lis$(EXEEXT) testcondense_oom$(EXEEXT) \
-	testca_mfamg_ilutp.sh testca_mfamg_profiles.sh \
-	testcondense_differential.sh
+	testuserbicgadjoint$(EXEEXT) testuserbicgsafe$(EXEEXT) \
+	testfgmresprojected$(EXEEXT) testmfamgvcycle$(EXEEXT) \
+	testmfamgfineagg$(EXEEXT) testmfamgdeepmerge$(EXEEXT) \
+	testmfamgilutp$(EXEEXT) testcondense_core$(EXEEXT) \
+	testcomposite_core$(EXEEXT) testcondense_lis$(EXEEXT) \
+	testcondense_oom$(EXEEXT) testca_mfamg_ilutp.sh \
+	testca_mfamg_profiles.sh testcondense_differential.sh
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
 testfgcrodrmaxiter_SOURCES = testfgcrodrmaxiter.c
@@ -2048,6 +2050,7 @@ testusercsrbounds_SOURCES = testusercsrbounds.c
 testusermpiduplicate_SOURCES = testusermpiduplicate.c
 testuserbicgerrors_SOURCES = testuserbicgerrors.c
 testuserbicgadjoint_SOURCES = testuserbicgadjoint.c
+testuserbicgsafe_SOURCES = testuserbicgsafe.c
 testfgmresprojected_SOURCES = testfgmresprojected.c
 testfgmresprojected_LDADD = $(LDADD) -lm
 testmfamgvcycle_SOURCES = testmfamgvcycle.c
@@ -2659,10 +2662,6 @@ testkrylovrobust$(EXEEXT): $(testkrylovrobust_OBJECTS) $(testkrylovrobust_DEPEND
 	@rm -f testkrylovrobust$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testkrylovrobust_OBJECTS) $(testkrylovrobust_LDADD) $(LIBS)
 
-testuserbicgsafe$(EXEEXT): $(testuserbicgsafe_OBJECTS) $(testuserbicgsafe_DEPENDENCIES) $(EXTRA_testuserbicgsafe_DEPENDENCIES) 
-	@rm -f testuserbicgsafe$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(testuserbicgsafe_OBJECTS) $(testuserbicgsafe_LDADD) $(LIBS)
-
 testmatrixautosession$(EXEEXT): $(testmatrixautosession_OBJECTS) $(testmatrixautosession_DEPENDENCIES) $(EXTRA_testmatrixautosession_DEPENDENCIES) 
 	@rm -f testmatrixautosession$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmatrixautosession_OBJECTS) $(testmatrixautosession_LDADD) $(LIBS)
@@ -2891,6 +2890,10 @@ testuserbicgerrors$(EXEEXT): $(testuserbicgerrors_OBJECTS) $(testuserbicgerrors_
 	@rm -f testuserbicgerrors$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testuserbicgerrors_OBJECTS) $(testuserbicgerrors_LDADD) $(LIBS)
 
+testuserbicgsafe$(EXEEXT): $(testuserbicgsafe_OBJECTS) $(testuserbicgsafe_DEPENDENCIES) $(EXTRA_testuserbicgsafe_DEPENDENCIES) 
+	@rm -f testuserbicgsafe$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testuserbicgsafe_OBJECTS) $(testuserbicgsafe_LDADD) $(LIBS)
+
 testusercsrbounds$(EXEEXT): $(testusercsrbounds_OBJECTS) $(testusercsrbounds_DEPENDENCIES) $(EXTRA_testusercsrbounds_DEPENDENCIES) 
 	@rm -f testusercsrbounds$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testusercsrbounds_OBJECTS) $(testusercsrbounds_LDADD) $(LIBS)
@@ -3071,7 +3074,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testjacobiuser.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testkrylovrobust.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixautosession.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuserbicgsafe.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixgeneration.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixgraph.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixmaterialize.Po@am__quote@ # am--include-marker
@@ -3128,6 +3130,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuser.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuserbicgadjoint.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuserbicgerrors.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuserbicgsafe.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testusercsrbounds.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testusermpiduplicate.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuserprecon.Po@am__quote@ # am--include-marker
@@ -3948,13 +3951,6 @@ testilutequil.log: testilutequil$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-testuserbicgsafe.log: testuserbicgsafe$(EXEEXT)
-	@p='testuserbicgsafe$(EXEEXT)'; \
-	b='testuserbicgsafe'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$f" \
-	--log-file $b.log --trs-file $b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$tst" $(AM_TESTS_FD_REDIRECT)
 testmatrixautosession.log: testmatrixautosession$(EXEEXT)
 	@p='testmatrixautosession$(EXEEXT)'; \
 	b='testmatrixautosession'; \
@@ -4256,6 +4252,13 @@ testuserbicgadjoint.log: testuserbicgadjoint$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testuserbicgsafe.log: testuserbicgsafe$(EXEEXT)
+	@p='testuserbicgsafe$(EXEEXT)'; \
+	b='testuserbicgsafe'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 testfgmresprojected.log: testfgmresprojected$(EXEEXT)
 	@p='testfgmresprojected$(EXEEXT)'; \
 	b='testfgmresprojected'; \
@@ -4538,7 +4541,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testjacobiuser.Po
 	-rm -f ./$(DEPDIR)/testkrylovrobust.Po
 	-rm -f ./$(DEPDIR)/testmatrixautosession.Po
-	-rm -f ./$(DEPDIR)/testuserbicgsafe.Po
 	-rm -f ./$(DEPDIR)/testmatrixgeneration.Po
 	-rm -f ./$(DEPDIR)/testmatrixgraph.Po
 	-rm -f ./$(DEPDIR)/testmatrixmaterialize.Po
@@ -4595,6 +4597,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testuser.Po
 	-rm -f ./$(DEPDIR)/testuserbicgadjoint.Po
 	-rm -f ./$(DEPDIR)/testuserbicgerrors.Po
+	-rm -f ./$(DEPDIR)/testuserbicgsafe.Po
 	-rm -f ./$(DEPDIR)/testusercsrbounds.Po
 	-rm -f ./$(DEPDIR)/testusermpiduplicate.Po
 	-rm -f ./$(DEPDIR)/testuserprecon.Po
@@ -4753,7 +4756,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testjacobiuser.Po
 	-rm -f ./$(DEPDIR)/testkrylovrobust.Po
 	-rm -f ./$(DEPDIR)/testmatrixautosession.Po
-	-rm -f ./$(DEPDIR)/testuserbicgsafe.Po
 	-rm -f ./$(DEPDIR)/testmatrixgeneration.Po
 	-rm -f ./$(DEPDIR)/testmatrixgraph.Po
 	-rm -f ./$(DEPDIR)/testmatrixmaterialize.Po
@@ -4810,6 +4812,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testuser.Po
 	-rm -f ./$(DEPDIR)/testuserbicgadjoint.Po
 	-rm -f ./$(DEPDIR)/testuserbicgerrors.Po
+	-rm -f ./$(DEPDIR)/testuserbicgsafe.Po
 	-rm -f ./$(DEPDIR)/testusercsrbounds.Po
 	-rm -f ./$(DEPDIR)/testusermpiduplicate.Po
 	-rm -f ./$(DEPDIR)/testuserprecon.Po
