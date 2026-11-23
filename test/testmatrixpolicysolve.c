@@ -48,9 +48,9 @@ done:
   if(diff)lis_vector_destroy(diff);return fail;
 }
 int main(int argc,char **argv) {
- CTX ctx={0,(LIS_REAL)1};LIS_MATRIX A=NULL,sel=NULL;
+ CTX ctx={0,(LIS_REAL)1};LIS_MATRIX A=NULL,R=NULL,sel=NULL;
  LIS_VECTOR truth=NULL,b=NULL,xd=NULL,xc=NULL,xs=NULL;
- LIS_SOLVER ilut=NULL,ssor=NULL;LIS_MATRIX_CSR_CACHE cache=NULL;
+ LIS_SOLVER ilut=NULL,ssor=NULL,none=NULL;LIS_MATRIX_CSR_CACHE cache=NULL;
  LIS_INT e,policy,action,expect[3]={2,1,2};int step,fail=1;
  e=lis_initialize(&argc,&argv);if(e)return 1;
  e=lis_matrix_create(LIS_COMM_WORLD,&A);if(e)goto done;
@@ -94,11 +94,37 @@ int main(int argc,char **argv) {
    if(check(xd,truth,"direct USER/ILUT")||check(xc,truth,"cached CSR/ILUT")||check(xs,truth,"cached CSR/SSOR"))goto done;
    printf("MATRIX_POLICY STEP %d PASS\n",step);
  }
+
+ /*
+  * USER row-only matrices already have a generic serial SpMV kernel.
+  * With -p none, AUTO must not materialize a redundant CSR copy.
+  */
+ e=lis_matrix_create(LIS_COMM_WORLD,&R);if(e)goto done;
+ e=lis_matrix_set_size(R,0,3);if(e)goto done;
+ e=lis_matrix_set_user(R,&ctx,NULL,NULL);if(e)goto done;
+ e=lis_matrix_set_user_row(R,row_cb);if(e)goto done;
+ e=lis_solver_create(&none);if(e)goto done;
+ {char opts[]="-i gmres -p none -scale none";
+  e=lis_solver_set_option(opts,none);if(e)goto done;}
+ e=lis_matvec(R,truth,b);if(e)goto done;
+ sel=NULL;policy=-1;action=-2;
+ e=lis_matrix_prepare_solver_matrix(R,none,&cache,&sel,&policy,&action);
+ if(e)goto done;
+ if(sel!=R||policy!=LIS_MATRIX_POLICY_DIRECT||
+    action!=LIS_MATRIX_POLICY_ACTION_DIRECT)
+ {
+   fprintf(stderr,"row-only USER unexpectedly materialized CSR (policy=%lld)\n",
+           (long long)policy);
+   goto done;
+ }
+ if(solve(sel,b,xd,"none")||check(xd,truth,"row-only USER/direct"))
+   goto done;
+ printf("ROW_ONLY_USER_DIRECT PASS\n");
  fail=0;
 done:
  printf("MATRIX_POLICY_NUMERICAL=%s\n",fail?"FAIL":"PASS");
- if(ilut)lis_solver_destroy(ilut);if(ssor)lis_solver_destroy(ssor);
+ if(ilut)lis_solver_destroy(ilut);if(ssor)lis_solver_destroy(ssor);if(none)lis_solver_destroy(none);
  if(truth)lis_vector_destroy(truth);if(b)lis_vector_destroy(b);
  if(xd)lis_vector_destroy(xd);if(xc)lis_vector_destroy(xc);if(xs)lis_vector_destroy(xs);
- lis_matrix_csr_cache_destroy(cache);if(A)lis_matrix_destroy(A);lis_finalize();return fail;
+ lis_matrix_csr_cache_destroy(cache);if(R)lis_matrix_destroy(R);if(A)lis_matrix_destroy(A);lis_finalize();return fail;
 }
