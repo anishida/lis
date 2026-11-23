@@ -588,27 +588,46 @@ LIS_INT lis_matrix_duplicate(LIS_MATRIX Ain, LIS_MATRIX *Aout)
 	lis_matrix_init(Aout);
 
 	#ifdef USE_MPI
-		l2g_map = (LIS_INT *)lis_malloc( (Ain->np-Ain->n)*sizeof(LIS_INT),"lis_matrix_duplicate::l2g_map" );
-		if( l2g_map==NULL )
+		/* Matrix-free USER and partially assembled matrices have no
+		 * communication table or ghost columns. Never duplicate zero
+		 * bytes or dereference missing MPI metadata. */
+		if(Ain->np<Ain->n || Ain->ranges==NULL || nprocs<1 ||
+		   (Ain->np>Ain->n && Ain->l2g_map==NULL))
 		{
-			LIS_SETERR_MEM((Ain->np-Ain->n)*sizeof(LIS_INT));
 			lis_matrix_destroy(*Aout);
-			*Aout = NULL;
+			*Aout=NULL;
+			return LIS_ERR_ILL_ARG;
+		}
+		l2g_map=NULL;
+		if(Ain->np>Ain->n)
+		{
+			l2g_map=(LIS_INT *)lis_malloc(
+				(size_t)(Ain->np-Ain->n)*sizeof(LIS_INT),
+				"lis_matrix_duplicate::l2g_map");
+			if(l2g_map==NULL)
+			{
+				LIS_SETERR_MEM((size_t)(Ain->np-Ain->n)*sizeof(LIS_INT));
+				lis_matrix_destroy(*Aout);
+				*Aout=NULL;
+				return LIS_OUT_OF_MEMORY;
+			}
+			memcpy(l2g_map,Ain->l2g_map,
+				(size_t)(Ain->np-Ain->n)*sizeof(LIS_INT));
+		}
+		ranges=(LIS_INT *)lis_malloc(
+			((size_t)nprocs+1)*sizeof(LIS_INT),
+			"lis_matrix_duplicate::range");
+		if(ranges==NULL)
+		{
+			LIS_SETERR_MEM(((size_t)nprocs+1)*sizeof(LIS_INT));
+			if(l2g_map!=NULL)lis_free(l2g_map);
+			lis_matrix_destroy(*Aout);
+			*Aout=NULL;
 			return LIS_OUT_OF_MEMORY;
 		}
-		memcpy(l2g_map,Ain->l2g_map,(Ain->np-Ain->n)*sizeof(LIS_INT));
-		ranges = (LIS_INT *)lis_malloc( (nprocs+1)*sizeof(LIS_INT),"lis_matrix_duplicate::range" );
-		if( ranges==NULL )
-		{
-			LIS_SETERR_MEM((nprocs+1)*sizeof(LIS_INT));
-			lis_free(l2g_map);
-			lis_matrix_destroy(*Aout);
-			*Aout = NULL;
-			return LIS_OUT_OF_MEMORY;
-		}
-		for(i=0;i<nprocs+1;i++) ranges[i] = Ain->ranges[i];
-		(*Aout)->ranges      = ranges;
-		(*Aout)->l2g_map     = l2g_map;
+		for(i=0;i<nprocs+1;i++)ranges[i]=Ain->ranges[i];
+		(*Aout)->ranges=ranges;
+		(*Aout)->l2g_map=l2g_map;
 	#else
 		(*Aout)->ranges      = NULL;
 	#endif
@@ -627,14 +646,19 @@ LIS_INT lis_matrix_duplicate(LIS_MATRIX Ain, LIS_MATRIX *Aout)
 	(*Aout)->is_destroy  = Ain->is_destroy;
 
 #ifdef USE_MPI
-	err = lis_commtable_duplicateM(Ain,Aout);
-	if( err )
+	if(Ain->commtable!=NULL)
 	{
-		lis_matrix_destroy(*Aout);
-		*Aout = NULL;
-		return err;
+		err=lis_commtable_duplicateM(Ain,Aout);
+		if(err)
+		{
+			lis_matrix_destroy(*Aout);
+			*Aout=NULL;
+			return err;
+		}
+		(*Aout)->is_comm=LIS_TRUE;
 	}
-	(*Aout)->is_comm   = LIS_TRUE;
+	/* A USER source with no commtable has no halo to duplicate.
+	 * Its target can still assemble a CSR communication table later. */
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
 #else
@@ -1048,7 +1072,11 @@ LIS_INT lis_matrix_assemble(LIS_MATRIX A)
 	#ifdef USE_MPI
 		if( !A->is_pmat )
 		{
-			if( A->l2g_map==NULL )
+			/* An existing communication table means the source is already
+			 * in local index space, even if it has zero ghost columns
+			 * and therefore no l2g_map.  Do not run g2l a second time:
+			 * non-CSR matrix formats may not implement that conversion. */
+			if( A->l2g_map==NULL && A->commtable==NULL )
 			{
 				err = lis_matrix_g2l(A);
 				if( err ) return err;
