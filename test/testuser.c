@@ -87,7 +87,10 @@ static LIS_INT userdiag_psolveh(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
 static int test_initial_matvec_error(LIS_MATRIX A, LIS_VECTOR b,
                                      LIS_VECTOR x, USER_TRIDIAG *ctx)
 {
-    const char *methods[3] = {"cg", "bicgstab", "gmres"};
+    const char *methods[] = {
+        "cg", "bicg", "cgs", "bicgstab", "bicgsafe",
+        "bicr", "bicrsafe", "gmres", "fgmres"
+    };
     LIS_INT k,err,status;
     LIS_SOLVER s=NULL;
     char options[160];
@@ -95,7 +98,7 @@ static int test_initial_matvec_error(LIS_MATRIX A, LIS_VECTOR b,
     /* Rank-local failure injection is intentionally not an MPI test. */
     if(A->nprocs!=1) return 0;
 
-    for(k=0;k<3;k++)
+    for(k=0;k<(LIS_INT)(sizeof(methods)/sizeof(methods[0]));k++)
     {
         err=lis_solver_create(&s);
         if(err) return 1;
