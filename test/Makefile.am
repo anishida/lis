@@ -363,6 +363,11 @@ test_PROGRAMS += testusermpiduplicate
 testusermpiduplicate_SOURCES = testusermpiduplicate.c
 TESTS += testusermpiduplicate$(EXEEXT)
 
+# USER callback failure propagation for this Krylov solver family.
+test_PROGRAMS += testuserbicgerrors
+testuserbicgerrors_SOURCES = testuserbicgerrors.c
+TESTS += testuserbicgerrors$(EXEEXT)
+
 # Standalone projected-residual normalization regression.
 test_PROGRAMS += testfgmresprojected
 testfgmresprojected_SOURCES = testfgmresprojected.c

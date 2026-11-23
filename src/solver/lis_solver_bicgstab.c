@@ -142,7 +142,7 @@ LIS_INT lis_bicgstab(LIS_SOLVER solver)
 	LIS_VECTOR r,rtld, t,p,v, s, phat, shat;
 	LIS_SCALAR alpha, beta, omega, rho, rho_old, tmpdot1, tmpdot2;
 	LIS_REAL   bnrm2, nrm2, tol, min_nrm2;
-	LIS_INT iter,maxiter,output,conv,maxiter_noimp,noimp_count;
+	LIS_INT err,iter,maxiter,output,conv,maxiter_noimp,noimp_count;
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
@@ -231,11 +231,25 @@ LIS_INT lis_bicgstab(LIS_SOLVER solver)
 		
 		/* phat = M^-1 * p */
 		time = lis_wtime();
-		lis_psolve(solver, p, phat);
+		err=lis_psolve(solver, p, phat);
 		ptime += lis_wtime()-time;
+		if(err)
+		{
+			solver->retcode=err;
+			solver->iter=iter;
+			solver->ptime=ptime;
+			return err;
+		}
 
 		/* v = A * phat */
-		lis_matvec(A,phat,v);
+		err=lis_matvec(A,phat,v);
+		if(err)
+		{
+			solver->retcode=err;
+			solver->iter=iter;
+			solver->ptime=ptime;
+			return err;
+		}
 
 		/* tmpdot1 = <rtld,v> */
 		lis_vector_dot(rtld,v,&tmpdot1);
@@ -295,11 +309,25 @@ LIS_INT lis_bicgstab(LIS_SOLVER solver)
 
 		/* shat = M^-1 * s */
 		time = lis_wtime();
-		lis_psolve(solver, s, shat);
+		err=lis_psolve(solver, s, shat);
 		ptime += lis_wtime()-time;
+		if(err)
+		{
+			solver->retcode=err;
+			solver->iter=iter;
+			solver->ptime=ptime;
+			return err;
+		}
 
 		/* t = A * shat */
-		lis_matvec(A,shat,t);
+		err=lis_matvec(A,shat,t);
+		if(err)
+		{
+			solver->retcode=err;
+			solver->iter=iter;
+			solver->ptime=ptime;
+			return err;
+		}
 
 		/* tmpdot1 = <t,s> */
 		/* tmpdot2 = <t,t> */

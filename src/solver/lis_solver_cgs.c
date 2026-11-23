@@ -139,7 +139,7 @@ LIS_INT lis_cgs(LIS_SOLVER solver)
 	LIS_VECTOR r,rtld, p,phat, q, qhat, u, uhat, vhat;
 	LIS_SCALAR alpha, beta, rho, rho_old, tmpdot1;
 	LIS_REAL bnrm2, nrm2, tol, min_nrm2;
-	LIS_INT iter,maxiter,output,conv,maxiter_noimp,noimp_count;
+	LIS_INT err,iter,maxiter,output,conv,maxiter_noimp,noimp_count;
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
@@ -210,11 +210,25 @@ LIS_INT lis_cgs(LIS_SOLVER solver)
 		
 		/* phat = M^-1 * p */
 		time = lis_wtime();
-		lis_psolve(solver, p, phat);
+		err=lis_psolve(solver, p, phat);
 		ptime += lis_wtime()-time;
+		if(err)
+		{
+			solver->retcode=err;
+			solver->iter=iter;
+			solver->ptime=ptime;
+			return err;
+		}
 
 		/* v = A * phat */
-		lis_matvec(A,phat,vhat);
+		err=lis_matvec(A,phat,vhat);
+		if(err)
+		{
+			solver->retcode=err;
+			solver->iter=iter;
+			solver->ptime=ptime;
+			return err;
+		}
 		
 		/* tmpdot1 = <rtld,vhat> */
 		lis_vector_dot(rtld,vhat,&tmpdot1);
@@ -238,14 +252,28 @@ LIS_INT lis_cgs(LIS_SOLVER solver)
 		/* uhat = M^-1 * (u + q) */
 		lis_vector_axpyz(1,u,q,phat);
 		time = lis_wtime();
-		lis_psolve(solver, phat, uhat);
+		err=lis_psolve(solver, phat, uhat);
 		ptime += lis_wtime()-time;
+		if(err)
+		{
+			solver->retcode=err;
+			solver->iter=iter;
+			solver->ptime=ptime;
+			return err;
+		}
 
 		/* x = x + alpha*uhat */
 		lis_vector_axpy(alpha,uhat,x);
 
 		/* qhat = A * uhat */
-		lis_matvec(A,uhat,qhat);
+		err=lis_matvec(A,uhat,qhat);
+		if(err)
+		{
+			solver->retcode=err;
+			solver->iter=iter;
+			solver->ptime=ptime;
+			return err;
+		}
 
 		/* r = r - alpha*qhat */
 		lis_vector_axpy(-alpha,qhat,r);
