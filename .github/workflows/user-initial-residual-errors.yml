@@ -1,0 +1,42 @@
+name: USER initial residual callback error regression
+on:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  initial-user-error:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [release, asan-ubsan]
+        index: [int32, int64]
+    env:
+      OMP_NUM_THREADS: '1'
+      OMP_DYNAMIC: 'FALSE'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+      - name: Build and run USER initial-error regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          autoreconf -fiv
+          if [ "${{ matrix.mode }}" = asan-ubsan ]; then
+            export CFLAGS="-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=undefined"
+            export LDFLAGS="-fsanitize=address,undefined"
+          else
+            export CFLAGS="-O2 -g"
+            export LDFLAGS=""
+          fi
+          index_flags=""
+          if [ "${{ matrix.index }}" = int64 ]; then
+            index_flags="--enable-longlong"
+          fi
+          ./configure --enable-omp --enable-test --disable-mpi --disable-fortran --disable-f90 --disable-saamg ${index_flags}
+          make -j2
+          export LD_LIBRARY_PATH="$PWD/src/.libs:${LD_LIBRARY_PATH:-}"
+          if ! make -C test check TESTS=testuser; then
+            cat test/testuser.log || true
+            exit 1
+          fi
