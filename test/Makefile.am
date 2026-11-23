@@ -352,6 +352,11 @@ testoommpiscale_SOURCES = testoommpiscale.c
 endif
 endif
 
+# Native USER callback regression for BiCG/BiCR.
+test_PROGRAMS += testuserbicgadjoint
+testuserbicgadjoint_SOURCES = testuserbicgadjoint.c
+TESTS += testuserbicgadjoint$(EXEEXT)
+
 # Standalone projected-residual normalization regression.
 test_PROGRAMS += testfgmresprojected
 testfgmresprojected_SOURCES = testfgmresprojected.c
