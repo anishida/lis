@@ -1330,6 +1330,8 @@ AC_TYPE_SIZE_T
 
 LIBS="-lm $LIBS"
 
+# Automake 1.18.1 templates reference @FILECMD@.
+AC_SUBST([FILECMD], [file])
 
 # Output
 

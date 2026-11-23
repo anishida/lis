@@ -652,7 +652,8 @@ ac_includes_default="\
 #endif"
 
 ac_header_c_list=
-ac_subst_vars='am__EXEEXT_FALSE
+ac_subst_vars='FILECMD
+am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
@@ -23517,6 +23518,8 @@ fi
 
 LIBS="-lm $LIBS"
 
+# Automake 1.18.1 templates reference @FILECMD@.
+FILECMD=file
 
 # Output
 
