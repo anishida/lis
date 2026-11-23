@@ -162,7 +162,7 @@ static int test_initial_psolve_error(LIS_MATRIX A, LIS_VECTOR b,
     LIS_REAL bnrm2=0;
     LIS_INT err,result;
     int failed=1;
-    char options[]="-i qmr -p userdiag -tol 1e-12 -print none";
+    char options[]="-i cg -p userdiag -tol 1e-12 -print none";
 
     if(A->nprocs!=1) return 0;
     err=lis_solver_create(&solver);if(err)goto done;
