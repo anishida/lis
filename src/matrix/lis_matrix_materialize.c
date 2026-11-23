@@ -804,7 +804,15 @@ lis_matrix_policy_has_matvec(
         return LIS_TRUE;
 
     case LIS_MATRIX_USER:
-        return A->user_matvec!=NULL ? LIS_TRUE : LIS_FALSE;
+        /*
+         * The generic USER row kernel provides SpMV in a single-process
+         * distribution even when no explicit matvec callback was installed.
+         * Do not force a CSR materialization for this supported direct path.
+         */
+        return (A->user_matvec!=NULL ||
+                (A->user_get_row!=NULL &&
+                 A->nprocs==1 && A->n==A->gn))
+            ? LIS_TRUE : LIS_FALSE;
 
     case LIS_MATRIX_OPERATOR:
         if(A->operator_A==NULL)
