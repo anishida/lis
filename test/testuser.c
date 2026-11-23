@@ -25,8 +25,9 @@ static LIS_INT shell_matvec(void *ctx, const LIS_SCALAR *x, LIS_SCALAR *y)
 
 	if( A->fail_next_matvec )
 	{
+		LIS_INT error = A->fail_next_matvec;
 		A->fail_next_matvec = LIS_FALSE;
-		return LIS_ERR_ILL_ARG;
+		return error;
 	}
 
 	if( A->n==1 )
@@ -143,6 +144,37 @@ static int test_initial_matvec_error(LIS_MATRIX A, LIS_VECTOR b,
         lis_solver_destroy(s);
         s=NULL;
     }
+    /* Also exercise the generic negative USER callback return code.
+     * With output enabled, lis_solve_kernel must not use -1 as an index
+     * into its table of named errors. */
+    err=lis_solver_create(&s);
+    if(err) return 1;
+    {char options[]="-i cg -p none -tol 1e-11 -maxiter 100 -print out";
+     err=lis_solver_set_option(options,s);if(err)goto fail;}
+    s->options[LIS_OPTIONS_INITGUESS_ZEROS]=LIS_FALSE;
+    err=lis_vector_set_all((LIS_SCALAR)0.5,x);
+    if(err)goto fail;
+    ctx->fail_next_matvec=LIS_FAILS;
+    err=lis_solve(A,b,x,s);
+    if(err)goto fail;
+    err=lis_solver_get_status(s,&status);
+    if(err || status!=LIS_FAILS || ctx->fail_next_matvec ||
+       s->iter!=0)
+    {
+        fprintf(stderr,
+                "generic USER callback error lost: status=%lld iter=%lld\n",
+                (long long)status,(long long)s->iter);
+        goto fail;
+    }
+    err=lis_vector_set_all((LIS_SCALAR)1.0,x);
+    if(err)goto fail;
+    err=lis_solve(A,b,x,s);
+    if(err)goto fail;
+    err=lis_solver_get_status(s,&status);
+    if(err || status!=LIS_SUCCESS) goto fail;
+    lis_solver_destroy(s);
+    s=NULL;
+
     printf("USER_INITIAL_RESIDUAL_ERROR PASS\n");
     return 0;
 fail:
