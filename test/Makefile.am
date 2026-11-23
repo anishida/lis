@@ -352,6 +352,11 @@ testoommpiscale_SOURCES = testoommpiscale.c
 endif
 endif
 
+# Native USER callback regression for BiCGSafe/BiCRSafe.
+test_PROGRAMS += testuserbicgsafe
+testuserbicgsafe_SOURCES = testuserbicgsafe.c
+TESTS += testuserbicgsafe$(EXEEXT)
+
 # Standalone projected-residual normalization regression.
 test_PROGRAMS += testfgmresprojected
 testfgmresprojected_SOURCES = testfgmresprojected.c
