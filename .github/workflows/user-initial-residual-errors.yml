@@ -10,6 +10,11 @@ jobs:
       matrix:
         mode: [release, asan-ubsan]
         index: [int32, int64]
+        quad: [disabled]
+        include:
+          - mode: release
+            index: int32
+            quad: enabled
     env:
       OMP_NUM_THREADS: '1'
       OMP_DYNAMIC: 'FALSE'
@@ -33,7 +38,11 @@ jobs:
           if [ "${{ matrix.index }}" = int64 ]; then
             index_flags="--enable-longlong"
           fi
-          ./configure --enable-omp --enable-test --disable-mpi --disable-fortran --disable-f90 --disable-saamg ${index_flags}
+          quad_flags=""
+          if [ "${{ matrix.quad }}" = enabled ]; then
+            quad_flags="--enable-quad"
+          fi
+          ./configure --enable-omp --enable-test --disable-mpi --disable-fortran --disable-f90 --disable-saamg ${index_flags} ${quad_flags}
           make -j2
           export LD_LIBRARY_PATH="$PWD/src/.libs:${LD_LIBRARY_PATH:-}"
           # testuser is a built test_PROGRAM but is not registered in TESTS.
