@@ -161,8 +161,8 @@ static int test_initial_psolve_error(LIS_MATRIX A, LIS_VECTOR b,
 {
     LIS_SOLVER solver=NULL;
     LIS_PRECON precon=NULL;
-    LIS_VECTOR scratch=NULL,residual=NULL;
-    LIS_REAL bnrm2=0;
+    LIS_VECTOR scratch=NULL,residual=NULL,rhs_copy=NULL;
+    LIS_REAL bnrm2=0,rhs_diff=0;
     LIS_INT err,result;
     int failed=1;
     char options[]="-i cg -p userdiag -tol 1e-12 -print none";
@@ -179,6 +179,8 @@ static int test_initial_psolve_error(LIS_MATRIX A, LIS_VECTOR b,
     solver->precon=precon;
     err=lis_vector_duplicate(A,&scratch);if(err)goto done;
     err=lis_vector_duplicate(A,&residual);if(err)goto done;
+    err=lis_vector_duplicate(A,&rhs_copy);if(err)goto done;
+    err=lis_vector_copy(b,rhs_copy);if(err)goto done;
 
     solver->retcode=LIS_SUCCESS;
     solver->iter=101;
@@ -207,6 +209,14 @@ static int test_initial_psolve_error(LIS_MATRIX A, LIS_VECTOR b,
                 (long long)result);
         goto done;
     }
+    err=lis_vector_axpy((LIS_SCALAR)-1,b,rhs_copy);if(err)goto done;
+    err=lis_vector_nrm2(rhs_copy,&rhs_diff);if(err)goto done;
+    if(rhs_diff!=(LIS_REAL)0.0)
+    {
+        fprintf(stderr,"USER initial psolve changed RHS: %.17g\n",
+                (double)rhs_diff);
+        goto done;
+    }
     printf("USER_INITIAL_PSOLVE_ERROR PASS\n");
     failed=0;
 
@@ -214,6 +224,7 @@ done:
     ctx->fail_next_psolve=LIS_FALSE;
     if(solver) solver->precon=NULL; /* caller owns this test preconditioner */
     if(precon) lis_precon_destroy(precon);
+    if(rhs_copy) lis_vector_destroy(rhs_copy);
     if(residual) lis_vector_destroy(residual);
     if(scratch) lis_vector_destroy(scratch);
     if(solver) lis_solver_destroy(solver);
