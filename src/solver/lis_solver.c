@@ -5028,6 +5028,8 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	
 	if (!solver->setup)
 	  {
+	    /* Do not carry a previous sequence's status into this solve. */
+	    solver->retcode = LIS_SUCCESS;
 #ifndef USE_QUAD_PRECISION
 	    err = lis_solver_execute[nsolver](solver);
 #else
@@ -5044,6 +5046,10 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 		err = lis_solver_execute_switch[nsolver](solver);
 	      }
 #endif
+	    /* Some solvers map the initial-residual early-exit sentinel to
+	     LIS_SUCCESS. Preserve any callback error recorded by the helper. */
+	    if( err==LIS_SUCCESS && solver->retcode!=LIS_SUCCESS )
+	      err = solver->retcode;
 	    solver->retcode = err;
 	  }
 
@@ -5197,7 +5203,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VECTOR t, LIS_VECTOR r, LIS_REAL *bnrm2)
 {
 	LIS_Comm comm;  
-	LIS_INT	output,conv;
+	LIS_INT	output,conv,err;
 	#ifdef USE_QUAD_PRECISION
 	LIS_INT	i;
 	#endif
@@ -5234,17 +5240,38 @@ LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VEC
 	if( !solver->options[LIS_OPTIONS_INITGUESS_ZEROS] )
 	{
 		#ifndef USE_QUAD_PRECISION
-			lis_matvec(A,x,p);           /* p = Ax    */
+			err = lis_matvec(A,x,p);     /* p = Ax    */
+			if( err )
+			{
+				solver->retcode = err;
+				solver->iter = 0;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_FAILS;
+			}
 			lis_vector_xpay(b,-1,p);     /* p = b - p */
 		#else
 			if( solver->precision==LIS_PRECISION_DOUBLE )
 			{
-				lis_matvec(A,x,p);           /* p = Ax    */
+				err = lis_matvec(A,x,p);     /* p = Ax    */
+			if( err )
+			{
+				solver->retcode = err;
+				solver->iter = 0;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_FAILS;
+			}
 				lis_vector_xpay(b,-1,p);     /* p = b - p */
 			}
 			else
 			{
-				lis_matvec(A,xx,p);          /* p = Ax    */
+				err = lis_matvec(A,xx,p);    /* p = Ax    */
+				if( err )
+				{
+					solver->retcode = err;
+					solver->iter = 0;
+					LIS_DEBUG_FUNC_OUT;
+					return LIS_FAILS;
+				}
 				lis_vector_xpay(b,-1,p);     /* p = b - p */
 				
 				#ifdef _OPENMP
@@ -5344,7 +5371,14 @@ LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VEC
 	if( M!=NULL )
 	{
 		/* r = M^-1 * p */
-		lis_psolve(solver, p, r);
+		err = lis_psolve(solver, p, r);
+		if( err )
+		{
+			solver->retcode = err;
+			solver->iter = 0;
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_FAILS;
+		}
 	}
 
 	LIS_DEBUG_FUNC_OUT;
