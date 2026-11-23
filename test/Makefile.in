@@ -144,7 +144,7 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testesolverselection$(EXEEXT) testprojectedeigen$(EXEEXT) \
 	testprojectedhermitian$(EXEEXT) testblockgram$(EXEEXT) \
 	testblockorthogonal$(EXEEXT) testblockrank$(EXEEXT) \
-	testmatrixautosession$(EXEEXT) testvectorreal64$(EXEEXT) \
+	testmatrixautosession$(EXEEXT) testusercsrbounds$(EXEEXT) testvectorreal64$(EXEEXT) \
 	benchautojacobirefresh$(EXEEXT) testabi$(EXEEXT) \
 	testgesolvepair$(EXEEXT) testrcoalloc$(EXEEXT) \
 	testilutp$(EXEEXT) testilutequil$(EXEEXT) benchilutp$(EXEEXT) \
@@ -711,6 +711,10 @@ am_testkrylovrobust_OBJECTS = testkrylovrobust.$(OBJEXT)
 testkrylovrobust_OBJECTS = $(am_testkrylovrobust_OBJECTS)
 testkrylovrobust_LDADD = $(LDADD)
 testkrylovrobust_DEPENDENCIES =
+am_testusercsrbounds_OBJECTS = testusercsrbounds.$(OBJEXT)
+testusercsrbounds_OBJECTS = $(am_testusercsrbounds_OBJECTS)
+testusercsrbounds_LDADD = $(LDADD)
+testusercsrbounds_DEPENDENCIES =
 am_testmatrixautosession_OBJECTS = testmatrixautosession.$(OBJEXT)
 testmatrixautosession_OBJECTS = $(am_testmatrixautosession_OBJECTS)
 testmatrixautosession_LDADD = $(LDADD)
@@ -1089,7 +1093,7 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testilucbsrsmoke.Po ./$(DEPDIR)/testilupivot.Po \
 	./$(DEPDIR)/testilutequil.Po ./$(DEPDIR)/testilutp.Po \
 	./$(DEPDIR)/testjacobiuser.Po ./$(DEPDIR)/testkrylovrobust.Po \
-	./$(DEPDIR)/testmatrixautosession.Po \
+	./$(DEPDIR)/testmatrixautosession.Po ./$(DEPDIR)/testusercsrbounds.Po \
 	./$(DEPDIR)/testmatrixgeneration.Po \
 	./$(DEPDIR)/testmatrixgraph.Po \
 	./$(DEPDIR)/testmatrixmaterialize.Po \
@@ -1227,7 +1231,7 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testhybridnested_SOURCES) $(testilucbsrsmoke_SOURCES) \
 	$(testilupivot_SOURCES) $(testilutequil_SOURCES) \
 	$(testilutp_SOURCES) $(testjacobiuser_SOURCES) \
-	$(testkrylovrobust_SOURCES) $(testmatrixautosession_SOURCES) \
+	$(testkrylovrobust_SOURCES) $(testmatrixautosession_SOURCES) $(testusercsrbounds_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatrixmaterialize_SOURCES) \
 	$(testmatrixmaterializeomp_SOURCES) \
@@ -1322,7 +1326,7 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testilucbsrsmoke_SOURCES) $(testilupivot_SOURCES) \
 	$(testilutequil_SOURCES) $(testilutp_SOURCES) \
 	$(testjacobiuser_SOURCES) $(testkrylovrobust_SOURCES) \
-	$(testmatrixautosession_SOURCES) \
+	$(testmatrixautosession_SOURCES) $(testusercsrbounds_SOURCES) \
 	$(testmatrixgeneration_SOURCES) $(testmatrixgraph_SOURCES) \
 	$(testmatrixmaterialize_SOURCES) \
 	$(testmatrixmaterializeomp_SOURCES) \
@@ -1751,6 +1755,7 @@ testmatrixmaterialize_SOURCES = testmatrixmaterialize.c
 testmatrixmaterializeomp_SOURCES = testmatrixmaterializeomp.c
 testmatrixpolicysolve_SOURCES = testmatrixpolicysolve.c
 testmatrixautosession_SOURCES = testmatrixautosession.c
+testusercsrbounds_SOURCES = testusercsrbounds.c
 benchautojacobirefresh_SOURCES = benchautojacobirefresh.c
 testvectorreal64_SOURCES = testvectorreal64.c
 testfrozenilut_SOURCES = testfrozenilut.c
@@ -1953,7 +1958,7 @@ TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) \
 	testexactnullspace$(EXEEXT) testhalfconfig$(EXEEXT) \
 	testhalfconvert$(EXEEXT) testnullspacecandidates$(EXEEXT) \
 	testesolverselection$(EXEEXT) testilutp$(EXEEXT) \
-	testilutequil$(EXEEXT) testmatrixautosession$(EXEEXT) \
+	testilutequil$(EXEEXT) testmatrixautosession$(EXEEXT) testusercsrbounds$(EXEEXT) \
 	testvectorreal64$(EXEEXT) testgesolvepair$(EXEEXT) \
 	testabi$(EXEEXT) testrcoalloc$(EXEEXT) $(am__append_5) \
 	testfgcrodrblocked$(EXEEXT) testfgcrodrtransport$(EXEEXT) \
@@ -2622,6 +2627,10 @@ testkrylovrobust$(EXEEXT): $(testkrylovrobust_OBJECTS) $(testkrylovrobust_DEPEND
 	@rm -f testkrylovrobust$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testkrylovrobust_OBJECTS) $(testkrylovrobust_LDADD) $(LIBS)
 
+testusercsrbounds$(EXEEXT): $(testusercsrbounds_OBJECTS) $(testusercsrbounds_DEPENDENCIES) $(EXTRA_testusercsrbounds_DEPENDENCIES) 
+	@rm -f testusercsrbounds$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testusercsrbounds_OBJECTS) $(testusercsrbounds_LDADD) $(LIBS)
+
 testmatrixautosession$(EXEEXT): $(testmatrixautosession_OBJECTS) $(testmatrixautosession_DEPENDENCIES) $(EXTRA_testmatrixautosession_DEPENDENCIES) 
 	@rm -f testmatrixautosession$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testmatrixautosession_OBJECTS) $(testmatrixautosession_LDADD) $(LIBS)
@@ -3014,6 +3023,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testjacobiuser.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testkrylovrobust.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixautosession.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testusercsrbounds.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixgeneration.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixgraph.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testmatrixmaterialize.Po@am__quote@ # am--include-marker
@@ -3886,6 +3896,13 @@ testilutequil.log: testilutequil$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testusercsrbounds.log: testusercsrbounds$(EXEEXT)
+	@p='testusercsrbounds$(EXEEXT)'; \
+	b='testusercsrbounds'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$f" \
+	--log-file $b.log --trs-file $b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$tst" $(AM_TESTS_FD_REDIRECT)
 testmatrixautosession.log: testmatrixautosession$(EXEEXT)
 	@p='testmatrixautosession$(EXEEXT)'; \
 	b='testmatrixautosession'; \
@@ -4441,6 +4458,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testjacobiuser.Po
 	-rm -f ./$(DEPDIR)/testkrylovrobust.Po
 	-rm -f ./$(DEPDIR)/testmatrixautosession.Po
+	-rm -f ./$(DEPDIR)/testusercsrbounds.Po
 	-rm -f ./$(DEPDIR)/testmatrixgeneration.Po
 	-rm -f ./$(DEPDIR)/testmatrixgraph.Po
 	-rm -f ./$(DEPDIR)/testmatrixmaterialize.Po
@@ -4651,6 +4669,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testjacobiuser.Po
 	-rm -f ./$(DEPDIR)/testkrylovrobust.Po
 	-rm -f ./$(DEPDIR)/testmatrixautosession.Po
+	-rm -f ./$(DEPDIR)/testusercsrbounds.Po
 	-rm -f ./$(DEPDIR)/testmatrixgeneration.Po
 	-rm -f ./$(DEPDIR)/testmatrixgraph.Po
 	-rm -f ./$(DEPDIR)/testmatrixmaterialize.Po

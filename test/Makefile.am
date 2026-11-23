@@ -352,6 +352,11 @@ testoommpiscale_SOURCES = testoommpiscale.c
 endif
 endif
 
+# USER-to-CSR row callback bounds are checked in the native test suite.
+test_PROGRAMS += testusercsrbounds
+testusercsrbounds_SOURCES = testusercsrbounds.c
+TESTS += testusercsrbounds$(EXEEXT)
+
 # Standalone projected-residual normalization regression.
 test_PROGRAMS += testfgmresprojected
 testfgmresprojected_SOURCES = testfgmresprojected.c
