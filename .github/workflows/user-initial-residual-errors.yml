@@ -36,7 +36,6 @@ jobs:
           ./configure --enable-omp --enable-test --disable-mpi --disable-fortran --disable-f90 --disable-saamg ${index_flags}
           make -j2
           export LD_LIBRARY_PATH="$PWD/src/.libs:${LD_LIBRARY_PATH:-}"
-          if ! make -C test check TESTS=testuser; then
-            cat test/testuser.log || true
-            exit 1
-          fi
+          # testuser is a built test_PROGRAM but is not registered in TESTS.
+          # Execute it directly rather than overriding Automake TESTS.
+          ./test/testuser
