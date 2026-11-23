@@ -12,12 +12,19 @@ typedef struct
 	LIS_INT n;
 	LIS_SCALAR diag;
 	LIS_SCALAR offdiag;
+	LIS_INT fail_next_matvec;
 } USER_TRIDIAG;
 
 static LIS_INT shell_matvec(void *ctx, const LIS_SCALAR *x, LIS_SCALAR *y)
 {
 	USER_TRIDIAG *A = (USER_TRIDIAG *)ctx;
 	LIS_INT i;
+
+	if( A->fail_next_matvec )
+	{
+		A->fail_next_matvec = LIS_FALSE;
+		return LIS_ERR_ILL_ARG;
+	}
 
 	if( A->n==1 )
 	{
@@ -66,6 +73,71 @@ static LIS_INT userdiag_psolveh(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
 	return userdiag_psolve(solver,b,x);
 }
 
+/* Verify an error on the first nonzero-initial-guess SpMV cannot be
+ * misreported as convergence, even when certification's later SpMV succeeds.
+ * An independent successful solve also checks stale status is not retained. */
+static int test_initial_matvec_error(LIS_MATRIX A, LIS_VECTOR b,
+                                     LIS_VECTOR x, USER_TRIDIAG *ctx)
+{
+    const char *methods[3] = {"cg", "bicgstab", "gmres"};
+    LIS_INT k,err,status;
+    LIS_SOLVER s=NULL;
+    char options[160];
+
+    /* Rank-local failure injection is intentionally not an MPI test. */
+    if(A->nprocs!=1) return 0;
+
+    for(k=0;k<3;k++)
+    {
+        err=lis_solver_create(&s);
+        if(err) return 1;
+        snprintf(options,sizeof(options),
+                 "-i %s -p none -tol 1e-11 -maxiter 1000 -print none",
+                 methods[k]);
+        err=lis_solver_set_option(options,s);
+        if(err) goto fail;
+
+        s->options[LIS_OPTIONS_INITGUESS_ZEROS]=LIS_FALSE;
+        err=lis_vector_set_all((LIS_SCALAR)0.5,x);
+        if(err) goto fail;
+        ctx->fail_next_matvec=LIS_TRUE;
+
+        err=lis_solve(A,b,x,s);
+        if(err) goto fail;
+        err=lis_solver_get_status(s,&status);
+        if(err || status!=LIS_ERR_ILL_ARG ||
+           ctx->fail_next_matvec || s->iter!=0)
+        {
+            fprintf(stderr,"initial USER callback error lost: %s status=%lld iter=%lld\n",
+                    methods[k],(long long)status,(long long)s->iter);
+            goto fail;
+        }
+
+        ctx->fail_next_matvec=LIS_FALSE;
+        s->options[LIS_OPTIONS_INITGUESS_ZEROS]=LIS_TRUE;
+        err=lis_vector_set_all((LIS_SCALAR)0.0,x);
+        if(err) goto fail;
+        err=lis_solve(A,b,x,s);
+        if(err) goto fail;
+        err=lis_solver_get_status(s,&status);
+        if(err || status!=LIS_SUCCESS)
+        {
+            fprintf(stderr,"USER callback recovery failed: %s status=%lld\n",
+                    methods[k],(long long)status);
+            goto fail;
+        }
+
+        lis_solver_destroy(s);
+        s=NULL;
+    }
+    printf("USER_INITIAL_RESIDUAL_ERROR PASS\n");
+    return 0;
+fail:
+    ctx->fail_next_matvec=LIS_FALSE;
+    if(s) lis_solver_destroy(s);
+    return 1;
+}
+
 int main(int argc, char *argv[])
 {
 	LIS_MATRIX A;
@@ -82,6 +154,7 @@ int main(int argc, char *argv[])
 	shell.n = n;
 	shell.diag = 2.0;
 	shell.offdiag = -1.0;
+	shell.fail_next_matvec = LIS_FALSE;
 
 	err = lis_precon_register("userdiag",
 	                          userdiag_create,
@@ -141,6 +214,12 @@ int main(int argc, char *argv[])
 	lis_vector_axpy(-1.0,exact,x);
 	lis_vector_nrm2(x,&nrm2);
 	printf("LIS_MATRIX_USER solution error = %.15e\n",(double)nrm2);
+
+	if( nrm2<=1.0e-8 && test_initial_matvec_error(A,b,x,&shell) )
+	{
+		fprintf(stderr,"USER initial residual regression FAILED\n");
+		return 1;
+	}
 
 	lis_solver_destroy(solver);
 	lis_vector_destroy(exact);
