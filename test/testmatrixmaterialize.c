@@ -361,10 +361,16 @@ test_auto_policy_capabilities(LIS_MATRIX A)
     if(test_policy_selection(A,"-i gmres -p jacobi",LIS_TRUE))
         goto done;
 
-    /* No matvec: even a diagonal callback must not enable direct access. */
+    /*
+     * Row-backed USER SpMV is a valid serial direct path even without an
+     * explicit matvec callback.  With a diagonal callback Jacobi is also
+     * eligible for DIRECT; without it the existing CSR fallback remains.
+     */
     A->user_matvec=NULL;
-    if(test_policy_selection(A,"-i gmres -p jacobi",LIS_FALSE) ||
-       test_policy_selection(A,"-i gmres -p none",LIS_FALSE))
+    if(test_policy_selection(A,"-i gmres -p jacobi",LIS_TRUE) ||
+       test_policy_selection(A,"-i gmres -p none",LIS_TRUE) ||
+       test_policy_selection(A,"-i gmres -p ilut",LIS_TRUE) ||
+       test_policy_selection(A,"-i gmres -p ssor",LIS_FALSE))
         goto done;
     A->user_matvec=saved_matvec;
     failed=0;
