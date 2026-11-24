@@ -378,6 +378,11 @@ test_PROGRAMS += testuserbicgsafe
 testuserbicgsafe_SOURCES = testuserbicgsafe.c
 TESTS += testuserbicgsafe$(EXEEXT)
 
+# Native USER callback regression for MINRES initial and in-loop callbacks.
+test_PROGRAMS += testuserminreserrors
+testuserminreserrors_SOURCES = testuserminreserrors.c
+TESTS += testuserminreserrors$(EXEEXT)
+
 # Standalone projected-residual normalization regression.
 test_PROGRAMS += testfgmresprojected
 testfgmresprojected_SOURCES = testfgmresprojected.c
