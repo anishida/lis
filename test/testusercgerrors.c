@@ -135,6 +135,14 @@ static int run(LIS_INT use_quad,LIS_INT matvec_fail_on,LIS_INT pc_fail_on)
                 (long long)precon_calls);
             goto done;
         }
+        if(matvec_fail_on==1 ? !isnan((double)residual) :
+           (!isfinite((double)residual) ||
+            (expect_completed==0 && fabs((double)residual-1.0)>1e-12)))
+        {
+            fprintf(stderr,"CG callback failure: unexpected residual %.17g\n",
+                    (double)residual);
+            goto done;
+        }
         for(i=0;i<ctx.n;i++)
         {
             double val=(double)x->value[i];
