@@ -85,7 +85,7 @@ static int run(LIS_INT fail_on,LIS_INT precon_fail_on)
            (precon_fail_on && precon_calls<precon_fail_on))
         {
             fprintf(stderr,
-                "MINRES USER error not propagated: matvec_at=%lld psolve_at=%lld ret=%lld status=%lld calls=%lld pcalls=%lld iter=%lld\\n",
+                "MINRES USER error not propagated: matvec_at=%lld psolve_at=%lld ret=%lld status=%lld calls=%lld pcalls=%lld iter=%lld\n",
                 (long long)fail_on,(long long)precon_fail_on,
                 (long long)err,(long long)status,
                 (long long)ctx.calls,(long long)precon_calls,
@@ -107,7 +107,7 @@ static int run(LIS_INT fail_on,LIS_INT precon_fail_on)
 done:
     if(failed)
         fprintf(stderr,
-            "USER_MINRES_ERRORS FAIL matvec_at=%lld psolve_at=%lld status=%lld api=%lld\\n",
+            "USER_MINRES_ERRORS FAIL matvec_at=%lld psolve_at=%lld status=%lld api=%lld\n",
             (long long)fail_on,(long long)precon_fail_on,
             (long long)status,(long long)err);
     if(solver)lis_solver_destroy(solver);
@@ -144,7 +144,7 @@ int main(int argc,char **argv)
     failed|=run(0,0);
     lis_precon_register_free();
     lis_finalize();
-    printf("USER_MINRES_ERRORS %s\\n",failed?"FAILED":"PASSED");
+    printf("USER_MINRES_ERRORS %s\n",failed?"FAILED":"PASSED");
     return failed?1:0;
 #endif
 }
