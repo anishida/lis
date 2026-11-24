@@ -33,6 +33,7 @@
 #endif
 
 #include <stdio.h>
+#include <math.h>
 #include <stdlib.h>
 #ifdef HAVE_MALLOC_H
         #include <malloc.h>
@@ -163,6 +164,12 @@ LIS_INT lis_cg(LIS_SOLVER solver)
 	if( lis_solver_get_initial_residual(solver,NULL,NULL,r,&bnrm2) )
 	{
 		LIS_DEBUG_FUNC_OUT;
+		if( solver->retcode != LIS_SUCCESS )
+		{
+			solver->resid = NAN;
+			solver->ptime = ptime;
+			return solver->retcode;
+		}
 		return LIS_SUCCESS;
 	}
 	tol     = solver->tol;
@@ -262,6 +269,8 @@ callback_failure:
 	 * the partially written output vector. */
 	solver->retcode = err;
 	solver->iter    = iter-1;
+	if( iter==1 )
+		lis_solver_get_residual[conv](r,solver,&nrm2);
 	solver->resid   = nrm2;
 	solver->ptime   = ptime;
 	LIS_DEBUG_FUNC_OUT;
@@ -315,6 +324,12 @@ LIS_INT lis_cg_quad(LIS_SOLVER solver)
 	if( lis_solver_get_initial_residual(solver,NULL,NULL,r,&bnrm2) )
 	{
 		LIS_DEBUG_FUNC_OUT;
+		if( solver->retcode != LIS_SUCCESS )
+		{
+			solver->resid = NAN;
+			solver->ptime = ptime;
+			return solver->retcode;
+		}
 		return LIS_SUCCESS;
 	}
 	tol     = solver->tol;
@@ -416,6 +431,8 @@ callback_failure:
 	 * the partially written output vector. */
 	solver->retcode = err;
 	solver->iter    = iter-1;
+	if( iter==1 )
+		lis_solver_get_residual[conv](r,solver,&nrm2);
 	solver->resid   = nrm2;
 	solver->ptime   = ptime;
 	LIS_DEBUG_FUNC_OUT;
