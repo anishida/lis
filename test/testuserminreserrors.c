@@ -56,9 +56,10 @@ static int run(LIS_INT fail_on,LIS_INT precon_fail_on)
     LIS_MATRIX A=NULL;
     LIS_VECTOR b=NULL,x=NULL;
     LIS_SOLVER solver=NULL;
-    LIS_INT i,err=LIS_SUCCESS,status=LIS_SUCCESS;
+    LIS_INT i,err=LIS_SUCCESS,status=LIS_SUCCESS,iterations=-1;
+    LIS_REAL relative_resid=NAN;
     int failed=1;
-    char opts[]="-i minres -p minerrpc -scale none -maxiter 100 -tol 1e-10 -print none";
+    char opts[]="-i minres -p minerrpc -scale none -initx_zeros false -maxiter 100 -tol 1e-10 -print none";
     ctx.n=8;ctx.calls=0;ctx.fail_on=fail_on;
     precon_calls=0;precon_error_at=precon_fail_on;
 
@@ -74,28 +75,54 @@ static int run(LIS_INT fail_on,LIS_INT precon_fail_on)
     }
     err=lis_solver_create(&solver);if(err)goto done;
     err=lis_solver_set_option(opts,solver);if(err)goto done;
-    solver->options[LIS_OPTIONS_INITGUESS_ZEROS]=LIS_FALSE;
-
+    /* In this LIS API, lis_solve() returns success after the kernel,
+     * even when the iterative callback error is stored in solver status.
+     * Check both paths explicitly, along with public diagnostics. */
     err=lis_solve(A,b,x,solver);
-    if(lis_solver_get_status(solver,&status))goto done;
+    if(lis_solver_get_status(solver,&status) ||
+       lis_solver_get_iter(solver,&iterations) ||
+       lis_solver_get_residualnorm(solver,&relative_resid))goto done;
     if(fail_on || precon_fail_on)
     {
+        LIS_INT completed=(fail_on==3)?1:0;
+        LIS_INT expected_matvec_calls=fail_on?fail_on:precon_fail_on;
         if(err!=LIS_SUCCESS || status!=LIS_ERR_ILL_ARG ||
-           (fail_on && ctx.calls<fail_on) ||
-           (precon_fail_on && precon_calls<precon_fail_on))
+           (fail_on && ctx.calls!=fail_on) ||
+           (precon_fail_on && precon_calls!=precon_fail_on) ||
+           (precon_fail_on && ctx.calls!=expected_matvec_calls) ||
+           iterations!=completed ||
+           (fail_on==1?!isnan((double)relative_resid):
+               (!isfinite((double)relative_resid) ||
+                relative_resid<=0.0 || relative_resid>1.0)))
         {
             fprintf(stderr,
-                "MINRES USER error not propagated: matvec_at=%lld psolve_at=%lld ret=%lld status=%lld calls=%lld pcalls=%lld iter=%lld\n",
+                "MINRES USER error not propagated: matvec_at=%lld psolve_at=%lld ret=%lld status=%lld calls=%lld pcalls=%lld iter=%lld residual=%g\n",
                 (long long)fail_on,(long long)precon_fail_on,
                 (long long)err,(long long)status,
                 (long long)ctx.calls,(long long)precon_calls,
-                (long long)solver->iter);
+                (long long)iterations,(double)relative_resid);
             goto done;
+        }
+        /* Iteration zero has not modified x; all later failures must
+         * leave a finite last completed iterate, never the poisoned
+         * NaN output of the failed USER/preconditioner callback. */
+        for(i=0;i<ctx.n;i++)
+        {
+            double val=(double)x->value[i];
+            if(!isfinite(val) ||
+               (completed==0 && fabs(val-0.1)>1e-15))
+            {
+                fprintf(stderr,"MINRES USER damaged x[%lld]=%g after callback failure\n",
+                        (long long)i,val);
+                goto done;
+            }
         }
     }
     else
     {
-        if(err!=LIS_SUCCESS || status!=LIS_SUCCESS)goto done;
+        if(err!=LIS_SUCCESS || status!=LIS_SUCCESS ||
+           !isfinite((double)relative_resid) ||
+           relative_resid>1e-10 || iterations<=0)goto done;
         for(i=0;i<ctx.n;i++)
         {
             double exact=(1.0+0.125*(double)i)/(3.0+0.25*(double)i);
