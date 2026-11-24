@@ -8,6 +8,9 @@
 #include "lis_config.h"
 #endif
 #include "lis.h"
+#ifdef USE_QUAD_PRECISION
+#include "lis_vector.h"
+#endif
 #include <math.h>
 #include <stdio.h>
 
@@ -45,6 +48,11 @@ static LIS_INT cg_precon_apply(LIS_SOLVER solver,LIS_VECTOR from,LIS_VECTOR to)
         to->value[0]=(LIS_SCALAR)NAN;
         return LIS_ERR_ILL_ARG;
     }
+#ifdef USE_QUAD_PRECISION
+    if(from->precision==LIS_PRECISION_QUAD &&
+       to->precision==LIS_PRECISION_QUAD)
+        return lis_vector_copyex_mm(from,to);
+#endif
     return lis_vector_copy(from,to);
 }
 
