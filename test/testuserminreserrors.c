@@ -88,6 +88,7 @@ static int run(LIS_INT fail_on,LIS_INT precon_fail_on)
         LIS_INT expected_matvec_calls=fail_on?fail_on:precon_fail_on;
         if(err!=LIS_SUCCESS || status!=LIS_ERR_ILL_ARG ||
            (fail_on && ctx.calls!=fail_on) ||
+           (fail_on && precon_calls!=fail_on-1) ||
            (precon_fail_on && precon_calls!=precon_fail_on) ||
            (precon_fail_on && ctx.calls!=expected_matvec_calls) ||
            iterations!=completed ||
