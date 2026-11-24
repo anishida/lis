@@ -378,6 +378,11 @@ test_PROGRAMS += testuserbicgsafe
 testuserbicgsafe_SOURCES = testuserbicgsafe.c
 TESTS += testuserbicgsafe$(EXEEXT)
 
+# Generic CG USER callback failures and QUAD preconditioner failures.
+test_PROGRAMS += testusercgerrors
+testusercgerrors_SOURCES = testusercgerrors.c
+TESTS += testusercgerrors$(EXEEXT)
+
 # Standalone projected-residual normalization regression.
 test_PROGRAMS += testfgmresprojected
 testfgmresprojected_SOURCES = testfgmresprojected.c
