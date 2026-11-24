@@ -164,11 +164,11 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testusercsrbounds$(EXEEXT) testusermpiduplicate$(EXEEXT) \
 	testuserbicgerrors$(EXEEXT) testuserbicgadjoint$(EXEEXT) \
 	testuserbicgsafe$(EXEEXT) testuserminreserrors$(EXEEXT) \
-	testfgmresprojected$(EXEEXT) testmfamgvcycle$(EXEEXT) \
-	testmfamgfineagg$(EXEEXT) testmfamgdeepmerge$(EXEEXT) \
-	testmfamgilutp$(EXEEXT) testcondense_core$(EXEEXT) \
-	testcomposite_core$(EXEEXT) testcondense_lis$(EXEEXT) \
-	testcondense_oom$(EXEEXT)
+	testusercgerrors$(EXEEXT) testfgmresprojected$(EXEEXT) \
+	testmfamgvcycle$(EXEEXT) testmfamgfineagg$(EXEEXT) \
+	testmfamgdeepmerge$(EXEEXT) testmfamgilutp$(EXEEXT) \
+	testcondense_core$(EXEEXT) testcomposite_core$(EXEEXT) \
+	testcondense_lis$(EXEEXT) testcondense_oom$(EXEEXT)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_3 = test2f test6f 
@@ -962,6 +962,10 @@ am_testuserbicgsafe_OBJECTS = testuserbicgsafe.$(OBJEXT)
 testuserbicgsafe_OBJECTS = $(am_testuserbicgsafe_OBJECTS)
 testuserbicgsafe_LDADD = $(LDADD)
 testuserbicgsafe_DEPENDENCIES =
+am_testusercgerrors_OBJECTS = testusercgerrors.$(OBJEXT)
+testusercgerrors_OBJECTS = $(am_testusercgerrors_OBJECTS)
+testusercgerrors_LDADD = $(LDADD)
+testusercgerrors_DEPENDENCIES =
 am_testusercsrbounds_OBJECTS = testusercsrbounds.$(OBJEXT)
 testusercsrbounds_OBJECTS = $(am_testusercsrbounds_OBJECTS)
 testusercsrbounds_LDADD = $(LDADD)
@@ -1159,6 +1163,7 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testuser.Po ./$(DEPDIR)/testuserbicgadjoint.Po \
 	./$(DEPDIR)/testuserbicgerrors.Po \
 	./$(DEPDIR)/testuserbicgsafe.Po \
+	./$(DEPDIR)/testusercgerrors.Po \
 	./$(DEPDIR)/testusercsrbounds.Po \
 	./$(DEPDIR)/testuserminreserrors.Po \
 	./$(DEPDIR)/testusermpiduplicate.Po \
@@ -1293,7 +1298,8 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testsymmdiagguard_SOURCES) $(testthreads_SOURCES) \
 	$(testuser_SOURCES) $(testuserbicgadjoint_SOURCES) \
 	$(testuserbicgerrors_SOURCES) $(testuserbicgsafe_SOURCES) \
-	$(testusercsrbounds_SOURCES) $(testuserminreserrors_SOURCES) \
+	$(testusercgerrors_SOURCES) $(testusercsrbounds_SOURCES) \
+	$(testuserminreserrors_SOURCES) \
 	$(testusermpiduplicate_SOURCES) $(testuserprecon_SOURCES) \
 	$(testuserrow_SOURCES) $(testvectornrm2mpi_SOURCES) \
 	$(testvectorreal64_SOURCES) $(testwarmstart_SOURCES) \
@@ -1393,7 +1399,8 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testsymmdiagguard_SOURCES) $(testthreads_SOURCES) \
 	$(testuser_SOURCES) $(testuserbicgadjoint_SOURCES) \
 	$(testuserbicgerrors_SOURCES) $(testuserbicgsafe_SOURCES) \
-	$(testusercsrbounds_SOURCES) $(testuserminreserrors_SOURCES) \
+	$(testusercgerrors_SOURCES) $(testusercsrbounds_SOURCES) \
+	$(testuserminreserrors_SOURCES) \
 	$(testusermpiduplicate_SOURCES) $(testuserprecon_SOURCES) \
 	$(testuserrow_SOURCES) $(testvectornrm2mpi_SOURCES) \
 	$(testvectorreal64_SOURCES) $(testwarmstart_SOURCES) \
@@ -2010,13 +2017,13 @@ TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) \
 	$(am__append_6) $(am__append_8) testusercsrbounds$(EXEEXT) \
 	testusermpiduplicate$(EXEEXT) testuserbicgerrors$(EXEEXT) \
 	testuserbicgadjoint$(EXEEXT) testuserbicgsafe$(EXEEXT) \
-	testuserminreserrors$(EXEEXT) testfgmresprojected$(EXEEXT) \
-	testmfamgvcycle$(EXEEXT) testmfamgfineagg$(EXEEXT) \
-	testmfamgdeepmerge$(EXEEXT) testmfamgilutp$(EXEEXT) \
-	testcondense_core$(EXEEXT) testcomposite_core$(EXEEXT) \
-	testcondense_lis$(EXEEXT) testcondense_oom$(EXEEXT) \
-	testca_mfamg_ilutp.sh testca_mfamg_profiles.sh \
-	testcondense_differential.sh
+	testuserminreserrors$(EXEEXT) testusercgerrors$(EXEEXT) \
+	testfgmresprojected$(EXEEXT) testmfamgvcycle$(EXEEXT) \
+	testmfamgfineagg$(EXEEXT) testmfamgdeepmerge$(EXEEXT) \
+	testmfamgilutp$(EXEEXT) testcondense_core$(EXEEXT) \
+	testcomposite_core$(EXEEXT) testcondense_lis$(EXEEXT) \
+	testcondense_oom$(EXEEXT) testca_mfamg_ilutp.sh \
+	testca_mfamg_profiles.sh testcondense_differential.sh
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
 testfgcrodrmaxiter_SOURCES = testfgcrodrmaxiter.c
@@ -2059,6 +2066,7 @@ testuserbicgerrors_SOURCES = testuserbicgerrors.c
 testuserbicgadjoint_SOURCES = testuserbicgadjoint.c
 testuserbicgsafe_SOURCES = testuserbicgsafe.c
 testuserminreserrors_SOURCES = testuserminreserrors.c
+testusercgerrors_SOURCES = testusercgerrors.c
 testfgmresprojected_SOURCES = testfgmresprojected.c
 testfgmresprojected_LDADD = $(LDADD) -lm
 testmfamgvcycle_SOURCES = testmfamgvcycle.c
@@ -2902,6 +2910,10 @@ testuserbicgsafe$(EXEEXT): $(testuserbicgsafe_OBJECTS) $(testuserbicgsafe_DEPEND
 	@rm -f testuserbicgsafe$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testuserbicgsafe_OBJECTS) $(testuserbicgsafe_LDADD) $(LIBS)
 
+testusercgerrors$(EXEEXT): $(testusercgerrors_OBJECTS) $(testusercgerrors_DEPENDENCIES) $(EXTRA_testusercgerrors_DEPENDENCIES) 
+	@rm -f testusercgerrors$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testusercgerrors_OBJECTS) $(testusercgerrors_LDADD) $(LIBS)
+
 testusercsrbounds$(EXEEXT): $(testusercsrbounds_OBJECTS) $(testusercsrbounds_DEPENDENCIES) $(EXTRA_testusercsrbounds_DEPENDENCIES) 
 	@rm -f testusercsrbounds$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testusercsrbounds_OBJECTS) $(testusercsrbounds_LDADD) $(LIBS)
@@ -3143,6 +3155,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuserbicgadjoint.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuserbicgerrors.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuserbicgsafe.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testusercgerrors.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testusercsrbounds.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuserminreserrors.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testusermpiduplicate.Po@am__quote@ # am--include-marker
@@ -4279,6 +4292,13 @@ testuserminreserrors.log: testuserminreserrors$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testusercgerrors.log: testusercgerrors$(EXEEXT)
+	@p='testusercgerrors$(EXEEXT)'; \
+	b='testusercgerrors'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 testfgmresprojected.log: testfgmresprojected$(EXEEXT)
 	@p='testfgmresprojected$(EXEEXT)'; \
 	b='testfgmresprojected'; \
@@ -4618,6 +4638,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testuserbicgadjoint.Po
 	-rm -f ./$(DEPDIR)/testuserbicgerrors.Po
 	-rm -f ./$(DEPDIR)/testuserbicgsafe.Po
+	-rm -f ./$(DEPDIR)/testusercgerrors.Po
 	-rm -f ./$(DEPDIR)/testusercsrbounds.Po
 	-rm -f ./$(DEPDIR)/testuserminreserrors.Po
 	-rm -f ./$(DEPDIR)/testusermpiduplicate.Po
@@ -4834,6 +4855,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testuserbicgadjoint.Po
 	-rm -f ./$(DEPDIR)/testuserbicgerrors.Po
 	-rm -f ./$(DEPDIR)/testuserbicgsafe.Po
+	-rm -f ./$(DEPDIR)/testusercgerrors.Po
 	-rm -f ./$(DEPDIR)/testusercsrbounds.Po
 	-rm -f ./$(DEPDIR)/testuserminreserrors.Po
 	-rm -f ./$(DEPDIR)/testusermpiduplicate.Po
