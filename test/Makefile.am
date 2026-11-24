@@ -383,6 +383,11 @@ test_PROGRAMS += testuserminreserrors
 testuserminreserrors_SOURCES = testuserminreserrors.c
 TESTS += testuserminreserrors$(EXEEXT)
 
+# Generic CG USER callback failures and QUAD preconditioner failures.
+test_PROGRAMS += testusercgerrors
+testusercgerrors_SOURCES = testusercgerrors.c
+TESTS += testusercgerrors$(EXEEXT)
+
 # Standalone projected-residual normalization regression.
 test_PROGRAMS += testfgmresprojected
 testfgmresprojected_SOURCES = testfgmresprojected.c
