@@ -1,10 +1,18 @@
 name: USER MINRES matvec and preconditioner callback errors
 on:
   pull_request:
+    paths:
+      - 'src/solver/lis_solver_minres.c'
+      - 'test/testuserminreserrors.c'
+      - 'test/Makefile.am'
+      - '.github/workflows/user-minres-errors.yml'
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   minres-callbacks:
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -13,10 +21,11 @@ jobs:
     env:
       OMP_NUM_THREADS: '1'
       OMP_DYNAMIC: 'FALSE'
+      UBSAN_OPTIONS: 'print_stacktrace=1'
     steps:
       - uses: actions/checkout@v4
       - name: Install toolchain
-        run: sudo apt-get update && sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential autoconf automake libtool libtool-bin
       - name: Build LIS and run native MINRES USER error regressions
         shell: bash
         run: |
