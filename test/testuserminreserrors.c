@@ -85,12 +85,16 @@ static int run(LIS_INT fail_on,LIS_INT precon_fail_on)
     if(fail_on || precon_fail_on)
     {
         LIS_INT completed=(fail_on==3)?1:0;
-        LIS_INT expected_matvec_calls=fail_on?fail_on:precon_fail_on;
+        /* lis_solve_kernel performs one *independent* post-solve
+         * certification matvec even after a failed iterative callback.
+         * Require the exact solver + certification call count, rather
+         * than incorrectly treating certification as solver continuation. */
+        LIS_INT expected_matvec_calls=
+            (fail_on?fail_on:precon_fail_on)+1;
         if(err!=LIS_SUCCESS || status!=LIS_ERR_ILL_ARG ||
-           (fail_on && ctx.calls!=fail_on) ||
+           (ctx.calls!=expected_matvec_calls) ||
            (fail_on && precon_calls!=fail_on-1) ||
            (precon_fail_on && precon_calls!=precon_fail_on) ||
-           (precon_fail_on && ctx.calls!=expected_matvec_calls) ||
            iterations!=completed ||
            (fail_on==1?!isnan((double)relative_resid):
                (!isfinite((double)relative_resid) ||
