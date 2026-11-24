@@ -140,7 +140,13 @@ static int run(LIS_INT use_quad,LIS_INT matvec_fail_on,LIS_INT pc_fail_on)
             double val=(double)x->value[i];
             if(!isfinite(val) ||
                (expect_completed==0 && fabs(val-0.1)>1e-15))
+            {
+                fprintf(stderr,
+                    "CG %s callback failure damaged x[%lld]=%.17g (completed=%lld, residual=%g)\n",
+                    use_quad?"QUAD":"USER",(long long)i,val,
+                    (long long)completed,(double)residual);
                 goto done;
+            }
         }
     }
     else
