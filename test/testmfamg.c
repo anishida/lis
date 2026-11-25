@@ -5938,6 +5938,30 @@ static int check_mfamg_sequence_configuration(void)
        lis_solver_clear_amg_coarse_basis(s) ||
        s->sequence_precon!=NULL)
         goto done;
+    /* Hybrid owns an independently configured inner solver.  Non-default
+     * hierarchy controls must survive the outer-to-inner copy. */
+    {
+        LIS_PRECON hybrid=NULL;
+        LIS_SOLVER inner;
+        LIS_INT err;
+        if(lis_solver_set_option("-i fgmres -p hybrid -hybrid_i gmres "
+              "-hybrid_p mfamg -hybrid_maxiter 2 -mfamg_block_size 2 "
+              "-mfamg_fine_agg_factor 2 -mfamg_vcycle_smooth_steps 2 "
+              "-mfamg_deep_sibling_merge 1",s) ||
+           lis_solver_set_matrix(A,s))
+            goto done;
+        err=lis_precon_create(s,&hybrid);
+        if(err) goto done; /* constructor owns failure cleanup */
+        inner=hybrid->solver;
+        err=(!inner ||
+             inner->mfamg_block_size!=2 ||
+             inner->mfamg_fine_agg_factor!=2 ||
+             inner->mfamg_vcycle_smooth_steps!=2 ||
+             inner->mfamg_deep_sibling_merge!=1);
+        s->precon=NULL;
+        lis_precon_destroy(hybrid);
+        if(err) goto done;
+    }
     failed=0;
 done:
     if(s) lis_solver_destroy(s);

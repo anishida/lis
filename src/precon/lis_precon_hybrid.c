@@ -263,6 +263,9 @@ LIS_INT lis_precon_create_hybrid(LIS_SOLVER solver, LIS_PRECON precon)
 	if( err ) goto fail;
 
 	psolver->mfamg_block_size = solver->mfamg_block_size;
+	psolver->mfamg_fine_agg_factor = solver->mfamg_fine_agg_factor;
+	psolver->mfamg_vcycle_smooth_steps = solver->mfamg_vcycle_smooth_steps;
+	psolver->mfamg_deep_sibling_merge = solver->mfamg_deep_sibling_merge;
 
 	if( solver->near_nullspace_dim>0 && solver->near_nullspace!=NULL )
 	{
