@@ -217,7 +217,7 @@ done:
 
 static int check_managed_session(void){
     LIS_MATRIX a=NULL,next=NULL,old_s=NULL;
-    LIS_VECTOR exact=NULL,b=NULL,x=NULL,r=NULL;
+    LIS_VECTOR exact=NULL,b=NULL,x=NULL,r=NULL,kernel=NULL;
     LIS_SOLVER solver=NULL;
     lis_sc_solver_session *session=NULL;
     lis_sc_solver_report report;
@@ -235,6 +235,22 @@ static int check_managed_session(void){
         "-i fgmres -p none -scale none -print none -maxiter 500 -restart 120 -tol 1e-9 -initx_zeros false",solver))
         goto done;
     old_s=lis_sc_lis_matrix(lis_sc_solver_session_get_condensation(session));
+    /* Deliberately accept the zero initial reduced iterate at a very loose
+     * solver tolerance. Physical certification must still reject it, leaving
+     * the caller's full output untouched. */
+    if(lis_solver_set_option("-tol 2 -conv_cond nrm2_b",solver) ||
+       lis_vector_set_all((LIS_SCALAR)7,x) ||
+       lis_sc_solver_session_solve(session,b,x,1e-7)!=LIS_SC_RESIDUAL_REJECTED ||
+       lis_sc_solver_session_get_report(session,&report)!=LIS_SC_OK ||
+       !report.solver_called || report.solution_committed ||
+       report.solver_status!=LIS_SUCCESS || !report.full_residual_valid ||
+       !(report.full_relative_residual>1e-7))
+        goto done;
+    {
+        LIS_INT i;
+        for(i=0;i<x->n;i++)if(x->value[i]!=(LIS_SCALAR)7)goto done;
+    }
+    if(lis_solver_set_option("-tol 1e-9",solver))goto done;
     if(lis_sc_solver_session_solve(session,b,x,1e-7)!=LIS_SC_OK ||
        lis_sc_solver_session_get_report(session,&report)!=LIS_SC_OK ||
        report.version!=LIS_SC_SOLVER_REPORT_VERSION ||
@@ -252,6 +268,21 @@ static int check_managed_session(void){
     if(build_matrix(&next,0.125) || lis_matvec(next,exact,b))goto done;
     if(lis_sc_solver_session_update(session,next,NB,bp,qd,1e-13,LIS_SC_REUSE_ALL)==LIS_SC_OK ||
        lis_sc_lis_matrix(lis_sc_solver_session_get_condensation(session))!=old_s)
+        goto done;
+    /* Register a candidate as an exact kernel only to exercise the update
+     * guard; this nonsingular fixture must never be solved with it attached. */
+    if(lis_vector_duplicate(old_s,&kernel) ||
+       lis_vector_set_all((LIS_SCALAR)1,kernel) ||
+       lis_solver_set_nullspace(solver,1,&kernel) ||
+       lis_sc_solver_session_update(session,next,NB,bp,qd,1e-13,LIS_SC_NUMERIC)!=LIS_SC_REBIND_REQUIRED ||
+       lis_sc_solver_session_update(session,next,NB,bp,qd,1e-13,LIS_SC_FULL)!=LIS_SC_REBIND_REQUIRED ||
+       lis_sc_lis_matrix(lis_sc_solver_session_get_condensation(session))!=old_s ||
+       lis_solver_clear_nullspace(solver) ||
+       lis_solver_set_left_nullspace(solver,1,&kernel) ||
+       lis_sc_solver_session_update(session,next,NB,bp,qd,1e-13,LIS_SC_NUMERIC)!=LIS_SC_REBIND_REQUIRED ||
+       lis_sc_solver_session_update(session,next,NB,bp,qd,1e-13,LIS_SC_FULL)!=LIS_SC_REBIND_REQUIRED ||
+       lis_sc_lis_matrix(lis_sc_solver_session_get_condensation(session))!=old_s ||
+       lis_solver_clear_left_nullspace(solver))
         goto done;
     if(lis_sc_solver_session_update(session,next,NB,bp,qd,1e-13,LIS_SC_NUMERIC)!=LIS_SC_OK ||
        lis_sc_lis_matrix(lis_sc_solver_session_get_condensation(session))==old_s ||
@@ -271,6 +302,7 @@ static int check_managed_session(void){
     failed=0;
 done:
     lis_sc_solver_session_destroy(session);
+    if(kernel)lis_vector_destroy(kernel);
     if(r)lis_vector_destroy(r);
     if(x)lis_vector_destroy(x);
     if(b)lis_vector_destroy(b);
