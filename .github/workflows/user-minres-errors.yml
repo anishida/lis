@@ -1,11 +1,38 @@
 name: USER MINRES matvec and preconditioner callback errors
 on:
+  push:
+    branches: [develop]
+    paths:
+      - 'src/solver/lis_solver_minres.c'
+      - 'test/testuserminreserrors.c'
+      - '.github/workflows/user-minres-errors.yml'
+      - 'src/solver/lis_solver.c'
+      - 'src/matvec/lis_matvec.c'
+      - 'src/vector/**'
+      - 'src/precon/lis_precon.c'
+      - 'src/matrix/lis_matrix.c'
+      - 'src/system/lis_memory.c'
+      - 'include/**'
+      - 'configure.ac'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
   pull_request:
     paths:
       - 'src/solver/lis_solver_minres.c'
       - 'test/testuserminreserrors.c'
-      - 'test/Makefile.am'
       - '.github/workflows/user-minres-errors.yml'
+      - 'src/solver/lis_solver.c'
+      - 'src/matvec/lis_matvec.c'
+      - 'src/vector/**'
+      - 'src/precon/lis_precon.c'
+      - 'src/matrix/lis_matrix.c'
+      - 'src/system/lis_memory.c'
+      - 'include/**'
+      - 'configure.ac'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
   workflow_dispatch:
 permissions:
   contents: read
@@ -16,8 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: [release, asan-ubsan]
-        index: [int32, int64]
+        include: ${{ fromJSON(github.event_name != 'pull_request' && '[{"mode":"release","index":"int32"},{"mode":"release","index":"int64"},{"mode":"asan-ubsan","index":"int32"},{"mode":"asan-ubsan","index":"int64"}]' || '[{"mode":"release","index":"int32"},{"mode":"asan-ubsan","index":"int64"}]') }}
     env:
       OMP_NUM_THREADS: '1'
       OMP_DYNAMIC: 'FALSE'

@@ -5,9 +5,29 @@ name: CA-MFAMG full native integration
 on:
   push:
     branches:
+      - develop
       - 'work/ca-mfamg-*'
       - 'feature/ca-mfamg-*'
-  workflow_dispatch:
+    paths:
+      - 'src/matrix/lis_condense_*.c'
+      - 'src/precon/lis_precon_mfamg*.c'
+      - 'src/solver/lis_solver.c'
+      - 'include/lis_condense_*.h'
+      - 'include/lis.h'
+      - 'test/testcondense_*'
+      - 'tools/differential_schur_stdlib.py'
+      - 'test/testca_mfamg_*.sh'
+      - '.github/workflows/ca-mfamg-native-integration.yml'
+      - 'src/precon/**'
+      - 'src/matrix/**'
+      - 'src/matvec/**'
+      - 'src/vector/**'
+      - 'include/**'
+      - 'configure.ac'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
+      - 'src/system/lis_memory.c'
   pull_request:
     paths:
       - 'src/matrix/lis_condense_*.c'
@@ -19,6 +39,17 @@ on:
       - 'tools/differential_schur_stdlib.py'
       - 'test/testca_mfamg_*.sh'
       - '.github/workflows/ca-mfamg-native-integration.yml'
+      - 'src/precon/**'
+      - 'src/matrix/**'
+      - 'src/matvec/**'
+      - 'src/vector/**'
+      - 'include/**'
+      - 'configure.ac'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
+      - 'src/system/lis_memory.c'
+  workflow_dispatch:
 jobs:
   native:
     name: Native LIS (${{ matrix.mode }})
@@ -27,7 +58,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: [serial, openmp, int64, sanitized, mpi]
+        mode: ${{ fromJSON(github.event_name != 'pull_request' && '["serial","openmp","int64","sanitized","mpi"]' || '["serial","sanitized"]') }}
     steps:
       - uses: actions/checkout@v4
       - name: Install LIS build prerequisites

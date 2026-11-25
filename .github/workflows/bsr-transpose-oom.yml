@@ -1,9 +1,43 @@
 name: BSR transpose scratch OOM regression
 
 on:
+  push:
+    branches:
+      - 'develop'
+    paths:
+      - 'src/matrix/lis_matrix_bsr.c'
+      - 'src/matvec/lis_matvec_bsr.c'
+      - 'src/system/lis_memory.c'
+      - 'test/testoomalloc.c'
+      - 'test/testbsraudit.c'
+      - 'configure.ac'
+      - '.github/workflows/bsr-transpose-oom.yml'
+      - 'src/matrix/lis_matrix.c'
+      - 'src/matvec/lis_matvec.c'
+      - 'src/solver/lis_solver.c'
+      - 'src/vector/**'
+      - 'include/**'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
   pull_request:
+    paths:
+      - 'src/matrix/lis_matrix_bsr.c'
+      - 'src/matvec/lis_matvec_bsr.c'
+      - 'src/system/lis_memory.c'
+      - 'test/testoomalloc.c'
+      - 'test/testbsraudit.c'
+      - 'configure.ac'
+      - '.github/workflows/bsr-transpose-oom.yml'
+      - 'src/matrix/lis_matrix.c'
+      - 'src/matvec/lis_matvec.c'
+      - 'src/solver/lis_solver.c'
+      - 'src/vector/**'
+      - 'include/**'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
   workflow_dispatch:
-
 concurrency:
   group: bsr-transpose-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -18,8 +52,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: [release, asan-ubsan]
-        index: [int32, int64]
+        # PR: representative 32-bit release + 64-bit sanitizer coverage.
+        # Push/manual: retain the complete four-configuration matrix.
+        include: ${{ fromJSON(github.event_name != 'pull_request' && '[{"mode":"release","index":"int32"},{"mode":"release","index":"int64"},{"mode":"asan-ubsan","index":"int32"},{"mode":"asan-ubsan","index":"int64"}]' || '[{"mode":"release","index":"int32"},{"mode":"asan-ubsan","index":"int64"}]') }}
     env:
       OMP_NUM_THREADS: '2'
       OMP_DYNAMIC: 'FALSE'

@@ -1,10 +1,39 @@
 name: USER batch-row regression
 on:
   push:
-    branches: ['feature/user-row-batch-develop-20261118']
+    branches: [develop]
+    paths:
+      - 'src/matrix/lis_matrix_user.c'
+      - 'src/matvec/lis_matvec.c'
+      - 'test/testuserbatch.c'
+      - 'test/testuserbatchbench.c'
+      - 'configure.ac'
+      - '.github/workflows/user-batch-regression.yml'
+      - 'src/solver/lis_solver.c'
+      - 'src/vector/**'
+      - 'src/precon/lis_precon.c'
+      - 'include/**'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
+      - 'src/system/lis_memory.c'
   pull_request:
+    paths:
+      - 'src/matrix/lis_matrix_user.c'
+      - 'src/matvec/lis_matvec.c'
+      - 'test/testuserbatch.c'
+      - 'test/testuserbatchbench.c'
+      - 'configure.ac'
+      - '.github/workflows/user-batch-regression.yml'
+      - 'src/solver/lis_solver.c'
+      - 'src/vector/**'
+      - 'src/precon/lis_precon.c'
+      - 'include/**'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
+      - 'src/system/lis_memory.c'
   workflow_dispatch:
-
 jobs:
   user-batch:
     runs-on: ubuntu-24.04

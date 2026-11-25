@@ -2,11 +2,47 @@ name: Numerical safety regression (BSR and Krylov)
 
 on:
   push:
-    branches:
-      - 'fix/develop-correctness-only-20261119'
+    branches: [develop]
+    paths:
+      - 'src/matrix/lis_matrix_bsr.c'
+      - 'src/matvec/lis_matvec_bsr.c'
+      - 'src/solver/lis_solver_gcrodr.c'
+      - 'src/solver/lis_solver_fgcrodr.c'
+      - 'test/testbsraudit.c'
+      - 'test/testgcrodrmatvecerror.c'
+      - 'test/testsemidefiniteb.c'
+      - '.github/workflows/numerical-safety-audit.yml'
+      - 'src/solver/lis_solver.c'
+      - 'src/matvec/lis_matvec.c'
+      - 'src/vector/**'
+      - 'src/matrix/lis_matrix.c'
+      - 'include/**'
+      - 'configure.ac'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
+      - 'src/system/lis_memory.c'
   pull_request:
+    paths:
+      - 'src/matrix/lis_matrix_bsr.c'
+      - 'src/matvec/lis_matvec_bsr.c'
+      - 'src/solver/lis_solver_gcrodr.c'
+      - 'src/solver/lis_solver_fgcrodr.c'
+      - 'test/testbsraudit.c'
+      - 'test/testgcrodrmatvecerror.c'
+      - 'test/testsemidefiniteb.c'
+      - '.github/workflows/numerical-safety-audit.yml'
+      - 'src/solver/lis_solver.c'
+      - 'src/matvec/lis_matvec.c'
+      - 'src/vector/**'
+      - 'src/matrix/lis_matrix.c'
+      - 'include/**'
+      - 'configure.ac'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
+      - 'src/system/lis_memory.c'
   workflow_dispatch:
-
 jobs:
   bsr-regression:
     runs-on: ubuntu-24.04

@@ -1,18 +1,50 @@
 name: USER to CSR bounds regression
 on:
-  pull_request:
   push:
-    branches: [fix/user-to-csr-overflow-20261120]
+    branches: [develop]
+    paths:
+      - 'src/matrix/lis_matrix_user.c'
+      - 'src/matrix/lis_matrix_csr.c'
+      - 'src/system/lis_memory.c'
+      - 'test/testusercsrbounds.c'
+      - '.github/workflows/user-csr-bounds.yml'
+      - 'src/solver/lis_solver.c'
+      - 'src/matvec/lis_matvec.c'
+      - 'src/vector/**'
+      - 'src/precon/lis_precon.c'
+      - 'src/matrix/lis_matrix.c'
+      - 'include/**'
+      - 'configure.ac'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
+  pull_request:
+    paths:
+      - 'src/matrix/lis_matrix_user.c'
+      - 'src/matrix/lis_matrix_csr.c'
+      - 'src/system/lis_memory.c'
+      - 'test/testusercsrbounds.c'
+      - '.github/workflows/user-csr-bounds.yml'
+      - 'src/solver/lis_solver.c'
+      - 'src/matvec/lis_matvec.c'
+      - 'src/vector/**'
+      - 'src/precon/lis_precon.c'
+      - 'src/matrix/lis_matrix.c'
+      - 'include/**'
+      - 'configure.ac'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
   workflow_dispatch:
-
 jobs:
   user-to-csr:
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        mode: [release, asan-ubsan]
-        index: [int32, int64]
+        # PR: representative 32-bit release + 64-bit sanitizer coverage.
+        # Push/manual: retain the complete four-configuration matrix.
+        include: ${{ fromJSON(github.event_name != 'pull_request' && '[{"mode":"release","index":"int32"},{"mode":"release","index":"int64"},{"mode":"asan-ubsan","index":"int32"},{"mode":"asan-ubsan","index":"int64"}]' || '[{"mode":"release","index":"int32"},{"mode":"asan-ubsan","index":"int64"}]') }}
     env:
       OMP_NUM_THREADS: '1'
     steps:

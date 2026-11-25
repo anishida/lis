@@ -1,12 +1,38 @@
 name: USER CG and QUAD preconditioner callback errors
 on:
+  push:
+    branches: [develop]
+    paths:
+      - 'src/solver/lis_solver_cg.c'
+      - 'src/solver/lis_solver.c'
+      - 'test/testusercgerrors.c'
+      - '.github/workflows/user-cg-callback-errors.yml'
+      - 'src/matvec/lis_matvec.c'
+      - 'src/vector/**'
+      - 'src/precon/lis_precon.c'
+      - 'src/matrix/lis_matrix.c'
+      - 'src/system/lis_memory.c'
+      - 'include/**'
+      - 'configure.ac'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
   pull_request:
     paths:
       - 'src/solver/lis_solver_cg.c'
       - 'src/solver/lis_solver.c'
       - 'test/testusercgerrors.c'
-      - 'test/Makefile.am'
       - '.github/workflows/user-cg-callback-errors.yml'
+      - 'src/matvec/lis_matvec.c'
+      - 'src/vector/**'
+      - 'src/precon/lis_precon.c'
+      - 'src/matrix/lis_matrix.c'
+      - 'src/system/lis_memory.c'
+      - 'include/**'
+      - 'configure.ac'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
   workflow_dispatch:
 permissions:
   contents: read
@@ -17,16 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: [release, asan-ubsan]
-        index: [int32, int64]
-        quad: [disabled]
-        include:
-          - mode: release
-            index: int32
-            quad: enabled
-          - mode: asan-ubsan
-            index: int64
-            quad: enabled
+        include: ${{ fromJSON(github.event_name != 'pull_request' && '[{"mode":"release","index":"int32","quad":"disabled"},{"mode":"release","index":"int64","quad":"disabled"},{"mode":"asan-ubsan","index":"int32","quad":"disabled"},{"mode":"asan-ubsan","index":"int64","quad":"disabled"},{"mode":"release","index":"int32","quad":"enabled"},{"mode":"asan-ubsan","index":"int64","quad":"enabled"}]' || '[{"mode":"release","index":"int32","quad":"disabled"},{"mode":"asan-ubsan","index":"int64","quad":"disabled"},{"mode":"release","index":"int32","quad":"enabled"},{"mode":"asan-ubsan","index":"int64","quad":"enabled"}]') }}
     env:
       OMP_NUM_THREADS: '1'
       OMP_DYNAMIC: 'FALSE'

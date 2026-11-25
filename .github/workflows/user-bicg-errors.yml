@@ -1,6 +1,40 @@
 name: USER BiCGSTAB and CGS callback errors
 on:
+  push:
+    branches: [develop]
+    paths:
+      - 'src/solver/lis_solver_bicgstab.c'
+      - 'src/solver/lis_solver_cgs.c'
+      - 'src/solver/lis_solver.c'
+      - 'src/matrix/lis_matrix_user.c'
+      - 'test/testuserbicgerrors.c'
+      - '.github/workflows/user-bicg-errors.yml'
+      - 'src/matvec/lis_matvec.c'
+      - 'src/vector/**'
+      - 'src/precon/lis_precon.c'
+      - 'include/**'
+      - 'configure.ac'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
+      - 'src/system/lis_memory.c'
   pull_request:
+    paths:
+      - 'src/solver/lis_solver_bicgstab.c'
+      - 'src/solver/lis_solver_cgs.c'
+      - 'src/solver/lis_solver.c'
+      - 'src/matrix/lis_matrix_user.c'
+      - 'test/testuserbicgerrors.c'
+      - '.github/workflows/user-bicg-errors.yml'
+      - 'src/matvec/lis_matvec.c'
+      - 'src/vector/**'
+      - 'src/precon/lis_precon.c'
+      - 'include/**'
+      - 'configure.ac'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
+      - 'src/system/lis_memory.c'
   workflow_dispatch:
 jobs:
   callbacks:
@@ -8,8 +42,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: [release, asan-ubsan]
-        index: [int32, int64]
+        # PR: representative 32-bit release + 64-bit sanitizer coverage.
+        # Push/manual: retain the complete four-configuration matrix.
+        include: ${{ fromJSON(github.event_name != 'pull_request' && '[{"mode":"release","index":"int32"},{"mode":"release","index":"int64"},{"mode":"asan-ubsan","index":"int32"},{"mode":"asan-ubsan","index":"int64"}]' || '[{"mode":"release","index":"int32"},{"mode":"asan-ubsan","index":"int64"}]') }}
     env:
       OMP_NUM_THREADS: '1'
       OMP_DYNAMIC: 'FALSE'

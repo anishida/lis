@@ -2,16 +2,18 @@ name: CSR transpose single-worker fast path and OOM regression
 
 on:
   push:
-    branches: [develop]
+    branches:
+      - develop
     paths:
       - 'src/matvec/lis_matvec_csr.c'
       - 'src/system/lis_memory.c'
       - 'include/**'
       - 'configure.ac'
       - 'test/testcsrtransposeoom.c'
-      - 'test/Makefile.am'
-      - 'test/Makefile.in'
       - '.github/workflows/csr-transpose-single-thread.yml'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
   pull_request:
     paths:
       - 'src/matvec/lis_matvec_csr.c'
@@ -19,11 +21,11 @@ on:
       - 'include/**'
       - 'configure.ac'
       - 'test/testcsrtransposeoom.c'
-      - 'test/Makefile.am'
-      - 'test/Makefile.in'
       - '.github/workflows/csr-transpose-single-thread.yml'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
   workflow_dispatch:
-
 concurrency:
   group: csr-transpose-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -38,8 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: [release, asan-ubsan]
-        index: [int32, int64]
+        include: ${{ fromJSON(github.event_name != 'pull_request' && '[{"mode":"release","index":"int32"},{"mode":"release","index":"int64"},{"mode":"asan-ubsan","index":"int32"},{"mode":"asan-ubsan","index":"int64"}]' || '[{"mode":"release","index":"int32"},{"mode":"asan-ubsan","index":"int64"}]') }}
     env:
       OMP_NUM_THREADS: '2'
       OMP_DYNAMIC: 'FALSE'
@@ -113,7 +114,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [complex-openmp, serial-without-openmp]
+        variant: ${{ fromJSON(github.event_name != 'pull_request' && '["complex-openmp","serial-without-openmp"]' || '["serial-without-openmp"]') }}
     env:
       OMP_NUM_THREADS: '2'
       OMP_DYNAMIC: 'FALSE'

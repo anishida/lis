@@ -1,7 +1,42 @@
 name: ILUTP bounded top-k regression
 
 on:
+  push:
+    branches:
+      - develop
+    paths:
+      - 'src/precon/lis_precon_ilutp*'
+      - 'test/testilutp.c'
+      - 'test/check_ilutp_topk.py'
+      - 'configure.ac'
+      - '.github/workflows/ilutp-topk-regression.yml'
+      - 'src/precon/**'
+      - 'src/matrix/**'
+      - 'src/solver/lis_solver.c'
+      - 'src/matvec/**'
+      - 'src/vector/**'
+      - 'include/**'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
+      - 'src/system/lis_memory.c'
   pull_request:
+    paths:
+      - 'src/precon/lis_precon_ilutp*'
+      - 'test/testilutp.c'
+      - 'test/check_ilutp_topk.py'
+      - 'configure.ac'
+      - '.github/workflows/ilutp-topk-regression.yml'
+      - 'src/precon/**'
+      - 'src/matrix/**'
+      - 'src/solver/lis_solver.c'
+      - 'src/matvec/**'
+      - 'src/vector/**'
+      - 'include/**'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
+      - 'src/system/lis_memory.c'
   workflow_dispatch:
 concurrency:
   group: ilutp-topk-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
