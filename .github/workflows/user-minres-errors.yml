@@ -1,0 +1,75 @@
+name: USER MINRES matvec and preconditioner callback errors
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'src/solver/lis_solver_minres.c'
+      - 'test/testuserminreserrors.c'
+      - '.github/workflows/user-minres-errors.yml'
+      - 'src/solver/lis_solver.c'
+      - 'src/matvec/lis_matvec.c'
+      - 'src/vector/**'
+      - 'src/precon/lis_precon.c'
+      - 'src/matrix/lis_matrix.c'
+      - 'src/system/lis_memory.c'
+      - 'include/**'
+      - 'configure.ac'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
+  pull_request:
+    paths:
+      - 'src/solver/lis_solver_minres.c'
+      - 'test/testuserminreserrors.c'
+      - '.github/workflows/user-minres-errors.yml'
+      - 'src/solver/lis_solver.c'
+      - 'src/matvec/lis_matvec.c'
+      - 'src/vector/**'
+      - 'src/precon/lis_precon.c'
+      - 'src/matrix/lis_matrix.c'
+      - 'src/system/lis_memory.c'
+      - 'include/**'
+      - 'configure.ac'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  minres-callbacks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(github.event_name != 'pull_request' && '[{"mode":"release","index":"int32"},{"mode":"release","index":"int64"},{"mode":"asan-ubsan","index":"int32"},{"mode":"asan-ubsan","index":"int64"}]' || '[{"mode":"release","index":"int32"},{"mode":"asan-ubsan","index":"int64"}]') }}
+    env:
+      OMP_NUM_THREADS: '1'
+      OMP_DYNAMIC: 'FALSE'
+      UBSAN_OPTIONS: 'print_stacktrace=1'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential autoconf automake libtool libtool-bin
+      - name: Build LIS and run native MINRES USER error regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          autoreconf -fiv
+          if [ "${{ matrix.mode }}" = asan-ubsan ]; then
+            export CFLAGS="-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=undefined"
+            export LDFLAGS="-fsanitize=address,undefined"
+          else
+            export CFLAGS="-O2 -g"
+            export LDFLAGS=""
+          fi
+          index_flags=""
+          if [ "${{ matrix.index }}" = int64 ]; then
+            index_flags="--enable-longlong"
+          fi
+          ./configure --enable-omp --enable-test --disable-mpi --disable-fortran --disable-f90 --disable-saamg ${index_flags}
+          make -C src -j2
+          make -C test testuserminreserrors
+          export LD_LIBRARY_PATH="$PWD/src/.libs:${LD_LIBRARY_PATH:-}"
+          ./test/testuserminreserrors

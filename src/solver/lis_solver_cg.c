@@ -33,6 +33,7 @@
 #endif
 
 #include <stdio.h>
+#include <math.h>
 #include <stdlib.h>
 #ifdef HAVE_MALLOC_H
         #include <malloc.h>
@@ -134,8 +135,8 @@ LIS_INT lis_cg(LIS_SOLVER solver)
 	LIS_VECTOR r,z,p,q;
 	LIS_SCALAR alpha, beta, rho, rho_old;
 	LIS_SCALAR dot_pq;
-	LIS_REAL bnrm2, nrm2, tol, min_nrm2;
-	LIS_INT iter,maxiter,output,conv,maxiter_noimp,noimp_count;
+	LIS_REAL bnrm2, nrm2=1.0, tol, min_nrm2;
+	LIS_INT iter,maxiter,output,conv,maxiter_noimp,noimp_count,err;
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
@@ -163,6 +164,12 @@ LIS_INT lis_cg(LIS_SOLVER solver)
 	if( lis_solver_get_initial_residual(solver,NULL,NULL,r,&bnrm2) )
 	{
 		LIS_DEBUG_FUNC_OUT;
+		if( solver->retcode != LIS_SUCCESS )
+		{
+			solver->resid = NAN;
+			solver->ptime = ptime;
+			return solver->retcode;
+		}
 		return LIS_SUCCESS;
 	}
 	tol     = solver->tol;
@@ -173,8 +180,9 @@ LIS_INT lis_cg(LIS_SOLVER solver)
 	{
 		/* z = M^-1 * r */
 		time = lis_wtime();
-		lis_psolve(solver,r,z);
+		err=lis_psolve(solver,r,z);
 		ptime += lis_wtime() - time;
+		if(err)goto callback_failure;
  
 		/* rho = <r,z> */
 		lis_vector_dot(r,z,&rho);
@@ -186,7 +194,8 @@ LIS_INT lis_cg(LIS_SOLVER solver)
 		lis_vector_xpay(z,beta,p);
 		
 		/* q = Ap */
-		lis_matvec(A,p,q);
+		err=lis_matvec(A,p,q);
+		if(err)goto callback_failure;
 		
 		/* dot_pq = <p,q> */
 		lis_vector_dot(p,q,&dot_pq);
@@ -253,6 +262,19 @@ LIS_INT lis_cg(LIS_SOLVER solver)
 	solver->resid     = nrm2;
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_MAXITER;
+
+callback_failure:
+	/* The failing USER matvec or preconditioner did not complete this
+	 * iteration; report the previous relative residual and do not use
+	 * the partially written output vector. */
+	solver->retcode = err;
+	solver->iter    = iter-1;
+	if( iter==1 )
+		lis_solver_get_residual[conv](r,solver,&nrm2);
+	solver->resid   = nrm2;
+	solver->ptime   = ptime;
+	LIS_DEBUG_FUNC_OUT;
+	return err;
 }
 
 #ifdef USE_QUAD_PRECISION
@@ -266,8 +288,8 @@ LIS_INT lis_cg_quad(LIS_SOLVER solver)
 	LIS_VECTOR r,z,p,q;
 	LIS_QUAD_PTR alpha, beta, rho, rho_old;
 	LIS_QUAD_PTR dot_pq;
-	LIS_REAL bnrm2, nrm2, tol, min_nrm2;
-	LIS_INT iter,maxiter,output,conv,maxiter_noimp,noimp_count;
+	LIS_REAL bnrm2, nrm2=1.0, tol, min_nrm2;
+	LIS_INT iter,maxiter,output,conv,maxiter_noimp,noimp_count,err;
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
@@ -302,6 +324,12 @@ LIS_INT lis_cg_quad(LIS_SOLVER solver)
 	if( lis_solver_get_initial_residual(solver,NULL,NULL,r,&bnrm2) )
 	{
 		LIS_DEBUG_FUNC_OUT;
+		if( solver->retcode != LIS_SUCCESS )
+		{
+			solver->resid = NAN;
+			solver->ptime = ptime;
+			return solver->retcode;
+		}
 		return LIS_SUCCESS;
 	}
 	tol     = solver->tol;
@@ -312,8 +340,9 @@ LIS_INT lis_cg_quad(LIS_SOLVER solver)
 	{
 		/* z = M^-1 * r */
 		time = lis_wtime();
-		lis_psolve(solver,r,z);
+		err=lis_psolve(solver,r,z);
 		ptime += lis_wtime() - time;
+		if(err)goto callback_failure;
 
 		/* rho = <r,z> */
 		lis_vector_dotex_mmm(r,z,&rho);
@@ -325,7 +354,8 @@ LIS_INT lis_cg_quad(LIS_SOLVER solver)
 		lis_vector_xpayex_mmm(z,beta,p);
 
 		/* q = Ap */
-		lis_matvec(A,p,q);
+		err=lis_matvec(A,p,q);
+		if(err)goto callback_failure;
 		
 		/* dot_pq = <p,q> */
 		lis_vector_dotex_mmm(p,q,&dot_pq);
@@ -394,6 +424,19 @@ LIS_INT lis_cg_quad(LIS_SOLVER solver)
 	solver->resid     = nrm2;
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_MAXITER;
+
+callback_failure:
+	/* The failing USER matvec or preconditioner did not complete this
+	 * iteration; report the previous relative residual and do not use
+	 * the partially written output vector. */
+	solver->retcode = err;
+	solver->iter    = iter-1;
+	if( iter==1 )
+		lis_solver_get_residual[conv](r,solver,&nrm2);
+	solver->resid   = nrm2;
+	solver->ptime   = ptime;
+	LIS_DEBUG_FUNC_OUT;
+	return err;
 }
 
 #undef __FUNC__

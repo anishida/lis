@@ -1,0 +1,147 @@
+# Run only on a branch that already contains BOTH the CA-MFAMG implementation
+# (fork PR #94), the current upstream/develop MFAMG_ILUTP and the stage 9
+# condensation bridge. This workflow does not fetch any private FE snapshots.
+name: CA-MFAMG full native integration
+on:
+  push:
+    branches:
+      - develop
+      - 'work/ca-mfamg-*'
+      - 'feature/ca-mfamg-*'
+    paths:
+      - 'src/matrix/lis_condense_*.c'
+      - 'src/precon/lis_precon_mfamg*.c'
+      - 'src/solver/lis_solver.c'
+      - 'include/lis_condense_*.h'
+      - 'include/lis.h'
+      - 'test/testcondense_*'
+      - 'tools/differential_schur_stdlib.py'
+      - 'test/testca_mfamg_*.sh'
+      - '.github/workflows/ca-mfamg-native-integration.yml'
+      - 'src/precon/**'
+      - 'src/matrix/**'
+      - 'src/matvec/**'
+      - 'src/vector/**'
+      - 'include/**'
+      - 'configure.ac'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
+      - 'src/system/lis_memory.c'
+  pull_request:
+    paths:
+      - 'src/matrix/lis_condense_*.c'
+      - 'src/precon/lis_precon_mfamg*.c'
+      - 'src/solver/lis_solver.c'
+      - 'include/lis_condense_*.h'
+      - 'include/lis.h'
+      - 'test/testcondense_*'
+      - 'tools/differential_schur_stdlib.py'
+      - 'test/testca_mfamg_*.sh'
+      - '.github/workflows/ca-mfamg-native-integration.yml'
+      - 'src/precon/**'
+      - 'src/matrix/**'
+      - 'src/matvec/**'
+      - 'src/vector/**'
+      - 'include/**'
+      - 'configure.ac'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
+      - 'src/system/lis_memory.c'
+  workflow_dispatch:
+jobs:
+  native:
+    name: Native LIS (${{ matrix.mode }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: ${{ fromJSON(github.event_name != 'pull_request' && '["serial","openmp","int64","sanitized","mpi"]' || '["serial","sanitized"]') }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install LIS build prerequisites
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool pkg-config openmpi-bin libopenmpi-dev
+      - name: Verify integrated sources exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f src/matrix/lis_condense_core.c
+          test -f src/matrix/lis_condense_lis.c
+          test -f src/precon/lis_precon_mfamg_ilutp.c
+          test -f test/testcondense_lis.c
+          grep -q lis_solver_set_mfamg_contact_partition include/lis.h
+          grep -q lis_solver_set_mfamg_contact_partition src/precon/lis_precon_mfamg_ilutp.c
+      - name: Generate Autotools files
+        shell: bash
+        run: autoreconf -fiv
+      - name: Verify tracked Automake files match regeneration
+        shell: bash
+        run: |
+          git diff --exit-code -- include/Makefile.in \
+            src/matrix/Makefile.in src/precon/Makefile.in test/Makefile.in
+      - name: Configure, compile and test with true LIS
+        shell: bash
+        env:
+          MODE: ${{ matrix.mode }}
+          OMP_NUM_THREADS: '1'
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: |
+          set -euo pipefail
+          mkdir -p "build-$MODE"
+          cd "build-$MODE"
+          root="$(cd .. && pwd)"
+          flags=(--enable-test --enable-oom-tests --disable-fortran --disable-f90 --disable-saamg)
+          cc=gcc
+          cflags='-O2'
+          ldflags=''
+          case "$MODE" in
+            serial) flags+=(--disable-mpi --disable-omp) ;;
+            openmp) flags+=(--disable-mpi --enable-omp) ;;
+            int64) flags+=(--disable-mpi --disable-omp --enable-longlong) ;;
+            sanitized)
+              flags+=(--disable-mpi --disable-omp)
+              cflags='-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined'
+              ldflags='-fsanitize=address,undefined' ;;
+            mpi)
+              flags+=(--enable-mpi --disable-omp)
+              cc=mpicc ;;
+            *) exit 2 ;;
+          esac
+          CC="$cc" CFLAGS="$cflags" LDFLAGS="$ldflags" \
+            "$root/configure" "${flags[@]}" 2>&1 | tee configure.log
+          make -j2 2>&1 | tee build.log
+          make -j2 check 2>&1 | tee check.log
+          grep -Eq 'PASS: testcondense_differential.sh( |$)' check.log || {
+            echo "Missing stdlib differential regression" >&2; exit 1; }
+          if [[ "$MODE" == mpi ]]; then
+            grep -Eq 'SKIP: testca_mfamg_profiles.sh' check.log
+            grep -Eq 'SKIP: testca_mfamg_ilutp.sh' check.log
+          else
+            for test in testcondense_core testcondense_lis testcondense_oom \
+                        testca_mfamg_profiles.sh testca_mfamg_ilutp.sh \
+                        testmfamg testmfamgfineagg testmfamgilutp; do
+              grep -Eq "PASS: ${test}( |$)" check.log || {
+                echo "Missing native PASS for $test" >&2
+                exit 1
+              }
+            done
+          fi
+          echo "NATIVE-LIS $MODE: PASS"
+      - name: Upload diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ca-mfamg-native-${{ matrix.mode }}
+          path: |
+            build-${{ matrix.mode }}/configure.log
+            build-${{ matrix.mode }}/build.log
+            build-${{ matrix.mode }}/check.log
+            build-${{ matrix.mode }}/test/test-suite.log
+            build-${{ matrix.mode }}/test/*.log
+          if-no-files-found: ignore

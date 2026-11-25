@@ -4,7 +4,7 @@
 
 # General Configurations
 
-AC_INIT([lis],[2.1.24],[devel@ssisc.org])
+AC_INIT([lis],[2.1.25],[devel@ssisc.org])
 AC_CONFIG_SRCDIR([src/fortran/lisf_matrix.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -1330,6 +1330,8 @@ AC_TYPE_SIZE_T
 
 LIBS="-lm $LIBS"
 
+# Automake 1.18.1 templates reference @FILECMD@.
+AC_SUBST([FILECMD], [file])
 
 # Output
 

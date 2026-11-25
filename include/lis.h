@@ -43,7 +43,7 @@ extern "C" {
 #endif
 
 /**************************************/
-#define LIS_VERSION	"2.1.24"
+#define LIS_VERSION	"2.1.25"
 /**************************************/
 #include <stdio.h>
 #ifdef USE_COMPLEX
@@ -285,7 +285,7 @@ extern "C" {
 #define LIS_PRECONNAME_MAX 10
 #define LIS_PRECON_REGISTER_MAX 10
 
-#define LIS_PRECON_TYPE_LEN 13
+#define LIS_PRECON_TYPE_LEN 14
 #define LIS_PRECON_TYPE_NONE 0
 #define LIS_PRECON_TYPE_JACOBI 1
 #define LIS_PRECON_TYPE_ILU 2
@@ -299,6 +299,7 @@ extern "C" {
 #define LIS_PRECON_TYPE_BJACOBI 10
 #define LIS_PRECON_TYPE_ADDS 11
 #define LIS_PRECON_TYPE_MFAMG 12
+#define LIS_PRECON_TYPE_MFAMG_ILUTP 13
 #define LIS_PRECON_TYPE_USERDEF LIS_PRECON_TYPE_LEN
 
 /* Sequence policy selection. */
@@ -687,6 +688,22 @@ typedef LIS_INT (*LIS_MATRIX_USER_GET_ROW)(void *user_data,
                                            LIS_INT *cols,
                                            LIS_SCALAR *vals);
 
+/* Optional batched USER row callback. Called first with cols=vals=NULL
+ * and nnz_capacity=0 to return relative offsets[0..end-begin], where
+ * offsets[0]=0 and offsets[last]=required NNZ. The fill call receives
+ * capacity>=required and must reproduce the same offsets and entries.
+ * Rows and columns are zero-based; column IDs are global. Callback state
+ * must remain stable throughout a query/fill pair.
+ * CRITICAL: the batch callback and the required single-row callback must
+ * return the same mathematical matrix for every row, as either may be used
+ * within an operation (e.g. for locality or allocation fallback). Do not
+ * replace callbacks, destroy A or change its values during an operation.
+ */
+typedef LIS_INT (*LIS_MATRIX_USER_GET_ROWS_BATCH)(
+    void *user_data, LIS_INT begin, LIS_INT end,
+    LIS_INT *offsets, LIS_INT nnz_capacity,
+    LIS_INT *cols, LIS_SCALAR *vals);
+
 #define LIS_MATRIX_OPTION_LEN 10
 
 struct LIS_MATRIX_CORE_STRUCT
@@ -837,6 +854,7 @@ struct LIS_MATRIX_STRUCT
 
 	/* CSR ptr/index/value are borrowed from the application. */
 	LIS_INT csr_external;
+
 };
 typedef struct LIS_MATRIX_STRUCT *LIS_MATRIX;
 
@@ -1131,6 +1149,12 @@ struct LIS_SOLVER_STRUCT
 	/* Opt-in two-sided row/column equilibration for ILUT and ILUTP. */
 	LIS_INT ilut_equil;
 	LIS_INT sequence_precon_ilut_equil;
+
+	/* Opt-in CA-MFAMG: solver-owned local DOF partition labels. */
+	LIS_INT mfamg_contact_aware;
+	LIS_INT *mfamg_contact_partition;
+	LIS_INT mfamg_contact_partition_n;
+	LIS_INT sequence_precon_mfamg_contact_aware;
 };
 typedef struct LIS_SOLVER_STRUCT *LIS_SOLVER;
 
@@ -1398,6 +1422,9 @@ extern LIS_INT lis_vector_export_real64_tolerant(
 	extern LIS_INT lis_matrix_set_user_row_thread_safe(
 	                                   LIS_MATRIX A,
 	                                   LIS_INT thread_safe);
+    /* USER batch rows are opt-in, independent of the single-row callback. */
+    extern LIS_INT lis_matrix_set_user_rows_batch(
+        LIS_MATRIX A,LIS_MATRIX_USER_GET_ROWS_BATCH get_rows_batch);
 	extern LIS_INT lis_matrix_get_user_row(
 	                                   LIS_MATRIX A,
 	                                   LIS_INT local_row,
@@ -1548,6 +1575,9 @@ extern LIS_INT lis_vector_export_real64_tolerant(
 	extern LIS_INT lis_solver_get_rhs_compatibility_tolerance(
 	    LIS_SOLVER solver, LIS_REAL *tolerance);
 	extern LIS_INT lis_solver_set_near_nullspace(LIS_SOLVER solver, LIS_INT nvec, LIS_VECTOR vectors[]);
+	/* Equal labels may aggregate; differing labels define contact boundaries. */
+	extern LIS_INT lis_solver_set_mfamg_contact_partition(LIS_SOLVER solver,
+		LIS_INT nlocal, const LIS_INT *partition);
 	extern LIS_INT lis_solver_clear_near_nullspace(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_set_gcrodr_recycle(
 		LIS_SOLVER solver, LIS_INT dim,

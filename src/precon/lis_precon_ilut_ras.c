@@ -171,6 +171,9 @@ lis_ilut_ras_make_subdomain(LIS_SOLVER outer, struct LIS_ILUT_RAS_STRUCT *s,
     p->solver->ilutp_full_limit=outer->ilutp_full_limit;
     p->solver->ilut_rcm=outer->ilut_rcm;
     p->solver->ilut_row_scale=outer->ilut_row_scale;
+    /* Keep explicit Equil behavior in the extracted local factors too.
+     * Otherwise the RAS path would silently ignore -ilut_equil 1. */
+    p->solver->ilut_equil=outer->ilut_equil;
     err=lis_solver_set_precon_half(p->solver,outer->precon_half_mode);
     if(err) goto done;
     err=lis_solver_set_matrix(p->A,p->solver);

@@ -39,6 +39,8 @@
 #endif
 #include <string.h>
 #include <math.h>
+#include <limits.h>
+#include <stdint.h>
 #ifdef _OPENMP
 	#include <omp.h>
 #endif
@@ -135,6 +137,8 @@ static LIS_INT lis_matrix_convert_user2csr(
 	LIS_INT total_nnz;
 	LIS_INT capacity;
 	LIS_INT *ptr;
+	const uintmax_t index_limit = sizeof(LIS_INT)==sizeof(int)
+	    ? (uintmax_t)INT_MAX : (uintmax_t)LLONG_MAX;
 	LIS_INT *index;
 	LIS_SCALAR *value;
 
@@ -142,18 +146,26 @@ static LIS_INT lis_matrix_convert_user2csr(
 
 	n = Ain->n;
 
+	/* Check (n+1) before narrowing or multiplying allocation sizes. */
+	if(n<0 || (uintmax_t)n+1 > (uintmax_t)SIZE_MAX/sizeof(LIS_INT))
+	{
+		LIS_SETERR(LIS_ERR_ILL_ARG,
+		           "USER to CSR row pointer allocation size overflow\n");
+		return LIS_ERR_ILL_ARG;
+	}
+
 	ptr   = NULL;
 	index = NULL;
 	value = NULL;
 
 	ptr = (LIS_INT *)lis_malloc(
-		(n+1)*sizeof(LIS_INT),
+		((size_t)n+1)*sizeof(LIS_INT),
 		"lis_matrix_convert_user2csr::ptr");
 
 	if( ptr==NULL )
 	{
 		LIS_SETERR_MEM(
-			(n+1)*sizeof(LIS_INT));
+			((size_t)n+1)*sizeof(LIS_INT));
 		return LIS_OUT_OF_MEMORY;
 	}
 
@@ -176,6 +188,14 @@ static LIS_INT lis_matrix_convert_user2csr(
 			return err;
 		}
 
+		/* Protect LIS_INT prefix sums before the CSR row pointers wrap. */
+		if(row_nnz<0 || (uintmax_t)row_nnz>index_limit-(uintmax_t)ptr[i])
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,
+			           "USER to CSR nonzero count exceeds LIS_INT\n");
+			lis_free(ptr);
+			return LIS_ERR_ILL_ARG;
+		}
 		ptr[i+1] = ptr[i] + row_nnz;
 	}
 
@@ -183,26 +203,34 @@ static LIS_INT lis_matrix_convert_user2csr(
 
 	if( total_nnz>0 )
 	{
+		if((uintmax_t)total_nnz>(uintmax_t)SIZE_MAX/sizeof(LIS_INT) ||
+		   (uintmax_t)total_nnz>(uintmax_t)SIZE_MAX/sizeof(LIS_SCALAR))
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,
+			           "USER to CSR allocation size overflow\n");
+			lis_free(ptr);
+			return LIS_ERR_ILL_ARG;
+		}
 		index = (LIS_INT *)lis_malloc(
-			total_nnz*sizeof(LIS_INT),
+			(size_t)total_nnz*sizeof(LIS_INT),
 			"lis_matrix_convert_user2csr::index");
 
 		if( index==NULL )
 		{
 			LIS_SETERR_MEM(
-				total_nnz*sizeof(LIS_INT));
+				(size_t)total_nnz*sizeof(LIS_INT));
 			lis_free(ptr);
 			return LIS_OUT_OF_MEMORY;
 		}
 
 		value = (LIS_SCALAR *)lis_malloc(
-			total_nnz*sizeof(LIS_SCALAR),
+			(size_t)total_nnz*sizeof(LIS_SCALAR),
 			"lis_matrix_convert_user2csr::value");
 
 		if( value==NULL )
 		{
 			LIS_SETERR_MEM(
-				total_nnz*sizeof(LIS_SCALAR));
+				(size_t)total_nnz*sizeof(LIS_SCALAR));
 			lis_free2(2,ptr,index);
 			return LIS_OUT_OF_MEMORY;
 		}
@@ -400,6 +428,12 @@ LIS_INT lis_matrix_convert(LIS_MATRIX Ain, LIS_MATRIX Aout)
 			err = lis_matrix_duplicate(Ain,&Atmp);
 			if( err ) return err;
 			err = lis_matrix_convert_user2csr(Ain,Atmp);
+			if( err )
+			{
+				/* The temporary duplicate is owned by this conversion. */
+				lis_matrix_destroy(Atmp);
+				return err;
+			}
 			break;
 		default:
 			LIS_SETERR_IMP;

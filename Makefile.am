@@ -652,3 +652,5 @@ man_MANS =   doc/man/man1/lsolve.1 \
 ACLOCAL_AMFLAGS = -I m4
 
 AUTOMAKE_OPTIONS = dist-zip
+
+EXTRA_DIST += tools/differential_schur_stdlib.py

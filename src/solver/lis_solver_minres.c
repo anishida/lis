@@ -132,7 +132,9 @@ LIS_INT lis_minres(LIS_SOLVER solver)
   LIS_SCALAR sigma1,sigma2,sigma3;
   LIS_SCALAR rho1,rho2,rho3;
   LIS_REAL r0_euc,r_euc; 
-  LIS_INT iter,maxiter,output,maxiter_noimp,noimp_count;
+  LIS_INT iter,maxiter,output,maxiter_noimp,noimp_count,err;
+  LIS_INT callback_completed_iter=0;
+  LIS_REAL callback_resid=NAN;
   double time,ptime;
 
   LIS_DEBUG_FUNC_IN;
@@ -158,13 +160,17 @@ LIS_INT lis_minres(LIS_SOLVER solver)
   w1       = solver->work[5];
   w2       = solver->work[6];
 
-  /* Lanczos algorithm */
-  lis_matvec(A,x,v2); 
+  /* MINRES computes its initial residual itself (rather than through
+   * lis_solver_get_initial_residual). Publish the configured tolerance
+   * even if the first USER matvec fails. The residual is then unknown,
+   * not zero: callback_resid remains NaN until the norm is available. */
+  solver->tol = tol;
+  err = lis_matvec(A,x,v2);
+  if( err ) goto callback_failure;
   lis_vector_xpay(b,-1.0,v2);
 
   /* Keep the shared convergence metadata consistent with the true residual. */
   lis_vector_nrm2(v2,&nrm2);
-  solver->tol = tol;
 
   if( nrm2!=nrm2 || nrm2>LIS_SCALAR_MAX )
   {
@@ -189,9 +195,12 @@ LIS_INT lis_minres(LIS_SOLVER solver)
 
   solver->bnrm = 1.0 / nrm2;
 
+  /* An initial residual norm is now known, so its relative norm is 1. */
+  callback_resid = 1.0;
   time = lis_wtime();
-  lis_psolve(solver,v2,v3);
+  err = lis_psolve(solver,v2,v3);
   ptime += lis_wtime()-time;
+  if( err ) goto callback_failure;
   lis_vector_copy(v3,v2);
 
   /* Compute elements of Hermitian tridiagonal matrix */
@@ -232,11 +241,18 @@ LIS_INT lis_minres(LIS_SOLVER solver)
       }
       lis_vector_scale(1.0 / beta2,v2); 
 
-      lis_matvec(A,v2,v3); 
+      /* A failed matvec/psolve aborts this *unfinished* iteration.
+       * nrm2 is already relative (r_euc / r0_euc), as in the normal
+       * MINRES convergence and MAXITER paths. */
+      callback_completed_iter = iter-1;
+      callback_resid = nrm2;
+      err = lis_matvec(A,v2,v3);
+      if( err ) goto callback_failure;
       time = lis_wtime();
 
-      lis_psolve(solver,v3,v4);
+      err = lis_psolve(solver,v3,v4);
       ptime += lis_wtime()-time;
+      if( err ) goto callback_failure;
 
       lis_vector_dot(v2,v4,&alpha);
       lis_vector_axpy(-alpha,v2,v4);
@@ -328,4 +344,15 @@ LIS_INT lis_minres(LIS_SOLVER solver)
   solver->resid     = nrm2;
   LIS_DEBUG_FUNC_OUT;
   return LIS_MAXITER;
+
+callback_failure:
+  /* Single failure exit: original callback error, completed iterations
+   * (not the interrupted iteration), and last known relative residual.
+   * Before the first matvec, no residual exists, so expose NaN. */
+  solver->retcode = err;
+  solver->iter    = callback_completed_iter;
+  solver->resid   = callback_resid;
+  solver->ptime   = ptime;
+  LIS_DEBUG_FUNC_OUT;
+  return err;
 }

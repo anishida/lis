@@ -65,7 +65,7 @@
  ************************************************/
 
 #define LIS_SOLVERS_LEN                 27
-#define LIS_PRECON_TYPE_LEN            13
+#define LIS_PRECON_TYPE_LEN            14
 
 
 LIS_SOLVER_CHECK_PARAMS lis_solver_check_params[] = {
@@ -202,7 +202,7 @@ LIS_INT LIS_SOLVER_OPTACT[] = {
 };
 
 char *lis_solver_atoi[]    = {"cg", "bicg", "cgs", "bicgstab", "bicgstabl", "gpbicg", "tfqmr","orthomin", "gmres", "jacobi", "gs", "sor", "bicgsafe", "cr", "bicr", "crs", "bicrstab", "gpbicr", "bicrsafe", "fgmres", "idrs", "idr1", "minres", "cocg", "cocr", "gcrodr", "fgcrodr"};
-char *lis_precon_atoi[]    = {"none", "jacobi", "ilu", "ssor", "hybrid", "is", "sainv", "saamg", "iluc", "ilut", "bjacobi", "", "mfamg"};
+char *lis_precon_atoi[]    = {"none", "jacobi", "ilu", "ssor", "hybrid", "is", "sainv", "saamg", "iluc", "ilut", "bjacobi", "", "mfamg", "mfamg_ilutp"};
 char *lis_storage_atoi[]   = {"csr", "csc", "msr", "dia", "ell", "jad", "bsr", "bsc", "vbr", "coo", "dns"};
 char *lis_print_atoi[]     = {"none", "mem", "out", "all"};
 char *lis_scale_atoi[]     = {"none", "jacobi", "symm_diag"};
@@ -211,7 +211,7 @@ char *lis_precision_atoi[] = {"double", "quad", "switch"};
 char *lis_conv_cond_atoi[] = {"nrm2_r", "nrm2_b", "nrm1_b"};
 
 char *lis_solvername[] = {"", "CG", "BiCG", "CGS", "BiCGSTAB", "BiCGSTAB(l)", "GPBiCG", "TFQMR", "Orthomin", "GMRES", "Jacobi",	"Gauss-Seidel", "SOR", "BiCGSafe", "CR", "BiCR", "CRS", "BiCRSTAB", "GPBiCR", "BiCRSafe", "FGMRES", "IDR(s)", "IDR(1)", "MINRES", "COCG", "COCR", "GCRO-DR", "FGCRO-DR"};
-char *lis_preconname[] = {"none", "Jacobi", "ILU", "SSOR", "Hybrid", "I+S", "SAINV", "SAAMG", "Crout ILU", "ILUT", "Block Jacobi", "", "MFAMG"};
+char *lis_preconname[] = {"none", "Jacobi", "ILU", "SSOR", "Hybrid", "I+S", "SAINV", "SAAMG", "Crout ILU", "ILUT", "Block Jacobi", "", "MFAMG", "MFAMG+P"};
 
 char *lis_returncode[] = {"LIS_SUCCESS", "LIS_ILL_OPTION", "LIS_BREAKDOWN", "LIS_OUT_OF_MEMORY", "LIS_MAXITER", "LIS_NOT_IMPLEMENTED", "LIS_ERR_FILE_IO"};
 char *lis_precisionname[] = {"double", "quad", "switch"};
@@ -311,6 +311,10 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->mfamg_fine_agg_factor = 0;
 	solver->mfamg_vcycle_smooth_steps = 1;
 	solver->mfamg_deep_sibling_merge = 0;
+	solver->mfamg_contact_aware = 0;
+	solver->mfamg_contact_partition = NULL;
+	solver->mfamg_contact_partition_n = 0;
+	solver->sequence_precon_mfamg_contact_aware = 0;
 	solver->near_nullspace_coarse = NULL;
 	solver->recycle_u = NULL;
 	solver->recycle_zu = NULL;
@@ -2188,6 +2192,48 @@ LIS_INT lis_solver_set_near_nullspace(
 }
 
 
+/* Store partition labels by value, not by caller reference. Replacing labels
+ * invalidates a retained hierarchy even when the matrix is unchanged. */
+#undef __FUNC__
+#define __FUNC__ "lis_solver_set_mfamg_contact_partition"
+LIS_INT lis_solver_set_mfamg_contact_partition(
+	LIS_SOLVER solver, LIS_INT nlocal, const LIS_INT *partition)
+{
+	LIS_INT *copy = NULL;
+	LIS_INT err;
+	size_t bytes;
+
+	if(solver==NULL || nlocal<0 ||
+	   (nlocal>0 && partition==NULL) ||
+	   (nlocal==0 && partition!=NULL))
+		return LIS_ERR_ILL_ARG;
+	if((size_t)nlocal > ((size_t)-1)/sizeof(LIS_INT))
+		return LIS_OUT_OF_MEMORY;
+	bytes = (size_t)nlocal*sizeof(LIS_INT);
+	if(nlocal>0)
+	{
+		copy = (LIS_INT *)lis_malloc(bytes,
+			"lis_solver_set_mfamg_contact_partition::copy");
+		if(copy==NULL)
+		{
+			LIS_SETERR_MEM(bytes);
+			return LIS_OUT_OF_MEMORY;
+		}
+		memcpy(copy,partition,bytes);
+	}
+	err = lis_solver_reset_sequence(solver);
+	if(err)
+	{
+		if(copy!=NULL) lis_free(copy);
+		return err;
+	}
+	if(solver->mfamg_contact_partition!=NULL)
+		lis_free(solver->mfamg_contact_partition);
+	solver->mfamg_contact_partition = copy;
+	solver->mfamg_contact_partition_n = nlocal;
+	return LIS_SUCCESS;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_solver_destroy"
 LIS_INT lis_solver_destroy(LIS_SOLVER solver)
@@ -2203,6 +2249,8 @@ LIS_INT lis_solver_destroy(LIS_SOLVER solver)
 		lis_solver_clear_nullspace(solver);
 		lis_solver_clear_left_nullspace(solver);
 	lis_solver_clear_near_nullspace(solver);
+		if(solver->mfamg_contact_partition)
+			lis_free(solver->mfamg_contact_partition);
 		lis_vector_destroy(solver->d);
 		if( solver->Ah ) lis_matrix_destroy(solver->Ah);
 		if( solver->rhistory ) lis_free(solver->rhistory);
@@ -2512,6 +2560,7 @@ static LIS_INT lis_solver_check_user_matrix(LIS_MATRIX A, LIS_SOLVER solver,
 	if( precon_type!=LIS_PRECON_TYPE_NONE &&
 	    precon_type<LIS_PRECON_TYPE_USERDEF &&
 	    precon_type!=LIS_PRECON_TYPE_MFAMG &&
+	    precon_type!=LIS_PRECON_TYPE_MFAMG_ILUTP &&
 	    precon==NULL )
 	{
 		if( A->matrix_type==LIS_MATRIX_USER )
@@ -2657,6 +2706,10 @@ static LIS_INT lis_solver_sequence_precon_config_matches(
 	   solver->sequence_precon_ilut_schur!=solver->ilut_schur)
 		return LIS_FALSE;
 
+	if(solver->sequence_precon_mfamg_contact_aware!=
+	   solver->mfamg_contact_aware)
+		return LIS_FALSE;
+
 	if( solver->sequence_precon_half_mode!=
 		solver->precon_half_mode )
 	{
@@ -2679,6 +2732,8 @@ static void lis_solver_sequence_precon_snapshot(
 		solver->params,
 		sizeof(solver->params));
 
+	solver->sequence_precon_mfamg_contact_aware =
+		solver->mfamg_contact_aware;
 	solver->sequence_precon_half_mode =
 		solver->precon_half_mode;
 	solver->sequence_precon_ilut_rcm = solver->ilut_rcm;
@@ -4184,6 +4239,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	double p_c_time, p_i_time,itime;
 	LIS_REAL nrm2,tol,tol_w;
 	LIS_VECTOR t;
+	LIS_INT residual_err;
 	LIS_VECTOR bb,shell_b;
 	LIS_MATRIX AA,B,shell_A;
 	LIS_MATRIX Ah;
@@ -4761,6 +4817,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	 */
 	if( solver->near_nullspace_dim>0 &&
 	    precon_type!=LIS_PRECON_TYPE_MFAMG &&
+	    precon_type!=LIS_PRECON_TYPE_MFAMG_ILUTP &&
 	    !(precon_type==LIS_PRECON_TYPE_HYBRID &&
 	      solver->options[LIS_OPTIONS_PPRECON]==
 	          LIS_PRECON_TYPE_MFAMG) )
@@ -4971,6 +5028,8 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	
 	if (!solver->setup)
 	  {
+	    /* Do not carry a previous sequence's status into this solve. */
+	    solver->retcode = LIS_SUCCESS;
 #ifndef USE_QUAD_PRECISION
 	    err = lis_solver_execute[nsolver](solver);
 #else
@@ -4987,6 +5046,10 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 		err = lis_solver_execute_switch[nsolver](solver);
 	      }
 #endif
+	    /* Some solvers map the initial-residual early-exit sentinel to
+	     LIS_SUCCESS. Preserve any callback error recorded by the helper. */
+	    if( err==LIS_SUCCESS && solver->retcode!=LIS_SUCCESS )
+	      err = solver->retcode;
 	    solver->retcode = err;
 	  }
 
@@ -5022,18 +5085,21 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	solver->p_i_time = p_i_time;
 	solver->time  = solver->ptime + itime;
 	solver->itime = itime;
-	lis_vector_duplicate(A,&t);
+	/* Residual certification must not read an uninitialized vector when
+	 * a USER/OPERATOR matvec callback fails (nor after an OOM).
+	 * Solver status is reported through solver->retcode as before. */
+	t = NULL;
+	residual_err = lis_vector_duplicate(A,&t);
 	xx->precision = LIS_PRECISION_DEFAULT;
-	if( shell_scale )
+	if( residual_err==LIS_SUCCESS )
 	{
-	        lis_matvec(A,x,t);
+		residual_err = shell_scale
+		    ? lis_matvec(A,x,t)
+		    : lis_matvec(A,xx,t);
 	}
-	else
-	{
-	        lis_matvec(A,xx,t);
-	}
-	lis_vector_xpay(b,-1.0,t);
-	if( !shell_scale &&
+	if( residual_err==LIS_SUCCESS )
+		residual_err = lis_vector_xpay(b,-1.0,t);
+	if( residual_err==LIS_SUCCESS && !shell_scale &&
 	    scale==LIS_SCALE_SYMM_DIAG &&
 	    precon_type!=LIS_PRECON_TYPE_IS )
 	{
@@ -5054,6 +5120,8 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
     if(
         err==LIS_SUCCESS
         &&
+        residual_err==LIS_SUCCESS
+        &&
         solver->nullspace_dim>0)
     {
         err =
@@ -5067,8 +5135,16 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
         }
     }
 
-	/* Validate a successful recursive solve against the true residual. */
-	lis_solver_get_residual[conv_cond](t,solver,&nrm2);
+	/* A callback or allocation failure is never certified as convergence. */
+	if( residual_err==LIS_SUCCESS )
+	{
+		residual_err = lis_solver_get_residual[conv_cond](t,solver,&nrm2);
+	}
+	if( residual_err!=LIS_SUCCESS )
+	{
+		if( err==LIS_SUCCESS ) err=residual_err;
+		solver->retcode = err;
+	}
 
 	if( !solver->setup && err==LIS_SUCCESS )
 	{
@@ -5084,7 +5160,18 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 
 	if( err )
 	  {
-	    if( output ) lis_printf(comm,"linear solver status  : %s(code=%D)\n\n",lis_returncode[err],err); 
+	    if( output )
+	    {
+	      /* USER callbacks may return LIS_FAILS (-1) or an application
+	       * error outside the built-in returncode table. Never index it
+	       * with an unchecked callback result. */
+	      const char *status_name =
+	          (err>=LIS_SUCCESS &&
+	           err<(LIS_INT)(sizeof(lis_returncode)/sizeof(lis_returncode[0])))
+	          ? lis_returncode[err] : "LIS_CALLBACK_ERROR";
+	      lis_printf(comm,"linear solver status  : %s(code=%D)\n\n",
+	                 status_name,err);
+	    }
 	  }
 	else
 	  {
@@ -5127,7 +5214,7 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VECTOR t, LIS_VECTOR r, LIS_REAL *bnrm2)
 {
 	LIS_Comm comm;  
-	LIS_INT	output,conv;
+	LIS_INT	output,conv,err;
 	#ifdef USE_QUAD_PRECISION
 	LIS_INT	i;
 	#endif
@@ -5164,17 +5251,38 @@ LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VEC
 	if( !solver->options[LIS_OPTIONS_INITGUESS_ZEROS] )
 	{
 		#ifndef USE_QUAD_PRECISION
-			lis_matvec(A,x,p);           /* p = Ax    */
+			err = lis_matvec(A,x,p);     /* p = Ax    */
+			if( err )
+			{
+				solver->retcode = err;
+				solver->iter = 0;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_FAILS;
+			}
 			lis_vector_xpay(b,-1,p);     /* p = b - p */
 		#else
 			if( solver->precision==LIS_PRECISION_DOUBLE )
 			{
-				lis_matvec(A,x,p);           /* p = Ax    */
+				err = lis_matvec(A,x,p);     /* p = Ax    */
+			if( err )
+			{
+				solver->retcode = err;
+				solver->iter = 0;
+				LIS_DEBUG_FUNC_OUT;
+				return LIS_FAILS;
+			}
 				lis_vector_xpay(b,-1,p);     /* p = b - p */
 			}
 			else
 			{
-				lis_matvec(A,xx,p);          /* p = Ax    */
+				err = lis_matvec(A,xx,p);    /* p = Ax    */
+				if( err )
+				{
+					solver->retcode = err;
+					solver->iter = 0;
+					LIS_DEBUG_FUNC_OUT;
+					return LIS_FAILS;
+				}
 				lis_vector_xpay(b,-1,p);     /* p = b - p */
 				
 				#ifdef _OPENMP
@@ -5274,7 +5382,14 @@ LIS_INT lis_solver_get_initial_residual(LIS_SOLVER solver, LIS_PRECON M, LIS_VEC
 	if( M!=NULL )
 	{
 		/* r = M^-1 * p */
-		lis_psolve(solver, p, r);
+		err = lis_psolve(solver, p, r);
+		if( err )
+		{
+			solver->retcode = err;
+			solver->iter = 0;
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_FAILS;
+		}
 	}
 
 	LIS_DEBUG_FUNC_OUT;
@@ -5353,6 +5468,26 @@ LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 	double double_value;
 
 	LIS_DEBUG_FUNC_IN;
+
+	if( strcmp(arg1,"-mfamg_contact_aware")==0 )
+	{
+		LIS_INT enabled;
+		char extra;
+#ifdef _LONG__LONG
+		if(arg2==NULL || sscanf(arg2,"%lld %c",&enabled,&extra)!=1 ||
+		   (enabled!=0 && enabled!=1))
+#else
+		if(arg2==NULL || sscanf(arg2,"%d %c",&enabled,&extra)!=1 ||
+		   (enabled!=0 && enabled!=1))
+#endif
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,
+				"-mfamg_contact_aware must be 0 or 1\n");
+			return LIS_ERR_ILL_ARG;
+		}
+		solver->mfamg_contact_aware = enabled;
+		return LIS_SUCCESS;
+	}
 
 	if( strcmp(arg1,"-mfamg_fine_agg_factor")==0 )
 	{
@@ -5869,6 +6004,14 @@ LIS_INT lis_solver_set_option_precon(char *argv, LIS_SOLVER solver)
 		sscanf(argv, "%d", &solver->options[LIS_OPTIONS_PRECON]);
 #endif
 		LIS_DEBUG_FUNC_OUT;
+		return LIS_SUCCESS;
+	}
+
+	/* Alias: separate opt-in name, canonical MFAMG implementation. */
+	if(strcmp(argv,"ca-mfamg")==0)
+	{
+		solver->options[LIS_OPTIONS_PRECON] = LIS_PRECON_TYPE_MFAMG;
+		solver->mfamg_contact_aware = 1;
 		return LIS_SUCCESS;
 	}
 

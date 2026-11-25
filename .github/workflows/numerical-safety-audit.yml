@@ -1,0 +1,107 @@
+name: Numerical safety regression (BSR and Krylov)
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'src/matrix/lis_matrix_bsr.c'
+      - 'src/matvec/lis_matvec_bsr.c'
+      - 'src/solver/lis_solver_gcrodr.c'
+      - 'src/solver/lis_solver_fgcrodr.c'
+      - 'test/testbsraudit.c'
+      - 'test/testgcrodrmatvecerror.c'
+      - 'test/testsemidefiniteb.c'
+      - '.github/workflows/numerical-safety-audit.yml'
+      - 'src/solver/lis_solver.c'
+      - 'src/matvec/lis_matvec.c'
+      - 'src/vector/**'
+      - 'src/matrix/lis_matrix.c'
+      - 'include/**'
+      - 'configure.ac'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
+      - 'src/system/lis_memory.c'
+  pull_request:
+    paths:
+      - 'src/matrix/lis_matrix_bsr.c'
+      - 'src/matvec/lis_matvec_bsr.c'
+      - 'src/solver/lis_solver_gcrodr.c'
+      - 'src/solver/lis_solver_fgcrodr.c'
+      - 'test/testbsraudit.c'
+      - 'test/testgcrodrmatvecerror.c'
+      - 'test/testsemidefiniteb.c'
+      - '.github/workflows/numerical-safety-audit.yml'
+      - 'src/solver/lis_solver.c'
+      - 'src/matvec/lis_matvec.c'
+      - 'src/vector/**'
+      - 'src/matrix/lis_matrix.c'
+      - 'include/**'
+      - 'configure.ac'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
+      - 'src/system/lis_memory.c'
+  workflow_dispatch:
+jobs:
+  bsr-regression:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [release, asan-ubsan]
+    env:
+      OMP_DYNAMIC: 'FALSE'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+      - name: Configure and build
+        shell: bash
+        run: |
+          set -euo pipefail
+          autoreconf -fiv
+          if [ "${{ matrix.mode }}" = asan-ubsan ]; then
+            export CFLAGS="-O1 -g -fno-omit-frame-pointer -DLIS_TEST_OOM -fsanitize=address,undefined"
+            export LDFLAGS="-fsanitize=address,undefined"
+          else
+            export CFLAGS="-O2 -g"
+          fi
+          ./configure --enable-test --enable-omp --disable-mpi \
+            --disable-fortran --disable-f90 --disable-saamg
+          make -j2
+          cc -Iinclude -I. -fopenmp "$PWD/test/testbsraudit.c" \
+            -Lsrc/.libs -llis -lm ${CFLAGS} ${LDFLAGS:-} -o test/testbsraudit
+          cc -Iinclude -I. -fopenmp "$PWD/test/testgcrodrmatvecerror.c" \
+            -Lsrc/.libs -llis -lm ${CFLAGS} ${LDFLAGS:-} -o test/testgcrodrmatvecerror
+          cc -Iinclude -I. -fopenmp "$PWD/test/testsemidefiniteb.c" \
+            -Lsrc/.libs -llis -lm ${CFLAGS} ${LDFLAGS:-} -o test/testsemidefiniteb
+          if [ "${{ matrix.mode }}" = asan-ubsan ]; then
+            cc -Iinclude -I. -fopenmp "$PWD/test/testcsrtransposeoom.c" \
+              -Lsrc/.libs -llis -lm ${CFLAGS} ${LDFLAGS:-} -o test/testcsrtransposeoom
+          fi
+      - name: Run BSR numerical checks with one and eight threads
+        shell: bash
+        run: |
+          set -euo pipefail
+          export LD_LIBRARY_PATH="$PWD/src/.libs:${LD_LIBRARY_PATH:-}"
+          OMP_NUM_THREADS=1 ./test/testbsraudit
+          OMP_NUM_THREADS=8 ./test/testbsraudit
+          OMP_NUM_THREADS=1 ./test/testgcrodrmatvecerror
+          OMP_NUM_THREADS=1 ./test/testsemidefiniteb
+          OMP_NUM_THREADS=8 ./test/testsemidefiniteb
+          OMP_NUM_THREADS=1 ./test/testgcrodrsequence
+          OMP_NUM_THREADS=1 ./test/testfgcrodr
+          if [ "${{ matrix.mode }}" = asan-ubsan ]; then
+            OMP_NUM_THREADS=8 ./test/testcsrtransposeoom
+          fi
+
+      - name: Upload diagnostic logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-${{ matrix.mode }}-logs
+          path: |
+            config.log
+            test/*.log
+          if-no-files-found: ignore

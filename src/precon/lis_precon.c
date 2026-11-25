@@ -47,6 +47,7 @@
 #endif
 #include <math.h>
 #include <limits.h>
+#include <stdint.h>
 #include "lislib.h"
 
 /************************************************
@@ -90,7 +91,8 @@ LIS_PRECON_CREATE_XXX lis_precon_create_xxx[] = {
         lis_precon_create_sainv,lis_precon_create_saamg,  lis_precon_create_iluc,
         lis_precon_create_ilut, lis_precon_create_bjacobi,
         lis_precon_builtin_unavailable,
-        lis_precon_create_mfamg
+        lis_precon_create_mfamg,
+        lis_precon_create_mfamg_ilutp
 };
 
 /*NEH support for extended "solve_kernel" workflow*/
@@ -100,7 +102,8 @@ LIS_PRECON_PSD_CREATE_XXX lis_precon_psd_create_xxx[] = {
         NULL,                   lis_precon_psd_create_saamg, NULL,
         NULL,                   NULL,
         lis_precon_builtin_unavailable,
-        lis_precon_create_mfamg
+        lis_precon_create_mfamg,
+        lis_precon_builtin_unavailable
 };
 
 /*NEH support for extended "solve_kernel" workflow*/
@@ -110,7 +113,8 @@ LIS_PRECON_PSD_UPDATE_XXX lis_precon_psd_update_xxx[] = {
         NULL,                   lis_precon_psd_update_saamg, NULL,
         NULL,                   NULL,
         lis_precon_builtin_unavailable,
-        lis_precon_psd_update_mfamg
+        lis_precon_psd_update_mfamg,
+        lis_precon_builtin_unavailable
 };
 
 LIS_PSOLVE_XXX lis_psolve_xxx[] = {
@@ -118,7 +122,8 @@ LIS_PSOLVE_XXX lis_psolve_xxx[] = {
         lis_psolve_ssor,     lis_psolve_hybrid, lis_psolve_none,
         lis_psolve_sainv,    lis_psolve_saamg,  lis_psolve_iluc,
         lis_psolve_ilut_csr, lis_psolve_bjacobi, lis_psolve_adds,
-        lis_psolve_mfamg
+        lis_psolve_mfamg,
+        lis_psolve_mfamg_ilutp
 };
 
 LIS_PSOLVEH_XXX lis_psolveh_xxx[] = {
@@ -126,6 +131,7 @@ LIS_PSOLVEH_XXX lis_psolveh_xxx[] = {
         lis_psolveh_ssor,     lis_psolveh_hybrid, lis_psolveh_none,
         lis_psolveh_sainv,    lis_psolveh_saamg,  lis_psolveh_iluc,
         lis_psolveh_ilut_csr, lis_psolveh_bjacobi, lis_psolveh_adds,
+        lis_psolve_builtin_unavailable,
         lis_psolve_builtin_unavailable
 };
 
@@ -179,8 +185,8 @@ LIS_INT lis_precon_row_source_init_mode(
 		{
 			return LIS_ERR_NOT_IMPLEMENTED;
 		}
-
-		return LIS_SUCCESS;
+        source->batch_callback=lis_matrix_user_batch_lookup(A);
+        return LIS_SUCCESS;
 
 	default:
 		return LIS_ERR_NOT_IMPLEMENTED;
@@ -226,6 +232,8 @@ void lis_precon_row_source_destroy(
 	{
 		lis_precon_row_source_release(source,source->value_buffer);
 	}
+    lis_precon_row_source_release(source,source->batch_index);
+    lis_precon_row_source_release(source,source->batch_value);
 
 	lis_precon_operator_row_source_destroy(source);
 
@@ -234,6 +242,99 @@ void lis_precon_row_source_destroy(
 
 
 #undef __FUNC__
+/* Two batched callbacks load up to 16 consecutive USER rows into
+ * source-private scratch.  Nonsequential row access simply refreshes
+ * the cache; no semantics of the legacy single-row callback change. */
+static LIS_INT
+lis_precon_user_batch_get(LIS_PRECON_ROW_SOURCE *source,LIS_INT local_row)
+{
+    LIS_MATRIX A=source->A;
+    LIS_INT begin,end,nrows,needed,i,k,err;
+    LIS_INT expected[17];
+    LIS_INT *new_index=NULL;
+    LIS_SCALAR *new_value=NULL;
+
+    source->batch_scratch_oom=LIS_FALSE;
+    if(local_row<source->batch_first ||
+       local_row>=source->batch_last)
+    {
+        begin=local_row;
+        end=A->n-begin>16 ? begin+16 : A->n;
+        nrows=end-begin;
+        source->batch_first=source->batch_last=0;
+        memset(source->batch_offset,0,sizeof(source->batch_offset));
+        err=source->batch_callback(A->user_data,begin,end,
+                    source->batch_offset,0,NULL,NULL);
+        if(err) return err;
+        if(source->batch_offset[0]!=0) return LIS_ERR_ILL_ARG;
+        for(i=0;i<nrows;i++)
+        {
+            if(source->batch_offset[i]<0 ||
+               source->batch_offset[i+1]<source->batch_offset[i])
+                return LIS_ERR_ILL_ARG;
+        }
+        needed=source->batch_offset[nrows];
+        memcpy(expected,source->batch_offset,
+               (size_t)(nrows+1)*sizeof(LIS_INT));
+        if(needed>source->batch_capacity)
+        {
+            if((size_t)needed>SIZE_MAX/sizeof(LIS_INT) ||
+               (size_t)needed>SIZE_MAX/sizeof(LIS_SCALAR))
+            {
+                source->batch_scratch_oom=LIS_TRUE;
+                return LIS_OUT_OF_MEMORY;
+            }
+            new_index=(LIS_INT *)lis_precon_row_source_alloc(
+                source,(size_t)needed*sizeof(LIS_INT),
+                "lis_precon_user_batch_get::index");
+            new_value=(LIS_SCALAR *)lis_precon_row_source_alloc(
+                source,(size_t)needed*sizeof(LIS_SCALAR),
+                "lis_precon_user_batch_get::value");
+            if(new_index==NULL || new_value==NULL)
+            {
+                lis_precon_row_source_release(source,new_index);
+                lis_precon_row_source_release(source,new_value);
+                source->batch_scratch_oom=LIS_TRUE;
+                return LIS_OUT_OF_MEMORY;
+            }
+            lis_precon_row_source_release(source,source->batch_index);
+            lis_precon_row_source_release(source,source->batch_value);
+            source->batch_index=new_index;
+            source->batch_value=new_value;
+            source->batch_capacity=needed;
+        }
+        if(needed>0)
+        {
+            err=source->batch_callback(A->user_data,begin,end,
+                    source->batch_offset,source->batch_capacity,
+                    source->batch_index,source->batch_value);
+            if(err) return err;
+            for(i=0;i<=nrows;i++)
+                if(source->batch_offset[i]!=expected[i])
+                    return LIS_ERR_ILL_ARG;
+            for(k=0;k<needed;k++)
+                if(source->batch_index[k]<0 ||
+                   source->batch_index[k]>=A->n)
+                    return LIS_ERR_ILL_ARG;
+        }
+        source->batch_first=begin;
+        source->batch_last=end;
+    }
+    i=local_row-source->batch_first;
+    source->nnz=source->batch_offset[i+1]-source->batch_offset[i];
+    if(source->nnz>0)
+    {
+        source->index=source->batch_index+source->batch_offset[i];
+        source->value=source->batch_value+source->batch_offset[i];
+    }
+    else
+    {
+        source->index=NULL;
+        source->value=NULL;
+    }
+    return LIS_SUCCESS;
+}
+
 #define __FUNC__ "lis_precon_row_source_get"
 LIS_INT lis_precon_row_source_get(
 	LIS_PRECON_ROW_SOURCE *source,
@@ -264,6 +365,55 @@ LIS_INT lis_precon_row_source_get(
 	{
 		return LIS_ERR_ILL_ARG;
 	}
+
+    /* The one-row USER callback is mandatory. Avoid repeatedly
+     * fetching 16-row windows if accesses keep jumping between distant
+     * rows. This only changes the fetch strategy, not matrix values.
+     *
+     * Two nonlocal cache misses switch to scalar. Eight sequential row
+     * requests restore batch mode, so a transient random probe does not
+     * permanently penalize a subsequent matrix traversal.
+     */
+    if(A->matrix_type==LIS_MATRIX_USER &&
+       source->batch_callback!=NULL && !source->batch_disabled)
+    {
+        LIS_INT sequential=LIS_FALSE;
+        if(source->batch_seen)
+        {
+            sequential=(source->batch_previous_row<A->n-1 &&
+                        local_row==source->batch_previous_row+1);
+            if(sequential)
+            {
+                if(source->batch_linear_streak<8)
+                    source->batch_linear_streak++;
+                source->batch_remote_misses=0;
+            }
+            else
+            {
+                source->batch_linear_streak=0;
+                if(!source->batch_prefer_scalar &&
+                   (local_row<source->batch_first ||
+                    local_row>=source->batch_last))
+                {
+                    source->batch_remote_misses++;
+                    if(source->batch_remote_misses>=2)
+                    {
+                        source->batch_prefer_scalar=LIS_TRUE;
+                        source->batch_remote_misses=0;
+                    }
+                }
+            }
+        }
+        if(source->batch_prefer_scalar &&
+           source->batch_linear_streak>=8)
+        {
+            source->batch_prefer_scalar=LIS_FALSE;
+            source->batch_remote_misses=0;
+            source->batch_first=source->batch_last=0;
+        }
+        source->batch_previous_row=local_row;
+        source->batch_seen=LIS_TRUE;
+    }
 
 	source->index = NULL;
 	source->value = NULL;
@@ -335,7 +485,32 @@ LIS_INT lis_precon_row_source_get(
 	{
 		return LIS_ERR_NOT_IMPLEMENTED;
 	}
-
+    if(source->batch_callback!=NULL && !source->batch_disabled &&
+       !source->batch_prefer_scalar)
+    {
+        err=lis_precon_user_batch_get(source,local_row);
+        if(err!=LIS_OUT_OF_MEMORY || !source->batch_scratch_oom)
+        {
+            /* A failed application callback is not evidence of random
+             * row access. In particular, repeated retries of a failed
+             * batch must not silently end up on the scalar fallback. */
+            if(err!=LIS_SUCCESS)
+            {
+                source->batch_seen=LIS_FALSE;
+                source->batch_remote_misses=0;
+                source->batch_linear_streak=0;
+                source->batch_prefer_scalar=LIS_FALSE;
+            }
+            return err;
+        }
+        /* A failed scratch allocation must not break an otherwise valid
+         * USER matrix: abandon the cache and use one-row callbacks. */
+        source->batch_disabled=LIS_TRUE;
+        source->batch_first=source->batch_last=0;
+        source->index=NULL;
+        source->value=NULL;
+        source->nnz=0;
+    }
 
 	/*
 	 * First callback invocation is a row-size query.
@@ -704,6 +879,15 @@ LIS_INT lis_precon_set_user_data(LIS_PRECON precon, void *user_data)
         return LIS_ERR_ILL_ARG;
     }
 
+    /* The MFAMG+ILUTP built-in owns this slot. Exposing or overwriting
+     * it through the public user-data API would corrupt child ownership. */
+    if( precon->precon_type==LIS_PRECON_TYPE_MFAMG_ILUTP )
+    {
+        LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+                   "MFAMG_ILUTP user_data is reserved for built-in state\n");
+        return LIS_ERR_NOT_IMPLEMENTED;
+    }
+
     precon->user_data = user_data;
 
     LIS_DEBUG_FUNC_OUT;
@@ -725,6 +909,15 @@ LIS_INT lis_precon_get_user_data(LIS_PRECON precon, void **user_data)
     {
         LIS_SETERR(LIS_ERR_ILL_ARG,"user_data output pointer is NULL\n");
         return LIS_ERR_ILL_ARG;
+    }
+
+    /* Never expose the composite's owned child/state pointer as
+     * arbitrary application-controlled preconditioner user_data. */
+    if( precon->precon_type==LIS_PRECON_TYPE_MFAMG_ILUTP )
+    {
+        LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+                   "MFAMG_ILUTP user_data is reserved for built-in state\n");
+        return LIS_ERR_NOT_IMPLEMENTED;
     }
 
     *user_data = precon->user_data;
@@ -761,12 +954,13 @@ LIS_INT lis_precon_create(LIS_SOLVER solver, LIS_PRECON *precon)
 		        precon_type-LIS_PRECON_TYPE_USERDEF].pdestroy;
 		err = precon_register_top[precon_type-LIS_PRECON_TYPE_USERDEF].pcreate(solver,*precon);
 	}
-	else if( precon_type==LIS_PRECON_TYPE_MFAMG &&
+	else if( (precon_type==LIS_PRECON_TYPE_MFAMG ||
+          precon_type==LIS_PRECON_TYPE_MFAMG_ILUTP) &&
          solver->options[LIS_OPTIONS_ADDS] )
     {
         LIS_SETERR(
             LIS_ERR_NOT_IMPLEMENTED,
-            "MFAMG does not support additive Schwarz in the two-level implementation\n");
+            "MFAMG-based preconditioners do not support additive Schwarz\n");
 
         err =
             LIS_ERR_NOT_IMPLEMENTED;
@@ -1001,6 +1195,11 @@ LIS_INT lis_precon_destroy(LIS_PRECON precon)
 	    {
 	        err = precon->user_destroy(precon);
 	    }
+		if( precon->precon_type==LIS_PRECON_TYPE_MFAMG_ILUTP )
+		{
+			mfamg_err=lis_precon_destroy_mfamg_ilutp(precon);
+			if(err==LIS_SUCCESS) err=mfamg_err;
+		}
 		if( precon->ilut_ras )
 		{
 			lis_precon_ilut_ras_destroy(precon->ilut_ras);
@@ -1139,6 +1338,7 @@ LIS_INT lis_psolve_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
                 )
                 &&
                 precon_type!=LIS_PRECON_TYPE_MFAMG
+                && precon_type!=LIS_PRECON_TYPE_MFAMG_ILUTP
                 &&
                 solver->near_nullspace_coarse!=NULL
                 &&

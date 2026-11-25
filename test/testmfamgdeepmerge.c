@@ -21,6 +21,9 @@
 
 extern LIS_INT lis_precon_mfamg_merge_siblings_for_test(
     LIS_MATRIX A, LIS_INT target, LIS_INT *aggregate, LIS_INT *nc);
+extern LIS_INT lis_precon_mfamg_merge_partitioned_siblings_for_test(
+    LIS_MATRIX A, LIS_INT target, LIS_INT *aggregate, LIS_INT *nc,
+    const LIS_INT *partitions);
 extern LIS_INT lis_precon_mfamg_get_hierarchy_info(
     LIS_PRECON precon, LIS_INT max_levels, LIS_INT *nlevels,
     LIS_INT *coarse_n, LIS_INT *level_n, LIS_INT *owns_A);
@@ -89,6 +92,69 @@ done:
     if(err) fprintf(stderr,"MFAMG DEEP MERGE structural rc=%d\n",(int)err);
     if(A) lis_matrix_destroy(A);
     if(solver) lis_solver_destroy(solver);
+    return failed;
+}
+
+/* A two-partition contact star: strong edges cross the contact boundary,
+ * but deep sibling merging must only join the 60 leaves in hub partition 0.
+ * A deliberately mixed pre-aggregate must be rejected transactionally.
+ */
+static int structural_partitioned_star_test(void)
+{
+    LIS_MATRIX A=NULL;
+    LIS_INT ids[STAR_N],parts[STAR_N],nc=STAR_N,i,j,err=0;
+    int failed=1;
+    err=lis_matrix_create(LIS_COMM_WORLD,&A);
+    if(err) goto done;
+    err=lis_matrix_set_size(A,0,STAR_N);
+    if(err) goto done;
+    for(i=0;i<STAR_N;i++) {
+        ids[i]=i;
+        /* Nonzero, signed contact IDs exercise the no-sentinel policy. */
+        parts[i]=(i<=60) ? -7 : 1000001;
+        err=lis_matrix_set_value(
+            LIS_INS_VALUE,i,i,(i==0 ? 121.0 : 2.0),A);
+        if(err) goto done;
+        if(i>0) {
+            err=lis_matrix_set_value(LIS_INS_VALUE,0,i,-1.0,A);
+            if(err) goto done;
+            err=lis_matrix_set_value(LIS_INS_VALUE,i,0,-1.0,A);
+            if(err) goto done;
+        }
+    }
+    err=lis_matrix_assemble(A);
+    if(err) goto done;
+    err=lis_precon_mfamg_merge_partitioned_siblings_for_test(
+        A,96,ids,&nc,parts);
+    if(err || nc!=61) {
+        fprintf(stderr,
+            "CA-MFAMG intra-partition merge expected 61 groups, got %d rc=%d\\n",
+            (int)nc,(int)err);
+        goto done;
+    }
+    for(i=1;i<=60;i++) if(ids[i]!=ids[0]) goto done;
+    for(i=61;i<STAR_N;i++) {
+        if(ids[i]==ids[0]) goto done;
+        for(j=61;j<i;j++) if(ids[i]==ids[j]) goto done;
+    }
+
+    /* Mixed labels inside an already formed aggregate must not
+     * change the caller's original aggregate map or count. */
+    for(i=0;i<STAR_N;i++) ids[i]=i;
+    ids[61]=0;
+    nc=STAR_N;
+    err=lis_precon_mfamg_merge_partitioned_siblings_for_test(
+        A,96,ids,&nc,parts);
+    if(err!=LIS_ERR_ILL_ARG || nc!=STAR_N || ids[61]!=0) {
+        fprintf(stderr,"CA-MFAMG mixed-partition aggregate not rejected\\n");
+        goto done;
+    }
+    for(i=0;i<STAR_N;i++)
+        if(ids[i]!=(i==61 ? 0 : i)) goto done;
+    printf("CA-MFAMG deep sibling partition guard PASS\\n");
+    failed=0;
+done:
+    if(A) lis_matrix_destroy(A);
     return failed;
 }
 
@@ -437,6 +503,7 @@ int main(int argc,char **argv)
 #endif
     if(nprocs==1) {
         if(structural_star_test()!=0 ||
+           structural_partitioned_star_test()!=0 ||
            structural_line_gate_test()!=0 ||
            structural_normalized_anchor_test()!=0) goto done;
     }

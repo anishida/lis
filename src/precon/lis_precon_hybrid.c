@@ -94,6 +94,14 @@ static LIS_INT lis_precon_hybrid_validate_config(LIS_SOLVER solver)
 		return LIS_ERR_ILL_ARG;
 	}
 
+	/* A composite cannot safely share Hybrid's single inner option scope. */
+	if( inner_precon==LIS_PRECON_TYPE_MFAMG_ILUTP )
+	{
+		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+			"MFAMG_ILUTP is not supported inside Hybrid; use -p mfamg_ilutp\n");
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
 	if( inner_precon==LIS_PRECON_TYPE_HYBRID )
 	{
 		LIS_SETERR(LIS_ERR_ILL_ARG,"recursive Hybrid preconditioner is not supported\n");

@@ -154,6 +154,25 @@ int main(int argc, char **argv)
         LIS_TRUE,
         ALL_CAPS);
 
+    /* The native composite requires near-nullspace even though
+     * the outer preconditioner type is not standalone MFAMG. */
+    failed |= check_query(
+        "FGMRES+MFAMG_ILUTP",
+        "-i fgmres -p mfamg_ilutp",
+        LIS_PRECON_TYPE_MFAMG_ILUTP,
+        LIS_FALSE,
+        LIS_SOLVER_CAP_FLEXIBLE_PRECON |
+        LIS_SOLVER_CAP_NEAR_NULLSPACE);
+
+    failed |= check_query(
+        "FGCRODR+MFAMG_ILUTP",
+        "-i fgcrodr -p mfamg_ilutp",
+        LIS_PRECON_TYPE_MFAMG_ILUTP,
+        LIS_FALSE,
+        LIS_SOLVER_CAP_FLEXIBLE_PRECON |
+        LIS_SOLVER_CAP_RECYCLING |
+        LIS_SOLVER_CAP_NEAR_NULLSPACE);
+
     /* NONE must remain a real leaf, not a special parsing case. */
     failed |= check_query(
         "CG+NONE",

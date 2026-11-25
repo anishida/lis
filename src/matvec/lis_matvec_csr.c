@@ -39,6 +39,8 @@
 #endif
 #include <string.h>
 #include <math.h>
+#include <stdint.h> /* SIZE_MAX */
+#include <limits.h> /* INT_MAX, LLONG_MAX */
 #ifdef USE_SSE2
 	#include <emmintrin.h>
 #endif
@@ -110,6 +112,71 @@ void lis_matvec_csr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	}
 }
 
+#ifdef _OPENMP
+/* Allocation-free serial fallback for transpose SpMV, used when the
+ * OpenMP thread-private reduction buffer cannot safely be allocated. */
+static void
+lis_matvech_csr_serial_fallback(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
+{
+    LIS_INT i,j,js,je,jj;
+    LIS_INT n=A->n,np=A->np;
+    LIS_SCALAR t;
+    if(A->is_splited)
+    {
+        for(i=0;i<np;i++) y[i]=conj(A->D->value[i])*x[i];
+        for(i=0;i<n;i++)
+        {
+            t=x[i];
+            js=A->L->ptr[i]; je=A->L->ptr[i+1];
+            for(j=js;j<je;j++)
+            {
+                jj=A->L->index[j];
+                y[jj]+=conj(A->L->value[j])*t;
+            }
+            js=A->U->ptr[i]; je=A->U->ptr[i+1];
+            for(j=js;j<je;j++)
+            {
+                jj=A->U->index[j];
+                y[jj]+=conj(A->U->value[j])*t;
+            }
+        }
+    }
+    else
+    {
+        for(i=0;i<np;i++) y[i]=(LIS_SCALAR)0.0;
+        for(i=0;i<n;i++)
+        {
+            t=x[i];
+            js=A->ptr[i]; je=A->ptr[i+1];
+            for(j=js;j<je;j++)
+            {
+                jj=A->index[j];
+                y[jj]+=conj(A->value[j])*t;
+            }
+        }
+    }
+}
+
+static LIS_SCALAR *
+lis_matvech_csr_thread_scratch(LIS_INT nthreads,LIS_INT np)
+{
+    size_t threads,rows;
+    if(nthreads<=0 || np<=0) return NULL;
+    threads=(size_t)nthreads;
+    rows=(size_t)np;
+    /* The allocation and the legacy k*np/j*np index arithmetic need
+     * separate bounds: size_t may be wider than LIS_INT. */
+    if(threads>SIZE_MAX/rows ||
+       threads*rows>SIZE_MAX/sizeof(LIS_SCALAR) ||
+       threads>(sizeof(LIS_INT)<=sizeof(int) ?
+                (size_t)INT_MAX/rows : (size_t)LLONG_MAX/rows))
+        return NULL;
+    return (LIS_SCALAR *)lis_malloc(
+        threads*rows*sizeof(LIS_SCALAR),"lis_matvech_csr::w");
+}
+
+#endif /* _OPENMP */
+
 void lis_matvech_csr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 {
 	LIS_INT i,j,js,je,jj;
@@ -122,11 +189,27 @@ void lis_matvech_csr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 
 	n    = A->n;
 	np   = A->np;
+#ifdef _OPENMP
+	/* With one worker, unsplit CSR can use the existing serial scatter
+	 * order without scratch allocation, memset or a parallel region.
+	 * Split CSR intentionally keeps its established OpenMP path. */
+	if(!A->is_splited && omp_get_max_threads()==1)
+	{
+		lis_matvech_csr_serial_fallback(A,x,y);
+		return;
+	}
+#endif
 	if( A->is_splited )
 	{
 		#ifdef _OPENMP
 			nprocs = omp_get_max_threads();
-			w = (LIS_SCALAR *)lis_malloc( nprocs*np*sizeof(LIS_SCALAR),"lis_matvech_csr::w" );
+			w = lis_matvech_csr_thread_scratch(nprocs,np);
+			if(w==NULL)
+			{
+				fprintf(stderr,"LIS CSR transpose SpMV: OpenMP scratch unavailable; using serial fallback\n");
+				lis_matvech_csr_serial_fallback(A,x,y);
+				return;
+			}
 			#pragma omp parallel private(i,j,js,je,t,jj,k)
 			{
 				k = omp_get_thread_num();
@@ -199,7 +282,13 @@ void lis_matvech_csr(LIS_MATRIX A, LIS_SCALAR x[], LIS_SCALAR y[])
 	{
 		#ifdef _OPENMP
 			nprocs = omp_get_max_threads();
-			w = (LIS_SCALAR *)lis_malloc( nprocs*np*sizeof(LIS_SCALAR),"lis_matvech_csr::w" );
+			w = lis_matvech_csr_thread_scratch(nprocs,np);
+			if(w==NULL)
+			{
+				fprintf(stderr,"LIS CSR transpose SpMV: OpenMP scratch unavailable; using serial fallback\n");
+				lis_matvech_csr_serial_fallback(A,x,y);
+				return;
+			}
 			#pragma omp parallel private(i,j,js,je,t,jj,k)
 			{
 				k = omp_get_thread_num();

@@ -336,20 +336,57 @@ TESTS += testilucbsrsmoke$(EXEEXT)
 
 # Opt-in native OOM regressions; build and run against the actual LIS library.
 if ENABLE_OOM_TESTS
-check_PROGRAMS = testoomalloc testoomilu testoomdiag testoomiluc testoomsnapshot testoomrco
-TESTS += testoomalloc$(EXEEXT) testoomilu$(EXEEXT) testoomdiag$(EXEEXT) testoomiluc$(EXEEXT) testoomsnapshot$(EXEEXT) testoomrco$(EXEEXT)
+check_PROGRAMS = testoomalloc testoomilu testoomdiag testoomiluc testoomsnapshot testoomrco testcsrtransposeoom
+TESTS += testoomalloc$(EXEEXT) testoomilu$(EXEEXT) testoomdiag$(EXEEXT) testoomiluc$(EXEEXT) testoomsnapshot$(EXEEXT) testoomrco$(EXEEXT) testcsrtransposeoom$(EXEEXT)
 testoomalloc_SOURCES = testoomalloc.c
 testoomilu_SOURCES = testoomilu.c
 testoomdiag_SOURCES = testoomdiag.c
 testoomiluc_SOURCES = testoomiluc.c
 testoomsnapshot_SOURCES = testoomsnapshot.c
 testoomrco_SOURCES = testoomrco.c
+testcsrtransposeoom_SOURCES = testcsrtransposeoom.c
 if ENABLE_MPI
 check_PROGRAMS += testoommpiscale
 TESTS += testoommpiscale$(EXEEXT)
 testoommpiscale_SOURCES = testoommpiscale.c
 endif
 endif
+
+# USER-to-CSR row callback bounds are checked in the native test suite.
+test_PROGRAMS += testusercsrbounds
+testusercsrbounds_SOURCES = testusercsrbounds.c
+TESTS += testusercsrbounds$(EXEEXT)
+
+# Native serial/MPI matrix duplication regression. The dedicated MPI CI
+# additionally runs two ranks with nonempty ghost communication tables.
+test_PROGRAMS += testusermpiduplicate
+testusermpiduplicate_SOURCES = testusermpiduplicate.c
+TESTS += testusermpiduplicate$(EXEEXT)
+
+# USER callback failure propagation for this Krylov solver family.
+test_PROGRAMS += testuserbicgerrors
+testuserbicgerrors_SOURCES = testuserbicgerrors.c
+TESTS += testuserbicgerrors$(EXEEXT)
+
+# Native USER callback regression for BiCG/BiCR.
+test_PROGRAMS += testuserbicgadjoint
+testuserbicgadjoint_SOURCES = testuserbicgadjoint.c
+TESTS += testuserbicgadjoint$(EXEEXT)
+
+# Native USER callback regression for BiCGSafe/BiCRSafe.
+test_PROGRAMS += testuserbicgsafe
+testuserbicgsafe_SOURCES = testuserbicgsafe.c
+TESTS += testuserbicgsafe$(EXEEXT)
+
+# Native USER callback regression for MINRES initial and in-loop callbacks.
+test_PROGRAMS += testuserminreserrors
+testuserminreserrors_SOURCES = testuserminreserrors.c
+TESTS += testuserminreserrors$(EXEEXT)
+
+# Generic CG USER callback failures and QUAD preconditioner failures.
+test_PROGRAMS += testusercgerrors
+testusercgerrors_SOURCES = testusercgerrors.c
+TESTS += testusercgerrors$(EXEEXT)
 
 # Standalone projected-residual normalization regression.
 test_PROGRAMS += testfgmresprojected
@@ -373,3 +410,24 @@ TESTS += testmfamgfineagg$(EXEEXT)
 test_PROGRAMS += testmfamgdeepmerge
 testmfamgdeepmerge_SOURCES = testmfamgdeepmerge.c
 TESTS += testmfamgdeepmerge$(EXEEXT)
+
+
+# Serial experimental MFAMG -> ILUTP composition regression.
+test_PROGRAMS += testmfamgilutp
+testmfamgilutp_SOURCES = testmfamgilutp.c
+testmfamgilutp_LDADD = $(LDADD) -lm
+TESTS += testmfamgilutp$(EXEEXT)
+
+# Opt-in generic static condensation and contact-aware solver integration.
+test_PROGRAMS += testcondense_core testcomposite_core testcondense_lis testcondense_oom
+testcondense_core_SOURCES = testcondense_core.c
+testcondense_core_LDADD = $(LDADD) -lm
+testcondense_oom_SOURCES = testcondense_oom.c
+testcondense_oom_LDADD = $(LDADD) -lm
+testcomposite_core_SOURCES = testcomposite_core.c
+testcomposite_core_LDADD = $(LDADD) -lm
+testcondense_lis_SOURCES = testcondense_lis.c
+testcondense_lis_LDADD = $(LDADD) -lm
+TESTS += testcondense_core$(EXEEXT) testcomposite_core$(EXEEXT) testcondense_lis$(EXEEXT) testcondense_oom$(EXEEXT)
+TESTS += testca_mfamg_ilutp.sh testca_mfamg_profiles.sh testcondense_differential.sh
+EXTRA_DIST += testca_mfamg_ilutp.sh testca_mfamg_profiles.sh testcondense_differential.sh

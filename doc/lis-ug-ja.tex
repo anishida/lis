@@ -43,7 +43,7 @@
 \vspace*{4cm}
 \begin{flushleft}
 {\Large Lis ユーザガイド}\\
-バージョン 2.1.23
+バージョン 2.1.25
 \end{flushleft}
 
 \vspace*{2cm}
@@ -1951,6 +1951,10 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & ドロップ基
          &                       & \verb=-iluc_rate [5.0]=     & 最大フィルイン数の倍率 \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
+         &                       & \verb=-ilut_rcm [0]= & 対称RCM（逐次CSR、倍精度） \\
+         &                       & \verb=-ilut_row_scale [0]= & 最大絶対値による行スケーリング \\
+         &                       & \verb=-ilut_drop [0.05]= & \verb=-iluc_drop=の別名 \\
+         &                       & \verb=-ilut_rate [5.0]= & \verb=-iluc_rate=の別名 \\
 MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
          &                       & \verb=-mfamg_block_size [1]= & ローカル連続平滑化ブロックサイズ \\
          &                       &                              & (1:重み付きヤコビ 2-:ブロックヤコビ) \\
@@ -2153,6 +2157,10 @@ crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & ドロップ基
          &                       & \verb=-iluc_rate [5.0]=     & 最大フィルイン数の倍率 \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
+         &                       & \verb=-ilut_rcm [0]= & 対称RCM（逐次CSR、倍精度） \\
+         &                       & \verb=-ilut_row_scale [0]= & 最大絶対値による行スケーリング \\
+         &                       & \verb=-ilut_drop [0.05]= & \verb=-iluc_drop=の別名 \\
+         &                       & \verb=-ilut_rate [5.0]= & \verb=-iluc_rate=の別名 \\
 MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
          &                       & \verb=-mfamg_block_size [1]= & ローカル連続平滑化ブロックサイズ \\
          &                       &                              & (1:重み付きヤコビ 2-:ブロックヤコビ) \\
@@ -6188,6 +6196,10 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & ドロップ基
          &                       & \verb=-iluc_rate [5.0]=     & 最大フィルイン数の倍率 \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
+         &                       & \verb=-ilut_rcm [0]= & 対称RCM（逐次CSR、倍精度） \\
+         &                       & \verb=-ilut_row_scale [0]= & 最大絶対値による行スケーリング \\
+         &                       & \verb=-ilut_drop [0.05]= & \verb=-iluc_drop=の別名 \\
+         &                       & \verb=-ilut_rate [5.0]= & \verb=-iluc_rate=の別名 \\
 MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
          &                       & \verb=-mfamg_block_size [1]= & ローカル連続平滑化ブロックサイズ \\
          &                       &                              & (1:重み付きヤコビ 2-:ブロックヤコビ) \\
@@ -6729,6 +6741,10 @@ Crout ILU& \verb=-p {iluc|8}=    & \verb=-iluc_drop [0.05]=    & ドロップ基
          &                       & \verb=-iluc_rate [5.0]=     & 最大フィルイン数の倍率 \\
          &                       & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
 ILUT     & \verb=-p {ilut|9}=    & \verb=-ilu_pivot_tol [0.0]= & 相対極小ピボット閾値 \\
+         &                       & \verb=-ilut_rcm [0]= & 対称RCM（逐次CSR、倍精度） \\
+         &                       & \verb=-ilut_row_scale [0]= & 最大絶対値による行スケーリング \\
+         &                       & \verb=-ilut_drop [0.05]= & \verb=-iluc_drop=の別名 \\
+         &                       & \verb=-ilut_rate [5.0]= & \verb=-iluc_rate=の別名 \\
 MFAMG   & \verb=-p {mfamg|12}=  &                             &                            \\
          &                       & \verb=-mfamg_block_size [1]= & ローカル連続平滑化ブロックサイズ \\
          &                       &                              & (1:重み付きヤコビ 2-:ブロックヤコビ) \\

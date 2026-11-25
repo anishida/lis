@@ -10,6 +10,8 @@ lis_precon_ilut_ras.c \
 lis_precon_is.c \
 lis_precon_jacobi.c \
 lis_precon_mfamg.c \
+lis_precon_mfamg_ilutp.c \
+lis_camfamg_composite_core.c \
 lis_precon_saamg.c \
 lis_precon_sainv.c \
 lis_precon_ssor.c  
@@ -31,3 +33,4 @@ LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) \
 
 # Included by lis_precon_mfamg.c; distribute with release archives.
 EXTRA_DIST = lis_mfamg_star_schur.inc lis_precon_ilutp.inc
+
