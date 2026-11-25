@@ -182,6 +182,8 @@ lis_gesolve_matrix_session_solve(
     if(s==NULL) return LIS_ERR_ILL_ARG;
     r=&s->report;
     memset(r,0,sizeof(*r));
+    r->struct_size=(uint32_t)sizeof(*r);
+    r->version=LIS_GESOLVE_SESSION_REPORT_VERSION;
     s->has_report=LIS_TRUE;
     r->stage=LIS_GESOLVE_STAGE_VALIDATE;
     r->return_code=LIS_ERR_ILL_ARG;
@@ -309,9 +311,19 @@ LIS_INT
 lis_gesolve_matrix_session_get_report(
     LIS_GESOLVE_MATRIX_SESSION s,LIS_GESOLVE_SESSION_REPORT *report)
 {
-    if(s==NULL || report==NULL || !s->has_report)
+    return lis_gesolve_matrix_session_get_report_ex(s,report,
+                                      LIS_GESOLVE_SESSION_REPORT_V1_SIZE);
+}
+
+LIS_INT
+lis_gesolve_matrix_session_get_report_ex(
+    LIS_GESOLVE_MATRIX_SESSION s,LIS_GESOLVE_SESSION_REPORT *report,
+    size_t report_size)
+{
+    if(s==NULL || report==NULL || !s->has_report ||
+       report_size<LIS_GESOLVE_SESSION_REPORT_V1_SIZE)
         return LIS_ERR_ILL_ARG;
-    *report=s->report;
+    memcpy(report,&s->report,report_size<sizeof(*report)?report_size:sizeof(*report));
     return LIS_SUCCESS;
 }
 

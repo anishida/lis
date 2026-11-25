@@ -1714,8 +1714,10 @@ extern LIS_INT lis_gesolve_matrix_session_solve(
 #define LIS_GESOLVE_STAGE_SOLVE     5
 #define LIS_GESOLVE_STAGE_STORE     6
 #define LIS_GESOLVE_STAGE_COMPLETE 7
+#define LIS_GESOLVE_SESSION_REPORT_VERSION 1u
 typedef struct LIS_GESOLVE_SESSION_REPORT_STRUCT
 {
+    uint32_t struct_size,version;
     LIS_INT stage;
     LIS_INT return_code;
     LIS_INT solver_called;
@@ -1729,8 +1731,14 @@ typedef struct LIS_GESOLVE_SESSION_REPORT_STRUCT
     LIS_INT results_committed;
     LIS_INT cleanup_return;
 } LIS_GESOLVE_SESSION_REPORT;
+#define LIS_GESOLVE_SESSION_REPORT_V1_SIZE \
+    (offsetof(LIS_GESOLVE_SESSION_REPORT,cleanup_return)+sizeof(LIS_INT))
 extern LIS_INT lis_gesolve_matrix_session_get_report(
     LIS_GESOLVE_MATRIX_SESSION session,LIS_GESOLVE_SESSION_REPORT *report);
+/* Sized form: v1 minimum; extra caller bytes remain untouched. */
+extern LIS_INT lis_gesolve_matrix_session_get_report_ex(
+    LIS_GESOLVE_MATRIX_SESSION session,LIS_GESOLVE_SESSION_REPORT *report,
+    size_t report_size);
 extern LIS_INT lis_gesolve_matrix_session_get_nev(
     LIS_GESOLVE_MATRIX_SESSION session,LIS_INT *computed_nev);
 extern LIS_INT lis_gesolve_matrix_session_get_eigenpair(

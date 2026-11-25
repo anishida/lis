@@ -104,9 +104,14 @@ int main(int argc,char **argv)
         session,0,&lambda,kept);
     if(err)goto done;
     if(lis_gesolve_matrix_session_get_report(session,&report) ||
+       report.version!=LIS_GESOLVE_SESSION_REPORT_VERSION ||
+       report.struct_size!=sizeof(report) ||
        report.stage!=LIS_GESOLVE_STAGE_COMPLETE ||
        report.return_code!=LIS_SUCCESS || !report.solver_called ||
        !report.results_committed || report.computed_nev!=1)
+        goto done;
+    if(lis_gesolve_matrix_session_get_report_ex(session,&report,
+          LIS_GESOLVE_SESSION_REPORT_V1_SIZE-1)!=LIS_ERR_ILL_ARG)
         goto done;
     if(lis_gesolve_matrix_session_solve(session,NULL,B,x,NULL,NULL)!=LIS_ERR_ILL_ARG ||
        lis_gesolve_matrix_session_get_report(session,&report) ||
@@ -162,7 +167,8 @@ int main(int argc,char **argv)
        lis_gesolve_matrix_session_get_report(session,&report) ||
        report.stage!=LIS_GESOLVE_STAGE_SOLVE ||
        !report.solver_called || report.return_code!=err ||
-       report.solver_api_return!=err || report.results_committed)
+       report.solver_api_return!=err || report.iterations_available ||
+       report.results_committed)
         goto done;
 
     /* Subspace mode: publish a genuinely indexed collection rather than
