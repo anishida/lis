@@ -431,3 +431,53 @@ testcondense_lis_LDADD = $(LDADD) -lm
 TESTS += testcondense_core$(EXEEXT) testcomposite_core$(EXEEXT) testcondense_lis$(EXEEXT) testcondense_oom$(EXEEXT)
 TESTS += testca_mfamg_ilutp.sh testca_mfamg_profiles.sh testcondense_differential.sh
 EXTRA_DIST += testca_mfamg_ilutp.sh testca_mfamg_profiles.sh testcondense_differential.sh
+
+test_PROGRAMS += testuserbicgstabl
+testuserbicgstabl_SOURCES = testuserbicgstabl.c
+testuserbicgstabl_LDADD = $(LDADD) -lm
+TESTS += testuserbicgstabl$(EXEEXT)
+
+test_PROGRAMS += testusercrcomplex
+testusercrcomplex_SOURCES = testusercrcomplex.c
+testusercrcomplex_LDADD = $(LDADD) -lm
+TESTS += testusercrcomplex$(EXEEXT)
+
+test_PROGRAMS += testusercrserrors
+testusercrserrors_SOURCES = testusercrserrors.c
+testusercrserrors_LDADD = $(LDADD) -lm
+TESTS += testusercrserrors$(EXEEXT)
+
+test_PROGRAMS += testuserfgcrodrerrors
+testuserfgcrodrerrors_SOURCES = testuserfgcrodrerrors.c
+testuserfgcrodrerrors_LDADD = $(LDADD) -lm
+TESTS += testuserfgcrodrerrors$(EXEEXT)
+
+test_PROGRAMS += testusergcrodrerrors
+testusergcrodrerrors_SOURCES = testusergcrodrerrors.c
+testusergcrodrerrors_LDADD = $(LDADD) -lm
+TESTS += testusergcrodrerrors$(EXEEXT)
+
+test_PROGRAMS += testusergmreserrors
+testusergmreserrors_SOURCES = testusergmreserrors.c
+testusergmreserrors_LDADD = $(LDADD) -lm
+TESTS += testusergmreserrors$(EXEEXT)
+
+test_PROGRAMS += testusergpbic
+testusergpbic_SOURCES = testusergpbic.c
+testusergpbic_LDADD = $(LDADD) -lm
+TESTS += testusergpbic$(EXEEXT)
+
+test_PROGRAMS += testuseridrcallback
+testuseridrcallback_SOURCES = testuseridrcallback.c
+testuseridrcallback_LDADD = $(LDADD) -lm
+TESTS += testuseridrcallback$(EXEEXT)
+
+test_PROGRAMS += testuserorthominerrors
+testuserorthominerrors_SOURCES = testuserorthominerrors.c
+testuserorthominerrors_LDADD = $(LDADD) -lm
+TESTS += testuserorthominerrors$(EXEEXT)
+
+test_PROGRAMS += testusertfqmrcallback
+testusertfqmrcallback_SOURCES = testusertfqmrcallback.c
+testusertfqmrcallback_LDADD = $(LDADD) -lm
+TESTS += testusertfqmrcallback$(EXEEXT)

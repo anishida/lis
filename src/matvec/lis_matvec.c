@@ -345,11 +345,11 @@ LIS_INT lis_matvec(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 		case LIS_MATRIX_USER:
 			if( A->user_matvec!=NULL )
 			{
-				err = A->user_matvec(A->user_data,x,y);
+				LIS_CALLBACK_INVOKE(err,A->user_matvec(A->user_data,x,y));
 			}
 			else if( A->user_get_row!=NULL )
 			{
-				err = lis_matvec_user_rows(A,x,y);
+				err = lis_callback_record(lis_matvec_user_rows(A,x,y));
 			}
 			else
 			{
@@ -599,11 +599,11 @@ LIS_INT lis_matvech(LIS_MATRIX A, LIS_VECTOR X, LIS_VECTOR Y)
 		case LIS_MATRIX_USER:
 			if( A->user_matvech!=NULL )
 			{
-				err = A->user_matvech(A->user_data,x,y);
+				LIS_CALLBACK_INVOKE(err,A->user_matvech(A->user_data,x,y));
 			}
 			else if( A->user_get_row!=NULL )
 			{
-				err = lis_matvech_user_rows(A,x,y);
+				err = lis_callback_record(lis_matvech_user_rows(A,x,y));
 			}
 			else
 			{
@@ -734,11 +734,7 @@ LIS_INT lis_matvec_block(
 
         if( use_user_block )
         {
-                err = A->user_matvec_block(
-                        A->user_data,
-                        nvec,
-                        X,
-                        Y);
+                LIS_CALLBACK_INVOKE(err,A->user_matvec_block(A->user_data,nvec,X,Y));
 
                 if( err ) return err;
 
@@ -832,11 +828,7 @@ LIS_INT lis_matvech_block(
 
         if( use_user_block )
         {
-                err = A->user_matvech_block(
-                        A->user_data,
-                        nvec,
-                        X,
-                        Y);
+                LIS_CALLBACK_INVOKE(err,A->user_matvech_block(A->user_data,nvec,X,Y));
 
                 if( err ) return err;
 

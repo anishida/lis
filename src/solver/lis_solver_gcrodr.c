@@ -1349,7 +1349,7 @@ LIS_INT lis_gcrodr(LIS_SOLVER solver)
     noimp_count = 0;
     ptime = 0.0;
     iter = 0;
-    nrm2 = LIS_SCALAR_MAX;
+    nrm2 = NAN;
 
     s = solver->work[0];
     wtmp = solver->work[1];
@@ -1365,8 +1365,9 @@ LIS_INT lis_gcrodr(LIS_SOLVER solver)
                                      "lis_gcrodr::bcoef");
     if( h==NULL || hraw==NULL || bcoef==NULL )
     {
-        lis_free(h); lis_free(hraw); lis_free(bcoef);
-        return LIS_ERR_OUT_OF_MEMORY;
+        LIS_SETERR_MEM(sizeof(LIS_SCALAR));
+        err = LIS_ERR_OUT_OF_MEMORY;
+        goto fail;
     }
     cs = (m+1)*hld;
     sn = (m+2)*hld;
@@ -1387,10 +1388,19 @@ LIS_INT lis_gcrodr(LIS_SOLVER solver)
     /* Initial true residual in v[0]; bnrm is LIS' fixed residual scaling. */
     if( lis_solver_get_initial_residual(solver,NULL,NULL,v[0],&bnrm) )
     {
-        err = LIS_SUCCESS;
+        err = solver->retcode;
+        if(err!=LIS_SUCCESS) goto fail;
         goto done;
     }
     tol = solver->tol;
+    if(solver->options[LIS_OPTIONS_CONV_COND]==LIS_CONV_COND_NRM2_R &&
+        isfinite(bnrm) && bnrm>0.0)
+        nrm2 = 1.0;
+    else
+    {
+        lis_vector_nrm2(v[0],&rnorm);
+        nrm2 = rnorm*bnrm;
+    }
 
     if( solver->recycle_valid && solver->recycle_dim>0 )
     {
@@ -1713,6 +1723,7 @@ LIS_INT lis_gcrodr(LIS_SOLVER solver)
         /* GCRO correction in physical x-space:
          *   delta x = M^-1(V y - U B y) = Z y - ZU(B y).
          */
+        nrm2 = NAN; /* No certified residual for the updated iterate yet. */
         for(j=0;j<jdim;j++) lis_vector_axpy(s->value[j],z[j],x);
         for(i=0;i<kcur;i++)
         {
@@ -1780,6 +1791,8 @@ LIS_INT lis_gcrodr(LIS_SOLVER solver)
     goto done;
 
 fail:
+    /* A partially updated recycle relation is not safe to reuse. */
+    lis_gcrodr_clear_recycle(solver);
     solver->retcode = err;
     solver->iter = iter;
     solver->resid = nrm2;
