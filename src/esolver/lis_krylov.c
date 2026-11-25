@@ -1595,6 +1595,16 @@ int lis_krylov_count_interval(int n, void *ctx,
     return LIS_KRYLOV_SUCCESS;
 }
 
+/* Keep the established midpoint rounding for ordinary intervals.  Avoid
+ * overflowing the subtraction for wide, opposite-sign finite endpoints. */
+static double krylov_interval_midpoint(double lower, double upper)
+{
+    if (lower < 0.0 && upper > 0.0 &&
+        (lower < -DBL_MAX / 2.0 || upper > DBL_MAX / 2.0))
+        return 0.5 * lower + 0.5 * upper;
+    return lower + 0.5 * (upper - lower);
+}
+
 /* An independently counted symmetric window with a midpoint shift.
  * For SPD B, transformed eigenvalues inside the symmetric open interval
  * outrank those outside by magnitude. All requested pairs must converge
@@ -1618,7 +1628,7 @@ int lis_krylov_solve_interval(const lis_krylov_problem *p,
         options->allow_semidefinite_metric ||
         !isfinite(lower) || !isfinite(upper) || !(lower < upper))
         return LIS_KRYLOV_BAD_ARGUMENT;
-    center = lower + 0.5 * (upper - lower);
+    center = krylov_interval_midpoint(lower, upper);
     if (!isfinite(center) || p->sigma != center)
         return LIS_KRYLOV_BAD_ARGUMENT;
     rc = lis_krylov_count_interval(p->n, p->ctx, inertia,
@@ -1689,7 +1699,7 @@ int lis_krylov_solve_interval64(const lis_krylov_problem64 *p,
         options->allow_semidefinite_metric ||
         !isfinite(lower) || !isfinite(upper) || !(lower < upper))
         return LIS_KRYLOV_BAD_ARGUMENT;
-    center = lower + 0.5 * (upper - lower);
+    center = krylov_interval_midpoint(lower, upper);
     if (!isfinite(center) || p->sigma != center)
         return LIS_KRYLOV_BAD_ARGUMENT;
     rc = lis_krylov_count_interval64(p->n, p->ctx, inertia,

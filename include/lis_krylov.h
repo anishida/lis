@@ -112,7 +112,10 @@ int lis_krylov_count_interval(int n, void *ctx,
 /* Enumerate a symmetric open interval with a user-prepared midpoint shift.
  * Requires a symmetric generalized pencil with SPD B, an inertia callback
  * at the nonsingular interval boundaries, and p->sigma equal to
- * lower+0.5*(upper-lower). The caller supplies a nonsingular shifted solve
+ * lower+0.5*(upper-lower), except for opposite-sign endpoints with either
+ * magnitude greater than DBL_MAX/2, where the midpoint is
+ * 0.5*lower+0.5*upper. Both index-width interfaces use this rule.
+ * The caller supplies a nonsingular shifted solve
  * at that sigma. options->nev is the output capacity; ncv must exceed the
  * inertia count. LM shift-invert mode is used regardless of options->which.
  * SUCCESS certifies that the number of converged, in-window pairs equals

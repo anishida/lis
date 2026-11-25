@@ -5,6 +5,7 @@
 #include "lis_krylov.h"
 #include <stdint.h>
 #include <limits.h>
+#include <float.h>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -58,6 +59,24 @@ static int diagonal_inertia64(void *ctx,int64_t n,double shift,
         if(d<0)++*negative;
         else if(d==0)++*zero;
     }
+    return 0;
+}
+
+/* Synthetic SPD identity metric and eigenvalues at DBL_MAX:
+ * neither boundary of the wide test interval encloses an eigenvalue. */
+static int wide_empty_inertia(void *ctx,int n,double shift,int *negative,int *zero)
+{
+    (void)ctx;
+    *negative=shift>DBL_MAX?n:0;
+    *zero=shift==DBL_MAX?n:0;
+    return 0;
+}
+static int wide_empty_inertia64(void *ctx,int64_t n,double shift,
+                                int64_t *negative,int64_t *zero)
+{
+    (void)ctx;
+    *negative=shift>DBL_MAX?n:0;
+    *zero=shift==DBL_MAX?n:0;
     return 0;
 }
 
@@ -237,6 +256,34 @@ int main(void)
                used.apply_a!=1 || !used.solve || stats.nreturned)return 1;
         }
         puts("PASS 64-bit vector API parity, shift-invert and overflow rejection");
+    }
+
+    /* Finite endpoints whose difference overflows double.  No vector
+     * callbacks should be needed when the inertia count is zero. */
+    {
+        lis_krylov_problem wide={0};
+        lis_krylov_problem64 wide64={0};
+        lis_krylov_options opt;
+        int count=-1;
+        int64_t count64=-1;
+        lis_krylov_options_default(&opt);
+        wide.n=8;wide64.n=8;
+        wide.transform=wide64.transform=LIS_KRYLOV_SHIFT_INVERT_B;
+        wide.sigma=wide64.sigma=-DBL_MAX/4.0;
+        rc=lis_krylov_solve_interval(&wide,&opt,wide_empty_inertia,
+                   -DBL_MAX,DBL_MAX/2.0,values,vectors,residuals,&stats,&count);
+        if(rc || count!=0 || stats.nreturned)return 1;
+        rc=lis_krylov_solve_interval64(&wide64,&opt,wide_empty_inertia64,
+                   -DBL_MAX,DBL_MAX/2.0,values,vectors,residuals,&stats,&count64);
+        if(rc || count64!=0 || stats.nreturned)return 1;
+        wide.sigma=wide64.sigma=0;
+        rc=lis_krylov_solve_interval(&wide,&opt,wide_empty_inertia,
+                   -DBL_MAX,DBL_MAX/2.0,values,vectors,residuals,&stats,&count);
+        if(rc!=LIS_KRYLOV_BAD_ARGUMENT)return 1;
+        rc=lis_krylov_solve_interval64(&wide64,&opt,wide_empty_inertia64,
+                   -DBL_MAX,DBL_MAX/2.0,values,vectors,residuals,&stats,&count64);
+        if(rc!=LIS_KRYLOV_BAD_ARGUMENT)return 1;
+        puts("PASS wide finite interval midpoint, both index widths");
     }
 
     /* On ILP32, n * ncv = 2^34 and n * (ncv/2) = 2^33.
