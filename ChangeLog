@@ -1,3 +1,16 @@
+Version 2.1.25 (November 25, 2026)
+
+  - Added an experimental opt-in MFAMG + native ILUTP composite preconditioner (-p mfamg_ilutp) with multiplicative residual correction and optional OpenMP ILUTP-RAS domain parallelism (thanks to Rafal Brzegowy).
+  - Added experimental Contact-Aware MFAMG (CA-MFAMG) integration with partition-aware aggregation, generic static condensation, and transactional Schur complement updates (thanks to Rafal Brzegowy).
+  - Added configurable terminal smoothing pass counts (LIS_MFAMG_SPARSE_TERMINAL_PASSES) for stalled MFAMG hierarchies (thanks to Rafal Brzegowy).
+  - Optimized limited-fill ILUTP factorization setup using a bounded top-k heap and clarified zero-based local factorization row diagnostics (thanks to Rafal Brzegowy).
+  - Optimized single-worker non-split CSR transposed matrix-vector multiplication by bypassing unnecessary OpenMP scratch allocation (thanks to Rafal Brzegowy).
+  - Fixed BSR 3x3 block scaling, symmetric diagonal scaling, Frobenius norm indexing, and OpenMP data races in transposed BSR SpMV (thanks to Rafal Brzegowy).
+  - Added an experimental ABI-neutral batched row callback API (lis_matrix_set_user_rows_batch) and enabled direct AUTO selection for serial row-only LIS_MATRIX_USER matrices (thanks to Rafal Brzegowy).
+  - Improved LIS_MATRIX_USER safety by validating row-count bounds during CSR conversion and supporting duplication of matrices without ghost maps or MPI commtables (thanks to Rafal Brzegowy).
+  - Propagated LIS_MATRIX_USER and preconditioner callback errors immediately across initial residual evaluation and Krylov solvers (CG, MINRES, BiCG, BiCR, BiCGSTAB, CGS, BiCGSafe, BiCRSafe, GCRO-DR) (thanks to Rafal Brzegowy).
+  - Fixed memory leaks and allocation error handling in matrix assembly and initialization, synchronized Automake FILECMD templates, and streamlined GitHub Actions PR checks (thanks to Rafal Brzegowy).
+
 Version 2.1.24 (November 17, 2026)
 
   - Added OpenMP parallelization for MFAMG setup, Jacobi smoothing, and V-cycle prolongation, along with optional FP16 storage and Hybrid policy propagation (thanks to Rafal Brzegowy).
