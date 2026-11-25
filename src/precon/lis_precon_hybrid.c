@@ -273,6 +273,16 @@ LIS_INT lis_precon_create_hybrid(LIS_SOLVER solver, LIS_PRECON precon)
 		if( err ) goto fail;
 	}
 
+	if(psolver->options[LIS_OPTIONS_PRECON]==LIS_PRECON_TYPE_MFAMG &&
+	   solver->amg_coarse_basis_dim>0)
+	{
+		err=lis_solver_set_amg_coarse_basis(psolver,
+			solver->amg_coarse_basis_dim,solver->amg_coarse_basis);
+		if(err) goto fail;
+		/* The setter resets borrowed solve references. */
+		psolver->A=solver->A;
+	}
+
 	nsolver = psolver->options[LIS_OPTIONS_SOLVER];
 	maxiter = psolver->options[LIS_OPTIONS_MAXITER];
 	precision = psolver->options[LIS_OPTIONS_PRECISION];

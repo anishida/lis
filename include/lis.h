@@ -1161,6 +1161,14 @@ struct LIS_SOLVER_STRUCT
 	LIS_INT *mfamg_contact_partition;
 	LIS_INT mfamg_contact_partition_n;
 	LIS_INT sequence_precon_mfamg_contact_aware;
+	/* Independent interpolation modes, appended to preserve existing offsets. */
+	LIS_VECTOR *amg_coarse_basis;
+	LIS_INT amg_coarse_basis_dim;
+	/* Configuration snapshot of the hierarchy construction controls. */
+	LIS_INT sequence_precon_mfamg_block_size;
+	LIS_INT sequence_precon_mfamg_fine_agg_factor;
+	LIS_INT sequence_precon_mfamg_vcycle_smooth_steps;
+	LIS_INT sequence_precon_mfamg_deep_sibling_merge;
 };
 typedef struct LIS_SOLVER_STRUCT *LIS_SOLVER;
 
@@ -1631,6 +1639,22 @@ extern LIS_INT lis_vector_export_real64_tolerant(
 	extern LIS_INT lis_solver_set_mfamg_contact_partition(LIS_SOLVER solver,
 		LIS_INT nlocal, const LIS_INT *partition);
 	extern LIS_INT lis_solver_clear_near_nullspace(LIS_SOLVER solver);
+	/* Optional MFAMG interpolation basis. Copies caller vectors independently
+	 * of mathematical near-nullspace. With no explicit basis, MFAMG retains
+	 * its historical near-nullspace fallback. An explicit basis is not
+	 * deflation. Changes reset reusable sequence state; identical serial
+	 * default-precision vectors are a no-op. Retire caller-owned
+	 * preconditioners before changing the basis. nvec=0 clears it. */
+	extern LIS_INT lis_solver_set_amg_coarse_basis(LIS_SOLVER solver,
+		LIS_INT nvec, LIS_VECTOR vectors[]);
+	extern LIS_INT lis_solver_clear_amg_coarse_basis(LIS_SOLVER solver);
+	/* Dimension of the explicit basis, not the legacy fallback. */
+	extern LIS_INT lis_solver_get_amg_coarse_basis_dim(LIS_SOLVER solver,
+		LIS_INT *dim);
+	/* Copy one explicit mode to an already allocated compatible vector.
+	 * Zero-based index. Never exposes borrowed solver-owned storage. */
+	extern LIS_INT lis_solver_copy_amg_coarse_basis_vector(LIS_SOLVER solver,
+		LIS_INT index,LIS_VECTOR out);
 	extern LIS_INT lis_solver_set_gcrodr_recycle(
 		LIS_SOLVER solver, LIS_INT dim,
 		LIS_REAL keep_quality, LIS_REAL reject_quality);

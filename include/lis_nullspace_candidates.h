@@ -102,6 +102,33 @@ LIS_INT lis_solver_classify_component_nullspace_candidates(
     LIS_INT flags,
     LIS_COMPONENT_NULLSPACE_DIAGNOSTICS *diagnostics);
 
+/* Generic interpolation-mode preparation, independent of A*q defects. */
+typedef struct LIS_AMG_BASIS_DIAGNOSTICS_STRUCT
+{
+    LIS_INT input_count;
+    LIS_INT group_count;
+    LIS_INT accepted_count;
+    LIS_INT zero_count;
+    LIS_INT dependent_count;
+} LIS_AMG_BASIS_DIAGNOSTICS;
+
+/* Normalize and remove dependent candidates by two-pass modified
+ * Gram-Schmidt. Groups are processed in first-occurrence order; rank is
+ * global, so overlapping groups cannot install duplicate directions.
+ * Disjoint supports remain disjoint. No matrix-vector products or
+ * exact/near classification are performed. The matrix supplies layout only.
+ * Serial default-precision vectors are currently supported.
+ * 0 < relative_tolerance < 1 is required. Input vectors are not modified.
+ * A nonempty accepted basis is installed transactionally through
+ * lis_solver_set_amg_coarse_basis. If all candidates are zero/dependent,
+ * return LIS_BREAKDOWN without changing the prior basis. Diagnostics are
+ * published on success or this all-rejected result, otherwise unchanged.
+ * Retire caller-owned preconditioners before calling. */
+LIS_INT lis_solver_prepare_amg_coarse_basis(
+    LIS_MATRIX A,LIS_SOLVER solver,LIS_INT nvec,LIS_VECTOR candidates[],
+    const LIS_INT groups[],LIS_REAL relative_tolerance,
+    LIS_AMG_BASIS_DIAGNOSTICS *diagnostics);
+
 /* Return the dimension of the exact right-nullspace currently bound. */
 LIS_INT lis_solver_get_nullspace_dim(
     LIS_SOLVER solver,

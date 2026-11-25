@@ -307,6 +307,8 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	    LIS_RHS_POLICY_ASSUME_COMPATIBLE;
 	solver->rhs_compatibility_tol = (LIS_REAL)1.0e-12;
 	solver->near_nullspace_dim = 0;
+	solver->amg_coarse_basis = NULL;
+	solver->amg_coarse_basis_dim = 0;
 	solver->mfamg_block_size = 1;
 	solver->mfamg_fine_agg_factor = 0;
 	solver->mfamg_vcycle_smooth_steps = 1;
@@ -315,6 +317,10 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->mfamg_contact_partition = NULL;
 	solver->mfamg_contact_partition_n = 0;
 	solver->sequence_precon_mfamg_contact_aware = 0;
+	solver->sequence_precon_mfamg_block_size = 1;
+	solver->sequence_precon_mfamg_fine_agg_factor = 0;
+	solver->sequence_precon_mfamg_vcycle_smooth_steps = 1;
+	solver->sequence_precon_mfamg_deep_sibling_merge = 0;
 	solver->near_nullspace_coarse = NULL;
 	solver->recycle_u = NULL;
 	solver->recycle_zu = NULL;
@@ -2022,7 +2028,7 @@ lis_solver_project_nullspace(
 #define __FUNC__ "lis_solver_clear_near_nullspace"
 LIS_INT lis_solver_clear_near_nullspace(LIS_SOLVER solver)
 {
-	LIS_INT i;
+	LIS_INT i,err;
 
 	LIS_DEBUG_FUNC_IN;
 
@@ -2035,6 +2041,15 @@ LIS_INT lis_solver_clear_near_nullspace(LIS_SOLVER solver)
 		return LIS_ERR_ILL_ARG;
 	}
 
+	/* A sequence-owned MFAMG hierarchy may still contain interpolation
+	 * derived from the old legacy basis. Retire reusable state before
+	 * releasing a nonempty basis. Empty-to-empty clear is a no-op.
+	 * Do not destroy caller-owned preconditioners. */
+	if(solver->near_nullspace_dim>0 && solver->sequence_precon!=NULL)
+	{
+		err=lis_solver_reset_sequence(solver);
+		if(err) return err;
+	}
 	lis_solver_near_nullspace_coarse_destroy(solver);
 
 	if( solver->near_nullspace )
@@ -2172,7 +2187,13 @@ LIS_INT lis_solver_set_near_nullspace(
 		}
 	}
 
-	err = lis_solver_clear_near_nullspace(solver);
+	/* Adding a previously absent legacy basis also invalidates the
+	 * hierarchy; clear(empty) deliberately does not. */
+	if(solver->near_nullspace_dim==0 && solver->sequence_precon!=NULL)
+		err=lis_solver_reset_sequence(solver);
+	else
+		err=LIS_SUCCESS;
+	if(!err)err=lis_solver_clear_near_nullspace(solver);
 	if( err )
 	{
 		for(i=0;i<nvec;i++)
@@ -2191,6 +2212,123 @@ LIS_INT lis_solver_set_near_nullspace(
 	return LIS_SUCCESS;
 }
 
+
+/* The explicit basis is independent of the near-nullspace coarse state. */
+static void lis_solver_free_amg_basis(LIS_VECTOR *basis,LIS_INT n)
+{
+    LIS_INT i;
+    if(basis==NULL) return;
+    for(i=0;i<n;i++)
+        if(basis[i]) lis_vector_destroy(basis[i]);
+    lis_free(basis);
+}
+
+LIS_INT lis_solver_amg_basis_dim(LIS_SOLVER solver)
+{
+    return solver->amg_coarse_basis_dim>0 ?
+        solver->amg_coarse_basis_dim : solver->near_nullspace_dim;
+}
+
+LIS_VECTOR *lis_solver_amg_basis_vectors(LIS_SOLVER solver)
+{
+    return solver->amg_coarse_basis_dim>0 ?
+        solver->amg_coarse_basis : solver->near_nullspace;
+}
+
+LIS_INT lis_solver_get_amg_coarse_basis_dim(LIS_SOLVER solver,LIS_INT *dim)
+{
+    if(solver==NULL || dim==NULL) return LIS_ERR_ILL_ARG;
+    *dim=solver->amg_coarse_basis_dim;
+    return LIS_SUCCESS;
+}
+
+LIS_INT lis_solver_copy_amg_coarse_basis_vector(
+    LIS_SOLVER solver,LIS_INT index,LIS_VECTOR out)
+{
+    LIS_VECTOR src;
+    if(!solver || index<0 || index>=solver->amg_coarse_basis_dim ||
+       !solver->amg_coarse_basis || !out)
+        return LIS_ERR_ILL_ARG;
+    src=solver->amg_coarse_basis[index];
+    if(!lis_solver_vector_compatible(src,out) || !src->value || !out->value)
+        return LIS_ERR_ILL_ARG;
+    return lis_vector_copy(src,out);
+}
+
+/* Exact representation equality is intentional: no tolerance-based
+ * numerical decision may retain a changed hierarchy. Distributed modes
+ * conservatively take the normal setter path on every rank. */
+static LIS_INT lis_solver_amg_basis_unchanged(
+    LIS_SOLVER solver,LIS_INT nvec,LIS_VECTOR vectors[])
+{
+    LIS_INT i;
+    size_t bytes;
+    if(solver->amg_coarse_basis_dim!=nvec || !solver->amg_coarse_basis ||
+       vectors[0]->nprocs!=1 || vectors[0]->precision!=LIS_PRECISION_DEFAULT ||
+       vectors[0]->n<=0 ||
+       (uintmax_t)vectors[0]->n>SIZE_MAX/sizeof(LIS_SCALAR))
+        return LIS_FALSE;
+    bytes=(size_t)vectors[0]->n*sizeof(LIS_SCALAR);
+    for(i=0;i<nvec;i++)
+        if(!lis_solver_vector_compatible(solver->amg_coarse_basis[i],vectors[i]) ||
+           !solver->amg_coarse_basis[i]->value || !vectors[i]->value ||
+           memcmp(solver->amg_coarse_basis[i]->value,vectors[i]->value,bytes))
+            return LIS_FALSE;
+    return LIS_TRUE;
+}
+
+LIS_INT lis_solver_clear_amg_coarse_basis(LIS_SOLVER solver)
+{
+    LIS_INT err;
+    if(solver==NULL) return LIS_ERR_ILL_ARG;
+    if(solver->amg_coarse_basis==NULL) return LIS_SUCCESS;
+    err=lis_solver_reset_sequence(solver);
+    if(err) return err;
+    lis_solver_free_amg_basis(solver->amg_coarse_basis,solver->amg_coarse_basis_dim);
+    solver->amg_coarse_basis=NULL;
+    solver->amg_coarse_basis_dim=0;
+    return LIS_SUCCESS;
+}
+
+LIS_INT lis_solver_set_amg_coarse_basis(
+    LIS_SOLVER solver,LIS_INT nvec,LIS_VECTOR vectors[])
+{
+    LIS_VECTOR *owned;
+    LIS_INT i,err;
+    size_t bytes;
+    if(solver==NULL || nvec<0 || (nvec>0 && vectors==NULL))
+        return LIS_ERR_ILL_ARG;
+    if(nvec==0) return lis_solver_clear_amg_coarse_basis(solver);
+    if((size_t)nvec>((size_t)-1)/sizeof(*owned))
+        return LIS_OUT_OF_MEMORY;
+    for(i=0;i<nvec;i++)
+        if(vectors[i]==NULL || vectors[i]->label!=LIS_LABEL_VECTOR ||
+           !lis_solver_vector_compatible(vectors[0],vectors[i]))
+            return LIS_ERR_ILL_ARG;
+    if(nvec>vectors[0]->gn) return LIS_ERR_ILL_ARG;
+    if(lis_solver_amg_basis_unchanged(solver,nvec,vectors)) return LIS_SUCCESS;
+    bytes=(size_t)nvec*sizeof(*owned);
+    owned=(LIS_VECTOR *)lis_malloc(bytes,"lis_solver_set_amg_coarse_basis::owned");
+    if(owned==NULL) return LIS_OUT_OF_MEMORY;
+    memset(owned,0,bytes);
+    for(i=0;i<nvec;i++)
+    {
+        err=lis_vector_duplicate(vectors[i],&owned[i]);
+        if(err) goto fail;
+        err=lis_vector_copy(vectors[i],owned[i]);
+        if(err) goto fail;
+    }
+    /* Stage all allocations before invalidating retained hierarchy state. */
+    err=lis_solver_reset_sequence(solver);
+    if(err) goto fail;
+    lis_solver_free_amg_basis(solver->amg_coarse_basis,solver->amg_coarse_basis_dim);
+    solver->amg_coarse_basis=owned;
+    solver->amg_coarse_basis_dim=nvec;
+    return LIS_SUCCESS;
+fail:
+    lis_solver_free_amg_basis(owned,nvec);
+    return err;
+}
 
 /* Store partition labels by value, not by caller reference. Replacing labels
  * invalidates a retained hierarchy even when the matrix is unchanged. */
@@ -2249,6 +2387,7 @@ LIS_INT lis_solver_destroy(LIS_SOLVER solver)
 		lis_solver_clear_nullspace(solver);
 		lis_solver_clear_left_nullspace(solver);
 	lis_solver_clear_near_nullspace(solver);
+		lis_solver_free_amg_basis(solver->amg_coarse_basis,solver->amg_coarse_basis_dim);
 		if(solver->mfamg_contact_partition)
 			lis_free(solver->mfamg_contact_partition);
 		lis_vector_destroy(solver->d);
@@ -2707,7 +2846,11 @@ static LIS_INT lis_solver_sequence_precon_config_matches(
 		return LIS_FALSE;
 
 	if(solver->sequence_precon_mfamg_contact_aware!=
-	   solver->mfamg_contact_aware)
+	   solver->mfamg_contact_aware ||
+	   solver->sequence_precon_mfamg_block_size!=solver->mfamg_block_size ||
+	   solver->sequence_precon_mfamg_fine_agg_factor!=solver->mfamg_fine_agg_factor ||
+	   solver->sequence_precon_mfamg_vcycle_smooth_steps!=solver->mfamg_vcycle_smooth_steps ||
+	   solver->sequence_precon_mfamg_deep_sibling_merge!=solver->mfamg_deep_sibling_merge)
 		return LIS_FALSE;
 
 	if( solver->sequence_precon_half_mode!=
@@ -2734,6 +2877,10 @@ static void lis_solver_sequence_precon_snapshot(
 
 	solver->sequence_precon_mfamg_contact_aware =
 		solver->mfamg_contact_aware;
+	solver->sequence_precon_mfamg_block_size=solver->mfamg_block_size;
+	solver->sequence_precon_mfamg_fine_agg_factor=solver->mfamg_fine_agg_factor;
+	solver->sequence_precon_mfamg_vcycle_smooth_steps=solver->mfamg_vcycle_smooth_steps;
+	solver->sequence_precon_mfamg_deep_sibling_merge=solver->mfamg_deep_sibling_merge;
 	solver->sequence_precon_half_mode =
 		solver->precon_half_mode;
 	solver->sequence_precon_ilut_rcm = solver->ilut_rcm;

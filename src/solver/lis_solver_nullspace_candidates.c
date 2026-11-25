@@ -693,3 +693,98 @@ cleanup:
 
     return err;
 }
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_prepare_amg_coarse_basis"
+LIS_INT lis_solver_prepare_amg_coarse_basis(
+    LIS_MATRIX A,LIS_SOLVER solver,LIS_INT nvec,LIS_VECTOR candidates[],
+    const LIS_INT groups[],LIS_REAL relative_tolerance,
+    LIS_AMG_BASIS_DIAGNOSTICS *diagnostics)
+{
+    LIS_AMG_BASIS_DIAGNOSTICS d;
+    LIS_VECTOR *basis=NULL,v=NULL;
+    LIS_INT i,j,group,capacity,err=LIS_SUCCESS;
+    LIS_REAL norm0,norm,invnorm;
+
+    if(A==NULL || solver==NULL || nvec<=0 || candidates==NULL ||
+       A->gn<=0 || !isfinite((double)relative_tolerance) ||
+       relative_tolerance<=0.0 || relative_tolerance>=1.0)
+        return LIS_ERR_ILL_ARG;
+    if(A->nprocs!=1 || A->n!=A->gn)
+        return LIS_ERR_NOT_IMPLEMENTED;
+    for(i=0;i<nvec;i++)
+        if(!lis_solver_candidate_vector_compatible(A,candidates[i]) ||
+           candidates[i]->precision!=LIS_PRECISION_DEFAULT ||
+           candidates[i]->value==NULL)
+            return LIS_ERR_ILL_ARG;
+
+    memset(&d,0,sizeof(d));
+    d.input_count=nvec;
+    capacity=nvec<A->gn?nvec:A->gn;
+    if((size_t)capacity>((size_t)-1)/sizeof(*basis))
+        return LIS_OUT_OF_MEMORY;
+    basis=(LIS_VECTOR *)lis_malloc((size_t)capacity*sizeof(*basis),
+                                   "lis_solver_prepare_amg_coarse_basis::basis");
+    if(basis==NULL) return LIS_OUT_OF_MEMORY;
+
+    for(i=0;i<nvec;i++)
+    {
+        if(lis_solver_candidate_group_seen(groups,i))
+            continue;
+        group=groups?groups[i]:0;
+        d.group_count++;
+        for(j=0;j<nvec;j++)
+        {
+            if(groups && groups[j]!=group) continue;
+            if(!groups && i!=0) continue;
+            err=lis_vector_duplicate(A,&v);
+            if(err) goto done;
+            err=lis_vector_copy(candidates[j],v);
+            if(err) goto done;
+            err=lis_solver_candidate_orthogonalize(
+                v,basis,d.accepted_count,&norm0,&norm);
+            if(err) goto done;
+            if(!isfinite((double)norm0) || !isfinite((double)norm))
+            {
+                err=LIS_ERR_ILL_ARG;
+                goto done;
+            }
+            if(norm0<=0.0)
+                d.zero_count++;
+            else if(d.accepted_count==capacity || norm/norm0<=relative_tolerance)
+                d.dependent_count++;
+            else
+            {
+                invnorm=(LIS_REAL)1.0/norm;
+                if(!isfinite((double)invnorm) || invnorm<=0.0)
+                {
+                    err=LIS_BREAKDOWN;
+                    goto done;
+                }
+                err=lis_vector_scale((LIS_SCALAR)invnorm,v);
+                if(err) goto done;
+                basis[d.accepted_count++]=v;
+                v=NULL;
+            }
+            if(v)
+            {
+                lis_vector_destroy(v);
+                v=NULL;
+            }
+        }
+    }
+
+    if(d.accepted_count==0)
+    {
+        if(diagnostics) *diagnostics=d;
+        err=LIS_BREAKDOWN;
+        goto done;
+    }
+    err=lis_solver_set_amg_coarse_basis(solver,d.accepted_count,basis);
+    if(!err && diagnostics) *diagnostics=d;
+done:
+    if(v) lis_vector_destroy(v);
+    lis_solver_candidate_destroy_array(basis,d.accepted_count);
+    return err;
+}

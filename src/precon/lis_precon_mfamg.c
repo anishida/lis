@@ -13829,17 +13829,17 @@ lis_precon_create_mfamg(
 
 
     mode_count =
-        solver->near_nullspace_dim;
+        lis_solver_amg_basis_dim(solver);
 
 
     if(
         mode_count<=0
         ||
-        solver->near_nullspace==NULL)
+        lis_solver_amg_basis_vectors(solver)==NULL)
     {
         LIS_SETERR(
             LIS_ERR_ILL_ARG,
-            "MFAMG requires at least one near-nullspace vector\n");
+            "MFAMG requires at least one interpolation basis vector\n");
 
         return LIS_ERR_ILL_ARG;
     }
@@ -13879,15 +13879,15 @@ lis_precon_create_mfamg(
     for(i=0;i<mode_count;i++)
     {
         if(
-            solver->near_nullspace[i]==NULL
+            lis_solver_amg_basis_vectors(solver)[i]==NULL
             ||
-            solver->near_nullspace[i]->n!=A->n
+            lis_solver_amg_basis_vectors(solver)[i]->n!=A->n
             ||
-            solver->near_nullspace[i]->gn!=A->gn
+            lis_solver_amg_basis_vectors(solver)[i]->gn!=A->gn
             ||
-            solver->near_nullspace[i]->is!=A->is
+            lis_solver_amg_basis_vectors(solver)[i]->is!=A->is
             ||
-            solver->near_nullspace[i]->ie!=A->ie)
+            lis_solver_amg_basis_vectors(solver)[i]->ie!=A->ie)
         {
             LIS_SETERR(
                 LIS_ERR_ILL_ARG,
@@ -14329,7 +14329,7 @@ lis_precon_create_mfamg(
     {
         err =
             lis_mfamg_build_prolongation(
-                solver->near_nullspace[0],
+                lis_solver_amg_basis_vectors(solver)[0],
                 level);
     }
     else
@@ -14340,7 +14340,7 @@ lis_precon_create_mfamg(
         err =
             lis_mfamg_install_multivector_transfer(
                 mode_count,
-                solver->near_nullspace,
+                lis_solver_amg_basis_vectors(solver),
                 level,
                 0,
                 &coarse_basis,
@@ -14554,7 +14554,7 @@ lis_precon_create_mfamg(
         err =
             lis_mfamg_extend_hierarchy(
                 state,
-                solver->near_nullspace[0],
+                lis_solver_amg_basis_vectors(solver)[0],
                 terminal_limit);
     }
     else
@@ -15036,11 +15036,11 @@ lis_mfamg_refresh_serial_scalar_numeric(
         ||
         solver->A==NULL
         ||
-        solver->near_nullspace_dim!=1
+        lis_solver_amg_basis_dim(solver)!=1
         ||
-        solver->near_nullspace==NULL
+        lis_solver_amg_basis_vectors(solver)==NULL
         ||
-        solver->near_nullspace[0]==NULL
+        lis_solver_amg_basis_vectors(solver)[0]==NULL
         ||
         state==NULL
         ||
@@ -15080,7 +15080,7 @@ lis_mfamg_refresh_serial_scalar_numeric(
 
 
     current_z =
-        solver->near_nullspace[0];
+        lis_solver_amg_basis_vectors(solver)[0];
 
     next_z = NULL;
 
@@ -15392,11 +15392,11 @@ lis_precon_psd_update_mfamg(
 
 
     if(
-        solver->near_nullspace_dim==1
+        lis_solver_amg_basis_dim(solver)==1
         &&
-        solver->near_nullspace!=NULL
+        lis_solver_amg_basis_vectors(solver)!=NULL
         &&
-        solver->near_nullspace[0]!=NULL)
+        lis_solver_amg_basis_vectors(solver)[0]!=NULL)
     {
         err =
             lis_mfamg_same_serial_csr_pattern(
