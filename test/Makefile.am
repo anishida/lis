@@ -345,6 +345,9 @@ testoomiluc_SOURCES = testoomiluc.c
 testoomsnapshot_SOURCES = testoomsnapshot.c
 testoomrco_SOURCES = testoomrco.c
 testcsrtransposeoom_SOURCES = testcsrtransposeoom.c
+check_PROGRAMS += testuserrowoom
+TESTS += testuserrowoom$(EXEEXT)
+testuserrowoom_SOURCES = testuserrowoom.c
 if ENABLE_MPI
 check_PROGRAMS += testoommpiscale
 TESTS += testoommpiscale$(EXEEXT)
@@ -431,3 +434,13 @@ testcondense_lis_LDADD = $(LDADD) -lm
 TESTS += testcondense_core$(EXEEXT) testcomposite_core$(EXEEXT) testcondense_lis$(EXEEXT) testcondense_oom$(EXEEXT)
 TESTS += testca_mfamg_ilutp.sh testca_mfamg_profiles.sh testcondense_differential.sh
 EXTRA_DIST += testca_mfamg_ilutp.sh testca_mfamg_profiles.sh testcondense_differential.sh
+
+test_PROGRAMS += testusercomplexadjoint
+testusercomplexadjoint_SOURCES = testusercomplexadjoint.c
+testusercomplexadjoint_LDADD = $(LDADD) -lm
+TESTS += testusercomplexadjoint$(EXEEXT)
+
+test_PROGRAMS += testuserserialcontract
+testuserserialcontract_SOURCES = testuserserialcontract.c
+testuserserialcontract_LDADD = $(LDADD) -lm
+TESTS += testuserserialcontract$(EXEEXT)
