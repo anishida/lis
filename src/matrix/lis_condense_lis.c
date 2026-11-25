@@ -464,6 +464,8 @@ lis_sc_status lis_sc_solver_session_solve(
     if(!s || !s->solver || !s->sc)return LIS_SC_BAD_ARGUMENT;
     r=&s->report;
     memset(r,0,sizeof(*r));s->has_report=LIS_TRUE;
+    r->struct_size=(uint32_t)sizeof(*r);
+    r->version=LIS_SC_SOLVER_REPORT_VERSION;
     r->status=LIS_SC_BAD_ARGUMENT;
     r->full_relative_residual=NAN;
     if(!isfinite(tol) || tol<0 || !sc_solver_vector_compatible(b,s->full) ||
@@ -502,6 +504,12 @@ fail:
 }
 lis_sc_status lis_sc_solver_session_get_report(
     const lis_sc_solver_session *s,lis_sc_solver_report *r){
-    if(!s || !r || !s->has_report)return LIS_SC_BAD_ARGUMENT;
-    *r=s->report;return LIS_SC_OK;
+    return lis_sc_solver_session_get_report_ex(s,r,LIS_SC_SOLVER_REPORT_V1_SIZE);
+}
+lis_sc_status lis_sc_solver_session_get_report_ex(
+    const lis_sc_solver_session *s,lis_sc_solver_report *r,size_t report_size){
+    if(!s || !r || !s->has_report || report_size<LIS_SC_SOLVER_REPORT_V1_SIZE)
+        return LIS_SC_BAD_ARGUMENT;
+    memcpy(r,&s->report,report_size<sizeof(*r)?report_size:sizeof(*r));
+    return LIS_SC_OK;
 }

@@ -105,7 +105,7 @@ static int origin(void)
     solver->A=A;
     if(lis_precon_create(solver,&pc)) { pc=NULL; goto done; }
     lis_callback_scope_begin(&scope); active=1;
-    if(!lis_callback_scope_active()) { failed=0; goto done; }
+    if(!lis_callback_scope_active()) { failed=1; goto done; }
     status=lis_esolver_inner_solve_attempt(A,b,x,solver,pc);
     if(status!=LIS_MAXITER || lis_callback_scope_status() ||
        !lis_esolver_inner_solve_can_retry(A,NULL,solver,status))goto done;

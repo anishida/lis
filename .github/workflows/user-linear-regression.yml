@@ -13,8 +13,8 @@ on:
       - 'src/solver/lis_solver_idrs.c'
       - 'src/solver/lis_solver_orthomin.c'
       - 'src/solver/lis_solver_qmr.c'
-      - 'test/testbicgstablinit.c'
       - 'test/testuserbicgstabl.c'
+      - 'test/testbicgstablinit.c'
       - 'test/testusercrcomplex.c'
       - 'test/testusercrserrors.c'
       - 'test/testuserfgcrodrerrors.c'
@@ -30,7 +30,20 @@ on:
       - 'src/precon/lis_precon.c'
       - 'src/vector/**'
       - 'src/system/lis_memory.c'
-      - 'include/**'
+      - 'src/system/lis_error.c'
+      - 'src/matrix/lis_matrix_ops.c'
+      - 'test/testusercgerrors.c'
+      - 'test/testuserminreserrors.c'
+      - 'src/solver/lis_solver_minres.c'
+      - 'include/lis.h'
+      - 'include/lislib.h'
+      - 'include/lis_system.h'
+      - 'include/lis_solver.h'
+      - 'include/lis_matrix.h'
+      - 'include/lis_matvec.h'
+      - 'include/lis_precon.h'
+      - 'include/lis_vector.h'
+      - 'include/lis_precision.h'
       - 'configure.ac'
       - 'Makefile.am'
       - 'src/Makefile.am'
@@ -50,8 +63,8 @@ on:
       - 'src/solver/lis_solver_idrs.c'
       - 'src/solver/lis_solver_orthomin.c'
       - 'src/solver/lis_solver_qmr.c'
-      - 'test/testbicgstablinit.c'
       - 'test/testuserbicgstabl.c'
+      - 'test/testbicgstablinit.c'
       - 'test/testusercrcomplex.c'
       - 'test/testusercrserrors.c'
       - 'test/testuserfgcrodrerrors.c'
@@ -67,7 +80,20 @@ on:
       - 'src/precon/lis_precon.c'
       - 'src/vector/**'
       - 'src/system/lis_memory.c'
-      - 'include/**'
+      - 'src/system/lis_error.c'
+      - 'src/matrix/lis_matrix_ops.c'
+      - 'test/testusercgerrors.c'
+      - 'test/testuserminreserrors.c'
+      - 'src/solver/lis_solver_minres.c'
+      - 'include/lis.h'
+      - 'include/lislib.h'
+      - 'include/lis_system.h'
+      - 'include/lis_solver.h'
+      - 'include/lis_matrix.h'
+      - 'include/lis_matvec.h'
+      - 'include/lis_precon.h'
+      - 'include/lis_vector.h'
+      - 'include/lis_precision.h'
       - 'configure.ac'
       - 'Makefile.am'
       - 'src/Makefile.am'
@@ -114,7 +140,7 @@ jobs:
           ./configure --enable-test --enable-omp --disable-mpi --disable-fortran --disable-f90 --disable-saamg ${index_flags}
           make -C src -j2
           export LD_LIBRARY_PATH="$PWD/src/.libs:${LD_LIBRARY_PATH:-}"
-          tests="testbicgstablinit testuserbicgstabl testusercrcomplex testusercrserrors testuserfgcrodrerrors testusergcrodrerrors testusergmreserrors testusergpbic testuseridrcallback testuserorthominerrors testusertfqmrcallback"
+          tests="testbicgstablinit testusercgerrors testuserminreserrors testuserbicgstabl testusercrcomplex testusercrserrors testuserfgcrodrerrors testusergcrodrerrors testusergmreserrors testusergpbic testuseridrcallback testuserorthominerrors testusertfqmrcallback"
           make -C test $tests
           if [ "${{ matrix.mode }}" = asan-ubsan ]; then
             export ASAN_OPTIONS="detect_leaks=1:halt_on_error=1"
@@ -125,7 +151,7 @@ jobs:
             timeout 120s ./test/$t || rc=$?
             case $rc in
               0) echo "PASS: $t" ;;
-              77) echo "SKIP: $t" ;;
+              77) echo "FAIL: unexpected skip: $t"; failed=1 ;;
               *) echo "FAIL: $t (exit $rc)"; failed=1 ;;
             esac
           done

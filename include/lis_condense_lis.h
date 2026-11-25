@@ -69,7 +69,9 @@ lis_sc_status lis_sc_lis_modes(const lis_sc_lis_session *session,
  * Only unscaled, default-precision, non-transposed CSR solves are supported.
  */
 typedef struct lis_sc_solver_session lis_sc_solver_session;
+#define LIS_SC_SOLVER_REPORT_VERSION 1u
 typedef struct {
+    uint32_t struct_size,version;
     lis_sc_status status;
     LIS_INT solver_called;
     LIS_INT api_return;
@@ -79,6 +81,8 @@ typedef struct {
     LIS_INT solution_committed;
     double full_relative_residual;
 } lis_sc_solver_report;
+#define LIS_SC_SOLVER_REPORT_V1_SIZE \
+    (offsetof(lis_sc_solver_report,full_relative_residual)+sizeof(double))
 lis_sc_status lis_sc_solver_session_create(
     LIS_MATRIX A,LIS_INT nblocks,const LIS_INT *block_ptr,
     const LIS_INT *block_dof,double pivot_tolerance,lis_sc_solver_session **out);
@@ -97,6 +101,10 @@ lis_sc_status lis_sc_solver_session_solve(
 /* Report exists after a solve attempt, and is invalidated on matrix update. */
 lis_sc_status lis_sc_solver_session_get_report(
     const lis_sc_solver_session *session,lis_sc_solver_report *report);
+/* Sized form: v1 minimum; bytes beyond the current report are untouched. */
+lis_sc_status lis_sc_solver_session_get_report_ex(
+    const lis_sc_solver_session *session,lis_sc_solver_report *report,
+    size_t report_size);
 void lis_sc_solver_session_destroy(lis_sc_solver_session *session);
 
 #ifdef __cplusplus

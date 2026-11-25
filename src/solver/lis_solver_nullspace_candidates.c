@@ -697,10 +697,10 @@ cleanup:
 
 #undef __FUNC__
 #define __FUNC__ "lis_solver_prepare_amg_coarse_basis"
-LIS_INT lis_solver_prepare_amg_coarse_basis(
+LIS_INT lis_solver_prepare_amg_coarse_basis_ex(
     LIS_MATRIX A,LIS_SOLVER solver,LIS_INT nvec,LIS_VECTOR candidates[],
     const LIS_INT groups[],LIS_REAL relative_tolerance,
-    LIS_AMG_BASIS_DIAGNOSTICS *diagnostics)
+    LIS_AMG_BASIS_DIAGNOSTICS *diagnostics,size_t diagnostics_size)
 {
     LIS_AMG_BASIS_DIAGNOSTICS d;
     LIS_VECTOR *basis=NULL,v=NULL;
@@ -719,7 +719,11 @@ LIS_INT lis_solver_prepare_amg_coarse_basis(
            candidates[i]->value==NULL)
             return LIS_ERR_ILL_ARG;
 
+    if(diagnostics && diagnostics_size<LIS_AMG_BASIS_DIAGNOSTICS_V1_SIZE)
+        return LIS_ERR_ILL_ARG;
     memset(&d,0,sizeof(d));
+    d.struct_size=(uint32_t)sizeof(d);
+    d.version=LIS_AMG_BASIS_DIAGNOSTICS_VERSION;
     d.input_count=nvec;
     capacity=nvec<A->gn?nvec:A->gn;
     if((size_t)capacity>((size_t)-1)/sizeof(*basis))
@@ -777,14 +781,23 @@ LIS_INT lis_solver_prepare_amg_coarse_basis(
 
     if(d.accepted_count==0)
     {
-        if(diagnostics) *diagnostics=d;
+        if(diagnostics) memcpy(diagnostics,&d,diagnostics_size<sizeof(d)?diagnostics_size:sizeof(d));
         err=LIS_BREAKDOWN;
         goto done;
     }
     err=lis_solver_set_amg_coarse_basis(solver,d.accepted_count,basis);
-    if(!err && diagnostics) *diagnostics=d;
+    if(!err && diagnostics) memcpy(diagnostics,&d,diagnostics_size<sizeof(d)?diagnostics_size:sizeof(d));
 done:
     if(v) lis_vector_destroy(v);
     lis_solver_candidate_destroy_array(basis,d.accepted_count);
     return err;
+}
+
+LIS_INT lis_solver_prepare_amg_coarse_basis(
+    LIS_MATRIX A,LIS_SOLVER solver,LIS_INT nvec,LIS_VECTOR candidates[],
+    const LIS_INT groups[],LIS_REAL relative_tolerance,
+    LIS_AMG_BASIS_DIAGNOSTICS *diagnostics)
+{
+    return lis_solver_prepare_amg_coarse_basis_ex(A,solver,nvec,candidates,
+        groups,relative_tolerance,diagnostics,LIS_AMG_BASIS_DIAGNOSTICS_V1_SIZE);
 }

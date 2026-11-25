@@ -237,8 +237,13 @@ static int check_managed_session(void){
     old_s=lis_sc_lis_matrix(lis_sc_solver_session_get_condensation(session));
     if(lis_sc_solver_session_solve(session,b,x,1e-7)!=LIS_SC_OK ||
        lis_sc_solver_session_get_report(session,&report)!=LIS_SC_OK ||
+       report.version!=LIS_SC_SOLVER_REPORT_VERSION ||
+       report.struct_size!=sizeof(report) ||
        !report.solver_called || !report.solution_committed ||
        !report.full_residual_valid || report.full_relative_residual>1e-7)
+        goto done;
+    if(lis_sc_solver_session_get_report_ex(session,&report,
+           LIS_SC_SOLVER_REPORT_V1_SIZE-1)!=LIS_SC_BAD_ARGUMENT)
         goto done;
     if(lis_sc_solver_session_update(session,a,NB,bp,qd,1e-13,LIS_SC_REUSE_ALL)!=LIS_SC_OK ||
        lis_sc_lis_matrix(lis_sc_solver_session_get_condensation(session))!=old_s ||
