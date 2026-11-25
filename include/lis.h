@@ -1699,6 +1699,35 @@ extern LIS_INT lis_gesolve_matrix_session_get_esolver(
 extern LIS_INT lis_gesolve_matrix_session_solve(
     LIS_GESOLVE_MATRIX_SESSION session,LIS_MATRIX A,LIS_MATRIX B,
     LIS_VECTOR x,LIS_INT *policy_A,LIS_INT *policy_B);
+/* Diagnostics of the most recent session attempt, independent of the
+ * lifetime of the borrowed eigensolver. Numeric values are diagnostic,
+ * not certification of an eigenpair. A failed preflight/retirement can
+ * leave earlier committed results accessible, but results_committed refers
+ * only to this attempt. Explicit successful reset clears the report. */
+#define LIS_GESOLVE_STAGE_VALIDATE  1
+#define LIS_GESOLVE_STAGE_RETIRE    2
+#define LIS_GESOLVE_STAGE_PREPARE_A 3
+#define LIS_GESOLVE_STAGE_PREPARE_B 4
+#define LIS_GESOLVE_STAGE_SOLVE     5
+#define LIS_GESOLVE_STAGE_STORE     6
+#define LIS_GESOLVE_STAGE_COMPLETE 7
+typedef struct LIS_GESOLVE_SESSION_REPORT_STRUCT
+{
+    LIS_INT stage;
+    LIS_INT return_code;
+    LIS_INT solver_called;
+    LIS_INT solver_api_return;
+    LIS_INT solver_status;
+    LIS_INT iterations_available;
+    LIS_INT iterations;
+    LIS_INT residual_available;
+    LIS_REAL residual_norm;
+    LIS_INT computed_nev;
+    LIS_INT results_committed;
+    LIS_INT cleanup_return;
+} LIS_GESOLVE_SESSION_REPORT;
+extern LIS_INT lis_gesolve_matrix_session_get_report(
+    LIS_GESOLVE_MATRIX_SESSION session,LIS_GESOLVE_SESSION_REPORT *report);
 extern LIS_INT lis_gesolve_matrix_session_get_nev(
     LIS_GESOLVE_MATRIX_SESSION session,LIS_INT *computed_nev);
 extern LIS_INT lis_gesolve_matrix_session_get_eigenpair(
