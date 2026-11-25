@@ -5948,6 +5948,7 @@ static int check_mfamg_sequence_configuration(void)
               "-hybrid_p mfamg -hybrid_maxiter 2 -mfamg_block_size 2 "
               "-mfamg_fine_agg_factor 2 -mfamg_vcycle_smooth_steps 2 "
               "-mfamg_deep_sibling_merge 1",s) ||
+           lis_solver_set_amg_coarse_basis(s,1,&z) ||
            lis_solver_set_matrix(A,s))
             goto done;
         err=lis_precon_create(s,&hybrid);
@@ -5957,7 +5958,10 @@ static int check_mfamg_sequence_configuration(void)
              inner->mfamg_block_size!=2 ||
              inner->mfamg_fine_agg_factor!=2 ||
              inner->mfamg_vcycle_smooth_steps!=2 ||
-             inner->mfamg_deep_sibling_merge!=1);
+             inner->mfamg_deep_sibling_merge!=1 ||
+             inner->amg_coarse_basis_dim!=1 ||
+             !inner->amg_coarse_basis ||
+             inner->amg_coarse_basis[0]==s->amg_coarse_basis[0]);
         s->precon=NULL;
         lis_precon_destroy(hybrid);
         if(err) goto done;
