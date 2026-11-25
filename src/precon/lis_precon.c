@@ -263,8 +263,8 @@ lis_precon_user_batch_get(LIS_PRECON_ROW_SOURCE *source,LIS_INT local_row)
         nrows=end-begin;
         source->batch_first=source->batch_last=0;
         memset(source->batch_offset,0,sizeof(source->batch_offset));
-        err=source->batch_callback(A->user_data,begin,end,
-                    source->batch_offset,0,NULL,NULL);
+        LIS_CALLBACK_INVOKE(err,source->batch_callback(A->user_data,begin,end,
+                    source->batch_offset,0,NULL,NULL));
         if(err) return err;
         if(source->batch_offset[0]!=0) return LIS_ERR_ILL_ARG;
         for(i=0;i<nrows;i++)
@@ -305,9 +305,9 @@ lis_precon_user_batch_get(LIS_PRECON_ROW_SOURCE *source,LIS_INT local_row)
         }
         if(needed>0)
         {
-            err=source->batch_callback(A->user_data,begin,end,
+            LIS_CALLBACK_INVOKE(err,source->batch_callback(A->user_data,begin,end,
                     source->batch_offset,source->batch_capacity,
-                    source->batch_index,source->batch_value);
+                    source->batch_index,source->batch_value));
             if(err) return err;
             for(i=0;i<=nrows;i++)
                 if(source->batch_offset[i]!=expected[i])
@@ -952,7 +952,7 @@ LIS_INT lis_precon_create(LIS_SOLVER solver, LIS_PRECON *precon)
 		(*precon)->user_destroy =
 		    precon_register_top[
 		        precon_type-LIS_PRECON_TYPE_USERDEF].pdestroy;
-		err = precon_register_top[precon_type-LIS_PRECON_TYPE_USERDEF].pcreate(solver,*precon);
+		LIS_CALLBACK_INVOKE(err,precon_register_top[precon_type-LIS_PRECON_TYPE_USERDEF].pcreate(solver,*precon));
 	}
 	else if( (precon_type==LIS_PRECON_TYPE_MFAMG ||
           precon_type==LIS_PRECON_TYPE_MFAMG_ILUTP) &&
@@ -1027,9 +1027,8 @@ LIS_INT lis_precon_psd_create(LIS_SOLVER solver, LIS_PRECON *precon)
                         if( precon_register_psd_create[
                                 precon_type-LIS_PRECON_TYPE_USERDEF] )
                         {
-                                err = precon_register_psd_create[
-                                        precon_type-LIS_PRECON_TYPE_USERDEF](
-                                                solver,*precon);
+                                LIS_CALLBACK_INVOKE(err,precon_register_psd_create[
+                                        precon_type-LIS_PRECON_TYPE_USERDEF](solver,*precon));
                         }
                         else
                         {
@@ -1106,9 +1105,8 @@ LIS_INT lis_precon_psd_update(LIS_SOLVER solver, LIS_PRECON precon)
                 else if( precon_register_psd_update[
                              precon_type-LIS_PRECON_TYPE_USERDEF] )
                 {
-                        err = precon_register_psd_update[
-                                precon_type-LIS_PRECON_TYPE_USERDEF](
-                                        solver,precon);
+                        LIS_CALLBACK_INVOKE(err,precon_register_psd_update[
+                                precon_type-LIS_PRECON_TYPE_USERDEF](solver,precon));
                 }
                 else
                 {
@@ -1346,12 +1344,10 @@ LIS_INT lis_psolve_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
         {
                 LIS_INT err;
 
-                err =
-                        lis_solver_near_nullspace_apply(
-                                solver,
-                                b,
-                                x,
-                                psolve);
+                if(precon_type>=LIS_PRECON_TYPE_USERDEF)
+                        LIS_CALLBACK_INVOKE(err,lis_solver_near_nullspace_apply(solver,b,x,psolve));
+                else
+                        err=lis_solver_near_nullspace_apply(solver,b,x,psolve);
 
                 if(err)
                 {
@@ -1362,11 +1358,10 @@ LIS_INT lis_psolve_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
         {
                 LIS_INT err;
 
-                err =
-                        psolve(
-                                solver,
-                                b,
-                                x);
+                if(precon_type>=LIS_PRECON_TYPE_USERDEF)
+                        LIS_CALLBACK_INVOKE(err,psolve(solver,b,x));
+                else
+                        err=psolve(solver,b,x);
 
                 if(err)
                 {
@@ -1453,7 +1448,11 @@ LIS_INT lis_psolveh_dispatch(LIS_SOLVER solver, LIS_VECTOR b, LIS_VECTOR x)
 			           "registered preconditioner has no psolveh callback\n");
 			return LIS_ERR_NOT_IMPLEMENTED;
 		}
-		return psolveh(solver,b,x);
+		{
+                        LIS_INT err;
+                        LIS_CALLBACK_INVOKE(err,psolveh(solver,b,x));
+                        return err;
+                }
 	}
 
 	if( precon_type<0 || precon_type>=LIS_PRECON_TYPE_LEN )

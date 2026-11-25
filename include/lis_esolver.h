@@ -55,6 +55,11 @@ extern LIS_INT lis_esolver_inner_solve_attempt(
         LIS_PRECON precon);
 extern LIS_INT lis_esolver_inner_solve_retryable(
         LIS_INT status);
+extern LIS_INT lis_esolver_inner_solve_can_retry(
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_SOLVER solver,
+        LIS_INT status);
 extern LIS_INT lis_esolver_inner_solve_certify(
         LIS_MATRIX A,
         LIS_VECTOR b,

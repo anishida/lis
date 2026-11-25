@@ -431,3 +431,33 @@ testcondense_lis_LDADD = $(LDADD) -lm
 TESTS += testcondense_core$(EXEEXT) testcomposite_core$(EXEEXT) testcondense_lis$(EXEEXT) testcondense_oom$(EXEEXT)
 TESTS += testca_mfamg_ilutp.sh testca_mfamg_profiles.sh testcondense_differential.sh
 EXTRA_DIST += testca_mfamg_ilutp.sh testca_mfamg_profiles.sh testcondense_differential.sh
+
+test_PROGRAMS += testusereigencgcr
+testusereigencgcr_SOURCES = testusereigencgcr.c
+testusereigencgcr_LDADD = $(LDADD) -lm
+TESTS += testusereigencgcr$(EXEEXT)
+
+test_PROGRAMS += testusereigeninverse
+testusereigeninverse_SOURCES = testusereigeninverse.c
+testusereigeninverse_LDADD = $(LDADD) -lm
+TESTS += testusereigeninverse$(EXEEXT)
+
+test_PROGRAMS += testusereigenpower
+testusereigenpower_SOURCES = testusereigenpower.c
+testusereigenpower_LDADD = $(LDADD) -lm
+TESTS += testusereigenpower$(EXEEXT)
+
+test_PROGRAMS += testusereigenprojection
+testusereigenprojection_SOURCES = testusereigenprojection.c
+testusereigenprojection_LDADD = $(LDADD) -lm
+TESTS += testusereigenprojection$(EXEEXT)
+
+test_PROGRAMS += testusereigenrqiguard
+testusereigenrqiguard_SOURCES = testusereigenrqiguard.c
+testusereigenrqiguard_LDADD = $(LDADD) -lm
+TESTS += testusereigenrqiguard$(EXEEXT)
+
+test_PROGRAMS += testusereigenstatus
+testusereigenstatus_SOURCES = testusereigenstatus.c
+testusereigenstatus_LDADD = $(LDADD) -lm
+TESTS += testusereigenstatus$(EXEEXT)

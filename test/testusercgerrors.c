@@ -119,11 +119,9 @@ static int run(LIS_INT use_quad,LIS_INT matvec_fail_on,LIS_INT pc_fail_on)
             expect_completed=pc_fail_on-1;
         if(err!=LIS_SUCCESS || status!=LIS_ERR_ILL_ARG ||
            completed!=expect_completed ||
-           /* lis_solve_kernel performs one final residual-certification
-            * matvec even on failed iterative solves. Count it separately
-            * from the failed CG callback; it must be the only extra call. */
+           /* No certification callback after a failed solve. */
            (!use_quad && ctx.calls!=
-               (matvec_fail_on?matvec_fail_on:pc_fail_on)+1) ||
+               (matvec_fail_on?matvec_fail_on:pc_fail_on)) ||
            (!use_quad && matvec_fail_on && precon_calls!=matvec_fail_on-1) ||
            (pc_fail_on && precon_calls!=pc_fail_on))
         {

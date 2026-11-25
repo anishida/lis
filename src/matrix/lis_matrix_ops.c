@@ -1327,7 +1327,7 @@ LIS_INT lis_matrix_get_diagonal(LIS_MATRIX A, LIS_VECTOR D)
 	case LIS_MATRIX_USER:
 	        if( A->user_get_diagonal!=NULL )
 	        {
-	                err = A->user_get_diagonal(A->user_data,d);
+	                LIS_CALLBACK_INVOKE(err,A->user_get_diagonal(A->user_data,d));
 	        }
 	        else if( A->user_get_row!=NULL )
 	        {

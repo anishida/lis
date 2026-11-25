@@ -209,8 +209,10 @@ LIS_INT lis_esolver_inner_solve_attempt(
 
         solver->retcode = LIS_SUCCESS;
 
+        if(lis_callback_scope_status()) return lis_callback_scope_status();
         err = lis_solve_kernel(
                 A,b,x,solver,precon);
+        if(lis_callback_scope_status()) err=lis_callback_scope_status();
         if( err )
         {
                 solver->retcode = err;
@@ -241,6 +243,32 @@ LIS_INT lis_esolver_inner_solve_retryable(
                status==LIS_MAXITER;
 }
 
+static LIS_INT lis_esolver_has_user_operand(LIS_MATRIX A);
+
+/* Use the recorded callback origin when supported. Keep the older
+ * fail-closed policy outside a serial scoped solve. */
+LIS_INT lis_esolver_inner_solve_can_retry(
+        LIS_MATRIX A,
+        LIS_MATRIX B,
+        LIS_SOLVER solver,
+        LIS_INT status)
+{
+        LIS_INT pc;
+        if( !lis_esolver_inner_solve_retryable(status) || solver==NULL )
+                return LIS_FALSE;
+        if( lis_callback_scope_active() )
+                return lis_callback_scope_status()==LIS_SUCCESS;
+        if( lis_esolver_has_user_operand(A) ||
+            lis_esolver_has_user_operand(B) )
+                return LIS_FALSE;
+        pc = solver->options[LIS_OPTIONS_PRECON];
+        if( pc>=LIS_PRECON_TYPE_USERDEF ||
+            (pc==LIS_PRECON_TYPE_HYBRID &&
+             solver->options[LIS_OPTIONS_PPRECON]>=LIS_PRECON_TYPE_USERDEF) )
+                return LIS_FALSE;
+        return LIS_TRUE;
+}
+
 #undef __FUNC__
 #define __FUNC__ "lis_esolver_inner_solve_certify"
 LIS_INT lis_esolver_inner_solve_certify(
@@ -264,7 +292,7 @@ LIS_INT lis_esolver_inner_solve_certify(
                 return LIS_SUCCESS;
         }
 
-        if( !lis_esolver_inner_solve_retryable(status) )
+        if( !lis_esolver_inner_solve_can_retry(A,NULL,solver,status) )
         {
                 LIS_DEBUG_FUNC_OUT;
                 return status;
@@ -294,7 +322,7 @@ LIS_INT lis_esolver_inner_solve_certify(
         if( err )
         {
                 LIS_DEBUG_FUNC_OUT;
-                return status;
+                return err;
         }
 
         if( !isfinite((double)residual_norm) ||
@@ -1081,6 +1109,18 @@ LIS_INT lis_esolver_get_subspace_retry(
         return LIS_SUCCESS;
 }
 
+/* USER can return the same numeric status as the eigensolver. Walk
+ * composed operators to retain the ordinary native-matrix retry policy. */
+static LIS_INT
+lis_esolver_has_user_operand(LIS_MATRIX A)
+{
+        if( A==NULL ) return LIS_FALSE;
+        if( A->matrix_type==LIS_MATRIX_USER ) return LIS_TRUE;
+        if( A->matrix_type!=LIS_MATRIX_OPERATOR ) return LIS_FALSE;
+        return lis_esolver_has_user_operand(A->operator_A) ||
+               lis_esolver_has_user_operand(A->operator_B);
+}
+
 static LIS_INT
 lis_esolver_subspace_retry_supported(LIS_INT nesolver)
 {
@@ -1120,11 +1160,11 @@ static LIS_INT lis_gesolve_once(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SC
 {
 	LIS_Comm comm;   
 	LIS_INT	nesolver,niesolver,nigesolver,emaxiter; 
-	LIS_SCALAR *evalue;
-	LIS_VECTOR *evector;
-	LIS_REAL *resid;
-	LIS_REAL *rhistory;
-	LIS_INT	*iter,*iter2;
+	LIS_SCALAR *evalue=NULL;
+	LIS_VECTOR *evector=NULL;
+	LIS_REAL *resid=NULL;
+	LIS_REAL *rhistory=NULL;
+	LIS_INT	*iter=NULL,*iter2=NULL;
 	LIS_INT	err;
 	LIS_INT output;
 	LIS_INT i;
@@ -1132,10 +1172,10 @@ static LIS_INT lis_gesolve_once(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SC
 	double time;
 	LIS_SCALAR oshift,ishift;
 	LIS_INT	estorage,eblock;
-	LIS_MATRIX A0;
+	LIS_MATRIX A0=NULL;
 	LIS_INT eprecision;
 	LIS_INT rval;
-	LIS_VECTOR xx;
+	LIS_VECTOR xx=NULL;
 
 	LIS_DEBUG_FUNC_IN;
 
@@ -1318,6 +1358,15 @@ static LIS_INT lis_gesolve_once(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SC
 		return LIS_ERR_ILL_ARG;
 	}
 
+	/* RQI changes the shift even when the requested initial shift is zero.
+	 * USER operators cannot be shifted in place. */
+	if( A->matrix_type==LIS_MATRIX_USER && nesolver==LIS_ESOLVER_RQI )
+	{
+		LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+		           "Rayleigh quotient iteration requires matrix shifts for LIS_MATRIX_USER\n");
+		return LIS_ERR_NOT_IMPLEMENTED;
+	}
+
 	if( B!=NULL &&
 	    (A->matrix_type==LIS_MATRIX_USER || B->matrix_type==LIS_MATRIX_USER) &&
 	    nesolver==LIS_ESOLVER_GRQI )
@@ -1402,46 +1451,25 @@ static LIS_INT lis_gesolve_once(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SC
 	}
 	/* end parameter check */
 
-	/* create eigenvalue array */
-	if( esolver->evalue ) lis_free(esolver->evalue);
+	/* Stage result storage before retiring the previous result. On OOM,
+	 * no partially allocated array may be published or leaked. */
 	evalue = (LIS_SCALAR *)lis_malloc((ss+2)*sizeof(LIS_SCALAR),"lis_esolve::evalue");
-	if( evalue==NULL )
-	{
-		LIS_SETERR_MEM((ss+2)*sizeof(LIS_SCALAR));
-		esolver->retcode = err;
-		return err;
-	}
+	if( evalue==NULL ) goto result_oom;
+	for(i=0;i<ss+2;i++) evalue[i] = (LIS_SCALAR)NAN;
 	evalue[0] = 1.0;
 	evalue[ss-1] = 1.0;
 
-	/* create residual norm array */
-	if( esolver->resid ) lis_free(esolver->resid);
 	resid = (LIS_REAL *)lis_malloc((ss+2)*sizeof(LIS_REAL),"lis_esolve::resid");
-	if( resid==NULL )
+	if( resid==NULL ) goto result_oom;
+	iter = (LIS_INT *)lis_malloc((ss+2)*sizeof(LIS_INT),"lis_esolve::iter");
+	if( iter==NULL ) goto result_oom;
+	iter2 = (LIS_INT *)lis_malloc((ss+2)*sizeof(LIS_INT),"lis_esolve::iter2");
+	if( iter2==NULL ) goto result_oom;
+	for(i=0;i<ss+2;i++)
 	{
-		LIS_SETERR_MEM((ss+2)*sizeof(LIS_SCALAR));
-		esolver->retcode = err;
-		return err;
-	}
-
-	/* create number of iterations array */
-	if( esolver->iter ) lis_free(esolver->iter);
-	iter = (LIS_INT *)lis_malloc((ss+2)*sizeof(LIS_SCALAR),"lis_esolve::iter");
-	if( iter==NULL )
-	{
-		LIS_SETERR_MEM((ss+2)*sizeof(LIS_SCALAR));
-		esolver->retcode = err;
-		return err;
-	}
-
-	/* create quad precision number of iterations array */
-	if( esolver->iter2 ) lis_free(esolver->iter2);
-	iter2 = (LIS_INT *)lis_malloc((ss+2)*sizeof(LIS_SCALAR),"lis_esolve::iter2");
-	if( iter2==NULL )
-	{
-		LIS_SETERR_MEM((ss+2)*sizeof(LIS_SCALAR));
-		esolver->retcode = err;
-		return err;
+		resid[i] = NAN;
+		iter[i] = 0;
+		iter2[i] = 0;
 	}
 
 	/* create initial vector */
@@ -1457,11 +1485,7 @@ static LIS_INT lis_gesolve_once(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SC
 			err = lis_vector_duplicateex(LIS_PRECISION_QUAD,A,&xx);
 		}
 	#endif
-	if( err )
-	{
-		esolver->retcode = err;
-		return err;
-	}
+	if( err ) goto result_failure;
 	if( esolver->options[LIS_EOPTIONS_INITGUESS_ONES] )
 	{
 	  if( output ) lis_printf(comm,"initial vector x      : all components set to 1\n");
@@ -1495,7 +1519,40 @@ static LIS_INT lis_gesolve_once(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SC
 		#endif
 	}
 
-	/* create eigenvector array */
+	/* Stage eigenvectors and residual history as well. */
+	evector = (LIS_VECTOR *)lis_malloc((ss+2)*sizeof(LIS_VECTOR),"lis_esolve::evector");
+	if( evector==NULL ) goto result_oom;
+	memset(evector,0,(ss+2)*sizeof(LIS_VECTOR));
+	rhistory = (LIS_REAL *)lis_malloc((emaxiter+2)*sizeof(LIS_REAL),"lis_esolve::rhistory");
+	if( rhistory==NULL ) goto result_oom;
+
+	/* convert matrix */
+	if( estorage>0 && A->matrix_type!=estorage )
+	{
+		err = lis_matrix_duplicate(A,&A0);
+		if( err ) goto result_failure;
+		lis_matrix_set_blocksize(A0,eblock,eblock,NULL,NULL);
+		lis_matrix_set_type(A0,estorage);
+		err = lis_matrix_convert(A,A0);
+		if( err ) goto result_failure;
+		lis_matrix_storage_destroy(A);
+		lis_matrix_DLU_destroy(A);
+		lis_matrix_diag_destroy(A->WD);
+		if( A->l2g_map ) lis_free( A->l2g_map );
+		if( A->commtable ) lis_commtable_destroy( A->commtable );
+		if( A->ranges ) lis_free( A->ranges );
+		err = lis_matrix_copy_struct(A0,A);
+		if( err ) goto result_failure;
+		lis_free(A0);
+		A0 = NULL;
+	}
+
+	/* All staged allocations succeeded. Retire the previous result now. */
+	if( esolver->evalue ) lis_free(esolver->evalue);
+	if( esolver->resid ) lis_free(esolver->resid);
+	if( esolver->iter ) lis_free(esolver->iter);
+	if( esolver->iter2 ) lis_free(esolver->iter2);
+	if( esolver->rhistory ) lis_free(esolver->rhistory);
 	if( esolver->evector )
 	{
 	        /*
@@ -1515,47 +1572,6 @@ static LIS_INT lis_gesolve_once(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SC
 	        esolver->evector = NULL;
 	        esolver->evector_owned_count = 0;
 	}
-	evector = (LIS_VECTOR *)lis_malloc((ss+2)*sizeof(LIS_VECTOR),"lis_esolve::evector");
-	if( evector==NULL )
-	{
-		LIS_SETERR_MEM((ss+2)*sizeof(LIS_VECTOR));
-		esolver->retcode = err;
-		return err;
-	}
-
-	    memset(evector,0,(ss+2)*sizeof(LIS_VECTOR));
-
-/* create residual history array */
-	if( esolver->rhistory ) lis_free(esolver->rhistory);
-	rhistory = (LIS_REAL *)lis_malloc((emaxiter+2)*sizeof(LIS_REAL),"lis_esolve::rhistory");
-	if( rhistory==NULL )
-	{
-		LIS_SETERR_MEM((emaxiter+2)*sizeof(LIS_SCALAR));
-		lis_vector_destroy(xx);
-		esolver->retcode = err;
-		return err;
-	}
-
-	/* convert matrix */
-	if( estorage>0 && A->matrix_type!=estorage )
-	{
-		err = lis_matrix_duplicate(A,&A0);
-		if( err ) return err;
-		lis_matrix_set_blocksize(A0,eblock,eblock,NULL,NULL);
-		lis_matrix_set_type(A0,estorage);
-		err = lis_matrix_convert(A,A0);
-		if( err ) return err;
-		lis_matrix_storage_destroy(A);
-		lis_matrix_DLU_destroy(A);
-		lis_matrix_diag_destroy(A->WD);
-		if( A->l2g_map ) lis_free( A->l2g_map );
-		if( A->commtable ) lis_commtable_destroy( A->commtable );
-		if( A->ranges ) lis_free( A->ranges );
-		err = lis_matrix_copy_struct(A0,A);
-		if( err ) return err;
-		lis_free(A0);
-	}
-
 	esolver->A        = A;
 	esolver->B        = B;
 	esolver->evalue   = evalue;
@@ -1668,7 +1684,22 @@ static LIS_INT lis_gesolve_once(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SC
 			err = lis_esolver_execute_switch[nesolver](esolver);
 		}
 	#endif
+	if(lis_callback_scope_status()) err=lis_callback_scope_status();
 	esolver->retcode = err;
+
+	/* A callback failure invalidates all results, even if its code is
+	 * MAXITER or BREAKDOWN. Preserve numerical partial-result conventions. */
+	if( lis_callback_scope_status() ||
+	    (err!=LIS_SUCCESS && err!=LIS_MAXITER && err!=LIS_BREAKDOWN) )
+	{
+		for(i=0;i<ss+2;i++)
+		{
+			esolver->evalue[i] = (LIS_SCALAR)NAN;
+			esolver->resid[i] = NAN;
+			if(i!=0) esolver->iter[i] = 0;
+			esolver->iter2[i] = 0;
+		}
+	}
 
 	*evalue0 = esolver->evalue[0];
 	lis_vector_copy(esolver->x, x);
@@ -1677,7 +1708,14 @@ static LIS_INT lis_gesolve_once(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SC
 
 	if( err )
 	  {
-	    if ( output ) lis_printf(comm,"eigensolver status    : %s(code=%D)\n\n",lis_ereturncode[err],err);
+	    if( output )
+	    {
+	      /* Application callbacks may return errors outside the built-in table. */
+	      const char *name = (err>=LIS_SUCCESS &&
+	          err<(LIS_INT)(sizeof(lis_ereturncode)/sizeof(lis_ereturncode[0])))
+	          ? lis_ereturncode[err] : "LIS_CALLBACK_ERROR";
+	      lis_printf(comm,"eigensolver status    : %s(code=%D)\n\n",name,err);
+	    }
 	  }
 	else
 	  {
@@ -1700,6 +1738,23 @@ static LIS_INT lis_gesolve_once(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SC
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+
+result_oom:
+	LIS_SETERR(LIS_OUT_OF_MEMORY,"eigensolver result allocation failed\n");
+	err = LIS_OUT_OF_MEMORY;
+result_failure:
+	if(A0) lis_matrix_destroy(A0);
+	if(xx) lis_vector_destroy(xx);
+	if(evalue) lis_free(evalue);
+	if(resid) lis_free(resid);
+	if(iter) lis_free(iter);
+	if(iter2) lis_free(iter2);
+	if(evector) lis_free(evector);
+	if(rhistory) lis_free(rhistory);
+	esolver->retcode = err;
+	if(evalue0) *evalue0 = (LIS_SCALAR)NAN;
+	LIS_DEBUG_FUNC_OUT;
+	return err;
 }
 
 #undef __FUNC__
@@ -1713,6 +1768,7 @@ LIS_INT lis_gesolve(
 {
         LIS_INT err,current_ss,next_ss,nesolver,attempt;
         LIS_INT original_ss,result;
+        LIS_CALLBACK_SCOPE callback_scope;
         LIS_REAL grown;
         double total_time;
 #ifdef USE_MPI
@@ -1727,6 +1783,7 @@ LIS_INT lis_gesolve(
                 return LIS_ERR_ILL_ARG;
         }
 
+        lis_callback_scope_begin(&callback_scope);
         original_ss = esolver->options[LIS_EOPTIONS_SUBSPACE];
         result = LIS_SUCCESS;
         total_time = 0.0;
@@ -1792,6 +1849,20 @@ LIS_INT lis_gesolve(
                         break;
                 }
 
+                /* Callback failure paths explicitly invalidate slot zero.
+                 * Do not interpret that invalid result as a request to grow
+                 * the subspace merely because its status is LIS_MAXITER.
+                 * Native matrices retain their previous retry policy. */
+                if( lis_callback_scope_status() ||
+                    (!lis_callback_scope_active() &&
+                     (lis_esolver_has_user_operand(A) ||
+                      lis_esolver_has_user_operand(B)) &&
+                     esolver->resid!=NULL &&
+                     isnan((double)esolver->resid[0])) )
+                {
+                        break;
+                }
+
                 nesolver = esolver->options[LIS_EOPTIONS_ESOLVER];
                 if( !lis_esolver_subspace_retry_supported(nesolver) )
                 {
@@ -1846,6 +1917,7 @@ LIS_INT lis_gesolve(
          */
         esolver->options[LIS_EOPTIONS_SUBSPACE] = original_ss;
         esolver->time = total_time;
+        lis_callback_scope_end(&callback_scope);
 
         LIS_DEBUG_FUNC_OUT;
         return result;

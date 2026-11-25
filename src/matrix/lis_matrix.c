@@ -1768,12 +1768,7 @@ LIS_INT lis_matrix_get_user_row(
                 }
         }
 
-        err = A->user_get_row(
-                A->user_data,
-                local_row,
-                nnz,
-                cols,
-                vals);
+        LIS_CALLBACK_INVOKE(err,A->user_get_row(A->user_data,local_row,nnz,cols,vals));
 
         if( err ) return err;
 

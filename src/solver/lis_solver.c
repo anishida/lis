@@ -5085,12 +5085,12 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	solver->p_i_time = p_i_time;
 	solver->time  = solver->ptime + itime;
 	solver->itime = itime;
-	/* Residual certification must not read an uninitialized vector when
-	 * a USER/OPERATOR matvec callback fails (nor after an OOM).
-	 * Solver status is reported through solver->retcode as before. */
+	/* Only a successful iteration is eligible for residual certification.
+	 * In particular, never invoke a failed application callback again. */
 	t = NULL;
-	residual_err = lis_vector_duplicate(A,&t);
 	xx->precision = LIS_PRECISION_DEFAULT;
+	if( err!=LIS_SUCCESS ) goto residual_done;
+	residual_err = lis_vector_duplicate(A,&t);
 	if( residual_err==LIS_SUCCESS )
 	{
 		residual_err = shell_scale
@@ -5144,6 +5144,9 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	{
 		if( err==LIS_SUCCESS ) err=residual_err;
 		solver->retcode = err;
+		solver->resid = NAN;
+		if(nsolver==LIS_SOLVER_GCRODR) lis_gcrodr_clear_recycle(solver);
+		if(nsolver==LIS_SOLVER_FGCRODR) lis_fgcrodr_clear_recycle(solver);
 	}
 
 	if( !solver->setup && err==LIS_SUCCESS )
@@ -5156,6 +5159,15 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 			err = LIS_BREAKDOWN;
 			solver->retcode = LIS_BREAKDOWN;
 		}
+	}
+
+residual_done:
+	/* Discard an uncertified recycle relation on a hard failure, but
+	 * preserve reuse after ordinary nonconvergence. */
+	if( err!=LIS_SUCCESS && err!=LIS_MAXITER && err!=LIS_BREAKDOWN )
+	{
+		if(nsolver==LIS_SOLVER_GCRODR) lis_gcrodr_clear_recycle(solver);
+		if(nsolver==LIS_SOLVER_FGCRODR) lis_fgcrodr_clear_recycle(solver);
 	}
 
 	if( err )
