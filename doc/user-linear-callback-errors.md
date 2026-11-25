@@ -10,8 +10,12 @@ A nonzero operator or preconditioner callback result must stop the
 affected recurrence before the failed output is used. The callback code
 is preserved in the solver's status; the existing public API convention
 is unchanged: the caller must check both `lis_solve` and
-`lis_solver_get_status`. The solve driver skips final residual certification after a non-successful
-iteration. It must not call an application operator again after a failure.
+`lis_solver_get_status`. The solve driver certifies ordinary MAXITER/BREAKDOWN for native operators
+with native non-Hybrid preconditioners, without promoting the status to
+success. For shell operators and application/Hybrid preconditioners it
+conservatively skips certification on every non-success status, because
+callback codes may overlap numerical status codes. It must not call an
+application operator again after a failure.
 A successful public API return does not imply a successful solve.
 
 - On failure before a usable residual is available, `resid` is NaN.
