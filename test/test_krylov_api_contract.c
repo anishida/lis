@@ -4,6 +4,7 @@
  */
 #include "lis_krylov.h"
 #include <stdint.h>
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -30,6 +31,33 @@ static int inertia64(void *ctx,int64_t n,double shift,int64_t *negative,int64_t 
     (void)ctx;
     *negative=shift>0?n:0;
     *zero=0;
+    return 0;
+}
+
+static int identity64(void *ctx,int64_t n,const double *x,double *y)
+{
+    (void)ctx;
+    memcpy(y,x,(size_t)n*sizeof(double));
+    return 0;
+}
+static int diagonal_inverse64(void *ctx,int64_t n,const double *x,double *y)
+{
+    int64_t i;
+    const double sigma=*(const double*)ctx;
+    for(i=0;i<n;++i)y[i]=x[i]/((double)(i+1)-sigma);
+    return 0;
+}
+static int diagonal_inertia64(void *ctx,int64_t n,double shift,
+                             int64_t *negative,int64_t *zero)
+{
+    int64_t i;
+    (void)ctx;
+    *negative=*zero=0;
+    for(i=0;i<n;++i){
+        double d=(double)(i+1)-shift;
+        if(d<0)++*negative;
+        else if(d==0)++*zero;
+    }
     return 0;
 }
 
@@ -168,7 +196,45 @@ int main(void)
         rc=lis_krylov_symmetric_ex64(&p64,&options,&ext,NULL,values,vectors,
                                      residuals,&stats,&extra);
         if(rc!=LIS_KRYLOV_BAD_ARGUMENT || stats.nreturned)return 1;
-        puts("PASS 64-bit vector API parity and overflow rejection");
+        {
+            lis_krylov_options bad=options;
+            const int64_t dims[]={INT64_MIN,-1,8,8};
+            const int requested[]={1,1,INT_MIN,0};
+            int i;
+            bad.ncv=0;
+            for(i=0;i<4;i++){
+                p64.n=dims[i];bad.nev=requested[i];
+                rc=lis_krylov_workspace_create64(&p64,&bad,&ext,&w);
+                if(rc!=LIS_KRYLOV_BAD_ARGUMENT || w)return 1;
+                rc=lis_krylov_symmetric_ex64(&p64,&bad,&ext,NULL,values,
+                                             vectors,residuals,&stats,&extra);
+                if(rc!=LIS_KRYLOV_BAD_ARGUMENT || stats.nreturned)return 1;
+            }
+        }
+        {
+            lis_krylov_options shift_options=options;
+            lis_krylov_budget budget;
+            lis_krylov_budget_stats used;
+            int64_t count=0;
+            double sigma=2.5;
+            p64.n=8;p64.transform=LIS_KRYLOV_SHIFT_INVERT_B;
+            p64.sigma=sigma;p64.ctx=&sigma;p64.apply_b=identity64;
+            p64.solve=diagonal_inverse64;
+            shift_options.ncv=8;shift_options.inner_tol=1e-10;
+            rc=lis_krylov_solve_interval64(&p64,&shift_options,
+                    diagonal_inertia64,1.5,3.5,values,vectors,residuals,
+                    &stats,&count);
+            if(rc || count!=2 || stats.nconv!=2 ||
+               fabs(values[0]+values[1]-5)>1e-7 ||
+               fabs(fabs(values[0]-values[1])-1)>1e-7)return 1;
+            lis_krylov_budget_default(&budget);
+            budget.max_apply_a=1;
+            rc=lis_krylov_symmetric_budgeted64(&p64,&shift_options,&ext,NULL,
+                    &budget,values,vectors,residuals,&stats,&extra,&used);
+            if(rc!=LIS_KRYLOV_BUDGET_EXHAUSTED || !used.exhausted ||
+               used.apply_a!=1 || !used.solve || stats.nreturned)return 1;
+        }
+        puts("PASS 64-bit vector API parity, shift-invert and overflow rejection");
     }
 
     /* On ILP32, n * ncv = 2^34 and n * (ncv/2) = 2^33.

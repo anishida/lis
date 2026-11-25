@@ -218,7 +218,10 @@ int lis_krylov_symmetric_ex64(const lis_krylov_problem64 *problem,
  * Zero means no user limit; a conservative total ceiling of INT_MAX/2
  * also protects legacy signed statistics. Limits count attempted calls
  * (including failed callbacks), not internal algebra or iterations.
- * On exhaustion no eigenpairs are published (nreturned=nconv=0).
+ * Metric orthogonalization, inverse verification (inner_tol>0) and
+ * physical eigenpair certification all consume their actual A/B calls,
+ * in addition to the solve calls. On exhaustion nreturned=nconv=0;
+ * output array contents are unspecified, including partial writes.
  * A genuine application failure remains CALLBACK_ERROR.
  * Struct layout is new; existing options/statistics are unchanged.
  */
