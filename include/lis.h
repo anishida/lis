@@ -36,6 +36,8 @@
 #endif
 
 #include <math.h>
+#include <stdint.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 #undef HAVE_COMPLEX_H
