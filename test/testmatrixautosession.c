@@ -168,6 +168,81 @@ test_solve(LIS_MATRIX_AUTO_SESSION session,LIS_SOLVER solver,
     return 0;
 }
 
+/* Native paired CSR: final recovery must use the same physical-residual
+ * acceptance rule as attempt zero, without overriding convergence hooks. */
+static LIS_INT recovery_matrix(LIS_MATRIX *out,LIS_SCALAR d1,LIS_SCALAR d2)
+{
+    LIS_INT err;
+    if((err=lis_matrix_create(LIS_COMM_WORLD,out)) ||
+       (err=lis_matrix_set_size(*out,0,2)) ||
+       (err=lis_matrix_set_value(LIS_INS_VALUE,0,0,d1,*out)) ||
+       (err=lis_matrix_set_value(LIS_INS_VALUE,1,1,d2,*out)) ||
+       (err=lis_matrix_set_type(*out,LIS_MATRIX_CSR)))return err;
+    return lis_matrix_assemble(*out);
+}
+
+static LIS_INT reject_convergence(LIS_SOLVER solver,LIS_INT iter,
+    LIS_REAL residual,LIS_REAL tolerance,LIS_INT kind,void *data)
+{
+    (void)solver;(void)iter;(void)residual;(void)tolerance;(void)kind;(void)data;
+    return LIS_FALSE;
+}
+
+static int check_final_recovery_status(void)
+{
+    LIS_MATRIX A=NULL,P=NULL;
+    LIS_VECTOR b=NULL,x=NULL,r=NULL;
+    LIS_MATRIX_AUTO_SESSION session=NULL;
+    LIS_SOLVER solver=NULL;
+    LIS_SEQUENCE_DIAGNOSTICS diag;
+    LIS_REAL nr,nb;
+    LIS_INT status,expected;
+    int failed=1,reject;
+    char options[]="-i fgmres -p jacobi -restart 2 -maxiter 1 -tol 0.2 -scale none -print none";
+    if(recovery_matrix(&A,1,2) || recovery_matrix(&P,1,1) ||
+       lis_vector_duplicate(A,&b) || lis_vector_duplicate(A,&x) ||
+       lis_vector_duplicate(A,&r) || lis_matrix_auto_session_create(&session) ||
+       lis_matrix_auto_session_get_solver(session,&solver) ||
+       lis_solver_set_option(options,solver) || lis_vector_set_all(1,b))goto done;
+    /* Seed the persistent P with an exact solution. */
+    x->value[0]=1;x->value[1]=0.5;
+    if(lis_matrix_auto_session_solve_with_precon_matrix(session,A,P,b,x,NULL,NULL,NULL,NULL) ||
+       lis_solver_get_status(solver,&status) || status!=LIS_SUCCESS ||
+       !solver->sequence_precon)goto done;
+    for(reject=0;reject<2;reject++)
+    {
+        expected=reject?LIS_MAXITER:LIS_SUCCESS;
+        if(lis_solver_set_convergence(solver,reject?reject_convergence:NULL,NULL) ||
+           lis_vector_set_all(0,x) ||
+           lis_matrix_auto_session_solve_with_precon_matrix(session,A,P,b,x,NULL,NULL,NULL,NULL) ||
+           lis_solver_get_status(solver,&status) ||
+           lis_solver_get_sequence_diagnostics(solver,&diag) ||
+           lis_matvec(A,x,r) || lis_vector_axpy(-1,b,r) ||
+           lis_vector_nrm2(r,&nr) || lis_vector_nrm2(b,&nb))goto done;
+        /* Each one-step FGMRES attempt reduces its starting residual
+         * by sqrt(0.1); together they meet the physical RHS tolerance. */
+        if(status!=expected || diag.final_retcode!=expected ||
+           diag.first_retcode!=LIS_MAXITER || diag.attempts!=2 ||
+           diag.precon_rebuilds!=1 || !(nb>0) ||
+           !(fabs((double)(nr/nb)-0.1)<1e-10))
+        {
+            fprintf(stderr,"paired final recovery: reject=%d status=%d residual=%g\n",
+                    reject,(int)status,(double)(nr/nb));
+            goto done;
+        }
+    }
+    failed=0;
+done:
+    if(session)lis_matrix_auto_session_destroy(session);
+    if(r)lis_vector_destroy(r);
+    if(x)lis_vector_destroy(x);
+    if(b)lis_vector_destroy(b);
+    if(P)lis_matrix_destroy(P);
+    if(A)lis_matrix_destroy(A);
+    printf("PAIRED_AUTO_FINAL_RECOVERY_STATUS %s\n",failed?"FAIL":"PASS");
+    return failed;
+}
+
 int main(int argc,char **argv)
 {
     TEST_CONTEXT ctx={1.0,0,-1,NULL,0},ctx2={2.0,0,-1,NULL,0};
@@ -184,6 +259,7 @@ int main(int argc,char **argv)
 
     err=lis_initialize(&argc,&argv);
     if(err) return 1;
+    if(check_final_recovery_status())goto done;
 
     err=test_make_user(&ctx,&A);if(err)goto done;
     err=test_make_user(&ctx2,&B);if(err)goto done;

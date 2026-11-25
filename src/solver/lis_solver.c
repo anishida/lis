@@ -4214,6 +4214,22 @@ LIS_INT lis_solve_sequence_with_precon_matrix(
 
     err = lis_solver_sequence_attempt(A,precon_A,effective_b,x,solver);
 
+    /* Apply the same physical-residual acceptance rule on the last
+     * recovery attempt as on the preceding attempts. Restrict this
+     * additional certification to the native paired CSR profiles: shell
+     * and application preconditioner error codes may overlap numerical
+     * nonconvergence codes. No further recovery is started here. */
+    if( !err && !solver->setup && A!=precon_A &&
+        A->matrix_type==LIS_MATRIX_CSR &&
+        precon_A->matrix_type==LIS_MATRIX_CSR &&
+        (nsolver==LIS_SOLVER_GMRES || nsolver==LIS_SOLVER_FGMRES) &&
+        (solver->options[LIS_OPTIONS_PRECON]==LIS_PRECON_TYPE_JACOBI ||
+         solver->options[LIS_OPTIONS_PRECON]==LIS_PRECON_TYPE_ILUT ||
+         solver->options[LIS_OPTIONS_PRECON]==LIS_PRECON_TYPE_MFAMG ||
+         solver->options[LIS_OPTIONS_PRECON]==LIS_PRECON_TYPE_MFAMG_ILUTP) &&
+        (solver->retcode==LIS_MAXITER || solver->retcode==LIS_BREAKDOWN) )
+        (void)lis_solver_sequence_retryable(solver);
+
     solver->sequence_diag_final_retcode = solver->retcode;
 
     if( err )
