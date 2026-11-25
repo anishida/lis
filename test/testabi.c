@@ -1,4 +1,12 @@
 #include "lis_abi.h"
+#if defined(HAVE_CONFIG_H) && (defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER))
+#define LIS_ABI_TEST_PACKAGE 1
+#undef PACKAGE_NAME
+#undef PACKAGE_VERSION
+#define PACKAGE_NAME "abi-client"
+#define PACKAGE_VERSION "client-version"
+#define LIS_USE_INSTALLED_CONFIG
+#endif
 #include "lis.h"
 #include <stdio.h>
 #include <string.h>
@@ -9,6 +17,10 @@ int main(void)
     union { LIS_ABI_INFO aligned; unsigned char bytes[sizeof(LIS_ABI_INFO)+8]; } extended;
     LIS_ABI_INFO short_result;
     int fail=0;
+#ifdef LIS_ABI_TEST_PACKAGE
+    if(strcmp(PACKAGE_NAME,"abi-client") ||
+       strcmp(PACKAGE_VERSION,"client-version")) fail=1;
+#endif
     memset(&info,0x5a,sizeof(info));
     old=info;
     if(lis_abi_get_info(NULL,sizeof(info))==0 ||

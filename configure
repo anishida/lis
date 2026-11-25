@@ -8088,6 +8088,9 @@ if test "$enable_mpi" = "yes"; then
   F77=$MPIF77
   FC=$MPIFC
   CFLAGS="$CFLAGS -DUSE_MPI"
+
+printf "%s\n" "#define USE_MPI 1" >>confdefs.h
+
   case $ax_cv_f77_compiler_vendor in
     ibm) FCFLAGS="$FCFLAGS -WF,-DUSE_MPI"
          FFLAGS="$FFLAGS -WF,-DUSE_MPI"
@@ -8386,6 +8389,9 @@ if test "$enable_longlong" = "yes"; then
   esac
   CFLAGS="$CFLAGS -D_LONG__LONG"
 
+printf "%s\n" "#define _LONG__LONG 1" >>confdefs.h
+
+
   case $ax_cv_f77_compiler_vendor in
     intel) FFLAGS="$FFLAGS -DLONG__LONG -integer-size 64"
          FCFLAGS="$FCFLAGS -DLONG__LONG -integer-size 64"
@@ -8415,6 +8421,9 @@ if test "$enable_longdouble" = "yes"; then
              ;;
   esac
   CFLAGS="$CFLAGS -D_LONG__DOUBLE"
+
+printf "%s\n" "#define _LONG__DOUBLE 1" >>confdefs.h
+
 
   case $ax_cv_f77_compiler_vendor in
     intel) FFLAGS="$FFLAGS -DLONG__DOUBLE -real-size 128"
@@ -8472,6 +8481,9 @@ printf "%s\n" "#define USE_COMPLEX 1" >>confdefs.h
 
   if test -z "$HAVE_COMPLEX_H"; then
     CFLAGS="$CFLAGS -D_COMPLEX"
+
+printf "%s\n" "#define _COMPLEX 1" >>confdefs.h
+
     FFLAGS="$FFLAGS -DCOMPLEX"
     FCFLAGS="$FCFLAGS -DCOMPLEX"
   else

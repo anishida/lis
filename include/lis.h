@@ -31,7 +31,39 @@
  * this header, without borrowing their own project's HAVE_CONFIG_H.
  * Use matching include/library prefixes and compiler/MPI flags. */
 #if defined(LIS_USE_INSTALLED_CONFIG)
+/* Do not export Autoconf package identity into the consumer's namespace. */
+#if defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
+#pragma push_macro("PACKAGE")
+#undef PACKAGE
+#pragma push_macro("PACKAGE_BUGREPORT")
+#undef PACKAGE_BUGREPORT
+#pragma push_macro("PACKAGE_NAME")
+#undef PACKAGE_NAME
+#pragma push_macro("PACKAGE_STRING")
+#undef PACKAGE_STRING
+#pragma push_macro("PACKAGE_TARNAME")
+#undef PACKAGE_TARNAME
+#pragma push_macro("PACKAGE_URL")
+#undef PACKAGE_URL
+#pragma push_macro("PACKAGE_VERSION")
+#undef PACKAGE_VERSION
+#pragma push_macro("VERSION")
+#undef VERSION
+#pragma push_macro("LT_OBJDIR")
+#undef LT_OBJDIR
+#endif
 #include "lis_config.h"
+#if defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
+#pragma pop_macro("LT_OBJDIR")
+#pragma pop_macro("VERSION")
+#pragma pop_macro("PACKAGE_VERSION")
+#pragma pop_macro("PACKAGE_URL")
+#pragma pop_macro("PACKAGE_TARNAME")
+#pragma pop_macro("PACKAGE_STRING")
+#pragma pop_macro("PACKAGE_NAME")
+#pragma pop_macro("PACKAGE_BUGREPORT")
+#pragma pop_macro("PACKAGE")
+#endif
 #elif defined(HAVE_CONFIG_H)
 #include "lis_config.h"
 #else
@@ -1269,7 +1301,16 @@ typedef struct LIS_ESOLVER_STRUCT *LIS_ESOLVER;
 /* Compile-time client description, NOT a query of the linked library.
  * Compare with lis_abi_get_info before passing LIS objects across the
  * ABI. Exact size checks catch many, not all, public layout mismatches. */
-static inline void lis_abi_get_client_info(LIS_ABI_INFO *info)
+#if defined(_MSC_VER)
+#define LIS_ABI_INLINE __inline
+#elif defined(__GNUC__) || defined(__clang__)
+#define LIS_ABI_INLINE __inline__
+#elif defined(__cplusplus) || (defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L)
+#define LIS_ABI_INLINE inline
+#else
+#define LIS_ABI_INLINE
+#endif
+static LIS_ABI_INLINE void lis_abi_get_client_info(LIS_ABI_INFO *info)
 {
     const uint16_t endian_probe=1;
     if(!info) return;
@@ -1310,6 +1351,7 @@ static inline void lis_abi_get_client_info(LIS_ABI_INFO *info)
     info->solver_struct_bytes=(uint32_t)sizeof(struct LIS_SOLVER_STRUCT);
     info->esolver_struct_bytes=(uint32_t)sizeof(struct LIS_ESOLVER_STRUCT);
 }
+#undef LIS_ABI_INLINE
 
 
 struct LIS_CONV_OPTIONS_STRUCT

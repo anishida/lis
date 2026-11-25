@@ -2933,7 +2933,8 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
       lis_printf(comm,"computing refined eigenpairs using inner eigensolver:\n\n");      
     }
 
-  lis_esolver_create(&esolver2);
+  err = lis_esolver_create(&esolver2);
+  if(err) goto callback_failure;
   esolver2->options[LIS_EOPTIONS_ESOLVER] = niesolver;
   esolver2->options[LIS_EOPTIONS_SUBSPACE] = 1;
   esolver2->options[LIS_EOPTIONS_MAXITER] = emaxiter;
@@ -2944,7 +2945,8 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   final_status = LIS_SUCCESS;
   for (i=0;i<ss;i++)
     {
-      lis_vector_duplicate(A, &esolver->evector[i]); 
+      err = lis_vector_duplicate(A, &esolver->evector[i]);
+      if(err) { lis_esolver_destroy(esolver2); goto callback_failure; }
       esolver2->ishift = esolver->evalue[i];
       err = lis_esolve(A, esolver->evector[i], &evalue, esolver2);
       if(!err && lis_callback_scope_status()) err=lis_callback_scope_status();
@@ -7994,7 +7996,8 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
       lis_printf(comm,"computing refined eigenpairs using inner eigensolver:\n\n");      
     }
 
-  lis_esolver_create(&esolver2);
+  err = lis_esolver_create(&esolver2);
+  if(err) goto callback_failure;
   esolver2->options[LIS_EOPTIONS_ESOLVER] = nigesolver;
   esolver2->options[LIS_EOPTIONS_SUBSPACE] = 1;
   esolver2->options[LIS_EOPTIONS_MAXITER] = emaxiter;
@@ -8004,7 +8007,8 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
   /* compute refined eigenpairs */
   for (i=0;i<ss;i++)
     {
-      lis_vector_duplicate(A, &esolver->evector[i]); 
+      err = lis_vector_duplicate(A, &esolver->evector[i]);
+      if(err) { lis_esolver_destroy(esolver2); goto callback_failure; }
       esolver2->ishift = esolver->evalue[i];
       err = lis_gesolve(A, B, esolver->evector[i], &evalue, esolver2);
       if(!err && lis_callback_scope_status()) err=lis_callback_scope_status();
