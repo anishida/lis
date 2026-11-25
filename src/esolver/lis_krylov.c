@@ -1774,7 +1774,7 @@ int lis_krylov_symmetric_budgeted64(const lis_krylov_problem64 *p,
     if (stats) memset(stats,0,sizeof(*stats));
     if (used) memset(used,0,sizeof(*used));
     if (!p || !budget || !used ||
-        budget->struct_size!=(unsigned int)sizeof(*budget) ||
+        budget->struct_size<(unsigned int)sizeof(*budget) ||
         budget->version!=LIS_KRYLOV_BUDGET_VERSION)
         return LIS_KRYLOV_BAD_ARGUMENT;
     ctx.original=p;ctx.limit=budget;ctx.used=used;

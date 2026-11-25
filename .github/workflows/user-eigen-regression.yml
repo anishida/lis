@@ -22,7 +22,20 @@ on:
       - 'src/precon/lis_precon.c'
       - 'src/vector/**'
       - 'src/system/lis_memory.c'
-      - 'include/**'
+      - 'src/system/lis_error.c'
+      - 'src/matrix/lis_matrix_ops.c'
+      - 'src/esolver/lis_gesolve_matrix_session.c'
+      - 'test/testgesolvepair.c'
+      - 'include/lis.h'
+      - 'include/lislib.h'
+      - 'include/lis_system.h'
+      - 'include/lis_esolver.h'
+      - 'include/lis_solver.h'
+      - 'include/lis_matrix.h'
+      - 'include/lis_matvec.h'
+      - 'include/lis_precon.h'
+      - 'include/lis_vector.h'
+      - 'include/lis_precision.h'
       - 'configure.ac'
       - 'Makefile.am'
       - 'src/Makefile.am'
@@ -53,7 +66,20 @@ on:
       - 'src/precon/lis_precon.c'
       - 'src/vector/**'
       - 'src/system/lis_memory.c'
-      - 'include/**'
+      - 'src/system/lis_error.c'
+      - 'src/matrix/lis_matrix_ops.c'
+      - 'src/esolver/lis_gesolve_matrix_session.c'
+      - 'test/testgesolvepair.c'
+      - 'include/lis.h'
+      - 'include/lislib.h'
+      - 'include/lis_system.h'
+      - 'include/lis_esolver.h'
+      - 'include/lis_solver.h'
+      - 'include/lis_matrix.h'
+      - 'include/lis_matvec.h'
+      - 'include/lis_precon.h'
+      - 'include/lis_vector.h'
+      - 'include/lis_precision.h'
       - 'configure.ac'
       - 'Makefile.am'
       - 'src/Makefile.am'
@@ -102,17 +128,17 @@ jobs:
           ./configure --enable-test --enable-omp --disable-mpi --disable-fortran --disable-f90 --disable-saamg --enable-oom-tests ${index_flags}
           make -C src -j2
           export LD_LIBRARY_PATH="$PWD/src/.libs:${LD_LIBRARY_PATH:-}"
-          make -C test testusereigencgcr testusereigeninverse testusereigenpower testusereigenprojection testusereigenrqiguard testusereigenstatus
+          make -C test testusereigencgcr testusereigeninverse testusereigenpower testusereigenprojection testusereigenrqiguard testusereigenstatus testgesolvepair
           if [ "${{ matrix.mode }}" = asan-ubsan ]; then
             export ASAN_OPTIONS="detect_leaks=1:halt_on_error=1"
           fi
           failed=0
-          for t in testusereigencgcr testusereigeninverse testusereigenpower testusereigenprojection testusereigenrqiguard testusereigenstatus; do
+          for t in testusereigencgcr testusereigeninverse testusereigenpower testusereigenprojection testusereigenrqiguard testusereigenstatus testgesolvepair; do
             rc=0
             timeout 120s ./test/$t || rc=$?
             case $rc in
               0) echo "PASS: $t" ;;
-              77) echo "SKIP: $t" ;;
+              77) echo "FAIL: unexpected skip: $t"; failed=1 ;;
               *) echo "FAIL: $t (exit $rc)"; failed=1 ;;
             esac
           done

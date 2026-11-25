@@ -143,6 +143,8 @@ int main(void)
             return 1;
         p.apply_a=apply_diagonal;
         lis_krylov_budget_default(&budget);
+        /* A larger v1 prefix must be accepted without reading its tail. */
+        budget.struct_size+=8;
         rc=lis_krylov_symmetric_budgeted(&p,&options,&ext,NULL,&budget,
                     values,vectors,residuals,&stats,&extra,&used);
         if(rc!=LIS_KRYLOV_SUCCESS || stats.nconv!=2 ||

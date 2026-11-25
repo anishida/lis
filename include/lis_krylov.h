@@ -223,7 +223,8 @@ int lis_krylov_symmetric_ex64(const lis_krylov_problem64 *problem,
  * in addition to the solve calls. On exhaustion nreturned=nconv=0;
  * output array contents are unspecified, including partial writes.
  * A genuine application failure remains CALLBACK_ERROR.
- * Struct layout is new; existing options/statistics are unchanged.
+ * A v1 budget accepts a larger buffer of the same version; unknown tail
+ * fields are ignored. Existing options/statistics are unchanged.
  */
 #define LIS_KRYLOV_BUDGET_VERSION 1u
 typedef struct lis_krylov_budget {
