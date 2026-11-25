@@ -1,0 +1,112 @@
+name: USER contract regression
+on:
+  pull_request:
+    paths:
+      - 'test/testusercomplexadjoint.c'
+      - 'test/testuserrowoom.c'
+      - 'test/testuserserialcontract.c'
+      - 'src/solver/lis_solver.c'
+      - 'src/matvec/lis_matvec.c'
+      - 'src/matrix/lis_matrix.c'
+      - 'src/precon/lis_precon.c'
+      - 'src/vector/**'
+      - 'src/system/lis_memory.c'
+      - 'include/**'
+      - 'configure.ac'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
+      - 'src/matvec/lis_matvec_csr.c'
+      - 'src/matrix/lis_matrix_materialize.c'
+      - '.github/workflows/user-contract-regression.yml'
+  push:
+    branches: [develop]
+    paths:
+      - 'test/testusercomplexadjoint.c'
+      - 'test/testuserrowoom.c'
+      - 'test/testuserserialcontract.c'
+      - 'src/solver/lis_solver.c'
+      - 'src/matvec/lis_matvec.c'
+      - 'src/matrix/lis_matrix.c'
+      - 'src/precon/lis_precon.c'
+      - 'src/vector/**'
+      - 'src/system/lis_memory.c'
+      - 'include/**'
+      - 'configure.ac'
+      - 'Makefile.am'
+      - 'src/Makefile.am'
+      - 'include/Makefile.am'
+      - 'src/matvec/lis_matvec_csr.c'
+      - 'src/matrix/lis_matrix_materialize.c'
+      - '.github/workflows/user-contract-regression.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(github.event_name != 'pull_request' && '[{"mode":"release","index":"int32"},{"mode":"release","index":"int64"},{"mode":"asan-ubsan","index":"int32"},{"mode":"asan-ubsan","index":"int64"}]' || '[{"mode":"release","index":"int32"},{"mode":"asan-ubsan","index":"int64"}]') }}
+    env:
+      OMP_NUM_THREADS: '1'
+      OMP_DYNAMIC: 'FALSE'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+      - name: Build once per configuration and run native regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.mode }}" = asan-ubsan ]; then
+            export CFLAGS="-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=undefined"
+            export LDFLAGS="-fsanitize=address,undefined"
+            export ASAN_OPTIONS="detect_leaks=0:halt_on_error=1"
+          else
+            export CFLAGS="-O2 -g"
+            export LDFLAGS=""
+          fi
+          index_flags=""
+          if [ "${{ matrix.index }}" = int64 ]; then
+            index_flags="--enable-longlong"
+          fi
+          autoreconf -fiv
+          ./configure --enable-test --enable-omp --disable-mpi --disable-fortran --disable-f90 --disable-saamg --enable-oom-tests ${index_flags}
+          make -C src -j2
+          export LD_LIBRARY_PATH="$PWD/src/.libs:${LD_LIBRARY_PATH:-}"
+          make -C test testuserrowoom testuserserialcontract
+          if [ "${{ matrix.mode }}" = asan-ubsan ]; then
+            export ASAN_OPTIONS="detect_leaks=1:halt_on_error=1"
+          fi
+          failed=0
+          for t in testuserrowoom testuserserialcontract; do
+            rc=0
+            timeout 120s ./test/$t || rc=$?
+            # Skip is a configuration failure in this dedicated suite.
+            if [ "$rc" -ne 0 ]; then echo "FAIL: $t (exit $rc)"; failed=1; else echo "PASS: $t"; fi
+          done
+          if [ "${{ matrix.mode }}" = asan-ubsan ]; then
+            export ASAN_OPTIONS="detect_leaks=0:halt_on_error=1"
+          fi
+          git worktree add --detach "$RUNNER_TEMP/lis-complex" HEAD
+          cd "$RUNNER_TEMP/lis-complex"
+          autoreconf -fiv
+          ./configure --enable-test --enable-complex --enable-omp --disable-mpi --disable-fortran --disable-f90 --disable-saamg ${index_flags}
+          make -C src -j2
+          export LD_LIBRARY_PATH="$PWD/src/.libs"
+          make -C test testusercomplexadjoint
+          if [ "${{ matrix.mode }}" = asan-ubsan ]; then
+            export ASAN_OPTIONS="detect_leaks=1:halt_on_error=1"
+          fi
+          for threads in 1 4; do
+            rc=0
+            OMP_NUM_THREADS=$threads timeout 120s ./test/testusercomplexadjoint || rc=$?
+            if [ "$rc" -ne 0 ]; then echo "FAIL: complex threads=$threads (exit $rc)"; failed=1; else echo "PASS: complex threads=$threads"; fi
+          done
+          exit "$failed"

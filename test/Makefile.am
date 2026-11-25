@@ -345,6 +345,9 @@ testoomiluc_SOURCES = testoomiluc.c
 testoomsnapshot_SOURCES = testoomsnapshot.c
 testoomrco_SOURCES = testoomrco.c
 testcsrtransposeoom_SOURCES = testcsrtransposeoom.c
+check_PROGRAMS += testuserrowoom
+TESTS += testuserrowoom$(EXEEXT)
+testuserrowoom_SOURCES = testuserrowoom.c
 if ENABLE_MPI
 check_PROGRAMS += testoommpiscale
 TESTS += testoommpiscale$(EXEEXT)
@@ -487,3 +490,43 @@ test_PROGRAMS += testbicgstablinit
 testbicgstablinit_SOURCES = testbicgstablinit.c
 testbicgstablinit_LDADD = $(LDADD) -lm
 TESTS += testbicgstablinit$(EXEEXT)
+
+test_PROGRAMS += testusereigencgcr
+testusereigencgcr_SOURCES = testusereigencgcr.c
+testusereigencgcr_LDADD = $(LDADD) -lm
+TESTS += testusereigencgcr$(EXEEXT)
+
+test_PROGRAMS += testusereigeninverse
+testusereigeninverse_SOURCES = testusereigeninverse.c
+testusereigeninverse_LDADD = $(LDADD) -lm
+TESTS += testusereigeninverse$(EXEEXT)
+
+test_PROGRAMS += testusereigenpower
+testusereigenpower_SOURCES = testusereigenpower.c
+testusereigenpower_LDADD = $(LDADD) -lm
+TESTS += testusereigenpower$(EXEEXT)
+
+test_PROGRAMS += testusereigenprojection
+testusereigenprojection_SOURCES = testusereigenprojection.c
+testusereigenprojection_LDADD = $(LDADD) -lm
+TESTS += testusereigenprojection$(EXEEXT)
+
+test_PROGRAMS += testusereigenrqiguard
+testusereigenrqiguard_SOURCES = testusereigenrqiguard.c
+testusereigenrqiguard_LDADD = $(LDADD) -lm
+TESTS += testusereigenrqiguard$(EXEEXT)
+
+test_PROGRAMS += testusereigenstatus
+testusereigenstatus_SOURCES = testusereigenstatus.c
+testusereigenstatus_LDADD = $(LDADD) -lm
+TESTS += testusereigenstatus$(EXEEXT)
+
+test_PROGRAMS += testusercomplexadjoint
+testusercomplexadjoint_SOURCES = testusercomplexadjoint.c
+testusercomplexadjoint_LDADD = $(LDADD) -lm
+TESTS += testusercomplexadjoint$(EXEEXT)
+
+test_PROGRAMS += testuserserialcontract
+testuserserialcontract_SOURCES = testuserserialcontract.c
+testuserserialcontract_LDADD = $(LDADD) -lm
+TESTS += testuserserialcontract$(EXEEXT)
