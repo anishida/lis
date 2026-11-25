@@ -232,7 +232,7 @@ static int check_managed_session(void){
         goto done;
     solver=lis_sc_solver_session_get_solver(session);
     if(!solver || lis_solver_set_option(
-        "-i fgmres -p none -scale none -print none -maxiter 500 -restart 120 -tol 1e-9",solver))
+        "-i fgmres -p none -scale none -print none -maxiter 500 -restart 120 -tol 1e-9 -initx_zeros false",solver))
         goto done;
     old_s=lis_sc_lis_matrix(lis_sc_solver_session_get_condensation(session));
     if(lis_sc_solver_session_solve(session,b,x,1e-7)!=LIS_SC_OK ||
@@ -331,6 +331,9 @@ static int check_paired_schur_profile(LIS_MATRIX S,LIS_VECTOR g,
            pp!=LIS_MATRIX_POLICY_DIRECT || pa!=LIS_MATRIX_POLICY_ACTION_DIRECT ||
            lis_solver_get_status(solver,&status) || status!=LIS_SUCCESS ||
            !solver->sequence_precon || solver->sequence_precon_matrix!=P ||
+           solver->sequence_precon_ilut_ras_overlap!=solver->ilut_ras_overlap ||
+           solver->sequence_precon_ilut_ras_domains!=solver->ilut_ras_domains ||
+           solver->sequence_precon_ilut_schur!=solver->ilut_schur ||
            (kept && solver->sequence_precon!=kept) ||
            lis_matvec(S,x,r) || lis_vector_axpy((LIS_SCALAR)-1,g,r) ||
            lis_vector_nrm2(r,&nr) || lis_vector_nrm2(g,&nb) ||

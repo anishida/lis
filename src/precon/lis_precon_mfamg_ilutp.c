@@ -88,9 +88,14 @@ lis_mfamg_ilutp_create_child(LIS_SOLVER outer, LIS_INT kind,
 
     if(kind==LIS_PRECON_TYPE_MFAMG)
     {
-        err=lis_solver_set_near_nullspace(child,
-                                         lis_solver_amg_basis_dim(outer),
-                                         lis_solver_amg_basis_vectors(outer));
+        /* Keep interpolation-only modes out of mathematical deflation.
+         * The legacy basis is used only when no explicit basis exists. */
+        if(outer->amg_coarse_basis_dim>0)
+            err=lis_solver_set_amg_coarse_basis(child,
+                    outer->amg_coarse_basis_dim,outer->amg_coarse_basis);
+        else
+            err=lis_solver_set_near_nullspace(child,
+                    outer->near_nullspace_dim,outer->near_nullspace);
         if(err) goto fail;
 
         /* CA-MFAMG is a property of the MFAMG child, not the ILUTP child.

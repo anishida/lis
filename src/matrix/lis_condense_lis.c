@@ -375,7 +375,7 @@ void lis_sc_solver_session_destroy(lis_sc_solver_session *s){
     if(s->solver)lis_solver_destroy(s->solver);
     sc_solver_free_vectors(s->g,s->u,s->full);
     lis_sc_lis_destroy(s->sc);
-    free(s);
+    lis_free(s);
 }
 lis_sc_status lis_sc_solver_session_create(
     LIS_MATRIX A,LIS_INT nblocks,const LIS_INT *block_ptr,
@@ -385,8 +385,9 @@ lis_sc_status lis_sc_solver_session_create(
     LIS_INT err;
     if(!out)return LIS_SC_BAD_ARGUMENT;
     *out=NULL;
-    s=(lis_sc_solver_session*)calloc(1,sizeof(*s));
+    s=(lis_sc_solver_session*)lis_malloc(sizeof(*s),"lis_sc_solver_session_create");
     if(!s)return LIS_SC_OUT_OF_MEMORY;
+    memset(s,0,sizeof(*s));
     st=lis_sc_lis_create(A,nblocks,block_ptr,block_dof,tol,&s->sc);
     if(st!=LIS_SC_OK)goto fail;
     err=lis_solver_create(&s->solver);
@@ -420,16 +421,24 @@ lis_sc_status lis_sc_solver_session_update(
     LIS_VECTOR g=NULL,u=NULL,full=NULL;
     lis_sc_status st;
     if(!s || !s->solver || !s->sc)return LIS_SC_BAD_ARGUMENT;
-    if(mode==LIS_SC_FULL &&
-       (s->solver->nullspace_dim || s->solver->left_nullspace_dim ||
-        s->solver->near_nullspace_dim || s->solver->amg_coarse_basis_dim ||
-        s->solver->mfamg_contact_partition_n))
+    /* A numerical change can invalidate mathematical kernel vectors even
+     * when the DOF map stays identical. Require explicit reclassification. */
+    if(((mode==LIS_SC_FULL || mode==LIS_SC_NUMERIC) &&
+        (s->solver->nullspace_dim || s->solver->left_nullspace_dim)) ||
+       (mode==LIS_SC_FULL &&
+        (s->solver->near_nullspace_dim || s->solver->amg_coarse_basis_dim ||
+         s->solver->mfamg_contact_partition_n)))
         return LIS_SC_REBIND_REQUIRED;
     st=sc_lis_stage_update(s->sc,A,nblocks,block_ptr,block_dof,tol,mode,
                           &candidate,&fresh);
     if(st!=LIS_SC_OK || !candidate)return st; /* including verified REUSE_ALL */
     st=sc_solver_work(A,fresh,&g,&u,&full);
     if(st!=LIS_SC_OK)goto fail;
+    /* NUMERIC preserves the reduced DOF map; retain the certified guess.
+     * FULL starts from the zero vector initialized by vector_duplicate. */
+    if(mode==LIS_SC_NUMERIC && lis_vector_copy(s->u,u)){
+        st=LIS_SC_SOLVER_ERROR;goto fail;
+    }
     /* No matrix or workspace is released while the solver still borrows it. */
     if(lis_solver_reset_sequence(s->solver)){st=LIS_SC_SOLVER_ERROR;goto fail;}
     sc_solver_free_vectors(s->g,s->u,s->full);

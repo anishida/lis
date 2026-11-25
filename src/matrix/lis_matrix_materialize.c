@@ -1378,15 +1378,20 @@ fail:
 static int paired_world_comm(LIS_Comm comm)
 {
     int relation;
+    if(comm==MPI_COMM_NULL)return 0;
     return MPI_Comm_compare(comm,MPI_COMM_WORLD,&relation)==MPI_SUCCESS &&
            (relation==MPI_IDENT || relation==MPI_CONGRUENT);
 }
 static int paired_collective_error(int local)
 {
-    int global=0;
-    if(MPI_Allreduce(&local,&global,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD)
+    int global_min=0,global_max=0;
+    /* Zero must not mask a negative error such as LIS_FAILS.
+     * Both reductions run on every rank; prefer a negative error if any. */
+    if(MPI_Allreduce(&local,&global_min,1,MPI_INT,MPI_MIN,MPI_COMM_WORLD)
        !=MPI_SUCCESS)return LIS_ERR_ILL_ARG;
-    return global;
+    if(MPI_Allreduce(&local,&global_max,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD)
+       !=MPI_SUCCESS)return LIS_ERR_ILL_ARG;
+    return global_min<0?global_min:global_max;
 }
 #endif
 
@@ -1470,12 +1475,17 @@ LIS_INT lis_matrix_auto_session_solve_distributed_csr(
        MPI_Bcast(controls,5,LIS_MPI_INT,0,MPI_COMM_WORLD)!=MPI_SUCCESS)
         return LIS_ERR_ILL_ARG;
     if(memcmp(options,s->options,sizeof(options)) ||
-       memcmp(params,s->params,sizeof(params)) ||
        controls[0]!=s->sequence_policy ||
        controls[1]!=s->sequence_precon_refresh_policy ||
        controls[2]!=s->sequence_precon_max_age ||
        controls[3]!=s->num_threads || controls[4]!=s->setup || s->setup)
         bad=LIS_ERR_ILL_ARG;
+    /* Compare numeric values, not the representation of signed zero.
+     * Nonfinite configuration is not supported by this restricted path. */
+    for(i=0;i<LIS_PARAMS_LEN;i++)
+        if(!isfinite((double)params[i]) ||
+           !isfinite((double)s->params[i]) || params[i]!=s->params[i])
+            bad=LIS_ERR_ILL_ARG;
     err=lis_matrix_materialize_source_stamp(A,&as,&av,0);
     if(!err)err=lis_matrix_materialize_source_stamp(P,&ps,&pv,0);
     if(err)bad=(int)err;

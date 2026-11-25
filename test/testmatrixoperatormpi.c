@@ -99,6 +99,16 @@ static int check_distributed_pair(LIS_MATRIX A,LIS_MATRIX P,int rank)
            lis_vector_nrm2(r,&nr) || !(nr/nb<1e-9))goto done;
         kept=solver->sequence_precon;
     }
+    /* A null communicator must be rejected before MPI_Comm_compare. */
+    {
+        LIS_Comm saved=b->comm;
+        if(rank==0)b->comm=MPI_COMM_NULL;
+        err=lis_matrix_auto_session_solve_distributed_csr(session,A,P,b,x);
+        b->comm=saved;
+        local=err!=LIS_ERR_ILL_ARG;
+        MPI_Allreduce(&local,&all,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+        if(all)goto done;
+    }
     /* A rank-local invalid argument must not enter the numerical solver. */
     err=lis_matrix_auto_session_solve_distributed_csr(
                     session,A,P,rank==0?NULL:b,x);

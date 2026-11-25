@@ -57,8 +57,14 @@ lis_sc_status lis_sc_lis_modes(const lis_sc_lis_session *session,
  * condensation is for read-only mode/label projection; never update or
  * destroy its matrix independently.
  * FULL updates require explicit clearing of dimension-dependent basis and
- * partition metadata (REBIND_REQUIRED); NUMERIC keeps those settings.
+ * partition metadata (REBIND_REQUIRED); NUMERIC retains geometric settings
+ * and the reduced warm start, but requires clearing exact/left nullspaces.
+ * Reclassify mathematical nullspaces against the changed operator.
  * Updates stage new plan, CSR and workspace before retiring old solver state.
+ * FULL and NUMERIC retire the preconditioner; REUSE_ALL preserves it.
+ * The plan owns a snapshot of the full operator. A caller modification
+ * becomes visible only after a successful update; certification is against
+ * that snapshot, not against a subsequently modified caller matrix.
  * REUSE_ALL never retires the solver. On solve failure x_full is unchanged.
  * Only unscaled, default-precision, non-transposed CSR solves are supported.
  */
