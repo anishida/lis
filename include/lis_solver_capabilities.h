@@ -23,8 +23,8 @@ extern "C"
  * *nested is LIS_FALSE.  For the supported one-level Hybrid composition,
  * *precon_type is LIS_OPTIONS_PPRECON and *nested is LIS_TRUE.
  *
- * Recursive Hybrid composition is intentionally not interpreted here because
- * the current Hybrid implementation rejects it during construction.
+ * Recursive Hybrid and Hybrid with MFAMG_ILUTP are rejected, matching
+ * the current Hybrid construction restrictions.
  */
 extern LIS_INT lis_solver_get_effective_preconditioner(
     LIS_SOLVER solver,
@@ -35,6 +35,8 @@ extern LIS_INT lis_solver_get_effective_preconditioner(
  * Return a bit mask describing capabilities of the currently configured
  * solver/preconditioner composition.  The query is configuration-only: it
  * does not require lis_solve_setup() and does not allocate solver state.
+ * NEAR_NULLSPACE indicates that the configured MFAMG leaf consumes a basis;
+ * it does not certify solver/precision compatibility or matrix eligibility.
  */
 extern LIS_INT lis_solver_get_effective_capabilities(
     LIS_SOLVER solver,
@@ -51,13 +53,26 @@ extern LIS_INT lis_solver_get_effective_capabilities(
 #define LIS_NULLSPACE_CONFIG_EXACT_PRECISION  0x04
 /* Unsupported outer solver / effective preconditioner combination.
  * The current solve kernel checks the top-level preconditioner type;
- * nested Hybrid+MFAMG is not treated as direct MFAMG here. */
+ * nested Hybrid+MFAMG is not treated as direct MFAMG here.
+ * MFAMG_ILUTP retains the flexible outer solver requirement. */
 #define LIS_NULLSPACE_CONFIG_NEAR_COMBINATION 0x08
 #define LIS_NULLSPACE_CONFIG_NEAR_PRECISION   0x10
 
 extern LIS_INT lis_solver_check_nullspace_configuration(
     LIS_SOLVER solver,
     LIS_INT *issues);
+
+/* Read-only queries for application-owned configuration copied by LIS.
+ * A zero dimension/count denotes an absent basis/partition. */
+extern LIS_INT lis_solver_get_near_nullspace_dim(
+    LIS_SOLVER solver,LIS_INT *dim);
+extern LIS_INT lis_solver_get_mfamg_contact_configuration(
+    LIS_SOLVER solver,LIS_INT *enabled,LIS_INT *nlocal);
+/* Compare label values and length, not pointer identity. For an empty
+ * partition pass nlocal=0 and NULL. Does not reset persistent state.
+ * Invalid arguments leave the output unchanged. */
+extern LIS_INT lis_solver_compare_mfamg_contact_partition(
+    LIS_SOLVER solver,LIS_INT nlocal,const LIS_INT *partition,LIS_INT *equal);
 
 #ifdef __cplusplus
 }

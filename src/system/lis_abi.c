@@ -13,7 +13,6 @@
 int lis_abi_get_info(LIS_ABI_INFO *info, size_t info_size)
 {
     LIS_ABI_INFO result;
-    const uint16_t byte_order_probe=1;
     size_t copy_size;
 
     /* The v1 prefix must never change, even if later versions grow. */
@@ -23,35 +22,16 @@ int lis_abi_get_info(LIS_ABI_INFO *info, size_t info_size)
     if(info==NULL || info_size<LIS_ABI_INFO_V1_SIZE)
         return LIS_ABI_ERR_ARGUMENT;
 
+    /* Prefix assertions also guard future ABI descriptor extensions. */
+    typedef char lis_abi_v2_prefix_size_check[
+        (offsetof(LIS_ABI_INFO,comm_bytes)==LIS_ABI_INFO_V2_SIZE)?1:-1];
+    typedef char lis_abi_v3_prefix_size_check[
+        (offsetof(LIS_ABI_INFO,esolver_struct_bytes)+sizeof(uint32_t)
+         ==LIS_ABI_INFO_V3_SIZE)?1:-1];
+    (void)sizeof(lis_abi_v2_prefix_size_check);
+    (void)sizeof(lis_abi_v3_prefix_size_check);
     memset(&result,0,sizeof(result));
-    result.version=LIS_ABI_INFO_VERSION;
-    result.struct_size=(uint32_t)sizeof(result);
-    result.lis_int_bytes=(uint32_t)sizeof(LIS_INT);
-    result.lis_scalar_bytes=(uint32_t)sizeof(LIS_SCALAR);
-    result.lis_real_bytes=(uint32_t)sizeof(LIS_REAL);
-#ifdef _COMPLEX
-    result.scalar_kind=LIS_ABI_SCALAR_COMPLEX;
-#else
-    result.scalar_kind=LIS_ABI_SCALAR_REAL;
-#endif
-#ifdef USE_MPI
-    result.flags|=LIS_ABI_FLAG_MPI;
-#endif
-#ifdef _OPENMP
-    result.flags|=LIS_ABI_FLAG_OPENMP;
-#endif
-#ifdef USE_QUAD_PRECISION
-    result.flags|=LIS_ABI_FLAG_QUAD_SOLVER;
-#endif
-#ifdef _LONG__DOUBLE
-    result.flags|=LIS_ABI_FLAG_LONG_DOUBLE;
-#endif
-#if defined(_COMPLEX) && defined(_LONG__DOUBLE) && defined(HAVE_QUADMATH_H)
-    result.flags|=LIS_ABI_FLAG_FLOAT128;
-#endif
-    result.pointer_bytes=(uint32_t)sizeof(void *);
-    result.endianness=*((const unsigned char *)&byte_order_probe) ?
-        LIS_ABI_ENDIAN_LITTLE : LIS_ABI_ENDIAN_BIG;
+    lis_abi_get_client_info(&result);
     copy_size=info_size<sizeof(result) ? info_size : sizeof(result);
     memcpy(info,&result,copy_size);
     return LIS_ABI_SUCCESS;
@@ -68,4 +48,29 @@ int lis_abi_is_compatible(const LIS_ABI_INFO *info,
            info->lis_scalar_bytes==lis_scalar_bytes &&
            info->lis_real_bytes==lis_real_bytes &&
            info->scalar_kind==scalar_kind;
+}
+
+int lis_abi_is_layout_compatible(const LIS_ABI_INFO *linked,size_t linked_size,
+    const LIS_ABI_INFO *client,size_t client_size,uint32_t flag_mask)
+{
+    if(!linked || !client ||
+       linked_size<LIS_ABI_INFO_V3_SIZE || client_size<LIS_ABI_INFO_V3_SIZE ||
+       linked->version<3u || client->version<3u ||
+       linked->struct_size<LIS_ABI_INFO_V3_SIZE ||
+       client->struct_size<LIS_ABI_INFO_V3_SIZE ||
+       linked->reserved || client->reserved)
+        return 0;
+    return lis_abi_is_compatible(linked,client->lis_int_bytes,
+             client->lis_scalar_bytes,client->lis_real_bytes,client->scalar_kind) &&
+           (linked->flags & flag_mask)==(client->flags & flag_mask) &&
+           linked->pointer_bytes==client->pointer_bytes &&
+           linked->endianness==client->endianness &&
+           (linked->endianness==LIS_ABI_ENDIAN_LITTLE ||
+            linked->endianness==LIS_ABI_ENDIAN_BIG) &&
+           linked->comm_bytes==client->comm_bytes &&
+           linked->vector_struct_bytes==client->vector_struct_bytes &&
+           linked->matrix_struct_bytes==client->matrix_struct_bytes &&
+           linked->precon_struct_bytes==client->precon_struct_bytes &&
+           linked->solver_struct_bytes==client->solver_struct_bytes &&
+           linked->esolver_struct_bytes==client->esolver_struct_bytes;
 }

@@ -105,6 +105,63 @@ static int check_recursive_hybrid_rejected(void)
     return failed;
 }
 
+static int check_mfamg_configuration(void)
+{
+    LIS_SOLVER s=NULL;
+    LIS_VECTOR v=NULL;
+    LIS_INT p,n,c,dim,enabled,eq,issues,err;
+    LIS_INT labels[3]={0,1,1},different[3]={0,1,2};
+    int failed=1;
+
+    if(lis_solver_create(&s)) goto done;
+    if(lis_solver_get_near_nullspace_dim(s,&dim) || dim!=0 ||
+       lis_solver_get_mfamg_contact_configuration(s,&enabled,&n) || n!=0 ||
+       lis_solver_compare_mfamg_contact_partition(s,0,NULL,&eq) || !eq)
+        goto done;
+    if(lis_solver_set_option("-i fgmres -p hybrid -hybrid_i gmres -hybrid_p mfamg_ilutp",s))
+        goto done;
+    p=n=c=-1;
+    if(lis_solver_get_effective_preconditioner(s,&p,&n)!=LIS_ERR_NOT_IMPLEMENTED ||
+       lis_solver_get_effective_capabilities(s,&c)!=LIS_ERR_NOT_IMPLEMENTED ||
+       p!=-1 || n!=-1 || c!=-1)
+        goto done;
+    if(lis_solver_set_option("-i fgmres -p mfamg_ilutp -mfamg_contact_aware 1",s))
+        goto done;
+    if(lis_vector_create(LIS_COMM_WORLD,&v) ||
+       lis_vector_set_size(v,0,3) ||
+       lis_vector_set_all((LIS_SCALAR)1,v) ||
+       lis_solver_set_near_nullspace(s,1,&v))
+        goto done;
+    if(lis_solver_get_near_nullspace_dim(s,&dim) || dim!=1 ||
+       lis_solver_check_nullspace_configuration(s,&issues) || issues!=0)
+        goto done;
+    if(lis_solver_set_mfamg_contact_partition(s,3,labels) ||
+       lis_solver_get_mfamg_contact_configuration(s,&enabled,&n) ||
+       enabled!=LIS_TRUE || n!=3)
+        goto done;
+    labels[2]=2; /* LIS owns a copy, not the caller's array. */
+    if(lis_solver_compare_mfamg_contact_partition(s,3,different,&eq) || eq ||
+       lis_solver_compare_mfamg_contact_partition(s,2,labels,&eq) || eq)
+        goto done;
+    labels[2]=1;
+    if(lis_solver_compare_mfamg_contact_partition(s,3,labels,&eq) || !eq)
+        goto done;
+    eq=99;
+    err=lis_solver_compare_mfamg_contact_partition(s,3,NULL,&eq);
+    if(err!=LIS_ERR_ILL_ARG || eq!=99) goto done;
+    if(lis_solver_set_mfamg_contact_partition(s,0,NULL) ||
+       lis_solver_compare_mfamg_contact_partition(s,0,NULL,&eq) || !eq ||
+       lis_solver_clear_near_nullspace(s) ||
+       lis_solver_get_near_nullspace_dim(s,&dim) || dim!=0)
+        goto done;
+    failed=0;
+done:
+    if(v) lis_vector_destroy(v);
+    if(s) lis_solver_destroy(s);
+    if(failed) fprintf(stderr,"MFAMG configuration query regression failed\n");
+    return failed;
+}
+
 int main(int argc, char **argv)
 {
     LIS_INT err;
@@ -182,6 +239,7 @@ int main(int argc, char **argv)
         0);
 
     failed |= check_recursive_hybrid_rejected();
+    failed |= check_mfamg_configuration();
 
     if(lis_solver_get_effective_preconditioner(NULL,NULL,NULL)!=LIS_ERR_ILL_ARG)
         failed = 1;

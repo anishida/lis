@@ -445,6 +445,56 @@ done:
     return failed;
 }
 
+static int check_ilut_ras_profile(void)
+{
+    LIS_SOLVER s=NULL,defaults=NULL;
+    LIS_INT changed,err;
+    int failed=1;
+    if(lis_solver_create(&s) || lis_solver_create(&defaults)) goto done;
+    if(lis_solver_set_option_replace(
+        "-i fgmres -p ilut -ilut_ras_overlap 1 -ilut_ras_domains 3 -ilut_schur 0",s) ||
+       s->ilut_ras_overlap!=1 || s->ilut_ras_domains!=3 || s->ilut_schur!=0)
+        goto done;
+    s->recycle_valid=LIS_TRUE;
+    changed=-1;
+    if(lis_solver_set_option_replace_if_changed(
+        "-ilut_schur 0 -ilut_ras_domains 3 -ilut_ras_overlap 1 -p ilut -i fgmres",s,&changed) ||
+       changed!=LIS_FALSE || s->recycle_valid!=LIS_TRUE)
+        goto done;
+    if(lis_solver_set_option_replace_if_changed(
+        "-i fgmres -p ilut -ilut_ras_overlap 2 -ilut_ras_domains 3 -ilut_schur 0",s,&changed) ||
+       changed!=LIS_TRUE || s->ilut_ras_overlap!=2 || s->recycle_valid!=LIS_FALSE)
+        goto done;
+    s->recycle_valid=LIS_TRUE;
+    if(lis_solver_set_option_replace_if_changed(
+        "-i fgmres -p ilut -ilut_ras_overlap 2 -ilut_ras_domains 4 -ilut_schur 0",s,&changed) ||
+       changed!=LIS_TRUE || s->ilut_ras_domains!=4 || s->recycle_valid!=LIS_FALSE)
+        goto done;
+    s->recycle_valid=LIS_TRUE;
+    if(lis_solver_set_option_replace_if_changed(
+        "-i fgmres -p ilut -ilut_ras_overlap 2 -ilut_ras_domains 4 -ilut_schur 1",s,&changed) ||
+       changed!=LIS_TRUE || s->ilut_schur!=1 || s->recycle_valid!=LIS_FALSE)
+        goto done;
+    s->recycle_valid=LIS_TRUE;
+    changed=-1;
+    err=lis_solver_set_option_replace_if_changed(
+        "-i fgmres -p ilut -ilut_ras_overlap 3",s,&changed);
+    if(err==LIS_SUCCESS || changed!=LIS_FALSE || s->recycle_valid!=LIS_TRUE ||
+       s->ilut_ras_overlap!=2 || s->ilut_ras_domains!=4 || s->ilut_schur!=1)
+        goto done;
+    if(lis_solver_set_option_replace_if_changed("-i fgmres -p ilut",s,&changed) ||
+       changed!=LIS_TRUE || s->ilut_ras_overlap!=defaults->ilut_ras_overlap ||
+       s->ilut_ras_domains!=defaults->ilut_ras_domains ||
+       s->ilut_schur!=defaults->ilut_schur || s->recycle_valid!=LIS_FALSE)
+        goto done;
+    failed=0;
+done:
+    if(defaults) lis_solver_destroy(defaults);
+    if(s) lis_solver_destroy(s);
+    printf("ILUT_RAS_OPTION_PROFILE %s\n",failed?"FAILED":"PASSED");
+    return failed;
+}
+
 int main(int argc, char **argv)
 {
     if(argc>1 && strcmp(argv[1],"--typed-only")==0)
@@ -849,6 +899,7 @@ int main(int argc, char **argv)
     failed |= check_gcrodr_profile_settings();
 
     failed |= check_fgcrodr_profile_settings();
+    failed |= check_ilut_ras_profile();
 
     if(x) lis_vector_destroy(x);
     if(b) lis_vector_destroy(b);

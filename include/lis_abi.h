@@ -19,8 +19,10 @@ extern "C" {
  * append fields without preventing clients compiled with older headers from
  * querying that prefix.
  */
-#define LIS_ABI_INFO_VERSION 2u
+#define LIS_ABI_INFO_VERSION 3u
 #define LIS_ABI_INFO_V1_SIZE UINT32_C(32)
+#define LIS_ABI_INFO_V2_SIZE UINT32_C(40)
+#define LIS_ABI_INFO_V3_SIZE UINT32_C(64)
 #define LIS_ABI_SUCCESS 0
 #define LIS_ABI_ERR_ARGUMENT 1
 #define LIS_ABI_ENDIAN_UNKNOWN 0u
@@ -48,6 +50,13 @@ typedef struct LIS_ABI_INFO_STRUCT
     /* Added in v2; unavailable to v1 callers passing 32 bytes. */
     uint32_t pointer_bytes;
     uint32_t endianness;
+    /* Added in v3. Public struct sizes, not an offset/layout fingerprint. */
+    uint32_t comm_bytes;
+    uint32_t vector_struct_bytes;
+    uint32_t matrix_struct_bytes;
+    uint32_t precon_struct_bytes;
+    uint32_t solver_struct_bytes;
+    uint32_t esolver_struct_bytes;
 } LIS_ABI_INFO;
 
 /*
@@ -77,6 +86,28 @@ int lis_abi_get_info(LIS_ABI_INFO *info, size_t info_size);
 int lis_abi_is_compatible(const LIS_ABI_INFO *info,
     uint32_t lis_int_bytes, uint32_t lis_scalar_bytes,
     uint32_t lis_real_bytes, uint32_t scalar_kind);
+
+/* Compare v3 client and linked-library descriptions. Supply the actual
+ * buffer lengths, not merely the struct_size reported by the library.
+ * Returns zero if either buffer lacks v3 data. Exact known layout fields
+ * and caller-selected flags must match. This is a conservative screening
+ * check, not a proof of identical offsets, MPI implementation or calling
+ * convention. The OpenMP flag may be omitted from flag_mask.
+ *
+ * External client example (matching installed include and lib paths):
+ *   #define LIS_USE_INSTALLED_CONFIG
+ *   #include <lis.h>
+ *   LIS_ABI_INFO local, linked;
+ *   lis_abi_get_client_info(&local);
+ *   if(lis_abi_get_info(&linked,sizeof(linked)) ||
+ *      !lis_abi_is_layout_compatible(&linked,sizeof(linked),
+ *             &local,sizeof(local),LIS_ABI_LAYOUT_FLAGS))
+ *       ... reject before using LIS objects ...
+ */
+#define LIS_ABI_LAYOUT_FLAGS (LIS_ABI_FLAG_MPI | LIS_ABI_FLAG_QUAD_SOLVER | \
+                              LIS_ABI_FLAG_LONG_DOUBLE | LIS_ABI_FLAG_FLOAT128)
+int lis_abi_is_layout_compatible(const LIS_ABI_INFO *linked,size_t linked_size,
+    const LIS_ABI_INFO *client,size_t client_size,uint32_t flag_mask);
 
 #ifdef __cplusplus
 }

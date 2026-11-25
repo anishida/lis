@@ -5,7 +5,7 @@
 
 int main(void)
 {
-    LIS_ABI_INFO info,old;
+    LIS_ABI_INFO info,old,client;
     union { LIS_ABI_INFO aligned; unsigned char bytes[sizeof(LIS_ABI_INFO)+8]; } extended;
     LIS_ABI_INFO short_result;
     int fail=0;
@@ -78,6 +78,24 @@ int main(void)
         (uint32_t)sizeof(LIS_INT)+1,(uint32_t)sizeof(LIS_SCALAR),
         (uint32_t)sizeof(LIS_REAL),info.scalar_kind) ||
        lis_abi_is_compatible(NULL,1,1,1,LIS_ABI_SCALAR_REAL))
+        fail=1;
+    lis_abi_get_client_info(&client);
+    if(!lis_abi_is_layout_compatible(&info,sizeof(info),&client,sizeof(client),
+          LIS_ABI_LAYOUT_FLAGS|LIS_ABI_FLAG_OPENMP) ||
+       lis_abi_is_layout_compatible(&info,LIS_ABI_INFO_V2_SIZE,
+          &client,sizeof(client),LIS_ABI_LAYOUT_FLAGS))
+        fail=1;
+    client.solver_struct_bytes++;
+    if(lis_abi_is_layout_compatible(&info,sizeof(info),&client,sizeof(client),
+          LIS_ABI_LAYOUT_FLAGS)) fail=1;
+    lis_abi_get_client_info(&client);
+    client.flags^=LIS_ABI_FLAG_MPI;
+    if(lis_abi_is_layout_compatible(&info,sizeof(info),&client,sizeof(client),
+          LIS_ABI_LAYOUT_FLAGS)) fail=1;
+    memset(&short_result,0x5a,sizeof(short_result));
+    if(lis_abi_get_info(&short_result,LIS_ABI_INFO_V2_SIZE)!=LIS_ABI_SUCCESS ||
+       short_result.pointer_bytes!=sizeof(void *) ||
+       short_result.comm_bytes!=UINT32_C(0x5a5a5a5a))
         fail=1;
     printf("LIS_ABI_INFO=%s\n",fail?"FAIL":"PASS");
     return fail;

@@ -44,6 +44,15 @@ lis_solver_get_effective_preconditioner(
         return LIS_ERR_NOT_IMPLEMENTED;
     }
 
+    /* Hybrid has no independent composite option scope. Match its
+     * constructor rather than advertising an unusable leaf. */
+    if(inner==LIS_PRECON_TYPE_MFAMG_ILUTP)
+    {
+        LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
+            "MFAMG_ILUTP is not supported inside Hybrid\n");
+        return LIS_ERR_NOT_IMPLEMENTED;
+    }
+
     *precon_type = inner;
     *nested = LIS_TRUE;
     return LIS_SUCCESS;
@@ -150,5 +159,43 @@ lis_solver_check_nullspace_configuration(
     }
 
     *issues=flags;
+    return LIS_SUCCESS;
+}
+
+/* Read-only application queries; never expose solver-owned storage. */
+LIS_INT lis_solver_get_near_nullspace_dim(LIS_SOLVER solver,LIS_INT *dim)
+{
+    if(solver==NULL || dim==NULL) return LIS_ERR_ILL_ARG;
+    *dim=solver->near_nullspace_dim;
+    return LIS_SUCCESS;
+}
+
+LIS_INT lis_solver_get_mfamg_contact_configuration(
+    LIS_SOLVER solver,LIS_INT *enabled,LIS_INT *nlocal)
+{
+    if(solver==NULL || enabled==NULL || nlocal==NULL)
+        return LIS_ERR_ILL_ARG;
+    *enabled=solver->mfamg_contact_aware;
+    *nlocal=solver->mfamg_contact_partition_n;
+    return LIS_SUCCESS;
+}
+
+LIS_INT lis_solver_compare_mfamg_contact_partition(
+    LIS_SOLVER solver,LIS_INT nlocal,const LIS_INT *partition,LIS_INT *equal)
+{
+    LIS_INT i;
+    if(solver==NULL || equal==NULL || nlocal<0 ||
+       (nlocal>0 && partition==NULL) ||
+       (nlocal==0 && partition!=NULL))
+        return LIS_ERR_ILL_ARG;
+    *equal=LIS_FALSE;
+    if(nlocal!=solver->mfamg_contact_partition_n)
+        return LIS_SUCCESS;
+    if(nlocal>0 && solver->mfamg_contact_partition==NULL)
+        return LIS_ERR_ILL_ARG;
+    for(i=0;i<nlocal;i++)
+        if(partition[i]!=solver->mfamg_contact_partition[i])
+            return LIS_SUCCESS;
+    *equal=LIS_TRUE;
     return LIS_SUCCESS;
 }

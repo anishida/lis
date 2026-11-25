@@ -99,6 +99,9 @@ lis_solver_set_option_replace(
     solver->mfamg_contact_aware = fresh->mfamg_contact_aware;
     solver->ilut_rcm = fresh->ilut_rcm;
     solver->ilut_row_scale = fresh->ilut_row_scale;
+    solver->ilut_ras_overlap = fresh->ilut_ras_overlap;
+    solver->ilut_ras_domains = fresh->ilut_ras_domains;
+    solver->ilut_schur = fresh->ilut_schur;
     solver->ilutp_enabled = fresh->ilutp_enabled;
     solver->ilutp_threshold = fresh->ilutp_threshold;
     solver->ilutp_full = fresh->ilutp_full;
@@ -215,6 +218,9 @@ lis_solver_set_option_replace_if_changed(
         different = LIS_TRUE;
     if(!different && (solver->ilut_rcm!=fresh->ilut_rcm ||
                       solver->ilut_row_scale!=fresh->ilut_row_scale ||
+                      solver->ilut_ras_overlap!=fresh->ilut_ras_overlap ||
+                      solver->ilut_ras_domains!=fresh->ilut_ras_domains ||
+                      solver->ilut_schur!=fresh->ilut_schur ||
                       solver->ilutp_enabled!=fresh->ilutp_enabled ||
                       solver->ilutp_threshold!=fresh->ilutp_threshold ||
                       solver->ilutp_full!=fresh->ilutp_full ||
