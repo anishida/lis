@@ -238,7 +238,7 @@ static int check_managed_session(void){
     /* Deliberately accept the zero initial reduced iterate at a very loose
      * solver tolerance. Physical certification must still reject it, leaving
      * the caller's full output untouched. */
-    if(lis_solver_set_option("-tol 2 -conv_cond nrm2_b",solver) ||
+    if(lis_solver_set_option("-tol 2",solver) ||
        lis_vector_set_all((LIS_SCALAR)7,x) ||
        lis_sc_solver_session_solve(session,b,x,1e-7)!=LIS_SC_RESIDUAL_REJECTED ||
        lis_sc_solver_session_get_report(session,&report)!=LIS_SC_OK ||
