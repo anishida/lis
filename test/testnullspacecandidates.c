@@ -45,9 +45,17 @@ static int check_amg_basis_preparation(LIS_MATRIX A,LIS_SOLVER solver,
         {
             if(lis_vector_dot(solver->amg_coarse_basis[i],
                               solver->amg_coarse_basis[j],&dot) ||
-               dot!=(i==j?(LIS_SCALAR)1:(LIS_SCALAR)0))
+#ifdef _COMPLEX
+               cabs(dot-(i==j?(LIS_SCALAR)1:(LIS_SCALAR)0))>1e-12)
+#else
+               fabs((double)(dot-(i==j?(LIS_SCALAR)1:(LIS_SCALAR)0)))>1e-12)
+#endif
                 goto done;
         }
+    if(lis_solver_prepare_amg_coarse_basis(A,solver,3,cand,NULL,
+                (LIS_REAL)1e-12,&d) || d.group_count!=1 ||
+       d.accepted_count!=3)
+        goto done;
     if(lis_solver_prepare_amg_coarse_basis(A,solver,1,&zero,NULL,
                 (LIS_REAL)1e-12,&d)!=LIS_BREAKDOWN ||
        d.zero_count!=1 || d.accepted_count!=0 ||

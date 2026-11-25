@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "lislib.h"
+#include "lis_solver_capabilities.h"
 
 
 extern LIS_INT lis_precon_mfamg_get_half_storage_info(
@@ -5842,6 +5843,9 @@ static int check_independent_amg_basis(void)
        lis_solver_set_amg_coarse_basis(s,1,&z) ||
        lis_solver_clear_near_nullspace(s) ||
        lis_solver_get_amg_coarse_basis_dim(s,&dim) || dim!=1)
+        goto done;
+    /* GMRES with stationary MFAMG and interpolation-only modes is valid. */
+    if(lis_solver_check_nullspace_configuration(s,&status) || status!=0)
         goto done;
     if(lis_vector_set_all((LIS_SCALAR)0,z)) goto done;
     err=lis_solver_set_amg_coarse_basis(s,1,NULL);

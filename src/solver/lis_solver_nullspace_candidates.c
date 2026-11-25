@@ -14,6 +14,7 @@
 #include <float.h>
 #include <math.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "lislib.h"
 #include "lis_nullspace_candidates.h"
@@ -382,35 +383,34 @@ lis_solver_classify_nullspace_candidates(
         }
     }
 
+    if((uintmax_t)nvec>SIZE_MAX/sizeof(LIS_VECTOR))
+        return LIS_OUT_OF_MEMORY;
+
     basis = (LIS_VECTOR *)lis_malloc(
-        nvec*sizeof(LIS_VECTOR),
+        (size_t)nvec*sizeof(LIS_VECTOR),
         "lis_solver_classify_nullspace_candidates::basis");
+    if(basis) memset(basis,0,(size_t)nvec*sizeof(LIS_VECTOR));
     image = (LIS_VECTOR *)lis_malloc(
         nvec*sizeof(LIS_VECTOR),
         "lis_solver_classify_nullspace_candidates::image");
+    if(image) memset(image,0,(size_t)nvec*sizeof(LIS_VECTOR));
     exact = (LIS_VECTOR *)lis_malloc(
         nvec*sizeof(LIS_VECTOR),
         "lis_solver_classify_nullspace_candidates::exact");
+    if(exact) memset(exact,0,(size_t)nvec*sizeof(LIS_VECTOR));
     near = (LIS_VECTOR *)lis_malloc(
         nvec*sizeof(LIS_VECTOR),
         "lis_solver_classify_nullspace_candidates::near");
+    if(near) memset(near,0,(size_t)nvec*sizeof(LIS_VECTOR));
     left = (LIS_VECTOR *)lis_malloc(
         nvec*sizeof(LIS_VECTOR),
         "lis_solver_classify_nullspace_candidates::left");
+    if(left) memset(left,0,(size_t)nvec*sizeof(LIS_VECTOR));
 
     if(basis==NULL || image==NULL || exact==NULL || near==NULL || left==NULL)
     {
         err = LIS_OUT_OF_MEMORY;
         goto cleanup;
-    }
-
-    for(i=0;i<nvec;i++)
-    {
-        basis[i] = NULL;
-        image[i] = NULL;
-        exact[i] = NULL;
-        near[i] = NULL;
-        left[i] = NULL;
     }
 
     err = lis_vector_duplicate(A,&tmp_basis);
