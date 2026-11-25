@@ -481,3 +481,9 @@ test_PROGRAMS += testusertfqmrcallback
 testusertfqmrcallback_SOURCES = testusertfqmrcallback.c
 testusertfqmrcallback_LDADD = $(LDADD) -lm
 TESTS += testusertfqmrcallback$(EXEEXT)
+
+# BiCGSTAB(l) initial-iterate regression.
+test_PROGRAMS += testbicgstablinit
+testbicgstablinit_SOURCES = testbicgstablinit.c
+testbicgstablinit_LDADD = $(LDADD) -lm
+TESTS += testbicgstablinit$(EXEEXT)

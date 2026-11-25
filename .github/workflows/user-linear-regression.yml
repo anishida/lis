@@ -13,6 +13,7 @@ on:
       - 'src/solver/lis_solver_idrs.c'
       - 'src/solver/lis_solver_orthomin.c'
       - 'src/solver/lis_solver_qmr.c'
+      - 'test/testbicgstablinit.c'
       - 'test/testuserbicgstabl.c'
       - 'test/testusercrcomplex.c'
       - 'test/testusercrserrors.c'
@@ -49,6 +50,7 @@ on:
       - 'src/solver/lis_solver_idrs.c'
       - 'src/solver/lis_solver_orthomin.c'
       - 'src/solver/lis_solver_qmr.c'
+      - 'test/testbicgstablinit.c'
       - 'test/testuserbicgstabl.c'
       - 'test/testusercrcomplex.c'
       - 'test/testusercrserrors.c'
@@ -112,7 +114,7 @@ jobs:
           ./configure --enable-test --enable-omp --disable-mpi --disable-fortran --disable-f90 --disable-saamg ${index_flags}
           make -C src -j2
           export LD_LIBRARY_PATH="$PWD/src/.libs:${LD_LIBRARY_PATH:-}"
-          tests="testuserbicgstabl testusercrcomplex testusercrserrors testuserfgcrodrerrors testusergcrodrerrors testusergmreserrors testusergpbic testuseridrcallback testuserorthominerrors testusertfqmrcallback"
+          tests="testbicgstablinit testuserbicgstabl testusercrcomplex testusercrserrors testuserfgcrodrerrors testusergcrodrerrors testusergmreserrors testusergpbic testuseridrcallback testuserorthominerrors testusertfqmrcallback"
           make -C test $tests
           if [ "${{ matrix.mode }}" = asan-ubsan ]; then
             export ASAN_OPTIONS="detect_leaks=1:halt_on_error=1"

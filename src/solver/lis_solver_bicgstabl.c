@@ -202,7 +202,12 @@ LIS_INT lis_bicgstabl(LIS_SOLVER solver)
 	lis_solver_set_shadowresidual(solver,r[0],rtld);
 
 	lis_vector_copy(r[0],bp);
+	/* Keep the initial iterate separate from the preconditioned correction.
+	 * The physical solution is reconstructed as xp + M^-1 x. */
 	lis_vector_copy(x,xp);
+	if(solver->options[LIS_OPTIONS_INITGUESS_ZEROS])
+		lis_vector_set_all(0.0,xp);
+	lis_vector_set_all(0.0,x);
 	lis_vector_set_all(0.0,u[0]);
 	lis_vector_nrm2(r[0],&rnorm0);
 	rnorm  = rnorm0;
@@ -429,20 +434,24 @@ LIS_INT lis_bicgstabl(LIS_SOLVER solver)
 			}
 			else if ( ++noimp_count > maxiter_noimp )
 			{
-				solver->retcode = LIS_MAXITER;
-				solver->iter = iter;
-				solver->resid = nrm2;
-				solver->ptime = ptime;
-				lis_free(tau);
-				LIS_DEBUG_FUNC_OUT;
-				return LIS_MAXITER;
+				goto iteration_limit;
 			}
 		}
 	}
 
+iteration_limit:
+	/* A numerical stop still returns a physical iterate, not a
+	 * preconditioned correction. If reconstruction fails, restore xp. */
+	time = lis_wtime();
+	err = lis_psolve(solver,x,t);
+	ptime += lis_wtime()-time;
+	if(err) goto callback_failure;
+	lis_vector_copy(t,x);
+	lis_vector_axpy(1.0,xp,x);
 	solver->retcode   = LIS_MAXITER;
 	solver->iter      = iter;
 	solver->resid     = nrm2;
+	solver->ptime     = ptime;
 	lis_free(tau);
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_MAXITER;
