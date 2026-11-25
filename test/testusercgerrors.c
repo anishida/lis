@@ -182,6 +182,46 @@ done:
     return failed;
 }
 
+/* A numerical MAXITER on a native matrix still reports the physical
+ * residual, not an uncertified recurrence estimate. */
+static int native_maxiter(void)
+{
+    LIS_MATRIX A=NULL;
+    LIS_VECTOR b=NULL,x=NULL,r=NULL;
+    LIS_SOLVER s=NULL;
+    LIS_INT i,status;
+    LIS_REAL nr,nb,reported;
+    int failed=1;
+    if(lis_matrix_create(LIS_COMM_WORLD,&A) ||
+       lis_matrix_set_size(A,0,8))goto done;
+    for(i=0;i<8;i++){
+        if(lis_matrix_set_value(LIS_INS_VALUE,i,i,(LIS_SCALAR)(4+i),A))
+            goto done;
+        if(i>0 && lis_matrix_set_value(LIS_INS_VALUE,i,i-1,-1,A))goto done;
+        if(i<7 && lis_matrix_set_value(LIS_INS_VALUE,i,i+1,-1,A))goto done;
+    }
+    if(lis_matrix_set_type(A,LIS_MATRIX_CSR) || lis_matrix_assemble(A) ||
+       lis_vector_duplicate(A,&b) || lis_vector_duplicate(A,&x) ||
+       lis_vector_duplicate(A,&r) || lis_vector_set_all(1,b) ||
+       lis_vector_set_all(0,x) || lis_solver_create(&s) ||
+       lis_solver_set_option("-i gmres -p jacobi -scale none -maxiter 1 -tol 1e-14 -print none",s) ||
+       lis_solve(A,b,x,s) || lis_solver_get_status(s,&status) ||
+       status!=LIS_MAXITER || lis_solver_get_residualnorm(s,&reported) ||
+       lis_matvec(A,x,r) || lis_vector_axpy(-1,b,r) ||
+       lis_vector_nrm2(r,&nr) || lis_vector_nrm2(b,&nb) || !(nb>0) ||
+       !isfinite((double)reported) || fabs((double)(reported-nr/nb))>1e-10)
+        goto done;
+    failed=0;
+done:
+    if(s)lis_solver_destroy(s);
+    if(r)lis_vector_destroy(r);
+    if(x)lis_vector_destroy(x);
+    if(b)lis_vector_destroy(b);
+    if(A)lis_matrix_destroy(A);
+    printf("NATIVE_MAXITER_RESIDUAL %s\n",failed?"FAILED":"PASSED");
+    return failed;
+}
+
 int main(int argc,char **argv)
 {
 #ifdef USE_MPI
@@ -203,6 +243,7 @@ int main(int argc,char **argv)
     failed|=run(0,0,1); /* first preconditioner application */
     failed|=run(0,0,2); /* later preconditioner application */
     failed|=run(0,0,0); /* genuine convergence */
+    failed|=native_maxiter();
 #ifdef USE_QUAD_PRECISION
     failed|=run(1,0,1); /* QUAD registered-preconditioner failure */
     failed|=run(1,0,2); /* later QUAD failure */

@@ -103,14 +103,19 @@ LIS_INT lis_solver_classify_component_nullspace_candidates(
     LIS_COMPONENT_NULLSPACE_DIAGNOSTICS *diagnostics);
 
 /* Generic interpolation-mode preparation, independent of A*q defects. */
+/* Version 1 is the stable prefix for sized diagnostics. */
+#define LIS_AMG_BASIS_DIAGNOSTICS_VERSION 1u
 typedef struct LIS_AMG_BASIS_DIAGNOSTICS_STRUCT
 {
+    uint32_t struct_size,version;
     LIS_INT input_count;
     LIS_INT group_count;
     LIS_INT accepted_count;
     LIS_INT zero_count;
     LIS_INT dependent_count;
 } LIS_AMG_BASIS_DIAGNOSTICS;
+#define LIS_AMG_BASIS_DIAGNOSTICS_V1_SIZE \
+    (offsetof(LIS_AMG_BASIS_DIAGNOSTICS,dependent_count)+sizeof(LIS_INT))
 
 /* Normalize and remove dependent candidates by two-pass modified
  * Gram-Schmidt. Groups are processed in first-occurrence order; rank is
@@ -128,6 +133,11 @@ LIS_INT lis_solver_prepare_amg_coarse_basis(
     LIS_MATRIX A,LIS_SOLVER solver,LIS_INT nvec,LIS_VECTOR candidates[],
     const LIS_INT groups[],LIS_REAL relative_tolerance,
     LIS_AMG_BASIS_DIAGNOSTICS *diagnostics);
+/* Size-aware form: v1 minimum, copy only available bytes. NULL is allowed. */
+LIS_INT lis_solver_prepare_amg_coarse_basis_ex(
+    LIS_MATRIX A,LIS_SOLVER solver,LIS_INT nvec,LIS_VECTOR candidates[],
+    const LIS_INT groups[],LIS_REAL relative_tolerance,
+    LIS_AMG_BASIS_DIAGNOSTICS *diagnostics,size_t diagnostics_size);
 
 /* Return the dimension of the exact right-nullspace currently bound. */
 LIS_INT lis_solver_get_nullspace_dim(

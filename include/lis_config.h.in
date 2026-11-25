@@ -139,6 +139,9 @@
 /* Use MAIN__ macro with Fortran. */
 #undef USE_MAIN__
 
+/* Define to 1 to enable MPI. */
+#undef USE_MPI
+
 /* Define to 1 to enable quad precision operations. */
 #undef USE_QUAD_PRECISION
 
@@ -153,6 +156,15 @@
 
 /* Version number of package */
 #undef VERSION
+
+/* Define to 1 to use complex LIS scalars. */
+#undef _COMPLEX
+
+/* Define to 1 to use long double LIS scalars. */
+#undef _LONG__DOUBLE
+
+/* Define to 1 to use 64-bit LIS indices. */
+#undef _LONG__LONG
 
 /* Define to empty if 'const' does not conform to ANSI C. */
 #undef const

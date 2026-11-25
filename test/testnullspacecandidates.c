@@ -36,7 +36,8 @@ static int check_amg_basis_preparation(LIS_MATRIX A,LIS_SOLVER solver,
     input[3]=zero; input[4]=cand[2];
     err=lis_solver_prepare_amg_coarse_basis(A,solver,5,input,groups,
                                             (LIS_REAL)1e-12,&d);
-    if(err || d.input_count!=5 || d.group_count!=3 ||
+    if(err || d.version!=LIS_AMG_BASIS_DIAGNOSTICS_VERSION ||
+       d.struct_size!=sizeof(d) || d.input_count!=5 || d.group_count!=3 ||
        d.accepted_count!=3 || d.zero_count!=1 || d.dependent_count!=1 ||
        lis_solver_get_amg_coarse_basis_dim(solver,&dim) || dim!=3)
         goto done;
@@ -52,6 +53,9 @@ static int check_amg_basis_preparation(LIS_MATRIX A,LIS_SOLVER solver,
 #endif
                 goto done;
         }
+    if(lis_solver_prepare_amg_coarse_basis_ex(A,solver,3,cand,NULL,
+        (LIS_REAL)1e-12,&d,LIS_AMG_BASIS_DIAGNOSTICS_V1_SIZE-1)!=LIS_ERR_ILL_ARG)
+        goto done;
     if(lis_solver_prepare_amg_coarse_basis(A,solver,3,cand,NULL,
                 (LIS_REAL)1e-12,&d) || d.group_count!=1 ||
        d.accepted_count!=3)
