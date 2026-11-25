@@ -163,9 +163,10 @@ LIS_INT lis_matrix_auto_session_solve(
  * in paired mode. Non-Jacobi paths initially require real-double builds.
  * A USER/OPERATOR P is materialized into a second owned cache; A is
  * applied directly. Composite residual correction uses P, not A.
- * Both inputs are
- * borrowed and must publish generation changes. Any change to either
- * input conservatively resets the sequence before materialization.
+ * Both inputs are borrowed and must publish generation changes. Changes
+ * to either input's identity/structure or to P values reset the sequence
+ * before materialization. A values-only change can retain P; the solver
+ * still checks P configuration and certifies the physical residual.
  * Passing source==precon_source delegates to the original single path.
  * Outputs remain unchanged on API failure; check solver status separately.
  */
@@ -182,7 +183,8 @@ LIS_INT lis_matrix_auto_session_solve_with_precon_matrix(
  * communicators and the same distribution. Real double, GMRES/FGMRES,
  * Jacobi, default precision, no scaling, no nullspaces, no half storage.
  * Use a dedicated session; reset it before releasing any borrowed object.
- * Local preflight errors and generation changes are reduced collectively.
+ * Local preflight errors and invalidating generation changes are reduced
+ * collectively. A values-only change can retain Jacobi of unchanged P.
  * The underlying native MPI solver's failure contract still applies:
  * this does not add collective recovery for arbitrary internal allocation
  * failures or MPI failures. USER/OPERATOR materialization is not supported.

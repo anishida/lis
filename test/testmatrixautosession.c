@@ -15,6 +15,7 @@ typedef struct {
     LIS_INT failed_row;
     LIS_SOLVER observed_solver;
     LIS_INT assert_reset_before_row;
+    LIS_INT assert_retained_before_row;
     /* Induce failure only after a CSR row has actually been overwritten,
      * not in either of the two pre-refresh pattern-validation passes. */
     LIS_MATRIX watched_csr;
@@ -41,6 +42,16 @@ test_row(void *data,LIS_INT row,LIS_INT *nnz,LIS_INT *cols,LIS_SCALAR *vals)
             return LIS_ERR_ILL_ARG;
         }
         ctx->assert_reset_before_row=LIS_FALSE;
+    }
+    if(ctx->assert_retained_before_row)
+    {
+        if(ctx->observed_solver==NULL ||
+           ctx->observed_solver->sequence_precon==NULL)
+        {
+            fprintf(stderr,"A-only update discarded frozen P before matvec\n");
+            return LIS_ERR_ILL_ARG;
+        }
+        ctx->assert_retained_before_row=LIS_FALSE;
     }
     if(ctx->failed_row==row)
         return LIS_ERR_ILL_ARG;
@@ -449,6 +460,7 @@ int main(int argc,char **argv)
         LIS_PRECON kept;
         char options[]="-i gmres -p jacobi -restart 10 -tol 1e-11 -maxiter 80 -scale none";
         err=lis_solver_set_option_replace(options,solver);if(err)goto done;
+        ctx.observed_solver=solver;
         ctx2.failed_row=-1;
         ctx2.assert_reset_before_row=LIS_FALSE;
         err=test_matvec(&ctx,truth,b->value);if(err)goto done;
@@ -465,6 +477,33 @@ int main(int argc,char **argv)
             session,A,B,b,x,NULL,NULL,NULL,&pa);
         if(err || pa!=LIS_MATRIX_MATERIALIZE_REUSE ||
            solver->sequence_precon!=kept || test_solution(x,truth))goto done;
+        /* A changes while its independent, cached P stays frozen.  Force
+         * a fresh solve; the first physical matvec must see the old P. */
+        ctx.scale+=(LIS_REAL)0.25;
+        err=lis_matrix_mark_values_changed(A);if(err)goto done;
+        err=test_matvec(&ctx,truth,b->value);if(err)goto done;
+        if(lis_vector_set_all((LIS_SCALAR)0,x))goto done;
+        ctx.assert_retained_before_row=LIS_TRUE;
+        err=lis_matrix_auto_session_solve_with_precon_matrix(
+            session,A,B,b,x,NULL,NULL,NULL,&pa);
+        if(err || ctx.assert_retained_before_row ||
+           pa!=LIS_MATRIX_MATERIALIZE_REUSE || solver->sequence_precon!=kept ||
+           lis_solver_get_status(solver,&status) || status!=LIS_SUCCESS ||
+           test_solution(x,truth))goto done;
+        printf("PAIRED_AUTO_JACOBI_A_VALUES_REUSE PASS\n");
+        /* A structure changes still retire P before the first matvec. */
+        ctx.dense=!ctx.dense;
+        err=lis_matrix_mark_structure_changed(A);if(err)goto done;
+        err=test_matvec(&ctx,truth,b->value);if(err)goto done;
+        if(lis_vector_set_all((LIS_SCALAR)0,x))goto done;
+        ctx.assert_reset_before_row=LIS_TRUE;
+        err=lis_matrix_auto_session_solve_with_precon_matrix(
+            session,A,B,b,x,NULL,NULL,NULL,&pa);
+        if(err || ctx.assert_reset_before_row ||
+           pa!=LIS_MATRIX_MATERIALIZE_REUSE ||
+           lis_solver_get_status(solver,&status) || status!=LIS_SUCCESS ||
+           test_solution(x,truth))goto done;
+        printf("PAIRED_AUTO_A_STRUCTURE_RESET PASS\n");
         ctx2.scale+=(LIS_REAL)0.25;
         err=lis_matrix_mark_values_changed(B);if(err)goto done;
         ctx2.assert_reset_before_row=LIS_TRUE;
@@ -517,6 +556,18 @@ int main(int argc,char **argv)
             if(err || pa!=LIS_MATRIX_MATERIALIZE_REUSE ||
                solver->sequence_precon!=kept || test_solution(x,truth))
                 goto done;
+            ctx.scale+=(LIS_REAL)0.125;
+            err=lis_matrix_mark_values_changed(A);if(err)goto done;
+            err=test_matvec(&ctx,truth,b->value);if(err)goto done;
+            if(lis_vector_set_all((LIS_SCALAR)0,x))goto done;
+            ctx.assert_retained_before_row=LIS_TRUE;
+            err=lis_matrix_auto_session_solve_with_precon_matrix(
+                session,A,B,b,x,NULL,NULL,NULL,&pa);
+            if(err || ctx.assert_retained_before_row ||
+               pa!=LIS_MATRIX_MATERIALIZE_REUSE || solver->sequence_precon!=kept ||
+               lis_solver_get_status(solver,&status) || status!=LIS_SUCCESS ||
+               test_solution(x,truth))goto done;
+            printf("PAIRED_AUTO_%s_A_VALUES_REUSE PASS\n",names[profile]);
             if(profile>=2)
             {
                 ctx2.scale+=(LIS_REAL)0.25;

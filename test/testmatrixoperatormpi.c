@@ -78,9 +78,21 @@ static int check_distributed_pair(LIS_MATRIX A,LIS_MATRIX P,int rank)
        lis_vector_duplicate(A,&r) || lis_vector_set_all((LIS_SCALAR)1,x) ||
        lis_matvec(A,x,b) || lis_vector_nrm2(b,&nb) || !(nb>0))
         goto done;
-    for(pass=0;pass<3;pass++)
+    for(pass=0;pass<4;pass++)
     {
         if(pass==2)
+        {
+            /* A changes on one rank while P is frozen. The collective
+             * solve must keep P and certify the changed physical system. */
+            if(rank==0)
+            {
+                A->value[0]+=(LIS_SCALAR)1;
+                lis_matrix_mark_values_changed(A);
+            }
+            if(lis_vector_set_all((LIS_SCALAR)1,x) || lis_matvec(A,x,b) ||
+               lis_vector_nrm2(b,&nb) || !(nb>0))goto done;
+        }
+        if(pass==3)
         {
             /* Only one rank publishes a new generation. All ranks
              * must retire persistent state before the next solve. */
@@ -98,6 +110,12 @@ static int check_distributed_pair(LIS_MATRIX A,LIS_MATRIX P,int rank)
         if(lis_matvec(A,x,r) || lis_vector_axpy((LIS_SCALAR)-1,b,r) ||
            lis_vector_nrm2(r,&nr) || !(nr/nb<1e-9))goto done;
         kept=solver->sequence_precon;
+    }
+    /* Restore A for the subsequent operator tests. */
+    if(rank==0)
+    {
+        A->value[0]-=(LIS_SCALAR)1;
+        lis_matrix_mark_values_changed(A);
     }
     /* A null communicator must be rejected before MPI_Comm_compare. */
     {

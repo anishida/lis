@@ -1326,9 +1326,13 @@ lis_matrix_auto_session_solve_with_precon_matrix(
     err=lis_matrix_materialize_source_stamp(precon_source,&ps,&pv,0);
     if(err) return err;
 
+    /* The paired GMRES/FGMRES path has no persistent A-dependent Krylov
+     * basis.  A values-only update does not invalidate factors of P.
+     * Keep structural/P/cache changes conservative; the sequence layer
+     * still checks P generations, solver configuration and recovery. */
     if(!session->paired || !session->has_selection ||
        session->source!=source || session->precon_source!=precon_source ||
-       session->structure_stamp!=as || session->value_stamp!=av ||
+       session->structure_stamp!=as ||
        session->precon_structure_stamp!=ps || session->precon_value_stamp!=pv ||
        (pp==LIS_MATRIX_POLICY_CACHED_CSR &&
         (!session->precon_cache || !session->precon_cache->valid ||
@@ -1492,9 +1496,11 @@ LIS_INT lis_matrix_auto_session_solve_distributed_csr(
     bad=paired_collective_error(bad);
     if(bad)return bad;
 
+    /* A-only numeric changes retain Jacobi(P) on every rank.  If A==P,
+     * the P value stamp still triggers collective invalidation. */
     changed=!session->paired || !session->has_selection ||
         session->source!=A || session->precon_source!=P ||
-        session->structure_stamp!=as || session->value_stamp!=av ||
+        session->structure_stamp!=as ||
         session->precon_structure_stamp!=ps || session->precon_value_stamp!=pv ||
         !s->sequence_precon || s->sequence_precon_matrix!=P;
     if(MPI_Allreduce(&changed,&any_changed,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD)
