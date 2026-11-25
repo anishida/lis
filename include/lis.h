@@ -1701,9 +1701,12 @@ extern LIS_INT lis_gesolve_matrix_session_solve(
     LIS_VECTOR x,LIS_INT *policy_A,LIS_INT *policy_B);
 /* Diagnostics of the most recent session attempt, independent of the
  * lifetime of the borrowed eigensolver. Numeric values are diagnostic,
- * not certification of an eigenpair. A failed preflight/retirement can
- * leave earlier committed results accessible, but results_committed refers
- * only to this attempt. Explicit successful reset clears the report. */
+ * not certification of an eigenpair. A failure at VALIDATE or RETIRE can
+ * leave earlier committed results accessible; failures at PREPARE_A or
+ * later invalidate them. results_committed refers only to this attempt.
+ * iterations_available is false for an unsuccessful attempt with zero
+ * recorded iterations (zero may mean failure before iteration started).
+ * Explicit successful reset clears the report. */
 #define LIS_GESOLVE_STAGE_VALIDATE  1
 #define LIS_GESOLVE_STAGE_RETIRE    2
 #define LIS_GESOLVE_STAGE_PREPARE_A 3

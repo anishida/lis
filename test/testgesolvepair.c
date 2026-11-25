@@ -111,7 +111,7 @@ int main(int argc,char **argv)
     if(lis_gesolve_matrix_session_solve(session,NULL,B,x,NULL,NULL)!=LIS_ERR_ILL_ARG ||
        lis_gesolve_matrix_session_get_report(session,&report) ||
        report.stage!=LIS_GESOLVE_STAGE_VALIDATE || report.solver_called ||
-       report.results_committed ||
+       report.iterations_available || report.results_committed ||
        lis_gesolve_matrix_session_get_nev(session,&nev) || nev!=1)
         goto done;
     memcpy(&oldvalue,&lambda,sizeof(lambda));

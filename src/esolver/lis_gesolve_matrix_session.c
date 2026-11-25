@@ -212,10 +212,13 @@ lis_gesolve_matrix_session_solve(
     err=lis_gesolve(a,b,x,&lambda,s->esolver);
     e=s->esolver;
     /* Capture the original status before any cleanup replaces the object.
-     * PR #257 initializes staged iteration/residual arrays on allocation. */
+     * A zero-filled iteration slot on failure does not establish that the
+     * numerical loop ran. Preserve positive progress, but mark ambiguous
+     * zero counts unavailable. */
     r->solver_api_return=err;
     r->solver_status=e->retcode;
-    if(e->iter!=NULL && e->iter[0]>=0)
+    if(e->iter!=NULL && (e->iter[0]>0 ||
+       (e->iter[0]==0 && !err && e->retcode==LIS_SUCCESS)))
     {
         r->iterations=e->iter[0];
         r->iterations_available=LIS_TRUE;
