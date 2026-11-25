@@ -24,14 +24,15 @@
 #define KRYLOV_OMP_CHUNKS 32
 #define KRYLOV_DIRECTION_REJECT (128.0 * DBL_EPSILON)
 #define KRYLOV_MAX_SWEEPS 80
+#define KRYLOV_INC(counter) do { if ((counter)<INT_MAX) ++(counter); } while(0)
 #define KRYLOV_JACOBI_EPS (16.0 * DBL_EPSILON)
 
 struct krylov_workspace {
-    const lis_krylov_problem *problem;
+    const lis_krylov_problem64 *problem;
     const lis_krylov_options *options;
     lis_krylov_stats *stats;
     lis_krylov_ext_stats *ext_stats;
-    int n;
+    int64_t n;
     int ncv;
     double norm_a;
     double *basis;
@@ -58,7 +59,7 @@ struct krylov_workspace {
 
 struct lis_krylov_workspace {
     struct krylov_workspace buffers;
-    int n;
+    int64_t n;
     int ncv;             /* initial active subspace dimension */
     int capacity_ncv;    /* reserved basis/projection capacity */
     int nev;
@@ -66,7 +67,7 @@ struct lis_krylov_workspace {
     int hard_locking;
 };
 
-static double compensated_dot(int n, const double *a, const double *b)
+static double compensated_dot(int64_t n, const double *a, const double *b)
 {
 #ifdef _OPENMP
     if (n >= KRYLOV_OMP_MIN_N && omp_get_max_threads() > 1) {
@@ -75,12 +76,12 @@ static double compensated_dot(int n, const double *a, const double *b)
         int chunk;
         #pragma omp parallel for schedule(static)
         for (chunk = 0; chunk < KRYLOV_OMP_CHUNKS; ++chunk) {
-            const int begin = (int)(((long long)n * chunk) /
-                                    KRYLOV_OMP_CHUNKS);
-            const int end = (int)(((long long)n * (chunk + 1)) /
-                                  KRYLOV_OMP_CHUNKS);
+            const int64_t begin = (n / KRYLOV_OMP_CHUNKS) * chunk +
+                ((n % KRYLOV_OMP_CHUNKS) * chunk) / KRYLOV_OMP_CHUNKS;
+            const int64_t end = (n / KRYLOV_OMP_CHUNKS) * (chunk + 1) +
+                ((n % KRYLOV_OMP_CHUNKS) * (chunk + 1)) / KRYLOV_OMP_CHUNKS;
             double sum = 0.0, correction_local = 0.0;
-            int k;
+            int64_t k;
             for (k = begin; k < end; ++k) {
                 double item = a[k] * b[k] - correction_local;
                 double next = sum + item;
@@ -100,7 +101,7 @@ static double compensated_dot(int n, const double *a, const double *b)
 #endif
     double sum = 0.0;
     double compensation = 0.0;
-    int i;
+    int64_t i;
     for (i = 0; i < n; ++i) {
         double value = a[i] * b[i] - compensation;
         double next = sum + value;
@@ -110,7 +111,7 @@ static double compensated_dot(int n, const double *a, const double *b)
     return sum;
 }
 
-static double stable_norm(int n, const double *x)
+static double stable_norm(int64_t n, const double *x)
 {
 #ifdef _OPENMP
     if (n >= KRYLOV_OMP_MIN_N && omp_get_max_threads() > 1) {
@@ -120,12 +121,12 @@ static double stable_norm(int n, const double *x)
         int chunk;
         #pragma omp parallel for schedule(static)
         for (chunk = 0; chunk < KRYLOV_OMP_CHUNKS; ++chunk) {
-            const int begin = (int)(((long long)n * chunk) /
-                                    KRYLOV_OMP_CHUNKS);
-            const int end = (int)(((long long)n * (chunk + 1)) /
-                                  KRYLOV_OMP_CHUNKS);
+            const int64_t begin = (n / KRYLOV_OMP_CHUNKS) * chunk +
+                ((n % KRYLOV_OMP_CHUNKS) * chunk) / KRYLOV_OMP_CHUNKS;
+            const int64_t end = (n / KRYLOV_OMP_CHUNKS) * (chunk + 1) +
+                ((n % KRYLOV_OMP_CHUNKS) * (chunk + 1)) / KRYLOV_OMP_CHUNKS;
             double scale = 0.0, local_squares = 1.0;
-            int k;
+            int64_t k;
             for (k = begin; k < end; ++k) {
                 const double value = fabs(x[k]);
                 if (!isfinite(value)) {
@@ -165,7 +166,7 @@ static double stable_norm(int n, const double *x)
 #endif
     double scale = 0.0;
     double square_sum = 1.0;
-    int i;
+    int64_t i;
     for (i = 0; i < n; ++i) {
         double a = fabs(x[i]);
         if (!isfinite(a)) return INFINITY;
@@ -182,9 +183,9 @@ static double stable_norm(int n, const double *x)
     return scale == 0.0 ? 0.0 : scale * sqrt(square_sum);
 }
 
-static int all_finite(int n, const double *x)
+static int all_finite(int64_t n, const double *x)
 {
-    int i;
+    int64_t i;
     for (i = 0; i < n; ++i)
         if (!isfinite(x[i])) return 0;
     return 1;
@@ -192,28 +193,28 @@ static int all_finite(int n, const double *x)
 
 /* Vector kernels keep the original sequential order of projections.
  * Parallel updates finish before the next metric dot product. */
-static void vector_axpy(int n, double alpha, const double *y, double *x)
+static void vector_axpy(int64_t n, double alpha, const double *y, double *x)
 {
-    int i;
+    int64_t i;
 #ifdef _OPENMP
     #pragma omp parallel for schedule(static) if(n >= KRYLOV_OMP_MIN_N)
 #endif
     for (i = 0; i < n; ++i) x[i] += alpha * y[i];
 }
 
-static void vector_scale(int n, double scale, double *x)
+static void vector_scale(int64_t n, double scale, double *x)
 {
-    int i;
+    int64_t i;
 #ifdef _OPENMP
     #pragma omp parallel for schedule(static) if(n >= KRYLOV_OMP_MIN_N)
 #endif
     for (i = 0; i < n; ++i) x[i] *= scale;
 }
 
-static void vector_scale_pair(int n, double scale,
+static void vector_scale_pair(int64_t n, double scale,
                               double *x, double *metric_x)
 {
-    int i;
+    int64_t i;
 #ifdef _OPENMP
     #pragma omp parallel for schedule(static) if(n >= KRYLOV_OMP_MIN_N)
 #endif
@@ -226,14 +227,14 @@ static void vector_scale_pair(int n, double scale,
 static int apply_metric(struct krylov_workspace *s,
                         const double *x, double *y)
 {
-    const lis_krylov_problem *p = s->problem;
-    lis_krylov_matvec fn;
+    const lis_krylov_problem64 *p = s->problem;
+    lis_krylov_matvec64 fn;
     if (p->transform == LIS_KRYLOV_STANDARD) {
         memcpy(y, x, (size_t)s->n * sizeof(double));
     } else {
         fn = p->transform == LIS_KRYLOV_SHIFT_INVERT_A ?
              p->apply_a : p->apply_b;
-        ++s->stats->metric_count;
+        KRYLOV_INC(s->stats->metric_count);
         if (fn(p->ctx, s->n, x, y)) return -1;
     }
     return all_finite(s->n, y) ? 0 : -2;
@@ -244,9 +245,9 @@ static int apply_metric(struct krylov_workspace *s,
 static int verify_inverse(struct krylov_workspace *s,
                           const double *rhs, const double *solution)
 {
-    const lis_krylov_problem *p = s->problem;
+    const lis_krylov_problem64 *p = s->problem;
     double numerator, denominator;
-    int i;
+    int64_t i;
 
     if (s->options->inner_tol == 0.0) return 0;
     if (p->apply_a(p->ctx, s->n, solution, s->check)) return -1;
@@ -267,13 +268,13 @@ static int apply_operator(struct krylov_workspace *s,
                           const double *x, const double *metric_x,
                           double *y)
 {
-    const lis_krylov_problem *p = s->problem;
+    const lis_krylov_problem64 *p = s->problem;
     int err;
-    ++s->stats->op_count;
+    KRYLOV_INC(s->stats->op_count);
     if (p->transform == LIS_KRYLOV_STANDARD) {
         err = p->apply_a(p->ctx, s->n, x, y);
     } else {
-        ++s->stats->solve_count;
+        KRYLOV_INC(s->stats->solve_count);
         err = p->solve(p->ctx, s->n, metric_x, y);
         if (!err && all_finite(s->n, y))
             err = verify_inverse(s, metric_x, y);
@@ -397,14 +398,14 @@ static int append_vector(struct krylov_workspace *s,
                (size_t)s->n * sizeof(double));
     err = apply_operator(s, x, s->metric_x,
                          s->images + (size_t)count * s->n);
-    if (!err && s->ext_stats) ++s->ext_stats->basis_vectors;
+    if (!err && s->ext_stats) KRYLOV_INC(s->ext_stats->basis_vectors);
     return err;
 }
 
-static void seed_vector(int n, double *x, unsigned seed)
+static void seed_vector(int64_t n, double *x, unsigned seed)
 {
     unsigned state = seed ^ 0x6d2b79f5u;
-    int i;
+    int64_t i;
     for (i = 0; i < n; ++i) {
         state ^= state << 13;
         state ^= state >> 17;
@@ -426,13 +427,13 @@ static int append_extra_seeds(struct krylov_workspace *s, int *count,
             int rc;
             seed_vector(s->n, s->x, start_seed +
                         (unsigned)extra * 41u + (unsigned)trial);
-            if (s->ext_stats) ++s->ext_stats->extra_seed_attempts;
+            if (s->ext_stats) KRYLOV_INC(s->ext_stats->extra_seed_attempts);
             rc = append_range_seed(s, *count, s->x);
             if (rc < 0) return rc;
             if (rc == 0) {
                 ++*count;
                 ++accepted;
-                if (s->ext_stats) ++s->ext_stats->extra_seed_accepted;
+                if (s->ext_stats) KRYLOV_INC(s->ext_stats->extra_seed_accepted);
                 found = 1;
                 break;
             }
@@ -597,7 +598,7 @@ static double result_transformed_value(int transform, double sigma,
     return lambda / (lambda - sigma);
 }
 
-static void reorder_results(int n, int count, int transform, double sigma,
+static void reorder_results(int64_t n, int count, int transform, double sigma,
                             int both, int output_sort,
                             double *values, double *residuals,
                             double *vectors, double *scratch,
@@ -660,7 +661,8 @@ static void rotate_column(struct krylov_workspace *s,
                           const double *basis, int m,
                           int idx, double *output)
 {
-    int i, j;
+    int64_t i;
+    int j;
 #ifdef _OPENMP
     if (s->n >= KRYLOV_OMP_MIN_N && omp_get_max_threads() > 1) {
         #pragma omp parallel for schedule(static)
@@ -688,7 +690,7 @@ static int eigenpair_residual(struct krylov_workspace *s,
                               int m, int index, double mu,
                               double *lambda, double *relative)
 {
-    const lis_krylov_problem *p = s->problem;
+    const lis_krylov_problem64 *p = s->problem;
     double norm_a, norm_b, norm_r, norm_x, denom;
  
     rotate_column(s, s->basis, m, index, s->x);
@@ -838,7 +840,7 @@ void lis_krylov_ext_stats_default(lis_krylov_ext_stats *extra)
  * option and stats layouts. The new API has an explicit version/size
  * contract; unknown layouts fail rather than silently reading fields. */
 static int validate_extension(const lis_krylov_ext_options *ext,
-                              int n, int initial_ncv,
+                              int64_t n, int initial_ncv,
                               int *storage_ncv, int *restart_directions)
 {
     *storage_ncv = initial_ncv;
@@ -863,19 +865,23 @@ static int validate_extension(const lis_krylov_ext_options *ext,
 }
 
 static int allocate_workspace_buffers(struct krylov_workspace *s,
-                                      int n, int ncv, int nev,
+                                      int64_t n, int ncv, int nev,
                                       int transform, int hard_locking)
 {
     size_t basis_size, dense_size, scratch_size;
     size_t max_doubles, scratch_columns;
     if (!s || n < 3 || nev < 1 || nev >= n || ncv <= nev ||
-        ncv > n || n > INT_MAX / 8 || ncv > INT_MAX / 8)
+        ncv > n || ncv > INT_MAX / 8)
         return LIS_KRYLOV_BAD_ARGUMENT;
     /* Bound each factor BEFORE multiplication. Checking a size_t
      * product after it wraps cannot detect overflow on 32-bit targets.
      * The locked basis uses nev <= ncv columns, so the basis bound
      * below also covers its (nev * n) allocation. */
     max_doubles = SIZE_MAX / sizeof(double);
+    if ((uintmax_t)PTRDIFF_MAX / sizeof(double) < max_doubles)
+        max_doubles = (size_t)PTRDIFF_MAX / sizeof(double);
+    if ((uintmax_t)n > (uintmax_t)max_doubles)
+        return LIS_KRYLOV_BAD_ARGUMENT;
     scratch_columns = (size_t)(nev > ncv / 2 ? nev : ncv / 2);
     if ((size_t)n > max_doubles / (size_t)ncv ||
         (size_t)ncv > max_doubles / (size_t)ncv ||
@@ -929,7 +935,7 @@ failed:
     return LIS_KRYLOV_NO_MEMORY;
 }
 
-int lis_krylov_workspace_create(const lis_krylov_problem *p,
+int lis_krylov_workspace_create64(const lis_krylov_problem64 *p,
                                 const lis_krylov_options *o,
                                 const lis_krylov_ext_options *ext,
                                 lis_krylov_workspace **result)
@@ -943,10 +949,10 @@ int lis_krylov_workspace_create(const lis_krylov_problem *p,
         p->transform < LIS_KRYLOV_STANDARD ||
         p->transform > LIS_KRYLOV_SHIFT_INVERT_A)
         return LIS_KRYLOV_BAD_ARGUMENT;
+    if(o->nev >= INT_MAX/8) return LIS_KRYLOV_BAD_ARGUMENT;
     ncv = o->ncv ? o->ncv :
-          (o->nev < (p->n - 8) / 3 ? 3 * o->nev + 8 : p->n);
-    if (ncv <= o->nev || ncv > p->n || p->n > INT_MAX / 8 ||
-        ncv > INT_MAX / 8)
+          (o->nev < (p->n - 8) / 3 ? 3 * o->nev + 8 : (int)p->n);
+    if (ncv <= o->nev || ncv > p->n || ncv > INT_MAX / 8)
         return LIS_KRYLOV_BAD_ARGUMENT;
     rc = validate_extension(ext, p->n, ncv, &capacity, &directions);
     if (rc != LIS_KRYLOV_SUCCESS) return rc;
@@ -973,7 +979,7 @@ void lis_krylov_workspace_destroy(lis_krylov_workspace *workspace)
 }
 
 static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
-                         const lis_krylov_problem *p,
+                         const lis_krylov_problem64 *p,
                          const lis_krylov_options *o,
                          const lis_krylov_ext_options *ext,
                          double *values, double *vectors, double *residuals,
@@ -1036,10 +1042,10 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
     nev = o->nev;
     maxiter = o->maxiter ? o->maxiter : 300;
     tol = o->tol ? o->tol : 1.0e-10;
+    if(nev >= INT_MAX/8) return LIS_KRYLOV_BAD_ARGUMENT;
     ncv = o->ncv ? o->ncv :
-          (nev < (p->n - 8) / 3 ? 3 * nev + 8 : p->n);
-    if (ncv <= nev || ncv > p->n || p->n > INT_MAX / 8 ||
-        ncv > INT_MAX / 8) return LIS_KRYLOV_BAD_ARGUMENT;
+          (nev < (p->n - 8) / 3 ? 3 * nev + 8 : (int)p->n);
+    if (ncv <= nev || ncv > p->n || ncv > INT_MAX / 8) return LIS_KRYLOV_BAD_ARGUMENT;
     rc = validate_extension(ext, p->n, ncv, &capacity, &restart_directions);
     if (rc != LIS_KRYLOV_SUCCESS) return rc;
     if (reuse) {
@@ -1126,7 +1132,7 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
             memcpy(s.dense_work + (size_t)i * s.ncv,
                    s.projected + (size_t)i * s.ncv,
                    (size_t)m * sizeof(double));
-        if (ext_stats) ++ext_stats->projected_solves;
+        if (ext_stats) KRYLOV_INC(ext_stats->projected_solves);
         if (diagonalize(m, s.dense_work, s.ritz, s.eval, s.ncv)) {
             rc = LIS_KRYLOV_BREAKDOWN;
             goto done;
@@ -1234,7 +1240,7 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
                         goto done;
                     }
                 }
-                ++stats->restarts;
+                KRYLOV_INC(stats->restarts);
                 continue;
             }
             /* The original result pass uses the final sampled norm_a.
@@ -1322,7 +1328,7 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
                     ncv += increment;
                     if (ext_stats) {
                         ext_stats->ncv_final = ncv;
-                        ++ext_stats->ncv_growths;
+                        KRYLOV_INC(ext_stats->ncv_growths);
                     }
                     stalled_restarts = 0;
                 }
@@ -1332,7 +1338,7 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
                 if (keep < nev) keep = nev;
                 if (keep >= m) keep = m - 1;
                 restart_basis(&s, m, keep);
-                ++stats->restarts;
+                KRYLOV_INC(stats->restarts);
                 m = keep;
                 /* Multi-direction restarts near repeated roots can
                  * accumulate roundoff in the retained Ritz projection.
@@ -1389,8 +1395,8 @@ static int lis_krylov_symmetric_core(lis_krylov_workspace *reuse,
             rotate_column(&s, s.basis, old_m, idx, s.metric_x);
             norm_w = stable_norm(s.n, s.x);
             norm_v = stable_norm(s.n, s.metric_x);
-            for (i = 0; i < s.n; ++i)
-                s.x[i] -= mu * s.metric_x[i];
+            for (int64_t row = 0; row < s.n; ++row)
+                s.x[row] -= mu * s.metric_x[row];
             norm_r = stable_norm(s.n, s.x);
             threshold = KRYLOV_DIRECTION_REJECT *
                         (norm_w + fabs(mu) * norm_v);
@@ -1494,25 +1500,72 @@ done:
     return rc;
 }
 
-int lis_krylov_symmetric(const lis_krylov_problem *p,
-                         const lis_krylov_options *o,
-                         double *values, double *vectors, double *residuals,
-                         lis_krylov_stats *stats)
-{
-    return lis_krylov_symmetric_core(NULL, p, o, NULL, values, vectors,
-                                     residuals, stats, NULL);
-}
 
-int lis_krylov_symmetric_ex(const lis_krylov_problem *p,
-                            const lis_krylov_options *o,
-                            const lis_krylov_ext_options *ext,
-                            lis_krylov_workspace *workspace,
-                            double *values, double *vectors,
-                            double *residuals, lis_krylov_stats *stats,
-                            lis_krylov_ext_stats *ext_stats)
+/* Translate the original callback ABI without a function-pointer cast.
+ * Legacy dimensions retain the original INT_MAX/8 policy. */
+static int legacy_a64(void *ctx,int64_t n,const double *x,double *y)
 {
-    return lis_krylov_symmetric_core(workspace, p, o, ext, values,
-                                     vectors, residuals, stats, ext_stats);
+    const lis_krylov_problem *p=(const lis_krylov_problem*)ctx;
+    return p->apply_a(p->ctx,(int)n,x,y);
+}
+static int legacy_b64(void *ctx,int64_t n,const double *x,double *y)
+{
+    const lis_krylov_problem *p=(const lis_krylov_problem*)ctx;
+    return p->apply_b(p->ctx,(int)n,x,y);
+}
+static int legacy_solve64(void *ctx,int64_t n,const double *x,double *y)
+{
+    const lis_krylov_problem *p=(const lis_krylov_problem*)ctx;
+    return p->solve(p->ctx,(int)n,x,y);
+}
+static void legacy_problem64(const lis_krylov_problem *p,lis_krylov_problem64 *q)
+{
+    memset(q,0,sizeof(*q));
+    q->n=p->n;q->transform=p->transform;q->sigma=p->sigma;
+    q->ctx=(void*)p;
+    q->apply_a=p->apply_a?legacy_a64:NULL;
+    q->apply_b=p->apply_b?legacy_b64:NULL;
+    q->solve=p->solve?legacy_solve64:NULL;
+}
+int lis_krylov_workspace_create(const lis_krylov_problem *p,
+    const lis_krylov_options *o,const lis_krylov_ext_options *ext,
+    lis_krylov_workspace **result)
+{
+    lis_krylov_problem64 q;
+    if(result)*result=NULL;
+    if(!p || p->n>INT_MAX/8)return LIS_KRYLOV_BAD_ARGUMENT;
+    legacy_problem64(p,&q);
+    return lis_krylov_workspace_create64(&q,o,ext,result);
+}
+int lis_krylov_symmetric_ex64(const lis_krylov_problem64 *p,
+    const lis_krylov_options *o,const lis_krylov_ext_options *ext,
+    lis_krylov_workspace *workspace,double *values,double *vectors,
+    double *residuals,lis_krylov_stats *stats,lis_krylov_ext_stats *ext_stats)
+{
+    return lis_krylov_symmetric_core(workspace,p,o,ext,values,vectors,
+                                      residuals,stats,ext_stats);
+}
+int lis_krylov_symmetric_ex(const lis_krylov_problem *p,
+    const lis_krylov_options *o,const lis_krylov_ext_options *ext,
+    lis_krylov_workspace *workspace,double *values,double *vectors,
+    double *residuals,lis_krylov_stats *stats,lis_krylov_ext_stats *ext_stats)
+{
+    lis_krylov_problem64 q;
+    if(!p || p->n>INT_MAX/8)
+    {
+        if(stats)memset(stats,0,sizeof(*stats));
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    }
+    legacy_problem64(p,&q);
+    return lis_krylov_symmetric_ex64(&q,o,ext,workspace,values,vectors,
+                                     residuals,stats,ext_stats);
+}
+int lis_krylov_symmetric(const lis_krylov_problem *p,
+    const lis_krylov_options *o,double *values,double *vectors,
+    double *residuals,lis_krylov_stats *stats)
+{
+    return lis_krylov_symmetric_ex(p,o,NULL,NULL,values,vectors,residuals,
+                                  stats,NULL);
 }
 
 /* For SPD B, Sylvester's inertia law converts symmetric indefinite
@@ -1586,5 +1639,189 @@ int lis_krylov_solve_interval(const lis_krylov_problem *p,
     for (i = 0; i < count; ++i)
         if (!(values[i] > lower && values[i] < upper))
             return LIS_KRYLOV_NO_CONVERGENCE;
+    return LIS_KRYLOV_SUCCESS;
+}
+
+
+int lis_krylov_count_interval64(int64_t n, void *ctx,
+                              lis_krylov_inertia_callback64 inertia,
+                              double lower, double upper, int64_t *count)
+{
+    int64_t neg_lo = 0, neg_hi = 0, zero_lo = 0, zero_hi = 0;
+    if (count) *count = 0;
+    if (n <= 0 || !inertia || !count ||
+        !isfinite(lower) || !isfinite(upper) || !(lower < upper))
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    if (inertia(ctx, n, lower, &neg_lo, &zero_lo) ||
+        inertia(ctx, n, upper, &neg_hi, &zero_hi))
+        return LIS_KRYLOV_CALLBACK_ERROR;
+    if (neg_lo < 0 || neg_lo > n || neg_hi < 0 || neg_hi > n ||
+        zero_lo < 0 || zero_lo > n - neg_lo ||
+        zero_hi < 0 || zero_hi > n - neg_hi ||
+        neg_hi < neg_lo)
+        return LIS_KRYLOV_BREAKDOWN;
+    if (zero_lo || zero_hi) return LIS_KRYLOV_SINGULAR_SHIFT;
+    *count = neg_hi - neg_lo;
+    return LIS_KRYLOV_SUCCESS;
+}
+
+/* An independently counted symmetric window with a midpoint shift.
+ * For SPD B, transformed eigenvalues inside the symmetric open interval
+ * outrank those outside by magnitude. All requested pairs must converge
+ * and lie strictly inside the window before success can be claimed. */
+int lis_krylov_solve_interval64(const lis_krylov_problem64 *p,
+                              const lis_krylov_options *options,
+                              lis_krylov_inertia_callback64 inertia,
+                              double lower, double upper,
+                              double *values, double *vectors,
+                              double *residuals, lis_krylov_stats *stats,
+                              int64_t *expected_count)
+{
+    lis_krylov_options o;
+    double center;
+    int64_t count = 0;
+    int rc, i;
+    if (stats) memset(stats, 0, sizeof(*stats));
+    if (expected_count) *expected_count = 0;
+    if (!p || !options || !inertia || !stats || !expected_count ||
+        !values || !vectors || !residuals ||
+        p->transform != LIS_KRYLOV_SHIFT_INVERT_B ||
+        options->allow_semidefinite_metric ||
+        !isfinite(lower) || !isfinite(upper) || !(lower < upper))
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    center = lower + 0.5 * (upper - lower);
+    if (!isfinite(center) || p->sigma != center)
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    rc = lis_krylov_count_interval64(p->n, p->ctx, inertia,
+                                   lower, upper, &count);
+    if (rc != LIS_KRYLOV_SUCCESS) return rc;
+    *expected_count = count;
+    if (!count) return LIS_KRYLOV_SUCCESS;
+    if (options->nev < count || count >= p->n ||
+        (options->ncv && options->ncv <= count))
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    o = *options;
+    o.nev = (int)count;
+    o.which = "LM";
+    rc = lis_krylov_symmetric_ex64(p,&o,NULL,NULL,values,vectors,residuals,stats,NULL);
+    if (rc != LIS_KRYLOV_SUCCESS) return rc;
+    if (stats->nreturned != count || stats->nconv != count)
+        return LIS_KRYLOV_NO_CONVERGENCE;
+    for (i = 0; i < count; ++i)
+        if (!(values[i] > lower && values[i] < upper))
+            return LIS_KRYLOV_NO_CONVERGENCE;
+    return LIS_KRYLOV_SUCCESS;
+}
+
+
+/* Callback accounting is local to a synchronous solve; the original
+ * workspace does not retain callback/context state across calls. */
+typedef struct {
+    const lis_krylov_problem64 *original;
+    const lis_krylov_budget *limit;
+    lis_krylov_budget_stats *used;
+} krylov_budget_context;
+
+void lis_krylov_budget_default(lis_krylov_budget *budget)
+{
+    if (!budget) return;
+    memset(budget,0,sizeof(*budget));
+    budget->struct_size=(unsigned int)sizeof(*budget);
+    budget->version=LIS_KRYLOV_BUDGET_VERSION;
+}
+
+static int krylov_budget_call(krylov_budget_context *ctx,
+    lis_krylov_matvec64 cb,uint64_t *count,uint64_t limit,
+    int64_t n,const double *x,double *y)
+{
+    if (ctx->used->total >= (uint64_t)(INT_MAX/2) ||
+        (ctx->limit->max_total && ctx->used->total >= ctx->limit->max_total) ||
+        (limit && *count >= limit)) {
+        ctx->used->exhausted=1;
+        return -1;
+    }
+    ++*count;
+    ++ctx->used->total;
+    return cb(ctx->original->ctx,n,x,y);
+}
+static int krylov_budget_a(void *opaque,int64_t n,const double *x,double *y)
+{
+    krylov_budget_context *ctx=(krylov_budget_context*)opaque;
+    return krylov_budget_call(ctx,ctx->original->apply_a,
+        &ctx->used->apply_a,ctx->limit->max_apply_a,n,x,y);
+}
+static int krylov_budget_b(void *opaque,int64_t n,const double *x,double *y)
+{
+    krylov_budget_context *ctx=(krylov_budget_context*)opaque;
+    return krylov_budget_call(ctx,ctx->original->apply_b,
+        &ctx->used->apply_b,ctx->limit->max_apply_b,n,x,y);
+}
+static int krylov_budget_solve(void *opaque,int64_t n,const double *x,double *y)
+{
+    krylov_budget_context *ctx=(krylov_budget_context*)opaque;
+    return krylov_budget_call(ctx,ctx->original->solve,
+        &ctx->used->solve,ctx->limit->max_solve,n,x,y);
+}
+int lis_krylov_symmetric_budgeted64(const lis_krylov_problem64 *p,
+    const lis_krylov_options *o,const lis_krylov_ext_options *ext,
+    lis_krylov_workspace *workspace,const lis_krylov_budget *budget,
+    double *values,double *vectors,double *residuals,lis_krylov_stats *stats,
+    lis_krylov_ext_stats *ext_stats,lis_krylov_budget_stats *used)
+{
+    lis_krylov_problem64 wrapped;
+    krylov_budget_context ctx;
+    int rc;
+    if (stats) memset(stats,0,sizeof(*stats));
+    if (used) memset(used,0,sizeof(*used));
+    if (!p || !budget || !used ||
+        budget->struct_size!=(unsigned int)sizeof(*budget) ||
+        budget->version!=LIS_KRYLOV_BUDGET_VERSION)
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    ctx.original=p;ctx.limit=budget;ctx.used=used;
+    wrapped=*p;
+    wrapped.ctx=&ctx;
+    wrapped.apply_a=p->apply_a?krylov_budget_a:NULL;
+    wrapped.apply_b=p->apply_b?krylov_budget_b:NULL;
+    wrapped.solve=p->solve?krylov_budget_solve:NULL;
+    rc=lis_krylov_symmetric_ex64(&wrapped,o,ext,workspace,values,vectors,
+                              residuals,stats,ext_stats);
+    if (used->exhausted) {
+        if (stats) stats->nreturned=stats->nconv=0;
+        return LIS_KRYLOV_BUDGET_EXHAUSTED;
+    }
+    return rc;
+}
+int lis_krylov_symmetric_budgeted(const lis_krylov_problem *p,
+    const lis_krylov_options *o,const lis_krylov_ext_options *ext,
+    lis_krylov_workspace *workspace,const lis_krylov_budget *budget,
+    double *values,double *vectors,double *residuals,lis_krylov_stats *stats,
+    lis_krylov_ext_stats *ext_stats,lis_krylov_budget_stats *used)
+{
+    lis_krylov_problem64 q;
+    if(!p || p->n>INT_MAX/8)
+    {
+        if(stats)memset(stats,0,sizeof(*stats));
+        if(used)memset(used,0,sizeof(*used));
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    }
+    legacy_problem64(p,&q);
+    return lis_krylov_symmetric_budgeted64(&q,o,ext,workspace,budget,values,
+               vectors,residuals,stats,ext_stats,used);
+}
+int lis_krylov_select_converged(int nreturned,const double *values,
+    const double *residuals,double lower,double upper,double tolerance,
+    int *indices,int capacity,int *count)
+{
+    int i,k=0;
+    if (!count || nreturned<0 || capacity<nreturned ||
+        !(lower<upper) || !isfinite(tolerance) || tolerance<0 ||
+        (nreturned && (!values || !residuals || !indices)))
+        return LIS_KRYLOV_BAD_ARGUMENT;
+    for(i=0;i<nreturned;++i)
+        if(isfinite(values[i]) && values[i]>lower && values[i]<upper &&
+           isfinite(residuals[i]) && residuals[i]>=0 &&
+           residuals[i]<=tolerance)
+            indices[k++]=i;
+    *count=k;
     return LIS_KRYLOV_SUCCESS;
 }

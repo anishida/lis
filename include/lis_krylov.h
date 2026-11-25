@@ -5,6 +5,8 @@
 #ifndef LIS_KRYLOV_H
 #define LIS_KRYLOV_H
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -37,6 +39,19 @@ typedef struct {
     lis_krylov_matvec apply_b;
     lis_krylov_matvec solve;
 } lis_krylov_problem;
+
+/* 64-bit physical vector dimensions; the projected subspace dimensions
+ * (nev/ncv) remain int. All vectors are contiguous real double, local.
+ * Existing int-indexed entry points and layouts remain unchanged. */
+typedef int (*lis_krylov_matvec64)(void *ctx,int64_t n,
+                                  const double *x,double *y);
+typedef struct {
+    int64_t n;
+    int transform;
+    double sigma;
+    void *ctx;
+    lis_krylov_matvec64 apply_a,apply_b,solve;
+} lis_krylov_problem64;
 
 typedef struct {
     int nev;                       /* requested eigenpairs, 1 <= nev < n */
@@ -75,7 +90,8 @@ enum {
     LIS_KRYLOV_BREAKDOWN = 4,
     LIS_KRYLOV_NO_CONVERGENCE = 5,
     LIS_KRYLOV_INEXACT_SOLVE = 6,
-    LIS_KRYLOV_SINGULAR_SHIFT = 7
+    LIS_KRYLOV_SINGULAR_SHIFT = 7,
+    LIS_KRYLOV_BUDGET_EXHAUSTED = 8
 };
 
 /* Callback returning inertia of A - shift B from a symmetric indefinite
@@ -110,6 +126,16 @@ int lis_krylov_solve_interval(const lis_krylov_problem *problem,
                               double *values, double *vectors,
                               double *residuals, lis_krylov_stats *stats,
                               int *expected_count);
+
+/* Inertia counting can exceed the projected solver's int capacity. */
+typedef int (*lis_krylov_inertia_callback64)(void *ctx,int64_t n,double shift,
+                                            int64_t *negative,int64_t *zero);
+int lis_krylov_count_interval64(int64_t n,void *ctx,
+    lis_krylov_inertia_callback64 inertia,double lower,double upper,int64_t *count);
+int lis_krylov_solve_interval64(const lis_krylov_problem64 *problem,
+    const lis_krylov_options *options,lis_krylov_inertia_callback64 inertia,
+    double lower,double upper,double *values,double *vectors,double *residuals,
+    lis_krylov_stats *stats,int64_t *expected_count);
 
 void lis_krylov_options_default(lis_krylov_options *options);
 
@@ -173,6 +199,64 @@ int lis_krylov_symmetric_ex(const lis_krylov_problem *problem,
                             double *eigenvalues, double *eigenvectors,
                             double *residuals, lis_krylov_stats *stats,
                             lis_krylov_ext_stats *ext_stats);
+
+
+/* Same numerical core with 64-bit physical indexing and checked
+ * allocation products. Existing options and statistics are reused;
+ * cumulative int counters saturate at INT_MAX rather than overflowing.
+ * Workspace is compatible across entry points if its shape matches.
+ * This API does not provide MPI-distributed vector operations. */
+int lis_krylov_workspace_create64(const lis_krylov_problem64 *problem,
+    const lis_krylov_options *options,const lis_krylov_ext_options *ext_options,
+    lis_krylov_workspace **workspace);
+int lis_krylov_symmetric_ex64(const lis_krylov_problem64 *problem,
+    const lis_krylov_options *options,const lis_krylov_ext_options *ext_options,
+    lis_krylov_workspace *workspace,double *eigenvalues,double *eigenvectors,
+    double *residuals,lis_krylov_stats *stats,lis_krylov_ext_stats *ext_stats);
+
+/* Optional hard limits on actual application callback invocations.
+ * Zero means no user limit; a conservative total ceiling of INT_MAX/2
+ * also protects legacy signed statistics. Limits count attempted calls
+ * (including failed callbacks), not internal algebra or iterations.
+ * On exhaustion no eigenpairs are published (nreturned=nconv=0).
+ * A genuine application failure remains CALLBACK_ERROR.
+ * Struct layout is new; existing options/statistics are unchanged.
+ */
+#define LIS_KRYLOV_BUDGET_VERSION 1u
+typedef struct lis_krylov_budget {
+    unsigned int struct_size,version;
+    uint64_t max_apply_a,max_apply_b,max_solve,max_total;
+} lis_krylov_budget;
+typedef struct lis_krylov_budget_stats {
+    uint64_t apply_a,apply_b,solve,total;
+    int exhausted;
+} lis_krylov_budget_stats;
+void lis_krylov_budget_default(lis_krylov_budget *budget);
+int lis_krylov_symmetric_budgeted(
+    const lis_krylov_problem *problem,
+    const lis_krylov_options *options,
+    const lis_krylov_ext_options *ext_options,
+    lis_krylov_workspace *workspace,
+    const lis_krylov_budget *budget,
+    double *values,double *vectors,double *residuals,
+    lis_krylov_stats *stats,lis_krylov_ext_stats *ext_stats,
+    lis_krylov_budget_stats *budget_stats);
+
+int lis_krylov_symmetric_budgeted64(
+    const lis_krylov_problem64 *problem,const lis_krylov_options *options,
+    const lis_krylov_ext_options *ext_options,lis_krylov_workspace *workspace,
+    const lis_krylov_budget *budget,double *values,double *vectors,
+    double *residuals,lis_krylov_stats *stats,lis_krylov_ext_stats *ext_stats,
+    lis_krylov_budget_stats *budget_stats);
+
+/* Select indices of finite returned pairs in an open interval whose
+ * reported residual is nonnegative and <= tolerance. Preserve input
+ * order; never claim spectral completeness. Caller supplies capacity
+ * >= nreturned. +/- infinity is permitted as an interval boundary.
+ */
+int lis_krylov_select_converged(int nreturned,const double *values,
+    const double *residuals,double lower,double upper,double tolerance,
+    int *indices,int capacity,int *count);
 
 
 /* Return the leading nreturned approximate eigenpairs, ordered by 'which'.
