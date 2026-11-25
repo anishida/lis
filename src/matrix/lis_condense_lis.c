@@ -221,35 +221,48 @@ size_fail:
     return LIS_SC_SIZE;
 }
 
+/* Stage both owned objects; REUSE_ALL leaves both outputs NULL. */
+static lis_sc_status sc_lis_stage_update(const lis_sc_lis_session *session,
+                                LIS_MATRIX A,LIS_INT nblocks,
+                                const LIS_INT *block_ptr,const LIS_INT *block_dof,
+                                double pivot_tolerance,lis_sc_reuse_mode mode,
+                                lis_sc_plan **candidate,LIS_MATRIX *fresh){
+    lis_sc_csr av={0};
+    lis_sc_blocks bl={0};
+    lis_sc_status st;
+    *candidate=NULL;*fresh=NULL;
+    if(!session)return LIS_SC_BAD_ARGUMENT;
+    st=read_lis_csr(A,&av);if(st!=LIS_SC_OK)return st;
+    st=read_lis_blocks(nblocks,block_ptr,block_dof,av.n,&bl);
+    if(st==LIS_SC_OK)
+        st=lis_sc_stage(candidate,session->plan,&av,&bl,mode,pivot_tolerance);
+    if(st==LIS_SC_OK && *candidate)
+        st=materialize_schur(*candidate,fresh);
+    if(st!=LIS_SC_OK){
+        if(*fresh)lis_matrix_destroy(*fresh);
+        lis_sc_free(*candidate);*fresh=NULL;*candidate=NULL;
+    }
+    free_lis_blocks(&bl);free_lis_csr(&av);
+    return st;
+}
+static void sc_lis_commit(lis_sc_lis_session *session,lis_sc_plan *candidate,
+                          LIS_MATRIX fresh){
+    lis_sc_plan *oldplan=session->plan;
+    LIS_MATRIX oldmat=session->S;
+    session->plan=candidate;session->S=fresh;
+    if(oldmat)lis_matrix_destroy(oldmat);
+    lis_sc_free(oldplan);
+}
+
 lis_sc_status lis_sc_lis_update(lis_sc_lis_session *session,LIS_MATRIX A,
                                  LIS_INT nblocks,const LIS_INT *block_ptr,
                                  const LIS_INT *block_dof,double pivot_tolerance,
                                  lis_sc_reuse_mode mode){
-    lis_sc_csr av={0};
-    lis_sc_blocks bl={0};
-    lis_sc_plan *candidate=NULL,*oldplan;
-    LIS_MATRIX fresh=NULL,oldmat;
-    lis_sc_status st;
-    if(!session)return LIS_SC_BAD_ARGUMENT;
-    st=read_lis_csr(A,&av);if(st!=LIS_SC_OK)return st;
-    st=read_lis_blocks(nblocks,block_ptr,block_dof,av.n,&bl);
-    if(st!=LIS_SC_OK)goto cleanup;
-    st=lis_sc_stage(&candidate,session->plan,&av,&bl,mode,pivot_tolerance);
-    if(st!=LIS_SC_OK||!candidate)goto cleanup; /* REUSE_ALL is a no-op. */
-    st=materialize_schur(candidate,&fresh);
-    if(st!=LIS_SC_OK)goto cleanup;
-    /* Commit point: no allocation or numerical operation can fail beyond here. */
-    oldplan=session->plan;
-    oldmat=session->S;
-    session->plan=candidate;candidate=NULL;
-    session->S=fresh;fresh=NULL;
-    if(oldmat)lis_matrix_destroy(oldmat);
-    lis_sc_free(oldplan);
-cleanup:
-    if(fresh)lis_matrix_destroy(fresh);
-    lis_sc_free(candidate);
-    free_lis_blocks(&bl);
-    free_lis_csr(&av);
+    lis_sc_plan *candidate=NULL;
+    LIS_MATRIX fresh=NULL;
+    lis_sc_status st=sc_lis_stage_update(session,A,nblocks,block_ptr,block_dof,
+                                       pivot_tolerance,mode,&candidate,&fresh);
+    if(st==LIS_SC_OK && candidate)sc_lis_commit(session,candidate,fresh);
     return st;
 }
 
@@ -329,3 +342,157 @@ lis_sc_status lis_sc_lis_modes(const lis_sc_lis_session *s,LIS_INT nvec,
     return LIS_SC_OK;
 }
 #endif
+
+
+/* Managed layer deliberately uses the same low-level plan and materializer. */
+struct lis_sc_solver_session {
+    lis_sc_lis_session *sc;
+    LIS_SOLVER solver;
+    LIS_VECTOR g,u,full;
+    lis_sc_solver_report report;
+    LIS_INT has_report;
+};
+
+static void sc_solver_free_vectors(LIS_VECTOR g,LIS_VECTOR u,LIS_VECTOR full){
+    if(g)lis_vector_destroy(g);
+    if(u)lis_vector_destroy(u);
+    if(full)lis_vector_destroy(full);
+}
+static lis_sc_status sc_solver_work(LIS_MATRIX A,LIS_MATRIX S,
+                                  LIS_VECTOR *g,LIS_VECTOR *u,LIS_VECTOR *full){
+    *g=NULL;*u=NULL;*full=NULL;
+    if(lis_vector_duplicate(S,g) || lis_vector_duplicate(S,u) ||
+       lis_vector_duplicate(A,full)){
+        sc_solver_free_vectors(*g,*u,*full);
+        *g=NULL;*u=NULL;*full=NULL;
+        return LIS_SC_OUT_OF_MEMORY;
+    }
+    return LIS_SC_OK;
+}
+void lis_sc_solver_session_destroy(lis_sc_solver_session *s){
+    if(!s)return;
+    /* Retire solver and all references before releasing matrix/work storage. */
+    if(s->solver)lis_solver_destroy(s->solver);
+    sc_solver_free_vectors(s->g,s->u,s->full);
+    lis_sc_lis_destroy(s->sc);
+    free(s);
+}
+lis_sc_status lis_sc_solver_session_create(
+    LIS_MATRIX A,LIS_INT nblocks,const LIS_INT *block_ptr,
+    const LIS_INT *block_dof,double tol,lis_sc_solver_session **out){
+    lis_sc_solver_session *s;
+    lis_sc_status st;
+    LIS_INT err;
+    if(!out)return LIS_SC_BAD_ARGUMENT;
+    *out=NULL;
+    s=(lis_sc_solver_session*)calloc(1,sizeof(*s));
+    if(!s)return LIS_SC_OUT_OF_MEMORY;
+    st=lis_sc_lis_create(A,nblocks,block_ptr,block_dof,tol,&s->sc);
+    if(st!=LIS_SC_OK)goto fail;
+    err=lis_solver_create(&s->solver);
+    if(err){st=LIS_SC_OUT_OF_MEMORY;goto fail;}
+    err=lis_solver_set_sequence_policy(s->solver,LIS_SEQUENCE_POLICY_AUTO);
+    if(err){st=LIS_SC_SOLVER_ERROR;goto fail;}
+    st=sc_solver_work(A,lis_sc_lis_matrix(s->sc),&s->g,&s->u,&s->full);
+    if(st!=LIS_SC_OK)goto fail;
+    *out=s;return LIS_SC_OK;
+fail:
+    lis_sc_solver_session_destroy(s);
+    return st;
+}
+LIS_SOLVER lis_sc_solver_session_get_solver(lis_sc_solver_session *s){
+    return s?s->solver:NULL;
+}
+const lis_sc_lis_session *lis_sc_solver_session_get_condensation(
+    const lis_sc_solver_session *s){
+    return s?s->sc:NULL;
+}
+lis_sc_status lis_sc_solver_session_update(
+    lis_sc_solver_session *s,LIS_MATRIX A,LIS_INT nblocks,
+    const LIS_INT *block_ptr,const LIS_INT *block_dof,double tol,
+    lis_sc_reuse_mode mode){
+#if defined(USE_COMPLEX) || defined(_COMPLEX) || defined(USE_MPI)
+    (void)s;(void)A;(void)nblocks;(void)block_ptr;(void)block_dof;(void)tol;(void)mode;
+    return LIS_SC_UNSUPPORTED;
+#else
+    lis_sc_plan *candidate=NULL;
+    LIS_MATRIX fresh=NULL;
+    LIS_VECTOR g=NULL,u=NULL,full=NULL;
+    lis_sc_status st;
+    if(!s || !s->solver || !s->sc)return LIS_SC_BAD_ARGUMENT;
+    if(mode==LIS_SC_FULL &&
+       (s->solver->nullspace_dim || s->solver->left_nullspace_dim ||
+        s->solver->near_nullspace_dim || s->solver->amg_coarse_basis_dim ||
+        s->solver->mfamg_contact_partition_n))
+        return LIS_SC_REBIND_REQUIRED;
+    st=sc_lis_stage_update(s->sc,A,nblocks,block_ptr,block_dof,tol,mode,
+                          &candidate,&fresh);
+    if(st!=LIS_SC_OK || !candidate)return st; /* including verified REUSE_ALL */
+    st=sc_solver_work(A,fresh,&g,&u,&full);
+    if(st!=LIS_SC_OK)goto fail;
+    /* No matrix or workspace is released while the solver still borrows it. */
+    if(lis_solver_reset_sequence(s->solver)){st=LIS_SC_SOLVER_ERROR;goto fail;}
+    sc_solver_free_vectors(s->g,s->u,s->full);
+    sc_lis_commit(s->sc,candidate,fresh);
+    s->g=g;s->u=u;s->full=full;s->has_report=LIS_FALSE;
+    return LIS_SC_OK;
+fail:
+    sc_solver_free_vectors(g,u,full);
+    if(fresh)lis_matrix_destroy(fresh);
+    lis_sc_free(candidate);
+    return st;
+#endif
+}
+static int sc_solver_vector_compatible(LIS_VECTOR a,LIS_VECTOR b){
+    return a && b && a->label==LIS_LABEL_VECTOR &&
+        a->precision==LIS_PRECISION_DEFAULT && a->value &&
+        a->n==b->n && a->gn==b->gn && a->nprocs==1 &&
+        a->is==b->is && a->ie==b->ie;
+}
+lis_sc_status lis_sc_solver_session_solve(
+    lis_sc_solver_session *s,LIS_VECTOR b,LIS_VECTOR x,double tol){
+    lis_sc_solver_report *r;
+    if(!s || !s->solver || !s->sc)return LIS_SC_BAD_ARGUMENT;
+    r=&s->report;
+    memset(r,0,sizeof(*r));s->has_report=LIS_TRUE;
+    r->status=LIS_SC_BAD_ARGUMENT;
+    r->full_relative_residual=NAN;
+    if(!isfinite(tol) || tol<0 || !sc_solver_vector_compatible(b,s->full) ||
+       !sc_solver_vector_compatible(x,s->full))return r->status;
+    if(s->solver->options[LIS_OPTIONS_SCALE]!=LIS_SCALE_NONE ||
+       s->solver->options[LIS_OPTIONS_PRECISION]!=LIS_PRECISION_DEFAULT ||
+       s->solver->options[LIS_OPTIONS_STORAGE]!=0 ||
+       s->solver->options[LIS_OPTIONS_USE_AT]){
+        r->status=LIS_SC_UNSUPPORTED;return r->status;
+    }
+    r->status=lis_sc_lis_rhs(s->sc,b,s->g);
+    if(r->status!=LIS_SC_OK)return r->status;
+    r->solver_called=LIS_TRUE;
+    r->api_return=lis_solve_sequence(lis_sc_lis_matrix(s->sc),s->g,s->u,s->solver);
+    (void)lis_solver_get_status(s->solver,&r->solver_status);
+    (void)lis_solver_get_iter(s->solver,&r->iterations);
+    if(r->api_return!=LIS_SUCCESS || r->solver_status!=LIS_SUCCESS){
+        r->status=LIS_SC_SOLVER_ERROR;goto fail;
+    }
+    r->status=lis_sc_lis_reconstruct(s->sc,s->u,b,s->full);
+    if(r->status!=LIS_SC_OK)goto fail;
+    r->status=lis_sc_lis_residual(s->sc,b,s->full,&r->full_relative_residual);
+    if(r->status!=LIS_SC_OK)goto fail;
+    r->full_residual_valid=LIS_TRUE;
+    if(!isfinite(r->full_relative_residual) || r->full_relative_residual>tol){
+        r->status=LIS_SC_RESIDUAL_REJECTED;goto fail;
+    }
+    /* Full output is committed only after independent physical certification. */
+    if(lis_vector_copy(s->full,x)){r->status=LIS_SC_SOLVER_ERROR;goto fail;}
+    r->solution_committed=LIS_TRUE;
+    return r->status;
+fail:
+    /* Do not warm-start the next attempt with an uncertified iterate. */
+    (void)lis_vector_set_all((LIS_SCALAR)0,s->u);
+    return r->status;
+}
+lis_sc_status lis_sc_solver_session_get_report(
+    const lis_sc_solver_session *s,lis_sc_solver_report *r){
+    if(!s || !r || !s->has_report)return LIS_SC_BAD_ARGUMENT;
+    *r=s->report;return LIS_SC_OK;
+}

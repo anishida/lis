@@ -14,6 +14,10 @@
 #include <stdint.h>
 #include <limits.h>
 #include <string.h>
+#include <math.h>
+#ifdef USE_MPI
+#include <mpi.h>
+#endif
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -960,6 +964,11 @@ struct LIS_MATRIX_AUTO_SESSION_STRUCT
     uint64_t selected_csr_epoch;
     LIS_INT selected_policy;
     LIS_INT has_selection;
+    LIS_MATRIX_CSR_CACHE precon_cache;
+    LIS_MATRIX precon_source;
+    uint64_t precon_structure_stamp,precon_value_stamp;
+    uint64_t precon_csr_epoch;
+    LIS_INT paired;
 };
 
 #undef __FUNC__
@@ -1093,6 +1102,13 @@ lis_matrix_auto_session_solve(
        source==NULL || b==NULL || x==NULL)
         return LIS_ERR_ILL_ARG;
 
+    /* Leaving paired mode must retire state before either cache is touched. */
+    if(session->paired)
+    {
+        err=lis_matrix_auto_session_reset(session);
+        if(err) return err;
+    }
+
     /* The outputs are committed only after a successful solve. */
     err=lis_matrix_choose_solver_policy(
         source,session->solver,&desired_policy);
@@ -1216,6 +1232,292 @@ fail:
 }
 
 #undef __FUNC__
+#define __FUNC__ "lis_matrix_auto_session_solve_with_precon_matrix"
+LIS_INT
+lis_matrix_auto_session_solve_with_precon_matrix(
+    LIS_MATRIX_AUTO_SESSION session,
+    LIS_MATRIX source,LIS_MATRIX precon_source,
+    LIS_VECTOR b,LIS_VECTOR x,
+    LIS_INT *policy,LIS_INT *action,
+    LIS_INT *precon_policy,LIS_INT *precon_action)
+{
+    LIS_MATRIX selected=precon_source;
+    LIS_SOLVER solver;
+    uint64_t as,av,ps,pv;
+    LIS_INT pp=LIS_MATRIX_POLICY_DIRECT,pa=LIS_MATRIX_POLICY_ACTION_DIRECT;
+    LIS_INT err,reset_err,ap,aa,method,kind,threads=1;
+
+    if(!session || !session->solver || !source || !precon_source || !b || !x)
+        return LIS_ERR_ILL_ARG;
+    if(source==precon_source)
+    {
+        err=lis_matrix_auto_session_solve(session,source,b,x,&ap,&aa);
+        if(err) return err;
+        if(policy) *policy=ap;
+        if(action) *action=aa;
+        if(precon_policy) *precon_policy=ap;
+        if(precon_action) *precon_action=aa;
+        return LIS_SUCCESS;
+    }
+    solver=session->solver;
+    method=solver->options[LIS_OPTIONS_SOLVER];
+    kind=solver->options[LIS_OPTIONS_PRECON];
+#ifdef _OPENMP
+    threads=solver->num_threads>0 ? solver->num_threads : omp_get_max_threads();
+#endif
+    if(source->nprocs!=1 || precon_source->nprocs!=1 ||
+       source->n!=source->gn || precon_source->n!=precon_source->gn ||
+       (method!=LIS_SOLVER_GMRES && method!=LIS_SOLVER_FGMRES) ||
+       (kind!=LIS_PRECON_TYPE_JACOBI && kind!=LIS_PRECON_TYPE_ILUT &&
+        kind!=LIS_PRECON_TYPE_MFAMG && kind!=LIS_PRECON_TYPE_MFAMG_ILUTP) ||
+       solver->options[LIS_OPTIONS_SCALE]!=LIS_SCALE_NONE ||
+       source->is_scaled || precon_source->is_scaled ||
+       solver->options[LIS_OPTIONS_PRECISION]!=LIS_PRECISION_DEFAULT ||
+       solver->options[LIS_OPTIONS_STORAGE]!=0 ||
+       solver->options[LIS_OPTIONS_ADDS] || solver->options[LIS_OPTIONS_USE_AT] ||
+       solver->nullspace_dim || solver->left_nullspace_dim ||
+       solver->near_nullspace_dim ||
+       !lis_matrix_policy_has_matvec(source,0))
+        return LIS_ERR_NOT_IMPLEMENTED;
+    if(source->n<=0 || source->n!=precon_source->n ||
+       source->is!=precon_source->is || source->ie!=precon_source->ie ||
+       b->label!=LIS_LABEL_VECTOR || x->label!=LIS_LABEL_VECTOR ||
+       b->precision!=LIS_PRECISION_DEFAULT || x->precision!=LIS_PRECISION_DEFAULT ||
+       !b->value || !x->value || b->nprocs!=1 || x->nprocs!=1 ||
+       b->n!=source->n || x->n!=source->n ||
+       b->gn!=source->gn || x->gn!=source->gn ||
+       b->is!=source->is || x->is!=source->is ||
+       b->ie!=source->ie || x->ie!=source->ie)
+        return LIS_ERR_ILL_ARG;
+    if(kind!=LIS_PRECON_TYPE_JACOBI)
+    {
+#if defined(_COMPLEX) || defined(USE_COMPLEX) || defined(_LONG__DOUBLE)
+        return LIS_ERR_NOT_IMPLEMENTED;
+#endif
+        if(solver->precon_half_mode!=LIS_PRECON_HALF_OFF ||
+           (precon_source->matrix_type==LIS_MATRIX_CSR && precon_source->is_splited))
+            return LIS_ERR_NOT_IMPLEMENTED;
+        if(kind==LIS_PRECON_TYPE_ILUT || kind==LIS_PRECON_TYPE_MFAMG_ILUTP)
+        {
+            if(solver->ilut_ras_overlap<0)
+            {
+                if(threads!=1 || solver->ilut_schur)
+                    return LIS_ERR_NOT_IMPLEMENTED;
+            }
+            else if(solver->ilut_ras_overlap>2 ||
+                    solver->ilut_ras_domains<2 || solver->ilut_ras_domains>16 ||
+                    solver->ilut_ras_domains>precon_source->n)
+                return LIS_ERR_ILL_ARG;
+        }
+        if(kind==LIS_PRECON_TYPE_MFAMG_ILUTP && method!=LIS_SOLVER_FGMRES)
+            return LIS_ERR_NOT_IMPLEMENTED;
+        if((kind==LIS_PRECON_TYPE_MFAMG || kind==LIS_PRECON_TYPE_MFAMG_ILUTP) &&
+           (solver->amg_coarse_basis_dim<=0 || !solver->amg_coarse_basis))
+            return LIS_ERR_ILL_ARG;
+    }
+    if(precon_source->matrix_type==LIS_MATRIX_USER ||
+       precon_source->matrix_type==LIS_MATRIX_OPERATOR)
+        pp=LIS_MATRIX_POLICY_CACHED_CSR;
+    else if(precon_source->matrix_type!=LIS_MATRIX_CSR)
+        return LIS_ERR_NOT_IMPLEMENTED;
+
+    err=lis_matrix_materialize_source_stamp(source,&as,&av,0);
+    if(err) return err;
+    err=lis_matrix_materialize_source_stamp(precon_source,&ps,&pv,0);
+    if(err) return err;
+
+    if(!session->paired || !session->has_selection ||
+       session->source!=source || session->precon_source!=precon_source ||
+       session->structure_stamp!=as || session->value_stamp!=av ||
+       session->precon_structure_stamp!=ps || session->precon_value_stamp!=pv ||
+       (pp==LIS_MATRIX_POLICY_CACHED_CSR &&
+        (!session->precon_cache || !session->precon_cache->valid ||
+         session->precon_cache->source!=precon_source ||
+         session->precon_cache->epoch!=session->precon_csr_epoch)))
+    {
+        err=lis_solver_reset_sequence(solver);
+        if(err) goto fail;
+        session->has_selection=LIS_FALSE;
+    }
+    session->paired=LIS_TRUE;
+    if(pp==LIS_MATRIX_POLICY_CACHED_CSR)
+    {
+        err=lis_matrix_materialize_csr_cached(precon_source,
+                 &session->precon_cache,&selected,&pa);
+        if(err) goto fail;
+    }
+    err=lis_solve_sequence_with_precon_matrix(source,selected,b,x,solver);
+    if(err) goto fail;
+    session->source=source;
+    session->precon_source=precon_source;
+    session->structure_stamp=as;
+    session->value_stamp=av;
+    session->precon_structure_stamp=ps;
+    session->precon_value_stamp=pv;
+    session->precon_csr_epoch=pp==LIS_MATRIX_POLICY_CACHED_CSR ?
+                             session->precon_cache->epoch : 0;
+    session->selected_policy=LIS_MATRIX_POLICY_DIRECT;
+    session->selected_csr_epoch=0;
+    session->has_selection=LIS_TRUE;
+    if(policy) *policy=LIS_MATRIX_POLICY_DIRECT;
+    if(action) *action=LIS_MATRIX_POLICY_ACTION_DIRECT;
+    if(precon_policy) *precon_policy=pp;
+    if(precon_action) *precon_action=pa;
+    return LIS_SUCCESS;
+fail:
+    reset_err=lis_solver_reset_sequence(solver);
+    if(session->precon_cache) session->precon_cache->valid=LIS_FALSE;
+    if(session->cache) session->cache->valid=LIS_FALSE;
+    session->has_selection=LIS_FALSE;
+    session->source=NULL;
+    session->precon_source=NULL;
+    return err ? err : reset_err;
+}
+
+#ifdef USE_MPI
+static int paired_world_comm(LIS_Comm comm)
+{
+    int relation;
+    return MPI_Comm_compare(comm,MPI_COMM_WORLD,&relation)==MPI_SUCCESS &&
+           (relation==MPI_IDENT || relation==MPI_CONGRUENT);
+}
+static int paired_collective_error(int local)
+{
+    int global=0;
+    if(MPI_Allreduce(&local,&global,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD)
+       !=MPI_SUCCESS)return LIS_ERR_ILL_ARG;
+    return global;
+}
+#endif
+
+#undef __FUNC__
+#define __FUNC__ "lis_matrix_auto_session_solve_distributed_csr"
+LIS_INT lis_matrix_auto_session_solve_distributed_csr(
+    LIS_MATRIX_AUTO_SESSION session,LIS_MATRIX A,LIS_MATRIX P,
+    LIS_VECTOR b,LIS_VECTOR x)
+{
+#if !defined(USE_MPI) || defined(_COMPLEX) || defined(USE_COMPLEX) || defined(_LONG__DOUBLE)
+    (void)session;(void)A;(void)P;(void)b;(void)x;
+    return LIS_ERR_NOT_IMPLEMENTED;
+#else
+    LIS_SOLVER s=session?session->solver:NULL;
+    LIS_INT i,k,method,err;
+    LIS_INT options[LIS_OPTIONS_LEN],controls[5];
+    LIS_SCALAR params[LIS_PARAMS_LEN];
+    uint64_t as=0,av=0,ps=0,pv=0;
+    int bad=0,changed=0,any_changed=0;
+    int size=0;
+    double d;
+    if(MPI_Comm_size(MPI_COMM_WORLD,&size)!=MPI_SUCCESS)
+        return LIS_ERR_ILL_ARG;
+    /* Do not dereference a locally invalid argument before the collective. */
+    if(!s || !A || !P || !b || !x)bad=LIS_ERR_ILL_ARG;
+    else if(A->matrix_type!=LIS_MATRIX_CSR || P->matrix_type!=LIS_MATRIX_CSR ||
+            A->is_splited || P->is_splited || A->is_scaled || P->is_scaled ||
+            s->options[LIS_OPTIONS_PRECON]!=LIS_PRECON_TYPE_JACOBI ||
+            s->options[LIS_OPTIONS_SCALE]!=LIS_SCALE_NONE ||
+            s->options[LIS_OPTIONS_PRECISION]!=LIS_PRECISION_DEFAULT ||
+            s->options[LIS_OPTIONS_STORAGE]!=0 ||
+            s->options[LIS_OPTIONS_ADDS] || s->options[LIS_OPTIONS_USE_AT] ||
+            s->precon_half_mode!=LIS_PRECON_HALF_OFF ||
+            s->nullspace_dim || s->left_nullspace_dim ||
+            s->near_nullspace_dim || s->amg_coarse_basis_dim ||
+            s->mfamg_contact_partition_n ||
+            s->sequence_policy!=LIS_SEQUENCE_POLICY_AUTO ||
+            s->sequence_precon_refresh_policy!=LIS_SEQUENCE_PRECON_REFRESH_SAFE)
+        bad=LIS_ERR_NOT_IMPLEMENTED;
+    else if(!paired_world_comm(A->comm) || !paired_world_comm(P->comm) ||
+            !paired_world_comm(b->comm) || !paired_world_comm(x->comm) ||
+            A->nprocs!=size || P->nprocs!=size || b->nprocs!=size || x->nprocs!=size ||
+            A->gn<=0 || A->n<=0 || A->n!=P->n || A->gn!=P->gn ||
+            A->is!=P->is || A->ie!=P->ie ||
+            b->label!=LIS_LABEL_VECTOR || x->label!=LIS_LABEL_VECTOR ||
+            b->precision!=LIS_PRECISION_DEFAULT || x->precision!=LIS_PRECISION_DEFAULT ||
+            b->n!=A->n || x->n!=A->n || b->gn!=A->gn || x->gn!=A->gn ||
+            b->is!=A->is || x->is!=A->is || b->ie!=A->ie || x->ie!=A->ie ||
+            !A->ptr || !A->index || !A->value || !P->ptr || !P->index ||
+            !P->value || !b->value || !x->value || b==x)
+        bad=LIS_ERR_ILL_ARG;
+    if(!bad)
+    {
+        method=s->options[LIS_OPTIONS_SOLVER];
+        if(method!=LIS_SOLVER_GMRES && method!=LIS_SOLVER_FGMRES)
+            bad=LIS_ERR_NOT_IMPLEMENTED;
+        /* Jacobi must not create infinities on a subset of ranks. */
+        for(i=0;!bad && i<P->n;i++)
+        {
+            d=0;
+            for(k=P->ptr[i];k<P->ptr[i+1];k++)
+                if(P->index[k]==i){d=(double)P->value[k];break;}
+            if(!isfinite(d) || d==0 || !isfinite(1.0/d))
+                bad=LIS_ERR_ILL_ARG;
+        }
+    }
+    bad=paired_collective_error(bad);
+    if(bad)return bad;
+
+    /* Identical solver controls ensure all ranks take the same Krylov
+     * path. Compare numeric params using their native MPI datatype. */
+    memcpy(options,s->options,sizeof(options));
+    memcpy(params,s->params,sizeof(params));
+    controls[0]=s->sequence_policy;
+    controls[1]=s->sequence_precon_refresh_policy;
+    controls[2]=s->sequence_precon_max_age;
+    controls[3]=s->num_threads;
+    controls[4]=s->setup;
+    if(MPI_Bcast(options,LIS_OPTIONS_LEN,LIS_MPI_INT,0,MPI_COMM_WORLD)!=MPI_SUCCESS ||
+       MPI_Bcast(params,LIS_PARAMS_LEN,LIS_MPI_SCALAR,0,MPI_COMM_WORLD)!=MPI_SUCCESS ||
+       MPI_Bcast(controls,5,LIS_MPI_INT,0,MPI_COMM_WORLD)!=MPI_SUCCESS)
+        return LIS_ERR_ILL_ARG;
+    if(memcmp(options,s->options,sizeof(options)) ||
+       memcmp(params,s->params,sizeof(params)) ||
+       controls[0]!=s->sequence_policy ||
+       controls[1]!=s->sequence_precon_refresh_policy ||
+       controls[2]!=s->sequence_precon_max_age ||
+       controls[3]!=s->num_threads || controls[4]!=s->setup || s->setup)
+        bad=LIS_ERR_ILL_ARG;
+    err=lis_matrix_materialize_source_stamp(A,&as,&av,0);
+    if(!err)err=lis_matrix_materialize_source_stamp(P,&ps,&pv,0);
+    if(err)bad=(int)err;
+    bad=paired_collective_error(bad);
+    if(bad)return bad;
+
+    changed=!session->paired || !session->has_selection ||
+        session->source!=A || session->precon_source!=P ||
+        session->structure_stamp!=as || session->value_stamp!=av ||
+        session->precon_structure_stamp!=ps || session->precon_value_stamp!=pv ||
+        !s->sequence_precon || s->sequence_precon_matrix!=P;
+    if(MPI_Allreduce(&changed,&any_changed,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD)
+        !=MPI_SUCCESS)return LIS_ERR_ILL_ARG;
+    if(any_changed)
+    {
+        err=lis_matrix_auto_session_reset(session);
+        bad=paired_collective_error((int)err);
+        if(bad)return bad;
+    }
+
+    /* Native MPI solve: no callback or row materialization introduced.
+     * Internal MPI/OOM recovery is intentionally not claimed here. */
+    err=lis_solve_sequence_with_precon_matrix(A,P,b,x,s);
+    bad=paired_collective_error((int)err);
+    if(bad)
+    {
+        (void)lis_matrix_auto_session_reset(session);
+        return bad;
+    }
+    session->paired=LIS_TRUE;
+    session->source=A;
+    session->precon_source=P;
+    session->structure_stamp=as;session->value_stamp=av;
+    session->precon_structure_stamp=ps;session->precon_value_stamp=pv;
+    session->selected_policy=LIS_MATRIX_POLICY_DIRECT;
+    session->selected_csr_epoch=0;session->precon_csr_epoch=0;
+    session->has_selection=LIS_TRUE;
+    return LIS_SUCCESS;
+#endif
+}
+
+#undef __FUNC__
 #define __FUNC__ "lis_matrix_auto_session_reset"
 LIS_INT
 lis_matrix_auto_session_reset(LIS_MATRIX_AUTO_SESSION session)
@@ -1231,6 +1533,11 @@ lis_matrix_auto_session_reset(LIS_MATRIX_AUTO_SESSION session)
 
     lis_matrix_csr_cache_destroy(session->cache);
     session->cache=NULL;
+    lis_matrix_csr_cache_destroy(session->precon_cache);
+    session->precon_cache=NULL;
+    session->precon_source=NULL;
+    session->precon_csr_epoch=0;
+    session->paired=LIS_FALSE;
     session->source=NULL;
     session->has_selection=LIS_FALSE;
     session->selected_csr_epoch=0;
@@ -1249,6 +1556,7 @@ lis_matrix_auto_session_destroy(LIS_MATRIX_AUTO_SESSION session)
     if(session->solver)
         lis_solver_destroy(session->solver);
     lis_matrix_csr_cache_destroy(session->cache);
+    lis_matrix_csr_cache_destroy(session->precon_cache);
     memset(session,0,sizeof(*session));
     lis_free(session);
 }

@@ -602,6 +602,9 @@ const char *lis_sc_status_string(lis_sc_status st){
     case LIS_SC_OUT_OF_MEMORY:return "OUT_OF_MEMORY";
     case LIS_SC_PATTERN_MISMATCH:return "PATTERN_MISMATCH";
     case LIS_SC_UNSUPPORTED:return "UNSUPPORTED";
+    case LIS_SC_SOLVER_ERROR:return "SOLVER_ERROR";
+    case LIS_SC_RESIDUAL_REJECTED:return "RESIDUAL_REJECTED";
+    case LIS_SC_REBIND_REQUIRED:return "REBIND_REQUIRED";
     default:return "UNKNOWN";
     }
 }
