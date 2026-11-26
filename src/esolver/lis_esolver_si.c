@@ -151,7 +151,7 @@ lis_esi_solve_with_retry(
                 return LIS_SUCCESS;
         }
 
-        if( !lis_esolver_inner_solve_retryable(status) )
+        if( !lis_esolver_inner_solve_can_retry(A,NULL,solver,status) )
         {
                 return status;
         }
@@ -202,7 +202,7 @@ lis_esi_solve_with_recovery(
                 return LIS_SUCCESS;
         }
 
-        if( !lis_esolver_inner_solve_retryable(status) )
+        if( !lis_esolver_inner_solve_can_retry(A,NULL,solver,status) )
         {
                 return status;
         }
@@ -230,10 +230,14 @@ lis_esi_solve_with_recovery(
                 return LIS_SUCCESS;
         }
 
-        if( !lis_esolver_inner_solve_retryable(status) )
+        if( !lis_esolver_inner_solve_can_retry(A,NULL,solver,status) )
         {
                 return status;
         }
+
+        /* Do not perturb a shell with an unsupported in-place shift. */
+        if(A->matrix_type==LIS_MATRIX_USER || A->matrix_type==LIS_MATRIX_OPERATOR)
+                return status;
 
         perturbation =
                 lis_esolver_shift_perturbation(
@@ -294,7 +298,7 @@ lis_esi_solve_with_recovery(
                         return LIS_SUCCESS;
                 }
 
-                if( !lis_esolver_inner_solve_retryable(status) )
+                if( !lis_esolver_inner_solve_can_retry(A,NULL,solver,status) )
                 {
                         return status;
                 }
@@ -331,7 +335,7 @@ lis_egsi_solve_with_recovery(
                 return LIS_SUCCESS;
         }
 
-        if( !lis_esolver_inner_solve_retryable(status) )
+        if( !lis_esolver_inner_solve_can_retry(A,B,solver,status) )
         {
                 return status;
         }
@@ -359,10 +363,15 @@ lis_egsi_solve_with_recovery(
                 return LIS_SUCCESS;
         }
 
-        if( !lis_esolver_inner_solve_retryable(status) )
+        if( !lis_esolver_inner_solve_can_retry(A,B,solver,status) )
         {
                 return status;
         }
+
+        /* Do not perturb a shell with an unsupported in-place shift. */
+        if(A->matrix_type==LIS_MATRIX_USER || A->matrix_type==LIS_MATRIX_OPERATOR ||
+           B->matrix_type==LIS_MATRIX_USER || B->matrix_type==LIS_MATRIX_OPERATOR)
+                return status;
 
         perturbation =
                 lis_esolver_shift_perturbation(
@@ -423,7 +432,7 @@ lis_egsi_solve_with_recovery(
                         return LIS_SUCCESS;
                 }
 
-                if( !lis_esolver_inner_solve_retryable(status) )
+                if( !lis_esolver_inner_solve_can_retry(A,B,solver,status) )
                 {
                         return status;
                 }
@@ -800,8 +809,8 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   LIS_REAL nrm2,resid,cert_resid;
   LIS_SCALAR dot;
   LIS_VECTOR *v,r,q;
-  LIS_SOLVER solver;
-  LIS_PRECON precon;
+  LIS_SOLVER solver=NULL;
+  LIS_PRECON precon=NULL;
   double time,itime,ptime,p_c_time,p_i_time;
   double etime0,etime;
   LIS_INT err,final_status;
@@ -869,8 +878,22 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
     {
     case LIS_ESOLVER_II:
 
-      lis_solver_create(&solver);
-      lis_solver_set_option("-i bicg -p none",solver);
+      err = lis_solver_create(&solver);
+      if(err)
+      {
+        if(solver) lis_solver_destroy(solver);
+        if(oshift!=0.0) lis_matrix_shift_diagonal(A,-oshift);
+        LIS_DEBUG_FUNC_OUT;
+        return err;
+      }
+      err = lis_solver_set_option("-i bicg -p none",solver);
+      if(err)
+      {
+        if(solver) lis_solver_destroy(solver);
+        if(oshift!=0.0) lis_matrix_shift_diagonal(A,-oshift);
+        LIS_DEBUG_FUNC_OUT;
+        return err;
+      }
       err = lis_solver_set_optionC(solver);
       if( err )
         {
@@ -957,7 +980,8 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	    case LIS_ESOLVER_PI:
 
 	      /* R = A * V */
-	      lis_matvec(A,v[j],r); 
+	      err = lis_matvec(A,v[j],r);
+	      if(err) goto callback_failure;
 
 	      break;
 
@@ -969,8 +993,11 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
 	              A, v[j], r, solver, &precon,
 	              oshift, tol, &solve_shift);
 	      if( err )
-		{
-		  esolver->retcode = err;
+	      {
+	        esolver->iter[0] = iter>0 ? iter-1 : 0;
+	        esolver->resid[0] = NAN;
+	        esolver->evalue[0] = (LIS_SCALAR)NAN;
+	        esolver->retcode = err;
 		  if ( oshift != 0.0 )
 		    lis_matrix_shift_diagonal(A, -oshift);
 		  lis_precon_destroy(precon);
@@ -1145,6 +1172,16 @@ LIS_INT lis_esi(LIS_ESOLVER esolver)
   LIS_DEBUG_FUNC_OUT;
   esolver->retcode = final_status;
   return final_status;
+callback_failure:
+  esolver->retcode = err;
+  esolver->iter[0] = 0;
+  esolver->resid[0] = NAN;
+  esolver->evalue[0] = (LIS_SCALAR)NAN;
+  if(oshift!=0.0) lis_matrix_shift_diagonal(A,-oshift);
+  if(niesolver==LIS_ESOLVER_II)
+    { lis_precon_destroy(precon); lis_solver_destroy(solver); }
+  LIS_DEBUG_FUNC_OUT;
+  return err;
 }
 
 /***************************************
@@ -1247,8 +1284,8 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   LIS_REAL nrm2,resid,cert_resid;
   LIS_SCALAR dot;
   LIS_VECTOR *v,w,y,q;
-  LIS_SOLVER solver;
-  LIS_PRECON precon;
+  LIS_SOLVER solver=NULL;
+  LIS_PRECON precon=NULL;
   double time,itime,ptime,p_c_time,p_i_time;
   double etime0,etime;  
   LIS_INT err,final_status;
@@ -1314,8 +1351,22 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   lis_esolver_get_esolvername(nigesolver, esolvername);
   if( output ) lis_printf(comm,"inner eigensolver     : %s\n", esolvername);
 
-  lis_solver_create(&solver);
-  lis_solver_set_option("-i bicg -p none",solver);
+  err = lis_solver_create(&solver);
+  if(err)
+  {
+    if(solver) lis_solver_destroy(solver);
+    if(oshift!=0.0) lis_matrix_shift_matrix(A,B,-oshift);
+    LIS_DEBUG_FUNC_OUT;
+    return err;
+  }
+  err = lis_solver_set_option("-i bicg -p none",solver);
+  if(err)
+  {
+    if(solver) lis_solver_destroy(solver);
+    if(oshift!=0.0) lis_matrix_shift_matrix(A,B,-oshift);
+    LIS_DEBUG_FUNC_OUT;
+    return err;
+  }
   err = lis_solver_set_optionC(solver);
   if( err )
     {
@@ -1411,7 +1462,8 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	    case LIS_ESOLVER_GPI:
 
 	      /* y = A * v */	      
-	      lis_matvec(A, v[j], w); 
+	      err = lis_matvec(A, v[j], w);
+	      if(err) goto callback_failure;
 
 	      /* v = v / <v,w>^1/2, w = w / <v,w>^1/2 */	      
 	      lis_vector_dot(v[j], w, &eta);
@@ -1451,8 +1503,11 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	      err = lis_esi_solve_with_retry(
 	              B, w, y, solver, &precon,tol);
 	      if( err )
-		{
-		  esolver->retcode = err;
+	      {
+	        esolver->iter[0] = iter>0 ? iter-1 : 0;
+	        esolver->resid[0] = NAN;
+	        esolver->evalue[0] = (LIS_SCALAR)NAN;
+	        esolver->retcode = err;
 		  if ( oshift != 0.0 )
 		    lis_matrix_shift_matrix(A, B, -oshift);
 		  lis_precon_destroy(precon);
@@ -1466,7 +1521,8 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	    case LIS_ESOLVER_GII:
 
 	      /* w = B * v */
-	      lis_matvec(B, v[j], w);
+	      err = lis_matvec(B, v[j], w);
+	      if(err) goto callback_failure;
 	      
 	      /* v = v / <v,w>^1/2, w = w / <v,w>^1/2 */
 	      lis_vector_dot(v[j], w, &eta);
@@ -1508,8 +1564,11 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
 	              A, B, w, y, solver, &precon,
 	              oshift, tol, &solve_shift);
 	      if( err )
-		{
-		  esolver->retcode = err;
+	      {
+	        esolver->iter[0] = iter>0 ? iter-1 : 0;
+	        esolver->resid[0] = NAN;
+	        esolver->evalue[0] = (LIS_SCALAR)NAN;
+	        esolver->retcode = err;
 		  if ( oshift != 0.0 )
 		    lis_matrix_shift_matrix(A, B, -oshift);
 		  lis_precon_destroy(precon);
@@ -1677,4 +1736,14 @@ LIS_INT lis_egsi(LIS_ESOLVER esolver)
   LIS_DEBUG_FUNC_OUT;
   esolver->retcode = final_status;
   return final_status;
+callback_failure:
+  esolver->retcode = err;
+  esolver->iter[0] = 0;
+  esolver->resid[0] = NAN;
+  esolver->evalue[0] = (LIS_SCALAR)NAN;
+  if(oshift!=0.0) lis_matrix_shift_matrix(A,B,-oshift);
+  lis_precon_destroy(precon);
+  lis_solver_destroy(solver);
+  LIS_DEBUG_FUNC_OUT;
+  return err;
 }

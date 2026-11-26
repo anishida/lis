@@ -2789,7 +2789,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   LIS_SCALAR dot;
   LIS_VECTOR *v,r;
   LIS_SCALAR *t,*tq,*tr,evalue,evalue0;
-  LIS_SOLVER solver;
+  LIS_SOLVER solver=NULL;
   LIS_ESOLVER esolver2;
   char esolvername[128],solvername[128],preconname[128];
   LIS_INT nsol,precon_type;
@@ -2816,6 +2816,7 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   t = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_eli::t");
   tq = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_eli::tq");
   tr = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_eli::tr");
+  if(!t || !tq || !tr) { err=LIS_OUT_OF_MEMORY; goto callback_failure; }
   
   A = esolver->A;
   r = esolver->work[0];
@@ -2824,10 +2825,12 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   lis_vector_set_all(1.0,r);
   lis_vector_nrm2(r, &nrm2);
 
-  lis_solver_create(&solver);
-  lis_solver_set_option("-i bicg -p none",solver);
+  err = lis_solver_create(&solver);
+  if(err) goto callback_failure;
+  err = lis_solver_set_option("-i bicg -p none",solver);
+  if(err) goto callback_failure;
   err = lis_solver_set_optionC(solver);
-  CHKERR(err);
+  if(err) goto callback_failure;
   lis_solver_get_solver(solver, &nsol);
   lis_solver_get_precon(solver, &precon_type);
   lis_solver_get_solvername(nsol, solvername);
@@ -2853,11 +2856,13 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
       /* r = r - beta(j-1) * v(j-1) */
       if (j==1) {
 	lis_vector_scale(1.0/nrm2, v[j]);
-	lis_matvec(A, v[j], r);
+	err = lis_matvec(A, v[j], r);
+	if(err) goto callback_failure;
       }
       else {
 	lis_vector_scale(1.0/t[(j-2)*ss+j-1], v[j]);
-	lis_matvec(A, v[j], r);
+	err = lis_matvec(A, v[j], r);
+	if(err) goto callback_failure;
 	lis_vector_axpy(-t[(j-2)*ss+j-1], v[j-1], r); 
       }
 
@@ -2928,7 +2933,8 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
       lis_printf(comm,"computing refined eigenpairs using inner eigensolver:\n\n");      
     }
 
-  lis_esolver_create(&esolver2);
+  err = lis_esolver_create(&esolver2);
+  if(err) goto callback_failure;
   esolver2->options[LIS_EOPTIONS_ESOLVER] = niesolver;
   esolver2->options[LIS_EOPTIONS_SUBSPACE] = 1;
   esolver2->options[LIS_EOPTIONS_MAXITER] = emaxiter;
@@ -2939,9 +2945,15 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   final_status = LIS_SUCCESS;
   for (i=0;i<ss;i++)
     {
-      lis_vector_duplicate(A, &esolver->evector[i]); 
+      err = lis_vector_duplicate(A, &esolver->evector[i]);
+      if(err) { lis_esolver_destroy(esolver2); goto callback_failure; }
       esolver2->ishift = esolver->evalue[i];
-      lis_esolve(A, esolver->evector[i], &evalue, esolver2);
+      err = lis_esolve(A, esolver->evector[i], &evalue, esolver2);
+      if(!err && lis_callback_scope_status()) err=lis_callback_scope_status();
+      if(!err && esolver2->retcode!=LIS_SUCCESS &&
+         esolver2->retcode!=LIS_MAXITER && esolver2->retcode!=LIS_BREAKDOWN)
+          err=esolver2->retcode;
+      if(err) { lis_esolver_destroy(esolver2); goto callback_failure; }
       lis_esolver_work_destroy(esolver2); 
       esolver->evalue[i] = evalue;
       esolver->iter[i] = esolver2->iter[0];
@@ -3014,6 +3026,17 @@ LIS_INT lis_eli(LIS_ESOLVER esolver)
   LIS_DEBUG_FUNC_OUT;
   esolver->retcode = final_status;
   return final_status;
+callback_failure:
+  esolver->retcode = err;
+  esolver->iter[0] = 0;
+  esolver->resid[0] = NAN;
+  esolver->evalue[0] = (LIS_SCALAR)NAN;
+  if(solver) lis_solver_destroy(solver);
+  if(t) lis_free(t);
+  if(tq) lis_free(tq);
+  if(tr) lis_free(tr);
+  LIS_DEBUG_FUNC_OUT;
+  return err;
 }
 
 /***************************************
@@ -3153,7 +3176,7 @@ lis_egli_solve_with_retry(
                 return LIS_SUCCESS;
         }
 
-        if( !lis_esolver_inner_solve_retryable(status) )
+        if( !lis_esolver_inner_solve_can_retry(S,NULL,solver,status) )
         {
                 return status;
         }
@@ -3261,7 +3284,7 @@ lis_egli_first_solve_with_recovery(
                 return LIS_SUCCESS;
         }
 
-        if( !lis_esolver_inner_solve_retryable(status) )
+        if( !lis_esolver_inner_solve_can_retry(A,B,solver,status) )
         {
                 return status;
         }
@@ -3289,7 +3312,7 @@ lis_egli_first_solve_with_recovery(
                 return LIS_SUCCESS;
         }
 
-        if( !lis_esolver_inner_solve_retryable(status) )
+        if( !lis_esolver_inner_solve_can_retry(A,B,solver,status) )
         {
                 return status;
         }
@@ -3402,7 +3425,7 @@ lis_egli_first_solve_with_recovery(
                         return LIS_SUCCESS;
                 }
 
-                if( !lis_esolver_inner_solve_retryable(status) )
+                if( !lis_esolver_inner_solve_can_retry(A,B,solver,status) )
                 {
                         return status;
                 }
@@ -4176,6 +4199,11 @@ if( resid>tol )
 			}
 
 			refine_status = esolver2->retcode;
+                        if(lis_callback_scope_status())
+                        {
+                                err=lis_callback_scope_status();
+                                goto cleanup;
+                        }
 
 			if( (refine_status==LIS_SUCCESS ||
 			     refine_status==LIS_MAXITER) &&
@@ -4726,6 +4754,7 @@ lis_egli_block_first_recurrence(
             candidate[j],
             solver,
             precon);
+        if(lis_callback_scope_status()) err=lis_callback_scope_status();
 
         if( err )
             return err;
@@ -5327,6 +5356,7 @@ lis_egli_block_continue_recurrence(
                 candidate[j],
                 solver,
                 precon);
+            if(lis_callback_scope_status()) err=lis_callback_scope_status();
 
             if( err )
                 return err;
@@ -7790,8 +7820,8 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
   LIS_SCALAR beta,dot;
   LIS_VECTOR q,r,*w,*v;
   LIS_SCALAR *t,*tq,*tr,evalue,evalue0;
-  LIS_SOLVER solver;
-  LIS_PRECON precon;
+  LIS_SOLVER solver=NULL;
+  LIS_PRECON precon=NULL;
   LIS_ESOLVER esolver2;
   char esolvername[128],solvername[128],preconname[128];
   LIS_INT nsol,precon_type;
@@ -7811,6 +7841,7 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
   t = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_egli::t");
   tq = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_egli::tq");
   tr = (LIS_SCALAR *)lis_malloc(ss*ss*sizeof(LIS_SCALAR), "lis_egli::tr");
+  if(!t || !tq || !tr) { err=LIS_OUT_OF_MEMORY; goto callback_failure; }
   
   A = esolver->A;
   B = esolver->B;
@@ -7823,10 +7854,12 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
   lis_vector_set_all(1.0,q);
 
   /* create linear solver */
-  lis_solver_create(&solver);
-  lis_solver_set_option("-i bicg -p none",solver);
+  err = lis_solver_create(&solver);
+  if(err) goto callback_failure;
+  err = lis_solver_set_option("-i bicg -p none",solver);
+  if(err) goto callback_failure;
   err = lis_solver_set_optionC(solver);
-  CHKERR(err);
+  if(err) goto callback_failure;
   lis_solver_get_solver(solver, &nsol);
   lis_solver_get_precon(solver, &precon_type);
   lis_solver_get_solvername(nsol, solvername);
@@ -7842,12 +7875,7 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
   /* create preconditioner */
   solver->A = B;
   err = lis_precon_create(solver, &precon);
-  if( err )
-    {
-      lis_solver_work_destroy(solver);
-      solver->retcode = err;
-      return err;
-    }
+  if(err) { precon=NULL; goto callback_failure; }
 
   for (i=0;i<ss*ss;i++) t[i] = 0.0;
 
@@ -7862,14 +7890,16 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
       /* r = r - beta(j-1) * w(j-1) */
       
       if (j==1) {
- 	lis_matvec(B, q, r);
+ 	err = lis_matvec(B, q, r);
+ 	if(err) goto callback_failure;
 	lis_vector_dot(q, r, &beta);
 	beta = sqrt(fabs(beta));
 	lis_vector_copy(r, w[j]);
 	lis_vector_copy(q, v[j]);	
 	lis_vector_scale(1.0/beta, w[j]);
 	lis_vector_scale(1.0/beta, v[j]);	
-	lis_matvec(A, v[j], r);
+	err = lis_matvec(A, v[j], r);
+	if(err) goto callback_failure;
 	lis_vector_axpy(-beta, w[j-1], r); 	
       }
       else {
@@ -7877,7 +7907,8 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
 	lis_vector_copy(q, v[j]);	
 	lis_vector_scale(1.0/t[(j-2)*ss+j-1], w[j]);	
 	lis_vector_scale(1.0/t[(j-2)*ss+j-1], v[j]);
-	lis_matvec(A, v[j], r);
+	err = lis_matvec(A, v[j], r);
+	if(err) goto callback_failure;
 	lis_vector_axpy(-t[(j-2)*ss+j-1], w[j-1], r); 
       }
 
@@ -7898,18 +7929,20 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
           1,
           j,
           r);
-      if( err )
-          return err;
+      if( err ) goto callback_failure;
 
       /* solve B * q = r */
       err = lis_solve_kernel(B, r, q, solver, precon);
-      if( err )
-	{
-	  lis_solver_work_destroy(solver);	  
-	  solver->retcode = err;
-	  lis_precon_destroy(precon);
-	  return err;
-	}
+      if(!err)
+    {
+      lis_solver_get_status(solver,&err);
+      /* Preserve the legacy numerical-status policy for built-in operators. */
+      if(lis_callback_scope_status()) err=lis_callback_scope_status();
+      else if( B->matrix_type!=LIS_MATRIX_USER && B->matrix_type!=LIS_MATRIX_OPERATOR &&
+          solver->options[LIS_OPTIONS_PRECON]<LIS_PRECON_TYPE_USERDEF &&
+          (err==LIS_MAXITER || err==LIS_BREAKDOWN) ) err = LIS_SUCCESS;
+    }
+      if(err) goto callback_failure;
 
       /* beta(j) = |<q,r>|^1/2 */
       lis_vector_dot(q, r, &beta);
@@ -7963,7 +7996,8 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
       lis_printf(comm,"computing refined eigenpairs using inner eigensolver:\n\n");      
     }
 
-  lis_esolver_create(&esolver2);
+  err = lis_esolver_create(&esolver2);
+  if(err) goto callback_failure;
   esolver2->options[LIS_EOPTIONS_ESOLVER] = nigesolver;
   esolver2->options[LIS_EOPTIONS_SUBSPACE] = 1;
   esolver2->options[LIS_EOPTIONS_MAXITER] = emaxiter;
@@ -7973,9 +8007,15 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
   /* compute refined eigenpairs */
   for (i=0;i<ss;i++)
     {
-      lis_vector_duplicate(A, &esolver->evector[i]); 
+      err = lis_vector_duplicate(A, &esolver->evector[i]);
+      if(err) { lis_esolver_destroy(esolver2); goto callback_failure; }
       esolver2->ishift = esolver->evalue[i];
-      lis_gesolve(A, B, esolver->evector[i], &evalue, esolver2);
+      err = lis_gesolve(A, B, esolver->evector[i], &evalue, esolver2);
+      if(!err && lis_callback_scope_status()) err=lis_callback_scope_status();
+      if(!err && esolver2->retcode!=LIS_SUCCESS &&
+         esolver2->retcode!=LIS_MAXITER && esolver2->retcode!=LIS_BREAKDOWN)
+          err=esolver2->retcode;
+      if(err) { lis_esolver_destroy(esolver2); goto callback_failure; }
       lis_esolver_work_destroy(esolver2); 
       esolver->evalue[i] = evalue;
       esolver->iter[i] = esolver2->iter[0];      
@@ -8030,6 +8070,18 @@ LIS_INT lis_egli(LIS_ESOLVER esolver)
 
   LIS_DEBUG_FUNC_OUT;
   return LIS_SUCCESS;
+callback_failure:
+  esolver->retcode = err;
+  esolver->iter[0] = 0;
+  esolver->resid[0] = NAN;
+  esolver->evalue[0] = (LIS_SCALAR)NAN;
+  if(precon) lis_precon_destroy(precon);
+  if(solver) lis_solver_destroy(solver);
+  if(t) lis_free(t);
+  if(tq) lis_free(tq);
+  if(tr) lis_free(tr);
+  LIS_DEBUG_FUNC_OUT;
+  return err;
 }
 
 
