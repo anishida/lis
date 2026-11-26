@@ -20,6 +20,7 @@
 #include <string.h>
 #include "lis.h"
 #include "lis_condense_lis.h"
+#include "lis_matrix_materialize.h"
 
 #define NP 240
 #define NQ 6
@@ -214,6 +215,179 @@ done:
     return failed;
 }
 
+static int check_managed_session(void){
+    LIS_MATRIX a=NULL,next=NULL,old_s=NULL;
+    LIS_VECTOR exact=NULL,b=NULL,x=NULL,r=NULL,kernel=NULL;
+    LIS_SOLVER solver=NULL;
+    lis_sc_solver_session *session=NULL;
+    lis_sc_solver_report report;
+    LIS_REAL nr,nb;
+    int failed=1;
+
+    if(build_matrix(&a,0.0) || lis_vector_duplicate(a,&exact) ||
+       lis_vector_duplicate(a,&b) || lis_vector_duplicate(a,&x) ||
+       lis_vector_duplicate(a,&r) || lis_vector_set_all((LIS_SCALAR)1,exact) ||
+       lis_matvec(a,exact,b))goto done;
+    if(lis_sc_solver_session_create(a,NB,bp,qd,1e-13,&session)!=LIS_SC_OK)
+        goto done;
+    solver=lis_sc_solver_session_get_solver(session);
+    if(!solver || lis_solver_set_option(
+        "-i fgmres -p none -scale none -print none -maxiter 500 -restart 120 -tol 1e-9 -initx_zeros false",solver))
+        goto done;
+    old_s=lis_sc_lis_matrix(lis_sc_solver_session_get_condensation(session));
+    /* Deliberately accept the zero initial reduced iterate at a very loose
+     * solver tolerance. Physical certification must still reject it, leaving
+     * the caller's full output untouched. */
+    if(lis_solver_set_option("-tol 2",solver) ||
+       lis_vector_set_all((LIS_SCALAR)7,x) ||
+       lis_sc_solver_session_solve(session,b,x,1e-7)!=LIS_SC_RESIDUAL_REJECTED ||
+       lis_sc_solver_session_get_report(session,&report)!=LIS_SC_OK ||
+       !report.solver_called || report.solution_committed ||
+       report.solver_status!=LIS_SUCCESS || !report.full_residual_valid ||
+       !(report.full_relative_residual>1e-7))
+        goto done;
+    {
+        LIS_INT i;
+        for(i=0;i<x->n;i++)if(x->value[i]!=(LIS_SCALAR)7)goto done;
+    }
+    if(lis_solver_set_option("-tol 1e-9",solver))goto done;
+    if(lis_sc_solver_session_solve(session,b,x,1e-7)!=LIS_SC_OK ||
+       lis_sc_solver_session_get_report(session,&report)!=LIS_SC_OK ||
+       report.version!=LIS_SC_SOLVER_REPORT_VERSION ||
+       report.struct_size!=sizeof(report) ||
+       !report.solver_called || !report.solution_committed ||
+       !report.full_residual_valid || report.full_relative_residual>1e-7)
+        goto done;
+    if(lis_sc_solver_session_get_report_ex(session,&report,
+           LIS_SC_SOLVER_REPORT_V1_SIZE-1)!=LIS_SC_BAD_ARGUMENT)
+        goto done;
+    if(lis_sc_solver_session_update(session,a,NB,bp,qd,1e-13,LIS_SC_REUSE_ALL)!=LIS_SC_OK ||
+       lis_sc_lis_matrix(lis_sc_solver_session_get_condensation(session))!=old_s ||
+       lis_sc_solver_session_solve(session,b,x,1e-7)!=LIS_SC_OK)
+        goto done;
+    if(build_matrix(&next,0.125) || lis_matvec(next,exact,b))goto done;
+    if(lis_sc_solver_session_update(session,next,NB,bp,qd,1e-13,LIS_SC_REUSE_ALL)==LIS_SC_OK ||
+       lis_sc_lis_matrix(lis_sc_solver_session_get_condensation(session))!=old_s)
+        goto done;
+    /* Register a candidate as an exact kernel only to exercise the update
+     * guard; this nonsingular fixture must never be solved with it attached. */
+    if(lis_vector_duplicate(old_s,&kernel) ||
+       lis_vector_set_all((LIS_SCALAR)1,kernel) ||
+       lis_solver_set_nullspace(solver,1,&kernel) ||
+       lis_sc_solver_session_update(session,next,NB,bp,qd,1e-13,LIS_SC_NUMERIC)!=LIS_SC_REBIND_REQUIRED ||
+       lis_sc_solver_session_update(session,next,NB,bp,qd,1e-13,LIS_SC_FULL)!=LIS_SC_REBIND_REQUIRED ||
+       lis_sc_lis_matrix(lis_sc_solver_session_get_condensation(session))!=old_s ||
+       lis_solver_clear_nullspace(solver) ||
+       lis_solver_set_left_nullspace(solver,1,&kernel) ||
+       lis_sc_solver_session_update(session,next,NB,bp,qd,1e-13,LIS_SC_NUMERIC)!=LIS_SC_REBIND_REQUIRED ||
+       lis_sc_solver_session_update(session,next,NB,bp,qd,1e-13,LIS_SC_FULL)!=LIS_SC_REBIND_REQUIRED ||
+       lis_sc_lis_matrix(lis_sc_solver_session_get_condensation(session))!=old_s ||
+       lis_solver_clear_left_nullspace(solver))
+        goto done;
+    if(lis_sc_solver_session_update(session,next,NB,bp,qd,1e-13,LIS_SC_NUMERIC)!=LIS_SC_OK ||
+       lis_sc_lis_matrix(lis_sc_solver_session_get_condensation(session))==old_s ||
+       lis_sc_solver_session_get_report(session,&report)==LIS_SC_OK)
+        goto done;
+    if(lis_vector_set_all((LIS_SCALAR)7,x) ||
+       lis_sc_solver_session_solve(session,b,x,-1)!=LIS_SC_BAD_ARGUMENT ||
+       lis_sc_solver_session_get_report(session,&report)!=LIS_SC_OK ||
+       report.solver_called || report.solution_committed ||
+       x->value[0]!=(LIS_SCALAR)7)
+        goto done;
+    if(lis_sc_solver_session_solve(session,b,x,1e-7)!=LIS_SC_OK ||
+       lis_matvec(next,x,r) || lis_vector_axpy((LIS_SCALAR)-1,b,r) ||
+       lis_vector_nrm2(r,&nr) || lis_vector_nrm2(b,&nb) || !(nb>0) ||
+       !(nr/nb<1e-7))
+        goto done;
+    failed=0;
+done:
+    lis_sc_solver_session_destroy(session);
+    if(kernel)lis_vector_destroy(kernel);
+    if(r)lis_vector_destroy(r);
+    if(x)lis_vector_destroy(x);
+    if(b)lis_vector_destroy(b);
+    if(exact)lis_vector_destroy(exact);
+    if(next)lis_matrix_destroy(next);
+    if(a)lis_matrix_destroy(a);
+    printf("MANAGED_SCHUR_SESSION %s\n",failed?"FAILED":"PASSED");
+    return failed;
+}
+
+/* Use a genuinely different Schur P while certifying against physical S.
+ * Exercise native MFAMG/CA-MFAMG and their ILUTP composite with the
+ * explicit interpolation basis, never with mathematical near-nullspace. */
+static int check_paired_schur_profile(LIS_MATRIX S,LIS_VECTOR g,
+                  LIS_VECTOR modes[],const LIS_INT labels[],const char *profile,
+                  char *options)
+{
+    LIS_MATRIX shifted=NULL,P=NULL;
+    lis_sc_lis_session *pc_sc=NULL;
+    LIS_MATRIX_AUTO_SESSION session=NULL;
+    LIS_SOLVER solver=NULL;
+    LIS_VECTOR x=NULL,r=NULL;
+    LIS_PRECON kept=NULL;
+    LIS_REAL nr,nb;
+    LIS_INT status,pp,pa,pass;
+    int failed=1;
+    if(!uses_mfamg(profile) && strcmp(profile,"ilutp"))return 0;
+    if(build_matrix(&shifted,0.125) ||
+       lis_sc_lis_create(shifted,NB,bp,qd,1e-13,&pc_sc)!=LIS_SC_OK)
+        goto done;
+    P=lis_sc_lis_matrix(pc_sc);
+    if(!P || P==S || lis_vector_duplicate(S,&x) ||
+       lis_vector_duplicate(S,&r) || lis_matrix_auto_session_create(&session) ||
+       lis_matrix_auto_session_get_solver(session,&solver) ||
+       lis_solver_set_option(options,solver) ||
+       lis_solver_set_num_threads(solver,1))goto done;
+    if(uses_mfamg(profile) && lis_solver_set_amg_coarse_basis(solver,NMODES,modes))
+        goto done;
+    if(uses_contact(profile) &&
+       lis_solver_set_mfamg_contact_partition(solver,NP,labels))goto done;
+    for(pass=0;pass<6;pass++)
+    {
+        /* Second pair of solves tests independent P with local RAS
+         * factors. Standalone MFAMG has no ILUT child. */
+        if(pass==2)
+        {
+            if(strcmp(profile,"ilutp") &&
+               strcmp(profile,"mfamg_ilutp") &&
+               strcmp(profile,"ca-mfamg_ilutp"))break;
+            if(lis_solver_set_option(
+                "-ilut_ras_overlap 1 -ilut_ras_domains 2",solver))
+                goto done;
+            kept=NULL;
+        }
+        if(pass==4)
+        {
+            if(lis_solver_set_option("-ilut_schur 1",solver))goto done;
+            kept=NULL;
+        }
+        if(lis_vector_set_all((LIS_SCALAR)0,x) ||
+           lis_matrix_auto_session_solve_with_precon_matrix(
+                session,S,P,g,x,NULL,NULL,&pp,&pa) ||
+           pp!=LIS_MATRIX_POLICY_DIRECT || pa!=LIS_MATRIX_POLICY_ACTION_DIRECT ||
+           lis_solver_get_status(solver,&status) || status!=LIS_SUCCESS ||
+           !solver->sequence_precon || solver->sequence_precon_matrix!=P ||
+           solver->sequence_precon_ilut_ras_overlap!=solver->ilut_ras_overlap ||
+           solver->sequence_precon_ilut_ras_domains!=solver->ilut_ras_domains ||
+           solver->sequence_precon_ilut_schur!=solver->ilut_schur ||
+           (kept && solver->sequence_precon!=kept) ||
+           lis_matvec(S,x,r) || lis_vector_axpy((LIS_SCALAR)-1,g,r) ||
+           lis_vector_nrm2(r,&nr) || lis_vector_nrm2(g,&nb) ||
+           !(nb>0) || !(nr/nb<1e-7))goto done;
+        kept=solver->sequence_precon;
+    }
+    failed=0;
+done:
+    lis_matrix_auto_session_destroy(session);
+    if(r)lis_vector_destroy(r);
+    if(x)lis_vector_destroy(x);
+    lis_sc_lis_destroy(pc_sc);
+    if(shifted)lis_matrix_destroy(shifted);
+    printf("PAIRED_SCHUR_%s %s\n",profile,failed?"FAILED":"PASSED");
+    return failed;
+}
+
 static int run(int argc,char **argv){
     LIS_MATRIX a=NULL,s=NULL;
     LIS_VECTOR xtrue=NULL,b=NULL,g=NULL,u=NULL,xfull=NULL;
@@ -228,6 +402,7 @@ static int run(int argc,char **argv){
     char options[220];
 
     make_map();
+    if(!strcmp(profile,"none") && check_managed_session())return 1;
     if(strcmp(profile,"none") && strcmp(profile,"mfamg") &&
        strcmp(profile,"ca-mfamg") && strcmp(profile,"ilutp") &&
        strcmp(profile,"mfamg_ilutp") && strcmp(profile,"ca-mfamg_ilutp")){
@@ -331,6 +506,7 @@ static int run(int argc,char **argv){
     if(lis_sc_lis_update(sc,a,NB,bp,qd,1e-13,LIS_SC_REUSE_ALL)!=LIS_SC_OK ||
        lis_sc_lis_matrix(sc)!=s)goto done;
     lis_solver_destroy(solver);solver=NULL;
+    if(check_paired_schur_profile(s,g,redmode,labels,profile,options))goto done;
     lis_vector_destroy(g);g=NULL;
     lis_vector_destroy(u);u=NULL;
     for(k=0;k<NMODES;k++) {lis_vector_destroy(redmode[k]);redmode[k]=NULL;}

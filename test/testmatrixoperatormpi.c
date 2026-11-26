@@ -3,6 +3,7 @@
 #endif
 #include "lis.h"
 #include "lis_matrix_operator.h"
+#include "lis_matrix_materialize.h"
 #include <stdio.h>
 #include <math.h>
 #ifdef _COMPLEX
@@ -55,6 +56,94 @@ static int check_output(LIS_MATRIX op,LIS_VECTOR x,LIS_VECTOR y,
     }
     return 0;
 }
+#if defined(USE_MPI) && !defined(_COMPLEX) && !defined(USE_COMPLEX) && !defined(_LONG__DOUBLE)
+static int check_distributed_pair(LIS_MATRIX A,LIS_MATRIX P,int rank)
+{
+    LIS_MATRIX_AUTO_SESSION session=NULL;
+    LIS_SOLVER solver=NULL;
+    LIS_VECTOR b=NULL,x=NULL,r=NULL;
+    LIS_PRECON kept=NULL;
+    LIS_REAL nr,nb;
+    LIS_INT err,status,pass;
+    int failed=1,local,all;
+    local=lis_matrix_auto_session_create(&session) ||
+          lis_matrix_auto_session_get_solver(session,&solver);
+    MPI_Allreduce(&local,&all,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+    if(all)goto done;
+    local=lis_solver_set_option("-i fgmres -p jacobi -scale none -tol 1e-10 -restart 10 -maxiter 80 -print none",solver);
+    MPI_Allreduce(&local,&all,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+    if(all)goto done;
+    /* Matrix/vector creation follows native collective allocation rules. */
+    if(lis_vector_duplicate(A,&b) || lis_vector_duplicate(A,&x) ||
+       lis_vector_duplicate(A,&r) || lis_vector_set_all((LIS_SCALAR)1,x) ||
+       lis_matvec(A,x,b) || lis_vector_nrm2(b,&nb) || !(nb>0))
+        goto done;
+    for(pass=0;pass<4;pass++)
+    {
+        if(pass==2)
+        {
+            /* A changes on one rank while P is frozen. The collective
+             * solve must keep P and certify the changed physical system. */
+            if(rank==0)
+            {
+                A->value[0]+=(LIS_SCALAR)1;
+                lis_matrix_mark_values_changed(A);
+            }
+            if(lis_vector_set_all((LIS_SCALAR)1,x) || lis_matvec(A,x,b) ||
+               lis_vector_nrm2(b,&nb) || !(nb>0))goto done;
+        }
+        if(pass==3)
+        {
+            /* Only one rank publishes a new generation. All ranks
+             * must retire persistent state before the next solve. */
+            if(rank==0)lis_matrix_mark_values_changed(P);
+            kept=NULL;
+        }
+        if(lis_vector_set_all((LIS_SCALAR)0,x))goto done;
+        err=lis_matrix_auto_session_solve_distributed_csr(session,A,P,b,x);
+        local=err || lis_solver_get_status(solver,&status) ||
+              status!=LIS_SUCCESS || !solver->sequence_precon ||
+              solver->sequence_precon_matrix!=P ||
+              (kept && solver->sequence_precon!=kept);
+        MPI_Allreduce(&local,&all,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+        if(all)goto done;
+        if(lis_matvec(A,x,r) || lis_vector_axpy((LIS_SCALAR)-1,b,r) ||
+           lis_vector_nrm2(r,&nr) || !(nr/nb<1e-9))goto done;
+        kept=solver->sequence_precon;
+    }
+    /* Restore A for the subsequent operator tests. */
+    if(rank==0)
+    {
+        A->value[0]-=(LIS_SCALAR)1;
+        lis_matrix_mark_values_changed(A);
+    }
+    /* A null communicator must be rejected before MPI_Comm_compare. */
+    {
+        LIS_Comm saved=b->comm;
+        if(rank==0)b->comm=MPI_COMM_NULL;
+        err=lis_matrix_auto_session_solve_distributed_csr(session,A,P,b,x);
+        b->comm=saved;
+        local=err!=LIS_ERR_ILL_ARG;
+        MPI_Allreduce(&local,&all,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+        if(all)goto done;
+    }
+    /* A rank-local invalid argument must not enter the numerical solver. */
+    err=lis_matrix_auto_session_solve_distributed_csr(
+                    session,A,P,rank==0?NULL:b,x);
+    local=err!=LIS_ERR_ILL_ARG;
+    MPI_Allreduce(&local,&all,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+    if(all)goto done;
+    failed=0;
+done:
+    lis_matrix_auto_session_destroy(session);
+    if(r)lis_vector_destroy(r);
+    if(x)lis_vector_destroy(x);
+    if(b)lis_vector_destroy(b);
+    if(rank==0)printf("MPI_PAIRED_CSR_JACOBI %s\n",failed?"FAILED":"PASSED");
+    return failed;
+}
+#endif
+
 int main(int argc,char **argv)
 {
     LIS_MATRIX A=NULL,B=NULL,C=NULL,D=NULL,E=NULL,op=NULL,nested=NULL;
@@ -82,6 +171,9 @@ int main(int argc,char **argv)
     if(err){failed=1;goto done;}
     err=make_diagonal(LIS_COMM_WORLD,n+2,(LIS_SCALAR)1.0,&E);
     if(err){failed=1;goto done;}
+#if defined(USE_MPI) && !defined(_COMPLEX) && !defined(USE_COMPLEX) && !defined(_LONG__DOUBLE)
+    if(size>1 && check_distributed_pair(A,B,rank)){failed=1;goto done;}
+#endif
     err=lis_matrix_create_operator(
         (LIS_SCALAR)1.0,A,(LIS_SCALAR)1.0,B,&op);
     if(err){failed=1;goto done;}

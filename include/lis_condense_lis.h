@@ -50,6 +50,63 @@ lis_sc_status lis_sc_lis_modes(const lis_sc_lis_session *session,
                                 LIS_INT nvec,
                                 LIS_VECTOR const full_modes[],
                                 LIS_VECTOR const reduced_modes[]);
+/* Managed serial real-double solve on the owned Schur operator.
+ * The session owns condensation, solver and work vectors. It uses sequence
+ * solves for repeated RHS. Configure the borrowed solver, but never destroy
+ * it or attach an externally owned preconditioner. The borrowed low-level
+ * condensation is for read-only mode/label projection; never update or
+ * destroy its matrix independently.
+ * FULL updates require explicit clearing of dimension-dependent basis and
+ * partition metadata (REBIND_REQUIRED); NUMERIC retains geometric settings
+ * and the reduced warm start, but requires clearing exact/left nullspaces.
+ * Reclassify mathematical nullspaces against the changed operator.
+ * Updates stage new plan, CSR and workspace before retiring old solver state.
+ * FULL and NUMERIC retire the preconditioner; REUSE_ALL preserves it.
+ * The plan owns a snapshot of the full operator. A caller modification
+ * becomes visible only after a successful update; certification is against
+ * that snapshot, not against a subsequently modified caller matrix.
+ * REUSE_ALL never retires the solver. On solve failure x_full is unchanged.
+ * Only unscaled, default-precision, non-transposed CSR solves are supported.
+ */
+typedef struct lis_sc_solver_session lis_sc_solver_session;
+#define LIS_SC_SOLVER_REPORT_VERSION 1u
+typedef struct {
+    uint32_t struct_size,version;
+    lis_sc_status status;
+    LIS_INT solver_called;
+    LIS_INT api_return;
+    LIS_INT solver_status;
+    LIS_INT iterations;
+    LIS_INT full_residual_valid;
+    LIS_INT solution_committed;
+    double full_relative_residual;
+} lis_sc_solver_report;
+#define LIS_SC_SOLVER_REPORT_V1_SIZE \
+    (offsetof(lis_sc_solver_report,full_relative_residual)+sizeof(double))
+lis_sc_status lis_sc_solver_session_create(
+    LIS_MATRIX A,LIS_INT nblocks,const LIS_INT *block_ptr,
+    const LIS_INT *block_dof,double pivot_tolerance,lis_sc_solver_session **out);
+lis_sc_status lis_sc_solver_session_update(
+    lis_sc_solver_session *session,LIS_MATRIX A,LIS_INT nblocks,
+    const LIS_INT *block_ptr,const LIS_INT *block_dof,double pivot_tolerance,
+    lis_sc_reuse_mode mode);
+LIS_SOLVER lis_sc_solver_session_get_solver(lis_sc_solver_session *session);
+const lis_sc_lis_session *lis_sc_solver_session_get_condensation(
+    const lis_sc_solver_session *session);
+/* The previous successful reduced iterate is available to the configured
+ * solver as an initial guess when -initx_zeros false is selected. */
+lis_sc_status lis_sc_solver_session_solve(
+    lis_sc_solver_session *session,LIS_VECTOR b_full,LIS_VECTOR x_full,
+    double full_residual_tolerance);
+/* Report exists after a solve attempt, and is invalidated on matrix update. */
+lis_sc_status lis_sc_solver_session_get_report(
+    const lis_sc_solver_session *session,lis_sc_solver_report *report);
+/* Sized form: v1 minimum; bytes beyond the current report are untouched. */
+lis_sc_status lis_sc_solver_session_get_report_ex(
+    const lis_sc_solver_session *session,lis_sc_solver_report *report,
+    size_t report_size);
+void lis_sc_solver_session_destroy(lis_sc_solver_session *session);
+
 #ifdef __cplusplus
 }
 #endif
