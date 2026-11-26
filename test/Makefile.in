@@ -206,7 +206,13 @@ F77LINK = $(LIBTOOL) $(AM_V_lt) --tag=F77 $(AM_LIBTOOLFLAGS) \
 @ENABLE_OOM_TESTS_TRUE@	testoomrco$(EXEEXT) \
 @ENABLE_OOM_TESTS_TRUE@	testcsrtransposeoom$(EXEEXT) \
 @ENABLE_OOM_TESTS_TRUE@	testuserrowoom$(EXEEXT) $(am__EXEEXT_1)
-@ENABLE_OOM_TESTS_TRUE@am__append_6 = testoomalloc$(EXEEXT) testoomilu$(EXEEXT) testoomdiag$(EXEEXT) testoomiluc$(EXEEXT) testoomsnapshot$(EXEEXT) testoomrco$(EXEEXT) testcsrtransposeoom$(EXEEXT) \
+@ENABLE_OOM_TESTS_TRUE@am__append_6 = testoomalloc$(EXEEXT) \
+@ENABLE_OOM_TESTS_TRUE@	testoomilu$(EXEEXT) \
+@ENABLE_OOM_TESTS_TRUE@	testoomdiag$(EXEEXT) \
+@ENABLE_OOM_TESTS_TRUE@	testoomiluc$(EXEEXT) \
+@ENABLE_OOM_TESTS_TRUE@	testoomsnapshot$(EXEEXT) \
+@ENABLE_OOM_TESTS_TRUE@	testoomrco$(EXEEXT) \
+@ENABLE_OOM_TESTS_TRUE@	testcsrtransposeoom$(EXEEXT) \
 @ENABLE_OOM_TESTS_TRUE@	testuserrowoom$(EXEEXT)
 @ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@am__append_7 = testoommpiscale
 @ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@am__append_8 = testoommpiscale$(EXEEXT)
@@ -980,18 +986,15 @@ am_testusercgerrors_OBJECTS = testusercgerrors.$(OBJEXT)
 testusercgerrors_OBJECTS = $(am_testusercgerrors_OBJECTS)
 testusercgerrors_LDADD = $(LDADD)
 testusercgerrors_DEPENDENCIES =
+am_testusercomplexadjoint_OBJECTS = testusercomplexadjoint.$(OBJEXT)
+testusercomplexadjoint_OBJECTS = $(am_testusercomplexadjoint_OBJECTS)
+testusercomplexadjoint_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_testusercrcomplex_OBJECTS = testusercrcomplex.$(OBJEXT)
 testusercrcomplex_OBJECTS = $(am_testusercrcomplex_OBJECTS)
 testusercrcomplex_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_testusercrserrors_OBJECTS = testusercrserrors.$(OBJEXT)
 testusercrserrors_OBJECTS = $(am_testusercrserrors_OBJECTS)
 testusercrserrors_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_testusercomplexadjoint_OBJECTS = testusercomplexadjoint.$(OBJEXT)
-testusercomplexadjoint_OBJECTS = $(am_testusercomplexadjoint_OBJECTS)
-testusercomplexadjoint_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_testuserserialcontract_OBJECTS = testuserserialcontract.$(OBJEXT)
-testuserserialcontract_OBJECTS = $(am_testuserserialcontract_OBJECTS)
-testuserserialcontract_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_testusercsrbounds_OBJECTS = testusercsrbounds.$(OBJEXT)
 testusercsrbounds_OBJECTS = $(am_testusercsrbounds_OBJECTS)
 testusercsrbounds_LDADD = $(LDADD)
@@ -1050,15 +1053,18 @@ am_testuserrow_OBJECTS = testuserrow.$(OBJEXT)
 testuserrow_OBJECTS = $(am_testuserrow_OBJECTS)
 testuserrow_LDADD = $(LDADD)
 testuserrow_DEPENDENCIES =
-am_testusertfqmrcallback_OBJECTS = testusertfqmrcallback.$(OBJEXT)
-testusertfqmrcallback_OBJECTS = $(am_testusertfqmrcallback_OBJECTS)
-testusertfqmrcallback_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__testuserrowoom_SOURCES_DIST = testuserrowoom.c
 @ENABLE_OOM_TESTS_TRUE@am_testuserrowoom_OBJECTS =  \
 @ENABLE_OOM_TESTS_TRUE@	testuserrowoom.$(OBJEXT)
 testuserrowoom_OBJECTS = $(am_testuserrowoom_OBJECTS)
 testuserrowoom_LDADD = $(LDADD)
 testuserrowoom_DEPENDENCIES =
+am_testuserserialcontract_OBJECTS = testuserserialcontract.$(OBJEXT)
+testuserserialcontract_OBJECTS = $(am_testuserserialcontract_OBJECTS)
+testuserserialcontract_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am_testusertfqmrcallback_OBJECTS = testusertfqmrcallback.$(OBJEXT)
+testusertfqmrcallback_OBJECTS = $(am_testusertfqmrcallback_OBJECTS)
+testusertfqmrcallback_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_testvectornrm2mpi_OBJECTS = testvectornrm2mpi.$(OBJEXT)
 testvectornrm2mpi_OBJECTS = $(am_testvectornrm2mpi_OBJECTS)
 testvectornrm2mpi_LDADD = $(LDADD)
@@ -1238,6 +1244,7 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testuserbicgsafe.Po \
 	./$(DEPDIR)/testuserbicgstabl.Po \
 	./$(DEPDIR)/testusercgerrors.Po \
+	./$(DEPDIR)/testusercomplexadjoint.Po \
 	./$(DEPDIR)/testusercrcomplex.Po \
 	./$(DEPDIR)/testusercrserrors.Po \
 	./$(DEPDIR)/testusercsrbounds.Po \
@@ -1256,13 +1263,12 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testusermpiduplicate.Po \
 	./$(DEPDIR)/testuserorthominerrors.Po \
 	./$(DEPDIR)/testuserprecon.Po ./$(DEPDIR)/testuserrow.Po \
+	./$(DEPDIR)/testuserrowoom.Po \
+	./$(DEPDIR)/testuserserialcontract.Po \
 	./$(DEPDIR)/testusertfqmrcallback.Po \
 	./$(DEPDIR)/testvectornrm2mpi.Po \
 	./$(DEPDIR)/testvectorreal64.Po ./$(DEPDIR)/testwarmstart.Po \
-	./$(DEPDIR)/testworkcompat.Po ./$(DEPDIR)/testworkreuse.Po \
-	./$(DEPDIR)/testusercomplexadjoint.Po \
-	./$(DEPDIR)/testuserrowoom.Po \
-	./$(DEPDIR)/testuserserialcontract.Po
+	./$(DEPDIR)/testworkcompat.Po ./$(DEPDIR)/testworkreuse.Po
 am__mv = mv -f
 AM_V_PPF77 = $(am__v_PPF77_@AM_V@)
 am__v_PPF77_ = $(am__v_PPF77_@AM_DEFAULT_V@)
@@ -1391,9 +1397,10 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testuser_SOURCES) $(testuserbicgadjoint_SOURCES) \
 	$(testuserbicgerrors_SOURCES) $(testuserbicgsafe_SOURCES) \
 	$(testuserbicgstabl_SOURCES) $(testusercgerrors_SOURCES) \
-	$(testusercrcomplex_SOURCES) $(testusercrserrors_SOURCES) \
-	$(testusercsrbounds_SOURCES) $(testusereigencgcr_SOURCES) \
-	$(testusereigeninverse_SOURCES) $(testusereigenpower_SOURCES) \
+	$(testusercomplexadjoint_SOURCES) $(testusercrcomplex_SOURCES) \
+	$(testusercrserrors_SOURCES) $(testusercsrbounds_SOURCES) \
+	$(testusereigencgcr_SOURCES) $(testusereigeninverse_SOURCES) \
+	$(testusereigenpower_SOURCES) \
 	$(testusereigenprojection_SOURCES) \
 	$(testusereigenrqiguard_SOURCES) \
 	$(testusereigenstatus_SOURCES) \
@@ -1403,13 +1410,11 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testuserminreserrors_SOURCES) \
 	$(testusermpiduplicate_SOURCES) \
 	$(testuserorthominerrors_SOURCES) $(testuserprecon_SOURCES) \
-	$(testuserrow_SOURCES) $(testusertfqmrcallback_SOURCES) \
-	$(testvectornrm2mpi_SOURCES) $(testvectorreal64_SOURCES) \
-	$(testwarmstart_SOURCES) $(testworkcompat_SOURCES) \
-	$(testworkreuse_SOURCES) \
-	$(testusercomplexadjoint_SOURCES) \
-	$(testuserrowoom_SOURCES) \
-	$(testuserserialcontract_SOURCES)
+	$(testuserrow_SOURCES) $(testuserrowoom_SOURCES) \
+	$(testuserserialcontract_SOURCES) \
+	$(testusertfqmrcallback_SOURCES) $(testvectornrm2mpi_SOURCES) \
+	$(testvectorreal64_SOURCES) $(testwarmstart_SOURCES) \
+	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
 DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(benchfrozenilut_SOURCES) $(benchilutp_SOURCES) \
 	$(benchilutpequil_SOURCES) $(esolve_SOURCES) \
@@ -1506,9 +1511,10 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testuser_SOURCES) $(testuserbicgadjoint_SOURCES) \
 	$(testuserbicgerrors_SOURCES) $(testuserbicgsafe_SOURCES) \
 	$(testuserbicgstabl_SOURCES) $(testusercgerrors_SOURCES) \
-	$(testusercrcomplex_SOURCES) $(testusercrserrors_SOURCES) \
-	$(testusercsrbounds_SOURCES) $(testusereigencgcr_SOURCES) \
-	$(testusereigeninverse_SOURCES) $(testusereigenpower_SOURCES) \
+	$(testusercomplexadjoint_SOURCES) $(testusercrcomplex_SOURCES) \
+	$(testusercrserrors_SOURCES) $(testusercsrbounds_SOURCES) \
+	$(testusereigencgcr_SOURCES) $(testusereigeninverse_SOURCES) \
+	$(testusereigenpower_SOURCES) \
 	$(testusereigenprojection_SOURCES) \
 	$(testusereigenrqiguard_SOURCES) \
 	$(testusereigenstatus_SOURCES) \
@@ -1518,13 +1524,11 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testuserminreserrors_SOURCES) \
 	$(testusermpiduplicate_SOURCES) \
 	$(testuserorthominerrors_SOURCES) $(testuserprecon_SOURCES) \
-	$(testuserrow_SOURCES) $(testusertfqmrcallback_SOURCES) \
-	$(testvectornrm2mpi_SOURCES) $(testvectorreal64_SOURCES) \
-	$(testwarmstart_SOURCES) $(testworkcompat_SOURCES) \
-	$(testworkreuse_SOURCES) \
-	$(testusercomplexadjoint_SOURCES) \
-	$(am__testuserrowoom_SOURCES_DIST) \
-	$(testuserserialcontract_SOURCES)
+	$(testuserrow_SOURCES) $(am__testuserrowoom_SOURCES_DIST) \
+	$(testuserserialcontract_SOURCES) \
+	$(testusertfqmrcallback_SOURCES) $(testvectornrm2mpi_SOURCES) \
+	$(testvectorreal64_SOURCES) $(testwarmstart_SOURCES) \
+	$(testworkcompat_SOURCES) $(testworkreuse_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -3085,6 +3089,10 @@ testusercgerrors$(EXEEXT): $(testusercgerrors_OBJECTS) $(testusercgerrors_DEPEND
 	@rm -f testusercgerrors$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testusercgerrors_OBJECTS) $(testusercgerrors_LDADD) $(LIBS)
 
+testusercomplexadjoint$(EXEEXT): $(testusercomplexadjoint_OBJECTS) $(testusercomplexadjoint_DEPENDENCIES) $(EXTRA_testusercomplexadjoint_DEPENDENCIES) 
+	@rm -f testusercomplexadjoint$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testusercomplexadjoint_OBJECTS) $(testusercomplexadjoint_LDADD) $(LIBS)
+
 testusercrcomplex$(EXEEXT): $(testusercrcomplex_OBJECTS) $(testusercrcomplex_DEPENDENCIES) $(EXTRA_testusercrcomplex_DEPENDENCIES) 
 	@rm -f testusercrcomplex$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testusercrcomplex_OBJECTS) $(testusercrcomplex_LDADD) $(LIBS)
@@ -3161,14 +3169,6 @@ testuserrow$(EXEEXT): $(testuserrow_OBJECTS) $(testuserrow_DEPENDENCIES) $(EXTRA
 	@rm -f testuserrow$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testuserrow_OBJECTS) $(testuserrow_LDADD) $(LIBS)
 
-testusertfqmrcallback$(EXEEXT): $(testusertfqmrcallback_OBJECTS) $(testusertfqmrcallback_DEPENDENCIES) $(EXTRA_testusertfqmrcallback_DEPENDENCIES) 
-	@rm -f testusertfqmrcallback$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(testusertfqmrcallback_OBJECTS) $(testusertfqmrcallback_LDADD) $(LIBS)
-
-testusercomplexadjoint$(EXEEXT): $(testusercomplexadjoint_OBJECTS) $(testusercomplexadjoint_DEPENDENCIES) $(EXTRA_testusercomplexadjoint_DEPENDENCIES) 
-	@rm -f testusercomplexadjoint$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(testusercomplexadjoint_OBJECTS) $(testusercomplexadjoint_LDADD) $(LIBS)
-
 testuserrowoom$(EXEEXT): $(testuserrowoom_OBJECTS) $(testuserrowoom_DEPENDENCIES) $(EXTRA_testuserrowoom_DEPENDENCIES) 
 	@rm -f testuserrowoom$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testuserrowoom_OBJECTS) $(testuserrowoom_LDADD) $(LIBS)
@@ -3176,6 +3176,10 @@ testuserrowoom$(EXEEXT): $(testuserrowoom_OBJECTS) $(testuserrowoom_DEPENDENCIES
 testuserserialcontract$(EXEEXT): $(testuserserialcontract_OBJECTS) $(testuserserialcontract_DEPENDENCIES) $(EXTRA_testuserserialcontract_DEPENDENCIES) 
 	@rm -f testuserserialcontract$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testuserserialcontract_OBJECTS) $(testuserserialcontract_LDADD) $(LIBS)
+
+testusertfqmrcallback$(EXEEXT): $(testusertfqmrcallback_OBJECTS) $(testusertfqmrcallback_DEPENDENCIES) $(EXTRA_testusertfqmrcallback_DEPENDENCIES) 
+	@rm -f testusertfqmrcallback$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testusertfqmrcallback_OBJECTS) $(testusertfqmrcallback_LDADD) $(LIBS)
 
 testvectornrm2mpi$(EXEEXT): $(testvectornrm2mpi_OBJECTS) $(testvectornrm2mpi_DEPENDENCIES) $(EXTRA_testvectornrm2mpi_DEPENDENCIES) 
 	@rm -f testvectornrm2mpi$(EXEEXT)
@@ -3400,6 +3404,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuserbicgsafe.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuserbicgstabl.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testusercgerrors.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testusercomplexadjoint.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testusercrcomplex.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testusercrserrors.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testusercsrbounds.Po@am__quote@ # am--include-marker
@@ -3419,10 +3424,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuserorthominerrors.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuserprecon.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuserrow.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testusertfqmrcallback.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testusercomplexadjoint.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuserrowoom.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testuserserialcontract.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testusertfqmrcallback.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testvectornrm2mpi.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testvectorreal64.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testwarmstart.Po@am__quote@ # am--include-marker
@@ -4505,6 +4509,13 @@ testcsrtransposeoom.log: testcsrtransposeoom$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testuserrowoom.log: testuserrowoom$(EXEEXT)
+	@p='testuserrowoom$(EXEEXT)'; \
+	b='testuserrowoom'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 testoommpiscale.log: testoommpiscale$(EXEEXT)
 	@p='testoommpiscale$(EXEEXT)'; \
 	b='testoommpiscale'; \
@@ -4760,13 +4771,6 @@ testusereigenstatus.log: testusereigenstatus$(EXEEXT)
 testusercomplexadjoint.log: testusercomplexadjoint$(EXEEXT)
 	@p='testusercomplexadjoint$(EXEEXT)'; \
 	b='testusercomplexadjoint'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-testuserrowoom.log: testuserrowoom$(EXEEXT)
-	@p='testuserrowoom$(EXEEXT)'; \
-	b='testuserrowoom'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -5035,6 +5039,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testuserbicgsafe.Po
 	-rm -f ./$(DEPDIR)/testuserbicgstabl.Po
 	-rm -f ./$(DEPDIR)/testusercgerrors.Po
+	-rm -f ./$(DEPDIR)/testusercomplexadjoint.Po
 	-rm -f ./$(DEPDIR)/testusercrcomplex.Po
 	-rm -f ./$(DEPDIR)/testusercrserrors.Po
 	-rm -f ./$(DEPDIR)/testusercsrbounds.Po
@@ -5054,10 +5059,9 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testuserorthominerrors.Po
 	-rm -f ./$(DEPDIR)/testuserprecon.Po
 	-rm -f ./$(DEPDIR)/testuserrow.Po
-	-rm -f ./$(DEPDIR)/testusertfqmrcallback.Po
-	-rm -f ./$(DEPDIR)/testusercomplexadjoint.Po
 	-rm -f ./$(DEPDIR)/testuserrowoom.Po
 	-rm -f ./$(DEPDIR)/testuserserialcontract.Po
+	-rm -f ./$(DEPDIR)/testusertfqmrcallback.Po
 	-rm -f ./$(DEPDIR)/testvectornrm2mpi.Po
 	-rm -f ./$(DEPDIR)/testvectorreal64.Po
 	-rm -f ./$(DEPDIR)/testwarmstart.Po
@@ -5271,6 +5275,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testuserbicgsafe.Po
 	-rm -f ./$(DEPDIR)/testuserbicgstabl.Po
 	-rm -f ./$(DEPDIR)/testusercgerrors.Po
+	-rm -f ./$(DEPDIR)/testusercomplexadjoint.Po
 	-rm -f ./$(DEPDIR)/testusercrcomplex.Po
 	-rm -f ./$(DEPDIR)/testusercrserrors.Po
 	-rm -f ./$(DEPDIR)/testusercsrbounds.Po
@@ -5290,10 +5295,9 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testuserorthominerrors.Po
 	-rm -f ./$(DEPDIR)/testuserprecon.Po
 	-rm -f ./$(DEPDIR)/testuserrow.Po
-	-rm -f ./$(DEPDIR)/testusertfqmrcallback.Po
-	-rm -f ./$(DEPDIR)/testusercomplexadjoint.Po
 	-rm -f ./$(DEPDIR)/testuserrowoom.Po
 	-rm -f ./$(DEPDIR)/testuserserialcontract.Po
+	-rm -f ./$(DEPDIR)/testusertfqmrcallback.Po
 	-rm -f ./$(DEPDIR)/testvectornrm2mpi.Po
 	-rm -f ./$(DEPDIR)/testvectorreal64.Po
 	-rm -f ./$(DEPDIR)/testwarmstart.Po
