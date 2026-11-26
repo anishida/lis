@@ -76,6 +76,7 @@ int main(int argc,char **argv)
     LIS_VECTOR x=NULL,out=NULL,kept=NULL;
     LIS_GESOLVE_MATRIX_SESSION session=NULL;
     LIS_ESOLVER e=NULL;
+    LIS_GESOLVE_SESSION_REPORT report;
     LIS_SCALAR lambda,oldvalue;
     LIS_INT err,pa=-123,pb=-456,nev=0;
     int failed=1;
@@ -88,6 +89,7 @@ int main(int argc,char **argv)
     err=lis_vector_duplicate(B,&out);if(err)goto done;
     err=lis_vector_duplicate(B,&kept);if(err)goto done;
     err=lis_gesolve_matrix_session_create(&session);if(err)goto done;
+    if(lis_gesolve_matrix_session_get_report(session,&report)==LIS_SUCCESS)goto done;
     err=lis_gesolve_matrix_session_get_esolver(session,&e);if(err)goto done;
     err=lis_esolver_set_option(
         "-e gii -emaxiter 300 -etol 1e-8 -eprint none",e);
@@ -101,6 +103,22 @@ int main(int argc,char **argv)
     err=lis_gesolve_matrix_session_get_eigenpair(
         session,0,&lambda,kept);
     if(err)goto done;
+    if(lis_gesolve_matrix_session_get_report(session,&report) ||
+       report.version!=LIS_GESOLVE_SESSION_REPORT_VERSION ||
+       report.struct_size!=sizeof(report) ||
+       report.stage!=LIS_GESOLVE_STAGE_COMPLETE ||
+       report.return_code!=LIS_SUCCESS || !report.solver_called ||
+       !report.results_committed || report.computed_nev!=1)
+        goto done;
+    if(lis_gesolve_matrix_session_get_report_ex(session,&report,
+          LIS_GESOLVE_SESSION_REPORT_V1_SIZE-1)!=LIS_ERR_ILL_ARG)
+        goto done;
+    if(lis_gesolve_matrix_session_solve(session,NULL,B,x,NULL,NULL)!=LIS_ERR_ILL_ARG ||
+       lis_gesolve_matrix_session_get_report(session,&report) ||
+       report.stage!=LIS_GESOLVE_STAGE_VALIDATE || report.solver_called ||
+       report.iterations_available || report.results_committed ||
+       lis_gesolve_matrix_session_get_nev(session,&nev) || nev!=1)
+        goto done;
     memcpy(&oldvalue,&lambda,sizeof(lambda));
     err=lis_gesolve_matrix_session_get_eigenpair(
         session,-1,&lambda,out);
@@ -128,12 +146,30 @@ int main(int argc,char **argv)
     pa=101;pb=202;
     err=lis_gesolve_matrix_session_solve(session,A,C,x,&pa,&pb);
     if(err==LIS_SUCCESS || pa!=101 || pb!=202)goto done;
+    if(lis_gesolve_matrix_session_get_report(session,&report) ||
+       report.stage!=LIS_GESOLVE_STAGE_PREPARE_B ||
+       report.return_code!=err || report.solver_called ||
+       report.results_committed || report.computed_nev!=0)
+        goto done;
     if(lis_gesolve_matrix_session_get_nev(session,&nev)==LIS_SUCCESS)
         goto done;
     bctx.fail_row=-1;
     err=lis_vector_set_all((LIS_SCALAR)1,x);if(err)goto done;
     err=lis_gesolve_matrix_session_solve(session,A,C,x,&pa,&pb);
     if(err)goto done;
+
+    /* Failure inside the actual eigensolver must survive its retirement. */
+    err=lis_gesolve_matrix_session_get_esolver(session,&e);
+    if(err)goto done;
+    e->options[LIS_EOPTIONS_ESOLVER]=0;
+    err=lis_gesolve_matrix_session_solve(session,A,B,x,NULL,NULL);
+    if(err==LIS_SUCCESS ||
+       lis_gesolve_matrix_session_get_report(session,&report) ||
+       report.stage!=LIS_GESOLVE_STAGE_SOLVE ||
+       !report.solver_called || report.return_code!=err ||
+       report.solver_api_return!=err || report.iterations_available ||
+       report.results_committed)
+        goto done;
 
     /* Subspace mode: publish a genuinely indexed collection rather than
      * treating every generalized eigensolver as single-pair only. */
@@ -152,6 +188,7 @@ int main(int argc,char **argv)
     if(err)goto done;
 
     err=lis_gesolve_matrix_session_reset(session);if(err)goto done;
+    if(lis_gesolve_matrix_session_get_report(session,&report)==LIS_SUCCESS)goto done;
     if(lis_gesolve_matrix_session_get_nev(session,&nev)==LIS_SUCCESS)
         goto done;
     /* Caller-owned eigenvector remains valid after reset. */

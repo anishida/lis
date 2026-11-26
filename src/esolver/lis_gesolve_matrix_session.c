@@ -14,6 +14,7 @@
 #endif
 
 #include <string.h>
+#include <math.h>
 #include "lislib.h"
 #include "lis_matrix_materialize.h"
 
@@ -25,6 +26,8 @@ struct LIS_GESOLVE_MATRIX_SESSION_STRUCT
     LIS_SCALAR single_evalue;
     LIS_INT computed_nev;
     LIS_INT committed;
+    LIS_INT has_report;
+    LIS_GESOLVE_SESSION_REPORT report;
 };
 
 /*
@@ -174,8 +177,19 @@ lis_gesolve_matrix_session_solve(
     LIS_INT pa=LIS_MATRIX_POLICY_DIRECT,pb=LIS_MATRIX_POLICY_DIRECT;
     LIS_INT err,count,i;
     LIS_ESOLVER e;
+    LIS_GESOLVE_SESSION_REPORT *r;
 
-    if(s==NULL || s->esolver==NULL || A==NULL || B==NULL ||
+    if(s==NULL) return LIS_ERR_ILL_ARG;
+    r=&s->report;
+    memset(r,0,sizeof(*r));
+    r->struct_size=(uint32_t)sizeof(*r);
+    r->version=LIS_GESOLVE_SESSION_REPORT_VERSION;
+    s->has_report=LIS_TRUE;
+    r->stage=LIS_GESOLVE_STAGE_VALIDATE;
+    r->return_code=LIS_ERR_ILL_ARG;
+    r->residual_norm=(LIS_REAL)NAN;
+
+    if(s->esolver==NULL || A==NULL || B==NULL ||
        x==NULL || A->n<=0 || A->gn!=B->gn || A->n!=B->n ||
        A->n!=x->n || A->gn!=x->gn ||
        A->nprocs!=1 || B->nprocs!=1 || x->nprocs!=1)
@@ -184,17 +198,39 @@ lis_gesolve_matrix_session_solve(
     /* Retire old eigensolver and all its nested references even if A/B
      * appear unchanged: algorithm-specific retention has not been audited.
      */
+    r->stage=LIS_GESOLVE_STAGE_RETIRE;
     err=lis_gesolve_session_retire(s,LIS_FALSE);
-    if(err) return err;
+    if(err){r->return_code=err;return err;}
+    r->stage=LIS_GESOLVE_STAGE_PREPARE_A;
     err=lis_gesolve_session_prepare(A,&s->cache_a,&a,&pa);
     if(err) goto fail;
+    r->stage=LIS_GESOLVE_STAGE_PREPARE_B;
     err=lis_gesolve_session_prepare(B,&s->cache_b,&b,&pb);
     if(err) goto fail;
 
     memset(&lambda,0,sizeof(lambda));
+    r->stage=LIS_GESOLVE_STAGE_SOLVE;
+    r->solver_called=LIS_TRUE;
     err=lis_gesolve(a,b,x,&lambda,s->esolver);
-    if(err) goto fail;
     e=s->esolver;
+    /* Capture the original status before any cleanup replaces the object.
+     * A zero-filled iteration slot on failure does not establish that the
+     * numerical loop ran. Preserve positive progress, but mark ambiguous
+     * zero counts unavailable. */
+    r->solver_api_return=err;
+    r->solver_status=e->retcode;
+    if(e->iter!=NULL && (e->iter[0]>0 ||
+       (e->iter[0]==0 && !err && e->retcode==LIS_SUCCESS)))
+    {
+        r->iterations=e->iter[0];
+        r->iterations_available=LIS_TRUE;
+    }
+    if(e->resid!=NULL && isfinite((double)e->resid[0]) && e->resid[0]>=0)
+    {
+        r->residual_norm=e->resid[0];
+        r->residual_available=LIS_TRUE;
+    }
+    if(err) goto fail;
     if(e->retcode!=LIS_SUCCESS)
     {
         err=e->retcode;
@@ -205,6 +241,7 @@ lis_gesolve_matrix_session_solve(
      * Subspace methods own one stored vector for each available result.
      * Other generalized methods typically return one eigenpair in x.
      */
+    r->stage=LIS_GESOLVE_STAGE_STORE;
     count=0;
     if(e->evector!=NULL && e->evalue!=NULL)
     {
@@ -234,16 +271,22 @@ lis_gesolve_matrix_session_solve(
     }
     s->computed_nev=count;
     s->committed=LIS_TRUE;
+    r->stage=LIS_GESOLVE_STAGE_COMPLETE;
+    r->return_code=LIS_SUCCESS;
+    r->computed_nev=count;
+    r->results_committed=LIS_TRUE;
     if(policy_A) *policy_A=pa;
     if(policy_B) *policy_B=pb;
     return LIS_SUCCESS;
 
 fail:
+    r->return_code=err;
     if(single) lis_vector_destroy(single);
     /* Invalidate BOTH caches after any partial preparation or solve
      * failure. The old esolver must be retired before freeing them. */
     {
         LIS_INT reset_err=lis_gesolve_session_retire(s,LIS_TRUE);
+        r->cleanup_return=reset_err;
         if(reset_err)
         {
             lis_esolver_destroy(s->esolver);
@@ -262,6 +305,26 @@ fail:
         }
     }
     return err;
+}
+
+LIS_INT
+lis_gesolve_matrix_session_get_report(
+    LIS_GESOLVE_MATRIX_SESSION s,LIS_GESOLVE_SESSION_REPORT *report)
+{
+    return lis_gesolve_matrix_session_get_report_ex(s,report,
+                                      LIS_GESOLVE_SESSION_REPORT_V1_SIZE);
+}
+
+LIS_INT
+lis_gesolve_matrix_session_get_report_ex(
+    LIS_GESOLVE_MATRIX_SESSION s,LIS_GESOLVE_SESSION_REPORT *report,
+    size_t report_size)
+{
+    if(s==NULL || report==NULL || !s->has_report ||
+       report_size<LIS_GESOLVE_SESSION_REPORT_V1_SIZE)
+        return LIS_ERR_ILL_ARG;
+    memcpy(report,&s->report,report_size<sizeof(*report)?report_size:sizeof(*report));
+    return LIS_SUCCESS;
 }
 
 LIS_INT
@@ -318,8 +381,11 @@ lis_gesolve_matrix_session_get_eigenpair(
 LIS_INT
 lis_gesolve_matrix_session_reset(LIS_GESOLVE_MATRIX_SESSION s)
 {
+    LIS_INT err;
     if(s==NULL || s->esolver==NULL) return LIS_ERR_ILL_ARG;
-    return lis_gesolve_session_retire(s,LIS_TRUE);
+    err=lis_gesolve_session_retire(s,LIS_TRUE);
+    if(!err) s->has_report=LIS_FALSE;
+    return err;
 }
 
 void
