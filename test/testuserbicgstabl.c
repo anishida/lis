@@ -37,9 +37,8 @@ static int exercise(LIS_INT fail_on,LIS_INT ell)
     err=lis_vector_duplicate(A,&x);if(err)goto done;
     for(i=0;i<ctx.n;i++)
     {
-        /* Failure must restore x0; the separate numerical fix tests
-         * healthy nonzero initial guesses. */
-        x->value[i]=(LIS_SCALAR)(fail_on ? 0.15 : 0.0);
+        /* Exercise nonzero initial guesses on both failure and success. */
+        x->value[i]=(LIS_SCALAR)0.15;
         b->value[i]=(LIS_SCALAR)(1.0+0.125*(double)i);
     }
     err=lis_solver_create(&solver);if(err)goto done;
@@ -65,8 +64,7 @@ static int exercise(LIS_INT fail_on,LIS_INT ell)
     }
     else
     {
-        /* The zero-initial-guess control must converge and return
-         * an accurate iterate. Nonzero x0 is tested separately. */
+        /* The nonzero-initial-guess control must converge accurately. */
         if(err!=LIS_SUCCESS || status!=LIS_SUCCESS)
         {
             fprintf(stderr,"BiCGSTAB(l=%d) control: api=%d status=%d calls=%d\n",

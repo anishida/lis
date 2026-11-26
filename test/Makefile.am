@@ -524,3 +524,10 @@ test_PROGRAMS += testuserserialcontract
 testuserserialcontract_SOURCES = testuserserialcontract.c
 testuserserialcontract_LDADD = $(LDADD) -lm
 TESTS += testuserserialcontract$(EXEEXT)
+
+# BiCGSTAB(l) initial-iterate regression.
+test_PROGRAMS += testbicgstablinit
+testbicgstablinit_SOURCES = testbicgstablinit.c
+testbicgstablinit_LDADD = $(LDADD) -lm
+TESTS += testbicgstablinit$(EXEEXT)
+

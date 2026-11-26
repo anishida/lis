@@ -178,7 +178,7 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testusereigenpower$(EXEEXT) testusereigenprojection$(EXEEXT) \
 	testusereigenrqiguard$(EXEEXT) testusereigenstatus$(EXEEXT) \
 	testusercomplexadjoint$(EXEEXT) \
-	testuserserialcontract$(EXEEXT)
+	testuserserialcontract$(EXEEXT) testbicgstablinit$(EXEEXT)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_3 = test2f test6f 
@@ -533,6 +533,10 @@ am_testabi_OBJECTS = testabi.$(OBJEXT)
 testabi_OBJECTS = $(am_testabi_OBJECTS)
 testabi_LDADD = $(LDADD)
 testabi_DEPENDENCIES =
+am_testbicgstablinit_OBJECTS = testbicgstablinit.$(OBJEXT)
+testbicgstablinit_OBJECTS = $(am_testbicgstablinit_OBJECTS)
+am__DEPENDENCIES_1 =
+testbicgstablinit_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_testblockgram_OBJECTS = testblockgram.$(OBJEXT)
 testblockgram_OBJECTS = $(am_testblockgram_OBJECTS)
 testblockgram_LDADD = $(LDADD)
@@ -571,7 +575,6 @@ testcomponentnullspace_LDADD = $(LDADD)
 testcomponentnullspace_DEPENDENCIES =
 am_testcomposite_core_OBJECTS = testcomposite_core.$(OBJEXT)
 testcomposite_core_OBJECTS = $(am_testcomposite_core_OBJECTS)
-am__DEPENDENCIES_1 =
 testcomposite_core_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_testcondense_core_OBJECTS = testcondense_core.$(OBJEXT)
 testcondense_core_OBJECTS = $(am_testcondense_core_OBJECTS)
@@ -1161,7 +1164,7 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/test_krylov_unified.Po \
 	./$(DEPDIR)/test_krylov_window.Po \
 	./$(DEPDIR)/test_krylov_workspace.Po ./$(DEPDIR)/testabi.Po \
-	./$(DEPDIR)/testblockgram.Po \
+	./$(DEPDIR)/testbicgstablinit.Po ./$(DEPDIR)/testblockgram.Po \
 	./$(DEPDIR)/testblockorthogonal.Po \
 	./$(DEPDIR)/testblockrank.Po ./$(DEPDIR)/testbreakretry.Po \
 	./$(DEPDIR)/testcapabilities.Po \
@@ -1338,11 +1341,11 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(test_krylov_sparse_SOURCES) $(test_krylov_stress_SOURCES) \
 	$(test_krylov_unified_SOURCES) $(test_krylov_window_SOURCES) \
 	$(test_krylov_workspace_SOURCES) $(testabi_SOURCES) \
-	$(testblockgram_SOURCES) $(testblockorthogonal_SOURCES) \
-	$(testblockrank_SOURCES) $(testbreakretry_SOURCES) \
-	$(testcapabilities_SOURCES) $(testchangingsystem_SOURCES) \
-	$(testcoarseapply_SOURCES) $(testcoarsesetup_SOURCES) \
-	$(testcomponentnullspace_SOURCES) \
+	$(testbicgstablinit_SOURCES) $(testblockgram_SOURCES) \
+	$(testblockorthogonal_SOURCES) $(testblockrank_SOURCES) \
+	$(testbreakretry_SOURCES) $(testcapabilities_SOURCES) \
+	$(testchangingsystem_SOURCES) $(testcoarseapply_SOURCES) \
+	$(testcoarsesetup_SOURCES) $(testcomponentnullspace_SOURCES) \
 	$(testcomposite_core_SOURCES) $(testcondense_core_SOURCES) \
 	$(testcondense_lis_SOURCES) $(testcondense_oom_SOURCES) \
 	$(testcsrtransposeoom_SOURCES) $(testdiagonal_SOURCES) \
@@ -1449,11 +1452,11 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(test_krylov_sparse_SOURCES) $(test_krylov_stress_SOURCES) \
 	$(test_krylov_unified_SOURCES) $(test_krylov_window_SOURCES) \
 	$(test_krylov_workspace_SOURCES) $(testabi_SOURCES) \
-	$(testblockgram_SOURCES) $(testblockorthogonal_SOURCES) \
-	$(testblockrank_SOURCES) $(testbreakretry_SOURCES) \
-	$(testcapabilities_SOURCES) $(testchangingsystem_SOURCES) \
-	$(testcoarseapply_SOURCES) $(testcoarsesetup_SOURCES) \
-	$(testcomponentnullspace_SOURCES) \
+	$(testbicgstablinit_SOURCES) $(testblockgram_SOURCES) \
+	$(testblockorthogonal_SOURCES) $(testblockrank_SOURCES) \
+	$(testbreakretry_SOURCES) $(testcapabilities_SOURCES) \
+	$(testchangingsystem_SOURCES) $(testcoarseapply_SOURCES) \
+	$(testcoarsesetup_SOURCES) $(testcomponentnullspace_SOURCES) \
 	$(testcomposite_core_SOURCES) $(testcondense_core_SOURCES) \
 	$(testcondense_lis_SOURCES) $(testcondense_oom_SOURCES) \
 	$(am__testcsrtransposeoom_SOURCES_DIST) \
@@ -2157,7 +2160,7 @@ TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) \
 	testusereigenpower$(EXEEXT) testusereigenprojection$(EXEEXT) \
 	testusereigenrqiguard$(EXEEXT) testusereigenstatus$(EXEEXT) \
 	testusercomplexadjoint$(EXEEXT) \
-	testuserserialcontract$(EXEEXT)
+	testuserserialcontract$(EXEEXT) testbicgstablinit$(EXEEXT)
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
 testfgcrodrmaxiter_SOURCES = testfgcrodrmaxiter.c
@@ -2255,6 +2258,8 @@ testusercomplexadjoint_SOURCES = testusercomplexadjoint.c
 testusercomplexadjoint_LDADD = $(LDADD) -lm
 testuserserialcontract_SOURCES = testuserserialcontract.c
 testuserserialcontract_LDADD = $(LDADD) -lm
+testbicgstablinit_SOURCES = testbicgstablinit.c
+testbicgstablinit_LDADD = $(LDADD) -lm
 all: all-am
 
 .SUFFIXES:
@@ -2648,6 +2653,10 @@ test_krylov_workspace$(EXEEXT): $(test_krylov_workspace_OBJECTS) $(test_krylov_w
 testabi$(EXEEXT): $(testabi_OBJECTS) $(testabi_DEPENDENCIES) $(EXTRA_testabi_DEPENDENCIES) 
 	@rm -f testabi$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testabi_OBJECTS) $(testabi_LDADD) $(LIBS)
+
+testbicgstablinit$(EXEEXT): $(testbicgstablinit_OBJECTS) $(testbicgstablinit_DEPENDENCIES) $(EXTRA_testbicgstablinit_DEPENDENCIES) 
+	@rm -f testbicgstablinit$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testbicgstablinit_OBJECTS) $(testbicgstablinit_LDADD) $(LIBS)
 
 testblockgram$(EXEEXT): $(testblockgram_OBJECTS) $(testblockgram_DEPENDENCIES) $(EXTRA_testblockgram_DEPENDENCIES) 
 	@rm -f testblockgram$(EXEEXT)
@@ -3294,6 +3303,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_window.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_krylov_workspace.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testabi.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testbicgstablinit.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testblockgram.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testblockorthogonal.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testblockrank.Po@am__quote@ # am--include-marker
@@ -4782,6 +4792,13 @@ testuserserialcontract.log: testuserserialcontract$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testbicgstablinit.log: testbicgstablinit$(EXEEXT)
+	@p='testbicgstablinit$(EXEEXT)'; \
+	b='testbicgstablinit'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -4929,6 +4946,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/test_krylov_window.Po
 	-rm -f ./$(DEPDIR)/test_krylov_workspace.Po
 	-rm -f ./$(DEPDIR)/testabi.Po
+	-rm -f ./$(DEPDIR)/testbicgstablinit.Po
 	-rm -f ./$(DEPDIR)/testblockgram.Po
 	-rm -f ./$(DEPDIR)/testblockorthogonal.Po
 	-rm -f ./$(DEPDIR)/testblockrank.Po
@@ -5165,6 +5183,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/test_krylov_window.Po
 	-rm -f ./$(DEPDIR)/test_krylov_workspace.Po
 	-rm -f ./$(DEPDIR)/testabi.Po
+	-rm -f ./$(DEPDIR)/testbicgstablinit.Po
 	-rm -f ./$(DEPDIR)/testblockgram.Po
 	-rm -f ./$(DEPDIR)/testblockorthogonal.Po
 	-rm -f ./$(DEPDIR)/testblockrank.Po
