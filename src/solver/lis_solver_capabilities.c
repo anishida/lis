@@ -148,7 +148,12 @@ lis_solver_check_nullspace_configuration(
             flags |= LIS_NULLSPACE_CONFIG_EXACT_PRECISION;
     }
 
-    if(solver->near_nullspace_dim>0)
+    if(solver->near_nullspace_dim>0 ||
+       (solver->amg_coarse_basis_dim>0 &&
+        (precon_type==LIS_PRECON_TYPE_MFAMG ||
+         precon_type==LIS_PRECON_TYPE_MFAMG_ILUTP ||
+         (precon_type==LIS_PRECON_TYPE_HYBRID &&
+          solver->options[LIS_OPTIONS_PPRECON]==LIS_PRECON_TYPE_MFAMG))))
     {
         if(nsolver!=LIS_SOLVER_FGMRES &&
            nsolver!=LIS_SOLVER_FGCRODR &&

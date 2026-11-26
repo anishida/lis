@@ -18,6 +18,64 @@ static int fail(const char *msg, int err)
     return 1;
 }
 
+static int check_amg_basis_preparation(LIS_MATRIX A,LIS_SOLVER solver,
+                                       LIS_VECTOR cand[])
+{
+    LIS_VECTOR zero=NULL;
+    LIS_VECTOR input[5];
+    LIS_INT groups[5]={5,7,5,7,3};
+    LIS_AMG_BASIS_DIAGNOSTICS d;
+    LIS_INT i,j,dim,err;
+    LIS_SCALAR dot;
+    int failed=1;
+
+    if(A->nprocs!=1) return 0;
+    if(lis_vector_duplicate(A,&zero) || lis_vector_set_all((LIS_SCALAR)0,zero))
+        goto done;
+    input[0]=cand[0]; input[1]=cand[0]; input[2]=cand[1];
+    input[3]=zero; input[4]=cand[2];
+    err=lis_solver_prepare_amg_coarse_basis(A,solver,5,input,groups,
+                                            (LIS_REAL)1e-12,&d);
+    if(err || d.version!=LIS_AMG_BASIS_DIAGNOSTICS_VERSION ||
+       d.struct_size!=sizeof(d) || d.input_count!=5 || d.group_count!=3 ||
+       d.accepted_count!=3 || d.zero_count!=1 || d.dependent_count!=1 ||
+       lis_solver_get_amg_coarse_basis_dim(solver,&dim) || dim!=3)
+        goto done;
+    for(i=0;i<dim;i++)
+        for(j=0;j<dim;j++)
+        {
+            if(lis_vector_dot(solver->amg_coarse_basis[i],
+                              solver->amg_coarse_basis[j],&dot) ||
+#ifdef _COMPLEX
+               cabs(dot-(i==j?(LIS_SCALAR)1:(LIS_SCALAR)0))>1e-12)
+#else
+               fabs((double)(dot-(i==j?(LIS_SCALAR)1:(LIS_SCALAR)0)))>1e-12)
+#endif
+                goto done;
+        }
+    if(lis_solver_prepare_amg_coarse_basis_ex(A,solver,3,cand,NULL,
+        (LIS_REAL)1e-12,&d,LIS_AMG_BASIS_DIAGNOSTICS_V1_SIZE-1)!=LIS_ERR_ILL_ARG)
+        goto done;
+    if(lis_solver_prepare_amg_coarse_basis(A,solver,3,cand,NULL,
+                (LIS_REAL)1e-12,&d) || d.group_count!=1 ||
+       d.accepted_count!=3)
+        goto done;
+    if(lis_solver_prepare_amg_coarse_basis(A,solver,1,&zero,NULL,
+                (LIS_REAL)1e-12,&d)!=LIS_BREAKDOWN ||
+       d.zero_count!=1 || d.accepted_count!=0 ||
+       lis_solver_get_amg_coarse_basis_dim(solver,&dim) || dim!=3)
+        goto done;
+    if(lis_solver_prepare_amg_coarse_basis(A,solver,1,input,NULL,
+                (LIS_REAL)0,&d)!=LIS_ERR_ILL_ARG ||
+       lis_solver_get_amg_coarse_basis_dim(solver,&dim) || dim!=3)
+        goto done;
+    failed=0;
+done:
+    if(zero) lis_vector_destroy(zero);
+    printf("AMG_BASIS_PREPARATION %s\n",failed?"FAILED":"PASSED");
+    return failed;
+}
+
 int main(int argc, char *argv[])
 {
     LIS_MATRIX A = NULL;
@@ -92,6 +150,9 @@ int main(int argc, char *argv[])
         (int)diag.independent_count,
         (int)diag.exact_count,
         (int)diag.near_count);
+
+    if(check_amg_basis_preparation(A,solver,cand))
+        return fail("AMG basis preparation",1);
 
     lis_solver_destroy(solver);
     solver = NULL;

@@ -38,6 +38,9 @@ extern "C"
 {
 #endif
 	extern LIS_INT lis_solver_init(LIS_SOLVER solver);
+	/* Internal borrowed effective interpolation basis (explicit or legacy). */
+	extern LIS_INT lis_solver_amg_basis_dim(LIS_SOLVER solver);
+	extern LIS_VECTOR *lis_solver_amg_basis_vectors(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_work_destroy(LIS_SOLVER solver);
 	extern LIS_INT lis_solver_sequence_prepare_precon(LIS_MATRIX A, LIS_SOLVER solver, LIS_PRECON *precon);
 	extern LIS_INT lis_solver_sequence_precon_destroy(LIS_SOLVER solver);

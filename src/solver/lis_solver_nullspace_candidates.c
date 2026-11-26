@@ -14,6 +14,7 @@
 #include <float.h>
 #include <math.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "lislib.h"
 #include "lis_nullspace_candidates.h"
@@ -382,35 +383,34 @@ lis_solver_classify_nullspace_candidates(
         }
     }
 
+    if((uintmax_t)nvec>SIZE_MAX/sizeof(LIS_VECTOR))
+        return LIS_OUT_OF_MEMORY;
+
     basis = (LIS_VECTOR *)lis_malloc(
-        nvec*sizeof(LIS_VECTOR),
+        (size_t)nvec*sizeof(LIS_VECTOR),
         "lis_solver_classify_nullspace_candidates::basis");
+    if(basis) memset(basis,0,(size_t)nvec*sizeof(LIS_VECTOR));
     image = (LIS_VECTOR *)lis_malloc(
         nvec*sizeof(LIS_VECTOR),
         "lis_solver_classify_nullspace_candidates::image");
+    if(image) memset(image,0,(size_t)nvec*sizeof(LIS_VECTOR));
     exact = (LIS_VECTOR *)lis_malloc(
         nvec*sizeof(LIS_VECTOR),
         "lis_solver_classify_nullspace_candidates::exact");
+    if(exact) memset(exact,0,(size_t)nvec*sizeof(LIS_VECTOR));
     near = (LIS_VECTOR *)lis_malloc(
         nvec*sizeof(LIS_VECTOR),
         "lis_solver_classify_nullspace_candidates::near");
+    if(near) memset(near,0,(size_t)nvec*sizeof(LIS_VECTOR));
     left = (LIS_VECTOR *)lis_malloc(
         nvec*sizeof(LIS_VECTOR),
         "lis_solver_classify_nullspace_candidates::left");
+    if(left) memset(left,0,(size_t)nvec*sizeof(LIS_VECTOR));
 
     if(basis==NULL || image==NULL || exact==NULL || near==NULL || left==NULL)
     {
         err = LIS_OUT_OF_MEMORY;
         goto cleanup;
-    }
-
-    for(i=0;i<nvec;i++)
-    {
-        basis[i] = NULL;
-        image[i] = NULL;
-        exact[i] = NULL;
-        near[i] = NULL;
-        left[i] = NULL;
     }
 
     err = lis_vector_duplicate(A,&tmp_basis);
@@ -692,4 +692,112 @@ cleanup:
     lis_solver_candidate_destroy_array(left,nvec);
 
     return err;
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "lis_solver_prepare_amg_coarse_basis"
+LIS_INT lis_solver_prepare_amg_coarse_basis_ex(
+    LIS_MATRIX A,LIS_SOLVER solver,LIS_INT nvec,LIS_VECTOR candidates[],
+    const LIS_INT groups[],LIS_REAL relative_tolerance,
+    LIS_AMG_BASIS_DIAGNOSTICS *diagnostics,size_t diagnostics_size)
+{
+    LIS_AMG_BASIS_DIAGNOSTICS d;
+    LIS_VECTOR *basis=NULL,v=NULL;
+    LIS_INT i,j,group,capacity,err=LIS_SUCCESS;
+    LIS_REAL norm0,norm,invnorm;
+
+    if(A==NULL || solver==NULL || nvec<=0 || candidates==NULL ||
+       A->gn<=0 || !isfinite((double)relative_tolerance) ||
+       relative_tolerance<=0.0 || relative_tolerance>=1.0)
+        return LIS_ERR_ILL_ARG;
+    if(A->nprocs!=1 || A->n!=A->gn)
+        return LIS_ERR_NOT_IMPLEMENTED;
+    for(i=0;i<nvec;i++)
+        if(!lis_solver_candidate_vector_compatible(A,candidates[i]) ||
+           candidates[i]->precision!=LIS_PRECISION_DEFAULT ||
+           candidates[i]->value==NULL)
+            return LIS_ERR_ILL_ARG;
+
+    if(diagnostics && diagnostics_size<LIS_AMG_BASIS_DIAGNOSTICS_V1_SIZE)
+        return LIS_ERR_ILL_ARG;
+    memset(&d,0,sizeof(d));
+    d.struct_size=(uint32_t)sizeof(d);
+    d.version=LIS_AMG_BASIS_DIAGNOSTICS_VERSION;
+    d.input_count=nvec;
+    capacity=nvec<A->gn?nvec:A->gn;
+    if((size_t)capacity>((size_t)-1)/sizeof(*basis))
+        return LIS_OUT_OF_MEMORY;
+    basis=(LIS_VECTOR *)lis_malloc((size_t)capacity*sizeof(*basis),
+                                   "lis_solver_prepare_amg_coarse_basis::basis");
+    if(basis==NULL) return LIS_OUT_OF_MEMORY;
+
+    for(i=0;i<nvec;i++)
+    {
+        if(lis_solver_candidate_group_seen(groups,i))
+            continue;
+        group=groups?groups[i]:0;
+        d.group_count++;
+        for(j=0;j<nvec;j++)
+        {
+            if(groups && groups[j]!=group) continue;
+            if(!groups && i!=0) continue;
+            err=lis_vector_duplicate(A,&v);
+            if(err) goto done;
+            err=lis_vector_copy(candidates[j],v);
+            if(err) goto done;
+            err=lis_solver_candidate_orthogonalize(
+                v,basis,d.accepted_count,&norm0,&norm);
+            if(err) goto done;
+            if(!isfinite((double)norm0) || !isfinite((double)norm))
+            {
+                err=LIS_ERR_ILL_ARG;
+                goto done;
+            }
+            if(norm0<=0.0)
+                d.zero_count++;
+            else if(d.accepted_count==capacity || norm/norm0<=relative_tolerance)
+                d.dependent_count++;
+            else
+            {
+                invnorm=(LIS_REAL)1.0/norm;
+                if(!isfinite((double)invnorm) || invnorm<=0.0)
+                {
+                    err=LIS_BREAKDOWN;
+                    goto done;
+                }
+                err=lis_vector_scale((LIS_SCALAR)invnorm,v);
+                if(err) goto done;
+                basis[d.accepted_count++]=v;
+                v=NULL;
+            }
+            if(v)
+            {
+                lis_vector_destroy(v);
+                v=NULL;
+            }
+        }
+    }
+
+    if(d.accepted_count==0)
+    {
+        if(diagnostics) memcpy(diagnostics,&d,diagnostics_size<sizeof(d)?diagnostics_size:sizeof(d));
+        err=LIS_BREAKDOWN;
+        goto done;
+    }
+    err=lis_solver_set_amg_coarse_basis(solver,d.accepted_count,basis);
+    if(!err && diagnostics) memcpy(diagnostics,&d,diagnostics_size<sizeof(d)?diagnostics_size:sizeof(d));
+done:
+    if(v) lis_vector_destroy(v);
+    lis_solver_candidate_destroy_array(basis,d.accepted_count);
+    return err;
+}
+
+LIS_INT lis_solver_prepare_amg_coarse_basis(
+    LIS_MATRIX A,LIS_SOLVER solver,LIS_INT nvec,LIS_VECTOR candidates[],
+    const LIS_INT groups[],LIS_REAL relative_tolerance,
+    LIS_AMG_BASIS_DIAGNOSTICS *diagnostics)
+{
+    return lis_solver_prepare_amg_coarse_basis_ex(A,solver,nvec,candidates,
+        groups,relative_tolerance,diagnostics,LIS_AMG_BASIS_DIAGNOSTICS_V1_SIZE);
 }

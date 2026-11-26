@@ -339,8 +339,8 @@ static int check_parallel_ras(LIS_MATRIX A,LIS_VECTOR b,
                               LIS_VECTOR exact,LIS_VECTOR x)
 {
     struct {
-        int threads,overlap,full;
-    } cases[]={{1,0,0},{1,1,0},{2,0,0},{2,1,0},{4,1,0},{4,2,1}};
+        int threads,overlap,full,schur;
+    } cases[]={{1,0,0,0},{1,1,0,0},{2,0,0,0},{2,1,0,0},{4,1,0,0},{4,2,1,0},{2,1,0,1},{4,1,0,1}};
     const int original_threads=omp_get_max_threads();
     const int original_dynamic=omp_get_dynamic();
     LIS_VECTOR first=NULL,residual=NULL,two_thread_reference=NULL,modes[1];
@@ -382,8 +382,8 @@ static int check_parallel_ras(LIS_MATRIX A,LIS_VECTOR b,
             "-ilut_rcm 1 -ilut_row_scale 1 "
             "-ilut_drop 0.005 -ilut_rate 8 "
             "-ilut_ras_domains 4 -ilut_ras_overlap %d "
-            "-ilutp_full %d -ilutp_full_limit 1024",
-            cases[c].overlap,cases[c].full)>=(int)sizeof(options))
+            "-ilutp_full %d -ilutp_full_limit 1024 -ilut_schur %d",
+            cases[c].overlap,cases[c].full,cases[c].schur)>=(int)sizeof(options))
         {
             failed=1;
             break;
@@ -442,7 +442,7 @@ static int check_parallel_ras(LIS_MATRIX A,LIS_VECTOR b,
                 err=lis_vector_copy(x,first);
                 if(err) { failed=1; goto case_cleanup; }
             }
-            if(k && cases[c].overlap==1 && !cases[c].full)
+            if(k && cases[c].overlap==1 && !cases[c].full && !cases[c].schur)
             {
                 if(workers==2)
                 {
@@ -485,6 +485,52 @@ cleanup:
     return failed;
 }
 #endif
+
+/* The Schur correction acts inside the ILUTP child, not on the
+ * outer solution. Check both residual and exact solution with explicit
+ * RAS, then verify sequence reuse and invalidation on option change. */
+static int check_composite_schur(LIS_MATRIX A,LIS_VECTOR b,
+                                 LIS_VECTOR exact,LIS_VECTOR x)
+{
+    LIS_SOLVER s=NULL;
+    LIS_VECTOR r=NULL;
+    LIS_PRECON kept=NULL;
+    LIS_REAL nr,nb;
+    LIS_INT i,pass,status;
+    int failed=1;
+    if(lis_solver_create(&s) || lis_vector_duplicate(A,&r) ||
+       lis_solver_set_option("-i fgmres -p mfamg_ilutp -scale none "
+          "-ilut_ras_overlap 1 -ilut_ras_domains 4 -ilutp_threshold 0.5 "
+          "-ilut_schur 1 -maxiter 160 -restart 16 -tol 1e-9 -print none",s) ||
+       lis_solver_set_amg_coarse_basis(s,1,&exact) ||
+       lis_vector_nrm2(b,&nb) || !(nb>0))goto done;
+    for(pass=0;pass<3;pass++)
+    {
+        if(pass==2)
+        {
+            if(lis_solver_set_option("-ilut_schur 0",s))goto done;
+            kept=NULL;
+        }
+        if(lis_vector_set_all((LIS_SCALAR)0,x) ||
+           lis_solve_sequence(A,b,x,s) ||
+           lis_solver_get_status(s,&status) || status!=LIS_SUCCESS ||
+           !s->sequence_precon ||
+           (kept && s->sequence_precon!=kept) ||
+           s->sequence_precon_ilut_schur!=s->ilut_schur ||
+           lis_matvec(A,x,r) || lis_vector_axpy((LIS_SCALAR)-1,b,r) ||
+           lis_vector_nrm2(r,&nr) || !(nr/nb<1e-8))goto done;
+        for(i=0;i<x->n;i++)
+            if(!(fabs((double)(x->value[i]-exact->value[i]))<1e-6))
+                goto done;
+        kept=s->sequence_precon;
+    }
+    failed=0;
+done:
+    if(s)lis_solver_destroy(s);
+    if(r)lis_vector_destroy(r);
+    printf("MFAMG_ILUTP_RAS_SCHUR %s\n",failed?"FAILED":"PASSED");
+    return failed;
+}
 
 int main(int argc,char **argv)
 {
@@ -552,7 +598,8 @@ int main(int argc,char **argv)
     if(!failed) failed|=reject_setup(A,exact,"legacy ILUT threshold zero",0,0,0,0,1);
     if(!failed) failed|=reject_setup(A,exact,"RAS domains without overlap",0,0,0,0,2);
     if(!failed) failed|=reject_setup(A,exact,"invalid RAS domains",0,0,0,0,4);
-    if(!failed) failed|=reject_setup(A,exact,"ILUT Schur",0,0,0,0,3);
+    if(!failed) failed|=reject_setup(A,exact,"ILUT Schur without RAS",0,0,0,0,3);
+    if(!failed) failed|=check_composite_schur(A,b,exact,x);
 #ifdef _OPENMP
     if(!failed) failed|=reject_setup(A,exact,"multiple OpenMP threads",0,0,0,1,0);
 #endif
