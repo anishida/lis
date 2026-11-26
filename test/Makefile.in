@@ -174,12 +174,11 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testusergcrodrerrors$(EXEEXT) testusergmreserrors$(EXEEXT) \
 	testusergpbic$(EXEEXT) testuseridrcallback$(EXEEXT) \
 	testuserorthominerrors$(EXEEXT) testusertfqmrcallback$(EXEEXT) \
-	testbicgstablinit$(EXEEXT) testusereigencgcr$(EXEEXT) \
-	testusereigeninverse$(EXEEXT) testusereigenpower$(EXEEXT) \
-	testusereigenprojection$(EXEEXT) \
+	testusereigencgcr$(EXEEXT) testusereigeninverse$(EXEEXT) \
+	testusereigenpower$(EXEEXT) testusereigenprojection$(EXEEXT) \
 	testusereigenrqiguard$(EXEEXT) testusereigenstatus$(EXEEXT) \
 	testusercomplexadjoint$(EXEEXT) \
-	testuserserialcontract$(EXEEXT)
+	testuserserialcontract$(EXEEXT) testbicgstablinit$(EXEEXT)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_3 = test2f test6f 
@@ -2157,12 +2156,11 @@ TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) \
 	testusergcrodrerrors$(EXEEXT) testusergmreserrors$(EXEEXT) \
 	testusergpbic$(EXEEXT) testuseridrcallback$(EXEEXT) \
 	testuserorthominerrors$(EXEEXT) testusertfqmrcallback$(EXEEXT) \
-	testbicgstablinit$(EXEEXT) testusereigencgcr$(EXEEXT) \
-	testusereigeninverse$(EXEEXT) testusereigenpower$(EXEEXT) \
-	testusereigenprojection$(EXEEXT) \
+	testusereigencgcr$(EXEEXT) testusereigeninverse$(EXEEXT) \
+	testusereigenpower$(EXEEXT) testusereigenprojection$(EXEEXT) \
 	testusereigenrqiguard$(EXEEXT) testusereigenstatus$(EXEEXT) \
 	testusercomplexadjoint$(EXEEXT) \
-	testuserserialcontract$(EXEEXT)
+	testuserserialcontract$(EXEEXT) testbicgstablinit$(EXEEXT)
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
 testfgcrodrmaxiter_SOURCES = testfgcrodrmaxiter.c
@@ -2244,8 +2242,6 @@ testuserorthominerrors_SOURCES = testuserorthominerrors.c
 testuserorthominerrors_LDADD = $(LDADD) -lm
 testusertfqmrcallback_SOURCES = testusertfqmrcallback.c
 testusertfqmrcallback_LDADD = $(LDADD) -lm
-testbicgstablinit_SOURCES = testbicgstablinit.c
-testbicgstablinit_LDADD = $(LDADD) -lm
 testusereigencgcr_SOURCES = testusereigencgcr.c
 testusereigencgcr_LDADD = $(LDADD) -lm
 testusereigeninverse_SOURCES = testusereigeninverse.c
@@ -2262,6 +2258,8 @@ testusercomplexadjoint_SOURCES = testusercomplexadjoint.c
 testusercomplexadjoint_LDADD = $(LDADD) -lm
 testuserserialcontract_SOURCES = testuserserialcontract.c
 testuserserialcontract_LDADD = $(LDADD) -lm
+testbicgstablinit_SOURCES = testbicgstablinit.c
+testbicgstablinit_LDADD = $(LDADD) -lm
 all: all-am
 
 .SUFFIXES:
@@ -4738,13 +4736,6 @@ testusertfqmrcallback.log: testusertfqmrcallback$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-testbicgstablinit.log: testbicgstablinit$(EXEEXT)
-	@p='testbicgstablinit$(EXEEXT)'; \
-	b='testbicgstablinit'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
 testusereigencgcr.log: testusereigencgcr$(EXEEXT)
 	@p='testusereigencgcr$(EXEEXT)'; \
 	b='testusereigencgcr'; \
@@ -4797,6 +4788,13 @@ testusercomplexadjoint.log: testusercomplexadjoint$(EXEEXT)
 testuserserialcontract.log: testuserserialcontract$(EXEEXT)
 	@p='testuserserialcontract$(EXEEXT)'; \
 	b='testuserserialcontract'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testbicgstablinit.log: testbicgstablinit$(EXEEXT)
+	@p='testbicgstablinit$(EXEEXT)'; \
+	b='testbicgstablinit'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
