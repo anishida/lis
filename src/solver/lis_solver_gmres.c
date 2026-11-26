@@ -156,7 +156,7 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 	LIS_SCALAR t;
 
 	LIS_REAL bnrm2,nrm2,tol,min_nrm2;
-	LIS_INT iter,maxiter,n,output,maxiter_noimp,noimp_count;
+	LIS_INT err,iter,maxiter,n,output,maxiter_noimp,noimp_count;
 	double time,ptime;
 
 	LIS_REAL rnorm;
@@ -181,6 +181,8 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 	min_nrm2      = LIS_SCALAR_MAX;
 	h_dim   = m+1;
 	ptime   = 0.0;
+	iter    = 0;
+	nrm2    = NAN;
 
 	s       = solver->work[0];
 	r       = solver->work[1];
@@ -188,6 +190,16 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 	v       = &solver->work[3];
 
 	h       = (LIS_SCALAR *)lis_malloc( sizeof(LIS_SCALAR)*(h_dim+1)*(h_dim+2),"lis_gmres::h" );
+	if(h==NULL)
+	{
+		LIS_SETERR_MEM(sizeof(LIS_SCALAR)*(h_dim+1)*(h_dim+2));
+		solver->retcode = LIS_ERR_OUT_OF_MEMORY;
+		solver->iter = 0;
+		solver->resid = NAN;
+		solver->ptime = 0.0;
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_ERR_OUT_OF_MEMORY;
+	}
 	cs      = (m+1)*h_dim;
 	sn      = (m+2)*h_dim;
 
@@ -195,10 +207,24 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 	if( lis_solver_get_initial_residual(solver,NULL,NULL,v[0],&bnrm2) )
 	{
 		lis_free(h);
+		if(solver->retcode!=LIS_SUCCESS)
+		{
+			solver->resid = NAN;
+			LIS_DEBUG_FUNC_OUT;
+			return solver->retcode;
+		}
 		LIS_DEBUG_FUNC_OUT;
 		return LIS_SUCCESS;
 	}
 	tol     = solver->tol;
+	if(solver->options[LIS_OPTIONS_CONV_COND]==LIS_CONV_COND_NRM2_R &&
+		isfinite(bnrm2) && bnrm2>0.0)
+		nrm2 = 1.0;
+	else
+	{
+		lis_vector_nrm2(v[0],&nrm2);
+		nrm2 *= bnrm2;
+	}
 
 
 	iter=0;
@@ -227,11 +253,13 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 
 			/* z = M^-1 * v */
 			time = lis_wtime();
-			lis_psolve(solver,v[iiv],z);
+			err = lis_psolve(solver,v[iiv],z);
 			ptime += lis_wtime()-time;
+			if(err) goto callback_failure;
 
 			/* w = A * z */
-			lis_matvec(A,z,v[i1v]);
+			err = lis_matvec(A,z,v[i1v]);
+			if(err) goto callback_failure;
 
 			for(k=0;k<i;k++)
 			{
@@ -376,8 +404,9 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 
 		/* r = M^-1 * z */
 		time = lis_wtime();
-		lis_psolve(solver,z,r);
+		err = lis_psolve(solver,z,r);
 		ptime += lis_wtime()-time;
+		if(err) goto callback_failure;
 
 		/* x = x + r */
 		lis_vector_axpy(1,r,x);
@@ -387,7 +416,9 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 		 * Keep the restarted Arnoldi residual in the original
 		 * residual space: v[0] = b - A*x.
 		 */
-		lis_matvec(A,x,z);
+		nrm2 = NAN; /* True residual of the updated iterate is not yet known. */
+		err = lis_matvec(A,x,z);
+		if(err) goto callback_failure;
 		lis_vector_xpay(b,-1.0,z);
 		lis_vector_copy(z,v[0]);
 		lis_vector_nrm2(v[0],&rnorm);
@@ -433,6 +464,15 @@ LIS_INT lis_gmres(LIS_SOLVER solver)
 	lis_free(h);
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_MAXITER;
+
+callback_failure:
+	solver->retcode = err;
+	solver->iter = iter;
+	solver->ptime = ptime;
+	solver->resid = nrm2;
+	lis_free(h);
+	LIS_DEBUG_FUNC_OUT;
+	return err;
 }
 
 #ifdef USE_QUAD_PRECISION
@@ -1499,12 +1539,24 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
      noimp_stop    = LIS_FALSE;
 	h_dim   = m+1;
 	ptime   = 0.0;
+	iter    = 0;
+	nrm2    = NAN;
 
 	s       = solver->work[0];
 	z       = &solver->work[2];
 	v       = &solver->work[m+2];
 
 	h       = (LIS_SCALAR *)lis_malloc( sizeof(LIS_SCALAR)*(h_dim+1)*(h_dim+2),"lis_gmres::h" );
+	if(h==NULL)
+	{
+		LIS_SETERR_MEM(sizeof(LIS_SCALAR)*(h_dim+1)*(h_dim+2));
+		solver->retcode = LIS_ERR_OUT_OF_MEMORY;
+		solver->iter = 0;
+		solver->resid = NAN;
+		solver->ptime = 0.0;
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_ERR_OUT_OF_MEMORY;
+	}
 	cs      = (m+1)*h_dim;
 	sn      = (m+2)*h_dim;
 
@@ -1512,10 +1564,24 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 	if( lis_solver_get_initial_residual(solver,NULL,NULL,v[0],&bnrm2) )
 	{
 		lis_free(h);
+		if(solver->retcode!=LIS_SUCCESS)
+		{
+			solver->resid = NAN;
+			LIS_DEBUG_FUNC_OUT;
+			return solver->retcode;
+		}
 		LIS_DEBUG_FUNC_OUT;
 		return LIS_SUCCESS;
 	}
 	tol     = solver->tol;
+	if(solver->options[LIS_OPTIONS_CONV_COND]==LIS_CONV_COND_NRM2_R &&
+		isfinite(bnrm2) && bnrm2>0.0)
+		nrm2 = 1.0;
+	else
+	{
+		lis_vector_nrm2(v[0],&nrm2);
+		nrm2 *= bnrm2;
+	}
 	rnorm   = 1.0/bnrm2;
 
 	/* The FGMRES-supported NRM2_R condition uses ||r0|| as the
@@ -1551,18 +1617,11 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 			err = lis_psolve(solver,v[iiv],z[iiv]);
 			ptime += lis_wtime()-time;
 
-			if( err )
-			{
-			        solver->retcode = err;
-			        solver->iter    = iter;
-			        solver->ptime   = ptime;
-			        lis_free(h);
-			        LIS_DEBUG_FUNC_OUT;
-			        return err;
-			}
+			if(err) goto callback_failure;
 
 			/* w = A * z */
-			lis_matvec(A,z[iiv], v[i1v]);
+			err = lis_matvec(A,z[iiv], v[i1v]);
+			if(err) goto callback_failure;
 
 			for(k=0;k<i;k++)
 			{
@@ -1719,7 +1778,9 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 		 * candidate.  Form the explicit residual of the updated
 		 * iterate before accepting success.
 		 */
-		lis_matvec(A,x,v[0]);
+		nrm2 = NAN; /* True residual of the updated iterate is not yet known. */
+		err = lis_matvec(A,x,v[0]);
+		if(err) goto callback_failure;
 		lis_vector_xpay(b,-1.0,v[0]);
 		lis_vector_nrm2(v[0],&rnorm);
 
@@ -1766,6 +1827,15 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 	lis_free(h);
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_MAXITER;
+
+callback_failure:
+	solver->retcode = err;
+	solver->iter = iter;
+	solver->ptime = ptime;
+	solver->resid = nrm2;
+	lis_free(h);
+	LIS_DEBUG_FUNC_OUT;
+	return err;
 }
 
 #ifdef USE_QUAD_PRECISION

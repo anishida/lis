@@ -119,7 +119,7 @@ LIS_INT lis_tfqmr(LIS_SOLVER solver)
 	LIS_REAL tau,w;
 	LIS_SCALAR rho, rhoold, theta,eta,beta,alpha,ww,wold,s,c;
 	LIS_REAL bnrm2, nrm2, tol, min_nrm2;
-	LIS_INT iter,maxiter,output,maxiter_noimp,noimp_count;
+	LIS_INT err,iter,maxiter,output,maxiter_noimp,noimp_count;
 	double time,ptime;
 	LIS_INT m;
 
@@ -135,6 +135,7 @@ LIS_INT lis_tfqmr(LIS_SOLVER solver)
 	noimp_count   = 0;
 	min_nrm2      = LIS_SCALAR_MAX;
 	ptime   = 0.0;
+	iter    = 0;
 
 	r       = solver->work[0];
 	rtld    = solver->work[1];
@@ -150,10 +151,24 @@ LIS_INT lis_tfqmr(LIS_SOLVER solver)
 	/* Initial Residual */
 	if( lis_solver_get_initial_residual(solver,NULL,NULL,r,&bnrm2) )
 	{
+		if(solver->retcode!=LIS_SUCCESS)
+		{
+			solver->resid = NAN;
+			LIS_DEBUG_FUNC_OUT;
+			return solver->retcode;
+		}
 		LIS_DEBUG_FUNC_OUT;
 		return LIS_SUCCESS;
 	}
 	tol     = solver->tol;
+	if(solver->options[LIS_OPTIONS_CONV_COND]==LIS_CONV_COND_NRM2_R &&
+		isfinite(bnrm2) && bnrm2>0.0)
+		nrm2 = 1.0;
+	else
+	{
+		lis_vector_nrm2(r,&nrm2);
+		nrm2 *= bnrm2;
+	}
 
 	lis_solver_set_shadowresidual(solver,r,rtld);
 
@@ -167,9 +182,11 @@ LIS_INT lis_tfqmr(LIS_SOLVER solver)
 	lis_vector_copy(r,u);
 	lis_vector_set_all(0,d);
 	time = lis_wtime();
-	lis_psolve(solver, p, t);
+	err=lis_psolve(solver, p, t);
 	ptime += lis_wtime()-time;
-	lis_matvec(A,t,v);
+	if(err) goto callback_failure;
+	err=lis_matvec(A,t,v);
+	if(err) goto callback_failure;
 
 	/* rhoold = (r,rtld) */
 	lis_vector_dot(r,rtld,&rhoold);
@@ -202,9 +219,11 @@ LIS_INT lis_tfqmr(LIS_SOLVER solver)
 		lis_vector_axpyz(1.0,u,q,t);
 
 		time = lis_wtime();
-		lis_psolve(solver, t, t1);
+		err=lis_psolve(solver, t, t1);
 		ptime += lis_wtime()-time;
-		lis_matvec(A,t1,v);
+		if(err) goto callback_failure;
+		err=lis_matvec(A,t1,v);
+		if(err) goto callback_failure;
 		lis_vector_axpy(-alpha,v,r);
 
 		lis_vector_nrm2(r,&w);
@@ -240,8 +259,9 @@ LIS_INT lis_tfqmr(LIS_SOLVER solver)
 			tau   = tau * theta * c;
 
 			time = lis_wtime();
-			lis_psolve(solver, d, t1);
+			err=lis_psolve(solver, d, t1);
 			ptime += lis_wtime()-time;
+			if(err) goto callback_failure;
 			lis_vector_axpy(eta,t1,x);
 
 			nrm2 = tau * sqrt(1.0+m) * bnrm2;
@@ -303,9 +323,11 @@ LIS_INT lis_tfqmr(LIS_SOLVER solver)
 		lis_vector_xpay(q,beta,p);
 		lis_vector_xpay(u,beta,p);
 		time = lis_wtime();
-		lis_psolve(solver, p, t1);
+		err=lis_psolve(solver, p, t1);
 		ptime += lis_wtime()-time;
-		lis_matvec(A,t1,v);
+		if(err) goto callback_failure;
+		err=lis_matvec(A,t1,v);
+		if(err) goto callback_failure;
 
 		rhoold = rho;
 		wold   = w;
@@ -317,6 +339,14 @@ LIS_INT lis_tfqmr(LIS_SOLVER solver)
 	solver->resid     = nrm2;
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_MAXITER;
+
+callback_failure:
+	solver->retcode=err;
+	solver->iter=iter;
+	solver->ptime=ptime;
+	solver->resid=nrm2;
+	LIS_DEBUG_FUNC_OUT;
+	return err;
 }
 
 #ifdef USE_QUAD_PRECISION

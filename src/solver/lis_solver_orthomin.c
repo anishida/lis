@@ -45,6 +45,7 @@
 #ifdef USE_MPI
 	#include <mpi.h>
 #endif
+#include <math.h>
 #include "lislib.h"
 
 #define NWORK 3
@@ -131,7 +132,7 @@ LIS_INT lis_orthomin(LIS_SOLVER solver)
 	LIS_SCALAR *dotsave;
 	LIS_SCALAR alpha, beta;
 	LIS_REAL bnrm2, nrm2, tol, min_nrm2;
-	LIS_INT iter,maxiter,output,conv,maxiter_noimp,noimp_count;
+	LIS_INT err,iter,maxiter,output,conv,maxiter_noimp,noimp_count;
 	double time,ptime;
 
 	LIS_INT m,l,lmax,ip,ip0;
@@ -159,14 +160,34 @@ LIS_INT lis_orthomin(LIS_SOLVER solver)
 	aptld   = &solver->work[2*(m+1)+2];
 
 	dotsave = (LIS_SCALAR *)lis_malloc( sizeof(LIS_SCALAR) * (m+1),"lis_orthomin::dotsave" );
+	if(dotsave==NULL)
+	{
+		LIS_SETERR_MEM(sizeof(LIS_SCALAR) * (m+1));
+		solver->retcode = LIS_ERR_OUT_OF_MEMORY;
+		solver->iter = 0;
+		solver->resid = NAN;
+		solver->ptime = 0.0;
+		LIS_DEBUG_FUNC_OUT;
+		return LIS_ERR_OUT_OF_MEMORY;
+	}
 
 	/* Initial Residual */
 	if( lis_solver_get_initial_residual(solver,M,r,rtld,&bnrm2) )
 	{
+		lis_free(dotsave);
+		if(solver->retcode!=LIS_SUCCESS)
+		{
+			solver->resid = NAN;
+			LIS_DEBUG_FUNC_OUT;
+			return solver->retcode;
+		}
 		LIS_DEBUG_FUNC_OUT;
 		return LIS_SUCCESS;
 	}
 	tol     = solver->tol;
+	/* The helper forms the unpreconditioned residual in r (its t argument). */
+	if(conv==LIS_CONV_COND_NRM2_R && isfinite(bnrm2) && bnrm2>0.0) nrm2 = 1.0;
+	else lis_solver_get_residual[conv](r,solver,&nrm2);
 
 	
 	iter=1;
@@ -179,10 +200,12 @@ LIS_INT lis_orthomin(LIS_SOLVER solver)
 
 		/* ap[ip]    = A*p[ip] */
 		/* aptld[ip] = M^-1 ap[ip] */
-		lis_matvec(A,p[ip],ap[ip]);
+		err=lis_matvec(A,p[ip],ap[ip]);
+		if(err) goto callback_failure;
 		time = lis_wtime();
-		lis_psolve(solver, ap[ip], aptld[ip]);
+		err=lis_psolve(solver, ap[ip], aptld[ip]);
 		ptime += lis_wtime()-time;
+		if(err) goto callback_failure;
 
 		lmax = _min(m,iter-1);
 		for(l=1;l<=lmax;l++)
@@ -254,6 +277,7 @@ LIS_INT lis_orthomin(LIS_SOLVER solver)
 				solver->iter = iter;
 				solver->resid = nrm2;
 				solver->ptime = ptime;
+				lis_free(dotsave);
 				LIS_DEBUG_FUNC_OUT;
 				return LIS_MAXITER;
 			}
@@ -268,6 +292,15 @@ LIS_INT lis_orthomin(LIS_SOLVER solver)
 	lis_free(dotsave);
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_MAXITER;
+
+callback_failure:
+	solver->retcode=err;
+	solver->iter=iter-1;
+	solver->ptime=ptime;
+	solver->resid=nrm2;
+	lis_free(dotsave);
+	LIS_DEBUG_FUNC_OUT;
+	return err;
 }
 
 #ifdef USE_QUAD_PRECISION

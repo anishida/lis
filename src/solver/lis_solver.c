@@ -5085,12 +5085,19 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	solver->p_i_time = p_i_time;
 	solver->time  = solver->ptime + itime;
 	solver->itime = itime;
-	/* Residual certification must not read an uninitialized vector when
-	 * a USER/OPERATOR matvec callback fails (nor after an OOM).
-	 * Solver status is reported through solver->retcode as before. */
+	/* Certify ordinary native numerical nonconvergence too. Callback
+	 * codes can overlap MAXITER/BREAKDOWN, so keep the conservative
+	 * no-reentry rule for shell operands and application preconditioners. */
 	t = NULL;
-	residual_err = lis_vector_duplicate(A,&t);
 	xx->precision = LIS_PRECISION_DEFAULT;
+	if( err!=LIS_SUCCESS &&
+	    ((err!=LIS_MAXITER && err!=LIS_BREAKDOWN) ||
+	     A->matrix_type==LIS_MATRIX_USER ||
+	     A->matrix_type==LIS_MATRIX_OPERATOR ||
+	     precon_type>=LIS_PRECON_TYPE_USERDEF ||
+	     precon_type==LIS_PRECON_TYPE_HYBRID) )
+	    goto residual_done;
+	residual_err = lis_vector_duplicate(A,&t);
 	if( residual_err==LIS_SUCCESS )
 	{
 		residual_err = shell_scale
@@ -5144,18 +5151,32 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	{
 		if( err==LIS_SUCCESS ) err=residual_err;
 		solver->retcode = err;
+		solver->resid = NAN;
+		if(nsolver==LIS_SOLVER_GCRODR) lis_gcrodr_clear_recycle(solver);
+		if(nsolver==LIS_SOLVER_FGCRODR) lis_fgcrodr_clear_recycle(solver);
 	}
 
-	if( !solver->setup && err==LIS_SUCCESS )
+	if( !solver->setup && residual_err==LIS_SUCCESS )
 	{
 		solver->resid = nrm2;
 
-		/* Reject non-finite or falsely converged iterates. */
-		if( nrm2!=nrm2 || lis_solver_real_abs(nrm2)>LIS_SCALAR_MAX || nrm2>solver->tol )
+		/* Preserve native nonconvergence status, even if the residual
+		 * happens to satisfy tolerance. Only reject claimed success. */
+		if( err==LIS_SUCCESS &&
+		    (nrm2!=nrm2 || lis_solver_real_abs(nrm2)>LIS_SCALAR_MAX || nrm2>solver->tol) )
 		{
 			err = LIS_BREAKDOWN;
 			solver->retcode = LIS_BREAKDOWN;
 		}
+	}
+
+residual_done:
+	/* Discard an uncertified recycle relation on a hard failure, but
+	 * preserve reuse after ordinary nonconvergence. */
+	if( err!=LIS_SUCCESS && err!=LIS_MAXITER && err!=LIS_BREAKDOWN )
+	{
+		if(nsolver==LIS_SOLVER_GCRODR) lis_gcrodr_clear_recycle(solver);
+		if(nsolver==LIS_SOLVER_FGCRODR) lis_fgcrodr_clear_recycle(solver);
 	}
 
 	if( err )

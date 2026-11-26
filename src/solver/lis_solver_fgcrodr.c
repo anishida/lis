@@ -3039,10 +3039,11 @@ lis_fgcrodr_install_recycle(
          *
          *     C_i = A Z_i
          */
-        lis_matvec(
+        err = lis_matvec(
             solver->A,
             state->z[keep],
             state->c[keep]);
+        if(err) goto fail;
 
 
         /*
@@ -4845,10 +4846,15 @@ lis_fgcrodr_validate_recycle(
 
     for(i=0;i<state->dim;i++)
     {
-        lis_matvec(
+        err = lis_matvec(
             solver->A,
             state->z[i],
             az);
+        if(err)
+        {
+            lis_vector_destroy(az);
+            return err;
+        }
 
 
         err =
@@ -5196,10 +5202,11 @@ lis_fgcrodr_prepare_recycle(
      */
     for(i=0;i<oldk;i++)
     {
-        lis_matvec(
+        err = lis_matvec(
             solver->A,
             state->z[i],
             scratch_c[i]);
+        if(err) goto cleanup;
 
 
         lis_vector_nrm2(
@@ -5720,6 +5727,12 @@ lis_fgcrodr_flexible_core(
 
         lis_free(h);
 
+        if(solver->retcode!=LIS_SUCCESS)
+        {
+            solver->resid = NAN;
+            lis_fgcrodr_clear_recycle(solver);
+            return solver->retcode;
+        }
         return LIS_SUCCESS;
     }
 
@@ -5808,6 +5821,7 @@ lis_fgcrodr_flexible_core(
 
 
     iter = 0;
+    nrm2 = rnorm * solver->bnrm;
 
 
     while( iter<maxiter )
@@ -5960,6 +5974,7 @@ lis_fgcrodr_flexible_core(
                 solver->retcode = err;
                 solver->iter = iter;
                 solver->ptime = ptime;
+                solver->resid = nrm2;
 
                 if( bcoef )
             lis_free(bcoef);
@@ -5969,6 +5984,7 @@ lis_fgcrodr_flexible_core(
 
         lis_free(h);
 
+                lis_fgcrodr_clear_recycle(solver);
                 return err;
             }
 
@@ -5984,10 +6000,22 @@ lis_fgcrodr_flexible_core(
             /*     w      = w - C B(:,j)                        */
             /* ------------------------------------------------ */
 
-            lis_matvec(
+            err = lis_matvec(
                 A,
                 z[iiv],
                 v[i1v]);
+            if(err)
+            {
+                solver->retcode=err;
+                solver->iter=iter;
+                solver->ptime=ptime;
+                solver->resid=nrm2;
+                if(bcoef) lis_free(bcoef);
+                if(hraw) lis_free(hraw);
+                lis_free(h);
+                lis_fgcrodr_clear_recycle(solver);
+                return err;
+            }
 
 
             /*
@@ -6631,6 +6659,7 @@ lis_fgcrodr_flexible_core(
 
         lis_free(h);
 
+            lis_fgcrodr_clear_recycle(solver);
             return err;
         }
 
@@ -6677,15 +6706,26 @@ lis_fgcrodr_flexible_core(
          * Keep this residual in v[0] so a rejected candidate can
          * continue directly through the existing restart path.
          */
-        lis_matvec(
+        err = lis_matvec(
             A,
             x,
             v[0]);
-
-        lis_vector_xpay(
+        if(!err) err=lis_vector_xpay(
             b,
             -1.0,
             v[0]);
+        if(err)
+        {
+            solver->retcode=err;
+            solver->iter=iter;
+            solver->ptime=ptime;
+            solver->resid=NAN;
+            if(bcoef) lis_free(bcoef);
+            if(hraw) lis_free(hraw);
+            lis_free(h);
+            lis_fgcrodr_clear_recycle(solver);
+            return err;
+        }
 
 
         if( candidate )
@@ -6967,7 +7007,15 @@ lis_fgcrodr(
             solver);
 
     if( err )
+    {
+        solver->retcode = err;
+        solver->iter = 0;
+        solver->resid = NAN;
+        solver->ptime = 0.0;
+        lis_fgcrodr_clear_recycle(solver);
+        LIS_DEBUG_FUNC_OUT;
         return err;
+    }
 
 
     /*

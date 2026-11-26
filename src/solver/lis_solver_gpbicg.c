@@ -45,6 +45,7 @@
 #ifdef USE_MPI
 	#include <mpi.h>
 #endif
+#include <math.h>
 #include "lislib.h"
 
 /********************************************************************
@@ -152,7 +153,7 @@ LIS_INT lis_gpbicg(LIS_SOLVER solver)
 	LIS_SCALAR qsi, eta;
 	LIS_SCALAR tmp, tmpdot[5];
 	LIS_REAL bnrm2, nrm2, tol, min_nrm2;
-	LIS_INT iter,maxiter,output,conv,maxiter_noimp,noimp_count;
+	LIS_INT err,iter,maxiter,output,conv,maxiter_noimp,noimp_count;
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
@@ -168,6 +169,7 @@ LIS_INT lis_gpbicg(LIS_SOLVER solver)
 	noimp_count   = 0;
 	min_nrm2      = LIS_SCALAR_MAX;
 	ptime   = 0.0;
+	iter    = 0;
 
 	rtld    = solver->work[0];
 	r       = solver->work[1];
@@ -189,16 +191,26 @@ LIS_INT lis_gpbicg(LIS_SOLVER solver)
 	/* Initial Residual */
 	if( lis_solver_get_initial_residual(solver,NULL,NULL,r,&bnrm2) )
 	{
+		if(solver->retcode!=LIS_SUCCESS)
+		{
+			solver->resid = NAN;
+			LIS_DEBUG_FUNC_OUT;
+			return solver->retcode;
+		}
 		LIS_DEBUG_FUNC_OUT;
 		return LIS_SUCCESS;
 	}
 	tol     = solver->tol;
+	/* The initial helper already normalized the nonzero residual. */
+	if(conv==LIS_CONV_COND_NRM2_R && isfinite(bnrm2) && bnrm2>0.0) nrm2 = 1.0;
+	else lis_solver_get_residual[conv](r,solver,&nrm2);
 
 	lis_solver_set_shadowresidual(solver,r,rtld);
 
 	time = lis_wtime();
-	lis_psolve(solver, r, p);
+	err = lis_psolve(solver, r, p);
 	ptime += lis_wtime()-time;
+	if(err) goto callback_failure;
 	lis_vector_dot(rtld,r,&rho_old);
 	lis_vector_set_all(0,t);
 	lis_vector_set_all(0,w);
@@ -209,10 +221,12 @@ LIS_INT lis_gpbicg(LIS_SOLVER solver)
 		/*   ap(k-1) = A * p(k-1)         */
 		/*   map(k-1)= M^-1 * ap(k-1)     */
 		/*   tmpdot0 = <rtld(0),map(k-1)> */
-		lis_matvec(A,p,ap);
+		err = lis_matvec(A,p,ap);
+		if(err) goto callback_failure;
 		time = lis_wtime();
-		lis_psolve(solver, ap, map);
+		err = lis_psolve(solver, ap, map);
 		ptime += lis_wtime()-time;
+		if(err) goto callback_failure;
 		lis_vector_dot(rtld,ap,&tmpdot[0]);
 
 		if( tmpdot[0]==0.0 )
@@ -263,7 +277,8 @@ LIS_INT lis_gpbicg(LIS_SOLVER solver)
 		/*   qsi     = (tmpdot0*tmpdot1-tmpdot2*tmpdot3) / tmp        */
 		/*   eta     = (tmpdot4*tmpdot2-tmpdot3*tmpdot1) / tmp        */
 		lis_vector_axpyz(-alpha,map,mr,mt);
-		lis_matvec(A,mt,amt);
+		err = lis_matvec(A,mt,amt);
+		if(err) goto callback_failure;
 		lis_vector_dot(y,y,&tmpdot[0]);
 		lis_vector_dot(amt,t,&tmpdot[1]);
 		lis_vector_dot(y,t,&tmpdot[2]);
@@ -321,8 +336,9 @@ LIS_INT lis_gpbicg(LIS_SOLVER solver)
 		/*   mr(k)   = M^-1 * r(k)                                          */
 		/*   rho(k)  = <rtld,mr(k)>                                         */
 		time = lis_wtime();
-		lis_psolve(solver, r, mr);
+		err = lis_psolve(solver, r, mr);
 		ptime += lis_wtime()-time;
+		if(err) goto callback_failure;
 		lis_vector_dot(rtld,r,&rho);
 		if( rho==0.0 )
 		{
@@ -369,6 +385,14 @@ LIS_INT lis_gpbicg(LIS_SOLVER solver)
 	solver->resid     = nrm2;
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_MAXITER;
+
+callback_failure:
+	solver->retcode = err;
+	solver->iter = iter;
+	solver->ptime = ptime;
+	solver->resid = nrm2;
+	LIS_DEBUG_FUNC_OUT;
+	return err;
 }
 
 #if 0
@@ -1398,7 +1422,7 @@ LIS_INT lis_gpbicr(LIS_SOLVER solver)
 	LIS_SCALAR qsi, eta;
 	LIS_SCALAR tmp, tmpdot[5];
 	LIS_REAL bnrm2, nrm2, tol, min_nrm2;
-	LIS_INT iter,maxiter,output,conv,maxiter_noimp,noimp_count;
+	LIS_INT err,iter,maxiter,output,conv,maxiter_noimp,noimp_count;
 	double time,ptime;
 
 	LIS_DEBUG_FUNC_IN;
@@ -1414,6 +1438,7 @@ LIS_INT lis_gpbicr(LIS_SOLVER solver)
 	noimp_count   = 0;
 	min_nrm2      = LIS_SCALAR_MAX;
 	ptime   = 0.0;
+	iter    = 0;
 
 	rtld    = solver->work[0];
 	r       = solver->work[1];
@@ -1435,17 +1460,28 @@ LIS_INT lis_gpbicr(LIS_SOLVER solver)
 	/* Initial Residual */
 	if( lis_solver_get_initial_residual(solver,NULL,NULL,r,&bnrm2) )
 	{
+		if(solver->retcode!=LIS_SUCCESS)
+		{
+			solver->resid = NAN;
+			LIS_DEBUG_FUNC_OUT;
+			return solver->retcode;
+		}
 		LIS_DEBUG_FUNC_OUT;
 		return LIS_SUCCESS;
 	}
 	tol     = solver->tol;
+	/* The initial helper already normalized the nonzero residual. */
+	if(conv==LIS_CONV_COND_NRM2_R && isfinite(bnrm2) && bnrm2>0.0) nrm2 = 1.0;
+	else lis_solver_get_residual[conv](r,solver,&nrm2);
 
 	lis_solver_set_shadowresidual(solver,r,p);
 
-	lis_matvech(A,p,rtld);
+	err = lis_matvech(A,p,rtld);
+	if(err) goto callback_failure;
 	time = lis_wtime();
-	lis_psolve(solver, r, p);
+	err = lis_psolve(solver, r, p);
 	ptime += lis_wtime()-time;
+	if(err) goto callback_failure;
 	lis_vector_dot(rtld,p,&rho_old);
 	lis_vector_set_all(0,t);
 	lis_vector_set_all(0,w);
@@ -1456,10 +1492,12 @@ LIS_INT lis_gpbicr(LIS_SOLVER solver)
 		/*   ap(k-1) = A * p(k-1)         */
 		/*   map(k-1)= M^-1 * ap(k-1)     */
 		/*   tmpdot0 = <map(k-1),rtld(0)> */
-		lis_matvec(A,p,ap);
+		err = lis_matvec(A,p,ap);
+		if(err) goto callback_failure;
 		time = lis_wtime();
-		lis_psolve(solver, ap, map);
+		err = lis_psolve(solver, ap, map);
 		ptime += lis_wtime()-time;
+		if(err) goto callback_failure;
 		lis_vector_dot(rtld,map,&tmpdot[0]);
 
 		if( tmpdot[0]==0.0 )
@@ -1510,7 +1548,8 @@ LIS_INT lis_gpbicr(LIS_SOLVER solver)
 		/*   qsi     = (tmpdot0*tmpdot1-tmpdot2*tmpdot3) / tmp        */
 		/*   eta     = (tmpdot4*tmpdot2-tmpdot3*tmpdot1) / tmp        */
 		lis_vector_axpyz(-alpha,map,mr,mt);
-		lis_matvec(A,mt,amt);
+		err = lis_matvec(A,mt,amt);
+		if(err) goto callback_failure;
 		lis_vector_dot(y,y,&tmpdot[0]);
 		lis_vector_dot(amt,t,&tmpdot[1]);
 		lis_vector_dot(y,t,&tmpdot[2]);
@@ -1586,8 +1625,9 @@ LIS_INT lis_gpbicr(LIS_SOLVER solver)
 		/*   mr(k)   = M^-1 * r(k)                                          */
 		/*   rho(k)  = <rtld,mr(k)>                                         */
 		time = lis_wtime();
-		lis_psolve(solver, r, mr);
+		err = lis_psolve(solver, r, mr);
 		ptime += lis_wtime()-time;
+		if(err) goto callback_failure;
 		lis_vector_dot(rtld,mr,&rho);
 		if( rho==0.0 )
 		{
@@ -1616,6 +1656,14 @@ LIS_INT lis_gpbicr(LIS_SOLVER solver)
 	solver->resid     = nrm2;
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_MAXITER;
+
+callback_failure:
+	solver->retcode = err;
+	solver->iter = iter;
+	solver->ptime = ptime;
+	solver->resid = nrm2;
+	LIS_DEBUG_FUNC_OUT;
+	return err;
 }
 
 #ifdef USE_QUAD_PRECISION

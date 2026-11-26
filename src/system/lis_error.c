@@ -41,6 +41,76 @@
 #endif
 #include "lislib.h"
 
+/* USER is a serial contract. Do not introduce rank-local retry decisions
+ * into MPI builds. On compilers without TLS retain conservative recovery. */
+#if !defined(USE_MPI)
+# if defined(_MSC_VER)
+#  define LIS_CALLBACK_TLS __declspec(thread)
+# elif defined(__GNUC__) || defined(__clang__)
+#  define LIS_CALLBACK_TLS __thread
+# elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#  define LIS_CALLBACK_TLS _Thread_local
+# endif
+#endif
+#ifdef LIS_CALLBACK_TLS
+static LIS_CALLBACK_TLS LIS_CALLBACK_SCOPE *lis_active_callback_scope;
+#endif
+
+void lis_callback_scope_begin(LIS_CALLBACK_SCOPE *scope)
+{
+        scope->status = LIS_SUCCESS;
+        scope->previous = lis_callback_scope_suspend();
+        lis_callback_scope_resume(scope);
+}
+void lis_callback_scope_end(LIS_CALLBACK_SCOPE *scope)
+{
+        lis_callback_scope_resume(scope->previous);
+        lis_callback_record(scope->status);
+}
+LIS_CALLBACK_SCOPE *lis_callback_scope_suspend(void)
+{
+#ifdef LIS_CALLBACK_TLS
+        LIS_CALLBACK_SCOPE *scope=lis_active_callback_scope;
+        lis_active_callback_scope=NULL;
+        return scope;
+#else
+        return NULL;
+#endif
+}
+void lis_callback_scope_resume(LIS_CALLBACK_SCOPE *scope)
+{
+#ifdef LIS_CALLBACK_TLS
+        lis_active_callback_scope=scope;
+#else
+        (void)scope;
+#endif
+}
+LIS_INT lis_callback_scope_active(void)
+{
+#ifdef LIS_CALLBACK_TLS
+        return lis_active_callback_scope!=NULL;
+#else
+        return LIS_FALSE;
+#endif
+}
+LIS_INT lis_callback_scope_status(void)
+{
+#ifdef LIS_CALLBACK_TLS
+        if(lis_active_callback_scope) return lis_active_callback_scope->status;
+#endif
+        return LIS_SUCCESS;
+}
+LIS_INT lis_callback_record(LIS_INT status)
+{
+#ifdef LIS_CALLBACK_TLS
+        if(status && lis_active_callback_scope &&
+           lis_active_callback_scope->status==LIS_SUCCESS)
+                lis_active_callback_scope->status=status;
+#endif
+        return status;
+}
+
+
 /************************************************
  * lis_debug_trace_func
  * lis_printf
