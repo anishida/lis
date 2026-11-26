@@ -210,7 +210,7 @@ lis_erqi_solve_with_recovery(
                         return LIS_SUCCESS;
                 }
 
-                if( !lis_esolver_inner_solve_retryable(status) )
+                if( !lis_esolver_inner_solve_can_retry(A,NULL,solver,status) )
                 {
                         return status;
                 }
@@ -312,7 +312,7 @@ lis_egrqi_solve_with_recovery(
                         return LIS_SUCCESS;
                 }
 
-                if( !lis_esolver_inner_solve_retryable(status) )
+                if( !lis_esolver_inner_solve_can_retry(A,B,solver,status) )
                 {
                         return status;
                 }
@@ -338,13 +338,13 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   LIS_SCALAR rho,solve_shift;
   LIS_INT emaxiter;
   LIS_REAL tol;
-  LIS_INT iter,iter2,output;
+  LIS_INT iter=0,iter2,output;
   LIS_REAL nrm2,resid,cert_resid;
   LIS_VECTOR y,q;
-  LIS_SOLVER solver;
+  LIS_SOLVER solver=NULL;
   double time,itime,ptime,p_c_time,p_i_time;
   LIS_INT err;
-  LIS_PRECON precon;
+  LIS_PRECON precon=NULL;
   LIS_INT nsol, precon_type;
   char solvername[128], preconname[128];
 
@@ -365,10 +365,12 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   y = esolver->work[0];
   q = esolver->work[1];
 
-  lis_solver_create(&solver);
-  lis_solver_set_option("-i bicg -p none",solver);
+  err = lis_solver_create(&solver);
+  if(err) goto callback_failure;
+  err = lis_solver_set_option("-i bicg -p none",solver);
+  if(err) goto callback_failure;
   err = lis_solver_set_optionC(solver);
-  CHKERR(err);
+  if(err) goto callback_failure;
   lis_solver_get_solver(solver, &nsol);
   lis_solver_get_precon(solver, &precon_type);
   lis_solver_get_solvername(nsol, solvername);
@@ -379,13 +381,9 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   /* create preconditioner */
   solver->A = A;
   err = lis_precon_create(solver, &precon);
-  if( err )
-    {
-      lis_solver_work_destroy(solver);
-      solver->retcode = err;
-      return err;
-    }
+  if(err) { precon=NULL; goto callback_failure; }
 
+  iter=0;
   /* v = v / ||v||_2 */
   lis_vector_nrm2(v, &nrm2);
   if( !lis_esolver_is_valid_norm(nrm2) )
@@ -401,7 +399,8 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   lis_vector_scale(1.0/nrm2, v);
 
   /* rho = <v,A*v> / <v,v> */
-  lis_matvec(A, v, y);
+  err = lis_matvec(A, v, y);
+  if(err) goto callback_failure;
   lis_vector_dot(v, y, &rho);
   
   iter=0;
@@ -559,6 +558,15 @@ LIS_INT lis_erqi(LIS_ESOLVER esolver)
   lis_solver_destroy(solver); 
   LIS_DEBUG_FUNC_OUT;
   return LIS_MAXITER;
+callback_failure:
+  esolver->retcode = err;
+  esolver->iter[0] = iter>0 ? iter-1 : 0;
+  esolver->resid[0] = NAN;
+  esolver->evalue[0] = (LIS_SCALAR)NAN;
+  if(precon) lis_precon_destroy(precon);
+  if(solver) lis_solver_destroy(solver);
+  LIS_DEBUG_FUNC_OUT;
+  return err;
 }
 
 /*******************************************
@@ -650,13 +658,13 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
   LIS_SCALAR rho,solve_shift;
   LIS_INT emaxiter;
   LIS_REAL tol;
-  LIS_INT iter,iter2,output;
+  LIS_INT iter=0,iter2,output;
   LIS_REAL nrm2,resid,cert_resid;
   LIS_VECTOR w,y,q;
-  LIS_SOLVER solver;
+  LIS_SOLVER solver=NULL;
   double time,itime,ptime,p_c_time,p_i_time;
   LIS_INT err,recovered_shift;
-  LIS_PRECON precon;
+  LIS_PRECON precon=NULL;
   LIS_INT nsol, precon_type;
   char solvername[128], preconname[128];
 
@@ -679,10 +687,12 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
   y = esolver->work[1];
   q = esolver->work[2];
 
-  lis_solver_create(&solver);
-  lis_solver_set_option("-i bicg -p none",solver);
+  err = lis_solver_create(&solver);
+  if(err) goto callback_failure;
+  err = lis_solver_set_option("-i bicg -p none",solver);
+  if(err) goto callback_failure;
   err = lis_solver_set_optionC(solver);
-  CHKERR(err);
+  if(err) goto callback_failure;
   lis_solver_get_solver(solver, &nsol);
   lis_solver_get_precon(solver, &precon_type);
   lis_solver_get_solvername(nsol, solvername);
@@ -693,13 +703,9 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
   /* create preconditioner */
   solver->A = A;
   err = lis_precon_create(solver, &precon);
-  if( err )
-    {
-      lis_solver_work_destroy(solver);
-      solver->retcode = err;
-      return err;
-    }
+  if(err) { precon=NULL; goto callback_failure; }
 
+  iter=0;
   /* v = v / ||v||_2 */
   lis_vector_nrm2(v, &nrm2);
   if( !lis_esolver_is_valid_norm(nrm2) )
@@ -715,10 +721,12 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
   lis_vector_scale(1.0/nrm2, v);
 
   /* w = B * v */
-  lis_matvec(B, v, w);
+  err = lis_matvec(B, v, w);
+  if(err) goto callback_failure;
 
   /* rho = <B*v,A*v> / <B*v,B*v> */
-  lis_matvec(A, v, y);
+  err = lis_matvec(A, v, y);
+  if(err) goto callback_failure;
   lis_vector_dot(w, y, &rho);
   lis_vector_dot(w, w, &dotww);
 
@@ -781,7 +789,8 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
         }
 
       /* w = B * y */
-      lis_matvec(B, y, w);
+      err = lis_matvec(B, y, w);
+      if(err) goto callback_failure;
 
       /* eta = <w, y>^1/2 */
       lis_vector_dot(w, y, &eta);
@@ -869,7 +878,8 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
           if( tol < resid )
             {
               /* Restore the live B*v state before another iteration. */
-              lis_matvec(B, v, w);
+              err = lis_matvec(B, v, w);
+              if(err) goto callback_failure;
             }
         }
 
@@ -931,5 +941,14 @@ LIS_INT lis_egrqi(LIS_ESOLVER esolver)
   lis_solver_destroy(solver); 
   LIS_DEBUG_FUNC_OUT;
   return LIS_MAXITER;
+callback_failure:
+  esolver->retcode = err;
+  esolver->iter[0] = iter>0 ? iter-1 : 0;
+  esolver->resid[0] = NAN;
+  esolver->evalue[0] = (LIS_SCALAR)NAN;
+  if(precon) lis_precon_destroy(precon);
+  if(solver) lis_solver_destroy(solver);
+  LIS_DEBUG_FUNC_OUT;
+  return err;
 }
 

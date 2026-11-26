@@ -151,7 +151,7 @@ lis_eii_solve_with_recovery(
                 return LIS_SUCCESS;
         }
 
-        if( !lis_esolver_inner_solve_retryable(status) )
+        if( !lis_esolver_inner_solve_can_retry(A,NULL,solver,status) )
         {
                 return status;
         }
@@ -178,10 +178,14 @@ lis_eii_solve_with_recovery(
                 return LIS_SUCCESS;
         }
 
-        if( !lis_esolver_inner_solve_retryable(status) )
+        if( !lis_esolver_inner_solve_can_retry(A,NULL,solver,status) )
         {
                 return status;
         }
+
+        /* Do not perturb a shell with an unsupported in-place shift. */
+        if(A->matrix_type==LIS_MATRIX_USER || A->matrix_type==LIS_MATRIX_OPERATOR)
+                return status;
 
         perturbation =
                 lis_esolver_shift_perturbation(
@@ -244,7 +248,7 @@ lis_eii_solve_with_recovery(
                         return LIS_SUCCESS;
                 }
 
-                if( !lis_esolver_inner_solve_retryable(status) )
+                if( !lis_esolver_inner_solve_can_retry(A,NULL,solver,status) )
                 {
                         return status;
                 }
@@ -282,7 +286,7 @@ lis_egii_solve_with_recovery(
                 return LIS_SUCCESS;
         }
 
-        if( !lis_esolver_inner_solve_retryable(status) )
+        if( !lis_esolver_inner_solve_can_retry(physical_A,B,solver,status) )
         {
                 return status;
         }
@@ -309,7 +313,7 @@ lis_egii_solve_with_recovery(
                 return LIS_SUCCESS;
         }
 
-        if( !lis_esolver_inner_solve_retryable(status) )
+        if( !lis_esolver_inner_solve_can_retry(physical_A,B,solver,status) )
         {
                 return status;
         }
@@ -380,6 +384,19 @@ lis_egii_solve_with_recovery(
                  * and solver-work lifetime strictly inside the operator
                  * lifetime.
                  */
+                if(lis_callback_scope_status())
+                {
+                        if(*precon)
+                        {
+                                if(solver->precon==*precon) solver->precon=NULL;
+                                lis_precon_destroy(*precon);
+                                *precon=NULL;
+                        }
+                        lis_solver_work_destroy(solver);
+                        solver->A=base_operator;
+                        lis_matrix_destroy(trial_operator);
+                        return status;
+                }
                 err = lis_esolver_rebuild_precon(
                         base_operator,
                         solver,
@@ -400,7 +417,7 @@ lis_egii_solve_with_recovery(
                         return LIS_SUCCESS;
                 }
 
-                if( !lis_esolver_inner_solve_retryable(status) )
+                if( !lis_esolver_inner_solve_can_retry(physical_A,B,solver,status) )
                 {
                         return status;
                 }
@@ -423,11 +440,11 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
   LIS_INT iter,iter2,output;
   LIS_REAL nrm2,resid,cert_resid;
   LIS_VECTOR y,q;
-  LIS_SOLVER solver;
+  LIS_SOLVER solver=NULL;
   double time,itime,ptime,p_c_time,p_i_time;
 
   LIS_INT err;
-  LIS_PRECON precon;
+  LIS_PRECON precon=NULL;
   LIS_INT nsol, precon_type;
   char solvername[128], preconname[128];
 
@@ -468,10 +485,30 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
 #endif
     }
   
-  lis_solver_create(&solver);
-  lis_solver_set_option("-i bicg -p none",solver);
+  err = lis_solver_create(&solver);
+  if(err)
+    {
+      if(solver) lis_solver_destroy(solver);
+      if( oshift != 0.0 ) lis_matrix_shift_diagonal(A,-oshift);
+      LIS_DEBUG_FUNC_OUT;
+      return err;
+    }
+  err = lis_solver_set_option("-i bicg -p none",solver);
+  if(err)
+    {
+      if(solver) lis_solver_destroy(solver);
+      if( oshift != 0.0 ) lis_matrix_shift_diagonal(A,-oshift);
+      LIS_DEBUG_FUNC_OUT;
+      return err;
+    }
   err = lis_solver_set_optionC(solver);
-  CHKERR(err);
+  if(err)
+    {
+      if(solver) lis_solver_destroy(solver);
+      if( oshift != 0.0 ) lis_matrix_shift_diagonal(A,-oshift);
+      LIS_DEBUG_FUNC_OUT;
+      return err;
+    }
   lis_solver_get_solver(solver, &nsol);
   lis_solver_get_precon(solver, &precon_type);
   lis_solver_get_solvername(nsol, solvername);
@@ -485,10 +522,11 @@ LIS_INT lis_eii(LIS_ESOLVER esolver)
   /* create preconditioner */
   solver->A = A;
   err = lis_precon_create(solver, &precon);
-  if( err )
+  if(err)
     {
-      lis_solver_work_destroy(solver);
-      solver->retcode = err;
+      if(solver) lis_solver_destroy(solver);
+      if( oshift != 0.0 ) lis_matrix_shift_diagonal(A,-oshift);
+      LIS_DEBUG_FUNC_OUT;
       return err;
     }
 
@@ -749,11 +787,11 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
   LIS_INT iter,iter2,output;
   LIS_REAL nrm2,resid,cert_resid;
   LIS_VECTOR w,y,q;
-  LIS_SOLVER solver;
+  LIS_SOLVER solver=NULL;
   double time,itime,ptime,p_c_time,p_i_time;
 
   LIS_INT err;
-  LIS_PRECON precon;
+  LIS_PRECON precon=NULL;
   LIS_INT nsol, precon_type;
   LIS_INT transform;
   char solvername[128], preconname[128];
@@ -813,8 +851,22 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
 	}
   }
 
-  lis_solver_create(&solver);
-  lis_solver_set_option("-i bicg -p none",solver);
+  err = lis_solver_create(&solver);
+  if(err)
+    {
+      if(solver) lis_solver_destroy(solver);
+      if(Aop) lis_matrix_destroy(Aop);
+      LIS_DEBUG_FUNC_OUT;
+      return err;
+    }
+  err = lis_solver_set_option("-i bicg -p none",solver);
+  if(err)
+    {
+      if(solver) lis_solver_destroy(solver);
+      if(Aop) lis_matrix_destroy(Aop);
+      LIS_DEBUG_FUNC_OUT;
+      return err;
+    }
 
   if( esolver->linear_options && esolver->linear_options[0] )
     {
@@ -827,7 +879,13 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
         }
     }
   err = lis_solver_set_optionC(solver);
-  CHKERR(err);
+  if(err)
+    {
+      if(solver) lis_solver_destroy(solver);
+      if(Aop) lis_matrix_destroy(Aop);
+      LIS_DEBUG_FUNC_OUT;
+      return err;
+    }
   lis_solver_get_solver(solver, &nsol);
   lis_solver_get_precon(solver, &precon_type);
   lis_solver_get_solvername(nsol, solvername);
@@ -893,12 +951,24 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
        */
       if( transform == LIS_EIGEN_TRANSFORM_BUCKLING )
       {
-	lis_matvec(esolver->A, v, w);
+	err = lis_matvec(esolver->A, v, w);
       }
       else
       {
-	lis_matvec(B, v, w);
+	err = lis_matvec(B, v, w);
       }
+      if( err )
+        {
+          esolver->retcode = err;
+          esolver->iter[0] = iter-1;
+          esolver->resid[0] = NAN;
+          esolver->evalue[0] = (LIS_SCALAR)NAN;
+          lis_precon_destroy(precon);
+          lis_solver_destroy(solver);
+          if( Aop ) lis_matrix_destroy(Aop);
+          LIS_DEBUG_FUNC_OUT;
+          return err;
+        }
 
       /* v = v / <w,v>^1/2, w = w / <w,v>^1/2 */
       lis_vector_dot(w, v, &eta);
@@ -941,9 +1011,13 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
       if( err )
         {
           esolver->retcode = err;
+          esolver->iter[0] = iter-1;
+          esolver->resid[0] = NAN;
+          esolver->evalue[0] = (LIS_SCALAR)NAN;
           lis_precon_destroy(precon);
           lis_solver_destroy(solver);
           if( Aop ) lis_matrix_destroy(Aop);
+          LIS_DEBUG_FUNC_OUT;
           return err;
         }
       lis_solver_get_iter(solver,&iter2);
@@ -1019,6 +1093,9 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
           if( err )
             {
               esolver->retcode = err;
+              esolver->iter[0] = iter-1;
+              esolver->resid[0] = NAN;
+              esolver->evalue[0] = (LIS_SCALAR)NAN;
               lis_precon_destroy(precon);
               lis_solver_destroy(solver);
               if( Aop ) lis_matrix_destroy(Aop);
