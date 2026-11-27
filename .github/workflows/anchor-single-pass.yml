@@ -1,0 +1,59 @@
+name: Anchor single-pass regression
+on:
+  push:
+    branches: ['cleanup/anchor-single-pass-20261127']
+  pull_request:
+    paths:
+      - 'tools/*anchor*'
+      - 'src/solver/**'
+      - 'src/precon/**'
+      - 'include/**'
+      - '.github/workflows/anchor-single-pass.yml'
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [release, asan-ubsan]
+    env:
+      OMP_NUM_THREADS: '1'
+      OMP_DYNAMIC: 'FALSE'
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+      UBSAN_OPTIONS: halt_on_error=1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: sudo apt-get update && sudo apt-get install -y build-essential autoconf automake libtool
+      - name: Build and regress
+        shell: bash
+        run: |
+          set -euo pipefail
+          flags='-O2 -DNDEBUG'
+          link=''
+          if [ '${{ matrix.profile }}' = asan-ubsan ]; then
+            flags='-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all'
+            link='-no-pie'
+          fi
+          ./configure --disable-mpi --enable-omp --disable-fortran --disable-f90 --disable-saamg --disable-test --disable-shared --enable-static CFLAGS="$flags" LDFLAGS="$flags"
+          make -j2
+          for test in test_anchor_pilot test_anchor_single_pass; do
+            cc $flags $link -Wall -Wextra -Wpedantic -Werror -fopenmp -DHAVE_CONFIG_H -Iinclude tools/lis_anchor_pilot.c "tools/$test.c" src/.libs/liblis.a -lm -o "$test"
+            "./$test" | tee "$test.log"
+          done
+          grep -Fx 'ANCHOR_PILOT_REGRESSION=PASS' test_anchor_pilot.log
+          grep -Fx 'SINGLE_PASS_REGRESSION=PASS' test_anchor_single_pass.log
+          cc $flags $link -fopenmp -DHAVE_CONFIG_H -Iinclude tools/lis_anchor_pilot.c tools/bench_anchor_pilot.c src/.libs/liblis.a -lm -o bench-anchor-pilot
+          cc $flags $link -fopenmp -DHAVE_CONFIG_H -Iinclude tools/lis_anchor_pilot.c tools/test_anchor_pilot_faults.c src/.libs/liblis.a -Wl,--wrap=lis_solver_sequence_prepare_precon,--wrap=lis_solve_kernel,--wrap=lis_matrix_get_generation,--wrap=lis_vector_copy -lm -o faults
+          ./faults | tee faults.log
+          for n in 1 2 3 4 5; do grep -Fx "ROLLING_FAULT_${n}=PASS" faults.log; done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: anchor-clean-${{ matrix.profile }}
+          path: '*.log'
+          retention-days: 30
