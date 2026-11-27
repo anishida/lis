@@ -32,5 +32,5 @@ LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) \
 	$(AM_CFLAGS) $(CFLAGS)
 
 # Included by lis_precon_mfamg.c; distribute with release archives.
-EXTRA_DIST = lis_mfamg_star_schur.inc lis_precon_ilutp.inc
+EXTRA_DIST = lis_mfamg_star_schur.inc lis_precon_ilutp.inc lis_ilut_min_degree.inc lis_ilutp_refactor.inc
 

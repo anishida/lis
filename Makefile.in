@@ -678,7 +678,8 @@ EXTRA_DIST = doc/ilutp.md doc/ilutp_contact_ccx_v2_benchmarks.md \
 	graphics/gnuplot5.sh graphics/gnuplot5.bat \
 	graphics/gnuplot5.plt reconfigure.sh win/Makefile.in \
 	win/README win/configure.bat \
-	tools/differential_schur_stdlib.py
+	tools/differential_schur_stdlib.py doc/ilutp-symbolic.md \
+	test/testilutp_symbolic.c
 man_MANS = doc/man/man1/lsolve.1 \
              doc/man/man1/esolve.1 \
              doc/man/man1/esolver.1 \

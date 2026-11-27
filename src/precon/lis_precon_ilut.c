@@ -68,6 +68,7 @@
 
 /* Fixed-pattern numerical refactorization is shared with ILU(k). */
 LIS_INT lis_numerical_fact_csr(LIS_SOLVER solver, LIS_PRECON precon);
+LIS_INT lis_ilutp_refresh_attached(LIS_SOLVER solver,LIS_PRECON precon);
 
 /* Isolated opt-in ILUTP implementation, compiled with the ILUT module. */
 #include "lis_precon_ilutp.inc"
@@ -238,6 +239,8 @@ LIS_INT lis_precon_update_ilut_frozen(
      * Keep the first implementation conservative: fall back to the normal
      * sequence rebuild instead of reconstructing those arrays here.
      */
+    if(precon->ilutp_reuse)
+        return lis_ilutp_refresh_attached(solver,precon);
     /* Frozen ILUT does not transport the ILUTP column permutation. */
     if(solver->ilutp_enabled || precon->ilutp_colperm ||
        solver->ilut_equil || precon->ilut_col_scale || precon->ilut_perm)
@@ -301,6 +304,13 @@ LIS_INT lis_precon_update_ilut_frozen(
  * sparsity graph, so it is also defined for nonsymmetric FEA matrices.
  * This is not hypre's ddPQ pivot matching or a distributed RAS solver.
  */
+#if !defined(_COMPLEX) && !defined(USE_COMPLEX)
+#include "lis_ilut_min_degree.inc"
+#include "lis_ilutp_refactor.inc"
+#else
+LIS_INT lis_ilutp_refresh_attached(LIS_SOLVER s,LIS_PRECON p) { (void)s;(void)p;return LIS_ERR_NOT_IMPLEMENTED; }
+void lis_ilutp_destroy_attached(LIS_PRECON p) { (void)p; }
+#endif
 static LIS_INT
 lis_ilut_ordered_create(LIS_SOLVER solver, LIS_PRECON precon)
 {
@@ -319,6 +329,7 @@ lis_ilut_ordered_create(LIS_SOLVER solver, LIS_PRECON precon)
     LIS_INT *perm=NULL;
     LIS_SCALAR *weights=NULL,*colweights=NULL;
     LIS_REAL *colmax=NULL;
+    int md=solver->ilutp_md;
 
     if(A->nprocs!=1 || A->is!=0 || A->n!=A->gn ||
        A->matrix_type!=LIS_MATRIX_CSR ||
@@ -359,7 +370,14 @@ lis_ilut_ordered_create(LIS_SOLVER solver, LIS_PRECON precon)
     }
 
 
-    if(solver->ilut_rcm)
+    if(md) {
+        uint64_t limit=(uint64_t)A->nnz*20;
+        if(limit>INT32_MAX)limit=INT32_MAX;
+        if(limit<(uint64_t)n*4)limit=(uint64_t)n*4;
+        if(!solver->ilutp_enabled || !solver->ilutp_full || solver->ilutp_threshold!=0.0 || solver->ilut_rcm || solver->ilutp_full_limit<0 || !solver->ilutp_symbolic) {err=LIS_ERR_NOT_IMPLEMENTED;goto cleanup;}
+        if(solver->ilutp_full_limit)limit=(uint64_t)solver->ilutp_full_limit;
+        err=lis_ilut_min_degree(A,perm,limit);if(err)goto cleanup;
+    } else if(solver->ilut_rcm)
     {
         degree=(LIS_INT *)lis_malloc((size_t)n*sizeof(LIS_INT),"ILUT RCM degrees");
         graphptr=(LIS_INT *)lis_malloc(((size_t)n+1)*sizeof(LIS_INT),"ILUT RCM ptr");
@@ -497,6 +515,9 @@ lis_ilut_ordered_create(LIS_SOLVER solver, LIS_PRECON precon)
         }
     }
 
+    if(md) {
+        err=lis_ilut_md_permute(A,P,perm,inv,weights,colweights);if(err)goto cleanup;
+    } else {
     for(i=0;i<n;i++)
     {
         old=perm[i];
@@ -514,6 +535,7 @@ lis_ilut_ordered_create(LIS_SOLVER solver, LIS_PRECON precon)
     }
     err=lis_matrix_assemble(P);
     if(err) goto cleanup;
+    }
 
     solver->A=P;
     err=solver->ilutp_enabled ?
@@ -590,6 +612,24 @@ LIS_INT lis_precon_create_ilut(LIS_SOLVER solver, LIS_PRECON precon)
 
 	LIS_DEBUG_FUNC_IN;
 
+    if(solver->ilutp_symbolic || solver->ilutp_md || solver->ilutp_reuse)
+    {
+#if defined(USE_MPI) || defined(_COMPLEX) || defined(USE_COMPLEX)
+        return LIS_ERR_NOT_IMPLEMENTED;
+#else
+        if(!solver->ilutp_symbolic || !solver->ilutp_enabled || !solver->ilutp_full ||
+           solver->ilutp_threshold!=0.0 || sizeof(LIS_INT)!=4 || sizeof(LIS_SCALAR)!=8 ||
+           solver->ilut_rcm || solver->ilut_row_scale || solver->ilut_equil ||
+           solver->ilut_ras_overlap>=0 || solver->ilut_schur ||
+           solver->A->matrix_type!=LIS_MATRIX_CSR ||
+           solver->options[LIS_OPTIONS_PRECISION]!=LIS_PRECISION_DOUBLE ||
+           solver->options[LIS_OPTIONS_SCALE]!=LIS_SCALE_NONE ||
+           solver->options[LIS_OPTIONS_ADDS] ||
+           solver->precon_half_mode!=LIS_PRECON_HALF_OFF ||
+           (solver->ilutp_reuse && !solver->ilutp_md))
+            return LIS_ERR_NOT_IMPLEMENTED;
+#endif
+    }
 	if(solver->ilut_ras_overlap>=0 || solver->ilut_schur)
 	{
 		if(solver->ilut_ras_overlap<0) return LIS_ERR_ILL_ARG;
@@ -670,6 +710,9 @@ LIS_INT lis_precon_create_ilut(LIS_SOLVER solver, LIS_PRECON precon)
 		precon);
 
 	if( err ) return err;
+#if !defined(USE_MPI) && !defined(_COMPLEX) && !defined(USE_COMPLEX)
+    err=reuse_attach(solver,precon);if(err)return err;
+#endif
 
 	LIS_DEBUG_FUNC_OUT;
     return LIS_SUCCESS;
@@ -1466,12 +1509,15 @@ lis_ilut_ordered_apply(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X,
     LIS_INT i,j,n=solver->A->n,err;
     LIS_SCALAR colscale;
     LIS_VECTOR rhs=pc->ilut_work_b,sol=pc->ilut_work_x;
+    if(pc->ilutp_symbolic_factor && !pc->ilutp_symbolic_valid)
+        return LIS_ERR_ILL_ARG;
     if(!rhs || !sol || !pc->ilut_perm || !pc->ilut_row_scale)
         return LIS_ERR_ILL_ARG;
 #ifdef _OPENMP
     /* Changing OMP_NUM_THREADS after ILUTP construction must not silently
      * apply a permutation through the block-parallel ILUT kernels. */
-    if(pc->ilutp_colperm && omp_get_max_threads()!=1)
+    if(pc->ilutp_colperm && omp_get_max_threads()!=1 &&
+       !(pc->ilutp_symbolic_factor && pc->ilutp_symbolic_valid))
     {
         LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
             "ILUTP apply requires one active OpenMP thread");
@@ -1493,10 +1539,29 @@ lis_ilut_ordered_apply(LIS_SOLVER solver, LIS_VECTOR B, LIS_VECTOR X,
         rhs->value[i]=B->value[pc->ilut_perm[j]] *
             (adjoint ? colscale : pc->ilut_row_scale[i]);
     }
-    pc->ilut_apply_active=1;
-    err=adjoint ? lis_psolveh_ilut_csr(solver,rhs,sol) :
-                  lis_psolve_ilut_csr(solver,rhs,sol);
-    pc->ilut_apply_active=0;
+    /* Global factors must never be applied by the block-local OMP kernels.
+     * The experimental path keeps both triangular substitutions serial;
+     * the outer solver's SpMV, dot products and vector ops can use threads. */
+#if !defined(_COMPLEX) && !defined(USE_COMPLEX)
+    if(pc->ilutp_colperm && pc->ilutp_symbolic_factor && pc->ilutp_symbolic_valid) {
+        LIS_INT k; LIS_SCALAR *x=sol->value; LIS_MATRIX_ILU L=pc->L,U=pc->U;
+        memcpy(x,rhs->value,(size_t)n*sizeof(*x));
+        if(!adjoint) {
+            for(i=0;i<n;i++) {LIS_SCALAR v=x[i];for(k=0;k<L->nnz[i];k++) v-=L->value[i][k]*x[L->index[i][k]];x[i]=v;}
+            for(i=n;i-->0;) {LIS_SCALAR v=x[i];for(k=0;k<U->nnz[i];k++) v-=U->value[i][k]*x[U->index[i][k]];x[i]=pc->D->value[i]*v;}
+        } else {
+            for(i=0;i<n;i++) {x[i]*=pc->D->value[i];for(k=0;k<U->nnz[i];k++) x[U->index[i][k]]-=U->value[i][k]*x[i];}
+            for(i=n;i-->0;) for(k=0;k<L->nnz[i];k++) x[L->index[i][k]]-=L->value[i][k]*x[i];
+        }
+        err=LIS_SUCCESS;
+    } else
+#endif
+    {
+        pc->ilut_apply_active=1;
+        err=adjoint ? lis_psolveh_ilut_csr(solver,rhs,sol) :
+                      lis_psolve_ilut_csr(solver,rhs,sol);
+        pc->ilut_apply_active=0;
+    }
     if(err) return err;
     for(i=0;i<n;i++)
     {

@@ -1213,6 +1213,7 @@ LIS_INT lis_precon_destroy(LIS_PRECON precon)
 		lis_vector_destroy(precon->D);
 		lis_vector_destroy(precon->temp);
 
+		lis_ilutp_destroy_attached(precon);
 		lis_free(precon->ilut_perm);
 		lis_free(precon->ilutp_colperm);
 		lis_free(precon->ilut_col_scale);

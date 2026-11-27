@@ -271,6 +271,8 @@ LIS_INT lis_solver_init(LIS_SOLVER solver)
 	solver->ilutp_full_limit = 0;
 	solver->sequence_precon_ilutp_full = 0;
 	solver->sequence_precon_ilutp_full_limit = 0;
+	solver->ilutp_symbolic = solver->ilutp_md = solver->ilutp_reuse = 0;
+	solver->sequence_precon_ilutp_symbolic = solver->sequence_precon_ilutp_md = solver->sequence_precon_ilutp_reuse = 0;
 	solver->ilut_equil = 0;
 	solver->sequence_precon_ilut_equil = 0;
 	solver->sequence_precon_half_mode = LIS_PRECON_HALF_OFF;
@@ -2835,6 +2837,9 @@ static LIS_INT lis_solver_sequence_precon_config_matches(
 	   solver->sequence_precon_ilutp_threshold!=solver->ilutp_threshold ||
 	   solver->sequence_precon_ilutp_full!=solver->ilutp_full ||
 	   solver->sequence_precon_ilutp_full_limit!=solver->ilutp_full_limit ||
+	   solver->sequence_precon_ilutp_symbolic!=solver->ilutp_symbolic ||
+	   solver->sequence_precon_ilutp_md!=solver->ilutp_md ||
+	   solver->sequence_precon_ilutp_reuse!=solver->ilutp_reuse ||
 	   solver->sequence_precon_ilut_equil!=solver->ilut_equil)
 	{
 		return LIS_FALSE;
@@ -2892,6 +2897,9 @@ static void lis_solver_sequence_precon_snapshot(
 	solver->sequence_precon_ilutp_threshold = solver->ilutp_threshold;
 	solver->sequence_precon_ilutp_full = solver->ilutp_full;
 	solver->sequence_precon_ilutp_full_limit = solver->ilutp_full_limit;
+	solver->sequence_precon_ilutp_symbolic = solver->ilutp_symbolic;
+	solver->sequence_precon_ilutp_md = solver->ilutp_md;
+	solver->sequence_precon_ilutp_reuse = solver->ilutp_reuse;
 	solver->sequence_precon_ilut_equil = solver->ilut_equil;
 }
 
@@ -5790,6 +5798,21 @@ LIS_INT lis_solver_set_option2(char* arg1, char *arg2, LIS_SOLVER solver)
 		}
 		LIS_SETERR(LIS_ERR_ILL_ARG,"-ilutp_full expects 0 or 1");
 		return LIS_ERR_ILL_ARG;
+	}
+	if(strcmp(arg1,"-ilutp_symbolic")==0 || strcmp(arg1,"-ilutp_md")==0 ||
+	   strcmp(arg1,"-ilutp_reuse")==0)
+	{
+		LIS_INT enabled;
+		if(!arg2 || (strcmp(arg2,"0") && strcmp(arg2,"1")))
+		{
+			LIS_SETERR(LIS_ERR_ILL_ARG,"symbolic ILUTP options expect 0 or 1");
+			return LIS_ERR_ILL_ARG;
+		}
+		enabled=(arg2[0]=='1');
+		if(!strcmp(arg1,"-ilutp_symbolic")) solver->ilutp_symbolic=enabled;
+		else if(!strcmp(arg1,"-ilutp_md")) solver->ilutp_md=enabled;
+		else solver->ilutp_reuse=enabled;
+		return LIS_SUCCESS;
 	}
 	if(strcmp(arg1,"-ilutp_full_limit")==0)
 	{

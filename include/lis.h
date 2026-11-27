@@ -965,6 +965,10 @@ struct LIS_PRECON_STRUCT
 	LIS_INT ilutp_swap_count; /* number of dynamic column pivot swaps */
 	/* Optional column maximum scaling before ILUT/ILUTP pivoting. */
 	LIS_SCALAR *ilut_col_scale;
+	/* Built-in symbolic full-LU state; never uses public user_data. */
+	LIS_INT ilutp_symbolic_factor;
+	LIS_INT ilutp_symbolic_valid;
+	struct LIS_ILUTP_REUSE_STRUCT *ilutp_reuse;
 };
 typedef struct LIS_PRECON_STRUCT *LIS_PRECON;
 
@@ -1203,6 +1207,9 @@ struct LIS_SOLVER_STRUCT
 	LIS_INT sequence_precon_mfamg_fine_agg_factor;
 	LIS_INT sequence_precon_mfamg_vcycle_smooth_steps;
 	LIS_INT sequence_precon_mfamg_deep_sibling_merge;
+	/* Opt-in symbolic complete-fill LU; appended, existing offsets unchanged. */
+	LIS_INT ilutp_symbolic, ilutp_md, ilutp_reuse;
+	LIS_INT sequence_precon_ilutp_symbolic, sequence_precon_ilutp_md, sequence_precon_ilutp_reuse;
 };
 typedef struct LIS_SOLVER_STRUCT *LIS_SOLVER;
 

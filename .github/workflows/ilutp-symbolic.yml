@@ -1,0 +1,106 @@
+name: Symbolic complete-fill LU regression
+on:
+  push:
+    branches: [feature/ilutp-symbolic-refactor]
+    paths:
+      - 'src/precon/**'
+      - 'src/solver/**'
+      - 'include/**'
+      - 'test/testilutp_symbolic.c'
+      - 'Makefile.am'
+      - 'Makefile.in'
+      - '.github/workflows/ilutp-symbolic.yml'
+  pull_request:
+    paths:
+      - 'src/precon/**'
+      - 'src/solver/**'
+      - 'include/**'
+      - 'test/testilutp_symbolic.c'
+      - 'Makefile.am'
+      - 'Makefile.in'
+      - '.github/workflows/ilutp-symbolic.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: serial
+            flags: ''
+            cflags: '-O2 -g'
+            ldflags: ''
+          - mode: openmp
+            flags: '--enable-omp'
+            cflags: '-O2 -g'
+            ldflags: '-fopenmp'
+          - mode: sanitizer
+            flags: ''
+            cflags: '-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer'
+            ldflags: '-fsanitize=address,undefined'
+    env:
+      OMP_NUM_THREADS: '1'
+      OMP_DYNAMIC: 'FALSE'
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+      UBSAN_OPTIONS: halt_on_error=1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+      - name: Build isolated symbolic LU
+        env:
+          CONFIGURE_OPTIONS: ${{ matrix.flags }}
+          CFLAGS: ${{ matrix.cflags }}
+          LDFLAGS: ${{ matrix.ldflags }}
+        run: |
+          ./configure --enable-test --disable-fortran --disable-f90 --disable-saamg --disable-mpi --disable-shared $CONFIGURE_OPTIONS
+          make -j2
+          gcc $CFLAGS $LDFLAGS -Iinclude test/testilutp_symbolic.c src/.libs/liblis.a -Wl,--wrap=lis_precon_create -Wl,--wrap=lis_precon_update_ilut_frozen -lm -o sequence-audit
+      - name: Full legacy regression
+        run: make -j2 check
+      - name: Sequence lifecycle and reference solution
+        run: |
+          set -euo pipefail
+          ./sequence-audit 2>&1 | tee sequence-audit.log
+          grep -q '^PASS sequence option snapshot rebuild' sequence-audit.log
+          if [[ "${{ matrix.mode }}" == openmp ]]; then
+            OMP_NUM_THREADS=4 ./sequence-audit 2>&1 | tee sequence-audit-omp4.log
+            grep -q '^PASS sequence option snapshot rebuild' sequence-audit-omp4.log
+          fi
+      - name: Isolated process timings and peak RSS
+        if: matrix.mode == 'serial'
+        run: |
+          set -euo pipefail
+          { uname -a; lscpu; gcc --version; /usr/bin/time --version; } 2>&1 | tee sequence-audit-rss.log
+          for rep in 0 1 2; do
+            for offset in 0 1 2 3; do
+              mode=$(( (rep + offset) % 4 ))
+              echo "BENCH_PROCESS rep=$rep mode=$mode" | tee -a sequence-audit-rss.log
+              /usr/bin/time -f 'BENCH_PROCESS elapsed_s=%e peak_rss_kib=%M' ./sequence-audit --benchmark 160 "$mode" 2>&1 | tee -a sequence-audit-rss.log
+            done
+          done
+      - name: Verify release archive and distcheck
+        if: matrix.mode == 'serial'
+        run: |
+          set -euo pipefail
+          make dist 2>&1 | tee sequence-audit-dist.log
+          archive=$(find . -maxdepth 1 -name 'lis-*.tar.gz' -print -quit)
+          test -n "$archive"
+          tar -tzf "$archive" > sequence-audit-dist-files.log
+          distdir=$(basename "$archive" .tar.gz)
+          for file in src/precon/lis_precon_ilutp.inc src/precon/lis_ilut_min_degree.inc src/precon/lis_ilutp_refactor.inc doc/ilutp-symbolic.md test/testilutp_symbolic.c; do
+            grep -Fx "$distdir/$file" sequence-audit-dist-files.log
+          done
+          make -j2 distcheck DISTCHECK_CONFIGURE_FLAGS='--enable-test --disable-fortran --disable-f90 --disable-saamg --disable-mpi --disable-shared' 2>&1 | tee sequence-audit-distcheck.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sequence-audit-${{ matrix.mode }}
+          path: sequence-audit*.log
+          if-no-files-found: ignore

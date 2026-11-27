@@ -110,6 +110,138 @@ static LIS_INT lis_ilutp_heap_pop(LIS_INT *a,LIS_INT *count)
     return first;
 }
 
+/* Experimental fixed-pattern full LU for symmetric CSR structure.
+ * Numeric values need not be symmetric. No pivoting or dropping.
+ * Separate symbolic reach allows a marker-free numeric scatter.
+ */
+#if !defined(_COMPLEX) && !defined(USE_COMPLEX)
+static int lis_ilutp_cmp_index(const void *a,const void *b)
+{
+    LIS_INT x=*(const LIS_INT*)a,y=*(const LIS_INT*)b;
+    return (x>y)-(x<y);
+}
+/* Each row writes its own factors, reads only completed dependency rows. */
+static LIS_INT lis_ilutp_numeric_row(LIS_MATRIX A,LIS_MATRIX_ILU L,LIS_MATRIX_ILU U,LIS_VECTOR D,
+  LIS_INT i,LIS_SCALAR *w,const LIS_INT *perm,const LIS_INT *inv)
+{
+    LIS_INT j,k,t,c; LIS_SCALAR f,pivot;
+        if(perm) {
+            LIS_INT old=perm[i];
+            for(k=A->ptr[old];k<A->ptr[old+1];k++) {
+                LIS_SCALAR v=A->value[k];
+                if(!isfinite((double)v))return LIS_ERR_ILL_ARG;
+                w[inv[A->index[k]]]=v;
+            }
+        } else {
+            for(k=A->ptr[i];k<A->ptr[i+1];k++) w[A->index[k]]=A->value[k];
+        }
+        for(t=0;t<L->nnz[i];t++) {
+            j=L->index[i][t]; f=w[j]*D->value[j];
+            if(!isfinite((double)f)) {return LIS_BREAKDOWN;}
+            L->value[i][t]=f; w[j]=0;
+            if(f!=0) {
+                LIS_INT len=U->nnz[j]; const LIS_INT *idx=U->index[j]; const LIS_SCALAR *val=U->value[j];
+                for(c=0;c<len;c++) w[idx[c]]-=f*val[c];
+            }
+        }
+        pivot=w[i]; w[i]=0;
+        if(!isfinite((double)pivot)||pivot==0||!isfinite(1.0/(double)pivot)) {return LIS_BREAKDOWN;}
+        D->value[i]=1.0/pivot;
+        for(t=0;t<U->nnz[i];t++) {
+            j=U->index[i][t]; f=w[j]; w[j]=0;
+            if(!isfinite((double)f)) {return LIS_BREAKDOWN;}
+            U->value[i][t]=f;
+        }
+    return LIS_SUCCESS;
+}
+static LIS_INT lis_ilutp_full_symbolic(LIS_MATRIX A,LIS_PRECON precon,uint64_t limit)
+{
+    LIS_INT n=A->n,i,j,k,t,m,lo,hi,mid,err=LIS_SUCCESS;
+    LIS_INT *parent=NULL,*mark=NULL,*reach=NULL,*count=NULL,*perm=NULL;
+    LIS_MATRIX_ILU L=NULL,U=NULL;
+    LIS_VECTOR D=NULL;
+    LIS_SCALAR *w=NULL;
+    uint64_t used=0;
+    /* Only sorted, duplicate-free, structurally symmetric CSR is supported.
+     * Validate all rows before binary-searching transposed entries. */
+    for(i=0;i<n;i++) {
+        if(A->ptr[i]<0 || A->ptr[i+1]<A->ptr[i] || A->ptr[i+1]>A->nnz)
+            return LIS_ERR_ILL_ARG;
+        for(k=A->ptr[i];k<A->ptr[i+1];k++) {
+            j=A->index[k];
+            if(j<0 || j>=n || !isfinite((double)A->value[k])) return LIS_ERR_ILL_ARG;
+            if(k>A->ptr[i] && A->index[k-1]>=j) return LIS_ERR_NOT_IMPLEMENTED;
+        }
+    }
+    for(i=0;i<n;i++) for(k=A->ptr[i];k<A->ptr[i+1];k++) {
+        j=A->index[k]; if(j==i) continue;
+        lo=A->ptr[j]; hi=A->ptr[j+1];
+        while(lo<hi) {mid=lo+(hi-lo)/2; if(A->index[mid]<i) lo=mid+1; else hi=mid;}
+        if(lo==A->ptr[j+1] || A->index[lo]!=i) return LIS_ERR_NOT_IMPLEMENTED;
+    }
+    parent=lis_malloc((size_t)n*sizeof(*parent),"symbolic LU parent");
+    mark=lis_malloc((size_t)n*sizeof(*mark),"symbolic LU mark");
+    reach=lis_malloc((size_t)n*sizeof(*reach),"symbolic LU reach");
+    count=lis_malloc((size_t)n*sizeof(*count),"symbolic LU count");
+    perm=lis_malloc((size_t)n*sizeof(*perm),"symbolic LU identity");
+    w=lis_malloc((size_t)n*sizeof(*w),"symbolic LU workspace");
+    if(!parent||!mark||!reach||!count||!perm||!w) {err=LIS_OUT_OF_MEMORY;goto done;}
+    for(i=0;i<n;i++) {parent[i]=-1; mark[i]=-1; count[i]=0; perm[i]=i; w[i]=0;}
+    if((err=lis_matrix_ilu_create(n,1,&L)) || (err=lis_matrix_ilu_create(n,1,&U)) ||
+       (err=lis_matrix_ilu_setCR(L)) || (err=lis_matrix_ilu_setCR(U)) ||
+       (err=lis_vector_duplicate(A,&D))) goto done;
+    /* ILU row arrays are owned by lis_matrix_ilu_destroy(), which uses
+     * free() for rows and lis_free() for tracked outer arrays. */
+    /* Compute elimination tree and each lower row pattern. Every visited
+     * node is a structural lower entry. Parent always exceeds child. */
+    for(i=0;i<n;i++) {
+        m=0; mark[i]=i;
+        for(k=A->ptr[i];k<A->ptr[i+1] && A->index[k]<i;k++) {
+            j=A->index[k];
+            while(mark[j]!=i) {
+                mark[j]=i; reach[m++]=j;
+                if(parent[j]<0) parent[j]=i;
+                j=parent[j];
+            }
+        }
+        if((uint64_t)m>(limit-used)/2) {err=LIS_OUT_OF_MEMORY;goto done;}
+        used+=2*(uint64_t)m;
+        if(m) {
+            qsort(reach,(size_t)m,sizeof(*reach),lis_ilutp_cmp_index);
+            L->index[i]=malloc((size_t)m*sizeof(LIS_INT));
+            L->value[i]=malloc((size_t)m*sizeof(LIS_SCALAR));
+            if(!L->index[i]||!L->value[i]) {L->nnz[i]=m;err=LIS_OUT_OF_MEMORY;goto done;}
+            L->nnz[i]=m;
+            memcpy(L->index[i],reach,(size_t)m*sizeof(*reach));
+            for(t=0;t<m;t++) count[reach[t]]++;
+        }
+    }
+    for(i=0;i<n;i++) if(count[i]) {
+        U->index[i]=malloc((size_t)count[i]*sizeof(LIS_INT));
+        U->value[i]=malloc((size_t)count[i]*sizeof(LIS_SCALAR));
+        U->nnz[i]=count[i];
+        if(!U->index[i]||!U->value[i]) {err=LIS_OUT_OF_MEMORY;goto done;}
+    }
+    memset(count,0,(size_t)n*sizeof(*count));
+    for(i=0;i<n;i++) for(t=0;t<L->nnz[i];t++) {
+        j=L->index[i][t]; U->index[j][count[j]++]=i;
+    }
+    /* Recovered scalar numerical row kernel, shared with refactorization. */
+    for(i=0;i<n;i++) {
+        err=lis_ilutp_numeric_row(A,L,U,D,i,w,NULL,NULL);
+        if(err) goto done;
+    }
+    precon->L=L;L=NULL;precon->U=U;U=NULL;precon->D=D;D=NULL;
+    precon->ilutp_colperm=perm;perm=NULL;precon->ilutp_swap_count=0;
+    precon->ilutp_symbolic_factor=1;
+    precon->ilutp_symbolic_valid=1;
+ done:
+    lis_matrix_ilu_destroy(L);lis_matrix_ilu_destroy(U);lis_vector_destroy(D);
+    lis_free(parent);lis_free(mark);lis_free(reach);lis_free(count);lis_free(perm);lis_free(w);
+    return err;
+}
+#endif
+
 #undef __FUNC__
 #define __FUNC__ "lis_precon_create_ilutp_csr"
 static LIS_INT
@@ -133,7 +265,7 @@ lis_precon_create_ilutp_csr(LIS_SOLVER solver,LIS_PRECON precon)
     uint64_t fill_used=0,fill_limit=0;
 #ifdef _OPENMP
     /* Existing ILU triangular kernels partition factors by OpenMP rank. */
-    if(omp_get_max_threads()!=1)
+    if(omp_get_max_threads()!=1 && !(full && solver->ilutp_symbolic))
     {
         LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
             "ILUTP requires one solver OpenMP thread");
@@ -210,6 +342,17 @@ lis_precon_create_ilutp_csr(LIS_SOLVER solver,LIS_PRECON precon)
         LIS_SETERR(LIS_ERR_ILL_ARG,"ILUTP requires a fresh preconditioner");
         return LIS_ERR_ILL_ARG;
     }
+    if(full && tau==0.0 && solver->ilutp_symbolic)
+    {
+        err=lis_ilutp_full_symbolic(A,precon,fill_limit);
+        /* Explicit symbolic selection never silently falls back to dynamic LU. */
+        return err;
+    }
+#ifdef _OPENMP
+    /* Only the fixed-pattern no-pivot path is extended to multi-thread
+     * outer solvers. Never enter a legacy block factorization here. */
+    if(omp_get_max_threads()!=1) return LIS_ERR_NOT_IMPLEMENTED;
+#endif
     /* The no-pivot case is precisely legacy ILUT, including drop/fill
      * selection and floating-point evaluation order. */
     if(tau==0.0 && !full)
