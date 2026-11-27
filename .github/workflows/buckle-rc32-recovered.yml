@@ -110,8 +110,18 @@ jobs:
           make -j2
       - name: Legacy ILUTP and MFAMG capability checks without experimental flags
         if: matrix.mode != 'mpi'
+        env:
+          BUILD_MODE: ${{ matrix.mode }}
         run: |
-          ./test/testilutp
+          # Native ILUTP is real-only. Automake defines exit 77 as SKIP.
+          # Require the exact documented skip on complex builds and a
+          # successful execution elsewhere; never mask another failure.
+          rc=0
+          ./test/testilutp || rc=$?
+          case "$BUILD_MODE" in
+            complex|complex-wide) test "$rc" -eq 77 ;;
+            *) test "$rc" -eq 0 ;;
+          esac
           ./test/testmfamgilutp
           ./test/testeigenbreakdown
       - name: MPI smoke tests (single rank)
