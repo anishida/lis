@@ -7989,12 +7989,23 @@ test_certification_zero_vector(void)
             goto failed;
     }
 
-    /* Singular B with B*x != 0: a valid finite generalized eigenpair.
-     * The second diagonal entry of B is zero. */
+    /* Regular pencil with singular B and finite eigenpair (2,e_1). */
     err = create_diagonal_matrix(&S,1.0,0.0);
     if( err ) goto cleanup;
-    err = create_diagonal_matrix(&T,2.0,0.0);
+    err = create_diagonal_matrix(&T,2.0,3.0);
     if( err ) goto cleanup;
+    err = lis_vector_set_all(0.0,x);
+    if( err ) goto cleanup;
+    {
+        LIS_INT is,ie;
+        err = lis_vector_get_range(x,&is,&ie);
+        if( err ) goto cleanup;
+        if( is==0 && ie>0 )
+        {
+            err = lis_vector_set_value(LIS_INS_VALUE,0,1.0,x);
+            if( err ) goto cleanup;
+        }
+    }
     residual = 7.0;
     err = lis_esolver_generalized_residual(T,S,x,2.0,Ax,Bx,r,&residual);
     if( err ) goto cleanup;
