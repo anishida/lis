@@ -145,6 +145,9 @@
 /* Define to 1 to enable quad precision operations. */
 #undef USE_QUAD_PRECISION
 
+/* Define to 1 when the experimental real-double RCI API is enabled. */
+#undef USE_RCI
+
 /* Define to 1 to enable SA-AMG preconditioner. */
 #undef USE_SAAMG
 

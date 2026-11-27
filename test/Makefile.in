@@ -178,7 +178,8 @@ test_PROGRAMS = testesubspaceretry$(EXEEXT) etest1$(EXEEXT) \
 	testusereigenpower$(EXEEXT) testusereigenprojection$(EXEEXT) \
 	testusereigenrqiguard$(EXEEXT) testusereigenstatus$(EXEEXT) \
 	testusercomplexadjoint$(EXEEXT) \
-	testuserserialcontract$(EXEEXT) testbicgstablinit$(EXEEXT)
+	testuserserialcontract$(EXEEXT) testbicgstablinit$(EXEEXT) \
+	$(am__EXEEXT_6)
 @ENABLE_HALF_REAL_DOUBLE_TRUE@am__append_1 = testhalfstorage testhalfprobe testhalfdispatch testhalfilukmemory testhalfiluksimd testhalfilut
 @ENABLE_FORTRAN_TRUE@am__append_2 = etest1f etest4f test1f test4f test7f
 @ENABLE_F90_TRUE@am__append_3 = test2f test6f 
@@ -216,6 +217,8 @@ F77LINK = $(LIBTOOL) $(AM_V_lt) --tag=F77 $(AM_LIBTOOLFLAGS) \
 @ENABLE_OOM_TESTS_TRUE@	testuserrowoom$(EXEEXT)
 @ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@am__append_7 = testoommpiscale
 @ENABLE_MPI_TRUE@@ENABLE_OOM_TESTS_TRUE@am__append_8 = testoommpiscale$(EXEEXT)
+@ENABLE_RCI_TRUE@am__append_9 = testrci testrcibridge testrcilarge testrciext testrcifull testrcistate testrcifaults testrcipoisson testrcisweep testrcimodel testrcirange
+@ENABLE_RCI_TRUE@am__append_10 = testrci$(EXEEXT) testrcibridge$(EXEEXT) testrcilarge$(EXEEXT) testrciext$(EXEEXT) testrcifull$(EXEEXT) testrcistate$(EXEEXT) testrcifaults$(EXEEXT) testrcipoisson$(EXEEXT) testrcisweep$(EXEEXT) testrcimodel$(EXEEXT) testrcirange$(EXEEXT)
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
@@ -243,6 +246,12 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(testdir)" \
 @ENABLE_FORTRAN_TRUE@	test7f$(EXEEXT)
 @ENABLE_F90_TRUE@am__EXEEXT_4 = test2f$(EXEEXT) test6f$(EXEEXT)
 @ENABLE_F90_TRUE@@ENABLE_MPI_TRUE@@ENABLE_SAAMG_TRUE@am__EXEEXT_5 = test8f$(EXEEXT)
+@ENABLE_RCI_TRUE@am__EXEEXT_6 = testrci$(EXEEXT) \
+@ENABLE_RCI_TRUE@	testrcibridge$(EXEEXT) testrcilarge$(EXEEXT) \
+@ENABLE_RCI_TRUE@	testrciext$(EXEEXT) testrcifull$(EXEEXT) \
+@ENABLE_RCI_TRUE@	testrcistate$(EXEEXT) testrcifaults$(EXEEXT) \
+@ENABLE_RCI_TRUE@	testrcipoisson$(EXEEXT) testrcisweep$(EXEEXT) \
+@ENABLE_RCI_TRUE@	testrcimodel$(EXEEXT) testrcirange$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(test_PROGRAMS)
 am_benchautojacobirefresh_OBJECTS = benchautojacobirefresh.$(OBJEXT)
 benchautojacobirefresh_OBJECTS = $(am_benchautojacobirefresh_OBJECTS)
@@ -890,6 +899,50 @@ am_testprojectedhermitian_OBJECTS = testprojectedhermitian.$(OBJEXT)
 testprojectedhermitian_OBJECTS = $(am_testprojectedhermitian_OBJECTS)
 testprojectedhermitian_LDADD = $(LDADD)
 testprojectedhermitian_DEPENDENCIES =
+am__testrci_SOURCES_DIST = testrci.c
+@ENABLE_RCI_TRUE@am_testrci_OBJECTS = testrci.$(OBJEXT)
+testrci_OBJECTS = $(am_testrci_OBJECTS)
+@ENABLE_RCI_TRUE@testrci_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__testrcibridge_SOURCES_DIST = testrcibridge.c
+@ENABLE_RCI_TRUE@am_testrcibridge_OBJECTS = testrcibridge.$(OBJEXT)
+testrcibridge_OBJECTS = $(am_testrcibridge_OBJECTS)
+@ENABLE_RCI_TRUE@testrcibridge_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__testrciext_SOURCES_DIST = testrciext.c
+@ENABLE_RCI_TRUE@am_testrciext_OBJECTS = testrciext.$(OBJEXT)
+testrciext_OBJECTS = $(am_testrciext_OBJECTS)
+@ENABLE_RCI_TRUE@testrciext_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__testrcifaults_SOURCES_DIST = testrcifaults.c
+@ENABLE_RCI_TRUE@am_testrcifaults_OBJECTS = testrcifaults.$(OBJEXT)
+testrcifaults_OBJECTS = $(am_testrcifaults_OBJECTS)
+@ENABLE_RCI_TRUE@testrcifaults_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__testrcifull_SOURCES_DIST = testrcifull.c
+@ENABLE_RCI_TRUE@am_testrcifull_OBJECTS = testrcifull.$(OBJEXT)
+testrcifull_OBJECTS = $(am_testrcifull_OBJECTS)
+@ENABLE_RCI_TRUE@testrcifull_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__testrcilarge_SOURCES_DIST = testrcilarge.c
+@ENABLE_RCI_TRUE@am_testrcilarge_OBJECTS = testrcilarge.$(OBJEXT)
+testrcilarge_OBJECTS = $(am_testrcilarge_OBJECTS)
+@ENABLE_RCI_TRUE@testrcilarge_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__testrcimodel_SOURCES_DIST = testrcimodel.c
+@ENABLE_RCI_TRUE@am_testrcimodel_OBJECTS = testrcimodel.$(OBJEXT)
+testrcimodel_OBJECTS = $(am_testrcimodel_OBJECTS)
+@ENABLE_RCI_TRUE@testrcimodel_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__testrcipoisson_SOURCES_DIST = testrcipoisson.c
+@ENABLE_RCI_TRUE@am_testrcipoisson_OBJECTS = testrcipoisson.$(OBJEXT)
+testrcipoisson_OBJECTS = $(am_testrcipoisson_OBJECTS)
+@ENABLE_RCI_TRUE@testrcipoisson_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__testrcirange_SOURCES_DIST = testrcirange.c
+@ENABLE_RCI_TRUE@am_testrcirange_OBJECTS = testrcirange.$(OBJEXT)
+testrcirange_OBJECTS = $(am_testrcirange_OBJECTS)
+@ENABLE_RCI_TRUE@testrcirange_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__testrcistate_SOURCES_DIST = testrcistate.c
+@ENABLE_RCI_TRUE@am_testrcistate_OBJECTS = testrcistate.$(OBJEXT)
+testrcistate_OBJECTS = $(am_testrcistate_OBJECTS)
+@ENABLE_RCI_TRUE@testrcistate_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__testrcisweep_SOURCES_DIST = testrcisweep.c
+@ENABLE_RCI_TRUE@am_testrcisweep_OBJECTS = testrcisweep.$(OBJEXT)
+testrcisweep_OBJECTS = $(am_testrcisweep_OBJECTS)
+@ENABLE_RCI_TRUE@testrcisweep_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_testrcoalloc_OBJECTS = testrcoalloc.$(OBJEXT)
 testrcoalloc_OBJECTS = $(am_testrcoalloc_OBJECTS)
 testrcoalloc_LDADD = $(LDADD)
@@ -1228,7 +1281,12 @@ am__depfiles_remade = ./$(DEPDIR)/benchautojacobirefresh.Po \
 	./$(DEPDIR)/testpreconpolicy.Po ./$(DEPDIR)/testpreconpsd.Po \
 	./$(DEPDIR)/testpreconreuse.Po \
 	./$(DEPDIR)/testprojectedeigen.Po \
-	./$(DEPDIR)/testprojectedhermitian.Po \
+	./$(DEPDIR)/testprojectedhermitian.Po ./$(DEPDIR)/testrci.Po \
+	./$(DEPDIR)/testrcibridge.Po ./$(DEPDIR)/testrciext.Po \
+	./$(DEPDIR)/testrcifaults.Po ./$(DEPDIR)/testrcifull.Po \
+	./$(DEPDIR)/testrcilarge.Po ./$(DEPDIR)/testrcimodel.Po \
+	./$(DEPDIR)/testrcipoisson.Po ./$(DEPDIR)/testrcirange.Po \
+	./$(DEPDIR)/testrcistate.Po ./$(DEPDIR)/testrcisweep.Po \
 	./$(DEPDIR)/testrcoalloc.Po ./$(DEPDIR)/testrecovery.Po \
 	./$(DEPDIR)/testrepeatedsystems.Po \
 	./$(DEPDIR)/testrhistoryerror.Po ./$(DEPDIR)/testrqirestore.Po \
@@ -1387,11 +1445,17 @@ SOURCES = $(benchautojacobirefresh_SOURCES) $(benchfrozenilut_SOURCES) \
 	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
 	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
 	$(testpreconreuse_SOURCES) $(testprojectedeigen_SOURCES) \
-	$(testprojectedhermitian_SOURCES) $(testrcoalloc_SOURCES) \
-	$(testrecovery_SOURCES) $(testrepeatedsystems_SOURCES) \
-	testrhistoryerror.c $(testrqirestore_SOURCES) \
-	$(testsequence_SOURCES) $(testshellscale_SOURCES) \
-	$(testsnapshot_SOURCES) $(testsolvercallbackcert_SOURCES) \
+	$(testprojectedhermitian_SOURCES) $(testrci_SOURCES) \
+	$(testrcibridge_SOURCES) $(testrciext_SOURCES) \
+	$(testrcifaults_SOURCES) $(testrcifull_SOURCES) \
+	$(testrcilarge_SOURCES) $(testrcimodel_SOURCES) \
+	$(testrcipoisson_SOURCES) $(testrcirange_SOURCES) \
+	$(testrcistate_SOURCES) $(testrcisweep_SOURCES) \
+	$(testrcoalloc_SOURCES) $(testrecovery_SOURCES) \
+	$(testrepeatedsystems_SOURCES) testrhistoryerror.c \
+	$(testrqirestore_SOURCES) $(testsequence_SOURCES) \
+	$(testshellscale_SOURCES) $(testsnapshot_SOURCES) \
+	$(testsolvercallbackcert_SOURCES) \
 	$(testsolvercallbackpaths_SOURCES) \
 	$(testsolvercapabilities_SOURCES) $(testsolvermonitor_SOURCES) \
 	$(testsolveroptionreplace_SOURCES) $(testsplitview_SOURCES) \
@@ -1501,7 +1565,17 @@ DIST_SOURCES = $(benchautojacobirefresh_SOURCES) \
 	$(testprebuiltuser_SOURCES) $(testpreconlifecycle_SOURCES) \
 	$(testpreconpolicy_SOURCES) $(testpreconpsd_SOURCES) \
 	$(testpreconreuse_SOURCES) $(testprojectedeigen_SOURCES) \
-	$(testprojectedhermitian_SOURCES) $(testrcoalloc_SOURCES) \
+	$(testprojectedhermitian_SOURCES) $(am__testrci_SOURCES_DIST) \
+	$(am__testrcibridge_SOURCES_DIST) \
+	$(am__testrciext_SOURCES_DIST) \
+	$(am__testrcifaults_SOURCES_DIST) \
+	$(am__testrcifull_SOURCES_DIST) \
+	$(am__testrcilarge_SOURCES_DIST) \
+	$(am__testrcimodel_SOURCES_DIST) \
+	$(am__testrcipoisson_SOURCES_DIST) \
+	$(am__testrcirange_SOURCES_DIST) \
+	$(am__testrcistate_SOURCES_DIST) \
+	$(am__testrcisweep_SOURCES_DIST) $(testrcoalloc_SOURCES) \
 	$(testrecovery_SOURCES) $(testrepeatedsystems_SOURCES) \
 	testrhistoryerror.c $(testrqirestore_SOURCES) \
 	$(testsequence_SOURCES) $(testshellscale_SOURCES) \
@@ -1906,7 +1980,7 @@ EXTRA_DIST = gen_ilutp_fullfill_case.py gen_stokes_saddle.py \
 	benchilutp_rhs_100.mtx defs test.sh testmat.mtx testmat2.mtx \
 	testmat3.mtx testmat4.mtx testmat0.mtx testvec0.mtx \
 	testca_mfamg_ilutp.sh testca_mfamg_profiles.sh \
-	testcondense_differential.sh
+	testcondense_differential.sh testrciabi.c testrcicxx.cpp
 testdir = ${prefix}/share/examples/lis
 test_DATA = testmat.mtx testmat2.mtx testmat3.mtx testmat4.mtx testmat0.mtx testvec0.mtx
 test_SCRIPTS = defs test.sh
@@ -2160,7 +2234,8 @@ TESTS = testsnapshot$(EXEEXT) test.sh testuserrow$(EXEEXT) \
 	testusereigenpower$(EXEEXT) testusereigenprojection$(EXEEXT) \
 	testusereigenrqiguard$(EXEEXT) testusereigenstatus$(EXEEXT) \
 	testusercomplexadjoint$(EXEEXT) \
-	testuserserialcontract$(EXEEXT) testbicgstablinit$(EXEEXT)
+	testuserserialcontract$(EXEEXT) testbicgstablinit$(EXEEXT) \
+	$(am__append_10)
 testthreads_SOURCES = testthreads.c
 testfgcrodr_SOURCES = testfgcrodr.c
 testfgcrodrmaxiter_SOURCES = testfgcrodrmaxiter.c
@@ -2260,6 +2335,28 @@ testuserserialcontract_SOURCES = testuserserialcontract.c
 testuserserialcontract_LDADD = $(LDADD) -lm
 testbicgstablinit_SOURCES = testbicgstablinit.c
 testbicgstablinit_LDADD = $(LDADD) -lm
+@ENABLE_RCI_TRUE@testrci_SOURCES = testrci.c
+@ENABLE_RCI_TRUE@testrcibridge_SOURCES = testrcibridge.c
+@ENABLE_RCI_TRUE@testrcilarge_SOURCES = testrcilarge.c
+@ENABLE_RCI_TRUE@testrciext_SOURCES = testrciext.c
+@ENABLE_RCI_TRUE@testrcifull_SOURCES = testrcifull.c
+@ENABLE_RCI_TRUE@testrcistate_SOURCES = testrcistate.c
+@ENABLE_RCI_TRUE@testrcifaults_SOURCES = testrcifaults.c
+@ENABLE_RCI_TRUE@testrcipoisson_SOURCES = testrcipoisson.c
+@ENABLE_RCI_TRUE@testrcisweep_SOURCES = testrcisweep.c
+@ENABLE_RCI_TRUE@testrcimodel_SOURCES = testrcimodel.c
+@ENABLE_RCI_TRUE@testrcirange_SOURCES = testrcirange.c
+@ENABLE_RCI_TRUE@testrci_LDADD = $(LDADD) -lm
+@ENABLE_RCI_TRUE@testrcibridge_LDADD = $(LDADD) -lm
+@ENABLE_RCI_TRUE@testrcilarge_LDADD = $(LDADD) -lm
+@ENABLE_RCI_TRUE@testrciext_LDADD = $(LDADD) -lm
+@ENABLE_RCI_TRUE@testrcifull_LDADD = $(LDADD) -lm
+@ENABLE_RCI_TRUE@testrcistate_LDADD = $(LDADD) -lm
+@ENABLE_RCI_TRUE@testrcifaults_LDADD = $(LDADD) -lm
+@ENABLE_RCI_TRUE@testrcipoisson_LDADD = $(LDADD) -lm
+@ENABLE_RCI_TRUE@testrcisweep_LDADD = $(LDADD) -lm
+@ENABLE_RCI_TRUE@testrcimodel_LDADD = $(LDADD) -lm
+@ENABLE_RCI_TRUE@testrcirange_LDADD = $(LDADD) -lm
 all: all-am
 
 .SUFFIXES:
@@ -3002,6 +3099,50 @@ testprojectedhermitian$(EXEEXT): $(testprojectedhermitian_OBJECTS) $(testproject
 	@rm -f testprojectedhermitian$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testprojectedhermitian_OBJECTS) $(testprojectedhermitian_LDADD) $(LIBS)
 
+testrci$(EXEEXT): $(testrci_OBJECTS) $(testrci_DEPENDENCIES) $(EXTRA_testrci_DEPENDENCIES) 
+	@rm -f testrci$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testrci_OBJECTS) $(testrci_LDADD) $(LIBS)
+
+testrcibridge$(EXEEXT): $(testrcibridge_OBJECTS) $(testrcibridge_DEPENDENCIES) $(EXTRA_testrcibridge_DEPENDENCIES) 
+	@rm -f testrcibridge$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testrcibridge_OBJECTS) $(testrcibridge_LDADD) $(LIBS)
+
+testrciext$(EXEEXT): $(testrciext_OBJECTS) $(testrciext_DEPENDENCIES) $(EXTRA_testrciext_DEPENDENCIES) 
+	@rm -f testrciext$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testrciext_OBJECTS) $(testrciext_LDADD) $(LIBS)
+
+testrcifaults$(EXEEXT): $(testrcifaults_OBJECTS) $(testrcifaults_DEPENDENCIES) $(EXTRA_testrcifaults_DEPENDENCIES) 
+	@rm -f testrcifaults$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testrcifaults_OBJECTS) $(testrcifaults_LDADD) $(LIBS)
+
+testrcifull$(EXEEXT): $(testrcifull_OBJECTS) $(testrcifull_DEPENDENCIES) $(EXTRA_testrcifull_DEPENDENCIES) 
+	@rm -f testrcifull$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testrcifull_OBJECTS) $(testrcifull_LDADD) $(LIBS)
+
+testrcilarge$(EXEEXT): $(testrcilarge_OBJECTS) $(testrcilarge_DEPENDENCIES) $(EXTRA_testrcilarge_DEPENDENCIES) 
+	@rm -f testrcilarge$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testrcilarge_OBJECTS) $(testrcilarge_LDADD) $(LIBS)
+
+testrcimodel$(EXEEXT): $(testrcimodel_OBJECTS) $(testrcimodel_DEPENDENCIES) $(EXTRA_testrcimodel_DEPENDENCIES) 
+	@rm -f testrcimodel$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testrcimodel_OBJECTS) $(testrcimodel_LDADD) $(LIBS)
+
+testrcipoisson$(EXEEXT): $(testrcipoisson_OBJECTS) $(testrcipoisson_DEPENDENCIES) $(EXTRA_testrcipoisson_DEPENDENCIES) 
+	@rm -f testrcipoisson$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testrcipoisson_OBJECTS) $(testrcipoisson_LDADD) $(LIBS)
+
+testrcirange$(EXEEXT): $(testrcirange_OBJECTS) $(testrcirange_DEPENDENCIES) $(EXTRA_testrcirange_DEPENDENCIES) 
+	@rm -f testrcirange$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testrcirange_OBJECTS) $(testrcirange_LDADD) $(LIBS)
+
+testrcistate$(EXEEXT): $(testrcistate_OBJECTS) $(testrcistate_DEPENDENCIES) $(EXTRA_testrcistate_DEPENDENCIES) 
+	@rm -f testrcistate$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testrcistate_OBJECTS) $(testrcistate_LDADD) $(LIBS)
+
+testrcisweep$(EXEEXT): $(testrcisweep_OBJECTS) $(testrcisweep_DEPENDENCIES) $(EXTRA_testrcisweep_DEPENDENCIES) 
+	@rm -f testrcisweep$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(testrcisweep_OBJECTS) $(testrcisweep_LDADD) $(LIBS)
+
 testrcoalloc$(EXEEXT): $(testrcoalloc_OBJECTS) $(testrcoalloc_DEPENDENCIES) $(EXTRA_testrcoalloc_DEPENDENCIES) 
 	@rm -f testrcoalloc$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(testrcoalloc_OBJECTS) $(testrcoalloc_LDADD) $(LIBS)
@@ -3390,6 +3531,17 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testpreconreuse.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testprojectedeigen.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testprojectedhermitian.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrci.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrcibridge.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrciext.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrcifaults.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrcifull.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrcilarge.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrcimodel.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrcipoisson.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrcirange.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrcistate.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrcisweep.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrcoalloc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrecovery.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testrepeatedsystems.Po@am__quote@ # am--include-marker
@@ -4799,6 +4951,83 @@ testbicgstablinit.log: testbicgstablinit$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testrci.log: testrci$(EXEEXT)
+	@p='testrci$(EXEEXT)'; \
+	b='testrci'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testrcibridge.log: testrcibridge$(EXEEXT)
+	@p='testrcibridge$(EXEEXT)'; \
+	b='testrcibridge'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testrcilarge.log: testrcilarge$(EXEEXT)
+	@p='testrcilarge$(EXEEXT)'; \
+	b='testrcilarge'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testrciext.log: testrciext$(EXEEXT)
+	@p='testrciext$(EXEEXT)'; \
+	b='testrciext'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testrcifull.log: testrcifull$(EXEEXT)
+	@p='testrcifull$(EXEEXT)'; \
+	b='testrcifull'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testrcistate.log: testrcistate$(EXEEXT)
+	@p='testrcistate$(EXEEXT)'; \
+	b='testrcistate'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testrcifaults.log: testrcifaults$(EXEEXT)
+	@p='testrcifaults$(EXEEXT)'; \
+	b='testrcifaults'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testrcipoisson.log: testrcipoisson$(EXEEXT)
+	@p='testrcipoisson$(EXEEXT)'; \
+	b='testrcipoisson'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testrcisweep.log: testrcisweep$(EXEEXT)
+	@p='testrcisweep$(EXEEXT)'; \
+	b='testrcisweep'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testrcimodel.log: testrcimodel$(EXEEXT)
+	@p='testrcimodel$(EXEEXT)'; \
+	b='testrcimodel'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+testrcirange.log: testrcirange$(EXEEXT)
+	@p='testrcirange$(EXEEXT)'; \
+	b='testrcirange'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -5033,6 +5262,17 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/testpreconreuse.Po
 	-rm -f ./$(DEPDIR)/testprojectedeigen.Po
 	-rm -f ./$(DEPDIR)/testprojectedhermitian.Po
+	-rm -f ./$(DEPDIR)/testrci.Po
+	-rm -f ./$(DEPDIR)/testrcibridge.Po
+	-rm -f ./$(DEPDIR)/testrciext.Po
+	-rm -f ./$(DEPDIR)/testrcifaults.Po
+	-rm -f ./$(DEPDIR)/testrcifull.Po
+	-rm -f ./$(DEPDIR)/testrcilarge.Po
+	-rm -f ./$(DEPDIR)/testrcimodel.Po
+	-rm -f ./$(DEPDIR)/testrcipoisson.Po
+	-rm -f ./$(DEPDIR)/testrcirange.Po
+	-rm -f ./$(DEPDIR)/testrcistate.Po
+	-rm -f ./$(DEPDIR)/testrcisweep.Po
 	-rm -f ./$(DEPDIR)/testrcoalloc.Po
 	-rm -f ./$(DEPDIR)/testrecovery.Po
 	-rm -f ./$(DEPDIR)/testrepeatedsystems.Po
@@ -5270,6 +5510,17 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/testpreconreuse.Po
 	-rm -f ./$(DEPDIR)/testprojectedeigen.Po
 	-rm -f ./$(DEPDIR)/testprojectedhermitian.Po
+	-rm -f ./$(DEPDIR)/testrci.Po
+	-rm -f ./$(DEPDIR)/testrcibridge.Po
+	-rm -f ./$(DEPDIR)/testrciext.Po
+	-rm -f ./$(DEPDIR)/testrcifaults.Po
+	-rm -f ./$(DEPDIR)/testrcifull.Po
+	-rm -f ./$(DEPDIR)/testrcilarge.Po
+	-rm -f ./$(DEPDIR)/testrcimodel.Po
+	-rm -f ./$(DEPDIR)/testrcipoisson.Po
+	-rm -f ./$(DEPDIR)/testrcirange.Po
+	-rm -f ./$(DEPDIR)/testrcistate.Po
+	-rm -f ./$(DEPDIR)/testrcisweep.Po
 	-rm -f ./$(DEPDIR)/testrcoalloc.Po
 	-rm -f ./$(DEPDIR)/testrecovery.Po
 	-rm -f ./$(DEPDIR)/testrepeatedsystems.Po

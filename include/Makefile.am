@@ -24,3 +24,11 @@ EXTRA_DIST = lis_config_win.h \
 
 nobase_include_HEADERS += lis_condense_core.h lis_condense_lis.h
 EXTRA_DIST += lis_camfamg_composite_core.h
+
+if ENABLE_RCI
+nobase_include_HEADERS += lis_rci.h lis_rci_bridge.h
+endif
+
+if ENABLE_NATIVE_RCI
+nobase_include_HEADERS += lis_rci_native.h lis_rci_status.h
+endif

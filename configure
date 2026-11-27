@@ -682,6 +682,10 @@ ENABLE_QUAD_FALSE
 ENABLE_QUAD_TRUE
 ENABLE_OMP_FALSE
 ENABLE_OMP_TRUE
+ENABLE_NATIVE_RCI_FALSE
+ENABLE_NATIVE_RCI_TRUE
+ENABLE_RCI_FALSE
+ENABLE_RCI_TRUE
 ENABLE_MPI_FALSE
 ENABLE_MPI_TRUE
 ENABLE_SAAMG_FALSE
@@ -840,6 +844,7 @@ enable_fortran
 enable_f90
 enable_saamg
 enable_mpi
+enable_rci
 enable_omp
 enable_quad
 enable_half
@@ -1523,6 +1528,8 @@ Optional Features:
                           [[default=no]]
   --enable-saamg          enable SA-AMG preconditioner [[default=no]]
   --enable-mpi            build with MPI library [[default=no]]
+  --enable-rci            enable experimental real-double serial/OpenMP RCI
+                          API [[default=no]]
   --enable-omp            build with OpenMP library [[default=no]]
   --enable-quad           enable quadruple precision operations [[default=no]]
   --enable-half           enable half precision preconditioner storage support
@@ -4264,6 +4271,21 @@ then :
   enableval=$enable_mpi;
 fi
 
+# Check whether --enable-rci was given.
+if test ${enable_rci+y}
+then :
+  enableval=$enable_rci;
+else case e in #(
+  e) enable_rci=no ;;
+esac
+fi
+
+case $enable_rci in #(
+  yes|no|native) :
+     ;; #(
+  *) :
+    as_fn_error $? "--enable-rci accepts yes, no or native" "$LINENO" 5 ;;
+esac
 # Check whether --enable-omp was given.
 if test ${enable_omp+y}
 then :
@@ -4339,6 +4361,11 @@ then :
   enableval=$enable_complex;
 fi
 
+if test "x$enable_rci" = xyes; then
+  if test "x$enable_mpi" = xyes || test "x$enable_quad" = xyes || test "x$enable_complex" = xyes || test "x$enable_longdouble" = xyes; then
+    as_fn_error $? "experimental RCI requires non-MPI real-double LIS without quad solver support" "$LINENO" 5
+  fi
+fi
 # Check whether --enable-test was given.
 if test ${enable_test+y}
 then :
@@ -6045,7 +6072,7 @@ _ACEOF
 	# flags.
 	ac_save_CFLAGS=$CFLAGS
 	CFLAGS="$CFLAGS $ac_verb"
-	(eval echo $as_me:6048: \"$ac_link\") >&5
+	(eval echo $as_me:6073: \"$ac_link\") >&5
 	ac_c_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 	echo "$ac_c_v_output" >&5
 	CFLAGS=$ac_save_CFLAGS
@@ -6121,7 +6148,7 @@ _ACEOF
 	# flags.
 	ac_save_CFLAGS=$CFLAGS
 	CFLAGS="$CFLAGS $ac_cv_prog_c_v"
-	(eval echo $as_me:6124: \"$ac_link\") >&5
+	(eval echo $as_me:6149: \"$ac_link\") >&5
 	ac_c_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 	echo "$ac_c_v_output" >&5
 	CFLAGS=$ac_save_CFLAGS
@@ -23241,6 +23268,103 @@ else
   ENABLE_MPI_FALSE=
 fi
 
+if test "x$enable_rci" = xyes; then
+  if test "x$enable_mpi" = xyes || test "x$enable_complex" = xyes || test "x$enable_longdouble" = xyes || test "x$enable_quad" = xyes; then
+    as_fn_error $? "experimental RCI requires non-MPI real-double LIS without quad solver support" "$LINENO" 5
+  fi
+
+printf "%s\n" "#define USE_RCI 1" >>confdefs.h
+
+fi
+if test "x$enable_rci" != xno; then
+  if test "x$enable_mpi" = xyes || test "x$enable_quad" = xyes; then
+    as_fn_error $? "native RCI requires non-MPI without double-double solver support" "$LINENO" 5
+  fi
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for nonfinite-aware floating-point compilation required by experimental RCI" >&5
+printf %s "checking for nonfinite-aware floating-point compilation required by experimental RCI... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#if defined(__FAST_MATH__) || (defined(__FINITE_MATH_ONLY__) && __FINITE_MATH_ONLY__ > 0)
+#error unsafe finite-only floating point compilation
+#endif
+#ifdef F77_DUMMY_MAIN
+
+#  ifdef __cplusplus
+     extern "C"
+#  endif
+   int F77_DUMMY_MAIN() { return 1; }
+
+#endif
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+else case e in #(
+  e) { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
+as_fn_error $? "experimental RCI requires IEEE nonfinite checks; disable fast/finite-only math
+See 'config.log' for more details" "$LINENO" 5; } ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for C11 support required by experimental RCI" >&5
+printf %s "checking for C11 support required by experimental RCI... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <stddef.h>
+#ifdef F77_DUMMY_MAIN
+
+#  ifdef __cplusplus
+     extern "C"
+#  endif
+   int F77_DUMMY_MAIN() { return 1; }
+
+#endif
+int
+main (void)
+{
+_Static_assert(_Generic((double)0,double:1,default:0),"C11 required");
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+else case e in #(
+  e) { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
+as_fn_error $? "experimental RCI requires C11 compiler support
+See 'config.log' for more details" "$LINENO" 5; } ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+ if test "x$enable_rci" = xyes; then
+  ENABLE_RCI_TRUE=
+  ENABLE_RCI_FALSE='#'
+else
+  ENABLE_RCI_TRUE='#'
+  ENABLE_RCI_FALSE=
+fi
+
+if test "x$enable_rci" != xno; then
+  ENABLE_NATIVE_RCI_TRUE=
+  ENABLE_NATIVE_RCI_FALSE='#'
+else
+  ENABLE_NATIVE_RCI_TRUE='#'
+  ENABLE_NATIVE_RCI_FALSE=
+fi
+
  if test x"$enable_omp" = xyes; then
   ENABLE_OMP_TRUE=
   ENABLE_OMP_FALSE='#'
@@ -23707,6 +23831,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_MPI_TRUE}" && test -z "${ENABLE_MPI_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_MPI\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_RCI_TRUE}" && test -z "${ENABLE_RCI_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_RCI\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_OMP_TRUE}" && test -z "${ENABLE_OMP_FALSE}"; then

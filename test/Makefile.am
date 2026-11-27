@@ -531,3 +531,31 @@ testbicgstablinit_SOURCES = testbicgstablinit.c
 testbicgstablinit_LDADD = $(LDADD) -lm
 TESTS += testbicgstablinit$(EXEEXT)
 
+
+if ENABLE_RCI
+test_PROGRAMS += testrci testrcibridge testrcilarge testrciext testrcifull testrcistate testrcifaults testrcipoisson testrcisweep testrcimodel testrcirange
+testrci_SOURCES = testrci.c
+testrcibridge_SOURCES = testrcibridge.c
+testrcilarge_SOURCES = testrcilarge.c
+testrciext_SOURCES = testrciext.c
+testrcifull_SOURCES = testrcifull.c
+testrcistate_SOURCES = testrcistate.c
+testrcifaults_SOURCES = testrcifaults.c
+testrcipoisson_SOURCES = testrcipoisson.c
+testrcisweep_SOURCES = testrcisweep.c
+testrcimodel_SOURCES = testrcimodel.c
+testrcirange_SOURCES = testrcirange.c
+testrci_LDADD = $(LDADD) -lm
+testrcibridge_LDADD = $(LDADD) -lm
+testrcilarge_LDADD = $(LDADD) -lm
+testrciext_LDADD = $(LDADD) -lm
+testrcifull_LDADD = $(LDADD) -lm
+testrcistate_LDADD = $(LDADD) -lm
+testrcifaults_LDADD = $(LDADD) -lm
+testrcipoisson_LDADD = $(LDADD) -lm
+testrcisweep_LDADD = $(LDADD) -lm
+testrcimodel_LDADD = $(LDADD) -lm
+testrcirange_LDADD = $(LDADD) -lm
+TESTS += testrci$(EXEEXT) testrcibridge$(EXEEXT) testrcilarge$(EXEEXT) testrciext$(EXEEXT) testrcifull$(EXEEXT) testrcistate$(EXEEXT) testrcifaults$(EXEEXT) testrcipoisson$(EXEEXT) testrcisweep$(EXEEXT) testrcimodel$(EXEEXT) testrcirange$(EXEEXT)
+endif
+EXTRA_DIST += testrciabi.c testrcicxx.cpp

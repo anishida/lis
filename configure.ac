@@ -29,6 +29,8 @@ AC_ARG_ENABLE(fortran, AS_HELP_STRING([--enable-fortran],[enable FORTRAN 77 comp
 AC_ARG_ENABLE(f90, AS_HELP_STRING([--enable-f90],[enable Fortran 90 compatible interface [[default=no]]]))
 AC_ARG_ENABLE(saamg, AS_HELP_STRING([--enable-saamg],[enable SA-AMG preconditioner [[default=no]]]))
 AC_ARG_ENABLE(mpi, AS_HELP_STRING([--enable-mpi],[build with MPI library [[default=no]]]))
+AC_ARG_ENABLE([rci], AS_HELP_STRING([--enable-rci],[enable experimental RCI (yes=legacy+native real double; native=native scalar API) [[default=no]]]), [], [enable_rci=no])
+AS_CASE([$enable_rci], [yes|no|native], [], [AC_MSG_ERROR([--enable-rci accepts yes, no or native])])
 AC_ARG_ENABLE(omp, AS_HELP_STRING([--enable-omp],[build with OpenMP library [[default=no]]]))
 AC_ARG_ENABLE(quad, AS_HELP_STRING([--enable-quad],[enable quadruple precision operations [[default=no]]]))
 AC_ARG_ENABLE(half, AS_HELP_STRING([--enable-half],[enable half precision preconditioner storage support [[default=no]]]))
@@ -41,6 +43,11 @@ AC_ARG_ENABLE(32bit, AS_HELP_STRING([--enable-32bit],[build 32bit binary on Mac 
 AC_ARG_ENABLE(longlong, AS_HELP_STRING([--enable-longlong],[enable long long int support [[default=no]]]))
 AC_ARG_ENABLE(longdouble, AS_HELP_STRING([--enable-longdouble],[enable long double support [[default=no]]]))
 AC_ARG_ENABLE(complex, AS_HELP_STRING([--enable-complex],[enable complex scalar support [[default=no]]]))
+if test "x$enable_rci" = xyes; then
+  if test "x$enable_mpi" = xyes || test "x$enable_quad" = xyes || test "x$enable_complex" = xyes || test "x$enable_longdouble" = xyes; then
+    AC_MSG_ERROR([experimental RCI requires non-MPI real-double LIS without quad solver support])
+  fi
+fi
 AC_ARG_ENABLE(test, AS_HELP_STRING([--enable-test],[enable test programs [[default=yes]]]))
 
 # Opt-in allocation-failure injection for native C regression tests.
@@ -1285,6 +1292,27 @@ if test "$enable_f90" = "yes" ; then
 fi
 AM_CONDITIONAL(ENABLE_SAAMG, test x$enable_saamg = xyes)
 AM_CONDITIONAL(ENABLE_MPI, test x"$enable_mpi" = xyes)
+if test "x$enable_rci" = xyes; then
+  if test "x$enable_mpi" = xyes || test "x$enable_complex" = xyes || test "x$enable_longdouble" = xyes || test "x$enable_quad" = xyes; then
+    AC_MSG_ERROR([experimental RCI requires non-MPI real-double LIS without quad solver support])
+  fi
+  AC_DEFINE([USE_RCI], [1], [Define to 1 when the experimental real-double RCI API is enabled.])
+fi
+if test "x$enable_rci" != xno; then
+  if test "x$enable_mpi" = xyes || test "x$enable_quad" = xyes; then
+    AC_MSG_ERROR([native RCI requires non-MPI without double-double solver support])
+  fi
+  AC_MSG_CHECKING([for nonfinite-aware floating-point compilation required by experimental RCI])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#if defined(__FAST_MATH__) || (defined(__FINITE_MATH_ONLY__) && __FINITE_MATH_ONLY__ > 0)
+#error unsafe finite-only floating point compilation
+#endif]], [[]])],
+    [AC_MSG_RESULT([yes])], [AC_MSG_FAILURE([experimental RCI requires IEEE nonfinite checks; disable fast/finite-only math])])
+  AC_MSG_CHECKING([for C11 support required by experimental RCI])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <stddef.h>]], [[_Static_assert(_Generic((double)0,double:1,default:0),"C11 required");]])],
+    [AC_MSG_RESULT([yes])], [AC_MSG_FAILURE([experimental RCI requires C11 compiler support])])
+fi
+AM_CONDITIONAL([ENABLE_RCI], [test "x$enable_rci" = xyes])
+AM_CONDITIONAL([ENABLE_NATIVE_RCI], [test "x$enable_rci" != xno])
 AM_CONDITIONAL(ENABLE_OMP, test x"$enable_omp" = xyes)
 AM_CONDITIONAL(ENABLE_QUAD, test x$enable_quad = xyes)
 AM_CONDITIONAL([ENABLE_HALF_REAL_DOUBLE],

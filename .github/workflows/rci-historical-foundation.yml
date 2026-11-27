@@ -1,0 +1,133 @@
+name: RCI historical foundation qualification
+on:
+  push:
+    branches: ['work/rci-historical-foundation-20261127']
+permissions:
+  contents: read
+jobs:
+  foundation:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+        sanitizer: [none, asan-ubsan]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - shell: bash
+        run: |
+          set -euo pipefail
+          flags=(-std=c11 -O2 -Wall -Wextra -Wpedantic -Werror -Wno-misleading-indentation)
+          if [ "${{ matrix.sanitizer }}" = asan-ubsan ]; then flags+=(-fsanitize=address,undefined -fno-sanitize-recover=all -g -fno-omit-frame-pointer -no-pie); fi
+          "${{ matrix.cc }}" "${flags[@]}" -Iinclude -Iqualification/rci-restore/ src/lis_rci.c qualification/rci-restore/lis_rci_restore.c qualification/rci-restore/test_restore.c -lm -o "$RUNNER_TEMP/restore"
+          ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 "$RUNNER_TEMP/restore"
+          "${{ matrix.cc }}" "${flags[@]}" -Iinclude -Iqualification/rci-restore/ src/lis_rci.c qualification/rci-restore/lis_rci_restore.c qualification/rci-restore/lis_rci_split_restore.c qualification/rci-restore/test_split.c -lm -o "$RUNNER_TEMP/split"
+          ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 "$RUNNER_TEMP/split"
+          "${{ matrix.cc }}" "${flags[@]}" -Iinclude -Iqualification/rci-restore/ qualification/rci-restore/lis_rci_recycle_restore.c qualification/rci-restore/test_recycle.c -lm -o "$RUNNER_TEMP/recycle"
+          ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 "$RUNNER_TEMP/recycle"
+          node qualification/rci-restore/generate_krylov_continuation.js src/esolver/lis_krylov.c "$RUNNER_TEMP/krylov_continuation.inc"
+          cmp "$RUNNER_TEMP/krylov_continuation.inc" qualification/rci-restore/krylov_continuation.inc
+          "${{ matrix.cc }}" "${flags[@]}" -Iinclude -Iqualification/rci-restore/ qualification/rci-restore/lis_rci_krylov_restore.c qualification/rci-restore/test_krylov_restore.c -lm -o "$RUNNER_TEMP/krylov"
+          ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 "$RUNNER_TEMP/krylov"
+          if [ "${{ matrix.cc }}" = gcc ]; then
+            gcc "${flags[@]}" -fopenmp -Iinclude -Iqualification/rci-restore/ qualification/rci-restore/lis_rci_krylov_restore.c qualification/rci-restore/test_krylov_restore.c -lm -o "$RUNNER_TEMP/krylov-omp"
+            OMP_NUM_THREADS=4 ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 "$RUNNER_TEMP/krylov-omp"
+          fi
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [serial, openmp]
+        index: [int32, int64]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - shell: bash
+        run: |
+          set -euo pipefail
+          opts=(--enable-rci --enable-shared --disable-mpi --disable-quad --disable-fortran --disable-f90 --disable-saamg)
+          flags=(-std=gnu11 -DHAVE_CONFIG_H -O2)
+          if [ "${{ matrix.mode }}" = openmp ]; then opts+=(--enable-omp); flags+=(-fopenmp); else opts+=(--disable-omp); fi
+          if [ "${{ matrix.index }}" = int64 ]; then opts+=(--enable-longlong); flags+=(-D_LONG__LONG); fi
+          ./configure "${opts[@]}"
+          make -C src -j2
+          cc "${flags[@]}" -Iinclude -Iqualification/rci-restore/ qualification/rci-restore/lis_rci_native_restore.c qualification/rci-restore/test_native.c -Lsrc/.libs -Wl,-rpath,"$PWD/src/.libs" -llis -lm -o "$RUNNER_TEMP/native"
+          ldd "$RUNNER_TEMP/native" | grep -F "$PWD/src/.libs/liblis.so"
+          OMP_NUM_THREADS=1 "$RUNNER_TEMP/native"
+          if [ "${{ matrix.mode }}" = openmp ]; then OMP_NUM_THREADS=4 "$RUNNER_TEMP/native"; fi
+          cc "${flags[@]}" -Iinclude -Iqualification/rci-restore/ qualification/rci-restore/lis_rci_restore.c qualification/rci-restore/lis_rci_split_restore.c qualification/rci-restore/lis_rci_native_restore.c qualification/rci-restore/lis_rci_feast_restore.c qualification/rci-restore/test_feast.c -Lsrc/.libs -Wl,-rpath,"$PWD/src/.libs" -llis -lm -o "$RUNNER_TEMP/feast"
+          OMP_NUM_THREADS=1 "$RUNNER_TEMP/feast"
+          if [ "${{ matrix.mode }}" = openmp ]; then OMP_NUM_THREADS=4 "$RUNNER_TEMP/feast"; fi
+          cc "${flags[@]}" -Iinclude -Iqualification/rci-restore/ qualification/rci-restore/lis_rci_native_restore.c qualification/rci-restore/lis_rci_recycle_restore.c qualification/rci-restore/lis_rci_augmented_restore.c qualification/rci-restore/test_augmented.c -Lsrc/.libs -Wl,-rpath,"$PWD/src/.libs" -llis -lm -o "$RUNNER_TEMP/augmented"
+          OMP_NUM_THREADS=1 "$RUNNER_TEMP/augmented"
+          if [ "${{ matrix.mode }}" = openmp ]; then OMP_NUM_THREADS=4 "$RUNNER_TEMP/augmented"; fi
+  integrated-krylov:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {mode: serial, index: int32}
+          - {mode: openmp, index: int64}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - shell: bash
+        run: |
+          set -euo pipefail
+          python3 qualification/rci-restore/qualify_krylov_native.py
+          opts=(--enable-rci --enable-test --enable-shared --disable-mpi --disable-quad --disable-fortran --disable-f90 --disable-saamg)
+          flags=(-std=gnu11 -DHAVE_CONFIG_H -DLIS_RCI_KRYLOV_NATIVE_LIBRARY -O2)
+          if [ "${{ matrix.mode }}" = openmp ]; then opts+=(--enable-omp); flags+=(-fopenmp); else opts+=(--disable-omp); fi
+          if [ "${{ matrix.index }}" = int64 ]; then opts+=(--enable-longlong); flags+=(-D_LONG__LONG); fi
+          ./configure "${opts[@]}"
+          make -C src -j2
+          cc "${flags[@]}" -Iinclude -Iqualification/rci-restore/ qualification/rci-restore/test_krylov_restore.c -Lsrc/.libs -Wl,-rpath,"$PWD/src/.libs" -llis -lm -o "$RUNNER_TEMP/krylov-native"
+          ldd "$RUNNER_TEMP/krylov-native" | grep -F "$PWD/src/.libs/liblis.so"
+          nm -D --defined-only src/.libs/liblis.so | grep -F 'lis_rci_krylov_restore_classic64'
+          tests=(test_krylov_modes test_krylov_sparse test_krylov_regression test_krylov_lis test_krylov_semidefinite test_krylov_stress test_krylov_inertia test_krylov_window test_krylov_openmp test_krylov_projected test_krylov_workspace test_krylov_unified test_krylov_adaptive_ex test_krylov_api_contract test_krylov_residual_reuse test_krylov_both_ends test_krylov_be_lock_order)
+          make -C test -j2 "${tests[@]}"
+          threads=(1)
+          if [ "${{ matrix.mode }}" = openmp ]; then threads+=(4); fi
+          for n in "${threads[@]}"; do
+            OMP_NUM_THREADS="$n" "$RUNNER_TEMP/krylov-native"
+            for t in "${tests[@]}"; do
+              OMP_NUM_THREADS="$n" "./test/$t"
+              echo "NATIVE CONTINUATION REGRESSION PASS $t threads=$n"
+            done
+          done
+          git diff --stat
+          echo 'KRYLOV NATIVE CLASSICAL DISPATCH QUALIFICATION PASS'
+  integrated-linear:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {mode: serial, index: int32, sanitize: 'no'}
+          - {mode: openmp, index: int64, sanitize: 'no'}
+          - {mode: serial, index: int64, sanitize: 'yes'}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - shell: bash
+        run: |
+          set -euo pipefail
+          python3 qualification/rci-restore/qualify_linear_native.py
+          opts=(--enable-rci --enable-test --enable-shared --disable-mpi --disable-quad --disable-fortran --disable-f90 --disable-saamg)
+          flags=(-std=gnu11 -DHAVE_CONFIG_H -O2)
+          if [ "${{ matrix.mode }}" = openmp ]; then opts+=(--enable-omp); flags+=(-fopenmp); else opts+=(--disable-omp); fi
+          if [ "${{ matrix.index }}" = int64 ]; then opts+=(--enable-longlong); flags+=(-D_LONG__LONG); fi
+          if [ "${{ matrix.sanitize }}" = yes ]; then
+            export CFLAGS='-O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer'
+            export LDFLAGS='-fsanitize=address,undefined'
+            flags+=(-g -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -no-pie)
+          fi
+          ./configure "${opts[@]}"
+          make -C src -j2
+          cc "${flags[@]}" -Iinclude -Iqualification/rci-restore/ qualification/rci-restore/test_linear_native.c -Lsrc/.libs -Wl,-rpath,"$PWD/src/.libs" -llis -lm -o "$RUNNER_TEMP/linear-native"
+          ldd "$RUNNER_TEMP/linear-native" | grep -F "$PWD/src/.libs/liblis.so"
+          export ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1
+          OMP_NUM_THREADS=1 "$RUNNER_TEMP/linear-native"
+          if [ "${{ matrix.mode }}" = openmp ]; then OMP_NUM_THREADS=4 "$RUNNER_TEMP/linear-native"; fi

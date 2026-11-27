@@ -1,0 +1,37 @@
+name: RCI installed scalar API qualification
+on:
+  push:
+    branches: ['qualification/rci-native-scalar-api-20261127']
+permissions:
+  contents: read
+jobs:
+  scalar:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        scalar: [real, longdouble, binary128, complex, complex-longdouble, complex-binary128]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - shell: bash
+        run: |
+          set -euo pipefail
+          opts=(--enable-rci=native --enable-shared --disable-mpi --disable-quad --disable-fortran --disable-f90 --disable-f90 --disable-saamg --disable-omp --prefix="$RUNNER_TEMP/install")
+          scalar="${{ matrix.scalar }}"
+          if [[ "$scalar" == complex* ]]; then opts+=(--enable-complex); fi
+          if [[ "$scalar" == *longdouble || "$scalar" == *binary128 ]]; then opts+=(--enable-longdouble); fi
+          if [[ "$scalar" == *longdouble ]]; then export ac_cv_header_quadmath_h=no; fi
+          ./configure "${opts[@]}"
+          make -C src -j2
+          make -C include install
+          make -C src install
+          test -f "$RUNNER_TEMP/install/include/lis_rci_native.h"
+          test ! -e "$RUNNER_TEMP/install/include/lis_rci.h"
+          nm -D --defined-only src/.libs/liblis.so > "$RUNNER_TEMP/exports"
+          test "$(grep -c ' lis_rci_native_' "$RUNNER_TEMP/exports")" -eq 10
+          ! grep -q ' lis_rci_create$' "$RUNNER_TEMP/exports"
+          cd "$RUNNER_TEMP"
+          cc -std=gnu11 -O2 -I"$RUNNER_TEMP/install/include" "$GITHUB_WORKSPACE/qualification/rci-restore/test_native_installed.c" -L"$RUNNER_TEMP/install/lib" -Wl,-rpath,"$RUNNER_TEMP/install/lib" -llis -lm -lquadmath -o installed
+          OMP_NUM_THREADS=1 ./installed
+          echo "INSTALLED SCALAR PASS $scalar"

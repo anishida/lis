@@ -1,0 +1,10 @@
+/* AI-assisted contribution. Proposed for inclusion under the LIS terms in COPYING;
+ * licensing is subject to contributor confirmation before merge. */
+#include "lis_rci.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+static void mat(size_t side,const double*x,double*y,int nonsym){size_t n=side*side;for(size_t i=0;i<n;i++){size_t col=i%side,row=i/side;y[i]=4*x[i]-(col?x[i-1]:0)-(col+1<side?(nonsym?.8:1)*x[i+1]:0)-(row?x[i-side]:0)-(row+1<side?x[i+side]:0);}}
+static int solve(int method,size_t side,size_t restart,int flexible,double scale){size_t n=side*side;lis_rci_options o={n,3000,restart,1e-9,0,(lis_rci_method)method};lis_rci_context*c=lis_rci_create(&o);double *mem=calloc(3*n,sizeof(double));if(!c||!mem){lis_rci_destroy(c);free(mem);return 1;}double *exact=mem,*b=mem+n,*ax=mem+2*n;for(size_t i=0;i<n;i++)exact[i]=scale*(1+.1*sin(i*.31));int nonsym=method!=LIS_RCI_CG;mat(side,exact,b,nonsym);lis_rci_request q;int st=lis_rci_start(c,b,NULL,&q);size_t k=0;while(st>0&&k++<20000){if(st==LIS_RCI_MATVEC)mat(side,q.in,q.out,nonsym);else for(size_t i=0;i<n;i++)q.out[i]=q.in[i]/(4*(flexible?(1+.1*((i+k)%5)):1));st=lis_rci_advance(c,0,&q);}const double*x=lis_rci_solution(c);mat(side,x,ax,nonsym);long double rn=0,bn=0,en=0,xn=0;for(size_t i=0;i<n;i++){long double d=(long double)b[i]-ax[i],e=(long double)x[i]-exact[i];rn+=d*d;bn+=(long double)b[i]*b[i];en+=e*e;xn+=(long double)exact[i]*exact[i];}long double rel=sqrtl(rn/bn),err=sqrtl(en/xn);lis_rci_info inf;lis_rci_get_info(c,&inf);int bad=st!=LIS_RCI_DONE||!(rel<=o.rtol)||!(err<1e-6L);printf("method=%d n=%zu restart=%zu flexible=%d scale=%.0e iter=%zu relative_residual=%.3Le relative_error=%.3Le %s\n",method,n,restart,flexible,scale,inf.iterations,rel,err,bad?"FAIL":"PASS");lis_rci_destroy(c);free(mem);return bad;}
+int main(void){int count=0,fail=0;for(int m=1;m<=4;m++)for(int j=0;j<3;j++){count++;fail+=solve(m,20,15,m==4,j==0?1:j==1?1e-150:1e150);}printf("POISSON cases=%d failures=%d\n",count,fail);return fail?1:0;}

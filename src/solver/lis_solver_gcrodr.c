@@ -354,6 +354,76 @@ static LIS_INT lis_gcrodr_extract_eigs(LIS_INT n, LIS_SCALAR *tqr,
 
 #endif /* !_COMPLEX */
 
+#if defined(USE_RCI) && !defined(_COMPLEX)
+/* Qualification-only entry point: the original native real GCRO-DR harmonic
+ * eigensystem machinery, on caller-supplied column-major G^T G and G^T F.
+ * No changes to the classical GCRO-DR selection or solver dispatch.
+ * coef columns are real candidates; a complex conjugate pair is atomic.
+ * The small native eigensystem may allocate; selection failure is optional.
+ */
+int lis_rci_restore_harmonic_native(void *unused,size_t dim,size_t capacity,
+ const double *gram,const double *overlap,double *coef,size_t *selected)
+{
+    LIS_INT p,k,err=LIS_SUCCESS,neig=0,nsel=0,it=0;
+    LIS_REAL qrerr=0;
+    LIS_SCALAR *inv=NULL,*t=NULL,*tqr=NULL,*qw=NULL,*rw=NULL;
+    LIS_REAL *vr=NULL,*vi=NULL;
+    LIS_GCRODR_EIG *eig=NULL;
+    size_t nn;
+    (void)unused;
+    if(!selected) return LIS_ERR_ILL_ARG;
+    *selected=0;
+    if(!dim||!capacity||capacity>dim||dim>1024||!gram||!overlap||!coef)
+        return LIS_ERR_ILL_ARG;
+    p=(LIS_INT)dim;k=(LIS_INT)capacity;nn=dim*dim;
+    inv=lis_malloc(nn*sizeof(*inv),"rci_harmonic::inv");
+    t=lis_malloc(nn*sizeof(*t),"rci_harmonic::t");
+    tqr=lis_malloc(nn*sizeof(*tqr),"rci_harmonic::tqr");
+    qw=lis_malloc(nn*sizeof(*qw),"rci_harmonic::qw");
+    rw=lis_malloc(nn*sizeof(*rw),"rci_harmonic::rw");
+    vr=lis_malloc(dim*sizeof(*vr),"rci_harmonic::vr");
+    vi=lis_malloc(dim*sizeof(*vi),"rci_harmonic::vi");
+    eig=lis_malloc(dim*sizeof(*eig),"rci_harmonic::eig");
+    if(!inv||!t||!tqr||!qw||!rw||!vr||!vi||!eig){err=LIS_ERR_OUT_OF_MEMORY;goto done;}
+    for(size_t i=0;i<nn;i++) {
+        if(!isfinite(gram[i])||!isfinite(overlap[i])){err=LIS_BREAKDOWN;goto done;}
+        inv[i]=gram[i];
+    }
+    err=lis_array_ge(p,inv);if(err)goto done;
+    for(LIS_INT c=0;c<p;c++)for(LIS_INT r=0;r<p;r++){
+        LIS_SCALAR x=0;
+        for(LIS_INT l=0;l<p;l++)x+=inv[r+l*p]*overlap[l+c*p];
+        if(!isfinite(x)){err=LIS_BREAKDOWN;goto done;}t[r+c*p]=x;
+    }
+    memcpy(tqr,t,nn*sizeof(*t));
+    err=lis_array_hqr_limit(p,tqr,qw,rw,1024,&it,&qrerr);if(err)goto done;
+    err=lis_gcrodr_extract_eigs(p,tqr,eig,&neig);if(err)goto done;
+    for(LIS_INT j=0;j<neig&&nsel<k;j++){
+        if(eig[j].pair&&nsel+2>k)continue;
+        if(!isfinite(eig[j].lr)||!isfinite(eig[j].li)||!isfinite(eig[j].score))continue;
+        err=lis_gcrodr_inverse_eigenvector(p,t,eig[j].lr,eig[j].li,vr,vi);
+        if(err==LIS_ERR_OUT_OF_MEMORY)goto done;
+        if(err)continue;
+        int valid=1;
+        for(LIS_INT i=0;i<p;i++)if(!isfinite(vr[i])||!isfinite(vi[i]))valid=0;
+        if(!valid)continue;
+        for(LIS_INT i=0;i<p;i++)coef[(size_t)nsel*dim+i]=vr[i];
+        nsel++;
+        if(eig[j].pair){
+            for(LIS_INT i=0;i<p;i++)coef[(size_t)nsel*dim+i]=vi[i];
+            nsel++;
+        }
+    }
+    err=nsel?LIS_SUCCESS:LIS_BREAKDOWN;
+    if(!err)*selected=(size_t)nsel;
+done:
+    lis_free(inv);lis_free(t);lis_free(tqr);lis_free(qw);lis_free(rw);
+    lis_free(vr);lis_free(vi);lis_free(eig);
+    return (int)err;
+}
+#endif
+
+
 /* ---------------------------------------------------------------------- */
 /* persistent recycle state                                               */
 /* ---------------------------------------------------------------------- */
