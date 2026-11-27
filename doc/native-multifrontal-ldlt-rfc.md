@@ -38,3 +38,23 @@ A separate C11 research prototype (stages 55–70) exists with standalone numeri
 ## Question for maintainers
 
 Would an opt-in, bounded, serial symmetric-indefinite factorization preconditioner fit LIS's scope? Feedback on the API surface, naming, and reuse lifecycle is welcome before integrating the imported numerical implementation into LIS.
+
+## First LIS integration checkpoint (application-linked)
+
+The experimental bridge registers `ldltexp` using the existing USERDEF
+preconditioner registration API; it does not add an installed header,
+change public layouts, or register a built-in preconditioner. It uses the
+serial symbolic/numerical multifrontal path (natural ordering), checks
+exact symmetry and sorted duplicate-free assembled CSR, and owns a factor
+and apply workspace per preconditioner instance. Matrix ownership remains
+with the caller. The caller must serialize operations and register once
+before solving; no concurrent apply on the same instance is supported.
+Generation changes reject a stale factor. No numerical reuse, MPI, complex,
+quad, CG/MINRES, or OpenMP numerical factorization is supported at this
+checkpoint. Allocation caps cover specific module allocations, not total RSS.
+The dedicated workflow links the prototype into LIS and tests physical
+residuals on indefinite 2x2 pivot systems with GMRES and FGMRES, plus rejection
+of nonsymmetry, singularity and CG. These are pending CI qualification,
+not a production-readiness or performance claim. Native built-in registration,
+release distribution, larger independent tests and a maintainer API decision
+remain future work.

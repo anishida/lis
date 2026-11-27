@@ -1,0 +1,59 @@
+name: Experimental LDLT LIS bridge
+on:
+  pull_request:
+    paths:
+      - 'experimental/native-ldlt/**'
+      - '.github/workflows/ldlt-lis-bridge.yml'
+      - 'src/precon/**'
+      - 'src/solver/**'
+      - 'include/**'
+  push:
+    branches: [feature/native-multifrontal-ldlt]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bridge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [serial, sanitizer]
+    env:
+      OMP_NUM_THREADS: '1'
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+      UBSAN_OPTIONS: halt_on_error=1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Ubuntu dependencies
+        run: |
+          set -euo pipefail
+          apt_options=(-o Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=- -o Acquire::Retries=3)
+          sudo apt-get "${apt_options[@]}" update
+          sudo apt-get "${apt_options[@]}" install -y build-essential autoconf automake libtool libtool-bin
+      - name: Build native LIS and application-linked bridge
+        run: |
+          set -euo pipefail
+          flags='-O2 -g'
+          link=''
+          if [ '${{ matrix.mode }}' = sanitizer ]; then
+            flags='-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all'
+            link='-no-pie'
+          fi
+          ./configure --disable-omp --disable-mpi --disable-quad --disable-fortran --disable-f90 --disable-saamg --disable-shared --enable-static CFLAGS="$flags" LDFLAGS="$flags"
+          make -C src -j2
+          d=experimental/native-ldlt
+          cc -std=c11 -DHAVE_CONFIG_H -DP66_DISABLE_SIMD -Iinclude -I"$d" $flags $link \
+            "$d"/lis_ldlt_user_bridge.c "$d"/test_lis_ldlt_bridge.c \
+            "$d"/packed_ldlt.c "$d"/lis_adapter.c "$d"/multifrontal_ldlt.c \
+            "$d"/schur_simd.c "$d"/symbolic_ldlt.c src/.libs/liblis.a -lm -o ldlt-lis-test
+          ./ldlt-lis-test | tee ldlt-lis.log
+          grep -Fx LDLT_LIS_BRIDGE=PASS ldlt-lis.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ldlt-lis-${{ matrix.mode }}
+          path: ldlt-lis.log
