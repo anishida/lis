@@ -49,6 +49,7 @@
 	#include <mpi.h>
 #endif
 #include "lislib.h"
+#include "lis_matrix_materialize.h"
 
 /************************************************
  * lis_esolver_init
@@ -499,13 +500,11 @@ LIS_INT lis_esolver_rebuild_precon(
                 return LIS_ERR_ILL_ARG;
         }
 
-        if( *precon )
-        {
-                if( solver->precon==*precon ) solver->precon = NULL;
-                lis_precon_destroy(*precon);
-                *precon = NULL;
+        /* Preserve original destruction order unless reuse is explicitly enabled. */
+        if(*precon && (solver->options[LIS_OPTIONS_PRECON]!=LIS_PRECON_TYPE_ILUT || !getenv("LIS_EXPERIMENT_ILUTP_REUSE"))) {
+            if(solver->precon==*precon)solver->precon=NULL;
+            lis_precon_destroy(*precon);*precon=NULL;
         }
-
         lis_solver_work_destroy(solver);
         solver->A = A;
         solver->retcode = LIS_SUCCESS;
@@ -526,6 +525,10 @@ LIS_INT lis_esolver_rebuild_precon(
                 }
                 else if( err!=LIS_ERR_NOT_IMPLEMENTED )
                 {
+                        if(*precon) {
+                            if(solver->precon==*precon)solver->precon=NULL;
+                            lis_precon_destroy(*precon);*precon=NULL;
+                        }
                         solver->retcode = err;
                         return err;
                 }
@@ -533,6 +536,17 @@ LIS_INT lis_esolver_rebuild_precon(
         }
 
         solver->A = build_matrix;
+        if(*precon) {
+            extern LIS_INT lis_ilutp_refresh_attached(LIS_SOLVER,LIS_PRECON);
+            if(precon_type==LIS_PRECON_TYPE_ILUT && getenv("LIS_EXPERIMENT_ILUTP_REUSE") &&
+               lis_ilutp_refresh_attached(solver,*precon)==LIS_SUCCESS) {
+                solver->A=A;
+                if(pc_matrix)lis_matrix_destroy(pc_matrix);
+                return LIS_SUCCESS;
+            }
+            if(solver->precon==*precon)solver->precon=NULL;
+            lis_precon_destroy(*precon);*precon=NULL;
+        }
         err = lis_precon_create(solver,precon);
         solver->A = A;
 
@@ -740,6 +754,7 @@ LIS_INT lis_esolver_init(LIS_ESOLVER esolver)
 	esolver->requested_nev_active = LIS_FALSE;
 	esolver->block_size = 1;
 	esolver->linear_options = NULL;
+        esolver->inner_near_nullspace_owner = NULL;
 	esolver->refine_linear_options = NULL;
 	esolver->refine_gap_fraction = 0.01;
 	esolver->subspace_retry_max = 0;
@@ -931,6 +946,8 @@ LIS_INT lis_esolver_destroy(LIS_ESOLVER esolver)
                         esolver->refine_linear_options = NULL;
                 }
 
+                lis_solver_destroy(esolver->inner_near_nullspace_owner);
+                esolver->inner_near_nullspace_owner=NULL;
 		lis_free(esolver);
 	}
 
@@ -981,6 +998,94 @@ lis_esolver_replace_option_string(
         return LIS_SUCCESS;
 }
 
+
+/* Serial real-double prototype: own a copy of the application's basis.
+ * Reuse the linear solver's existing validated transactional copy routine.
+ * nvec == 0 clears the configuration. No global state. */
+LIS_INT lis_esolver_set_inner_near_nullspace(
+        LIS_ESOLVER esolver,LIS_INT nvec,LIS_VECTOR vectors[])
+{
+        LIS_SOLVER owner=NULL;
+        LIS_INT i,j,err;
+        if( esolver==NULL || nvec<0 ) return LIS_ERR_ILL_ARG;
+        if( nvec==0 )
+        {
+                lis_solver_destroy(esolver->inner_near_nullspace_owner);
+                esolver->inner_near_nullspace_owner=NULL;
+                return LIS_SUCCESS;
+        }
+#if defined(USE_MPI) || defined(_COMPLEX)
+        return LIS_ERR_NOT_IMPLEMENTED;
+#endif
+        if( vectors==NULL ) return LIS_ERR_ILL_ARG;
+        for(i=0;i<nvec;i++)
+        {
+                LIS_VECTOR v=vectors[i];
+                if( v==NULL || v->label!=LIS_LABEL_VECTOR ||
+                    v->value==NULL || v->n<nvec || v->nprocs!=1 ||
+                    v->precision!=LIS_PRECISION_DOUBLE ) return LIS_ERR_ILL_ARG;
+                for(j=0;j<v->n;j++)
+                        if( !lis_esolver_is_finite_scalar(v->value[j]) )
+                                return LIS_ERR_ILL_ARG;
+        }
+        err=lis_solver_create(&owner);
+        if( err ) return err;
+        err=lis_solver_set_near_nullspace(owner,nvec,vectors);
+        if( err ) { lis_solver_destroy(owner); return err; }
+        lis_solver_destroy(esolver->inner_near_nullspace_owner);
+        esolver->inner_near_nullspace_owner=owner;
+        return LIS_SUCCESS;
+}
+
+LIS_INT lis_esolver_copy_inner_near_nullspace(LIS_ESOLVER src,LIS_ESOLVER dst)
+{
+        LIS_SOLVER owner=src->inner_near_nullspace_owner;
+        if( owner==NULL ) return LIS_SUCCESS;
+        return lis_esolver_set_inner_near_nullspace(dst,
+                owner->near_nullspace_dim,owner->near_nullspace);
+}
+
+LIS_INT lis_esolver_apply_inner_near_nullspace(LIS_ESOLVER esolver,LIS_SOLVER solver)
+{
+        LIS_SOLVER owner=esolver->inner_near_nullspace_owner;
+        LIS_INT p=solver->options[LIS_OPTIONS_PRECON];
+        if( owner==NULL || (p!=LIS_PRECON_TYPE_MFAMG &&
+                            p!=LIS_PRECON_TYPE_MFAMG_ILUTP) ) return LIS_SUCCESS;
+        return lis_solver_set_near_nullspace(solver,
+                owner->near_nullspace_dim,owner->near_nullspace);
+}
+
+
+/* Keep the owned shifted CSR alive as long as its preconditioner.
+ * Do not materialize for operator-capable preconditioners, or change
+ * the existing distributed operator path. */
+LIS_INT
+lis_esolver_create_shifted_operator(
+        LIS_MATRIX A,LIS_MATRIX B,LIS_SCALAR shift,
+        LIS_SOLVER solver,LIS_MATRIX *out)
+{
+        LIS_INT err, type;
+        LIS_MATRIX op = NULL;
+
+        *out = NULL;
+        err = lis_matrix_create_operator(1.0,A,-shift,B,&op);
+        if( err ) return err;
+
+        type = solver->options[LIS_OPTIONS_PRECON];
+        if( op->nprocs==1 &&
+            (type==LIS_PRECON_TYPE_MFAMG ||
+             type==LIS_PRECON_TYPE_MFAMG_ILUTP ||
+             (type==LIS_PRECON_TYPE_ILUT &&
+              solver->ilutp_enabled)) )
+        {
+                err = lis_matrix_materialize_csr_owned(op,out);
+                lis_matrix_destroy(op);
+                return err;
+        }
+
+        *out = op;
+        return LIS_SUCCESS;
+}
 
 #undef __FUNC__
 #define __FUNC__ "lis_esolver_set_linear_options"
@@ -1209,6 +1314,26 @@ static LIS_INT lis_gesolve_once(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SC
 		LIS_SETERR1(LIS_ERR_ILL_ARG,"Size n(=%D) of matrix B is less than 0\n",B->gn);
 		return LIS_ERR_ILL_ARG;
 	}
+
+        if( esolver->inner_near_nullspace_owner )
+        {
+                LIS_SOLVER owner=esolver->inner_near_nullspace_owner;
+                LIS_VECTOR v=owner->near_nullspace[0];
+                LIS_INT method=esolver->options[LIS_EOPTIONS_ESOLVER];
+                if( B==NULL ||
+                    (method==LIS_ESOLVER_GLI && esolver->transform==LIS_EIGEN_TRANSFORM_AUTO) ||
+                    (method!=LIS_ESOLVER_GLI && method!=LIS_ESOLVER_GII) ||
+                    esolver->options[LIS_EOPTIONS_PRECISION]!=LIS_PRECISION_DOUBLE )
+                        { esolver->retcode=LIS_ERR_NOT_IMPLEMENTED; return LIS_ERR_NOT_IMPLEMENTED; }
+                if( method==LIS_ESOLVER_GLI && esolver->block_size==1 &&
+                    !esolver->options[LIS_EOPTIONS_RVAL] &&
+                    esolver->options[LIS_EOPTIONS_INNER_GENERALIZED_ESOLVER]!=LIS_ESOLVER_GII )
+                        { esolver->retcode=LIS_ERR_NOT_IMPLEMENTED; return LIS_ERR_NOT_IMPLEMENTED; }
+                if( v->gn!=x->gn || v->n!=x->n || v->is!=x->is ||
+                    v->ie!=x->ie || v->origin!=x->origin ||
+                    v->precision!=x->precision || v->nprocs!=x->nprocs )
+                        { esolver->retcode=LIS_ERR_ILL_ARG; return LIS_ERR_ILL_ARG; }
+        }
 
 	nesolver = esolver->options[LIS_EOPTIONS_ESOLVER];
 	niesolver = esolver->options[LIS_EOPTIONS_INNER_ESOLVER];

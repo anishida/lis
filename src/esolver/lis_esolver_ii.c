@@ -336,12 +336,8 @@ lis_egii_solve_with_recovery(
                         base_shift+perturbation :
                         base_shift-perturbation;
 
-                err = lis_matrix_create_operator(
-                        1.0,
-                        physical_A,
-                        -trial_shift,
-                        B,
-                        &trial_operator);
+                err = lis_esolver_create_shifted_operator(
+                        physical_A,B,trial_shift,solver,&trial_operator);
                 if( err )
                 {
                         return err;
@@ -886,6 +882,14 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
       LIS_DEBUG_FUNC_OUT;
       return err;
     }
+  err = lis_esolver_apply_inner_near_nullspace(esolver,solver);
+  if(err)
+    {
+      if(solver) lis_solver_destroy(solver);
+      if(Aop) lis_matrix_destroy(Aop);
+      LIS_DEBUG_FUNC_OUT;
+      return err;
+    }
   lis_solver_get_solver(solver, &nsol);
   lis_solver_get_precon(solver, &precon_type);
   lis_solver_get_solvername(nsol, solvername);
@@ -893,7 +897,7 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
 
   if( oshift != 0.0 )
     {
-      err = lis_matrix_create_operator(1.0, esolver->A, -oshift, B, &Aop);
+      err = lis_esolver_create_shifted_operator(esolver->A,B,oshift,solver,&Aop);
       if( err )
         {
           lis_solver_destroy(solver);

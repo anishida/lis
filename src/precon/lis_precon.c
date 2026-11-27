@@ -881,10 +881,11 @@ LIS_INT lis_precon_set_user_data(LIS_PRECON precon, void *user_data)
 
     /* The MFAMG+ILUTP built-in owns this slot. Exposing or overwriting
      * it through the public user-data API would corrupt child ownership. */
-    if( precon->precon_type==LIS_PRECON_TYPE_MFAMG_ILUTP )
+    if( precon->precon_type==LIS_PRECON_TYPE_MFAMG_ILUTP ||
+        (precon->precon_type==LIS_PRECON_TYPE_ILUT && precon->user_destroy) )
     {
         LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-                   "MFAMG_ILUTP user_data is reserved for built-in state\n");
+                   "Built-in preconditioner user_data is reserved for built-in state\n");
         return LIS_ERR_NOT_IMPLEMENTED;
     }
 
@@ -913,10 +914,11 @@ LIS_INT lis_precon_get_user_data(LIS_PRECON precon, void **user_data)
 
     /* Never expose the composite's owned child/state pointer as
      * arbitrary application-controlled preconditioner user_data. */
-    if( precon->precon_type==LIS_PRECON_TYPE_MFAMG_ILUTP )
+    if( precon->precon_type==LIS_PRECON_TYPE_MFAMG_ILUTP ||
+        (precon->precon_type==LIS_PRECON_TYPE_ILUT && precon->user_destroy) )
     {
         LIS_SETERR(LIS_ERR_NOT_IMPLEMENTED,
-                   "MFAMG_ILUTP user_data is reserved for built-in state\n");
+                   "Built-in preconditioner user_data is reserved for built-in state\n");
         return LIS_ERR_NOT_IMPLEMENTED;
     }
 

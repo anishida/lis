@@ -1305,6 +1305,8 @@ struct LIS_ESOLVER_STRUCT
          * 4 = -delta inner solve, 8 = both perturbations exhausted.
          * A non-converged outer iteration alone cannot set bit 8. */
         LIS_INT inverse_recovery_shift_mask;
+        /* Owned application near-nullspace for transformed GLI/GII. */
+        LIS_SOLVER inner_near_nullspace_owner;
 };
 typedef struct LIS_ESOLVER_STRUCT *LIS_ESOLVER;
 
@@ -1787,6 +1789,7 @@ extern LIS_INT lis_vector_export_real64_tolerant(
 	extern LIS_INT lis_esolver_set_option(char *text, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_optionC(LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_linear_options(const char *text, LIS_ESOLVER esolver);
+        extern LIS_INT lis_esolver_set_inner_near_nullspace(LIS_ESOLVER esolver, LIS_INT nvec, LIS_VECTOR vectors[]);
 	extern LIS_INT lis_esolver_set_refine_linear_options(const char *text, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolver_set_refine_gap_fraction(LIS_REAL fraction, LIS_ESOLVER esolver);
 	extern LIS_INT lis_esolve(LIS_MATRIX A, LIS_VECTOR x, LIS_SCALAR *evalue0, LIS_ESOLVER esolver);

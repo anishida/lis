@@ -51,6 +51,7 @@
 	#include <mpi.h>
 #endif
 #include "lislib.h"
+#include "lis_matrix_materialize.h"
 
 /***************************************
  * Lanczos Iteration                   *
@@ -3216,9 +3217,8 @@ lis_egli_replace_shifted_operator(
 
         trial_operator = NULL;
 
-        err = lis_matrix_create_operator(
-                1.0,A,-shift,B,
-                &trial_operator);
+        err = lis_esolver_create_shifted_operator(
+                A,B,shift,solver,&trial_operator);
         if( err )
         {
                 return err;
@@ -3578,16 +3578,6 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 		tr[i] = 0.0;
 	}
 
-	if( oshift!=0.0 )
-	{
-		err = lis_matrix_create_operator(
-			1.0,A,-oshift,B,&Sop);
-
-		if( err ) goto cleanup;
-
-		S = Sop;
-	}
-
 	err = lis_solver_create(&solver);
 	if( err ) goto cleanup;
 
@@ -3601,6 +3591,15 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 
 	err = lis_solver_set_optionC(solver);
 	if( err ) goto cleanup;
+        err = lis_esolver_apply_inner_near_nullspace(esolver,solver);
+        if( err ) goto cleanup;
+
+	if( oshift!=0.0 )
+	{
+		err = lis_esolver_create_shifted_operator(A,B,oshift,solver,&Sop);
+		if( err ) goto cleanup;
+		S = Sop;
+	}
 
 	lis_solver_get_solver(solver,&nsol);
 	lis_solver_get_precon(solver,&precon_type);
@@ -4003,6 +4002,9 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 	resid0 = 0.0;
 
 	err = lis_esolver_create(&esolver2);
+        if( err ) goto cleanup;
+        err = lis_esolver_copy_inner_near_nullspace(esolver,esolver2);
+        if( err ) goto cleanup;
 
 			if( esolver->refine_linear_options &&
 			    esolver->refine_linear_options[0] )
@@ -6666,13 +6668,20 @@ lis_egli_block_transformed_project_results(
         esolver->resid[i] =
             cert_resid;
 
+        /* Only explicitly requested Ritz pairs determine convergence. */
         if( cert_resid>cert_tol &&
+            (!esolver->requested_nev_active ||
+             esolver->requested_nev<=0 || i<esolver->requested_nev) &&
             final_status==LIS_SUCCESS )
         {
             final_status =
                 LIS_MAXITER;
         }
     }
+
+    if( esolver->requested_nev_active &&
+        esolver->requested_nev>projected_dim )
+        final_status = LIS_MAXITER;
 
     esolver->retcode =
         final_status;
@@ -7036,21 +7045,6 @@ lis_egli_block_transformed(
         block_rank[i] = 0;
     }
 
-    if( requested_shift!=0.0 )
-    {
-        err = lis_matrix_create_operator(
-            1.0,
-            A,
-            -requested_shift,
-            B,
-            &Sop);
-
-        if( err )
-            goto cleanup;
-
-        S = Sop;
-    }
-
     err = lis_solver_create(
         &solver);
 
@@ -7061,17 +7055,30 @@ lis_egli_block_transformed(
         "-i bicg -p none",
         solver);
 
+    if( esolver->linear_options && esolver->linear_options[0] )
+    {
+        err = lis_solver_set_option(esolver->linear_options,solver);
+        if( err ) goto cleanup;
+    }
+
     err = lis_solver_set_optionC(
         solver);
 
     if( err )
         goto cleanup;
 
-    solver->A = S;
+    err = lis_esolver_apply_inner_near_nullspace(esolver,solver);
+    if( err ) goto cleanup;
 
-    err = lis_precon_create(
-        solver,
-        &precon);
+    if( requested_shift!=0.0 )
+    {
+        err = lis_esolver_create_shifted_operator(
+            A,B,requested_shift,solver,&Sop);
+        if( err ) goto cleanup;
+        S = Sop;
+    }
+
+    err = lis_esolver_rebuild_precon(S,solver,&precon);
 
     if( err )
         goto cleanup;

@@ -69,6 +69,9 @@ extern LIS_INT lis_esolver_inner_solve_certify(
         LIS_REAL tolerance);
 extern LIS_SCALAR lis_esolver_shift_perturbation(
         LIS_SCALAR shift);
+extern LIS_INT lis_esolver_apply_inner_near_nullspace(LIS_ESOLVER esolver,LIS_SOLVER solver);
+extern LIS_INT lis_esolver_copy_inner_near_nullspace(LIS_ESOLVER src,LIS_ESOLVER dst);
+extern LIS_INT lis_esolver_create_shifted_operator(LIS_MATRIX A,LIS_MATRIX B,LIS_SCALAR shift,LIS_SOLVER solver,LIS_MATRIX *out);
 extern LIS_INT lis_esolver_rebuild_precon(
         LIS_MATRIX A,
         LIS_SOLVER solver,
