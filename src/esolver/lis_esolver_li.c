@@ -7081,11 +7081,7 @@ lis_egli_block_transformed(
     if( err )
         goto cleanup;
 
-    solver->A = S;
-
-    err = lis_precon_create(
-        solver,
-        &precon);
+    err = lis_esolver_rebuild_precon(S,solver,&precon);
 
     if( err )
         goto cleanup;
