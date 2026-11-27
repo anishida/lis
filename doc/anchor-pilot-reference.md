@@ -24,4 +24,6 @@ OMP_NUM_THREADS=1 OMP_DYNAMIC=FALSE ./bench-anchor-pilot pilot-single-pass A1.mt
 
 Other modes: fresh, pilot-low-memory, pilot-rolling. Inputs are Matrix Market CSR-compatible matrices and one-column real array RHS. Optional LIS_ANCHOR_AUDIT_DIR points to an existing directory for exact round-trip solution output.
 
+The internal FGMRES stop hook is independent of the driver policy: it uses the ordinary default-precision FGMRES execution path, including in quad-enabled builds, while the driver enforces its own build, matrix, preconditioner, scaling and callback constraints. MPI callers of the internal hook must make a consistent stop decision across participating ranks. The dedicated native regression workflow also checks an unpreconditioned CSC solve against ordinary capped FGMRES and verifies that the driver still rejects CSC. The workflow runs on pushes to develop and on relevant pull requests.
+
 The dedicated native regression workflow covers checkpoint equivalence, continuation, fallback, ownership, generation invalidation, and five injected boundary failures. It is not an exhaustive native allocation-failure sweep. Historical experiments and controls remain in the research fork; performance depends on the matrix sequence and is not guaranteed. Original nonlinear contact histories and multi-thread/MPI support require separate validation.

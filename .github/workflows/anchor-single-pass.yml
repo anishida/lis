@@ -1,7 +1,7 @@
 name: Anchor single-pass regression
 on:
   push:
-    branches: ['cleanup/anchor-single-pass-20261127']
+    branches: [develop]
   pull_request:
     paths:
       - 'tools/*anchor*'
@@ -47,6 +47,7 @@ jobs:
           done
           grep -Fx 'ANCHOR_PILOT_REGRESSION=PASS' test_anchor_pilot.log
           grep -Fx 'SINGLE_PASS_REGRESSION=PASS' test_anchor_single_pass.log
+          grep -Fx 'GENERIC_FGMRES_STOP_CSC_NONE=PASS' test_anchor_single_pass.log
           cc $flags $link -fopenmp -DHAVE_CONFIG_H -Iinclude tools/lis_anchor_pilot.c tools/bench_anchor_pilot.c src/.libs/liblis.a -lm -o bench-anchor-pilot
           cc $flags $link -fopenmp -DHAVE_CONFIG_H -Iinclude tools/lis_anchor_pilot.c tools/test_anchor_pilot_faults.c src/.libs/liblis.a -Wl,--wrap=lis_solver_sequence_prepare_precon,--wrap=lis_solve_kernel,--wrap=lis_matrix_get_generation,--wrap=lis_vector_copy -lm -o faults
           ./faults | tee faults.log

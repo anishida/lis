@@ -90,12 +90,26 @@ static int numerical(LIS_INT status)
 {
     return status==LIS_SUCCESS || status==LIS_MAXITER || status==LIS_BREAKDOWN;
 }
+/* Scope of the retained-anchor experiment, not of the FGMRES hook.
+ * Matrix/vector and build restrictions are enforced by valid_args()
+ * and the compile-time driver guard above. */
+static int valid_pilot_kernel(LIS_MATRIX A,LIS_VECTOR b,LIS_VECTOR work,
+    LIS_SOLVER s,LIS_PRECON pc)
+{
+    return valid_args(A,b,work) && s && pc && !s->setup &&
+        s->options[LIS_OPTIONS_SOLVER]==LIS_SOLVER_FGMRES &&
+        s->options[LIS_OPTIONS_PRECISION]==LIS_PRECISION_DOUBLE &&
+        s->options[LIS_OPTIONS_SCALE]==LIS_SCALE_NONE &&
+        s->options[LIS_OPTIONS_PRECON]==LIS_PRECON_TYPE_ILUT &&
+        !s->convergence && !s->monitor;
+}
 static LIS_INT attempt_impl(LIS_MATRIX A,LIS_VECTOR b,LIS_VECTOR work,LIS_VECTOR residual,
     LIS_SOLVER s,LIS_PRECON pc,LIS_INT budget,int zero,LIS_INT *iterations,
     lis_anchor_pilot_report *r,LIS_FGMRES_STOP stop,void *data)
 {
     LIS_INT rc;
     LIS_REAL nr,nb,reported;
+    if(stop && !valid_pilot_kernel(A,b,work,s,pc))return LIS_ERR_ILL_ARG;
     if((rc=lis_solver_set_maxiter(s,budget)))return rc;
     s->options[LIS_OPTIONS_INITGUESS_ZEROS]=zero?LIS_TRUE:LIS_FALSE;
     if(zero && (rc=lis_vector_set_all(0,work)))return rc;

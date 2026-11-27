@@ -5198,7 +5198,7 @@ static LIS_INT lis_solve_kernel_impl(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, L
 #else
 	    if( precision==LIS_PRECISION_DOUBLE )
 	      {
-		err = lis_solver_execute[nsolver](solver);
+		err = stop ? lis_fgmres_with_stop(solver,stop,data) : lis_solver_execute[nsolver](solver);
 	      }
 	    else if( precision==LIS_PRECISION_QUAD )
 	      {
@@ -5398,25 +5398,17 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A,LIS_VECTOR b,LIS_VECTOR x,LIS_SOLVER solve
     return lis_solve_kernel_impl(A,b,x,solver,precon,NULL,NULL);
 }
 
-/* This prototype is internal and deliberately narrow. No solver object
- * fields or global callbacks are introduced; each call owns the hook. */
+/* Internal FGMRES execution hook. Each call owns its callback; callers
+ * are responsible for application-specific policy checks and, under MPI,
+ * for returning the same stop decision on every participating rank. */
 LIS_INT lis_solve_kernel_fgmres_stop(LIS_MATRIX A,LIS_VECTOR b,LIS_VECTOR x,
     LIS_SOLVER solver,LIS_PRECON precon,LIS_FGMRES_STOP stop,void *data)
 {
-#if defined(USE_MPI) || defined(_COMPLEX) || defined(USE_COMPLEX) || defined(_LONG__DOUBLE) || defined(USE_QUAD_PRECISION)
-    (void)A;(void)b;(void)x;(void)solver;(void)precon;(void)stop;(void)data;
-    return LIS_ERR_NOT_IMPLEMENTED;
-#else
     if(!A || !b || !x || !solver || !precon || !stop || solver->setup ||
-       A->matrix_type!=LIS_MATRIX_CSR || A->is_scaled || A->nprocs!=1 ||
        solver->options[LIS_OPTIONS_SOLVER]!=LIS_SOLVER_FGMRES ||
-       solver->options[LIS_OPTIONS_PRECISION]!=LIS_PRECISION_DOUBLE ||
-       solver->options[LIS_OPTIONS_SCALE]!=LIS_SCALE_NONE ||
-       solver->options[LIS_OPTIONS_PRECON]!=LIS_PRECON_TYPE_ILUT ||
-       solver->convergence || solver->monitor)
+       solver->options[LIS_OPTIONS_PRECISION]!=LIS_PRECISION_DOUBLE)
         return LIS_ERR_ILL_ARG;
     return lis_solve_kernel_impl(A,b,x,solver,precon,stop,data);
-#endif
 }
 
 #undef __FUNC__
