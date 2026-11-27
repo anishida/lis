@@ -1,0 +1,72 @@
+name: Recovered RC32 LU validation
+on:
+  push:
+    branches: [experiment/buckle-rc32-recovered-port]
+  pull_request:
+    branches: [develop]
+    paths:
+      - 'experimental/buckle-rc32/**'
+      - 'src/precon/lis_ilutp_refactor.inc'
+      - 'src/precon/lis_ilut_min_degree.inc'
+      - '.github/workflows/buckle-rc32-recovered.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  rc32:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: serial
+            configure: ''
+            cflags: '-O2 -g'
+            ldflags: ''
+            suffix: serial
+          - mode: omp
+            configure: '--enable-omp'
+            cflags: '-O2 -g'
+            ldflags: ''
+            suffix: omp
+          - mode: serial
+            configure: ''
+            cflags: '-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer'
+            ldflags: '-fsanitize=address,undefined'
+            suffix: asan-ubsan
+    env:
+      OMP_NUM_THREADS: '1'
+      OMP_DYNAMIC: 'FALSE'
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+      UBSAN_OPTIONS: halt_on_error=1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin python3-numpy python3-scipy
+      - name: Build static LIS from current port
+        env:
+          CONFIGURE_OPTIONS: ${{ matrix.configure }}
+          CFLAGS: ${{ matrix.cflags }}
+          LDFLAGS: ${{ matrix.ldflags }}
+        run: |
+          ./configure --enable-test --disable-shared --disable-fortran --disable-f90 --disable-saamg --disable-mpi $CONFIGURE_OPTIONS
+          make -j2
+      - name: Legacy regressions (no experimental flags)
+        run: |
+          ./test/testilutp
+          ./test/testeigenbreakdown
+          make -j2 check
+      - name: Original RC32 driver regressions
+        env:
+          RC32_TEST_CFLAGS: ${{ matrix.cflags }}
+          RC32_TEST_LDFLAGS: ${{ matrix.ldflags }}
+        run: bash experimental/buckle-rc32/validate-port.sh "$PWD" "${{ matrix.mode }}" "$RUNNER_TEMP/rc32-results"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rc32-${{ matrix.suffix }}
+          path: ${{ runner.temp }}/rc32-results/
+          if-no-files-found: ignore
