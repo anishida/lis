@@ -323,3 +323,47 @@ This is a full-size pencil validation, not verification of the
 native GLI implementation, complete eigenvalue spectrum, first
 physical buckling load, or end-to-end CalculiX run. Private input
 matrices and mode vectors are not included in the repository.
+
+## Final optimization qualification (local benchmark and independent CI)
+
+The independent Clang 18 + LLVM libomp + Archer/ThreadSanitizer
+diagnostic completed all 121/121 Schur OpenMP cases without a reported
+race ([run 46068084447](https://github.com/3rav/lis/actions/runs/46068084447)).
+This resolves the outstanding race-sanitizer qualification for the
+tested tile fixtures, not for arbitrary applications or the full-size
+model. The GCC/libgomp diagnostic remains non-passing; its reports were
+not suppressed or reclassified as a pass. LLVM's long-double OpenMP
+reduction requires linking libatomic on the tested Clang configuration
+(`-fopenmp -lm -latomic`).
+
+The final full-size benchmark used three sequential, interleaved
+repetitions per configuration, real double precision, optimized GCC
+builds, the same private input pattern, known-solution RHS, FGMRES
+restart 60, tolerance 1e-8, and no LIS scaling. No local compile or
+other benchmark overlapped these runs. The virtual machine had a
+four-CPU quota. LDLT requested 1 or 4 threads only for the optional
+Schur tile update; LU was the one-thread #273 build
+(`9b386fac69d5c4cccf8215536a7cbf650eced66f`), with complete-fill
+limit 64 million. All nine solves completed in one FGMRES iteration.
+
+| Configuration | Median setup (s) | Range (s) | Median solve (s) | Median peak RSS (KiB) | Relative physical residual |
+|---|---:|---:|---:|---:|---:|
+| LDLT, 1 requested thread | 31.3608429 | 30.7564368–31.60238 | 0.122374058 | 713452 | 7.2414170947189105e-15 |
+| LDLT, 4 requested threads | 20.850158 | 20.3931389–21.128999 | 0.127048969 | 713440 | 7.2414170947189105e-15 |
+| #273 Symbolic LU + MD, 1 thread | 10.674844 | 10.5101371–10.8369591 | 0.121814966 | 729204 | 3.5221367073862117e-13 |
+
+The four-thread LDLT setup median is 1.50x faster than the final
+serial LDLT median. Relative to the historical single-run 68.815459 s
+first successful QMD/supernodal factorization, the four-thread setup
+median is 3.30x faster. That historical comparison is not a controlled
+multi-run A/B. Serial Symbolic LU remains faster on this input; no
+general LDLT speed, accuracy or memory superiority is claimed.
+
+The native bridge/refresh, QMD, SIMD, multifrontal, supernodal and
+OpenMP tests passed in the dedicated serial and sanitizer CI
+([run 46067952304](https://github.com/3rav/lis/actions/runs/46067952304)).
+The application-linked implementation is ready for RFC review.
+Built-in LIS registration, automatic LIS sequence refresh,
+native GLI/CalculiX end-to-end integration and broader production
+qualification remain maintainer design decisions. No private input,
+eigenvectors, or application-specific engineering data are committed.
