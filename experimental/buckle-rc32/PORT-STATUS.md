@@ -1,0 +1,5 @@
+# Recovered RC32 experimental port
+
+This branch applies the original consolidated RC32 patch to upstream develop 6a4ae9c11bb03b028a6477455cb4f9f0a790132d, retaining newer error handling in two inverse-iteration hunks. The original patch (Git blob 5bdd49e4a29243b9e873cc8e99fdb3adc9c37823) and historical regression logs are preserved on `archive/buckle-rc32-original`. The drivers/scripts and historical documentation here are unmodified original files. The full benchmark requires private inputs and reference values that are not included. The historical README's instructions for applying the consolidated patch refer to pristine LIS 2.1.25, not this branch.
+
+The original experimental ABI change is retained: rebuild clients. The port has not been built or tested. Historical RC32 results do not establish performance or correctness on current develop. Do not enable experimental configurations by default. RC33 direct-trial experiment is excluded. Before upstream acceptance: review ABI and factor lifecycle, test serial/OpenMP, MPI/complex/index variants, sanitize and reproduce the original benchmark.
