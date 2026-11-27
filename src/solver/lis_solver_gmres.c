@@ -1504,6 +1504,11 @@ LIS_INT lis_fgmres_malloc_work(LIS_SOLVER solver)
 #define __FUNC__ "lis_fgmres"
 LIS_INT lis_fgmres(LIS_SOLVER solver)
 {
+    return lis_fgmres_with_stop(solver,NULL,NULL);
+}
+
+LIS_INT lis_fgmres_with_stop(LIS_SOLVER solver,LIS_FGMRES_STOP stop,void *data)
+{
 	LIS_Comm comm;  
 	LIS_MATRIX A;
 	LIS_VECTOR b,x;
@@ -1514,7 +1519,7 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 
 	LIS_REAL bnrm2,nrm2,tol,min_nrm2;
 	LIS_INT err,iter,maxiter,output,maxiter_noimp,noimp_count,candidate;
-     LIS_INT noimp_stop;
+     LIS_INT noimp_stop,policy_stop=LIS_FALSE;
 	double time,ptime;
 
 	LIS_REAL rnorm;
@@ -1694,7 +1699,8 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 				solver,iter,nrm2,tol,
 				LIS_SOLVER_RESIDUAL_PROJECTED,
 				tol >= nrm2);
-			if( candidate ) break;
+			if( stop ) policy_stop=stop(iter,nrm2,data)?LIS_TRUE:LIS_FALSE;
+			if( candidate || policy_stop ) break;
 
 			if (maxiter_noimp)
 			{
@@ -1762,7 +1768,7 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 		 * A no-improvement decision terminates the solve, but
 		 * the current Krylov approximation has now been applied.
 		 */
-		if( noimp_stop )
+		if( noimp_stop || (policy_stop && !candidate) )
 		{
 			solver->retcode = LIS_MAXITER;
 			solver->iter = iter;
@@ -1818,6 +1824,17 @@ LIS_INT lis_fgmres(LIS_SOLVER solver)
 			}
 		}
 
+		/* A candidate at the checkpoint was explicitly rejected above. */
+		if(policy_stop)
+		{
+			solver->retcode=LIS_MAXITER;
+			solver->iter=iter;
+			solver->resid=nrm2;
+			solver->ptime=ptime;
+			lis_free(h);
+			LIS_DEBUG_FUNC_OUT;
+			return LIS_MAXITER;
+		}
 		bnrm2 = 1.0/rnorm;
 	}
 

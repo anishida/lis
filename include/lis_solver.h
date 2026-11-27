@@ -257,6 +257,13 @@ extern "C"
 /* FGMRES(m)       */
 /*******************/
 
+	/* Experimental internal projected-residual stop, synchronous and scoped
+	 * to one native solve. Nonzero requests a numerical stop after the
+	 * current Krylov approximation is applied, not convergence. */
+	typedef LIS_INT (*LIS_FGMRES_STOP)(LIS_INT,LIS_REAL,void *);
+	extern LIS_INT lis_fgmres_with_stop(LIS_SOLVER solver,LIS_FGMRES_STOP stop,void *data);
+	extern LIS_INT lis_solve_kernel_fgmres_stop(LIS_MATRIX A,LIS_VECTOR b,LIS_VECTOR x,
+	    LIS_SOLVER solver,LIS_PRECON precon,LIS_FGMRES_STOP stop,void *data);
 	extern LIS_INT lis_fgmres(LIS_SOLVER solver);
 	extern LIS_INT lis_fgmres_quad(LIS_SOLVER solver);
 /*	extern LIS_INT lis_fgmres_switch(LIS_SOLVER solver);*/
