@@ -7,7 +7,8 @@ int p66_available(p66_mode mode);
 int p66_set_mode(p66_mode mode);
 p66_mode p66_effective_mode(void);
 const char *p66_mode_name(p66_mode mode);
-/* Internal triangular update. Scratch may be partly modified on failure. */
+/* Internal triangular update: pivot width must be 1 or 2.
+   Scratch may be partly modified on failure. */
 typedef int (*p66_kernel)(double *,size_t,size_t,size_t,long double *);
 p66_kernel p66_select_kernel(void);
 /* Active symmetric front stored in its lower triangle only. */

@@ -38,6 +38,29 @@ static void lower_compare(double *a,size_t m,size_t k,size_t w,int expected){
  }
  free(ref);free(res);
 }
+/* Signed exact structural zeros, with both normal and subnormal finite
+   operands. Compare the result against the portable long-double path. */
+static void structural_zeros(void){
+ for(size_t w=1;w<=2;w++)for(size_t n=17;n<=24;n++){
+  size_t k=3,m=n+k+w;double *a=calloc(m*m,sizeof *a),*ref=malloc(m*m*sizeof *ref),*res=malloc(m*m*sizeof *res);CHECK(a&&ref&&res);
+  for(unsigned t=0;t<8;t++){
+   for(size_t i=k+w;i<m;i++){
+    for(size_t j=k+w;j<=i;j++)a[i*m+j]=a[j*m+i]=(i+j+t)%2?-0.0:0.0;
+    for(size_t l=0;l<w;l++){
+     double zero=(i+l+t)%2?-0.0:0.0;
+     double finite=(i+l+t)%2?-DBL_TRUE_MIN:DBL_MAX;
+     a[(k+l)*m+i]=t&(1u<<l)?finite:zero;
+     a[i*m+k+l]=t&(1u<<l)?zero:finite;
+    }
+   }
+   memcpy(ref,a,m*m*sizeof *a);CHECK(p66_set_mode(P66_REFERENCE));long double p=0;CHECK(p66_select_kernel()(ref,m,k,w,&p));
+   for(int mode=P66_AVX2;mode<=P66_AVX512;mode++)if(p66_available(mode)){
+    memcpy(res,a,m*m*sizeof *a);CHECK(p66_set_mode(mode));long double q=0;CHECK(p66_select_kernel()(res,m,k,w,&q));CHECK(p==q);CHECK(!memcmp(ref,res,m*m*sizeof *a));tests++;
+   }
+  }
+  free(a);free(ref);free(res);
+ }
+}
 static void kernels(void){for(unsigned t=0;t<420;t++){size_t m=2+rnd()%96,w=1+t%2;if(m<=w)m=w+1;size_t k=rnd()%(m-w);double scale=t%3==0?1e-100:t%3==1?1e100:1;double *a=calloc(m*m,sizeof *a);CHECK(a);for(size_t i=k+w;i<m;i++){for(size_t j=k+w;j<=i;j++)a[i*m+j]=a[j*m+i]=v()*scale;for(size_t l=0;l<w;l++){a[(k+l)*m+i]=v();a[i*m+k+l]=v()*scale;}}compare(a,m,k,w,1);lower_compare(a,m,k,w,1);free(a);}
  /* rank-2 intermediate exceeds double range, final finite; true overflow;
     exact cancellation, subnormal outputs; vector-length tails. */
@@ -57,4 +80,4 @@ static void factors(void){for(unsigned t=0;t<160;t++){uint32_t n=2*(5+rnd()%27),
  }}
 static void bench(uint32_t n,uint32_t side,uint32_t block){size_t *cp=malloc(((size_t)n+1)*sizeof *cp);uint32_t *ri=malloc((size_t)n*(block?block:3)*sizeof *ri);double *a=malloc((size_t)n*(block?block:3)*sizeof *a);CHECK(cp&&ri&&a);size_t z=0;for(uint32_t j=0;j<n;j++){cp[j]=z;ri[z]=j;a[z++]=block?2*block:5;if(block){uint32_t end=(j/block+1)*block;if(end>n)end=n;for(uint32_t i=j+1;i<end;i++){ri[z]=i;a[z++]=-.25;}}else{if(j+1<n&&(!side||j%side+1<side)){ri[z]=j+1;a[z++]=-1;}if(side&&j+side<n){ri[z]=j+side;a[z++]=-1;}}}cp[n]=z;
  for(int mode=P66_REFERENCE;mode<=P66_AVX512;mode++){if(!p66_available(mode))continue;CHECK(p66_set_mode(mode));double tm[3];p64_stats st={0};for(int rep=0;rep<3;rep++){p56_context *ctx=NULL;clock_t start=clock();CHECK(!p65_ordered_factorize(&ctx,n,z,cp,ri,a,&ol,&sl,&nl,side?P64_ND:P64_NATURAL,16,&st));tm[rep]=(double)(clock()-start)/CLOCKS_PER_SEC;solve(ctx,n,cp,ri,a);p56_destroy(ctx);}double med=tm[0]+tm[1]+tm[2]-fmin(tm[0],fmin(tm[1],tm[2]))-fmax(tm[0],fmax(tm[1],tm[2]));printf("bench n=%u side=%u block=%u mode=%s cpu_median3=%.6f s fronts=%zu max_front=%zu slots=%zu\n",n,side,block,p66_mode_name(mode),med,st.numeric.fronts,st.numeric.peak_front,st.numeric.factor_slots);tests++;}free(cp);free(ri);free(a);}
-int main(int argc,char **argv){(void)argv;CHECK(p66_set_mode(P66_AUTO));printf("AUTO=%s AVX2=%d AVX512=%d\n",p66_mode_name(p66_effective_mode()),!!p66_available(P66_AVX2),!!p66_available(P66_AVX512));if(argc==1){kernels();factors();}else{bench(1600,40,0);bench(4096,64,0);bench(4096,0,64);bench(152592,0,0);}printf("SIMD %u/%u PASS max_kernel_rel=%.3Le max_x=%.3e max_componentwise_backward=%.3Le\n",tests,tests,max_kernel,max_x,max_back);return 0;}
+int main(int argc,char **argv){(void)argv;CHECK(p66_set_mode(P66_AUTO));printf("AUTO=%s AVX2=%d AVX512=%d\n",p66_mode_name(p66_effective_mode()),!!p66_available(P66_AVX2),!!p66_available(P66_AVX512));if(argc==1){kernels();structural_zeros();factors();}else{bench(1600,40,0);bench(4096,64,0);bench(4096,0,64);bench(152592,0,0);}printf("SIMD %u/%u PASS max_kernel_rel=%.3Le max_x=%.3e max_componentwise_backward=%.3Le\n",tests,tests,max_kernel,max_x,max_back);return 0;}

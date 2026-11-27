@@ -208,3 +208,35 @@ overlapped part of the new timing; this is preliminary, not a controlled
 multi-run speedup measurement. Forcing AVX-512 in the previous implementation
 gave 53.1606159 s setup and a certified physical residual of 7.43e-15;
 the conservative AVX2 default is unchanged. No full eigenpair claim is made.
+
+## Eighth integration checkpoint: compile-time SIMD specialization
+
+The existing AVX2 and AVX-512 kernels now force compile-time specialization
+for pivot width (1 or 2) and storage policy (mirrored or lower-only).
+GCC -O2 previously emitted a common implementation despite the inline
+specifier; the new wrappers remove runtime dispatch from the hot loops.
+No valid pivot update arithmetic, range/cancellation fallback, growth
+policy, or allocation bounds change. Signed structural-zero cases are
+added to SIMD regression.
+
+Local exact A/B comparison against the previous implementation passed
+2088/2088 cases for both available instruction sets and storage policies.
+GCC release and Clang ASan/UBSan passed SIMD 2988/2988, multifrontal
+543/543 and supernodal 783/783 each. The portable SIMD-disabled build
+passed 612/612. A separate five-repetition, alternating-order 1024-by-1024
+AVX2 microbenchmark (32 repeated updates per sample, bitwise equal results)
+recorded median times of 0.028237334 versus 0.026548096 s for rank one
+and 0.049245926 versus 0.046496657 s for rank two (6.0% and 5.6% lower).
+
+On the private 152,592-DOF shifted CalculiX-derived linear system,
+sequential single-run setup was 32.3367729 s (control) and 31.425508 s
+(specialized), peak RSS 713260 versus 713152 KiB. Both used 22,172,255
+numeric factor slots, 15,473 delayed pivots, one FGMRES iteration,
+physical relative residual 7.2414170947189105e-15 and forward error
+4.8939654672876622e-12 in the recorded precision. The full-size timing
+is a preliminary observation; it is not a multi-run speedup claim.
+
+Two alternative local structural-zero SIMD fast paths gave 33.8219349 s
+and 32.406774 s, respectively. Neither demonstrated a useful full-size
+benefit; neither is included in this change. The new tests retain coverage
+of signed zeros without modifying the existing numerical fallback.

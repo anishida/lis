@@ -52,7 +52,7 @@ static inline int finish(double *a,size_t m,size_t k,size_t w,size_t i,size_t j,
  }
  commit(a,m,i,j,z,peak,mirror);return 1;
 }
-__attribute__((target("avx2,fma"))) static inline int avx2_impl(double *a,size_t m,size_t k,size_t w,long double *peak,int mirror){
+__attribute__((target("avx2,fma"),always_inline)) static inline int avx2_impl(double *a,size_t m,size_t k,size_t w,long double *peak,int mirror){
  /* Keep a vector maximum for safe lanes; the precise fallback and tails
     continue to use the original scalar range and cancellation checks. */
  __m256d vmax=_mm256_setzero_pd(),sign=_mm256_set1_pd(-0.0),hi=_mm256_set1_pd(DBL_MAX),lo=_mm256_set1_pd(DBL_MIN),eighth=_mm256_set1_pd(0.125);
@@ -87,7 +87,7 @@ __attribute__((target("avx2,fma"))) static inline int avx2_impl(double *a,size_t
  double mx[4];_mm256_storeu_pd(mx,vmax);for(size_t l=0;l<4;l++)if(mx[l]>*peak)*peak=mx[l];
  return 1;
 }
-__attribute__((target("avx512f,fma"))) static inline int avx512_impl(double *a,size_t m,size_t k,size_t w,long double *peak,int mirror){
+__attribute__((target("avx512f,fma"),always_inline)) static inline int avx512_impl(double *a,size_t m,size_t k,size_t w,long double *peak,int mirror){
  __m512i stride=_mm512_set_epi64((long long)(7*m),(long long)(6*m),(long long)(5*m),(long long)(4*m),(long long)(3*m),(long long)(2*m),(long long)m,0);
  __m512d vmax=_mm512_setzero_pd(),hi=_mm512_set1_pd(DBL_MAX),lo=_mm512_set1_pd(DBL_MIN),eighth=_mm512_set1_pd(0.125);
  __m512i absbits=_mm512_set1_epi64(0x7fffffffffffffffLL);
@@ -123,7 +123,13 @@ __attribute__((target("avx512f,fma"))) static inline int avx512_impl(double *a,s
  return 1;
 }
 /* Specialize the storage policy at compile time. */
-#define WRAP(name,impl,flag,attr) attr static int name(double *a,size_t m,size_t k,size_t w,long double *peak){return impl(a,m,k,w,peak,flag);}
+/* Keep rank-one/rank-two and mirrored/lower-only paths compile-time
+   specialized; plain inline is not sufficient with GCC -O2. */
+#define WRAP(name,impl,flag,attr) attr static int name(double *a,size_t m,size_t k,size_t w,long double *peak){ \
+ if(w==1)return impl(a,m,k,1,peak,flag); \
+ if(w==2)return impl(a,m,k,2,peak,flag); \
+ return 0; \
+}
 WRAP(avx2,avx2_impl,1,__attribute__((target("avx2,fma"))))
 WRAP(avx2_lower,avx2_impl,0,__attribute__((target("avx2,fma"))))
 WRAP(avx512,avx512_impl,1,__attribute__((target("avx512f,fma"))))
