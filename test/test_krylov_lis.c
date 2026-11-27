@@ -54,6 +54,17 @@ static int solve_check(LIS_MATRIX A, LIS_MATRIX B,
     phase = "solve eigenproblem";
     err = B ? lis_gesolve(A, B, x, &eig0, es) :
               lis_esolve(A, x, &eig0, es);
+#if defined(_COMPLEX) || defined(USE_COMPLEX)
+    /* The native Krylov adapter is explicitly real-only. Test the public
+     * rejection contract rather than expecting a real Ritz calculation
+     * from an unsupported scalar configuration. */
+    if (err != LIS_ERR_NOT_IMPLEMENTED) goto cleanup;
+    phase = "get unsupported scalar status";
+    err = lis_esolver_get_status(es, &status);
+    if (err || status != LIS_ERR_NOT_IMPLEMENTED) goto cleanup;
+    printf("PASS LIS API: native Krylov rejects complex arithmetic\n");
+    fail = 0;
+#else
     if (err) goto cleanup;
     phase = "get status";
     err = lis_esolver_get_status(es, &status);
@@ -71,6 +82,7 @@ static int solve_check(LIS_MATRIX A, LIS_MATRIX B,
     printf("PASS LIS API: eigenvalues %.10g %.10g\n",
            (double)eig0, (double)eig1);
     fail = 0;
+#endif
 cleanup:
     if (fail) fprintf(stderr,"FAIL LIS API at %s: error=%lld status=%lld options=%s\n",phase,(long long)err,(long long)(es?es->retcode:-1),options);
     if (es) lis_esolver_destroy(es);
