@@ -131,3 +131,15 @@ and this document are also in the top-level distribution manifest. The
 serial CI checks archive membership and runs `make distcheck` with the
 non-MPI real-double test configuration; no new installed header or
 Fortran option index is needed for these internal includes.
+
+## ABI migration gate
+
+The serial CI compiles a matching client and a client using the pinned
+upstream baseline headers, both linked to the proposed library. Only the
+fixed-width ABI query is called by the baseline client; no old-layout
+solver/preconditioner object is passed to the new library. The gate requires
+rejection of the old layout, acceptance of the matching layout and unchanged
+selected existing member offsets. This is a migration screening test, not
+proof of binary compatibility or a substitute for maintainer ABI policy.
+Clients must rebuild. The option remains opt-in; changing public structure
+sizes still requires an explicit release/ABI decision.

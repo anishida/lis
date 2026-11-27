@@ -49,10 +49,14 @@ jobs:
       UBSAN_OPTIONS: halt_on_error=1
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
       - name: Dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+          apt_options=(-o Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=- -o Acquire::Retries=3)
+          sudo apt-get "${apt_options[@]}" update
+          sudo apt-get "${apt_options[@]}" install -y build-essential autoconf automake libtool libtool-bin
       - name: Build isolated symbolic LU
         env:
           CONFIGURE_OPTIONS: ${{ matrix.flags }}
@@ -62,6 +66,19 @@ jobs:
           ./configure --enable-test --disable-fortran --disable-f90 --disable-saamg --disable-mpi --disable-shared $CONFIGURE_OPTIONS
           make -j2
           gcc $CFLAGS $LDFLAGS -Iinclude test/testilutp_symbolic.c src/.libs/liblis.a -Wl,--wrap=lis_precon_create -Wl,--wrap=lis_precon_update_ilut_frozen -lm -o sequence-audit
+      - name: Check ABI migration with baseline and matching clients
+        if: matrix.mode == 'serial'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p abi-baseline
+          git archive 6a4ae9c11bb03b028a6477455cb4f9f0a790132d include | tar -x -C abi-baseline
+          cp include/lis_config.h abi-baseline/include/
+          gcc -DHAVE_CONFIG_H -Iinclude test/testilutp_symbolic_abi.c src/.libs/liblis.a -lm -o abi-current
+          gcc -DBASELINE_CLIENT -DHAVE_CONFIG_H -Iabi-baseline/include -Iinclude test/testilutp_symbolic_abi.c src/.libs/liblis.a -lm -o abi-old
+          ./abi-current | tee sequence-audit-abi-current.log
+          ./abi-old | tee sequence-audit-abi-old.log
+          diff <(grep '^offsets=' sequence-audit-abi-current.log) <(grep '^offsets=' sequence-audit-abi-old.log)
       - name: Full legacy regression
         run: make -j2 check
       - name: Sequence lifecycle and reference solution
