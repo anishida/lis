@@ -68,6 +68,16 @@ jobs:
             "$d"/schur_simd.c "$d"/symbolic_ldlt.c -lm -o ldlt-simd-test
           ./ldlt-simd-test 2>&1 | tee ldlt-simd.log
           grep -Eq '^SIMD [0-9]+/[0-9]+ PASS' ldlt-simd.log
+          # Qualify the numeric front assembly/pivot path, including
+          # delayed pivots, large sparse fixtures and strict supernodes.
+          for suite in multifrontal supernodal; do
+            "$simd_cc" -std=c11 -Wall -Wextra -Werror $flags $link -I"$d" \
+              "$d/test_${suite}.c" "$d"/minimum_degree.c "$d"/nested_dissection.c \
+              "$d"/packed_ldlt.c "$d"/lis_adapter.c "$d"/multifrontal_ldlt.c \
+              "$d"/schur_simd.c "$d"/symbolic_ldlt.c "$d"/factor_cache.c -lm -o "ldlt-${suite}-test"
+            "./ldlt-${suite}-test" 2>&1 | tee "ldlt-${suite}.log"
+            grep -Eq "^${suite} [0-9]+/[0-9]+ PASS" "ldlt-${suite}.log"
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -76,3 +86,5 @@ jobs:
             ldlt-lis.log
             ldlt-qmd.log
             ldlt-simd.log
+            ldlt-multifrontal.log
+            ldlt-supernodal.log

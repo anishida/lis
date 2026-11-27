@@ -105,3 +105,28 @@ in both the previous and modified AVX-512 paths on the local VM; its cause
 is not established. The dedicated CI adds runtime SIMD regression using
 GCC release and Clang ASan/UBSan, alongside existing portable bridge and
 QMD checks. Runtime SIMD availability depends on the runner hardware.
+
+## Fourth integration checkpoint: finite maximum fast path
+
+In numeric front assembly, pivot selection and multiplier statistics,
+all maximum operands are finite nonnegative magnitudes after input and
+range checks. Use an inline comparison instead of repeated general-purpose
+long-double libm maximum calls. This does not change pivot acceptance,
+delayed-pivot policy, arithmetic precision, range checks or resource limits.
+
+A preliminary local single-run observation on the same 152,592-DOF
+CalculiX-derived shifted linear system decreased setup from 46.4829149 s
+to 40.4585161 s. Numeric factor slots (22,172,255), delayed pivots (15,473),
+physical relative residual (7.2414170947189105e-15), forward error
+(4.8939654672876622e-12) and one FGMRES iteration were unchanged in the
+recorded precision. Peak RSS was 744636 KiB. The comparison is not a
+statistically qualified timing result; the complete buckling eigensolver
+was not tested. Local GCC release and Clang ASan/UBSan regressions each
+passed multifrontal 543/543, supernodal 783/783 and SIMD 1330/1330.
+The dedicated CI now runs the first two suites in addition to the existing
+bridge, QMD and SIMD checks.
+
+A separate local power-of-two symmetric equilibration experiment gave
+41.0708539 s and 15,416 delays, with physical residual 7.44e-15. The
+reduction in delayed pivots was negligible, so this scaling policy is
+not included in the PR.

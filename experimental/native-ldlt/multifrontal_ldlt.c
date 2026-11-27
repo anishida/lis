@@ -19,6 +19,9 @@ typedef struct {uint32_t m,pending;uint32_t *id;double *a;} update;
 typedef struct {uint32_t row;double x,y;} entry;
 typedef struct {uint32_t first,w,nr;entry *e;} pivot;
 static void clear(budget *b,update *u){release(b,u->id);release(b,u->a);*u=(update){0};}
+/* All arguments are absolute values of finite quantities, or running
+   nonnegative maxima. Avoid a libm call in the hot assembly/pivot loops. */
+static inline long double max_finite(long double a,long double b){return a>b?a:b;}
 static int cv(long double x,double *v){if(!isfinite(x)||fabsl(x)>DBL_MAX)return 0;*v=(double)x;return 1;}
 static void sw(double *a,uint32_t *id,size_t m,size_t k,size_t i,size_t j){
  if(i==j)return;
@@ -47,7 +50,7 @@ int p65_numeric(p56_context **slot,uint32_t n,const size_t *col,const uint32_t *
  for(uint32_t root=0;root<n;root++)if(parent[root]==NONE){size_t depth=0;stack[depth++]=root;tin[root]=tick++;inv[root]=head[root];while(depth){uint32_t v=stack[depth-1],c=inv[v];if(c==NONE){tout[v]=tick;depth--;continue;}inv[v]=next[c];tin[c]=tick++;inv[c]=head[c];stack[depth++]=c;}}
  for(uint32_t j=0;j<n;j++)for(size_t z=col[j];z<col[j+1];z++){
   uint32_t i=row[z];if(i<j||i>=n||(z>col[j]&&i<=row[z-1])||!isfinite(val[z])||!(tin[i]<=tin[j]&&tin[j]<tout[i]))goto exit;
-  initial=fmaxl(initial,fabsl(val[z]));
+  initial=max_finite(initial,fabsl(val[z]));
  }
  if(bounds){
   if(!ng||ng>n||bounds[0]!=0||bounds[ng]!=n)goto exit;
@@ -80,7 +83,7 @@ int p65_numeric(p56_context **slot,uint32_t n,const size_t *col,const uint32_t *
    update *q=&u[c];for(size_t i=0;i<q->m;i++)for(size_t j=0;j<=i;j++){
     size_t x=map[q->id[i]],y=map[q->id[j]];
     if(!cv((long double)a[x*m+y]+q->a[i*q->m+j],&a[x*m+y])){rc=P55_RANGE;goto exit;}a[y*m+x]=a[x*m+y];
-    peak=fmaxl(peak,fabsl(a[x*m+y]));
+    peak=max_finite(peak,fabsl(a[x*m+y]));
    }
    clear(&b,q);
   }
@@ -91,7 +94,7 @@ int p65_numeric(p56_context **slot,uint32_t n,const size_t *col,const uint32_t *
    long double akk=fabsl(a[k*m+k]),colmax=0;size_t r=k,w=1,chosen=k;
    for(size_t i=k+1;i<m;i++)if(fabsl(a[i*m+k])>colmax){colmax=fabsl(a[i*m+k]);r=i;}
    if(akk==0&&colmax==0){rc=P58_NO_PIVOT;goto exit;}
-   if(akk<alpha*colmax){long double rm=0;for(size_t i=k;i<m;i++)if(i!=r)rm=fmaxl(rm,fabsl(a[r*m+i]));
+   if(akk<alpha*colmax){long double rm=0;for(size_t i=k;i<m;i++)if(i!=r)rm=max_finite(rm,fabsl(a[r*m+i]));
     if(akk<alpha*colmax*(colmax/rm)){chosen=r;if(fabsl(a[r*m+r])<alpha*rm)w=2;}}
    size_t target=k+w-1;
    if(chosen>=eligible||target>=eligible){
@@ -101,7 +104,7 @@ int p65_numeric(p56_context **slot,uint32_t n,const size_t *col,const uint32_t *
    }
    if(chosen!=target){sw(a,ids,m,k,target,chosen);st.swaps++;}
    long double aa=a[k*m+k],bb=0,cc=0,s=1,det=1;
-   if(w==2){bb=a[(k+1)*m+k];cc=a[(k+1)*m+k+1];s=fmaxl(fabsl(aa),fmaxl(fabsl(bb),fabsl(cc)));aa/=s;bb/=s;cc/=s;det=fmal(aa,cc,-bb*bb);if(!isfinite(det)||fabsl(det)<=8*LDBL_EPSILON*(fabsl(aa*cc)+bb*bb)){rc=P58_NO_PIVOT;goto exit;}}
+   if(w==2){bb=a[(k+1)*m+k];cc=a[(k+1)*m+k+1];s=max_finite(fabsl(aa),max_finite(fabsl(bb),fabsl(cc)));aa/=s;bb/=s;cc/=s;det=fmal(aa,cc,-bb*bb);if(!isfinite(det)||fabsl(det)<=8*LDBL_EPSILON*(fabsl(aa*cc)+bb*bb)){rc=P58_NO_PIVOT;goto exit;}}
    kind[done]=(uint8_t)w;diag[done]=a[k*m+k];perm[done]=ids[k];
    if(w==2){diag[done+1]=a[(k+1)*m+k+1];off[done]=a[(k+1)*m+k];perm[done+1]=ids[k+1];st.pairs++;}else st.scalars++;
    pivot *p=&pv[used++];p->first=(uint32_t)done;p->w=(uint32_t)w;
@@ -111,7 +114,7 @@ int p65_numeric(p56_context **slot,uint32_t n,const size_t *col,const uint32_t *
     long double x=a[i*m+k],y=w==2?a[i*m+k+1]:0;
     if(w==1)x/=aa;else{long double z=x/s,v=y/s;x=fmal(cc,z,-bb*v)/det;y=fmal(aa,v,-bb*z)/det;}
     if(!cv(x,&a[k*m+i])||(w==2&&!cv(y,&a[(k+1)*m+i]))){rc=P55_RANGE;goto exit;}
-    st.max_multiplier=fmaxl(st.max_multiplier,fmaxl(fabsl(x),fabsl(y)));
+    st.max_multiplier=max_finite(st.max_multiplier,max_finite(fabsl(x),fabsl(y)));
     if(a[k*m+i]!=0||(w==2&&a[(k+1)*m+i]!=0))p->nr++;
    }
    size_t slots=(size_t)p->nr*w+(w-1);
