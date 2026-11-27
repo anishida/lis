@@ -1,0 +1,17 @@
+# LIS BUCKLE – etap 66 / kandydat poprawki 55
+
+Samodzielny prototyp C11, kontynuacja etapu 65. Nie jest patchem oryginalnego LIS. Bez BLAS, OpenBLAS, LAPACK, METIS i SuiteSparse.
+
+## Implementacja
+- `schur_simd.c/.h`: aktualizacje dolnego trójkąta lokalnych frontów dla pivotów 1x1 (rank-1) i 2x2 (rank-2), symetryczne kopiowanie, śledzenie wzrostu. Wektory FMA AVX2 (4 double) i AVX-512F (8 double), gather kolumn sprzężeń, bez dodatkowej alokacji. Końcówki wierszy pozostają skalarne.
+- `p65_numeric` wybiera wskaźnik funkcji raz na faktoryzację. Pozostałe fazy, w tym wybór pivotów, mnożniki, pakowanie, cache i transakcyjna wymiana faktora, bez zmian.
+- `p66_set_mode(P66_AUTO/P66_REFERENCE/P66_AVX2/P66_AVX512)` – ustawienie wątku wywołującego. Zwraca 1 w przypadku sukcesu, 0 przy braku wsparcia lub nieprawidłowym trybie. `p66_effective_mode` sprawdza bieżące środowisko FP. AUTO preferuje AVX2 na podstawie lokalnych pomiarów, następnie AVX-512, potem referencję. To heurystyka, nie autotuning dla każdego procesora. GCC/Clang x86: runtime CPU dispatch, target attributes, bez globalnych -mavx. `-DP66_DISABLE_SIMD` wyłącza oba jądra. Inne platformy korzystają z referencji; testowano tylko x86-64.
+- Wektory pracują w binary64. W rank-2 pośrednie zaokrąglenie może zwiększyć błąd przy odejmowaniu. Jeżeli |wynik| < 0.125 * |pośredni wynik| lub wynik/pośredni wynik jest skrajny, subnormalny, zerowy lub nieskończony, dany element jest przeliczany w long double (jak etap 65). Zwykłe aktualizacje mogą nie być bitowo zgodne z referencją; kryterium nie jest formalnym dowodem stabilności całego solvera. Przy innym trybie zaokrąglenia lub FTZ/DAZ wybierana jest referencja. Wymagany standardowy tryb FP bez pułapek: próba SIMD może ustawić flagi wyjątków FP nawet przy udanym fallbacku. Nie kompilować z fast-math. Nie ma jeszcze blokowych aktualizacji macierz–macierz, OpenMP ani SIMD podstawień.
+
+## Testy
+- `make stage66-check`: pełna regresja etapów 55–65 i nowe testy SIMD, GCC 14.2 oraz Clang 17 ASan+UBSan. 6929 + 1330 = 8259/8259 w każdej konfiguracji. Dodatkowo kompilacja przenośna 162/162 (bez SIMD). `test-results.txt` – finalne AUTO AVX2, `regression-auto-avx512.txt` – wcześniejsza regresja przy AUTO AVX-512.
+- Nowe testy: 424 przypadki bezpośrednie na każdy z dwóch trybów SIMD (losowe rozmiary, przesunięcia, skale 1e-100/1/1e100, ogony wektorów, symetria, skrajne wartości, przepełnienie pośrednie z końcowym wynikiem skończonym i rzeczywiste przepełnienie); 160 macierzy numerycznych x 3 tryby, 2 testy wyboru trybu. Maksymalna względna różnica elementów jądra 8.663e-16, max błąd rozwiązania 1.221e-15, max komponentowy błąd wsteczny 6.485e-16. Liczniki to przypadki, nie pojedyncze asercje.
+- `make simd-bench`: 12 konfiguracji syntetycznych, mediany 3 przebiegów CPU na AMD EPYC 9V74; analiza + faktoryzacja (szerokość 16), weryfikacja rozwiązania poza pomiarem. `benchmark-serial.txt` pochodzi z wersji przed zmianą priorytetu AUTO, ale każdy mierzony tryb był wymuszony jawnie i jądra są identyczne. Nie porównywać z czasami w logu równoległego make. `dependencies.txt` – ldd test_simd.
+
+## Ograniczenia
+Brak źródeł zmodyfikowanego LIS i rzeczywistej macierzy CCX 152592 DOF. Syntetyczne testy nie są benchmarkiem CCX. Nie wykonano MPI/ABI, pełnego BUCKLE ani make check oryginalnego LIS. Nie publikowano na GitHubie. Następny etap: równoległa eliminacja OpenMP, z niezależnymi frontami i kontrolą pamięci.
