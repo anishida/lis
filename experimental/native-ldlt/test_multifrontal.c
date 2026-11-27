@@ -71,4 +71,23 @@ static void large_indefinite(uint32_t n){size_t *col=malloc(((size_t)n+1)*sizeof
  for(uint32_t j=0;j<n;j++){col[j]=z;row[z]=j;a[z++]=0;p[j]=j%2?ROOT:j+1;if(j%2==0){row[z]=j+1;a[z++]=2;}}col[n]=z;
  p61_stats s=run(n,col,row,a,p,&limits);printf("large_indefinite n=%u nnz_lower=%zu front=%zu pairs=%zu delays=%zu slots=%zu workspace=%zu\n",n,z,s.peak_front,s.pairs,s.delays,s.factor_slots,s.peak_work_bytes);REQUIRE(s.peak_front==2&&s.pairs==n/2&&s.delays==n/2);free(col);free(row);free(p);free(a);
 }
-int main(void){for(unsigned i=0;i<300;i++)tree_case(i);for(unsigned i=0;i<200;i++)paired(i);extra();errors();large(10000);large(152592);grid_case(32);large_indefinite(152592);printf("multifrontal %u/%u PASS, pairs=%zu delays=%zu max_x=%.3e max_componentwise_backward=%.3Le\n",tests,tests,pairs,delays,worst_x,worst);return 0;}
+/* Many independent child fronts contribute dense symmetric updates to a
+   common separator. This stresses packed child storage and accumulation. */
+static void shared_separator(void){
+ enum { leaves=32, sep=24, n=leaves+sep };
+ size_t col[n+1],z=0;uint32_t row[n*n],parent[n];double a[n*n];
+ for(uint32_t j=0;j<n;j++){
+  col[j]=z;row[z]=j;a[z++]=(j%2?1.:-1.)*128.;
+  uint32_t first=j<leaves?leaves:j+1;
+  parent[j]=first<n?first:ROOT;
+  for(uint32_t i=first;i<n;i++){row[z]=i;a[z++]=((int)((i+3*j)%11)-5)*0.03125;}
+ }col[n]=z;
+ /* All uncompressed child updates alone require leaves*sep^2 doubles.
+    The packed path must finish below that lower bound, including all
+    other workspace accounted for by the numerical module. */
+ p61_limits bounded=limits;bounded.max_work_bytes=(size_t)leaves*sep*sep*sizeof(double)-1;
+ p61_stats st=run(n,col,row,a,parent,&bounded);
+ REQUIRE(st.peak_front==sep+1&&st.delays==0&&st.pairs==0);
+ printf("shared_separator workspace=%zu front=%zu slots=%zu\n",st.peak_work_bytes,st.peak_front,st.factor_slots);
+}
+int main(void){for(unsigned i=0;i<300;i++)tree_case(i);for(unsigned i=0;i<200;i++)paired(i);extra();shared_separator();errors();large(10000);large(152592);grid_case(32);large_indefinite(152592);printf("multifrontal %u/%u PASS, pairs=%zu delays=%zu max_x=%.3e max_componentwise_backward=%.3Le\n",tests,tests,pairs,delays,worst_x,worst);return 0;}

@@ -153,3 +153,33 @@ is made. The added tests exercise multiple tile boundaries, rank-one
 and rank-two updates and all SIMD remainders at nonzero pivot offsets.
 Local GCC release and Clang ASan/UBSan passed SIMD 1382/1382,
 multifrontal 543/543 and supernodal 783/783.
+
+## Sixth integration checkpoint: packed symmetric child updates
+
+Child-to-parent contributions now retain only the packed lower triangle
+rather than an entire square symmetric update. Checked triangular-size
+arithmetic precedes the allocation, and the assembly order, active
+front storage, pivot policy and accumulation precision are unchanged.
+The pivot column maximum is read from the contiguous symmetric active
+row instead of a strided column. No additional public API or ABI changes.
+
+A 32-child, 24-variable shared-separator fixture completed with 108,848
+bytes of numeric-module workspace instead of 179,504 bytes (39.4% lower).
+The regression constrains workspace below the lower bound for the old
+unpacked child buffers alone, 147,456 bytes. The preceding implementation
+returns P60_LIMIT with that constraint; the packed implementation solves
+and verifies the same system. Existing resource-failure atomicity tests
+are retained.
+
+On the same private 152,592-DOF CalculiX-derived shifted system, the
+preliminary local setup observation was 37.165884 s (previous 38.1748061 s),
+solve 0.135046005 s, peak RSS 716832 KiB (previous 744524 KiB), and numeric
+workspace peak 481113856 bytes (previous 493144800). The recorded
+physical residual (7.2414170947189105e-15), forward error
+(4.8939654672876622e-12), factor slots (22,172,255), delays (15,473)
+and one FGMRES iteration are unchanged. Timing observations are not
+statistically qualified; they do not establish eigenpair accuracy.
+Local GCC release and Clang ASan/UBSan passed multifrontal 543/543
+(including the new shared-separator budget test), supernodal 783/783,
+and SIMD 1382/1382. The number of workspace-failure cases depends on
+the measured peak, so aggregate counts can change with storage layout.

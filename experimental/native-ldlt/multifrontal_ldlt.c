@@ -82,7 +82,7 @@ int p65_numeric(p56_context **slot,uint32_t n,const size_t *col,const uint32_t *
   for(uint32_t c=head[f];c!=NONE;c=next[c]){
    update *q=&u[c];for(size_t i=0;i<q->m;i++)for(size_t j=0;j<=i;j++){
     size_t x=map[q->id[i]],y=map[q->id[j]];
-    if(!cv((long double)a[x*m+y]+q->a[i*q->m+j],&a[x*m+y])){rc=P55_RANGE;goto exit;}a[y*m+x]=a[x*m+y];
+    if(!cv((long double)a[x*m+y]+q->a[i*(i+1)/2+j],&a[x*m+y])){rc=P55_RANGE;goto exit;}a[y*m+x]=a[x*m+y];
     peak=max_finite(peak,fabsl(a[x*m+y]));
    }
    clear(&b,q);
@@ -92,7 +92,7 @@ int p65_numeric(p56_context **slot,uint32_t n,const size_t *col,const uint32_t *
   size_t candidates=eligible;
   while(k<eligible){
    long double akk=fabsl(a[k*m+k]),colmax=0;size_t r=k,w=1,chosen=k;
-   for(size_t i=k+1;i<m;i++)if(fabsl(a[i*m+k])>colmax){colmax=fabsl(a[i*m+k]);r=i;}
+   for(size_t i=k+1;i<m;i++)if(fabsl(a[k*m+i])>colmax){colmax=fabsl(a[k*m+i]);r=i;}
    if(akk==0&&colmax==0){rc=P58_NO_PIVOT;goto exit;}
    if(akk<alpha*colmax){long double rm=0;for(size_t i=k;i<m;i++)if(i!=r)rm=max_finite(rm,fabsl(a[r*m+i]));
     if(akk<alpha*colmax*(colmax/rm)){chosen=r;if(fabsl(a[r*m+r])<alpha*rm)w=2;}}
@@ -126,8 +126,9 @@ int p65_numeric(p56_context **slot,uint32_t n,const size_t *col,const uint32_t *
   }
   if(k<m){
    if(parent[f]==NONE){rc=P58_NO_PIVOT;goto exit;}
-   update *q=&u[f];q->m=(uint32_t)(m-k);q->pending=(uint32_t)(candidates-k);NEW(q->id,q->m);NEW(q->a,(size_t)q->m*q->m);
-   memcpy(q->id,ids+k,(size_t)q->m*sizeof *ids);for(size_t i=0;i<q->m;i++)memcpy(q->a+i*q->m,a+(i+k)*m+k,(size_t)q->m*sizeof *a);
+   update *q=&u[f];q->m=(uint32_t)(m-k);q->pending=(uint32_t)(candidates-k);NEW(q->id,q->m);/* The child update is symmetric: store only its lower triangle. */
+   size_t qm=q->m; if(qm==SIZE_MAX||qm>SIZE_MAX/(qm+1)){rc=P60_LIMIT;goto exit;}NEW(q->a,qm*(qm+1)/2);
+   memcpy(q->id,ids+k,(size_t)q->m*sizeof *ids);for(size_t i=0;i<qm;i++)memcpy(q->a+i*(i+1)/2,a+(i+k)*m+k,(i+1)*sizeof *a);
   }
   release(&b,a);a=NULL;st.fronts++;
  }
