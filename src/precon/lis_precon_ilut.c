@@ -1034,7 +1034,7 @@ LIS_INT lis_precon_create_ilut_csr(LIS_SOLVER solver, LIS_PRECON precon)
 			len = _min(lfil,lenl);
 			for(j=0;j<lenl;j++)
 			{
-				wn[my_rank*n+j] = fabs(w[my_rank*n+j]);
+				wn[my_rank*n+j] = -fabs(w[my_rank*n+j]);
 				iw[my_rank*n+j] = j;
 			}
 			lis_sort_di(0,lenl-1,&wn[my_rank*n],&iw[my_rank*n]);
@@ -1057,7 +1057,7 @@ LIS_INT lis_precon_create_ilut_csr(LIS_SOLVER solver, LIS_PRECON precon)
 			len = _min(lfil,lenu);
 			for(j=0;j<lenu;j++)
 			{
-				wn[my_rank*n+j] = fabs(w[my_rank*n+i+j+1]);
+				wn[my_rank*n+j] = -fabs(w[my_rank*n+i+j+1]);
 				iw[my_rank*n+j] = i+j+1;
 			}
 			lis_sort_di(0,lenu-1,&wn[my_rank*n],&iw[my_rank*n]);
@@ -1392,7 +1392,7 @@ LIS_INT lis_precon_create_ilut_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		len = _min(lfil,lenl);
 		for(j=0;j<lenl;j++)
 		{
-			wn[j] = fabs(w[j]);
+			wn[j] = -fabs(w[j]);
 			iw[j] = j;
 		}
 		lis_sort_di(0,lenl-1,wn,iw);
@@ -1415,7 +1415,7 @@ LIS_INT lis_precon_create_ilut_csr(LIS_SOLVER solver, LIS_PRECON precon)
 		len = _min(lfil,lenu);
 		for(j=0;j<lenu;j++)
 		{
-			wn[j] = fabs(w[i+j+1]);
+			wn[j] = -fabs(w[i+j+1]);
 			iw[j] = i+j+1;
 		}
 		lis_sort_di(0,lenu-1,wn,iw);
