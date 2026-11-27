@@ -3591,8 +3591,6 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 
 	err = lis_solver_set_optionC(solver);
 	if( err ) goto cleanup;
-        err = lis_esolver_apply_inner_near_nullspace(esolver,solver);
-        if( err ) goto cleanup;
 
 	if( oshift!=0.0 )
 	{
@@ -4002,8 +4000,6 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 	resid0 = 0.0;
 
 	err = lis_esolver_create(&esolver2);
-        if( err ) goto cleanup;
-        err = lis_esolver_copy_inner_near_nullspace(esolver,esolver2);
         if( err ) goto cleanup;
 
 			if( esolver->refine_linear_options &&
@@ -7067,8 +7063,6 @@ lis_egli_block_transformed(
     if( err )
         goto cleanup;
 
-    err = lis_esolver_apply_inner_near_nullspace(esolver,solver);
-    if( err ) goto cleanup;
 
     if( requested_shift!=0.0 )
     {

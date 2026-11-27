@@ -882,14 +882,6 @@ LIS_INT lis_egii(LIS_ESOLVER esolver)
       LIS_DEBUG_FUNC_OUT;
       return err;
     }
-  err = lis_esolver_apply_inner_near_nullspace(esolver,solver);
-  if(err)
-    {
-      if(solver) lis_solver_destroy(solver);
-      if(Aop) lis_matrix_destroy(Aop);
-      LIS_DEBUG_FUNC_OUT;
-      return err;
-    }
   lis_solver_get_solver(solver, &nsol);
   lis_solver_get_precon(solver, &precon_type);
   lis_solver_get_solvername(nsol, solvername);

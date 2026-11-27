@@ -754,7 +754,6 @@ LIS_INT lis_esolver_init(LIS_ESOLVER esolver)
 	esolver->requested_nev_active = LIS_FALSE;
 	esolver->block_size = 1;
 	esolver->linear_options = NULL;
-        esolver->inner_near_nullspace_owner = NULL;
 	esolver->refine_linear_options = NULL;
 	esolver->refine_gap_fraction = 0.01;
 	esolver->subspace_retry_max = 0;
@@ -946,8 +945,6 @@ LIS_INT lis_esolver_destroy(LIS_ESOLVER esolver)
                         esolver->refine_linear_options = NULL;
                 }
 
-                lis_solver_destroy(esolver->inner_near_nullspace_owner);
-                esolver->inner_near_nullspace_owner=NULL;
 		lis_free(esolver);
 	}
 
@@ -996,63 +993,6 @@ lis_esolver_replace_option_string(
         memcpy(copy,text,length+1);
         *slot = copy;
         return LIS_SUCCESS;
-}
-
-
-/* Serial real-double prototype: own a copy of the application's basis.
- * Reuse the linear solver's existing validated transactional copy routine.
- * nvec == 0 clears the configuration. No global state. */
-LIS_INT lis_esolver_set_inner_near_nullspace(
-        LIS_ESOLVER esolver,LIS_INT nvec,LIS_VECTOR vectors[])
-{
-        LIS_SOLVER owner=NULL;
-        LIS_INT i,j,err;
-        if( esolver==NULL || nvec<0 ) return LIS_ERR_ILL_ARG;
-        if( nvec==0 )
-        {
-                lis_solver_destroy(esolver->inner_near_nullspace_owner);
-                esolver->inner_near_nullspace_owner=NULL;
-                return LIS_SUCCESS;
-        }
-#if defined(USE_MPI) || defined(_COMPLEX)
-        return LIS_ERR_NOT_IMPLEMENTED;
-#endif
-        if( vectors==NULL ) return LIS_ERR_ILL_ARG;
-        for(i=0;i<nvec;i++)
-        {
-                LIS_VECTOR v=vectors[i];
-                if( v==NULL || v->label!=LIS_LABEL_VECTOR ||
-                    v->value==NULL || v->n<nvec || v->nprocs!=1 ||
-                    v->precision!=LIS_PRECISION_DOUBLE ) return LIS_ERR_ILL_ARG;
-                for(j=0;j<v->n;j++)
-                        if( !lis_esolver_is_finite_scalar(v->value[j]) )
-                                return LIS_ERR_ILL_ARG;
-        }
-        err=lis_solver_create(&owner);
-        if( err ) return err;
-        err=lis_solver_set_near_nullspace(owner,nvec,vectors);
-        if( err ) { lis_solver_destroy(owner); return err; }
-        lis_solver_destroy(esolver->inner_near_nullspace_owner);
-        esolver->inner_near_nullspace_owner=owner;
-        return LIS_SUCCESS;
-}
-
-LIS_INT lis_esolver_copy_inner_near_nullspace(LIS_ESOLVER src,LIS_ESOLVER dst)
-{
-        LIS_SOLVER owner=src->inner_near_nullspace_owner;
-        if( owner==NULL ) return LIS_SUCCESS;
-        return lis_esolver_set_inner_near_nullspace(dst,
-                owner->near_nullspace_dim,owner->near_nullspace);
-}
-
-LIS_INT lis_esolver_apply_inner_near_nullspace(LIS_ESOLVER esolver,LIS_SOLVER solver)
-{
-        LIS_SOLVER owner=esolver->inner_near_nullspace_owner;
-        LIS_INT p=solver->options[LIS_OPTIONS_PRECON];
-        if( owner==NULL || (p!=LIS_PRECON_TYPE_MFAMG &&
-                            p!=LIS_PRECON_TYPE_MFAMG_ILUTP) ) return LIS_SUCCESS;
-        return lis_solver_set_near_nullspace(solver,
-                owner->near_nullspace_dim,owner->near_nullspace);
 }
 
 
@@ -1314,26 +1254,6 @@ static LIS_INT lis_gesolve_once(LIS_MATRIX A, LIS_MATRIX B, LIS_VECTOR x, LIS_SC
 		LIS_SETERR1(LIS_ERR_ILL_ARG,"Size n(=%D) of matrix B is less than 0\n",B->gn);
 		return LIS_ERR_ILL_ARG;
 	}
-
-        if( esolver->inner_near_nullspace_owner )
-        {
-                LIS_SOLVER owner=esolver->inner_near_nullspace_owner;
-                LIS_VECTOR v=owner->near_nullspace[0];
-                LIS_INT method=esolver->options[LIS_EOPTIONS_ESOLVER];
-                if( B==NULL ||
-                    (method==LIS_ESOLVER_GLI && esolver->transform==LIS_EIGEN_TRANSFORM_AUTO) ||
-                    (method!=LIS_ESOLVER_GLI && method!=LIS_ESOLVER_GII) ||
-                    esolver->options[LIS_EOPTIONS_PRECISION]!=LIS_PRECISION_DOUBLE )
-                        { esolver->retcode=LIS_ERR_NOT_IMPLEMENTED; return LIS_ERR_NOT_IMPLEMENTED; }
-                if( method==LIS_ESOLVER_GLI && esolver->block_size==1 &&
-                    !esolver->options[LIS_EOPTIONS_RVAL] &&
-                    esolver->options[LIS_EOPTIONS_INNER_GENERALIZED_ESOLVER]!=LIS_ESOLVER_GII )
-                        { esolver->retcode=LIS_ERR_NOT_IMPLEMENTED; return LIS_ERR_NOT_IMPLEMENTED; }
-                if( v->gn!=x->gn || v->n!=x->n || v->is!=x->is ||
-                    v->ie!=x->ie || v->origin!=x->origin ||
-                    v->precision!=x->precision || v->nprocs!=x->nprocs )
-                        { esolver->retcode=LIS_ERR_ILL_ARG; return LIS_ERR_ILL_ARG; }
-        }
 
 	nesolver = esolver->options[LIS_EOPTIONS_ESOLVER];
 	niesolver = esolver->options[LIS_EOPTIONS_INNER_ESOLVER];
