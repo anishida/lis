@@ -130,3 +130,26 @@ A separate local power-of-two symmetric equilibration experiment gave
 41.0708539 s and 15,416 delays, with physical residual 7.44e-15. The
 reduction in delayed pivots was negligible, so this scaling policy is
 not included in the PR.
+
+## Fifth integration checkpoint: tiled Schur updates
+
+The AVX2 and AVX-512 paths pack immutable pivot couplings into fixed
+64-column tiles and reuse contiguous SIMD loads in place of repeated
+strided gathers. The tile width is divisible by both vector lengths,
+preserving vector group boundaries and each lane's arithmetic. The
+reference kernel, long-double fallback, pivot acceptance, growth checks
+and factor budgets are unchanged. Scratch storage is two 64-double arrays
+(1 KiB per active kernel). This is per-pivot cache tiling, not a delayed
+multi-pivot BLAS-3 update.
+
+On the same private 152,592-DOF shifted CalculiX system, sequential local
+single-run A/B observations with the same native LIS build gave 40.9835579 s
+(before) and 38.1748061 s (tiled) setup, a 6.9% reduction. Peak RSS was
+744592 and 744524 KiB; both runs used 22,172,255 numeric factor slots,
+15,473 delayed pivots, one FGMRES iteration, physical relative residual
+7.2414170947189105e-15 and forward error 4.8939654672876622e-12 in the
+recorded precision. No statistically qualified speedup or eigenpair claim
+is made. The added tests exercise multiple tile boundaries, rank-one
+and rank-two updates and all SIMD remainders at nonzero pivot offsets.
+Local GCC release and Clang ASan/UBSan passed SIMD 1382/1382,
+multifrontal 543/543 and supernodal 783/783.

@@ -25,6 +25,13 @@ static void kernels(void){for(unsigned t=0;t<420;t++){size_t m=2+rnd()%96,w=1+t%
  /* rank-2 intermediate exceeds double range, final finite; true overflow;
     exact cancellation, subnormal outputs; vector-length tails. */
  for(unsigned t=0;t<4;t++){size_t m=19,w=2;double a[361]={0};for(size_t i=w;i<m;i++){for(size_t j=w;j<=i;j++)a[i*m+j]=a[j*m+i]=t==2?1: t==3?DBL_TRUE_MIN:DBL_MAX; a[i]=t==2?1:t==3?0:-1;a[i*m]=t==2?1:t==3?0:DBL_MAX;a[m+i]=t==0?1:0;a[i*m+1]=t==0?DBL_MAX:0;}compare(a,m,0,w,t!=1);}
+ /* Force multiple 64-column tiles, with nonzero pivot offsets and
+    every SIMD remainder. Exercise large rank-one/rank-two fronts. */
+ for(size_t n=125;n<=137;n++)for(size_t w=1;w<=2;w++){
+  size_t k=3,m=n+k+w;double *a=calloc(m*m,sizeof *a);CHECK(a);
+  for(size_t i=k+w;i<m;i++){for(size_t j=k+w;j<=i;j++)a[i*m+j]=a[j*m+i]=v();for(size_t l=0;l<w;l++){a[(k+l)*m+i]=v();a[i*m+k+l]=v();}}
+  compare(a,m,k,w,1);free(a);
+ }
  CHECK(!p66_set_mode((p66_mode)99));tests++;CHECK(p66_set_mode(P66_AUTO));CHECK(fesetround(FE_DOWNWARD)==0&&p66_effective_mode()==P66_REFERENCE);CHECK(fesetround(FE_TONEAREST)==0);tests++;
 }
 static void solve(p56_context *ctx,uint32_t n,const size_t *cp,const uint32_t *ri,const double *a){double *x=malloc(n*sizeof *x),*b=calloc(n,sizeof *b),*y=malloc(n*sizeof *y),*w=malloc(n*sizeof *w);long double *r=calloc(n,sizeof *r),*d=calloc(n,sizeof *d);CHECK(x&&b&&y&&w&&r&&d);for(uint32_t i=0;i<n;i++)x[i]=((int)(i%19)-9)/11.;for(uint32_t j=0;j<n;j++)for(size_t z=cp[j];z<cp[j+1];z++){uint32_t i=ri[z];b[i]+=a[z]*x[j];if(i!=j)b[j]+=a[z]*x[i];}CHECK(!p56_apply(ctx,b,y,w,n));for(uint32_t i=0;i<n;i++){double e=fabs(x[i]-y[i]);CHECK(e<1e-9);if(e>max_x)max_x=e;r[i]=-b[i];d[i]=fabsl(b[i]);}for(uint32_t j=0;j<n;j++)for(size_t z=cp[j];z<cp[j+1];z++){uint32_t i=ri[z];long double q=(long double)a[z]*y[j];r[i]+=q;d[i]+=fabsl(q);if(i!=j){q=(long double)a[z]*y[i];r[j]+=q;d[j]+=fabsl(q);}}for(uint32_t i=0;i<n;i++){long double e=d[i]?fabsl(r[i])/d[i]:0;CHECK(e<1e-12L);if(e>max_back)max_back=e;}free(x);free(b);free(y);free(w);free(r);free(d);}
