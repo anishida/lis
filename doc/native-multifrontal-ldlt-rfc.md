@@ -1,6 +1,6 @@
 # RFC: opt-in native multifrontal LDLT preconditioner
 
-Status: design proposal; the standalone numerical prototype has not been imported into LIS. This document is not an implementation of a new preconditioner.
+Status: draft proposal with the standalone RC1 numerical prototype imported under `experimental/native-ldlt/`. The prototype is not yet registered or built as a LIS preconditioner.
 
 ## Motivation
 
@@ -33,8 +33,8 @@ Distributed MPI factorization, complex and extended precision, experimental Open
 
 ## Current evidence
 
-A separate C11 research prototype (stages 55–70) exists with standalone numerical and sanitizer regression logs. These are not upstream LIS CI results. The source import, adapter registration, build integration and upstream testing remain open. No speedup, memory reduction or production readiness is claimed for LIS or CalculiX.
+A separate C11 research prototype (stages 55–70) exists with standalone numerical and sanitizer regression logs. These are not upstream LIS CI results. The standalone source import is complete. Native adapter registration, build integration and upstream testing remain open. No speedup, memory reduction or production readiness is claimed for LIS or CalculiX.
 
 ## Question for maintainers
 
-Would an opt-in, bounded, serial symmetric-indefinite factorization preconditioner fit LIS's scope? Feedback on the API surface, naming, and reuse lifecycle is welcome before importing the numerical implementation.
+Would an opt-in, bounded, serial symmetric-indefinite factorization preconditioner fit LIS's scope? Feedback on the API surface, naming, and reuse lifecycle is welcome before integrating the imported numerical implementation into LIS.
