@@ -50,7 +50,7 @@ jobs:
             "$d"/lis_ldlt_user_bridge.c "$d"/test_lis_ldlt_bridge.c \
             "$d"/packed_ldlt.c "$d"/lis_adapter.c "$d"/multifrontal_ldlt.c \
             "$d"/schur_simd.c "$d"/symbolic_ldlt.c src/.libs/liblis.a -lm -o ldlt-lis-test
-          ./ldlt-lis-test | tee ldlt-lis.log
+          ./ldlt-lis-test 2>&1 | tee ldlt-lis.log
           grep -Fx LDLT_LIS_BRIDGE=PASS ldlt-lis.log
       - uses: actions/upload-artifact@v4
         if: always()

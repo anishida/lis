@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #if !defined(USE_MPI) && !defined(_COMPLEX) && !defined(USE_COMPLEX) && !defined(_LONG__DOUBLE) && !defined(USE_QUAD_PRECISION)
 typedef struct {
@@ -76,7 +77,7 @@ static LIS_INT create(LIS_SOLVER solver,LIS_PRECON p)
     col[A->n]=z;
     {
         int e=p62_factorize(&s->factor,(uint32_t)A->n,z,col,row,val,&sl,&nl,NULL);
-        if(e){rc=e==P55_NOMEM?LIS_OUT_OF_MEMORY:LIS_BREAKDOWN;goto done;}
+        if(e){fprintf(stderr,"LDLT factorization status=%d\n",e);rc=e==P55_NOMEM?LIS_OUT_OF_MEMORY:LIS_BREAKDOWN;goto done;}
     }
     s->matrix=A;
     rc=lis_matrix_get_generation(A,&s->structure,&s->value);
@@ -97,7 +98,7 @@ static LIS_INT apply(LIS_SOLVER solver,LIS_VECTOR b,LIS_VECTOR x)
     if(!s||solver->A!=s->matrix||b->n!=s->matrix->n||x->n!=b->n||
        !b->value||!x->value)return LIS_ERR_ILL_ARG;
     if(lis_matrix_get_generation(s->matrix,&sg,&vg)||
-       sg!=s->structure||vg!=s->value)return LIS_ERR_ILL_ARG;
+       sg!=s->structure||vg!=s->value){fprintf(stderr,"LDLT stale factor\n");return LIS_ERR_ILL_ARG;}
     return p56_apply(s->factor,b->value,x->value,s->scratch,(size_t)b->n)
         ?LIS_BREAKDOWN:LIS_SUCCESS;
 }
