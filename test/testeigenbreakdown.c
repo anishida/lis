@@ -7925,6 +7925,100 @@ cleanup:
 }
 
 
+#if !defined(_COMPLEX) && !defined(USE_COMPLEX)
+/*
+ * The deterministic initial block has even and odd index supports.
+ * For A=diag(2,4,2,8), B=I and a two-dimensional block projection,
+ * the even vector is exact (lambda=2); the odd Ritz vector mixes
+ * distinct eigenvalues and cannot pass physical certification.
+ */
+static LIS_INT
+test_transformed_block_requested_nev(void)
+{
+    LIS_MATRIX A = NULL, B = NULL;
+    LIS_VECTOR x = NULL;
+    LIS_ESOLVER esolver = NULL;
+    LIS_SCALAR lambda;
+    LIS_INT err, status, mode, n;
+    const LIS_INT transforms[] = {
+        LIS_EIGEN_TRANSFORM_SHIFT_INVERT,
+        LIS_EIGEN_TRANSFORM_BUCKLING
+    };
+    const char *options[] = {
+        "-ss 2 -nev 0", "-ss 2 -nev 1", "-ss 2 -nev 2"
+    };
+    const LIS_INT expected[] = {LIS_MAXITER,LIS_SUCCESS,LIS_MAXITER};
+
+    err = block_lanczos_test_diag4(&A,2.0,4.0,2.0,8.0);
+    if( err ) goto cleanup;
+    err = block_lanczos_test_diag4(&B,1.0,1.0,1.0,1.0);
+    if( err ) goto cleanup;
+
+    for(mode=0;mode<2;mode++)
+    {
+        for(n=0;n<3;n++)
+        {
+            err = block_lanczos_test_setup(A,transforms[mode],1.0,0,
+                                          &esolver,&x);
+            if( err ) goto cleanup;
+            err = lis_esolver_set_option((char *)options[n],esolver);
+            if( err ) goto cleanup;
+            err = lis_esolver_set_linear_options("-i bicg -p none",esolver);
+            if( err ) goto cleanup;
+            err = lis_gesolve(A,B,x,&lambda,esolver);
+            if( err ) goto cleanup;
+            err = lis_esolver_get_status(esolver,&status);
+            if( err ) goto cleanup;
+            if( status!=expected[n] || esolver->nev!=2 ||
+                fabs((double)(block_lanczos_test_real(esolver->evalue[0])-2.0))>1.0e-8 ||
+                !isfinite((double)esolver->resid[0]) ||
+                !isfinite((double)esolver->resid[1]) ||
+                esolver->resid[0]>1.0e-10 || esolver->resid[1]<=1.0e-10 )
+            {
+                printf("FAIL: transformed Block GLI NEV mode=%D request=%D status=%D\n",
+                       mode,n,status);
+                err = LIS_FAILS;
+                goto cleanup;
+            }
+            lis_esolver_destroy(esolver);
+            esolver = NULL;
+            lis_vector_destroy(x);
+            x = NULL;
+        }
+    }
+
+    /* A deliberately invalid nested option must be parsed, not ignored. */
+    err = block_lanczos_test_setup(A,LIS_EIGEN_TRANSFORM_SHIFT_INVERT,
+                                  1.0,0,&esolver,&x);
+    if( err ) goto cleanup;
+    err = lis_esolver_set_linear_options("-i invalid_buckle_test_solver",esolver);
+    if( err ) goto cleanup;
+    err = lis_gesolve(A,B,x,&lambda,esolver);
+    if( err!=LIS_ERR_ILL_ARG )
+    {
+        if( err ) goto cleanup;
+        err = lis_esolver_get_status(esolver,&status);
+        if( err ) goto cleanup;
+        if( status!=LIS_ERR_ILL_ARG )
+        {
+            printf("FAIL: transformed Block GLI ignored invalid inner options\n");
+            err = LIS_FAILS;
+            goto cleanup;
+        }
+    }
+    printf("PASS: transformed Block GLI requested NEV and inner options\n");
+    err = LIS_SUCCESS;
+
+cleanup:
+    if( esolver ) lis_esolver_destroy(esolver);
+    if( x ) lis_vector_destroy(x);
+    if( B ) lis_matrix_destroy(B);
+    if( A ) lis_matrix_destroy(A);
+    return err;
+}
+#endif
+
+
 int
 main(
     int argc,
@@ -8318,6 +8412,13 @@ main(
     printf(
         "SKIP: transformed generalized Block Lanczos regressions are not implemented for complex scalar builds\n");
 #else
+    if( test_transformed_block_requested_nev()!=LIS_SUCCESS )
+    {
+        printf("LIS_EIGEN_BLOCK_LANCZOS_NEV_REGRESSION FAILED\n");
+        lis_finalize();
+        return 1;
+    }
+
     if( check_generalized_block_lanczos_regression()!=LIS_SUCCESS )
     {
         printf("LIS_EIGEN_BLOCK_LANCZOS_REGRESSION FAILED\n");

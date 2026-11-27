@@ -4003,6 +4003,7 @@ static LIS_INT lis_egli_transformed(LIS_ESOLVER esolver)
 	resid0 = 0.0;
 
 	err = lis_esolver_create(&esolver2);
+	if( err ) goto cleanup;
 
 			if( esolver->refine_linear_options &&
 			    esolver->refine_linear_options[0] )
@@ -6666,13 +6667,20 @@ lis_egli_block_transformed_project_results(
         esolver->resid[i] =
             cert_resid;
 
+        /* Only explicitly requested Ritz pairs determine convergence. */
         if( cert_resid>cert_tol &&
+            (!esolver->requested_nev_active ||
+             esolver->requested_nev<=0 || i<esolver->requested_nev) &&
             final_status==LIS_SUCCESS )
         {
             final_status =
                 LIS_MAXITER;
         }
     }
+
+    if( esolver->requested_nev_active &&
+        esolver->requested_nev>projected_dim )
+        final_status = LIS_MAXITER;
 
     esolver->retcode =
         final_status;
@@ -7060,6 +7068,12 @@ lis_egli_block_transformed(
     lis_solver_set_option(
         "-i bicg -p none",
         solver);
+
+    if( esolver->linear_options && esolver->linear_options[0] )
+    {
+        err = lis_solver_set_option(esolver->linear_options,solver);
+        if( err ) goto cleanup;
+    }
 
     err = lis_solver_set_optionC(
         solver);
