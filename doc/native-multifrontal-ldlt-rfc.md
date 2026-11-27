@@ -80,3 +80,28 @@ cases, including numerical solves and resource rejection. A private
 (21,108,420 symbolic off-diagonal L slots, maximum front 1485); a full
 numeric solve was not established in the preliminary observation window.
 No full-size LDLT success or application-level eigenpair claim is made.
+
+## Third integration checkpoint: SIMD Schur update fast path
+
+For ordinary finite, normal SIMD lanes, the rank-one/rank-two update now
+uses vector range and cancellation checks, contiguous lower-triangle stores,
+symmetric mirrored stores, and a vector maximum reduction. Mixed or unsafe
+vectors retain the existing long-double fallback, as do triangular tails.
+The runtime mode selection, scalar reference, pivot policy, workspace and
+factor budgets are unchanged. The full-matrix local experiment uses AVX2.
+
+On the same private 152,592-DOF shifted CalculiX linear system and the same
+QMD/width-32 path, preliminary single-run setup time decreased from 68.815459
+to 46.4829149 seconds; solve time was 0.132695913 seconds, peak RSS 744492 KiB,
+22,172,255 numeric factor slots and 15,473 delayed pivots. The physical
+relative residual (7.2414170947189105e-15), relative forward error
+(4.8939654672876622e-12), and one FGMRES iteration were unchanged in the
+recorded precision. These are local observations, not statistically
+qualified performance or buckling-eigenpair results.
+
+The local SIMD regression passed 1330/1330 in GCC release and Clang
+ASan/UBSan with AVX2 and AVX-512 available. A GCC 14 ASan crash was reproduced
+in both the previous and modified AVX-512 paths on the local VM; its cause
+is not established. The dedicated CI adds runtime SIMD regression using
+GCC release and Clang ASan/UBSan, alongside existing portable bridge and
+QMD checks. Runtime SIMD availability depends on the runner hardware.

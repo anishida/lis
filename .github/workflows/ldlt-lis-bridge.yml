@@ -33,7 +33,7 @@ jobs:
           set -euo pipefail
           apt_options=(-o Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=- -o Acquire::Retries=3)
           sudo apt-get "${apt_options[@]}" update
-          sudo apt-get "${apt_options[@]}" install -y build-essential autoconf automake libtool libtool-bin
+          sudo apt-get "${apt_options[@]}" install -y build-essential autoconf automake libtool libtool-bin clang
       - name: Build native LIS and application-linked bridge
         run: |
           set -euo pipefail
@@ -57,6 +57,17 @@ jobs:
             "$d"/lis_adapter.c "$d"/multifrontal_ldlt.c "$d"/schur_simd.c "$d"/symbolic_ldlt.c -lm -o ldlt-qmd-test
           ./ldlt-qmd-test 2>&1 | tee ldlt-qmd.log
           grep -q "^quotient ordering 900/900 PASS" ldlt-qmd.log
+          # Exercise actual runtime SIMD dispatch as well as the portable bridge.
+          # Clang is used for the vector sanitizer test (GCC 14 ASan crashes
+          # on the original AVX-512 intrinsic stack path on the development VM).
+          simd_cc=cc
+          if [ '${{ matrix.mode }}' = sanitizer ]; then simd_cc=clang; fi
+          "$simd_cc" -std=c11 -Wall -Wextra -Werror $flags $link -I"$d" \
+            "$d"/test_simd.c "$d"/minimum_degree.c "$d"/nested_dissection.c \
+            "$d"/packed_ldlt.c "$d"/lis_adapter.c "$d"/multifrontal_ldlt.c \
+            "$d"/schur_simd.c "$d"/symbolic_ldlt.c -lm -o ldlt-simd-test
+          ./ldlt-simd-test 2>&1 | tee ldlt-simd.log
+          grep -Eq '^SIMD [0-9]+/[0-9]+ PASS' ldlt-simd.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -64,3 +75,4 @@ jobs:
           path: |
             ldlt-lis.log
             ldlt-qmd.log
+            ldlt-simd.log
