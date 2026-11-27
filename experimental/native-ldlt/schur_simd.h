@@ -13,4 +13,6 @@ typedef int (*p66_kernel)(double *,size_t,size_t,size_t,long double *);
 p66_kernel p66_select_kernel(void);
 /* Active symmetric front stored in its lower triangle only. */
 p66_kernel p66_select_kernel_lower(void);
+/* Experimental per-calling-thread setting; default 1. No nested teams. */
+int p66_set_threads(unsigned n);
 #endif
