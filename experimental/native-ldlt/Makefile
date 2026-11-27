@@ -10,7 +10,7 @@ sanitize:
 	$(SAN_CC) -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer packed_ldlt.c test_packed.c -lm -o test_packed_san
 	./test_packed_san
 clean:
-	rm -f test_certificate test_certificate_san test_bridge test_bridge_san test_memory_cache test_memory_cache_san cache_scalar.o cache_scalar_san.o test68_tsan test_parallel test_parallel_san test_simd test_simd_san test_simd_portable test_supernodal test_supernodal_san test_nd test_nd_san test_ordering test_ordering_san test_symbolic test_symbolic_san test_multifrontal test_multifrontal_san test_delayed test_delayed_san test_bk test_bk_san test_pivot test_pivot_san test_cache test_cache_san test_packed test_packed_san test_adapter test_adapter_san
+	rm -f test_qmd_plan test_qmd_plan_san test_schur_omp test_schur_omp_san test_certificate test_certificate_san test_bridge test_bridge_san test_memory_cache test_memory_cache_san cache_scalar.o cache_scalar_san.o test68_tsan test_parallel test_parallel_san test_simd test_simd_san test_simd_portable test_supernodal test_supernodal_san test_nd test_nd_san test_ordering test_ordering_san test_symbolic test_symbolic_san test_multifrontal test_multifrontal_san test_delayed test_delayed_san test_bk test_bk_san test_pivot test_pivot_san test_cache test_cache_san test_packed test_packed_san test_adapter test_adapter_san
 .PHONY: adapter adapter-sanitize all-check
 adapter: test_adapter
 	./test_adapter
@@ -167,3 +167,20 @@ certificate-sanitize:
 	$(CC) -std=c11 -Wall -Wextra -Werror -O1 -g -fopenmp -fsanitize=address,undefined -fno-omit-frame-pointer -no-pie $(CERT_SRC) -lm -o test_certificate_san
 	./test_certificate_san
 stage70-check: stage69-check certificate certificate-sanitize
+
+# Explicit experimental symbolic-plan and Schur tile tests. These are
+# not part of the installed library or the default build.
+PLAN_SRC=qmd_plan.c minimum_degree.c packed_ldlt.c lis_adapter.c multifrontal_ldlt.c schur_simd.c symbolic_ldlt.c test_qmd_plan.c
+.PHONY: qmd-plan schur-omp qmd-plan-sanitize schur-omp-sanitize
+qmd-plan:
+	$(CC) $(CFLAGS) -DP66_DISABLE_SIMD $(PLAN_SRC) -lm -o test_qmd_plan
+	./test_qmd_plan
+qmd-plan-sanitize:
+	$(SAN_CC) -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -DP66_DISABLE_SIMD $(PLAN_SRC) -lm -o test_qmd_plan_san
+	./test_qmd_plan_san
+schur-omp:
+	$(CC) $(CFLAGS) -fopenmp test_schur_omp.c schur_simd.c -lm -o test_schur_omp
+	OMP_DYNAMIC=FALSE OMP_NUM_THREADS=4 ./test_schur_omp
+schur-omp-sanitize:
+	$(CC) -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fopenmp -no-pie test_schur_omp.c schur_simd.c -lm -o test_schur_omp_san
+	OMP_DYNAMIC=FALSE OMP_NUM_THREADS=4 ./test_schur_omp_san

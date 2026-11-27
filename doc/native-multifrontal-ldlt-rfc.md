@@ -240,3 +240,86 @@ Two alternative local structural-zero SIMD fast paths gave 33.8219349 s
 and 32.406774 s, respectively. Neither demonstrated a useful full-size
 benefit; neither is included in this change. The new tests retain coverage
 of signed zeros without modifying the existing numerical fallback.
+
+## Ninth integration checkpoint: optional Schur OpenMP and symbolic reuse
+
+The application-linked bridge remains opt-in. Existing installed headers,
+public structure layouts, default solver behavior and mandatory
+dependencies are unchanged.
+
+The AVX2 lower-only Schur kernel can dispatch independent 64-column tiles
+to an OpenMP team for trailing dimensions of at least 384. Pivot selection,
+front assembly and factor construction stay serial; tiles write disjoint
+lower-triangle columns, and the team joins before the next pivot. The
+worker floating-point environment is set from the caller and restored.
+The maximum and success reductions retain the existing numeric failure
+contract. There are no nested teams. Reference/AVX-512 modes and small
+fronts remain serial. Build the experimental sources with `-fopenmp`
+and opt in via `lis_ldlt_experimental_set_threads(4)` before setup.
+The per-calling-thread default is one. This is not distributed or
+concurrent application of one preconditioner.
+
+The new `p71_plan` retains the complete original CSC pattern, ordered
+pattern, scatter map, permutation, elimination tree and split supernodes.
+Refresh compares dimensions and the full original pattern byte-for-byte
+and constructs new numeric factors with dynamic pivoting; L/D entries and
+pivot decisions are not frozen. Failure preserves the prior factor and
+stats. The additional plan allocation limit is 256 MiB in the bridge;
+phase-local workspace bounds do not account for total process RSS,
+OpenMP runtime allocations or simultaneously live old/new factors.
+
+Applications may register both experimental names with
+`lis_ldlt_experimental_register()` after `lis_initialize`:
+
+- `-i fgmres -p ldltexp -scale none`: fresh analysis and factorization.
+- `-i fgmres -p ldltexpr -scale none`: retain a symbolic plan.
+  The application owns the preconditioner, calls
+  `lis_matrix_mark_values_changed(A)` after a value update,
+  `lis_ldlt_experimental_refresh(solver, precon)`, then
+  `lis_solve_kernel(A, b, x, solver, precon)` on success.
+  Destroy/recreate on a structure generation change; a failed refresh
+  leaves the old factor stale and cannot be used for the new generation.
+  This is explicit application-linked refresh, not automatic
+  `lis_solve_sequence` refresh or a built-in preconditioner.
+
+The application must serialize matrix changes, registration, setup,
+refresh, apply and destruction. Both modes remain restricted to the
+previous real-double symmetric assembled CSR GMRES/FGMRES scope.
+
+Local GCC release and ASan/UBSan passed Schur OpenMP 121/121 and QMD
+plan 32/32. The native refresh fixture passed release and ASan/UBSan
+(adapter instrumented against a release LIS library locally); full
+library instrumentation is part of the dedicated CI. The local GCC
+ThreadSanitizer/libgomp run reported races and timed out; the OpenMP path
+remains experimental and is not claimed race-sanitizer qualified.
+An independent LLVM/Archer diagnostic is appropriate before production use.
+
+Private 152,592-DOF shifted CalculiX matrix observations (same native
+linear-system harness, single runs): setup 31.3064291, 26.467665 and
+21.3962982 seconds for 1, 2 and 4 requested threads, respectively.
+All achieved one FGMRES iteration, relative physical residual
+7.2414170947189105e-15, forward error 4.8939654672876622e-12,
+22,172,255 factor slots and 15,473 delays in recorded precision.
+
+Two shifts differing by 1%, fixed input pattern, four requested
+threads: fresh setup 21.7329481 + 18.6551208 s; explicit symbolic
+reuse setup 20.365051 + 17.900686 s. Both paths certified the same
+physical relative residuals (7.24e-15 and 4.21e-15) with one
+FGMRES iteration per system, despite changed numeric pivot decisions.
+Peak RSS 875192 KiB fresh and 1122260 KiB reuse; atomic replacement
+retains the previous factor during numeric refresh. These are
+single-run measurements, not a general speedup or memory guarantee.
+
+An independent local ARPACK experiment used the native factor for
+the inverse action in the transformed problem
+`sigma * (K - sigma G)^(-1) G`, with
+`sigma = 4296248570.279691`. Six real eigenpairs near the shift
+were recovered and independently certified against the original
+pencil `K x = lambda G x`:
+maximum normalized physical eigenpair residual 1.40e-12,
+maximum relative Rayleigh quotient difference 1.38e-14,
+25 inverse applications and maximum linear residual 4.32e-9.
+This is a full-size pencil validation, not verification of the
+native GLI implementation, complete eigenvalue spectrum, first
+physical buckling load, or end-to-end CalculiX run. Private input
+matrices and mode vectors are not included in the repository.

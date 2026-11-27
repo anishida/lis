@@ -49,9 +49,34 @@ jobs:
           cc -std=c11 -DHAVE_CONFIG_H -DP66_DISABLE_SIMD -Iinclude -I"$d" $flags $link \
             "$d"/lis_ldlt_user_bridge.c "$d"/test_lis_ldlt_bridge.c \
             "$d"/packed_ldlt.c "$d"/lis_adapter.c "$d"/multifrontal_ldlt.c \
-            "$d"/schur_simd.c "$d"/symbolic_ldlt.c "$d"/minimum_degree.c src/.libs/liblis.a -lm -o ldlt-lis-test
+            "$d"/schur_simd.c "$d"/symbolic_ldlt.c "$d"/minimum_degree.c "$d"/qmd_plan.c src/.libs/liblis.a -lm -o ldlt-lis-test
           ./ldlt-lis-test 2>&1 | tee ldlt-lis.log
           grep -Fx LDLT_LIS_BRIDGE=PASS ldlt-lis.log
+          cc -std=c11 -DHAVE_CONFIG_H -DP66_DISABLE_SIMD -Iinclude -I"$d" $flags $link \
+            "$d"/lis_ldlt_user_bridge.c "$d"/test_lis_ldlt_refresh.c "$d"/qmd_plan.c \
+            "$d"/packed_ldlt.c "$d"/lis_adapter.c "$d"/multifrontal_ldlt.c \
+            "$d"/schur_simd.c "$d"/symbolic_ldlt.c "$d"/minimum_degree.c src/.libs/liblis.a -lm -o ldlt-refresh-test
+          ./ldlt-refresh-test 2>&1 | tee ldlt-refresh.log
+          grep -Fx LDLT_LIS_REFRESH=PASS ldlt-refresh.log
+          cc -std=c11 -Wall -Wextra -Werror -DP66_DISABLE_SIMD $flags $link -I"$d" \
+            "$d"/test_qmd_plan.c "$d"/qmd_plan.c "$d"/minimum_degree.c "$d"/packed_ldlt.c \
+            "$d"/lis_adapter.c "$d"/multifrontal_ldlt.c "$d"/schur_simd.c "$d"/symbolic_ldlt.c -lm -o ldlt-plan-test
+          ./ldlt-plan-test 2>&1 | tee ldlt-plan.log
+          grep -Fx 'QMD plan 32/32 PASS' ldlt-plan.log
+          # Only the AVX2 lower path uses the optional OpenMP team. The
+          # standalone AVX2 suite includes range errors and nested calls.
+          cc -std=c11 -Wall -Wextra -Werror -fopenmp $flags $link -I"$d" \
+            "$d"/test_schur_omp.c "$d"/schur_simd.c -lm -o ldlt-omp-test
+          set +e
+          OMP_NUM_THREADS=4 OMP_DYNAMIC=FALSE ./ldlt-omp-test 2>&1 | tee ldlt-omp.log
+          omp_rc=${PIPESTATUS[0]}
+          set -e
+          if [ "$omp_rc" -eq 77 ]; then
+            grep -Fx 'OpenMP AVX2 unavailable: SKIP' ldlt-omp.log
+          else
+            test "$omp_rc" -eq 0
+            grep -Fx 'Schur OpenMP 121/121 PASS' ldlt-omp.log
+          fi
           cc -std=c11 -Wall -Wextra -Werror -DP66_DISABLE_SIMD $flags $link -I"$d" \
             "$d"/test_quotient_ordering.c "$d"/minimum_degree.c "$d"/packed_ldlt.c \
             "$d"/lis_adapter.c "$d"/multifrontal_ldlt.c "$d"/schur_simd.c "$d"/symbolic_ldlt.c -lm -o ldlt-qmd-test
@@ -84,6 +109,9 @@ jobs:
           name: ldlt-lis-${{ matrix.mode }}
           path: |
             ldlt-lis.log
+            ldlt-refresh.log
+            ldlt-plan.log
+            ldlt-omp.log
             ldlt-qmd.log
             ldlt-simd.log
             ldlt-multifrontal.log
