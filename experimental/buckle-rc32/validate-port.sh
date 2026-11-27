@@ -35,6 +35,19 @@ run_case() {
     status=FAIL; failed=1
     cat "$log"
   fi
+  # A successful solve alone could hide a fallback to legacy factors.
+  # Verify actual selection and numerical refresh on the positive cases.
+  if [[ $status == PASS ]]; then
+    if ! grep -q 'ILUTP_SYMBOLIC full LU selected' "$log"; then
+      echo "Missing symbolic LU activation: $log"
+      status=FAIL; failed=1
+    elif [[ $kind == direct || $kind == sequence || $kind == rebuild ]]; then
+      if [[ $(grep -c '^REUSE verify=' "$log") -ne 2 ]]; then
+        echo "Expected two numerical refreshes: $log"
+        status=FAIL; failed=1
+      fi
+    fi
+  fi
   printf '%s,%s,%s,%s,%s\n' "$mode" "$OMP_NUM_THREADS" "$kind" "$id" "$status" >> summary.csv
 }
 for nt in "${threads[@]}"; do

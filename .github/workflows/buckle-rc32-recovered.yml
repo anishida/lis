@@ -70,3 +70,64 @@ jobs:
           name: rc32-${{ matrix.suffix }}
           path: ${{ runner.temp }}/rc32-results/
           if-no-files-found: ignore
+
+  compatibility:
+    name: Legacy configuration / ABI (${{ matrix.mode }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: complex
+            options: '--enable-complex --disable-mpi'
+          - mode: wide-index
+            options: '--enable-longlong --disable-mpi'
+          - mode: complex-wide
+            options: '--enable-complex --enable-longlong --disable-mpi'
+          - mode: half
+            options: '--enable-half --disable-mpi'
+          - mode: mpi
+            options: '--enable-mpi MPICC=mpicc MPIRUN=mpiexec'
+    env:
+      OMP_NUM_THREADS: '1'
+      OMP_DYNAMIC: 'FALSE'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Public header matches upstream baseline exactly
+        run: git diff --exit-code 6a4ae9c11bb03b028a6477455cb4f9f0a790132d HEAD -- include/lis.h
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool libtool-bin openmpi-bin libopenmpi-dev
+      - name: Build from tracked Makefiles
+        env:
+          CONFIGURE_OPTIONS: ${{ matrix.options }}
+        run: |
+          ./configure --enable-test --disable-fortran --disable-f90 --disable-saamg --disable-omp $CONFIGURE_OPTIONS
+          make -j2
+      - name: Legacy ILUTP and MFAMG capability checks without experimental flags
+        if: matrix.mode != 'mpi'
+        run: |
+          ./test/testilutp
+          ./test/testmfamgilutp
+          ./test/testeigenbreakdown
+      - name: MPI smoke tests (single rank)
+        if: matrix.mode == 'mpi'
+        run: |
+          ./test/testeigenbreakdown
+          ./test/testmfamgilutp
+      - name: Full legacy test suite
+        if: matrix.mode != 'mpi'
+        run: make -j2 check
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: rc32-compat-${{ matrix.mode }}-logs
+          path: |
+            config.log
+            test/test-suite.log
+            test/*.log
+          if-no-files-found: ignore
