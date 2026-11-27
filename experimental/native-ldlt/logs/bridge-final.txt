@@ -1,0 +1,8 @@
+cc -O3 -std=c11 -Wall -Wextra -Werror -fopenmp packed_ldlt.c lis_adapter.c multifrontal_ldlt.c schur_simd.c symbolic_ldlt.c minimum_degree.c nested_dissection.c parallel_ldlt.c buckle_bridge.c test_bridge.c -lm -o test_bridge
+cc -std=c11 -Wall -Wextra -Werror -O1 -g -fopenmp -fsanitize=address,undefined -fno-omit-frame-pointer -no-pie packed_ldlt.c lis_adapter.c multifrontal_ldlt.c schur_simd.c symbolic_ldlt.c minimum_degree.c nested_dissection.c parallel_ldlt.c buckle_bridge.c test_bridge.c -lm -o test_bridge_san
+./test_bridge
+large n=152592 input_k=457774 input_g=152592 shifted_nnz=305183 conversion_bytes=17700644 numeric_bytes=23350680 threads=1 factorize_wall=0.184543 s apply_wall=0.002548 s
+bridge 436/436 PASS max_x=5.551e-16 max_componentwise_backward=4.051e-16
+./test_bridge_san
+large n=152592 input_k=457774 input_g=152592 shifted_nnz=305183 conversion_bytes=17700644 numeric_bytes=23350680 threads=1 factorize_wall=0.687386 s apply_wall=0.006746 s
+bridge 436/436 PASS max_x=5.551e-16 max_componentwise_backward=4.051e-16

@@ -1,0 +1,15 @@
+cc -O3 -std=c11 -Wall -Wextra -Werror -fopenmp packed_ldlt.c lis_adapter.c multifrontal_ldlt.c schur_simd.c symbolic_ldlt.c minimum_degree.c nested_dissection.c parallel_ldlt.c buckle_bridge.c mode_certificate.c test_certificate.c -lm -o test_certificate
+./test_certificate
+sigma=0.25 mode=1 lambda=1 original_residual=9.614e-17 PASS
+sigma=0.25 mode=2 lambda=2 original_residual=6.939e-18 PASS
+sigma=0.25 mode=3 lambda=3 original_residual=8.677e-17 PASS
+sigma=0.25 mode=4 lambda=4 original_residual=2.209e-17 PASS
+sigma=0.25 mode=5 lambda=5 original_residual=2.106e-17 PASS
+sigma=0.25 mode=6 lambda=6 original_residual=2.000e-17 PASS
+sigma=5.30 mode=1 lambda=5 original_residual=2.106e-17 PASS
+sigma=5.30 mode=2 lambda=6 original_residual=1.340e-17 PASS
+sigma=5.30 mode=3 lambda=4 original_residual=6.487e-140 PASS
+sigma=5.30 mode=4 lambda=7 original_residual=6.567e-17 PASS
+sigma=5.30 mode=5 lambda=3 original_residual=7.401e-17 PASS
+sigma=5.30 mode=6 lambda=8 original_residual=1.518e-17 PASS
+certificate 884/884 PASS max_original_residual=1.457e-16 max_eigenvalue_error=8.882e-16

@@ -1,0 +1,31 @@
+==================
+WARNING: ThreadSanitizer: data race (pid=12114)
+  Read of size 4 at 0x728000000aa8 by thread T1:
+    #0 p67_numeric._omp_fn.0 /mnt/data/lis_stage68/parallel_ldlt.c:217 (test68_tsan+0x4127ac) (BuildId: 23b310d822b4a5304833d6ab666a373e1189f780)
+    #1 <null> <null> (libgomp.so.1+0x217cd) (BuildId: abac9c46bfe169c31d97018db81b5386bdf38a17)
+
+  Previous write of size 4 at 0x728000000aa8 by main thread:
+    #0 p67_numeric._omp_fn.0 /mnt/data/lis_stage68/parallel_ldlt.c:214 (test68_tsan+0x41206b) (BuildId: 23b310d822b4a5304833d6ab666a373e1189f780)
+    #1 GOMP_parallel <null> (libgomp.so.1+0x17fe5) (BuildId: abac9c46bfe169c31d97018db81b5386bdf38a17)
+    #2 p67_factorize /mnt/data/lis_stage68/parallel_ldlt.c:273 (test68_tsan+0x417637) (BuildId: 23b310d822b4a5304833d6ab666a373e1189f780)
+    #3 random_case /mnt/data/lis_stage68/test_parallel.c:38 (test68_tsan+0x4191e1) (BuildId: 23b310d822b4a5304833d6ab666a373e1189f780)
+    #4 main /mnt/data/lis_stage68/test_parallel.c:75 (test68_tsan+0x41b58f) (BuildId: 23b310d822b4a5304833d6ab666a373e1189f780)
+
+  Location is heap block of size 3952 at 0x728000000000 allocated by main thread:
+    #0 calloc ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:685 (libtsan.so.2+0x5179e) (BuildId: 99ef88596cb10a8ccf307fe1a9070f66a44b1624)
+    #1 alloc /mnt/data/lis_stage68/parallel_ldlt.c:28 (test68_tsan+0x41040c) (BuildId: 23b310d822b4a5304833d6ab666a373e1189f780)
+    #2 p67_numeric /mnt/data/lis_stage68/parallel_ldlt.c:182 (test68_tsan+0x414cf8) (BuildId: 23b310d822b4a5304833d6ab666a373e1189f780)
+    #3 p67_factorize /mnt/data/lis_stage68/parallel_ldlt.c:273 (test68_tsan+0x417637) (BuildId: 23b310d822b4a5304833d6ab666a373e1189f780)
+    #4 random_case /mnt/data/lis_stage68/test_parallel.c:38 (test68_tsan+0x4191e1) (BuildId: 23b310d822b4a5304833d6ab666a373e1189f780)
+    #5 main /mnt/data/lis_stage68/test_parallel.c:75 (test68_tsan+0x41b58f) (BuildId: 23b310d822b4a5304833d6ab666a373e1189f780)
+
+  Thread T1 (tid=12116, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1022 (libtsan.so.2+0x568a6) (BuildId: 99ef88596cb10a8ccf307fe1a9070f66a44b1624)
+    #1 <null> <null> (libgomp.so.1+0x21e06) (BuildId: abac9c46bfe169c31d97018db81b5386bdf38a17)
+    #2 p67_factorize /mnt/data/lis_stage68/parallel_ldlt.c:273 (test68_tsan+0x417637) (BuildId: 23b310d822b4a5304833d6ab666a373e1189f780)
+    #3 random_case /mnt/data/lis_stage68/test_parallel.c:38 (test68_tsan+0x4191e1) (BuildId: 23b310d822b4a5304833d6ab666a373e1189f780)
+    #4 main /mnt/data/lis_stage68/test_parallel.c:75 (test68_tsan+0x41b58f) (BuildId: 23b310d822b4a5304833d6ab666a373e1189f780)
+
+SUMMARY: ThreadSanitizer: data race /mnt/data/lis_stage68/parallel_ldlt.c:217 in p67_numeric._omp_fn.0
+==================
+exit=66

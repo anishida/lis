@@ -1,0 +1,220 @@
+cc -O3 -std=c11 -Wall -Wextra -Werror packed_ldlt.c test_packed.c -lm -o test_packed
+cc -O3 -std=c11 -Wall -Wextra -Werror packed_ldlt.c lis_adapter.c test_adapter.c -lm -o test_adapter
+clang -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer packed_ldlt.c test_packed.c -lm -o test_packed_san
+clang -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer packed_ldlt.c lis_adapter.c test_adapter.c -lm -o test_adapter_san
+cc -O3 -std=c11 -Wall -Wextra -Werror packed_ldlt.c lis_adapter.c factor_cache.c test_cache.c -lm -o test_cache
+clang -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer packed_ldlt.c lis_adapter.c factor_cache.c test_cache.c -lm -o test_cache_san
+./test_packed_san
+PASS 314/314
+max_abs_solution_error=7.7715611723760958e-16
+max_scaled_backward_error=2.0249764678922692e-16
+cc -O3 -std=c11 -Wall -Wextra -Werror packed_ldlt.c lis_adapter.c factor_cache.c pivot_ldlt.c test_pivot.c -lm -o test_pivot
+./test_adapter_san
+PASS 318/318
+max_abs_solution_error=6.6613381477509392e-16
+max_scaled_backward_error=1.458551164451569e-16
+clang -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer packed_ldlt.c lis_adapter.c factor_cache.c pivot_ldlt.c test_pivot.c -lm -o test_pivot_san
+cc -O3 -std=c11 -Wall -Wextra -Werror packed_ldlt.c lis_adapter.c factor_cache.c pivot_ldlt.c bk_ldlt.c test_bk.c -lm -o test_bk
+./test_cache_san
+PASS 560/560
+max_abs_solution_error=6.6613381477509392e-16
+max_scaled_backward_error=1.458551164451569e-16
+clang -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer packed_ldlt.c lis_adapter.c factor_cache.c pivot_ldlt.c bk_ldlt.c test_bk.c -lm -o test_bk_san
+cc -O3 -std=c11 -Wall -Wextra -Werror packed_ldlt.c lis_adapter.c factor_cache.c pivot_ldlt.c bk_ldlt.c delayed_ldlt.c test_delayed.c -lm -o test_delayed
+./test_pivot_san
+pivot: 461/461 PASS; generated pairs=1680 swaps=955; max solution error=4.441e-16; max backward error=1.520e-16
+clang -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer packed_ldlt.c lis_adapter.c factor_cache.c pivot_ldlt.c bk_ldlt.c delayed_ldlt.c test_delayed.c -lm -o test_delayed_san
+cc -O3 -std=c11 -Wall -Wextra -Werror packed_ldlt.c lis_adapter.c factor_cache.c multifrontal_ldlt.c schur_simd.c test_multifrontal.c -lm -o test_multifrontal
+clang -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer packed_ldlt.c lis_adapter.c factor_cache.c multifrontal_ldlt.c schur_simd.c test_multifrontal.c -lm -o test_multifrontal_san
+./test_bk_san
+BK: 648/648 PASS; random cases=600, stage58 success=600/600; direct=2393 secondary=191 alternate=776 pairs=1164 swaps=1660; max growth=9.357401e+00 max multiplier=5.313954e+00; max solution error=4.076e-13 max backward error=2.889e-16
+cc -O3 -std=c11 -Wall -Wextra -Werror packed_ldlt.c lis_adapter.c multifrontal_ldlt.c schur_simd.c symbolic_ldlt.c test_symbolic.c -lm -o test_symbolic
+clang -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer packed_ldlt.c lis_adapter.c multifrontal_ldlt.c schur_simd.c symbolic_ldlt.c test_symbolic.c -lm -o test_symbolic_san
+./test_delayed_san
+DELAY: 564/564 PASS; random split=400, sparse pairs=120; stage59 split success=40/400; rescued=360/400; delays=6236 pairs=1227 swaps=5196 peak_front=10 peak_pending=9; max growth=1.300686e+01; max solution error=2.782e-13 max backward error=3.238e-16
+cc -O3 -std=c11 -Wall -Wextra -Werror packed_ldlt.c lis_adapter.c multifrontal_ldlt.c schur_simd.c symbolic_ldlt.c minimum_degree.c test_ordering.c -lm -o test_ordering
+clang -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer packed_ldlt.c lis_adapter.c multifrontal_ldlt.c schur_simd.c symbolic_ldlt.c minimum_degree.c test_ordering.c -lm -o test_ordering_san
+./test_multifrontal_san
+cc -O3 -std=c11 -Wall -Wextra -Werror packed_ldlt.c lis_adapter.c multifrontal_ldlt.c schur_simd.c symbolic_ldlt.c minimum_degree.c nested_dissection.c test_nd.c -lm -o test_nd
+./test_symbolic_san
+large n=10000 nnz_lower=19999 front=2 slots=9999 workspace=1491044 cpu_factor=0.021248 s cpu_solve_and_verify=0.001251 s
+large n=152592 nnz_lower=305183 front=2 slots=152591 workspace=22737252 cpu_factor=0.419960 s cpu_solve_and_verify=0.044897 s
+grid 32x32 n=1024 nnz_lower=3008 front=33 slots=31775 workspace=896752
+large_indefinite n=152592 nnz_lower=228888 front=2 pairs=76296 delays=76296 slots=76296 workspace=20906128
+multifrontal 543/543 PASS, pairs=78657 delays=78659 max_x=8.549e-15 max_componentwise_backward=4.831e-16
+clang -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer packed_ldlt.c lis_adapter.c multifrontal_ldlt.c schur_simd.c symbolic_ldlt.c minimum_degree.c nested_dissection.c test_nd.c -lm -o test_nd_san
+symbolic n=152592 grid_side=0 nnz_lower=305183 slots=152591 supernodes=152591 max_front=2 peak_bytes=5493392 cpu=0.011013 s
+auto_factor n=152592 cpu_symbolic_numeric=0.411179 s numeric_peak_bytes=22737252
+symbolic n=1600 grid_side=40 nnz_lower=4720 slots=62439 supernodes=1560 max_front=41 peak_bytes=63764 cpu=0.000765 s
+auto_factor n=1600 cpu_symbolic_numeric=0.192619 s numeric_peak_bytes=1707248
+symbolic n=16384 grid_side=128 nnz_lower=48896 slots=2080895 supernodes=16256 max_front=129 peak_bytes=654420 cpu=0.014660 s
+symbolic 897/897 PASS max_x=1.554e-15 max_componentwise_backward=7.619e-16
+cc -O3 -std=c11 -Wall -Wextra -Werror packed_ldlt.c lis_adapter.c factor_cache.c multifrontal_ldlt.c schur_simd.c symbolic_ldlt.c minimum_degree.c nested_dissection.c test_supernodal.c -lm -o test_supernodal
+./test_ordering_san
+clang -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer packed_ldlt.c lis_adapter.c factor_cache.c multifrontal_ldlt.c schur_simd.c symbolic_ldlt.c minimum_degree.c nested_dissection.c test_supernodal.c -lm -o test_supernodal_san
+./test_nd_san
+cc -O3 -std=c11 -Wall -Wextra -Werror packed_ldlt.c lis_adapter.c multifrontal_ldlt.c schur_simd.c symbolic_ldlt.c minimum_degree.c nested_dissection.c test_simd.c -lm -o test_simd
+order n=152592 side=0 natural_slots=152591 md_slots=152591 natural_front=2 md_front=2 order_peak_bytes=7934840 pair_checks=0 cpu=0.111261 s
+factor n=152592 natural_cpu=0.433900 s md_cpu=0.575595 s natural_numeric_bytes=22737252 md_numeric_bytes=22737252 reorder_bytes=11597028
+order n=1600 side=40 natural_slots=62439 md_slots=19904 natural_front=41 md_front=63 order_peak_bytes=142520 pair_checks=245068 cpu=0.009096 s
+factor n=1600 natural_cpu=0.142038 s md_cpu=0.044883 s natural_numeric_bytes=1707248 md_numeric_bytes=707188 reorder_bytes=164224
+order n=16384 side=128 natural_slots=2080895 md_slots=400929 natural_front=129 md_front=244 order_peak_bytes=2029624 pair_checks=17940463 cpu=0.580376 s
+ordering 903/903 PASS max_x=1.554e-15 max_componentwise_backward=7.901e-16
+clang -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer packed_ldlt.c lis_adapter.c multifrontal_ldlt.c schur_simd.c symbolic_ldlt.c minimum_degree.c nested_dissection.c test_simd.c -lm -o test_simd_san
+./test_supernodal_san
+cc -O3 -std=c11 -Wall -Wextra -Werror -DP66_DISABLE_SIMD packed_ldlt.c lis_adapter.c multifrontal_ldlt.c schur_simd.c symbolic_ldlt.c minimum_degree.c nested_dissection.c test_simd.c -lm -o test_simd_portable
+order n=1600 side=40 method=0 selected=0 slots=62439 front=41 work=2602757 phase_bytes=63764 cpu=0.000877 s
+factor n=1600 method=0 cpu=0.190298 s numeric_bytes=1707248 front=41 slots=62439
+order n=1600 side=40 method=1 selected=1 slots=19904 front=63 work=551448 phase_bytes=142520 cpu=0.012189 s
+factor n=1600 method=1 cpu=0.054326 s numeric_bytes=707188 front=63 slots=19904
+order n=1600 side=40 method=2 selected=2 slots=22329 front=60 work=620687 phase_bytes=120008 cpu=0.002766 s
+factor n=1600 method=2 cpu=0.044627 s numeric_bytes=765700 front=60 slots=22329
+order n=1600 side=40 method=3 selected=1 slots=19904 front=63 work=551448 phase_bytes=142520 cpu=0.022386 s
+factor n=1600 method=3 cpu=0.049287 s numeric_bytes=707188 front=63 slots=19904
+order n=16384 side=128 method=0 selected=0 slots=2080895 front=129 work=269833853 phase_bytes=654420 cpu=0.015626 s
+order n=16384 side=128 method=1 selected=1 slots=400929 front=244 work=37100097 phase_bytes=2029624 cpu=0.476467 s
+order n=16384 side=128 method=2 selected=2 slots=357777 front=192 work=24308715 phase_bytes=1240072 cpu=0.028346 s
+order n=16384 side=128 method=3 selected=2 slots=357777 front=192 work=24308715 phase_bytes=1240072 cpu=0.533050 s
+order n=152592 side=0 method=0 selected=0 slots=152591 front=2 work=610365 phase_bytes=5493392 cpu=0.015332 s
+order n=152592 side=0 method=1 selected=1 slots=152591 front=2 work=610365 phase_bytes=8545140 cpu=0.199967 s
+order n=152592 side=0 method=2 selected=2 slots=305147 front=3 work=1373145 phase_bytes=8545140 cpu=0.267886 s
+order n=152592 side=0 method=3 selected=0 slots=152591 front=2 work=610365 phase_bytes=5493392 cpu=0.033182 s
+factor n=152592 method=3 cpu=0.457674 s numeric_bytes=22737252 front=2 slots=152591
+nested-dissection 938/938 PASS max_x=1.554e-15 max_componentwise_backward=7.619e-16
+cc -O3 -std=c11 -Wall -Wextra -Werror -fopenmp packed_ldlt.c lis_adapter.c multifrontal_ldlt.c schur_simd.c symbolic_ldlt.c minimum_degree.c nested_dissection.c parallel_ldlt.c test_parallel.c -lm -o test_parallel
+./test_simd_portable
+./test_simd_san
+AUTO=REFERENCE AVX2=0 AVX512=0
+SIMD 162/162 PASS max_kernel_rel=0.000e+00 max_x=1.221e-15 max_componentwise_backward=6.485e-16
+cc -std=c11 -Wall -Wextra -Werror -O1 -g -fopenmp -fsanitize=address,undefined -fno-omit-frame-pointer -no-pie packed_ldlt.c lis_adapter.c multifrontal_ldlt.c schur_simd.c symbolic_ldlt.c minimum_degree.c nested_dissection.c parallel_ldlt.c test_parallel.c -lm -o test_parallel_san
+AUTO=AVX2 AVX2=1 AVX512=1
+SIMD 1330/1330 PASS max_kernel_rel=8.663e-16 max_x=1.221e-15 max_componentwise_backward=6.485e-16
+cc -O3 -std=c11 -Wall -Wextra -Werror -DP68_CACHE_SCALAR -Dp57_save=scalar_save -Dp57_load=scalar_load -c factor_cache.c -o cache_scalar.o
+cc -O3 -std=c11 -Wall -Wextra -Werror -fopenmp packed_ldlt.c lis_adapter.c multifrontal_ldlt.c schur_simd.c symbolic_ldlt.c minimum_degree.c nested_dissection.c parallel_ldlt.c factor_cache.c test_memory_cache.c cache_scalar.o -lm -o test_memory_cache
+cc -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize=address,undefined -DP68_CACHE_SCALAR -Dp57_save=scalar_save -Dp57_load=scalar_load -c factor_cache.c -o cache_scalar_san.o
+cc -std=c11 -Wall -Wextra -Werror -O1 -g -fopenmp -fsanitize=address,undefined -fno-omit-frame-pointer -no-pie packed_ldlt.c lis_adapter.c multifrontal_ldlt.c schur_simd.c symbolic_ldlt.c minimum_degree.c nested_dissection.c parallel_ldlt.c factor_cache.c test_memory_cache.c cache_scalar_san.o -lm -o test_memory_cache_san
+bench n=1600 side=40 block=0 width=1 fronts=1600 max_front=60 slots=22329 workspace=765700 cpu_min3=0.040845 s
+bench n=1600 side=40 block=0 width=4 fronts=1245 max_front=60 slots=22329 workspace=773432 cpu_min3=0.031441 s
+bench n=1600 side=40 block=0 width=16 fronts=1181 max_front=60 slots=22329 workspace=778040 cpu_min3=0.029674 s
+bench n=8192 side=0 block=16 width=1 fronts=8192 max_front=16 slots=61440 workspace=2500972 cpu_min3=0.093493 s
+bench n=8192 side=0 block=16 width=4 fronts=2048 max_front=16 slots=61440 workspace=2534016 cpu_min3=0.068778 s
+bench n=8192 side=0 block=16 width=16 fronts=512 max_front=16 slots=61440 workspace=2534400 cpu_min3=0.059196 s
+bench n=152592 side=0 block=0 width=1 fronts=152592 max_front=2 slots=152591 workspace=22737252 cpu_min3=0.367076 s
+bench n=152592 side=0 block=0 width=4 fronts=152591 max_front=2 slots=152591 workspace=23347608 cpu_min3=0.361077 s
+bench n=152592 side=0 block=0 width=16 fronts=152591 max_front=2 slots=152591 workspace=23347608 cpu_min3=0.374847 s
+supernodal 783/783 PASS max_x=1.221e-15 max_componentwise_backward=8.105e-16 random_fronts_legacy=12827 grouped=4714 paired_delays_legacy=3020 grouped=0 grouped_pairs=3020
+cc -O3 -std=c11 -Wall -Wextra -Werror -fopenmp packed_ldlt.c lis_adapter.c multifrontal_ldlt.c schur_simd.c symbolic_ldlt.c minimum_degree.c nested_dissection.c parallel_ldlt.c buckle_bridge.c test_bridge.c -lm -o test_bridge
+./test_memory_cache
+chain n=152592 width=16 one=23346840 requested_four=23346840 levels=152591
+chain n=512 width=1 one=76564 requested_four=76564 levels=512
+chain n=1 width=16 one=141 requested_four=141 levels=1
+cache n=65536 panel=64 pairs=0 bytes=17313852 save_scalar=0.081337 save_bulk=0.075713 load_scalar=0.068704 load_bulk=0.071983
+cache n=8192 panel=32 pairs=1 bytes=1120316 save_scalar=0.004726 save_bulk=0.004592 load_scalar=0.003537 load_bulk=0.003052
+stage68 72/72 PASS
+cc -std=c11 -Wall -Wextra -Werror -O1 -g -fopenmp -fsanitize=address,undefined -fno-omit-frame-pointer -no-pie packed_ldlt.c lis_adapter.c multifrontal_ldlt.c schur_simd.c symbolic_ldlt.c minimum_degree.c nested_dissection.c parallel_ldlt.c buckle_bridge.c test_bridge.c -lm -o test_bridge_san
+./test_parallel_san
+./test_packed
+PASS 314/314
+max_abs_solution_error=7.7715611723760958e-16
+max_scaled_backward_error=2.0249764678922692e-16
+./test_adapter
+PASS 318/318
+max_abs_solution_error=6.6613381477509392e-16
+max_scaled_backward_error=1.458551164451569e-16
+./test_cache
+./test_memory_cache_san
+PASS 560/560
+max_abs_solution_error=6.6613381477509392e-16
+max_scaled_backward_error=1.458551164451569e-16
+./test_pivot
+pivot: 461/461 PASS; generated pairs=1680 swaps=955; max solution error=4.441e-16; max backward error=1.520e-16
+./test_bk
+BK: 648/648 PASS; random cases=600, stage58 success=600/600; direct=2393 secondary=191 alternate=776 pairs=1164 swaps=1660; max growth=9.357401e+00 max multiplier=5.313954e+00; max solution error=4.076e-13 max backward error=2.889e-16
+./test_delayed
+DELAY: 564/564 PASS; random split=400, sparse pairs=120; stage59 split success=40/400; rescued=360/400; delays=6236 pairs=1227 swaps=5196 peak_front=10 peak_pending=9; max growth=1.300686e+01; max solution error=2.782e-13 max backward error=3.238e-16
+./test_multifrontal
+large n=10000 nnz_lower=19999 front=2 slots=9999 workspace=1491044 cpu_factor=0.007455 s cpu_solve_and_verify=0.000394 s
+large n=152592 nnz_lower=305183 front=2 slots=152591 workspace=22737252 cpu_factor=0.114705 s cpu_solve_and_verify=0.006279 s
+grid 32x32 n=1024 nnz_lower=3008 front=33 slots=31775 workspace=896752
+large_indefinite n=152592 nnz_lower=228888 front=2 pairs=76296 delays=76296 slots=76296 workspace=20906128
+multifrontal 543/543 PASS, pairs=78657 delays=78659 max_x=8.549e-15 max_componentwise_backward=4.831e-16
+./test_symbolic
+symbolic n=152592 grid_side=0 nnz_lower=305183 slots=152591 supernodes=152591 max_front=2 peak_bytes=5493392 cpu=0.003345 s
+auto_factor n=152592 cpu_symbolic_numeric=0.138763 s numeric_peak_bytes=22737252
+symbolic n=1600 grid_side=40 nnz_lower=4720 slots=62439 supernodes=1560 max_front=41 peak_bytes=63764 cpu=0.000150 s
+auto_factor n=1600 cpu_symbolic_numeric=0.061805 s numeric_peak_bytes=1707248
+symbolic n=16384 grid_side=128 nnz_lower=48896 slots=2080895 supernodes=16256 max_front=129 peak_bytes=654420 cpu=0.004104 s
+symbolic 897/897 PASS max_x=1.554e-15 max_componentwise_backward=7.619e-16
+./test_ordering
+order n=152592 side=0 natural_slots=152591 md_slots=152591 natural_front=2 md_front=2 order_peak_bytes=7934840 pair_checks=0 cpu=0.027258 s
+factor n=152592 natural_cpu=0.128128 s md_cpu=0.172090 s natural_numeric_bytes=22737252 md_numeric_bytes=22737252 reorder_bytes=11597028
+order n=1600 side=40 natural_slots=62439 md_slots=19904 natural_front=41 md_front=63 order_peak_bytes=142520 pair_checks=245068 cpu=0.003162 s
+factor n=1600 natural_cpu=0.066735 s md_cpu=0.020631 s natural_numeric_bytes=1707248 md_numeric_bytes=707188 reorder_bytes=164224
+order n=16384 side=128 natural_slots=2080895 md_slots=400929 natural_front=129 md_front=244 order_peak_bytes=2029624 pair_checks=17940463 cpu=0.110739 s
+ordering 903/903 PASS max_x=1.554e-15 max_componentwise_backward=7.901e-16
+./test_nd
+./test_bridge_san
+order n=1600 side=40 method=0 selected=0 slots=62439 front=41 work=2602757 phase_bytes=63764 cpu=0.000150 s
+factor n=1600 method=0 cpu=0.063786 s numeric_bytes=1707248 front=41 slots=62439
+order n=1600 side=40 method=1 selected=1 slots=19904 front=63 work=551448 phase_bytes=142520 cpu=0.003226 s
+factor n=1600 method=1 cpu=0.023638 s numeric_bytes=707188 front=63 slots=19904
+order n=1600 side=40 method=2 selected=2 slots=22329 front=60 work=620687 phase_bytes=120008 cpu=0.000691 s
+factor n=1600 method=2 cpu=0.020215 s numeric_bytes=765700 front=60 slots=22329
+order n=1600 side=40 method=3 selected=1 slots=19904 front=63 work=551448 phase_bytes=142520 cpu=0.004107 s
+factor n=1600 method=3 cpu=0.021564 s numeric_bytes=707188 front=63 slots=19904
+order n=16384 side=128 method=0 selected=0 slots=2080895 front=129 work=269833853 phase_bytes=654420 cpu=0.003974 s
+order n=16384 side=128 method=1 selected=1 slots=400929 front=244 work=37100097 phase_bytes=2029624 cpu=0.119059 s
+order n=16384 side=128 method=2 selected=2 slots=357777 front=192 work=24308715 phase_bytes=1240072 cpu=0.012686 s
+order n=16384 side=128 method=3 selected=2 slots=357777 front=192 work=24308715 phase_bytes=1240072 cpu=0.160257 s
+order n=152592 side=0 method=0 selected=0 slots=152591 front=2 work=610365 phase_bytes=5493392 cpu=0.005016 s
+order n=152592 side=0 method=1 selected=1 slots=152591 front=2 work=610365 phase_bytes=8545140 cpu=0.044832 s
+order n=152592 side=0 method=2 selected=2 slots=305147 front=3 work=1373145 phase_bytes=8545140 cpu=0.062559 s
+order n=152592 side=0 method=3 selected=0 slots=152591 front=2 work=610365 phase_bytes=5493392 cpu=0.003312 s
+factor n=152592 method=3 cpu=0.174372 s numeric_bytes=22737252 front=2 slots=152591
+nested-dissection 938/938 PASS max_x=1.554e-15 max_componentwise_backward=7.619e-16
+./test_supernodal
+large n=152592 input_k=457774 input_g=152592 shifted_nnz=305183 conversion_bytes=17700644 numeric_bytes=23350680 threads=1 factorize_wall=0.699984 s apply_wall=0.007807 s
+bridge 436/436 PASS max_x=5.551e-16 max_componentwise_backward=4.051e-16
+./test_simd
+chain n=152592 width=16 one=23346840 requested_four=23346840 levels=152591
+chain n=512 width=1 one=76564 requested_four=76564 levels=512
+chain n=1 width=16 one=141 requested_four=141 levels=1
+cache n=65536 panel=64 pairs=0 bytes=17313852 save_scalar=0.245813 save_bulk=0.167104 load_scalar=0.416413 load_bulk=0.121793
+cache n=8192 panel=32 pairs=1 bytes=1120316 save_scalar=0.012756 save_bulk=0.004976 load_scalar=0.011869 load_bulk=0.005330
+stage68 72/72 PASS
+./test_parallel
+AUTO=AVX2 AVX2=1 AVX512=1
+SIMD 1330/1330 PASS max_kernel_rel=8.663e-16 max_x=1.221e-15 max_componentwise_backward=6.485e-16
+./test_bridge
+large n=152592 input_k=457774 input_g=152592 shifted_nnz=305183 conversion_bytes=17700644 numeric_bytes=23350680 threads=1 factorize_wall=0.196751 s apply_wall=0.003066 s
+bridge 436/436 PASS max_x=5.551e-16 max_componentwise_backward=4.051e-16
+bench n=1600 side=40 block=0 width=1 fronts=1600 max_front=60 slots=22329 workspace=765700 cpu_min3=0.020601 s
+bench n=1600 side=40 block=0 width=4 fronts=1245 max_front=60 slots=22329 workspace=773432 cpu_min3=0.019864 s
+bench n=1600 side=40 block=0 width=16 fronts=1181 max_front=60 slots=22329 workspace=778040 cpu_min3=0.017638 s
+bench n=8192 side=0 block=16 width=1 fronts=8192 max_front=16 slots=61440 workspace=2500972 cpu_min3=0.044631 s
+bench n=8192 side=0 block=16 width=4 fronts=2048 max_front=16 slots=61440 workspace=2534016 cpu_min3=0.040977 s
+bench n=8192 side=0 block=16 width=16 fronts=512 max_front=16 slots=61440 workspace=2534400 cpu_min3=0.038860 s
+bench n=152592 side=0 block=0 width=1 fronts=152592 max_front=2 slots=152591 workspace=22737252 cpu_min3=0.116449 s
+bench n=152592 side=0 block=0 width=4 fronts=152591 max_front=2 slots=152591 workspace=23347608 cpu_min3=0.117723 s
+bench n=152592 side=0 block=0 width=16 fronts=152591 max_front=2 slots=152591 workspace=23347608 cpu_min3=0.123471 s
+supernodal 783/783 PASS max_x=1.221e-15 max_componentwise_backward=8.105e-16 random_fronts_legacy=12827 grouped=4714 paired_delays_legacy=3020 grouped=0 grouped_pairs=3020
+bench n=4096 side=64 block=0 requested=1 used=1 levels=0 ready=1 workspace=2295584 wall_median=0.067394 s
+bench n=4096 side=64 block=0 requested=2 used=2 levels=29 ready=834 workspace=2668920 wall_median=0.055830 s
+bench n=4096 side=64 block=0 requested=4 used=4 levels=29 ready=834 workspace=2703736 wall_median=0.370580 s
+bench n=4096 side=0 block=64 requested=1 used=1 levels=0 ready=1 workspace=3650304 wall_median=0.104906 s
+bench n=4096 side=0 block=64 requested=2 used=2 levels=4 ready=64 workspace=3991000 wall_median=0.057432 s
+bench n=4096 side=0 block=64 requested=4 used=4 levels=4 ready=64 workspace=4028520 wall_median=0.074997 s
+bench n=152592 side=0 block=0 requested=1 used=1 levels=0 ready=1 workspace=23347608 wall_median=0.183187 s
+bench n=152592 side=0 block=0 requested=2 used=1 levels=152591 ready=1 workspace=23347608 wall_median=0.160973 s
+bench n=152592 side=0 block=0 requested=4 used=1 levels=152591 ready=1 workspace=23347608 wall_median=0.111638 s
+parallel 526/526 PASS max_x=1.332e-15 max_componentwise_backward=6.393e-16 parallel_random_runs=360 pairs=1581 delays=1581
+bench n=4096 side=64 block=0 requested=1 used=1 levels=0 ready=1 workspace=2295584 wall_median=0.156901 s
+bench n=4096 side=64 block=0 requested=2 used=2 levels=29 ready=834 workspace=2668920 wall_median=0.102231 s
+bench n=4096 side=64 block=0 requested=4 used=4 levels=29 ready=834 workspace=2703736 wall_median=0.409222 s
+bench n=4096 side=0 block=64 requested=1 used=1 levels=0 ready=1 workspace=3650304 wall_median=0.198136 s
+bench n=4096 side=0 block=64 requested=2 used=2 levels=4 ready=64 workspace=3991456 wall_median=0.128271 s
+bench n=4096 side=0 block=64 requested=4 used=4 levels=4 ready=64 workspace=4028512 wall_median=0.144100 s
+bench n=152592 side=0 block=0 requested=1 used=1 levels=0 ready=1 workspace=23347608 wall_median=0.579975 s
+bench n=152592 side=0 block=0 requested=2 used=1 levels=152591 ready=1 workspace=23347608 wall_median=0.631978 s
+bench n=152592 side=0 block=0 requested=4 used=1 levels=152591 ready=1 workspace=23347608 wall_median=0.681072 s
+parallel 524/524 PASS max_x=1.332e-15 max_componentwise_backward=6.393e-16 parallel_random_runs=360 pairs=1581 delays=1581
