@@ -128,12 +128,12 @@ jobs:
           ./configure --enable-test --enable-omp --disable-mpi --disable-fortran --disable-f90 --disable-saamg --enable-oom-tests ${index_flags}
           make -C src -j2
           export LD_LIBRARY_PATH="$PWD/src/.libs:${LD_LIBRARY_PATH:-}"
-          make -C test testusereigencgcr testusereigeninverse testusereigenpower testusereigenprojection testusereigenrqiguard testusereigenstatus testgesolvepair
+          make -C test testusereigencgcr testusereigeninverse testusereigenpower testusereigenprojection testusereigenrqiguard testusereigenstatus testgesolvepair testeigenbreakdown
           if [ "${{ matrix.mode }}" = asan-ubsan ]; then
             export ASAN_OPTIONS="detect_leaks=1:halt_on_error=1"
           fi
           failed=0
-          for t in testusereigencgcr testusereigeninverse testusereigenpower testusereigenprojection testusereigenrqiguard testusereigenstatus testgesolvepair; do
+          for t in testusereigencgcr testusereigeninverse testusereigenpower testusereigenprojection testusereigenrqiguard testusereigenstatus testgesolvepair testeigenbreakdown; do
             rc=0
             timeout 120s ./test/$t || rc=$?
             case $rc in
