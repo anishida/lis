@@ -1,5 +1,5 @@
 #include "lis_ldlt_user_bridge.h"
-#include "symbolic_ldlt.h"
+#include "minimum_degree.h"
 #include <stdlib.h>
 #include <math.h>
 #include <stdint.h>
@@ -29,8 +29,9 @@ static LIS_INT create(LIS_SOLVER solver,LIS_PRECON p)
     uint32_t *row=NULL;
     double *val=NULL;
     bridge_state *s=NULL;
-    const p62_limits sl={64u*1024*1024,4000000};
-    const p61_limits nl={1024,128u*1024*1024,4000000,1000000,0};
+    const p63_limits ol={512u*1024*1024,64000000,2000000000};
+    const p62_limits sl={256u*1024*1024,64000000};
+    const p61_limits nl={8192,1536u*1024*1024,64000000,1000000,0};
     if(sizeof(LIS_SCALAR)!=sizeof(double)||!A||A->nprocs!=1||
        A->n!=A->gn||A->matrix_type!=LIS_MATRIX_CSR||A->is_scaled||
        solver->options[LIS_OPTIONS_SCALE]!=LIS_SCALE_NONE||
@@ -41,7 +42,7 @@ static LIS_INT create(LIS_SOLVER solver,LIS_PRECON p)
         return LIS_ERR_NOT_IMPLEMENTED;
     /* Bounded first integration: do not silently reinterpret other storage,
        unsorted rows, duplicate entries or non-symmetric matrices. */
-    if(A->n<=0||A->n>100000||!A->ptr||A->nnz<0||A->nnz>4000000||
+    if(A->n<=0||A->n>200000||!A->ptr||A->nnz<0||A->nnz>10000000||
        (A->nnz&&(!A->index||!A->value))||
        A->ptr[0]!=0||A->ptr[A->n]!=A->nnz) return LIS_ERR_ILL_ARG;
     nnz=(size_t)A->nnz;
@@ -76,7 +77,9 @@ static LIS_INT create(LIS_SOLVER solver,LIS_PRECON p)
     }
     col[A->n]=z;
     {
-        int e=p62_factorize(&s->factor,(uint32_t)A->n,z,col,row,val,&sl,&nl,NULL);
+        p63_stats st={0};
+        int e=p63q_factorize(&s->factor,(uint32_t)A->n,z,col,row,val,&ol,&sl,&nl,32,&st);
+        if(!e)fprintf(stderr,"QMD slots=%zu front=%zu visits=%zu numeric_slots=%zu delays=%zu peak=%zu\n",st.summary.slots,st.summary.max_front,st.summary.pair_checks,st.numeric.factor_slots,st.numeric.delays,st.numeric.peak_work_bytes);
         if(e){fprintf(stderr,"LDLT factorization status=%d\n",e);rc=e==P55_NOMEM?LIS_OUT_OF_MEMORY:LIS_BREAKDOWN;goto done;}
     }
     s->matrix=A;

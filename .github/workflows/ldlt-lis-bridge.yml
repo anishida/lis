@@ -49,11 +49,18 @@ jobs:
           cc -std=c11 -DHAVE_CONFIG_H -DP66_DISABLE_SIMD -Iinclude -I"$d" $flags $link \
             "$d"/lis_ldlt_user_bridge.c "$d"/test_lis_ldlt_bridge.c \
             "$d"/packed_ldlt.c "$d"/lis_adapter.c "$d"/multifrontal_ldlt.c \
-            "$d"/schur_simd.c "$d"/symbolic_ldlt.c src/.libs/liblis.a -lm -o ldlt-lis-test
+            "$d"/schur_simd.c "$d"/symbolic_ldlt.c "$d"/minimum_degree.c src/.libs/liblis.a -lm -o ldlt-lis-test
           ./ldlt-lis-test 2>&1 | tee ldlt-lis.log
           grep -Fx LDLT_LIS_BRIDGE=PASS ldlt-lis.log
+          cc -std=c11 -Wall -Wextra -Werror -DP66_DISABLE_SIMD $flags $link -I"$d" \
+            "$d"/test_quotient_ordering.c "$d"/minimum_degree.c "$d"/packed_ldlt.c \
+            "$d"/lis_adapter.c "$d"/multifrontal_ldlt.c "$d"/schur_simd.c "$d"/symbolic_ldlt.c -lm -o ldlt-qmd-test
+          ./ldlt-qmd-test 2>&1 | tee ldlt-qmd.log
+          grep -q "^quotient ordering 900/900 PASS" ldlt-qmd.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: ldlt-lis-${{ matrix.mode }}
-          path: ldlt-lis.log
+          path: |
+            ldlt-lis.log
+            ldlt-qmd.log

@@ -58,3 +58,25 @@ of nonsymmetry, singularity and CG. These are pending CI qualification,
 not a production-readiness or performance claim. Native built-in registration,
 release distribution, larger independent tests and a maintainer API decision
 remain future work.
+
+## Second integration checkpoint: bounded quotient minimum degree
+
+The experimental `ldltexp` adapter now uses a quotient graph to represent
+elimination cliques implicitly, with exact lazy minimum-degree selection
+and deterministic smallest-index ties. The earlier explicit-graph routine
+is retained as a small-graph oracle. Strict symbolic supernodes are split
+at width 32. Ordering counts adjacency/element visits rather than pair
+checks; the two counters are not directly comparable. The bridge input
+caps are 200,000 DOF and 10 million full CSR entries. Phase-local ordering,
+symbolic and numeric workspace caps are 512, 256 and 1536 MiB respectively;
+64 million factor slots, 2 billion ordering visits and maximum numeric
+front 8192. These are experimental bounds, not an RSS guarantee. No LIS
+public headers, installed ABI, or default solver options change.
+
+Local release and ASan/UBSan tests compare exact permutations, fill and
+front size against the explicit graph on random and paired indefinite
+cases, including numerical solves and resource rejection. A private
+152,592-DOF CalculiX-derived shifted linear system completed ordering
+(21,108,420 symbolic off-diagonal L slots, maximum front 1485); a full
+numeric solve was not established in the preliminary observation window.
+No full-size LDLT success or application-level eigenpair claim is made.
