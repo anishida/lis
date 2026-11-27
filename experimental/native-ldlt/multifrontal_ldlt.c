@@ -23,10 +23,16 @@ static void clear(budget *b,update *u){release(b,u->id);release(b,u->a);*u=(upda
    nonnegative maxima. Avoid a libm call in the hot assembly/pivot loops. */
 static inline long double max_finite(long double a,long double b){return a>b?a:b;}
 static int cv(long double x,double *v){if(!isfinite(x)||fabsl(x)>DBL_MAX)return 0;*v=(double)x;return 1;}
+/* Symmetric interchange in the authoritative lower triangle. Previously
+   eliminated pivot rows/columns are not touched. */
 static void sw(double *a,uint32_t *id,size_t m,size_t k,size_t i,size_t j){
  if(i==j)return;
- for(size_t r=k;r<m;r++){double v=a[i*m+r];a[i*m+r]=a[j*m+r];a[j*m+r]=v;}
- for(size_t r=k;r<m;r++){double v=a[r*m+i];a[r*m+i]=a[r*m+j];a[r*m+j]=v;}
+ if(i>j){size_t t=i;i=j;j=t;}
+ double v;
+ for(size_t r=k;r<i;r++){v=a[i*m+r];a[i*m+r]=a[j*m+r];a[j*m+r]=v;}
+ v=a[i*m+i];a[i*m+i]=a[j*m+j];a[j*m+j]=v;
+ for(size_t r=i+1;r<j;r++){v=a[r*m+i];a[r*m+i]=a[j*m+r];a[j*m+r]=v;}
+ for(size_t r=j+1;r<m;r++){v=a[r*m+i];a[r*m+i]=a[r*m+j];a[r*m+j]=v;}
  uint32_t t=id[i];id[i]=id[j];id[j]=t;
 }
 static int cmp(const void *a,const void *b){uint32_t x=((const entry*)a)->row,y=((const entry*)b)->row;return (x>y)-(x<y);}
@@ -66,7 +72,7 @@ int p65_numeric(p56_context **slot,uint32_t n,const size_t *col,const uint32_t *
  if(initial==0){rc=P58_NO_PIVOT;goto exit;}peak=initial;
  release(&b,tin);tin=NULL;release(&b,tout);tout=NULL;release(&b,stack);stack=NULL;
  const long double alpha=(1+sqrtl(17))/8;
- p66_kernel schur=p66_select_kernel();
+ p66_kernel schur=p66_select_kernel_lower();
  for(size_t g=0;g<(bounds?ng:n);g++){
   uint32_t lo=bounds?bounds[g]:(uint32_t)g,f=bounds?bounds[g+1]-1:(uint32_t)g;
   size_t m=0,k=0,eligible;
@@ -78,11 +84,11 @@ int p65_numeric(p56_context **slot,uint32_t n,const size_t *col,const uint32_t *
   for(uint32_t c=head[f];c!=NONE;c=next[c])for(uint32_t i=u[c].pending;i<u[c].m;i++)if(!add(u[c].id[i],ids,map,&m,cap)){rc=P60_LIMIT;goto exit;}
   if(m>st.peak_front)st.peak_front=m;
   if(m>SIZE_MAX/m){rc=P60_LIMIT;goto exit;}NEW(a,m*m);
-  for(uint32_t j=lo;j<=f;j++)for(size_t z=col[j];z<col[j+1];z++){size_t i=map[row[z]],h=map[j];a[i*m+h]=a[h*m+i]=val[z];}
+  for(uint32_t j=lo;j<=f;j++)for(size_t z=col[j];z<col[j+1];z++){size_t i=map[row[z]],h=map[j];if(i<h){size_t t=i;i=h;h=t;}a[i*m+h]=val[z];}
   for(uint32_t c=head[f];c!=NONE;c=next[c]){
    update *q=&u[c];for(size_t i=0;i<q->m;i++)for(size_t j=0;j<=i;j++){
-    size_t x=map[q->id[i]],y=map[q->id[j]];
-    if(!cv((long double)a[x*m+y]+q->a[i*(i+1)/2+j],&a[x*m+y])){rc=P55_RANGE;goto exit;}a[y*m+x]=a[x*m+y];
+    size_t x=map[q->id[i]],y=map[q->id[j]];if(x<y){size_t t=x;x=y;y=t;}
+    if(!cv((long double)a[x*m+y]+q->a[i*(i+1)/2+j],&a[x*m+y])){rc=P55_RANGE;goto exit;}
     peak=max_finite(peak,fabsl(a[x*m+y]));
    }
    clear(&b,q);
@@ -92,9 +98,9 @@ int p65_numeric(p56_context **slot,uint32_t n,const size_t *col,const uint32_t *
   size_t candidates=eligible;
   while(k<eligible){
    long double akk=fabsl(a[k*m+k]),colmax=0;size_t r=k,w=1,chosen=k;
-   for(size_t i=k+1;i<m;i++)if(fabsl(a[k*m+i])>colmax){colmax=fabsl(a[k*m+i]);r=i;}
+   for(size_t i=k+1;i<m;i++)if(fabsl(a[i*m+k])>colmax){colmax=fabsl(a[i*m+k]);r=i;}
    if(akk==0&&colmax==0){rc=P58_NO_PIVOT;goto exit;}
-   if(akk<alpha*colmax){long double rm=0;for(size_t i=k;i<m;i++)if(i!=r)rm=max_finite(rm,fabsl(a[r*m+i]));
+   if(akk<alpha*colmax){long double rm=0;for(size_t i=k;i<m;i++)if(i!=r)rm=max_finite(rm,fabsl(i<r?a[r*m+i]:a[i*m+r]));
     if(akk<alpha*colmax*(colmax/rm)){chosen=r;if(fabsl(a[r*m+r])<alpha*rm)w=2;}}
    size_t target=k+w-1;
    if(chosen>=eligible||target>=eligible){

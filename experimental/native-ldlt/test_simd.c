@@ -21,16 +21,33 @@ static void compare(double *a,size_t m,size_t k,size_t w,int expected){
   tests++;
  }free(ref);free(res);
 }
-static void kernels(void){for(unsigned t=0;t<420;t++){size_t m=2+rnd()%96,w=1+t%2;if(m<=w)m=w+1;size_t k=rnd()%(m-w);double scale=t%3==0?1e-100:t%3==1?1e100:1;double *a=calloc(m*m,sizeof *a);CHECK(a);for(size_t i=k+w;i<m;i++){for(size_t j=k+w;j<=i;j++)a[i*m+j]=a[j*m+i]=v()*scale;for(size_t l=0;l<w;l++){a[(k+l)*m+i]=v();a[i*m+k+l]=v()*scale;}}compare(a,m,k,w,1);free(a);}
+/* The lower-only kernel must agree bitwise with the mirrored kernel of
+   the same mode and never read or write the poisoned active upper half. */
+static void lower_compare(double *a,size_t m,size_t k,size_t w,int expected){
+ size_t bytes=m*m*sizeof(double);double *ref=malloc(bytes),*res=malloc(bytes);CHECK(ref&&res);
+ for(int mode=P66_REFERENCE;mode<=P66_AVX512;mode++){
+  if(!p66_available(mode))continue;
+  CHECK(p66_set_mode(mode));memcpy(ref,a,bytes);memcpy(res,a,bytes);
+  for(size_t i=k+w;i<m;i++)for(size_t j=i+1;j<m;j++)res[i*m+j]=NAN;
+  long double p=0,q=0;int ok=p66_select_kernel()(ref,m,k,w,&p);CHECK(ok==expected);
+  CHECK(p66_select_kernel_lower()(res,m,k,w,&q)==ok);
+  if(ok){CHECK(p==q);for(size_t i=k+w;i<m;i++)for(size_t j=k+w;j<=i;j++)CHECK(!memcmp(ref+i*m+j,res+i*m+j,sizeof(double)));}
+  for(size_t i=k+w;i<m;i++)for(size_t j=i+1;j<m;j++)CHECK(isnan(res[i*m+j]));
+  for(size_t i=0;i<m;i++)for(size_t j=0;j<m;j++)if(i<k+w||j<k+w)CHECK(!memcmp(res+i*m+j,a+i*m+j,sizeof(double)));
+  tests++;
+ }
+ free(ref);free(res);
+}
+static void kernels(void){for(unsigned t=0;t<420;t++){size_t m=2+rnd()%96,w=1+t%2;if(m<=w)m=w+1;size_t k=rnd()%(m-w);double scale=t%3==0?1e-100:t%3==1?1e100:1;double *a=calloc(m*m,sizeof *a);CHECK(a);for(size_t i=k+w;i<m;i++){for(size_t j=k+w;j<=i;j++)a[i*m+j]=a[j*m+i]=v()*scale;for(size_t l=0;l<w;l++){a[(k+l)*m+i]=v();a[i*m+k+l]=v()*scale;}}compare(a,m,k,w,1);lower_compare(a,m,k,w,1);free(a);}
  /* rank-2 intermediate exceeds double range, final finite; true overflow;
     exact cancellation, subnormal outputs; vector-length tails. */
- for(unsigned t=0;t<4;t++){size_t m=19,w=2;double a[361]={0};for(size_t i=w;i<m;i++){for(size_t j=w;j<=i;j++)a[i*m+j]=a[j*m+i]=t==2?1: t==3?DBL_TRUE_MIN:DBL_MAX; a[i]=t==2?1:t==3?0:-1;a[i*m]=t==2?1:t==3?0:DBL_MAX;a[m+i]=t==0?1:0;a[i*m+1]=t==0?DBL_MAX:0;}compare(a,m,0,w,t!=1);}
+ for(unsigned t=0;t<4;t++){size_t m=19,w=2;double a[361]={0};for(size_t i=w;i<m;i++){for(size_t j=w;j<=i;j++)a[i*m+j]=a[j*m+i]=t==2?1: t==3?DBL_TRUE_MIN:DBL_MAX; a[i]=t==2?1:t==3?0:-1;a[i*m]=t==2?1:t==3?0:DBL_MAX;a[m+i]=t==0?1:0;a[i*m+1]=t==0?DBL_MAX:0;}compare(a,m,0,w,t!=1);lower_compare(a,m,0,w,t!=1);}
  /* Force multiple 64-column tiles, with nonzero pivot offsets and
     every SIMD remainder. Exercise large rank-one/rank-two fronts. */
  for(size_t n=125;n<=137;n++)for(size_t w=1;w<=2;w++){
   size_t k=3,m=n+k+w;double *a=calloc(m*m,sizeof *a);CHECK(a);
   for(size_t i=k+w;i<m;i++){for(size_t j=k+w;j<=i;j++)a[i*m+j]=a[j*m+i]=v();for(size_t l=0;l<w;l++){a[(k+l)*m+i]=v();a[i*m+k+l]=v();}}
-  compare(a,m,k,w,1);free(a);
+  compare(a,m,k,w,1);lower_compare(a,m,k,w,1);free(a);
  }
  CHECK(!p66_set_mode((p66_mode)99));tests++;CHECK(p66_set_mode(P66_AUTO));CHECK(fesetround(FE_DOWNWARD)==0&&p66_effective_mode()==P66_REFERENCE);CHECK(fesetround(FE_TONEAREST)==0);tests++;
 }

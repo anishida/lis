@@ -183,3 +183,28 @@ Local GCC release and Clang ASan/UBSan passed multifrontal 543/543
 (including the new shared-separator budget test), supernodal 783/783,
 and SIMD 1382/1382. The number of workspace-failure cases depends on
 the measured peak, so aggregate counts can change with storage layout.
+
+## Seventh integration checkpoint: lower-triangle active front
+
+The active numeric front now treats the lower triangle as authoritative.
+Schur updates avoid redundant upper-triangle stores, and assembly and
+symmetric interchanges use the corresponding lower-triangle addresses.
+Eliminated pivot rows still hold their multipliers; the allocation shape
+and workspace accounting are unchanged. The mirrored kernel remains
+available as an internal reference. Regression tests poison the unused
+active upper triangle with NaNs and check bitwise equality of the lower
+triangle and peak magnitude against the mirrored kernel in each available
+mode. The pivot policy and arithmetic range/cancellation checks are unchanged.
+
+Local GCC release and Clang ASan/UBSan each passed SIMD 2732/2732,
+multifrontal 543/543 and supernodal 783/783. A private full-size shifted
+CalculiX-derived system (152,592 DOF) completed in 31.8586659 s setup and
+0.149282932 s solve, versus the previous 36.334445 s single-run AVX2
+observation. Peak RSS was 713396 KiB. Numeric factor slots (22,172,255),
+delays (15,473), one FGMRES iteration, physical relative residual
+(7.2414170947189105e-15) and forward error (4.8939654672876622e-12)
+were unchanged in the recorded precision. Compilation/regression work
+overlapped part of the new timing; this is preliminary, not a controlled
+multi-run speedup measurement. Forcing AVX-512 in the previous implementation
+gave 53.1606159 s setup and a certified physical residual of 7.43e-15;
+the conservative AVX2 default is unchanged. No full eigenpair claim is made.

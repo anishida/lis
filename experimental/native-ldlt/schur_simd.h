@@ -10,4 +10,6 @@ const char *p66_mode_name(p66_mode mode);
 /* Internal triangular update. Scratch may be partly modified on failure. */
 typedef int (*p66_kernel)(double *,size_t,size_t,size_t,long double *);
 p66_kernel p66_select_kernel(void);
+/* Active symmetric front stored in its lower triangle only. */
+p66_kernel p66_select_kernel_lower(void);
 #endif

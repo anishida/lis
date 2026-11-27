@@ -37,22 +37,22 @@ static inline int precise(double *a,size_t m,size_t k,size_t w,size_t i,size_t j
  if(!isfinite(z)||fabsl(z)>DBL_MAX)return 0;
  *out=(double)z;return 1;
 }
-static inline void commit(double *a,size_t m,size_t i,size_t j,double z,long double *peak){a[i*m+j]=a[j*m+i]=z;if(fabsl(z)>*peak)*peak=fabsl(z);}
-static int reference(double *a,size_t m,size_t k,size_t w,long double *peak){
- for(size_t i=k+w;i<m;i++)for(size_t j=k+w;j<=i;j++){double z;if(!precise(a,m,k,w,i,j,&z))return 0;commit(a,m,i,j,z,peak);}
+static inline void commit(double *a,size_t m,size_t i,size_t j,double z,long double *peak,int mirror){a[i*m+j]=z;if(mirror)a[j*m+i]=z;if(fabsl(z)>*peak)*peak=fabsl(z);}
+static inline int reference_impl(double *a,size_t m,size_t k,size_t w,long double *peak,int mirror){
+ for(size_t i=k+w;i<m;i++)for(size_t j=k+w;j<=i;j++){double z;if(!precise(a,m,k,w,i,j,&z))return 0;commit(a,m,i,j,z,peak,mirror);}
  return 1;
 }
 #if P66_X86
 /* Rank-2 cancellation may amplify intermediate rounding. Recompute sensitive
    lanes and range extremes using original long-double precision. */
-static inline int finish(double *a,size_t m,size_t k,size_t w,size_t i,size_t j,double t,double z,long double *peak){
+static inline int finish(double *a,size_t m,size_t k,size_t w,size_t i,size_t j,double t,double z,long double *peak,int mirror){
  double az=fabs(z),at=fabs(t);
  if(!isfinite(z)||az>=DBL_MAX||az<DBL_MIN||(w==2&&(!isfinite(t)||at>=DBL_MAX||at<DBL_MIN||az<at*0.125))){
   if(!precise(a,m,k,w,i,j,&z))return 0;
  }
- commit(a,m,i,j,z,peak);return 1;
+ commit(a,m,i,j,z,peak,mirror);return 1;
 }
-__attribute__((target("avx2,fma"))) static int avx2(double *a,size_t m,size_t k,size_t w,long double *peak){
+__attribute__((target("avx2,fma"))) static inline int avx2_impl(double *a,size_t m,size_t k,size_t w,long double *peak,int mirror){
  /* Keep a vector maximum for safe lanes; the precise fallback and tails
     continue to use the original scalar range and cancellation checks. */
  __m256d vmax=_mm256_setzero_pd(),sign=_mm256_set1_pd(-0.0),hi=_mm256_set1_pd(DBL_MAX),lo=_mm256_set1_pd(DBL_MIN),eighth=_mm256_set1_pd(0.125);
@@ -73,21 +73,21 @@ __attribute__((target("avx2,fma"))) static int avx2(double *a,size_t m,size_t k,
    _mm256_storeu_pd(z,r);
    if(_mm256_movemask_pd(safe)==15){
     _mm256_storeu_pd(a+i*m+j,r);
-    for(size_t l=0;l<4;l++)a[(j+l)*m+i]=z[l];
+    if(mirror)for(size_t l=0;l<4;l++)a[(j+l)*m+i]=z[l];
     vmax=_mm256_max_pd(vmax,az);
    }else{
     _mm256_storeu_pd(t,v);
-    for(size_t l=0;l<4;l++)if(!finish(a,m,k,w,i,j+l,t[l],z[l],peak))return 0;
+    for(size_t l=0;l<4;l++)if(!finish(a,m,k,w,i,j+l,t[l],z[l],peak,mirror))return 0;
    }
   }
-  for(;j<stop;j++){double z;if(!precise(a,m,k,w,i,j,&z))return 0;commit(a,m,i,j,z,peak);}
+  for(;j<stop;j++){double z;if(!precise(a,m,k,w,i,j,&z))return 0;commit(a,m,i,j,z,peak,mirror);}
   }
   base=end;
  }
  double mx[4];_mm256_storeu_pd(mx,vmax);for(size_t l=0;l<4;l++)if(mx[l]>*peak)*peak=mx[l];
  return 1;
 }
-__attribute__((target("avx512f,fma"))) static int avx512(double *a,size_t m,size_t k,size_t w,long double *peak){
+__attribute__((target("avx512f,fma"))) static inline int avx512_impl(double *a,size_t m,size_t k,size_t w,long double *peak,int mirror){
  __m512i stride=_mm512_set_epi64((long long)(7*m),(long long)(6*m),(long long)(5*m),(long long)(4*m),(long long)(3*m),(long long)(2*m),(long long)m,0);
  __m512d vmax=_mm512_setzero_pd(),hi=_mm512_set1_pd(DBL_MAX),lo=_mm512_set1_pd(DBL_MIN),eighth=_mm512_set1_pd(0.125);
  __m512i absbits=_mm512_set1_epi64(0x7fffffffffffffffLL);
@@ -107,22 +107,37 @@ __attribute__((target("avx512f,fma"))) static int avx512(double *a,size_t m,size
    if(w==2)safe&=_mm512_cmp_pd_mask(at,lo,_CMP_GE_OQ)&_mm512_cmp_pd_mask(at,hi,_CMP_LT_OQ)&_mm512_cmp_pd_mask(az,_mm512_mul_pd(at,eighth),_CMP_GE_OQ);
    if(safe==255){
     _mm512_storeu_pd(a+i*m+j,r);
-    _mm512_i64scatter_pd(a+j*m+i,stride,r,8);
+    if(mirror)_mm512_i64scatter_pd(a+j*m+i,stride,r,8);
     vmax=_mm512_max_pd(vmax,az);
    }else{
     _mm512_storeu_pd(t,v);
     _mm512_storeu_pd(z,r);
-    for(size_t l=0;l<8;l++)if(!finish(a,m,k,w,i,j+l,t[l],z[l],peak))return 0;
+    for(size_t l=0;l<8;l++)if(!finish(a,m,k,w,i,j+l,t[l],z[l],peak,mirror))return 0;
    }
   }
-  for(;j<stop;j++){double z;if(!precise(a,m,k,w,i,j,&z))return 0;commit(a,m,i,j,z,peak);}
+  for(;j<stop;j++){double z;if(!precise(a,m,k,w,i,j,&z))return 0;commit(a,m,i,j,z,peak,mirror);}
   }
   base=end;
  }
  double mx=_mm512_reduce_max_pd(vmax);if(mx>*peak)*peak=mx;
  return 1;
 }
+/* Specialize the storage policy at compile time. */
+#define WRAP(name,impl,flag,attr) attr static int name(double *a,size_t m,size_t k,size_t w,long double *peak){return impl(a,m,k,w,peak,flag);}
+WRAP(avx2,avx2_impl,1,__attribute__((target("avx2,fma"))))
+WRAP(avx2_lower,avx2_impl,0,__attribute__((target("avx2,fma"))))
+WRAP(avx512,avx512_impl,1,__attribute__((target("avx512f,fma"))))
+WRAP(avx512_lower,avx512_impl,0,__attribute__((target("avx512f,fma"))))
+#undef WRAP
 #endif
+static int reference(double *a,size_t m,size_t k,size_t w,long double *peak){return reference_impl(a,m,k,w,peak,1);}
+static int reference_lower(double *a,size_t m,size_t k,size_t w,long double *peak){return reference_impl(a,m,k,w,peak,0);}
+p66_kernel p66_select_kernel_lower(void){
+#if P66_X86
+ switch(p66_effective_mode()){case P66_AVX512:return avx512_lower;case P66_AVX2:return avx2_lower;default:break;}
+#endif
+ return reference_lower;
+}
 p66_kernel p66_select_kernel(void){
 #if P66_X86
  switch(p66_effective_mode()){case P66_AVX512:return avx512;case P66_AVX2:return avx2;default:break;}
