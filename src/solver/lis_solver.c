@@ -4386,7 +4386,7 @@ cleanup:
 
 #undef __FUNC__
 #define __FUNC__ "lis_solve_kernel"
-LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver, LIS_PRECON precon)
+static LIS_INT lis_solve_kernel_impl(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER solver, LIS_PRECON precon,LIS_FGMRES_STOP stop,void *data)
 {
 	LIS_Comm comm;  
 	LIS_INT	nsolver, precon_type, maxiter, maxiter_noimp;
@@ -5194,11 +5194,11 @@ LIS_INT lis_solve_kernel(LIS_MATRIX A, LIS_VECTOR b, LIS_VECTOR x, LIS_SOLVER so
 	    /* Do not carry a previous sequence's status into this solve. */
 	    solver->retcode = LIS_SUCCESS;
 #ifndef USE_QUAD_PRECISION
-	    err = lis_solver_execute[nsolver](solver);
+	    err = stop ? lis_fgmres_with_stop(solver,stop,data) : lis_solver_execute[nsolver](solver);
 #else
 	    if( precision==LIS_PRECISION_DOUBLE )
 	      {
-		err = lis_solver_execute[nsolver](solver);
+		err = stop ? lis_fgmres_with_stop(solver,stop,data) : lis_solver_execute[nsolver](solver);
 	      }
 	    else if( precision==LIS_PRECISION_QUAD )
 	      {
@@ -5391,6 +5391,24 @@ residual_done:
 
 	LIS_DEBUG_FUNC_OUT;
 	return LIS_SUCCESS;
+}
+
+LIS_INT lis_solve_kernel(LIS_MATRIX A,LIS_VECTOR b,LIS_VECTOR x,LIS_SOLVER solver,LIS_PRECON precon)
+{
+    return lis_solve_kernel_impl(A,b,x,solver,precon,NULL,NULL);
+}
+
+/* Internal FGMRES execution hook. Each call owns its callback; callers
+ * are responsible for application-specific policy checks and, under MPI,
+ * for returning the same stop decision on every participating rank. */
+LIS_INT lis_solve_kernel_fgmres_stop(LIS_MATRIX A,LIS_VECTOR b,LIS_VECTOR x,
+    LIS_SOLVER solver,LIS_PRECON precon,LIS_FGMRES_STOP stop,void *data)
+{
+    if(!A || !b || !x || !solver || !precon || !stop || solver->setup ||
+       solver->options[LIS_OPTIONS_SOLVER]!=LIS_SOLVER_FGMRES ||
+       solver->options[LIS_OPTIONS_PRECISION]!=LIS_PRECISION_DOUBLE)
+        return LIS_ERR_ILL_ARG;
+    return lis_solve_kernel_impl(A,b,x,solver,precon,stop,data);
 }
 
 #undef __FUNC__

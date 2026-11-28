@@ -579,6 +579,13 @@ LIS_INT lis_esolver_standard_residual(
         err = lis_vector_nrm2(x,&xnrm);
         if( err ) return err;
 
+        if( !lis_esolver_is_valid_norm(xnrm) )
+        {
+                LIS_SETERR(LIS_BREAKDOWN,
+                        "invalid eigenvector norm during certification\n");
+                return LIS_BREAKDOWN;
+        }
+
         lis_vector_axpyz(-lambda,x,Ax,r);
 
         err = lis_vector_nrm2(r,&rnrm);
@@ -641,7 +648,7 @@ LIS_INT lis_esolver_generalized_residual(
         LIS_REAL *resid)
 {
         LIS_INT err;
-        LIS_REAL anrm,bnrm,rnrm,denom;
+        LIS_REAL anrm,bnrm,xnrm,rnrm,denom;
         LIS_REAL lmag;
 
         LIS_DEBUG_FUNC_IN;
@@ -657,6 +664,16 @@ LIS_INT lis_esolver_generalized_residual(
 
         err = lis_vector_nrm2(Bx,&bnrm);
         if( err ) return err;
+
+        err = lis_vector_nrm2(x,&xnrm);
+        if( err ) return err;
+
+        if( !lis_esolver_is_valid_norm(xnrm) )
+        {
+                LIS_SETERR(LIS_BREAKDOWN,
+                        "invalid eigenvector norm during certification\n");
+                return LIS_BREAKDOWN;
+        }
 
         lis_vector_axpyz(-lambda,Bx,Ax,r);
 

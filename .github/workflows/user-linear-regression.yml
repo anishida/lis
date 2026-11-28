@@ -119,7 +119,15 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Install build tools
-        run: sudo apt-get update && sudo apt-get install -y build-essential autoconf automake libtool libtool-bin
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Only Ubuntu repositories are needed for these build dependencies.
+          # Unrelated third-party repositories can fail before LIS is built.
+          test -r /etc/apt/sources.list.d/ubuntu.sources
+          apt_options=(-o Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=- -o Acquire::Retries=3)
+          sudo apt-get "${apt_options[@]}" update
+          sudo apt-get "${apt_options[@]}" install -y build-essential autoconf automake libtool libtool-bin
       - name: Build once per configuration and run native regressions
         shell: bash
         run: |
