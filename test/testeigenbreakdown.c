@@ -7925,6 +7925,133 @@ cleanup:
 }
 
 
+/* A zero vector is not an eigenvector even when its residual is zero.
+ * A nonzero vector for a physical zero eigenvalue remains valid. */
+static LIS_INT
+test_certification_zero_vector(void)
+{
+    LIS_INT err;
+    LIS_MATRIX A = NULL, B = NULL, Z = NULL;
+    LIS_MATRIX S = NULL, T = NULL;
+    LIS_VECTOR x = NULL, Ax = NULL, Bx = NULL, r = NULL;
+    LIS_REAL residual;
+    int i,j;
+    const LIS_SCALAR invalid[] = {0.0, (LIS_SCALAR)NAN, (LIS_SCALAR)INFINITY};
+
+    err = create_diagonal_matrix(&A,2.0,2.0);
+    if( err ) goto cleanup;
+    err = create_diagonal_matrix(&B,1.0,1.0);
+    if( err ) goto cleanup;
+    err = create_diagonal_matrix(&Z,0.0,0.0);
+    if( err ) goto cleanup;
+    err = lis_vector_duplicate(A,&x);
+    if( err ) goto cleanup;
+    err = lis_vector_duplicate(A,&Ax);
+    if( err ) goto cleanup;
+    err = lis_vector_duplicate(A,&Bx);
+    if( err ) goto cleanup;
+    err = lis_vector_duplicate(A,&r);
+    if( err ) goto cleanup;
+
+    for(j=0;j<3;j++)
+    {
+        err = lis_vector_set_all(invalid[j],x);
+        if( err ) goto cleanup;
+        for(i=0;i<2;i++)
+        {
+            LIS_SCALAR lambda = i ? 2.0 : 0.0;
+            residual = 7.0;
+            if( lis_esolver_standard_residual(A,x,lambda,Ax,r,&residual)
+                    !=LIS_BREAKDOWN || residual!=7.0 )
+                goto failed;
+            residual = 7.0;
+            if( lis_esolver_generalized_residual(A,B,x,lambda,Ax,Bx,r,&residual)
+                    !=LIS_BREAKDOWN || residual!=7.0 )
+                goto failed;
+        }
+    }
+
+    err = lis_vector_set_all(1.0,x);
+    if( err ) goto cleanup;
+    for(i=0;i<2;i++)
+    {
+        LIS_MATRIX op = i ? A : Z;
+        LIS_SCALAR lambda = i ? 2.0 : 0.0;
+        residual = 7.0;
+        err = lis_esolver_standard_residual(op,x,lambda,Ax,r,&residual);
+        if( err ) goto cleanup;
+        if( !isfinite((double)residual) || fabs((double)residual)>1.0e-12 )
+            goto failed;
+        residual = 7.0;
+        err = lis_esolver_generalized_residual(op,B,x,lambda,Ax,Bx,r,&residual);
+        if( err ) goto cleanup;
+        if( !isfinite((double)residual) || fabs((double)residual)>1.0e-12 )
+            goto failed;
+    }
+
+    /* Regular pencil with singular B and finite eigenpair (2,e_1). */
+    err = create_diagonal_matrix(&S,1.0,0.0);
+    if( err ) goto cleanup;
+    err = create_diagonal_matrix(&T,2.0,3.0);
+    if( err ) goto cleanup;
+    err = lis_vector_set_all(0.0,x);
+    if( err ) goto cleanup;
+    {
+        LIS_INT is,ie;
+        err = lis_vector_get_range(x,&is,&ie);
+        if( err ) goto cleanup;
+        if( is==0 && ie>0 )
+        {
+            err = lis_vector_set_value(LIS_INS_VALUE,0,1.0,x);
+            if( err ) goto cleanup;
+        }
+    }
+    residual = 7.0;
+    err = lis_esolver_generalized_residual(T,S,x,2.0,Ax,Bx,r,&residual);
+    if( err ) goto cleanup;
+    if( !isfinite((double)residual) || fabs((double)residual)>1.0e-12 )
+        goto failed;
+
+#ifdef _COMPLEX
+    /* Exercise a genuinely complex eigenvalue and eigenvector. */
+    lis_matrix_destroy(T);
+    T = NULL;
+    err = create_diagonal_matrix(&T,2.0+_Complex_I,2.0+_Complex_I);
+    if( err ) goto cleanup;
+    err = lis_vector_set_all(1.0+_Complex_I,x);
+    if( err ) goto cleanup;
+    residual = 7.0;
+    err = lis_esolver_standard_residual(T,x,2.0+_Complex_I,Ax,r,&residual);
+    if( err ) goto cleanup;
+    if( !isfinite((double)residual) || fabs((double)residual)>1.0e-12 )
+        goto failed;
+    residual = 7.0;
+    err = lis_esolver_generalized_residual(T,B,x,2.0+_Complex_I,Ax,Bx,r,&residual);
+    if( err ) goto cleanup;
+    if( !isfinite((double)residual) || fabs((double)residual)>1.0e-12 )
+        goto failed;
+#endif
+
+    printf("PASS: invalid eigenvectors, valid zero eigenvalues and singular metric\n");
+    err = LIS_SUCCESS;
+    goto cleanup;
+failed:
+    printf("FAIL: eigenvector certification edge case\n");
+    err = LIS_FAILS;
+cleanup:
+    if( r ) lis_vector_destroy(r);
+    if( Bx ) lis_vector_destroy(Bx);
+    if( Ax ) lis_vector_destroy(Ax);
+    if( x ) lis_vector_destroy(x);
+    if( T ) lis_matrix_destroy(T);
+    if( S ) lis_matrix_destroy(S);
+    if( Z ) lis_matrix_destroy(Z);
+    if( B ) lis_matrix_destroy(B);
+    if( A ) lis_matrix_destroy(A);
+    return err;
+}
+
+
 int
 main(
     int argc,
@@ -7937,6 +8064,13 @@ main(
         &argv);
     if( err )
         return 1;
+
+    err = test_certification_zero_vector();
+    if( err )
+    {
+        lis_finalize();
+        return 1;
+    }
 
     err = test_block_lanczos_projected_storage();
 

@@ -100,7 +100,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(github.event_name != 'pull_request' && '[{"mode":"release","index":"int32"},{"mode":"release","index":"int64"},{"mode":"asan-ubsan","index":"int32"},{"mode":"asan-ubsan","index":"int64"}]' || '[{"mode":"release","index":"int32"},{"mode":"asan-ubsan","index":"int64"}]') }}
+        include: ${{ fromJSON(github.event_name != 'pull_request' && '[{"mode":"release","index":"int32"},{"mode":"release","index":"int64"},{"mode":"asan-ubsan","index":"int32"},{"mode":"asan-ubsan","index":"int64"},{"mode":"complex","index":"int32"}]' || '[{"mode":"release","index":"int32"},{"mode":"asan-ubsan","index":"int64"},{"mode":"complex","index":"int32"}]') }}
     env:
       OMP_NUM_THREADS: '1'
       OMP_DYNAMIC: 'FALSE'
@@ -124,16 +124,25 @@ jobs:
           if [ "${{ matrix.index }}" = int64 ]; then
             index_flags="--enable-longlong"
           fi
+          scalar_flags=""
+          if [ "${{ matrix.mode }}" = complex ]; then
+            scalar_flags="--enable-complex"
+          fi
           autoreconf -fiv
-          ./configure --enable-test --enable-omp --disable-mpi --disable-fortran --disable-f90 --disable-saamg --enable-oom-tests ${index_flags}
+          ./configure --enable-test --enable-omp --disable-mpi --disable-fortran --disable-f90 --disable-saamg --enable-oom-tests ${index_flags} ${scalar_flags}
           make -C src -j2
           export LD_LIBRARY_PATH="$PWD/src/.libs:${LD_LIBRARY_PATH:-}"
-          make -C test testusereigencgcr testusereigeninverse testusereigenpower testusereigenprojection testusereigenrqiguard testusereigenstatus testgesolvepair
+          if [ "${{ matrix.mode }}" = complex ]; then
+            make -C test testeigenbreakdown
+            timeout 120s ./test/testeigenbreakdown
+            exit 0
+          fi
+          make -C test testusereigencgcr testusereigeninverse testusereigenpower testusereigenprojection testusereigenrqiguard testusereigenstatus testgesolvepair testeigenbreakdown
           if [ "${{ matrix.mode }}" = asan-ubsan ]; then
             export ASAN_OPTIONS="detect_leaks=1:halt_on_error=1"
           fi
           failed=0
-          for t in testusereigencgcr testusereigeninverse testusereigenpower testusereigenprojection testusereigenrqiguard testusereigenstatus testgesolvepair; do
+          for t in testusereigencgcr testusereigeninverse testusereigenpower testusereigenprojection testusereigenrqiguard testusereigenstatus testgesolvepair testeigenbreakdown; do
             rc=0
             timeout 120s ./test/$t || rc=$?
             case $rc in
