@@ -1,0 +1,50 @@
+name: RCI normal build and distribution qualification
+on:
+  push:
+    branches: ['qualification/rci-native-build-integration-20261127']
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [serial, openmp, disabled]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - shell: bash
+        run: |
+          set -euo pipefail
+          opts=(--enable-test --enable-shared --disable-mpi --disable-quad --disable-fortran --disable-f90 --disable-saamg --prefix="$RUNNER_TEMP/install")
+          flags=(-std=gnu11 -O2)
+          if [ "${{ matrix.mode }}" = openmp ]; then opts+=(--enable-omp --enable-longlong); flags+=(-fopenmp); else opts+=(--disable-omp); fi
+          if [ "${{ matrix.mode }}" = disabled ]; then opts+=(--disable-rci); else opts+=(--enable-rci); fi
+          git fetch --no-tags --depth=1 origin 1fc495871559928f0ab8bafe445d7e301d8b9e67
+          git worktree add --detach "$RUNNER_TEMP/base" 1fc495871559928f0ab8bafe445d7e301d8b9e67
+          (cd "$RUNNER_TEMP/base"; ./configure "${opts[@]}"; make -C src -j2)
+          nm -D --defined-only "$RUNNER_TEMP/base/src/.libs/liblis.so" | awk '{print $3}' | LC_ALL=C sort -u > "$RUNNER_TEMP/base.exports"
+          if [ "${{ matrix.mode }}" != disabled ]; then
+            printf '%s\n' lis_rci_native_create lis_rci_native_destroy lis_rci_native_start_linear lis_rci_native_start_feast lis_rci_native_start_krylov lis_rci_native_advance lis_rci_native_cancel lis_rci_native_pending lis_rci_native_status lis_rci_native_execute_default >> "$RUNNER_TEMP/base.exports"
+          fi
+          LC_ALL=C sort -u -o "$RUNNER_TEMP/base.exports" "$RUNNER_TEMP/base.exports"
+          ./configure "${opts[@]}"
+          make -C src -j2
+          nm -D --defined-only src/.libs/liblis.so | awk '{print $3}' | LC_ALL=C sort -u > "$RUNNER_TEMP/actual.exports"
+          diff -u "$RUNNER_TEMP/base.exports" "$RUNNER_TEMP/actual.exports"
+          git diff --exit-code -- src/solver/*.c src/esolver/*.c
+          make -C include install
+          make -C src install
+          if [ "${{ matrix.mode }}" != disabled ]; then
+            (cd "$RUNNER_TEMP"; cc "${flags[@]}" -I"$RUNNER_TEMP/install/include" "$GITHUB_WORKSPACE/qualification/rci-restore/test_native_installed.c" -L"$RUNNER_TEMP/install/lib" -Wl,-rpath,"$RUNNER_TEMP/install/lib" -llis -lm -o installed; OMP_NUM_THREADS=1 ./installed; if [ "${{ matrix.mode }}" = openmp ]; then OMP_NUM_THREADS=4 ./installed; fi)
+          else
+            test ! -e "$RUNNER_TEMP/install/include/lis_rci_native.h"
+            test ! -e src/solver/rci-native.stamp
+            test ! -e src/esolver/rci-native.stamp
+          fi
+          OMP_NUM_THREADS=1 make -C test -j2 check
+          cat test/test-suite.log
+          make dist
+          tar tf lis-*.tar.gz | grep 'qualification/rci-restore/build_native_tree.py'
+          tar tf lis-*.tar.gz | grep 'include/lis_rci_native.h'

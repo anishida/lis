@@ -27,3 +27,8 @@ if ENABLE_FORTRAN
 endif
 endif
 liblis@LIBSUFFIX@_la_SOURCES = 
+
+if ENABLE_RCI
+AM_CPPFLAGS = -I$(top_builddir)/include -I$(top_srcdir)/include
+liblis@LIBSUFFIX@_la_SOURCES += lis_rci.c lis_rci_bridge.c
+endif

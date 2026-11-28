@@ -1,0 +1,133 @@
+name: Native Generic RCI RC3 final qualification
+on:
+  push:
+    branches: ['qualification/rci-native-rc3-final-20261127', 'release-candidate/rci-reconstructed-v1.0-serial-openmp']
+  pull_request:
+    branches: [develop]
+    paths: ['configure*', '**/Makefile.am', '**/Makefile.in', 'src/**', 'include/**', 'qualification/rci-restore/**', '.github/workflows/rci-native-rc3-final.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {name: legacy-serial32, scalar: real, omp: 'no', int64: 'no', rci: 'yes', sanitize: 'no'}
+          - {name: legacy-openmp64, scalar: real, omp: 'yes', int64: 'yes', rci: 'yes', sanitize: 'no'}
+          - {name: disabled-serial, scalar: real, omp: 'no', int64: 'no', rci: 'no', sanitize: 'no'}
+          - {name: native-real, scalar: real, omp: 'no', int64: 'no', rci: native, sanitize: 'no'}
+          - {name: native-longdouble, scalar: longdouble, omp: 'no', int64: 'no', rci: native, sanitize: 'no'}
+          - {name: native-binary128, scalar: binary128, omp: 'yes', int64: 'yes', rci: native, sanitize: 'no'}
+          - {name: native-complex, scalar: complex, omp: 'yes', int64: 'yes', rci: native, sanitize: 'no'}
+          - {name: native-complex-longdouble, scalar: complex-longdouble, omp: 'no', int64: 'no', rci: native, sanitize: 'no'}
+          - {name: native-complex-binary128, scalar: complex-binary128, omp: 'yes', int64: 'yes', rci: native, sanitize: 'no'}
+          - {name: native-asan-ubsan, scalar: real, omp: 'no', int64: 'yes', rci: native, sanitize: 'yes'}
+    name: ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+      - shell: bash
+        run: |
+          set -euo pipefail
+          scalar="${{ matrix.scalar }}"
+          rci="${{ matrix.rci }}"
+          opts=(--enable-test --enable-shared --disable-mpi --disable-quad --disable-fortran --disable-f90 --disable-saamg --prefix="$RUNNER_TEMP/install")
+          flags=(-std=gnu11 -O2)
+          if [ "${{ matrix.omp }}" = yes ]; then opts+=(--enable-omp); flags+=(-fopenmp); else opts+=(--disable-omp); fi
+          if [ "${{ matrix.int64 }}" = yes ]; then opts+=(--enable-longlong); fi
+          if [[ "$scalar" == complex* ]]; then opts+=(--enable-complex); fi
+          if [[ "$scalar" == *longdouble || "$scalar" == *binary128 ]]; then opts+=(--enable-longdouble); fi
+          if [[ "$scalar" == *longdouble ]]; then export ac_cv_header_quadmath_h=no; fi
+          if [ "${{ matrix.sanitize }}" = yes ]; then
+            export CFLAGS='-O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer'
+            export LDFLAGS='-fsanitize=address,undefined'
+            flags+=(-g -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -no-pie)
+          fi
+          export ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 OMP_NUM_THREADS=1
+          base_rci="$rci"; if [ "$rci" = native ]; then base_rci=no; fi
+          # The review branch may be squashed; the pinned baseline is retained in the fork.
+          if ! git cat-file -e 1fc495871559928f0ab8bafe445d7e301d8b9e67^{commit}; then
+            git fetch --no-tags https://github.com/3rav/lis.git refs/heads/backup/pr267-before-squash-20261127
+          fi
+          git cat-file -e 1fc495871559928f0ab8bafe445d7e301d8b9e67^{commit}
+          git worktree add --detach "$RUNNER_TEMP/base" 1fc495871559928f0ab8bafe445d7e301d8b9e67
+          (cd "$RUNNER_TEMP/base"; ./configure "${opts[@]}" --enable-rci="$base_rci"; make -C src -j2)
+          base="$RUNNER_TEMP/base"
+          nm -D --defined-only "$base/src/.libs/liblis.so" | awk '{print $3}' | LC_ALL=C sort -u > "$RUNNER_TEMP/expected"
+          readelf -d "$base/src/.libs/liblis.so" | grep SONAME > "$RUNNER_TEMP/soname.base"
+          cc "${flags[@]}" -DHAVE_CONFIG_H -I"$base/include" qualification/rci-restore/native_release_abi.c -L"$base/src/.libs" -llis -lm -lquadmath -o "$RUNNER_TEMP/abi"
+          LD_LIBRARY_PATH="$base/src/.libs" "$RUNNER_TEMP/abi" > "$RUNNER_TEMP/abi.base"
+          # Historical qualification helpers were never public ABI.
+          sed -i '/^lis_rci_restore_dimension$/d; /^lis_rci_restore_harmonic_native$/d' "$RUNNER_TEMP/expected"
+          if [ "$rci" != no ]; then
+            printf '%s\n' lis_rci_native_create lis_rci_native_destroy lis_rci_native_start_linear lis_rci_native_start_feast lis_rci_native_start_krylov lis_rci_native_advance lis_rci_native_cancel lis_rci_native_pending lis_rci_native_status lis_rci_native_execute_default >> "$RUNNER_TEMP/expected"
+          fi
+          LC_ALL=C sort -u -o "$RUNNER_TEMP/expected" "$RUNNER_TEMP/expected"
+          ./configure "${opts[@]}" --enable-rci="$rci"
+          if [[ "$scalar" == complex* ]]; then grep -q '^#define _COMPLEX 1' include/lis_config.h; fi
+          if [[ "$scalar" == *longdouble || "$scalar" == *binary128 ]]; then grep -q '^#define _LONG__DOUBLE 1' include/lis_config.h; fi
+          if [[ "$scalar" == *longdouble ]]; then ! grep -q '^#define HAVE_QUADMATH_H 1' include/lis_config.h; fi
+          if [[ "$scalar" == *binary128 ]]; then grep -q '^#define HAVE_QUADMATH_H 1' include/lis_config.h; fi
+          make -C src -j2
+          git diff --exit-code -- src/solver/*.c src/esolver/*.c
+          nm -D --defined-only src/.libs/liblis.so | awk '{print $3}' | LC_ALL=C sort -u > "$RUNNER_TEMP/actual"
+          diff -u "$RUNNER_TEMP/expected" "$RUNNER_TEMP/actual"
+          readelf -d src/.libs/liblis.so | grep SONAME > "$RUNNER_TEMP/soname.final"
+          diff -u "$RUNNER_TEMP/soname.base" "$RUNNER_TEMP/soname.final"
+          LD_LIBRARY_PATH="$PWD/src/.libs" "$RUNNER_TEMP/abi" > "$RUNNER_TEMP/abi.final"
+          diff -u "$RUNNER_TEMP/abi.base" "$RUNNER_TEMP/abi.final"
+          echo 'EXACT EXPORTS SONAME AND ABI PASS'
+          make -C include install
+          make -C src install
+          if [ "$rci" != no ]; then
+            for t in native_installed native_release; do
+              cc "${flags[@]}" -I"$RUNNER_TEMP/install/include" "qualification/rci-restore/test_$t.c" -L"$RUNNER_TEMP/install/lib" -Wl,-rpath,"$RUNNER_TEMP/install/lib" -llis -lm -lquadmath -o "$RUNNER_TEMP/$t"
+              (cd "$RUNNER_TEMP"; OMP_NUM_THREADS=1 "./$t"; if [ "${{ matrix.omp }}" = yes ]; then OMP_NUM_THREADS=4 "./$t"; fi)
+            done
+          else
+            test ! -e "$RUNNER_TEMP/install/include/lis_rci_native.h"
+            test ! -e src/solver/rci-native.stamp
+          fi
+          if [ "$rci" = yes ]; then
+            cc "${flags[@]}" -DHAVE_CONFIG_H -I"$base/include" qualification/rci-restore/native_benchmark.c -L"$base/src/.libs" -llis -lm -o "$RUNNER_TEMP/bench"
+            if [ "${{ matrix.omp }}" = yes ]; then export OMP_NUM_THREADS=4; fi
+            for phase in base final final base; do
+              lib="$base/src/.libs"; if [ "$phase" = final ]; then lib="$PWD/src/.libs"; fi
+              LD_LIBRARY_PATH="$lib" "$RUNNER_TEMP/bench" | tee -a "$RUNNER_TEMP/$phase.log"
+            done
+            diff -u <(grep '^RESULT ' "$RUNNER_TEMP/base.log") <(grep '^RESULT ' "$RUNNER_TEMP/final.log")
+            echo 'CLASSIC BENCHMARK NUMERICAL PARITY PASS'
+          fi
+          if [ "$scalar" = real ] && [ "${{ matrix.sanitize }}" = no ]; then
+            if ! make -C test -j2 check; then cat test/test-suite.log; exit 1; fi
+            cat test/test-suite.log
+          fi
+  distribution:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+      - shell: bash
+        run: |
+          set -euo pipefail
+          opts=(--disable-mpi --disable-quad --disable-fortran --disable-f90 --disable-saamg --disable-omp)
+          ./configure "${opts[@]}" --disable-rci
+          make dist
+          mkdir "$RUNNER_TEMP/unpack"
+          tar xf lis-*.tar.gz -C "$RUNNER_TEMP/unpack"
+          cd "$RUNNER_TEMP/unpack"/lis-*/
+          ./configure "${opts[@]}" --enable-rci=native --disable-shared --enable-static --prefix="$RUNNER_TEMP/static"
+          make -C src -j2
+          make -C include install
+          make -C src install
+          test -f "$RUNNER_TEMP/static/lib/liblis.a"
+          cc -std=gnu11 -O2 -I"$RUNNER_TEMP/static/include" qualification/rci-restore/test_native_installed.c "$RUNNER_TEMP/static/lib/liblis.a" -lm -o "$RUNNER_TEMP/static-client"
+          OMP_NUM_THREADS=1 "$RUNNER_TEMP/static-client"
+          echo 'SOURCE DISTRIBUTION STATIC CLIENT PASS'

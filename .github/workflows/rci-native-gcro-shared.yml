@@ -1,0 +1,46 @@
+name: RCI native GCRO-DR shared continuation
+on:
+  push:
+    branches: ['qualification/rci-native-gcro-shared-20261127']
+permissions:
+  contents: read
+jobs:
+  gcro:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {mode: serial, index: int32, sanitize: 'no'}
+          - {mode: openmp, index: int64, sanitize: 'no'}
+          - {mode: serial, index: int64, sanitize: 'yes'}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - shell: bash
+        run: |
+          set -euo pipefail
+          python3 qualification/rci-restore/qualify_gcro_native.py
+          opts=(--enable-rci --enable-test --enable-shared --disable-mpi --disable-quad --disable-fortran --disable-f90 --disable-saamg)
+          flags=(-std=gnu11 -DHAVE_CONFIG_H -O2)
+          if [ "${{ matrix.mode }}" = openmp ]; then opts+=(--enable-omp); flags+=(-fopenmp); else opts+=(--disable-omp); fi
+          if [ "${{ matrix.index }}" = int64 ]; then opts+=(--enable-longlong); flags+=(-D_LONG__LONG); fi
+          if [ "${{ matrix.sanitize }}" = yes ]; then
+            export CFLAGS='-O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer'
+            export LDFLAGS='-fsanitize=address,undefined'
+            flags+=(-g -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -no-pie)
+          fi
+          ./configure "${opts[@]}"
+          make -C src -j2
+          cc "${flags[@]}" -Iinclude -Iqualification/rci-restore/ qualification/rci-restore/test_gcro_native.c -Lsrc/.libs -Wl,-rpath,"$PWD/src/.libs" -llis -lm -o "$RUNNER_TEMP/gcro-native"
+          ldd "$RUNNER_TEMP/gcro-native" | grep -F "$PWD/src/.libs/liblis.so"
+          export ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1
+          OMP_NUM_THREADS=1 "$RUNNER_TEMP/gcro-native"
+          if [ "${{ matrix.mode }}" = openmp ]; then OMP_NUM_THREADS=4 "$RUNNER_TEMP/gcro-native"; fi
+          if [ "${{ matrix.sanitize }}" = no ]; then
+            make -C test -j2 testgcrodroptions testgcrodrconfig testgcrodrsequence testusergcrodrerrors
+            for t in testgcrodroptions testgcrodrconfig testgcrodrsequence testusergcrodrerrors; do
+              OMP_NUM_THREADS=1 "./test/$t"
+              echo "GCRO NATIVE UPSTREAM PASS $t"
+            done
+          fi

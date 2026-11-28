@@ -678,7 +678,74 @@ EXTRA_DIST = doc/ilutp.md doc/ilutp_contact_ccx_v2_benchmarks.md \
 	graphics/gnuplot5.sh graphics/gnuplot5.bat \
 	graphics/gnuplot5.plt reconfigure.sh win/Makefile.in \
 	win/README win/configure.bat \
-	tools/differential_schur_stdlib.py
+	tools/differential_schur_stdlib.py doc/generic-rci.md \
+	doc/generic-rci-abi.md \
+	qualification/rci-restore/README.md \
+	qualification/rci-restore/generate_krylov_continuation.js \
+	qualification/rci-restore/generate_linear_continuation.py \
+	qualification/rci-restore/krylov_continuation.inc \
+	qualification/rci-restore/lis_rci_augmented_restore.c \
+	qualification/rci-restore/lis_rci_augmented_restore.h \
+	qualification/rci-restore/lis_rci_feast_restore.c \
+	qualification/rci-restore/lis_rci_feast_restore.h \
+	qualification/rci-restore/lis_rci_krylov_restore.c \
+	qualification/rci-restore/lis_rci_krylov_restore.h \
+	qualification/rci-restore/lis_rci_native_feast.c \
+	qualification/rci-restore/lis_rci_native_feast.h \
+	qualification/rci-restore/lis_rci_native_feast_lifecycle.c \
+	qualification/rci-restore/lis_rci_native_feast_lifecycle.h \
+	qualification/rci-restore/lis_rci_native_feast_projector.c \
+	qualification/rci-restore/lis_rci_native_feast_projector.h \
+	qualification/rci-restore/lis_rci_native_fgcro_restore.c \
+	qualification/rci-restore/lis_rci_native_fgcro_restore.h \
+	qualification/rci-restore/lis_rci_native_gcro_restore.c \
+	qualification/rci-restore/lis_rci_native_gcro_restore.h \
+	qualification/rci-restore/lis_rci_native_lifecycle.c \
+	qualification/rci-restore/lis_rci_native_lifecycle.h \
+	qualification/rci-restore/lis_rci_native_linear_restore.c \
+	qualification/rci-restore/lis_rci_native_linear_restore.h \
+	qualification/rci-restore/lis_rci_native_public.c \
+	qualification/rci-restore/lis_rci_native_restore.c \
+	qualification/rci-restore/lis_rci_native_restore.h \
+	qualification/rci-restore/lis_rci_native_session.c \
+	qualification/rci-restore/lis_rci_native_session.h \
+	qualification/rci-restore/lis_rci_recycle_restore.c \
+	qualification/rci-restore/lis_rci_recycle_restore.h \
+	qualification/rci-restore/lis_rci_restore.c \
+	qualification/rci-restore/lis_rci_restore.h \
+	qualification/rci-restore/lis_rci_split_restore.c \
+	qualification/rci-restore/prepare_native_installed_api.py \
+	qualification/rci-restore/qualify_all_native.py \
+	qualification/rci-restore/qualify_feast_native.py \
+	qualification/rci-restore/qualify_feast_projector_native.py \
+	qualification/rci-restore/qualify_fgcro_native.py \
+	qualification/rci-restore/qualify_gcro_native.py \
+	qualification/rci-restore/qualify_krylov_native.py \
+	qualification/rci-restore/qualify_linear_native.py \
+	qualification/rci-restore/qualify_native_feast_lifecycle.py \
+	qualification/rci-restore/qualify_native_lifecycle.py \
+	qualification/rci-restore/test_augmented.c \
+	qualification/rci-restore/test_feast.c \
+	qualification/rci-restore/test_feast_native.c \
+	qualification/rci-restore/test_feast_projector_native.c \
+	qualification/rci-restore/test_fgcro_native.c \
+	qualification/rci-restore/test_gcro_native.c \
+	qualification/rci-restore/test_krylov_restore.c \
+	qualification/rci-restore/test_linear_native.c \
+	qualification/rci-restore/test_linear_precision.c \
+	qualification/rci-restore/test_native.c \
+	qualification/rci-restore/test_native_feast_lifecycle.c \
+	qualification/rci-restore/test_native_installed.c \
+	qualification/rci-restore/test_native_lifecycle.c \
+	qualification/rci-restore/test_native_session.c \
+	qualification/rci-restore/test_recycle.c \
+	qualification/rci-restore/test_restore.c \
+	qualification/rci-restore/test_split.c \
+	qualification/rci-restore/build_native_tree.py \
+	doc/generic-rci-native.md \
+	qualification/rci-restore/native_benchmark.c \
+	qualification/rci-restore/native_release_abi.c \
+	qualification/rci-restore/test_native_release.c
 man_MANS = doc/man/man1/lsolve.1 \
              doc/man/man1/esolve.1 \
              doc/man/man1/esolver.1 \
