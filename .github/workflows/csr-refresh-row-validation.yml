@@ -1,0 +1,95 @@
+name: CSR refresh row validation
+on:
+  pull_request:
+    paths:
+      - 'src/matrix/lis_matrix_materialize.c'
+      - 'test/testmatrixmaterialize.c'
+      - '.github/workflows/csr-refresh-row-validation.yml'
+      - 'src/system/lis_sort.c'
+      - 'src/precon/lis_precon.c'
+      - 'configure.ac'
+      - 'include/**'
+  push:
+    branches: [develop, 'fix/csr-iluc-ilut-regressions-20261127']
+    paths:
+      - 'src/matrix/lis_matrix_materialize.c'
+      - 'test/testmatrixmaterialize.c'
+      - '.github/workflows/csr-refresh-row-validation.yml'
+      - 'src/system/lis_sort.c'
+      - 'src/precon/lis_precon.c'
+      - 'configure.ac'
+      - 'include/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [serial, openmp, asan-ubsan]
+    env:
+      OMP_DYNAMIC: 'FALSE'
+      OMP_NUM_THREADS: '1'
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+      UBSAN_OPTIONS: halt_on_error=1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install Ubuntu build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          apt_options=(-o Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=- -o Acquire::Retries=3)
+          sudo apt-get "${apt_options[@]}" update
+          sudo apt-get "${apt_options[@]}" install -y build-essential autoconf automake libtool
+      - name: Build and verify fixed and original code
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          flags='-O2 -g'
+          omp='--disable-omp'
+          link=''
+          threads='1'
+          case '${{ matrix.profile }}' in
+            openmp) omp='--enable-omp'; link='-fopenmp'; threads='1';;
+            asan-ubsan) flags='-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all'; omp='--enable-omp'; link='-fopenmp -no-pie'; threads='1';;
+          esac
+          root="$PWD"
+          git worktree add --detach "$RUNNER_TEMP/original" 6a4ae9c11bb03b028a6477455cb4f9f0a790132d
+          for mode in fixed original; do
+            dir="$root"
+            if [ "$mode" = original ]; then dir="$RUNNER_TEMP/original"; fi
+            (
+              cd "$dir"
+              ./configure --disable-mpi $omp --disable-fortran --disable-f90 --disable-saamg --disable-test --disable-shared --enable-static CFLAGS="$flags" LDFLAGS="$flags"
+              make -C src -j2
+              cc $flags $link -DHAVE_CONFIG_H -Iinclude "$root/test/testmatrixmaterialize.c" src/.libs/liblis.a -lm -o "$root/evidence/$mode-test"
+            ) > "evidence/$mode-build.log" 2>&1
+            for n in $threads; do
+              rc=0
+              OMP_NUM_THREADS="$n" "evidence/$mode-test" > "evidence/$mode-$n.log" 2>&1 || rc=$?
+              cat "evidence/$mode-$n.log"
+              if [ "$mode" = fixed ]; then
+                test "$rc" = 0
+                grep -Fx 'CSR_REFRESH_FAULT_1=PASS' "evidence/$mode-$n.log"
+                grep -Fx 'CSR_REFRESH_FAULT_2=PASS' "evidence/$mode-$n.log"
+                grep -Fx 'LIS_MATRIX_MATERIALIZE_CACHE PASSED' "evidence/$mode-$n.log"
+              else
+                test "$rc" != 0
+                grep -Eq 'FAIL|AddressSanitizer: heap-buffer-overflow' "evidence/$mode-$n.log"
+              fi
+            done
+          done
+          echo RED_GREEN_GATE=PASS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidence-${{ matrix.profile }}
+          path: evidence/*.log
+          retention-days: 30

@@ -158,6 +158,32 @@ fail:
     return err;
 }
 
+/* Keep the callback internally consistent for each query/fill pair,
+ * but change the final row on the second traversal of a refresh. */
+typedef struct
+{
+    TEST_ROW_CTX base;
+    int fault, queries;
+} REFRESH_FAULT_CTX;
+
+static LIS_INT
+refresh_fault_row(void *data,LIS_INT row,LIS_INT *nnz,
+                  LIS_INT *cols,LIS_SCALAR *vals)
+{
+    REFRESH_FAULT_CTX *ctx=(REFRESH_FAULT_CTX *)data;
+    TEST_ROW_CTX local=ctx->base;
+    LIS_INT rc;
+    if(ctx->fault && row==2)
+    {
+        if(cols==NULL && vals==NULL) ctx->queries++;
+        if(ctx->queries>=2 && ctx->fault==1) local.variant=1;
+    }
+    rc=test_get_row(&local,row,nnz,cols,vals);
+    if(!rc && ctx->fault==2 && row==2 && ctx->queries>=2 && cols && vals)
+        cols[0]=0; /* same count, different column */
+    return rc;
+}
+
 static int
 check_csr_matches_context(LIS_MATRIX A,const TEST_ROW_CTX *ctx)
 {
@@ -189,6 +215,36 @@ check_csr_matches_context(LIS_MATRIX A,const TEST_ROW_CTX *ctx)
         }
     }
     return 0;
+}
+
+static int
+test_refresh_fault(int fault)
+{
+    REFRESH_FAULT_CTX ctx={{0,(LIS_REAL)1.0},0,0};
+    LIS_MATRIX A=NULL,csr=NULL;
+    LIS_MATRIX_CSR_CACHE cache=NULL;
+    LIS_INT action=-1,err;
+    int failed=1;
+    if(create_user_matrix(&ctx.base,&A)) goto done;
+    if(lis_matrix_set_user_row(A,refresh_fault_row)) goto done;
+    if(lis_matrix_materialize_csr_cached(A,&cache,&csr,&action) ||
+       action!=LIS_MATRIX_MATERIALIZE_REBUILD) goto done;
+    ctx.base.scale=(LIS_REAL)2.0;
+    ctx.queries=0;
+    ctx.fault=fault;
+    if(lis_matrix_mark_values_changed(A)) goto done;
+    err=lis_matrix_materialize_csr_cached(A,&cache,&csr,&action);
+    if(err!=LIS_ERR_ILL_ARG || csr!=NULL || ctx.queries!=2) goto done;
+    ctx.fault=0;
+    if(lis_matrix_materialize_csr_cached(A,&cache,&csr,&action) ||
+       action!=LIS_MATRIX_MATERIALIZE_REBUILD ||
+       check_csr_matches_context(csr,&ctx.base)) goto done;
+    failed=0;
+done:
+    printf("CSR_REFRESH_FAULT_%d=%s\n",fault,failed?"FAIL":"PASS");
+    lis_matrix_csr_cache_destroy(cache);
+    if(A) lis_matrix_destroy(A);
+    return failed;
 }
 
 static int
@@ -468,6 +524,9 @@ int main(int argc,char **argv)
 
     err=lis_initialize(&argc,&argv);
     if(err) return 1;
+
+    if(test_refresh_fault(1) || test_refresh_fault(2))
+    { failed=1; goto cleanup; }
 
     err=create_user_matrix(&actx,&A);
     if(err) { failed=1; goto cleanup; }

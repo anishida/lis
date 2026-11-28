@@ -541,6 +541,22 @@ lis_matrix_materialize_refresh_values(
         err=lis_precon_row_source_get(&row,i);
         if(err) break;
         p0=csr->ptr[i];
+        /* A USER callback may change between the pattern and value passes.
+         * Check the current row before touching the cached CSR storage. */
+        if(row.nnz!=csr->ptr[i+1]-p0)
+        {
+            err=LIS_ERR_ILL_ARG;
+            break;
+        }
+        for(k=0;k<row.nnz;k++)
+        {
+            if(row.index[k]!=csr->index[p0+k])
+            {
+                err=LIS_ERR_ILL_ARG;
+                break;
+            }
+        }
+        if(err) break;
         for(k=0;k<row.nnz;k++)
             csr->value[p0+k]=row.value[k];
     }

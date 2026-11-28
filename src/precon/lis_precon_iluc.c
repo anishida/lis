@@ -935,7 +935,7 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 			}
 		}
 		len = _min(lfil,nnz);
-		for(j=0;j<nnz;j++) tmp[my_rank*n+j] = fabs(z[is+j]);
+		for(j=0;j<nnz;j++) tmp[my_rank*n+j] = -fabs(z[iz[my_rank*n+j]]);
 		lis_sort_di(0,nnz-1,&tmp[my_rank*n],&iz[my_rank*n]);
 		lis_sort_i(0,len-1,&iz[my_rank*n]);
 		U->nnz[k] = len;
@@ -950,7 +950,6 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 			U->index[k][j] = jj;
 			U->value[k][j] = z[jj];
 		}
-		for(j=len;j<cz;j++) zc[iz[my_rank*n+j]] = 0;
 		cz = nnz;
 
 		/* drop L */
@@ -968,7 +967,7 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 			}
 		}
 		len = _min(lfil,nnz);
-		for(j=0;j<nnz;j++) tmp[my_rank*n+j] = fabs(w[is+j]);
+		for(j=0;j<nnz;j++) tmp[my_rank*n+j] = -fabs(w[iw[my_rank*n+j]]);
 		lis_sort_di(0,nnz-1,&tmp[my_rank*n],&iw[my_rank*n]);
 		lis_sort_i(0,len-1,&iw[my_rank*n]);
 		L->nnz[k] = len;
@@ -983,7 +982,6 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 			L->index[k][j] = jj;
 			L->value[k][j] = w[jj]*t;
 		}
-		for(j=len;j<cw;j++) wc[iw[my_rank*n+j]] = 0;
 		cw = nnz;
 
 		/**/
@@ -1507,7 +1505,7 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 			}
 		}
 		len = _min(lfil,nnz);
-		for(j=0;j<nnz;j++) tmp[j] = fabs(z[j]);
+		for(j=0;j<nnz;j++) tmp[j] = -fabs(z[iz[j]]);
 		lis_sort_di(0,nnz-1,tmp,iz);
 		lis_sort_i(0,len-1,iz);
 		U->nnz[k] = len;
@@ -1522,7 +1520,6 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 			U->index[k][j] = jj;
 			U->value[k][j] = z[jj];
 		}
-		for(j=len;j<cz;j++) zc[iz[j]] = 0;
 		cz = nnz;
 
 		/* drop L */
@@ -1540,7 +1537,7 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 			}
 		}
 		len = _min(lfil,nnz);
-		for(j=0;j<nnz;j++) tmp[j] = fabs(w[j]);
+		for(j=0;j<nnz;j++) tmp[j] = -fabs(w[iw[j]]);
 		lis_sort_di(0,nnz-1,tmp,iw);
 		lis_sort_i(0,len-1,iw);
 		L->nnz[k] = len;
@@ -1555,7 +1552,6 @@ LIS_INT lis_precon_create_iluc_csr(LIS_SOLVER solver, LIS_PRECON precon)
 			L->index[k][j] = jj;
 			L->value[k][j] = w[jj]*t;
 		}
-		for(j=len;j<cw;j++) wc[iw[j]] = 0;
 		cw = nnz;
 
 		/**/
@@ -2464,8 +2460,8 @@ LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 			}
 			if( t>toldd )
 			{
-				iz[nnz++]    = jj;
-				tmp[jj] = t;
+				tmp[nnz] = -t;
+				iz[nnz++] = jj;
 			}
 			else
 			{
@@ -2493,7 +2489,6 @@ LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 					break;
 				}
 				zc[jj] = 0;
-				tmp[jj] = 0.0;
 			}
 		}
 		len = _min(lfil,nnz);
@@ -2521,7 +2516,6 @@ LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 				lis_printf(comm,"\n");
 			}*/
 		}
-		for(j=len;j<cz;j++) zc[iz[j]] = 0;
 		cz = nnz;
 /*		lis_printf(comm,"k=%d U:lfil=%d nnz=%d len=%d\n",k,lfil,nnz,len);*/
 
@@ -2550,13 +2544,12 @@ LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 /*			lis_printf(comm,"k=%d L:jj=%d t=%e tol=%e\n",k,jj,t,toldd);*/
 			if( t>toldd )
 			{
-				iw[nnz++]    = jj;
-				tmp[jj] = t;
+				tmp[nnz] = -t;
+				iw[nnz++] = jj;
 			}
 			else
 			{
 				wc[jj] = 0;
-				tmp[jj] = 0.0;
 			}
 		}
 		len = _min(lfil,nnz);
@@ -2635,7 +2628,6 @@ LIS_INT lis_precon_create_iluc_bsr(LIS_SOLVER solver, LIS_PRECON precon)
 			}*/
 #endif
 		}
-		for(j=len;j<cw;j++) wc[iw[j]] = 0;
 		cw = nnz;
 /*		lis_printf(comm,"k=%d L:lfil=%d nnz=%d len=%d\n",k,lfil,nnz,len);*/
 
